@@ -626,13 +626,13 @@ var update = function(opt_fromTick) {
           state.g_numferns++;
           state.c_numferns++;
           var fernres = state.fernres;
-          actualgain.addInPlace(fernres);
           if(state.fern == 1) {
             showMessage('That fern gave: ' + fernres.toString(), '#4a0', '#120', true);
           } else {
             fernres = fernres.mulr(5);
             showMessage('This fern is extra bushy! It gave ' + fernres.toString(), '#4a0', '#120', true);
           }
+          actualgain.addInPlace(fernres);
           lastFernTime = util.getTime(); // in seconds
           state.fern = 0;
           clickedfern = true;
