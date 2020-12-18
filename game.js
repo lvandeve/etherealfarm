@@ -490,10 +490,11 @@ var update = function(opt_fromTick) {
         var num = 0;
         var res_before = Res(state.res);
         for(;;) {
-          if(state.res.lt(u.getCost())) {
+          var cost = u.getCost();
+          if(state.res.lt(cost)) {
             if(!(shift && num > 0)) {
-              showMessage('not enough resources for upgrade: need ' + u.getCost().toString() +
-                  ', have: ' + Res.getMatchingResourcesOnly(u.getCost(), state.res).toString(), invalidFG, invalidBG);
+              showMessage('not enough resources for upgrade: need ' + cost.toString() +
+                  ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
             }
             break;
           } else if(!u.canUpgrade()) {
@@ -502,38 +503,38 @@ var update = function(opt_fromTick) {
             }
             break;
           } else {
-            state.res.subInPlace(u.getCost());
-            if(!shift) showMessage('upgraded: ' + u.getName() + ', consumed: ' + u.getCost().toString(), '#ff0', '#000');
-            // do fun last! u.getCost() and u.getName() may change due to executing fun...
+            state.res.subInPlace(cost);
             u.fun();
             num++;
+            if(!shift) showMessage('upgraded: ' + u.getName() + ', consumed: ' + cost.toString(), '#ff0', '#000');
           }
           if(!shift) break;
           if(shift && u.isExhausted()) break;
           if(num > 1000) break; // this is a bit long, infinite loop?
         }
         if(shift && num) {
+          var total_cost = res_before.sub(state.res);
           if(num == 1) {
-            showMessage('upgraded: ' + u.getName() + ', consumed: ' + u.getCost().toString(), '#ff0', '#000');
+            showMessage('upgraded: ' + u.getName() + ', consumed: ' + total_cost.toString(), '#ff0', '#000');
           } else {
-            showMessage('upgraded ' + u.name + ' ' + num + ' times to ' + u.getName() + ', consumed: ' + (res_before.sub(state.res)).toString(), '#ff0', '#000');
+            showMessage('upgraded ' + u.name + ' ' + num + ' times to ' + u.getName() + ', consumed: ' + total_cost.toString(), '#ff0', '#000');
           }
         }
         if(num) updateUI();
       } else if(type == ACTION_UPGRADE2) {
         var u = upgrades2[action.u];
         var power = gain.sub(state.ethereal_upgrade_spent).mulr(1.001); // allow slight numerical precision error, e.g. say you have 0.4 pericarp/s, it may still fail to let you buy 4 upgrades costing 0.1 pericarp/s each otherwise
-        var cost = u.getCost().mulr(0.999);
-        if(power.lt(u.getCost())) {
-          showMessage('not enough available power for ethereal upgrade: need ' + u.getCost().toProdString() +
-              ', have: ' + Res.getMatchingResourcesOnly(u.getCost(), power).toProdString(), invalidFG, invalidBG);
+        var cost = u.getCost();
+        var cost_tweaked = cost.mulr(0.999);
+        if(power.lt(cost_tweaked)) {
+          showMessage('not enough available power for ethereal upgrade: need ' + cost.toProdString() +
+              ', have: ' + Res.getMatchingResourcesOnly(cost, power).toProdString(), invalidFG, invalidBG);
         } else if(!u.canUpgrade()) {
           showMessage('this ethereal upgrade is not currently available', invalidFG, invalidBG);
         } else  {
-          state.ethereal_upgrade_spent.addInPlace(u.getCost());
-          showMessage('Ethereal upgrade applied: ' + u.getName() + ', power used: ' + u.getCost().toString(), '#ffc', '#640');
-          // do fun last! u.getCost() and u.getName() may change due to executing fun...
+          state.ethereal_upgrade_spent.addInPlace(cost);
           u.fun();
+          showMessage('Ethereal upgrade applied: ' + u.getName() + ', power used: ' + cost.toString(), '#ffc', '#640');
         }
         updateUI();
       } else if(type == ACTION_PLANT) {
