@@ -202,13 +202,8 @@ function makeFieldDialog(x, y) {
     var f1 = new Flex(dialog, [0.01, 0.2], 0.25, 1, 0.75, 0.3);
     var text;
 
-    //var f0 = new Flex(flex, 0, ysize * ypos, 1, ysize * (ypos + 1), 0.3); ypos++;
-    //var f1 = new Flex(flex, 0, ysize * ypos, 1, ysize * (ypos + 1), 0.3); ypos++;
-    //var f = flex;
-
     text = '<b>' + util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
     text += 'Tree level: ' + state.treelevel + '<br/>';
-    //f.div.innerHTML = text;
     if(state.treelevel == 0) {
       text += 'This tree needs to be rejuvenated first.<br/>';
       f0.div.innerHTML = text;

@@ -50,7 +50,7 @@ function makeMainDivs() {
   var showdebugborders = false;
 
   if(mainFlex) mainFlex.removeSelf();
-  mainFlex = new Flex(null, [0, 0.01, 0.6], 0.01, [0, 0.99, 0.6], 0.99);
+  mainFlex = new Flex(null, [0, 0.01, 0.75], 0.01, [0, 0.99, 0.75], 0.99);
   if(showdebugborders) mainFlex.div.style.border = '2px solid green';
 
   topFlex = new Flex(mainFlex, 0, 0, 1, 0.05);

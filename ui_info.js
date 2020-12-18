@@ -71,10 +71,10 @@ function updateResourceUI() {
   var infoDiv = infoFlex.div;
   infoDiv.style.backgroundColor = season_colors[getSeason()];
   if(!resourceDivs.length) {
-    for(var y = 0; y < 3; y++) {
+    for(var y = 0; y < 2; y++) {
       for(var x = 0; x < 4; x++) {
         var i = y * 4 + x;
-        var div = makeDiv((x * 25) + '%', (y * 33) + '%', '25%', '33%', infoDiv);
+        var div = makeDiv((x * 25) + '%', (y * 50) + '%', '25%', '50%', infoDiv);
         div.style.border = '1px solid black';
         centerText2(div);
         div.style.textOverflow = 'hidden';
@@ -220,7 +220,7 @@ function updateResourceUI() {
       }, /*opt_poll=*/true, /*allow_mobile=*/true);
       div.style.cursor = 'pointer';
       div.onclick = function() {
-        var dialog = createDialog();
+        var dialog = createDialog(resin ? true : false);
         dialog.div.style.backgroundColor = '#cccc'; // slightly translucent to see resources through it
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);
