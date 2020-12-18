@@ -34,7 +34,7 @@ function Crop() {
   this.boost = Num(0); // how much this boosts neighboring crops, 0 means no boost, 1 means +100%, etc... (do not use directly, use getBoost() to get all multipliers taken into account)
   this.tagline = '';
   // multipliers for particular seasons
-  this.bonus_season = [Num(1), Num(1), Num(1), Num(0.65)];
+  this.bonus_season = [Num(1), Num(1), Num(1), Num(0.75)];
 
   this.basic_upgrade = null; // id of registered upgrade that does basic upgrades of this plant
 
@@ -212,7 +212,7 @@ function registerMushroom(name, tier, planttime, image, opt_tagline) {
   var prod = getMushroomProd(tier);
   var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
   var crop = crops[index];
-  crop.bonus_season[2] = Num(1.2);
+  crop.bonus_season[2] = Num(1.25);
   crop.type = CROPTYPE_MUSH;
   return index;
 }
@@ -240,11 +240,11 @@ function getBerryCost(i) {
   return Res({seeds:seeds});
 }
 
-// first one should cost 0.1
+// first one should give 0.5
 function getBerryProd(i) {
   var seeds = getBerryBase(i);
-  seeds.mulrInPlace(0.1);
-  seeds.mulInPlace(Num.rpow(0.5, Num(i)));
+  seeds.mulrInPlace(0.5);
+  seeds.mulInPlace(Num.rpow(0.35, Num(i)));
   return Res({seeds:seeds});
 }
 

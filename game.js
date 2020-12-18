@@ -833,7 +833,7 @@ var update = function(opt_fromTick) {
           showMessage('The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button.', helpFG, helpBG);
         }
         if(state.g_nummedals == 1) {
-          showMessage('You got your first achievements! Achievements give a slight production boost.', helpFG, helpBG);
+          showMessage('You got your first achievement! Achievements give a slight production boost.', helpFG, helpBG);
         }
       }
     }

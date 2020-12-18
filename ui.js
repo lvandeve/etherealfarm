@@ -140,7 +140,7 @@ if(oldfont) {
   document.body.style.fontFamily = 'Verdana, sans-serif';
   //document.body.style.fontSize = '0.9em';
 } else {
-  document.body.style.fontFamily = 'Arian, sans-serif';
+  document.body.style.fontFamily = 'Arial, sans-serif';
   //document.body.style.fontSize = '1em';
 }
 
