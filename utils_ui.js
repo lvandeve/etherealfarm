@@ -541,7 +541,12 @@ Flex.prototype.updateSelf = function() {
     this.div.style.verticalAlign = 'middle';
     this.div.style.lineHeight = divheight + 'px';
   }
-}
+};
+
+Flex.prototype.setCentered = function() {
+  this.center = true;
+  this.updateSelf();
+};
 
 // updates self and all chilren recursively
 Flex.prototype.update = function() {

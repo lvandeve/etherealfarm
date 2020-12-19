@@ -22,18 +22,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function renderUpgradeChip(u, x, y, w, flex, completed) {
   var div = flex.div;
   div.style.border = '1px solid black';
+  div.style.backgroundColor = '#ffe';
 
   var cost = u.getCost(completed ? -1 : 0);
-  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 0.8);
+  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 1);
   var name = completed ? u.getName() : u.getNextName();
   titleFlex.div.innerHTML = name;
+  titleFlex.div.style.whiteSpace = 'nowrap';
 
   var canvasFlex = new Flex(flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  canvasFlex.div.style.backgroundColor = '#ccc';
+  canvasFlex.div.style.border = '1px solid black';
   if(u.bgcolor) {
-    canvasFlex.div.style.backgroundColor = u.bgcolor;
+    //canvasFlex.div.style.backgroundColor = u.bgcolor;
+    div.style.backgroundColor = u.bgcolor;
   }
   if(u.bordercolor) {
-    canvasFlex.div.style.border = '1px solid ' + u.bordercolor;
+    //canvasFlex.div.style.border = '1px solid ' + u.bordercolor;
+    div.style.border = '1px solid ' + u.bordercolor;
   }
   if(u.image0) {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -44,12 +50,12 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     renderImage(u.image1, canvas);
   }
 
-  var buyFlex = new Flex(flex, [0, 0.8], 0.3, 0.9, [0.5, 0.35], 0.8);
+  var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.9);
 
   var infoText = '';
   var updateInfoText = function() {
     infoText = name;
-    infoText += '<br>cost:' + cost.toString();
+    infoText += '<br>Cost: ' + cost.toString();
     if(!completed) {
       var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
       if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
@@ -69,8 +75,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     var buyText = 'Buy: ' + cost.toString();
 
     buyFlex.div.innerText = buyText;
-    buyFlex.center = true;
-    buyFlex.updateSelf();
+    buyFlex.setCentered();
 
     buyFlex.div.style.border = '1px solid black';
     buyFlex.div.style.backgroundColor = '#ccc';
@@ -81,7 +86,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     }, i);
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();
-    //buyFlex.center = true;
+    //buyFlex.setCentered();
   }
 
 
@@ -111,16 +116,21 @@ function updateUpgradeUI() {
 
   upgradeFlex.clear();
 
-  var titleFlex = new Flex(upgradeFlex, 0.01, 0.02, 0.95, 0.1, 0.35);
+  var titleFlex = new Flex(upgradeFlex, 0.01, 0.02, 0.95, 0.15, 0.3);
 
-  titleFlex.div.innerText = 'Hold shift to buy as many as possible';
+  var titleText = '';
+  titleText = 'Hold shift to buy as many as possible';
+  titleText += '<br>';
+  titleText += 'Click to icon or see tooltip for more info';
+  titleFlex.div.innerHTML = titleText;
 
-  var scrollFlex = new Flex(upgradeFlex, 0, 0.1, 1, 1);
+  var scrollFlex = new Flex(upgradeFlex, 0, 0.15, 1, 1);
   upgradeScrollFlex = scrollFlex;
   upgradeFlex.div.removeChild(scrollFlex.div);
 
   scrollFlex.div.innerText = '';
   scrollFlex.div.style.overflowY = 'scroll';
+  scrollFlex.div.style.border = '5px solid #ccc';
   var pos = [0, 0];
 
   var unlocked = [];
@@ -158,22 +168,34 @@ function updateUpgradeUI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
     var w = 0.45;
 
-    var flex = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], 1, [0, (y + 1) * w - 0.01, 0.27], 0.4);
-    flex.div.innerText = 'Completed Upgrades';
-  }
+    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0, y * w + 0.01, 0.27], [(0 + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.6);
+    styleButton(flex.div);
+    flex.div.innerText = 'See Completed Upgrades';
+    flex.setCentered();
 
-  for(var i = 0; i < researched.length; i++) {
-    var u = upgrades[researched[i]];
-    var div = makeDiv(pos[0], pos[1], 200, 20, scrollFlex.div);
+    flex.div.onclick = function() {
+      var dialog = createDialog();
+      var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
 
+      var scrollFlex = new Flex(dialog, 0, 0.1, 1, 0.9);
 
-    var x = (i & 1);
-    var y = ((unlocked.length + 1) >> 1) + 1 + (i >> 1);
-    var w = 0.45;
-    var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
-    renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, true);
-    chip.div.style.color = '#2a2';
-    chip.div.style.borderColor = '#2a2';
+      scrollFlex.div.innerText = '';
+      scrollFlex.div.style.overflowY = 'scroll';
+
+      for(var i = 0; i < researched.length; i++) {
+        var u = upgrades[researched[i]];
+        var div = makeDiv(pos[0], pos[1], 200, 20, scrollFlex.div);
+
+        var x = (i & 1);
+        var y = i >> 1;
+        var w = 0.45;
+        var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
+        renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, true);
+        chip.div.style.color = '#2a2';
+        chip.div.style.borderColor = '#2a2';
+      }
+
+    };
   }
 
   upgradeFlex.div.appendChild(scrollFlex.div);

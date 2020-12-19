@@ -28,9 +28,10 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   div.style.backgroundColor = '#9df';
 
   var cost = u.getCost(completed ? -1 : 0);
-  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 0.8);
+  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 1);
   var name = completed ? u.getName() : u.getNextName();
   titleFlex.div.innerHTML = name;
+  titleFlex.div.style.whiteSpace = 'nowrap';
 
   var canvasFlex = new Flex(flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
   if(u.bgcolor) {
@@ -48,20 +49,20 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     renderImage(u.image1, canvas);
   }
 
-  var buyFlex = new Flex(flex, [0, 0.8], 0.3, 0.9, [0.5, 0.35], 0.7);
+  var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.8);
 
   var infoText = name;
-    infoText += '<br>cost:' + cost.toString();
+  infoText += '<br>Cost: ' + cost.toString() + '/s';
   if(u.description) {
     infoText += '<br>' + u.description;
   }
+  infoText += '<br>' + 'Non-refundable and permanent!';
 
   if(!completed) {
-    var buyText = 'Buy: ' + cost.toString() + '/s';
+    var buyText = 'Get: ' + cost.toString() + '/s';
 
     buyFlex.div.innerText = buyText;
-    buyFlex.center = true;
-    buyFlex.updateSelf();
+    buyFlex.setCentered();
 
     buyFlex.div.style.border = '1px solid black';
     buyFlex.div.style.backgroundColor = '#ccc';
@@ -72,7 +73,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     }, i);
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();
-    //buyFlex.center = true;
+    //buyFlex.setCentered();
   }
 
 
@@ -128,25 +129,47 @@ function renderUpgrade3Chip(u, x, y, w, flex, completed) {
 function updateUpgrade2UI() {
   upgrade2Flex.clear();
 
-  var titleFlex = new Flex(upgrade2Flex, 0.05, 0, 0.95, 0.2, 0.2);
+  var titleFlex = new Flex(upgrade2Flex, 0.05, 0, 0.95, 0.2, 0.3);
 
-  var text = 'Ethereal upgrades do not cost resources directly, but get allocated ethereal field power - that is: production per second from ethereal crops. Ethereal upgrades are non-refundable and permanent, they last through transcensions.';
-  text += '<br/>';
+  var text = '';
   var power = Res({seeds2:gain.seeds2, spores2:gain.spores2});
   text += '• Ethereal field power: ' + power.toProdString();
   text += '<br/>';
   text += '• Power allocated: ' + state.ethereal_upgrade_spent.toProdString();
   text += '<br/>';
   text += '• <b>Power available: ' + (power.sub(state.ethereal_upgrade_spent)).toProdString() + '</b>';
-  text += '<br/>';
-  text += 'Please note: this part of the game is still under design, there may appear a very different set of upgrades here instead of these later, when that happens the old upgrades will be refunded.';
+
+  var buttonFlex = new Flex(upgrade2Flex, 0.6, 0, 0.8, 0.1, 1);
+  buttonFlex.setCentered();
+  buttonFlex.div.style.backgroundColor = '#ccc';
+  styleButton(buttonFlex.div);
+  buttonFlex.div.innerText = 'More Info';
+  buttonFlex.div.onclick = function() {
+    var dialog = createDialog();
+    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
+
+    var text = 'Ethereal upgrades do not cost resources directly, but get allocated ethereal field power - that is: production per second from ethereal crops. Ethereal upgrades are non-refundable and permanent, they last through transcensions.';
+    text += '<br/><br/>';
+    var power = Res({seeds2:gain.seeds2, spores2:gain.spores2});
+    text += '• Ethereal field power: ' + power.toProdString();
+    text += '<br/>';
+    text += '• Power allocated: ' + state.ethereal_upgrade_spent.toProdString();
+    text += '<br/>';
+    text += '• <b>Power available: ' + (power.sub(state.ethereal_upgrade_spent)).toProdString() + '</b>';
+    text += '<br/><br/>';
+    text += 'Please note: this part of the game is still under design, there may appear a very different set of upgrades here instead of these later, when that happens the old upgrades will be refunded.';
+
+    flex.div.innerHTML = text;
+  };
+  buttonFlex.updateSelf();
 
   titleFlex.div.innerHTML = text;
 
-  var scrollFlex = new Flex(upgrade2Flex, 0, 0.3, 1, 1);
+  var scrollFlex = new Flex(upgrade2Flex, 0, 0.15, 1, 1);
 
   scrollFlex.div.innerText = '';
   scrollFlex.div.style.overflowY = 'scroll';
+  scrollFlex.div.style.border = '5px solid #ccc';
   var pos = [0, 0];
 
 
@@ -178,21 +201,33 @@ function updateUpgrade2UI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
     var w = 0.45;
 
-    var flex = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.25], 1, [0, (y + 1) * w - 0.01, 0.25], 0.4);
-    flex.div.innerText = 'Completed Ethereal Upgrades';
-  }
+    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0, y * w + 0.01, 0.27], [(0 + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.6);
+    styleButton(flex.div);
+    flex.div.innerText = 'See Completed Upgrades';
+    flex.setCentered();
 
-  for(var i = 0; i < researched.length; i++) {
-    var u = upgrades2[researched[i]];
-    var div = makeDiv(pos[0], pos[1], 200, 20, scrollFlex.div);
+    flex.div.onclick = function() {
+      var dialog = createDialog();
+      var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
 
+      var scrollFlex = new Flex(dialog, 0, 0.1, 1, 0.9);
 
-    var x = (i & 1);
-    var y = ((unlocked.length + 1) >> 1) + 1 + (i >> 1);
-    var w = 0.45;
-    var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.25], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.25], 0.75);
-    renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, true);
-    chip.div.style.color = '#999';
-    chip.div.style.borderColor = '#999';
+      scrollFlex.div.innerText = '';
+      scrollFlex.div.style.overflowY = 'scroll';
+
+      for(var i = 0; i < researched.length; i++) {
+        var u = upgrades2[researched[i]];
+        var div = makeDiv(pos[0], pos[1], 200, 20, scrollFlex.div);
+
+        var x = (i & 1);
+        var y = i >> 1;
+        var w = 0.45;
+        var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
+        renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, true);
+        chip.div.style.color = '#2a2';
+        chip.div.style.borderColor = '#2a2';
+      }
+
+    };
   }
 }

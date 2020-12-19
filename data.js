@@ -936,39 +936,39 @@ upgrade2_register_id = 10;
 
 
 
-registerUpgrade2('improve seeds production +25%', Res({seeds2:0.1}), 1.5, function() {
+registerUpgrade2('seeds', Res({seeds2:0.1}), 1.5, function() {
   state.ethereal_prodmul.seeds.addrInPlace(0.25);
-}, function(){return true;}, 0, 'seed production bonus (additive)', undefined, undefined, image_seed);
+}, function(){return true;}, 0, 'seed production bonus 25% (additive)', undefined, undefined, image_seed);
 
-registerUpgrade2('improve spores production +25%', Res({seeds2:0.1}), 1.5, function() {
+registerUpgrade2('spores', Res({seeds2:0.1}), 1.5, function() {
   state.ethereal_prodmul.spores.addrInPlace(0.25);
-}, function(){return true;}, 0, 'spores production bonus (additive)', undefined, undefined, image_spore);
+}, function(){return true;}, 0, 'spores production bonus 25% (additive)', undefined, undefined, image_spore);
 
-registerUpgrade2('starting resources: +10 seeds', Res({seeds2:0.1}), 1.5, function() {
+registerUpgrade2('starting resources', Res({seeds2:0.1}), 1.5, function() {
   state.ethereal_starting_resources.seeds.addrInPlace(10);
   state.res.seeds.addrInPlace(10);
 }, function(){return true;}, 1, 'start with +10 seeds after reset, also get them immediately now', undefined, undefined, image_starting_seeds);
 
-var upgrade2_starting_0 = registerUpgrade2('starting resources: +100 seeds', Res({seeds2:1}), 1.5, function() {
+var upgrade2_starting_0 = registerUpgrade2('starting resources II', Res({seeds2:1}), 1.5, function() {
   state.ethereal_starting_resources.seeds.addrInPlace(100);
   state.res.seeds.addrInPlace(100);
 }, function(){return state.upgrades2[upgrade2_starting_0].unlocked;}, 1, 'start with +100 seeds after reset, also get them immediately now', undefined, undefined, image_starting_seeds);
 
-registerUpgrade2('improve spring 25%', Res({seeds2:0.1}), 1.5, function() {
+registerUpgrade2('improve spring', Res({seeds2:0.1}), 1.5, function() {
   state.ethereal_season_bonus[0].addrInPlace(0.25);
-}, function(){return true;}, 0, 'improve spring effect (additive)', undefined, undefined, tree_images[3][1][0]);
+}, function(){return true;}, 0, 'improve spring effect 25% (additive)', undefined, undefined, tree_images[3][1][0]);
 
-registerUpgrade2('improve summer 25%', Res({seeds2:0.1}), 1.5, function() {
+registerUpgrade2('improve summer', Res({seeds2:0.1}), 1.5, function() {
   state.ethereal_season_bonus[1].addrInPlace(0.25);
-}, function(){return true;}, 0, 'improve summer effect (additive)', undefined, undefined, tree_images[3][1][1]);
+}, function(){return true;}, 0, 'improve summer effect 25% (additive)', undefined, undefined, tree_images[3][1][1]);
 
-registerUpgrade2('improve autumn 25%', Res({seeds2:0.1}), 1.5, function() {
+registerUpgrade2('improve autumn', Res({seeds2:0.1}), 1.5, function() {
   state.ethereal_season_bonus[2].addrInPlace(0.25);
-}, function(){return true;}, 0, 'improve autumn effect (additive)', undefined, undefined, tree_images[3][1][2]);
+}, function(){return true;}, 0, 'improve autumn effect 25% (additive)', undefined, undefined, tree_images[3][1][2]);
 
-registerUpgrade2('improve winter 25%', Res({seeds2:0.1}), 1.5, function() {
+registerUpgrade2('improve winter', Res({seeds2:0.1}), 1.5, function() {
   state.ethereal_season_bonus[3].mulrInPlace(1.25);
-}, function(){return true;}, 0, 'reduce winter harshness (multiplicative)', undefined, undefined, tree_images[3][1][3]);
+}, function(){return true;}, 0, 'reduce winter harshness 25% (multiplicative)', undefined, undefined, tree_images[3][1][3]);
 
 // This is not affordable in the beta release, it's a teaser and future idea needing balancing only
 registerUpgrade2('increase field size 6x6', Res({seeds2:100}), 1, function() {

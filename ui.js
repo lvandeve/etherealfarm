@@ -56,17 +56,17 @@ function makeMainDivs() {
   topFlex = new Flex(mainFlex, 0, 0, 1, 0.05);
   if(showdebugborders) topFlex.div.style.border = '2px solid red';
 
-  infoFlex = new Flex(mainFlex, 0, 0.05, 1, 0.2, 0.25);
+  infoFlex = new Flex(mainFlex, 0, 0.05, 1, 0.18, 0.25);
   if(showdebugborders) infoFlex.div.style.border = '2px solid blue';
 
-  tabFlex = new Flex(mainFlex, 0, 0.2, 1, 0.3, 0.25);
+  tabFlex = new Flex(mainFlex, 0, 0.18, 1, 0.28, 0.25);
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
-  contentFlex = new Flex(mainFlex, 0, 0.31, 1, 0.79);
+  contentFlex = new Flex(mainFlex, 0, 0.285, 1, 0.84);
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
 
-  logFlex = new Flex(mainFlex, 0, 0.8, 1, 1, 0.25);
+  logFlex = new Flex(mainFlex, 0, 0.85, 1, 1, 0.25);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
   mainFlex.update();
