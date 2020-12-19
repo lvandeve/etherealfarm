@@ -136,6 +136,7 @@ function State() {
   }
 
   // ethereal upgrade effects
+  // TODO: this should not be saved like this in the savegame, instead the upgrade level must be saved and these values derived from it, otherwise tuning them is impossible
   this.ethereal_upgrade_spent = Res(); // how much spent on ethereal upgrades. This is in res/s, since ethereal upgrades cost res/s, not res.
   this.ethereal_prodmul = Res(); // production multiplier from ethereal, per resource (additive, as in, this is a multiplier, but the ethereal upgrade adds to this multiplier, not multiplies it)
   this.ethereal_prodmul.addrInPlace(1);

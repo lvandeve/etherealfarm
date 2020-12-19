@@ -157,7 +157,9 @@ function updateUpgrade2UI() {
     text += '<br/>';
     text += '• <b>Power available: ' + (power.sub(state.ethereal_upgrade_spent)).toProdString() + '</b>';
     text += '<br/><br/>';
-    text += 'Please note: this part of the game is still under design, there may appear a very different set of upgrades here instead of these later, when that happens the old upgrades will be refunded.';
+    text += 'Click an update icon or view its tooltip for more info.';
+    text += '<br/><br/>';
+    text += 'Please note: this part of the game is still under design, there may appear a very different set of upgrades here instead of these later, when that happens the old upgrades will be refunded. The upgrades now are likely also very weak. But first the main run must be balanced, and that is also not yet completed. Only then, ethereal upgrades can be implemented and nicely balanced. The 6x6 field upgrade is not reachable yet for now.';
 
     flex.div.innerHTML = text;
   };
