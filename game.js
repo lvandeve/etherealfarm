@@ -139,7 +139,10 @@ function softReset() {
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
-  state.res.addInPlace(state.ethereal_starting_resources);
+
+  var ethereal_starting_resources = new Res();
+  if(state.upgrades2[upgrade2_starting0].count) ethereal_starting_resources.seeds.addrInPlace(10);
+  if(state.upgrades2[upgrade2_starting1].count) ethereal_starting_resources.seeds.addrInPlace(100);
   state.res.resin.addInPlace(state.resin);
   state.resin = Num(0); // future resin from next tree
 
@@ -149,6 +152,9 @@ function softReset() {
 
   state.fernres = new Res();
   state.fern = false;
+
+  state.fogtime = 0;
+  state.suntime = 0;
 
   state.crops = [];
   for(var i = 0; i < registered_crops.length; i++) {
@@ -187,6 +193,7 @@ var ACTION_UPGRADE = action_index++;
 var ACTION_PLANT2 = action_index++;
 var ACTION_DELETE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
+var ACTION_ABILITY = action_index++;
 
 var lastSaveTime = util.getTime();
 
@@ -647,6 +654,29 @@ var update = function(opt_fromTick) {
             showMessage('You have enough resources to plant. Click an empty field to plant', helpFG2, helpBG2);
           }
         }
+      } else if(type == ACTION_ABILITY) {
+        var a = action.ability;
+        if(a == 0) {
+          var fogd = util.getTime() - state.fogtime;
+          if(!state.upgrades[upgrade_fogunlock].count) {
+            // not possible, ignore
+          } else if(fogd > fog_wait) {
+            state.fogtime = util.getTime();
+            showMessage('fog activated, mushrooms produce more spores and consume less seeds');
+          } else {
+            showMessage(fogd < fog_duration ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
+          }
+        } else if(a == 1) {
+          var sund = util.getTime() - state.suntime;
+          if(!state.upgrades[upgrade_sununlock].count) {
+            // not possible, ignore
+          } else if(sund > sun_wait) {
+            state.suntime = util.getTime();
+            showMessage('sunny activated, berries get a boost');
+          } else {
+            showMessage(sund < sun_duration ? 'sunny is already active' : 'sunny is not ready yet', invalidFG, invalidBG);
+          }
+        }
       }
     }
     actions = [];
@@ -776,8 +806,12 @@ var update = function(opt_fromTick) {
         showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. Click the tree for more info.', helpFG, helpBG);
       } else if(state.treelevel == 2) {
         showMessage('Thanks to more spores, the tree is now even stronger!', helpFG, helpBG);
+      } else if(state.treelevel == 3) {
+        showMessage('The tree discovered a new ability! Fog is available under "upgrades"', helpFG, helpBG);
       } else if(state.treelevel == 5) {
         showMessage('The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there!', helpFG, helpBG);
+      } else if(state.treelevel == 6) {
+        showMessage('The tree discovered a new ability! Sunny is available under "upgrades"', helpFG, helpBG);
       } else if(state.treelevel == 8) {
         showMessage('The spores grew the tree yet more, it looks so close to adulthood now. What powers does such a tree hold?', helpFG, helpBG);
       }
@@ -883,6 +917,7 @@ var update = function(opt_fromTick) {
   updateResourceUI();
   updateUpgradeUIIfNeeded();
   updateTabButtons();
+  updateAbilitiesUI();
   if(updatetooltipfun) updatetooltipfun();
   if(updatedialogfun) updatedialogfun();
 

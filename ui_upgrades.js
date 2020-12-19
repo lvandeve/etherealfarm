@@ -110,7 +110,57 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
 
 var upgradeScrollFlex = null;
 
+var upgrades_order = [];
+function computeUpgradeUIOrder() {
+  var rev;
+
+  rev = [];
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    if(u.maxcount == 1) rev.push(registered_upgrades[i]);
+  }
+  rev = rev.sort(function(a, b) {
+    a = upgrades[a];
+    b = upgrades[b];
+    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+  });
+  for(var i = 0; i < rev.length; i++) {
+    upgrades_order.push(rev[i]);
+  }
+
+  rev = [];
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    if(u.maxcount > 1) rev.push(registered_upgrades[i]);
+  }
+  rev = rev.sort(function(a, b) {
+    a = upgrades[a];
+    b = upgrades[b];
+    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+  });
+  for(var i = 0; i < rev.length; i++) {
+    upgrades_order.push(rev[i]);
+  }
+
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    if(u.maxcount == 0) rev.push(registered_upgrades[i]);
+  }
+  rev = rev.sort(function(a, b) {
+    a = upgrades[a];
+    b = upgrades[b];
+    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+  });
+  for(var i = 0; i < rev.length; i++) {
+    upgrades_order.push(rev[i]);
+  }
+}
+
+
+
 function updateUpgradeUI() {
+  if(upgrades_order.length == 0) computeUpgradeUIOrder();
+
   upgrade_ui_cache = [];
   var scrollPos = 0;
   if(upgradeScrollFlex) scrollPos = upgradeScrollFlex.div.scrollTop;
@@ -135,8 +185,8 @@ function updateUpgradeUI() {
   var pos = [0, 0];
 
   var unlocked = [];
-  for(var i = 0; i < registered_upgrades.length; i++) {
-    var j = registered_upgrades[i];
+  for(var i = 0; i < upgrades_order.length; i++) {
+    var j = upgrades_order[i];
     if(upgrades[j].canUpgrade()) unlocked.push(j);
   }
 
@@ -151,8 +201,8 @@ function updateUpgradeUI() {
   }
 
   var researched = [];
-  for(var i = 0; i < registered_upgrades.length; i++) {
-    var j = registered_upgrades[i];
+  for(var i = 0; i < upgrades_order.length; i++) {
+    var j = upgrades_order[i];
     //if(upgrades[j].isExhausted()) researched.push(j);
     if(state.upgrades[j].count) researched.push(j);
   }
@@ -201,10 +251,11 @@ function updateUpgradeUI() {
 var upgrade_ui_cache = [];
 
 function updateUpgradeUIIfNeeded() {
+  if(upgrades_order.length == 0) computeUpgradeUIOrder();
 
   var unlocked = [];
-  for(var i = 0; i < registered_upgrades.length; i++) {
-    var j = registered_upgrades[i];
+  for(var i = 0; i < upgrades_order.length; i++) {
+    var j = upgrades_order[i];
     if(upgrades[j].canUpgrade()) unlocked.push(j);
   }
 

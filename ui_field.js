@@ -116,7 +116,7 @@ function getCropInfoHTML(f, c) {
     var prod = c.getProd(f);
     if(!prod.empty()) {
       result += 'Production per second: ' + prod.toString() + '<br/>';
-      if(prod.hasNeg()) result += 'Consumes a resource produced by other crops<br/>';
+      if(prod.hasNeg()) result += 'Consumes a resource produced by other crops, so the above may be the hypothetical amount if there is overconsumption.<br/>';
     }
     if(c.boost.neqr(0)) {
       result += 'Boosting neighbors: ' + (c.getBoost().mulr(100).toString()) + '%<br/>';
@@ -146,10 +146,10 @@ function makeFieldDialog(x, y) {
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
-    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.15, 0.3);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.15, 0.01], 0.5, 0.2, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.22, 0.01], 0.5, 0.27, 0.8).div;
-    var flex1 = new Flex(dialog, [0.01, 0.2], [0.29, 0.01], 1, 0.9, 0.3);
+    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.3);
+    var button0 = new Flex(dialog, [0.01, 0.2], [0.2, 0.01], 0.5, 0.25, 0.8).div;
+    var button1 = new Flex(dialog, [0.01, 0.2], [0.27, 0.01], 0.5, 0.32, 0.8).div;
+    var flex1 = new Flex(dialog, [0.01, 0.2], [0.33, 0.01], 1, 0.9, 0.3);
     var last0 = undefined;
     var last1 = undefined;
 
@@ -199,7 +199,7 @@ function makeFieldDialog(x, y) {
     var ysize = 0.1;
 
     var f0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.25, 0.3);
-    var f1 = new Flex(dialog, [0.01, 0.2], 0.25, 1, 0.75, 0.3);
+    var f1 = new Flex(dialog, [0.01, 0.2], 0.3, 1, 0.75, 0.3);
     var text;
 
     text = '<b>' + util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
@@ -224,6 +224,13 @@ function makeFieldDialog(x, y) {
 
       text += '<br/>';
       text += 'Tree level production boost to crops: ' + (100 * treeboost * state.treelevel) + '%' + '<br>';
+
+      if(state.upgrades[upgrade_fogunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked) {
+        text += '<br/>';
+        text += 'Abilities discovered:<br>';
+        if(state.upgrades[upgrade_fogunlock].unlocked) text += '• Fog<br>';
+        if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sunny<br>';
+      }
 
       f0.div.innerHTML = text;
 

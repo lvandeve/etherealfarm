@@ -115,6 +115,7 @@ function updateMedalUI() {
         m2.seen = true;
         div.style.border = '3px solid black';
         util.removeElement(canvas2);
+        medal_canvases2[i] = undefined;
       }
       var tier = m.getTier();
       if(!m2.earned) {

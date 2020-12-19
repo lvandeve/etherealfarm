@@ -143,12 +143,22 @@ function encState(state, opt_raw_only) {
   }
 
   result += encRes(state.ethereal_upgrade_spent);
-  result += encRes(state.ethereal_prodmul);
+
+  // this was <= version 4096*1 + 3
+  /*result += encRes(state.ethereal_prodmul);
   result += encNum(state.ethereal_season_bonus[0]);
   result += encNum(state.ethereal_season_bonus[1]);
   result += encNum(state.ethereal_season_bonus[2]);
   result += encNum(state.ethereal_season_bonus[3]);
-  result += encRes(state.ethereal_starting_resources);
+  result += encRes(state.ethereal_starting_resources);*/
+
+  result += encFloat(state.fogtime);
+  result += encFloat(state.suntime);
+  result += encFloat(state.rain);
+  result += encFloat(state.rainbowtime);
+  result += encFloat(state.hailtime);
+  result += encFloat(state.snowtime);
+  result += encFloat(state.windtime);
 
   result += encUint16(state.notation);
   result += encUint16(state.precision);
@@ -381,12 +391,22 @@ function decState(s) {
   }
 
   state.ethereal_upgrade_spent = decRes(reader);
-  state.ethereal_prodmul = decRes(reader);
-  state.ethereal_season_bonus[0] = decNum(reader);
-  state.ethereal_season_bonus[1] = decNum(reader);
-  state.ethereal_season_bonus[2] = decNum(reader);
-  state.ethereal_season_bonus[3] = decNum(reader);
-  state.ethereal_starting_resources = decRes(reader);
+  if(save_version <= 4096*1 + 2) {
+    /*state.ethereal_prodmul =*/ decRes(reader);
+    /*state.ethereal_season_bonus[0] =*/ decNum(reader);
+    /*state.ethereal_season_bonus[1] =*/ decNum(reader);
+    /*state.ethereal_season_bonus[2] =*/ decNum(reader);
+    /*state.ethereal_season_bonus[3] =*/ decNum(reader);
+    /*state.ethereal_starting_resources =*/ decRes(reader);
+  } else {
+    state.fogtime = decFloat(reader);
+    state.suntime = decFloat(reader);
+    state.raintime = decFloat(reader);
+    state.rainbowtime = decFloat(reader);
+    state.hailtime = decFloat(reader);
+    state.snowtime = decFloat(reader);
+    state.windtime = decFloat(reader);
+  }
   if(reader.error) return err(4);
 
   state.notation = decUint16(reader);

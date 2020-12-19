@@ -143,6 +143,15 @@ function State() {
   this.ethereal_season_bonus = [Num(1), Num(1), Num(1), Num(1)];
   this.ethereal_starting_resources = Res(); // basic starting resources after a soft reset, given by ethereal upgrade
 
+  this.fogtime = 0; // fog is unlocked if state.upgrades[upgrade_fogunlock].count
+  this.suntime = 0; // similar
+  // These are TODO but already in the savegame. e.g. increase flowers, in crease growing time, ...
+  this.raintime = 0;
+  this.rainbowtime = 0;
+  this.hailtime = 0;
+  this.snowtime = 0;
+  this.windtime = 0;
+
 
   // how much the price of basic crop multiplier upgrades increases with each level
   this.upgrade_cost_increase = Num(2.5);
