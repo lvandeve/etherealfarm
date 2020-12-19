@@ -44,26 +44,33 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     renderImage(u.image1, canvas);
   }
 
-  var buyFlex = new Flex(flex, [0, 0.8], 0.3, 0.9, [0.5, 0.35], 0.6);
+  var buyFlex = new Flex(flex, [0, 0.8], 0.3, 0.9, [0.5, 0.35], 0.8);
 
-  var infoText = name;
+  var infoText = '';
+  var updateInfoText = function() {
+    infoText = name;
     infoText += '<br>cost:' + cost.toString();
-  if(u.description) {
-    infoText += '<br>' + u.description;
-  }
+    if(!completed) {
+      var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
+      if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+      if(percent.gtr(100)) {
+        infoText += ' (' + percent.toString(0, Num.N_FULL) + '%)';
+      } else {
+        infoText += ' (' + percent.toString() + '%)';
+      }
+    }
+    if(u.description) {
+      infoText += '<br>' + u.description;
+    }
+  };
+  updateInfoText();
 
   if(!completed) {
     var buyText = 'Buy: ' + cost.toString();
-    var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
-    if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
-    if(percent.gtr(100)) {
-      buyText += ' (' + percent.toString(0, Num.N_FULL) + '%)';
-    } else {
-      buyText += ' (' + percent.toString() + '%)';
-    }
 
     buyFlex.div.innerText = buyText;
     buyFlex.center = true;
+    buyFlex.updateSelf();
 
     buyFlex.div.style.border = '1px solid black';
     buyFlex.div.style.backgroundColor = '#ccc';
@@ -78,11 +85,15 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   }
 
 
-  registerTooltip(flex.div, infoText);
+  registerTooltip(flex.div, function() {
+    updateInfoText();
+    return infoText;
+  }, true);
 
   styleButton0(canvasFlex.div);
 
   canvasFlex.div.onclick = function() {
+    updateInfoText();
     var dialog = createDialog(true);
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
     flex.div.innerHTML = infoText;

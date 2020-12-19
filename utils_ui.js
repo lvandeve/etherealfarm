@@ -361,7 +361,8 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
       div.style.lineHeight = 'normal';
       div.style.textAlign = 'left';
       div.style.verticalAlign = 'top';
-      div.style.fontSize = '150%';
+      //div.style.fontSize = '150%';
+      div.style.fontSize = '';
       var textel = util.makeElementAt('span', 0, 0, div);
       textel.style.position = ''; // not absolute, so that the parent div will grow its size to fit this one.
       textel.innerHTML = text;

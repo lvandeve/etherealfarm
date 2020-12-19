@@ -661,28 +661,26 @@ var update = function(opt_fromTick) {
     var fernTimeWorth = 0;
     if(!state.fern && !clickedfern) {
       var progress = state.res.seeds;
-      var mintime = 300;
+      var mintime = 0;
       if(progress.eqr(0) && gain.empty()) mintime = 0;
       else if(progress.ltr(15)) mintime = 3;
       else if(progress.ltr(150)) mintime = 10;
-      else if(progress.ltr(15000)) mintime = 30;
-      else if(progress.ltr(1500000)) mintime = 60;
-      else if(progress.ltr(150000000)) mintime = 120;
-      else if(progress.ltr(15000000000)) mintime = 240;
+      else if(progress.ltr(1500)) mintime = 30;
+      else mintime = 60; // TODO: some upgrades can increase this time so that idle players can benefit more from ferns
       if(util.getTime() > lastFernTime + mintime) {
         fern = true;
       }
-      // how much production time the fern is worth. This shouldn't be too high: e.g. if player waited an hour before clicking fern, this shouldn't be an hour. Even if we have a very high min fern time, the max time bonus here should be limited even more in some cases.
-      fernTimeWorth = Math.min(300, mintime);
-  //fern=true;
+      // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
+      // e.g. 0.25 means clicking all ferns makes you get 25% more income (on average, since there is a uniforn random 0.5..1.5 factor, plus due to the "extra bushy" ferns the real active production is actually a bit higher than this value)
+      fernTimeWorth = mintime * 0.25;
     }
     if(fern) {
       var s = getRandomPreferablyEmptyFieldSpot();
       if(s) {
-        var numseeds = state.c_max_prod.seeds;
-        numseeds = numseeds.mulr(fernTimeWorth * 0.25 * (Math.random() * 0.5 + 0.5));
-        if(numseeds.ltr(2)) numseeds = Math.max(numseeds, Num(Math.random() * 2 + 1));
-        var fernres = new Res({seeds:numseeds});
+        var r = fernTimeWorth * (Math.random() + 0.5);
+        var g = gain.mulr(r);
+        if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(Math.random() * 2 + 1));
+        var fernres = new Res({seeds:g.seeds, spores:g.spores});
         state.fernres = fernres;
         state.fern = 1;
         state.fernx = s[0];
@@ -837,7 +835,7 @@ var update = function(opt_fromTick) {
         updateMedalUI();
 
         if(j == medal_crowded_id) {
-          showMessage('The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button.', helpFG, helpBG);
+          showMessage('The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear, no need to make room for them, they can appear on top of crops.', helpFG, helpBG);
         }
         if(state.g_nummedals == 1) {
           showMessage('You got your first achievement! Achievements give a slight production boost.', helpFG, helpBG);
@@ -874,12 +872,6 @@ var update = function(opt_fromTick) {
     state.c_max_prod = Res.max(state.c_max_prod, gain);
     state.g_numticks++;
     state.c_numticks++;
-
-
-    updateResourceUI();
-    updateTabButtons();
-    if(updatetooltipfun) updatetooltipfun();
-    if(updatedialogfun) updatedialogfun();
   }
 
   var d_total = state.prevtime - oldtime;
@@ -887,6 +879,11 @@ var update = function(opt_fromTick) {
     var totalgain = state.res.sub(oldres);
     showMessage('Large time delta: ' + util.formatDuration(d_total, true, 4, true) + ', gained at once: ' + totalgain.toString(), '#999');
   }
+
+  updateResourceUI();
+  updateTabButtons();
+  if(updatetooltipfun) updatetooltipfun();
+  if(updatedialogfun) updatedialogfun();
 
   postupdate();
 }

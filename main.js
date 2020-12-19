@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // meaning:
 // -major: 0..64 represents decimal 0.0..6.4, e.g. 1 to set to version 0.1, 10 to set to version 1.0.
 // -minor: 0..4096: increment for any minor features and fixes, e.g. if major has value 10 and this has value 1234, then the version is shown as 0.1.1234
-var version = 4096*1 + 1;
+var version = 4096*1 + 2;
 
 function formatVersion() {
   var a = '' + ((version >> 12) / 10.0);
