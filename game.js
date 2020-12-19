@@ -771,11 +771,11 @@ var update = function(opt_fromTick) {
       if(state.treelevel == 1) {
         showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. Click the tree for more info.', helpFG, helpBG);
       } else if(state.treelevel == 2) {
-        showMessage('Thanks to more spores, the tree is now even stronger!');
+        showMessage('Thanks to more spores, the tree is now even stronger!', helpFG, helpBG);
       } else if(state.treelevel == 5) {
-        showMessage('The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there!');
+        showMessage('The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there!', helpFG, helpBG);
       } else if(state.treelevel == 8) {
-        showMessage('The spores grew the tree yet more, it looks so close to adulthood now. What powers does such a tree hold?');
+        showMessage('The spores grew the tree yet more, it looks so close to adulthood now. What powers does such a tree hold?', helpFG, helpBG);
       }
       showMessage('Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
           '. Consumed: ' + req.toString() +

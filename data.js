@@ -212,7 +212,7 @@ function registerMushroom(name, tier, planttime, image, opt_tagline) {
   var prod = getMushroomProd(tier);
   var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
   var crop = crops[index];
-  crop.bonus_season[2] = Num(1.25);
+  crop.bonus_season[2] = Num(1.5);
   crop.type = CROPTYPE_MUSH;
   return index;
 }
@@ -240,10 +240,10 @@ function getBerryCost(i) {
   return Res({seeds:seeds});
 }
 
-// first one should give 0.5
+// first one should give 1.0
 function getBerryProd(i) {
   var seeds = getBerryBase(i);
-  seeds.mulrInPlace(0.5);
+  seeds.mulrInPlace(1.0);
   seeds.mulInPlace(Num.rpow(0.35, Num(i)));
   return Res({seeds:seeds});
 }
@@ -258,7 +258,7 @@ function getMushroomProd(i) {
   var seeds = getBerryProd(2 + i * 2).seeds.neg();
   var seeds0 = getBerryProd(2 + 0 * 2).seeds.neg();
 
-  var spores = seeds.div(seeds0).mulr(0.1);
+  var spores = seeds.div(seeds0).mulr(0.15);
   spores.mulrInPlace(Math.pow(0.1, i)); // make higher mushrooms less efficient in seeds->spores conversion ratio
 
   return Res({seeds:seeds, spores:spores});
@@ -530,12 +530,12 @@ var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8);
 ////////////////////////////////////////////////////////////////////////////////
 
 // power increase for crop production (not flower boost) by basic upgrades
-var basic_upgrade_power_increase = 2; // multiplicative
+var basic_upgrade_power_increase = 1.5; // multiplicative
 // cost increase for crop production (not flower boost) by basic upgrades
-var basic_upgrade_cost_increase = 2.25;
+var basic_upgrade_cost_increase = 2.5;
 
 // how much more expensive than the base cost of the crop is the upgrade cost
-var basic_upgrade_initial_cost = 25;
+var basic_upgrade_initial_cost = 15;
 
 var flower_upgrade_power_increase = 0.2; // additive
 var flower_upgrade_cost_increase = 5;
