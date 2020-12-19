@@ -144,10 +144,12 @@ function updateUpgrade2UI() {
   text += '• Power allocated: ' + state.ethereal_upgrade_spent.toProdString();
   text += '<br/>';
   text += '• <b>Power available: ' + (power.sub(state.ethereal_upgrade_spent)).toProdString() + '</b>';
+  text += '<br/>';
+  text += 'Please note: this part of the game is still under design, there may appear a very different set of upgrades here instead of these later, when that happens the old upgrades will be refunded.';
 
   titleFlex.div.innerHTML = text;
 
-  var scrollFlex = new Flex(upgrade2Flex, 0, 0.2, 1, 1);
+  var scrollFlex = new Flex(upgrade2Flex, 0, 0.3, 1, 1);
 
   scrollFlex.div.innerText = '';
   scrollFlex.div.style.overflowY = 'scroll';

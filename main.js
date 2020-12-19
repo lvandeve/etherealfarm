@@ -63,8 +63,10 @@ function autoSaveOk() {
   return false;
 }
 
+var window_unloading = false;
 
 window.onbeforeunload = function() {
+  window_unloading = true;
   if(!state.saveonexit) return;
   if(autoSaveOk()) {
     saveNow();

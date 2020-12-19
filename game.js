@@ -161,7 +161,7 @@ function softReset() {
     state.upgrades[registered_upgrades[i]] = new UpgradeState();
   }
 
-  computeDerived(state);
+  postupdate();
 
   initInfoUI();
 }
@@ -546,6 +546,8 @@ var update = function(opt_fromTick) {
           cost = state.refundrecoup;
           showMessage('planted same type as just deleted, action undone, no further cost than the recoup subtracted and immediately fullgrown', '#f8a');
           undone = true;
+          state.g_numunplanted--;
+          state.c_numunplanted--;
         }
         if(f.index >= CROPINDEX) {
           showMessage('field already has crop', invalidFG, invalidBG);
@@ -560,9 +562,11 @@ var update = function(opt_fromTick) {
           showMessage('not enough resources to plant ' + c.name + ': need ' + cost.toString() +
                       ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
         } else {
-          state.g_numplanted++;
-          state.c_numplanted++;
-          if(!undone) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
+          if(!undone) {
+            showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
+            state.g_numplanted++;
+            state.c_numplanted++;
+          }
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
@@ -590,19 +594,21 @@ var update = function(opt_fromTick) {
       } else if(type == ACTION_DELETE) {
         var f = state.field[action.y][action.x];
         if(f.index >= CROPINDEX) {
-          state.g_numunplanted++;
-          state.c_numunplanted++;
           var c = crops[f.index - CROPINDEX];
           var recoup = c.getCost(-1).mulr(cropRecoup);
           if(f.growth < 1) {
             recoup = c.getCost(-1);
             showMessage('plant was still growing, full refund given', '#f8a');
             state.refundtype = 0;
+            state.g_numplanted--;
+            state.c_numplanted--;
           } else {
             state.refundx = action.x;
             state.refundy = action.y;
             state.refundtype = f.index;
             state.refundrecoup = recoup;
+            state.g_numunplanted++;
+            state.c_numunplanted++;
           }
           f.index = 0;
           f.growth = 0;

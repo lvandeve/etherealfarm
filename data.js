@@ -651,7 +651,7 @@ for(var i = 0; i < planted_achievement_values.length; i++) {
   var name = 'planted ' + a;
   if(i > 0) medals[prevmedal].description += '. Next achievement in this series, ' + name + ', unlocks at ' + a + ' planted.';
   prevmedal = registerMedal(name, 'Planted ' + a + ' or more plants over the course of the game', genericicon,
-      bind(function(a) { return state.g_numplanted >= a; }, a),
+      bind(function(a) { return state.g_numfullgrown >= a; }, a),
       Num(b));
 }
 medal_register_id += 20; // a few spares for this one
