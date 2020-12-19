@@ -19,9 +19,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
-function renderUpgradeChip(u, x, y, w, flex, next) {
+function renderUpgradeChip(u, x, y, w, flex, completed) {
   var div = flex.div;
   div.style.border = '1px solid black';
+
+  var cost = u.getCost(completed ? -1 : 0);
+  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 0.8);
+  var name = completed ? u.getName() : u.getNextName();
+  titleFlex.div.innerHTML = name;
 
   var canvasFlex = new Flex(flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
   if(u.bgcolor) {
@@ -39,24 +44,50 @@ function renderUpgradeChip(u, x, y, w, flex, next) {
     renderImage(u.image1, canvas);
   }
 
-  var infoFlex = new Flex(flex, [0, 0.8], [0.5, -0.5], 1, [0, 1], 0.6);
+  var buyFlex = new Flex(flex, [0, 0.8], 0.3, 0.9, [0.5, 0.35], 0.6);
 
-  var cost = u.getCost(next ? 0 : -1);
-  var text = '<b>' + (next ? u.getNextName() : u.getName()) + '</b><br><b>cost:</b> ' + cost.toString();
-  var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
-  if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
-  if(percent.gtr(100)) {
-    text += ' <b>(' + percent.toString(0, Num.N_FULL) + '%)</b>';
-  } else {
-    text += ' (' + percent.toString() + '%)';
-  }
-
-
+  var infoText = name;
+    infoText += '<br>cost:' + cost.toString();
   if(u.description) {
-    text += '<br>' + u.description;
+    infoText += '<br>' + u.description;
   }
 
-  infoFlex.div.innerHTML = text;
+  if(!completed) {
+    var buyText = 'Buy: ' + cost.toString();
+    var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
+    if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+    if(percent.gtr(100)) {
+      buyText += ' (' + percent.toString(0, Num.N_FULL) + '%)';
+    } else {
+      buyText += ' (' + percent.toString() + '%)';
+    }
+
+    buyFlex.div.innerText = buyText;
+    buyFlex.center = true;
+
+    buyFlex.div.style.border = '1px solid black';
+    buyFlex.div.style.backgroundColor = '#ccc';
+    styleButton0(buyFlex.div);
+
+    buyFlex.div.onclick = bind(function(i, e) {
+      actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
+    }, i);
+  } else {
+    buyFlex.div.innerText = 'Cost: ' + cost.toString();
+    //buyFlex.center = true;
+  }
+
+
+  registerTooltip(flex.div, infoText);
+
+  styleButton0(canvasFlex.div);
+
+  canvasFlex.div.onclick = function() {
+    var dialog = createDialog(true);
+    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
+    flex.div.innerHTML = infoText;
+  };
+
 
   return flex;
 }
@@ -94,12 +125,8 @@ function updateUpgradeUI() {
     var y = (i >> 1);
     var w = 0.45;
     var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
-    renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, true);
-    styleButton0(chip.div);
+    renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
 
-    chip.div.onclick = bind(function(i, e) {
-      actions.push({type:ACTION_UPGRADE, u:unlocked[i], shift:e.shiftKey});
-    }, i);
 
     // TODO: enable this. But it should then dynamically change if enough resources appear, and the current rendering of upgrades is slow so this requires a better approach
     /*if(state.res.lt(u.getCost())) {
@@ -133,7 +160,7 @@ function updateUpgradeUI() {
     var y = ((unlocked.length + 1) >> 1) + 1 + (i >> 1);
     var w = 0.45;
     var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
-    renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
+    renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, true);
     chip.div.style.color = '#2a2';
     chip.div.style.borderColor = '#2a2';
   }

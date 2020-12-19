@@ -22,7 +22,82 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
-function renderUpgrade2Chip(u, x, y, w, flex, next) {
+function renderUpgrade2Chip(u, x, y, w, flex, completed) {
+  var div = flex.div;
+  div.style.border = '1px solid yellow';
+  div.style.backgroundColor = '#9df';
+
+  var cost = u.getCost(completed ? -1 : 0);
+  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 0.8);
+  var name = completed ? u.getName() : u.getNextName();
+  titleFlex.div.innerHTML = name;
+
+  var canvasFlex = new Flex(flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  if(u.bgcolor) {
+    canvasFlex.div.style.backgroundColor = u.bgcolor;
+  }
+  if(u.bordercolor) {
+    canvasFlex.div.style.border = '1px solid ' + u.bordercolor;
+  }
+  if(u.image0) {
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    renderImage(u.image0, canvas);
+  }
+  if(u.image1) {
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    renderImage(u.image1, canvas);
+  }
+
+  var buyFlex = new Flex(flex, [0, 0.8], 0.3, 0.9, [0.5, 0.35], 0.6);
+
+  var infoText = name;
+    infoText += '<br>cost:' + cost.toString();
+  if(u.description) {
+    infoText += '<br>' + u.description;
+  }
+
+  if(!completed) {
+    var buyText = 'Buy: ' + cost.toString();
+    var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
+    if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+    if(percent.gtr(100)) {
+      buyText += ' (' + percent.toString(0, Num.N_FULL) + '%)';
+    } else {
+      buyText += ' (' + percent.toString() + '%)';
+    }
+
+    buyFlex.div.innerText = buyText;
+    buyFlex.center = true;
+
+    buyFlex.div.style.border = '1px solid black';
+    buyFlex.div.style.backgroundColor = '#ccc';
+    styleButton0(buyFlex.div);
+
+    buyFlex.div.onclick = bind(function(i, e) {
+      actions.push({type:ACTION_UPGRADE2, u:u.index, shift:e.shiftKey});
+    }, i);
+  } else {
+    buyFlex.div.innerText = 'Cost: ' + cost.toString();
+    //buyFlex.center = true;
+  }
+
+
+  registerTooltip(flex.div, infoText);
+
+  styleButton0(canvasFlex.div);
+
+  canvasFlex.div.onclick = function() {
+    var dialog = createDialog(true);
+    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
+    flex.div.innerHTML = infoText;
+  };
+
+
+  return flex;
+}
+
+// make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
+function renderUpgrade3Chip(u, x, y, w, flex, completed) {
   var div = flex.div;
   div.style.border = '1px solid yellow';
   div.style.backgroundColor = '#9df';
@@ -45,7 +120,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, next) {
 
   var infoFlex = new Flex(flex, [0, 0.8], [0.5, -0.5], 1, [0, 1], 0.6);
 
-  var text = '<b>' + (next ? u.getNextName() : u.getName()) + '</b><br><b>requirement:</b> ' + u.getCost(next ? 0 : -1).toString() + '/s';
+  var text = '<b>' + (completed ? u.getName() : u.getNextName()) + '</b><br><b>requirement:</b> ' + u.getCost(completed ? -1 : 0).toString() + '/s';
 
   if(u.description) {
     text += '<br>' + u.description;
@@ -92,12 +167,7 @@ function updateUpgrade2UI() {
     var y = (i >> 1);
     var w = 0.45;
     var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.25], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.25], 0.75);
-    renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, true);
-    styleButton0(chip.div);
-
-    chip.div.onclick = bind(function(i) {
-      actions.push({type:ACTION_UPGRADE2, u:unlocked[i]});
-    }, i);
+    renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, false);
   }
 
   var researched = [];
@@ -125,7 +195,7 @@ function updateUpgrade2UI() {
     var y = ((unlocked.length + 1) >> 1) + 1 + (i >> 1);
     var w = 0.45;
     var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.25], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.25], 0.75);
-    renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, false);
+    renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, true);
     chip.div.style.color = '#999';
     chip.div.style.borderColor = '#999';
   }

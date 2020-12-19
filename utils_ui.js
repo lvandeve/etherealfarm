@@ -20,8 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // element and allows changing the text at any time without updating this,
 // but it only supports single-line text. The div must already have its final
 // height and shouldn't change.
-function centerText(div) {
-  var divheight = div.clientHeight;
+function centerText(div, opt_clientHeight) {
+  var divheight = opt_clientHeight || div.clientHeight;
   // the next 3 properties are to center text horizontally and vertically
   div.style.textAlign = 'center';
   div.style.verticalAlign = 'middle';
@@ -530,6 +530,15 @@ Flex.prototype.updateSelf = function() {
   if(this.fontSize) {
     //this.div.style.fontSize = Math.floor(Math.min(x1 - x0, y1 - y0) * this.fontSize) + 'px';
     this.div.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * this.fontSize) + 'px';
+  }
+
+
+  if(this.center) {
+    var divheight = this.div.clientHeight;
+    // the next 3 properties are to center text horizontally and vertically
+    this.div.style.textAlign = 'center';
+    this.div.style.verticalAlign = 'middle';
+    this.div.style.lineHeight = divheight + 'px';
   }
 }
 
