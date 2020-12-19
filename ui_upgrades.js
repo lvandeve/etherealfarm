@@ -34,12 +34,10 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   canvasFlex.div.style.backgroundColor = '#ccc';
   canvasFlex.div.style.border = '1px solid black';
   if(u.bgcolor) {
-    //canvasFlex.div.style.backgroundColor = u.bgcolor;
-    div.style.backgroundColor = u.bgcolor;
+    canvasFlex.div.style.backgroundColor = u.bgcolor;
   }
   if(u.bordercolor) {
-    //canvasFlex.div.style.border = '1px solid ' + u.bordercolor;
-    div.style.border = '1px solid ' + u.bordercolor;
+    canvasFlex.div.style.border = '1px solid ' + u.bordercolor;
   }
   if(u.image0) {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -81,6 +79,8 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     buyFlex.div.style.backgroundColor = '#ccc';
     styleButton0(buyFlex.div);
 
+    if(state.res.lt(cost)) buyFlex.div.style.color = '#aaa';
+
     buyFlex.div.onclick = bind(function(i, e) {
       actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
     }, i);
@@ -111,6 +111,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
 var upgradeScrollFlex = null;
 
 function updateUpgradeUI() {
+  upgrade_ui_cache = [];
   var scrollPos = 0;
   if(upgradeScrollFlex) scrollPos = upgradeScrollFlex.div.scrollTop;
 
@@ -147,13 +148,6 @@ function updateUpgradeUI() {
     var w = 0.45;
     var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
     renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
-
-
-    // TODO: enable this. But it should then dynamically change if enough resources appear, and the current rendering of upgrades is slow so this requires a better approach
-    /*if(state.res.lt(u.getCost())) {
-      chip.div.style.color = '#0008';
-      chip.div.style.borderColor = '#0008';
-    }*/
   }
 
   var researched = [];
@@ -202,4 +196,39 @@ function updateUpgradeUI() {
   upgradeFlex.update();
 
   upgradeScrollFlex.div.scrollTop = scrollPos;
+}
+
+var upgrade_ui_cache = [];
+
+function updateUpgradeUIIfNeeded() {
+
+  var unlocked = [];
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var j = registered_upgrades[i];
+    if(upgrades[j].canUpgrade()) unlocked.push(j);
+  }
+
+  var cache = [];
+  for(var i = 0; i < unlocked.length; i++) {
+    var u = upgrades[unlocked[i]];
+    var cost = u.getCost(0);
+    if(state.res.lt(cost)) cache[i] = true;
+    else cache[i] = false;
+  }
+
+  var eq = false;
+  if(upgrade_ui_cache.length == cache.length) {
+    eq = true;
+    for(var i = 0; i < cache.length; i++) {
+      if(cache[i] != upgrade_ui_cache[i]) {
+        eq = false;
+        break;
+      }
+    }
+  }
+
+  if(!eq) {
+    updateUpgradeUI();
+    upgrade_ui_cache = cache;
+  }
 }

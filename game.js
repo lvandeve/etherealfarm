@@ -881,6 +881,7 @@ var update = function(opt_fromTick) {
   }
 
   updateResourceUI();
+  updateUpgradeUIIfNeeded();
   updateTabButtons();
   if(updatetooltipfun) updatetooltipfun();
   if(updatedialogfun) updatedialogfun();
