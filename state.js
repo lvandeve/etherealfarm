@@ -66,6 +66,11 @@ function State() {
   // so that saving, and browsers pausing tabs, both have no effect on game
   this.prevtime = 0; // time of previous update frame, in fractional seconds since unix epoch
 
+  // current time, this is usually the same as util.getTime(), but if an update() is broken into multiple pieces, then it is
+  // the end of the current piece.
+  // not saved. set by update(). recommended to use instead of util.getTime() for game time duration related computations such as special abilities
+  this.time = 0;
+
   // resources
   this.res = undefined;
   // resin that will be gained at the next soft reset, not added to res until the soft reset

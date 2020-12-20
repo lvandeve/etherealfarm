@@ -195,8 +195,8 @@ Crop.prototype.getProd = function(f, give_breakdown) {
   // most do not use posmul, since the game would become trivial if production has multipliers of billions while consumption remains something similar to the early game values.
   // especially a global bonus like medal, that affects everything at once and hence can't cause increased consumption to be worse, should use full mul, not posmul
 
-  var fog_active = state.upgrades[upgrade_fogunlock].count && this.type == CROPTYPE_MUSH && (util.getTime() - state.fogtime) < getFogDuration();
-  var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (util.getTime() - state.suntime) < getSunDuration();
+  var fog_active = state.upgrades[upgrade_fogunlock].count && this.type == CROPTYPE_MUSH && (state.time - state.fogtime) < getFogDuration();
+  var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (state.time - state.suntime) < getSunDuration();
 
   //season. Unlike other multipliers, this one does not affect negative production. This is a good thing in the crop's good season, but extra harsh in a bad season (e.g. winter)
   var season = getSeason();
@@ -240,7 +240,7 @@ Crop.prototype.getBoost = function(give_breakdown) {
   if(give_breakdown) breakdown.push(['base', Num(0), result.clone()]);
 
 
-  var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && this.type == CROPTYPE_FLOWER && (util.getTime() - state.rainbowtime) < getRainbowDuration();
+  var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && this.type == CROPTYPE_FLOWER && (state.time - state.rainbowtime) < getRainbowDuration();
 
   // TODO: have some achievements that give a boostmul instead of a prodmul
 
@@ -524,7 +524,7 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop) {
 
   var fun = function() {
     if(cropid == flower_0) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', helpFG, helpBG);
-    if(cropid == mushunlock_0) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds.', helpFG, helpBG);
+    if(cropid == mushunlock_0) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', helpFG, helpBG);
     state.crops[crop.index].unlocked = true;
   };
 
@@ -548,7 +548,7 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop) {
 }
 
 // an upgrade that increases the multiplier of a crop
-function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num) {
+function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_unlock_id) {
   var crop = crops[cropid];
   var name = crop.name;
 
@@ -560,7 +560,12 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num) {
   var fun = function() {};
 
   var pre = function() {
-    return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
+    if(crop_unlock_id == undefined) {
+      return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
+    } else {
+      // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
+      return state.upgrades[crop_unlock_id].count;
+    }
   };
 
   var aspect = 'production';
@@ -654,26 +659,26 @@ var flower_upgrade_initial_cost = basic_upgrade_initial_cost;
 
 upgrade_register_id = 125;
 var berrymul_0 = registerCropMultiplier(berry_0, getBerryCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_1 = registerCropMultiplier(berry_1, getBerryCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_2 = registerCropMultiplier(berry_2, getBerryCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_3 = registerCropMultiplier(berry_3, getBerryCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_4 = registerCropMultiplier(berry_4, getBerryCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_5 = registerCropMultiplier(berry_5, getBerryCost(5).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_6 = registerCropMultiplier(berry_6, getBerryCost(6).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
+var berrymul_1 = registerCropMultiplier(berry_1, getBerryCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_1);
+var berrymul_2 = registerCropMultiplier(berry_2, getBerryCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_2);
+var berrymul_3 = registerCropMultiplier(berry_3, getBerryCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_3);
+var berrymul_4 = registerCropMultiplier(berry_4, getBerryCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_4);
+var berrymul_5 = registerCropMultiplier(berry_5, getBerryCost(5).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_5);
+var berrymul_6 = registerCropMultiplier(berry_6, getBerryCost(6).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_6);
+var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_7);
+var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_7);
 
 upgrade_register_id = 150;
-var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
-var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
+var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_0);
+var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_1);
+var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_2);
+var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_3);
 
 upgrade_register_id = 175;
-var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1);
-var flowermul_1 = registerBoostMultiplier(flower_1, getFlowerCost(1).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1);
-var flowermul_2 = registerBoostMultiplier(flower_2, getFlowerCost(2).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1);
-var flowermul_3 = registerBoostMultiplier(flower_3, getFlowerCost(3).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1);
+var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0);
+var flowermul_1 = registerBoostMultiplier(flower_1, getFlowerCost(1).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_1);
+var flowermul_2 = registerBoostMultiplier(flower_2, getFlowerCost(2).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_2);
+var flowermul_3 = registerBoostMultiplier(flower_3, getFlowerCost(3).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_3);
 
 
 upgrade_register_id = 250;

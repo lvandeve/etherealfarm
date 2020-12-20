@@ -106,6 +106,8 @@ function hardReset() {
 function softReset() {
   showMessage('Transcended! Got resin: ' + state.resin.toString(), '#40f', '#ffd');
 
+  state.time = util.getTime();
+
   state.reset_stats.push(state.treelevel);
   if(state.reset_stats.length > 100) state.reset_stats = state.reset_stats.shift();
 
@@ -119,7 +121,7 @@ function softReset() {
   state.p_numupgrades = state.c_numupgrades;
   state.p_numupgrades_unlocked = state.c_numupgrades_unlocked;
 
-  state.c_starttime = util.getTime();
+  state.c_starttime = state.time;
   state.c_runtime = 0;
   state.c_numticks = 0;
   state.c_max_res = Res();
@@ -206,7 +208,18 @@ var postupdate = function() {
   computeDerived(state);
 };
 
+// TODO: have this stored in the state instead
 var lastFernTime = util.getTime(); // in seconds
+
+
+// TODO: implement undo feature
+/*
+var lastUndoSaveTime = 0;
+var undoSaves = [];
+
+var storeUndoSave() {
+}
+*/
 
 // returns by preference a random empty field spot, if too much spots filled, then
 // randomly any spot
@@ -236,15 +249,15 @@ function getRandomPreferablyEmptyFieldSpot() {
 
 // result: 0=spring, 1=summer, 2=autumn, 3=winter
 function getSeason() {
-  var t = state.g_runtime;
+  var t = state.time - state.g_starttime;
   t /= (24 * 3600);
   return Math.floor(t) % 4;
 }
 
 function timeTilNextSeason() {
   var daylen = 24 * 3600;
-  var t = state.g_runtime;
-  t  /= daylen;
+  var t = state.time - state.g_starttime;
+  t /= daylen;
   t -= Math.floor(t);
   return daylen - t * daylen;
 }
@@ -459,6 +472,30 @@ function computeProduction2(factor, theoretical, include_growing, pos_only) {
   }
 }
 
+// when is the next time that something happens that requires a separate update()
+// run. E.g. if the time difference is 1 hour (due to closing the tab for 1 hour),
+// and 10 minutes of the fog ability were remaining, then update must be broken
+// in 2 parts: the first 10 minutes, and the remaining 50 minutes. This function
+// will return that 10. Idem for season changes, ... The function returns the
+// first one.
+// the returned value is amount of seconds before the first next event
+// the value used to determine current time is state.time
+function nextEventTime() {
+  var times = [];
+  times.push(timeTilNextSeason());
+
+  if((state.time - state.fogtime) < getFogDuration()) times.push(getFogDuration() - state.time + state.fogtime);
+  if((state.time - state.suntime) < getSunDuration()) times.push(getSunDuration() - state.time + state.suntime);
+  if((state.time - state.rainbowtime) < getRainbowDuration()) times.push(getRainbowDuration() - state.time + state.rainbowtime);
+
+  times.sort(function(a, b) {
+    return a - b;
+  });
+
+  return times[0];
+}
+
+
 var prev_season = -1; // season of previous tick (-1 if uninitialized)
 
 var update = function(opt_fromTick) {
@@ -467,12 +504,40 @@ var update = function(opt_fromTick) {
   if(state.prevtime == 0) state.prevtime = util.getTime();
 
   var oldres = Res(state.red);
-  var oldtime = state.prevtime;
+  var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
   var done = false;
   var numloops = 0;
   for(;;) {
     if(done) break;
     if(numloops++ > 365) break;
+
+    var prevtime = state.prevtime;
+    var time = util.getTime(); // in seconds
+
+    state.time = state.prevtime; // to let the nextEventTime() computation work as desired now
+    var d = (state.prevtime == 0 || state.prevtime > time) ? 0 : (time - state.prevtime); // delta time for this tick. Set to 0 if in future (e.g. timezone change or daylight saving could have happened)
+    var rem = nextEventTime(2) + 1; // for numerical reasons, ensure it's not exactly at the border of the event
+    if(d > rem && rem > 2) {
+      d = rem;
+      time = state.prevtime + d;
+      //console.log('time: ' + util.formatDate(time) + '  ||| ' + rem);
+      done = false;
+      state.time = time - 2; // as opposed to the numerical fix above that added 1 second, now subtract 2 seconds from state.time so that it's for sure in the interval of the current intended event (before the ability ran out, before the season changed to the next, ...)
+    } else {
+      done = true;
+      state.time = time;
+    }
+    state.prevtime = time;
+
+    if(numloops > 1 || !done) console.log('d: ' + d + ', rem: ' + rem + ', sun: ' + ((state.time - state.suntime) < getSunDuration()) + ', season: ' + getSeason() + ', done: ' + done);
+
+    var d1 = d; // d without timemul
+
+    d *= state.timemul;
+    state.g_runtime += d;
+    state.c_runtime += d;
+
+    ////////////////////////////////////////////////////////////////////////////
 
 
     // gain added to the player's actual resources during this tick (virtualgain is per second, actualgain is per this tick)
@@ -648,7 +713,7 @@ var update = function(opt_fromTick) {
             showMessage('This fern is extra bushy! It gave ' + fernres.toString(), '#4a0', '#120', true);
           }
           actualgain.addInPlace(fernres);
-          lastFernTime = util.getTime(); // in seconds
+          lastFernTime = state.time; // in seconds
           state.fern = 0;
           clickedfern = true;
           if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
@@ -658,31 +723,31 @@ var update = function(opt_fromTick) {
       } else if(type == ACTION_ABILITY) {
         var a = action.ability;
         if(a == 0) {
-          var fogd = util.getTime() - state.fogtime;
+          var fogd = state.time - state.fogtime;
           if(!state.upgrades[upgrade_fogunlock].count) {
             // not possible, ignore
           } else if(fogd > getFogWait()) {
-            state.fogtime = util.getTime();
+            state.fogtime = state.time;
             showMessage('fog activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
           } else {
             showMessage(fogd < getFogDuration() ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
           }
         } else if(a == 1) {
-          var sund = util.getTime() - state.suntime;
+          var sund = state.time - state.suntime;
           if(!state.upgrades[upgrade_sununlock].count) {
             // not possible, ignore
           } else if(sund > getSunWait()) {
-            state.suntime = util.getTime();
+            state.suntime = state.time;
             showMessage('sun activated, berries get a boost and aren\'t affected by winter');
           } else {
             showMessage(sund < getSunDuration() ? 'sunny is already active' : 'sunny is not ready yet', invalidFG, invalidBG);
           }
         } else if(a == 2) {
-          var rainbowd = util.getTime() - state.rainbowtime;
+          var rainbowd = state.time - state.rainbowtime;
           if(!state.upgrades[upgrade_rainbowunlock].count) {
             // not possible, ignore
           } else if(rainbowd > getRainbowWait()) {
-            state.rainbowtime = util.getTime();
+            state.rainbowtime = state.time;
             showMessage('rainbow activated, flowers get a boost and aren\'t affected by winter');
           } else {
             showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', invalidFG, invalidBG);
@@ -709,7 +774,7 @@ var update = function(opt_fromTick) {
       else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
       else mintime = fern_wait_minutes * 60;
       if(state.upgrades[fern_choice0_a].count) mintime += fern_choice0_a_minutes * 60;
-      if(util.getTime() > lastFernTime + mintime) {
+      if(state.time > lastFernTime + mintime) {
         fern = true;
       }
       // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
@@ -732,26 +797,7 @@ var update = function(opt_fromTick) {
       }
     }
 
-    var prevtime = state.prevtime;
-    var time = util.getTime(); // in seconds
-    var d = (state.prevtime == 0 || state.prevtime > time) ? 0 : (time - state.prevtime); // delta time for this tick. Set to 0 if in future (e.g. timezone change or daylight saving could have happened)
-    if(d > 3600*24) {
-      d = 3600*24;
-      var rem = timeTilNextSeason();
-      if(rem < 3600*24-1) d = rem + 1;
-      time = state.prevtime + d;
-      console.log('time: ' + util.formatDate(time));
-      done = false;
-    } else {
-      done = true;
-    }
-    state.prevtime = time;
-
-    var d1 = d; // d without timemul
-
-    d *= state.timemul;
-    state.g_runtime += d;
-    state.c_runtime += d;
+    ////////////////////////////////////////////////////////////////////////////
 
     var producers = [];
 
@@ -886,7 +932,7 @@ var update = function(opt_fromTick) {
         updateMedalUI();
 
         if(j == medal_crowded_id) {
-          showMessage('The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear, no need to make room for them, they can appear on top of crops.', helpFG, helpBG);
+          showMessage('The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear safely on top of crops, no need to make room for them.', helpFG, helpBG);
         }
         if(state.g_nummedals == 1) {
           showMessage('You got your first achievement! Achievements give a slight production boost.', helpFG, helpBG);
