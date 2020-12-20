@@ -42,6 +42,7 @@ function updateAbilitiesUI() {
     styleButton0(fogbutton.div);
 
     fogtimerflex = new Flex(topFlex, [0.15,0.1], [0,0.2], [0.25,0.1], [0,0.9], 1.9);
+    fogtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
 
     var canvasFlex = new Flex(fogbutton, 0, 0, 1, 1);
@@ -80,6 +81,7 @@ function updateAbilitiesUI() {
     styleButton0(sunbutton.div);
 
     suntimerflex = new Flex(topFlex, [0.35,0.1], [0,0.2], [0.45,0.1], [0,0.9], 1.9);
+    suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
 
     var canvasFlex = new Flex(sunbutton, 0, 0, 1, 1);
@@ -119,6 +121,7 @@ function updateAbilitiesUI() {
     styleButton0(rainbowbutton.div);
 
     rainbowtimerflex = new Flex(topFlex, [0.55,0.1], [0,0.2], [0.65,0.1], [0,0.9], 1.9);
+    rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
 
     var canvasFlex = new Flex(rainbowbutton, 0, 0, 1, 1);

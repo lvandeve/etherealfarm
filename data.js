@@ -367,7 +367,7 @@ function getMushroomProd(i) {
   var seeds0 = getBerryProd(2 + 0 * 2).seeds.neg();
 
   var spores = seeds.div(seeds0).mulr(0.15);
-  spores.mulrInPlace(Math.pow(0.1, i)); // make higher mushrooms less efficient in seeds->spores conversion ratio
+  spores.mulrInPlace(Math.pow(0.25, i)); // make higher mushrooms less efficient in seeds->spores conversion ratio: they are better because they can manage much more seeds, but must also have a disadvantage
 
   return Res({seeds:seeds, spores:spores});
 }
