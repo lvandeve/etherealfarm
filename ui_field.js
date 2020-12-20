@@ -378,10 +378,13 @@ var digits = [
   0,1,0, 1,1,1, 1,1,1, 1,1,0, 0,0,1, 1,1,0, 0,1,0, 0,1,0, 0,1,0, 1,1,0,
 ];
 
-function renderDigit(ctx, digit, x0, y0) {
+// progresspixel = pixel to use different color for progress bar effect, must be an integer in range 0..5
+function renderDigit(ctx, digit, x0, y0, progresspixel) {
+  ctx.fillStyle = '#840';
   var ax = digit * 3;
   var aw = 30;
   for(var y = 0; y < 5; y++) {
+    if(y >= (5 - progresspixel)) ctx.fillStyle = '#f80';
     var as = y * aw + ax;
     for(var x = 0; x < 3; x++) {
       if(digits[as + x]) ctx.fillRect(x0 + x, y0 + y, 1, 1);
@@ -389,23 +392,22 @@ function renderDigit(ctx, digit, x0, y0) {
   }
 };
 
-function renderLevel(canvas, level, x, y) {
+function renderLevel(canvas, level, x, y, progresspixel) {
   var ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#840';
   if(level < 10) {
-    renderDigit(ctx, level, x + 6, y);
+    renderDigit(ctx, level, x + 6, y, progresspixel);
   } else if(level < 100) {
-    renderDigit(ctx, Math.floor(level / 10), x + 4, y);
-    renderDigit(ctx, level % 10, x + 8, y);
+    renderDigit(ctx, Math.floor(level / 10), x + 4, y, progresspixel);
+    renderDigit(ctx, level % 10, x + 8, y, progresspixel);
   } else if(level < 1000) {
-    renderDigit(ctx, Math.floor(level / 100), x + 2, y);
-    renderDigit(ctx, Math.floor(level / 10) % 10, x + 6, y);
-    renderDigit(ctx, level % 10, x + 10, y);
+    renderDigit(ctx, Math.floor(level / 100), x + 2, y, progresspixel);
+    renderDigit(ctx, Math.floor(level / 10) % 10, x + 6, y, progresspixel);
+    renderDigit(ctx, level % 10, x + 10, y, progresspixel);
   } else if(level < 10000) {
-    renderDigit(ctx, Math.floor(level / 1000), x + 0, y);
-    renderDigit(ctx, Math.floor(level / 100) % 10, x + 4, y);
-    renderDigit(ctx, Math.floor(level / 10) % 10, x + 8, y);
-    renderDigit(ctx, level % 10, x + 12, y);
+    renderDigit(ctx, Math.floor(level / 1000), x + 0, y, progresspixel);
+    renderDigit(ctx, Math.floor(level / 100) % 10, x + 4, y, progresspixel);
+    renderDigit(ctx, Math.floor(level / 10) % 10, x + 8, y, progresspixel);
+    renderDigit(ctx, level % 10, x + 12, y, progresspixel);
   }
 }
 
@@ -415,9 +417,15 @@ function updateFieldCellUI(x, y) {
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   var season = getSeason();
 
+  var nextlevelprogress = 0;
+  if(f.index == FIELD_TREE_BOTTOM && state.treelevel > 0) {
+    nextlevelprogress = Math.min(0.99, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
+  }
+  var progresspixel = Math.floor(nextlevelprogress * 6);
+
   var ferncode = ((state.fernx + state.ferny * state.numw) << 3) | state.fern;
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode || progresspixel != fd.progresspixel) {
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
@@ -426,6 +434,7 @@ function updateFieldCellUI(x, y) {
     fd.season = season;
     fd.treelevel = state.treelevel;
     fd.ferncode = ferncode;
+    fd.progresspixel = progresspixel;
 
     fd.index = f.index;
     fd.growstage = growstage;
@@ -443,7 +452,7 @@ function updateFieldCellUI(x, y) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
-      if(state.treelevel > 0) renderLevel(fd.canvas, state.treelevel, 0, 11);
+      if(state.treelevel > 0) renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
     } else {
       setProgressBar(fd.progress, -1);
       fd.div.innerText = '';

@@ -523,7 +523,6 @@ var update = function(opt_fromTick) {
     if(d > rem && rem > 2) {
       d = rem;
       time = state.prevtime + d;
-      //console.log('time: ' + util.formatDate(time) + '  ||| ' + rem);
       done = false;
       state.time = time - 2; // as opposed to the numerical fix above that added 1 second, now subtract 2 seconds from state.time so that it's for sure in the interval of the current intended event (before the ability ran out, before the season changed to the next, ...)
     } else {
@@ -532,7 +531,7 @@ var update = function(opt_fromTick) {
     }
     state.prevtime = time;
 
-    if(numloops > 1 || !done) console.log('d: ' + d + ', rem: ' + rem + ', sun: ' + ((state.time - state.suntime) < getSunDuration()) + ', season: ' + getSeason() + ', done: ' + done);
+    //if(numloops > 1 || !done) console.log('d: ' + d + ', rem: ' + rem + ', sun: ' + ((state.time - state.suntime) < getSunDuration()) + ', season: ' + getSeason() + ', done: ' + done);
 
     var d1 = d; // d without timemul
 

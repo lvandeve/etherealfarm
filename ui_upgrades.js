@@ -187,7 +187,7 @@ function updateUpgradeUI() {
   var titleText = '';
   titleText = 'Hold shift to buy as many as possible';
   titleText += '<br>';
-  titleText += 'Click to icon or see tooltip for more info';
+  titleText += 'Click icon or see tooltip for more info';
   titleFlex.div.innerHTML = titleText;
 
   var scrollFlex = new Flex(upgradeFlex, 0, 0.15, 1, 1);

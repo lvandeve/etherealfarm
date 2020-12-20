@@ -88,6 +88,10 @@ function updateResourceUI() {
   var texts = [];
   var seasonName = ['🌱 spring 🌱', '☀️ summer ☀️', '🍂 autumn 🍂', '❄️ winter ❄️'][getSeason()];
   var title = state.treelevel > 0 ? ('level ' + state.treelevel) : ('time');
+  if(state.treelevel > 0) {
+    var nextlevelprogress = Math.min(1, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
+    title += ' (' + Math.floor(nextlevelprogress * 100) + '%)';
+  }
   if(state.treelevel >= min_transcension_level * 2) title += ' [T ' + util.toRoman(Math.floor(state.treelevel / min_transcension_level)) + ']';
   else if(state.treelevel >= min_transcension_level) title += ' [T]';
   resourceDivs[0].textEl.innerHTML = title + '<br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br>' + seasonName;

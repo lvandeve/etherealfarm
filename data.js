@@ -379,7 +379,7 @@ function getFlowerCost(i) {
 
 var berryplanttime0 = 60;
 var mushplanttime0 = 120;
-var flowerplanttime0 = 300;
+var flowerplanttime0 = 180;
 
 // berries: give seeds
 crop_register_id = 25;
