@@ -150,17 +150,16 @@ function updateResourceUI() {
     if(resin) {
       var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
-
       if(tlevel > 1) {
         text += 'Collected resin: ' + upcoming.toString() + '<br/><br/>';
         text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
       }
       text += 'Future additional amount: ' + upcoming2.toString() + '<br/><br/>';
     } else {
-
-
       var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
+
+      if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
 
       if(diff) {
         text += 'Production constrained: some resource type consumed by a plant to produce a different resource type, is limited for consumption by the max allowed consumption percentage. The rest goes to your stacks instead of the consumers. To get more output, plant more of the input producer types. E.g. if spores are constrained, get more seed production first to get more spores. You are getting the amount shown in black/white, not the hypothetical amount shown in red.' + '<br/><br/>';

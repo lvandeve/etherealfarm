@@ -24,6 +24,9 @@ var fogtimerflex = undefined;
 var sunbutton = undefined;
 var suntimerflex = undefined;
 
+var rainbowbutton = undefined;
+var rainbowtimerflex = undefined;
+
 
 
 
@@ -49,18 +52,18 @@ function updateAbilitiesUI() {
       actions.push({type:ACTION_ABILITY, ability:0});
     };
 
-    registerTooltip(fogbutton.div, 'fog ability: mushrooms produce more spores and consume less seeds');
+    registerTooltip(fogbutton.div, 'fog ability: mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
   }
 
   if(state.upgrades[upgrade_fogunlock].count) {
     var d = util.getTime() - state.fogtime;
-    if(d > fog_wait) {
+    if(d > getFogWait()) {
       fogtimerflex.div.innerHTML = 'ready';
 
-    } else if(d > fog_duration) {
-      fogtimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(fog_wait - d, true);
+    } else if(d > getFogDuration()) {
+      fogtimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(getFogWait() - d, true);
     } else {
-      fogtimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(fog_duration - d, true) + '</font>';
+      fogtimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(getFogDuration() - d, true) + '</font>';
     }
   }
 
@@ -87,18 +90,57 @@ function updateAbilitiesUI() {
       actions.push({type:ACTION_ABILITY, ability:1});
     };
 
-    registerTooltip(sunbutton.div, 'sun ability: berries get a production bonus');
+    registerTooltip(sunbutton.div, 'sun ability: berries get a production bonus and aren\'t affected by winter');
   }
 
   if(state.upgrades[upgrade_sununlock].count) {
     var d = util.getTime() - state.suntime;
-    if(d > sun_wait) {
+    if(d > getSunWait()) {
       suntimerflex.div.innerHTML = 'ready';
 
-    } else if(d > sun_duration) {
-      suntimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(sun_wait - d, true);
+    } else if(d > getSunDuration()) {
+      suntimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(getSunWait() - d, true);
     } else {
-      suntimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(sun_duration - d, true) + '</font>';
+      suntimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(getSunDuration() - d, true) + '</font>';
+    }
+  }
+
+
+
+
+  if(rainbowbutton && !state.upgrades[upgrade_rainbowunlock].count) {
+    rainbowbutton.removeSelf();
+    rainbowtimerflex.removeSelf();
+    rainbowbutton = undefined;
+  }
+
+  if(!rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
+    rainbowbutton = new Flex(topFlex, [0.5,0.1], [0,0.1], [0.55,0.1], [0,0.9]);
+    styleButton0(rainbowbutton.div);
+
+    rainbowtimerflex = new Flex(topFlex, [0.55,0.1], [0,0.2], [0.65,0.1], [0,0.9], 1.9);
+
+
+    var canvasFlex = new Flex(rainbowbutton, 0, 0, 1, 1);
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    renderImage(image_rainbow, canvas);
+
+    rainbowbutton.div.onclick = function() {
+      actions.push({type:ACTION_ABILITY, ability:2});
+    };
+
+    registerTooltip(rainbowbutton.div, 'rainbow ability: flowers get a boost and aren\'t affected by winter');
+  }
+
+  if(state.upgrades[upgrade_rainbowunlock].count) {
+    var d = util.getTime() - state.rainbowtime;
+    if(d > getRainbowWait()) {
+      rainbowtimerflex.div.innerHTML = 'ready';
+
+    } else if(d > getRainbowDuration()) {
+      rainbowtimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(getRainbowWait() - d, true);
+    } else {
+      rainbowtimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(getRainbowDuration() - d, true) + '</font>';
     }
   }
 }

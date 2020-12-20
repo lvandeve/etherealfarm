@@ -63,10 +63,10 @@ function makeMainDivs() {
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
-  contentFlex = new Flex(mainFlex, 0, 0.285, 1, 0.84);
+  contentFlex = new Flex(mainFlex, 0, 0.285, 1, 0.79);
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
 
-  logFlex = new Flex(mainFlex, 0, 0.85, 1, 1, 0.25);
+  logFlex = new Flex(mainFlex, 0, 0.8, 1, 1, 0.25);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
   mainFlex.update();

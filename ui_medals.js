@@ -110,7 +110,7 @@ function updateMedalUI() {
       renderImage(exclamation, canvas2);
     }
 
-    var getMedalText = bind(function(m, m2, div, canvas2){
+    var getMedalText = bind(function(m, m2, div, canvas2, i){
       if(m2.earned && !m2.seen) {
         m2.seen = true;
         div.style.border = '3px solid black';
@@ -122,7 +122,7 @@ function updateMedalUI() {
         return '???<br>Not yet earned<br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + util.toRoman(tier) + ': ' + tierNames[tier];
       }
       return util.upperCaseFirstWord(m.name) + '<br>' + util.upperCaseFirstWord(m.description) + '<br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + tier + ': ' + util.upperCaseFirstWord(tierNames[tier]);
-    }, m, m2, div, canvas2);
+    }, m, m2, div, canvas2, i);
 
     registerTooltip(div, getMedalText);
 

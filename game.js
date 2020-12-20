@@ -155,6 +155,7 @@ function softReset() {
 
   state.fogtime = 0;
   state.suntime = 0;
+  state.rainbowtime = 0;
 
   state.crops = [];
   for(var i = 0; i < registered_crops.length; i++) {
@@ -660,21 +661,31 @@ var update = function(opt_fromTick) {
           var fogd = util.getTime() - state.fogtime;
           if(!state.upgrades[upgrade_fogunlock].count) {
             // not possible, ignore
-          } else if(fogd > fog_wait) {
+          } else if(fogd > getFogWait()) {
             state.fogtime = util.getTime();
-            showMessage('fog activated, mushrooms produce more spores and consume less seeds');
+            showMessage('fog activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
           } else {
-            showMessage(fogd < fog_duration ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
+            showMessage(fogd < getFogDuration() ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
           }
         } else if(a == 1) {
           var sund = util.getTime() - state.suntime;
           if(!state.upgrades[upgrade_sununlock].count) {
             // not possible, ignore
-          } else if(sund > sun_wait) {
+          } else if(sund > getSunWait()) {
             state.suntime = util.getTime();
-            showMessage('sunny activated, berries get a boost');
+            showMessage('sun activated, berries get a boost and aren\'t affected by winter');
           } else {
-            showMessage(sund < sun_duration ? 'sunny is already active' : 'sunny is not ready yet', invalidFG, invalidBG);
+            showMessage(sund < getSunDuration() ? 'sunny is already active' : 'sunny is not ready yet', invalidFG, invalidBG);
+          }
+        } else if(a == 2) {
+          var rainbowd = util.getTime() - state.rainbowtime;
+          if(!state.upgrades[upgrade_rainbowunlock].count) {
+            // not possible, ignore
+          } else if(rainbowd > getRainbowWait()) {
+            state.rainbowtime = util.getTime();
+            showMessage('rainbow activated, flowers get a boost and aren\'t affected by winter');
+          } else {
+            showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', invalidFG, invalidBG);
           }
         }
       }
@@ -695,8 +706,9 @@ var update = function(opt_fromTick) {
       if(progress.eqr(0) && gain.empty()) mintime = 0;
       else if(progress.ltr(15)) mintime = 3;
       else if(progress.ltr(150)) mintime = 10;
-      else if(progress.ltr(1500)) mintime = 30;
-      else mintime = 60; // TODO: some upgrades can increase this time so that idle players can benefit more from ferns
+      else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
+      else mintime = fern_wait_minutes * 60;
+      if(state.upgrades[fern_choice0_a].count) mintime += fern_choice0_a_minutes * 60;
       if(util.getTime() > lastFernTime + mintime) {
         fern = true;
       }
@@ -708,6 +720,7 @@ var update = function(opt_fromTick) {
       var s = getRandomPreferablyEmptyFieldSpot();
       if(s) {
         var r = fernTimeWorth * (Math.random() + 0.5);
+        if(state.upgrades[fern_choice0_b].count) r *= (1 + fern_choice0_b_bonus);
         var g = gain.mulr(r);
         if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(Math.random() * 2 + 1));
         var fernres = new Res({seeds:g.seeds, spores:g.spores});
@@ -803,17 +816,21 @@ var update = function(opt_fromTick) {
       state.res.subInPlace(req);
       state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
       if(state.treelevel == 1) {
-        showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. Click the tree for more info.', helpFG, helpBG);
+        showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree for more info.', helpFG, helpBG);
       } else if(state.treelevel == 2) {
-        showMessage('Thanks to more spores, the tree is now even stronger!', helpFG, helpBG);
+        showMessage('Thanks to more spores, the tree is now even stronger! The tree is providing a choice, choose one of the two choices under "upgrades".', helpFG, helpBG);
       } else if(state.treelevel == 3) {
-        showMessage('The tree discovered a new ability! Fog is available under "upgrades"', helpFG, helpBG);
+        showMessage('The tree discovered a new ability! Fog is now available under "upgrades"', helpFG, helpBG);
       } else if(state.treelevel == 5) {
         showMessage('The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there!', helpFG, helpBG);
       } else if(state.treelevel == 6) {
-        showMessage('The tree discovered a new ability! Sunny is available under "upgrades"', helpFG, helpBG);
+        showMessage('The tree discovered a new ability! Sunny is now available under "upgrades"', helpFG, helpBG);
       } else if(state.treelevel == 8) {
         showMessage('The spores grew the tree yet more, it looks so close to adulthood now. What powers does such a tree hold?', helpFG, helpBG);
+      } else if(state.treelevel == 9) {
+        showMessage('The tree discovered a new ability! Rainbow is now available under "upgrades"', helpFG, helpBG);
+      } else if(state.treelevel == 11) {
+        showMessage('The tree is providing another choice, check the upgrades', helpFG, helpBG);
       }
       showMessage('Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
           '. Consumed: ' + req.toString() +

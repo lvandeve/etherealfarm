@@ -53,18 +53,18 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   var infoText = '';
   var updateInfoText = function() {
     infoText = name;
-    infoText += '<br>Cost: ' + cost.toString();
-    if(!completed) {
+    infoText += '<br><br>Cost: ' + cost.toString();
+    if(!completed && cost.seeds.neqr(0)) {
       var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
       if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
       if(percent.gtr(100)) {
-        infoText += ' (' + percent.toString(0, Num.N_FULL) + '%)';
+        infoText += ' (' + percent.toString(0, Num.N_FULL) + '% of stacks)';
       } else {
-        infoText += ' (' + percent.toString() + '%)';
+        infoText += ' (' + percent.toString() + '% of stacks)';
       }
     }
     if(u.description) {
-      infoText += '<br>' + u.description;
+      infoText += '<br><br>' + u.description;
     }
   };
   updateInfoText();
@@ -83,6 +83,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
 
     buyFlex.div.onclick = bind(function(i, e) {
       actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
+      update();
     }, i);
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();
@@ -117,7 +118,21 @@ function computeUpgradeUIOrder() {
   rev = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
-    if(u.maxcount == 1) rev.push(registered_upgrades[i]);
+    if(u.maxcount == 1 && u.cost.spores.neqr(0)) rev.push(registered_upgrades[i]);
+  }
+  rev = rev.sort(function(a, b) {
+    a = upgrades[a];
+    b = upgrades[b];
+    return a.cost.spores.lt(b.cost.spores) ? 1 : -1;
+  });
+  for(var i = 0; i < rev.length; i++) {
+    upgrades_order.push(rev[i]);
+  }
+
+  rev = [];
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    if(u.maxcount == 1 && u.cost.spores.eqr(0)) rev.push(registered_upgrades[i]);
   }
   rev = rev.sort(function(a, b) {
     a = upgrades[a];

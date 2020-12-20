@@ -145,7 +145,6 @@ function State() {
 
   this.fogtime = 0; // fog is unlocked if state.upgrades[upgrade_fogunlock].count
   this.suntime = 0; // similar
-  // These are TODO but already in the savegame. e.g. increase flowers, in crease growing time, ...
   this.raintime = 0;
   this.rainbowtime = 0;
   this.hailtime = 0;

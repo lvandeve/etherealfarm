@@ -70,6 +70,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
     buyFlex.div.onclick = bind(function(i, e) {
       actions.push({type:ACTION_UPGRADE2, u:u.index});
+      update();
     }, i);
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();

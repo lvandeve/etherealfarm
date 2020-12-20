@@ -63,7 +63,8 @@ function createTranscendDialog() {
   text += '• Ethereal field and ethereal crops<br/>';
   text += '• Ethereal upgrades<br/>';
   text += '• Current season<br/>';
-  text += '<br/>';
+  text += '<br/><br/>';
+  text += 'Please note: the transcension aspect of this game is still under development and is a temporary demo only. Currently the main run of the game is still being balanced, when that is done the content of transcension will be fully developed.<br/>';
 
   flex.div.innerHTML = text;
 }
@@ -199,7 +200,7 @@ function makeFieldDialog(x, y) {
     var ysize = 0.1;
 
     var f0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.25, 0.3);
-    var f1 = new Flex(dialog, [0.01, 0.2], 0.3, 1, 0.75, 0.3);
+    var f1 = new Flex(dialog, [0.01, 0.2], 0.4, 1, 0.75, 0.3);
     var text;
 
     text = '<b>' + util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
@@ -225,11 +226,12 @@ function makeFieldDialog(x, y) {
       text += '<br/>';
       text += 'Tree level production boost to crops: ' + (100 * treeboost * state.treelevel) + '%' + '<br>';
 
-      if(state.upgrades[upgrade_fogunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked) {
+      if(state.upgrades[upgrade_fogunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
         text += '<br/>';
         text += 'Abilities discovered:<br>';
-        if(state.upgrades[upgrade_fogunlock].unlocked) text += '• Fog<br>';
-        if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sunny<br>';
+        if(state.upgrades[upgrade_fogunlock].unlocked) text += '• Fog: benefits mushrooms when active<br>';
+        if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sun: benefits berries when active<br>';
+        if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
       }
 
       f0.div.innerHTML = text;
