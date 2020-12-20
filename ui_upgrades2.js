@@ -234,3 +234,37 @@ function updateUpgrade2UI() {
     };
   }
 }
+
+var upgrade2_ui_cache = [];
+
+function updateUpgrade2UIIfNeeded() {
+  var unlocked = [];
+  for(var i = 0; i < registered_upgrades2.length; i++) {
+    var j = registered_upgrades2[i];
+    if(upgrades2[j].canUpgrade()) unlocked.push(j);
+  }
+
+  var cache = [];
+  for(var i = 0; i < unlocked.length; i++) {
+    var u = upgrades2[unlocked[i]];
+    var cost = u.getCost(0);
+    if(state.res.lt(cost)) cache[i] = true;
+    else cache[i] = false;
+  }
+
+  var eq = false;
+  if(upgrade2_ui_cache.length == cache.length) {
+    eq = true;
+    for(var i = 0; i < cache.length; i++) {
+      if(cache[i] != upgrade2_ui_cache[i]) {
+        eq = false;
+        break;
+      }
+    }
+  }
+
+  if(!eq) {
+    updateUpgrade2UI();
+    upgrade2_ui_cache = cache;
+  }
+}

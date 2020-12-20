@@ -160,6 +160,7 @@ function updateResourceUI() {
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
 
       if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
+      if(index == 4) text += 'The pericarps/s (production per second) value is the field power and is used for ethereal upgrades. But the produced pericarps themselves have no purpose yet!<br><br>';
 
       if(diff) {
         text += 'Production constrained: some resource type consumed by a plant to produce a different resource type, is limited for consumption by the max allowed consumption percentage. The rest goes to your stacks instead of the consumers. To get more output, plant more of the input producer types. E.g. if spores are constrained, get more seed production first to get more spores. You are getting the amount shown in black/white, not the hypothetical amount shown in red.' + '<br/><br/>';

@@ -141,6 +141,9 @@ function softReset() {
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
+  // reset these too: there's no purpose for them yet, they shouldn't stick around yet
+  state.res.seeds2 = Num(0);
+  state.res.spores2 = Num(0);
 
   var ethereal_starting_resources = new Res();
   if(state.upgrades2[upgrade2_starting0].count) ethereal_starting_resources.seeds.addrInPlace(10);
@@ -979,6 +982,7 @@ var update = function(opt_fromTick) {
 
   updateResourceUI();
   updateUpgradeUIIfNeeded();
+  updateUpgrade2UIIfNeeded();
   updateTabButtons();
   updateAbilitiesUI();
   if(updatetooltipfun) updatetooltipfun();
