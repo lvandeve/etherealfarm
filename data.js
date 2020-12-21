@@ -646,16 +646,16 @@ var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8);
 ////////////////////////////////////////////////////////////////////////////////
 
 // power increase for crop production (not flower boost) by basic upgrades
-var basic_upgrade_power_increase = 1.5; // multiplicative
+var basic_upgrade_power_increase = 1.25; // multiplicative
 // cost increase for crop production (not flower boost) by basic upgrades
-var basic_upgrade_cost_increase = 2.5;
+var basic_upgrade_cost_increase = 1.65;
 
 // how much more expensive than the base cost of the crop is the upgrade cost
-var basic_upgrade_initial_cost = 15;
+var basic_upgrade_initial_cost = 10;
 
 var flower_upgrade_power_increase = 0.5; // additive
 var flower_upgrade_cost_increase = 2.5;
-var flower_upgrade_initial_cost = basic_upgrade_initial_cost;
+var flower_upgrade_initial_cost = 15;
 
 upgrade_register_id = 125;
 var berrymul_0 = registerCropMultiplier(berry_0, getBerryCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1);
