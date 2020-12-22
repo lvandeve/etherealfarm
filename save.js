@@ -526,8 +526,6 @@ var presave = function(state) {
 // (re-)initializes everything (UI, ...) with the new state object
 var postload = function(new_state) {
   state = new_state;
-  initUI();
-  update();
 
   // a few variables that are external to state
   Num.notation = state.notation;

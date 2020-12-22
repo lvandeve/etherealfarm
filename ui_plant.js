@@ -81,7 +81,7 @@ function makePlantDialog(x, y) {
       ty++;
     }
 
-    registerTooltip(chip.div, bind(function(index) {
+    var tooltipfun = bind(function(index) {
       var result = '';
       var c = crops[index];
       if(show_only) {
@@ -89,15 +89,25 @@ function makePlantDialog(x, y) {
       } else {
         result = 'Plant ' + c.name;
       }
-      result += '.<br> Base cost: ' + c.cost.toString();
-      result += '.<br> Current cost: ' + c.getCost().toString();
-      result += '.<br> Plant time: ' + util.formatDuration(c.planttime);
-      result += '.<br> Production/sec: ' + c.getProd(undefined).toString();
+      result += '.<br><br> Base cost: ' + c.cost.toString();
+      result += '.<br><br> Current cost: ' + c.getCost().toString();
+      result += '.<br><br> Plant time: ' + util.formatDuration(c.planttime);
+      result += '.<br><br> Production/sec: ' + c.getProd(undefined).toString();
+      if(c.type == CROPTYPE_NETTLE) result += '.<br><br> Boost neighboring mushrooms spores production, but negatively affects neighboring berries, so avoid touching berries with this plant';
+      if(c.type == CROPTYPE_FLOWER) result += '.<br><br> Boost neighboring crops, their production, but if they have consumption, also increases their consumption equally';
       result += '.';
       return result;
-    }, index));
+    }, index);
 
-    if(!show_only) {
+    registerTooltip(chip.div, tooltipfun);
+
+    if(show_only) {
+      chip.div.onclick = bind(function(tooltipfun) {
+        var dialog = createDialog(true);
+        var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.4);
+        flex.div.innerHTML = tooltipfun();
+      }, tooltipfun);
+    } else {
       chip.div.onclick = bind(function(index) {
         var c = crops[index];
         actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});

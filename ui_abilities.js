@@ -51,6 +51,7 @@ function updateAbilitiesUI() {
 
     fogbutton.div.onclick = function() {
       actions.push({type:ACTION_ABILITY, ability:0});
+      update();
     };
 
     registerTooltip(fogbutton.div, 'fog ability: mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
@@ -90,6 +91,7 @@ function updateAbilitiesUI() {
 
     sunbutton.div.onclick = function() {
       actions.push({type:ACTION_ABILITY, ability:1});
+      update();
     };
 
     registerTooltip(sunbutton.div, 'sun ability: berries get a production bonus and aren\'t affected by winter');
@@ -130,6 +132,7 @@ function updateAbilitiesUI() {
 
     rainbowbutton.div.onclick = function() {
       actions.push({type:ACTION_ABILITY, ability:2});
+      update();
     };
 
     registerTooltip(rainbowbutton.div, 'rainbow ability: flowers get a boost and aren\'t affected by winter');

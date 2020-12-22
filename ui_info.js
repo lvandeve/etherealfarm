@@ -88,8 +88,8 @@ function updateResourceUI() {
   var texts = [];
   var seasonName = ['🌱 spring 🌱', '☀️ summer ☀️', '🍂 autumn 🍂', '❄️ winter ❄️'][getSeason()];
   var title = state.treelevel > 0 ? ('level ' + state.treelevel) : ('time');
+  var nextlevelprogress = Math.min(1, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
   if(state.treelevel > 0) {
-    var nextlevelprogress = Math.min(1, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
     title += ' (' + Math.floor(nextlevelprogress * 100) + '%)';
   }
   if(state.treelevel >= min_transcension_level * 2) title += ' [T ' + util.toRoman(Math.floor(state.treelevel / min_transcension_level)) + ']';
@@ -100,13 +100,21 @@ function updateResourceUI() {
     var dialog = createDialog(true);
     var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.4);
     var getText = function() {
-      var result = '<b>Time in this field:</b><br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
-      result += 'The current season is: ' + seasonNames[getSeason()] + '<br><br>';
+      var result = '';
+      if(state.treelevel > 0) {
+        result += '<b>Level:</b> ' + state.treelevel + '<br><br>';
+        result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100) + '%' + '<br><br>';
+      }
+      result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
+      result += '<b>Time since beginning:</b> ' + util.formatDuration(state.g_runtime, true, 4, true) + '<br><br>';
+      result += '<b>Current season:</b> ' + util.upperCaseFirstWord(seasonNames[getSeason()]) + '';
       var s = getSeason();
-      if(s == 0) result += 'Flowers get a boost in spring.';
-      if(s == 1) result += 'Berries love summer.';
-      if(s == 2) result += 'Autumn favors mushrooms';
-      if(s == 3) result += 'Winter brings a few harsh conditions';
+      if(s == 0) result += '. This boosts flowers.';
+      if(s == 1) result += '. Berries love this!';
+      if(s == 2) result += '. Mushrooms love this!';
+      if(s == 3) result += '. It brings harsh conditions.';
+      result += '<br><br>';
+      result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason()) + '.<br>';
       return result;
     };
     flex.div.innerHTML = getText();
@@ -114,6 +122,11 @@ function updateResourceUI() {
       flex.div.innerHTML = getText();
     };
   };
+  registerTooltip(resourceDivs[0], function() {
+    if(state.treelevel < 1) return '';
+    var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+    return 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+  }, true);
 
   var i = 1;
   var showResource = function(resin, index, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over) {

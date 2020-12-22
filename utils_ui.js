@@ -302,6 +302,11 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
 
   var MOBILEMODE = isTouchDevice();
 
+  if(MOBILEMODE) {
+    removeAllTooltips();
+    return;
+  }
+
   var init = function() {
     el.tooltipfun = fun;
     if(el.tooltipregistered) return; // prevent keeping adding event listeners, and make sure re-calling registerTooltip is fast (can be done every frame), just update the minimum needed to change the text

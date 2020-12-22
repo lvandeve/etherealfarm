@@ -58,7 +58,17 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
       if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
       if(percent.gtr(100)) {
-        infoText += ' (' + percent.toString(0, Num.N_FULL) + '% of stacks)';
+        var time = cost.seeds.sub(state.res.seeds).div(gain.seeds);
+        infoText += ' (' + util.formatDuration(time.valueOf(), true) + ')';
+      } else {
+        infoText += ' (' + percent.toString() + '% of stacks)';
+      }
+    } else if(!completed && cost.spores.neqr(0)) {
+      var percent = cost.spores.div(state.res.spores).mulr(100); // TODO: take other resources into account if used
+      if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+      if(percent.gtr(100)) {
+        var time = cost.spores.sub(state.res.spores).div(gain.spores);
+        infoText += ' (' + util.formatDuration(time.valueOf(), true) + ')';
       } else {
         infoText += ' (' + percent.toString() + '% of stacks)';
       }

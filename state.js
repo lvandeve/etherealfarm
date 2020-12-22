@@ -140,13 +140,8 @@ function State() {
     this.upgrades2[registered_upgrades2[i]] = new Upgrade2State();
   }
 
-  // ethereal upgrade effects
-  // TODO: this should not be saved like this in the savegame, instead the upgrade level must be saved and these values derived from it, otherwise tuning them is impossible
   this.ethereal_upgrade_spent = Res(); // how much spent on ethereal upgrades. This is in res/s, since ethereal upgrades cost res/s, not res.
-  this.ethereal_prodmul = Res(); // production multiplier from ethereal, per resource (additive, as in, this is a multiplier, but the ethereal upgrade adds to this multiplier, not multiplies it)
-  this.ethereal_prodmul.addrInPlace(1);
-  this.ethereal_season_bonus = [Num(1), Num(1), Num(1), Num(1)];
-  this.ethereal_starting_resources = Res(); // basic starting resources after a soft reset, given by ethereal upgrade
+
 
   this.fogtime = 0; // fog is unlocked if state.upgrades[upgrade_fogunlock].count
   this.suntime = 0; // similar

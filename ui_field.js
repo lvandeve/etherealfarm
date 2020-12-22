@@ -120,7 +120,11 @@ function getCropInfoHTML(f, c) {
       if(prod.hasNeg()) result += 'Consumes a resource produced by other crops, so the above may be the hypothetical amount if there is overconsumption.<br/>';
     }
     if(c.boost.neqr(0)) {
-      result += 'Boosting neighbors: ' + (c.getBoost().mulr(100).toString()) + '%<br/>';
+      if(c.type == CROPTYPE_NETTLE) {
+        result += 'Boosting neighbor mushrooms spores ' + (c.getBoost().mulr(100).toString()) + '%, but has negative effect on neighboring berries so don\'t touch berries with this plant!<br/>';
+      } else {
+        result += 'Boosting neighbors: ' + (c.getBoost().mulr(100).toString()) + '%<br/>';
+      }
     }
   }
 
@@ -308,8 +312,12 @@ function initFieldUI() {
           var c = crops[f.index - CROPINDEX];
           result = getCropInfoHTML(f, c);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-          if(state.treelevel <= 0) return 'a weathered tree';
-          else return util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '. Next level requires: ' + treeLevelReq(state.treelevel + 1).toString();
+          if(state.treelevel <= 0) {
+            return 'a weathered tree';
+          } else {
+            var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+            return util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+          }
         }
         return result;
       }, x, y, div), true);
@@ -421,7 +429,7 @@ function updateFieldCellUI(x, y) {
   if(f.index == FIELD_TREE_BOTTOM && state.treelevel > 0) {
     nextlevelprogress = Math.min(0.99, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
   }
-  var progresspixel = Math.floor(nextlevelprogress * 6);
+  var progresspixel = Math.round(nextlevelprogress * 5);
 
   var ferncode = ((state.fernx + state.ferny * state.numw) << 3) | state.fern;
 

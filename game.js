@@ -51,6 +51,8 @@ function loadFromLocalStorage(onsuccess, onfail) {
     }
   }
   load(e, function(state) {
+    initUI();
+    update();
     onsuccess(state);
     // save a "last successful load" save for recovery purposes, if the game has any substantial time duration (at least 3 days)
     var save_last_known_good = true;
@@ -603,7 +605,7 @@ var update = function(opt_fromTick) {
         var cost_tweaked = cost.mulr(0.999);
         if(power.lt(cost_tweaked)) {
           showMessage('not enough available power for ethereal upgrade: need ' + cost.toProdString() +
-              ', have: ' + Res.getMatchingResourcesOnly(cost, power).toProdString(), invalidFG, invalidBG);
+              ', have: ' + Res.getMatchingResourcesOnly(cost, power).toProdString() + '. If you have enough resin, you can plant something on the ethereal field, which will immediately give pericarps/s for these upgrades.', invalidFG, invalidBG);
         } else if(!u.canUpgrade()) {
           showMessage('this ethereal upgrade is not currently available', invalidFG, invalidBG);
         } else  {
@@ -742,7 +744,7 @@ var update = function(opt_fromTick) {
             state.suntime = state.time;
             showMessage('sun activated, berries get a boost and aren\'t affected by winter');
           } else {
-            showMessage(sund < getSunDuration() ? 'sunny is already active' : 'sunny is not ready yet', invalidFG, invalidBG);
+            showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', invalidFG, invalidBG);
           }
         } else if(a == 2) {
           var rainbowd = state.time - state.rainbowtime;
@@ -905,7 +907,7 @@ var update = function(opt_fromTick) {
         if(state.c_numupgrades_unlocked == 1) {
           showMessage('You unlocked your first upgrade! Check the "upgrades" tab to view it.', helpFG, helpBG);
         }
-        showMessage('Upgrade unlocked: "' + upgrades[j].getName() + '"', '#ffc', '#008');
+        showMessage('Upgrade available: "' + upgrades[j].getName() + '"', '#ffc', '#008');
       }
     }
     if(state.g_numresets > 0) {
@@ -918,7 +920,7 @@ var update = function(opt_fromTick) {
           if(state.g_numupgrades2_unlocked == 1) {
             showMessage('You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it.', helpFG, helpBG);
           }
-          showMessage('Ethereal upgrade unlocked: "' + upgrades2[j].getName() + '"', '#44f', '#ff8');
+          showMessage('Ethereal upgrade available: "' + upgrades2[j].getName() + '"', '#44f', '#ff8');
         }
       }
     }
