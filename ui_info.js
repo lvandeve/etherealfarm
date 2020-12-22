@@ -114,7 +114,7 @@ function updateResourceUI() {
       if(s == 2) result += '. Mushrooms love this!';
       if(s == 3) result += '. It brings harsh conditions.';
       result += '<br><br>';
-      result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason()) + '.<br>';
+      result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
       return result;
     };
     flex.div.innerHTML = getText();

@@ -171,7 +171,7 @@ function makeFieldDialog(x, y) {
     button1.textEl.innerText = 'see crop types';
     registerTooltip(button1, 'Show the crop dialog with unlocked plants.');
     button1.onclick = function() {
-      makePlantDialog(undefined, undefined);
+      makePlantDialog(x, y, true);
     };
 
     updatedialogfun = bind(function(f, c, flex) {
@@ -254,7 +254,7 @@ function makeFieldDialog(x, y) {
     }
 
   } else {
-    makePlantDialog(x, y);
+    makePlantDialog(x, y, false);
   }
 }
 
