@@ -74,6 +74,10 @@ function loadFromLocalStorage(onsuccess, onfail) {
       if(manual) {
         showMessage('last manual save: ' + manual, '#f00', '#ff0');
       }
+      var undo = util.getLocalStorage(localstorageName_undo);
+      if(undo) {
+        showMessage('last save for undo feature: ' + undo, '#f00', '#ff0');
+      }
       var lastsuccess = util.getLocalStorage(localstorageName_success);
       if(lastsuccess) {
         showMessage('last known good: ' + lastsuccess, '#f00', '#ff0');
@@ -99,10 +103,14 @@ function hardReset() {
   util.clearLocalStorage(localstorageName_recover);
   util.clearLocalStorage(localstorageName_success);
   util.clearLocalStorage(localstorageName_prev_version);
+  util.clearLocalStorage(localstorageName_undo);
+  util.clearLocalStorage(localstorageName_manual);
   postload(createInitialState());
 
   lastPlanted = -1;
   prev_season = -1;
+  undoSave = '';
+  lastUndoSaveTime = 0;
 }
 
 function softReset() {
@@ -134,8 +142,6 @@ function softReset() {
   state.c_numunplanted = 0;
   state.c_numupgrades = 0;
   state.c_numupgrades_unlocked = 0;
-
-  state.refundtype = 0;
 
   state.g_numresets++;
 
@@ -202,6 +208,7 @@ var ACTION_PLANT2 = action_index++;
 var ACTION_DELETE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++;
+var ACTION_TRANCSEND = action_index++;
 
 var lastSaveTime = util.getTime();
 
@@ -213,18 +220,43 @@ var postupdate = function() {
   computeDerived(state);
 };
 
-// TODO: have this stored in the state instead
-var lastFernTime = util.getTime(); // in seconds
 
-
-// TODO: implement undo feature
-/*
+var undoSave = '';
 var lastUndoSaveTime = 0;
-var undoSaves = [];
+var minUndoTime = 60;
 
-var storeUndoSave() {
+function storeUndo(state) {
+  lastUndoSaveTime = util.getTime();
+  save(state, function(s) {
+    //console.log('undo saved');
+    undoSave = s;
+    util.setLocalStorage(undoSave, localstorageName_undo);
+  }, function() {
+    undoSave = '';
+  });
 }
-*/
+
+function loadUndo() {
+  if(undoSave == '' || !undoSave) {
+    showMessage('No undo present. Undo is stored when performing an action.', invalidFG, invalidBG);
+    return;
+  }
+  save(state, function(redoSave) {
+    load(undoSave, function(state) {
+      //showMessage('Last group of actions undone. Press undo again now to redo. Once you do other actions, a new undo is saved instead. "group of actions" means actions such as planting, upgrades, ... that occured roughly within the span of a minute. If the last action was a very long time ago, then an undo from that long ago will be loaded, but all production should be computed correctly. When you reload the page, the undo is gone.');
+      showMessage('Undone', '#f8a');
+      initUI();
+      update();
+      undoSave = redoSave;
+      util.setLocalStorage(undoSave, localstorageName_undo);
+    }, function(state) {
+      showMessage('Not undone, failed to load undo-save');
+    });
+  }, function() {
+    showMessage('Not undone, failed to save redo save');
+  });
+}
+
 
 // returns by preference a random empty field spot, if too much spots filled, then
 // randomly any spot
@@ -504,6 +536,12 @@ function nextEventTime() {
 var prev_season = -1; // season of previous tick (-1 if uninitialized)
 
 var update = function(opt_fromTick) {
+  var undostate = undefined;
+  if(actions.length > 0 && (util.getTime() - lastUndoSaveTime > minUndoTime)) {
+    undostate = util.clone(state);
+  }
+  var store_undo = false;
+
   if(!preupdate(opt_fromTick)) return;
 
   if(state.prevtime == 0) state.prevtime = util.getTime();
@@ -556,7 +594,6 @@ var update = function(opt_fromTick) {
 
     var clickedfern = false; // if fern just clicked, don't do the next fern computation yet, since #resources is not yet taken into account
 
-
     // action
     for(var i = 0; i < actions.length; i++) {
       var action = actions[i];
@@ -584,6 +621,7 @@ var update = function(opt_fromTick) {
             u.fun();
             num++;
             if(!shift) showMessage('upgraded: ' + u.getName() + ', consumed: ' + cost.toString(), '#ff0', '#000');
+            store_undo = true;
           }
           if(!shift) break;
           if(shift && u.isExhausted()) break;
@@ -612,20 +650,13 @@ var update = function(opt_fromTick) {
           state.ethereal_upgrade_spent.addInPlace(cost);
           u.fun();
           showMessage('Ethereal upgrade applied: ' + u.getName() + ', power used: ' + cost.toString(), '#ffc', '#640');
+          store_undo = true;
         }
         updateUI();
       } else if(type == ACTION_PLANT) {
         var f = state.field[action.y][action.x];
         var c = action.crop;
         var cost = c.getCost();
-        var undone = false;
-        if(action.x == state.refundx && action.y == state.refundy && f.index == 0 && state.refundtype == (c.index + CROPINDEX) && state.res.gte(state.refundrecoup)) {
-          cost = state.refundrecoup;
-          showMessage('planted same type as just deleted, action undone, no further cost than the recoup subtracted and immediately fullgrown', '#f8a');
-          undone = true;
-          state.g_numunplanted--;
-          state.c_numunplanted--;
-        }
         if(f.index >= CROPINDEX) {
           showMessage('field already has crop', invalidFG, invalidBG);
         } else if(f.index != 0) {
@@ -639,16 +670,13 @@ var update = function(opt_fromTick) {
           showMessage('not enough resources to plant ' + c.name + ': need ' + cost.toString() +
                       ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
         } else {
-          if(!undone) {
-            showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
-            state.g_numplanted++;
-            state.c_numplanted++;
-          }
+          showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
+          state.g_numplanted++;
+          state.c_numplanted++;
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
-          if(undone) f.growth = 1;
-          state.refundtype = 0;
+          store_undo = true;
         }
       } else if(type == ACTION_PLANT2) {
         var f = state.field2[action.y][action.x];
@@ -667,6 +695,7 @@ var update = function(opt_fromTick) {
           showMessage('planted ' + c.name + '. Consumed: ' + cost.toString());
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
+          store_undo = true;
         }
       } else if(type == ACTION_DELETE) {
         var f = state.field[action.y][action.x];
@@ -676,14 +705,9 @@ var update = function(opt_fromTick) {
           if(f.growth < 1) {
             recoup = c.getCost(-1);
             showMessage('plant was still growing, full refund given', '#f8a');
-            state.refundtype = 0;
             state.g_numplanted--;
             state.c_numplanted--;
           } else {
-            state.refundx = action.x;
-            state.refundy = action.y;
-            state.refundtype = f.index;
-            state.refundrecoup = recoup;
             state.g_numunplanted++;
             state.c_numunplanted++;
           }
@@ -692,6 +716,7 @@ var update = function(opt_fromTick) {
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
           state.res.addInPlace(recoup); // get a bit of cost back
           showMessage('unplanted ' + c.name + ', got back: ' + recoup.toString());
+          store_undo = true;
         }
       } else if(type == ACTION_DELETE2) {
         var f = state.field2[action.y][action.x];
@@ -704,6 +729,7 @@ var update = function(opt_fromTick) {
           var recoup = c.getCost(-1);
           state.res.addInPlace(recoup); // get a bit of cost back
           showMessage('unplanted ' + c.name + ', got back: ' + recoup.toString());
+          store_undo = true;
         }
       } else if(type == ACTION_FERN) {
         if(state.fern && state.fernx == action.x && state.ferny == action.y) {
@@ -717,12 +743,13 @@ var update = function(opt_fromTick) {
             showMessage('This fern is extra bushy! It gave ' + fernres.toString(), '#4a0', '#120', true);
           }
           actualgain.addInPlace(fernres);
-          lastFernTime = state.time; // in seconds
+          state.lastFernTime = state.time; // in seconds
           state.fern = 0;
           clickedfern = true;
           if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
             showMessage('You have enough resources to plant. Click an empty field to plant', helpFG2, helpBG2);
           }
+          store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
         var a = action.ability;
@@ -733,6 +760,7 @@ var update = function(opt_fromTick) {
           } else if(fogd > getFogWait()) {
             state.fogtime = state.time;
             showMessage('fog activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
+            store_undo = true;
           } else {
             showMessage(fogd < getFogDuration() ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
           }
@@ -743,6 +771,7 @@ var update = function(opt_fromTick) {
           } else if(sund > getSunWait()) {
             state.suntime = state.time;
             showMessage('sun activated, berries get a boost and aren\'t affected by winter');
+            store_undo = true;
           } else {
             showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', invalidFG, invalidBG);
           }
@@ -753,13 +782,23 @@ var update = function(opt_fromTick) {
           } else if(rainbowd > getRainbowWait()) {
             state.rainbowtime = state.time;
             showMessage('rainbow activated, flowers get a boost and aren\'t affected by winter');
+            store_undo = true;
           } else {
             showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', invalidFG, invalidBG);
           }
         }
+      } else if(type == ACTION_TRANCSEND) {
+        if(state.treelevel >= min_transcension_level) {
+          softReset();
+          store_undo = true;
+        }
       }
     }
     actions = [];
+
+    if(store_undo && undostate) {
+      storeUndo(undostate);
+    }
 
     // for display purposes, but also a few computations here
     gain = computeProduction(state.over, false, false, false).add(computeProduction2(state.over, false, false, false));
@@ -778,7 +817,7 @@ var update = function(opt_fromTick) {
       else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
       else mintime = fern_wait_minutes * 60;
       if(state.upgrades[fern_choice0_a].count) mintime += fern_choice0_a_minutes * 60;
-      if(state.time > lastFernTime + mintime) {
+      if(state.time > state.lastFernTime + mintime) {
         fern = true;
       }
       // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
@@ -945,13 +984,14 @@ var update = function(opt_fromTick) {
     }
 
 
-    if(time > lastSaveTime + 300) {
+    if(time > lastSaveTime + 180) {
       if(autoSaveOk()) {
         state.g_numautosaves++;
         saveNow(function() {
           // Remind to make backups if not done any save importing or exporting for 2 or more days
-          if(time > Math.max(state.g_lastexporttime, state.g_lastimporttime) + 2 * 24 * 3600) {
+          if(time > Math.max(state.lastBackupWarningTime, Math.max(state.g_lastexporttime, state.g_lastimporttime)) + 2 * 24 * 3600) {
             showMessage(autoSavedStateMessageWithReminder, '#000', '#ff0');
+            state.lastBackupWarningTime = util.getTime();
           } else {
             showMessage(autoSavedStateMessage, '#888');
           }

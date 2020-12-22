@@ -144,14 +144,6 @@ function encState(state, opt_raw_only) {
 
   result += encRes(state.ethereal_upgrade_spent);
 
-  // this was <= version 4096*1 + 3
-  /*result += encRes(state.ethereal_prodmul);
-  result += encNum(state.ethereal_season_bonus[0]);
-  result += encNum(state.ethereal_season_bonus[1]);
-  result += encNum(state.ethereal_season_bonus[2]);
-  result += encNum(state.ethereal_season_bonus[3]);
-  result += encRes(state.ethereal_starting_resources);*/
-
   result += encFloat(state.fogtime);
   result += encFloat(state.suntime);
   result += encFloat(state.rain);
@@ -160,10 +152,14 @@ function encState(state, opt_raw_only) {
   result += encFloat(state.snowtime);
   result += encFloat(state.windtime);
 
+  result += encFloat(state.lastFernTime);
+  result += encFloat(state.lastBackupWarningTime);
+
   result += encUint16(state.notation);
   result += encUint16(state.precision);
   result += encBool(state.saveonexit);
   result += encBool(state.allowshiftdelete);
+  result += encUint16(state.tooltipstyle);
 
   result += encUint(state.g_numresets);
   result += encUint(state.g_numsaves);
@@ -239,6 +235,12 @@ function encState(state, opt_raw_only) {
   result = 'EF' + save_version + ticks_code + compress(result) + checksum;
   return result;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 
 function decState(s) {
@@ -392,12 +394,13 @@ function decState(s) {
 
   state.ethereal_upgrade_spent = decRes(reader);
   if(save_version <= 4096*1 + 2) {
-    /*state.ethereal_prodmul =*/ decRes(reader);
-    /*state.ethereal_season_bonus[0] =*/ decNum(reader);
-    /*state.ethereal_season_bonus[1] =*/ decNum(reader);
-    /*state.ethereal_season_bonus[2] =*/ decNum(reader);
-    /*state.ethereal_season_bonus[3] =*/ decNum(reader);
-    /*state.ethereal_starting_resources =*/ decRes(reader);
+    // old version ethereal bonuses
+    decRes(reader);
+    decNum(reader);
+    decNum(reader);
+    decNum(reader);
+    decNum(reader);
+    decRes(reader);
   } else {
     state.fogtime = decFloat(reader);
     state.suntime = decFloat(reader);
@@ -407,12 +410,19 @@ function decState(s) {
     state.snowtime = decFloat(reader);
     state.windtime = decFloat(reader);
   }
+  if(save_version >= 4096*1 + 6) {
+    state.lastFernTime = decFloat(reader);
+    state.lastBackupWarningTime = decFloat(reader);
+  }
   if(reader.error) return err(4);
 
   state.notation = decUint16(reader);
   state.precision = decUint16(reader);
   state.saveonexit = decBool(reader);
   state.allowshiftdelete = decBool(reader);
+  if(save_version >= 4096*1 + 6) {
+    state.tooltipstyle = decUint16(reader);
+  }
   if(reader.error) return err(4);
 
   state.g_numresets = decUint(reader);

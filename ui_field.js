@@ -24,7 +24,7 @@ var lastPlanted = -1; // for shift key
 function createTranscendDialog() {
   var dialog = createDialog(false, function(e) {
       showMessage('Transcended');
-      softReset();
+      actions.push({type:ACTION_TRANCSEND});
       closeAllDialogs();
       update();
   }, 'transcend', 'cancel');
@@ -241,7 +241,7 @@ function makeFieldDialog(x, y) {
       f0.div.innerHTML = text;
 
       if(state.treelevel < min_transcension_level) {
-        if(state.treelevel >= min_transcension_level - 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
+        if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
       } else {
         var button = new Flex(f1, 0, 0, 0.5, 0.2, 0.8).div;
         styleButton(button);

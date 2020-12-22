@@ -28,6 +28,12 @@ var rainbowbutton = undefined;
 var rainbowtimerflex = undefined;
 
 
+var shadow = '0 0 0.3em #fff';
+var ability_text_shadow = shadow + ', ' + shadow + ', ' + shadow + ', ' + shadow + ', ' + shadow + ', ' + shadow; // for legibility
+var ability_charging_open = 'ready in:<br> ';
+var ability_charging_close = '';
+var ability_active_open = '<font color="red">active:<br> ';
+var ability_active_close = '</font>';
 
 
 function updateAbilitiesUI() {
@@ -38,11 +44,13 @@ function updateAbilitiesUI() {
   }
 
   if(!fogbutton && state.upgrades[upgrade_fogunlock].count) {
-    fogbutton = new Flex(topFlex, [0.1,0.1], [0,0.1], [0.15,0.1], [0,0.9]);
+    fogbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
     styleButton0(fogbutton.div);
 
-    fogtimerflex = new Flex(topFlex, [0.15,0.1], [0,0.2], [0.25,0.1], [0,0.9], 1.9);
+    fogtimerflex = new Flex(topFlex, [0,5], [0,0.1], [0,6.5], [0,0.9], 2);
     fogtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+    fogtimerflex.div.style.textShadow = ability_text_shadow;
+    fogtimerflex.div.style.pointerEvents = 'none';
 
 
     var canvasFlex = new Flex(fogbutton, 0, 0, 1, 1);
@@ -53,6 +61,7 @@ function updateAbilitiesUI() {
       actions.push({type:ACTION_ABILITY, ability:0});
       update();
     };
+    fogtimerflex.div.onclick = fogbutton.div.onclick;
 
     registerTooltip(fogbutton.div, 'fog ability: mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
   }
@@ -60,15 +69,16 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_fogunlock].count) {
     var d = util.getTime() - state.fogtime;
     if(d > getFogWait()) {
-      fogtimerflex.div.innerHTML = 'ready';
-
+      fogtimerflex.div.innerHTML = '';
     } else if(d > getFogDuration()) {
-      fogtimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(getFogWait() - d, true);
+      fogtimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getFogWait() - d, true) + ability_charging_close;
     } else {
-      fogtimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(getFogDuration() - d, true) + '</font>';
+      fogtimerflex.div.innerHTML = ability_active_open + util.formatDuration(getFogDuration() - d, true) + ability_active_close;
     }
   }
 
+
+  //////////////////////////////////////////////////////////////////////////////
 
 
   if(sunbutton && !state.upgrades[upgrade_sununlock].count) {
@@ -78,11 +88,13 @@ function updateAbilitiesUI() {
   }
 
   if(!sunbutton && state.upgrades[upgrade_sununlock].count) {
-    sunbutton = new Flex(topFlex, [0.3,0.1], [0,0.1], [0.35,0.1], [0,0.9]);
+    sunbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
     styleButton0(sunbutton.div);
 
-    suntimerflex = new Flex(topFlex, [0.35,0.1], [0,0.2], [0.45,0.1], [0,0.9], 1.9);
+    suntimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
     suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+    suntimerflex.div.style.textShadow = ability_text_shadow;
+    suntimerflex.div.style.pointerEvents = 'none';
 
 
     var canvasFlex = new Flex(sunbutton, 0, 0, 1, 1);
@@ -100,16 +112,16 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_sununlock].count) {
     var d = util.getTime() - state.suntime;
     if(d > getSunWait()) {
-      suntimerflex.div.innerHTML = 'ready';
-
-    } else if(d > getSunDuration()) {
-      suntimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(getSunWait() - d, true);
+      suntimerflex.div.innerHTML = '';
+    } else if(d > getFogDuration()) {
+      suntimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getSunWait() - d, true) + ability_charging_close;
     } else {
-      suntimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(getSunDuration() - d, true) + '</font>';
+      suntimerflex.div.innerHTML = ability_active_open + util.formatDuration(getSunDuration() - d, true) + ability_active_close;
     }
   }
 
 
+  //////////////////////////////////////////////////////////////////////////////
 
 
   if(rainbowbutton && !state.upgrades[upgrade_rainbowunlock].count) {
@@ -119,11 +131,13 @@ function updateAbilitiesUI() {
   }
 
   if(!rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
-    rainbowbutton = new Flex(topFlex, [0.5,0.1], [0,0.1], [0.55,0.1], [0,0.9]);
+    rainbowbutton = new Flex(topFlex, [0,9], [0,0.1], [0,9.8], [0,0.9]);
     styleButton0(rainbowbutton.div);
 
-    rainbowtimerflex = new Flex(topFlex, [0.55,0.1], [0,0.2], [0.65,0.1], [0,0.9], 1.9);
+    rainbowtimerflex = new Flex(topFlex, [0,9], [0,0.1], [0,10.5], [0,0.9], 2);
     rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+    rainbowtimerflex.div.style.textShadow = ability_text_shadow;
+    rainbowtimerflex.div.style.pointerEvents = 'none';
 
 
     var canvasFlex = new Flex(rainbowbutton, 0, 0, 1, 1);
@@ -141,8 +155,7 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_rainbowunlock].count) {
     var d = util.getTime() - state.rainbowtime;
     if(d > getRainbowWait()) {
-      rainbowtimerflex.div.innerHTML = 'ready';
-
+      rainbowtimerflex.div.innerHTML = '';
     } else if(d > getRainbowDuration()) {
       rainbowtimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(getRainbowWait() - d, true);
     } else {

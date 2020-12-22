@@ -78,6 +78,7 @@ function makeMainDivs() {
 function initUIGlobal() {
   makeMainDivs();
   initMessageUI();
+  initSettingsUI();
 }
 
 
@@ -112,7 +113,6 @@ function initUI(state) {
   field2Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   upgrade2Flex = tabs[4];
 
-  initSettingsUI();
   initFieldUI();
   initInfoUI();
   initField2UI();

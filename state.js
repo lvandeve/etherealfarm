@@ -83,11 +83,6 @@ function State() {
   this.ferny = 0;
   this.fernres = Res(0);
 
-  this.refundx = 0;
-  this.refundy = 0;
-  this.refundtype = 0;
-  this.refundrecoup = 0;
-
   /*
   factor for overconsumption:
   say there is a berry producing seeds, and a mushroom consuming seeds but producing spores:
@@ -151,6 +146,9 @@ function State() {
   this.snowtime = 0;
   this.windtime = 0;
 
+  this.lastFernTime = 0;
+  this.lastBackupWarningTime = 0;
+
 
   // how much the price of basic crop multiplier upgrades increases with each level
   this.upgrade_cost_increase = Num(2.5);
@@ -161,6 +159,7 @@ function State() {
   this.mobilemode = false;
   this.saveonexit = true; // save with the window unload event (this is different than the interval based autosave)
   this.allowshiftdelete = false; // allow deleting a crop without dialog or confirmation by shift+clicking it
+  this.tooltipstyle = 1;
 
   // saved stats, global across all runs
   this.g_numresets = 0; // amount of soft resets done

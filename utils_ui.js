@@ -332,6 +332,10 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
   };
 
   var maketip = function(text, e, mobilemode) {
+    if(state.tooltipstyle == 0) {
+      removeAllTooltips();
+      return;
+    }
     // already displaying
     if(div && div == globaltooltip) return;
     // if a tooltip somehow remained from elsewhere, remove it. Even if fun returned undefined (so we make no new tip), because any remaining one may be stray
@@ -358,9 +362,20 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
       globaltooltip = div;
       // no width or hight set on the div: make it automatically match the size of the text. But the maxWidth ensures it won't get too wide in case of long text without newlines.
       ///div.style.maxWidth = mainFlex.div.clientWidth + 'px';
-      div.style.backgroundColor = '#840';
-      div.style.color = '#fff';
-      div.style.border = '2px solid #fff';
+      if(state.tooltipstyle == 1) {
+        div.style.backgroundColor = '#840';
+        div.style.color = '#fff';
+        div.style.border = '2px solid #fff';
+      } else if(state.tooltipstyle == 2) {
+        div.style.backgroundColor = '#ccc';
+        div.style.color = '#000';
+        div.style.border = '1px solid #000';
+      } else {
+        div.style.backgroundColor = '#0008';
+        div.style.color = '#fff';
+        div.style.border = '';
+      }
+
       div.style.padding = '4px';
       div.style.zIndex = '999';
       div.style.lineHeight = 'normal';
