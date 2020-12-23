@@ -39,13 +39,13 @@ var fog_wait = 10 * 60 + fog_duration;
 
 function getFogDuration() {
   var result = fog_duration;
-  if(state.upgrades[fog_choice0_a].count) result *= 2;
+  if(state.upgrades[active_choice0_a].count) result *= 2;
   return result;
 }
 
 function getFogWait() {
   var result = fog_wait;
-  if(state.upgrades[fog_choice0_a].count) result *= 2;
+  if(state.upgrades[active_choice0_a].count) result *= 2;
   return result;
 }
 
@@ -54,13 +54,13 @@ var sun_wait = 15 * 60 + sun_duration;
 
 function getSunDuration() {
   var result = sun_duration;
-  if(state.upgrades[sun_choice0_a].count) result *= 2;
+  if(state.upgrades[active_choice0_a].count) result *= 2;
   return result;
 }
 
 function getSunWait() {
   var result = sun_wait;
-  if(state.upgrades[sun_choice0_a].count) result *= 2;
+  if(state.upgrades[active_choice0_a].count) result *= 2;
   return result;
 }
 
@@ -69,13 +69,13 @@ var rainbow_wait = 20 * 60 + rainbow_duration;
 
 function getRainbowDuration() {
   var result = rainbow_duration;
-  if(state.upgrades[rainbow_choice0_a].count) result *= 2;
+  if(state.upgrades[active_choice0_a].count) result *= 2;
   return result;
 }
 
 function getRainbowWait() {
   var result = rainbow_wait;
-  if(state.upgrades[rainbow_choice0_a].count) result *= 2;
+  if(state.upgrades[active_choice0_a].count) result *= 2;
   return result;
 }
 
@@ -173,6 +173,8 @@ Crop.prototype.getProd = function(f, give_breakdown) {
     result = e;
   }
 
+  var season = getSeason();
+
   // flower boost
   if(f) {
     var mul_boost = Num(1);
@@ -182,7 +184,11 @@ Crop.prototype.getProd = function(f, give_breakdown) {
       if(n.index >= CROPINDEX && n.growth >= 1 && crops[n.index - CROPINDEX].type != CROPTYPE_NETTLE) {
         var boost = crops[n.index - CROPINDEX].getBoost();
         if(boost.neqr(0)) {
-          mul_boost.addInPlace(boost);
+          //if(season == 2 || season == 3) {
+          //  mul_boost = Num.max(mul_boost, boost.addr(1));
+          //} else {
+            mul_boost.addInPlace(boost);
+          //}
           return true;
         }
       }
@@ -242,7 +248,6 @@ Crop.prototype.getProd = function(f, give_breakdown) {
   var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (state.time - state.suntime) < getSunDuration();
 
   //season. Unlike other multipliers, this one does not affect negative production. This is a good thing in the crop's good season, but extra harsh in a bad season (e.g. winter)
-  var season = getSeason();
   if(!((fog_active || sun_active) && season == 3)) {
     var bonus_season = this.getSeasonBonus(season);
     if(bonus_season.neqr(1)) {
@@ -254,11 +259,11 @@ Crop.prototype.getProd = function(f, give_breakdown) {
   // fog
   if(fog_active) {
     var bonus_fog0 = Num(0.75);
-    if(state.upgrades[fog_choice0_b].count) bonus_fog0.divrInPlace(1 + fog_choice0_b_bonus);
+    if(state.upgrades[fog_choice0_b].count) bonus_fog0.divrInPlace(1 + active_choice0_b_bonus);
     result.seeds.mulInPlace(bonus_fog0);
     if(give_breakdown) breakdown.push(['fog (less seeds)', bonus_fog0, result.clone()]);
     var bonus_fog1 = Num(0.25);
-    if(state.upgrades[fog_choice0_b].count) bonus_fog1.mulrInPlace(1 + fog_choice0_b_bonus);
+    if(state.upgrades[fog_choice0_b].count) bonus_fog1.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_fog1.addrInPlace(1);
     result.spores.mulInPlace(bonus_fog1);
     if(give_breakdown) breakdown.push(['fog (more spores)', bonus_fog1, result.clone()]);
@@ -267,7 +272,7 @@ Crop.prototype.getProd = function(f, give_breakdown) {
   // sun
   if(sun_active) {
     var bonus_sun = Num(0.5);
-    if(state.upgrades[sun_choice0_b].count) bonus_sun.mulrInPlace(1 + sun_choice0_b_bonus);
+    if(state.upgrades[sun_choice0_b].count) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_sun.addrInPlace(1);
     result.seeds.mulrInPlace(bonus_sun);
     if(give_breakdown) breakdown.push(['sun', bonus_sun, result.clone()]);
@@ -311,7 +316,7 @@ Crop.prototype.getBoost = function(give_breakdown) {
   // rainbow
   if(rainbow_active) {
     var bonus_rainbow = Num(0.5);
-    if(state.upgrades[rainbow_choice0_b].count) bonus_rainbow.mulrInPlace(1 + rainbow_choice0_b_bonus);
+    if(state.upgrades[rainbow_choice0_b].count) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_rainbow.addrInPlace(1);
     result.mulrInPlace(bonus_rainbow);
     if(give_breakdown) breakdown.push(['rainbow', bonus_rainbow, result.clone()]);
@@ -513,6 +518,8 @@ function Upgrade() {
   this.image0 = undefined; // bg image, e.g. a plant
   this.image1 = undefined; // fg image, e.g. a level-up arrow in front of the plant
 
+  this.old_inactive = false; // no longer existing upgrade from earlier game version
+
   // gets the name, taking stage into account if it has stages
   this.getName = function() {
     var name = this.name;
@@ -688,6 +695,16 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num) {
   return result;
 }
 
+
+// register an upgrade that was removed from the game so it's marked as invalid to not display it and remove from new saves
+function registerOldInactiveUpgrade() {
+  var result = registerUpgrade('<none>', Res(), function(){}, function(){return false;}, 1, '<none>');
+  var u = upgrades[result];
+  u.old_inactive = true;
+  return result;
+}
+
+
 upgrade_register_id = 25;
 //berryunlock_0 does not exist, you start with that berry type already unlocked
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), 1, berry_0);
@@ -755,23 +772,41 @@ upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0);
 
 upgrade_register_id = 250;
-var upgrade_fogunlock = registerUpgrade('fog ability', treeLevelReq(3).mulr(0.05), function() {
+var upgrade_fogunlock = registerUpgrade('fog ability', treeLevelReq(3).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
-  return state.treelevel >= 3;
-}, 1, 'unlocks the active ability "fog". While enabled, fog temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter', '#fff', '#88f', image_fog, undefined);
+  if(state.treelevel >= 3) {
+    // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
+    state.upgrades[upgrade_fogunlock].unlocked = true;
+    state.upgrades[upgrade_fogunlock].count = 1;
+    return true;
+  }
+  return false;
+}, 1, 'Unlocks the active ability "fog". While enabled, fog temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter', '#fff', '#88f', image_fog, undefined);
 
-var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReq(6).mulr(0.05), function() {
+var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReq(5).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
-  return state.treelevel >= 6;
-}, 1, 'unlocks the active ability "sun". While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter', '#ccf', '#88f', image_sun, undefined);
+  if(state.treelevel >= 5) {
+    // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
+    state.upgrades[upgrade_sununlock].unlocked = true;
+    state.upgrades[upgrade_sununlock].count = 1;
+    return true;
+  }
+  return false;
+}, 1, 'Unlocks the active ability "sun". While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter', '#ccf', '#88f', image_sun, undefined);
 
-var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReq(9).mulr(0.05), function() {
+var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReq(7).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
-  return state.treelevel >= 9;
-}, 1, 'unlocks the active ability "rainbow". While enabled, flowers get a boost, and in addition are not affected by winter.', '#ccf', '#00f', image_rainbow, undefined);
+  if(state.treelevel >= 7) {
+    // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
+    state.upgrades[upgrade_rainbowunlock].unlocked = true;
+    state.upgrades[upgrade_rainbowunlock].count = 1;
+    return true;
+  }
+  return false;
+}, 1, 'Unlocks the active ability "rainbow". While enabled, flowers get a boost, and in addition are not affected by winter.', '#ccf', '#00f', image_rainbow, undefined);
 
 
 
@@ -795,50 +830,31 @@ var fern_choice0_b = registerUpgrade('richer ferns [CHOICE]', treeLevelReq(2).mu
   return !state.upgrades[fern_choice0_a].count && state.treelevel >= 2;
 }, 1, choice_text + 'Ferns contain on average ' + (fern_choice0_b_bonus * 100) + '% more resources, but they\'ll appear as often as before so this benefits active play more than idle play. This starts taking effect only for the next fern that appears.', '#fff', '#88f', images_fern[1], undefined);
 
+// pre version 0.1.6
+var fog_choice0_a = registerOldInactiveUpgrade();
+var fog_choice0_b = registerOldInactiveUpgrade();
+var sun_choice0_a = registerOldInactiveUpgrade();
+var sun_choice0_b = registerOldInactiveUpgrade();
+var rainbow_choice0_a = registerOldInactiveUpgrade();
+var rainbow_choice0_b = registerOldInactiveUpgrade();
 
-var fog_choice0_a = registerUpgrade('slower fog [CHOICE]', treeLevelReq(5).mulr(0.05), function() {
-  state.upgrades[fog_choice0_b].unlocked = false;
+
+
+var active_choice0_a = registerUpgrade('slow weather [CHOICE]', treeLevelReq(8).mulr(0.05), function() {
+  state.upgrades[active_choice0_b].unlocked = false;
 }, function() {
-  return state.treelevel >= 5 && !state.upgrades[fog_choice0_b].count && state.upgrades[upgrade_fogunlock].count;
-}, 1, choice_text + 'Slower fog makes the fog effect take twice as long, but also twice as long to recharge. This benefits idle play, but gives no benefit for active play.', '#fff', '#88f', image_fog, undefined);
+  return state.treelevel >= 8 && !state.upgrades[active_choice0_b].count;
+}, 1, choice_text + 'Makes the active weather abilities run twice as long, but also twice as long to recharge. This benefits idle play, but gives on average no benefit for active play.', '#fff', '#88f', image_fog, undefined);
 
-var fog_choice0_b_bonus = 0.25;
+var active_choice0_b_bonus = 0.25;
 
-var fog_choice0_b = registerUpgrade('thicker fog [CHOICE]', treeLevelReq(5).mulr(0.05), function() {
-  state.upgrades[fog_choice0_a].unlocked = false;
+var active_choice0_b = registerUpgrade('effective weather [CHOICE]', treeLevelReq(8).mulr(0.05), function() {
+  state.upgrades[active_choice0_a].unlocked = false;
 }, function() {
-  return state.treelevel >= 5 && !state.upgrades[fog_choice0_a].count && state.upgrades[upgrade_fogunlock].count;
-}, 1, choice_text + 'Increases the fog effect by ' + (fog_choice0_b_bonus * 100) + '%. The fog recharge time remains the same so this benefits active play more than idle play.', '#fff', '#88f', image_fog, undefined);
+  return state.treelevel >= 8 && !state.upgrades[active_choice0_a].count;
+}, 1, choice_text + 'Increases all active ability weather effects by ' + (active_choice0_b_bonus * 100) + '%. The active abilities recharge time remains the same so this benefits active play more than idle play.', '#fff', '#88f', image_fog, undefined);
 
 
-var sun_choice0_a = registerUpgrade('slower sun [CHOICE]', treeLevelReq(8).mulr(0.05), function() {
-  state.upgrades[sun_choice0_b].unlocked = false;
-}, function() {
-  return state.treelevel >= 8 && !state.upgrades[sun_choice0_b].count && state.upgrades[upgrade_sununlock].count;
-}, 1, choice_text + 'Slower sun makes the sun effect take twice as long, but also twice as long to recharge. This benefits idle play, but gives no benefit for active play.', '#ccf', '#88f', image_sun, undefined);
-
-var sun_choice0_b_bonus = 0.25;
-
-var sun_choice0_b = registerUpgrade('shinier sun [CHOICE]', treeLevelReq(8).mulr(0.05), function() {
-  state.upgrades[sun_choice0_a].unlocked = false;
-}, function() {
-  return state.treelevel >= 8 && !state.upgrades[sun_choice0_a].count && state.upgrades[upgrade_sununlock].count;
-}, 1, choice_text + 'Increases the sun effect by ' + (sun_choice0_b_bonus * 100) + '%. The sun recharge time remains the same so this benefits active play more than idle play.', '#ccf', '#88f', image_sun, undefined);
-
-
-var rainbow_choice0_b_bonus = 0.25;
-
-var rainbow_choice0_a = registerUpgrade('slower rainbow [CHOICE]', treeLevelReq(11).mulr(0.05), function() {
-  state.upgrades[rainbow_choice0_b].unlocked = false;
-}, function() {
-  return state.treelevel >= 11 && !state.upgrades[rainbow_choice0_b].count && state.upgrades[upgrade_rainbowunlock].count;
-}, 1, choice_text + 'Slower rainbow makes the rainbow effect take twice as long, but also twice as long to recharge. This benefits idle play, but gives no benefit for active play.', '#fff', '#88f', image_rainbow, undefined);
-
-var rainbow_choice0_b = registerUpgrade('grander rainbow [CHOICE]', treeLevelReq(11).mulr(0.05), function() {
-  state.upgrades[rainbow_choice0_a].unlocked = false;
-}, function() {
-  return state.treelevel >= 11 && !state.upgrades[rainbow_choice0_a].count && state.upgrades[upgrade_rainbowunlock].count;
-}, 1, choice_text + 'Increases the rainbow effect by ' + (rainbow_choice0_b_bonus * 100) + '%. The rainbow recharge time remains the same so this benefits active play more than idle play.', '#fff', '#88f', image_rainbow, undefined);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

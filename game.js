@@ -904,28 +904,29 @@ var update = function(opt_fromTick) {
       state.resin.addInPlace(resin);
       state.res.subInPlace(req);
       state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
-      if(state.treelevel == 1) {
-        showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree for more info.', helpFG, helpBG);
-      } else if(state.treelevel == 2) {
-        showMessage('Thanks to more spores, the tree is now even stronger! The tree is providing a choice, choose one of the two choices under "upgrades".', helpFG, helpBG);
-      } else if(state.treelevel == 3) {
-        showMessage('The tree discovered a new ability! Fog is now available under "upgrades"', helpFG, helpBG);
-      } else if(state.treelevel == 5) {
-        showMessage('The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there!', helpFG, helpBG);
-      } else if(state.treelevel == 6) {
-        showMessage('The tree discovered a new ability! Sunny is now available under "upgrades"', helpFG, helpBG);
-      } else if(state.treelevel == 8) {
-        showMessage('The spores grew the tree yet more, it looks so close to adulthood now. What powers does such a tree hold?', helpFG, helpBG);
-      } else if(state.treelevel == 9) {
-        showMessage('The tree discovered a new ability! Rainbow is now available under "upgrades"', helpFG, helpBG);
-      } else if(state.treelevel == 11) {
-        showMessage('The tree is providing another choice, check the upgrades', helpFG, helpBG);
-      }
-      showMessage('Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
+      var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
           '. Consumed: ' + req.toString() +
           '. Tree boost: ' + Num((state.treelevel * treeboost) * 100).toString(2, Num.N_FULL) + '%' +
-          '. Resin added: ' + resin.toString() + '. Total resin ready: ' + state.resin.toString(), '#2f2');
-      if(state.treelevel == min_transcension_level) {
+          '. Resin added: ' + resin.toString() + '. Total resin ready: ' + state.resin.toString()
+      if(state.treelevel == 2) {
+        message += '. The tree is providing a choice, choose one of the two choices under "upgrades".';
+      } else if(state.treelevel == 3) {
+        message += '. The tree discovered a new ability!';
+      } else if(state.treelevel == 5) {
+        message += '. The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there. The tree discovered another ability!';
+      } else if(state.treelevel == 7) {
+        message += '. The tree discovered another new ability!';
+      } else if(state.treelevel == 8) {
+        message += '. The tree is providing a choice again, under "upgrades"';
+      } else if(state.treelevel == 9) {
+        message += '. The tree is so close to becoming an adult tree now.';
+      } else if(state.treelevel == 11) {
+        message += '. The tree is providing another choice, check the upgrades';
+      }
+      showMessage(message, '#2f2');
+      if(state.treelevel == 1) {
+        showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree for more info.', helpFG, helpBG);
+      } else if(state.treelevel == min_transcension_level) {
         showMessage('The tree reached adulthood, and is now able to transcend! Click the tree to view the transcension dialog.', helpFG, helpBG);
       }
     }
@@ -940,13 +941,18 @@ var update = function(opt_fromTick) {
       var j = registered_upgrades[i];
       if(state.upgrades[j].unlocked) continue;
       if(upgrades[j].pre()) {
-        state.upgrades[j].unlocked = true;
-        state.c_numupgrades_unlocked++;
-        state.g_numupgrades_unlocked++;
-        if(state.c_numupgrades_unlocked == 1) {
-          showMessage('You unlocked your first upgrade! Check the "upgrades" tab to view it.', helpFG, helpBG);
+        if(state.upgrades[j].unlocked) {
+          // the pre function itself already unlocked it, so perhaps it auto applied the upgrade. Nothing to do anymore here other than show a different message.
+          showMessage('Received: "' + upgrades[j].getName() + '". ' + upgrades[j].description, '#cfc', '#800');
+        } else {
+          state.upgrades[j].unlocked = true;
+          state.c_numupgrades_unlocked++;
+          state.g_numupgrades_unlocked++;
+          if(state.c_numupgrades_unlocked == 1) {
+            showMessage('You unlocked your first upgrade! Check the "upgrades" tab to view it.', helpFG, helpBG);
+          }
+          showMessage('Upgrade available: "' + upgrades[j].getName() + '"', '#ffc', '#008');
         }
-        showMessage('Upgrade available: "' + upgrades[j].getName() + '"', '#ffc', '#008');
       }
     }
     if(state.g_numresets > 0) {

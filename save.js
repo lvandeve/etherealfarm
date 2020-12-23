@@ -329,6 +329,7 @@ function decState(s) {
     if(!upgrades[index]) return err(4);
     unlocked[i] = index;
     state.upgrades[unlocked[i]].unlocked = true;
+    if(upgrades[unlocked[i]].old_inactive) state.upgrades[unlocked[i]].unlocked = false;
   }
   for(var i = 0; i < unlocked.length; i++) {
     state.upgrades[unlocked[i]].seen = decBool(reader);
