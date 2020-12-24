@@ -122,7 +122,7 @@ function highlightButton(div, highlight) {
 }
 
 // div must already have the position and size (the arguments are used to compute stuff inside of it)
-function initProgressBar(div) {
+function initProgressBar(div, color) {
   div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
   div.style.border = '1px solid black';
   var c = makeDiv('0%', '0%', '100%', '100%', div);
@@ -134,7 +134,7 @@ function initProgressBar(div) {
 }
 
 // value is in range 0-1. Make negative to hide the progress bar.
-function setProgressBar(div, value) {
+function setProgressBar(div, value, color) {
   if(value < 0) {
     if(div.visible) {
       div.style.display = 'none';
@@ -149,10 +149,10 @@ function setProgressBar(div, value) {
     div.visible = true;
   }
   c.style.width = (100 * value) + '%';
-}
-
-function setProgressBarColor(div, color) {
-  div.c.style.backgroundColor = color;
+  if(color && div.colorCache_ != color) {
+    div.c.style.backgroundColor = color;
+    div.colorCache_ = color; // reading div.style.backgroundColor is slow, so set in higher field.
+  }
 }
 
 

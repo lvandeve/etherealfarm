@@ -36,9 +36,9 @@ function setTab(i) {
     highlightButton(tabbuttons[j], i == j ? 1 : 2);
   }
 
-  if(i == 1) updateUpgradeUI();
-  if(i == 2) updateMedalUI();
-  if(i == 4) updateUpgrade2UI();
+  if(i == tabindex_upgrades) updateUpgradeUI();
+  if(i == tabindex_medals) updateMedalUI();
+  if(i == tabindex_upgrades2) updateUpgrade2UI();
 
   updateTabButtons();
 }
@@ -46,7 +46,7 @@ function setTab(i) {
 
 // makes it indicate new upgrades/achievements/..., if there are
 function updateTabButtons2() {
-  if(currentTab == 1 && state.upgrades_new) {
+  if(currentTab == tabindex_upgrades && state.upgrades_new) {
     for(var i = 0; i < registered_upgrades.length; i++) {
       var u = state.upgrades[registered_upgrades[i]];
       if(u.unlocked && !u.seen) u.seen = true;
@@ -54,7 +54,7 @@ function updateTabButtons2() {
     computeDerived(state);
   }
 
-  if(currentTab == 2 && state.medals_new) {
+  if(currentTab == tabindex_medals && state.medals_new) {
     for(var i = 0; i < registered_medals.length; i++) {
       // commented out: medal tooltip does this now.
       //var m = state.medals[registered_medals[i]];
@@ -63,7 +63,7 @@ function updateTabButtons2() {
     computeDerived(state);
   }
 
-  if(currentTab == 4 && state.upgrades2_new) {
+  if(currentTab == tabindex_upgrades2 && state.upgrades2_new) {
     for(var i = 0; i < registered_upgrades2.length; i++) {
       var u = state.upgrades2[registered_upgrades2[i]];
       if(u.unlocked && !u.seen) u.seen = true;
@@ -71,42 +71,47 @@ function updateTabButtons2() {
     computeDerived(state);
   }
 
-  if(tabbuttons[1]) {
-    var text = 'upgrades <br/>(' + state.upgrades_affordable + '/' + state.upgrades_upgradable + ')';
+  var tabnum;
+
+  tabnum = tabindex_upgrades;
+  if(tabbuttons[tabnum]) {
+    var text = 'upgrades<br/>(' + state.upgrades_affordable + '/' + state.upgrades_upgradable + ')';
     if(state.upgrades_new) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
 
     if(text != upgradesButtonLastText) {
-      tabbuttons[1].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
-      tabbuttons[1].textEl.innerHTML  = text;
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
       upgradesButtonLastText = text;
     }
   }
 
-  if(tabbuttons[2]) {
-    var text = 'achievements <br/>(' + state.medals_earned + ')';
+  tabnum = tabindex_medals;
+  if(tabbuttons[tabnum]) {
+    var text = 'achievements<br/>(' + state.medals_earned + ')';
 
     if(state.medals_new) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
 
     if(text != medalsButtonLastText) {
-      tabbuttons[2].textEl.innerHTML = text;
+      tabbuttons[tabnum].textEl.innerHTML = text;
       medalsButtonLastText = text;
-      tabbuttons[2].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
     }
   }
 
-  if(tabbuttons[4]) {
-    var text = 'ethereal upgrades <br/>(' + state.upgrades2_affordable + '/' + state.upgrades2_upgradable + ')';
+  tabnum = tabindex_upgrades2;
+  if(tabbuttons[tabnum]) {
+    var text = 'ethereal upgrades<br/>(' + state.upgrades2_affordable + '/' + state.upgrades2_upgradable + ')';
     if(state.upgrades2_new) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
 
     if(text != upgrades2ButtonLastText) {
-      tabbuttons[4].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
-      tabbuttons[4].textEl.innerHTML  = text;
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
       upgrades2ButtonLastText = text;
     }
   }
@@ -118,11 +123,11 @@ function updateTabButtons2() {
 function updateTabButtons() {
 
   var wanted = [];
-  wanted[0] = true;
-  wanted[1] = state.upgrades_unlocked > 0;
-  wanted[2] = state.medals_earned > 0;
-  wanted[3] = state.g_numresets > 0;
-  wanted[4] = state.g_numresets > 0;
+  wanted[tabindex_field] = true;
+  wanted[tabindex_upgrades] = state.upgrades_unlocked > 0;
+  wanted[tabindex_field2] = state.g_numresets > 0;
+  wanted[tabindex_upgrades2] = state.g_numresets > 0;
+  wanted[tabindex_medals] = state.medals_earned > 0;
 
   var num = 0;
   for(var i = 0; i < wanted.length; i++) {
@@ -158,46 +163,55 @@ function updateTabButtons() {
 
   var tabDiv = tabFlex.div;
 
-  if(wanted[0]) {
-    tabbuttons[0] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
-    styleButton(tabbuttons[0]);
-    tabbuttons[0].onclick = function() { setTab(0); };
-    tabbuttons[0].textEl.innerText = 'field';
+  var tabnum;
+
+  // the order below determines the display order of the tabs
+
+  tabnum = tabindex_field;
+  if(wanted[tabnum]) {
+    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
+    tabbuttons[tabnum].textEl.innerText = 'field';
     index++;
   }
 
-  if(wanted[1]) {
-    tabbuttons[1] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
-    styleButton(tabbuttons[1]);
-    tabbuttons[1].onclick = function() { setTab(1); };
-    tabbuttons[1].textEl.innerText = 'upgrades';
+  tabnum = tabindex_upgrades;
+  if(wanted[tabnum]) {
+    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
+    tabbuttons[tabnum].textEl.innerText = 'upgrades';
     upgradesButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
 
-  if(wanted[2]) {
-    tabbuttons[2] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
-    styleButton(tabbuttons[2]);
-    tabbuttons[2].onclick = function() { setTab(2); };
-    tabbuttons[2].textEl.innerText = 'achievements';
-    medalsButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+  tabnum = tabindex_field2;
+  if(wanted[tabnum]) {
+    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
+    tabbuttons[tabnum].textEl.innerText = 'ethereal field';
     index++;
   }
 
-  if(wanted[3]) {
-    tabbuttons[3] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
-    styleButton(tabbuttons[3]);
-    tabbuttons[3].onclick = function() { setTab(3); };
-    tabbuttons[3].textEl.innerText = 'ethereal field';
-    index++;
-  }
-
-  if(wanted[4]) {
-    tabbuttons[4] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
-    styleButton(tabbuttons[4]);
-    tabbuttons[4].onclick = function() { setTab(4); };
-    tabbuttons[4].textEl.innerText = 'ethereal upgrades';
+  tabnum = tabindex_upgrades2;
+  if(wanted[tabnum]) {
+    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
+    tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
     upgrades2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    index++;
+  }
+
+  tabnum = tabindex_medals;
+  if(wanted[tabnum]) {
+    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
+    tabbuttons[tabnum].textEl.innerText = 'achievements';
+    medalsButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
 
@@ -206,8 +220,6 @@ function updateTabButtons() {
   // this is to give the buttons the correct style
   setTab(currentTab);
 }
-
-
 
 
 

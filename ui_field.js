@@ -76,7 +76,7 @@ function formatBreakdown(breakdown, percent, title) {
   result += '<br/>' + title + ':<br/>';
   for(var i = 0; i < breakdown.length; i++) {
     result += '• ' + breakdown[i][0];
-    if(i > 0) result += ': ' + (breakdown[i][1].subr(1).mulr(100)).toString() + '%'; // first is base production
+    if(breakdown[i][1] != undefined && i > 0) result += ': ' + (breakdown[i][1].subr(1).mulr(100)).toString() + '%'; // first is base production
     result += (i == 0) ? ': ' : ' ⇒ ';
     if(percent) {
       result += breakdown[i][2].mulr(100).toString() + '%<br/>';
@@ -91,10 +91,10 @@ function formatBreakdown(breakdown, percent, title) {
 function getCropInfoHTMLBreakdown(f, c) {
   var result = '';
 
-  if(f.growth >= 1) {
-    var prod = c.getProd(f);
+  if(f.growth >= 1 || c.type == CROPTYPE_SHORT) {
+    var prod = c.getProd(f, true, false);
     if(!prod.empty()) {
-      var breakdown = c.getProd(f, true);
+      var breakdown = c.getProd(f, true, true);
       result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
     }
     if(c.boost.neqr(0)) {
@@ -110,11 +110,18 @@ function getCropInfoHTMLBreakdown(f, c) {
 function getCropInfoHTML(f, c) {
   var result = util.upperCaseFirstWord(c.name);
   result += '<br/>';
+  result += 'Crop type: ' + getCropTypeName(c.type);
+  result += '<br/><br/>';
 
-  if(f.growth < 1) {
-    result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.planttime, true, 4, true);
+  if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+    result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlanttime(), true, 4, true);
   } else {
-    var prod = c.getProd(f);
+    if(c.type == CROPTYPE_SHORT) {
+      result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlanttime(), true, 4, true) + '<br/><br/>';
+      result += 'If this plant has permanent resource-producing plants as neighbors, the watercress will add all their production to its own, no matter how high their production! So the watercrass can act as a temporary income multiplier and is always useful. This has diminishing returns if there are multiple watercress plants in the entire field, this permanent-neighbor feature works best for 1 or maybe 2 well-positioned watercress in the world. A badly placed watercress can even negatively affect others. If you have no permanent crop types this is not yet relevant, plant as many watercress as you want then!<br/>';
+      result += '<br/>';
+    }
+    var prod = c.getProd(f, true);
     if(!prod.empty()) {
       result += 'Production per second: ' + prod.toString() + '<br/>';
       if(prod.hasNeg()) result += 'Consumes a resource produced by other crops, so the above may be the hypothetical amount if there is overconsumption.<br/>';
@@ -128,10 +135,14 @@ function getCropInfoHTML(f, c) {
     }
   }
 
-  result += '<br/>Base planting cost: ' + c.cost.toString();
-  result += '<br/>Num planted of this type: ' + state.cropcount[c.index];
-  result += '<br/>Current planting cost: ' + c.getCost().toString();
-  result += '<br/>Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+  result += '<br/>';
+  result += 'Num planted of this type: ' + state.cropcount[c.index];
+  result += '<br/>';
+
+  result += '<br/>Cost: ' + c.cost.toString();
+  result += '<br/>• Base planting cost: ' + c.cost.toString();
+  result += '<br/>• Current planting cost: ' + c.getCost().toString();
+  result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
 
   return result;
 }
@@ -151,10 +162,13 @@ function makeFieldDialog(x, y) {
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
+    var buttonshift = 0;
+    if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
+
     var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.3);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.2, 0.01], 0.5, 0.25, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.27, 0.01], 0.5, 0.32, 0.8).div;
-    var flex1 = new Flex(dialog, [0.01, 0.2], [0.33, 0.01], 1, 0.9, 0.3);
+    var button0 = new Flex(dialog, [0.01, 0.2], [0.3 + buttonshift, 0.01], 0.5, 0.35 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog, [0.01, 0.2], [0.37 + buttonshift, 0.01], 0.5, 0.42 + buttonshift, 0.8).div;
+    var flex1 = new Flex(dialog, [0.01, 0.2], [0.43 + buttonshift, 0.01], 1, 0.9, 0.3);
     var last0 = undefined;
     var last1 = undefined;
 
@@ -168,7 +182,7 @@ function makeFieldDialog(x, y) {
     };
 
     styleButton(button1);
-    button1.textEl.innerText = 'see crop types';
+    button1.textEl.innerText = 'see unlocked crops';
     registerTooltip(button1, 'Show the crop dialog with unlocked plants.');
     button1.onclick = function() {
       makePlantDialog(x, y, true);
@@ -339,11 +353,14 @@ function initFieldUI() {
             } else {
               showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
             }
+          } else if(e.ctrlKey) {
+            actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
+            update();
           } else {
             makeFieldDialog(x, y);
           }
         } else if(f.index >= CROPINDEX) {
-          if(e.shiftKey) {
+          if(e.shiftKey || (e.ctrlKey && f.index - CROPINDEX == short_0)) {
             if(state.allowshiftdelete) {
               var c = crops[lastPlanted];
               actions.push({type:ACTION_DELETE, x:x, y:y});
@@ -423,13 +440,14 @@ function updateFieldCellUI(x, y) {
   var f = state.field[y][x];
   var fd = fieldDivs[y][x];
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
+  if(!(growstage >= 0 && growstage <= 4)) growstage = 0;
   var season = getSeason();
 
-  var nextlevelprogress = 0;
-  if(f.index == FIELD_TREE_BOTTOM && state.treelevel > 0) {
-    nextlevelprogress = Math.min(0.99, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
+  var progresspixel = -1;
+  if(f.index == FIELD_TREE_BOTTOM && (state.treelevel > 0 || state.res.spores.gtr(0))) {
+    var nextlevelprogress = Math.min(0.99, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
+    progresspixel = Math.round(nextlevelprogress * 5);
   }
-  var progresspixel = Math.round(nextlevelprogress * 5);
 
   var ferncode = ((state.fernx + state.ferny * state.numw) << 3) | state.fern;
 
@@ -452,17 +470,15 @@ function updateFieldCellUI(x, y) {
       renderImage(c.image[growstage], fd.canvas);
       if(f.growth >= 1) {
         // fullgrown, so hide progress bar
-        setProgressBar(fd.progress, -1);
-      } else {
-        setProgressBarColor(fd.progress, '#f00');
+        setProgressBar(fd.progress, -1, undefined);
       }
     } else if(f.index == FIELD_TREE_TOP) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
-      if(state.treelevel > 0) renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
+      if(state.treelevel > 0 || state.res.spores.gtr(0)) renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
     } else {
-      setProgressBar(fd.progress, -1);
+      setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
       unrenderImage(fd.canvas);
     }
@@ -471,7 +487,8 @@ function updateFieldCellUI(x, y) {
     }
   }
   if(fd.index >= CROPINDEX && f.growth < 1) {
-    setProgressBar(fd.progress, f.growth);
+    var c = crops[f.index - CROPINDEX];
+    setProgressBar(fd.progress, f.growth, c.type == CROPTYPE_SHORT ? '#0c0' : '#f00');
   }
 }
 

@@ -111,6 +111,9 @@ function hardReset() {
   prev_season = -1;
   undoSave = '';
   lastUndoSaveTime = 0;
+
+  initUI();
+  update();
 }
 
 function softReset() {
@@ -125,6 +128,7 @@ function softReset() {
   state.p_max_res = state.c_max_res;
   state.p_max_prod = state.c_max_prod;
   state.p_numferns = state.c_numferns;
+  state.p_numplantedshort = state.c_numplantedshort;
   state.p_numplanted = state.c_numplanted;
   state.p_numfullgrown = state.c_numfullgrown;
   state.p_numunplanted = state.c_numplanted;
@@ -137,6 +141,7 @@ function softReset() {
   state.c_max_res = Res();
   state.c_max_prod = Res();
   state.c_numferns = 0;
+  state.c_numplantedshort = 0;
   state.c_numplanted = 0;
   state.c_numfullgrown = 0;
   state.c_numunplanted = 0;
@@ -174,7 +179,7 @@ function softReset() {
   for(var i = 0; i < registered_crops.length; i++) {
     state.crops[registered_crops[i]] = new CropState();
   }
-  state.crops[berry_0].unlocked = true;
+  state.crops[short_0].unlocked = true;
 
   state.upgrades = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
@@ -456,7 +461,7 @@ function computeProduction(factor, theoretical, include_growing, pos_only) {
       var f = state.field[y][x];
       if(f.index >= CROPINDEX) {
         var c = crops[f.index - CROPINDEX];
-        if(f.growth >= 1 || include_growing) {
+        if(f.growth >= 1 || include_growing || c.type == CROPTYPE_SHORT) {
           var prod = c.getProd(f);
           if(pos_only) prod = prod.getPositive();
           if(theoretical) {
@@ -518,18 +523,18 @@ function computeProduction2(factor, theoretical, include_growing, pos_only) {
 // the returned value is amount of seconds before the first next event
 // the value used to determine current time is state.time
 function nextEventTime() {
-  var times = [];
-  times.push(timeTilNextSeason());
 
-  if((state.time - state.fogtime) < getFogDuration()) times.push(getFogDuration() - state.time + state.fogtime);
-  if((state.time - state.suntime) < getSunDuration()) times.push(getSunDuration() - state.time + state.suntime);
-  if((state.time - state.rainbowtime) < getRainbowDuration()) times.push(getRainbowDuration() - state.time + state.rainbowtime);
+  var time = timeTilNextSeason();
 
-  times.sort(function(a, b) {
-    return a - b;
-  });
+  var addtime = function(time2) {
+    time = Math.min(time, time2);
+  };
 
-  return times[0];
+  if((state.time - state.fogtime) < getFogDuration()) addtime(getFogDuration() - state.time + state.fogtime);
+  if((state.time - state.suntime) < getSunDuration()) addtime(getSunDuration() - state.time + state.suntime);
+  if((state.time - state.rainbowtime) < getRainbowDuration()) addtime(getRainbowDuration() - state.time + state.rainbowtime);
+
+  return time;
 }
 
 
@@ -635,7 +640,13 @@ var update = function(opt_fromTick) {
             showMessage('upgraded ' + u.name + ' ' + num + ' times to ' + u.getName() + ', consumed: ' + total_cost.toString(), '#ff0', '#000');
           }
         }
-        if(num) updateUI();
+        if(num) {
+          updateUI();
+          if(action.u == berryunlock_0) {
+            showMessage('You unlocked your first permanent type of plant. Plants like this stay on the field forever and have much more powerful production upgrades too.', helpFG, helpBG);
+            showMessage('If you plant watercress next to permanent plants, the watercress will add all its neighbors production to its own, so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns.', helpFG2, helpBG2);
+          }
+        }
       } else if(type == ACTION_UPGRADE2) {
         var u = upgrades2[action.u];
         var power = gain.sub(state.ethereal_upgrade_spent).mulr(1.001); // allow slight numerical precision error, e.g. say you have 0.4 pericarp/s, it may still fail to let you buy 4 upgrades costing 0.1 pericarp/s each otherwise
@@ -671,11 +682,21 @@ var update = function(opt_fromTick) {
                       ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
         } else {
           showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
-          state.g_numplanted++;
-          state.c_numplanted++;
+          if(c.type == CROPTYPE_SHORT) {
+            state.g_numplantedshort++;
+            state.c_numplantedshort++;
+            if(state.c_numplantedshort == 1) {
+              showMessage('you planted your first plant! It\'s producing seeds. This one is short-lived so will need to be replanted soon. But don\'t worry, most plant types are permanent. Just not this one. Watercress will remain useful later on as well once you have permanent crops from watercress can leech.', helpFG, helpBG);
+            }
+          } else {
+            state.g_numplanted++;
+            state.c_numplanted++;
+          }
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
+          if(c.type == CROPTYPE_SHORT) f.growth = 1;
+          if(c.type == CROPTYPE_SHORT) computeDerived(state); // ensure correct formula used for same-type penalty of neighbor boost of watercress
           store_undo = true;
         }
       } else if(type == ACTION_PLANT2) {
@@ -702,7 +723,7 @@ var update = function(opt_fromTick) {
         if(f.index >= CROPINDEX) {
           var c = crops[f.index - CROPINDEX];
           var recoup = c.getCost(-1).mulr(cropRecoup);
-          if(f.growth < 1) {
+          if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
             recoup = c.getCost(-1);
             showMessage('plant was still growing, full refund given', '#f8a');
             state.g_numplanted--;
@@ -714,8 +735,12 @@ var update = function(opt_fromTick) {
           f.index = 0;
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
-          state.res.addInPlace(recoup); // get a bit of cost back
-          showMessage('unplanted ' + c.name + ', got back: ' + recoup.toString());
+          if(c.type == CROPTYPE_SHORT) {
+            showMessage('unplanted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
+          } else {
+            state.res.addInPlace(recoup); // get a bit of cost back
+            showMessage('unplanted ' + c.name + ', got back: ' + recoup.toString());
+          }
           store_undo = true;
         }
       } else if(type == ACTION_DELETE2) {
@@ -849,33 +874,47 @@ var update = function(opt_fromTick) {
         var f = state.field[y][x];
         if(f.index >= CROPINDEX) {
           var c = crops[f.index - CROPINDEX];
-
-          if(f.growth < 1) {
-            if(c.planttime == 0) {
+          if(c.type == CROPTYPE_SHORT) {
+            var g = d / c.getPlanttime();
+            var growth0 = f.growth;
+            f.growth -= g;
+            if(f.growth <= 0) {
               f.growth = 0;
-              f.growth = 1;
+              f.index = 0;
+              // give partial resources for the time we had
+              var time_alive = c.getPlanttime() * growth0;
+              producers.push([c.getProd(f), 0, time_alive]);
             } else {
-              var g = d / c.planttime;
-              var growth0 = f.growth;
-              f.growth += g;
-              if(f.growth >= 1) {
-                // just fullgrown now
+              producers.push([c.getProd(f), 0, d]);
+            }
+          } else { // long lived plant
+            if(f.growth < 1) {
+              if(c.getPlanttime() == 0) {
+                f.growth = 0;
                 f.growth = 1;
-                // subtract how much time left we used for the growing
-                var g_needed = 1 - growth0;
-                var g_left = g - g_needed;
-                var time_left = g_left * c.planttime;
-                producers.push([c.getProd(f), d - time_left, 1]);
-                state.g_numfullgrown++;
-                state.c_numfullgrown++;
-                if(state.c_numfullgrown == 1) {
-                  showMessage('your first plant has fully grown! Click plants for details and extra actions.', helpFG2, helpBG2);
+              } else {
+                var g = d / c.getPlanttime();
+                var growth0 = f.growth;
+                f.growth += g;
+                if(f.growth >= 1) {
+                  // just fullgrown now
+                  f.growth = 1;
+                  // subtract how much time left we used for the growing
+                  var g_needed = 1 - growth0;
+                  var g_left = g - g_needed;
+                  var time_left = g_left * c.getPlanttime();
+                  producers.push([c.getProd(f), d - time_left, d]);
+                  state.g_numfullgrown++;
+                  state.c_numfullgrown++;
+                  if(state.c_numfullgrown == 1) {
+                    showMessage('your first permanent (non-withering) plant has fully grown! Click plants for details and extra actions. If you plant watercress next to permanent plants like this, the watercress will add all its neighbors production to its own, so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns.', helpFG2, helpBG2);
+                  }
                 }
               }
+            } else {
+              // fullgrown
+              producers.push([c.getProd(f), 0, d]);
             }
-          } else {
-            // fullgrown
-            producers.push([c.getProd(f), 0, d]);
           }
         }
         updateFieldCellUI(x, y);
@@ -907,23 +946,22 @@ var update = function(opt_fromTick) {
       var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
           '. Consumed: ' + req.toString() +
           '. Tree boost: ' + Num((state.treelevel * treeboost) * 100).toString(2, Num.N_FULL) + '%' +
-          '. Resin added: ' + resin.toString() + '. Total resin ready: ' + state.resin.toString()
-      if(state.treelevel == 2) {
-        message += '. The tree is providing a choice, choose one of the two choices under "upgrades".';
-      } else if(state.treelevel == 3) {
-        message += '. The tree discovered a new ability!';
-      } else if(state.treelevel == 5) {
-        message += '. The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there. The tree discovered another ability!';
-      } else if(state.treelevel == 7) {
-        message += '. The tree discovered another new ability!';
-      } else if(state.treelevel == 8) {
-        message += '. The tree is providing a choice again, under "upgrades"';
-      } else if(state.treelevel == 9) {
+          '. Resin added: ' + resin.toString() + '. Total resin ready: ' + state.resin.toString();
+      if(state.treelevel == 9) {
         message += '. The tree is so close to becoming an adult tree now.';
-      } else if(state.treelevel == 11) {
-        message += '. The tree is providing another choice, check the upgrades';
       }
       showMessage(message, '#2f2');
+      if(state.treelevel == 2) {
+        showMessage('The tree is providing a choice, choose one of the two choices under "upgrades"', '#cfc', '#800');
+      } else if(state.treelevel == 3) {
+        showMessage('The tree discovered a new ability!', '#cfc', '#800');
+      } else if(state.treelevel == 5) {
+        showMessage('The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there. The tree discovered another ability!', '#cfc', '#800');
+      } else if(state.treelevel == 7) {
+        showMessage('The tree discovered another new ability!', '#cfc', '#800');
+      } else if(state.treelevel == 8) {
+        showMessage('The tree is providing a choice again, under "upgrades"', '#cfc', '#800');
+      }
       if(state.treelevel == 1) {
         showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree for more info.', helpFG, helpBG);
       } else if(state.treelevel == min_transcension_level) {

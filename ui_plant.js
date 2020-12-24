@@ -36,10 +36,12 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   var text = '';
   text +=  '<b>' + crop.name + '</b><br>';
   text += '<b>cost:</b>' + crop.getCost().toString() + '<br>';
-  var prod = crop.getProd(f);
+  if(crop.type == CROPTYPE_SHORT) text += '<b><i><font color="#040">can leech</font></i></b><br>';
+  //if(crop.type == CROPTYPE_SHORT) text += '<b>short-lived</b><br>';
+  var prod = crop.getProd(f, true);
   if(!prod.empty()) text += '<b>prod:</b>' + prod.toString();
   var boost = crop.getBoost();
-  if(boost.neqr(0))  text += '<b>boost:</b>' + boost.mulr(100).toString() + '%';
+  if(boost.neqr(0)) text += '<b>boost:</b>' + boost.mulr(100).toString() + '%';
   infoFlex.div.innerHTML = text;
 
   return flex;
@@ -92,13 +94,22 @@ function makePlantDialog(x, y, show_only) {
       } else {
         result = 'Plant ' + c.name;
       }
-      result += '.<br><br>Base cost: ' + c.cost.toString();
+
+      result += '.<br><br>Crop type: ' + getCropTypeName(c.type);
       result += '.<br><br>Num planted of this type: ' + state.cropcount[c.index];
-      result += '.<br><br>Current cost: ' + c.getCost().toString();
-      result += '.<br><br>Plant time: ' + util.formatDuration(c.planttime);
-      result += '.<br><br>Base production/sec: ' + c.prod.toString();
-      result += '.<br><br>Production/sec here: ' + c.getProd(state.field[y][x]).toString();
-      result += '.<br><br>Production/sec w/o neighbors: ' + c.getProd(undefined).toString();
+      if(c.type == CROPTYPE_SHORT) result += '.<br><br>If this plant has permanent resource-producing plants as neighbors, the watercress will add all their production to its own, no matter how high their production! So the watercrass can act as a temporary income multiplier and is always useful. This has diminishing returns if there are multiple watercress plants in the entire field, this permanent-neighbor feature works best for 1 or maybe 2 well-positioned watercress in the world. A badly placed watercress can even negatively affect others. If you have no permanent crop types this is not yet relevant, plant as many watercress as you want then!';
+      result += '<br><br>Planting cost:';
+      result += '<br>• Base: ' + c.cost.toString();
+      result += '.<br>• Current: ' + c.getCost().toString();
+      if(c.type == CROPTYPE_SHORT) {
+        result += '.<br><br>Living time: ' + util.formatDuration(c.getPlanttime());
+      } else {
+        result += '.<br><br>Growing time: ' + util.formatDuration(c.getPlanttime());
+      }
+      result += '.<br><br>Production/sec:';
+      result += '<br>• Base: ' + c.prod.toString();
+      result += '.<br>• Here: ' + c.getProd(state.field[y][x], true).toString();
+      result += '.<br>• Without Neighbors: ' + c.getProd(undefined).toString();
       if(c.type == CROPTYPE_NETTLE) result += '.<br><br>Boost neighboring mushrooms spores production, but negatively affects neighboring berries, so avoid touching berries with this plant';
       if(c.type == CROPTYPE_FLOWER) result += '.<br><br>Boost neighboring crops, their production, but if they have consumption, also increases their consumption equally';
       result += '.';

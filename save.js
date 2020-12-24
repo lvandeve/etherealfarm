@@ -183,6 +183,7 @@ function encState(state, opt_raw_only) {
   result += encRes(state.g_max_res);
   result += encRes(state.g_max_prod);
   result += encUint(state.g_numferns);
+  result += encUint(state.g_numplantedshort);
   result += encUint(state.g_numplanted);
   result += encUint(state.g_numfullgrown);
   result += encUint(state.g_numunplanted);
@@ -196,6 +197,7 @@ function encState(state, opt_raw_only) {
   result += encRes(state.c_max_res);
   result += encRes(state.c_max_prod);
   result += encUint(state.c_numferns);
+  result += encUint(state.c_numplantedshort);
   result += encUint(state.c_numplanted);
   result += encUint(state.c_numfullgrown);
   result += encUint(state.c_numunplanted);
@@ -210,6 +212,7 @@ function encState(state, opt_raw_only) {
     result += encRes(state.p_max_res);
     result += encRes(state.p_max_prod);
     result += encUint(state.p_numferns);
+    result += encUint(state.p_numplantedshort);
     result += encUint(state.p_numplanted);
     result += encUint(state.p_numfullgrown);
     result += encUint(state.p_numunplanted);
@@ -297,6 +300,7 @@ function decState(s) {
       state.field[y][x] = new Cell(x, y);
       var f = state.field[y][x];
       f.index = decInt(reader);
+      if(save_version < 4096*1 + 7 && f.index == 79 + CROPINDEX) f.index = 100 + CROPINDEX; // fix mistake where nettle was accidentially registered in the flower series
       if(f.index >= CROPINDEX) {
         f.growth = decFloat2(reader);
       }
@@ -344,9 +348,14 @@ function decState(s) {
     if(reader.error) return err(4);
     var index = decUint16(reader) + prev;
     prev = index;
+    if(save_version < 4096*1 + 7 && index == 79) index = 100; // fix mistake where nettle was accidentially registered in the flower series
     if(!crops[index]) return err(4);
     unlocked[i] = index;
     state.crops[unlocked[i]].unlocked = true;
+  }
+
+  if(save_version <= 4096*1+7) {
+    state.crops[short_0].unlocked = true; // this newly introduced crop should be unlocked for everyone
   }
 
   unlocked = [];
@@ -448,6 +457,7 @@ function decState(s) {
   state.g_max_res = decRes(reader);
   state.g_max_prod = decRes(reader);
   state.g_numferns = decUint(reader);
+  if(save_version >= 4096*1 + 7) state.g_numplantedshort = decUint(reader);
   state.g_numplanted = decUint(reader);
   state.g_numfullgrown = decUint(reader);
   state.g_numunplanted = decUint(reader);
@@ -463,6 +473,7 @@ function decState(s) {
   state.c_max_res = decRes(reader);
   state.c_max_prod = decRes(reader);
   state.c_numferns = decUint(reader);
+  if(save_version >= 4096*1 + 7) state.c_numplantedshort = decUint(reader);
   state.c_numplanted = decUint(reader);
   state.c_numfullgrown = decUint(reader);
   state.c_numunplanted = decUint(reader);
@@ -478,6 +489,7 @@ function decState(s) {
     state.p_max_res = decRes(reader);
     state.p_max_prod = decRes(reader);
     state.p_numferns = decUint(reader);
+    if(save_version >= 4096*1 + 7) state.p_numplantedshort = decUint(reader);
     state.p_numplanted = decUint(reader);
     state.p_numfullgrown = decUint(reader);
     state.p_numunplanted = decUint(reader);

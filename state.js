@@ -184,6 +184,7 @@ function State() {
   this.g_max_res = Res(); // max resources ever had
   this.g_max_prod = Res(); // max displayed resource/second gain ever had (production, this excludes immediate resources such as from ferns)
   this.g_numferns = 0;
+  this.g_numplantedshort = 0; // amount of short-lived plants planted
   this.g_numplanted = 0; // amount of plants planted on a field
   this.g_numfullgrown = 0; // very similar to numplanted, but for full grown plants
   this.g_numunplanted = 0; // amount of plants deleted from a field
@@ -201,6 +202,7 @@ function State() {
   this.p_max_res = Res();
   this.p_max_prod = Res();
   this.p_numferns = 0;
+  this.p_numplantedshort = 0;
   this.p_numplanted = 0;
   this.p_numfullgrown = 0;
   this.p_numunplanted = 0;
@@ -216,6 +218,7 @@ function State() {
   this.c_max_res = Res();
   this.c_max_prod = Res();
   this.c_numferns = 0;
+  this.c_numplantedshort = 0;
   this.c_numplanted = 0;
   this.c_numfullgrown = 0;
   this.c_numunplanted = 0;
@@ -235,9 +238,13 @@ function State() {
   // derived stat, not to be saved
   this.numcropfields = 0;
 
-  // fullgrown only, not growing, any type >= CROPINDEX
+  // fullgrown only, not growing, any type >= CROPINDEX. Includes shoft-lived plants.
   // derived stat, not to be saved
   this.numfullgrowncropfields = 0;
+
+  // like numfullgrowncropfields but excluding short lived crops
+  // derived stat, not to be saved
+  this.numfullpermanentcropfields = 0;
 
   // amount of plants of this type planted in fields, including newly still growing ones
   // derived stat, not to be saved
@@ -347,7 +354,9 @@ function createInitialState() {
   clearField2(state);
 
 
-  state.crops[berry_0].unlocked = true;
+  state.crops[short_0].unlocked = true;
+
+  //state.crops[berry_0].unlocked = true;
   //state.upgrades[berrymul_0].unlocked = true;
   //state.upgrades[berryunlock_1].unlocked = true;
   state.crops2[berry_0].unlocked = true;
@@ -374,6 +383,7 @@ function computeDerived(state) {
   state.numemptyfields = 0;
   state.numcropfields = 0;
   state.numfullgrowncropfields = 0;
+  state.numfullpermanentcropfields = 0;
 
   state.fullgrowncropcount = [];
   state.cropcount = [];
@@ -388,11 +398,13 @@ function computeDerived(state) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
       if(f.index >= CROPINDEX) {
+        var c = crops[f.index - CROPINDEX];
         state.cropcount[f.index - CROPINDEX]++;
         state.numcropfields++;
-        if(f.growth >= 1) {
+        if(f.growth >= 1 || c.type == CROPTYPE_SHORT) {
           state.fullgrowncropcount[f.index - CROPINDEX]++;
           state.numfullgrowncropfields++;
+          if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++
         }
       } else if(f.index == 0) {
         state.numemptyfields++;

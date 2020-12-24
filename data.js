@@ -24,6 +24,16 @@ var CROPTYPE_BERRY = 0;
 var CROPTYPE_MUSH = 1;
 var CROPTYPE_FLOWER = 2;
 var CROPTYPE_NETTLE = 3;
+var CROPTYPE_SHORT = 4;
+
+function getCropTypeName(type) {
+  if(type == CROPTYPE_BERRY) return "berry";
+  if(type == CROPTYPE_MUSH) return "mushroom";
+  if(type == CROPTYPE_FLOWER) return "flower";
+  if(type == CROPTYPE_NETTLE) return "nettle";
+  if(type == CROPTYPE_SHORT) return "short-lived";
+  return "unknown";
+}
 
 var fern_wait_minutes = 2; // default fern wait minutes (in very game they go faster)
 
@@ -106,10 +116,28 @@ function Crop() {
 
 var sameTypeCostMultiplier = 1.5;
 var sameTypeCostMultiplier_Flower = 2;
+var sameTypeCostMultiplier_Short = 1;
 var cropRecoup = 0.33;  // recoup for deleting a plant. It is only partial, the goal of the game is not to replace plants often
+
+Crop.prototype.getPlanttime = function() {
+  var result = this.planttime;
+
+  if(this.type == CROPTYPE_SHORT) {
+    if(this.basic_upgrade != null) {
+      var u = state.upgrades[this.basic_upgrade];
+      var u2 = upgrades[this.basic_upgrade];
+      if(u.count > 0) {
+        result += (this.planttime * u2.bonus) * u.count;
+      }
+    }
+  }
+
+  return result;
+};
 
 Crop.prototype.getCost = function(opt_adjust_count) {
   var mul = (this.type == CROPTYPE_FLOWER) ? sameTypeCostMultiplier_Flower : sameTypeCostMultiplier;
+  if(this.type == CROPTYPE_SHORT) mul = sameTypeCostMultiplier_Short;
   var countfactor = Math.pow(mul, state.cropcount[this.index] + (opt_adjust_count || 0));
   return this.cost.mulr(countfactor);
 };
@@ -132,7 +160,54 @@ Crop.prototype.getSeasonBonus = function(season) {
 }
 
 // f = Cell from field, or undefined to not take location-based production bonuses into account
-Crop.prototype.getProd = function(f, give_breakdown) {
+// assume_fullgrown: get the production if the plant would be fullgrown. This has no effect if f is undefined. Default false. Typically you want this true in UI, false in computations.
+Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
+  if(this.type == CROPTYPE_SHORT) {
+    var result = Res(this.prod);
+    var breakdown = [];
+    if(give_breakdown) breakdown.push(['base', Num(0), result.clone()]);
+
+    if(f) {
+      // add a penalty for the neighbor production copy-ing if there are multiple watercress in the field. The reason for this is:
+      // the watercress neighbor production copying is really powerful, and if every single watercress does this at full power, this would require way too active play, replanting watercresses in the whole field all the time.
+      // encouraging to plant one or maybe two (but diminishing returns that make more almost useless) strikes a good balance between doing something useful during active play, but still getting reasonable income from passive play
+      var numsame = state.cropcount[this.index];
+      var penalty = 1;
+      if(numsame > 1) penalty = 1 / (1 + (numsame - 1) * 0.75);
+      var neigh = Res();
+      var testneighbor = function(x, y) {
+        if(x < 0 || y < 0 || x >= state.numw || y >= state.numh) return;
+        var n = state.field[y][x];
+        if(n.index < CROPINDEX) return;
+        var c = crops[n.index - CROPINDEX];
+        if(c.type == CROPTYPE_SHORT) return;
+        if(c.type == CROPTYPE_FLOWER) return;
+        var r = c.getProd(n);
+        neigh.addInPlace(r);
+      };
+      testneighbor(f.x - 1, f.y);
+      testneighbor(f.x + 1, f.y);
+      testneighbor(f.x, f.y - 1);
+      testneighbor(f.x, f.y + 1);
+      neigh.mulrInPlace(penalty);
+      if(!neigh.empty()) {
+        result.addInPlace(neigh);
+        if(give_breakdown) {
+          if(penalty < 1) breakdown.push(['neighbors (diminished)', undefined, result.clone()]);
+          else breakdown.push(['neighbors', undefined, result.clone()]);
+        }
+      }
+    }
+
+    if(give_breakdown) return breakdown;
+    return result;
+  }
+
+  if(!assume_fullgrown && f && f.growth < 1) {
+    if(give_breakdown) return [];
+    return Res();
+  }
+
   var result = Res(this.prod);
   var breakdown = [];
   if(give_breakdown) breakdown.push(['base', Num(0), result.clone()]);
@@ -282,6 +357,8 @@ Crop.prototype.getProd = function(f, give_breakdown) {
   return result;
 };
 
+
+
 Crop.prototype.getBoost = function(give_breakdown) {
   var result = this.boost.clone();
   var breakdown = [];
@@ -390,24 +467,32 @@ function registerNettle(name, tier, boost, planttime, image, opt_tagline) {
   return index;
 }
 
+function registerShortLived(name, tier, prod, planttime, image, opt_tagline) {
+  var cost = Res({seeds:10});
+  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
+  var crop = crops[index];
+  crop.type = CROPTYPE_SHORT;
+  return index;
+}
+
 // should return 1 for i=0
 function getBerryBase(i) {
   return Num.rpow(2000, Num(i));
 }
 
-// first one should cost 10
 function getBerryCost(i) {
   var seeds = getBerryBase(i);
-  seeds.mulrInPlace(10);
+  seeds.mulrInPlace(20);
+  if(i == 0) seeds.mulrInPlace(50);
   if(i > 1) seeds.mulInPlace(Num.rpow(1.5, Num((i - 1) * (i - 1))));
   seeds = Num.roundNicely(seeds);
   return Res({seeds:seeds});
 }
 
-// first one should give 1.0
 function getBerryProd(i) {
   var seeds = getBerryBase(i);
-  seeds.mulrInPlace(1.0);
+  seeds.mulrInPlace(2);
+  if(i == 0) seeds.mulrInPlace(2);
   seeds.mulInPlace(Num.rpow(0.35, Num(i)));
   return Res({seeds:seeds});
 }
@@ -471,9 +556,12 @@ var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 4, c
 var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 16, daisy);
 var flower_3 = registerFlower('dandelion', 3, Num(1024.0), flowerplanttime0 * 64, dandelion);
 
+crop_register_id = 100;
 var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, nettle);
 // a next one could be "thistle"
 
+crop_register_id = 105;
+var short_0 = registerShortLived('watercress', 0, Res({seeds:1}), 60, watercress);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -603,14 +691,16 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop) {
   };
 
   var description = 'Unlocks new crop: ' + crop.name + '.';
-  if(!crop.prod.empty()) description += ' Base production: ' + crop.prod.toString();
+  //if(!crop.prod.empty()) description += ' Base planting cost: ' + crop.cost.toString() + '.'; // not necessary to show since it's same as the unlock-research cost.
+  if(!crop.prod.empty()) description += ' Base production: ' + crop.prod.toString() + '/s.';
   if(!crop.boost.eqr(0)) {
     if(crop.type == CROPTYPE_NETTLE) {
       description += ' Boosts neighbor mushroom spores production ' + (crop.boost.mulr(100).toString(3, Num.N_FULL)) + '% without increasing seed consumption. However, negatively affects neighboring berries, so avoid touching berries with this plant.';
     } else {
-      description += ' Boosts neighbors: ' + (crop.boost.mulr(100).toString(3, Num.N_FULL)) + '%';
+      description += ' Boosts neighbors: ' + (crop.boost.mulr(100).toString(3, Num.N_FULL)) + '%. Does not boost watercress directly, but watercress gets same boosts as its neighbor resource-producing crops.';
     }
   }
+  description += ' Crop type: ' + getCropTypeName(crop.type);
 
   var result = registerUpgrade(name, cost, fun, pre, 1, description, '#dfc', '#0a0', crop.image[4], undefined);
   var u = upgrades[result];
@@ -695,6 +785,41 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num) {
   return result;
 }
 
+// an upgrade that increases the multiplier of a crop
+function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_num, crop_unlock_id) {
+  var crop = crops[cropid];
+  var name = crop.name;
+
+  // the index this new upgrade will get
+  var index = upgrade_register_id;
+
+  crop.basic_upgrade = index;
+
+  var fun = function() {};
+
+  var pre = function() {
+    if(crop_unlock_id == undefined) {
+      return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
+    } else {
+      // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
+      return state.upgrades[crop_unlock_id].count;
+    }
+  };
+
+  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive)';
+
+  var result = registerUpgrade('Sturdier ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var u = upgrades[result];
+  u.bonus = Num(time_increase);
+
+  u.getCost = function(opt_adjust_count) {
+    var countfactor = Num.powr(Num(basic_upgrade_cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
+    return this.cost.mul(countfactor);
+  };
+
+  return result;
+}
+
 
 // register an upgrade that was removed from the game so it's marked as invalid to not display it and remove from new saves
 function registerOldInactiveUpgrade() {
@@ -706,7 +831,7 @@ function registerOldInactiveUpgrade() {
 
 
 upgrade_register_id = 25;
-//berryunlock_0 does not exist, you start with that berry type already unlocked
+var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), 1, short_0);
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), 1, berry_0);
 var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), 1, berry_1);
 var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), 1, berry_2);
@@ -730,6 +855,8 @@ var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8);
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, mush_1);
+
+//shortunlock_0 does not exist, you start with that berry type already unlocked
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -770,6 +897,9 @@ var flowermul_3 = registerBoostMultiplier(flower_3, getFlowerCost(3).mulr(flower
 
 upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0);
+
+upgrade_register_id = 205;
+var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.15, 1);
 
 upgrade_register_id = 250;
 var upgrade_fogunlock = registerUpgrade('fog ability', treeLevelReq(3).mulr(0.05 * 0), function() {
@@ -917,7 +1047,12 @@ function registerMedal(name, description, icon, conditionfun, prodmul) {
 var genericicon = undefined; // use default generic medal icon. value is undefined, just given a name here.
 
 medal_register_id = 0;
-var medal_crowded_id = registerMedal('crowded', 'planted something on every single field cell. Time to delete crops when more room is needed!', genericicon, function() { return state.numemptyfields == 0; }, Num(0.02));
+var medal_crowded_id = registerMedal('crowded', 'planted something on every single field cell. Time to delete crops when more room is needed!', genericicon, function() {
+  if(state.numemptyfields != 0) return false;
+  // why - 4: 2 are for the tree. And the other 2: allow having two temporary crops and yet still be valid for getting this achievement. The "numemptyfields" check above ensures there's at least something present on those two remaining non-full-permanent-plant spots.
+  // why allowing 2 short-lived crops: this achievement is supposed to come somewhat early and has a tutorial function (explain delete), so ensure it doesn't accidently come way too late when someone is using short-lived crops for their boost continuously.
+  return state.numfullpermanentcropfields >= state.numw * state.numh - 4;
+}, Num(0.02));
 registerMedal('fern 100', 'clicked 100 ferns', images_fern[0], function() { return state.g_numferns >= 100; }, Num(0.01));
 registerMedal('fern 1000', 'clicked 1000 ferns', images_fern[0], function() { return state.g_numferns >= 1000; }, Num(0.02));
 registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { return state.g_numferns >= 10000; }, Num(0.04));

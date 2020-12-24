@@ -375,13 +375,13 @@ Res.prototype.weighedSum = function() {
   return result;
 };
 
-Res.prototype.toString = function() {
+Res.prototype.toString = function(opt_precision, opt_notation) {
   var arr = this.toArray();
   var s = '';
   for(var i = 0; i < arr.length; i++) {
     if(arr[i].neq(Num(0))) {
       if(s.length > 0) s += ', ';
-      s += arr[i].toString() + ' ' + resource_names[i];
+      s += arr[i].toString(opt_precision, opt_notation) + ' ' + resource_names[i];
     }
   }
   if(s == '') s = 'none';

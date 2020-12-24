@@ -82,6 +82,14 @@ function initUIGlobal() {
 }
 
 
+
+var tabindex_field;
+var tabindex_upgrades;
+var tabindex_medals;
+var tabindex_field2;
+var tabindex_upgrades2;
+var tabindex_tree;
+
 // init the UI after a reset, save load, .... Keeps log messages
 function initUI(state) {
   //topDiv.innerHTML = '';
@@ -97,21 +105,25 @@ function initUI(state) {
   tabbuttons = [];
   tabs = [];
 
-  tabs[0] = new Flex(contentFlex, 0, 0, 1, 1);
-  tabs[1] = new Flex(contentFlex, 0, 0, 1, 1);
-  tabs[2] = new Flex(contentFlex, 0, 0, 1, 1);
-  tabs[3] = new Flex(contentFlex, 0, 0, 1, 1);
-  tabs[4] = new Flex(contentFlex, 0, 0, 1, 1);
+  // this determines the unique id of each tab but not the display order
+  var tabnum = 0;
+  tabindex_field = tabnum++;
+  tabindex_upgrades = tabnum++;
+  tabindex_field2 = tabnum++;
+  tabindex_upgrades2 = tabnum++;
+  tabindex_medals = tabnum++;
+
+  for(var i = 0; i < tabnum; i++) tabs[i] = new Flex(contentFlex, 0, 0, 1, 1);
 
   updateTabButtons();
 
-  fieldFlex = tabs[0];
+  fieldFlex = tabs[tabindex_field];
   fieldFlex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
-  upgradeFlex = tabs[1];
-  medalFlex = tabs[2];
-  field2Flex = tabs[3];
+  upgradeFlex = tabs[tabindex_upgrades];
+  medalFlex = tabs[tabindex_medals];
+  field2Flex = tabs[tabindex_field2];
   field2Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
-  upgrade2Flex = tabs[4];
+  upgrade2Flex = tabs[tabindex_upgrades2];
 
   initFieldUI();
   initInfoUI();

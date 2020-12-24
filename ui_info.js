@@ -40,8 +40,8 @@ function prodBreakdown(index) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
       if(f.index >= CROPINDEX) {
-        if(f.growth >= 1) {
-          var c = crops[f.index - CROPINDEX];
+        var c = crops[f.index - CROPINDEX];
+        if(f.growth >= 1 || c.type == CROPTYPE_SHORT) {
           var index2 = c.index;
           if(!o[index2]) o[index2] = Num(0);
           o[index2].addInPlace(c.getProd(f).toArray()[index]);
