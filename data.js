@@ -608,6 +608,8 @@ function Upgrade() {
 
   this.old_inactive = false; // no longer existing upgrade from earlier game version
 
+  this.cropid = undefined; // if not undefined, it means the upgrade is related to this crop
+
   // gets the name, taking stage into account if it has stages
   this.getName = function() {
     var name = this.name;
@@ -704,6 +706,7 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop) {
 
   var result = registerUpgrade(name, cost, fun, pre, 1, description, '#dfc', '#0a0', crop.image[4], undefined);
   var u = upgrades[result];
+  u.cropid = cropid;
 
   u.getCost = function(opt_adjust_count) {
     return cost;
@@ -744,6 +747,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
   var result = registerUpgrade('Improve ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(multiplier);
+  u.cropid = cropid;
 
   u.getCost = function(opt_adjust_count) {
     var countfactor = Num.powr(Num(basic_upgrade_cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
@@ -776,6 +780,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num) {
   var result = registerUpgrade('Improve ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(adder);
+  u.cropid = cropid;
 
   u.getCost = function(opt_adjust_count) {
     var countfactor = Num.powr(Num(flower_upgrade_cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
@@ -811,6 +816,7 @@ function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_nu
   var result = registerUpgrade('Sturdier ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(time_increase);
+  u.cropid = cropid;
 
   u.getCost = function(opt_adjust_count) {
     var countfactor = Num.powr(Num(basic_upgrade_cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));

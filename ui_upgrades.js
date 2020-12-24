@@ -123,62 +123,109 @@ var upgradeScrollFlex = null;
 
 var upgrades_order = [];
 function computeUpgradeUIOrder() {
-  var rev;
+  var array;
+  upgrades_order = [];
 
-  rev = [];
+  // one-time upgrades (unlocks, ...) that cost spores (= special tree related ones)
+  array = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
-    if(u.maxcount == 1 && u.cost.spores.neqr(0)) rev.push(registered_upgrades[i]);
+    if(u.maxcount == 1 && u.cost.spores.neqr(0)) array.push(registered_upgrades[i]);
   }
-  rev = rev.sort(function(a, b) {
+  array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
     return a.cost.spores.lt(b.cost.spores) ? 1 : -1;
   });
-  for(var i = 0; i < rev.length; i++) {
-    upgrades_order.push(rev[i]);
+  for(var i = 0; i < array.length; i++) {
+    upgrades_order.push(array[i]);
   }
 
-  rev = [];
+  // one-time upgrades (unlocks, ...) that cost seeds
+  array = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
-    if(u.maxcount == 1 && u.cost.spores.eqr(0)) rev.push(registered_upgrades[i]);
+    if(u.maxcount == 1 && u.cost.spores.eqr(0)) array.push(registered_upgrades[i]);
   }
-  rev = rev.sort(function(a, b) {
+  array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
     return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
   });
-  for(var i = 0; i < rev.length; i++) {
-    upgrades_order.push(rev[i]);
+  for(var i = 0; i < array.length; i++) {
+    upgrades_order.push(array[i]);
   }
 
-  rev = [];
+  // finite amount of time upgrades (those don't yet exist actually)
+  array = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
-    if(u.maxcount > 1) rev.push(registered_upgrades[i]);
+    if(u.maxcount > 1) array.push(registered_upgrades[i]);
   }
-  rev = rev.sort(function(a, b) {
+  array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
     return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
   });
-  for(var i = 0; i < rev.length; i++) {
-    upgrades_order.push(rev[i]);
+  for(var i = 0; i < array.length; i++) {
+    upgrades_order.push(array[i]);
   }
 
+  // infinite amount of times upgrades, sorted by costs, that are relevant (has plants they apply to in the field, or for the limited-time watercress)
+  array = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
-    if(u.maxcount == 0) rev.push(registered_upgrades[i]);
+    if(u.maxcount != 0) continue;
+    var relevant = !u.cropid || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
+    if(!relevant) continue;
+    array.push(registered_upgrades[i]);
   }
-  rev = rev.sort(function(a, b) {
+  array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
     return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
   });
-  for(var i = 0; i < rev.length; i++) {
-    upgrades_order.push(rev[i]);
+  for(var i = 0; i < array.length; i++) {
+    upgrades_order.push(array[i]);
   }
+
+  // infinite amount of times upgrades, sorted by costs, that are currently not relevant (has no plants they apply to in the field)
+  array = [];
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    if(u.maxcount != 0) continue;
+    var relevant = !u.cropid || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
+    if(relevant) continue;
+    array.push(registered_upgrades[i]);
+  }
+  array = array.sort(function(a, b) {
+    a = upgrades[a];
+    b = upgrades[b];
+    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+  });
+  for(var i = 0; i < array.length; i++) {
+    upgrades_order.push(array[i]);
+  }
+}
+
+var upgrades_order_cache = [];
+// this is just to avoid all the sorting of computeUpgradeUIOrder when not necessary
+function computeUpgradeUIOrderIfNeeded() {
+  var cropcount = [];
+  for(var i = 0; i < registered_crops.length; i++) {
+    var count = state.cropcount[registered_crops[i]];
+    cropcount[i] = !!count;
+  }
+  var same = true;
+  for(var i = 0; i < cropcount.length; i++) {
+    if(i >= upgrades_order_cache || upgrades_order_cache[i] != cropcount[i]) {
+      same = false;
+      break;
+    }
+  }
+  if(same) return;
+  upgrades_order_cache = cropcount;
+  computeUpgradeUIOrder();
 }
 
 
@@ -276,7 +323,7 @@ function updateUpgradeUI() {
 var upgrade_ui_cache = [];
 
 function updateUpgradeUIIfNeeded() {
-  if(upgrades_order.length == 0) computeUpgradeUIOrder();
+  computeUpgradeUIOrderIfNeeded();
 
   var unlocked = [];
   for(var i = 0; i < upgrades_order.length; i++) {
