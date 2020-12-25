@@ -60,7 +60,7 @@ function makePlantDialog(x, y, show_only) {
     if(state.crops[registered_crops[i]].unlocked) num_unlocked++;
   }
 
-  var dialog = createDialog((num_unlocked > 12) ? false : true);
+  var dialog = createDialog((num_unlocked > 12) ? DIALOG_MEDIUM : DIALOG_SMALL);
   dialog.div.style.backgroundColor = '#efec'; // slightly translucent to see resources through it
   var tx = 0;
   var ty = 0;
@@ -97,7 +97,7 @@ function makePlantDialog(x, y, show_only) {
 
       result += '.<br><br>Crop type: ' + getCropTypeName(c.type);
       result += '.<br><br>Num planted of this type: ' + state.cropcount[c.index];
-      if(c.type == CROPTYPE_SHORT) result += '.<br><br>If this plant has permanent resource-producing plants as neighbors, the watercress will add all their production to its own, no matter how high their production! So the watercrass can act as a temporary income multiplier and is always useful. This has diminishing returns if there are multiple watercress plants in the entire field, this permanent-neighbor feature works best for 1 or maybe 2 well-positioned watercress in the world. A badly placed watercress can even negatively affect others. If you have no permanent crop types this is not yet relevant, plant as many watercress as you want then!';
+      if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;
       result += '<br><br>Planting cost:';
       result += '<br>• Base: ' + c.cost.toString();
       result += '.<br>• Current: ' + c.getCost().toString();
@@ -121,7 +121,7 @@ function makePlantDialog(x, y, show_only) {
     if(show_only) {
       chip.div.onclick = bind(function(tooltipfun) {
         var text = tooltipfun();
-        var dialog = createDialog(text.length < 350);
+        var dialog = createDialog(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM);
         var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.4);
         flex.div.innerHTML = text;
       }, tooltipfun);

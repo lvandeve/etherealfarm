@@ -97,7 +97,7 @@ function updateResourceUI() {
   resourceDivs[0].textEl.innerHTML = title + '<br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
   resourceDivs[0].onclick = function() {
-    var dialog = createDialog(true);
+    var dialog = createDialog(DIALOG_SMALL);
     var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.4);
     var getText = function() {
       var result = '';
@@ -237,7 +237,7 @@ function updateResourceUI() {
       }, /*opt_poll=*/true, /*allow_mobile=*/true);
       div.style.cursor = 'pointer';
       div.onclick = function() {
-        var dialog = createDialog(resin ? true : false);
+        var dialog = createDialog(resin ? DIALOG_MEDIUM : DIALOG_SMALL);
         dialog.div.style.backgroundColor = '#cccc'; // slightly translucent to see resources through it
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);

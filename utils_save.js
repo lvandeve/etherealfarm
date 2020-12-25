@@ -693,31 +693,92 @@ function decString(reader) {
   return arrayToString(a);
 }
 
+
+
+// encode resources
+function encResArray(arr) {
+  var result = '';
+  var first = 0, last = -1;
+  for(var i = 0; i < arr.length; i++) {
+    if(arr[i].neqr(0)) {
+      if(last == -1) first = i;
+      last = i;
+    }
+  }
+
+  // encode with a single number what range of resources is being encoded (first to last index), so that if there's e.g. only 1 type of non-zero resource, it doesn't encode a zero character for all the others
+  // but also future proof this so that if new resource types are added it can still be represented
+  var code = 0;
+  if(last >= 0) {
+    var t = last * (last + 1) / 2; // triangular number
+    code = 1 + t + first; // + 1 since code 0 means no resources at all are encoded
+  }
+  if(code < 56) {
+    result += encUint6(code);
+  } else {
+    result += encUint6(56 + (code & 7));
+    result += encUint(code >> 3);
+  }
+
+  for(var i = first; i <= last; i++) {
+    result += encNum(arr[i]);
+  }
+  return result;
+}
+
+function decResArray(reader) {
+  var arr = [];
+  var code = decUint6(reader);
+  if(code >= 56) {
+    code = (code & 7) | (decUint(reader) << 3);
+  }
+  if(reader.error) return undefined;
+  var first = 0, last = -1;
+  if(code > 0) {
+    code--;
+    var n = Math.floor(Math.sqrt(0.25 + 2 * code) - 0.5); // inverse of triangular number
+    if((n + 1) * (n + 2) / 2 - 1 < code) {
+      n++; // fix potential numerical imprecision
+    }
+    var t = n * (n + 1) / 2;
+    last = n;
+    first = code - t;
+  }
+  for(var i = first; i <= last; i++) {
+    arr[i] = decNum(reader);
+  }
+  return arr;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 var type_index = 0;
-var TYPE_BOOL = type_index++;
-var TYPE_UINT6 = type_index++;
-var TYPE_INT = type_index++;
-var TYPE_UINT = type_index++;
-var TYPE_UINT16 = type_index++;
-var TYPE_FLOAT = type_index++;
-var TYPE_FLOAT2 = type_index++;
-var TYPE_NUM = type_index++; // large number
+var TYPE_BOOL = type_index++; // boolean true/false value
+var TYPE_UINT6 = type_index++; // single base64 character
+var TYPE_INT = type_index++; // signed integer, variable length encoded
+var TYPE_UINT = type_index++; // unsigned integer, variable length encoded
+var TYPE_UINT16 = type_index++; // 16-bit integer, variable length encoded
+var TYPE_FLOAT = type_index++; // floating point value, variable length encoded
+var TYPE_FLOAT2 = type_index++; // floating point value, alternative variable length encoding that is shorter for values in range 0.25..2
+var TYPE_NUM = type_index++; // large number with large exponent
 var TYPE_STRING = type_index++; // unicode text
-var TYPE_RES = type_index++; // resources
+var TYPE_RES = type_index++; // resources (array of resources from the game, such as seeds, ...)
 
+// arrays for all the same types
 type_index = 12;
-var TYPE_ARRAY_BOOL = type_index++;
-var TYPE_ARRAY_UINT6 = type_index++;
+var TYPE_ARRAY_BOOL = type_index++; // bits packed
+var TYPE_ARRAY_UINT6 = type_index++; // array of base64 characters, useable as blob
 var TYPE_ARRAY_INT = type_index++;
 var TYPE_ARRAY_UINT = type_index++;
 var TYPE_ARRAY_UINT16 = type_index++;
 var TYPE_ARRAY_FLOAT = type_index++;
 var TYPE_ARRAY_FLOAT2 = type_index++;
-var TYPE_ARRAY_NUM = type_index++; // large number
-var TYPE_ARRAY_STRING = type_index++; // unicode text
-var TYPE_ARRAY_RES = type_index++; // resources
+var TYPE_ARRAY_NUM = type_index++;
+var TYPE_ARRAY_STRING = type_index++;
+var TYPE_ARRAY_RES = type_index++;
 
 
 var compactBool = true;

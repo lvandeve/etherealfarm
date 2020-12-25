@@ -22,7 +22,7 @@ var fieldDivs;
 var lastPlanted = -1; // for shift key
 
 function createTranscendDialog() {
-  var dialog = createDialog(false, function(e) {
+  var dialog = createDialog(DIALOG_MEDIUM, function(e) {
       showMessage('Transcended');
       actions.push({type:ACTION_TRANCSEND});
       closeAllDialogs();
@@ -118,7 +118,7 @@ function getCropInfoHTML(f, c) {
   } else {
     if(c.type == CROPTYPE_SHORT) {
       result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlanttime(), true, 4, true) + '<br/><br/>';
-      result += 'If this plant has permanent resource-producing plants as neighbors, the watercress will add all their production to its own, no matter how high their production! So the watercrass can act as a temporary income multiplier and is always useful. This has diminishing returns if there are multiple watercress plants in the entire field, this permanent-neighbor feature works best for 1 or maybe 2 well-positioned watercress in the world. A badly placed watercress can even negatively affect others. If you have no permanent crop types this is not yet relevant, plant as many watercress as you want then!<br/>';
+      result += leechInfo + '<br/>';
       result += '<br/>';
     }
     var prod = c.getProd(f, true);

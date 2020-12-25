@@ -53,13 +53,13 @@ Res.prototype.clone = function() {
 
 // in-place
 Res.prototype.fromArray = function(a) {
-  this.seeds = a[0];
-  this.spores = a[1];
-  this.resin = a[2];
-  this.leaves = a[3];
-  this.seeds2 = a[4];
-  this.spores2 = a[5];
-  this.amber = a[6];
+  this.seeds = a[0] || Num(0);
+  this.spores = a[1] || Num(0);
+  this.resin = a[2] || Num(0);
+  this.leaves = a[3] || Num(0);
+  this.seeds2 = a[4] || Num(0);
+  this.spores2 = a[5] || Num(0);
+  this.amber = a[6] || Num(0);
 };
 // not in-place
 Res.fromArray = function(a) {

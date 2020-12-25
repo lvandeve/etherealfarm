@@ -127,7 +127,7 @@ function updateMedalUI() {
     registerTooltip(div, getMedalText);
 
     div.onclick = bind(function(getMedalText) {
-      var dialog = createDialog(true);
+      var dialog = createDialog(DIALOG_SMALL);
       var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.9, 0.5);
       flex.div.innerHTML = getMedalText();
     }, getMedalText);

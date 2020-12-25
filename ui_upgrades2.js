@@ -83,7 +83,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   styleButton0(canvasFlex.div);
 
   canvasFlex.div.onclick = function() {
-    var dialog = createDialog(true);
+    var dialog = createDialog(DIALOG_SMALL);
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
     flex.div.innerHTML = infoText;
   };

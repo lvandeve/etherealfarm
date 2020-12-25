@@ -984,7 +984,7 @@ var active_choice0_a = registerUpgrade('slow weather [CHOICE]', treeLevelReq(8).
 
 var active_choice0_b_bonus = 0.25;
 
-var active_choice0_b = registerUpgrade('effective weather [CHOICE]', treeLevelReq(8).mulr(0.05), function() {
+var active_choice0_b = registerUpgrade('strong weather [CHOICE]', treeLevelReq(8).mulr(0.05), function() {
   state.upgrades[active_choice0_a].unlocked = false;
 }, function() {
   return state.treelevel >= 8 && !state.upgrades[active_choice0_a].count;

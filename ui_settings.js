@@ -224,7 +224,7 @@ var notations_inv = [];
 for(var i = 0; i < notations.length; i++) notations_inv[notations[i]] = i;
 
 function createNumberFormatDialog() {
-  var dialogFlex = createDialog();
+  var dialogFlex = createDialog(DIALOG_LARGE);
   var dialog = dialogFlex.div;
 
   var y2 = 0;
@@ -687,7 +687,7 @@ function initSettingsUI_in(dialogFlex) {
 
     var textFlex = new Flex(dialog, 0.02, 0.01, 0.98, 0.1, 0.3);
     textFlex.div.innerText = 'Export a savegame backup: copy or download the encoded savegame below, and store it somewhere safe. Do this regularly: even though the game autosaves in the web browser, browsers can easily lose this data. This contains all your progress!';
-    var area = util.makeAbsElement('textarea', '2%', '15%', '96%', '75%', dialog.div);
+    var area = util.makeAbsElement('textarea', '2%', '15%', '96%', '70%', dialog.div);
     state.g_numexports++;
     // this gets updated even if user would then close the dialog without actually saving it, we can't know whether they actually properly stored the text or not
     state.g_lastexporttime = util.getTime();

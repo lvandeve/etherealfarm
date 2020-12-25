@@ -168,18 +168,26 @@ var dialog_level = 0;
 var created_dialogs = [];
 var created_overlays = [];
 
+var DIALOG_SMALL = 0;
+var DIALOG_MEDIUM = 1;
+var DIALOG_LARGE = 2;
+
 // create a dialog for the settings menu
 // opt_okfun must call dialog.cancelFun when the dialog is to be closed
 // opt_extrafun and opt_extraname allow a third button in addition to cancel and ok. The order will be: cancel, extra, ok.
-function createDialog(opt_small, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname) {
+function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname) {
   dialog_level++;
 
   var dialogFlex;
-  if(opt_small) {
+  if(opt_size == DIALOG_SMALL) {
     dialogFlex = new Flex(mainFlex, 0.1, 0.25, 0.9, 0.75);
+  } else if(opt_size == DIALOG_LARGE) {
+    dialogFlex = new Flex(mainFlex, 0.05, 0.05, 0.95, 0.9);
   } else {
-    dialogFlex = new Flex(mainFlex, 0.05, 0.05, 0.95, 0.95);
+    // default, medium
+    dialogFlex = new Flex(mainFlex, 0.05, 0.12, 0.93, 0.9);
   }
+
   created_dialogs.push(dialogFlex);
   var dialog = dialogFlex.div;
 
@@ -239,7 +247,7 @@ function createDialog(opt_small, opt_okfun, opt_okname, opt_cancelname, opt_extr
   created_overlays.push(overlay);
   overlay.style.width = '100%';
   overlay.style.height = '100%';
-  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.66)';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
   overlay.style.position = 'fixed';
   overlay.style.zIndex = '' + (dialog_level * 10);
   overlay.onclick = dialog.cancelFun;
