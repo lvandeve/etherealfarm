@@ -336,6 +336,52 @@ function decUint6(reader) {
   return v;
 }
 
+// For unicode codepoint values
+function encUint21(i) {
+  if(i < 0 || i > 2130975 || isNaN(i)) i = 0; // avoid infinite loops
+  // 1 char: 5 bits: 0-31
+  // 2 chars: 10 bits: 32-1055
+  // 3 chars: 15 bits: 1056-33823
+  // 4 chars: 21 bits: 33824-2130975
+  if(i < 32) {
+    return toBase64[i];
+  }
+  if(i < 1056) {
+    i -= 32;
+    return toBase64[32 | (i & 31)] + toBase64[((i >> 5) & 31)];
+  }
+  if(i < 33824) {
+    i -= 1056;
+    return toBase64[32 | (i & 31)] + toBase64[32 | ((i >> 5) & 31)] + toBase64[((i >> 10) & 31)];
+  }
+  i -= 33824;
+  return toBase64[32 | (i & 31)] + toBase64[32 | ((i >> 5) & 31)] + toBase64[32 | ((i >> 10) & 31)] + toBase64[((i >> 15) & 63)];
+}
+
+// returns value in range 0-2130975 reading up to 4 chars
+function decUint21(reader) {
+  var olderror = reader.error;
+  var v = readBase64(reader);
+  var result = v & 31;
+  if(v & 32) {
+    result += 32;
+    v = readBase64(reader);
+    result += ((v & 31) << 5);
+  }
+  if(v & 32) {
+    result += 1024;
+    v = readBase64(reader);
+    result += ((v & 31) << 10);
+  }
+  if(v & 32) {
+    result += 32768;
+    v = readBase64(reader);
+    result += ((v & 63) << 15);
+  }
+  if(reader.error && !olderror) return NaN;
+  return result;
+}
+
 function mirrorBits(i, num) {
   var res = 0;
   // not using shifts because JS only supports those up to 32-bit integers
@@ -563,6 +609,324 @@ function decNum(reader) {
   if(result.e <= 1) result.e += 2;
   return result;
 }
+
+// converts array of unicode codepoints to JS string
+function arrayToString(a) {
+  var s = '';
+  for(var i = 0; i < a.length; i++) {
+    var c = a[i];
+    if (c < 0x10000) {
+       s += String.fromCharCode(c);
+    } else if (c <= 0x10FFFF) {
+      s += String.fromCharCode((c >> 10) + 0xD7C0);
+      s += String.fromCharCode((c & 0x3FF) + 0xDC00);
+    } else {
+      s += ' ';
+    }
+  }
+  return s;
+}
+
+// converts JS string to array of unicode codepoints
+function stringToArray(s) {
+  var a = [];
+  for(var i = 0; i < s.length; i++) {
+    var c = s.charCodeAt(i);
+    if (c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length) {
+      var c2 = s.charCodeAt(i + 1);
+      if (c2 >= 0xDC00 && c2 <= 0xDFFF) {
+        c = (c << 10) + c2 - 0x35FDC00;
+        i++;
+      }
+    }
+    a.push(c);
+  }
+  return a;
+}
+
+function swapFrequent(a) {
+  // give likely more frequent characters the 32 1-character values
+  for(var i = 0; i < a.length; i++) {
+    // 'a'-'z'
+    if(a[i] >= 97 && a[i] <= 122) a[i] -= 97;
+    else if(a[i] >= 0 && a[i] <= 25) a[i] += 97;
+    // ' '
+    else if(a[i] == 32) a[i] = 26;
+    else if(a[i] == 26) a[i] = 32;
+    // '.'
+    else if(a[i] == 46) a[i] = 27;
+    else if(a[i] == 27) a[i] = 46;
+    // ','
+    else if(a[i] == 44) a[i] = 28;
+    else if(a[i] == 28) a[i] = 44;
+    // 'A'
+    else if(a[i] == 65) a[i] = 29;
+    else if(a[i] == 29) a[i] = 65;
+    // 'S'
+    else if(a[i] == 83) a[i] = 30;
+    else if(a[i] == 30) a[i] = 83;
+    // 'T'
+    else if(a[i] == 84) a[i] = 31;
+    else if(a[i] == 31) a[i] = 84;
+  }
+}
+
+function encString(s) {
+  var a = stringToArray(s);
+  swapFrequent(a);
+  var result = encUint(a.length);
+  for(var i = 0; i < a.length; i++) {
+    result += encUint21(a[i]);
+  }
+  return result;
+}
+
+function decString(reader) {
+  var len = decUint(reader);
+  if(reader.error) return '';
+  var a = [];
+  for(var i = 0; i < len; i++) {
+    a[i] = decUint21(reader);
+    if(reader.error) return '';
+  }
+  swapFrequent(a);
+  return arrayToString(a);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var type_index = 0;
+var TYPE_BOOL = type_index++;
+var TYPE_UINT6 = type_index++;
+var TYPE_INT = type_index++;
+var TYPE_UINT = type_index++;
+var TYPE_UINT16 = type_index++;
+var TYPE_FLOAT = type_index++;
+var TYPE_FLOAT2 = type_index++;
+var TYPE_NUM = type_index++; // large number
+var TYPE_STRING = type_index++; // unicode text
+var TYPE_RES = type_index++; // resources
+
+type_index = 12;
+var TYPE_ARRAY_BOOL = type_index++;
+var TYPE_ARRAY_UINT6 = type_index++;
+var TYPE_ARRAY_INT = type_index++;
+var TYPE_ARRAY_UINT = type_index++;
+var TYPE_ARRAY_UINT16 = type_index++;
+var TYPE_ARRAY_FLOAT = type_index++;
+var TYPE_ARRAY_FLOAT2 = type_index++;
+var TYPE_ARRAY_NUM = type_index++; // large number
+var TYPE_ARRAY_STRING = type_index++; // unicode text
+var TYPE_ARRAY_RES = type_index++; // resources
+
+
+var compactBool = true;
+
+
+function Token(value, type, id) {
+  // Allow calling it without new, but act like new
+  if(!(this instanceof Token)) {
+    return new Token(value, type, id);
+  }
+
+  this.id = id; // section*64 + subid, where subid is id within section, so there can be max 64 unique tokens within 1 section (but a token can be an array of data)
+
+  this.value = value; // once filled in, must be relevant for the type
+
+  this.type = type;
+};
+
+function encTokenValue(value, type) {
+  switch(type) {
+    case TYPE_BOOL: return encBool(value);
+    case TYPE_UINT6: return encUint6(value);
+    case TYPE_INT: return encInt(value);
+    case TYPE_UINT: return encUint(value);
+    case TYPE_UINT16: return encUint16(value);
+    case TYPE_FLOAT: return encFloat(value);
+    case TYPE_FLOAT2: return encFloat2(value);
+    case TYPE_NUM: return encNum(value);
+    case TYPE_STRING: return encString(value);
+    case TYPE_RES: return encRes(value);
+  }
+  return undefined;
+}
+
+function encToken(token, prev_id) {
+  var type = token.type;
+  var value = token.value;
+
+  var result = '';
+
+  if(type < 12) {
+    if((type != TYPE_STRING && value === 0) || (type == TYPE_STRING && value == '') || (type == TYPE_RES && value.empty()) || (type == TYPE_NUM && value.eqr(0))) {
+      result += encUint6(type + 0);
+      result += encUint6(token.id & 63);
+    } else if(token.id == prev_id + 1) {
+      result += encUint6(type + 12);
+      result += encTokenValue(token.value, type);
+    } else {
+      result += encUint6(type + 24);
+      result += encUint6(token.id & 63);
+      result += encTokenValue(token.value, type);
+    }
+  } else {
+    if(token.id == prev_id + 1) {
+      result += encUint6(type - 12 + 36);
+      result += encUint(token.value.length);
+    } else {
+      result += encUint6(type - 12 + 48);
+      result += encUint6(token.id & 63);
+      result += encUint(token.value.length);
+    }
+    if(type == TYPE_ARRAY_BOOL && compactBool) {
+      for(var i = 0; i < token.value.length; i += 6) {
+        var v = 0;
+        for(var j = 0; j < 6 && i + j < token.value.length; j++) {
+          if(token.value[i + j]) v |= (1 << j);
+        }
+        result += encUint6(v);
+      }
+    } else {
+      for(var i = 0; i < token.value.length; i++) {
+        result += encTokenValue(token.value[i], type - 12);
+      }
+    }
+  }
+  return result;
+}
+
+function decToken(reader, prev_id, section) {
+  var token = new Token(0, 0, 0);
+  var code = decUint6(reader);
+  if((code >= 12 && code <= 23) || (code >= 36 && code <= 47)) {
+    token.id = prev_id + 1;
+  } else {
+    token.id = decUint6(reader);
+    token.id += (section << 6);
+  }
+
+  if(code < 36) {
+    var type = code % 12;
+    token.type = type;
+    if(code < 12) {
+      switch(type) {
+        case TYPE_BOOL: token.value = false; break;
+        case TYPE_UINT6: token.value = 0; break;
+        case TYPE_INT: token.value = 0; break;
+        case TYPE_UINT: token.value = 0; break;
+        case TYPE_UINT16: token.value = 0; break;
+        case TYPE_FLOAT: token.value = 0; break;
+        case TYPE_FLOAT2: token.value = 0; break;
+        case TYPE_NUM: token.value = Num(0); break;
+        case TYPE_STRING: token.value = ''; break;
+        case TYPE_RES: token.value = Res(0); break;
+        default: { reader.error = true; return token; }
+      }
+    } else {
+      switch(type) {
+        case TYPE_BOOL: token.value = decBool(reader); break;
+        case TYPE_UINT6: token.value = decUint6(reader); break;
+        case TYPE_INT: token.value = decInt(reader); break;
+        case TYPE_UINT: token.value = decUint(reader); break;
+        case TYPE_UINT16: token.value = decUint16(reader); break;
+        case TYPE_FLOAT: token.value = decFloat(reader); break;
+        case TYPE_FLOAT2: token.value = decFloat2(reader); break;
+        case TYPE_NUM: token.value = decNum(reader); break;
+        case TYPE_STRING: token.value = decString(reader); break;
+        case TYPE_RES: token.value = decRes(reader); break;
+        default: { reader.error = true; return token; }
+      }
+    }
+  } else {
+    var type = 12 + (code % 12);
+    token.type = type;
+    var n = decUint(reader);
+    token.value = [];
+    if(type == TYPE_ARRAY_BOOL && compactBool) {
+      for(var i = 0; i < n; i += 6) {
+        var v = decUint6(reader);
+        if(reader.error) return token;
+        for(var j = 0; j < 6 && i + j < n; j++) {
+          token.value[i + j] = (v & (1 << j)) ? true : false;
+        }
+      }
+    } else {
+      for(var i = 0; i < n; i++) {
+        switch(type) {
+          case TYPE_ARRAY_BOOL: token.value[i] = decBool(reader); break;
+          case TYPE_ARRAY_UINT6: token.value[i] = decUint6(reader); break;
+          case TYPE_ARRAY_INT: token.value[i] = decInt(reader); break;
+          case TYPE_ARRAY_UINT: token.value[i] = decUint(reader); break;
+          case TYPE_ARRAY_UINT16: token.value[i] = decUint16(reader); break;
+          case TYPE_ARRAY_FLOAT: token.value[i] = decFloat(reader); break;
+          case TYPE_ARRAY_FLOAT2: token.value[i] = decFloat2(reader); break;
+          case TYPE_ARRAY_NUM: token.value[i] = decNum(reader); break;
+          case TYPE_ARRAY_STRING: token.value[i] = decString(reader); break;
+          case TYPE_ARRAY_RES: token.value[i] = decRes(reader); break;
+          default: { reader.error = true; return token; }
+        }
+        if(reader.error) return token;
+      }
+    }
+  }
+  return token;
+}
+
+function encTokens(tokens) {
+
+  var sections = {};
+  for(var i = 0; i < tokens.length; i++) {
+    var token = tokens[i];
+    var section = token.id >> 6;
+    if(!sections[section]) sections[section] = [];
+    sections[section].push(token);
+  }
+  var result = '';
+  for(section in sections) {
+    if(!sections.hasOwnProperty(section)) continue;
+
+    var prev_id = (section << 6) - 1;
+    var t = sections[section];
+    t.sort(function(a, b) {
+      return a.id - b.id;
+    });
+    var r = '';
+    for(var i = 0; i < t.length; i++) {
+      var token = t[i];
+      r += encToken(t[i], prev_id);
+      prev_id = token.id;
+    }
+    result += encUint(section);
+    result += encUint(t.length);
+    result += r;
+  }
+
+  return result;
+}
+
+function decTokens(reader) {
+  var result = {};
+  for(;;) {
+    if(reader.pos == reader.s.length) break;
+    var section = decUint(reader);
+    var num = decUint(reader);
+    if(reader.error) return result;
+
+    var prev_id = (section << 6) - 1;
+    for(var i = 0; i < num; i++) {
+      var token = decToken(reader, prev_id, section);
+      if(reader.error) return result;
+      prev_id = token.id;
+      result[token.id] = token;
+    }
+  }
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
 
 // reason: 0: unknown, 1:string too short, 2: not base64, 3:signature EF missing, 4:format, 5:compression, 6:checksum mismatch, 7:save version newer than game version
 var err = function(reason) {

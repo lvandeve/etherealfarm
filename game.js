@@ -44,7 +44,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
   }
   var prev_version = version;
   if(e.length > 4 && isBase64(e)) {
-    prev_version = fromBase64[e[0]] + fromBase64[e[1]] * 64 + fromBase64[e[2]] * 4096;
+    prev_version = 4096 * fromBase64[e[2]] + 64 * fromBase64[e[3]] + fromBase64[e[4]];
     // NOTE: if there is a bug, and prev_version is a bad version with bug, then do NOT overwrite if prev_version is that bad one
     if(prev_version < version) {
       util.setLocalStorage(e, localstorageName_prev_version);
@@ -551,7 +551,7 @@ var update = function(opt_fromTick) {
 
   if(state.prevtime == 0) state.prevtime = util.getTime();
 
-  var oldres = Res(state.red);
+  var oldres = Res(state.res);
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
   var done = false;
   var numloops = 0;
@@ -685,7 +685,7 @@ var update = function(opt_fromTick) {
           if(c.type == CROPTYPE_SHORT) {
             state.g_numplantedshort++;
             state.c_numplantedshort++;
-            if(state.c_numplantedshort == 1) {
+            if(state.c_numplantedshort == 1 && state.c_numplanted == 0) {
               showMessage('you planted your first plant! It\'s producing seeds. This one is short-lived so will need to be replanted soon. But don\'t worry, most plant types are permanent. Just not this one. Watercress will remain useful later on as well once you have permanent crops from watercress can leech.', helpFG, helpBG);
             }
           } else {
