@@ -129,6 +129,7 @@ function softReset() {
 
   state.g_res.resin.addInPlace(state.resin);
   state.c_res.resin.addInPlace(state.resin);
+  state.g_resin_from_transcends.addInPlace(state.resin);
 
   state.time = util.getTime();
   state.prevtime = state.time;
@@ -283,6 +284,8 @@ function loadUndo() {
   }, function() {
     showMessage('Not undone, failed to save redo save');
   });
+
+  lastUndoSaveTime = 0; // now ensure next action saves undo again, pressing undo is a break in the action sequence, let the next action save so that pressing undo again brings us back to thie same undo-result-state
 }
 
 

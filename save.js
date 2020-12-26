@@ -69,11 +69,14 @@ function encState(state, opt_raw_only) {
     processUint(state.ferny);
     processRes(state.fernres);
   }
+  id = 10; // id for every named value must be fixed (and the process function increments it)
   processFloat(state.lastFernTime);
   processFloat(state.lastBackupWarningTime);
   processInt(state.currentTab);
   processInt(state.lastPlanted);
   processInt(state.lastPlanted2);
+  id = 15; // the inner copy of version is saved in section 0, id 15
+  processUint(version); // redundancy inner (as opposed to the outer one at front) game version value. important to ensure save-version checks are correct.
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -239,6 +242,7 @@ function encState(state, opt_raw_only) {
   processUint(state.p_treelevel);
   processUint(state.g_numfullgrown2);
   processUint(state.g_seasons);
+  processUint(state.g_resin_from_transcends);
 
 
   section = 11; id = 0; // global run stats
@@ -406,11 +410,18 @@ function decState(s) {
       state.ferny = processUint();
       state.fernres = processRes();
     }
+    id = 10;
+    if(save_version <= 4096*1+9 && !state.fern) id -= 3; // fix mistake in pre-0.1.10 savegame version, values lastFernTime, lastBackupWarningTime, currentTab, lastPlanted, lastPlanted2 all got an id of 3 too low if state.fern was false. id should not depend on ifs.
     state.lastFernTime = processFloat();
     state.lastBackupWarningTime = processFloat();
     if(save_version >= 4096*1+9) state.currentTab = processInt();
     if(save_version >= 4096*1+9) state.lastPlanted = processInt();
     if(save_version >= 4096*1+9) state.lastPlanted2 = processInt();
+    id = 15;
+    if(save_version >= 4096*1+10) {
+      var save_version2 = processUint();
+      if(save_version2 != save_version) return err(4); // non-matching outer and inner version: error, save_version checks invalid.
+    }
     if(error) return err(4);
 
 
@@ -582,6 +593,7 @@ function decState(s) {
     state.p_treelevel = processUint();
     if(save_version >= 4096*1+9) state.g_numfullgrown2 = processUint();
     if(save_version >= 4096*1+9) state.g_seasons = processUint();
+    if(save_version >= 4096*1+10) processUint(state.g_resin_from_transcends);
 
     if(error) return err(4);
 
@@ -691,7 +703,18 @@ function decState(s) {
     state.g_numunplanted2 = 0;
     state.g_numupgrades2 = 0;
     state.g_numupgrades2_unlocked = 0;
+
+    state.g_res.resin = Num(state.res.resin);
+    state.g_resin_from_transcends = Num(state.g_res.resin);
+  } else if(save_version == 4096*1+9) {
+    // fix forgetting to do "state.g_res.resin = Num(state.res.resin);" when converting pre 0.1.8 savegame to 0.1.9
+    // fortunately, the "state.g_max_res.resin" should have that exact value in it thanks to seeing it from the refund.
+    // note: g_res is total earned resources ever, and g_max_res is max ever had of the corresponding resource
+    // g_res.resin may be needed to recover lost resin in future transcension breaking upgrades so it should be ensured to fill it in correctly
+    state.g_res.resin = Num(state.g_max_res.resin);
+    state.g_resin_from_transcends = Num(state.g_res.resin);
   }
+
 
   state.g_numloads++;
   return state;

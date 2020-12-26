@@ -183,6 +183,7 @@ function State() {
   this.g_numupgrades2_unlocked = 0;
   this.g_numfullgrown2 = 0;
   this.g_seasons = 0; // season changes actually seen
+  this.g_resin_from_transcends = Num(0); // this is likely the same value as g_res.resin, but is a separate counter for amount of resin ever earned from transcends in case it's needed for recovery in transcension-changing game updates
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)

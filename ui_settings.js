@@ -421,7 +421,7 @@ function createStatsDialog() {
     text += '• unplanted: ' + open + state.g_numunplanted + close + '<br>';
     text += '• weather abilities activated: ' + open + state.g_numabilities + close + '<br>';
     text += '• season changes seen: ' + open + state.g_seasons + close + '<br>';
-    text += '<br><br>';
+    text += '<br>';
   }
 
   if(state.g_numresets > 0) {
@@ -439,7 +439,7 @@ function createStatsDialog() {
     }
     text += close + '<br>';
     text += '• ethereal planted (fullgrown): ' + open + state.g_numfullgrown2 + close + '<br>';
-    text += '<br><br>';
+    text += '<br>';
   }
 
   text += '<b>Current</b><br>';
@@ -454,7 +454,7 @@ function createStatsDialog() {
   text += '• planted (watercress): ' + open + state.c_numplantedshort + close + '<br>';
   text += '• unplanted: ' + open + state.c_numunplanted + close + '<br>';
   if(state.g_numresets > 0 || state.treelevel > 0) text += '• weather abilities activated: ' + open + state.c_numabilities + close + '<br>';
-  text += '<br><br>';
+  text += '<br>';
 
   if(state.g_numresets > 0) {
     text += '<b>Previous</b><br>';
@@ -469,7 +469,7 @@ function createStatsDialog() {
     text += '• planted (watercress): ' + open + state.p_numplantedshort + close + '<br>';
     text += '• unplanted: ' + open + state.p_numunplanted + close + '<br>';
     text += '• weather abilities activated: ' + open + state.p_numabilities + close + '<br>';
-    text += '<br><br>';
+    text += '<br>';
   }
 
   div.innerHTML = text;
@@ -504,6 +504,12 @@ function createChangelogDialog() {
 
 
 
+
+
+  text += '0.1.10 (2020-12-26):';
+  text += '<br/>';
+  text += '• Internal fixes.';
+  text += '<br/><br/>';
 
 
   text += '0.1.9 (2020-12-26):';
