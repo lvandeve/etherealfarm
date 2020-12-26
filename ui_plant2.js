@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ui for planting a new ethereal plant
 
 function makePlantChip2(crop, x, y, w, parent) {
-  var flex = new Flex(parent, x * w + 0.01, [0, y * w + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.5], 0.75);
+  var flex = new Flex(parent, x * w + 0.01, [0, y * w + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.5], 0.8);
   var div = flex.div;
   div.style.border = '1px solid black';
   div.style.backgroundColor = '#9df';
@@ -29,14 +29,22 @@ function makePlantChip2(crop, x, y, w, parent) {
   renderImage(crop.image[4], canvas);
 
   var infoFlex = new Flex(flex, [0, 0.7], 0, 1, [0, 1]);
-  infoFlex.div.innerHTML = '<b>' + crop.name + '</b><br><b>cost:</b>' + crop.getCost().toString() + '<br><b>prod:</b>' + crop.getProd(undefined).toString();
+  var text = '';
+  text += '<b>' + crop.name + '</b><br>';
+  text += '<b>cost:</b>' + crop.getCost().toString() + '<br>';
+  if(crop.effect_description_short) {
+    text += '<b>effect:</b>' + crop.effect_description_short + '<br>';
+  }
+  var boost = crop.getBoost();
+  if(boost.neqr(0)) text += '<b>boost here:</b>' + boost.mulr(100).toString() + '%';
+  infoFlex.div.innerHTML = text;
 
   return flex;
 }
 
 // Ethereal version
 // TODO: share code with makePlantDialog
-function makePlantDialog2(x, y) {
+function makePlantDialog2(x, y, show_only) {
   var numplants = 0;
   for(var i = 0; i < registered_crops2.length; i++) {
     if(state.crops2[registered_crops2[i]].unlocked) numplants++;
@@ -46,12 +54,17 @@ function makePlantDialog2(x, y) {
   var tx = 0;
   var ty = 0;
 
-  var flex = new Flex(dialog, 0, 0, 1, 0.05, 0.4);
+  var flex = new Flex(dialog, 0, 0, 1, 0.05, 0.5);
   dialog.div.style.backgroundColor = '#eefc'; // slightly translucent to see resources through it
   centerText2(flex.div);
-  flex.div.textEl.innerText = 'Choose an ethereal crop to plant';
 
-  flex = new Flex(dialog, 0, 0.05, 1, 0.85);
+  if(show_only) {
+    flex.div.textEl.innerText = 'Unlocked ethereal crops...';
+  } else {
+    flex.div.textEl.innerHTML = 'Choose an ethereal crop to plant<br>Ethereal crops give various bonuses to the basic field';
+  }
+
+  flex = new Flex(dialog, 0, 0.1, 1, 0.85);
 
   for(var i = 0; i < registered_crops2.length; i++) {
     if(!state.crops2[registered_crops2[i]].unlocked) continue;
@@ -67,20 +80,34 @@ function makePlantDialog2(x, y) {
     registerTooltip(chip.div, bind(function(index) {
       var result = '';
       var c = crops2[index];
-      result = 'Plant ' + c.name;
+      if(show_only) {
+        result = util.upperCaseFirstWord(c.name);
+      } else {
+        result = 'Plant ethereal ' + c.name;
+      }
       result += '.<br> Cost: ' + c.getCost().toString();
       result += '.<br> Plant time: ' + util.formatDuration(c.planttime);
-      result += '.<br> Production/sec: ' + c.getProd(undefined).toString();
+      //result += '.<br> Production/sec: ' + c.getProd(undefined).toString();
+
+      if(c.effect_description_long) {
+        result += '.<br/>Effect: ' + c.effect_description_long;
+      } else if(c.effect_description_short) {
+        result += '.<br/>Effect: ' + c.effect_description_short;
+      }
+
       result += '.';
       return result;
     }, index));
-    chip.div.onclick = bind(function(index) {
-      var c = crops2[index];
-      actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c});
-      lastPlanted = index; // for shift key
-      dialog.cancelFun();
-      update(); // do update immediately rather than wait for tick, for faster feeling response time
-    }, index);
-    styleButton0(chip.div);
+
+    if(!show_only) {
+      chip.div.onclick = bind(function(index) {
+        var c = crops2[index];
+        actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c});
+        state.lastPlanted2 = index; // for shift key
+        dialog.cancelFun();
+        update(); // do update immediately rather than wait for tick, for faster feeling response time
+      }, index);
+      styleButton0(chip.div);
+    }
   }
 }

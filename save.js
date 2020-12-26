@@ -71,6 +71,9 @@ function encState(state, opt_raw_only) {
   }
   processFloat(state.lastFernTime);
   processFloat(state.lastBackupWarningTime);
+  processInt(state.currentTab);
+  processInt(state.lastPlanted);
+  processInt(state.lastPlanted2);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -102,9 +105,13 @@ function encState(state, opt_raw_only) {
     for(var x = 0; x < w2; x++) {
       var f = state.field2[y][x];
       array0.push(f.index);
+      if(f.index >= CROPINDEX) {
+        array1.push(f.growth);
+      }
     }
   }
   processIntArray(array0);
+  processFloat2Array(array1);
 
   var unlocked;
   var prev;
@@ -230,6 +237,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numupgrades2);
   processUint(state.g_numupgrades2_unlocked);
   processUint(state.p_treelevel);
+  processUint(state.g_numfullgrown2);
+  processUint(state.g_seasons);
 
 
   section = 11; id = 0; // global run stats
@@ -246,6 +255,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numunplanted);
   processUint(state.g_numupgrades);
   processUint(state.g_numupgrades_unlocked);
+  processUint(state.g_numabilities);
 
 
   section = 12; id = 0; // current run stats
@@ -262,6 +272,7 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numunplanted);
   processUint(state.c_numupgrades);
   processUint(state.c_numupgrades_unlocked);
+  processUint(state.c_numabilities);
 
 
   section = 13; id = 0; // previous run stats
@@ -279,6 +290,7 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numunplanted);
     processUint(state.p_numupgrades);
     processUint(state.p_numupgrades_unlocked);
+    processUint(state.p_numabilities);
   }
 
 
@@ -327,6 +339,7 @@ function decState(s) {
   s = decompress(s);
 
   if(!s) return err(5);
+  if(checksum != computeChecksum(s)) return err(6);
   var state = new State();
 
   var reader = {s:s, pos:0};
@@ -395,6 +408,9 @@ function decState(s) {
     }
     state.lastFernTime = processFloat();
     state.lastBackupWarningTime = processFloat();
+    if(save_version >= 4096*1+9) state.currentTab = processInt();
+    if(save_version >= 4096*1+9) state.lastPlanted = processInt();
+    if(save_version >= 4096*1+9) state.lastPlanted2 = processInt();
     if(error) return err(4);
 
 
@@ -434,7 +450,9 @@ function decState(s) {
     var w2 = state.numw2;
     var h2 = state.numh2;
     array0 = processIntArray();
+    array1 = (save_version >= 4096*1+9) ? processFloat2Array() : null;
     index0 = 0;
+    index1 = 0;
     if(error) return err(4);
     for(var y = 0; y < h2; y++) {
       state.field2[y] = [];
@@ -442,9 +460,13 @@ function decState(s) {
         state.field2[y][x] = new Cell(x, y);
         var f = state.field2[y][x];
         f.index = array0[index0++];
+        if(f.index >= CROPINDEX) {
+          if(save_version >= 4096*1+9) f.growth = array1[index1++];
+        }
       }
     }
     if(index0 > array0.length) return err(4);
+    if((save_version >= 4096*1+9) && index1 > array1.length) return err(4);
 
 
     var unlocked;
@@ -465,7 +487,7 @@ function decState(s) {
       state.upgrades[index].unlocked = true;
       state.upgrades[index].seen = array1[i];
       state.upgrades[index].count = array2[i];
-      if(upgrades[index].old_inactive) state.upgrades[index].unlocked = false;
+      if(upgrades[index].deprecated) state.upgrades[index].unlocked = false;
     }
 
 
@@ -495,6 +517,7 @@ function decState(s) {
       state.upgrades2[index].unlocked = true;
       state.upgrades2[index].seen = array1[i];
       state.upgrades2[index].count = array2[i];
+      if(upgrades2[index].deprecated) state.upgrades2[index].unlocked = false;
     }
 
 
@@ -557,6 +580,9 @@ function decState(s) {
     state.g_numupgrades2 = processUint();
     state.g_numupgrades2_unlocked = processUint();
     state.p_treelevel = processUint();
+    if(save_version >= 4096*1+9) state.g_numfullgrown2 = processUint();
+    if(save_version >= 4096*1+9) state.g_seasons = processUint();
+
     if(error) return err(4);
 
 
@@ -574,6 +600,7 @@ function decState(s) {
     state.g_numunplanted = processUint();
     state.g_numupgrades = processUint();
     state.g_numupgrades_unlocked = processUint();
+    if(save_version >= 4096*1+9) state.g_numabilities = processUint();
     if(error) return err(4);
 
 
@@ -591,6 +618,7 @@ function decState(s) {
     state.c_numunplanted = processUint();
     state.c_numupgrades = processUint();
     state.c_numupgrades_unlocked = processUint();
+    if(save_version >= 4096*1+9) state.c_numabilities = processUint();
     if(error) return err(4);
 
 
@@ -609,6 +637,7 @@ function decState(s) {
       state.p_numunplanted = processUint();
       state.p_numupgrades = processUint();
       state.p_numupgrades_unlocked = processUint();
+      if(save_version >= 4096*1+9) state.p_numabilities = processUint(0);
       if(error) return err(4);
     }
 
@@ -625,7 +654,44 @@ function decState(s) {
     }
   }
 
-  if(checksum != computeChecksum(s)) return err(6);
+  if(save_version <= 4096*1+8) {
+    // ethereal upgrades have been refactored, refund all old stuff
+    for(var y = 0; y < h2; y++) {
+      for(var x = 0; x < w2; x++) {
+        var f = state.field2[y][x];
+        if(f.index >= CROPINDEX) {
+          state.res.resin.addrInPlace(10); // the old ethereal plant cost
+        }
+      }
+    }
+    clearField2(state);
+    if(state.g_numresets > 0) {
+      showMessage('Due to an update, the resin and transcension system has been reset. All your resin has been refunded so you can re-use it with the new system. The pericarps resource has been removed from the game.' +
+          ' There are now multiple ethereal field plant types and they give direct boosts to the basic field. Unused resin also gives a small boost now.' +
+          ' The ethereal upgrades are currently removed, but new ones, probably costing resin, may be added back in a future game update.',
+          '#d56', '#5e8', false, true);
+    }
+    state.res.seeds2 = Num(0);
+    state.g_res.seeds2 = Num(0);
+    state.g_max_res.seeds2 = Num(0);
+    state.g_max_prod.seeds2 = Num(0);
+    state.c_res.seeds2 = Num(0);
+    state.c_max_res.seeds2 = Num(0);
+    state.c_max_prod.seeds2 = Num(0);
+    state.p_res.seeds2 = Num(0);
+    state.p_max_res.seeds2 = Num(0);
+    state.p_max_prod.seeds2 = Num(0);
+
+    state.crops2[berry2_0].unlocked = true;
+    state.crops2[mush2_0].unlocked = true;
+    state.crops2[flower2_0].unlocked = true;
+    state.crops2[special2_0].unlocked = true;
+
+    state.g_numplanted2 = 0;
+    state.g_numunplanted2 = 0;
+    state.g_numupgrades2 = 0;
+    state.g_numupgrades2_unlocked = 0;
+  }
 
   state.g_numloads++;
   return state;
@@ -701,7 +767,7 @@ function decStateOLD(reader, state, save_version) {
     if(!upgrades[index]) return err(4);
     unlocked[i] = index;
     state.upgrades[unlocked[i]].unlocked = true;
-    if(upgrades[unlocked[i]].old_inactive) state.upgrades[unlocked[i]].unlocked = false;
+    if(upgrades[unlocked[i]].deprecated) state.upgrades[unlocked[i]].unlocked = false;
   }
   for(var i = 0; i < unlocked.length; i++) {
     state.upgrades[unlocked[i]].seen = decBool(reader);
@@ -782,11 +848,11 @@ function decStateOLD(reader, state, save_version) {
   } else {
     state.fogtime = decFloat(reader);
     state.suntime = decFloat(reader);
-    state.raintime = decFloat(reader);
+    decFloat(reader);
     state.rainbowtime = decFloat(reader);
-    state.hailtime = decFloat(reader);
-    state.snowtime = decFloat(reader);
-    state.windtime = decFloat(reader);
+    decFloat(reader);
+    decFloat(reader);
+    decFloat(reader);
   }
   if(save_version >= 4096*1 + 6) {
     state.lastFernTime = decFloat(reader);

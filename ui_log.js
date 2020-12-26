@@ -26,9 +26,16 @@ var lastMessageElement = undefined;
 
 var spans = [];
 
+var futuremessages = [];
+
 // shows message in the message log
-// opt_forcenew: force a new line for this message, do not compbine with previous line if same text
-function showMessage(text, opt_color, opt_bgcolor, opt_forcenew) {
+// opt_forcenew: force a new line for this message, do not combine with previous line if same text
+// opt_showlate: show the message as late as possible, that is, at the end of the next update() function call rather than right now, so it'll appear after anything else update() may show first.
+function showMessage(text, opt_color, opt_bgcolor, opt_forcenew, opt_showlate) {
+  if(opt_showlate) {
+    futuremessages.push([text, opt_color, opt_bgcolor, opt_forcenew]);
+    return;
+  }
   //var title = util.formatDate(util.getTime());
   var title = util.formatDate(state.prevtime);
   var logDiv = logFlex.div;
@@ -67,6 +74,13 @@ function showMessage(text, opt_color, opt_bgcolor, opt_forcenew) {
   }
 }
 
+function showLateMessages() {
+  for(var i = 0; i < futuremessages.length; i++) {
+    var m = futuremessages[i];
+    showMessage(m[0], m[1], m[2], m[3]);
+  }
+  futuremessages = [];
+}
 
 
 

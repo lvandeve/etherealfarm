@@ -882,7 +882,10 @@ function decToken(reader, prev_id, section) {
         case TYPE_NUM: token.value = Num(0); break;
         case TYPE_STRING: token.value = ''; break;
         case TYPE_RES: token.value = Res(0); break;
-        default: { reader.error = true; return token; }
+        default: {
+          reader.error = true;
+          return token;
+        }
       }
     } else {
       switch(type) {
@@ -896,7 +899,10 @@ function decToken(reader, prev_id, section) {
         case TYPE_NUM: token.value = decNum(reader); break;
         case TYPE_STRING: token.value = decString(reader); break;
         case TYPE_RES: token.value = decRes(reader); break;
-        default: { reader.error = true; return token; }
+        default: {
+          reader.error = true;
+          return token;
+        }
       }
     }
   } else {
@@ -907,7 +913,9 @@ function decToken(reader, prev_id, section) {
     if(type == TYPE_ARRAY_BOOL && compactBool) {
       for(var i = 0; i < n; i += 6) {
         var v = decUint6(reader);
-        if(reader.error) return token;
+        if(reader.error) {
+          return token;
+        }
         for(var j = 0; j < 6 && i + j < n; j++) {
           token.value[i + j] = (v & (1 << j)) ? true : false;
         }
@@ -925,9 +933,14 @@ function decToken(reader, prev_id, section) {
           case TYPE_ARRAY_NUM: token.value[i] = decNum(reader); break;
           case TYPE_ARRAY_STRING: token.value[i] = decString(reader); break;
           case TYPE_ARRAY_RES: token.value[i] = decRes(reader); break;
-          default: { reader.error = true; return token; }
+          default: {
+            reader.error = true;
+            return token;
+          }
         }
-        if(reader.error) return token;
+        if(reader.error) {
+          return token;
+        }
       }
     }
   }
@@ -967,23 +980,33 @@ function encTokens(tokens) {
 }
 
 function decTokens(reader) {
+var testdone = false;
   var result = {};
   for(;;) {
     if(reader.pos == reader.s.length) break;
     var section = decUint(reader);
     var num = decUint(reader);
-    if(reader.error) return result;
+    //console.log('section: ' + section + ', num: ' + num);
+    if(reader.error) {
+      return result;
+    }
 
     var prev_id = (section << 6) - 1;
     for(var i = 0; i < num; i++) {
       var token = decToken(reader, prev_id, section);
-      if(reader.error) return result;
+      //console.log('id: ' + (token&63) + ', type: ' + token.type + ', value: ' + token.value);
+      if(reader.error) {
+        return result;
+      }
       prev_id = token.id;
       result[token.id] = token;
     }
   }
   return result;
 }
+
+var inctestamount = false;
+var testamount = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 

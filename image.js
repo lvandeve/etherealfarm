@@ -408,7 +408,7 @@ function generatePalette(header) {
 
       }
       palette[c] = rgb;
-      palette[c].push(l_rgb[3]); // alpha
+      palette[c].push(Math.min(l_rgb[3], h_rgb[3])); // alpha
     }
   }
 

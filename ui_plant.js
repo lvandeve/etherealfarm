@@ -65,15 +65,15 @@ function makePlantDialog(x, y, show_only) {
   var tx = 0;
   var ty = 0;
 
-  var flex = new Flex(dialog, 0, 0, 1, 0.05, 0.4);
-  centerText2(flex.div);
+  var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.05, 0.6);
   if(show_only) {
-    flex.div.textEl.innerText = 'Unlocked crops...';
+    centerText2(flex.div);
+    flex.div.textEl.innerHTML = 'Unlocked crops...';
   } else {
-    flex.div.textEl.innerText = 'Choose a crop to plant';
+    flex.div.innerHTML = 'Choose a crop to plant<br>Tip: use SHIFT key on the field to plant last plant type, or CTRL for watercress.';
   }
 
-  flex = new Flex(dialog, 0, 0.05, 1, 0.85);
+  flex = new Flex(dialog, 0, 0.1, 1, 0.85);
 
   for(var i = 0; i < registered_crops.length; i++) {
     if(!state.crops[registered_crops[i]].unlocked) continue;
@@ -129,7 +129,7 @@ function makePlantDialog(x, y, show_only) {
       chip.div.onclick = bind(function(index) {
         var c = crops[index];
         actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});
-        lastPlanted = index; // for shift key
+        state.lastPlanted = index; // for shift key
         dialog.cancelFun();
         update(); // do update immediately rather than wait for tick, for faster feeling response time
       }, index);

@@ -37,6 +37,10 @@ function CropState() {
   this.unlocked = false;
 }
 
+function Crop2State() {
+  this.unlocked = false;
+}
+
 function UpgradeState() {
   this.seen = false; // seen the upgrade in the upgrades tab
   this.unlocked = false;
@@ -55,6 +59,7 @@ function MedalState() {
   this.earned = false;
 }
 
+
 // all the state that should be able to get saved
 function State() {
   this.savegame_recovery_situation = false; // if true, makes it less likely to autosave, to ensure local storage preserves a valid older save
@@ -70,6 +75,10 @@ function State() {
   // the end of the current piece.
   // not saved. set by update(). recommended to use instead of util.getTime() for game time duration related computations such as special abilities
   this.time = 0;
+
+  this.currentTab = 0; // currently selected tab
+  this.lastPlanted = 0; // for shift+plant
+  this.lastPlanted2 = 0; // for shift+plant on field2
 
   // resources
   this.res = undefined;
@@ -125,8 +134,8 @@ function State() {
   this.numh2 = 5;
   this.field2 = [];
   this.crops2 = [];
-  for(var i = 0; i < registered_crops.length; i++) {
-    this.crops2[registered_crops[i]] = new CropState();
+  for(var i = 0; i < registered_crops2.length; i++) {
+    this.crops2[registered_crops2[i]] = new Crop2State();
   }
   this.treelevel2 = 0;
 
@@ -140,11 +149,7 @@ function State() {
 
   this.fogtime = 0; // fog is unlocked if state.upgrades[upgrade_fogunlock].count
   this.suntime = 0; // similar
-  this.raintime = 0;
   this.rainbowtime = 0;
-  this.hailtime = 0;
-  this.snowtime = 0;
-  this.windtime = 0;
 
   this.lastFernTime = 0;
   this.lastBackupWarningTime = 0;
@@ -176,6 +181,8 @@ function State() {
   this.g_numunplanted2 = 0;
   this.g_numupgrades2 = 0;
   this.g_numupgrades2_unlocked = 0;
+  this.g_numfullgrown2 = 0;
+  this.g_seasons = 0; // season changes actually seen
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -190,6 +197,7 @@ function State() {
   this.g_numunplanted = 0; // amount of plants deleted from a field
   this.g_numupgrades = 0; // upgrades performed
   this.g_numupgrades_unlocked = 0; // upgrades unlocked but not yet necessarily performed
+  this.g_numabilities = 0; // weather abilities ran
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -208,6 +216,7 @@ function State() {
   this.p_numunplanted = 0;
   this.p_numupgrades = 0;
   this.p_numupgrades_unlocked = 0;
+  this.p_numabilities = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -224,6 +233,7 @@ function State() {
   this.c_numunplanted = 0;
   this.c_numupgrades = 0;
   this.c_numupgrades_unlocked = 0;
+  this.c_numabilities = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   this.reset_stats = []; // reset at what tree level for each reset
@@ -232,15 +242,18 @@ function State() {
   // amount of fields with nothing on them (index 0)
   // derived stat, not to be saved
   this.numemptyfields = 0;
+  this.numemptyfields2 = 0;
 
   // amount of fields with a crop on them (index >= CROPINDEX, special types 1<=index<CROPINDEX are not counted)
   // includes growing ones
   // derived stat, not to be saved
   this.numcropfields = 0;
+  this.numcropfields2 = 0;
 
   // fullgrown only, not growing, any type >= CROPINDEX. Includes shoft-lived plants.
   // derived stat, not to be saved
   this.numfullgrowncropfields = 0;
+  this.numfullgrowncropfields2 = 0;
 
   // like numfullgrowncropfields but excluding short lived crops
   // derived stat, not to be saved
@@ -249,14 +262,17 @@ function State() {
   // amount of plants of this type planted in fields, including newly still growing ones
   // derived stat, not to be saved
   this.cropcount = [];
+  this.crop2count = [];
 
   // amount of fully grown plants of this type planted in fields
   // does not include partially growing ones
   // derived stat, not to be saved
   this.fullgrowncropcount = [];
+  this.fullgrowncrop2count = [];
 
   // count of non-crop fields, such as fern
   this.specialfieldcount = [];
+  this.specialfield2count = [];
 
   // amount of upgrades ever had available (whether upgraded/exhausted or not doesn't matter, it's about being visible, available for research, at all)
   // derived stat, not to be saved
@@ -286,6 +302,11 @@ function State() {
   // Global production multiplier from all metals
   // derived stat, not to be saved.
   this.medal_prodmul = Num(1);
+
+  // bonuses from ethereal crops
+  // derived stat, not to be saved.
+  this.ethereal_berry_bonus = Num(0);
+  this.ethereal_mush_bonus = Num(0);
 }
 
 function clearField(state) {
@@ -356,10 +377,6 @@ function createInitialState() {
 
   state.crops[short_0].unlocked = true;
 
-  //state.crops[berry_0].unlocked = true;
-  //state.upgrades[berrymul_0].unlocked = true;
-  //state.upgrades[berryunlock_1].unlocked = true;
-  state.crops2[berry_0].unlocked = true;
 
   state.g_starttime = util.getTime();
   state.c_starttime = state.g_starttime;
@@ -380,11 +397,12 @@ function createInitialState() {
 // state every now and then (e.g. every upgrade)
 // this allows getting some stats, such as unlock conditions for upgrades, in a slightly cheaper way than computing it on the fly for every upgrade check
 function computeDerived(state) {
+
+  // field
   state.numemptyfields = 0;
   state.numcropfields = 0;
   state.numfullgrowncropfields = 0;
   state.numfullpermanentcropfields = 0;
-
   state.fullgrowncropcount = [];
   state.cropcount = [];
   for(var i = 0; i < registered_crops.length; i++) {
@@ -410,6 +428,38 @@ function computeDerived(state) {
         state.numemptyfields++;
       } else {
         state.specialfieldcount[f.index]++;
+      }
+    }
+  }
+
+  // field2
+  state.numemptyfields2 = 0;
+  state.numcropfields2 = 0;
+  state.numfullgrowncropfields2 = 0;
+  state.fullgrowncrop2count = [];
+  state.crop2count = [];
+  for(var i = 0; i < registered_crops2.length; i++) {
+    state.crop2count[registered_crops2[i]] = 0;
+    state.fullgrowncrop2count[registered_crops2[i]] = 0;
+  }
+  for(var i = 1; i < CROPINDEX; i++) {
+    state.specialfield2count[i] = 0;
+  }
+  for(var y = 0; y < state.numh2; y++) {
+    for(var x = 0; x < state.numw2; x++) {
+      var f = state.field2[y][x];
+      if(f.index >= CROPINDEX) {
+        var c = crops2[f.index - CROPINDEX];
+        state.crop2count[f.index - CROPINDEX]++;
+        state.numcropfields2++;
+        if(f.growth >= 1) {
+          state.fullgrowncrop2count[f.index - CROPINDEX]++;
+          state.numfullgrowncropfields2++;
+        }
+      } else if(f.index == 0) {
+        state.numemptyfields2++;
+      } else {
+        state.specialfield2count[f.index]++;
       }
     }
   }
@@ -462,6 +512,28 @@ function computeDerived(state) {
       state.medals_earned++;
       if(!m2.seen) state.medals_new++;
       state.medal_prodmul.addInPlace(m.prodmul);
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  state.ethereal_berry_bonus = Num(0);
+  state.ethereal_mush_bonus = Num(0);
+
+  for(var y = 0; y < state.numh2; y++) {
+    for(var x = 0; x < state.numw2; x++) {
+      var f = state.field2[y][x];
+      if(f.index >= CROPINDEX && f.growth >= 1) {
+        var index = f.index - CROPINDEX;
+        if(index == berry2_0) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(0.2));
+        }
+        if(index == mush2_0) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(0.2));
+        }
+      }
     }
   }
 }

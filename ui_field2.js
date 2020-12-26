@@ -21,6 +21,52 @@ var field2Divs;
 
 
 
+// get crop info in HTML
+function getCropInfoHTML2(f, c) {
+  var result = 'Ethereal ' + util.upperCaseFirstWord(c.name);
+  result += '<br/><br/>';
+
+
+  if(f.growth < 1) {
+    result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlanttime(), true, 4, true);
+  } else {
+    if(c.effect_description_long) {
+      result += '<br/>Effect: ' + c.effect_description_long + '<br/>';
+    } else if(c.effect_description_short) {
+      result += '<br/>Effect: ' + c.effect_description_short + '<br/>';
+    }
+
+    var prod = c.getProd(f);
+    if(!prod.empty()) {
+      result += 'Production per second: ' + prod.toString() + '<br/>';
+      if(prod.hasNeg()) result += 'Consumes a resource produced by other crops<br/>';
+    }
+    if(c.boost.neqr(0)) {
+      result += 'Boosting neighbors: ' + (c.getBoost().mulr(100).toString()) + '%<br/>';
+    }
+
+    if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
+      var boost = Crop2.getNeighborBoost(f);
+      if(boost.neqr(0)) {
+        result += '<br/>';
+        result += 'This effect is boosted by neighbors: ' + (boost.mulr(100)).toString() + '%<br/>';
+      }
+    }
+  }
+
+  result += '<br/>';
+  result += 'Num planted of this type: ' + state.crop2count[c.index];
+  result += '<br/>';
+
+  result += '<br/>Cost: ';
+  result += '<br/>• Base planting cost: ' + c.cost.toString();
+  result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
+  result += '<br/>• Next planting cost: ' + c.getCost().toString();
+  result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup2).toString();
+
+  return result;
+}
+
 function makeField2Dialog(x, y) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
@@ -35,42 +81,60 @@ function makeField2Dialog(x, y) {
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
-    var flex = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.15, 0.3);
-    flex.div.innerHTML = 'ethereal crop';
+    var buttonshift = 0;
+
+    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.3);
+    var button0 = new Flex(dialog, [0.01, 0.2], [0.4 + buttonshift, 0.01], 0.5, 0.45 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog, [0.01, 0.2], [0.47 + buttonshift, 0.01], 0.5, 0.52 + buttonshift, 0.8).div;
+    var last0 = undefined;
+
+    styleButton(button0);
+    button0.textEl.innerText = 'delete';
+    registerTooltip(button0, 'Delete crop and get most of its cost back.<br>BEWARE: this makes you lose a slight amount of resin overall,<br>you get back ' + (cropRecoup2 * 100) + '% of the original resin cost.');
+    button0.onclick = function() {
+      actions.push({type:ACTION_DELETE2, x:x, y:y});
+      dialog.cancelFun();
+      update(); // do update immediately rather than wait for tick, for faster feeling response time
+    };
+
+    styleButton(button1);
+    button1.textEl.innerText = 'see unlocked crops';
+    registerTooltip(button1, 'Show the crop dialog with unlocked ethereal plants.');
+    button1.onclick = function() {
+      makePlantDialog2(x, y, true);
+    };
+
+    updatedialogfun = bind(function(f, c, flex) {
+      var html0 = getCropInfoHTML2(f, c);
+      if(html0 != last0) {
+        flex0.div.innerHTML = html0;
+        last0 = html0;
+      }
+    }, f, c);
+
+    updatedialogfun(f, c);
   } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
     var c = crops2[f.index - CROPINDEX];
     var div;
 
     var dialog = createDialog();
     dialog.div.style.backgroundColor = '#eefc'; // slightly translucent to see resources through it
-    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 1);
-    flex.div.innerHTML = 'ethereal tree';
+    var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.9, 0.3);
+
+    var text = '<b>Ethereal Tree</b>';
+    text += '<br><br>';
+
+    text += '<b>Ethereal boosts from this field to basic field:</b><br>';
+    text += '• starter resources: ' + getStarterResources().toString() + '<br>';
+    text += '• berry boost: ' + state.ethereal_berry_bonus.mulr(100).toString() + '%<br>';
+    text += '• mushroom boost: ' + state.ethereal_mush_bonus.mulr(100).toString() + '%<br>';
+    text += '<br><br>';
+
+    flex.div.innerHTML = text;
 
   } else {
     makePlantDialog2(x, y);
   }
-}
-
-// get crop info in HTML
-function getCropInfoHTML2(f, c) {
-  var result = util.upperCaseFirstWord(c.name);
-  result += '<br/>';
-
-
-  var prod = c.getProd(f);
-  if(!prod.empty()) {
-    result += 'Production per second: ' + prod.toString() + '<br/>';
-    if(prod.hasNeg()) result += 'Consumes a resource produced by other crops<br/>';
-  }
-  if(c.boost.neqr(0)) {
-    result += 'Boosting neighbors: ' + (c.getBoost().mulr(100).toString()) + '%<br/>';
-  }
-
-  result += '<br/>Cost: ' + c.getCost().toString();
-  // ethereal crop recoup is 100%
-  result += '<br/>Recoup on delete: ' + c.getCost().toString();
-
-  return result;
 }
 
 function initField2UI() {
@@ -132,13 +196,40 @@ function initField2UI() {
         if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           makeField2Dialog(x, y);
         } else if(f.index == 0) {
-          makeField2Dialog(x, y);
+          if(e.shiftKey) {
+            if(state.lastPlanted2 >= 0) {
+              var c = crops2[state.lastPlanted2];
+              actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c, shiftPlanted:true});
+              update();
+            } else {
+              showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
+            }
+          } else {
+            makeField2Dialog(x, y);
+          }
         } else if(f.index >= CROPINDEX) {
-          makeField2Dialog(x, y);
+          if(e.shiftKey) {
+            if(state.allowshiftdelete) {
+              var c = crops[state.lastPlanted];
+              actions.push({type:ACTION_DELETE2, x:x, y:y});
+              update();
+            } else {
+              showMessage('shift+click to delete must be enabled in the settings before it is allowed', invalidFG, invalidBG);
+            }
+          } else {
+            makeField2Dialog(x, y);
+          }
         }
       }, x, y, div);
 
-
+      var pw = tw >> 1;
+      var ph = Math.round(th / 16);
+      if(ph < 4) ph = 4;
+      var px = x0 + x * tw + ((tw - pw) >> 1);
+      var py = y0 + (y + 1) * th - ph * 2;
+      var progress = makeDiv((((x + 0.2) / state.numw) * 100) + '%', (((y + 0.9) / state.numh) * 100) + '%', (100 / state.numw * 0.6) + '%', (100 / state.numh * 0.05) + '%', field2Grid.div);
+      initProgressBar(progress);
+      field2Divs[y][x].progress = progress;
     }
   }
 }
@@ -146,7 +237,7 @@ function initField2UI() {
 function updateField2CellUI(x, y) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
-  var growstage = 4;
+  var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   var season = 4; // the ethereal season
 
   var ferncode = 0;
@@ -166,14 +257,23 @@ function updateField2CellUI(x, y) {
     if(f.index >= CROPINDEX) {
       var c = crops2[f.index - CROPINDEX];
       renderImage(c.image[growstage], fd.canvas);
+      if(f.growth >= 1) {
+        // fullgrown, so hide progress bar
+        setProgressBar(fd.progress, -1, undefined);
+      }
     } else if(f.index == FIELD_TREE_TOP) {
       renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][season], fd.canvas);
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][season], fd.canvas);
       if(state.treelevel2 > 0) renderLevel(fd.canvas, state.treelevel2, 0, 11);
     } else {
+      setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
       unrenderImage(fd.canvas);
     }
+  }
+  if(fd.index >= CROPINDEX && f.growth < 1) {
+    var c = crops2[f.index - CROPINDEX];
+    setProgressBar(fd.progress, f.growth, '#f00');
   }
 }

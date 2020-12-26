@@ -91,7 +91,8 @@ var tabindex_upgrades2;
 var tabindex_tree;
 
 // init the UI after a reset, save load, .... Keeps log messages
-function initUI(state) {
+// assume state is already correctly initialized
+function initUI() {
   //topDiv.innerHTML = '';
   //tabDiv.innerHTML = '';
   //contentDiv.innerHTML = '';
@@ -115,8 +116,6 @@ function initUI(state) {
 
   for(var i = 0; i < tabnum; i++) tabs[i] = new Flex(contentFlex, 0, 0, 1, 1);
 
-  updateTabButtons();
-
   fieldFlex = tabs[tabindex_field];
   fieldFlex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   upgradeFlex = tabs[tabindex_upgrades];
@@ -125,12 +124,15 @@ function initUI(state) {
   field2Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   upgrade2Flex = tabs[tabindex_upgrades2];
 
+  updateTabButtons();
+
   initFieldUI();
   initInfoUI();
   initField2UI();
 
   updateUI();
-  setTab(0);
+  if(state) setTab(state.currentTab);
+  else setTab(0, true);
 }
 
 

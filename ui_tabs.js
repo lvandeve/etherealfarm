@@ -21,12 +21,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var tabbuttons;
 var tabs;
 
-var currentTab = -1;
-
-function setTab(i) {
+function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
 
-  currentTab = i;
+  if(!opt_temp) state.currentTab = i;
 
   for(var j = 0; j < tabs.length; j++) {
     tabs[j].div.style.visibility = (i == j) ? 'visible' : 'hidden';
@@ -46,7 +44,7 @@ function setTab(i) {
 
 // makes it indicate new upgrades/achievements/..., if there are
 function updateTabButtons2() {
-  if(currentTab == tabindex_upgrades && state.upgrades_new) {
+  if(state.currentTab == tabindex_upgrades && state.upgrades_new) {
     for(var i = 0; i < registered_upgrades.length; i++) {
       var u = state.upgrades[registered_upgrades[i]];
       if(u.unlocked && !u.seen) u.seen = true;
@@ -54,7 +52,7 @@ function updateTabButtons2() {
     computeDerived(state);
   }
 
-  if(currentTab == tabindex_medals && state.medals_new) {
+  if(state.currentTab == tabindex_medals && state.medals_new) {
     for(var i = 0; i < registered_medals.length; i++) {
       // commented out: medal tooltip does this now.
       //var m = state.medals[registered_medals[i]];
@@ -63,7 +61,7 @@ function updateTabButtons2() {
     computeDerived(state);
   }
 
-  if(currentTab == tabindex_upgrades2 && state.upgrades2_new) {
+  if(state.currentTab == tabindex_upgrades2 && state.upgrades2_new) {
     for(var i = 0; i < registered_upgrades2.length; i++) {
       var u = state.upgrades2[registered_upgrades2[i]];
       if(u.unlocked && !u.seen) u.seen = true;
@@ -126,7 +124,7 @@ function updateTabButtons() {
   wanted[tabindex_field] = true;
   wanted[tabindex_upgrades] = state.upgrades_unlocked > 0;
   wanted[tabindex_field2] = state.g_numresets > 0;
-  wanted[tabindex_upgrades2] = state.g_numresets > 0;
+  wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
   wanted[tabindex_medals] = state.medals_earned > 0;
 
   var num = 0;
@@ -218,7 +216,7 @@ function updateTabButtons() {
   updateTabButtons2();
 
   // this is to give the buttons the correct style
-  setTab(currentTab);
+  setTab(state.currentTab, true);
 }
 
 

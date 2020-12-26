@@ -98,16 +98,19 @@ function updateMedalUI() {
     div.style.border = m2.earned ? ('3px solid ' + tierColors[m.getTier()]) : '';
     div.style.backgroundColor = m2.earned ? util.darkenColor(tierColors[m.getTier()], 0.35) : '#8888';
 
-    var canvas2;
+    var canvas2 = medal_canvases2[i];
     if(m2.earned && !m2.seen) {
       if(!medal_canvases2[i]) {
         canvas2 = createCanvas('0', '0', '25%', '25%', div);
         medal_canvases[i] = canvas;
-      } else {
-        canvas2 = medal_canvases2[i];
+        medal_canvases2[i] = canvas2;
+        renderImage(exclamation, canvas2);
       }
-      medal_canvases2[i] = canvas2;
-      renderImage(exclamation, canvas2);
+    }
+
+    if(m2.seen && medal_canvases2[i]) {
+      util.removeElement(canvas2);
+      medal_canvases2[i] = undefined;
     }
 
     var getMedalText = bind(function(m, m2, div, canvas2, i){

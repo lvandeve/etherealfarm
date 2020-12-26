@@ -1751,3 +1751,14 @@ subtleplantimageheader + `
 HHhh###.##HHHH..
 Hhhh......HHhh..
 `);
+
+
+
+
+var image_fern_as_crop = createPlantImages2(seeds_nettle,
+'#hg:#08f4' + fern_base_image,
+'#hg:#08f8' + fern_base_image,
+'#hg:#08fc' + fern_base_image,
+'#hg:#08ff' + fern_base_image);
+
+

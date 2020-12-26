@@ -19,11 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var fieldDivs;
 
-var lastPlanted = -1; // for shift key
-
 function createTranscendDialog() {
   var dialog = createDialog(DIALOG_MEDIUM, function(e) {
-      showMessage('Transcended');
       actions.push({type:ACTION_TRANCSEND});
       closeAllDialogs();
       update();
@@ -41,7 +38,7 @@ function createTranscendDialog() {
   if(tlevel > 1) {
     text += 'Higher transcensions work like transcension but give extra resin multiplier.<br/>';
   } else {
-    text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These unlock ethereal upgrades that improve your basic field in a more permanent way.<br/>';
+    text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These crops give bonuses to the basic field in various ways. Unused resin also gives a slight boost.<br/>';
   }
   text += '<br/>';
   if(tlevel > 1) {
@@ -64,7 +61,7 @@ function createTranscendDialog() {
   text += '• Ethereal upgrades<br/>';
   text += '• Current season<br/>';
   text += '<br/><br/>';
-  text += 'Please note: the transcension aspect of this game is still under development and is a temporary demo only. Currently the main run of the game is still being balanced, when that is done the content of transcension will be fully developed.<br/>';
+  text += 'Please note: the transcension aspect of this game is still under development, game version 0.1.9 just brought a redesigned version, and an upcoming version may bring back ethereal upgrades back (in a different form and probably costing resin) too.<br/>';
 
   flex.div.innerHTML = text;
 }
@@ -139,9 +136,10 @@ function getCropInfoHTML(f, c) {
   result += 'Num planted of this type: ' + state.cropcount[c.index];
   result += '<br/>';
 
-  result += '<br/>Cost: ' + c.cost.toString();
+  result += '<br/>Cost: ';
   result += '<br/>• Base planting cost: ' + c.cost.toString();
-  result += '<br/>• Current planting cost: ' + c.getCost().toString();
+  result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
+  result += '<br/>• Next planting cost: ' + c.getCost().toString();
   result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
 
   return result;
@@ -156,7 +154,7 @@ function makeFieldDialog(x, y) {
     var c = crops[f.index - CROPINDEX];
     var div;
 
-    var dialog = createDialog();
+    var dialog = createDialog(c.type == CROPTYPE_SHORT ? DIALOG_LARGE : undefined);
     dialog.div.style.backgroundColor = '#efec'; // slightly translucent to see resources through it
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
@@ -165,7 +163,7 @@ function makeFieldDialog(x, y) {
     var buttonshift = 0;
     if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.3);
+    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
     var button0 = new Flex(dialog, [0.01, 0.2], [0.3 + buttonshift, 0.01], 0.5, 0.35 + buttonshift, 0.8).div;
     var button1 = new Flex(dialog, [0.01, 0.2], [0.37 + buttonshift, 0.01], 0.5, 0.42 + buttonshift, 0.8).div;
     var flex1 = new Flex(dialog, [0.01, 0.2], [0.43 + buttonshift, 0.01], 1, 0.9, 0.3);
@@ -260,6 +258,7 @@ function makeFieldDialog(x, y) {
         var button = new Flex(f1, 0, 0, 0.5, 0.2, 0.8).div;
         styleButton(button);
         button.textEl.innerText = 'Transcension ' + roman;
+        button.textEl.style.boxShadow = '0px 0px 5px #ff0';
         registerTooltip(button, 'Show the transcension dialog');
         button.onclick = function() {
           createTranscendDialog();
@@ -346,8 +345,8 @@ function initFieldUI() {
             makeFieldDialog(x, y);
         } else if(f.index == 0) {
           if(e.shiftKey) {
-            if(lastPlanted >= 0) {
-              var c = crops[lastPlanted];
+            if(state.lastPlanted >= 0) {
+              var c = crops[state.lastPlanted];
               actions.push({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
               update();
             } else {
@@ -362,7 +361,7 @@ function initFieldUI() {
         } else if(f.index >= CROPINDEX) {
           if(e.shiftKey || (e.ctrlKey && f.index - CROPINDEX == short_0)) {
             if(state.allowshiftdelete) {
-              var c = crops[lastPlanted];
+              var c = crops[state.lastPlanted];
               actions.push({type:ACTION_DELETE, x:x, y:y});
               update();
             } else {
@@ -379,7 +378,6 @@ function initFieldUI() {
       if(ph < 4) ph = 4;
       var px = x0 + x * tw + ((tw - pw) >> 1);
       var py = y0 + (y + 1) * th - ph * 2;
-      //var progress = makeDiv('10%', '80%', '80%', '10%', fieldDiv);
       var progress = makeDiv((((x + 0.2) / state.numw) * 100) + '%', (((y + 0.9) / state.numh) * 100) + '%', (100 / state.numw * 0.6) + '%', (100 / state.numh * 0.05) + '%', fieldGrid.div);
       initProgressBar(progress);
       fieldDivs[y][x].progress = progress;

@@ -40,6 +40,13 @@ function Res(o) {
   this.amber = Num(o.amber || 0);
 };
 
+// returns a new resource object with all values set to 1, e.g. for a bonus multiplier
+Res.resOne = function() {
+  var res = new Res();
+  res.addrInPlace(1);
+  return res;
+};
+
 // returns the resources as an array. The order is consistent, but do not rely on which index is which named resource. Only converting back to Resource with fromArray brings back the names.
 // does not make copies of the Num values, so do not change them in place if the original resources should not be modified
 Res.prototype.toArray = function() {

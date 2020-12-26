@@ -73,6 +73,9 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
         infoText += ' (' + percent.toString() + '% of stacks)';
       }
     }
+    if(u.cropid != undefined) {
+      infoText += '<br><br>' + 'have of this crop: ' + state.cropcount[u.cropid];
+    }
     if(u.description) {
       infoText += '<br><br>' + u.description;
     }
@@ -120,6 +123,19 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
 }
 
 var upgradeScrollFlex = null;
+
+
+
+// if true, moves upgrades related to unplanted crops to the bottom. However,
+// this may cause players to not see that upgrade and hence not remember that
+// they had this higher level crop unlocked in the first place.
+// So disabled now, better to have a reminder of your best crop visibile
+// at the top of the upgrades panel, than to have it at the bottom because
+// it's not planted yet. Without this the sort order places more expensive
+// crops higher up.
+var moveunplantedtobottom = false;
+
+
 
 var upgrades_order = [];
 function computeUpgradeUIOrder() {
@@ -173,38 +189,50 @@ function computeUpgradeUIOrder() {
 
   // infinite amount of times upgrades, sorted by costs, that are relevant (has plants they apply to in the field, or for the limited-time watercress)
   array = [];
+  var highest = Num(0);
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
     if(u.maxcount != 0) continue;
-    var relevant = !u.cropid || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
+    var relevant = !moveunplantedtobottom || (u.cropid == undefined) || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
     if(!relevant) continue;
     array.push(registered_upgrades[i]);
+    if(u.cost && state.upgrades[registered_upgrades[i]].unlocked) highest = Num.max(u.cost.seeds, highest);
   }
+  // a bit of a hack to move watercress higher up since it's always relevant. Make it take second place.
+  var fakewatercresscost = highest.divr(2);
   array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
-    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+    var costa = a.cost.seeds;
+    var costb = b.cost.seeds;
+    if(a.cropid != undefined && crops[a.cropid].type == CROPTYPE_SHORT) {
+      costa = fakewatercresscost;
+    }
+    if(b.cropid != undefined && crops[b.cropid].type == CROPTYPE_SHORT) costb = fakewatercresscost;
+    return costa.lt(costb) ? 1 : -1;
   });
   for(var i = 0; i < array.length; i++) {
     upgrades_order.push(array[i]);
   }
 
-  // infinite amount of times upgrades, sorted by costs, that are currently not relevant (has no plants they apply to in the field)
-  array = [];
-  for(var i = 0; i < registered_upgrades.length; i++) {
-    var u = upgrades[registered_upgrades[i]];
-    if(u.maxcount != 0) continue;
-    var relevant = !u.cropid || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
-    if(relevant) continue;
-    array.push(registered_upgrades[i]);
-  }
-  array = array.sort(function(a, b) {
-    a = upgrades[a];
-    b = upgrades[b];
-    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
-  });
-  for(var i = 0; i < array.length; i++) {
-    upgrades_order.push(array[i]);
+  if(moveunplantedtobottom) {
+    // infinite amount of times upgrades, sorted by costs, that are currently not relevant (has no plants they apply to in the field)
+    array = [];
+    for(var i = 0; i < registered_upgrades.length; i++) {
+      var u = upgrades[registered_upgrades[i]];
+      if(u.maxcount != 0) continue;
+      var relevant = !u.cropid || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
+      if(relevant) continue;
+      array.push(registered_upgrades[i]);
+    }
+    array = array.sort(function(a, b) {
+      a = upgrades[a];
+      b = upgrades[b];
+      return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+    });
+    for(var i = 0; i < array.length; i++) {
+      upgrades_order.push(array[i]);
+    }
   }
 }
 

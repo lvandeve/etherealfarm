@@ -180,12 +180,12 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
 
   var dialogFlex;
   if(opt_size == DIALOG_SMALL) {
-    dialogFlex = new Flex(mainFlex, 0.1, 0.25, 0.9, 0.75);
+    dialogFlex = new Flex(mainFlex, 0.05, 0.25, 0.95, 0.75);
   } else if(opt_size == DIALOG_LARGE) {
     dialogFlex = new Flex(mainFlex, 0.05, 0.05, 0.95, 0.9);
   } else {
-    // default, medium
-    dialogFlex = new Flex(mainFlex, 0.05, 0.12, 0.93, 0.9);
+    // default, medium. Designed to be as big as possible without covering up the resource display
+    dialogFlex = new Flex(mainFlex, 0.05, 0.12, 0.95, 0.9);
   }
 
   created_dialogs.push(dialogFlex);

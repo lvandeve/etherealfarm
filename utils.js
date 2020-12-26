@@ -349,6 +349,8 @@ var Utils = (function() {
   var formatDuration = function(s, opt_short, opt_maxSections, opt_inv) {
     var maxSections = opt_maxSections || 3;
 
+    if(s == Infinity) return 'Infinity ' + (opt_short ? 's' : ' seconds');
+
     var orig = s;
     s = Math.floor(s);
 

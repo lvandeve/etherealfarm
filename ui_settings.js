@@ -397,7 +397,7 @@ function createStatsDialog() {
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Player Statistics';
 
-  var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.4).div;
+  var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.35).div;
   div.style.overflowY = 'scroll';
   div.style.backgroundColor = '#aac';
 
@@ -406,28 +406,9 @@ function createStatsDialog() {
   var open = '<font color="#fff">';
   var close = '</font>';
 
-  text += '<b>Current</b><br>';
-  text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
-  text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
-  text += '• total earned: ' + open + state.c_res.toString(true) + close + '<br>';
-  text += '• highest resources: ' + open + state.c_max_res.toString(true) + close + '<br>';
-  text += '• highest production/s: ' + open + state.c_max_prod.toString(true) + close + '<br>';
-  text += '• ferns: ' + open + state.c_numferns + close + '<br>';
-  text += '• planted (fullgrown): ' + open + state.c_numfullgrown + close + '<br>';
-  text += '• unplanted: ' + open + state.c_numunplanted + close + '<br>';
-    text += '<br><br>';
-
   if(state.g_numresets > 0) {
     text += '<b>Total</b><br>';
     text += '• highest tree level: ' + open + state.g_treelevel + close + '<br>';
-    text += '• transcensions: ' + open + state.g_numresets + close + '<br>';
-    text += '• last transcension levels: ' + open;
-    for(var i = 0; i < 10; i++) {
-      var j = state.reset_stats.length - 1 - i;
-      if(j < 0) break;
-      text += ' ' + state.reset_stats[j];
-    }
-    text += close + '<br>';
     text += '• achievements: ' + open + state.g_nummedals + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.g_starttime) + close + '<br>';
     text += '• duration: ' + open + util.formatDuration(util.getTime() - state.g_starttime) + close + '<br>';
@@ -436,20 +417,58 @@ function createStatsDialog() {
     text += '• highest production/s: ' + open + state.g_max_prod.toString(true) + close + '<br>';
     text += '• ferns: ' + open + state.g_numferns + close + '<br>';
     text += '• planted (fullgrown): ' + open + state.g_numfullgrown + close + '<br>';
+    text += '• planted (watercress): ' + open + state.g_numplantedshort + close + '<br>';
     text += '• unplanted: ' + open + state.g_numunplanted + close + '<br>';
+    text += '• weather abilities activated: ' + open + state.g_numabilities + close + '<br>';
+    text += '• season changes seen: ' + open + state.g_seasons + close + '<br>';
     text += '<br><br>';
   }
 
   if(state.g_numresets > 0) {
+    text += '<b>Ethereal</b><br>';
+    text += '• transcensions: ' + open + state.g_numresets + close + '<br>';
+    if(state.reset_stats.length == 1) {
+      text += '• last transcension level: ' + open;
+    } else {
+      text += '• last transcension levels: ' + open;
+    }
+    for(var i = 0; i < 10; i++) {
+      var j = state.reset_stats.length - 1 - i;
+      if(j < 0) break;
+      text += ' ' + state.reset_stats[j];
+    }
+    text += close + '<br>';
+    text += '• ethereal planted (fullgrown): ' + open + state.g_numfullgrown2 + close + '<br>';
+    text += '<br><br>';
+  }
+
+  text += '<b>Current</b><br>';
+  if(state.g_numresets > 0 || state.treelevel > 0) text += '• tree level: ' + open + state.treelevel + close + '<br>';
+  text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
+  text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
+  text += '• total earned: ' + open + state.c_res.toString(true) + close + '<br>';
+  text += '• highest resources: ' + open + state.c_max_res.toString(true) + close + '<br>';
+  text += '• highest production/s: ' + open + state.c_max_prod.toString(true) + close + '<br>';
+  text += '• ferns: ' + open + state.c_numferns + close + '<br>';
+  text += '• planted (fullgrown): ' + open + state.c_numfullgrown + close + '<br>';
+  text += '• planted (watercress): ' + open + state.c_numplantedshort + close + '<br>';
+  text += '• unplanted: ' + open + state.c_numunplanted + close + '<br>';
+  if(state.g_numresets > 0 || state.treelevel > 0) text += '• weather abilities activated: ' + open + state.c_numabilities + close + '<br>';
+  text += '<br><br>';
+
+  if(state.g_numresets > 0) {
     text += '<b>Previous</b><br>';
+    text += '• tree level: ' + open + state.p_treelevel + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.p_starttime) + close + '<br>';
     text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
     text += '• total earned: ' + open + state.p_res.toString(true) + close + '<br>';
     text += '• highest resources: ' + open + state.p_max_res.toString(true) + close + '<br>';
     text += '• highest production/s: ' + open + state.p_max_prod.toString(true) + close + '<br>';
     text += '• ferns: ' + open + state.p_numferns + close + '<br>';
-    text += '• planted: ' + open + state.p_numplanted + close + '<br>';
+    text += '• planted (fullgrown): ' + open + state.p_numfullgrown + close + '<br>';
+    text += '• planted (watercress): ' + open + state.p_numplantedshort + close + '<br>';
     text += '• unplanted: ' + open + state.p_numunplanted + close + '<br>';
+    text += '• weather abilities activated: ' + open + state.p_numabilities + close + '<br>';
     text += '<br><br>';
   }
 
@@ -481,6 +500,23 @@ function createChangelogDialog() {
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';
   text += 'Changelog:';
+  text += '<br/><br/>';
+
+
+
+
+
+  text += '0.1.9 (2020-12-26):';
+  text += '<br/>';
+  text += '• The resin and transcension system has been redesigned. There are now multiple ethereal field plant types and they give direct boosts to the basic field. All resin has been refunded and can be re-used with the new system.';
+  text += '<br/>';
+  text += '• The pericarps resource has been removed from the game. Nothing is lost from this since only its production per second ("ethereal field power") was used and this was determined by resin which has been refunded.';
+  text += '<br/>';
+  text += '• Unused resin also gives a small boost now.';
+  text += '<br/>';
+  text += '• The ethereal upgrades (which used to cost ethereal field power) are currently removed (and replaced by ethereal plant effects instead), but new ones, probably costing resin, may be added back in a future game update.';
+  text += '<br/>';
+  text += '• A few other minor tweaks, e.g. the savegame now remembers which tab you had open and the assigned shift key plant.';
   text += '<br/><br/>';
 
   text += '0.1.8 (2020-12-24):';
