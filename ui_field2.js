@@ -146,8 +146,8 @@ function initField2UI() {
     }
   }
 
-  //This is set up such that the field tiles are square on screen, field is rectangle (or square if numw == numh), and always takes max size in the rectangular div in which the field is placed
-  var ratio = state.numw / state.numh;
+  //This is set up such that the field tiles are square on screen, field is rectangle (or square if numw2 == numh2), and always takes max size in the rectangular div in which the field is placed
+  var ratio = state.numw2 / state.numh2;
   var field2Grid = new Flex(field2Flex, [0.5,-0.5,ratio], [0.5,-0.5,1/ratio], [0.5,0.5,ratio], [0.5,0.5,1/ratio]);
 
   var field2Div = field2Flex.div;
@@ -163,9 +163,9 @@ function initField2UI() {
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
-      var bgdiv = makeDiv((x / state.numw2 * 100) + '%', (y / state.numh2 * 100) + '%', (100 / state.numw2) + '%', (100 / state.numh2) + '%', field2Grid.div);
-      var fgdiv = makeDiv((x / state.numw2 * 100) + '%', (y / state.numh2 * 100) + '%', (100 / state.numw2) + '%', (100 / state.numh2) + '%', field2Grid.div);
-      var div = makeDiv((x / state.numw2 * 100) + '%', (y / state.numh2 * 100) + '%', (100 / state.numw2) + '%', (100 / state.numh2) + '%', field2Grid.div);
+      var bgdiv = makeDiv((x / state.numw2 * 100) + '%', (y / state.numh2 * 100) + '%', (101 / state.numw2) + '%', (101 / state.numh2) + '%', field2Grid.div);
+      var fgdiv = makeDiv((x / state.numw2 * 100) + '%', (y / state.numh2 * 100) + '%', (101 / state.numw2) + '%', (101 / state.numh2) + '%', field2Grid.div);
+      var div = makeDiv((x / state.numw2 * 100) + '%', (y / state.numh2 * 100) + '%', (101 / state.numw2) + '%', (101 / state.numh2) + '%', field2Grid.div);
       div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
       centerText(div);
       var bgcanvas = createCanvas('0%', '0%', '100%', '100%', bgdiv); // canvas with the field background image
@@ -227,7 +227,7 @@ function initField2UI() {
       if(ph < 4) ph = 4;
       var px = x0 + x * tw + ((tw - pw) >> 1);
       var py = y0 + (y + 1) * th - ph * 2;
-      var progress = makeDiv((((x + 0.2) / state.numw) * 100) + '%', (((y + 0.9) / state.numh) * 100) + '%', (100 / state.numw * 0.6) + '%', (100 / state.numh * 0.05) + '%', field2Grid.div);
+      var progress = makeDiv((((x + 0.2) / state.numw2) * 100) + '%', (((y + 0.9) / state.numh2) * 100) + '%', (100 / state.numw2 * 0.6) + '%', (100 / state.numh2 * 0.05) + '%', field2Grid.div);
       initProgressBar(progress);
       field2Divs[y][x].progress = progress;
     }

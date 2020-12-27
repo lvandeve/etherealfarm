@@ -60,7 +60,8 @@ function encState(state, opt_raw_only) {
   processFloat(state.prevtime);
   processRes(state.res);
   processUint(state.treelevel);
-  processRes(state.ethereal_upgrade_spent);
+  // id=3 now unused, it used to be "ethereal_upgrade_spent" pre 0.1.9
+  id = 4;
   processUint(state.treelevel2);
   processNum(state.resin);
   processUint(state.fern);
@@ -401,7 +402,8 @@ function decState(s) {
     state.prevtime = processFloat();
     state.res = processRes();
     state.treelevel = processUint();
-    state.ethereal_upgrade_spent = processRes();
+    // id=3 now unused, it used to be "ethereal_upgrade_spent" pre 0.1.9
+    id = 4;
     state.treelevel2 = processUint();
     state.resin = processNum();
     state.fern = processUint();
@@ -668,8 +670,8 @@ function decState(s) {
 
   if(save_version <= 4096*1+8) {
     // ethereal upgrades have been refactored, refund all old stuff
-    for(var y = 0; y < h2; y++) {
-      for(var x = 0; x < w2; x++) {
+    for(var y = 0; y < state.numh2; y++) {
+      for(var x = 0; x < state.numw2; x++) {
         var f = state.field2[y][x];
         if(f.index >= CROPINDEX) {
           state.res.resin.addrInPlace(10); // the old ethereal plant cost
@@ -859,7 +861,7 @@ function decStateOLD(reader, state, save_version) {
     state.medals[unlocked[i]].seen = decBool(reader);
   }
 
-  state.ethereal_upgrade_spent = decRes(reader);
+  decRes(reader); // was ethereal_upgrade_spent, no longer used
   if(save_version <= 4096*1 + 2) {
     // old version ethereal bonuses
     decRes(reader);

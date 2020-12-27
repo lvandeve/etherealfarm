@@ -144,8 +144,6 @@ function State() {
     this.upgrades2[registered_upgrades2[i]] = new Upgrade2State();
   }
 
-  this.ethereal_upgrade_spent = Res(); // how much spent on ethereal upgrades. This is in res/s, since ethereal upgrades cost res/s, not res.
-
 
   this.fogtime = 0; // fog is unlocked if state.upgrades[upgrade_fogunlock].count
   this.suntime = 0; // similar
@@ -339,12 +337,10 @@ function clearField2(state) {
 }
 
 function changeFieldSize(state, w, h) {
-  // this shift is designed such that the tree in the center of the field will stay in the center, by alternating between adding new cells on the left or right side
-  // this only works if w and h only increase size by 1, but that's how the upgrades work anyway
-  var xs = 0;
-  if((state.numw & 1) == 1) xs = -1;
-  var ys = 0;
-  if((state.numh & 1) == 1) ys = -1;
+  // this shift is designed such that the center tile of the old field will stay in the center, and in case of
+  // even sizes will be at the floor(dimension / 2). w and h should be larger than state.numw and state.numh respectively
+  var xs = (((state.numw + 1) >> 1) - ((w + 1) >> 1));
+  var ys = (((state.numh + 1) >> 1) - ((h + 1) >> 1));
   var field = [];
   for(var y = 0; y < h; y++) {
     field[y] = [];
@@ -359,6 +355,9 @@ function changeFieldSize(state, w, h) {
   state.field = field;
   state.numw = w;
   state.numh = h;
+
+  state.fernx -= xs;
+  state.ferny -= ys;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -487,7 +486,6 @@ function computeDerived(state) {
     }
   }
 
-  var power = gain.sub(state.ethereal_upgrade_spent);
   for(var i = 0; i < registered_upgrades2.length; i++) {
     var u = state.upgrades2[registered_upgrades2[i]];
     var u2 = upgrades2[registered_upgrades2[i]];
@@ -496,7 +494,7 @@ function computeDerived(state) {
       if(!u.seen) state.upgrades2_new++;
       if(!u2.isExhausted()) {
         state.upgrades2_upgradable++; // same as u2.canUpgrade()
-        if(u2.getCost().le(power)) state.upgrades2_affordable++;
+        if(u2.getCost().le(state.res)) state.upgrades2_affordable++;
       }
     }
   }

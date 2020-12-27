@@ -190,6 +190,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
+    tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     index++;
   }
 
@@ -199,6 +200,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
+    tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     upgrades2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }

@@ -682,18 +682,16 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_UPGRADE2) {
         var u = upgrades2[action.u];
-        var power = gain.sub(state.ethereal_upgrade_spent).mulr(1.001); // allow slight numerical precision error, e.g. say you have 0.4 pericarp/s, it may still fail to let you buy 4 upgrades costing 0.1 pericarp/s each otherwise
         var cost = u.getCost();
-        var cost_tweaked = cost.mulr(0.999);
-        if(power.lt(cost_tweaked)) {
-          showMessage('not enough available power for ethereal upgrade: need ' + cost.toProdString() +
-              ', have: ' + Res.getMatchingResourcesOnly(cost, power).toProdString() + '. If you have enough resin, you can plant something on the ethereal field, which will immediately give pericarps/s for these upgrades.', invalidFG, invalidBG);
+        if(state.res.lt(cost)) {
+          showMessage('not enough resources for ethereal upgrade: need ' + cost.toString() +
+              ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
         } else if(!u.canUpgrade()) {
           showMessage('this ethereal upgrade is not currently available', invalidFG, invalidBG);
         } else  {
-          state.ethereal_upgrade_spent.addInPlace(cost);
+          state.res.subInPlace(cost);
           u.fun();
-          showMessage('Ethereal upgrade applied: ' + u.getName() + ', power used: ' + cost.toString(), '#ffc', '#640');
+          showMessage('Ethereal upgrade applied: ' + u.getName() + ', consumed: ' + cost.toString(), '#ffc', '#640');
           store_undo = true;
           state.g_numupgrades2++;
         }
@@ -791,10 +789,16 @@ var update = function(opt_fromTick) {
           showMessage('cannot delete: must have at least the 10 seeds which this crop gave to delete it.', invalidFG, invalidBG);
         } else if(f.index >= CROPINDEX) {
           var c = crops2[f.index - CROPINDEX];
-          state.g_numunplanted2++;
           var recoup = c.getCost(-1).mulr(cropRecoup2);
           if(f.index - CROPINDEX == special2_0) {
             state.res.seeds.subrInPlace(10);
+          }
+          if(f.growth < 1) {
+            recoup = c.getCost(-1);
+            showMessage('plant was still growing, full refund given', '#f8a');
+            state.g_numplanted2--;
+          } else {
+            state.g_numunplanted2++;
           }
           f.index = 0;
           f.growth = 0;
@@ -1057,7 +1061,7 @@ var update = function(opt_fromTick) {
         }
       }
     }
-    if(state.g_numresets > 0) {
+    if(state.g_numresets > 0 && state.g_numplanted2 > 0) {
       for(var i = 0; i < registered_upgrades2.length; i++) {
         var j = registered_upgrades2[i];
         if(state.upgrades2[j].unlocked) continue;
@@ -1065,7 +1069,7 @@ var update = function(opt_fromTick) {
           state.upgrades2[j].unlocked = true;
           state.g_numupgrades2_unlocked++;
           if(state.g_numupgrades2_unlocked == 1) {
-            showMessage('You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it.', helpFG, helpBG);
+            showMessage('You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable', helpFG, helpBG);
           }
           showMessage('Ethereal upgrade available: "' + upgrades2[j].getName() + '"', '#44f', '#ff8');
         }

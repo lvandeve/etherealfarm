@@ -506,11 +506,16 @@ function createChangelogDialog() {
 
 
 
+  text += '0.1.11 (2020-12-27):';
+  text += '<br/>';
+  text += '• Added back ethereal upgrades (2 for now), now costing resin. The 6x6 field size upgrade is now actually reachable.';
+  text += '<br/><br/>';
+
+
   text += '0.1.10 (2020-12-26):';
   text += '<br/>';
   text += '• Internal fixes.';
   text += '<br/><br/>';
-
 
   text += '0.1.9 (2020-12-26):';
   text += '<br/>';
@@ -579,6 +584,7 @@ function createChangelogDialog() {
   text += '0.1.2 (2020-12-19):';
   text += '<br/>';
   text += '• Slightly boosted fern and it can now also give spores';
+  text += '<br/>';
   text += '• Tweaked the upgrade-button UI';
   text += '<br/><br/>';
 

@@ -38,7 +38,7 @@ function createTranscendDialog() {
   if(tlevel > 1) {
     text += 'Higher transcensions work like transcension but give extra resin multiplier.<br/>';
   } else {
-    text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These crops give bonuses to the basic field in various ways. Unused resin also gives a slight boost.<br/>';
+    text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These crops give bonuses to the basic field in various ways. Resin can also be used for other ethereal upgrades. Unused resin also gives a slight boost. <br/>';
   }
   text += '<br/>';
   if(tlevel > 1) {
@@ -61,7 +61,7 @@ function createTranscendDialog() {
   text += '• Ethereal upgrades<br/>';
   text += '• Current season<br/>';
   text += '<br/><br/>';
-  text += 'Please note: the transcension aspect of this game is still under development, game version 0.1.9 just brought a redesigned version, and an upcoming version may bring back ethereal upgrades back (in a different form and probably costing resin) too.<br/>';
+  text += 'Please note: the transcension aspect of this game is still under development, game version 0.1.11 brought a few ethereal upgrades, future releases will add more.<br/>';
 
   flex.div.innerHTML = text;
 }
@@ -259,6 +259,7 @@ function makeFieldDialog(x, y) {
         styleButton(button);
         button.textEl.innerText = 'Transcension ' + roman;
         button.textEl.style.boxShadow = '0px 0px 5px #ff0';
+        button.textEl.style.textShadow = '0px 0px 5px #ff0';
         registerTooltip(button, 'Show the transcension dialog');
         button.onclick = function() {
           createTranscendDialog();
@@ -299,9 +300,11 @@ function initFieldUI() {
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
-      var bgdiv = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (100 / state.numw) + '%', (100 / state.numh) + '%', fieldGrid.div);
-      var fgdiv = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (100 / state.numw) + '%', (100 / state.numh) + '%', fieldGrid.div);
-      var div = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (100 / state.numw) + '%', (100 / state.numh) + '%', fieldGrid.div);
+      // the widths are made a tiny bit bigger, to avoid some gridding (1-pixel gaps between field tiles) that can occur for some field sizes otherwise
+      var extra = 0.1;
+      var bgdiv = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (101 / state.numw) + '%', (101 / state.numh) + '%', fieldGrid.div);
+      var fgdiv = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (101 / state.numw) + '%', (101 / state.numh) + '%', fieldGrid.div);
+      var div = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (101 / state.numw) + '%', (101 / state.numh) + '%', fieldGrid.div);
       div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
       centerText(div);
       var bgcanvas = createCanvas('0%', '0%', '100%', '100%', bgdiv); // canvas with the field background image
@@ -317,7 +320,7 @@ function initFieldUI() {
 
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
-          return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears, or starter resources when there is no production yet. Once a fern appeared, letting it sit longer does not change the amount gives.';
+          return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a fern appeared, letting it sit longer does not change the amount gives.';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there

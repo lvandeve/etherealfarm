@@ -126,9 +126,23 @@ var sameTypeCostMultiplier_Flower2 = 2;
 var sameTypeCostMultiplier_Special2 = 1.5;
 var cropRecoup2 = 0.9; // there must be at least some reduction in recoup of ethereal crops: this prevents e.g. cheesing the ethereal crops that give starter resources
 
+
+
+function reduceGrowTime(time, reduce) {
+  if(time > reduce * 2) {
+    time -= reduce;
+  } else {
+    time /= 2;
+  }
+
+  return time;
+}
+
+
 Crop.prototype.getPlanttime = function() {
   var result = this.planttime;
 
+  // This is the opposite for croptype_short, it's not planttime but live time. TODO: make two separate functions for this
   if(this.type == CROPTYPE_SHORT) {
     if(this.basic_upgrade != null) {
       var u = state.upgrades[this.basic_upgrade];
@@ -137,6 +151,12 @@ Crop.prototype.getPlanttime = function() {
         result += (this.planttime * u2.bonus) * u.count;
       }
     }
+
+    return result;
+  }
+
+  if(state.upgrades2[upgrade2_time_reduce_0].count) {
+    result = reduceGrowTime(result, upgrade2_time_reduce_0_amount);
   }
 
   return result;
@@ -773,7 +793,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
 }
 
 
-function registerBoostMultiplier(cropid, cost, adder, prev_crop_num) {
+function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock_id) {
   var crop = crops[cropid];
   var name = crop.name;
 
@@ -785,7 +805,12 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num) {
   var fun = function() {};
 
   var pre = function() {
-    return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
+    if(crop_unlock_id == undefined) {
+      return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
+    } else {
+      // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
+      return state.upgrades[crop_unlock_id].count;
+    }
   };
 
   var aspect = 'boost';
@@ -1340,7 +1365,7 @@ function Upgrade2() {
   this.cost = Res();
 
   // style related, for the upgrade chip in upgrade UI
-  this.bgcolor = '#0ff';
+  this.bgcolor = '#8cf';
   this.bordercolor = '#ff0';
   this.image0 = undefined; // bg image, e.g. a plant
   this.image1 = undefined; // fg image, e.g. a level-up arrow in front of the plant
@@ -1417,7 +1442,7 @@ function registerUpgrade2(name, cost, cost_increase, fun, pre, maxcount, descrip
 
 // register an upgrade that was removed from the game so it's marked as invalid to not display it and remove from new saves
 function registerDeprecatedUpgrade2() {
-  var result = registerUpgrade2('<none>', Res(), 0, function(){}, function(){return false;}, 1, '<none>');
+  var result = registerUpgrade2('<deprecated>', Res(), 0, function(){}, function(){return false;}, 1, '<deprecated>');
   var u = upgrades2[result];
   u.deprecated = true;
   return result;
@@ -1426,18 +1451,40 @@ function registerDeprecatedUpgrade2() {
 
 upgrade2_register_id = 10;
 // deprecated for v0.1.9, but some may come back in a later version
-var upgrade2_seeds = registerDeprecatedUpgrade2();
-var upgrade2_spores = registerDeprecatedUpgrade2();
-var upgrade2_starting0  = registerDeprecatedUpgrade2();
-var upgrade2_starting1  = registerDeprecatedUpgrade2();
-var upgrade2_season = [];
-upgrade2_season[0] =  registerDeprecatedUpgrade2();
-upgrade2_season[1] = registerDeprecatedUpgrade2();
-upgrade2_season[2] = registerDeprecatedUpgrade2();
-upgrade2_season[3] = registerDeprecatedUpgrade2();
-var upgrade2_field6x6 = registerDeprecatedUpgrade2();
+registerDeprecatedUpgrade2(); // old upgrade2_seeds
+registerDeprecatedUpgrade2(); // old upgrade2_spores
+registerDeprecatedUpgrade2(); // old upgrade2_starting0
+registerDeprecatedUpgrade2(); // old upgrade2_starting1
+registerDeprecatedUpgrade2(); // old upgrade2_season[0]
+registerDeprecatedUpgrade2(); // old upgrade2_season[1]
+registerDeprecatedUpgrade2(); // old upgrade2_season[2]
+registerDeprecatedUpgrade2(); // old upgrade2_season[3]
+registerDeprecatedUpgrade2(); // old upgrade2_field6x6
 
 
+
+
+
+
+var upgrade2_time_reduce_0_amount = 60;
+
+upgrade2_register_id = 25;
+var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', Res({resin:25}), 1, function() {
+  var numw = Math.max(7, state.numw);
+  var numh = Math.max(7, state.numh);
+  changeFieldSize(state, numw, numh);
+  initFieldUI();
+}, function(){return state.numw >= 5 && state.numh >= 5}, 1, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds faster. This is capped to remove up to 50% of the total time.', undefined, undefined, blackberry[0]);
+
+
+
+upgrade2_register_id = 50;
+var upgrade2_field6x6 = registerUpgrade2('larger field', Res({resin:100}), 1, function() {
+  var numw = Math.max(6, state.numw);
+  var numh = Math.max(6, state.numh);
+  changeFieldSize(state, numw, numh);
+  initFieldUI();
+}, function(){return state.numw >= 5 && state.numh >= 5}, 1, 'increase basic field size to 6x6 tiles', undefined, undefined, field_summer[0]);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
