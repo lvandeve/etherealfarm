@@ -827,6 +827,7 @@ function decStateOLD(reader, state, save_version) {
     if(!upgrades2[index]) return err(4);
     unlocked[i] = index;
     state.upgrades2[unlocked[i]].unlocked = true;
+    if(upgrades2[unlocked[i]].deprecated) state.upgrades2[unlocked[i]].unlocked = false;
   }
   for(var i = 0; i < unlocked.length; i++) {
     state.upgrades2[unlocked[i]].seen = decBool(reader);
