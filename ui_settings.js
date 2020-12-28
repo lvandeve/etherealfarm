@@ -506,6 +506,11 @@ function createChangelogDialog() {
 
 
 
+  text += '0.1.12 (2020-12-28):';
+  text += '<br/>';
+  text += '• Fix accidental 7x7 field bug, 6x6 is currently the maximum if the relevant upgrade is purchased.';
+  text += '<br/><br/>';
+
   text += '0.1.11 (2020-12-27):';
   text += '<br/>';
   text += '• Added back ethereal upgrades (2 for now), now costing resin. The 6x6 field size upgrade is now actually reachable.';

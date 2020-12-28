@@ -236,6 +236,16 @@ function softReset() {
   state.res.resin.addInPlace(state.resin);
   state.resin = Num(0); // future resin from next tree
 
+
+  // fix the accidental grow time ethereal upgrade that accidentally gave 7x7 field due to debug code in version 0.1.11
+  // TODO: update this code to match next such upgrades this code once a 7x7 upgrade exists!
+  if(state.numw == 7 && state.numh == 7) {
+    var size = (state.upgrades2[upgrade2_field6x6].count) ? 6 : 5;
+    state.numw = size;
+    state.numh = size;
+    initFieldUI();
+  }
+
   clearField(state);
 
   state.treelevel = 0;

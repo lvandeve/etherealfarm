@@ -1470,11 +1470,7 @@ var upgrade2_time_reduce_0_amount = 60;
 
 upgrade2_register_id = 25;
 var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', Res({resin:25}), 1, function() {
-  var numw = Math.max(7, state.numw);
-  var numh = Math.max(7, state.numh);
-  changeFieldSize(state, numw, numh);
-  initFieldUI();
-}, function(){return state.numw >= 5 && state.numh >= 5}, 1, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds faster. This is capped to remove up to 50% of the total time.', undefined, undefined, blackberry[0]);
+}, function(){return true}, 1, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds faster. This is capped to remove up to 50% of the total time.', undefined, undefined, blackberry[0]);
 
 
 
