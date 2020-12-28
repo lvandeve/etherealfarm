@@ -503,9 +503,6 @@ function createChangelogDialog() {
   text += '<br/><br/>';
 
 
-
-
-
   text += '0.1.12 (2020-12-28):';
   text += '<br/>';
   text += '• Fix accidental 7x7 field bug, 6x6 is currently the maximum if the relevant upgrade is purchased.';
@@ -661,24 +658,91 @@ function createHelpDialog() {
 
   var el = document.getElementById('recovery');
   el.onclick = function() {
-    var dialog = createDialog();
-
-    var textFlex = new Flex(dialog, 0.02, 0.01, 0.98, 0.1, 0.3);
-    textFlex.div.innerText = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues.';
-    var area = util.makeAbsElement('textarea', '2%', '15%', '96%', '70%', dialog.div);
-
-    var saves = getRecoverySaves();
-
-    var text = '';
-    for(var i = 0; i < saves.length; i++) {
-      text += saves[i][0] + '\n' + saves[i][1] + '\n\n';
-    }
-    if(saves.length == 0) {
-      text = 'No recovery saves found. This can happen, for example, if your browser deleted (or doesn\'t save) local storage for this website, or after performing a hard reset, or never played the game on this device or in this browser.\n';
-    }
-
-    area.value = text;
+    showSavegameRecoveryDialog();
   };
+}
+
+// if opt_failed_save is true, the dialog is shown due to an actual failed save so the message is different.
+function showSavegameRecoveryDialog(opt_failed_save) {
+  var title;
+  if(opt_failed_save) {
+    title = '<font color="red"><b>Loading failed</b></font>. Read this carefully to help recover your savegame if you don\'t have backups. Copypaste all the recovery savegame(s) below and save them in a text file. Once they\'re stored safely by you, try some of them in the "import save" dialog under settings. One of them may be recent enough and work. Even if the recovery saves don\'t work now, a future version of the game may fix it. Apologies for this.';
+  } else {
+    title = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues.';
+  }
+
+  var saves = getRecoverySaves();
+  var text = '';
+  for(var i = 0; i < saves.length; i++) {
+    text += saves[i][0] + '\n' + saves[i][1] + '\n\n';
+  }
+  if(saves.length == 0) {
+    text = 'No recovery saves found. Ethereal farm savegames are stored in local storage of your web browser for the current website. If you expected to see savegames here, there may be several possible reasons:\n\n' +
+            ' • Your browser deleted (or doesn\'t save) local storage for this website\n\n' +
+            ' • After manually performing a hard reset all data is erased\n\n' +
+            ' • Never played the game on this device or in this browser.\n\n' +
+            ' • Played the game on a different website (URL). If you played on a different website before and want to continue here, you can export the save there and import it here in the settings.\n\n' +
+            ' • Other modifications to the URL: for example, ensure no "www" in front and "https", not "http" in front.\n\n';
+  }
+
+  if(!opt_failed_save && saves.length > 0 && !savegame_recovery_situation) {
+    // also add current
+    save(state, function(s) {
+      text += 'current' + '\n' + s + '\n\n';
+      showExportTextDialog(title, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
+    });
+  } else {
+    showExportTextDialog(title, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
+  }
+}
+
+// show a dialog to export the text, to clipboard, by save as file, ...
+function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
+  var large = title.length > 500 || text.length > 1000;
+
+  var clipboardSupported = document.queryCommandSupported && document.queryCommandSupported('copy') && document.execCommand;
+  var dialog;
+  var extrafun = undefined;
+  var extraname = undefined;
+
+  if(clipboardSupported) {
+    extrafun = function(e) {
+      area.select();
+      area.focus();
+      try {
+        document.execCommand('copy');
+      } catch(e) {
+        showMessage('failed to copy to clipboard', '#f00', '#ff0');
+        textFlex.div.innerText = 'failed to copy to clipboard, copy it manually with ctrl+c instead';
+        textFlex.div.style.color = 'red';
+        return;
+      }
+      if(opt_close_on_clipboard) closeAllDialogs();
+      showMessage('save copied to clipboard', '#aaa');
+    };
+    extraname = 'to clipboard';
+  }
+
+  dialog = createDialog(large ? DIALOG_MEDIUM : DIALOG_SMALL, function(e) {
+    var a = document.createElement('a');
+    a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(area.value + '\n'));
+    a.setAttribute('download', filename);
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if(opt_close_on_clipboard) closeAllDialogs();
+    showMessage('save exported to file', '#aaa');
+  }, 'download', 'back', extrafun, extraname);
+
+
+  var textFlex = new Flex(dialog, 0.02, 0.01, 0.98, 0.15, 0.3);
+  textFlex.div.innerHTML = title;
+
+  var areaFlex = new Flex(dialog, 0.02, 0.2, 0.98, 0.8, 0.3);
+  var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', areaFlex.div);
+
+  area.value = text;
 }
 
 
@@ -722,54 +786,12 @@ function initSettingsUI_in(dialogFlex) {
   button.textEl.innerText = 'export save';
   registerTooltip(button, 'Export an encoded savegame, for backups.');
   button.onclick = function() {
-    var w = 500, h = 500;
-    var clipboardSupported = document.queryCommandSupported && document.queryCommandSupported('copy') && document.execCommand;
-    var dialog;
-    var extrafun = undefined;
-    var extraname = undefined;
-
-    if(clipboardSupported) {
-      extrafun = function(e) {
-        area.select();
-        area.focus();
-        try {
-          document.execCommand('copy');
-        } catch(e) {
-          showMessage('failed to copy to clipboard', '#f00', '#ff0');
-          textFlex.div.innerText = 'failed to copy to clipboard, copy it manually with ctrl+c instead';
-          textFlex.div.style.color = 'red';
-          return;
-        }
-        closeAllDialogs();
-        showMessage('save copied to clipboard', '#aaa');
-      };
-      extraname = 'to clipboard';
-    }
-
-    dialog = createDialog(false, function(e) {
-      var filename = 'ethereal-farm-' + util.formatDate(util.getTime(), true) + '.txt';
-      var a = document.createElement('a');
-      a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(area.value + '\n'));
-      a.setAttribute('download', filename);
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      closeAllDialogs();
-      showMessage('save exported to file', '#aaa');
-    }, 'download', 'back', extrafun, extraname);
-
-
-    var textFlex = new Flex(dialog, 0.02, 0.01, 0.98, 0.1, 0.3);
-    textFlex.div.innerText = 'Export a savegame backup: copy or download the encoded savegame below, and store it somewhere safe. Do this regularly: even though the game autosaves in the web browser, browsers can easily lose this data. This contains all your progress!';
-    var area = util.makeAbsElement('textarea', '2%', '15%', '96%', '70%', dialog.div);
     state.g_numexports++;
     // this gets updated even if user would then close the dialog without actually saving it, we can't know whether they actually properly stored the text or not
     state.g_lastexporttime = util.getTime();
     save(state, function(s) {
-      area.value = s;
-      area.select();
-      area.focus();
+      var title = 'Export a savegame backup: copy or download the encoded savegame below, and store it somewhere safe. Do this regularly: even though the game autosaves in the web browser, browsers can easily lose this data. This contains all your progress!';
+      showExportTextDialog(title, s, 'ethereal-farm-' + util.formatDate(util.getTime(), true) + '.txt', true);
     });
   };
 

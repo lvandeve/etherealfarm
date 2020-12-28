@@ -173,9 +173,11 @@ var DIALOG_MEDIUM = 1;
 var DIALOG_LARGE = 2;
 
 // create a dialog for the settings menu
+// opt_size: see DIALOG_SMALL etc... values above
 // opt_okfun must call dialog.cancelFun when the dialog is to be closed
 // opt_extrafun and opt_extraname allow a third button in addition to cancel and ok. The order will be: cancel, extra, ok.
-function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname) {
+// opt_nobgclose: don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
+function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose) {
   dialog_level++;
 
   var dialogFlex;
@@ -250,7 +252,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
   overlay.style.position = 'fixed';
   overlay.style.zIndex = '' + (dialog_level * 10);
-  overlay.onclick = dialog.cancelFun;
+  if(!opt_nobgclose) overlay.onclick = dialog.cancelFun;
   return dialogFlex;
 }
 

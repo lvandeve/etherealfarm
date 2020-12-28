@@ -74,7 +74,6 @@ function loadFromLocalStorage(onsuccess, onfail) {
       var has_recovery = !!util.getLocalStorage(localstorageName_recover);
       if(!has_recovery) util.setLocalStorage(e, localstorageName_recover);
 
-      // save a recovery save in case something went wrong.
       var saves = getRecoverySaves();
       for(var i = 0; i < saves.length; i++) {
         showMessage(saves[i][0] + ' : ' + saves[i][1], '#f00', '#ff0');
@@ -89,7 +88,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
       if(state && state.error_reason == 7) text += ' ' + loadfailreason_toonew;
 
       showMessage(text, '#f00', '#ff0');
-      //var dialog = createDialog();
+      showSavegameRecoveryDialog(true);
 
       savegame_recovery_situation = true;
     }

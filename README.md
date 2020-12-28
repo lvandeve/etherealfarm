@@ -1,4 +1,4 @@
 # etherealfarm
 Ethereal Farm incremental game
 
-https://lvandeve.github.io/etherealfarm/
+https://lodev.org/etherealfarm/
