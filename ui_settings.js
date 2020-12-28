@@ -625,11 +625,7 @@ function createHelpDialog() {
   text += '<br/><br/>';
   text += 'You can click resources in the resource panel to see more detailed breakdown. You can click fullgrown crops to see detailed stats. As the game progresses, more types of information may appear in there.';
   text += '<br/><br/>';
-  text += 'To personalize settings, see <i>settings -> preferences</i>. To learn about or change the large number notation (suffixes like K, etc...), see <i>settings -> number format</i>. To view gameplay statistics so far, see <i>settings -> player stats</i>.';
-  text += '<br/><br/>';
-  text += 'This game auto-saves every few minutes in local storage in the web browser, but please use <i>settings -> export save</i> regularly for backups, because a local storage savegame can easily get lost.';
-  text += '<br/><br/>';
-  text += 'List of keyboard shortcuts:';
+  text += '<b>List of keyboard shortcuts:</b>';
   text += '<br/><br/>';
   text += ' • <b>"a"</b>: activate all unlocked weather abilities';
   text += '<br/>';
@@ -644,14 +640,40 @@ function createHelpDialog() {
   text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you actions a minute later.';
   text += '<br/>';
   text += ' • <b>shift + click save import dialog</b>: import and old savegame, but do not run the time, so you get the resources at the time of saving rather than with all production during that time added.';
-  text += '<br/>';
-
   text += '<br/><br/>';
+  text += '<b>Savegame recovery:</b>';
+  text += '<br/><br/>';
+  text += 'This game auto-saves every few minutes in local storage in the web browser, but please use <i>settings -> export save</i> regularly for backups, because a local storage savegame can easily get lost.';
+  text += '<br/><br/>';
+  text += 'If something goes wrong with your savegame, there may be a few older recovery savegames. Click <a style="color:#44f;" id="recovery">here</a> to view them.';
+
+  text += '<br/><br/><br/>';
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';
   text += 'Copyright (c) 2020 by Lode Vandevenne';
 
   div.innerHTML = text;
+
+  var el = document.getElementById('recovery');
+  el.onclick = function() {
+    var dialog = createDialog();
+
+    var textFlex = new Flex(dialog, 0.02, 0.01, 0.98, 0.1, 0.3);
+    textFlex.div.innerText = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues.';
+    var area = util.makeAbsElement('textarea', '2%', '15%', '96%', '70%', dialog.div);
+
+    var saves = getRecoverySaves();
+
+    var text = '';
+    for(var i = 0; i < saves.length; i++) {
+      text += saves[i][0] + '\n' + saves[i][1] + '\n\n';
+    }
+    if(saves.length == 0) {
+      text = 'No recovery saves found. This can happen, for example, if your browser deleted (or doesn\'t save) local storage for this website, or after performing a hard reset, or never played the game on this device or in this browser.\n';
+    }
+
+    area.value = text;
+  };
 }
 
 
@@ -768,6 +790,8 @@ function initSettingsUI_in(dialogFlex) {
         closeAllDialogs();
         initUI();
         update();
+        util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
+        savegame_recovery_situation = false;
       }, function(state) {
         var message = importfailedmessage;
         if(state && state.error_reason == 1) message += '\n' + loadfailreason_toosmall;

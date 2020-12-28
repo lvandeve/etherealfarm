@@ -28,6 +28,8 @@ initUIGlobal();
 
 var paused = false;
 
+var savegame_recovery_situation = false; // if true, makes it less likely to autosave, to ensure local storage preserves a valid older save
+
 // saves to local storage
 function saveNow(onsuccess) {
   save(state, function(s) {
@@ -47,6 +49,10 @@ function loadFromLocalStorage(onsuccess, onfail) {
     prev_version = 4096 * fromBase64[e[2]] + 64 * fromBase64[e[3]] + fromBase64[e[4]];
     // NOTE: if there is a bug, and prev_version is a bad version with bug, then do NOT overwrite if prev_version is that bad one
     if(prev_version < version) {
+      var prev2 = util.getLocalStorage(localstorageName_prev_version);
+      if(prev2) {
+        util.setLocalStorage(prev2, localstorageName_prev_version2);
+      }
       util.setLocalStorage(e, localstorageName_prev_version);
     }
   }
@@ -64,25 +70,18 @@ function loadFromLocalStorage(onsuccess, onfail) {
     }
   }, function(state) {
     if(e.length > 22 && isBase64(e) && e[0] == 'E' && e[1] == 'F') {
+      // save a recovery save in case something went wrong, but only if there isn't already one. Only some specific later actions like importing a save and hard reset will clear this
+      var has_recovery = !!util.getLocalStorage(localstorageName_recover);
+      if(!has_recovery) util.setLocalStorage(e, localstorageName_recover);
+
       // save a recovery save in case something went wrong.
-      util.setLocalStorage(e, localstorageName_recover);
-      var prev = util.getLocalStorage(localstorageName_prev_version);
-      if(prev) {
-        showMessage('last from older game version: ' + prev, '#f00', '#ff0');
+      var saves = getRecoverySaves();
+      for(var i = 0; i < saves.length; i++) {
+        showMessage(saves[i][0] + ' : ' + saves[i][1], '#f00', '#ff0');
       }
-      var manual = util.getLocalStorage(localstorageName_manual);
-      if(manual) {
-        showMessage('last manual save: ' + manual, '#f00', '#ff0');
+      if(saves.length == 0) {
+        showMessage('current: ' + e, '#f00', '#ff0');
       }
-      var undo = util.getLocalStorage(localstorageName_undo);
-      if(undo) {
-        showMessage('last save for undo feature: ' + undo, '#f00', '#ff0');
-      }
-      var lastsuccess = util.getLocalStorage(localstorageName_success);
-      if(lastsuccess) {
-        showMessage('last known good: ' + lastsuccess, '#f00', '#ff0');
-      }
-      showMessage('current: ' + e, '#f00', '#ff0');
       var text = loadlocalstoragefailedmessage;
       if(state && state.error_reason == 4) text += ' ' + loadfailreason_format;
       if(state && state.error_reason == 5) text += ' ' + loadfailreason_decompression;
@@ -91,10 +90,52 @@ function loadFromLocalStorage(onsuccess, onfail) {
 
       showMessage(text, '#f00', '#ff0');
       //var dialog = createDialog();
+
+      savegame_recovery_situation = true;
     }
-    state.savegame_recovery_situation = true;
     onfail(state);
   });
+}
+
+
+
+// Why there are so many recovery saves: because different systems may break in different ways, hopefully at least one still has a valid recent enough save but not too recent to have the breakage
+// This mostly protects against loss of progress due to accidental bugs of new game versions that break old saves. This cannot recover anything if local storage was deleted.
+function getRecoverySaves() {
+  var result = [];
+  var prev = util.getLocalStorage(localstorageName_prev_version);
+  if(prev) {
+    result.push(['last from older game version', prev]);
+  }
+  var prev2 = util.getLocalStorage(localstorageName_prev_version2);
+  if(prev2) {
+    result.push(['last from second-older game version', prev2]);
+  }
+  var manual = util.getLocalStorage(localstorageName_manual);
+  if(manual) {
+    result.push(['last manual save', manual]);
+  }
+  var transcend = util.getLocalStorage(localstorageName_transcend);
+  if(transcend) {
+    result.push(['last transcend', transcend]);
+  }
+  var undo = util.getLocalStorage(localstorageName_undo);
+  if(undo) {
+    result.push(['last save for undo feature', undo]);
+  }
+  var lastsuccess = util.getLocalStorage(localstorageName_success);
+  if(lastsuccess) {
+    result.push(['last known good', lastsuccess]);
+  }
+  var recovery = util.getLocalStorage(localstorageName_recover);
+  if(recovery) {
+    result.push(['last known failed', recovery]);
+  }
+  var current = util.getLocalStorage(localstorageName);
+  if(lastsuccess) {
+    result.push(['last', current]);
+  }
+  return result;
 }
 
 function hardReset() {
@@ -103,19 +144,29 @@ function hardReset() {
   util.clearLocalStorage(localstorageName_recover);
   util.clearLocalStorage(localstorageName_success);
   util.clearLocalStorage(localstorageName_prev_version);
+  util.clearLocalStorage(localstorageName_prev_version2);
   util.clearLocalStorage(localstorageName_undo);
   util.clearLocalStorage(localstorageName_manual);
+  util.clearLocalStorage(localstorageName_transcend);
   postload(createInitialState());
 
   prev_season = -1;
   undoSave = '';
   lastUndoSaveTime = 0;
 
+  savegame_recovery_situation = false;
+
   initUI();
   update();
 }
 
 function softReset() {
+  save(util.clone(state), function(s) {
+    util.setLocalStorage(s, localstorageName_transcend);
+  });
+  util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that trascending means all about the game is going fine
+  savegame_recovery_situation = false;
+
   showMessage('Transcended! Got resin: ' + state.resin.toString(), '#40f', '#ffd');
   if(state.g_numresets == 0) {
     showMessage('This is your first transcension. Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.', helpFG, helpBG);

@@ -62,8 +62,6 @@ function MedalState() {
 
 // all the state that should be able to get saved
 function State() {
-  this.savegame_recovery_situation = false; // if true, makes it less likely to autosave, to ensure local storage preserves a valid older save
-
   this.timemul = 1; // global total time speed multiplier. TODO: this should NOT be in the state, probably. Try to get this to exist in the debug interface only.
 
   // prevtime is used to know how much time elapsed at next tick, including after loading a savegame

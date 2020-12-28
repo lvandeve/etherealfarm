@@ -53,7 +53,7 @@ undoSave = util.getLocalStorage(localstorageName_undo, '');
 
 // do not auto save if no action was ever taken
 function autoSaveOk() {
-  if(state.savegame_recovery_situation) {
+  if(savegame_recovery_situation) {
     // in the recovery situation, only autosave if the user has decided to advance rather far in the newly-created game: not only planted something but even did an upgrade.
     return state.g_numupgrades > 0;
   }
