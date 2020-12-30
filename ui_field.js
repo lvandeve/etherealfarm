@@ -80,12 +80,15 @@ function formatBreakdown(breakdown, percent, title) {
       // additive
       if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2]).toString();
     }
-    result += (i == 0) ? ': ' : ' ⇒ ';
-    if(percent) {
-      result += breakdown[i][3].mulr(100).toString() + '%<br/>';
-    } else {
-      result += breakdown[i][3].toString() + '<br/>';
+    if(breakdown[i][3] != undefined) {
+      result += (i == 0) ? ': ' : ' ⇒ ';
+      if(percent) {
+        result += breakdown[i][3].mulr(100).toString() + '%';
+      } else {
+        result += breakdown[i][3].toString();
+      }
     }
+    result += '<br/>';
   }
   return result;
 }
@@ -198,7 +201,7 @@ function makeFieldDialog(x, y) {
     var c = f.getCrop();
     var div;
 
-    var dialog = createDialog(c.type == CROPTYPE_SHORT ? DIALOG_LARGE : undefined);
+    var dialog = createDialog();
     dialog.div.style.backgroundColor = '#efec'; // slightly translucent to see resources through it
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
@@ -227,7 +230,7 @@ function makeFieldDialog(x, y) {
     button1.textEl.innerText = 'detailed stats / bonuses';
     registerTooltip(button1, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     button1.onclick = function() {
-      var dialog = createDialog();
+      var dialog = createDialog(DIALOG_LARGE);
       dialog.div.style.backgroundColor = '#fedc'; // slightly translucent to see resources through it
       var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.8, 0.3);
       var text = '';

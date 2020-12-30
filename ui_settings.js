@@ -525,6 +525,8 @@ function createChangelogDialog() {
   text += '<br/>';
   text += '• Ethereal crops now give 100% resin back on delete, but require ethereal deletion tokens.';
   text += '<br/>';
+  text += '• Buffed watercress to have a more meaningful upgrade for the early game experience.';
+  text += '<br/>';
   text += '• Added a few more achievements.';
   text += '<br/><br/>';
 

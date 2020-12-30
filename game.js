@@ -655,6 +655,7 @@ function precomputeField() {
           var leech = c.getLeech(f);
           var p = prefield[y][x];
           var total = Res();
+          var num = 0;
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
@@ -669,11 +670,19 @@ function precomputeField() {
                 p.prod2.addInPlace(leech2);
                 p.prod3.addInPlace(leech3);
                 total.addInPlace(leech3); // for the breakdown
+                num++;
               }
             }
           }
           // also add this to the breakdown
-          if(!total.empty()) p.breakdown.push(['<b><i><font color="#040">leeching neighbors</font></i></b>', false, total, p.prod3.clone()]);
+          if(!total.empty()) {
+            if(leech.ltr(1)) {
+              p.breakdown.push(['leech reduction due to multiple watercress globally', true, leech, undefined]);
+            }
+            p.breakdown.push(['<b><i><font color="#040">leeching neighbors (' + num + ')</font></i></b>', false, total, p.prod3.clone()]);
+          } else {
+            p.breakdown.push(['no neighbors, not leeching', false, total, p.prod3.clone()]);
+          }
         }
       }
     }
@@ -831,7 +840,7 @@ var update = function(opt_fromTick) {
           updateUI();
           if(action.u == berryunlock_0) {
             showMessage('You unlocked your first permanent type of plant. Plants like this stay on the field forever and have much more powerful production upgrades too.', helpFG, helpBG);
-            showMessage('If you plant watercress next to permanent plants, the watercress will add all its neighbors production to its own, so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns.', helpFG2, helpBG2);
+            showMessage('If you plant watercress next to permanent plants, the watercress will add all its neighbors production to its own ("leech"), so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns.', helpFG2, helpBG2);
           }
         }
       } else if(type == ACTION_UPGRADE2) {
@@ -872,7 +881,8 @@ var update = function(opt_fromTick) {
             state.g_numplantedshort++;
             state.c_numplantedshort++;
             if(state.c_numplantedshort == 1 && state.c_numplanted == 0) {
-              showMessage('you planted your first plant! It\'s producing seeds. This one is short-lived so will need to be replanted soon. But don\'t worry, most plant types are permanent. Just not this one. Watercress will remain useful later on as well once you have permanent crops from watercress can leech.', helpFG, helpBG);
+              showMessage('you planted your first plant! It\'s producing seeds. This one (unlike most later ones) is short-lived so will need to be replanted soon. Watercress will remain useful later on as well since it can leech.', helpFG, helpBG);
+              showMessage('TIP: hold SHIFT to plant last crop type, CTRL to plant watercress', helpFG, helpBG);
             }
           } else {
             state.g_numplanted++;

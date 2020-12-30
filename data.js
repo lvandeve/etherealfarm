@@ -219,6 +219,15 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
   }
+  if(this.basic_upgrade != null && this.type == CROPTYPE_SHORT) {
+    var u = state.upgrades[this.basic_upgrade];
+    var u2 = upgrades[this.basic_upgrade];
+    if(u.count > 0) {
+      var mul_upgrade = Num(1).add(Num(0.5).mulr(u.count)); // watercress upgrade is additive instead of multiplicative
+      result.mulInPlace(mul_upgrade);
+      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+    }
+  }
 
   // ethereal crops bonus to basic crops
   var ethereal_prodmul = Res.resOne();
@@ -364,6 +373,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     var leech = this.getLeech(f);
     var p = prefield[f.y][f.x];
     var total = Res();
+    var num = 0;
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
       var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
       var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
@@ -374,11 +384,21 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
         var p2 = prefield[y2][x2];
         if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
           total.addInPlace(p2.prod0);
+          num++;
         }
       }
     }
     result.addInPlace(total);
-    if(breakdown && !total.empty()) breakdown.push(['<b><i><font color="#040">leeching neighbors</font></i></b>', false, total, result.clone()]);
+    if(breakdown) {
+      if(!total.empty()) {
+        if(leech.ltr(1)) {
+          breakdown.push(['leech reduction due to multiple watercress globally', true, leech, undefined]);
+        }
+        breakdown.push(['<b><i><font color="#040">leeching neighbors (' + num + ')</font></i></b>', false, total, result.clone()]);
+      } else {
+        breakdown.push(['no neighbors, not leeching', false, total, result.clone()]);
+      }
+    }
   }
 
   return result;
@@ -832,7 +852,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
   if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption! Get your seeds production up first!';
 
 
-  var result = registerUpgrade('Improve ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(multiplier);
   u.cropid = cropid;
@@ -870,7 +890,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
 
   var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (additive)';
 
-  var result = registerUpgrade('Improve ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var result = registerUpgrade('Upgrade' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(adder);
   u.cropid = cropid;
@@ -904,9 +924,9 @@ function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_nu
     }
   };
 
-  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive)';
+  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive), and adds 50% base production excluding leech (additive)';
 
-  var result = registerUpgrade('Sturdier ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(time_increase);
   u.cropid = cropid;
@@ -998,7 +1018,7 @@ upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0);
 
 upgrade_register_id = 205;
-var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.15, 1);
+var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 1);
 
 upgrade_register_id = 250;
 var upgrade_fogunlock = registerUpgrade('fog ability', treeLevelReq(3).mulr(0.05 * 0), function() {
