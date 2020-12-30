@@ -173,6 +173,8 @@ function softReset() {
     showMessage('This is your first transcension. Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.', helpFG, helpBG);
   }
 
+  // state.c_runtime = util.getTime() - state.c_starttime; // state.c_runtime was computed by incrementing each delta, but this should be numerically more precise
+
   // first ethereal crops
   state.crops2[berry2_0].unlocked = true;
   state.crops2[mush2_0].unlocked = true;
@@ -203,6 +205,33 @@ function softReset() {
   state.p_numupgrades = state.c_numupgrades;
   state.p_numupgrades_unlocked = state.c_numupgrades_unlocked;
   state.p_numabilities = state.c_numabilities;
+
+  if(state.g_numresets == 0) {
+    state.f_treelevel = state.treelevel;
+
+    state.f_starttime = state.c_starttime;
+    state.f_runtime = state.c_runtime;
+    state.f_numticks = state.c_numticks;
+    state.f_res = Res(state.c_res);
+    state.f_max_res = Res(state.c_max_res);
+    state.f_max_prod = Res(state.c_max_prod);
+    state.f_numferns = state.c_numferns;
+    state.f_numplantedshort = state.c_numplantedshort;
+    state.f_numplanted = state.c_numplanted;
+    state.f_numfullgrown = state.c_numfullgrown;
+    state.f_numunplanted = state.c_numplanted;
+    state.f_numupgrades = state.c_numupgrades;
+    state.f_numupgrades_unlocked = state.c_numupgrades_unlocked;
+    state.f_numabilities = state.c_numabilities;
+  }
+
+  if(state.g_slowestrun == 0) {
+    state.g_fastestrun = state.c_runtime;
+    state.g_slowestrun = state.c_runtime;
+  } else {
+    state.g_fastestrun = Math.min(state.g_fastestrun, state.c_runtime);
+    state.g_slowestrun = Math.max(state.g_slowestrun, state.c_runtime);
+  }
 
   state.c_starttime = state.time;
   state.c_runtime = 0;
@@ -911,7 +940,9 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_DELETE2) {
         var f = state.field2[action.y][action.x];
-        if(f.cropIndex() == special2_0 && state.res.seeds.ltr(10)) {
+        if(state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
+          showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)' , invalidFG, invalidBG);
+        } else if(f.cropIndex() == special2_0 && state.res.seeds.ltr(10)) {
           showMessage('cannot delete: must have at least the 10 seeds which this crop gave to delete it.', invalidFG, invalidBG);
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
@@ -921,16 +952,18 @@ var update = function(opt_fromTick) {
           }
           if(f.growth < 1) {
             recoup = c.getCost(-1);
-            showMessage('plant was still growing, full refund given', '#f8a');
+            showMessage('plant was still growing, resin refunded and no delete token used', '#f8a');
             state.g_numplanted2--;
           } else {
             state.g_numunplanted2++;
+            if(state.delete2tokens > 0) state.delete2tokens--;
+            showMessage('unplanted ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
           }
           f.index = 0;
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
           state.res.addInPlace(recoup);
-          showMessage('unplanted ' + c.name + ', got back: ' + recoup.toString());
+
           store_undo = true;
         }
       } else if(type == ACTION_FERN) {
@@ -1256,10 +1289,6 @@ var update = function(opt_fromTick) {
     }
   }
 
-  if(num_season_changes > 0) {
-    state.g_seasons++;
-  }
-
   var d_total = state.prevtime - oldtime;
   if(d_total > 300) {
     var totalgain = state.res.sub(oldres);
@@ -1277,6 +1306,15 @@ var update = function(opt_fromTick) {
     if(num_season_changes == 1) {
       showMessage('The season changed, it is now ' + seasonNames[getSeason()], '#fff', '#260');
     }
+  }
+
+  if(num_season_changes > 0) {
+    state.g_seasons++;
+    var num_tokens = num_season_changes * delete2perSeason;
+    if(state.delete2tokens + num_tokens > delete2maxBuildup) num_tokens = delete2maxBuildup - state.delete2tokens;
+    state.delete2tokens += num_tokens;
+    state.g_delete2tokens += num_tokens;
+    if(num_tokens > 0 && state.g_numresets > 0) showMessage('Received ' + num_tokens + ' ethereal deletion tokens', '#45d', '#9de');
   }
 
   updateResourceUI();

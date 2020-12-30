@@ -20,12 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var seasonNames = ['spring', 'summer', 'autumn', 'winter'];
 
-var CROPTYPE_BERRY = 0;
-var CROPTYPE_MUSH = 1;
-var CROPTYPE_FLOWER = 2;
-var CROPTYPE_NETTLE = 3;
-var CROPTYPE_SHORT = 4;
-var CROPTYPE_SPECIAL = 5;
+var croptype_index = 0;
+var CROPTYPE_BERRY = croptype_index++;
+var CROPTYPE_MUSH = croptype_index++;
+var CROPTYPE_FLOWER = croptype_index++;
+var CROPTYPE_NETTLE = croptype_index++;
+var CROPTYPE_SHORT = croptype_index++;
+var CROPTYPE_SPECIAL = croptype_index++; // used for some ethereal crops
+var NUM_CROPTYPES = croptype_index;
 
 function getCropTypeName(type) {
   if(type == CROPTYPE_BERRY) return "berry";
@@ -135,7 +137,12 @@ var cropRecoup = 0.33;  // recoup for deleting a plant. It is only partial, the 
 var sameTypeCostMultiplier2 = 1.5;
 var sameTypeCostMultiplier_Flower2 = 2;
 var sameTypeCostMultiplier_Special2 = 1.5;
-var cropRecoup2 = 0.9; // there must be at least some reduction in recoup of ethereal crops: this prevents e.g. cheesing the ethereal crops that give starter resources
+var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
+
+//for state.delete2tokes
+var delete2perSeason = 2; // how many deletions on the ethereal field may be done per season
+var delete2maxBuildup = delete2perSeason * 4; // how many deletions can be saved up for future use when seasons change
+var delete2initial = delete2perSeason * 2; // how many deletions received at game start (NOTE: delete2perSeason only gotten at next season change, not at game start)
 
 
 
@@ -822,7 +829,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
 
   var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor(((multiplier - 1) * 100)) + '% (multiplicative)';
 
-  if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your resource production shows any red, this upgrade will not help you for now since it also increases the consumption! Get your seeds production up first!';
+  if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption! Get your seeds production up first!';
 
 
   var result = registerUpgrade('Improve ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
@@ -1171,12 +1178,11 @@ for(var i = 0; i < planted_achievement_values.length; i++) {
   var b = planted_achievement_bonuses[i];
   var name = 'planted ' + a;
   if(i > 0) medals[prevmedal].description += '. Next achievement in this series, ' + name + ', unlocks at ' + a + ' planted.';
-  prevmedal = registerMedal(name, 'Planted ' + a + ' or more fullgrown plants over the course of the game', genericicon,
+  prevmedal = registerMedal(name, 'Planted ' + a + ' or more fullgrown plants over the course of the game', blackberry[0],
       bind(function(a) { return state.g_numfullgrown >= a; }, a),
       Num(b));
 }
 medal_register_id += 20; // a few spares for this one
-var level_achievement_values =  [10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000, 9999];
 var level_achievement_values =  [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 150];
 for(var i = 0; i < level_achievement_values.length; i++) {
   var level = Num(level_achievement_values[i]);
@@ -1193,6 +1199,36 @@ medal_register_id += 20; // a few spares for this one
 // TODO: from now on, clearly define the value of a new medal series right before it, rather than the "+= 20" system from above, to prevent no accidental changing of all achievement IDs
 medal_register_id = 104;
 var season_medal = registerMedal('four seasons', 'reached winter and seen all seasons', field_winter[0], function() { return getSeason() == 3; }, Num(0.05));
+
+medal_register_id = 110;
+registerMedal('watercress', 'plant the entire field full of watercress', watercress[4], function() {
+  return state.croptypecount[CROPTYPE_SHORT] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('berries', 'plant the entire field full of berries', blackberry[4], function() {
+  return state.croptypecount[CROPTYPE_BERRY] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at least that\'s something', clover[4], function() {
+  return state.croptypecount[CROPTYPE_FLOWER] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('mushrooms', 'plant the entire field full of mushrooms. Why would you do this?', champignon[4], function() {
+  return state.croptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('nettles', 'plant the entire field full of nettles. This is a stingy situation.', nettle[4], function() {
+  return state.croptypecount[CROPTYPE_NETTLE] == state.numw * state.numh - 2;
+}, Num(0.01));
+
+medal_register_id = 125;
+var numreset_achievement_values =   [   1,    5,   10,   20,   50,  100,  200,  500, 1000];
+var numreset_achievement_bonuses =  [0.05, 0.05, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5]; // TODO: give a bit more bonus for some of those
+for(var i = 0; i < level_achievement_values.length; i++) {
+  var level = numreset_achievement_values[i];
+  var bonus = Num(numreset_achievement_bonuses[i]);
+  var name = 'transenced ' + level;
+  if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + level + '.';
+  prevmedal = registerMedal(name, 'Transcended ' + level + ' times', image_medaltranscend,
+      bind(function(level) { return state.g_numresets >= level; }, level),
+      bonus);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

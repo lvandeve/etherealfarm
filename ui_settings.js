@@ -421,6 +421,8 @@ function createStatsDialog() {
     text += '• unplanted: ' + open + state.g_numunplanted + close + '<br>';
     text += '• weather abilities activated: ' + open + state.g_numabilities + close + '<br>';
     text += '• season changes seen: ' + open + state.g_seasons + close + '<br>';
+    text += '• fastest run: ' + util.formatDuration(state.g_fastestrun) + '<br>';
+    text += '• longest run: ' + util.formatDuration(state.g_slowestrun) + '<br>';
     text += '<br>';
   }
 
@@ -460,7 +462,7 @@ function createStatsDialog() {
     text += '<b>Previous</b><br>';
     text += '• tree level: ' + open + state.p_treelevel + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.p_starttime) + close + '<br>';
-    text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
+    text += '• duration: ' + open + util.formatDuration(state.p_runtime) + close + '<br>';
     text += '• total earned: ' + open + state.p_res.toString(true) + close + '<br>';
     text += '• highest resources: ' + open + state.p_max_res.toString(true) + close + '<br>';
     text += '• highest production/s: ' + open + state.p_max_prod.toString(true) + close + '<br>';
@@ -471,6 +473,22 @@ function createStatsDialog() {
     text += '• weather abilities activated: ' + open + state.p_numabilities + close + '<br>';
     text += '<br>';
   }
+
+  /*if(state.g_numresets > 1) {
+    text += '<b>First</b><br>';
+    text += '• tree level: ' + open + state.f_treelevel + close + '<br>';
+    text += '• start time: ' + open + util.formatDate(state.f_starttime) + close + '<br>';
+    text += '• duration: ' + open + util.formatDuration(state.f_runtime) + close + '<br>';
+    text += '• total earned: ' + open + state.f_res.toString(true) + close + '<br>';
+    text += '• highest resources: ' + open + state.f_max_res.toString(true) + close + '<br>';
+    text += '• highest production/s: ' + open + state.f_max_prod.toString(true) + close + '<br>';
+    text += '• ferns: ' + open + state.f_numferns + close + '<br>';
+    text += '• planted (fullgrown): ' + open + state.f_numfullgrown + close + '<br>';
+    text += '• planted (watercress): ' + open + state.f_numplantedshort + close + '<br>';
+    text += '• unplanted: ' + open + state.f_numunplanted + close + '<br>';
+    text += '• weather abilities activated: ' + open + state.f_numabilities + close + '<br>';
+    text += '<br>';
+  }*/
 
   div.innerHTML = text;
 }
@@ -500,6 +518,14 @@ function createChangelogDialog() {
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';
   text += 'Changelog:';
+  text += '<br/><br/>';
+
+
+  text += '0.1.14 (2020-12-30):';
+  text += '<br/>';
+  text += '• Ethereal crops now give 100% resin back on delete, but require ethereal deletion tokens.';
+  text += '<br/>';
+  text += '• Added a few more achievements.';
   text += '<br/><br/>';
 
 

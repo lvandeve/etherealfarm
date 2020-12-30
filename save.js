@@ -243,7 +243,10 @@ function encState(state, opt_raw_only) {
   processUint(state.p_treelevel);
   processUint(state.g_numfullgrown2);
   processUint(state.g_seasons);
-  processUint(state.g_resin_from_transcends);
+  processNum(state.g_resin_from_transcends);
+  processUint(state.g_delete2tokens);
+  processFloat(state.g_fastestrun);
+  processFloat(state.g_slowestrun);
 
 
   section = 11; id = 0; // global run stats
@@ -307,6 +310,28 @@ function encState(state, opt_raw_only) {
     prev = state.reset_stats[i];
   }
   processIntArray(array0);
+
+
+  section = 15; id = 0; // first stats
+  if(state.g_numresets > 0) {
+    processFloat(state.f_starttime);
+    processFloat(state.f_runtime);
+    processUint(state.f_numticks);
+    processRes(state.f_res);
+    processRes(state.f_max_res);
+    processRes(state.f_max_prod);
+    processUint(state.f_numferns);
+    processUint(state.f_numplantedshort);
+    processUint(state.f_numplanted);
+    processUint(state.f_numfullgrown);
+    processUint(state.f_numunplanted);
+    processUint(state.f_numupgrades);
+    processUint(state.f_numupgrades_unlocked);
+    processUint(state.f_numabilities);
+  }
+
+  section = 16; id = 0; // misc
+  processUint(state.delete2tokens);
 
   var e = encTokens(tokens);
 
@@ -595,7 +620,18 @@ function decState(s) {
     state.p_treelevel = processUint();
     if(save_version >= 4096*1+9) state.g_numfullgrown2 = processUint();
     if(save_version >= 4096*1+9) state.g_seasons = processUint();
-    if(save_version >= 4096*1+10) processUint(state.g_resin_from_transcends);
+    if(save_version >= 4096*1+10) {
+      if(save_version >= 4096*1+14) {
+        state.g_resin_from_transcends = processNum();
+      } else {
+        state.g_resin_from_transcends = Num(processUint()); // was accidentally encoded as Uint
+      }
+    }
+    if(save_version >= 4096*1+14) {
+      state.g_delete2tokens = processUint();
+      state.g_fastestrun = processFloat();
+      state.g_slowestrun = processFloat();
+    }
 
     if(error) return err(4);
 
@@ -666,6 +702,29 @@ function decState(s) {
       if(prev < 0) return err(4);
       state.reset_stats[i] = prev;
     }
+
+
+    section = 15; id = 0; // first run stats
+    if(state.g_numresets > 0 && save_version >= 4096*1+14) {
+      state.f_starttime = processFloat();
+      state.f_runtime = processFloat();
+      state.f_numticks = processUint();
+      state.f_res = processRes();
+      state.f_max_res = processRes();
+      state.f_max_prod = processRes();
+      state.f_numferns = processUint();
+      state.f_numplantedshort = processUint();
+      state.f_numplanted = processUint();
+      state.f_numfullgrown = processUint();
+      state.f_numunplanted = processUint();
+      state.f_numupgrades = processUint();
+      state.f_numupgrades_unlocked = processUint();
+      if(save_version >= 4096*1+9) state.f_numabilities = processUint(0);
+      if(error) return err(4);
+    }
+
+    section = 16; id = 0; // misc
+    if(save_version >= 4096*1+14) state.delete2tokens = processUint();
   }
 
   if(save_version <= 4096*1+8) {
@@ -715,6 +774,17 @@ function decState(s) {
     // g_res.resin may be needed to recover lost resin in future transcension breaking upgrades so it should be ensured to fill it in correctly
     state.g_res.resin = Num(state.g_max_res.resin);
     state.g_resin_from_transcends = Num(state.g_res.resin);
+  } else if(save_version < 4096*1+14) {
+    // yet another bug caused g_resin_from_transcends to be incorrect. Fix it as much as possible.
+    var r = state.g_resin_from_transcends;
+    var r2;
+    r2 = state.g_res.resin;
+    if(r2.gt(r)) r = Num(r2);
+    r2 = state.g_max_res.resin;
+    if(r2.gt(r)) r = Num(r2);
+    r2 = Num(state.g_numresets * 11);
+    if(r2.gt(r)) r = Num(r2);
+    state.g_resin_from_transcends = r;
   }
 
 

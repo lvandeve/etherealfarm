@@ -62,7 +62,12 @@ function getCropInfoHTML2(f, c) {
   result += '<br/>• Base planting cost: ' + c.cost.toString();
   result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
   result += '<br/>• Next planting cost: ' + c.getCost().toString();
-  result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup2).toString();
+  result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+  result += '<br><br>';
+  result += 'Deleting ethereal crops refunds all resin, but requires ethereal deletion tokens. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)';
+  result += '<br><br>';
+  result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + delete2maxBuildup + ')';
+  result += '<br><br>';
 
   return result;
 }
@@ -83,14 +88,14 @@ function makeField2Dialog(x, y) {
 
     var buttonshift = 0;
 
-    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.3);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.4 + buttonshift, 0.01], 0.5, 0.45 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.47 + buttonshift, 0.01], 0.5, 0.52 + buttonshift, 0.8).div;
+    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
+    var button0 = new Flex(dialog, [0.01, 0.2], [0.45 + buttonshift, 0.01], 0.5, 0.5 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog, [0.01, 0.2], [0.52 + buttonshift, 0.01], 0.5, 0.57 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
     button0.textEl.innerText = 'delete';
-    registerTooltip(button0, 'Delete crop and get most of its cost back.<br>BEWARE: this makes you lose a slight amount of resin overall,<br>you get back ' + (cropRecoup2 * 100) + '% of the original resin cost.');
+    registerTooltip(button0, 'Delete crop, get' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
     button0.onclick = function() {
       actions.push({type:ACTION_DELETE2, x:x, y:y});
       dialog.cancelFun();

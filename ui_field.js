@@ -106,14 +106,6 @@ function getCropInfoHTMLBreakdown(f, c) {
     }
   }
 
-  // for debugging
-  var p = prefield[f.y][f.x];
-  result += '<br>DEBUG INFO<br>';
-  result += 'prod0: ' + p.prod0.toString() + '<br>';
-  result += 'prod1: ' + p.prod1.toString() + '<br>';
-  result += 'prod2: ' + p.prod2.toString() + '<br>';
-  result += 'prod3: ' + p.prod3.toString() + '<br>';
-
   return result;
 }
 
@@ -133,7 +125,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
     if(opt_detailed) {
       // the detailed dialog is not dynamically updated, so show the total growth time statically instead.
-      result += 'Growing. Total growing tile: '; + c.getPlantTime();
+      result += 'Growing. Total growing time: ' + c.getPlantTime();
     } else {
       result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
     }

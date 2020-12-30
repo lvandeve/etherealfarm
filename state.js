@@ -176,9 +176,8 @@ function State() {
   this.lastFernTime = 0;
   this.lastBackupWarningTime = 0;
 
-
-  // how much the price of basic crop multiplier upgrades increases with each level
-  this.upgrade_cost_increase = Num(2.5);
+  // misc
+  this.delete2tokens = delete2initial;
 
   // settings
   this.notation = Num.N_LATIN; // number notation
@@ -204,8 +203,11 @@ function State() {
   this.g_numupgrades2 = 0;
   this.g_numupgrades2_unlocked = 0;
   this.g_numfullgrown2 = 0;
-  this.g_seasons = 0; // season changes actually seen
+  this.g_seasons = 0; // season changes actually seen (a savegame from multiple days ago counts as only 1)
   this.g_resin_from_transcends = Num(0); // this is likely the same value as g_res.resin, but is a separate counter for amount of resin ever earned from transcends in case it's needed for recovery in transcension-changing game updates
+  this.g_delete2tokens = 0; // global count of ethereal deletion tokens received, this is not the actual recource but a stat
+  this.g_fastestrun = 0; // runtime of fastest transcension
+  this.g_slowestrun = 0; // runtime of slowest transcension
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -259,8 +261,24 @@ function State() {
   this.c_numabilities = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
-  this.reset_stats = []; // reset at what tree level for each reset
+  // saved stats, for first reset, benchmark against which future resets are compared
+  this.f_starttime = 0; // starttime of current run
+  this.f_runtime = 0;
+  this.f_numticks = 0;
+  this.f_res = Res();
+  this.f_max_res = Res();
+  this.f_max_prod = Res();
+  this.f_numferns = 0;
+  this.f_numplantedshort = 0;
+  this.f_numplanted = 0;
+  this.f_numfullgrown = 0;
+  this.f_numunplanted = 0;
+  this.f_numupgrades = 0;
+  this.f_numupgrades_unlocked = 0;
+  this.f_numabilities = 0;
+  // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
+  this.reset_stats = []; // reset at what tree level for each reset
 
   // amount of fields with nothing on them (index 0)
   // derived stat, not to be saved
@@ -292,6 +310,7 @@ function State() {
   // derived stat, not to be saved
   this.fullgrowncropcount = [];
   this.fullgrowncrop2count = [];
+  this.croptypecount = [];
 
   // count of non-crop fields, such as fern
   this.specialfieldcount = [];
@@ -429,12 +448,16 @@ function computeDerived(state) {
   state.numfullpermanentcropfields = 0;
   state.fullgrowncropcount = [];
   state.cropcount = [];
+  state.croptypecount = [];
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
   }
   for(var i = 1; i < CROPINDEX; i++) {
     state.specialfieldcount[i] = 0;
+  }
+  for(var i = 0; i < NUM_CROPTYPES; i++) {
+    state.croptypecount[i] = 0;
   }
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
@@ -445,6 +468,7 @@ function computeDerived(state) {
         state.numcropfields++;
         if(f.isFullGrown()) {
           state.fullgrowncropcount[c.index]++;
+          state.croptypecount[c.type]++;
           state.numfullgrowncropfields++;
           if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++
         }
