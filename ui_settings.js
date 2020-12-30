@@ -503,6 +503,25 @@ function createChangelogDialog() {
   text += '<br/><br/>';
 
 
+  text += '0.1.13 (2020-12-30):';
+  text += '<br/>';
+  text += '• Mushrooms now only get seeds from neighbors, so they can\'t produce spores if they don\'t have berries as neighbors in the field.';
+  text += '<br/>';
+  text += '• The global overconsumption system has been removed since this now takes place locally amongst groups of mushroom/berry neighbors.';
+  text += '<br/>';
+  text += '• Nettles now also negatively affect neighboring flowers, instead of only berries.';
+  text += '<br/>';
+  text += '• Leech effect takes the extra seeds consumption through the mushrooms neighboring producers.';
+  text += '<br/>';
+  text += '• Internal field production algorithm updated to support the neighbor-based consumption/production effects.';
+  text += '<br/>';
+  text += '• Trees still consume spores globally, mushrooms are not required to be next to the tree. Maybe this makes sense in a future update but it may cause an issue of discoverability when one doesn\'t yet know you want to upgrade the tree.';
+  text += '<br/>';
+  text += '• The goal of this is to add more crop interaction and positional elements to the game';
+
+  text += '<br/><br/>';
+
+
   text += '0.1.12 (2020-12-28):';
   text += '<br/>';
   text += '• Fix accidental 7x7 field bug, 6x6 is currently the maximum if the relevant upgrade is purchased.';
@@ -642,7 +661,10 @@ function createHelpDialog() {
   text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you actions a minute later.';
   text += '<br/>';
   text += ' • <b>shift + click save import dialog</b>: import and old savegame, but do not run the time, so you get the resources at the time of saving rather than with all production during that time added.';
+  text += '<br/>';
+  text += ' • <b>esc</b>: close dialogs.';
   text += '<br/><br/>';
+
   text += '<b>Savegame recovery:</b>';
   text += '<br/><br/>';
   text += 'This game auto-saves every few minutes in local storage in the web browser, but please use <i>settings -> export save</i> regularly for backups, because a local storage savegame can easily get lost.';

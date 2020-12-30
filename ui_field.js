@@ -73,12 +73,18 @@ function formatBreakdown(breakdown, percent, title) {
   result += '<br/>' + title + ':<br/>';
   for(var i = 0; i < breakdown.length; i++) {
     result += '• ' + breakdown[i][0];
-    if(breakdown[i][1] != undefined && i > 0) result += ': ' + (breakdown[i][1].subr(1).mulr(100)).toString() + '%'; // first is base production
+    if(breakdown[i][1]) {
+      // multiplicative
+      if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2].subr(1).mulr(100)).toString() + '%'; // first is base production
+    } else {
+      // additive
+      if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2]).toString();
+    }
     result += (i == 0) ? ': ' : ' ⇒ ';
     if(percent) {
-      result += breakdown[i][2].mulr(100).toString() + '%<br/>';
+      result += breakdown[i][3].mulr(100).toString() + '%<br/>';
     } else {
-      result += breakdown[i][2].toString() + '<br/>';
+      result += breakdown[i][3].toString() + '<br/>';
     }
   }
   return result;
@@ -88,59 +94,105 @@ function formatBreakdown(breakdown, percent, title) {
 function getCropInfoHTMLBreakdown(f, c) {
   var result = '';
 
-  if(f.growth >= 1 || c.type == CROPTYPE_SHORT) {
-    var prod = c.getProd(f, true, false);
+  if(f.isFullGrown()) {
+    var prod = c.getProd(f);
     if(!prod.empty()) {
-      var breakdown = c.getProd(f, true, true);
+      var breakdown = prefield[f.y][f.x].breakdown;
       result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
     }
     if(c.boost.neqr(0)) {
-      var breakdown = c.getBoost(true);
+      var breakdown = prefield[f.y][f.x].breakdown;
       result += formatBreakdown(breakdown, true, 'Breakdown (neighboor boost +%)');
     }
   }
+
+  // for debugging
+  var p = prefield[f.y][f.x];
+  result += '<br>DEBUG INFO<br>';
+  result += 'prod0: ' + p.prod0.toString() + '<br>';
+  result += 'prod1: ' + p.prod1.toString() + '<br>';
+  result += 'prod2: ' + p.prod2.toString() + '<br>';
+  result += 'prod3: ' + p.prod3.toString() + '<br>';
 
   return result;
 }
 
 // get crop info in HTML
-function getCropInfoHTML(f, c) {
+function getCropInfoHTML(f, c, opt_detailed) {
   var result = util.upperCaseFirstWord(c.name);
   result += '<br/>';
   result += 'Crop type: ' + getCropTypeName(c.type);
+  var help = getCropTypeHelp(c.type);
+  if(help) {
+    result += '<br/>' + help;
+  }
   result += '<br/><br/>';
 
+  var p = prefield[f.y][f.x];
+
   if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
-    result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlanttime(), true, 4, true);
+    if(opt_detailed) {
+      // the detailed dialog is not dynamically updated, so show the total growth time statically instead.
+      result += 'Growing. Total growing tile: '; + c.getPlantTime();
+    } else {
+      result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
+    }
+
   } else {
     if(c.type == CROPTYPE_SHORT) {
-      result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlanttime(), true, 4, true) + '<br/><br/>';
-      result += leechInfo + '<br/>';
+      if(opt_detailed) {
+        // the detailed dialog is not dynamically updated, so show the life growth time statically instead.
+        result += 'Short-lived plant. Total lifetime: ' + c.getPlantTime() + 's<br/><br/>';
+        result += leechInfo + '<br/>';
+      } else {
+        result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + '<br/><br/>';
+        result += '<font color="#040">Can leech: to copy full production of long-lived neighbors</font><br/>';
+      }
+
       result += '<br/>';
     }
-    var prod = c.getProd(f, true);
+    var prod = p.prod3;
     if(!prod.empty()) {
       result += 'Production per second: ' + prod.toString() + '<br/>';
-      if(prod.hasNeg()) result += 'Consumes a resource produced by other crops, so the above may be the hypothetical amount if there is overconsumption.<br/>';
+      if(prod.hasNeg()) {
+        if(p.prod0.neq(p.prod3)) {
+          if(c.type == CROPTYPE_MUSH) {
+            result += 'Needs more seeds, requires berries as neighbors.<br>Theoretical max production: ' + p.prod0.toString() + '<br/>';
+          } else if(c.type == CROPTYPE_SHORT) {
+            // nothing to print.
+          } else {
+            result += 'Needs more input resources, theoretical max production: ' + p.prod0.toString() + '<br/>';
+          }
+        } else {
+          result += 'Consumes a resource produced by neighboring crops.<br/>';
+        }
+      } else if(p.prod3.neq(p.prod2)) {
+        result += 'After consumption: ' + p.prod2.toString() + '<br/>';
+      }
     }
     if(c.boost.neqr(0)) {
       if(c.type == CROPTYPE_NETTLE) {
-        result += 'Boosting neighbor mushrooms spores ' + (c.getBoost().mulr(100).toString()) + '%, but has negative effect on neighboring berries so don\'t touch berries with this plant!<br/>';
+        result += 'Boosting neighbor mushrooms spores ' + (c.getBoost(f).mulr(100).toString()) + '%, but has negative effect on neighboring berries so don\'t touch berries with this plant!<br/>';
       } else {
-        result += 'Boosting neighbors: ' + (c.getBoost().mulr(100).toString()) + '%<br/>';
+        result += 'Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
       }
     }
   }
 
   result += '<br/>';
-  result += 'Num planted of this type: ' + state.cropcount[c.index];
-  result += '<br/>';
 
-  result += '<br/>Cost: ';
-  result += '<br/>• Base planting cost: ' + c.cost.toString();
-  result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
-  result += '<br/>• Next planting cost: ' + c.getCost().toString();
-  result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+  if(opt_detailed) {
+    result += 'Num planted of this type: ' + state.cropcount[c.index];
+    result += '<br/>';
+    result += '<br/>Cost: ';
+    result += '<br/>• Base planting cost: ' + c.cost.toString();
+    result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
+    result += '<br/>• Next planting cost: ' + c.getCost().toString();
+    result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+  } else {
+    result += '<br/>Next planting cost: ' + c.getCost().toString();
+    result += '<br/>Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+  }
 
   return result;
 }
@@ -150,8 +202,8 @@ function makeFieldDialog(x, y) {
   var fd = fieldDivs[y][x];
 
 
-  if(f.index >= CROPINDEX) {
-    var c = crops[f.index - CROPINDEX];
+  if(f.hasCrop()) {
+    var c = f.getCrop();
     var div;
 
     var dialog = createDialog(c.type == CROPTYPE_SHORT ? DIALOG_LARGE : undefined);
@@ -166,12 +218,12 @@ function makeFieldDialog(x, y) {
     var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
     var button0 = new Flex(dialog, [0.01, 0.2], [0.3 + buttonshift, 0.01], 0.5, 0.35 + buttonshift, 0.8).div;
     var button1 = new Flex(dialog, [0.01, 0.2], [0.37 + buttonshift, 0.01], 0.5, 0.42 + buttonshift, 0.8).div;
-    var flex1 = new Flex(dialog, [0.01, 0.2], [0.43 + buttonshift, 0.01], 1, 0.9, 0.3);
+    var button2 = new Flex(dialog, [0.01, 0.2], [0.44 + buttonshift, 0.01], 0.5, 0.49 + buttonshift, 0.8).div;
     var last0 = undefined;
-    var last1 = undefined;
 
     styleButton(button0);
     button0.textEl.innerText = 'delete';
+    button0.textEl.style.color = '#800';
     registerTooltip(button0, 'Delete crop and get some of its cost back.');
     button0.onclick = function() {
       actions.push({type:ACTION_DELETE, x:x, y:y});
@@ -180,27 +232,40 @@ function makeFieldDialog(x, y) {
     };
 
     styleButton(button1);
-    button1.textEl.innerText = 'see unlocked crops';
-    registerTooltip(button1, 'Show the crop dialog with unlocked plants.');
+    button1.textEl.innerText = 'detailed stats / bonuses';
+    registerTooltip(button1, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     button1.onclick = function() {
+      var dialog = createDialog();
+      dialog.div.style.backgroundColor = '#fedc'; // slightly translucent to see resources through it
+      var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.8, 0.3);
+      var text = '';
+
+
+      text += getCropInfoHTML(f, c, true);
+      text += '<br/>';
+      text += getCropInfoHTMLBreakdown(f, c);
+      flex.div.innerHTML = text;
+    };
+
+    styleButton(button2);
+    button2.textEl.innerText = 'see unlocked crops';
+    registerTooltip(button2, 'Show the crop dialog with unlocked plants.');
+    button2.onclick = function() {
       makePlantDialog(x, y, true);
     };
 
     updatedialogfun = bind(function(f, c, flex) {
       var html0 = getCropInfoHTML(f, c);
-      var html1 = getCropInfoHTMLBreakdown(f, c);
-      if(html0 != last0 || html1 != last1) {
+      if(html0 != last0) {
         flex0.div.innerHTML = html0;
-        flex1.div.innerHTML = html1;
         last0 = html0;
-        last1 = html1;
       }
     }, f, c);
 
     updatedialogfun(f, c);
 
   } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-    var c = crops[f.index - CROPINDEX];
+    var c = f.getCrop();
     var div;
 
     var dialog = createDialog();
@@ -222,7 +287,7 @@ function makeFieldDialog(x, y) {
     text = '<b>' + util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
     text += 'Tree level: ' + state.treelevel + '<br/>';
     if(state.treelevel == 0) {
-      text += 'This tree needs to be rejuvenated first.<br/>';
+      text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
       f0.div.innerHTML = text;
     } else {
       text += '<br/>';
@@ -324,14 +389,16 @@ function initFieldUI() {
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
-        } else if(f.index >= CROPINDEX) {
-          var c = crops[f.index - CROPINDEX];
+        } else if(f.hasCrop()) {
+          var c = f.getCrop();
           result = getCropInfoHTML(f, c);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
+          var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
           if(state.treelevel <= 0) {
-            return 'a weathered tree';
+            var result = 'a weathered tree';
+            if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+            return result;
           } else {
-            var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
             return util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
           }
         }
@@ -361,8 +428,8 @@ function initFieldUI() {
           } else {
             makeFieldDialog(x, y);
           }
-        } else if(f.index >= CROPINDEX) {
-          if(e.shiftKey || (e.ctrlKey && f.index - CROPINDEX == short_0)) {
+        } else if(f.hasCrop()) {
+          if(e.shiftKey || (e.ctrlKey && f.cropIndex() == short_0)) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];
               actions.push({type:ACTION_DELETE, x:x, y:y});
@@ -465,8 +532,8 @@ function updateFieldCellUI(x, y) {
 
     fd.index = f.index;
     fd.growstage = growstage;
-    if(f.index >= CROPINDEX) {
-      var c = crops[f.index - CROPINDEX];
+    if(f.hasCrop()) {
+      var c = f.getCrop();
       //fd.div.innerText = c.name;
       renderImage(c.image[growstage], fd.canvas);
       if(f.growth >= 1) {
@@ -487,8 +554,8 @@ function updateFieldCellUI(x, y) {
       blendImage((state.fern == 2 ? images_fern2 : images_fern)[season], fd.canvas);
     }
   }
-  if(fd.index >= CROPINDEX && f.growth < 1) {
-    var c = crops[f.index - CROPINDEX];
+  if(f.hasCrop() && f.growth < 1) {
+    var c = f.getCrop();
     setProgressBar(fd.progress, f.growth, c.type == CROPTYPE_SHORT ? '#0c0' : '#f00');
   }
 }

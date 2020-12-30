@@ -23,14 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // resource gain per second, only used for display purposes
 var gain = Res();
 
-// similar to gain, but including negative production if present, only displayed if there's a constrained input resource situation
-var gain_over = Res();
-
 // gain if all consumption would be empty.
 var gain_pos = Res();
-
-// gain if all consumption would be empty and in the hypothetical overconsumption case
-var gain_pos_over = Res();
 
 var resourceDivs;
 
@@ -39,9 +33,9 @@ function prodBreakdown(index) {
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
-      if(f.index >= CROPINDEX) {
-        var c = crops[f.index - CROPINDEX];
-        if(f.growth >= 1 || c.type == CROPTYPE_SHORT) {
+      if(f.hasCrop()) {
+        var c = f.getCrop();;
+        if(f.isFullGrown()) {
           var index2 = c.index;
           if(!o[index2]) o[index2] = Num(0);
           o[index2].addInPlace(c.getProd(f).toArray()[index]);
@@ -129,7 +123,7 @@ function updateResourceUI() {
   }, true);
 
   var i = 1;
-  var showResource = function(resin, index, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over) {
+  var showResource = function(resin, index, arr_res, arr_gain, arr_pos) {
     var name = resource_names[index];
     var res = arr_res[index];
     var upcoming;
@@ -152,13 +146,8 @@ function updateResourceUI() {
     } else {
       var gain = arr_gain[index]; // actual
       var gain_pos = arr_pos[index]; // actual, without consumption
-      var gain_over = arr_over[index]; // potential, in case of overconsumption situation
-      var gain_pos_over = arr_pos_over[index]; // potential, without consumption
 
-      var diff = !gain.near(gain_over, 0.02); // different due to constraint production. There is some numerical imprecision possible, so allow near
-      var neg = diff ? (' <font color="red">(' + gain_over.toString() + '/s)</font>') : '';
-      var sign = gain.gtr(0) ? '+' : '';
-      text = name + '<br>' + res.toString() + '<br>' + sign + gain.toString() + '/s' + neg;
+      text = name + '<br>' + res.toString() + '<br>' + gain.toString() + '/s';
     }
     div.textEl.innerHTML = text;
 
@@ -177,53 +166,18 @@ function updateResourceUI() {
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
 
       if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
-      if(index == 4) text += 'The pericarps/s (production per second) value is the field power and is used for ethereal upgrades. But the produced pericarps themselves have no purpose yet!<br><br>';
 
-      if(diff) {
-        text += 'Production constrained: some resource type consumed by a plant to produce a different resource type, is limited for consumption by the max allowed consumption percentage. The rest goes to your stacks instead of the consumers. To get more output, plant more of the input producer types. E.g. if spores are constrained, get more seed production first to get more spores. You are getting the amount shown in black/white, not the hypothetical amount shown in red.' + '<br/><br/>';
-
-        text += 'Max allowed consumption percentage: ' + ((state.over * 100).toString()) + '%<br/><br/>';
-
-        var actual_prod = gain_pos; // what the plant produces in total
-        var actual_stacks = gain; // going to player's stacks
-        var actual_cons = gain_pos.sub(gain); // going to other consumers
-        /*if(false && actual_prod.eq(actual_stacks)) {
-          text += 'Actual ' + name + ': ' + actual_stacks.toString() + '/s<br/><br/>';
-        } else*/ {
-          text += 'Actual ' + name + ' (= with overconsumption prevented):<br/>';
-          text += '• Production: ' + actual_prod.toString() + '/s<br/>';
-          text += '• To stacks: ' + actual_stacks.toString() + '/s<br/>';
-          text += '• To consumers: ' + actual_cons.toString() + '/s<br/>';
-          text += '<br/>';
-        }
-
-        // potential = if infinity% overconsumption were allowed
-        var potential_prod = gain_pos_over; // what the plant produces in total
-        var potential_stacks = gain_over; // going to player's stacks
-        var potential_cons = gain_pos_over.sub(gain_over); // going to other consumers
-
-        /*if(false && potential_prod.eq(potential_stacks)) {
-          text += '<font color="#f22">Hypothetical ' + name + ': ' + potential_stacks.toString() + '/s</font><br/><br/>';
-        } else*/ {
-          text += '<font color="#f22">Hypothetical ' + name + ' (= if full overconsumption were allowed):<br/>';
-          text += '• Production: ' + potential_prod.toString() + '/s<br/>';
-          text += '• To stacks: ' + potential_stacks.toString() + '/s<br/>';
-          text += '• To consumers: ' + potential_cons.toString() + '/s<br/>';
-          text += '</font><br/>';
-        }
+      if(gain.neq(gain_pos)) {
+        // Total production is production - consumption.
+        text += 'Production (' + name + '/s):<br/>';
+        text += '• Total: ' + gain_pos.toString() + '/s<br/>';
+        text += '• To stacks: ' + gain.toString() + '/s<br/>';
+        text += '• To consumers: ' + (gain_pos.sub(gain)).toString() + '/s<br/>';
+        text += '<br/>';
       } else {
-        if(gain.neq(gain_pos)) {
-          // Total production is production - consumption.
-          text += 'Production (' + name + '/s):<br/>';
-          text += '• Total: ' + gain_pos.toString() + '/s<br/>';
-          text += '• To stacks: ' + gain.toString() + '/s<br/>';
-          text += '• To consumers: ' + (gain_pos.sub(gain)).toString() + '/s<br/>';
-          text += '<br/>';
-        } else {
-          text += '• Production: ' + gain.toString() + '/s<br/>';
-          text += '• Consumption: 0/s<br/>'; // This serves as a teaser that consumption can exist
-          text += '<br/>';
-        }
+        text += '• Production: ' + gain.toString() + '/s<br/>';
+        text += '• Consumption: 0/s<br/>'; // This serves as a teaser that consumption can exist
+        text += '<br/>';
       }
     }
     div.tooltiptext = text;
@@ -238,7 +192,7 @@ function updateResourceUI() {
       div.style.cursor = 'pointer';
       div.onclick = function() {
         var dialog = createDialog(resin ? DIALOG_MEDIUM : DIALOG_SMALL);
-        dialog.div.style.backgroundColor = '#cccc'; // slightly translucent to see resources through it
+        dialog.div.style.backgroundColor = '#cccd'; // slightly translucent to see resources through it
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);
         var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.3);
@@ -247,11 +201,7 @@ function updateResourceUI() {
           if(div.tooltiptext != last) {
             var html = div.tooltiptext;
             if(!resin) {
-              if(diff) {
-                html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
-              } else {
-                html += 'Breakdown per crop type: <br/>' + breakdown;
-              }
+              html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
             }
             flex.div.innerHTML = html;
             last = div.tooltiptext;
@@ -265,17 +215,15 @@ function updateResourceUI() {
 
   var arr_res = state.res.toArray();
   var arr_gain = gain.toArray();
-  var arr_over = gain_over.toArray();
   var arr_pos = gain_pos.toArray();
-  var arr_pos_over = gain_pos_over.toArray();
 
-  if(!state.g_max_res.seeds.eqr(0)) showResource(false, 0, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over);
-  if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over);
-  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over);
-  if(!state.g_max_res.leaves.eqr(0)) showResource(false, 3, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over);
-  if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over);
-  if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over);
-  if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_over, arr_pos, arr_pos_over);
+  if(!state.g_max_res.seeds.eqr(0)) showResource(false, 0, arr_res, arr_gain, arr_pos);
+  if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_pos);
+  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_pos);
+  if(!state.g_max_res.leaves.eqr(0)) showResource(false, 3, arr_res, arr_gain, arr_pos);
+  if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos);
+  if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_pos);
+  if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos);
 
 }
 

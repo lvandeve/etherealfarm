@@ -155,6 +155,8 @@ function hardReset() {
 
   savegame_recovery_situation = false;
 
+  prefield = [];
+
   initUI();
   update();
 }
@@ -252,6 +254,9 @@ function softReset() {
   state.fernres = new Res();
   state.fern = false;
 
+  gain = new Res();
+  gain_pos = new Res();
+
   state.fogtime = 0;
   state.suntime = 0;
   state.rainbowtime = 0;
@@ -306,7 +311,7 @@ var preupdate = function(opt_fromTick) {
 };
 
 var postupdate = function() {
-  computeDerived(state);
+  // nothing to do currently
 };
 
 
@@ -390,216 +395,261 @@ function timeTilNextSeason() {
   return daylen - t * daylen;
 }
 
-/*
-Computes resource income as follows, given that some crops can have negative income:
--if nothing has negative income, then it's simple: you gain SUM_crops(prod_crop/s * time_delta)
--if there's negative income but for each resource, total is still positive, then the same simple formula above applies
--if there's too much negative income, then things get different. If there's a resource that totals to negative:
---we compute a factor f: pos / neg, where pos is pos production of that resource by crops that produce it, neg is the consumption of those that consume it
---for each crop that has the relevant resource as consumption, its production will be multiplied by f, hence it produces less
---this is done in order of resources as they appear in a Resource struct, which is roughly in the order as they get unlocked in the game
--if the
--this makes the following assumptions (to simplify the algorithm, if more complexity is needed then this needs to be solved with linear programming instead (simplex algorithm))
---there are no circular dependencies, such as with resources A, B, C, three crops doing this: (+A,-B), (+B,-C), (+C,-A)
---no crop has more than 1 type of resource it consumes, so crops can be of form (-A,+B,+C) but not (-A,-B,+C)
---the resource a crop consumes is of an earlier type (in the Resource struct order) than any resource it produces, e.g. if A is a more basic earlier resource than B, then (-A,+B) is ok but (+A,-B) is not
---a not algorithm related assumption: crops that consume something also produce something: if they produce nothing, then they'll get no disadvantage whatsoever from having not enough input, since their already zero output just stays zero. They do take away input resources from other consumers though.
--if there are multiple different start and end times in the resources (which can happen if a crop finished growing during the update tick's timespan), then it does the computation individually and independently per timespan, and sums everything to the result
+// field cell with precomputed info
+function PreCell(f) {
+  this.f = f; // the associated field cell from the state
+  this.x = f.x;
+  this.y = f.y;
 
-NOTE: The behavior, as intended, is as follows: if you have a crop consuming more A than is produced, then crop A will not consume from resources the player already has from before.
-Crops can only consume directly from what is currently produced during the current tick. This is by design: production/s itself is a kind of resource and leftovers from old production can't create extra production/s.
-The game should also make it such that you can only build something if you have enough total prod/s to handle its consumption/s. But, since you can delete crops after that, the negative income case handled here can indeed happen.
+  // boost of this plant, taking field position into account. Used during precompute of field: amount of bonus from this cell if it's a flower, nettle, ...
+  // 0 means no boost, 1 means +100% boost, etc...
+  // if this is a malus-type, e.g. nettle for flower and berry, then this boost is still the positive value (nettle to mushroom boost),
+  // and must be used as follows to apply the malus: with a malus value starting at 1 for no neighbors, per bad neighbor, divide malus through (boost + 1). That is multiplicative (division), while the possitive bonus is additive.
+  // --> this is already calculated in for flowers. For berries it must be done as above.
+  this.boost = Num(0);
 
-a is array of elements, where each element is array of:
--Resources: income for this crop per second, where some resources can be negative if it consumes instead
--starttime in seconds
--endtime in seconds
-*/
-function computeIncome(factor, a, opt_pos_only) {
-  // breaking up per time slot is very likely overkill, but it does ensure that the computation is the
-  // same whether it happens in many small ticks, or one very long tick.
-  // breaking up time slots happens when a plant that was growing, is ready during the tick and starts producing then
 
-  var times0 = [];
-  var times1 = [];
-  for(var i = 0; i < a.length; i++) {
-    if(i == 0 || a[i][1] != times0[times0.length - 1]) times0.push(a[i][1]);
-    if(i == 0 || a[i][2] != times1[times1.length - 1]) times1.push(a[i][2]);
-  }
-  times0.sort(function(a, b) { return a - b; });
-  times1.sort(function(a, b) { return a - b; });
-  var times = [];
-  var i0 = 0, i1 = 0;
-  for(;;) {
-    if(i0 >= times0.length && i1 >= times1.length) break;
+  this.weights = null; // used during precompute of field: if filled in, array of 4 elements: weights for N, E, S, W neighbors of their share of recource consumption from this. Used for mushrooms taking seeds of neighboring berries.
 
-    if(i1 >= times1.length || times0[i0] <= times1[i1]) {
-      if(times.length == 0 || times[times.length - 1] != times0[i0]) times.push(times0[i0]);
-      i0++;
-    } else {
-      if(times.length == 0 || times[times.length - 1] != times1[i1]) times.push(times1[i1]);
-      i1++;
+  // differnt stages of the production computation, some useful for certain UI, others not, see the comments
+
+  // before consumption/production computation. not taking any leech into account (multiply prod or cons with 1+leech if that's needed)
+  // useful for UI that shows the potential production of a mushroom if it hypothetically got as many seeds as needed from neighbors
+  this.prod0 = Res(0);
+  // during consumption/production computation, not useful for any UI, intermediate stage only
+  this.prod1 = Res(0);
+  // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
+  // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
+  this.prod2 = Res(0);
+  // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. The sum of all prod3 on a field should be equal to the sum of all prod2. Also contains leech like prod2 does.
+  this.prod3 = Res(0);
+
+  this.consumers = []; // if this is a berry: list of mushroom neighbors that consume from this
+  this.producers = []; // if this is a mushroom: list of berry neighbors that produce for this
+
+  this.leech = Num(0); // how much leech there is on this plant. e.g. if 4 watercress neighbors leech 100% each, this value is 4 (in reality that high is not possible due to the penalty for multiple watercress)
+
+  // breakdown of the production for UI. Is like prod0, but with leech result added. Does not take consumption into account, and shows the negative consumption value of mushroom.
+  this.breakdown = [];
+
+  this.last_it = -1;
+};
+
+// field with precomputed info, 2D array, separate from state.field because not saved but precomputed at each update()
+var prefield = [];
+
+// precompute boosts of things that depend on each other on the field
+// the dependency graph (of crops on neighbor crops) is as follows:
+// - flower and berry depend on nettle for the negative effect
+// - berry and mushroom depends on flower for the boost
+// - mushroom depends on nettle for the boost
+// - mushroom depends on berry for the spores income
+// - watercress depends on mushroom and berry for the leech, but you could see this the opposite direction, muchroom depends on watercress to precompute how much extra seeds are being consumed for the part copied by the watercress
+// --> watercress leech output is computed after all producing/consuming/bonuses have been done. watercress does not itself give seeds to mushrooms. watercress gets 0 seeds from a berry that has all seeds going to neighboring mushrooms.
+// - watercress depends on overall watercress amount on field for the large-amount penalty.
+function precomputeField() {
+  var w = state.numw;
+  var h = state.numh;
+
+  prefield = [];
+  for(var y = 0; y < h; y++) {
+    prefield[y] = [];
+    for(var x = 0; x < w; x++) {
+      prefield[y][x] = new PreCell(state.field[y][x]);
     }
   }
 
-  var buckets = [];
-  for(var i = 0; i + 1 < times.length; i++) {
-    var start = times[i];
-    var end = times[i + 1];
-    buckets[i] = [];
-    for(var j = 0; j < a.length; j++) {
-      if(a[j][1] <= start && a[j][2] >= end) {
-        buckets[i].push(j);
+  // pass 1: compute boosts of flowers and nettles
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(c) {
+        var p = prefield[y][x];
+        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
+          p.boost = c.getBoost(f, p.breakdown);
+        }
       }
     }
   }
 
-  var res = new Res(); // total result
-  var ifactor = 1 / factor;
+  // pass 2: compute amount of leech each cell gets
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(c) {
+        if(c.type == CROPTYPE_SHORT) {
+          var leech = c.getLeech(f);
+          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            prefield[y2][x2].leech.addInPlace(leech);
+          }
+        }
+      }
+    }
+  }
 
-  // now do the full computation per bucket
-  for(var b = 0; b < buckets.length; b++) {
-    var bucket = buckets[b];
-    var d = times[b + 1] - times[b]; // time delta in seconds
-    var pos = (new Res()).toArray(); // all the positive produced resources
-    var neg = (new Res()).toArray(); // all the negative produced resources, so consumption
-    var mul = [];
-    for(var i = 0; i < bucket.length; i++) {
-      var prod = a[bucket[i]][0].mulr(d).toArray();
-      for(var j = 0; j < prod.length; j++) {
-        if(prod[j].gtr(0)) pos[j].addInPlace(prod[j]);
-        if(prod[j].ltr(0)) neg[j].subInPlace(prod[j]);
+  // pass 3: compute basic production/consumption of each cell, without taking input/output connections (berries to mushrooms) into account, just the full value
+  // production without leech, consumption with leech (if watercress leeches from mushroom, adds that to its consumption, but not the leeched spores production, that's added in a later step)
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(c) {
+        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) continue; // don't overwrite their boost breakdown with production breakdown
+        var p = prefield[y][x];
+        var prod = c.getProd(f, false, p.breakdown);
+        p.prod0 = prod;
+        p.prod1 = Res(prod); // a separate copy
       }
     }
-    var ok = true;
-    for(var j = 0; j < pos.length; j++) {
-      var neg2 = neg[j];
-      if(!neg2.eqr(0)) neg2 = neg2.mulr(ifactor);
-      // there is overcomsumption of some resource in total, need to restrict some of the negative producers
-      // NOTE: if factor is 1, then this prevents negative production (using more than 100% of original production). If factor < 1, it prevents production below some percentage of the original production. If factor is 0, this would prevent any and all consumption.
-      if(neg2.gt(pos[j])) {
-        ok = false;
-        break;
-      }
-    }
-    if(!ok) {
-      // has some negative result, so reduce production of involved crops
-      var prods = [];
-      for(var i = 0; i < bucket.length; i++) {
-        prods[i] = a[bucket[i]][0].mulr(d).toArray();
-      }
-      for(var j = 0; j < pos.length; j++) {
-        var neg2 = neg[j];
-        if(!neg2.eqr(0)) neg2 = neg2.mulr(ifactor);
-        // there is negative production of some resource in total, need to restrict some of the negative producers
-        if(neg2.gt(pos[j])) {
-          ok = false;
-          var ratio = pos[j].div(neg2); // always in range [0, 1) since neg2 > pos
-          var iratio = Num(1).sub(ratio); // the part that's not produced
-          for(var i = 0; i < bucket.length; i++) {
-            var prod = prods[i];
-            if(prod[j].ltr(0)) { // this crop consumes the involved resource
-              for(var k = 0; k < prod.length; k++) {
-                if(prod[k].gtr(0)) { // an output resource of this crop, so reduce it
-                  // this assumes that k > j (so past already checked neg[j]>pos[j] are not affected), see the assumptions at the function's main comment
-                  pos[k].subInPlace(prod[k].mul(iratio)); // subtract what was not produced due to the penalty
-                  if(pos[k].ltr(0)) pos[k] = Num(0); // fix potential numerical errors with the subtraction
-                }
+  }
+
+  // pass 4a: compute list/graph of neighboring producers/consumers
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(c) {
+        if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
+          var p = prefield[y][x];
+          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            var f2 = state.field[y2][x2];
+            var c2 = f2.getCrop();
+            if(c2) {
+              var p2 = prefield[y2][x2];
+              if(c.type == CROPTYPE_BERRY && c2.type == CROPTYPE_MUSH) {
+                p.consumers.push(p2);
+              }
+              if(c.type == CROPTYPE_MUSH && c2.type == CROPTYPE_BERRY) {
+                p.producers.push(p2);
               }
             }
           }
-          neg[j] = pos[j].mulr(factor);
         }
       }
     }
+  }
 
-    if(!opt_pos_only) {
-      for(var j = 0; j < pos.length; j++) {
-        pos[j].subInPlace(neg[j]);
-        if(factor >= 1 && pos[j].ltr(0)) pos[j] = Num(0); // fix potential numerical errors with the subtraction
+  // pass 4b: approximation of distributing the resources
+  var num_it = 4;
+  for(var it = 0; it < num_it; it++) {
+    var last = (it + 1 == num_it);
+    var did_something = false;
+    for(var y0 = 0; y0 < h; y0++) {
+      for(var x0 = 0; x0 < w; x0++) {
+        var y = y0;
+        var x = x0;
+        if(it & 1) {
+          // probably unnecessary method to make it more fair by alternating direction
+          y = h - y0 - 1;
+          x = w - x0 - 1;
+        }
+        var f = state.field[y][x];
+        var c = f.getCrop();
+        if(c) {
+          if(c.type == CROPTYPE_MUSH) {
+            var p = prefield[y][x];
+            if(p.producers.length == 0) continue; // no producers at all for this mushroom
+            // want is gotten outside of the producers loop to ensure it's calculated the same for all producers
+            var want = p.prod1.seeds.neg().divr(p.producers.length).mul(p.leech.addr(1));
+            for(var i = 0; i < p.producers.length; i++) {
+              var p2 = p.producers[i];
+              if(p2.last_it != it) {
+                // temporarily use prod2 for an earlier purpose than that of next passes
+                // divide the remaining resources of this berry fairly amongst different mushrooms through this iteration
+                // so ensure the same is seen by next mushrooms too
+                p2.prod2 = Res(p2.prod1);
+                p2.last_it = it;
+              }
+              var have = p2.prod2.seeds.divr(p2.consumers.length); // the divisor is guaranteed at least 1 since the current mushroom is a neighbor
+              if(last) {
+                // in last iteration, just greedily take everything. This means that there is some unintended positional advantage to some
+                // locations, but it should be small with enough iterations.
+                // TODO: use better algo that prevents this
+                want = p.prod1.seeds.neg().mul(p.leech.addr(1));
+                have = p2.prod1.seeds;
+              }
+              var amount = Num.min(want, have);
+              if(amount.neqr(0)) {
+                did_something = true;
+                p.prod1.seeds.addInPlace(amount);
+                p2.prod1.seeds.subInPlace(amount);
+              }
+            }
+          }
+        }
       }
     }
-    var gain = Res.fromArray(pos);
-    res.addInPlace(gain);
+    if(!did_something) break;
   }
 
-  return res;
-}
-
-// This computes the current production/s of all stable incompe sources (crops)
-// Does not include income from interaction things like clicking a fern
-// This is different than computeIncome: computeProduction gives the prod/s the plants give, while computeIncome computes what gain you get during some time delta
-// theoretical: if false, applies the algorithm of computeIncome for negative income, to give the effective income. If true, gives the theoretic income, which may include a negative total for some resources and too high for some income resources since penalty to fix negative not taken into account
-// include_growing: also include crops that are still growing, so compute the production once all crops are fullgrown
-// pos_only: if true, ignores all negative consumption. The setting theoretical then has no effect
-// factor: parameter for computeIncome, only used if theoretical and pos_only both are false. theoretical false actually also has the same effect as having a factor of infinity.
-function computeProduction(factor, theoretical, include_growing, pos_only) {
-  var pos_only2 = false;
-  if(!theoretical && pos_only) {
-    pos_only2 = true;
-    pos_only = false;
-  }
-  var result = theoretical ? new Res() : undefined;
-  var a = [];
-
-  for(var y = 0; y < state.numh; y++) {
-    for(var x = 0; x < state.numw; x++) {
+  // pass 4c: now compute the spores based on the satisfied amount of seeds
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      if(f.index >= CROPINDEX) {
-        var c = crops[f.index - CROPINDEX];
-        if(f.growth >= 1 || include_growing || c.type == CROPTYPE_SHORT) {
-          var prod = c.getProd(f);
-          if(pos_only) prod = prod.getPositive();
-          if(theoretical) {
-            result.addInPlace(prod);
-          } else {
-            a.push([prod, 0, 1]);
-          }
+      var c = f.getCrop();
+      if(c) {
+        var p = prefield[y][x];
+        p.prod2 = Res(p.prod1);
+        p.prod3 = Res(p.prod0);
+        if(c.type == CROPTYPE_MUSH) {
+          var wanted = p.prod0.seeds.neg().mul(p.leech.addr(1));
+          if(wanted.eqr(0)) continue; // zero input required, so nothing to do (no current mushroom has this case though, but avoid NaNs if it'd happen)
+          var gotten = wanted.add(p.prod1.seeds); // prod1.seeds is <= 0 so is a subtraction
+          var ratio = gotten.div(wanted);
+          // the actual amount of spores produced based on satisfied input amount
+          // if there was watercress leeching from this mushroom, then the amount may be less if the multiplied-by-leech input was not satisfied, but the output of the watercress makes up for that in a next pass
+          p.prod2.spores.mulInPlace(ratio);
+          p.prod2.seeds = Num(0); // they have been consumed, and already subtracted from the production of the berry so don't have the negative value here anymore
+          p.prod3.spores.mulInPlace(ratio);
+          p.prod3.seeds.mulInPlace(ratio);
         }
       }
     }
   }
 
-  if(theoretical) {
-    return result;
-  } else {
-    return computeIncome(factor, a, pos_only2);
-  }
-}
-
-function computeProduction2(factor, theoretical, include_growing, pos_only) {
-  var pos_only2 = false;
-  if(!theoretical && pos_only) {
-    pos_only2 = true;
-    pos_only = false;
-  }
-  var result = theoretical ? new Res() : undefined;
-  var a = [];
-
-  for(var y = 0; y < state.numh2; y++) {
-    for(var x = 0; x < state.numw2; x++) {
-      var f = state.field2[y][x];
-      if(f.index >= CROPINDEX) {
-        var c = crops2[f.index - CROPINDEX];
-        if(f.growth >= 1 || include_growing || c.type == CROPTYPE_SHORT) {
-          var prod = c.getProd(f);
-          if(pos_only) prod = prod.getPositive();
-          if(theoretical) {
-            result.addInPlace(prod);
-          } else {
-            a.push([prod, 0, 1]);
+  // pass 5: leeching
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var p = prefield[y][x];
+      var c = f.getCrop();
+      if(c) {
+        if(c.type == CROPTYPE_SHORT) {
+          var leech = c.getLeech(f);
+          var p = prefield[y][x];
+          var total = Res();
+          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            var f2 = state.field[y2][x2];
+            var c2 = f2.getCrop();
+            if(c2) {
+              var p2 = prefield[y2][x2];
+              if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
+                var leech2 = p2.prod2.mul(leech);
+                var leech3 = p2.prod3.mul(leech);
+                p.prod2.addInPlace(leech2);
+                p.prod3.addInPlace(leech3);
+                total.addInPlace(leech3); // for the breakdown
+              }
+            }
           }
+          // also add this to the breakdown
+          if(!total.empty()) p.breakdown.push(['<b><i><font color="#040">leeching neighbors</font></i></b>', false, total, p.prod3.clone()]);
         }
       }
     }
   }
-
-  if(theoretical) {
-    return result;
-  } else {
-    return computeIncome(factor, a, pos_only2);
-  }
-}
+};
 
 // when is the next time that something happens that requires a separate update()
 // run. E.g. if the time difference is 1 hour (due to closing the tab for 1 hour),
@@ -620,6 +670,20 @@ function nextEventTime() {
   if((state.time - state.fogtime) < getFogDuration()) addtime(getFogDuration() - state.time + state.fogtime);
   if((state.time - state.suntime) < getSunDuration()) addtime(getSunDuration() - state.time + state.suntime);
   if((state.time - state.rainbowtime) < getRainbowDuration()) addtime(getRainbowDuration() - state.time + state.rainbowtime);
+
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(c) {
+        if(c.type == CROPTYPE_SHORT) {
+          addtime(c.getPlantTime() * (f.growth));
+        } else if(f.growth < 1) {
+          addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
+        }
+      }
+    }
+  }
 
   return time;
 }
@@ -655,7 +719,8 @@ var update = function(opt_fromTick) {
 
     state.time = state.prevtime; // to let the nextEventTime() computation work as desired now
     var d = (state.prevtime == 0 || state.prevtime > time) ? 0 : (time - state.prevtime); // delta time for this tick. Set to 0 if in future (e.g. timezone change or daylight saving could have happened)
-    var rem = nextEventTime(2) + 1; // for numerical reasons, ensure it's not exactly at the border of the event
+    var rem = 0;
+    if(d > 1) rem = nextEventTime() + 0.5; // for numerical reasons, ensure it's not exactly at the border of the event
     if(d > rem && rem > 2) {
       d = rem;
       time = state.prevtime + d;
@@ -760,7 +825,7 @@ var update = function(opt_fromTick) {
         var f = state.field[action.y][action.x];
         var c = action.crop;
         var cost = c.getCost();
-        if(f.index >= CROPINDEX) {
+        if(f.hasCrop()) {
           showMessage('field already has crop', invalidFG, invalidBG);
         } else if(f.index != 0) {
           showMessage('field already has something', invalidFG, invalidBG);
@@ -788,14 +853,14 @@ var update = function(opt_fromTick) {
           f.index = c.index + CROPINDEX;
           f.growth = 0;
           if(c.type == CROPTYPE_SHORT) f.growth = 1;
-          if(c.type == CROPTYPE_SHORT) computeDerived(state); // ensure correct formula used for same-type penalty of neighbor boost of watercress
+          computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
       } else if(type == ACTION_PLANT2) {
         var f = state.field2[action.y][action.x];
         var c = action.crop;
         var cost = c.getCost();
-        if(f.index >= CROPINDEX) {
+        if(f.hasCrop()) {
           showMessage('field already has crop', invalidFG, invalidBG);
         } else if(f.index != 0) {
           showMessage('field already has something', invalidFG, invalidBG);
@@ -813,15 +878,16 @@ var update = function(opt_fromTick) {
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
-          if(f.index - CROPINDEX == special2_0) {
+          if(f.cropIndex() == special2_0) {
             state.res.seeds.addrInPlace(10);
           }
+          computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
       } else if(type == ACTION_DELETE) {
         var f = state.field[action.y][action.x];
-        if(f.index >= CROPINDEX) {
-          var c = crops[f.index - CROPINDEX];
+        if(f.hasCrop()) {
+          var c = f.getCrop();
           var recoup = c.getCost(-1).mulr(cropRecoup);
           if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
             recoup = c.getCost(-1);
@@ -845,12 +911,12 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_DELETE2) {
         var f = state.field2[action.y][action.x];
-        if(f.index - CROPINDEX == special2_0 && state.res.seeds.ltr(10)) {
+        if(f.cropIndex() == special2_0 && state.res.seeds.ltr(10)) {
           showMessage('cannot delete: must have at least the 10 seeds which this crop gave to delete it.', invalidFG, invalidBG);
-        } else if(f.index >= CROPINDEX) {
-          var c = crops2[f.index - CROPINDEX];
+        } else if(f.hasCrop()) {
+          var c = crops2[f.cropIndex()];
           var recoup = c.getCost(-1).mulr(cropRecoup2);
-          if(f.index - CROPINDEX == special2_0) {
+          if(f.cropIndex() == special2_0) {
             state.res.seeds.subrInPlace(10);
           }
           if(f.growth < 1) {
@@ -934,6 +1000,7 @@ var update = function(opt_fromTick) {
           softReset();
           store_undo = true;
         }
+        // TODO: the rest of the update, cost/prod computation shouldn't happen anymore after this action, delta times and such are no longer relevant now.
       }
     }
     actions = [];
@@ -942,11 +1009,8 @@ var update = function(opt_fromTick) {
       storeUndo(undostate);
     }
 
-    // for display purposes, but also a few computations here
-    gain = computeProduction(state.over, false, false, false).add(computeProduction2(state.over, false, false, false));
-    gain_pos = computeProduction(state.over, false, false, true).add(computeProduction2(state.over, false, false, true));
-    gain_over = computeProduction(state.over, true, false, false).add(computeProduction2(state.over, true, false, false));
-    gain_pos_over = computeProduction(state.over, true, false, true).add(computeProduction2(state.over, true, false, true));
+    precomputeField();
+
 
     var fern = false;
     var fernTimeWorth = 0;
@@ -984,70 +1048,70 @@ var update = function(opt_fromTick) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    var producers = [];
+
+    gain = Res();
+    gain_pos = Res();
 
     for(var y = 0; y < state.numh; y++) {
       for(var x = 0; x < state.numw; x++) {
         var f = state.field[y][x];
-        if(f.index >= CROPINDEX) {
-          var c = crops[f.index - CROPINDEX];
+        if(f.hasCrop()) {
+          var p = prefield[y][x];
+          var c = f.getCrop();
+          var prod = Res();
           if(c.type == CROPTYPE_SHORT) {
-            var g = d / c.getPlanttime();
+            var g = d / c.getPlantTime();
             var growth0 = f.growth;
             f.growth -= g;
             if(f.growth <= 0) {
               f.growth = 0;
               f.index = 0;
-              // give partial resources for the time we had
-              var time_alive = c.getPlanttime() * growth0;
-              producers.push([c.getProd(f), 0, time_alive]);
-            } else {
-              producers.push([c.getProd(f), 0, d]);
             }
+            // it's ok to have the production when growth becoame 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
+            prod = p.prod2;
           } else { // long lived plant
             if(f.growth < 1) {
-              if(c.getPlanttime() == 0) {
+              if(c.getPlantTime() == 0) {
                 f.growth = 1;
               } else {
-                var g = d / c.getPlanttime();
+                var g = d / c.getPlantTime();
                 var growth0 = f.growth;
                 f.growth += g;
                 if(f.growth >= 1) {
                   // just fullgrown now
                   f.growth = 1;
-                  // subtract how much time left we used for the growing
-                  var g_needed = 1 - growth0;
-                  var g_left = g - g_needed;
-                  var time_left = g_left * c.getPlanttime();
-                  producers.push([c.getProd(f), d - time_left, d]);
                   state.g_numfullgrown++;
                   state.c_numfullgrown++;
                   if(state.c_numfullgrown == 1) {
-                    showMessage('your first permanent (non-withering) plant has fully grown! Click plants for details and extra actions. If you plant watercress next to permanent plants like this, the watercress will add all its neighbors production to its own, so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns.', helpFG2, helpBG2);
+                    showMessage('your first permanent (non-withering) plant has fully grown! Click plants for details and extra actions.', helpFG2, helpBG2);
+                    showMessage('plant watercress next to blackberry to leech for extra production! This gets less effective with more watercress, 1-2 max in world is advisable, placed in best spot between multiple berries.', helpFG2, helpBG2);
                   }
+                  // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
                 }
               }
             } else {
               // fullgrown
-              producers.push([c.getProd(f), 0, d]);
+              prod = p.prod2;
             }
           }
+          gain.addInPlace(prod);
+          gain_pos.addInPlace(prod.getPositive());
+          actualgain.addInPlace(prod.mulr(d));
         }
         updateFieldCellUI(x, y);
       }
     }
 
-    actualgain.addInPlace(computeIncome(state.over, producers));
     for(var y = 0; y < state.numh2; y++) {
       for(var x = 0; x < state.numw2; x++) {
         var f = state.field2[y][x];
-        if(f.index >= CROPINDEX) {
-          var c = crops2[f.index - CROPINDEX];
+        if(f.hasCrop()) {
+          var c = crops2[f.cropIndex()];
           if(f.growth < 1) {
-            if(c.getPlanttime() == 0) {
+            if(c.getPlantTime() == 0) {
               f.growth = 1;
             } else {
-              var g = d / c.getPlanttime();
+              var g = d / c.getPlantTime();
               f.growth += g;
               if(f.growth >= 1) {
                 f.growth = 1;
@@ -1170,6 +1234,8 @@ var update = function(opt_fromTick) {
     state.c_max_prod = Res.max(state.c_max_prod, gain);
     state.g_numticks++;
     state.c_numticks++;
+
+    computeDerived(state);
   } // end of loop for long ticks
 
 

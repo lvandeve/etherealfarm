@@ -40,7 +40,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   //if(crop.type == CROPTYPE_SHORT) text += '<b>short-lived</b><br>';
   var prod = crop.getProd(f, true);
   if(!prod.empty()) text += '<b>prod:</b>' + prod.toString();
-  var boost = crop.getBoost();
+  var boost = crop.getBoost(f);
   if(boost.neqr(0)) text += '<b>boost:</b>' + boost.mulr(100).toString() + '%';
   infoFlex.div.innerHTML = text;
 
@@ -96,22 +96,20 @@ function makePlantDialog(x, y, show_only) {
       }
 
       result += '.<br><br>Crop type: ' + getCropTypeName(c.type);
-      result += '.<br><br>Num planted of this type: ' + state.cropcount[c.index];
-      if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;
-      result += '<br><br>Planting cost:';
-      result += '<br>• Base: ' + c.cost.toString();
-      result += '.<br>• Current: ' + c.getCost().toString();
-      if(c.type == CROPTYPE_SHORT) {
-        result += '.<br><br>Living time: ' + util.formatDuration(c.getPlanttime());
-      } else {
-        result += '.<br><br>Growing time: ' + util.formatDuration(c.getPlanttime());
+      var help = getCropTypeHelp(c.type);
+      if(help) {
+        result += '.<br>' + help;
       }
-      result += '.<br><br>Production/sec:';
-      result += '<br>• Base: ' + c.prod.toString();
-      result += '.<br>• Here: ' + c.getProd(state.field[y][x], true).toString();
-      result += '.<br>• Without Neighbors: ' + c.getProd(undefined).toString();
-      if(c.type == CROPTYPE_NETTLE) result += '.<br><br>Boost neighboring mushrooms spores production, but negatively affects neighboring berries, so avoid touching berries with this plant';
-      if(c.type == CROPTYPE_FLOWER) result += '.<br><br>Boost neighboring crops, their production, but if they have consumption, also increases their consumption equally';
+
+
+      if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;
+      result += '<br><br>Planting cost: ' + c.getCost().toString();
+      if(c.type == CROPTYPE_SHORT) {
+        result += '.<br><br>Living time: ' + util.formatDuration(c.getPlantTime());
+      } else {
+        result += '.<br><br>Growing time: ' + util.formatDuration(c.getPlantTime());
+      }
+      result += '.<br><br>Production/sec:' + c.getProd(state.field[y][x], true).toString();
       result += '.';
       return result;
     }, index);

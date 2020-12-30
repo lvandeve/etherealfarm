@@ -24,14 +24,40 @@ var FIELD_TREE_BOTTOM = 2;
 function Cell(x, y) {
   // index of crop, but with different numerical values:
   // 0 = empty
-  // 1-(CROPINDEX-1): special: 1=tree, 2=fern, ...
+  // 1..(CROPINDEX-1): special: 1=tree top, 2=tree bottom, ...
   // >= CROPINDEX: crop with crop index = this.index - CROPINDEX.
   this.index = 0;
   this.growth = 0; // 0.0-1.0: percentage completed, or 1 if fullgrown
-  this.res = null; // this is used by fern to remember what random resources this one got
+
   this.x = x;
   this.y = y;
 }
+
+Cell.prototype.isFullGrown = function() {
+  if(this.index < CROPINDEX) return false; // not relevant for non-crops
+  var c = this.getCrop();
+  if(c.type == CROPTYPE_SHORT) return this.growth > 0;
+  return this.growth >= 1;
+};
+
+Cell.prototype.hasCrop = function() {
+  return this.index >= CROPINDEX;
+};
+
+// only valid if hasCrop()
+Cell.prototype.cropIndex = function() {
+  return this.index - CROPINDEX;
+};
+
+// Only valid for the basic field, not for the ethereal field.
+// returns crops object if the field has a crop, undefined otherwise
+// TODO: make a class Cell2 for ethereal field instead
+Cell.prototype.getCrop = function() {
+  if(this.index < CROPINDEX) return undefined;
+  return crops[this.index - CROPINDEX];
+};
+
+
 
 function CropState() {
   this.unlocked = false;
@@ -241,7 +267,7 @@ function State() {
   this.numemptyfields = 0;
   this.numemptyfields2 = 0;
 
-  // amount of fields with a crop on them (index >= CROPINDEX, special types 1<=index<CROPINDEX are not counted)
+  // amount of fields with a crop on them (hasCrop(), special types 1<=index<CROPINDEX are not counted)
   // includes growing ones
   // derived stat, not to be saved
   this.numcropfields = 0;
@@ -413,12 +439,12 @@ function computeDerived(state) {
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
-      if(f.index >= CROPINDEX) {
-        var c = crops[f.index - CROPINDEX];
-        state.cropcount[f.index - CROPINDEX]++;
+      if(f.hasCrop()) {
+        var c = f.getCrop();
+        state.cropcount[c.index]++;
         state.numcropfields++;
-        if(f.growth >= 1 || c.type == CROPTYPE_SHORT) {
-          state.fullgrowncropcount[f.index - CROPINDEX]++;
+        if(f.isFullGrown()) {
+          state.fullgrowncropcount[c.index]++;
           state.numfullgrowncropfields++;
           if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++
         }
@@ -446,12 +472,12 @@ function computeDerived(state) {
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
-      if(f.index >= CROPINDEX) {
-        var c = crops2[f.index - CROPINDEX];
-        state.crop2count[f.index - CROPINDEX]++;
+      if(f.hasCrop()) {
+        var c = crops2[f.cropIndex()];
+        state.crop2count[c.index]++;
         state.numcropfields2++;
         if(f.growth >= 1) {
-          state.fullgrowncrop2count[f.index - CROPINDEX]++;
+          state.fullgrowncrop2count[c.index]++;
           state.numfullgrowncropfields2++;
         }
       } else if(f.index == 0) {
@@ -520,8 +546,8 @@ function computeDerived(state) {
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
-      if(f.index >= CROPINDEX && f.growth >= 1) {
-        var index = f.index - CROPINDEX;
+      if(f.hasCrop() && f.growth >= 1) {
+        var index = f.cropIndex();
         if(index == berry2_0) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(0.2));

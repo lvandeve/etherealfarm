@@ -36,6 +36,17 @@ function getCropTypeName(type) {
   return "unknown";
 }
 
+function getCropTypeHelp(type) {
+  switch(type) {
+    case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Neighboring watercress can leech its production (but also consumption), producing more spores overall given enough seeds.';
+    case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production, but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
+    case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption. Negatively affected by neighboring nettles.';
+    case CROPTYPE_SHORT: return 'Produces a small amount of seeds on its own, but can produce much more resources by leeching from berry and mushroom neighbors';
+    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. Negatively affected by nettles. Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can leech its production, producing more seeds overall.';
+  }
+  return undefined;
+}
+
 var fern_wait_minutes = 2; // default fern wait minutes (in very game they go faster)
 
 
@@ -139,7 +150,7 @@ function reduceGrowTime(time, reduce) {
 }
 
 
-Crop.prototype.getPlanttime = function() {
+Crop.prototype.getPlantTime = function() {
   var result = this.planttime;
 
   // This is the opposite for croptype_short, it's not planttime but live time. TODO: make two separate functions for this
@@ -178,20 +189,18 @@ Crop.prototype.getSeasonBonus = function(season) {
 }
 
 // f = Cell from field, or undefined to not take location-based production bonuses into account
-// assume_fullgrown: get the production if the plant would be fullgrown. This has no effect if f is undefined. Default false. Typically you want this true in UI, false in computations.
-Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
+// pretend: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
+Crop.prototype.getProd = function(f, pretend, breakdown) {
   var result = Res(this.prod);
-  var breakdown = [];
-  if(give_breakdown) breakdown.push(['base', Num(0), result.clone()]);
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-  if(!assume_fullgrown && f && f.growth < 1 && this.type != CROPTYPE_SHORT) {
-    if(give_breakdown) return [];
+  if(!pretend && f && f.growth < 1 && this.type != CROPTYPE_SHORT) {
     return Res();
   }
 
   // medal
   result.mulInPlace(state.medal_prodmul);
-  if(give_breakdown) breakdown.push(['achievements', state.medal_prodmul, result.clone()]);
+  if(breakdown) breakdown.push(['achievements', true, state.medal_prodmul, result.clone()]);
 
   // upgrades
   if(this.basic_upgrade != null && this.type != CROPTYPE_SHORT) {
@@ -200,7 +209,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     if(u.count > 0) {
       var mul_upgrade = u2.bonus.powr(u.count);
       result.mulInPlace(mul_upgrade);
-      if(give_breakdown) breakdown.push([' upgrades (' + u.count + ')', mul_upgrade, result.clone()]);
+      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
   }
 
@@ -215,7 +224,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
   }
   var e = result.elmul(ethereal_prodmul);
   if(result.neq(e)) {
-    if(give_breakdown) {
+    if(breakdown) {
       var mul = Num(1);
       var a0 = result.toArray();
       var a1 = e.toArray();
@@ -225,7 +234,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
           break;
         }
       }
-      breakdown.push(['ethereal crops', mul, e.clone()]);
+      breakdown.push(['ethereal crops', true, mul, e.clone()]);
     }
     result = e;
   }
@@ -233,7 +242,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
   if(state.res.resin.gter(1)) {
     var resin_bonus = Num(Num.log10(state.res.resin.addr(1))).mulr(0.01).addr(1);
     result.mulInPlace(resin_bonus);
-    if(give_breakdown) breakdown.push(['unused resin', resin_bonus, result.clone()]);
+    if(breakdown) breakdown.push(['unused resin', true, resin_bonus, result.clone()]);
   }
 
 
@@ -245,8 +254,8 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     var num = 0;
 
     var getboost = function(self, n) {
-      if(n.index >= CROPINDEX && n.growth >= 1 && crops[n.index - CROPINDEX].type != CROPTYPE_NETTLE) {
-        var boost = crops[n.index - CROPINDEX].getBoost();
+      if(n.hasCrop() && n.growth >= 1 && n.getCrop().type != CROPTYPE_NETTLE) {
+        var boost = n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
           //if(season == 2 || season == 3) {
           //  mul_boost = Num.max(mul_boost, boost.addr(1));
@@ -264,7 +273,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     if(f.x + 1 < state.numw && getboost(this, state.field[f.y][f.x + 1])) num++;
     if(f.y + 1 < state.numh && getboost(this, state.field[f.y + 1][f.x])) num++;
     result.mulInPlace(mul_boost);
-    if(give_breakdown && num > 0) breakdown.push(['flowers (' + num + ')', mul_boost, result.clone()]);
+    if(breakdown && num > 0) breakdown.push(['flowers (' + num + ')', true, mul_boost, result.clone()]);
   }
 
   // nettle boost
@@ -274,8 +283,8 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     var num = 0;
 
     var getboost = function(self, n) {
-      if(n.index >= CROPINDEX && n.growth >= 1 && crops[n.index - CROPINDEX].type == CROPTYPE_NETTLE) {
-        var boost = crops[n.index - CROPINDEX].getBoost();
+      if(n.hasCrop() && n.growth >= 1 && n.getCrop().type == CROPTYPE_NETTLE) {
+        var boost = n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
           if(self.type == CROPTYPE_MUSH) {
             spore_boost.addInPlace(boost);
@@ -294,7 +303,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     if(f.y + 1 < state.numh && getboost(this, state.field[f.y + 1][f.x])) num++;
     result.seeds.mulInPlace(seed_malus);
     result.spores.mulInPlace(spore_boost);
-    if(give_breakdown && num > 0) breakdown.push(['nettles (' + num + ')', (this.type == CROPTYPE_MUSH) ? spore_boost : seed_malus, result.clone()]);
+    if(breakdown && num > 0) breakdown.push(['nettles (' + num + ')', true, (this.type == CROPTYPE_MUSH) ? spore_boost : seed_malus, result.clone()]);
   }
 
   // teelevel boost
@@ -302,7 +311,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
   if(state.treelevel > 0 && this.type != CROPTYPE_SHORT) {
     var tree_boost = Num(1).addr(treeboost * state.treelevel);
     result.mulInPlace(tree_boost);
-    if(give_breakdown && tree_boost.neqr(1)) breakdown.push(['tree level (' + state.treelevel + ')', tree_boost, result.clone()]);
+    if(breakdown && tree_boost.neqr(1)) breakdown.push(['tree level (' + state.treelevel + ')', true, tree_boost, result.clone()]);
   }
 
   // posmul is used when the bonus only affects its production but not its consumption.
@@ -317,7 +326,7 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     var bonus_season = this.getSeasonBonus(season);
     if(bonus_season.neqr(1)) {
       result.posmulInPlace(bonus_season);
-      if(give_breakdown) breakdown.push([seasonNames[season], bonus_season, result.clone()]);
+      if(breakdown) breakdown.push([seasonNames[season], true, bonus_season, result.clone()]);
     }
   }
 
@@ -326,12 +335,12 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     var bonus_fog0 = Num(0.75);
     if(state.upgrades[fog_choice0_b].count) bonus_fog0.divrInPlace(1 + active_choice0_b_bonus);
     result.seeds.mulInPlace(bonus_fog0);
-    if(give_breakdown) breakdown.push(['fog (less seeds)', bonus_fog0, result.clone()]);
+    if(breakdown) breakdown.push(['fog (less seeds)', true, bonus_fog0, result.clone()]);
     var bonus_fog1 = Num(0.25);
     if(state.upgrades[fog_choice0_b].count) bonus_fog1.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_fog1.addrInPlace(1);
     result.spores.mulInPlace(bonus_fog1);
-    if(give_breakdown) breakdown.push(['fog (more spores)', bonus_fog1, result.clone()]);
+    if(breakdown) breakdown.push(['fog (more spores)', true, bonus_fog1, result.clone()]);
   }
 
   // sun
@@ -340,57 +349,42 @@ Crop.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
     if(state.upgrades[sun_choice0_b].count) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_sun.addrInPlace(1);
     result.seeds.mulrInPlace(bonus_sun);
-    if(give_breakdown) breakdown.push(['sun', bonus_sun, result.clone()]);
+    if(breakdown) breakdown.push(['sun', true, bonus_sun, result.clone()]);
   }
 
-  // This must be done at the end: all the above bonuses may *not* apply to the leech effect of watercress, since it already has them indirectly through the plants it leeches from.
-  if(this.type == CROPTYPE_SHORT) {
-    if(f) {
-      // add a penalty for the neighbor production copy-ing if there are multiple watercress in the field. The reason for this is:
-      // the watercress neighbor production copying is really powerful, and if every single watercress does this at full power, this would require way too active play, replanting watercresses in the whole field all the time.
-      // encouraging to plant one or maybe two (but diminishing returns that make more almost useless) strikes a good balance between doing something useful during active play, but still getting reasonable income from passive play
-      var numsame = state.cropcount[this.index];
-      var penalty = 1;
-      if(numsame > 1) penalty = 1 / (1 + (numsame - 1) * 0.75);
-      var neigh = Res();
-      var testneighbor = function(x, y) {
-        if(x < 0 || y < 0 || x >= state.numw || y >= state.numh) return;
-        var n = state.field[y][x];
-        if(n.index < CROPINDEX) return;
-        var c = crops[n.index - CROPINDEX];
-        if(c.type == CROPTYPE_SHORT) return;
-        if(c.type == CROPTYPE_FLOWER) return;
-        var r = c.getProd(n);
-        neigh.addInPlace(r);
-      };
-      testneighbor(f.x - 1, f.y);
-      testneighbor(f.x + 1, f.y);
-      testneighbor(f.x, f.y - 1);
-      testneighbor(f.x, f.y + 1);
-      neigh.mulrInPlace(penalty);
-      if(!neigh.empty()) {
-        result.addInPlace(neigh);
-        if(give_breakdown) {
-          if(penalty < 1) breakdown.push(['<b><i><font color="#040">leeching (diminished)</font></i></b>', undefined, result.clone()]);
-          else breakdown.push(['<b><i><font color="#040">leeching neighbors</font></i></b>', undefined, result.clone()]);
+  // leech, only computed here in case of "pretend", without pretent leech is computed in more correct way in precomputeField()
+  if(pretend && this.type == CROPTYPE_SHORT) {
+    var leech = this.getLeech(f);
+    var p = prefield[f.y][f.x];
+    var total = Res();
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+      var f2 = state.field[y2][x2];
+      var c2 = f2.getCrop();
+      if(c2) {
+        var p2 = prefield[y2][x2];
+        if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
+          total.addInPlace(p2.prod0);
         }
       }
     }
+    result.addInPlace(total);
+    if(breakdown && !total.empty()) breakdown.push(['<b><i><font color="#040">leeching neighbors</font></i></b>', false, total, result.clone()]);
   }
 
-  if(give_breakdown) return breakdown;
   return result;
 };
 
 
-
-Crop.prototype.getBoost = function(give_breakdown) {
+// The result is the added value, e.g. a result of 0.5 means a multiplier of 1.5, or a bonus of +50%
+Crop.prototype.getBoost = function(f, breakdown) {
   var result = this.boost.clone();
-  var breakdown = [];
-  if(give_breakdown) breakdown.push(['base', Num(0), result.clone()]);
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
 
-  var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && this.type == CROPTYPE_FLOWER && (state.time - state.rainbowtime) < getRainbowDuration();
+  var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && (state.time - state.rainbowtime) < getRainbowDuration();
 
   // TODO: have some achievements that give a boostmul instead of a prodmul
 
@@ -401,40 +395,92 @@ Crop.prototype.getBoost = function(give_breakdown) {
     if(u.count > 0) {
       var mul_upgrade = u2.bonus.mulr(u.count).addr(1); // the flower upgrades are additive, unlike the crop upgrades which are multiplicative. This because the flower bonus itself is already multiplicative to the plants.
       result.mulInPlace(mul_upgrade);
-      if(give_breakdown) breakdown.push([' upgrades (' + u.count + ')', mul_upgrade, result.clone()]);
+      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
     }
   }
 
   var season = getSeason();
-  if(!(rainbow_active && season == 3)) {
-    var bonus_season = this.getSeasonBonus(season);
-    if(bonus_season.neqr(1)) {
-      result.mulInPlace(bonus_season);
-      if(give_breakdown) breakdown.push([seasonNames[season], bonus_season, result.clone()]);
+  if(this.type == CROPTYPE_FLOWER) {
+    if(!(rainbow_active && season == 3)) {
+      var bonus_season = this.getSeasonBonus(season);
+      if(bonus_season.neqr(1)) {
+        result.mulInPlace(bonus_season);
+        if(breakdown) breakdown.push([seasonNames[season], true, bonus_season, result.clone()]);
+      }
+    }
+  }
+
+  // ethereal crops bonus to basic crops
+  if(this.type == CROPTYPE_FLOWER) {
+    var ethereal_boost = Num(1 + state.fullgrowncrop2count[flower2_0] * 0.2);
+    if(ethereal_boost.neqr(1)) {
+      result.mulInPlace(ethereal_boost);
+      if(breakdown) breakdown.push(['ethereal crops', true, ethereal_boost, result.clone()]);
     }
   }
 
 
-
-  // ethereal crops bonus to basic crops
-  var ethereal_boost = Num(1 + state.fullgrowncrop2count[flower2_0] * 0.2);
-  if(ethereal_boost.neqr(1)) {
-    result.mulInPlace(ethereal_boost);
-    if(give_breakdown) breakdown.push(['ethereal crops', ethereal_boost, result.clone()]);
-  }
-
-
   // rainbow
-  if(rainbow_active) {
-    var bonus_rainbow = Num(0.5);
-    if(state.upgrades[rainbow_choice0_b].count) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
-    bonus_rainbow.addrInPlace(1);
-    result.mulrInPlace(bonus_rainbow);
-    if(give_breakdown) breakdown.push(['rainbow', bonus_rainbow, result.clone()]);
+  if(this.type == CROPTYPE_FLOWER) {
+    if(rainbow_active) {
+      var bonus_rainbow = Num(0.5);
+      if(state.upgrades[rainbow_choice0_b].count) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
+      bonus_rainbow.addrInPlace(1);
+      result.mulrInPlace(bonus_rainbow);
+      if(breakdown) breakdown.push(['rainbow', true, bonus_rainbow, result.clone()]);
+    }
   }
 
-  if(give_breakdown) return breakdown;
+  // nettle negatively affecting flowers
+  if(f && (this.type == CROPTYPE_FLOWER)) {
+    var malus = Num(1);
+    var num = 0;
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+      var f2 = state.field[y2][x2];
+      var c2 = f2.getCrop();
+      if(c2 && f2.growth >= 1 && c2.type == CROPTYPE_NETTLE) {
+        var boost = c2.getBoost(f2);
+        malus.divInPlace(boost.addr(1));
+        num++;
+      }
+    }
+    if(num > 0) {
+      result.mulInPlace(malus);
+      if(breakdown) breakdown.push(['nettles malus (' + num + ')', true, malus, result.clone()]);
+    }
+  }
+
+  return result;
+};
+
+// This returns the leech ratio of this plant, not the actual resource amount leeched
+// Only correct for already planted leeching plants (for the penalty of multiple planted ones computation)
+Crop.prototype.getLeech = function(f, breakdown) {
+  if(this.type != CROPTYPE_SHORT) {
+    var result = Num(0);
+    if(breakdown) breakdown.push(['none', true, Num(0), result.clone()]);
+    return Res();
+  }
+
+  var result = Num(1);
+  if(breakdown) breakdown.push(['base', true, Num(1), result.clone()]);
+
+  // add a penalty for the neighbor production copy-ing if there are multiple watercress in the field. The reason for this is:
+  // the watercress neighbor production copying is really powerful, and if every single watercress does this at full power, this would require way too active play, replanting watercresses in the whole field all the time.
+  // encouraging to plant one or maybe two (but diminishing returns that make more almost useless) strikes a good balance between doing something useful during active play, but still getting reasonable income from passive play
+  var numsame = state.cropcount[this.index];
+  if(numsame > 1) {
+    var penalty = 1 / (1 + (numsame - 1) * 0.75);
+    result.mulrInPlace(penalty);
+
+    if(breakdown) breakdown.push(['reduction for multiple', true, Num(penalty), result.clone()]);
+  }
+
   return result;
 };
 
@@ -1175,25 +1221,20 @@ Crop2.prototype.getCost = function(opt_adjust_count) {
 };
 
 
-Crop2.prototype.getPlanttime = function() {
+Crop2.prototype.getPlantTime = function() {
   return this.planttime;
 };
 
 // Ethereal production
-Crop2.prototype.getProd = function(f, assume_fullgrown, give_breakdown) {
+Crop2.prototype.getProd = function(f, assume_fullgrown, breakdown) {
   if(!assume_fullgrown && f && f.growth < 1) {
-    if(give_breakdown) return [];
     return Res();
   }
 
   var result = Res(this.prod);
-  var breakdown = [];
 
-  if(give_breakdown) breakdown.push(['base', Num(0), result.clone()]);
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-
-
-  if(give_breakdown) return breakdown;
   return result;
 }
 
@@ -1206,8 +1247,8 @@ Crop2.getNeighborBoost = function(f) {
     var num = 0;
 
     var getboost = function(n) {
-      if(n.index >= CROPINDEX && n.growth >= 1 && crops2[n.index - CROPINDEX].type != CROPTYPE_NETTLE) {
-        var boost = crops2[n.index - CROPINDEX].getBoost();
+      if(n.hasCrop() && n.growth >= 1 && crops2[n.cropIndex()].type != CROPTYPE_NETTLE) {
+        var boost = crops2[n.cropIndex()].getBoost(n);
         if(boost.neqr(0)) {
           result.addInPlace(boost);
           return true;
@@ -1227,12 +1268,10 @@ Crop2.getNeighborBoost = function(f) {
   return Num(0);
 };
 
-Crop2.prototype.getBoost = function(give_breakdown) {
+Crop2.prototype.getBoost = function(f, breakdown) {
   var result = this.boost.clone();
-  var breakdown = [];
-  if(give_breakdown) breakdown.push(['base', Num(0), result.clone()]);
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-  if(give_breakdown) return breakdown;
   return result;
 };
 
@@ -1470,7 +1509,7 @@ var upgrade2_time_reduce_0_amount = 60;
 
 upgrade2_register_id = 25;
 var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', Res({resin:25}), 1, function() {
-}, function(){return true}, 1, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds faster. This is capped to remove up to 50% of the total time.', undefined, undefined, blackberry[0]);
+}, function(){return true}, 1, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds faster. This is capped for already fast plants, and can remove up to 50% of the total time.', undefined, undefined, blackberry[0]);
 
 
 

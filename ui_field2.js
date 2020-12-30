@@ -28,7 +28,7 @@ function getCropInfoHTML2(f, c) {
 
 
   if(f.growth < 1) {
-    result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlanttime(), true, 4, true);
+    result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
   } else {
     if(c.effect_description_long) {
       result += '<br/>Effect: ' + c.effect_description_long + '<br/>';
@@ -42,7 +42,7 @@ function getCropInfoHTML2(f, c) {
       if(prod.hasNeg()) result += 'Consumes a resource produced by other crops<br/>';
     }
     if(c.boost.neqr(0)) {
-      result += 'Boosting neighbors: ' + (c.getBoost().mulr(100).toString()) + '%<br/>';
+      result += 'Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
     }
 
     if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
@@ -71,8 +71,8 @@ function makeField2Dialog(x, y) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
 
-  if(f.index >= CROPINDEX) {
-    var c = crops2[f.index - CROPINDEX];
+  if(f.hasCrop()) {
+    var c = crops2[f.cropIndex()];
     var div;
 
     var dialog = createDialog();
@@ -114,7 +114,7 @@ function makeField2Dialog(x, y) {
 
     updatedialogfun(f, c);
   } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-    var c = crops2[f.index - CROPINDEX];
+    var c = crops2[f.cropIndex()];
     var div;
 
     var dialog = createDialog();
@@ -182,8 +182,8 @@ function initField2UI() {
         var result = undefined;
         if(f.index == 0) {
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
-        } else if(f.index >= CROPINDEX) {
-          var c = crops2[f.index - CROPINDEX];
+        } else if(f.hasCrop()) {
+          var c = crops2[f.cropIndex()];
           result = getCropInfoHTML2(f, c);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           return 'ethereal tree';
@@ -207,7 +207,7 @@ function initField2UI() {
           } else {
             makeField2Dialog(x, y);
           }
-        } else if(f.index >= CROPINDEX) {
+        } else if(f.hasCrop()) {
           if(e.shiftKey) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];
@@ -254,8 +254,8 @@ function updateField2CellUI(x, y) {
 
     fd.index = f.index;
     fd.growstage = growstage;
-    if(f.index >= CROPINDEX) {
-      var c = crops2[f.index - CROPINDEX];
+    if(f.hasCrop()) {
+      var c = crops2[f.cropIndex()];
       renderImage(c.image[growstage], fd.canvas);
       if(f.growth >= 1) {
         // fullgrown, so hide progress bar
@@ -272,8 +272,8 @@ function updateField2CellUI(x, y) {
       unrenderImage(fd.canvas);
     }
   }
-  if(fd.index >= CROPINDEX && f.growth < 1) {
-    var c = crops2[f.index - CROPINDEX];
+  if(f.hasCrop() && f.growth < 1) {
+    var c = crops2[f.cropIndex()];
     setProgressBar(fd.progress, f.growth, '#f00');
   }
 }

@@ -90,7 +90,7 @@ function encState(state, opt_raw_only) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
       array0.push(f.index);
-      if(f.index >= CROPINDEX) {
+      if(f.hasCrop()) {
         array1.push(f.growth);
       }
     }
@@ -109,7 +109,7 @@ function encState(state, opt_raw_only) {
     for(var x = 0; x < w2; x++) {
       var f = state.field2[y][x];
       array0.push(f.index);
-      if(f.index >= CROPINDEX) {
+      if(f.hasCrop()) {
         array1.push(f.growth);
       }
     }
@@ -446,7 +446,7 @@ function decState(s) {
         state.field[y][x] = new Cell(x, y);
         var f = state.field[y][x];
         f.index = array0[index0++];
-        if(f.index >= CROPINDEX) {
+        if(f.hasCrop()) {
           f.growth = array1[index1++];
         }
       }
@@ -473,7 +473,7 @@ function decState(s) {
         state.field2[y][x] = new Cell(x, y);
         var f = state.field2[y][x];
         f.index = array0[index0++];
-        if(f.index >= CROPINDEX) {
+        if(f.hasCrop()) {
           if(save_version >= 4096*1+9) f.growth = array1[index1++];
         }
       }
@@ -673,7 +673,7 @@ function decState(s) {
     for(var y = 0; y < state.numh2; y++) {
       for(var x = 0; x < state.numw2; x++) {
         var f = state.field2[y][x];
-        if(f.index >= CROPINDEX) {
+        if(f.hasCrop()) {
           state.res.resin.addrInPlace(10); // the old ethereal plant cost
         }
       }
@@ -760,7 +760,7 @@ function decStateOLD(reader, state, save_version) {
       var f = state.field[y][x];
       f.index = decInt(reader);
       if(save_version < 4096*1 + 7 && f.index == 79 + CROPINDEX) f.index = 100 + CROPINDEX; // fix mistake where nettle was accidentially registered in the flower series
-      if(f.index >= CROPINDEX) {
+      if(f.hasCrop()) {
         f.growth = decFloat2(reader);
       }
     }

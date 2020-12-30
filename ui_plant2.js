@@ -61,7 +61,7 @@ function makePlantDialog2(x, y, show_only) {
   if(show_only) {
     flex.div.textEl.innerText = 'Unlocked ethereal crops...';
   } else {
-    flex.div.textEl.innerHTML = 'Choose an ethereal crop to plant<br>Ethereal crops give various bonuses to the basic field';
+    flex.div.textEl.innerHTML = 'Choose an ethereal crop to plant.<br>They cost resin, so choose wisely.<br>Ethereal crops give various bonuses to the basic field';
   }
 
   flex = new Flex(dialog, 0, 0.1, 1, 0.85);

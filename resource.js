@@ -31,6 +31,7 @@ function Res(o) {
   }
 
   if(!o) o = {};
+  // create a new Num for each, so that addrInPlace can't accently affect source number objects
   this.seeds = Num(o.seeds || 0);
   this.spores = Num(o.spores || 0);
   this.resin = Num(o.resin || 0);
