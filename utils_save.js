@@ -986,7 +986,7 @@ var testdone = false;
     if(reader.pos == reader.s.length) break;
     var section = decUint(reader);
     var num = decUint(reader);
-    //console.log('section: ' + section + ', num: ' + num);
+    //console.log('section: ' + section + ', num: ' + num + ', pos: ' + reader.pos);
     if(reader.error) {
       return result;
     }
@@ -994,7 +994,7 @@ var testdone = false;
     var prev_id = (section << 6) - 1;
     for(var i = 0; i < num; i++) {
       var token = decToken(reader, prev_id, section);
-      //console.log('id: ' + (token&63) + ', type: ' + token.type + ', value: ' + token.value);
+      //console.log('id: ' + (token&63) + ', type: ' + token.type + ', value: ' + token.value + ', pos: ' + reader.pos);
       if(reader.error) {
         return result;
       }

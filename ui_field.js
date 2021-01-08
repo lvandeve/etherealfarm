@@ -152,14 +152,15 @@ function getCropInfoHTML(f, c, opt_detailed) {
       if(prod.hasNeg()) {
         if(p.prod0.neq(p.prod3)) {
           if(c.type == CROPTYPE_MUSH) {
-            result += 'Needs more seeds, requires berries as neighbors.<br>Theoretical max production: ' + p.prod0.toString() + '<br/>';
+            result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + p.prod0.toString() + '<br/>';
           } else if(c.type == CROPTYPE_SHORT) {
             // nothing to print.
           } else {
-            result += 'Needs more input resources, theoretical max production: ' + p.prod0.toString() + '<br/>';
+            result += 'Needs more input resources, potential max production: ' + p.prod0.toString() + '<br/>';
           }
         } else {
-          result += 'Consumes a resource produced by neighboring crops.<br/>';
+          // commented out, the crop type description already says this
+          //result += 'Consumes a resource produced by neighboring crops.<br/>';
         }
       } else if(p.prod3.neq(p.prod2)) {
         result += 'After consumption: ' + p.prod2.toString() + '<br/>';
@@ -167,7 +168,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
     if(c.boost.neqr(0)) {
       if(c.type == CROPTYPE_NETTLE) {
-        result += 'Boosting neighbor mushrooms spores ' + (c.getBoost(f).mulr(100).toString()) + '%, but has negative effect on neighboring berries so don\'t touch berries with this plant!<br/>';
+        result += 'Boosting spores: ' + (c.getBoost(f).mulr(100).toString()) + '%. Nerfing neighbor berries and flowers<br/>';
       } else {
         result += 'Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
       }
@@ -177,16 +178,16 @@ function getCropInfoHTML(f, c, opt_detailed) {
   result += '<br/>';
 
   if(opt_detailed) {
-    result += 'Num planted of this type: ' + state.cropcount[c.index];
+    result += 'Num planted of this type: ' + state.cropcount[c.index] + '<br>';
     result += '<br/>';
-    result += '<br/>Cost: ';
-    result += '<br/>• Base planting cost: ' + c.cost.toString();
-    result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
-    result += '<br/>• Next planting cost: ' + c.getCost().toString();
-    result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+    result += 'Cost: ' + '<br>';
+    result += ' • Base planting cost: ' + c.cost.toString() + '<br>';
+    result += ' • Last planting cost: ' + c.getCost(-1).toString() + '<br>';
+    result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
+    result += ' • Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
   } else {
-    result += '<br/>Next planting cost: ' + c.getCost().toString();
-    result += '<br/>Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+    result += 'Next planting cost: ' + c.getCost().toString() + '<br>';
+    result += 'Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
   }
 
   return result;

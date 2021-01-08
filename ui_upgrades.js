@@ -79,11 +79,14 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     if(u.description) {
       infoText += '<br><br>' + u.description;
     }
+    if(u.is_choice && completed) {
+      infoText += '<br><br>chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+    }
   };
   updateInfoText();
 
   if(!completed) {
-    var buyText = 'Buy: ' + cost.toString();
+    var buyText = (u.is_choice ? 'Choice: ' : 'Buy: ') + cost.toString();
 
     buyFlex.div.innerText = buyText;
     buyFlex.setCentered();
@@ -95,8 +98,23 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     if(state.res.lt(cost)) buyFlex.div.style.color = '#aaa';
 
     buyFlex.div.onclick = bind(function(i, e) {
-      actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
-      update();
+      if(u.is_choice) {
+        var dialog;
+        var funa = function() {
+          actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
+          dialog.cancelFun();
+        };
+        var funb = function() {
+          actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
+          dialog.cancelFun();
+        };
+        dialog = createDialog(undefined, funa, u.choicename_a, undefined, funb, u.choicename_b);
+        var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.3);
+        flex.div.innerHTML = u.description;
+      } else {
+        actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
+        update();
+      }
     }, i);
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();
@@ -267,7 +285,15 @@ function updateUpgradeUI() {
 
   upgradeFlex.clear();
 
-  var titleFlex = new Flex(upgradeFlex, 0.01, 0.02, 0.95, 0.15, 0.3);
+
+  var scrollFlex = new Flex(upgradeFlex, 0, 0.01, 1, 1);
+  upgradeScrollFlex = scrollFlex;
+  scrollFlex.div.style.overflowY = 'scroll';
+  scrollFlex.div.style.overflowX = 'visible';
+  scrollFlex.div.style.border = '5px solid #ccc';
+
+
+  var titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15, 0.3);
 
   var titleText = '';
   titleText = 'Hold shift to buy as many as possible';
@@ -275,13 +301,7 @@ function updateUpgradeUI() {
   titleText += 'Click icon or see tooltip for more info';
   titleFlex.div.innerHTML = titleText;
 
-  var scrollFlex = new Flex(upgradeFlex, 0, 0.15, 1, 1);
-  upgradeScrollFlex = scrollFlex;
-  upgradeFlex.div.removeChild(scrollFlex.div);
 
-  scrollFlex.div.innerText = '';
-  scrollFlex.div.style.overflowY = 'scroll';
-  scrollFlex.div.style.border = '5px solid #ccc';
   var pos = [0, 0];
 
   var unlocked = [];
@@ -296,7 +316,7 @@ function updateUpgradeUI() {
     var x = (i & 1);
     var y = (i >> 1);
     var w = 0.45;
-    var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
+    var chip = new Flex(scrollFlex, x * w + 0.01, [0.15, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0.15, (y + 1) * w - 0.01, 0.27], 0.75);
     renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
   }
 
@@ -312,7 +332,7 @@ function updateUpgradeUI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
     var w = 0.45;
 
-    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0, y * w + 0.01, 0.27], [(0 + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.6);
+    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.15, y * w + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.15, (y + 1) * w - 0.01, 0.27], 0.6);
     styleButton(flex.div);
     flex.div.innerText = 'See Completed Upgrades';
     flex.setCentered();
@@ -342,8 +362,8 @@ function updateUpgradeUI() {
     };
   }
 
-  upgradeFlex.div.appendChild(scrollFlex.div);
-  upgradeFlex.update();
+  //upgradeFlex.div.appendChild(scrollFlex.div);
+  //upgradeFlex.update();
 
   upgradeScrollFlex.div.scrollTop = scrollPos;
 }

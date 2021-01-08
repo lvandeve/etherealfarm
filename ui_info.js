@@ -20,25 +20,33 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-// resource gain per second, only used for display purposes
+// resource gain per second, mainly used for display purposes
 var gain = Res();
 
-// gain if all consumption would be empty.
 var gain_pos = Res();
+var gain_neg = Res();
+
+var gain_hyp = Res();
+var gain_hyp_pos = Res();
+var gain_hyp_neg = Res();
+
 
 var resourceDivs;
 
+// breakdown of which crops produce/consume how much of a particular resource type
 function prodBreakdown(index) {
   var o = {};
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
+      var p = prefield[y][x];
       if(f.hasCrop()) {
         var c = f.getCrop();;
         if(f.isFullGrown()) {
           var index2 = c.index;
           if(!o[index2]) o[index2] = Num(0);
-          o[index2].addInPlace(c.getProd(f).toArray()[index]);
+          //o[index2].addInPlace(c.getProd(f).toArray()[index]);
+          o[index2].addInPlace(p.prod0b.toArray()[index]);
         }
       }
     }
@@ -58,6 +66,30 @@ function prodBreakdown(index) {
   }
   return result;
 }
+
+// a global breakdown into hypothetical, actual, positive and negative production/consumption
+function prodBreakdown2() {
+  gain_pos = Res();
+  gain_neg = Res();
+  gain_hyp = Res();
+  gain_hyp_pos = Res();
+  gain_hyp_neg = Res();
+
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      var f = state.field[y][x];
+      var p = prefield[y][x];
+      if(f.hasCrop()) {
+        gain_pos.addInPlace(p.prod3.getPositive());
+        gain_neg.addInPlace(p.prod3.getNegative());
+        gain_hyp.addInPlace(p.prod0b);
+        gain_hyp_pos.addInPlace(p.prod0b.getPositive());
+        gain_hyp_neg.addInPlace(p.prod0b.getNegative());
+      }
+    }
+  }
+}
+
 
 var season_colors = [ '#dbecc8', '#c3e4bc', '#d3be9c', '#eef'];
 
@@ -86,8 +118,12 @@ function updateResourceUI() {
   if(state.treelevel > 0) {
     title += ' (' + Math.floor(nextlevelprogress * 100) + '%)';
   }
-  if(state.treelevel >= min_transcension_level * 2) title += ' [T ' + util.toRoman(Math.floor(state.treelevel / min_transcension_level)) + ']';
-  else if(state.treelevel >= min_transcension_level) title += ' [T]';
+  /*if(state.treelevel >= min_transcension_level * 2) title += ' [T ' + util.toRoman(Math.floor(state.treelevel / min_transcension_level)) + ']';
+  else if(state.treelevel >= min_transcension_level) title += ' [T]';*/
+  if(state.treelevel >= min_transcension_level) {
+    //resourceDivs[0].textEl.style.textShadow = '0px 0px 5px #ff0';
+    title = '<span style="text-shadow:0px 0px 5px #ff0">' + title + '</span>';
+  }
   resourceDivs[0].textEl.innerHTML = title + '<br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
   resourceDivs[0].onclick = function() {
@@ -123,7 +159,7 @@ function updateResourceUI() {
   }, true);
 
   var i = 1;
-  var showResource = function(resin, index, arr_res, arr_gain, arr_pos) {
+  var showResource = function(resin, index, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos) {
     var name = resource_names[index];
     var res = arr_res[index];
     var upcoming;
@@ -133,6 +169,11 @@ function updateResourceUI() {
 
     var div = resourceDivs[i];
     i++;
+
+    var gain;
+    var gain_pos;
+    var gain_hyp;
+    var gain_hyp_pos;
 
 
     text = '';
@@ -144,10 +185,13 @@ function updateResourceUI() {
       var upcoming2 = upcoming.mul(tlevel_mul);
       text = name + '<br>' + res.toString() + '<br>(→ ' + upcoming2.toString() + ')';
     } else {
-      var gain = arr_gain[index]; // actual
-      var gain_pos = arr_pos[index]; // actual, without consumption
+      gain = arr_gain[index]; // actual
+      gain_pos = arr_pos[index]; // actual, without consumption
+      gain_hyp = arr_hyp[index]; // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
+      gain_hyp_pos = arr_hyp_pos[index]; // hypothetical aka potential, without consumption
 
       text = name + '<br>' + res.toString() + '<br>' + gain.toString() + '/s';
+      if(gain_hyp.neq(gain)) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
     }
     div.textEl.innerHTML = text;
 
@@ -179,6 +223,17 @@ function updateResourceUI() {
         text += '• Consumption: 0/s<br/>'; // This serves as a teaser that consumption can exist
         text += '<br/>';
       }
+
+      if(gain.neq(gain_hyp)) {
+        // Total production is production - consumption.
+        text += 'Potential production (' + name + '/s):<br/>';
+        text += '• Total: ' + gain_hyp_pos.toString() + '/s<br/>';
+        text += '• To stacks: ' + gain_hyp.toString() + '/s<br/>';
+        text += '• To consumers: ' + (gain_hyp_pos.sub(gain_hyp)).toString() + '/s<br/>';
+        text += '<br/>';
+        text += 'Potential production means: if mushrooms could take more than neighbor berries can produce';
+        text += '<br/><br/>';
+      }
     }
     div.tooltiptext = text;
 
@@ -191,7 +246,7 @@ function updateResourceUI() {
       }, /*opt_poll=*/true, /*allow_mobile=*/true);
       div.style.cursor = 'pointer';
       div.onclick = function() {
-        var dialog = createDialog(resin ? DIALOG_MEDIUM : DIALOG_SMALL);
+        var dialog = createDialog(resin ? DIALOG_SMALL : DIALOG_MEDIUM);
         dialog.div.style.backgroundColor = '#cccd'; // slightly translucent to see resources through it
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);
@@ -212,18 +267,22 @@ function updateResourceUI() {
     }
   };
 
+  prodBreakdown2();
+
 
   var arr_res = state.res.toArray();
   var arr_gain = gain.toArray();
   var arr_pos = gain_pos.toArray();
+  var arr_hyp = gain_hyp.toArray();
+  var arr_hyp_pos = gain_hyp_pos.toArray();
 
-  if(!state.g_max_res.seeds.eqr(0)) showResource(false, 0, arr_res, arr_gain, arr_pos);
-  if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_pos);
-  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_pos);
-  if(!state.g_max_res.leaves.eqr(0)) showResource(false, 3, arr_res, arr_gain, arr_pos);
-  if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos);
-  if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_pos);
-  if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos);
+  if(!state.g_max_res.seeds.eqr(0)) showResource(false, 0, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.leaves.eqr(0)) showResource(false, 3, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
 
 }
 

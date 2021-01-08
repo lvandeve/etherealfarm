@@ -105,17 +105,21 @@ function encState(state, opt_raw_only) {
   var w2 = state.numw2;
   var h2 = state.numh2;
   array0 = [];
+  array1 = [];
+  array2 = [];
   for(var y = 0; y < h2; y++) {
     for(var x = 0; x < w2; x++) {
       var f = state.field2[y][x];
       array0.push(f.index);
       if(f.hasCrop()) {
         array1.push(f.growth);
+        array2.push(f.justplanted);
       }
     }
   }
   processIntArray(array0);
   processFloat2Array(array1);
+  processBoolArray(array2);
 
   var unlocked;
   var prev;
@@ -489,8 +493,10 @@ function decState(s) {
     var h2 = state.numh2;
     array0 = processIntArray();
     array1 = (save_version >= 4096*1+9) ? processFloat2Array() : null;
+    array2 = (save_version >= 4096*1+15) ? processBoolArray() : null;
     index0 = 0;
     index1 = 0;
+    index2 = 0;
     if(error) return err(4);
     for(var y = 0; y < h2; y++) {
       state.field2[y] = [];
@@ -500,11 +506,13 @@ function decState(s) {
         f.index = array0[index0++];
         if(f.hasCrop()) {
           if(save_version >= 4096*1+9) f.growth = array1[index1++];
+          if(save_version >= 4096*1+15) f.justplanted = array2[index2++];
         }
       }
     }
     if(index0 > array0.length) return err(4);
     if((save_version >= 4096*1+9) && index1 > array1.length) return err(4);
+    if((save_version >= 4096*1+15) && index2 > array2.length) return err(4);
 
 
     var unlocked;
@@ -525,7 +533,15 @@ function decState(s) {
       state.upgrades[index].unlocked = true;
       state.upgrades[index].seen = array1[i];
       state.upgrades[index].count = array2[i];
-      if(upgrades[index].deprecated) state.upgrades[index].unlocked = false;
+      if(upgrades[index].deprecated) {
+        state.upgrades[index].unlocked = false;
+        state.upgrades[index].count = 0;
+        // this version, the choice upgrades changed from 2 separate ones, to a single one that uses "count" as the choice
+        if(save_version <= 4096*1+14) {
+          if(index == fern_choice0_b && array2[i]) {state.upgrades[fern_choice0].unlocked = true; state.upgrades[fern_choice0].count = 2;}
+          if(index == active_choice0_b && array2[i]) {state.upgrades[active_choice0].unlocked = true; state.upgrades[active_choice0].count = 2;}
+        }
+      }
     }
 
 

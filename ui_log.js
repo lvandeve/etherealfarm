@@ -36,8 +36,8 @@ function showMessage(text, opt_color, opt_bgcolor, opt_forcenew, opt_showlate) {
     futuremessages.push([text, opt_color, opt_bgcolor, opt_forcenew]);
     return;
   }
-  //var title = util.formatDate(util.getTime());
-  var title = util.formatDate(state.prevtime);
+  var time = (state && state.prevtime) ? state.prevtime : util.getTime();
+  var title = util.formatDate(time);
   var logDiv = logFlex.div;
   // automatically capitalize the message. Reason: consistency.
   text = util.upperCaseFirstWord(text);

@@ -31,6 +31,9 @@ function Cell(x, y) {
 
   this.x = x;
   this.y = y;
+
+  // only used for ethereal field. TODO: make a Cell2 class for ethereal field instead
+  this.justplanted = false; // planted during this run (this transcension), so can't be deleted until next one.
 }
 
 Cell.prototype.isFullGrown = function() {
@@ -71,6 +74,7 @@ function UpgradeState() {
   this.seen = false; // seen the upgrade in the upgrades tab
   this.unlocked = false;
   // how many times this upgrade was done
+  // if is_choice, then this is the choice instead of a count. 0 means no choice made yet, 1 means first choice, 2 means second choice.
   this.count = 0;
 }
 
@@ -382,8 +386,9 @@ function clearField2(state) {
 function changeFieldSize(state, w, h) {
   // this shift is designed such that the center tile of the old field will stay in the center, and in case of
   // even sizes will be at the floor(dimension / 2). w and h should be larger than state.numw and state.numh respectively
-  var xs = (((state.numw + 1) >> 1) - ((w + 1) >> 1));
-  var ys = (((state.numh + 1) >> 1) - ((h + 1) >> 1));
+  // the center tile is the tile with the tree bottom half
+  var xs = ((state.numw >> 1) - (w >> 1));
+  var ys = ((state.numh >> 1) - (h >> 1));
   var field = [];
   for(var y = 0; y < h; y++) {
     field[y] = [];

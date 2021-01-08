@@ -60,7 +60,7 @@ var suffixnames = [
 function createNumberFormatExplanation(notation, precision, parent) {
   parent.innerHTML = '';
 
-  var lineHeight = 0.045;
+  var lineHeight = 0.055;
   var margin = 0.01;
   var ypos = 0.05;
   var div = makeDiv((margin * 100) + '%', (ypos * 100) + '%', (100 - margin * 2 * 100) + '%', (lineHeight * 100) + '%', parent);
@@ -103,12 +103,14 @@ function createNumberFormatExplanation(notation, precision, parent) {
       <b>e</b>: scientific exponent, e.g. 5e4 = 5*10^4 = 50000 (4 zeroes)<br>`;
   } else if(notation == Num.N_LATIN || notation == Num.N_HYBRID_T || notation == Num.N_HYBRID_U) {
     div.innerHTML = '<b>Latin Suffixes:</b>';
-    var num = suffixnames.length + 3;
+    var num = 25; //suffixnames.length + 3;
     if(notation == Num.N_HYBRID_T) num = 5;
     if(notation == Num.N_HYBRID_U) num = 13;
+    var add_centillion_etc = (notation == Num.N_LATIN);
     for(var i = 1; i < num; i++) {
-      var x = margin + (i < num / 2 ? 0 : 0.5);
-      var y = ypos + (i - 1) * lineHeight - (i < num / 2 ? 0 : (0.5 * (num - 1) * lineHeight));
+      var left = i <= (num >> 1);
+      var x = margin + (left ? 0 : 0.5);
+      var y = ypos + (i - 1) * lineHeight - (left ? 0 : (((num - 1) >> 1) * lineHeight));
       if(num < 8) {
         x = margin;
         y = ypos + (i - 1) * lineHeight;
@@ -117,7 +119,7 @@ function createNumberFormatExplanation(notation, precision, parent) {
       var h2 = lineHeight;
       div = makeDiv((x * 100) + '%', (y * 100) + '%', (w2 * 100) + '%', (h2 * 100) + '%', parent);
       var suffix = '', suffixname = '', numeric = '';
-      if(i < suffixnames.length) {
+      if(i < num - 2 || !add_centillion_etc) {
         suffix = getLatinSuffix(i * 3);
         suffixname = suffixnames[i];
         if(i <= 4) {
@@ -127,14 +129,12 @@ function createNumberFormatExplanation(notation, precision, parent) {
         } else {
           numeric = ', 1e' + (i * 3);
         }
-      } else if(i == suffixnames.length) {
-        suffix = '⋮';
-      } else if(i == suffixnames.length + 2) {
-        suffix = 'etc...';
-      } else if(i == suffixnames.length + 1) {
-        suffix = 'C';
+      } else if(i == num - 2) {
         suffixname = 'centillion';
         numeric = ', 1e303';
+        suffix = 'C';
+      } else {
+        suffix = 'etc...';
       }
 
       div.innerHTML = '<b>' + suffix + '</b>' + (suffixname ? ': ' : '') + suffixname + numeric;
@@ -249,7 +249,7 @@ function createNumberFormatDialog() {
   //descriptionFlex.div.style.border = '1px solid blue';
   y2 += h2;
 
-  h2 = 0.15;
+  h2 = 0.2;
   var examplesFlex = new Flex(dialogFlex, 0, y2, 1, y2 + h2, 0.3);
   var examplesDiv = examplesFlex.div;
   //examplesFlex.div.style.border = '1px solid blue';
@@ -353,6 +353,13 @@ function createAdvancedSettingsDialog() {
   var updatebuttontext;
 
   button = makeSettingsButton();
+  button.textEl.innerText = 'number format';
+  registerTooltip(button, 'Change the precision and display type for large numbers.');
+  button.onclick = function(e) {
+    createNumberFormatDialog();
+  };
+
+  button = makeSettingsButton();
   updatebuttontext = function(button) { button.textEl.innerText = 'save on close: ' + (state.saveonexit ? 'yes' : 'no'); };
   updatebuttontext(button);
   registerTooltip(button, 'Whether to auto-save when closing the browser window or tab. If off, then still auto-saves every few minutes, but no longer on unload. Toggling this setting will also immediately cause a save.');
@@ -406,6 +413,24 @@ function createStatsDialog() {
   var open = '<font color="#fff">';
   var close = '</font>';
 
+  text += '<b>Current</b><br>';
+  if(state.g_numresets > 0 || state.treelevel > 0) text += '• tree level: ' + open + state.treelevel + close + '<br>';
+  text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
+  text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
+  text += '• total earned: ' + open + state.c_res.toString(true) + close + '<br>';
+  text += '• highest resources: ' + open + state.c_max_res.toString(true) + close + '<br>';
+  text += '• highest production/s: ' + open + state.c_max_prod.toString(true) + close + '<br>';
+  text += '• ferns: ' + open + state.c_numferns + close + '<br>';
+  text += '• planted (permanent): ' + open + state.c_numfullgrown + close + '<br>';
+  text += '• planted (watercress): ' + open + state.c_numplantedshort + close + '<br>';
+  text += '• deleted: ' + open + state.c_numunplanted + close + '<br>';
+  if(state.g_numresets > 0 || state.treelevel > 0) text += '• weather abilities activated: ' + open + state.c_numabilities + close + '<br>';
+  if(state.g_numresets > 0) text += '• ethereal delete tokens: ' + open + state.delete2tokens + close + '<br>';
+  if(state.upgrades[upgrade_sununlock].count > 0) text += '• sun ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait() - getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait(), true) + close + '<br>';
+  if(state.upgrades[upgrade_fogunlock].count > 0) text += '• fog ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getFogDuration(), true) + close + ', ' + open + util.formatDuration(getFogWait() - getFogDuration(), true) + close + ', ' + open + util.formatDuration(getFogWait(), true) + close + '<br>';
+  if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
+  text += '<br>';
+
   if(state.g_numresets > 0) {
     text += '<b>Total</b><br>';
     text += '• highest tree level: ' + open + state.g_treelevel + close + '<br>';
@@ -416,13 +441,13 @@ function createStatsDialog() {
     text += '• highest resources: ' + open + state.g_max_res.toString(true) + close + '<br>';
     text += '• highest production/s: ' + open + state.g_max_prod.toString(true) + close + '<br>';
     text += '• ferns: ' + open + state.g_numferns + close + '<br>';
-    text += '• planted (fullgrown): ' + open + state.g_numfullgrown + close + '<br>';
+    text += '• planted (permanent): ' + open + state.g_numfullgrown + close + '<br>';
     text += '• planted (watercress): ' + open + state.g_numplantedshort + close + '<br>';
-    text += '• unplanted: ' + open + state.g_numunplanted + close + '<br>';
+    text += '• deleted: ' + open + state.g_numunplanted + close + '<br>';
     text += '• weather abilities activated: ' + open + state.g_numabilities + close + '<br>';
     text += '• season changes seen: ' + open + state.g_seasons + close + '<br>';
-    text += '• fastest run: ' + util.formatDuration(state.g_fastestrun) + '<br>';
-    text += '• longest run: ' + util.formatDuration(state.g_slowestrun) + '<br>';
+    text += '• fastest run: ' + open + util.formatDuration(state.g_fastestrun) + close + '<br>';
+    text += '• longest run: ' + open + util.formatDuration(state.g_slowestrun) + close + '<br>';
     text += '<br>';
   }
 
@@ -440,23 +465,10 @@ function createStatsDialog() {
       text += ' ' + state.reset_stats[j];
     }
     text += close + '<br>';
-    text += '• ethereal planted (fullgrown): ' + open + state.g_numfullgrown2 + close + '<br>';
+    text += '• ethereal planted: ' + open + state.g_numfullgrown2 + close + '<br>';
+    text += '• ethereal deleted: ' + open + state.g_numunplanted2 + close + '<br>';
     text += '<br>';
   }
-
-  text += '<b>Current</b><br>';
-  if(state.g_numresets > 0 || state.treelevel > 0) text += '• tree level: ' + open + state.treelevel + close + '<br>';
-  text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
-  text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
-  text += '• total earned: ' + open + state.c_res.toString(true) + close + '<br>';
-  text += '• highest resources: ' + open + state.c_max_res.toString(true) + close + '<br>';
-  text += '• highest production/s: ' + open + state.c_max_prod.toString(true) + close + '<br>';
-  text += '• ferns: ' + open + state.c_numferns + close + '<br>';
-  text += '• planted (fullgrown): ' + open + state.c_numfullgrown + close + '<br>';
-  text += '• planted (watercress): ' + open + state.c_numplantedshort + close + '<br>';
-  text += '• unplanted: ' + open + state.c_numunplanted + close + '<br>';
-  if(state.g_numresets > 0 || state.treelevel > 0) text += '• weather abilities activated: ' + open + state.c_numabilities + close + '<br>';
-  text += '<br>';
 
   if(state.g_numresets > 0) {
     text += '<b>Previous</b><br>';
@@ -467,9 +479,9 @@ function createStatsDialog() {
     text += '• highest resources: ' + open + state.p_max_res.toString(true) + close + '<br>';
     text += '• highest production/s: ' + open + state.p_max_prod.toString(true) + close + '<br>';
     text += '• ferns: ' + open + state.p_numferns + close + '<br>';
-    text += '• planted (fullgrown): ' + open + state.p_numfullgrown + close + '<br>';
+    text += '• planted (permanent): ' + open + state.p_numfullgrown + close + '<br>';
     text += '• planted (watercress): ' + open + state.p_numplantedshort + close + '<br>';
-    text += '• unplanted: ' + open + state.p_numunplanted + close + '<br>';
+    text += '• deleted: ' + open + state.p_numunplanted + close + '<br>';
     text += '• weather abilities activated: ' + open + state.p_numabilities + close + '<br>';
     text += '<br>';
   }
@@ -483,9 +495,9 @@ function createStatsDialog() {
     text += '• highest resources: ' + open + state.f_max_res.toString(true) + close + '<br>';
     text += '• highest production/s: ' + open + state.f_max_prod.toString(true) + close + '<br>';
     text += '• ferns: ' + open + state.f_numferns + close + '<br>';
-    text += '• planted (fullgrown): ' + open + state.f_numfullgrown + close + '<br>';
+    text += '• planted (permanent): ' + open + state.f_numfullgrown + close + '<br>';
     text += '• planted (watercress): ' + open + state.f_numplantedshort + close + '<br>';
-    text += '• unplanted: ' + open + state.f_numunplanted + close + '<br>';
+    text += '• deleted: ' + open + state.f_numunplanted + close + '<br>';
     text += '• weather abilities activated: ' + open + state.f_numabilities + close + '<br>';
     text += '<br>';
   }*/
@@ -518,6 +530,22 @@ function createChangelogDialog() {
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';
   text += 'Changelog:';
+  text += '<br/><br/>';
+
+
+  text += '0.1.15 (2021-01-08):';
+  text += '<br/>';
+  text += '• Swapped fog and sun ability (sun is now unlocked first).';
+  text += '<br/>';
+  text += '• Improve UI of "choice" upgrades to be single upgrade with a choice dialog';
+  text += '<br/>';
+  text += '• Increased unused resin bonus 10x';
+  text += '<br/>';
+  text += '• Increased amount of starter resources from ethereal fern and made it scale quadratically';
+  text += '<br/>';
+  text += '• Can now only delete new ethereal crops after next transcension';
+  text += '<br/>';
+  text += '• Bugfixes';
   text += '<br/><br/>';
 
 
@@ -748,7 +776,7 @@ function showSavegameRecoveryDialog(opt_failed_save) {
 
 // show a dialog to export the text, to clipboard, by save as file, ...
 function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
-  var large = title.length > 500 || text.length > 1000;
+  var large = title.length > 400 || text.length > 1000;
 
   var clipboardSupported = document.queryCommandSupported && document.queryCommandSupported('copy') && document.execCommand;
   var dialog;
@@ -990,7 +1018,7 @@ function initSettingsUI() {
   };
   registerTooltip(undobutton.div,
       'Undo your last action(s). Press again to redo.<br><br>' +
-      'Undo is saved when doing an action, but with at least a minute<br>in-between, so multiple actions in quick succession may all be undone.<br><br>' +
-      'No matter how long ago the undo was saved, you still get<br>the correct produced resources now for that timespan.' +
+      'Undo is saved when doing an action, but with at least a minute in-between, so multiple actions in quick succession may all be undone.<br><br>' +
+      'No matter how long ago the undo was saved, you still get the correct produced resources now for that timespan.' +
       '');
 }

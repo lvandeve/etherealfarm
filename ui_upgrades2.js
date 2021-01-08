@@ -68,6 +68,8 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     buyFlex.div.style.backgroundColor = '#ccc';
     styleButton0(buyFlex.div);
 
+    if(state.res.lt(cost)) buyFlex.div.style.color = '#aaa';
+
     buyFlex.div.onclick = bind(function(i, e) {
       actions.push({type:ACTION_UPGRADE2, u:u.index});
       update();
@@ -92,10 +94,19 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   return flex;
 }
 
+var upgrade2ScrollFlex = null;
+
 function updateUpgrade2UI() {
+  var scrollPos = 0;
+  if(upgrade2ScrollFlex) scrollPos = upgrade2ScrollFlex.div.scrollTop;
+
   upgrade2Flex.clear();
 
   var scrollFlex = new Flex(upgrade2Flex, 0, 0.01, 1, 1);
+  upgrade2ScrollFlex = scrollFlex;
+  scrollFlex.div.style.overflowY = 'scroll';
+  scrollFlex.div.style.overflowX = 'visible';
+  scrollFlex.div.style.border = '5px solid #ccc';
 
   var titleFlex = new Flex(scrollFlex, 0.01, 0, 0.99, 0.2, 0.25);
 
@@ -117,8 +128,6 @@ function updateUpgrade2UI() {
 
   titleFlex.div.innerHTML = text;
 
-  scrollFlex.div.style.overflowY = 'scroll';
-  scrollFlex.div.style.border = '5px solid #ccc';
   var pos = [0, 0];
 
   for(var i = 0; i < unlocked.length; i++) {
@@ -156,6 +165,7 @@ function updateUpgrade2UI() {
 
       scrollFlex.div.innerText = '';
       scrollFlex.div.style.overflowY = 'scroll';
+      scrollFlex.div.style.overflowX = 'visible';
 
       for(var i = 0; i < researched.length; i++) {
         var u = upgrades2[researched[i]];
@@ -172,6 +182,8 @@ function updateUpgrade2UI() {
 
     };
   }
+
+  upgrade2ScrollFlex.div.scrollTop = scrollPos;
 }
 
 var upgrade2_ui_cache = [];

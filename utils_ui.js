@@ -533,6 +533,7 @@ var Flex_prevParent_clientWidth = undefined;
 var Flex_prevParent_clientHeight = undefined;
 
 Flex.prototype.updateSelf = function() {
+  if(this.div == Flex_prevParent) Flex_prevParent = undefined;
   var w, h;
   if(this.parentdiv == document.body || !this.parentdiv) {
     w = window.innerWidth;
@@ -588,6 +589,7 @@ Flex.prototype.update = function() {
 
 // remove self from parent, from both Flex and DOM
 Flex.prototype.removeSelf = function() {
+  if(this.div == Flex_prevParent) Flex_prevParent = undefined;
   util.removeElement(this.div);
   if(this.parent) {
     var e = this.parent.elements;
@@ -602,7 +604,9 @@ Flex.prototype.removeSelf = function() {
 
 // removes all children and inner HTML of own div as well, but keeps self existing
 Flex.prototype.clear = function() {
+  if(this.div == Flex_prevParent) Flex_prevParent = undefined;
   for(var i = 0; i < this.elements.length; i++) {
+    if(this.elements[i].div == Flex_prevParent) Flex_prevParent = undefined;
     util.removeElement(this.elements[i].div);
   }
   this.elements = [];

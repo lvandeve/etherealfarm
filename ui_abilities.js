@@ -35,8 +35,61 @@ var ability_charging_close = '';
 var ability_active_open = '<font color="red">active:<br> ';
 var ability_active_close = '</font>';
 
+// just like how the numbers are defined in data: duration is the running time, wait is the cooldown time plus the running time (total cycle time)
+function formatAbilityDurationTooltipText(name, description, duration, wait) {
+  var cooldown = wait - duration;
+  return name + ': ' + description + '<br><br>' + 'Running time: ' + util.formatDuration(duration) + '<br>Cooldown time: ' + util.formatDuration(cooldown) + '<br>Total cycle: ' + util.formatDuration(wait);
+}
+
 
 function updateAbilitiesUI() {
+
+
+  //////////////////////////////////////////////////////////////////////////////
+
+
+  if(sunbutton && !state.upgrades[upgrade_sununlock].count) {
+    sunbutton.removeSelf();
+    suntimerflex.removeSelf();
+    sunbutton = undefined;
+  }
+
+  if(!sunbutton && state.upgrades[upgrade_sununlock].count) {
+    sunbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
+    styleButton0(sunbutton.div);
+
+    suntimerflex = new Flex(topFlex, [0,5], [0,0.1], [0,6.5], [0,0.9], 2);
+    suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+    suntimerflex.div.style.textShadow = ability_text_shadow;
+    suntimerflex.div.style.pointerEvents = 'none';
+
+
+    var canvasFlex = new Flex(sunbutton, 0, 0, 1, 1);
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    renderImage(image_sun, canvas);
+
+    sunbutton.div.onclick = function() {
+      actions.push({type:ACTION_ABILITY, ability:1});
+      update();
+    };
+
+    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a production bonus and aren\'t affected by winter', getSunDuration(), getSunWait())});
+  }
+
+  if(state.upgrades[upgrade_sununlock].count) {
+    var d = util.getTime() - state.suntime;
+    if(d > getSunWait()) {
+      suntimerflex.div.innerHTML = '';
+    } else if(d > getSunDuration()) {
+      suntimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getSunWait() - d, true) + ability_charging_close;
+    } else {
+      suntimerflex.div.innerHTML = ability_active_open + util.formatDuration(getSunDuration() - d, true) + ability_active_close;
+    }
+  }
+
+
+  //////////////////////////////////////////////////////////////////////////////
+
   if(fogbutton && !state.upgrades[upgrade_fogunlock].count) {
     fogbutton.removeSelf();
     fogtimerflex.removeSelf();
@@ -44,10 +97,10 @@ function updateAbilitiesUI() {
   }
 
   if(!fogbutton && state.upgrades[upgrade_fogunlock].count) {
-    fogbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
+    fogbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
     styleButton0(fogbutton.div);
 
-    fogtimerflex = new Flex(topFlex, [0,5], [0,0.1], [0,6.5], [0,0.9], 2);
+    fogtimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
     fogtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     fogtimerflex.div.style.textShadow = ability_text_shadow;
     fogtimerflex.div.style.pointerEvents = 'none';
@@ -63,7 +116,7 @@ function updateAbilitiesUI() {
     };
     fogtimerflex.div.onclick = fogbutton.div.onclick;
 
-    registerTooltip(fogbutton.div, 'fog ability: mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
+    registerTooltip(fogbutton.div, function() { return formatAbilityDurationTooltipText('fog ability', 'mushrooms produce more spores, consume less seeds, and aren\'t affected by winter', getFogDuration(), getFogWait())});
   }
 
   if(state.upgrades[upgrade_fogunlock].count) {
@@ -74,49 +127,6 @@ function updateAbilitiesUI() {
       fogtimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getFogWait() - d, true) + ability_charging_close;
     } else {
       fogtimerflex.div.innerHTML = ability_active_open + util.formatDuration(getFogDuration() - d, true) + ability_active_close;
-    }
-  }
-
-
-  //////////////////////////////////////////////////////////////////////////////
-
-
-  if(sunbutton && !state.upgrades[upgrade_sununlock].count) {
-    sunbutton.removeSelf();
-    suntimerflex.removeSelf();
-    sunbutton = undefined;
-  }
-
-  if(!sunbutton && state.upgrades[upgrade_sununlock].count) {
-    sunbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
-    styleButton0(sunbutton.div);
-
-    suntimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
-    suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
-    suntimerflex.div.style.textShadow = ability_text_shadow;
-    suntimerflex.div.style.pointerEvents = 'none';
-
-
-    var canvasFlex = new Flex(sunbutton, 0, 0, 1, 1);
-    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-    renderImage(image_sun, canvas);
-
-    sunbutton.div.onclick = function() {
-      actions.push({type:ACTION_ABILITY, ability:1});
-      update();
-    };
-
-    registerTooltip(sunbutton.div, 'sun ability: berries get a production bonus and aren\'t affected by winter');
-  }
-
-  if(state.upgrades[upgrade_sununlock].count) {
-    var d = util.getTime() - state.suntime;
-    if(d > getSunWait()) {
-      suntimerflex.div.innerHTML = '';
-    } else if(d > getFogDuration()) {
-      suntimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getSunWait() - d, true) + ability_charging_close;
-    } else {
-      suntimerflex.div.innerHTML = ability_active_open + util.formatDuration(getSunDuration() - d, true) + ability_active_close;
     }
   }
 
@@ -149,7 +159,7 @@ function updateAbilitiesUI() {
       update();
     };
 
-    registerTooltip(rainbowbutton.div, 'rainbow ability: flowers get a boost and aren\'t affected by winter');
+    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a boost and aren\'t affected by winter', getRainbowDuration(), getRainbowWait())});
   }
 
   if(state.upgrades[upgrade_rainbowunlock].count) {
@@ -162,6 +172,9 @@ function updateAbilitiesUI() {
       rainbowtimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(getRainbowDuration() - d, true) + '</font>';
     }
   }
+
+
+  //////////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -172,6 +185,7 @@ document.addEventListener('keydown', function(e) {
     if(state.upgrades[upgrade_fogunlock].count && util.getTime() - state.fogtime > getFogWait()) actions.push({type:ACTION_ABILITY, ability:0});
     if(state.upgrades[upgrade_sununlock].count && util.getTime() - state.suntime > getSunWait()) actions.push({type:ACTION_ABILITY, ability:1});
     if(state.upgrades[upgrade_rainbowunlock].count && util.getTime() - state.rainbowtime > getRainbowWait()) actions.push({type:ACTION_ABILITY, ability:2});
+    update();
   }
 });
 

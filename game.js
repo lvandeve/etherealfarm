@@ -128,7 +128,7 @@ function getRecoverySaves() {
   }
   var recovery = util.getLocalStorage(localstorageName_recover);
   if(recovery) {
-    result.push(['last known failed', recovery]);
+    result.push(['last known attempted', recovery]);
   }
   var current = util.getLocalStorage(localstorageName);
   if(lastsuccess) {
@@ -149,7 +149,6 @@ function hardReset() {
   util.clearLocalStorage(localstorageName_transcend);
   postload(createInitialState());
 
-  prev_season = -1;
   undoSave = '';
   lastUndoSaveTime = 0;
 
@@ -181,10 +180,6 @@ function softReset() {
   state.crops2[flower2_0].unlocked = true;
   state.crops2[special2_0].unlocked = true;
 
-  state.g_res.resin.addInPlace(state.resin);
-  state.c_res.resin.addInPlace(state.resin);
-  state.g_resin_from_transcends.addInPlace(state.resin);
-
   state.time = util.getTime();
   state.prevtime = state.time;
 
@@ -201,7 +196,7 @@ function softReset() {
   state.p_numplantedshort = state.c_numplantedshort;
   state.p_numplanted = state.c_numplanted;
   state.p_numfullgrown = state.c_numfullgrown;
-  state.p_numunplanted = state.c_numplanted;
+  state.p_numunplanted = state.c_numunplanted;
   state.p_numupgrades = state.c_numupgrades;
   state.p_numupgrades_unlocked = state.c_numupgrades_unlocked;
   state.p_numabilities = state.c_numabilities;
@@ -219,7 +214,7 @@ function softReset() {
     state.f_numplantedshort = state.c_numplantedshort;
     state.f_numplanted = state.c_numplanted;
     state.f_numfullgrown = state.c_numfullgrown;
-    state.f_numunplanted = state.c_numplanted;
+    state.f_numunplanted = state.c_numunplanted;
     state.f_numupgrades = state.c_numupgrades;
     state.f_numupgrades_unlocked = state.c_numupgrades_unlocked;
     state.f_numabilities = state.c_numabilities;
@@ -261,9 +256,14 @@ function softReset() {
 
 
   var starterResources = getStarterResources();
-  state.res.addInPlace(getStarterResources());
+  state.res.addInPlace(starterResources);
+  state.g_res.addInPlace(starterResources);
+  state.c_res.addInPlace(starterResources);
 
   state.res.resin.addInPlace(state.resin);
+  state.g_res.resin.addInPlace(state.resin);
+  state.c_res.resin.addInPlace(state.resin);
+  state.g_resin_from_transcends.addInPlace(state.resin);
   state.resin = Num(0); // future resin from next tree
 
 
@@ -278,13 +278,18 @@ function softReset() {
 
   clearField(state);
 
+  for(var y = 0; y < state.numh2; y++) {
+    for(var x = 0; x < state.numw2; x++) {
+      state.field2[y][x].justplanted = false;
+    }
+  }
+
   state.treelevel = 0;
 
   state.fernres = new Res();
   state.fern = false;
 
   gain = new Res();
-  gain_pos = new Res();
 
   state.fogtime = 0;
   state.suntime = 0;
@@ -409,11 +414,16 @@ function getRandomPreferablyEmptyFieldSpot() {
   return undefined; // something went wrong
 }
 
-// result: 0=spring, 1=summer, 2=autumn, 3=winter
-function getSeason() {
-  var t = state.time - state.g_starttime;
+
+function getSeasonAt(time) {
+  var t = time - state.g_starttime;
   t /= (24 * 3600);
   return Math.floor(t) % 4;
+}
+
+// result: 0=spring, 1=summer, 2=autumn, 3=winter
+function getSeason() {
+  return getSeasonAt(state.time);
 }
 
 function timeTilNextSeason() {
@@ -442,16 +452,18 @@ function PreCell(f) {
 
   // differnt stages of the production computation, some useful for certain UI, others not, see the comments
 
-  // before consumption/production computation. not taking any leech into account (multiply prod or cons with 1+leech if that's needed)
+  // before consumption/production computation. not taking any leech into account (multiply prod or cons with 1+leech if that's needed, or see prod0b below)
   // useful for UI that shows the potential production of a mushroom if it hypothetically got as many seeds as needed from neighbors
-  this.prod0 = Res(0);
+  this.prod0 = Res();
+  // for UI only, like prod0, but with final leech added
+  this.prod0b = Res();
   // during consumption/production computation, not useful for any UI, intermediate stage only
-  this.prod1 = Res(0);
+  this.prod1 = Res();
   // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
-  this.prod2 = Res(0);
+  this.prod2 = Res();
   // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. The sum of all prod3 on a field should be equal to the sum of all prod2. Also contains leech like prod2 does.
-  this.prod3 = Res(0);
+  this.prod3 = Res();
 
   this.consumers = []; // if this is a berry: list of mushroom neighbors that consume from this
   this.producers = []; // if this is a mushroom: list of berry neighbors that produce for this
@@ -533,6 +545,7 @@ function precomputeField() {
         var prod = c.getProd(f, false, p.breakdown);
         p.prod0 = prod;
         p.prod1 = Res(prod); // a separate copy
+        p.prod0b = Res(prod); // a separate copy
       }
     }
   }
@@ -669,6 +682,7 @@ function precomputeField() {
                 var leech3 = p2.prod3.mul(leech);
                 p.prod2.addInPlace(leech2);
                 p.prod3.addInPlace(leech3);
+                p.prod0b.addInPlace(leech2);
                 total.addInPlace(leech3); // for the breakdown
                 num++;
               }
@@ -726,9 +740,6 @@ function nextEventTime() {
   return time;
 }
 
-
-var prev_season = -1; // season of previous tick (-1 if uninitialized)
-
 var update = function(opt_fromTick) {
   var undostate = undefined;
   if(actions.length > 0 && (util.getTime() - lastUndoSaveTime > minUndoTime)) {
@@ -770,7 +781,11 @@ var update = function(opt_fromTick) {
     }
     state.prevtime = time;
 
-    //if(numloops > 1 || !done) console.log('d: ' + d + ', rem: ' + rem + ', sun: ' + ((state.time - state.suntime) < getSunDuration()) + ', season: ' + getSeason() + ', done: ' + done);
+    if(getSeasonAt(prevtime) != getSeasonAt(time)) {
+      num_season_changes++;
+    }
+
+    //if(numloops > 1 || !done) console.log('d: ' + d + ', rem: ' + rem + ', prevtime: ' + util.formatDate(prevtime)  + ', time: ' + util.formatDate(state.time) + ', season: ' + getSeason() + ' ' + getSeasonAt(prevtime) + ', done: ' + done);
 
     var d1 = d; // d without timemul
 
@@ -817,7 +832,7 @@ var update = function(opt_fromTick) {
             break;
           } else {
             state.res.subInPlace(cost);
-            u.fun();
+            u.fun(action.choice);
             num++;
             if(!shift) showMessage('upgraded: ' + u.getName() + ', consumed: ' + cost.toString(), '#ff0', '#000');
             store_undo = true;
@@ -912,13 +927,17 @@ var update = function(opt_fromTick) {
           showMessage('not enough resources to plant ' + c.name + ': need ' + cost.toString() +
                       ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
         } else {
-          showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
+          showMessage('planted ethereal ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
+          f.justplanted = true;
           if(f.cropIndex() == special2_0) {
-            state.res.seeds.addrInPlace(10);
+            var extrastarter = getStarterResources(1).sub(getStarterResources(0));
+            state.res.addInPlace(extrastarter);
+            state.g_res.addInPlace(extrastarter);
+            state.c_res.addInPlace(extrastarter);
           }
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
@@ -941,24 +960,32 @@ var update = function(opt_fromTick) {
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
           if(c.type == CROPTYPE_SHORT) {
-            showMessage('unplanted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
+            showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
           } else {
             state.res.addInPlace(recoup);
-            showMessage('unplanted ' + c.name + ', got back: ' + recoup.toString());
+            showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
           }
           store_undo = true;
         }
       } else if(type == ACTION_DELETE2) {
         var f = state.field2[action.y][action.x];
+
+        var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
+        if(f.cropIndex() == special2_0) remstarter = getStarterResources(0).sub(getStarterResources(-1));
         if(state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
           showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)' , invalidFG, invalidBG);
-        } else if(f.cropIndex() == special2_0 && state.res.seeds.ltr(10)) {
-          showMessage('cannot delete: must have at least the 10 seeds which this crop gave to delete it.', invalidFG, invalidBG);
+        } else if(f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
+          // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
+          showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.');
+        } else if(f.cropIndex() == special2_0 && state.res.lt(remstarter)) {
+          showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', invalidFG, invalidBG);
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
           var recoup = c.getCost(-1).mulr(cropRecoup2);
           if(f.cropIndex() == special2_0) {
-            state.res.seeds.subrInPlace(10);
+            state.res.subInPlace(remstarter);
+            state.g_res.subInPlace(remstarter);
+            state.c_res.subInPlace(remstarter);
           }
           if(f.growth < 1) {
             recoup = c.getCost(-1);
@@ -967,7 +994,7 @@ var update = function(opt_fromTick) {
           } else {
             state.g_numunplanted2++;
             if(state.delete2tokens > 0) state.delete2tokens--;
-            showMessage('unplanted ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
+            showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
           }
           f.index = 0;
           f.growth = 0;
@@ -1065,7 +1092,7 @@ var update = function(opt_fromTick) {
       else if(progress.ltr(150)) mintime = 10;
       else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
       else mintime = fern_wait_minutes * 60;
-      if(state.upgrades[fern_choice0_a].count) mintime += fern_choice0_a_minutes * 60;
+      if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
       if(state.time > state.lastFernTime + mintime) {
         fern = true;
       }
@@ -1077,7 +1104,7 @@ var update = function(opt_fromTick) {
       var s = getRandomPreferablyEmptyFieldSpot();
       if(s) {
         var r = fernTimeWorth * (Math.random() + 0.5);
-        if(state.upgrades[fern_choice0_b].count) r *= (1 + fern_choice0_b_bonus);
+        if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
         var g = gain.mulr(r);
         if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(Math.random() * 2 + 1));
         var fernres = new Res({seeds:g.seeds, spores:g.spores});
@@ -1093,7 +1120,6 @@ var update = function(opt_fromTick) {
 
 
     gain = Res();
-    gain_pos = Res();
 
     for(var y = 0; y < state.numh; y++) {
       for(var x = 0; x < state.numw; x++) {
@@ -1138,7 +1164,6 @@ var update = function(opt_fromTick) {
             }
           }
           gain.addInPlace(prod);
-          gain_pos.addInPlace(prod.getPositive());
           actualgain.addInPlace(prod.mulr(d));
         }
         updateFieldCellUI(x, y);
@@ -1262,13 +1287,6 @@ var update = function(opt_fromTick) {
       }
     }
 
-    if(prev_season != -1 && prev_season != getSeason()) {
-      num_season_changes++;
-    }
-    prev_season = getSeason();
-
-
-
     state.g_res.addInPlace(actualgain);
     state.c_res.addInPlace(actualgain);
     state.g_max_res = Res.max(state.g_max_res, state.res);
@@ -1303,7 +1321,7 @@ var update = function(opt_fromTick) {
   if(d_total > 300) {
     var totalgain = state.res.sub(oldres);
     var season_message = '';
-    if(num_season_changes >= 1) {
+    if(num_season_changes > 1) {
       season_message = '. The season changed ' + num_season_changes + ' times';
     }
     var tree_message = '';
@@ -1311,12 +1329,14 @@ var update = function(opt_fromTick) {
       tree_message = '. The tree leveled up ' + num_tree_levelups + ' times';
     }
     showMessage('Large time delta: ' + util.formatDuration(d_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, '#999');
-  } else {
-    // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages
-    if(num_season_changes == 1) {
-      showMessage('The season changed, it is now ' + seasonNames[getSeason()], '#fff', '#260');
-    }
   }
+
+  // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.
+  // if num_season_changes > 1, it's already printed in the large time delta message above instead.
+  if(num_season_changes == 1) {
+    showMessage('The season changed, it is now ' + seasonNames[getSeason()], '#fff', '#260');
+  }
+
 
   if(num_season_changes > 0) {
     state.g_seasons++;

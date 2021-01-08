@@ -64,7 +64,7 @@ function getCropInfoHTML2(f, c) {
   result += '<br/>• Next planting cost: ' + c.getCost().toString();
   result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
   result += '<br><br>';
-  result += 'Deleting ethereal crops refunds all resin, but requires ethereal deletion tokens. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)';
+  result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)';
   result += '<br><br>';
   result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + delete2maxBuildup + ')';
   result += '<br><br>';
@@ -89,13 +89,16 @@ function makeField2Dialog(x, y) {
     var buttonshift = 0;
 
     var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.45 + buttonshift, 0.01], 0.5, 0.5 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.52 + buttonshift, 0.01], 0.5, 0.57 + buttonshift, 0.8).div;
+    var button0 = new Flex(dialog, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog, [0.01, 0.2], [0.57 + buttonshift, 0.01], 0.5, 0.62 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
     button0.textEl.innerText = 'delete';
-    registerTooltip(button0, 'Delete crop, get' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
+    button0.textEl.style.color = '#800';
+    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1)) button0.textEl.style.color = '#888';
+    if(!state.delete2tokens) button0.textEl.style.color = '#888';
+    registerTooltip(button0, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
     button0.onclick = function() {
       actions.push({type:ACTION_DELETE2, x:x, y:y});
       dialog.cancelFun();
