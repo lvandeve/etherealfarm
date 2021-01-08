@@ -182,8 +182,8 @@ function updateAbilitiesUI() {
 
 document.addEventListener('keydown', function(e) {
   if(e.key == 'a') {
-    if(state.upgrades[upgrade_fogunlock].count && util.getTime() - state.fogtime > getFogWait()) actions.push({type:ACTION_ABILITY, ability:0});
     if(state.upgrades[upgrade_sununlock].count && util.getTime() - state.suntime > getSunWait()) actions.push({type:ACTION_ABILITY, ability:1});
+    if(state.upgrades[upgrade_fogunlock].count && util.getTime() - state.fogtime > getFogWait()) actions.push({type:ACTION_ABILITY, ability:0});
     if(state.upgrades[upgrade_rainbowunlock].count && util.getTime() - state.rainbowtime > getRainbowWait()) actions.push({type:ACTION_ABILITY, ability:2});
     update();
   }

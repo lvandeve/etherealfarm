@@ -1082,40 +1082,6 @@ var update = function(opt_fromTick) {
     precomputeField();
 
 
-    var fern = false;
-    var fernTimeWorth = 0;
-    if(!state.fern && !clickedfern) {
-      var progress = state.res.seeds;
-      var mintime = 0;
-      if(progress.eqr(0) && gain.empty()) mintime = 0;
-      else if(progress.ltr(15)) mintime = 3;
-      else if(progress.ltr(150)) mintime = 10;
-      else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
-      else mintime = fern_wait_minutes * 60;
-      if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
-      if(state.time > state.lastFernTime + mintime) {
-        fern = true;
-      }
-      // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
-      // e.g. 0.25 means clicking all ferns makes you get 25% more income (on average, since there is a uniforn random 0.5..1.5 factor, plus due to the "extra bushy" ferns the real active production is actually a bit higher than this value)
-      fernTimeWorth = mintime * 0.25;
-    }
-    if(fern) {
-      var s = getRandomPreferablyEmptyFieldSpot();
-      if(s) {
-        var r = fernTimeWorth * (Math.random() + 0.5);
-        if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
-        var g = gain.mulr(r);
-        if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(Math.random() * 2 + 1));
-        var fernres = new Res({seeds:g.seeds, spores:g.spores});
-        state.fernres = fernres;
-        state.fern = 1;
-        state.fernx = s[0];
-        state.ferny = s[1];
-        if(state.g_numferns == 6 || (state.g_numferns > 10 && Math.random() < 0.1)) state.fern = 2; // lucky fern
-      }
-    }
-
     ////////////////////////////////////////////////////////////////////////////
 
 
@@ -1194,6 +1160,42 @@ var update = function(opt_fromTick) {
           }
         }
         updateField2CellUI(x, y);
+      }
+    }
+
+
+
+    var fern = false;
+    var fernTimeWorth = 0;
+    if(!state.fern && !clickedfern) {
+      var progress = state.res.seeds;
+      var mintime = 0;
+      if(progress.eqr(0) && gain.empty()) mintime = 0;
+      else if(progress.ltr(15)) mintime = 3;
+      else if(progress.ltr(150)) mintime = 10;
+      else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
+      else mintime = fern_wait_minutes * 60;
+      if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
+      if(state.time > state.lastFernTime + mintime) {
+        fern = true;
+      }
+      // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
+      // e.g. 0.25 means clicking all ferns makes you get 25% more income (on average, since there is a uniforn random 0.5..1.5 factor, plus due to the "extra bushy" ferns the real active production is actually a bit higher than this value)
+      fernTimeWorth = mintime * 0.25;
+    }
+    if(fern) {
+      var s = getRandomPreferablyEmptyFieldSpot();
+      if(s) {
+        var r = fernTimeWorth * (Math.random() + 0.5);
+        if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
+        var g = gain.mulr(r);
+        if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(Math.random() * 2 + 1));
+        var fernres = new Res({seeds:g.seeds, spores:g.spores});
+        state.fernres = fernres;
+        state.fern = 1;
+        state.fernx = s[0];
+        state.ferny = s[1];
+        if(state.g_numferns == 6 || (state.g_numferns > 10 && Math.random() < 0.1)) state.fern = 2; // lucky fern
       }
     }
 

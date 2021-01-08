@@ -20,7 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-// resource gain per second, mainly used for display purposes
+// resource gain per second, mainly used for display purposes, also used as temporary variable inside update()
+// also used for displaying estimated time remaining of upgrade, ...
 var gain = Res();
 
 var gain_pos = Res();
@@ -69,6 +70,9 @@ function prodBreakdown(index) {
 
 // a global breakdown into hypothetical, actual, positive and negative production/consumption
 function prodBreakdown2() {
+  // even though update() computes gain, re-compute it here now, because it may be slightly different if watercress just disappeared
+  // that matters, because if it's out of sync with gain_hyp, it may be displaying the gray parenthesis different one while it's unneeded
+  gain = Res();
   gain_pos = Res();
   gain_neg = Res();
   gain_hyp = Res();
@@ -80,6 +84,7 @@ function prodBreakdown2() {
       var f = state.field[y][x];
       var p = prefield[y][x];
       if(f.hasCrop()) {
+        gain.addInPlace(p.prod3);
         gain_pos.addInPlace(p.prod3.getPositive());
         gain_neg.addInPlace(p.prod3.getNegative());
         gain_hyp.addInPlace(p.prod0b);
