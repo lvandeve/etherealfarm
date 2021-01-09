@@ -51,7 +51,7 @@ function fromHue(h) {
     case 4: r=t; g=p; b=v; break;
     default: r=v; g=p; b=q; break; //this be case 5, it's mathematically impossible for i to be something else
   }
-  return [r, g, b];
+  return [r, g, b, 255];
 }
 
 
@@ -72,7 +72,7 @@ function RGBtoHSL(rgb) {
     if(l < 0.5) s = (maxColor - minColor) / (maxColor + minColor);
     else s = (maxColor - minColor) / (2 - maxColor - minColor);
   }
-  return [Math.floor(h * 255), Math.floor(s * 255), Math.floor(l * 255)];
+  return [Math.floor(h * 255), Math.floor(s * 255), Math.floor(l * 255), rgb[3]];
 }
 
 function HSLtoRGB(hsl) {
@@ -112,7 +112,7 @@ function HSLtoRGB(hsl) {
     else if(tempb < 2.0 / 3.0) b = temp1 + (temp2 - temp1) * ((2.0 / 3.0) - tempb) * 6.0;
     else b = temp1;
   }
-  return [Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255)];
+  return [Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255), hsl[3]];
 }
 
 function RGBtoHSV(rgb) {
@@ -137,7 +137,7 @@ function RGBtoHSV(rgb) {
     h = getHue(r, g, b);
   }
 
-  return [Math.floor(h * 255), Math.floor(s * 255), Math.floor(v * 255)];
+  return [Math.floor(h * 255), Math.floor(s * 255), Math.floor(v * 255), rgb[3]];
 }
 
 function HSVtoRGB(hsv) {
@@ -168,7 +168,7 @@ function HSVtoRGB(hsv) {
       default: r=v; g=p; b=q; break; //this be case 5, it's mathematically impossible for i to be something else
     }
   }
-  return [Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255)];
+  return [Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255), hsv[3]];
 }
 
 function CSStoRGB(css) {
@@ -315,6 +315,8 @@ function generatePalette(header) {
     '#fff'
   ];
 
+  var all = undefined;
+
 
   var hueshift0 = 0;
   var hueshift = 0;
@@ -355,6 +357,7 @@ function generatePalette(header) {
       else if(k == 'g7') gradient[7] = v;
       else if(k == 'g8') gradient[8] = v;
       else if(k == 'g9') gradient[9] = v;
+      else if(k == 'aa') all = RGBtoHSV(CSStoRGB(v));
     }
   }
 
@@ -408,7 +411,7 @@ function generatePalette(header) {
 
       }
       palette[c] = rgb;
-      palette[c].push(Math.min(l_rgb[3], h_rgb[3])); // alpha
+      palette[c][3] = Math.min(l_rgb[3], h_rgb[3]); // alpha
     }
   }
 
@@ -419,7 +422,7 @@ function generatePalette(header) {
 
   palette[' '] = palette['.'] = [0, 0, 0, 0]; // transparent
 
-  // finally also allow to override any known symbol (except space or period) after all the above rules were applied:
+  // also allow to override any known symbol (except space or period) after all the above rules were applied:
   if(header) {
     var sections = header.split(' ');
     for(var i = 0; i < sections.length; i++) {
@@ -428,6 +431,19 @@ function generatePalette(header) {
       var k = kv[0];
       var v = kv[1];
       if(k.length == 1 && palette[k] != undefined && k != ' ' && k != '.') palette[k] = CSStoRGB(v);
+    }
+  }
+
+  // the "affect all", if present
+  if(all) {
+    for(k in palette) {
+      if(!palette.hasOwnProperty(k)) continue;
+
+      var hsv = RGBtoHSV(palette[k]);
+      hsv[1] *= all[1] / 255;
+      hsv[2] *= all[2] / 255;
+      hsv[3] *= all[3] / 255;
+      palette[k] = HSVtoRGB(hsv);
     }
   }
 
@@ -474,7 +490,8 @@ Generates an image from ASCII text as follows:
   -- ts1: end for ts0
   -- hX: affect hue series X, where X is the second letter of one of the hue series, e.g. r for red: change the hue of that entire series to the hue/saturation/lightness/alpha of the given color (lightness computed using the HSV method), e.g. hf:#802 to change the fuchsia to be more red-ish and also darker
   -- g0, g1, ..., g9: set gradient value 0 to 9 to the given CSS color. Initially, g0 is #000 and g9 is #fff and all values in between are undefined, causing a grayscale gradient. Changing any entry sets that entry to that exact value, and will fill in undefined entries with a gradient between the two nearest defined neighbors.
-  -- 0-9,a-z,A-Z,... (any known single character): set value directly to the given CSS color (can also have alpha channel), overriding and after any of the other rules
+  -- 0-9,a-z,A-Z,... (any known single character): set value directly to the given CSS color (can also have alpha channel), overriding and after any of the above rules
+  -- aa: affect all: reduce lightness, saturation and alpha of all based on the lightness, saturation and alpha of the given color value here, this is done after all the above rules, including single characters
   -- example of a header: #l0:#c22 l1:#d44 l2:#e66 l3:#f88
 */
 function generateImage(text) {

@@ -294,10 +294,6 @@ var globaltooltip;
 var MOBILEMODE = false;
 
 var updatetooltipfun = undefined; // must be called by the game update fun if set
-var tipx0 = 0;
-var tipy0 = 0;
-var tipx1 = 0;
-var tipy1 = 0;
 
 /*
 tooltip for the desktop version. For mobile, may be able to show it through an indirect info button
@@ -355,12 +351,11 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
       updatetooltipfun = undefined;
     }
     if(text) {
-
       var rect = el.getBoundingClientRect();
-      tipx0 = rect.x;
-      tipy0 = rect.y;
-      tipx1 = rect.x + rect.width;
-      tipy1 = rect.y + rect.height;
+      var tipx0 = rect.x;
+      var tipy0 = rect.y;
+      var tipx1 = rect.x + rect.width;
+      var tipy1 = rect.y + rect.height;
 
       var x = e.clientX + 20;
       // TODO: adjust y position such that tooltip does not appear over the element itself, only below or above (do not cover it)
@@ -373,11 +368,11 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
       // no width or hight set on the div: make it automatically match the size of the text. But the maxWidth ensures it won't get too wide in case of long text without newlines.
       ///div.style.maxWidth = mainFlex.div.clientWidth + 'px';
       if(state.tooltipstyle == 1) {
-        div.style.backgroundColor = '#840';
+        div.style.backgroundColor = '#840e';
         div.style.color = '#fff';
         div.style.border = '2px solid #fff';
       } else if(state.tooltipstyle == 2) {
-        div.style.backgroundColor = '#ccc';
+        div.style.backgroundColor = '#ccce';
         div.style.color = '#000';
         div.style.border = '1px solid #000';
       } else {
@@ -399,7 +394,7 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
 
       document.body.appendChild(div);
       var tw = div.clientWidth;
-      var maxw = Math.floor(mainFlex.div.clientWidth * 0.5);
+      var maxw = Math.max(300, Math.floor(mainFlex.div.clientWidth * 0.3));
       var maxr = mainFlex.div.clientWidth;
       if(tw > maxw) tw = maxw;
       if(x + maxw > maxr) x = maxr - maxw;
@@ -411,6 +406,13 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
         // if one manages to mouse over the tip itself, remove it as it likely means it's in the way (plus it's not supposed to be possible in theory)
         remtip();
       };
+
+      // Adjust the tooltip if it goes through the bottom, place it above instead then
+      rect = div.getBoundingClientRect();
+      var tipbottom = rect.y + rect.height;
+      var tiph = rect.height;
+      var doch = window.innerHeight;
+      if(tipbottom > doch) div.style.top = (tipy0 - tiph) + 'px';
 
       if(opt_poll) {
         updatetooltipfun = function() {

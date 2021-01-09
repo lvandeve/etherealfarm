@@ -382,7 +382,7 @@ function initFieldUI() {
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
           return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a fern appeared, letting it sit longer does not change the amount gives.';
-        } else if(f.index == 0) {
+        } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
         } else if(f.hasCrop()) {
@@ -409,7 +409,7 @@ function initFieldUI() {
           update();
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
             makeFieldDialog(x, y);
-        } else if(f.index == 0) {
+        } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           if(e.shiftKey) {
             if(state.lastPlanted >= 0) {
               var c = crops[state.lastPlanted];
@@ -541,6 +541,9 @@ function updateFieldCellUI(x, y) {
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
       if(state.treelevel > 0 || state.res.spores.gtr(0)) renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
+    } else if(f.index == FIELD_REMAINDER) {
+      renderImage(image_watercress_remainder, fd.canvas);
+      setProgressBar(fd.progress, -1, undefined);
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';

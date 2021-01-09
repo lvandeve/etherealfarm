@@ -986,21 +986,24 @@ var testdone = false;
     if(reader.pos == reader.s.length) break;
     var section = decUint(reader);
     var num = decUint(reader);
-    //console.log('section: ' + section + ', num: ' + num + ', pos: ' + reader.pos);
+    //console.log('begin section ' + section + ', num: ' + num + ', pos: ' + reader.pos);
     if(reader.error) {
       return result;
     }
 
+    var section_begin = reader.pos;
     var prev_id = (section << 6) - 1;
     for(var i = 0; i < num; i++) {
       var token = decToken(reader, prev_id, section);
-      //console.log('id: ' + (token&63) + ', type: ' + token.type + ', value: ' + token.value + ', pos: ' + reader.pos);
+      //console.log('id: ' + (token.id&63) + ', type: ' + token.type + ', value: ' + token.value + ', pos: ' + reader.pos);
       if(reader.error) {
         return result;
       }
       prev_id = token.id;
       result[token.id] = token;
     }
+    var section_length = reader.pos - section_begin;
+    //console.log('*** end section ' + section + ', num: ' + num + ', length: ' + section_length + ' ***');
   }
   return result;
 }

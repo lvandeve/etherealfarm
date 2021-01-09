@@ -425,7 +425,6 @@ function createStatsDialog() {
   text += '• planted (watercress): ' + open + state.c_numplantedshort + close + '<br>';
   text += '• deleted: ' + open + state.c_numunplanted + close + '<br>';
   if(state.g_numresets > 0 || state.treelevel > 0) text += '• weather abilities activated: ' + open + state.c_numabilities + close + '<br>';
-  if(state.g_numresets > 0) text += '• ethereal delete tokens: ' + open + state.delete2tokens + close + '<br>';
   if(state.upgrades[upgrade_sununlock].count > 0) text += '• sun ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait() - getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait(), true) + close + '<br>';
   if(state.upgrades[upgrade_fogunlock].count > 0) text += '• fog ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getFogDuration(), true) + close + ', ' + open + util.formatDuration(getFogWait() - getFogDuration(), true) + close + ', ' + open + util.formatDuration(getFogWait(), true) + close + '<br>';
   if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
@@ -457,16 +456,17 @@ function createStatsDialog() {
     if(state.reset_stats.length == 1) {
       text += '• last transcension level: ' + open;
     } else {
-      text += '• last transcension levels: ' + open;
+      text += '• last transcension levels (recent first): ' + open;
     }
     for(var i = 0; i < 10; i++) {
       var j = state.reset_stats.length - 1 - i;
       if(j < 0) break;
-      text += ' ' + state.reset_stats[j];
+      text += (i == 0 ? ' ' : ', ') + state.reset_stats[j];
     }
     text += close + '<br>';
     text += '• ethereal planted: ' + open + state.g_numfullgrown2 + close + '<br>';
     text += '• ethereal deleted: ' + open + state.g_numunplanted2 + close + '<br>';
+    text += '• ethereal delete tokens: ' + open + state.delete2tokens + close + '<br>';
     text += '<br>';
   }
 
@@ -533,149 +533,7 @@ function createChangelogDialog() {
   text += '<br/><br/>';
 
 
-  text += '0.1.15 (2021-01-08):';
-  text += '<br/>';
-  text += '• Swapped fog and sun ability (sun is now unlocked first).';
-  text += '<br/>';
-  text += '• Improve UI of "choice" upgrades to be single upgrade with a choice dialog';
-  text += '<br/>';
-  text += '• Increased unused resin bonus 10x';
-  text += '<br/>';
-  text += '• Increased amount of starter resources from ethereal fern and made it scale quadratically';
-  text += '<br/>';
-  text += '• Can now only delete new ethereal crops after next transcension';
-  text += '<br/>';
-  text += '• Bugfixes';
-  text += '<br/><br/>';
-
-
-  text += '0.1.14 (2020-12-30):';
-  text += '<br/>';
-  text += '• Ethereal crops now give 100% resin back on delete, but require ethereal deletion tokens.';
-  text += '<br/>';
-  text += '• Buffed watercress to have a more meaningful upgrade for the early game experience.';
-  text += '<br/>';
-  text += '• Added a few more achievements.';
-  text += '<br/><br/>';
-
-
-  text += '0.1.13 (2020-12-30):';
-  text += '<br/>';
-  text += '• Mushrooms now only get seeds from neighbors, so they can\'t produce spores if they don\'t have berries as neighbors in the field.';
-  text += '<br/>';
-  text += '• The global overconsumption system has been removed since this now takes place locally amongst groups of mushroom/berry neighbors.';
-  text += '<br/>';
-  text += '• Nettles now also negatively affect neighboring flowers, instead of only berries.';
-  text += '<br/>';
-  text += '• Leech effect takes the extra seeds consumption through the mushrooms neighboring producers.';
-  text += '<br/>';
-  text += '• Internal field production algorithm updated to support the neighbor-based consumption/production effects.';
-  text += '<br/>';
-  text += '• Trees still consume spores globally, mushrooms are not required to be next to the tree. Maybe this makes sense in a future update but it may cause an issue of discoverability when one doesn\'t yet know you want to upgrade the tree.';
-  text += '<br/>';
-  text += '• The goal of this is to add more crop interaction and positional elements to the game';
-
-  text += '<br/><br/>';
-
-
-  text += '0.1.12 (2020-12-28):';
-  text += '<br/>';
-  text += '• Fix accidental 7x7 field bug, 6x6 is currently the maximum if the relevant upgrade is purchased.';
-  text += '<br/><br/>';
-
-  text += '0.1.11 (2020-12-27):';
-  text += '<br/>';
-  text += '• Added back ethereal upgrades (2 for now), now costing resin. The 6x6 field size upgrade is now actually reachable.';
-  text += '<br/><br/>';
-
-
-  text += '0.1.10 (2020-12-26):';
-  text += '<br/>';
-  text += '• Internal fixes.';
-  text += '<br/><br/>';
-
-  text += '0.1.9 (2020-12-26):';
-  text += '<br/>';
-  text += '• The resin and transcension system has been redesigned. There are now multiple ethereal field plant types and they give direct boosts to the basic field. All resin has been refunded and can be re-used with the new system.';
-  text += '<br/>';
-  text += '• The pericarps resource has been removed from the game. Nothing is lost from this since only its production per second ("ethereal field power") was used and this was determined by resin which has been refunded.';
-  text += '<br/>';
-  text += '• Unused resin also gives a small boost now.';
-  text += '<br/>';
-  text += '• The ethereal upgrades (which used to cost ethereal field power) are currently removed (and replaced by ethereal plant effects instead), but new ones, probably costing resin, may be added back in a future game update.';
-  text += '<br/>';
-  text += '• A few other minor tweaks, e.g. the savegame now remembers which tab you had open and the assigned shift key plant.';
-  text += '<br/><br/>';
-
-  text += '0.1.8 (2020-12-24):';
-  text += '<br/>';
-  text += '• Changed the savegame format internally to be more compatible with future updates.';
-  text += '<br/>';
-  text += '• Minor tweaks and fixes.';
-  text += '<br/><br/>';
-
-  text += '0.1.7 (2020-12-23):';
-  text += '<br/>';
-  text += '• Added new plant type: watercress, and made it the starter plant. Also remains important as non-idle (active) plant throughout the game.';
-  text += '<br/>';
-  text += '• Nerfed costs and production of other plants to compensate the watercress power.';
-  text += '<br/>';
-  text += '• Added "a" keyboard shortcut for abilities.';
-  text += '<br/><br/>';
-
-  text += '0.1.6 (2020-12-22):';
-  text += '<br/>';
-  text += '• Added undo button.';
-  text += '• Removed the free replant of same plant type at same spot since undo can be used instead now.';
-  text += '<br/>';
-  text += '• Weather abilities unlock immediately rather than through extra upgrade step, and merged their choice upgrades.';
-  text += '<br/><br/>';
-
-  text += '0.1.5 (2020-12-21):';
-  text += '<br/>';
-  text += '• Added new plant type: nettle';
-  text += '<br/>';
-  text += '• Added estimated time counters to several cost tooltips';
-  text += '<br/>';
-  text += '• Balancing tweaks';
-  text += '<br/>';
-  text += '• Increased ethereal upgrades but still very conservative for now as first run can still get balanced more';
-  text += '<br/><br/>';
-
-  text += '0.1.4 (2020-12-20):';
-  text += '<br/>';
-  text += '• Added "choice" upgrades';
-  text += '<br/>';
-  text += '• Added a third weather ability';
-  text += '<br/>';
-  text += '• Made higher level mushrooms produce more spores';
-  text += '<br/><br/>';
-
-  text += '0.1.3 (2020-12-19):';
-  text += '<br/>';
-  text += '• Added weather abilities';
-  text += '<br/>';
-  text += '• Balancing: slightly cheaper 3rth and higher tier plants';
-  text += '<br/><br/>';
-
-  text += '0.1.2 (2020-12-19):';
-  text += '<br/>';
-  text += '• Slightly boosted fern and it can now also give spores';
-  text += '<br/>';
-  text += '• Tweaked the upgrade-button UI';
-  text += '<br/><br/>';
-
-  text += '0.1.1 (2020-12-18):';
-  text += '<br/>';
-  text += '• Balance changes: fixed too slow beginning of game, but also the too powerful long term upgrade scaling';
-  text += '<br/><br/>';
-
-  text += '0.1.0 (2020-12-18):';
-  text += '<br/>';
-  text += '• Initial test release, no patches applied yet';
-  text += '<br/>';
-  text += '• Since this is a first alpha release, balancing and mechanics can still change quite bit!';
-  text += '<br/><br/>';
+  text += getChangeLog();
 
   text += 'Copyright (c) 2020 by Lode Vandevenne';
 
@@ -714,7 +572,7 @@ function createHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford';
   text += '<br/>';
-  text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you actions a minute later.';
+  text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you do actions a minute later.';
   text += '<br/>';
   text += ' • <b>shift + click save import dialog</b>: import and old savegame, but do not run the time, so you get the resources at the time of saving rather than with all production during that time added.';
   text += '<br/>';

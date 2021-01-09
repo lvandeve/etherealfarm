@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var CROPINDEX = 16;
 var FIELD_TREE_TOP = 1;
 var FIELD_TREE_BOTTOM = 2;
+var FIELD_REMAINDER = 3; // remainder debris of temporary plant. Counts as empty field (same as index == 0) for all purposes. Purely a visual effect, to remember that this is the spot you're using for watercress (and not accidently put a flower there or so)
 
 // field cell
 function Cell(x, y) {
@@ -349,10 +350,11 @@ function State() {
   // derived stat, not to be saved.
   this.medal_prodmul = Num(1);
 
-  // bonuses from ethereal crops
+  // bonuses from ethereal crops to basic crops
   // derived stat, not to be saved.
   this.ethereal_berry_bonus = Num(0);
   this.ethereal_mush_bonus = Num(0);
+  this.ethereal_flower_bonus = Num(0);
 }
 
 function clearField(state) {
@@ -363,7 +365,7 @@ function clearField(state) {
       state.field[y][x] = new Cell(x, y);
     }
   }
-  var treex = Math.floor(state.numw / 2);
+  var treex = Math.floor((state.numw - 1) / 2); // for even field size, tree will be shifted to the left, not the right.
   var treey = Math.floor(state.numh / 2);
   state.field[treey][treex].index = FIELD_TREE_BOTTOM;
   state.field[treey - 1][treex].index = FIELD_TREE_TOP;
@@ -377,7 +379,7 @@ function clearField2(state) {
       state.field2[y][x] = new Cell(x, y);
     }
   }
-  var treex2 = Math.floor(state.numw2 / 2);
+  var treex2 = Math.floor((state.numw2 - 1) / 2); // for even field size, tree will be shifted to the left, not the right.
   var treey2 = Math.floor(state.numh2 / 2);
   state.field2[treey2][treex2].index = FIELD_TREE_BOTTOM;
   state.field2[treey2 - 1][treex2].index = FIELD_TREE_TOP;
@@ -385,9 +387,10 @@ function clearField2(state) {
 
 function changeFieldSize(state, w, h) {
   // this shift is designed such that the center tile of the old field will stay in the center, and in case of
-  // even sizes will be at the floor(dimension / 2). w and h should be larger than state.numw and state.numh respectively
+  // even sizes will be at floor((w-1) / 2) horizontally, floor(h/2) vertically.
+  // w and h should be larger than state.numw and state.numh respectively
   // the center tile is the tile with the tree bottom half
-  var xs = ((state.numw >> 1) - (w >> 1));
+  var xs = (((state.numw + 1) >> 1) - ((w + 1) >> 1));
   var ys = ((state.numh >> 1) - (h >> 1));
   var field = [];
   for(var y = 0; y < h; y++) {
@@ -477,7 +480,7 @@ function computeDerived(state) {
           state.numfullgrowncropfields++;
           if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++
         }
-      } else if(f.index == 0) {
+      } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.numemptyfields++;
       } else {
         state.specialfieldcount[f.index]++;
@@ -571,6 +574,7 @@ function computeDerived(state) {
 
   state.ethereal_berry_bonus = Num(0);
   state.ethereal_mush_bonus = Num(0);
+  state.ethereal_flower_bonus = Num(0);
 
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
@@ -584,6 +588,10 @@ function computeDerived(state) {
         if(index == mush2_0) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(0.2));
+        }
+        if(index == flower2_0) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(0.25));
         }
       }
     }

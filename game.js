@@ -179,6 +179,7 @@ function softReset() {
   state.crops2[mush2_0].unlocked = true;
   state.crops2[flower2_0].unlocked = true;
   state.crops2[special2_0].unlocked = true;
+  state.crops2[lotus2_0].unlocked = true;
 
   state.time = util.getTime();
   state.prevtime = state.time;
@@ -405,7 +406,7 @@ function getRandomPreferablyEmptyFieldSpot() {
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
-      if(f.index == 0) {
+      if(f.index == 0 || f.index == FIELD_REMAINDER) {
         if(i == r) return [x, y];
         i++;
       }
@@ -462,7 +463,7 @@ function PreCell(f) {
   // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
   this.prod2 = Res();
-  // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. The sum of all prod3 on a field should be equal to the sum of all prod2. Also contains leech like prod2 does.
+  // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. The sum of all prod3 on a field should be equal to the sum of all prod2. Also contains leech like prod2 does. However, the sum of all prod2 will be more numerically precise than that of prod3.
   this.prod3 = Res();
 
   this.consumers = []; // if this is a berry: list of mushroom neighbors that consume from this
@@ -755,6 +756,8 @@ var update = function(opt_fromTick) {
 
   if(state.prevtime == 0) state.prevtime = util.getTime();
 
+  var preseasongain = undefined;
+
   var oldres = Res(state.res);
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
   var done = false;
@@ -782,6 +785,7 @@ var update = function(opt_fromTick) {
     state.prevtime = time;
 
     if(getSeasonAt(prevtime) != getSeasonAt(time)) {
+      if(gain) preseasongain = Res(gain);
       num_season_changes++;
     }
 
@@ -880,7 +884,7 @@ var update = function(opt_fromTick) {
         var cost = c.getCost();
         if(f.hasCrop()) {
           showMessage('field already has crop', invalidFG, invalidBG);
-        } else if(f.index != 0) {
+        } else if(f.index != 0 && f.index != FIELD_REMAINDER) {
           showMessage('field already has something', invalidFG, invalidBG);
         } else if(!state.crops[c.index].unlocked) {
           if(action.shiftPlanted) {
@@ -1100,7 +1104,9 @@ var update = function(opt_fromTick) {
             f.growth -= g;
             if(f.growth <= 0) {
               f.growth = 0;
-              f.index = 0;
+              // add the remainder image, but only if this one was leeching: it serves as a reminder of watercress you used for leeching, not *all* watercresses
+              if(p.prod0.neq(p.prod0b)) f.index = FIELD_REMAINDER;
+              else f.index = 0;
             }
             // it's ok to have the production when growth becoame 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
             prod = p.prod2;
@@ -1195,7 +1201,7 @@ var update = function(opt_fromTick) {
         state.fern = 1;
         state.fernx = s[0];
         state.ferny = s[1];
-        if(state.g_numferns == 6 || (state.g_numferns > 10 && Math.random() < 0.1)) state.fern = 2; // lucky fern
+        if(state.g_numferns == 6 || (state.g_numferns > 10 && Math.random() < 0.1)) state.fern = 2; // extra bushy fern
       }
     }
 
@@ -1256,17 +1262,20 @@ var update = function(opt_fromTick) {
       }
     }
     if(state.g_numresets > 0 && state.g_numplanted2 > 0) {
+      var is_first = (state.g_numupgrades2_unlocked == 0);
+      var num_unlocked = 0;
       for(var i = 0; i < registered_upgrades2.length; i++) {
         var j = registered_upgrades2[i];
         if(state.upgrades2[j].unlocked) continue;
         if(upgrades2[j].pre()) {
           state.upgrades2[j].unlocked = true;
           state.g_numupgrades2_unlocked++;
-          if(state.g_numupgrades2_unlocked == 1) {
-            showMessage('You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable', helpFG, helpBG);
-          }
+          num_unlocked++;
           showMessage('Ethereal upgrade available: "' + upgrades2[j].getName() + '"', '#44f', '#ff8');
         }
+      }
+      if(num_unlocked && is_first) {
+        showMessage('You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable', helpFG, helpBG);
       }
     }
     // check medals
@@ -1336,7 +1345,9 @@ var update = function(opt_fromTick) {
   // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.
   // if num_season_changes > 1, it's already printed in the large time delta message above instead.
   if(num_season_changes == 1) {
-    showMessage('The season changed, it is now ' + seasonNames[getSeason()], '#fff', '#260');
+    var gainchangemessage = '';
+    if(preseasongain) gainchangemessage = '. Income before: ' + preseasongain.toString() + '. Income now: ' + gain.toString();
+    showMessage('The season changed, it is now ' + seasonNames[getSeason()] + gainchangemessage, '#fff', '#260');
   }
 
 

@@ -32,13 +32,16 @@ function updateMedalUI() {
     medal_canvases2 = [];
     medal_cache = [];
 
-    medalText = new Flex(medalFlex, 0.02, 0.02, 1, 0.05, 1);
-    medalGrid = new Flex(medalFlex, 0.02, 0.1, 0.9, 2.0);
+    medalText = new Flex(medalFlex, 0.02, 0.02, 1, 0.05, 1.2);
+    medalGrid = new Flex(medalFlex, 0.02, 0.15, 0.9, 2.0);
     medalFlex.div.style.overflowY = 'scroll';
     medalFlex.div.style.overflowX = 'hidden';
   }
 
-  medalText.div.innerText = 'Achievement production bonus: +' + (state.medal_prodmul.subr(1).mulr(100)).toString() + '%';
+  var infoText = ''
+  infoText += 'Achievement production bonus: +' + (state.medal_prodmul.subr(1).mulr(100)).toString() + '%';
+
+  medalText.div.innerHTML = infoText;
 
   var unlocked = [];
   var locked = [];
@@ -54,7 +57,11 @@ function updateMedalUI() {
     var m = medals[registered_medals[j]];
     var m2 = state.medals[registered_medals[j]];
 
-    if(!m2.earned) continue;
+    var show = false;
+    if(m2.earned) show = true;
+    if(m.hint != undefined && state.medals[m.hint].earned) show = true;
+
+    if(!show) continue;
     i++;
 
     var icon = m.icon;
@@ -64,9 +71,9 @@ function updateMedalUI() {
 
     if(medal_cache[i]) {
       var o = medal_cache[i];
-      if(o.icon == icon && o.seen == m2.seen && o.index == j) continue;
+      if(o.icon == icon && o.seen == m2.seen && o.index == j && o.earned == m2.v) continue;
     }
-    medal_cache[i] = {icon:icon, seen:m2.seen, index:j};
+    medal_cache[i] = {icon:icon, seen:m2.seen, index:j, earned:m2.earned};
 
     var xpos = i % numx;
     var ypos = Math.floor(i / numx);
@@ -108,7 +115,7 @@ function updateMedalUI() {
       }
     }
 
-    if(m2.seen && medal_canvases2[i]) {
+    if((m2.seen || !m2.earned) && medal_canvases2[i]) {
       util.removeElement(canvas2);
       medal_canvases2[i] = undefined;
     }
@@ -120,11 +127,12 @@ function updateMedalUI() {
         util.removeElement(canvas2);
         medal_canvases2[i] = undefined;
       }
+
       var tier = m.getTier();
       if(!m2.earned) {
-        return '???<br>Not yet earned<br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + util.toRoman(tier) + ': ' + tierNames[tier];
+        return util.upperCaseFirstWord(m.name) + '<br><br>Not yet earned. Unearned achievements are normally hidden, except hinted ones like this shown as "?"<br><br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + util.toRoman(tier) + ': ' + tierNames[tier];
       }
-      return util.upperCaseFirstWord(m.name) + '<br>' + util.upperCaseFirstWord(m.description) + '<br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + tier + ': ' + util.upperCaseFirstWord(tierNames[tier]);
+      return util.upperCaseFirstWord(m.name) + '<br><br>' + util.upperCaseFirstWord(m.description) + '<br><br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + util.toRoman(tier) + ': ' + util.upperCaseFirstWord(tierNames[tier]);
     }, m, m2, div, canvas2, i);
 
     registerTooltip(div, getMedalText);

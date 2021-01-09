@@ -85,17 +85,16 @@ function makePlantDialog2(x, y, show_only) {
       } else {
         result = 'Plant ethereal ' + c.name;
       }
-      result += '.<br> Cost: ' + c.getCost().toString();
-      result += '.<br> Plant time: ' + util.formatDuration(c.planttime);
-      //result += '.<br> Production/sec: ' + c.getProd(undefined).toString();
+      result += '<br><br> Cost: ' + c.getCost().toString();
+      result += '<br><br> Plant time: ' + util.formatDuration(c.planttime);
+      //result += '<br> Production/sec: ' + c.getProd(undefined).toString();
 
       if(c.effect_description_long) {
-        result += '.<br/>Effect: ' + c.effect_description_long;
+        result += '<br><br>Effect: ' + c.effect_description_long;
       } else if(c.effect_description_short) {
-        result += '.<br/>Effect: ' + c.effect_description_short;
+        result += '<br><br>Effect: ' + c.effect_description_short;
       }
 
-      result += '.';
       return result;
     }, index));
 

@@ -84,7 +84,7 @@ function prodBreakdown2() {
       var f = state.field[y][x];
       var p = prefield[y][x];
       if(f.hasCrop()) {
-        gain.addInPlace(p.prod3);
+        gain.addInPlace(p.prod2);
         gain_pos.addInPlace(p.prod3.getPositive());
         gain_neg.addInPlace(p.prod3.getNegative());
         gain_hyp.addInPlace(p.prod0b);
@@ -133,11 +133,20 @@ function updateResourceUI() {
   resourceDivs[0].style.cursor = 'pointer';
   resourceDivs[0].onclick = function() {
     var dialog = createDialog(DIALOG_SMALL);
-    var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.4);
+    var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.35);
     var getText = function() {
       var result = '';
       if(state.treelevel > 0) {
-        result += '<b>Level:</b> ' + state.treelevel + '<br><br>';
+        result += '<b>Level:</b> ' + state.treelevel;
+
+        if(state.treelevel >= min_transcension_level) {
+          var roman = '';
+          if(state.treelevel >= min_transcension_level * 2) roman = ' ' + util.toRoman(Math.floor(state.treelevel / min_transcension_level));
+          result += '. Transcension' + roman + ' available, click the tree.';
+        }
+
+        result += '<br><br>';
+
         result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100) + '%' + '<br><br>';
       }
       result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
@@ -158,9 +167,13 @@ function updateResourceUI() {
     };
   };
   registerTooltip(resourceDivs[0], function() {
-    if(state.treelevel < 1) return '';
-    var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-    return 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+    var text = '';
+    text += 'Season change in: ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
+    if(state.treelevel >= 1) {
+      var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+      text += '<br>Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+    }
+    return text;
   }, true);
 
   var i = 1;
@@ -179,6 +192,7 @@ function updateResourceUI() {
     var gain_pos;
     var gain_hyp;
     var gain_hyp_pos;
+    var hyp_neq = false; // gain_hyp.neq(gain) but allowing some numerical tolerance
 
 
     text = '';
@@ -194,9 +208,10 @@ function updateResourceUI() {
       gain_pos = arr_pos[index]; // actual, without consumption
       gain_hyp = arr_hyp[index]; // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
       gain_hyp_pos = arr_hyp_pos[index]; // hypothetical aka potential, without consumption
+      var hyp_neq = !gain.near(gain_hyp, 0.001);
 
       text = name + '<br>' + res.toString() + '<br>' + gain.toString() + '/s';
-      if(gain_hyp.neq(gain)) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
+      if(hyp_neq) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
     }
     div.textEl.innerHTML = text;
 
@@ -229,7 +244,7 @@ function updateResourceUI() {
         text += '<br/>';
       }
 
-      if(gain.neq(gain_hyp)) {
+      if(hyp_neq) {
         // Total production is production - consumption.
         text += 'Potential production (' + name + '/s):<br/>';
         text += '• Total: ' + gain_hyp_pos.toString() + '/s<br/>';

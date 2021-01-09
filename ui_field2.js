@@ -22,8 +22,9 @@ var field2Divs;
 
 
 // get crop info in HTML
-function getCropInfoHTML2(f, c) {
+function getCropInfoHTML2(f, c, opt_detailed) {
   var result = 'Ethereal ' + util.upperCaseFirstWord(c.name);
+  result += '<br/>Crop type: ' + getCropTypeName(c.type);
   result += '<br/><br/>';
 
 
@@ -42,32 +43,37 @@ function getCropInfoHTML2(f, c) {
       if(prod.hasNeg()) result += 'Consumes a resource produced by other crops<br/>';
     }
     if(c.boost.neqr(0)) {
-      result += 'Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
+      result += '<br/>Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
     }
 
-    if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
+    if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER) {
       var boost = Crop2.getNeighborBoost(f);
       if(boost.neqr(0)) {
         result += '<br/>';
-        result += 'This effect is boosted by neighbors: ' + (boost.mulr(100)).toString() + '%<br/>';
+        result += 'This effect is boosted by neighbors here: ' + (boost.mulr(100)).toString() + '%<br/>';
       }
     }
   }
 
-  result += '<br/>';
-  result += 'Num planted of this type: ' + state.crop2count[c.index];
-  result += '<br/>';
+  if(opt_detailed) {
+    result += '<br/>';
+    result += 'Num planted of this type: ' + state.crop2count[c.index];
+    result += '<br/>';
+  }
 
   result += '<br/>Cost: ';
-  result += '<br/>• Base planting cost: ' + c.cost.toString();
+  if(opt_detailed) result += '<br/>• Base planting cost: ' + c.cost.toString();
   result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
   result += '<br/>• Next planting cost: ' + c.getCost().toString();
   result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
-  result += '<br><br>';
-  result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)';
-  result += '<br><br>';
-  result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + delete2maxBuildup + ')';
-  result += '<br><br>';
+
+  if(opt_detailed) {
+    result += '<br><br>';
+    result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)';
+    result += '<br><br>';
+    result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + delete2maxBuildup + ')';
+    result += '<br><br>';
+  }
 
   return result;
 }
@@ -89,8 +95,8 @@ function makeField2Dialog(x, y) {
     var buttonshift = 0;
 
     var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.57 + buttonshift, 0.01], 0.5, 0.62 + buttonshift, 0.8).div;
+    var button0 = new Flex(dialog, [0.01, 0.2], [0.6 + buttonshift, 0.01], 0.5, 0.65 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog, [0.01, 0.2], [0.67 + buttonshift, 0.01], 0.5, 0.72 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -113,7 +119,7 @@ function makeField2Dialog(x, y) {
     };
 
     updatedialogfun = bind(function(f, c, flex) {
-      var html0 = getCropInfoHTML2(f, c);
+      var html0 = getCropInfoHTML2(f, c, true);
       if(html0 != last0) {
         flex0.div.innerHTML = html0;
         last0 = html0;
@@ -136,6 +142,7 @@ function makeField2Dialog(x, y) {
     text += '• starter resources: ' + getStarterResources().toString() + '<br>';
     text += '• berry boost: ' + state.ethereal_berry_bonus.mulr(100).toString() + '%<br>';
     text += '• mushroom boost: ' + state.ethereal_mush_bonus.mulr(100).toString() + '%<br>';
+    text += '• flower boost: ' + state.ethereal_flower_bonus.mulr(100).toString() + '%<br>';
     text += '<br><br>';
 
     flex.div.innerHTML = text;
@@ -192,7 +199,7 @@ function initField2UI() {
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
-          result = getCropInfoHTML2(f, c);
+          result = getCropInfoHTML2(f, c, false);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           return 'ethereal tree';
         }

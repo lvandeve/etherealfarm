@@ -65,7 +65,7 @@ function makePlantDialog(x, y, show_only) {
   var tx = 0;
   var ty = 0;
 
-  var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.05, 0.6);
+  var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.05, 0.75);
   if(show_only) {
     centerText2(flex.div);
     flex.div.textEl.innerHTML = 'Unlocked crops...';

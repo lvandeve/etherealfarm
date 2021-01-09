@@ -316,23 +316,9 @@ function encState(state, opt_raw_only) {
   processIntArray(array0);
 
 
-  section = 15; id = 0; // first stats
-  if(state.g_numresets > 0) {
-    processFloat(state.f_starttime);
-    processFloat(state.f_runtime);
-    processUint(state.f_numticks);
-    processRes(state.f_res);
-    processRes(state.f_max_res);
-    processRes(state.f_max_prod);
-    processUint(state.f_numferns);
-    processUint(state.f_numplantedshort);
-    processUint(state.f_numplanted);
-    processUint(state.f_numfullgrown);
-    processUint(state.f_numunplanted);
-    processUint(state.f_numupgrades);
-    processUint(state.f_numupgrades_unlocked);
-    processUint(state.f_numabilities);
-  }
+  section = 15; id = 0; // first run stats
+  // this section was used until v 0.1.15, with id 0..13
+  // do not reuse to not break backwards compatibility.
 
   section = 16; id = 0; // misc
   processUint(state.delete2tokens);
@@ -721,23 +707,8 @@ function decState(s) {
 
 
     section = 15; id = 0; // first run stats
-    if(state.g_numresets > 0 && save_version >= 4096*1+14) {
-      state.f_starttime = processFloat();
-      state.f_runtime = processFloat();
-      state.f_numticks = processUint();
-      state.f_res = processRes();
-      state.f_max_res = processRes();
-      state.f_max_prod = processRes();
-      state.f_numferns = processUint();
-      state.f_numplantedshort = processUint();
-      state.f_numplanted = processUint();
-      state.f_numfullgrown = processUint();
-      state.f_numunplanted = processUint();
-      state.f_numupgrades = processUint();
-      state.f_numupgrades_unlocked = processUint();
-      if(save_version >= 4096*1+9) state.f_numabilities = processUint(0);
-      if(error) return err(4);
-    }
+  // this section was used until v 0.1.15, with id 0..13
+  // do not reuse to not break backwards compatibility.
 
     section = 16; id = 0; // misc
     if(save_version >= 4096*1+14) state.delete2tokens = processUint();
@@ -801,6 +772,13 @@ function decState(s) {
     r2 = Num(state.g_numresets * 11);
     if(r2.gt(r)) r = Num(r2);
     state.g_resin_from_transcends = r;
+  }
+
+  if(save_version < 4096*1+16) {
+    state.crops2[lotus2_0].unlocked = true;
+    state.crops2[flower2_0].unlocked = true;
+
+    state.res.spores.mulrInPlace(6.666666); // spores value got adjusted in v0.1.16
   }
 
 
