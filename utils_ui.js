@@ -180,6 +180,8 @@ var DIALOG_LARGE = 2;
 function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose) {
   dialog_level++;
 
+  removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
+
   var dialogFlex;
   if(opt_size == DIALOG_SMALL) {
     dialogFlex = new Flex(mainFlex, 0.05, 0.25, 0.95, 0.75);

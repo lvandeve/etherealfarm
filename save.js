@@ -54,7 +54,7 @@ function encState(state, opt_raw_only) {
   var processStringArray = function(value) { process(value, TYPE_ARRAY_STRING); };
   var processResArray = function(value) { process(value, TYPE_ARRAY_RES); };
 
-  var array, array0, array1, array2;
+  var array, array0, array1, array2, array3, array4, array5, array6;
 
   section = 0; id = 0; // main/misc
   processFloat(state.prevtime);
@@ -268,6 +268,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numupgrades);
   processUint(state.g_numupgrades_unlocked);
   processUint(state.g_numabilities);
+  processUint(state.g_numfruits);
+  processUint(state.g_numfruitupgrades);
 
 
   section = 12; id = 0; // current run stats
@@ -285,6 +287,8 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numupgrades);
   processUint(state.c_numupgrades_unlocked);
   processUint(state.c_numabilities);
+  processUint(state.c_numfruits);
+  processUint(state.c_numfruitupgrades);
 
 
   section = 13; id = 0; // previous run stats
@@ -303,6 +307,8 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numupgrades);
     processUint(state.p_numupgrades_unlocked);
     processUint(state.p_numabilities);
+    processUint(state.p_numfruits);
+    processUint(state.p_numfruitupgrades);
   }
 
 
@@ -322,6 +328,51 @@ function encState(state, opt_raw_only) {
 
   section = 16; id = 0; // misc
   processUint(state.delete2tokens);
+
+  section = 17; id = 0; // fruits
+  processInt(state.fruit_seed);
+  processBool(state.fruit_seen);
+  processUint(state.fruit_slots);
+  processUint(state.fruit_active.length);
+  processUint(state.fruit_stored.length);
+  processUint(state.fruit_sacr.length);
+
+  id = 8;
+  array0 = [];
+  array1 = []; // fruit num ability slots (is normally known from tier, but is there as precaution in case it changes with an update)
+  array2 = [];
+  array3 = [];
+  array4 = [];
+  array5 = [];
+  array6 = [];
+  var appendfruit = function(f) {
+    array0.push(f.type);
+    array1.push(f.tier);
+    array2.push(f.abilities.length);
+    for(var i = 0; i < f.abilities.length; i++) {
+      array3.push(f.abilities[i]);
+      array4.push(f.levels[i]);
+    }
+    array5.push(f.essence);
+    array6.push(f.mark);
+  };
+  for(var i = 0; i < state.fruit_active.length; i++) {
+    appendfruit(state.fruit_active[i]);
+  }
+  for(var i = 0; i < state.fruit_stored.length; i++) {
+    appendfruit(state.fruit_stored[i]);
+  }
+  for(var i = 0; i < state.fruit_sacr.length; i++) {
+    appendfruit(state.fruit_sacr[i]);
+  }
+  processUintArray(array0);
+  processUintArray(array1);
+  processUintArray(array2);
+  processUintArray(array3);
+  processUintArray(array4);
+  processNumArray(array5);
+  processUintArray(array6);
+
 
   var e = encTokens(tokens);
 
@@ -409,8 +460,8 @@ function decState(s) {
     var processStringArray = function(def) { return process(def, TYPE_ARRAY_STRING); };
     var processResArray = function(def) { return process(def, TYPE_ARRAY_RES); };
 
-    var array, array0, array1, array2;
-    var index, index0, index1, index2;
+    var array, array0, array1, array2, array3, array4, array5, array6;
+    var index, index0, index1, index2, index3, index4, index5, index6;
 
 
     section = 0; id = 0; // main/misc
@@ -653,6 +704,8 @@ function decState(s) {
     state.g_numupgrades = processUint();
     state.g_numupgrades_unlocked = processUint();
     if(save_version >= 4096*1+9) state.g_numabilities = processUint();
+    if(save_version >= 4096*1+17) state.g_numfruits = processUint();
+    if(save_version >= 4096*1+17) state.g_numfruitupgrades = processUint();
     if(error) return err(4);
 
 
@@ -671,6 +724,8 @@ function decState(s) {
     state.c_numupgrades = processUint();
     state.c_numupgrades_unlocked = processUint();
     if(save_version >= 4096*1+9) state.c_numabilities = processUint();
+    if(save_version >= 4096*1+17) state.c_numfruits = processUint();
+    if(save_version >= 4096*1+17) state.c_numfruitupgrades = processUint();
     if(error) return err(4);
 
 
@@ -690,6 +745,8 @@ function decState(s) {
       state.p_numupgrades = processUint();
       state.p_numupgrades_unlocked = processUint();
       if(save_version >= 4096*1+9) state.p_numabilities = processUint(0);
+    if(save_version >= 4096*1+17) state.p_numfruits = processUint();
+    if(save_version >= 4096*1+17) state.p_numfruitupgrades = processUint();
       if(error) return err(4);
     }
 
@@ -707,11 +764,69 @@ function decState(s) {
 
 
     section = 15; id = 0; // first run stats
-  // this section was used until v 0.1.15, with id 0..13
-  // do not reuse to not break backwards compatibility.
+    // this section was used until v 0.1.15, with id 0..13
+    // do not reuse to not break backwards compatibility.
 
     section = 16; id = 0; // misc
     if(save_version >= 4096*1+14) state.delete2tokens = processUint();
+
+    section = 17; id = 0; // fruits
+    if(save_version >= 4096*1+17) {
+      state.fruit_seed = processInt();
+      state.fruit_seen = processBool();
+      state.fruit_slots = processUint();
+      state.fruit_active.length = processUint(0);
+      state.fruit_stored.length = processUint(0);
+      state.fruit_sacr.length = processUint(0);
+      if(state.fruit_active.length > 1) return err(4);
+      if(state.fruit_stored.length > state.fruit_slots) return err(4);
+
+      id = 8;
+      array0 = processUintArray();
+      array1 = processUintArray();
+      array2 = processUintArray();
+      array3 = processUintArray();
+      array4 = processUintArray();
+      array5 = processNumArray();
+      array6 = processUintArray();
+      if(error) return err(4);
+      index0 = 0;
+      index1 = 0;
+      index2 = 0;
+      index3 = 0;
+      index4 = 0;
+      index5 = 0;
+      index6 = 0;
+      var decfruit = function() {
+        var f = new Fruit();
+        f.type = array0[index0++];
+        f.tier = array1[index1++];
+        f.abilities.length = array2[index2++];
+        for(var i = 0; i < f.abilities.length; i++) {
+          f.abilities[i] = array3[index3++];
+          f.levels[i] = array4[index4++];
+        }
+        f.essence = array5[index5++];
+        f.mark = array6[index6++];
+        return f;
+      };
+      for(var i = 0; i < state.fruit_active.length; i++) {
+        state.fruit_active[i] = decfruit();
+      }
+      for(var i = 0; i < state.fruit_stored.length; i++) {
+        state.fruit_stored[i] = decfruit();
+      }
+      for(var i = 0; i < state.fruit_sacr.length; i++) {
+        state.fruit_sacr[i] = decfruit();
+      }
+      if(index0 != array0.length) return err(4);
+      if(index1 != array1.length) return err(4);
+      if(index2 != array2.length) return err(4);
+      if(index3 != array3.length) return err(4);
+      if(index4 != array4.length) return err(4);
+      if(index5 != array5.length) return err(4);
+      if(index6 != array6.length) return err(4);
+    }
   }
 
   if(save_version <= 4096*1+8) {
@@ -1109,7 +1224,7 @@ function encRes(res) {
 function decRes(reader) {
   var arr = new decResArray(reader);
   if(arr == null || arr == undefined) return null;
-  if(arr.length > 7) { reader.error = true; return null; } // maybe it's a future version that has more resource types
+  if(arr.length > 8) { reader.error = true; return null; } // maybe it's a future version that has more resource types
   var res = new Res();
   res.fromArray(arr);
   return res;

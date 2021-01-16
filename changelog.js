@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.17 "Fruit Update" (2021-01-16):';
+  text += '<br/>• Added fruits.';
+  text += '<br/>• Only one weather ability can be active at the same time now.';
+  text += '<br/><br/>';
+
   text += '0.1.16 (2021-01-09):';
   text += '<br/>• Added ethereal lotus. Lotus now boosts ethereal neighbors, while clover boosts basic flowers.';
   text += '<br/>• Added more ethereal upgrades';

@@ -19,14 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var fieldFlex;
 var upgradeFlex;
+var fruitFlex;
 var medalDiv;
 var field2Flex;
 var upgrade2Flex;
-
-
-var upgradesButtonLastText = '';
-var upgrades2ButtonLastText = '';
-var medalsButtonLastText = '';
 
 
 var mainw;
@@ -85,6 +81,7 @@ function initUIGlobal() {
 
 var tabindex_field;
 var tabindex_upgrades;
+var tabindex_fruit;
 var tabindex_medals;
 var tabindex_field2;
 var tabindex_upgrades2;
@@ -110,6 +107,7 @@ function initUI() {
   var tabnum = 0;
   tabindex_field = tabnum++;
   tabindex_upgrades = tabnum++;
+  tabindex_fruit = tabnum++;
   tabindex_field2 = tabnum++;
   tabindex_upgrades2 = tabnum++;
   tabindex_medals = tabnum++;
@@ -119,6 +117,7 @@ function initUI() {
   fieldFlex = tabs[tabindex_field];
   fieldFlex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   upgradeFlex = tabs[tabindex_upgrades];
+  fruitFlex = tabs[tabindex_fruit];
   medalFlex = tabs[tabindex_medals];
   field2Flex = tabs[tabindex_field2];
   field2Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things

@@ -714,6 +714,7 @@ function encResArray(arr) {
     code = 1 + t + first; // + 1 since code 0 means no resources at all are encoded
   }
   if(code < 56) {
+    // up to 10 distinct resources can have this combination encoded in 1 character
     result += encUint6(code);
   } else {
     result += encUint6(56 + (code & 7));

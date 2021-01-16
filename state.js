@@ -91,6 +91,7 @@ function MedalState() {
 }
 
 
+
 // all the state that should be able to get saved
 function State() {
   this.timemul = 1; // global total time speed multiplier. TODO: this should NOT be in the state, probably. Try to get this to exist in the debug interface only.
@@ -182,7 +183,15 @@ function State() {
   this.lastBackupWarningTime = 0;
 
   // misc
-  this.delete2tokens = delete2initial;
+  this.delete2tokens = delete2initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
+
+  // fruit
+  this.fruit_seed = -1; // random seed for creating random fruits
+  this.fruit_seen = false; // whether ever seen the fruits tab at all (for red color)
+  this.fruit_active = []; // current active fruit (array length is 0 or 1 only)
+  this.fruit_stored = []; // fruits in storage that stay after transcension
+  this.fruit_slots = 2; // amount of slots for fruit_stored
+  this.fruit_sacr = []; // fruits outside of storage that will be sacrificed on transcension
 
   // settings
   this.notation = Num.N_LATIN; // number notation
@@ -228,6 +237,8 @@ function State() {
   this.g_numupgrades = 0; // upgrades performed
   this.g_numupgrades_unlocked = 0; // upgrades unlocked but not yet necessarily performed
   this.g_numabilities = 0; // weather abilities ran
+  this.g_numfruits = 0; // fruits received
+  this.g_numfruitupgrades = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -247,6 +258,8 @@ function State() {
   this.p_numupgrades = 0;
   this.p_numupgrades_unlocked = 0;
   this.p_numabilities = 0;
+  this.p_numfruits = 0;
+  this.p_numfruitupgrades = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -264,23 +277,8 @@ function State() {
   this.c_numupgrades = 0;
   this.c_numupgrades_unlocked = 0;
   this.c_numabilities = 0;
-  // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
-
-  // saved stats, for first reset, benchmark against which future resets are compared
-  this.f_starttime = 0; // starttime of current run
-  this.f_runtime = 0;
-  this.f_numticks = 0;
-  this.f_res = Res();
-  this.f_max_res = Res();
-  this.f_max_prod = Res();
-  this.f_numferns = 0;
-  this.f_numplantedshort = 0;
-  this.f_numplanted = 0;
-  this.f_numfullgrown = 0;
-  this.f_numunplanted = 0;
-  this.f_numupgrades = 0;
-  this.f_numupgrades_unlocked = 0;
-  this.f_numabilities = 0;
+  this.c_numfruits = 0;
+  this.c_numfruitupgrades = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   this.reset_stats = []; // reset at what tree level for each reset
@@ -435,6 +433,7 @@ function createInitialState() {
   state.g_lastimporttime = state.g_starttime;
 
   computeDerived(state);
+  getRandomFruitRoll(state); // this initializes the random seed to a random initial value
 
   return state;
 }
@@ -596,8 +595,123 @@ function computeDerived(state) {
       }
     }
   }
+  //////////////////////////////////////////////////////////////////////////////
+
+  for(var i = 0; i < state.fruit_active.length; i++) state.fruit_active[i].slot = i;
+  for(var i = 0; i < state.fruit_stored.length; i++) state.fruit_stored[i].slot = i + 10;
+  for(var i = 0; i < state.fruit_sacr.length; i++) state.fruit_sacr[i].slot = i + 20;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
+function Fruit() {
+  this.type = 0; // type 0 = apple, no other types implemented yet
+  this.tier = 0;
+  this.abilities = []; // array of the FRUIT_... abilities
 
+  // how much the abilities have been leveled
+  // must be at least 1 for any ability, 0 is equivalent to not having the ability at all.
+  this.levels = [];
 
+  this.essence = Num(0); // how much essence was already spent on upgrading this fruit
+
+  this.mark = 0; // mark as favorite etc...
+
+  // the slot in which this fruit is: 0 for the active slot, 10+ storage slots, and 20+ for sacrificial slots
+  // not saved, this must be updated to match the slot the fruit is placed in, this is cache for fast reverse lookup only
+  this.slot = 0;
+
+  this.toString = function() {
+    return tierNames[this.tier] + ' apple';
+  };
+
+  this.abilitiesToString = function() {
+    var result = '';
+    for(var i = 0; i < this.abilities.length; i++) {
+      if(i > 0) result += ', ';
+      result += getFruitAbilityName(this.abilities[i]) + ' ' + util.toRoman(this.levels[i]);
+    }
+    return result;
+  };
+}
+
+// returns the level of a specific fruit ability, or 0 if you don't have that ability
+function getFruitAbility(ability) {
+  if(state.fruit_active.length == 0) return 0;
+
+  var f = state.fruit_active[0];
+  for(var i = 0; i < f.abilities.length; i++) {
+    if(f.abilities[i] == ability) return f.levels[i];
+  }
+
+  return 0;
+}
+
+function getFruitTier() {
+  if(state.fruit_active.length == 0) return 0;
+
+  return state.fruit_active[0].tier;
+}
+
+// slot is 0 for active, 10+ for stored, 20+ for sacrificial pool
+// returns undefined if no fruit in that slot
+function getFruit(slot) {
+  if(slot < 10) {
+    return state.fruit_active[slot];
+  }
+  if(slot < 20) {
+    return state.fruit_stored[slot - 10];
+  }
+  return state.fruit_sacr[slot - 20];
+}
+
+// set f to something falsy to unset the fruit
+// will shift/resize arrays to fit the updated collection
+function setFruit(slot, f) {
+  if(slot < 10) {
+    var j = slot;
+    if(f) {
+      if(j > state.fruit_active.length) j = state.fruit_active.length;
+      state.fruit_active[j] = f;
+      f.slot = j;
+    } else {
+      for(var i = j; i + 1 < state.fruit_active.length; i++) {
+        state.fruit_active[i] = state.fruit_active[i + 1];
+        state.fruit_active[i].slot = i;
+      }
+      state.fruit_active.length = state.fruit_active.length - 1;
+    }
+  } else if(slot < 20) {
+    var j = slot - 10;
+    if(f) {
+      if(j > state.fruit_stored.length) j = state.fruit_stored.length;
+      state.fruit_stored[j] = f;
+      f.slot = j + 10;
+    } else {
+      for(var i = j; i + 1 < state.fruit_stored.length; i++) {
+        state.fruit_stored[i] = state.fruit_stored[i + 1];
+        state.fruit_stored[i].slot = i + 10;
+      }
+      state.fruit_stored.length = state.fruit_stored.length - 1;
+    }
+  } else {
+    var j = slot - 20;
+    if(f) {
+      if(j > state.fruit_sacr.length) j = state.fruit_sacr.length;
+      state.fruit_sacr[j] = f;
+      f.slot = j + 20;
+    } else {
+      for(var i = j; i + 1 < state.fruit_sacr.length; i++) {
+        state.fruit_sacr[i] = state.fruit_sacr[i + 1];
+        state.fruit_sacr[i].slot = i + 20;
+      }
+      state.fruit_sacr.length = state.fruit_sacr.length - 1;
+    }
+  }
+}
+
+function getUpcomingFruitEssence() {
+  var res = Res();
+  for(var j = 0; j < state.fruit_sacr.length; j++) res.addInPlace(getFruitSacrifice(state.fruit_sacr[j]));
+  return res;
+}

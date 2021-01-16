@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-var resource_names = ['seeds', 'spores', 'resin', 'leaves', 'pericarps', 'mycelia', 'amber'];
+var resource_names = ['seeds', 'spores', 'resin', 'leaves', 'pericarps', 'mycelia', 'amber', 'essence'];
 
 // Resources.
 // o is object with optional fields with the same names as the resource fields of Res (and may have regular JS numbers or Num), or can be a Res itself
@@ -39,6 +39,7 @@ function Res(o) {
   this.seeds2 = Num(o.seeds2 || 0);
   this.spores2 = Num(o.spores2 || 0);
   this.amber = Num(o.amber || 0);
+  this.essence = Num(o.essence || 0); // fruit essence
 };
 
 // returns a new resource object with all values set to 1, e.g. for a bonus multiplier
@@ -51,7 +52,7 @@ Res.resOne = function() {
 // returns the resources as an array. The order is consistent, but do not rely on which index is which named resource. Only converting back to Resource with fromArray brings back the names.
 // does not make copies of the Num values, so do not change them in place if the original resources should not be modified
 Res.prototype.toArray = function() {
-  return [this.seeds, this.spores, this.resin, this.leaves, this.seeds2, this.spores2, this.amber];
+  return [this.seeds, this.spores, this.resin, this.leaves, this.seeds2, this.spores2, this.amber, this.essence];
 };
 Res.toArray = function(v) { return v.toArray(); }
 
@@ -68,6 +69,7 @@ Res.prototype.fromArray = function(a) {
   this.seeds2 = a[4] || Num(0);
   this.spores2 = a[5] || Num(0);
   this.amber = a[6] || Num(0);
+  this.essence = a[7] || Num(0);
 };
 // not in-place
 Res.fromArray = function(a) {
@@ -89,6 +91,7 @@ Res.prototype.addInPlace = function(b) {
   this.seeds2.addInPlace(b.seeds2);
   this.spores2.addInPlace(b.spores2);
   this.amber.addInPlace(b.amber);
+  this.essence.addInPlace(b.essence);
   return this;
 };
 Res.prototype.add = function(b) {
@@ -109,6 +112,7 @@ Res.prototype.addrInPlace = function(v) {
   this.seeds2.addInPlace(v);
   this.spores2.addInPlace(v);
   this.amber.addInPlace(v);
+  this.essence.addInPlace(v);
   return this;
 };
 Res.prototype.addr = function(v) {
@@ -126,6 +130,7 @@ Res.prototype.subInPlace = function(b) {
   this.seeds2.subInPlace(b.seeds2);
   this.spores2.subInPlace(b.spores2);
   this.amber.subInPlace(b.amber);
+  this.essence.subInPlace(b.essence);
   return this;
 };
 Res.prototype.sub = function(b) {
@@ -145,6 +150,7 @@ Res.prototype.mulInPlace = function(v) {
   this.seeds2.mulInPlace(v);
   this.spores2.mulInPlace(v);
   this.amber.mulInPlace(v);
+  this.essence.mulInPlace(v);
   return this;
 };
 Res.prototype.mul = function(v) {
@@ -171,6 +177,7 @@ Res.prototype.divInPlace = function(v) {
   this.seeds2.divInPlace(v);
   this.spores2.divInPlace(v);
   this.amber.divInPlace(v);
+  this.essence.divInPlace(v);
   return this;
 };
 Res.prototype.div = function(v) {
@@ -198,6 +205,7 @@ Res.prototype.elmulInPlace = function(r) {
   this.seeds2.mulInPlace(r.seeds2);
   this.spores2.mulInPlace(r.spores2);
   this.amber.mulInPlace(r.amber);
+  this.essence.mulInPlace(r.essence);
   return this;
 };
 Res.prototype.elmul = function(r) {
@@ -260,6 +268,7 @@ Res.prototype.eq = function(b) {
   if(!this.seeds2.eq(b.seeds2)) return false;
   if(!this.spores2.eq(b.spores2)) return false;
   if(!this.amber.eq(b.amber)) return false;
+  if(!this.essence.eq(b.essence)) return false;
   return true;
 };
 Res.eq = function(a, b) { return a.eq(b); };
@@ -273,6 +282,7 @@ Res.prototype.ge = function(b) {
   if(!this.seeds2.ge(b.seeds2)) return false;
   if(!this.spores2.ge(b.spores2)) return false;
   if(!this.amber.ge(b.amber)) return false;
+  if(!this.essence.ge(b.essence)) return false;
   return true;
 };
 Res.ge = function(a, b) { return a.ge(b); };
@@ -286,6 +296,7 @@ Res.prototype.le = function(b) {
   if(!this.seeds2.le(b.seeds2)) return false;
   if(!this.spores2.le(b.spores2)) return false;
   if(!this.amber.le(b.amber)) return false;
+  if(!this.essence.le(b.essence)) return false;
   return true;
 };
 Res.le = function(a, b) { return a.le(b); };

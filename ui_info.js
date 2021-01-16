@@ -177,11 +177,20 @@ function updateResourceUI() {
   }, true);
 
   var i = 1;
-  var showResource = function(resin, index, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos) {
+  var showResource = function(special, index, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos) {
     var name = resource_names[index];
     var res = arr_res[index];
     var upcoming;
-    if(resin) upcoming = state.resin;
+    if(special) {
+      if(index == 2) {
+        // resin
+        upcoming = state.resin;
+      }
+      if(index == 7) {
+        // essence
+        upcoming = getUpcomingFruitEssence().essence;
+      }
+    }
 
     var text;
 
@@ -196,13 +205,19 @@ function updateResourceUI() {
 
 
     text = '';
-    if(resin) {
-      var tlevel = Math.floor(state.treelevel / min_transcension_level);
-      if(tlevel < 1) tlevel = 1;
-      var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
-      var tlevel_mul = Num(tlevel);
-      var upcoming2 = upcoming.mul(tlevel_mul);
-      text = name + '<br>' + res.toString() + '<br>(→ ' + upcoming2.toString() + ')';
+    if(special) {
+      if(index == 2) {
+        // resin
+        var tlevel = Math.floor(state.treelevel / min_transcension_level);
+        if(tlevel < 1) tlevel = 1;
+        var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
+        var tlevel_mul = Num(tlevel);
+        var upcoming2 = upcoming.mul(tlevel_mul);
+        text = name + '<br>' + res.toString() + '<br>(→ +' + upcoming2.toString() + ')';
+      } else {
+        text = name + '<br>' + res.toString();
+        if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
+      }
     } else {
       gain = arr_gain[index]; // actual
       gain_pos = arr_pos[index]; // actual, without consumption
@@ -217,14 +232,24 @@ function updateResourceUI() {
 
     // tooltip text
     text = '';
-    if(resin) {
-      var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
-      text += 'Current amount: ' + res.toString() + '<br/><br/>';
-      if(tlevel > 1) {
-        text += 'Collected resin: ' + upcoming.toString() + '<br/><br/>';
-        text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
+    if(special) {
+      if(index == 2) {
+        // resin
+        var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
+        text += 'Current amount: ' + res.toString() + '<br/><br/>';
+        if(tlevel > 1) {
+          text += 'Collected resin: ' + upcoming.toString() + '<br/><br/>';
+          text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
+        }
+        text += 'Future additional amount: ' + upcoming2.toString() + '<br/><br/>';
       }
-      text += 'Future additional amount: ' + upcoming2.toString() + '<br/><br/>';
+      if(index == 7) {
+        // fruit essence
+        var text = '<b>Fruit essence</b><br/><br/>';
+        text += 'Current amount: ' + res.toString() + '<br/><br/>';
+        text += 'Amount from next sacrificed fruits: ' + upcoming.toString() + '<br/><br/>';
+        text += 'Using this to level up fruit abilities does not consume the global essence. Every fruit can use all the essence.<br/><br/>';
+      }
     } else {
       var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
@@ -266,7 +291,7 @@ function updateResourceUI() {
       }, /*opt_poll=*/true, /*allow_mobile=*/true);
       div.style.cursor = 'pointer';
       div.onclick = function() {
-        var dialog = createDialog(resin ? DIALOG_SMALL : DIALOG_MEDIUM);
+        var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM);
         dialog.div.style.backgroundColor = '#cccd'; // slightly translucent to see resources through it
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);
@@ -275,7 +300,7 @@ function updateResourceUI() {
         updatedialogfun = bind(function(div, flex) {
           if(div.tooltiptext != last) {
             var html = div.tooltiptext;
-            if(!resin) {
+            if(!special) {
               html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
             }
             flex.div.innerHTML = html;
@@ -303,6 +328,7 @@ function updateResourceUI() {
   if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.essence.eqr(0)) showResource(true, 7, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
 
 }
 

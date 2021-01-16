@@ -461,3 +461,52 @@ y....0...0..+-*/
 ................
 ................
 `);
+
+////////////////////////////////////////////////////////////////////////////////
+
+var metalheader0 = ' hm:#999';
+var metalheader1 = ' hm:#c70';
+var metalheader2 = ' N:#eee M:#bbb m:#888 n:#555';
+var metalheader3 = ' hm:#dfb';
+var metalheader4 = ' hm:#ff0';
+var metalheader5 = ' N:#fff M:#eee m:#ddd n:#ccc';
+var metalheader6 = ' N:#fee M:#ecc m:#dbb n:#caa';
+var metalheader7 = ' hm:#00f';
+var metalheader8 = ' hm:#0f0';
+var metalheader9 = ' hm:#f00';
+var metalheader10 = ' N:#fff M:#eee m:#ddd n:#ccc';
+
+var image_apple = `
+................
+.........mm.....
+........mmm.....
+......n.mm......
+.......n........
+.......n........
+......NnMMN.....
+...NNNNMMNNnn...
+...NNMNNNmmnn...
+..NNMMMmmmmnnn..
+..NNMMmmmmmmnn..
+..NNMMMmmmmnnn..
+..NNMMmmmmmmnn..
+...NMMMmmmmnnn..
+....NMMMmmmnn...
+.....MMM..nnn...
+`;
+
+
+// the different metal tiers for the apple fruit
+var images_apple = [
+generateImageCanvas('#' + metalheader0 + image_apple),
+generateImageCanvas('#' + metalheader1 + image_apple),
+generateImageCanvas('#' + metalheader2 + image_apple),
+generateImageCanvas('#' + metalheader3 + image_apple),
+generateImageCanvas('#' + metalheader4 + image_apple),
+generateImageCanvas('#' + metalheader5 + image_apple),
+generateImageCanvas('#' + metalheader6 + image_apple),
+generateImageCanvas('#' + metalheader7 + image_apple),
+generateImageCanvas('#' + metalheader8 + image_apple),
+generateImageCanvas('#' + metalheader9 + image_apple),
+generateImageCanvas('#' + metalheader10 + image_apple),
+];

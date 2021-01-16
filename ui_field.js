@@ -46,22 +46,25 @@ function createTranscendDialog() {
     text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
   }
   var actual_resin = state.resin.mul(tlevel_mul);
-  text += 'You will get ' + actual_resin.toString() + ' resin from your tree level ' + state.treelevel + '<br/>';
+  text += 'You will get:<br/>';
+  text += '• ' + actual_resin.toString() + ' resin from your tree level ' + state.treelevel + '<br/>';
+  text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool<br/>';
   text += '<br/>';
   text += 'What will be reset:<br/>';
   text += '• Basic field with all crops<br/>';
   text += '• Basic upgrades<br/>';
   text += '• Basic resources: seeds, spores<br/>';
   text += '• Tree level<br/>';
+  text += '• Fruits in the sacrificial pool<br/>';
   text += '<br/>';
   text += 'What will be kept:<br/>';
   text += '• Achievements<br/>';
-  text += '• Resin<br/>';
+  text += '• Resin and fruit essence<br/>';
   text += '• Ethereal field and ethereal crops<br/>';
   text += '• Ethereal upgrades<br/>';
+  text += '• Fruits in the active and storage slots<br/>';
   text += '• Current season<br/>';
   text += '<br/><br/>';
-  text += 'Please note: the transcension aspect of this game is still under development, game version 0.1.11 brought a few ethereal upgrades, future releases will add more.<br/>';
 
   flex.div.innerHTML = text;
 }
@@ -98,14 +101,19 @@ function getCropInfoHTMLBreakdown(f, c) {
   var result = '';
 
   if(f.isFullGrown()) {
+    var p = prefield[f.y][f.x];
     var prod = c.getProd(f);
     if(!prod.empty()) {
-      var breakdown = prefield[f.y][f.x].breakdown;
+      var breakdown = p.breakdown;
       result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
     }
     if(c.boost.neqr(0)) {
-      var breakdown = prefield[f.y][f.x].breakdown;
+      var breakdown = p.breakdown;
       result += formatBreakdown(breakdown, true, 'Breakdown (neighboor boost +%)');
+    }
+    if(p.breakdown_leech && p.breakdown_leech.length > 0) {
+      var breakdown = p.breakdown_leech;
+      result += formatBreakdown(breakdown, true, 'Breakdown (leech)');
     }
   }
 
@@ -404,10 +412,14 @@ function initFieldUI() {
       div.style.cursor = 'pointer';
       div.onclick = bind(function(x, y, div, e) {
         var f = state.field[y][x];
+        var fern = state.fern && x == state.fernx && y == state.ferny;
+
         if(state.fern && x == state.fernx && y == state.ferny) {
           actions.push({type:ACTION_FERN, x:x, y:y});
           update();
-        } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
+        }
+
+        if(!fern && f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
             makeFieldDialog(x, y);
         } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           if(e.shiftKey) {
@@ -421,10 +433,10 @@ function initFieldUI() {
           } else if(e.ctrlKey) {
             actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
             update();
-          } else {
+          } else if(!fern) {
             makeFieldDialog(x, y);
           }
-        } else if(f.hasCrop()) {
+        } else if(!fern && f.hasCrop()) {
           if(e.shiftKey || (e.ctrlKey && f.cropIndex() == short_0)) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];

@@ -44,6 +44,10 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   if(boost.neqr(0)) text += '<b>boost:</b>' + boost.mulr(100).toString() + '%';
   infoFlex.div.innerHTML = text;
 
+  if(state.res.lt(crop.getCost())) {
+    infoFlex.div.style.color = '#666';
+  }
+
   return flex;
 }
 
@@ -60,12 +64,12 @@ function makePlantDialog(x, y, show_only) {
     if(state.crops[registered_crops[i]].unlocked) num_unlocked++;
   }
 
-  var dialog = createDialog((num_unlocked > 12) ? DIALOG_MEDIUM : DIALOG_SMALL);
+  var dialog = createDialog((num_unlocked >= 12) ? DIALOG_MEDIUM : DIALOG_SMALL);
   dialog.div.style.backgroundColor = '#efec'; // slightly translucent to see resources through it
   var tx = 0;
   var ty = 0;
 
-  var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.05, 0.75);
+  var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.05, 0.7);
   if(show_only) {
     centerText2(flex.div);
     flex.div.textEl.innerHTML = 'Unlocked crops...';

@@ -167,7 +167,11 @@ function softReset() {
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that trascending means all about the game is going fine
   savegame_recovery_situation = false;
 
-  showMessage('Transcended! Got resin: ' + state.resin.toString(), '#40f', '#ffd');
+  var essence = getUpcomingFruitEssence();
+  var message = 'Transcended! Got resin: ' + state.resin.toString();
+  if(state.fruit_sacr.length) message += '. Sacrificed ' + state.fruit_sacr.length + ' fruits and got ' + essence.toString();
+
+  showMessage(message, '#40f', '#ffd');
   if(state.g_numresets == 0) {
     showMessage('This is your first transcension. Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.', helpFG, helpBG);
   }
@@ -201,25 +205,8 @@ function softReset() {
   state.p_numupgrades = state.c_numupgrades;
   state.p_numupgrades_unlocked = state.c_numupgrades_unlocked;
   state.p_numabilities = state.c_numabilities;
-
-  if(state.g_numresets == 0) {
-    state.f_treelevel = state.treelevel;
-
-    state.f_starttime = state.c_starttime;
-    state.f_runtime = state.c_runtime;
-    state.f_numticks = state.c_numticks;
-    state.f_res = Res(state.c_res);
-    state.f_max_res = Res(state.c_max_res);
-    state.f_max_prod = Res(state.c_max_prod);
-    state.f_numferns = state.c_numferns;
-    state.f_numplantedshort = state.c_numplantedshort;
-    state.f_numplanted = state.c_numplanted;
-    state.f_numfullgrown = state.c_numfullgrown;
-    state.f_numunplanted = state.c_numunplanted;
-    state.f_numupgrades = state.c_numupgrades;
-    state.f_numupgrades_unlocked = state.c_numupgrades_unlocked;
-    state.f_numabilities = state.c_numabilities;
-  }
+  state.p_numfruits = state.c_numfruits;
+  state.p_numfruitupgrades = state.p_numfruitupgrades;
 
   if(state.g_slowestrun == 0) {
     state.g_fastestrun = state.c_runtime;
@@ -243,6 +230,8 @@ function softReset() {
   state.c_numupgrades = 0;
   state.c_numupgrades_unlocked = 0;
   state.c_numabilities = 0;
+  state.c_numfruits = 0;
+  state.c_numfruitupgrades = 0;
 
   state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
   state.p_treelevel = state.treelevel;
@@ -267,6 +256,12 @@ function softReset() {
   state.g_resin_from_transcends.addInPlace(state.resin);
   state.resin = Num(0); // future resin from next tree
 
+
+  // fruits
+  state.res.addInPlace(essence);
+  state.g_res.addInPlace(essence);
+  state.c_res.addInPlace(essence);
+  state.fruit_sacr = [];
 
   // fix the accidental grow time ethereal upgrade that accidentally gave 7x7 field due to debug code in version 0.1.11
   // TODO: update this code to match next such upgrades this code once a 7x7 upgrade exists!
@@ -338,6 +333,8 @@ var ACTION_DELETE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++;
 var ACTION_TRANCSEND = action_index++;
+var ACTION_FRUIT_SLOT = action_index++;
+var ACTION_FRUIT_LEVEL = action_index++;
 
 var lastSaveTime = util.getTime();
 
@@ -474,7 +471,13 @@ function PreCell(f) {
   // breakdown of the production for UI. Is like prod0, but with leech result added. Does not take consumption into account, and shows the negative consumption value of mushroom.
   this.breakdown = [];
 
+  // breakdown of the leech %
+  this.breakdown_leech = [];
+
   this.last_it = -1;
+
+  // how many neighbors this was leeching (for watercress. For visual effects.)
+  this.leechnum = 0;
 };
 
 // field with precomputed info, 2D array, separate from state.field because not saved but precomputed at each update()
@@ -689,12 +692,11 @@ function precomputeField() {
               }
             }
           }
+          p.leechnum = num;
           // also add this to the breakdown
           if(!total.empty()) {
-            if(leech.ltr(1)) {
-              p.breakdown.push(['leech reduction due to multiple watercress globally', true, leech, undefined]);
-            }
             p.breakdown.push(['<b><i><font color="#040">leeching neighbors (' + num + ')</font></i></b>', false, total, p.prod3.clone()]);
+            c.getLeech(f, p.breakdown_leech);
           } else {
             p.breakdown.push(['no neighbors, not leeching', false, total, p.prod3.clone()]);
           }
@@ -703,6 +705,79 @@ function precomputeField() {
     }
   }
 };
+
+
+
+// Use this rather than Math.random() to avoid using refresh to get better random fruits
+// opt_state is optional, if not given the global state is used
+function getRandomFruitRoll(opt_state) {
+  var state2 = opt_state || state;
+  if(state2.fruit_seed < 0) {
+    // this means the seed is uninitialized and must be randominzed now
+    state2.fruit_seed = Math.floor(Math.random() * 281474976710656);
+  }
+
+  var mul48 = function(a, b) {
+    var a0 = a & 16777215;
+    var b0 = b & 16777215;
+    var a1 = Math.floor(a / 16777216);
+    var b1 = Math.floor(b / 16777216);
+    var c0 = a0 * b0;
+    var c1 = ((a1 * b0) + (a0 * b1)) & 16777215;
+    return c1 * 16777216 + c0;
+  };
+
+  // drand48, because 48 bits fit in JS's 52-bit integers
+  var s = state2.fruit_seed;
+  s = (mul48(25214903917, s) + 11) % 281474976710656;
+  state2.fruit_seed = s;
+  return s / 281474976710656;
+}
+
+function addRandomFruit() {
+  var level = state.treelevel;
+
+  var tier = getNewFruitTier(getRandomFruitRoll(), state.treelevel);
+
+  var fruit = new Fruit();
+  fruit.tier = tier;
+
+  var num_abilities = getNumFruitAbilities(tier);
+
+  var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_LEECH, FRUIT_GROWSPEED, FRUIT_COOLDOWN, FRUIT_FERN];
+
+  for(var i = 0; i < num_abilities; i++) {
+    var roll = Math.floor(getRandomFruitRoll() * abilities.length);
+    var ability = abilities[roll];
+    abilities.splice(roll, 1);
+    var level = 1 + Math.floor(getRandomFruitRoll() * 4);
+
+    fruit.abilities.push(ability);
+    fruit.levels.push(level);
+  }
+
+  if(state.fruit_active.length == 0) {
+    setFruit(0, fruit);
+  } else if(state.fruit_stored.length < state.fruit_slots) {
+    setFruit(10 + state.fruit_stored.length, fruit);
+  } else {
+    setFruit(20 + state.fruit_sacr.length, fruit);
+  }
+
+  state.c_numfruits++;
+  state.g_numfruits++;
+
+  if(state.g_numfruits == 1) {
+    showMessage('You received your first fruit! Fruits provide boosts and can be upgraded. See the "fruit" tab.', helpFG, helpBG);
+  }
+
+  updateFruitUI();
+  return fruit;
+}
+
+
+
+
 
 // when is the next time that something happens that requires a separate update()
 // run. E.g. if the time difference is 1 hour (due to closing the tab for 1 hour),
@@ -1029,46 +1104,117 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_ABILITY) {
         var a = action.ability;
+        var fogd = state.time - state.fogtime;
+        var sund = state.time - state.suntime;
+        var rainbowd = state.time - state.rainbowtime;
+        var already_ability = false;
+        if(fogd < getFogDuration() || sund < getSunDuration() || rainbowd < getRainbowDuration()) already_ability = true;
         if(a == 0) {
-          var fogd = state.time - state.fogtime;
           if(!state.upgrades[upgrade_fogunlock].count) {
             // not possible, ignore
-          } else if(fogd > getFogWait()) {
+          } else if(fogd < getFogWait()) {
+            showMessage(fogd < getFogDuration() ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
+          } else if(already_ability) {
+            showMessage('there already is an active weather ability', invalidFG, invalidBG);
+          } else {
             state.fogtime = state.time;
             showMessage('fog activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
             store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
-          } else {
-            showMessage(fogd < getFogDuration() ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
           }
         } else if(a == 1) {
-          var sund = state.time - state.suntime;
           if(!state.upgrades[upgrade_sununlock].count) {
             // not possible, ignore
-          } else if(sund > getSunWait()) {
+          } else if(sund < getSunWait()) {
+            showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', invalidFG, invalidBG);
+          } else if(already_ability) {
+            showMessage('there already is an active weather ability', invalidFG, invalidBG);
+          } else {
             state.suntime = state.time;
             showMessage('sun activated, berries get a boost and aren\'t affected by winter');
             store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
-          } else {
-            showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', invalidFG, invalidBG);
           }
         } else if(a == 2) {
-          var rainbowd = state.time - state.rainbowtime;
           if(!state.upgrades[upgrade_rainbowunlock].count) {
             // not possible, ignore
-          } else if(rainbowd > getRainbowWait()) {
+          } else if(rainbowd < getRainbowWait()) {
+            showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', invalidFG, invalidBG);
+          } else if(already_ability) {
+            showMessage('there already is an active weather ability', invalidFG, invalidBG);
+          } else {
             state.rainbowtime = state.time;
             showMessage('rainbow activated, flowers get a boost and aren\'t affected by winter');
             store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
-          } else {
-            showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', invalidFG, invalidBG);
           }
         }
+      } else if(type == ACTION_FRUIT_SLOT) {
+        var f = action.f;
+        var slottype = action.slot; // 0:active, 1:stored, 2:sacrificial
+        var currenttype = ((f.slot < 10) ? 0 : ((f.slot < 20) ? 1 : 2));
+        if(slottype == currenttype) {
+          // nothing to do
+        } else if(slottype == 0) {
+          var f2 = getFruit(action.slot);
+          // swaps
+          setFruit(f.slot, f2);
+          setFruit(action.slot, f);
+        } else if(slottype == 1) {
+          if(state.fruit_stored.length >= state.fruit_slots) {
+            showMessage('stored slots already full', invalidFG, invalidBG);
+          } else {
+            var slot = 10 + state.fruit_stored.length;
+            setFruit(f.slot, undefined);
+            setFruit(slot, f);
+          }
+        } else if(slottype == 2) {
+          var slot = 20 + state.fruit_sacr.length;
+          setFruit(f.slot, undefined);
+          setFruit(slot, f);
+        }
+        updateFruitUI();
+      } else if(type == ACTION_FRUIT_LEVEL) {
+        var f = action.f;
+        var index = action.index;
+        var a = f.abilities[index];
+        var level = f.levels[index];
+        var cost = getFruitAbilityCost(a, level, f.tier).essence;
+        var available = state.res.essence.sub(f.essence);
+        if(action.shift) {
+          available.mulrInPlace(0.25); // do not use up ALL essence here, up to 25% only
+          var num = 0;
+          while(available.gte(cost)) {
+            f.essence.addInPlace(cost);
+            f.levels[index]++;
+            store_undo = true;
+            state.c_numfruitupgrades++;
+            state.g_numfruitupgrades++;
+            available.subInPlace(cost);
+            cost = getFruitAbilityCost(a, f.levels[index], f.tier).essence;
+            num++;
+            if(num > 1000) break; // too much, avoid infinite loop
+          }
+          if(num > 0) {
+            showMessage('Fruit ability ' + getFruitAbilityName(a) + ' leveled up ' + num + ' times to level ' + f.levels[index]);
+          }
+        } else {
+          if(available.lt(cost)) {
+            showMessage('not enough essence for fruit upgrade: need ' + cost.toString() +
+                ', available for this fruit: ' + available.toString(), invalidFG, invalidBG);
+          } else {
+            f.essence.addInPlace(cost);
+            f.levels[index]++;
+            showMessage('Fruit ability ' + getFruitAbilityName(a) + ' leveled up to level ' + f.levels[index]);
+            store_undo = true;
+            state.c_numfruitupgrades++;
+            state.g_numfruitupgrades++;
+          }
+        }
+        updateFruitUI();
       } else if(type == ACTION_TRANCSEND) {
         if(state.treelevel >= min_transcension_level) {
           softReset();
@@ -1104,8 +1250,8 @@ var update = function(opt_fromTick) {
             f.growth -= g;
             if(f.growth <= 0) {
               f.growth = 0;
-              // add the remainder image, but only if this one was leeching: it serves as a reminder of watercress you used for leeching, not *all* watercresses
-              if(p.prod0.neq(p.prod0b)) f.index = FIELD_REMAINDER;
+              // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses
+              if(p.leechnum >= 2) f.index = FIELD_REMAINDER;
               else f.index = 0;
             }
             // it's ok to have the production when growth becoame 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
@@ -1197,6 +1343,13 @@ var update = function(opt_fromTick) {
         var g = gain.mulr(r);
         if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(Math.random() * 2 + 1));
         var fernres = new Res({seeds:g.seeds, spores:g.spores});
+
+        var level = getFruitAbility(FRUIT_FERN);
+        if(level > 0) {
+          var mul = Num(1).add(getFruitBoost(FRUIT_FERN, level, getFruitTier()));
+          fernres.mulInPlace(mul);
+        }
+
         state.fernres = fernres;
         state.fern = 1;
         state.fernx = s[0];
@@ -1222,21 +1375,38 @@ var update = function(opt_fromTick) {
       }
       showMessage(message, '#2f2');
       if(state.treelevel == 2) {
-        showMessage('The tree is providing a choice, choose one of the two choices under "upgrades"', '#cfc', '#800');
-      } else if(state.treelevel == 3) {
         showMessage('The tree discovered a new ability!', '#cfc', '#800');
+      } else if(state.treelevel == 3) {
+        showMessage('The tree is providing a choice, choose one of the two choices under "upgrades"', '#cfc', '#800');
+      } else if(state.treelevel == 4) {
+        showMessage('The tree discovered another ability', '#cfc', '#800');
       } else if(state.treelevel == 5) {
-        showMessage('The spores are growing the tree very nicely now. The tree is not quite adult yet, but it feels like it\'s at least halfway there. The tree discovered another ability!', '#cfc', '#800');
-      } else if(state.treelevel == 7) {
+        var fruit = addRandomFruit();
+        showMessage('The tree is halfway to adulthood. The tree dropped a fruit! ' + util.upperCaseFirstWord(fruit.toString()) + ': ' + fruit.abilitiesToString(), '#800', '#cfc');
+      } else if(state.treelevel == 6) {
         showMessage('The tree discovered another new ability!', '#cfc', '#800');
       } else if(state.treelevel == 8) {
         showMessage('The tree is providing a choice again, under "upgrades"', '#cfc', '#800');
-      }
+      } else if(state.treelevel == 15) {
+        var fruit = addRandomFruit();
+        showMessage('The tree dropped another fruit! ' + util.upperCaseFirstWord(fruit.toString()) + ': ' + fruit.abilitiesToString(), '#800', '#cfc');
+      } /* else if(state.treelevel == 25) {
+        // No random fruit here yet: more play time is needed to determine what costs, levels, boost percentages, ... are good here
+      }*/
       if(state.treelevel == 1) {
         showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree for more info.', helpFG, helpBG);
       } else if(state.treelevel == min_transcension_level) {
         showMessage('The tree reached adulthood, and is now able to transcend! Click the tree to view the transcension dialog.', helpFG, helpBG);
       }
+    }
+
+    // compensation for savegames below version 0.1.17
+    if(state.treelevel >= 5 && state.g_numfruits == 0 && state.fruit_seed == -1) {
+      showMessage('Your tree level is higher than 5 but you didn\'t get a random fruit yet! Must have come from a previous version of the game before the "Fruit Update". One random fruit added now to get you started with this new feature.', '#ff0');
+      state.fruit_seed = Math.floor(state.g_starttime) & 0xffffffff; // to avoid abuse with the free fruit from old savegame (reloading it to get a randomly different one each time), use one fixed seed so this is the same always.
+      addRandomFruit();
+      state.fruit_seed = -1; // now truly randomly initialize the random seed with this and next function call
+      getRandomFruitRoll();
     }
 
 

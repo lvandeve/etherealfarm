@@ -181,10 +181,25 @@ function updateAbilitiesUI() {
 
 
 document.addEventListener('keydown', function(e) {
-  if(e.key == 'a') {
+  /*if(e.key == 'a') {
     if(state.upgrades[upgrade_sununlock].count && util.getTime() - state.suntime > getSunWait()) actions.push({type:ACTION_ABILITY, ability:1});
     if(state.upgrades[upgrade_fogunlock].count && util.getTime() - state.fogtime > getFogWait()) actions.push({type:ACTION_ABILITY, ability:0});
     if(state.upgrades[upgrade_rainbowunlock].count && util.getTime() - state.rainbowtime > getRainbowWait()) actions.push({type:ACTION_ABILITY, ability:2});
+    update();
+  }*/
+  if(e.key == 'a') {
+    showMessage('a key no longer works since only 1 weather ability can be active at once now, use 1, 2 or 3 to enable an ability instead.');
+  }
+  if(e.key == '1') {
+    actions.push({type:ACTION_ABILITY, ability:1});
+    update();
+  }
+  if(e.key == '2') {
+    actions.push({type:ACTION_ABILITY, ability:0});
+    update();
+  }
+  if(e.key == '3') {
+    actions.push({type:ACTION_ABILITY, ability:2});
     update();
   }
 });

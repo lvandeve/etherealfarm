@@ -21,6 +21,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var tabbuttons;
 var tabs;
 
+
+var upgradesButtonLastText = '';
+var fruitButtonLastText = '';
+var upgrades2ButtonLastText = '';
+var medalsButtonLastText = '';
+
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
 
@@ -35,6 +41,11 @@ function setTab(i, opt_temp) {
   }
 
   if(i == tabindex_upgrades) updateUpgradeUI();
+  if(i == tabindex_fruit) {
+    state.fruit_seen = true;
+    lastTouchedFruit = null;
+    updateFruitUI();
+  }
   if(i == tabindex_medals) updateMedalUI();
   if(i == tabindex_upgrades2) updateUpgrade2UI();
 
@@ -85,18 +96,26 @@ function updateTabButtons2() {
     }
   }
 
-  tabnum = tabindex_medals;
+  tabnum = tabindex_fruit;
   if(tabbuttons[tabnum]) {
-    var text = 'achievements<br/>(' + state.medals_earned + ')';
-
-    if(state.medals_new) {
+    var num = state.fruit_active.length + state.fruit_stored.length + state.fruit_sacr.length;
+    var text = 'fruit<br/>(' + num + ')';
+    if(!state.fruit_seen) {
+      text = '<b><font color="red">' + text + '</font></b>';
+    }
+    var highest = 0, highestsacr = 0;
+    for(var i = 0; i < state.fruit_active.length; i++) highest = Math.max(highest, state.fruit_active[i].tier);
+    for(var i = 0; i < state.fruit_stored.length; i++) highest = Math.max(highest, state.fruit_stored[i].tier);
+    for(var i = 0; i < state.fruit_sacr.length; i++) highestsacr = Math.max(highestsacr, state.fruit_sacr[i].tier);
+    if(highestsacr > highest) {
+      // fruit of highest tier is in sacrificial pool, indicate this to prevent accidently losing it
       text = '<b><font color="red">' + text + '</font></b>';
     }
 
-    if(text != medalsButtonLastText) {
-      tabbuttons[tabnum].textEl.innerHTML = text;
-      medalsButtonLastText = text;
+    if(text != fruitButtonLastText) {
       tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
+      fruitButtonLastText = text;
     }
   }
 
@@ -113,6 +132,21 @@ function updateTabButtons2() {
       upgrades2ButtonLastText = text;
     }
   }
+
+  tabnum = tabindex_medals;
+  if(tabbuttons[tabnum]) {
+    var text = 'achievements<br/>(' + state.medals_earned + ')';
+
+    if(state.medals_new) {
+      text = '<b><font color="red">' + text + '</font></b>';
+    }
+
+    if(text != medalsButtonLastText) {
+      tabbuttons[tabnum].textEl.innerHTML = text;
+      medalsButtonLastText = text;
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+    }
+  }
 }
 
 // Note: it depends on the state which buttons will be visible
@@ -123,6 +157,7 @@ function updateTabButtons() {
   var wanted = [];
   wanted[tabindex_field] = true;
   wanted[tabindex_upgrades] = state.upgrades_unlocked > 0;
+  wanted[tabindex_fruit] = state.g_numfruits > 0;
   wanted[tabindex_field2] = state.g_numresets > 0;
   wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
   wanted[tabindex_medals] = state.medals_earned > 0;
@@ -181,6 +216,16 @@ function updateTabButtons() {
     tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
     upgradesButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    index++;
+  }
+
+  tabnum = tabindex_fruit;
+  if(wanted[tabnum]) {
+    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
+    tabbuttons[tabnum].textEl.innerText = 'fruit';
+    fruitButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
 

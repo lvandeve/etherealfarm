@@ -60,6 +60,18 @@ var bonus_season_berry_summer = 1.5;
 var bonus_season_mushroom_autumn = 2;
 var malus_season_winter = 0.75;
 
+// apply bonuses that apply to all ability waits
+function adjustWait(result) {
+  if(state.upgrades[active_choice0].count == 1) result *= 2;
+
+  var level = getFruitAbility(FRUIT_COOLDOWN);
+  if(level > 0) {
+    var mul = Num(1).sub(getFruitBoost(FRUIT_COOLDOWN, level, getFruitTier())).valueOf();
+    result *= mul;
+  }
+
+  return result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -74,7 +86,9 @@ function getSunDuration() {
 
 function getSunWait() {
   var result = sun_wait;
-  if(state.upgrades[active_choice0].count == 1) result *= 2;
+
+  result = adjustWait(result);
+
   return result;
 }
 
@@ -91,7 +105,7 @@ function getFogDuration() {
 
 function getFogWait() {
   var result = fog_wait;
-  if(state.upgrades[active_choice0].count == 1) result *= 2;
+  result = adjustWait(result);
   return result;
 }
 
@@ -108,7 +122,7 @@ function getRainbowDuration() {
 
 function getRainbowWait() {
   var result = rainbow_wait;
-  if(state.upgrades[active_choice0].count == 1) result *= 2;
+  result = adjustWait(result);
   return result;
 }
 
@@ -188,6 +202,12 @@ Crop.prototype.getPlantTime = function() {
     result = reduceGrowTime(result, upgrade2_time_reduce_0_amount);
   }
 
+  var level = getFruitAbility(FRUIT_GROWSPEED);
+  if(level > 0) {
+    var mul = Num(1).sub(getFruitBoost(FRUIT_GROWSPEED, level, getFruitTier())).valueOf();
+    result *= mul;
+  }
+
   return result;
 };
 
@@ -248,6 +268,30 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var mul_upgrade = Num(1).add(Num(0.5).mulr(u.count)); // watercress upgrade is additive instead of multiplicative
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+    }
+  }
+
+
+  if(this.type == CROPTYPE_BERRY) {
+    var level = getFruitAbility(FRUIT_BERRYBOOST);
+    if(level > 0) {
+      var mul = getFruitBoost(FRUIT_BERRYBOOST, level, getFruitTier()).addr(1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BERRYBOOST), true, mul, result.clone()]);
+    }
+  }
+  if(this.type == CROPTYPE_MUSH) {
+    var level = getFruitAbility(FRUIT_MUSHBOOST);
+    if(level > 0) {
+      var mul = getFruitBoost(FRUIT_MUSHBOOST, level, getFruitTier()).addr(1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MUSHBOOST), true, mul, result.clone()]);
+    }
+    var level = getFruitAbility(FRUIT_MUSHEFF);
+    if(level > 0) {
+      var mul = Num(1).sub(getFruitBoost(FRUIT_MUSHEFF, level, getFruitTier()));
+      result.seeds.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MUSHEFF), true, mul, result.clone()]);
     }
   }
 
@@ -461,6 +505,15 @@ Crop.prototype.getBoost = function(f, breakdown) {
     }
   }
 
+  if(this.type == CROPTYPE_FLOWER) {
+    var level = getFruitAbility(FRUIT_FLOWERBOOST);
+    if(level > 0) {
+      var mul = getFruitBoost(FRUIT_FLOWERBOOST, level, getFruitTier()).addr(1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_FLOWERBOOST), true, mul, result.clone()]);
+    }
+  }
+
   // ethereal crops bonus to basic crops
   if(this.type == CROPTYPE_FLOWER) {
     var ethereal_boost = state.ethereal_flower_bonus.addr(1);
@@ -519,6 +572,13 @@ Crop.prototype.getLeech = function(f, breakdown) {
 
   var result = Num(1);
   if(breakdown) breakdown.push(['base', true, Num(1), result.clone()]);
+
+  var level = getFruitAbility(FRUIT_LEECH);
+  if(level > 0) {
+    var mul = getFruitBoost(FRUIT_LEECH, level, getFruitTier()).addr(1);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_LEECH), true, mul, result.clone()]);
+  }
 
   // add a penalty for the neighbor production copy-ing if there are multiple watercress in the field. The reason for this is:
   // the watercress neighbor production copying is really powerful, and if every single watercress does this at full power, this would require way too active play, replanting watercresses in the whole field all the time.
@@ -1079,38 +1139,38 @@ upgrade_register_id = 250;
 var upgrade_fogunlock = registerUpgrade('fog ability', treeLevelReq(5).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
-  if(state.treelevel >= 5) {
+  if(state.treelevel >= 4) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_fogunlock].unlocked = true;
     state.upgrades[upgrade_fogunlock].count = 1;
     return true;
   }
   return false;
-}, 1, 'While enabled, fog temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or "a" key.', '#fff', '#88f', image_fog, undefined);
+}, 1, 'While enabled, fog temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or the "2" key.', '#fff', '#88f', image_fog, undefined);
 
 var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReq(3).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
-  if(state.treelevel >= 3) {
+  if(state.treelevel >= 2) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_sununlock].unlocked = true;
     state.upgrades[upgrade_sununlock].count = 1;
     return true;
   }
   return false;
-}, 1, 'While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter. This active ability is enabled using its icon button at the top or "a" key.', '#ccf', '#88f', image_sun, undefined);
+}, 1, 'While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter. This active ability is enabled using its icon button at the top or the "1" key.', '#ccf', '#88f', image_sun, undefined);
 
 var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReq(7).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
-  if(state.treelevel >= 7) {
+  if(state.treelevel >= 6) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_rainbowunlock].unlocked = true;
     state.upgrades[upgrade_rainbowunlock].count = 1;
     return true;
   }
   return false;
-}, 1, 'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or "a" key.', '#ccf', '#00f', image_rainbow, undefined);
+}, 1, 'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or the "2" key.', '#ccf', '#00f', image_rainbow, undefined);
 
 
 
@@ -1123,7 +1183,7 @@ var fern_choice0_b_bonus = 0.25;
 
 var fern_choice0 = registerChoiceUpgrade('fern choice', treeLevelReq(2).mulr(0.05),
   function() {
-    return state.treelevel >= 2;
+    return state.treelevel >= 3;
   }, function() {
   },
  'Slower ferns', 'Richer ferns',
@@ -1157,7 +1217,7 @@ var active_choice0 = registerChoiceUpgrade('weather choice', treeLevelReq(8).mul
       if(state.time - state.rainbowtime > rainbow_duration) state.rainbowtime -= rainbow_wait;
     }
   },
- 'Slow weather', 'Strong weather',
+ 'Long weather', 'Strong weather',
  'Makes the active weather abilities run twice as long, but also twice as long to recharge. This benefits idle play, but gives on average no benefit for active play.',
  'Increases all active ability weather effects by ' + (active_choice0_b_bonus * 100) + '%. The active abilities recharge time remains the same so this benefits active play more than idle play.',
  '#000', '#fff', image_sun, undefined);
@@ -1309,7 +1369,7 @@ registerMedal('nettles', 'plant the entire field full of nettles. This is a stin
 medal_register_id = 125;
 var numreset_achievement_values =   [   1,    5,   10,   20,   50,  100,  200,  500, 1000];
 var numreset_achievement_bonuses =  [0.05, 0.05, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5]; // TODO: give a bit more bonus for some of those
-for(var i = 0; i < level_achievement_values.length; i++) {
+for(var i = 0; i < numreset_achievement_values.length; i++) {
   var level = numreset_achievement_values[i];
   var bonus = Num(numreset_achievement_bonuses[i]);
   var name = 'transcend ' + level;
@@ -1377,6 +1437,19 @@ registerMedal('20 ethereal crops', 'Have 20 ethereal crops', undefined, function
   return state.numfullgrowncropfields2 >= 20;
 }, Num(0.1));
 
+medal_register_id = 500;
+var fruit_achievement_values =   [   5,   10,   20,   50,  100,  200,  500, 1000, 2000, 5000, 10000];
+var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     1];
+for(var i = 0; i < fruit_achievement_values.length; i++) {
+  var num = fruit_achievement_values[i];
+  var bonus = Num(fruit_achievement_bonuses[i]);
+  var name = 'fruits ' + num;
+  var id = registerMedal(name, 'Found ' + num + ' fruits', images_apple[1],
+      bind(function(num) { return state.g_numfruits >= num; }, num),
+      bonus);
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1740,6 +1813,140 @@ var upgrade2_field6x6 = registerUpgrade2('larger field', Res({resin:100}), 1, fu
 }, function(){return state.numw >= 5 && state.numh >= 5}, 1, 'increase basic field size to 6x6 tiles', undefined, undefined, field_summer[0]);
 
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// a function that starts at 0, and for x going towards infinity, outputs values towards 1 (horizontal asymptote at 1)
+// this for e.g. effects of upgrades with diminishing returns
+// h = when (for which x) should 50% (0.5) be reached
+function towards1(x, h) {
+  // some options for this:
+  // *) atan(x) / (pi/2)
+  // *) tanh(x)
+  // *) erf(x): goes too fast to 1 and too horizontal once 1 reached
+  // *) x / sqrt(x * x + 1)
+
+  x *= 0.57735;
+  x /= h;
+  return x / Math.sqrt(x * x + 1);
+}
+
+
+// fruit abilities
+var fruit_index = 0;
+var FRUIT_NONE = fruit_index++; // 0 means no ability
+var firstFruitAbility = fruit_index;
+var FRUIT_BERRYBOOST = fruit_index++; // boosts seed production of berries
+var FRUIT_MUSHBOOST = fruit_index++; // boosts muchrooms spore production but also seed consumption
+var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (but same spore production output)
+var FRUIT_FLOWERBOOST = fruit_index++;
+var FRUIT_LEECH = fruit_index++;
+var FRUIT_GROWSPEED = fruit_index++;
+var FRUIT_COOLDOWN = fruit_index++;
+var FRUIT_FERN = fruit_index++;
+// BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
+var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
+// TODO: one that extends lifetime of watercress
+// TODO: one that boosts nettles
+// TODO: seasonal ones, but only for fruits with 2+ slots, to avoid a very disappointing single-slot fruit in the wrong season
+
+// returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
+function getFruitBoost(ability, level, tier) {
+  var base = Math.pow(getFruitTierCost(tier), 0.75) * 0.05;
+
+  if(ability == FRUIT_BERRYBOOST) {
+    return Num(base * level);
+  }
+  if(ability == FRUIT_MUSHBOOST) {
+    return Num(base * level);
+  }
+  if(ability == FRUIT_MUSHEFF) {
+    var amount = towards1(level, 10);
+    var max = 0.2 + tier * 0.05;
+    return Num(max * amount);
+  }
+  if(ability == FRUIT_FLOWERBOOST) {
+    return Num(base * level);
+  }
+  if(ability == FRUIT_LEECH) {
+    /*var amount = towards1(level, 10);
+    var max = 1 + tier * 0.2;
+    return Num(max * amount);*/
+    return Num(base * 1.5 * level);
+  }
+  if(ability == FRUIT_GROWSPEED) {
+    var amount = towards1(level, 10);
+    var max = 0.2 + tier * 0.05;
+    return Num(max * amount);
+  }
+  if(ability == FRUIT_COOLDOWN) {
+    var amount = towards1(level, 10);
+    var max = 0.2 + tier * 0.05;
+    return Num(max * amount);
+  }
+  if(ability == FRUIT_FERN) {
+    return Num(base * 2 * level);
+  }
+
+  return Num(0.1);
+}
+
+// cost for next level if ability is at this level
+function getFruitAbilityCost(ability, level, tier) {
+  var result = Num(1.5).powr(level);
+  result = result.mulr(getFruitTierCost(tier));
+
+  return Res({essence:result});
+}
+
+function getFruitSacrifice(f) {
+  var result = getFruitTierCost(f.tier) * 10;
+
+  return Res({essence:result});
+}
+
+function getFruitTierCost(tier) {
+  // half-exponential progression
+  switch(tier) {
+    case 0: return 1;
+    case 1: return 4;
+    case 2: return 12;
+    case 3: return 30;
+    case 4: return 45;
+    case 5: return 65;
+    case 6: return 100;
+    case 7: return 120;
+    case 8: return 160;
+    case 9: return 240;
+    case 10: return 300;
+  }
+  return Infinity;
+}
+
+// get fruit tier given random roll and tree level
+function getNewFruitTier(roll, treelevel) {
+  var tier = 0;
+  // Higher tree levels are not yet implemented for the fruits
+  if(treelevel >= 15) {
+    tier = (roll > 0.75) ? 2 : 1;
+  } else {
+    tier = (roll > 0.75) ? 1 : 0;
+  }
+  return tier;
+}
+
+// how many abilities should a fruit of this tier have
+function getNumFruitAbilities(tier) {
+  var num_abilities = 1;
+  if(tier >= 1) num_abilities = 2;
+  // These are not yet supported, this is preliminary
+  if(tier >= 3) num_abilities = 3;
+  if(tier >= 5) num_abilities = 4;
+  if(tier >= 7) num_abilities = 5;
+  return num_abilities;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
