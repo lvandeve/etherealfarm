@@ -223,7 +223,7 @@ function updateResourceUI() {
       gain_pos = arr_pos[index]; // actual, without consumption
       gain_hyp = arr_hyp[index]; // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
       gain_hyp_pos = arr_hyp_pos[index]; // hypothetical aka potential, without consumption
-      var hyp_neq = !gain.near(gain_hyp, 0.001);
+      var hyp_neq = !gain.near(gain_hyp, 0.0001);
 
       text = name + '<br>' + res.toString() + '<br>' + gain.toString() + '/s';
       if(hyp_neq) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
@@ -276,7 +276,7 @@ function updateResourceUI() {
         text += '• To stacks: ' + gain_hyp.toString() + '/s<br/>';
         text += '• To consumers: ' + (gain_hyp_pos.sub(gain_hyp)).toString() + '/s<br/>';
         text += '<br/>';
-        text += 'Potential production means: if mushrooms could take more than neighbor berries can produce';
+        text += 'Potential production means: if mushrooms could consume as many seed as it needs, even if more than neighbor berries can produce';
         text += '<br/><br/>';
       }
     }

@@ -448,12 +448,12 @@ function PreCell(f) {
 
   this.weights = null; // used during precompute of field: if filled in, array of 4 elements: weights for N, E, S, W neighbors of their share of recource consumption from this. Used for mushrooms taking seeds of neighboring berries.
 
-  // differnt stages of the production computation, some useful for certain UI, others not, see the comments
+  // different stages of the production computation, some useful for certain UI, others not, see the comments
 
   // before consumption/production computation. not taking any leech into account (multiply prod or cons with 1+leech if that's needed, or see prod0b below)
   // useful for UI that shows the potential production of a mushroom if it hypothetically got as many seeds as needed from neighbors
   this.prod0 = Res();
-  // for UI only, like prod0, but with final leech added
+  // for UI only, like prod0, but with final leech added. Not to be used in any computation. Represents the potential rather than actual production/consumption.
   this.prod0b = Res();
   // during consumption/production computation, not useful for any UI, intermediate stage only
   this.prod1 = Res();
@@ -548,8 +548,11 @@ function precomputeField() {
         var p = prefield[y][x];
         var prod = c.getProd(f, false, p.breakdown);
         p.prod0 = prod;
-        p.prod1 = Res(prod); // a separate copy
         p.prod0b = Res(prod); // a separate copy
+        // prod1 is, for the case of mushrooms and seeds, a negative amount of seeds, and if there is leech, the total amount of seeds needed included for the leeched spores.
+        // pass 4 will then add positive seeds from berry neighbors to prod1, and when prod1 reaches 0 (or higher), the full consumption has been satisfied, otherwise it's partial
+        p.prod1 = Res(prod);
+        if(p.prod1.seeds.ltr(0)) p.prod1.seeds.mulInPlace(p.leech.addr(1));
       }
     }
   }
@@ -603,8 +606,10 @@ function precomputeField() {
           if(c.type == CROPTYPE_MUSH) {
             var p = prefield[y][x];
             if(p.producers.length == 0) continue; // no producers at all for this mushroom
-            // want is gotten outside of the producers loop to ensure it's calculated the same for all producers
-            var want = p.prod1.seeds.neg().divr(p.producers.length).mul(p.leech.addr(1));
+            // want is how much seeds we want, but only for the slice allocated to this producer
+            // computed outside of the producers loop to ensure it's calculated the same for all producers
+            //var want = p.prod1.seeds.neg().divr(p.producers.length).mul(p.leech.addr(1));
+            var want = p.prod1.seeds.neg().divr(p.producers.length);
             for(var i = 0; i < p.producers.length; i++) {
               var p2 = p.producers[i];
               if(p2.last_it != it) {
@@ -623,7 +628,7 @@ function precomputeField() {
                 have = p2.prod1.seeds;
               }
               var amount = Num.min(want, have);
-              if(amount.neqr(0)) {
+              if(amount.gter(0)) {
                 did_something = true;
                 p.prod1.seeds.addInPlace(amount);
                 p2.prod1.seeds.subInPlace(amount);
@@ -682,11 +687,12 @@ function precomputeField() {
             if(c2) {
               var p2 = prefield[y2][x2];
               if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
+                var leech0 = p2.prod0.mul(leech);
                 var leech2 = p2.prod2.mul(leech);
                 var leech3 = p2.prod3.mul(leech);
                 p.prod2.addInPlace(leech2);
                 p.prod3.addInPlace(leech3);
-                p.prod0b.addInPlace(leech2);
+                p.prod0b.addInPlace(leech0);
                 total.addInPlace(leech3); // for the breakdown
                 num++;
               }

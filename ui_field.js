@@ -155,7 +155,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       result += '<br/>';
     }
     var prod = p.prod3;
-    if(!prod.empty()) {
+    if(!prod.empty() || c.type == CROPTYPE_MUSH) {
       result += 'Production per second: ' + prod.toString() + '<br/>';
       if(prod.hasNeg()) {
         if(p.prod0.neq(p.prod3)) {

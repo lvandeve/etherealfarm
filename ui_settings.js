@@ -237,22 +237,16 @@ function createNumberFormatDialog() {
   precisionDropdown.style.fontSize = '100%'; // take that of the parent flex-managed element
 
   var div = makeDiv('1%', '0%', '98%', '10%', examplesDiv);
-  //div.innerHTML = 'examples, with formatted display in <b>bold</b>:';
   div.innerHTML = '<b>Examples:</b>';
-  var div2 = makeDiv('1%', '15%', '98%', '85%', examplesDiv);
   var precision = Num.precision;
   var examples = [0, 0.002, 0.3, 1, 7.123456, 12, 150, 1712.29, 14348907.5, 4294967296, 2048e20, 800e27, 7.10915e50, 2.1065e85];
 
   var fill = function() {
 
     var tableText = '';
-    //tableText += '<b>Examples:</b>';
     tableText += '<table border="1" style="border-collapse:collapse">';
-    tableText += '<tr><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td><td width="10%"> </td><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td></tr>';
+    tableText += '<tr><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td><td width="10%" style="border:none"></td><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td></tr>';
     for(var i = 0; i * 2 < examples.length; i++) {
-      //var text = examples[i].valueOf();
-      //text += ': <b>' + Num(examples[i]).toString(precision, notation) + '</b>';
-      //exampleDivs[i].innerHTML = text;
       tableText += '<tr>';
       tableText += '<td style="padding:8px; color:#444">';
       tableText += examples[i].valueOf();
@@ -260,7 +254,7 @@ function createNumberFormatDialog() {
       tableText += Num(examples[i]).toString(precision, notation);
       tableText += '</td>';
       var j = i + Math.floor(examples.length / 2);
-      tableText += '<td> </td>';
+      tableText += '<td style="border:none"> </td>';
       tableText += '<td style="padding:8px; color:#444">';
       tableText += examples[j].valueOf();
       tableText += '</td><td style="padding:8px">'
@@ -270,7 +264,6 @@ function createNumberFormatDialog() {
     }
     tableText += '</table>';
     descriptionDiv.innerHTML = '<b>Notation description:</b> ' + Num.N_Help[notation];
-    //createNumberFormatExplanation(notation, precision, infoDiv);
 
     div.innerHTML = tableText;
   };

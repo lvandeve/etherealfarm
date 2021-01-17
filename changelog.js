@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.18 (2021-01-17):';
+  text += '<br/>• Increased starter resources of ethereal fern.';
+  text += '<br/>• Fixed a leeching related bug.';
+  text += '<br/><br/>';
+
   text += '0.1.17 "Fruit Update" (2021-01-16):';
   text += '<br/>• Added fruits.';
   text += '<br/>• Only one weather ability can be active at the same time now.';

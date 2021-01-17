@@ -1605,7 +1605,7 @@ function registerSpecial2(name, cost, planttime, effect_description_short, effec
 
 
 crop2_register_id = 0;
-var special2_0 = registerSpecial2('fern', Res({resin:10}), 1.5, 'gives 50 * n^2 starter seeds', 'gives 50 * n^2 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 50, with two you get 200, three gives 450, four gives 800, and so on.', image_fern_as_crop);
+var special2_0 = registerSpecial2('fern', Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
 
 // berries2
 crop2_register_id = 25;
@@ -1997,7 +1997,7 @@ function treeLevelResin(level) {
 function getStarterResources(opt_adjust) {
   var count = state.fullgrowncrop2count[special2_0];
   if(opt_adjust) count += opt_adjust;
-  var ethereal_seeds = count * count * 50;
+  var ethereal_seeds = count * count * count * 100;
   return Res({seeds:ethereal_seeds});
 }
 
