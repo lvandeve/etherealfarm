@@ -238,10 +238,10 @@ function updateResourceUI() {
         var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
         text += 'Current amount: ' + res.toString() + '<br/><br/>';
         if(tlevel > 1) {
-          text += 'Collected resin: ' + upcoming.toString() + '<br/><br/>';
-          text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
+          text += 'Collected upcoming resin: ' + upcoming.toString() + '<br/><br/>';
+          text += 'Upcoming resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
         }
-        text += 'Future additional amount: ' + upcoming2.toString() + '<br/><br/>';
+        text += 'Total upcoming amount: ' + upcoming2.toString() + '<br/><br/>';
       }
       if(index == 7) {
         // fruit essence

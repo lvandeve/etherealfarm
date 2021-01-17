@@ -22,7 +22,7 @@ function getChangeLog() {
 
   text += '0.1.18 (2021-01-17):';
   text += '<br/>• Increased starter resources of ethereal fern.';
-  text += '<br/>• Fixed a leeching related bug.';
+  text += '<br/>• Fixed bugs related to leeching and transcension II.';
   text += '<br/><br/>';
 
   text += '0.1.17 "Fruit Update" (2021-01-16):';

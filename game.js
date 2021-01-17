@@ -167,8 +167,13 @@ function softReset() {
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that trascending means all about the game is going fine
   savegame_recovery_situation = false;
 
+  var resin = state.resin;
+  var tlevel = Math.floor(state.treelevel / min_transcension_level);
+  if(tlevel < 1) tlevel = 1;
+  resin = resin.mulr(tlevel);
+
   var essence = getUpcomingFruitEssence();
-  var message = 'Transcended! Got resin: ' + state.resin.toString();
+  var message = 'Transcended! Got resin: ' + resin.toString();
   if(state.fruit_sacr.length) message += '. Sacrificed ' + state.fruit_sacr.length + ' fruits and got ' + essence.toString();
 
   showMessage(message, '#40f', '#ffd');
@@ -250,10 +255,10 @@ function softReset() {
   state.g_res.addInPlace(starterResources);
   state.c_res.addInPlace(starterResources);
 
-  state.res.resin.addInPlace(state.resin);
-  state.g_res.resin.addInPlace(state.resin);
-  state.c_res.resin.addInPlace(state.resin);
-  state.g_resin_from_transcends.addInPlace(state.resin);
+  state.res.resin.addInPlace(resin);
+  state.g_res.resin.addInPlace(resin);
+  state.c_res.resin.addInPlace(resin);
+  state.g_resin_from_transcends.addInPlace(resin);
   state.resin = Num(0); // future resin from next tree
 
 
