@@ -328,6 +328,7 @@ function encState(state, opt_raw_only) {
 
   section = 16; id = 0; // misc
   processUint(state.delete2tokens);
+  processFloat(state.lasttreeleveluptime);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -769,6 +770,7 @@ function decState(s) {
 
     section = 16; id = 0; // misc
     if(save_version >= 4096*1+14) state.delete2tokens = processUint();
+    if(save_version >= 4096*1+19) state.lasttreeleveluptime = processFloat();
 
     section = 17; id = 0; // fruits
     if(save_version >= 4096*1+17) {

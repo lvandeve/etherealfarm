@@ -116,6 +116,7 @@ function State() {
   this.resin = Num(0);
 
   this.treelevel = 0;
+  this.lasttreeleveluptime = 0;
 
   this.fern = 0; // 0 = no fern, 1 = standard fern, 2 = lucky fern
   this.fernx = 0;

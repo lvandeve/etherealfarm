@@ -55,11 +55,6 @@ function getCropTypeHelp(type) {
 var fern_wait_minutes = 2; // default fern wait minutes (in very game they go faster)
 
 
-var bonus_season_flower_spring = 1.25;
-var bonus_season_berry_summer = 1.5;
-var bonus_season_mushroom_autumn = 2;
-var malus_season_winter = 0.75;
-
 // apply bonuses that apply to all ability waits
 function adjustWait(result) {
   if(state.upgrades[active_choice0].count == 1) result *= 2;
@@ -142,8 +137,6 @@ function Crop() {
   this.planttime = 0; // in seconds
   this.boost = Num(0); // how much this boosts neighboring crops, 0 means no boost, 1 means +100%, etc... (do not use directly, use getBoost() to get all multipliers taken into account)
   this.tagline = '';
-  // multipliers for particular seasons
-  this.bonus_season = [Num(1), Num(1), Num(1), Num(malus_season_winter)];
 
   this.basic_upgrade = null; // id of registered upgrade that does basic upgrades of this plant
 
@@ -220,21 +213,66 @@ Crop.prototype.getCost = function(opt_adjust_count) {
 };
 
 // used for multiple possible aspects, such as production, boost if this is a flower, etc...
-Crop.prototype.getSeasonBonus = function(season) {
-  var bonus_season = this.bonus_season[season];
+// f is field, similar to in Crop.prototype.getProd
+// result is change in-place and may be either Num or Res. Nothing is returned.
+Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
+  // posmul is used:
+  // Unlike other multipliers, this one does not affect negative production. This is a good thing in the crop's good season, but extra harsh in a bad season (e.g. winter)
 
-  var ethereal_season = state.upgrades2[upgrade2_season[season]].count;
-  if(ethereal_season) {
-    if(season == 3) {
-      var ethereal_season_bonus = Num(1 + upgrade2_season_bonus[season]).powr(ethereal_season);
-      // winter, since it's a malus, the bonus applies in reverse direction
-      bonus_season = Num(1).sub(Num(1).sub(bonus_season).div(ethereal_season_bonus));
-    } else {
-      var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[season]).addr(1);
-      bonus_season = bonus_season.subr(1).mul(ethereal_season_bonus).addr(1);
+  if(season == 0 && this.type == CROPTYPE_FLOWER) {
+    var bonus = getSpringFlowerBonus();
+    result.posmulInPlace(bonus);
+    if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
+  }
+
+  if(season == 1 && this.type == CROPTYPE_BERRY) {
+    var bonus = getSummerBerryBonus();
+    result.posmulInPlace(bonus);
+    if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
+  }
+
+  if(season == 2 && this.type == CROPTYPE_MUSH) {
+    var bonus = getAutumnMushroomBonus();
+    result.posmulInPlace(bonus);
+    if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
+  }
+
+  if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER)) {
+    var fog_active = state.upgrades[upgrade_fogunlock].count && this.type == CROPTYPE_MUSH && (state.time - state.fogtime) < getFogDuration();
+    var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (state.time - state.suntime) < getSunDuration();
+    var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && (state.time - state.rainbowtime) < getRainbowDuration();
+
+    var next_to_tree = false;
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+      var f2 = state.field[y2][x2];
+      if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
+        next_to_tree = true;
+        break;
+      }
+    }
+    var weather_ignore = false;
+    if(this.type == CROPTYPE_BERRY && sun_active) weather_ignore = true;
+    if(this.type == CROPTYPE_MUSH && fog_active) weather_ignore = true;
+    if(this.type == CROPTYPE_FLOWER && rainbow_active) weather_ignore = true;
+
+    if(!next_to_tree && !weather_ignore) {
+      var malus = getWinterMalus();
+      if(malus.neqr(1)) {
+        result.posmulInPlace(malus);
+        if(breakdown) breakdown.push([seasonNames[season], true, malus, result.clone()]);
+      }
+    }
+
+    // winter tree warmth
+    if(next_to_tree) {
+      var bonus = getWinterTreeWarmth();
+      result.posmulInPlace(bonus);
+      if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
     }
   }
-  return bonus_season;
 }
 
 // f = Cell from field, or undefined to not take location-based production bonuses into account
@@ -404,14 +442,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   var fog_active = state.upgrades[upgrade_fogunlock].count && this.type == CROPTYPE_MUSH && (state.time - state.fogtime) < getFogDuration();
   var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (state.time - state.suntime) < getSunDuration();
 
-  //season. Unlike other multipliers, this one does not affect negative production. This is a good thing in the crop's good season, but extra harsh in a bad season (e.g. winter)
-  if(!((fog_active || sun_active) && season == 3)) {
-    var bonus_season = this.getSeasonBonus(season);
-    if(bonus_season.neqr(1)) {
-      result.posmulInPlace(bonus_season);
-      if(breakdown) breakdown.push([seasonNames[season], true, bonus_season, result.clone()]);
-    }
-  }
+
+  this.addSeasonBonus_(result, season, f, breakdown);
 
   // fog
   if(fog_active && this.type == CROPTYPE_MUSH) {
@@ -495,15 +527,7 @@ Crop.prototype.getBoost = function(f, breakdown) {
   }
 
   var season = getSeason();
-  if(this.type == CROPTYPE_FLOWER) {
-    if(!(rainbow_active && season == 3)) {
-      var bonus_season = this.getSeasonBonus(season);
-      if(bonus_season.neqr(1)) {
-        result.mulInPlace(bonus_season);
-        if(breakdown) breakdown.push([seasonNames[season], true, bonus_season, result.clone()]);
-      }
-    }
-  }
+  this.addSeasonBonus_(result, season, f, breakdown);
 
   if(this.type == CROPTYPE_FLOWER) {
     var level = getFruitAbility(FRUIT_FLOWERBOOST);
@@ -626,7 +650,6 @@ function registerBerry(name, tier, planttime, image, opt_tagline) {
   var prod = getBerryProd(tier);
   var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
   var crop = crops[index];
-  crop.bonus_season[1] = Num(bonus_season_berry_summer);
   crop.type = CROPTYPE_BERRY;
   crop.tier = tier;
   return index;
@@ -637,7 +660,6 @@ function registerMushroom(name, tier, planttime, image, opt_tagline) {
   var prod = getMushroomProd(tier);
   var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
   var crop = crops[index];
-  crop.bonus_season[2] = Num(bonus_season_mushroom_autumn);
   crop.type = CROPTYPE_MUSH;
   crop.tier = tier;
   return index;
@@ -647,7 +669,6 @@ function registerFlower(name, tier, boost, planttime, image, opt_tagline) {
   var cost = getFlowerCost(tier);
   var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline);
   var crop = crops[index];
-  crop.bonus_season[0] = Num(bonus_season_flower_spring);
   crop.type = CROPTYPE_FLOWER;
   crop.tier = tier;
   return index;
@@ -1384,7 +1405,10 @@ for(var i = 0; i < numreset_achievement_values.length; i++) {
 
 function registerPlantTypeMedal(cropid, num) {
   var c = crops[cropid];
-  var mul = (c.tier + 1) * 0.01 / 10 * num;
+  var tier = c.tier;
+  if(c.type == CROPTYPE_MUSH) tier = tier * 2 + 1;
+  if(c.type == CROPTYPE_FLOWER) tier = tier * 2 + 2;
+  var mul = (tier + 1) * 0.01 / 10 * num;
   return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
     return state.fullgrowncropcount[cropid] >= num;
   }, Num(mul));
@@ -1769,7 +1793,7 @@ registerDeprecatedUpgrade2(); // old upgrade2_field6x6
 
 upgrade2_register_id = 20;
 
-var upgrade2_season_bonus = [0.2, 0.2, 0.2, 0.2];
+var upgrade2_season_bonus = [0.25, 0.25, 0.25, 0.25];
 
 var upgrade2_season = [];
 
@@ -1777,19 +1801,19 @@ var upgrade2_season = [];
 
 upgrade2_season[0] = registerUpgrade2('improve spring', Res({resin:10}), 10, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 2, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (additive). Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
+}, function(){return true;}, 3, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (additive). Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
 
 upgrade2_season[1] = registerUpgrade2('improve summer', Res({resin:10}), 10, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 2, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (additive). Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
+}, function(){return true;}, 3, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (additive). Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
 
 upgrade2_season[2] = registerUpgrade2('improve autumn', Res({resin:10}), 10, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 2, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (additive). Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
+}, function(){return true;}, 3, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (additive). Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
 
 upgrade2_season[3] = registerUpgrade2('winter hardening', Res({resin:10}), 10, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 2, 'reduce winter harshness ' + (upgrade2_season_bonus[3] * 100) + '% (multiplicative). Winter reduces most production and boost stats.', undefined, undefined, tree_images[3][1][3]);
+}, function(){return true;}, 3, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive). In addition, slightly increase the winter resin bonus and gradually reduce the negative winter effect.', undefined, undefined, tree_images[3][1][3]);
 
 
 
@@ -1929,10 +1953,15 @@ function getFruitTierCost(tier) {
 function getNewFruitTier(roll, treelevel) {
   var tier = 0;
   // Higher tree levels are not yet implemented for the fruits
-  if(treelevel >= 15) {
-    tier = (roll > 0.75) ? 2 : 1;
-  } else {
+  if(treelevel < 15) {
     tier = (roll > 0.75) ? 1 : 0;
+  } else if(treelevel < 25) {
+    tier = (roll < 0.25) ? 0 : ((roll < 0.75) ? 1 : 2);
+  } else if(treelevel < 35) {
+    tier = (roll > 0.66) ? 2 : 1;
+  } else  {
+    // Higher tree levels are not yet implemented for the fruits
+    tier = (roll > 0.66) ? 2 : 1;
   }
   return tier;
 }
@@ -1983,8 +2012,18 @@ function treeLevelIndex(level) {
 }
 
 // The resin given by tree going to this level
+// this is the base amount
 function treeLevelResin(level) {
   return Num.rpow(1.14, Num(level)).mulr(0.5);
+}
+
+// amount with bonuses etc...
+function currentTreeLevelResin() {
+  var resin = treeLevelResin(state.treelevel);
+  if(getSeason() == 3) {
+    resin.mulInPlace(getWinterTreeResinBonus());
+  }
+  return resin;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2004,4 +2043,91 @@ function getStarterResources(opt_adjust) {
 function getUnusedResinBonus(){
   return Num(Num.log10(state.res.resin.addr(1))).mulr(0.1).addr(1);
 }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+/*
+The plants benefitting most of each season are roughly:
+spring: flowers
+summer: berries
+autumn: mushrooms
+winter: tree
+*/
+
+var bonus_season_flower_spring = 1.25;
+var bonus_season_berry_summer = 1.5;
+var bonus_season_mushroom_autumn = 2;
+var malus_season_winter = 0.75;
+var bonus_season_winter_tree = 1.5;
+var bonus_season_winter_resin = 1.5;
+
+
+function getSpringFlowerBonus() {
+  var bonus = Num(bonus_season_flower_spring);
+  var ethereal_season = state.upgrades2[upgrade2_season[0]].count;
+  if(ethereal_season) {
+    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[0]).addr(1);
+    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+  }
+  return bonus;
+}
+
+function getSummerBerryBonus() {
+  var bonus = Num(bonus_season_berry_summer);
+  var ethereal_season = state.upgrades2[upgrade2_season[1]].count;
+  if(ethereal_season) {
+    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[1]).addr(1);
+    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+  }
+  return bonus;
+}
+
+function getAutumnMushroomBonus() {
+  var bonus = Num(bonus_season_mushroom_autumn);
+  var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
+  if(ethereal_season) {
+    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
+    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+  }
+  return bonus;
+}
+
+function getWinterMalus() {
+  var malus = Num(malus_season_winter);
+  var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
+  if(ethereal_season) {
+    // winter, since it's a malus, the bonus applies in reverse direction, and never gets completely reduced (using the towards1 function)
+    var t = towards1(ethereal_season, 10) * 0.75;
+    var antimalus = 1 - malus_season_winter;
+    antimalus *= (1 - t);
+    malus = Num(1 - antimalus);
+  }
+  return malus;
+}
+
+function getWinterTreeWarmth() {
+  var bonus = Num(bonus_season_winter_tree);
+  var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
+  if(ethereal_season) {
+    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[3]).addr(1);
+    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+  }
+  return bonus;
+}
+
+function getWinterTreeResinBonus() {
+  var result = Num(1.5);
+  var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
+  if(ethereal_season) {
+    // winter, since it's a malus, the bonus applies in reverse direction, and never gets completely reduced (using the towards1 function)
+    var t = towards1(ethereal_season, 10) * 0.5;
+    result.addrInPlace(t);
+  }
+  return result;
+}
+
 

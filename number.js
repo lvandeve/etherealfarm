@@ -293,6 +293,40 @@ Num.prototype.mulr = function(r) {
 Num.mul = function(a, r) { return a.mul(r); };
 
 
+
+// posmul exists to have the same set of function names as Res (the resources
+// object) has: this multiplies the current value with b only if the current
+// value is positive. If the current value is negative, it's left unchanged.
+Num.prototype.posmulInPlace = function(b) {
+  if(this.ltr(0)) return this;
+  this.b *= b.b;
+  this.e += b.e;
+  this.scaleInPlace();
+  return this;
+};
+Num.prototype.posmul = function(b) {
+  var res = Num(this);
+  res.posmulInPlace(b);
+  return res;
+};
+Num.posmul = function(a, b) { return a.posmul(b); };
+
+Num.prototype.posmulrInPlace = function(r) {
+  if(this.ltr(0)) return this;
+  this.b *= r;
+  this.scaleInPlace();
+  return this;
+};
+Num.prototype.posmulr = function(r) {
+  var res = Num(this);
+  res.posmulrInPlace(r);
+  return res;
+};
+Num.posmul = function(a, r) { return a.posmul(r); };
+
+
+
+
 Num.prototype.divInPlace = function(b) {
   this.b /= b.b;
   this.e -= b.e;

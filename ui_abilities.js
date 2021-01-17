@@ -73,7 +73,7 @@ function updateAbilitiesUI() {
       update();
     };
 
-    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a production bonus and aren\'t affected by winter', getSunDuration(), getSunWait())});
+    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
   }
 
   if(state.upgrades[upgrade_sununlock].count) {
@@ -116,7 +116,7 @@ function updateAbilitiesUI() {
     };
     fogtimerflex.div.onclick = fogbutton.div.onclick;
 
-    registerTooltip(fogbutton.div, function() { return formatAbilityDurationTooltipText('fog ability', 'mushrooms produce more spores, consume less seeds, and aren\'t affected by winter', getFogDuration(), getFogWait())});
+    registerTooltip(fogbutton.div, function() { return formatAbilityDurationTooltipText('fog ability', 'mushrooms produce more spores, consume less seeds, and aren\'t negatively affected by winter', getFogDuration(), getFogWait())});
   }
 
   if(state.upgrades[upgrade_fogunlock].count) {
@@ -159,7 +159,7 @@ function updateAbilitiesUI() {
       update();
     };
 
-    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a boost and aren\'t affected by winter', getRainbowDuration(), getRainbowWait())});
+    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
   }
 
   if(state.upgrades[upgrade_rainbowunlock].count) {

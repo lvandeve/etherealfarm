@@ -312,9 +312,20 @@ function makeFruitChip(flex, f) {
   styleFruitChip(flex, f);
 
   registerTooltip(flex.div, text);
+  flex.div.style.userSelect = 'none';
 
-  flex.div.onclick = function() {
-    createFruitDialog(f);
+  flex.div.onclick = function(e) {
+    if(e.shiftKey) {
+      var slot = 2;
+      if(f.slot >= 20) slot = 1;
+      actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:slot});
+      update();
+    } else if(e.ctrlKey) {
+      actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+      update();
+    } else {
+      createFruitDialog(f);
+    }
   };
 }
 

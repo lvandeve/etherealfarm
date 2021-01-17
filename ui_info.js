@@ -132,7 +132,7 @@ function updateResourceUI() {
   resourceDivs[0].textEl.innerHTML = title + '<br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
   resourceDivs[0].onclick = function() {
-    var dialog = createDialog(DIALOG_SMALL);
+    var dialog = createDialog(DIALOG_MEDIUM);
     var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.35);
     var getText = function() {
       var result = '';
@@ -147,16 +147,27 @@ function updateResourceUI() {
 
         result += '<br><br>';
 
-        result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100) + '%' + '<br><br>';
+        result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br><br>';
       }
       result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
       result += '<b>Time since beginning:</b> ' + util.formatDuration(state.g_runtime, true, 4, true) + '<br><br>';
-      result += '<b>Current season:</b> ' + util.upperCaseFirstWord(seasonNames[getSeason()]) + '';
+      result += '<b>Current season:</b> ' + util.upperCaseFirstWord(seasonNames[getSeason()]) + '<br><br>';
+      result += '<b>' + util.upperCaseFirstWord(seasonNames[getSeason()]) + ' Effects:</b><br>';
       var s = getSeason();
-      if(s == 0) result += '. This boosts flowers.';
-      if(s == 1) result += '. Berries love this!';
-      if(s == 2) result += '. Mushrooms love this!';
-      if(s == 3) result += '. It brings harsh conditions.';
+      if(s == 0) {
+        result += '• +' + getSpringFlowerBonus().subr(1).mulr(100).toString() + '% bonus to flower boost<br>';
+      }
+      if(s == 1) {
+        result += '• +' + getSummerBerryBonus().subr(1).mulr(100).toString() + '% bonus to berry seed production<br>';
+      }
+      if(s == 2) {
+        result += '• +' + getAutumnMushroomBonus().subr(1).mulr(100).toString() + '% bonus to mushroom spores production, without increasing consumption<br>';
+      }
+      if(s == 3) {
+        result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).mulr(100).toString() + '% berry / mushroom / flower stats when not next to the tree<br>';
+        result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).mulr(100).toString() + '% berry / mushroom / flower stats when next to the tree<br>';
+        result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).mulr(100).toString() + '% more resin added when tree levels up during the winter<br>';
+      }
       result += '<br><br>';
       result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
       return result;

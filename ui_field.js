@@ -49,6 +49,7 @@ function createTranscendDialog() {
   text += 'You will get:<br/>';
   text += '• ' + actual_resin.toString() + ' resin from your tree level ' + state.treelevel + '<br/>';
   text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool<br/>';
+  if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) text += '<font color="#a00">→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before ascending</font><br/>';
   text += '<br/>';
   text += 'What will be reset:<br/>';
   text += '• Basic field with all crops<br/>';
@@ -285,7 +286,7 @@ function makeFieldDialog(x, y) {
     var ysize = 0.1;
 
     var f0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.25, 0.3);
-    var f1 = new Flex(dialog, [0.01, 0.2], 0.4, 1, 0.75, 0.3);
+    var f1 = new Flex(dialog, [0.01, 0.2], 0.5, 1, 0.75, 0.3);
     var text;
 
     text = '<b>' + util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
@@ -303,13 +304,21 @@ function makeFieldDialog(x, y) {
 
       text += '<br/>';
       text += 'Resin ready: ' + state.resin.toString() + '<br/>';
-      text += 'Resin added at next tree level: ' + treeLevelResin(state.treelevel + 1).toString() + '<br/>';
+      text += 'Resin added at next tree level: ' + currentTreeLevelResin(state.treelevel + 1).toString() + '<br/>';
+      if(getSeason() == 3) {
+        text += 'This includes resin winter bonus of ' + (getWinterTreeResinBonus().subr(1).mulr(100)) + '%<br/>';
+      }
       if(tlevel > 1) {
         text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
       }
 
       text += '<br/>';
       text += 'Tree level production boost to crops: ' + (100 * treeboost * state.treelevel) + '%' + '<br>';
+
+      if(getSeason() == 3) {
+        text += '<br/>';
+        text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).mulr(100).toString() + '% berry / mushroom / flower stats for crops next to the tree<br>';
+      }
 
       if(state.upgrades[upgrade_fogunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
         text += '<br/>';

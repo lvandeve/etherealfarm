@@ -1372,8 +1372,12 @@ var update = function(opt_fromTick) {
     var req = treeLevelReq(state.treelevel + 1);
     if(state.res.ge(req)) {
       state.treelevel++;
+      state.lasttreeleveluptime = state.time;
       num_tree_levelups++;
-      var resin = treeLevelResin(state.treelevel);
+      var resin = currentTreeLevelResin();
+      if(getSeason() == 3) {
+        showMessage('Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1).mulr(100)) + '%');
+      }
       state.resin.addInPlace(resin);
       state.res.subInPlace(req);
       state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);

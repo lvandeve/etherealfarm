@@ -20,13 +20,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.19 (2021-01-17):';
+  text += '<br/>• Improved winter: still has the harsh effect, but also has positive effect for crops next to tree ("winter tree warmth"), and makes the tree produce more resin when it levels up.';
+  // The issue here was: there are ethereal upgrades for each season. Since spring/summer/autumn had positive effects, they become better and better. Winter has negative effect, only so much can be removed from that, making winter relatively worse and worse compared to other seasons. By having the positive tree effect and infinite additive upgrade for it, winter stays reasonable compared to the other seasons.
+  text += '<br/>• Ethereal winter upgrade now more useful: also upgrades those positive winter effects.';
+  text += '<br/>• Added more info about season effects to the dialog gotten from clicking the time/season indicator.';
+  text += '<br/><br/>';
+
   text += '0.1.18 (2021-01-17):';
+  // The previous formula of starting resources didn't help much after a while, the new formula makes it so that you can unlock and plant a berry almost immediately at the third fern, and get blueberry from the beginning if you have many of them, so now the ferns make an actual useful difference.
   text += '<br/>• Increased starter resources of ethereal fern.';
   text += '<br/>• Fixed bugs related to leeching and transcension II.';
   text += '<br/><br/>';
 
   text += '0.1.17 "Fruit Update" (2021-01-16):';
   text += '<br/>• Added fruits.';
+  // Because possibly future updates will allow making weather more passive than active, but then there should be a choice between which you have available, all three permanently on is uninteresting.
   text += '<br/>• Only one weather ability can be active at the same time now.';
   text += '<br/><br/>';
 
