@@ -839,6 +839,13 @@ Num.notationSci = function(v, precision, eng, opt_base) {
     }
   }
 
+  // even for sci notation, show the cases that would be e1 or e2 directly anyway, 10 looks better than 1e1
+  while(e >= 1 && e <= 2) {
+    e--;
+    precision--;
+    b *= base;
+  }
+
   var fixed = precision;
   if(fixed < 0) fixed = 0; // e.g. if precision was 3 but eng was 4 in hex, this can happen
   var s;

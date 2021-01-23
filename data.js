@@ -1369,7 +1369,7 @@ registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { 
 var prevmedal;
 
 medal_register_id = 4;
-var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33, 1e36, 1e39, 1e42, 1e45];
+var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60];
 var seeds_achievement_bonuses_percent =   [0.1, 0.2, 0.3,  0.4, 0.5,  0.75,    1,  1.5,    2,    3,    4,    5,  7.5,   10,   15];
 for(var i = 0; i < seeds_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
@@ -1458,7 +1458,6 @@ for(var i = 0; i < numreset_achievement_values.length; i++) {
   prevmedal = id;
 }
 
-
 function registerPlantTypeMedal(cropid, num) {
   var c = crops[cropid];
   var tier = c.tier;
@@ -1466,11 +1465,28 @@ function registerPlantTypeMedal(cropid, num) {
   if(c.type == CROPTYPE_FLOWER) tier = tier * 2 + 2;
   if(c.type == CROPTYPE_NETTLE) tier = 3;
   if(c.type == CROPTYPE_MISTLETOE) tier = 4;
-  var mul = Math.ceil((tier * tier + 1) * Math.log(num + 1) * 0.1) / 100;
+  var num2 = (Math.floor(num / 10) + 1);
+  var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
+  var mul = t * num2 / 100 * 0.25;
   return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
     return state.fullgrowncropcount[cropid] >= num;
   }, Num(mul));
 };
+
+/*function registerPlantTypeMedal(cropid, num) {
+  var c = crops[cropid];
+  var tier = c.tier;
+  if(c.type == CROPTYPE_MUSH) tier = tier * 2 + 1;
+  if(c.type == CROPTYPE_FLOWER) tier = tier * 2 + 2;
+  if(c.type == CROPTYPE_NETTLE) tier = 3;
+  if(c.type == CROPTYPE_MISTLETOE) tier = 4;
+  var mul = Math.ceil((tier * tier + 1) * 0.1) / 100;
+  return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
+    return state.fullgrowncropcount[cropid] >= num;
+  }, Num(mul));
+};*/
+
+
 function registerPlantTypeMedals(cropid) {
   var id0 = registerPlantTypeMedal(cropid, 1);
   var id1 = registerPlantTypeMedal(cropid, 10); // easy to get for most crops, harder for flowers due to multiplier

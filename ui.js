@@ -45,8 +45,10 @@ window.onresize = function() {
 function makeMainDivs() {
   var showdebugborders = false;
 
+  var has_top_notice = !!document.getElementById('topnotice');
+
   if(mainFlex) mainFlex.removeSelf();
-  mainFlex = new Flex(null, [0, 0.01, 0.75], 0.01, [0, 0.99, 0.75], 0.99);
+  mainFlex = new Flex(null, [0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0.99, 0.75], 0.99);
   if(showdebugborders) mainFlex.div.style.border = '2px solid green';
 
   topFlex = new Flex(mainFlex, 0, 0, 1, 0.05);
