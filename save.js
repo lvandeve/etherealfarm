@@ -78,6 +78,7 @@ function encState(state, opt_raw_only) {
   processInt(state.lastPlanted2);
   id = 15; // the inner copy of version is saved in section 0, id 15
   processUint(version); // redundancy inner (as opposed to the outer one at front) game version value. important to ensure save-version checks are correct.
+  processInt(state.seed0);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -216,7 +217,7 @@ function encState(state, opt_raw_only) {
 
 
   section = 8; id = 0; // cooldown times
-  processFloat(state.fogtime);
+  processFloat(state.misttime);
   processFloat(state.suntime);
   processFloat(state.rainbowtime);
 
@@ -227,6 +228,7 @@ function encState(state, opt_raw_only) {
   processBool(state.saveonexit);
   processBool(state.allowshiftdelete);
   processUint16(state.tooltipstyle);
+  processBool(state.disableHelp);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -326,9 +328,11 @@ function encState(state, opt_raw_only) {
   // this section was used until v 0.1.15, with id 0..13
   // do not reuse to not break backwards compatibility.
 
+
   section = 16; id = 0; // misc
   processUint(state.delete2tokens);
   processFloat(state.lasttreeleveluptime);
+
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -373,6 +377,41 @@ function encState(state, opt_raw_only) {
   processUintArray(array4);
   processNumArray(array5);
   processUintArray(array6);
+
+
+
+
+  section = 18; id = 0; // help dialogs
+  array0 = [];
+  array1 = [];
+  array2 = [];
+  for(var a in state.help_seen) {
+    if(!state.help_seen.hasOwnProperty(a)) continue;
+    if(!state.help_seen[a]) continue;
+    array0.push(state.help_seen[a]);
+  }
+  array0.sort(function(a, b) { return a - b; });
+  for(var i = array0.length - 1; i > 0; i--) array0[i] -= array0[i - 1];
+  processUintArray(array0);
+
+  for(var a in state.help_seen_text) {
+    if(!state.help_seen_text.hasOwnProperty(a)) continue;
+    if(!state.help_seen_text[a]) continue;
+    array1.push(state.help_seen_text[a]);
+  }
+  array1.sort(function(a, b) { return a - b; });
+  for(var i = array1.length - 1; i > 0; i--) array1[i] -= array1[i - 1];
+  processUintArray(array1);
+
+  for(var a in state.help_disable) {
+    if(!state.help_disable.hasOwnProperty(a)) continue;
+    if(!state.help_disable[a]) continue;
+    array2.push(state.help_disable[a]);
+  }
+  array2.sort(function(a, b) { return a - b; });
+  for(var i = array2.length - 1; i > 0; i--) array2[i] -= array2[i - 1];
+  processUintArray(array2);
+
 
 
   var e = encTokens(tokens);
@@ -490,6 +529,11 @@ function decState(s) {
     if(save_version >= 4096*1+10) {
       var save_version2 = processUint();
       if(save_version2 != save_version) return err(4); // non-matching outer and inner version: error, save_version checks invalid.
+    }
+    if(save_version >= 4096*1+20) {
+      state.seed0 = processInt();
+    } else {
+      state.seed0 = Math.floor(Math.random() * 281474976710656);
     }
     if(error) return err(4);
 
@@ -641,7 +685,7 @@ function decState(s) {
 
 
     section = 8; id = 0; // cooldown times
-    state.fogtime = processFloat();
+    state.misttime = processFloat();
     state.suntime = processFloat();
     state.rainbowtime = processFloat();
     if(error) return err(4);
@@ -653,6 +697,7 @@ function decState(s) {
     state.saveonexit = processBool();
     state.allowshiftdelete = processBool();
     state.tooltipstyle = processUint16();
+    if(save_version >= 4096*1+20) state.disableHelp = processBool();
     if(error) return err(4);
 
 
@@ -764,7 +809,7 @@ function decState(s) {
     }
 
 
-    section = 15; id = 0; // first run stats
+    section = 15; id = 0;
     // this section was used until v 0.1.15, with id 0..13
     // do not reuse to not break backwards compatibility.
 
@@ -828,6 +873,33 @@ function decState(s) {
       if(index4 != array4.length) return err(4);
       if(index5 != array5.length) return err(4);
       if(index6 != array6.length) return err(4);
+    }
+
+    if(state.fruit_seed < 0) {
+      // before version 0.1.17, fruit seed did not exist yet, and seed0 neither,
+      // so initialize it based on start time. Do not use Math.random() here to
+      // avoid cheesing the free fruit drop by reloading the same save
+      // 0x6672756974 is ASCII for fruit
+      state.fruit_seed = (Math.floor(state.g_starttime) & 0xffffffff) ^ 0x6672756974;
+    }
+
+    section = 18; id = 0; // help dialogs
+    if(save_version >= 4096*1+20) {
+      array0 = processUintArray();
+      array1 = processUintArray();
+      array2 = processUintArray();
+      if(error) return err(4);
+      index0 = 0;
+      index1 = 0;
+      index2 = 0;
+
+      for(var i = 1; i < array0.length; i++) array0[i] += array0[i - 1];
+      for(var i = 1; i < array1.length; i++) array1[i] += array1[i - 1];
+      for(var i = 1; i < array2.length; i++) array2[i] += array2[i - 1];
+
+      for(var i = 0; i < array0.length; i++) state.help_seen[array0[i]] = array0[i];
+      for(var i = 0; i < array1.length; i++) state.help_seen_text[array1[i]] = array1[i];
+      for(var i = 0; i < array2.length; i++) state.help_disable[array2[i]] = array2[i];
     }
   }
 
@@ -898,6 +970,21 @@ function decState(s) {
     state.res.spores.mulrInPlace(6.666666); // spores value got adjusted in v0.1.16
   }
 
+
+  if(save_version < 4096*1+20) {
+    var resin = Num(0);
+    for(var i = 0; i < 4; i++) {
+      var num = state.upgrades2[upgrade2_season[i]].count;
+      for(var j = 1; j < num; j++) {
+        resin.addInPlace(Num(10).powr(j).mulr(10));
+        resin.subInPlace(Num(2).powr(j).mulr(10));
+      }
+    }
+    if(resin.gtr(0)) {
+      showMessage('ethereal season upgrades became cheaper in version v0.1.20, compensated ' + resin.toString() + ' resin to your stacks');
+      state.res.resin.addInPlace(resin);
+    }
+  }
 
   state.g_numloads++;
   return state;
@@ -1053,7 +1140,7 @@ function decStateOLD(reader, state, save_version) {
     decNum(reader);
     decRes(reader);
   } else {
-    state.fogtime = decFloat(reader);
+    state.misttime = decFloat(reader);
     state.suntime = decFloat(reader);
     decFloat(reader);
     state.rainbowtime = decFloat(reader);

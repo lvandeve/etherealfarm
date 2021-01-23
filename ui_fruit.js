@@ -64,7 +64,7 @@ function createFruitDialog(f, opt_selected) {
   styleFruitChip(canvasFlex, f);
 
   var topFlex = new Flex(dialog, [0.01, 0.15], 0.01, 0.99, 0.15, 0.3);
-  var text = util.upperCaseFirstWord(f.toString());
+  var text = upper(f.toString());
   text += '<br>';
   text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier];
   text += '<br><br>';
@@ -120,12 +120,12 @@ function createFruitDialog(f, opt_selected) {
   for(var i = 0; i < f.abilities.length; i++) {
     var flex = new Flex(dialog, [0.01, 0.15], y, 0.7, y + h, 0.5);
     y += h * 1.1;
+    var a = f.abilities[i];
+    var level = f.levels[i];
 
-    text = util.upperCaseFirstWord(getFruitAbilityName(f.abilities[i])) + ' ' + util.toRoman(f.levels[i]);
+    text = upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).mulr(100).toString() + '%)';
 
     flex.div.innerHTML = text;
-    //flex.div.style.border = '2px solid black';
-    registerTooltip(flex.div, 'current boost: ' + getFruitBoost(f.abilities[i], f.levels[i], f.tier).mulr(100).toString() + '%');
 
     centerText(flex.div);
 
@@ -177,10 +177,10 @@ function createFruitDialog(f, opt_selected) {
 
     y += h;
 
-    text = util.upperCaseFirstWord(getFruitAbilityName(a)) + ' ' + util.toRoman(level);
+    text = upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level);
     text += '<br>';
     //text += 'Cost to level: ????';
-    text += util.upperCaseFirstWord(getFruitAbilityDescription(a));
+    text += upper(getFruitAbilityDescription(a));
     text += '<br>';
     text += 'Current level: ' + getFruitBoost(a, level, f.tier).mulr(100).toString() + '%';
     text += '<br>';
@@ -302,11 +302,13 @@ function makeFruitChip(flex, f) {
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(images_apple[f.tier], canvas);
 
-  var text = util.upperCaseFirstWord(f.toString());
-  text += '<br>Fruit tier ' + util.toRoman(f.tier);
+  var text = upper(f.toString());
+  text += ', fruit tier ' + util.toRoman(f.tier);
   for(var i = 0; i < f.abilities.length; i++) {
+    var a = f.abilities[i];
+    var level = f.levels[i];
     text += '<br>';
-    text += 'Ability: ' + util.upperCaseFirstWord(getFruitAbilityName(f.abilities[i])) + ' ' + util.toRoman(f.levels[i]);
+    text += 'Ability: ' + upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).mulr(100).toString() + '%)';
   }
 
   styleFruitChip(flex, f);
@@ -404,7 +406,7 @@ function updateFruitUI() {
   titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.33, [0, y + s], 0.66);
   y += s;
   titleFlex.div.innerText = 'sacrificial fruit pool';
-  help = 'Fruits in here will be turned into fruit essense on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
+  help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
   registerTooltip(titleFlex.div, help);
 
   var num = Math.max(4, state.fruit_sacr.length);

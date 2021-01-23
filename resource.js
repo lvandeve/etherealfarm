@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-var resource_names = ['seeds', 'spores', 'resin', 'leaves', 'pericarps', 'mycelia', 'amber', 'essence'];
+var resource_names = ['seeds', 'spores', 'resin', 'twigs', 'pericarps', 'mycelia', 'amber', 'essence'];
 
 // Resources.
 // o is object with optional fields with the same names as the resource fields of Res (and may have regular JS numbers or Num), or can be a Res itself
@@ -35,7 +35,7 @@ function Res(o) {
   this.seeds = Num(o.seeds || 0);
   this.spores = Num(o.spores || 0);
   this.resin = Num(o.resin || 0);
-  this.leaves = Num(o.leaves || 0);
+  this.twigs = Num(o.twigs || 0);
   this.seeds2 = Num(o.seeds2 || 0);
   this.spores2 = Num(o.spores2 || 0);
   this.amber = Num(o.amber || 0);
@@ -52,7 +52,7 @@ Res.resOne = function() {
 // returns the resources as an array. The order is consistent, but do not rely on which index is which named resource. Only converting back to Resource with fromArray brings back the names.
 // does not make copies of the Num values, so do not change them in place if the original resources should not be modified
 Res.prototype.toArray = function() {
-  return [this.seeds, this.spores, this.resin, this.leaves, this.seeds2, this.spores2, this.amber, this.essence];
+  return [this.seeds, this.spores, this.resin, this.twigs, this.seeds2, this.spores2, this.amber, this.essence];
 };
 Res.toArray = function(v) { return v.toArray(); }
 
@@ -65,7 +65,7 @@ Res.prototype.fromArray = function(a) {
   this.seeds = a[0] || Num(0);
   this.spores = a[1] || Num(0);
   this.resin = a[2] || Num(0);
-  this.leaves = a[3] || Num(0);
+  this.twigs = a[3] || Num(0);
   this.seeds2 = a[4] || Num(0);
   this.spores2 = a[5] || Num(0);
   this.amber = a[6] || Num(0);
@@ -87,7 +87,7 @@ Res.prototype.addInPlace = function(b) {
   this.seeds.addInPlace(b.seeds);
   this.spores.addInPlace(b.spores);
   this.resin.addInPlace(b.resin);
-  this.leaves.addInPlace(b.leaves);
+  this.twigs.addInPlace(b.twigs);
   this.seeds2.addInPlace(b.seeds2);
   this.spores2.addInPlace(b.spores2);
   this.amber.addInPlace(b.amber);
@@ -108,7 +108,7 @@ Res.prototype.addrInPlace = function(v) {
   this.seeds.addInPlace(v);
   this.spores.addInPlace(v);
   this.resin.addInPlace(v);
-  this.leaves.addInPlace(v);
+  this.twigs.addInPlace(v);
   this.seeds2.addInPlace(v);
   this.spores2.addInPlace(v);
   this.amber.addInPlace(v);
@@ -126,7 +126,7 @@ Res.prototype.subInPlace = function(b) {
   this.seeds.subInPlace(b.seeds);
   this.spores.subInPlace(b.spores);
   this.resin.subInPlace(b.resin);
-  this.leaves.subInPlace(b.leaves);
+  this.twigs.subInPlace(b.twigs);
   this.seeds2.subInPlace(b.seeds2);
   this.spores2.subInPlace(b.spores2);
   this.amber.subInPlace(b.amber);
@@ -146,7 +146,7 @@ Res.prototype.mulInPlace = function(v) {
   this.seeds.mulInPlace(v);
   this.spores.mulInPlace(v);
   this.resin.mulInPlace(v);
-  this.leaves.mulInPlace(v);
+  this.twigs.mulInPlace(v);
   this.seeds2.mulInPlace(v);
   this.spores2.mulInPlace(v);
   this.amber.mulInPlace(v);
@@ -173,7 +173,7 @@ Res.prototype.divInPlace = function(v) {
   this.seeds.divInPlace(v);
   this.spores.divInPlace(v);
   this.resin.divInPlace(v);
-  this.leaves.divInPlace(v);
+  this.twigs.divInPlace(v);
   this.seeds2.divInPlace(v);
   this.spores2.divInPlace(v);
   this.amber.divInPlace(v);
@@ -201,7 +201,7 @@ Res.prototype.elmulInPlace = function(r) {
   this.seeds.mulInPlace(r.seeds);
   this.spores.mulInPlace(r.spores);
   this.resin.mulInPlace(r.resin);
-  this.leaves.mulInPlace(r.leaves);
+  this.twigs.mulInPlace(r.twigs);
   this.seeds2.mulInPlace(r.seeds2);
   this.spores2.mulInPlace(r.spores2);
   this.amber.mulInPlace(r.amber);
@@ -264,7 +264,7 @@ Res.prototype.eq = function(b) {
   if(!this.seeds.eq(b.seeds)) return false;
   if(!this.spores.eq(b.spores)) return false;
   if(!this.resin.eq(b.resin)) return false;
-  if(!this.leaves.eq(b.leaves)) return false;
+  if(!this.twigs.eq(b.twigs)) return false;
   if(!this.seeds2.eq(b.seeds2)) return false;
   if(!this.spores2.eq(b.spores2)) return false;
   if(!this.amber.eq(b.amber)) return false;
@@ -278,7 +278,7 @@ Res.prototype.ge = function(b) {
   if(!this.seeds.ge(b.seeds)) return false;
   if(!this.spores.ge(b.spores)) return false;
   if(!this.resin.ge(b.resin)) return false;
-  if(!this.leaves.ge(b.leaves)) return false;
+  if(!this.twigs.ge(b.twigs)) return false;
   if(!this.seeds2.ge(b.seeds2)) return false;
   if(!this.spores2.ge(b.spores2)) return false;
   if(!this.amber.ge(b.amber)) return false;
@@ -292,7 +292,7 @@ Res.prototype.le = function(b) {
   if(!this.seeds.le(b.seeds)) return false;
   if(!this.spores.le(b.spores)) return false;
   if(!this.resin.le(b.resin)) return false;
-  if(!this.leaves.le(b.leaves)) return false;
+  if(!this.twigs.le(b.twigs)) return false;
   if(!this.seeds2.le(b.seeds2)) return false;
   if(!this.spores2.le(b.spores2)) return false;
   if(!this.amber.le(b.amber)) return false;

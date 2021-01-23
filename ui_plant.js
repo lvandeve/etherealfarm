@@ -24,7 +24,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   if(fieldx != undefined && fieldy != undefined) {
     f = state.field[fieldy][fieldx];
   }
-  var flex = new Flex(parent, x * w + 0.01, [0, y * w + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.5], 0.75);
+  var flex = new Flex(parent, x * w + 0.01, [0, y * w * 0.9 + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w * 0.9 - 0.01, 0.5], 0.75);
   var div = flex.div;
   div.style.border = '1px solid black';
 
@@ -35,7 +35,9 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   var infoFlex = new Flex(flex, [0, 0.7], 0, 1, [0, 1]);
   var text = '';
   text +=  '<b>' + crop.name + '</b><br>';
-  text += '<b>cost:</b>' + crop.getCost().toString() + '<br>';
+  var cost = crop.getCost();
+  text += '<b>cost:</b>' + cost.toString() + '<br>';
+
   if(crop.type == CROPTYPE_SHORT) text += '<b><i><font color="#040">can leech</font></i></b><br>';
   //if(crop.type == CROPTYPE_SHORT) text += '<b>short-lived</b><br>';
   var prod = crop.getProd(f, true);
@@ -64,7 +66,11 @@ function makePlantDialog(x, y, show_only) {
     if(state.crops[registered_crops[i]].unlocked) num_unlocked++;
   }
 
-  var dialog = createDialog((num_unlocked >= 12) ? DIALOG_MEDIUM : DIALOG_SMALL);
+  var dialogsize = DIALOG_SMALL;
+  if(num_unlocked >= 12) dialogsize = DIALOG_MEDIUM;
+  if(num_unlocked >= 15) dialogsize = DIALOG_LARGE;
+
+  var dialog = createDialog(dialogsize);
   dialog.div.style.backgroundColor = '#efec'; // slightly translucent to see resources through it
   var tx = 0;
   var ty = 0;
@@ -94,7 +100,7 @@ function makePlantDialog(x, y, show_only) {
       var result = '';
       var c = crops[index];
       if(show_only) {
-        result = util.upperCaseFirstWord(c.name);
+        result = upper(c.name);
       } else {
         result = 'Plant ' + c.name;
       }
@@ -107,18 +113,22 @@ function makePlantDialog(x, y, show_only) {
 
 
       if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;
-      result += '<br><br>Planting cost: ' + c.getCost().toString();
+      var cost = c.getCost();
+      result += '<br><br>Planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+
+
       if(c.type == CROPTYPE_SHORT) {
         result += '.<br><br>Living time: ' + util.formatDuration(c.getPlantTime());
       } else {
         result += '.<br><br>Growing time: ' + util.formatDuration(c.getPlantTime());
+        if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       }
       result += '.<br><br>Production/sec:' + c.getProd(state.field[y][x], true).toString();
       result += '.';
       return result;
     }, index);
 
-    registerTooltip(chip.div, tooltipfun);
+    registerTooltip(chip.div, tooltipfun, true);
 
     if(show_only) {
       chip.div.onclick = bind(function(tooltipfun) {

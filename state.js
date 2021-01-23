@@ -106,9 +106,11 @@ function State() {
   // not saved. set by update(). recommended to use instead of util.getTime() for game time duration related computations such as special abilities
   this.time = 0;
 
+  this.seed0 = -1; // if there's ever a new feature added to the game requiring a new random seed, this can be used to initialize that new seed to ensure the new seed can't be cheesed by refreshing with a savegame that didn't have the new seed yet
+
   this.currentTab = 0; // currently selected tab
-  this.lastPlanted = 0; // for shift+plant
-  this.lastPlanted2 = 0; // for shift+plant on field2
+  this.lastPlanted = -1; // for shift+plant
+  this.lastPlanted2 = -1; // for shift+plant on field2
 
   // resources
   this.res = undefined;
@@ -122,22 +124,6 @@ function State() {
   this.fernx = 0;
   this.ferny = 0;
   this.fernres = Res(0);
-
-  /*
-  factor for overconsumption:
-  say there is a berry producing seeds, and a mushroom consuming seeds but producing spores:
-  then if there is not enough production from the berry, the mushroom will produce less spores.
-  the "over" value defines how much of the production of the berry, the mushroom is allowed to use.
-  If this value is 1, then the mushroom can consume max 100% of the seeds production, but not more (no negative total seeds production)
-  If this value is infinity, then the mushroom always consumes any amount of seeds and has 100% of its spores production, but there can be a total negative seeds produciton then. This game does not allow this.
-  If this value is 0.5, then the mushroom can consume max 50% of the seeds production. The remaining seeds production always goes to the player's resources.
-  If this value would be 0, no consumption at all is allowed and the mushroom can never produce spores.
-  Good values are:
-  *) 0.5 for a safe early game experience (where you can't get blocked by no seeds production due to expensive mushrooms you'd find too painful to delete)
-  *) 0.6, 0.65, 0.7, 0.75, 0.8, ... as options that can unlock later in the game for the more experienced player, and the player can then choose between e.g. with a slider
-  *) 1 as a possible more dangerous lategame option
-  */
-  this.over = 0.5;
 
   // field size in amount of cells
   this.numw = 5;
@@ -176,7 +162,7 @@ function State() {
   }
 
 
-  this.fogtime = 0; // fog is unlocked if state.upgrades[upgrade_fogunlock].count
+  this.misttime = 0; // mist is unlocked if state.upgrades[upgrade_mistunlock].count
   this.suntime = 0; // similar
   this.rainbowtime = 0;
 
@@ -201,6 +187,12 @@ function State() {
   this.saveonexit = true; // save with the window unload event (this is different than the interval based autosave)
   this.allowshiftdelete = false; // allow deleting a crop without dialog or confirmation by shift+clicking it
   this.tooltipstyle = 1;
+  this.disableHelp = false; // disable all popup help dialogs
+
+  // help dialog related
+  this.help_seen = {}; // ever seen this help message at all as dialog
+  this.help_seen_text = {}; // ever seen this help message at all as text
+  this.help_disable = {}; // disabled this help message (available once seeing it the second time)
 
   // saved stats, global across all runs
   this.g_numresets = 0; // amount of soft resets done
@@ -354,6 +346,12 @@ function State() {
   this.ethereal_berry_bonus = Num(0);
   this.ethereal_mush_bonus = Num(0);
   this.ethereal_flower_bonus = Num(0);
+  this.ethereal_nettle_bonus = Num(0);
+
+  // how many mistletoes are correctly touching the tree
+  // computed by precomputeField
+  // derived stat, not to be saved.
+  this.mistletoes = 0;
 }
 
 function clearField(state) {
@@ -410,6 +408,32 @@ function changeFieldSize(state, w, h) {
   state.ferny -= ys;
 }
 
+function changeField2Size(state, w, h) {
+  // this shift is designed such that the center tile of the old field will stay in the center, and in case of
+  // even sizes will be at floor((w-1) / 2) horizontally, floor(h/2) vertically.
+  // w and h should be larger than state.numw and state.numh respectively
+  // the center tile is the tile with the tree bottom half
+  var xs = (((state.numw2 + 1) >> 1) - ((w + 1) >> 1));
+  var ys = ((state.numh2 >> 1) - (h >> 1));
+  var field = [];
+  for(var y = 0; y < h; y++) {
+    field[y] = [];
+    for(var x = 0; x < w; x++) {
+      var x2 = x + xs;
+      var y2 = y + ys;
+      field[y][x] = (x2 >= 0 && x2 < state.numw2 && y2 >= 0 && y2 < state.numh2) ? state.field2[y2][x2] : new Cell(x, y);
+      field[y][x].x = x;
+      field[y][x].y = y;
+    }
+  }
+  state.field2 = field;
+  state.numw2 = w;
+  state.numh2 = h;
+
+  state.fernx -= xs;
+  state.ferny -= ys;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -434,7 +458,8 @@ function createInitialState() {
   state.g_lastimporttime = state.g_starttime;
 
   computeDerived(state);
-  getRandomFruitRoll(state); // this initializes the random seed to a random initial value
+  state.seed0 = Math.floor(Math.random() * 281474976710656);
+  state.fruit_seed = Math.floor(Math.random() * 281474976710656);
 
   return state;
 }
@@ -575,6 +600,7 @@ function computeDerived(state) {
   state.ethereal_berry_bonus = Num(0);
   state.ethereal_mush_bonus = Num(0);
   state.ethereal_flower_bonus = Num(0);
+  state.ethereal_nettle_bonus = Num(0);
 
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
@@ -583,15 +609,31 @@ function computeDerived(state) {
         var index = f.cropIndex();
         if(index == berry2_0) {
           var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(0.2));
+          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(0.25));
+        }
+        if(index == berry2_1) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(1));
         }
         if(index == mush2_0) {
           var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(0.2));
+          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(0.25));
         }
+        /*if(index == mush2_1) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(1));
+        }*/
         if(index == flower2_0) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(0.25));
+        }
+        /*if(index == flower2_1) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(1));
+        }*/
+        if(index == nettle2_0) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_nettle_bonus.addInPlace(boost.addr(1).mulr(0.25));
         }
       }
     }

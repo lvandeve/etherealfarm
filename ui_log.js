@@ -40,7 +40,7 @@ function showMessage(text, opt_color, opt_bgcolor, opt_forcenew, opt_showlate) {
   var title = util.formatDate(time);
   var logDiv = logFlex.div;
   // automatically capitalize the message. Reason: consistency.
-  text = util.upperCaseFirstWord(text);
+  text = upper(text);
   if(!opt_forcenew && text == lastMessage && lastMessageElement) {
     sameMessageCount++;
     text = lastMessage + ' (' + sameMessageCount + 'x)';

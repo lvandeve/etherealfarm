@@ -177,7 +177,8 @@ var DIALOG_LARGE = 2;
 // opt_okfun must call dialog.cancelFun when the dialog is to be closed
 // opt_extrafun and opt_extraname allow a third button in addition to cancel and ok. The order will be: cancel, extra, ok.
 // opt_nobgclose: don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
-function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose) {
+// opt_onclose, if given, is called no matter what way the dialog closes
+function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose) {
   dialog_level++;
 
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
@@ -223,7 +224,6 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   }
   dialog.cancelFun = function() {
     updatedialogfun = undefined;
-    dialogFlex.removeSelf();
     util.removeElement(overlay);
     for(var i = 0; i < created_dialogs.length; i++) {
       if(created_dialogs[i] == dialogFlex) {
@@ -240,6 +240,11 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     dialog_level--;
     // a tooltip created by an element from a dialog could remain, make sure those are removed too
     removeAllTooltips();
+    dialog.removeSelfFun();
+  };
+  dialog.removeSelfFun = function() {
+    dialogFlex.removeSelf();
+    if(opt_onclose) opt_onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
   };
   dialogFlex.cancelFun = dialog.cancelFun;
   button = (new Flex(dialogFlex, [1.0, -0.3 * (buttonshift + 1)], [1.0, -0.12], [1.0, -0.01 - 0.3 * buttonshift], [1.0, -0.01], 1)).div;
@@ -262,7 +267,7 @@ function closeAllDialogs() {
   updatedialogfun = undefined;
 
   for(var i = 0; i < created_dialogs.length; i++) {
-    created_dialogs[i].removeSelf();
+    created_dialogs[i].div.removeSelfFun();
   }
   for(var i = 0; i < created_overlays.length; i++) {
     util.removeElement(created_overlays[i]);
@@ -618,4 +623,47 @@ Flex.prototype.clear = function() {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
+// returns as a string the time to be able to avoid this cost, or percentage more of resources you have
+// uses the global state.res and gain variables
+// intended for dynamically updating tooltips
+function getCostAffordTimer(cost) {
+  var time = Num(0);
+  var percent = Num(9999);
+
+
+  if(cost.seeds.gtr(0)) {
+    var p = cost.seeds.div(state.res.seeds).mulr(100);
+    var t = cost.seeds.sub(state.res.seeds).div(gain.seeds);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.spores.gtr(0)) {
+    var p = cost.spores.div(state.res.spores).mulr(100);
+    var t = cost.spores.sub(state.res.spores).div(gain.spores);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  /*if(cost.resin.gtr(0)) {
+    var p = cost.resin.div(state.res.resin).mulr(100);
+    var t = cost.resin.sub(state.res.resin).div(gain.resin);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }*/
+
+  var result = '';
+  if(percent.gtr(100)) {
+    result += util.formatDuration(time.valueOf(), true);
+  } else {
+    if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+    result += percent.toString() + '% of stacks';
+  }
+
+  return result;
+}

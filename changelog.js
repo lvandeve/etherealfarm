@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2021  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +19,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 function getChangeLog() {
   var text = '';
+
+  text += '0.1.20 (2021-01-23):';
+  text += '<br/>• New mechanic: mistletoes, twigs resource and ethereal tree leveling.';
+  text += '<br/>• Added new ethereal upgrades and crops, both first-tier and higher ethereal-tree-level-tier ones.';
+  text += '<br/>• Made ethereal season upgrades cheaper (2x instead of 10x cost scaling).';
+  text += '<br/>• Increased ethereal blackberry and champignon boosts from 20% to 25%.';
+  text += '<br/>• Other balance tweaks: more medal bonuses, higher level plants tweaked, ...';
+  // the name "mist" fits the ethereal theme better than the name "fog"
+  text += '<br/>• Renamed "fog ability" to "mist ability".';
+  text += '<br/>• Added help dialog system plus preferences for this';
+  text += '<br/><br/>';
 
   text += '0.1.19 (2021-01-17):';
   text += '<br/>• Improved winter: still has the harsh effect, but also has positive effect for crops next to tree ("winter tree warmth"), and makes the tree produce more resin when it levels up.';

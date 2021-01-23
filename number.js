@@ -806,7 +806,6 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 
   var e = Math.floor(v.abs().logr(base));
 
-
   var b = v.b * (base ** (e_orig - e));
 
   // the goal (for e.g. base 10) is to bring b in the range [1..10). But actually, range [0.9999..9.999) because 0.999 will round to 1, and 9.999 would round to 10 which we don't want displayed
@@ -818,11 +817,25 @@ Num.notationSci = function(v, precision, eng, opt_base) {
     b *= base;
     e--;
   }
+
+  // For values in range 0.1-0.999..., show them as-is without scientific notation.
+  if(e == -1) {
+    e++;
+    precision++;
+    b /= base;
+  }
+
   if(eng) {
     while(e % eng != 0) {
       b *= base;
       e--;
       precision--; // since this adds one more digit before the point
+    }
+    // For values in range 0.001-0.999..., show them as-is without scientific notation
+    while(e >= -eng && e < 0) {
+      e++;
+      precision++;
+      b /= base;
     }
   }
 

@@ -18,8 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-var fogbutton = undefined;
-var fogtimerflex = undefined;
+var mistbutton = undefined;
+var misttimerflex = undefined;
 
 var sunbutton = undefined;
 var suntimerflex = undefined;
@@ -90,43 +90,43 @@ function updateAbilitiesUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  if(fogbutton && !state.upgrades[upgrade_fogunlock].count) {
-    fogbutton.removeSelf();
-    fogtimerflex.removeSelf();
-    fogbutton = undefined;
+  if(mistbutton && !state.upgrades[upgrade_mistunlock].count) {
+    mistbutton.removeSelf();
+    misttimerflex.removeSelf();
+    mistbutton = undefined;
   }
 
-  if(!fogbutton && state.upgrades[upgrade_fogunlock].count) {
-    fogbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
-    styleButton0(fogbutton.div);
+  if(!mistbutton && state.upgrades[upgrade_mistunlock].count) {
+    mistbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
+    styleButton0(mistbutton.div);
 
-    fogtimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
-    fogtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
-    fogtimerflex.div.style.textShadow = ability_text_shadow;
-    fogtimerflex.div.style.pointerEvents = 'none';
+    misttimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
+    misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+    misttimerflex.div.style.textShadow = ability_text_shadow;
+    misttimerflex.div.style.pointerEvents = 'none';
 
 
-    var canvasFlex = new Flex(fogbutton, 0, 0, 1, 1);
+    var canvasFlex = new Flex(mistbutton, 0, 0, 1, 1);
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-    renderImage(image_fog, canvas);
+    renderImage(image_mist, canvas);
 
-    fogbutton.div.onclick = function() {
+    mistbutton.div.onclick = function() {
       actions.push({type:ACTION_ABILITY, ability:0});
       update();
     };
-    fogtimerflex.div.onclick = fogbutton.div.onclick;
+    misttimerflex.div.onclick = mistbutton.div.onclick;
 
-    registerTooltip(fogbutton.div, function() { return formatAbilityDurationTooltipText('fog ability', 'mushrooms produce more spores, consume less seeds, and aren\'t negatively affected by winter', getFogDuration(), getFogWait())});
+    registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText('mist ability', 'mushrooms produce more spores, consume less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
   }
 
-  if(state.upgrades[upgrade_fogunlock].count) {
-    var d = util.getTime() - state.fogtime;
-    if(d > getFogWait()) {
-      fogtimerflex.div.innerHTML = '';
-    } else if(d > getFogDuration()) {
-      fogtimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getFogWait() - d, true) + ability_charging_close;
+  if(state.upgrades[upgrade_mistunlock].count) {
+    var d = util.getTime() - state.misttime;
+    if(d > getMistWait()) {
+      misttimerflex.div.innerHTML = '';
+    } else if(d > getMistDuration()) {
+      misttimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getMistWait() - d, true) + ability_charging_close;
     } else {
-      fogtimerflex.div.innerHTML = ability_active_open + util.formatDuration(getFogDuration() - d, true) + ability_active_close;
+      misttimerflex.div.innerHTML = ability_active_open + util.formatDuration(getMistDuration() - d, true) + ability_active_close;
     }
   }
 
@@ -183,7 +183,7 @@ function updateAbilitiesUI() {
 document.addEventListener('keydown', function(e) {
   /*if(e.key == 'a') {
     if(state.upgrades[upgrade_sununlock].count && util.getTime() - state.suntime > getSunWait()) actions.push({type:ACTION_ABILITY, ability:1});
-    if(state.upgrades[upgrade_fogunlock].count && util.getTime() - state.fogtime > getFogWait()) actions.push({type:ACTION_ABILITY, ability:0});
+    if(state.upgrades[upgrade_mistunlock].count && util.getTime() - state.misttime > getMistWait()) actions.push({type:ACTION_ABILITY, ability:0});
     if(state.upgrades[upgrade_rainbowunlock].count && util.getTime() - state.rainbowtime > getRainbowWait()) actions.push({type:ACTION_ABILITY, ability:2});
     update();
   }*/

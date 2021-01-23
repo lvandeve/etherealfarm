@@ -29,7 +29,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
   var cost = u.getCost(completed ? -1 : 0);
   var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 1);
-  var name = completed ? u.getName() : u.getNextName();
+  var name = upper(completed ? u.getName() : u.getNextName());
   titleFlex.div.innerHTML = name;
   titleFlex.div.style.whiteSpace = 'nowrap';
 
@@ -51,12 +51,12 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
   var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.8);
 
-  var infoText = util.upperCaseFirstWord(name);
+  var infoText = upper(name);
   infoText += '<br><br>Cost: ' + cost.toString();
   if(u.description) {
     infoText += '<br><br>' + u.description;
   }
-  infoText += '<br><br>' + 'Non-refundable and permanent. Lasts through transcensions.';
+  infoText += '<br><br>' + 'This ethereal upgrade is non-refundable and permanent. Lasts through transcensions.';
 
   if(!completed) {
     var buyText = 'Cost: ' + cost.toString();

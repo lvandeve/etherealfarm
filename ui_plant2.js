@@ -39,6 +39,10 @@ function makePlantChip2(crop, x, y, w, parent) {
   if(boost.neqr(0)) text += '<b>boost here:</b>' + boost.mulr(100).toString() + '%';
   infoFlex.div.innerHTML = text;
 
+  if(state.res.lt(crop.getCost())) {
+    infoFlex.div.style.color = '#666';
+  }
+
   return flex;
 }
 
@@ -81,7 +85,7 @@ function makePlantDialog2(x, y, show_only) {
       var result = '';
       var c = crops2[index];
       if(show_only) {
-        result = util.upperCaseFirstWord(c.name);
+        result = upper(c.name);
       } else {
         result = 'Plant ethereal ' + c.name;
       }

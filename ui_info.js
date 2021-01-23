@@ -151,8 +151,8 @@ function updateResourceUI() {
       }
       result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
       result += '<b>Time since beginning:</b> ' + util.formatDuration(state.g_runtime, true, 4, true) + '<br><br>';
-      result += '<b>Current season:</b> ' + util.upperCaseFirstWord(seasonNames[getSeason()]) + '<br><br>';
-      result += '<b>' + util.upperCaseFirstWord(seasonNames[getSeason()]) + ' Effects:</b><br>';
+      result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
+      result += '<b>' + upper(seasonNames[getSeason()]) + ' Effects:</b><br>';
       var s = getSeason();
       if(s == 0) {
         result += '• +' + getSpringFlowerBonus().subr(1).mulr(100).toString() + '% bonus to flower boost<br>';
@@ -225,6 +225,9 @@ function updateResourceUI() {
         var tlevel_mul = Num(tlevel);
         var upcoming2 = upcoming.mul(tlevel_mul);
         text = name + '<br>' + res.toString() + '<br>(→ +' + upcoming2.toString() + ')';
+      } else if(index == 3) {
+        // twigs
+        text = name + '<br>' + res.toString();
       } else {
         text = name + '<br>' + res.toString();
         if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
@@ -246,13 +249,20 @@ function updateResourceUI() {
     if(special) {
       if(index == 2) {
         // resin
-        var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
+        var text = '<b>' + upper(name) + '</b><br/><br/>';
         text += 'Current amount: ' + res.toString() + '<br/><br/>';
         if(tlevel > 1) {
           text += 'Collected upcoming resin: ' + upcoming.toString() + '<br/><br/>';
           text += 'Upcoming resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
         }
         text += 'Total upcoming amount: ' + upcoming2.toString() + '<br/><br/>';
+      }
+      if(index == 3) {
+        // twigs
+        var text = '<b>Twigs</b><br/><br/>';
+        text += 'Current amount: ' + res.toString() + '<br/><br/>';
+        text += 'Amount from next tree level up with the current mistletoes: ' + nextTwigs().toString() + '<br/><br/>';
+        text += 'Twigs can be gotten by planting mistletoes next to the basic field tree, and appear when the tree levels up. This does increase the spore requirement for tree level up. More mistletoes gives diminishing returns while still increasing spores as much, so max 1 or 2 mistletoes makes sense.<br/><br/>';
       }
       if(index == 7) {
         // fruit essence
@@ -262,7 +272,7 @@ function updateResourceUI() {
         text += 'Using this to level up fruit abilities does not consume the global essence. Every fruit can use all the essence.<br/><br/>';
       }
     } else {
-      var text = '<b>' + util.upperCaseFirstWord(name) + '</b><br/><br/>';
+      var text = '<b>' + upper(name) + '</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
 
       if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
@@ -287,7 +297,7 @@ function updateResourceUI() {
         text += '• To stacks: ' + gain_hyp.toString() + '/s<br/>';
         text += '• To consumers: ' + (gain_hyp_pos.sub(gain_hyp)).toString() + '/s<br/>';
         text += '<br/>';
-        text += 'Potential production means: if mushrooms could consume as many seed as it needs, even if more than neighbor berries can produce';
+        text += 'Potential production means: if mushrooms could consume as many seed as it needs, even if this is more than neighbor berries can produce';
         text += '<br/><br/>';
       }
     }
@@ -335,7 +345,7 @@ function updateResourceUI() {
   if(!state.g_max_res.seeds.eqr(0)) showResource(false, 0, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.leaves.eqr(0)) showResource(false, 3, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.twigs.eqr(0)) showResource(true, 3, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);

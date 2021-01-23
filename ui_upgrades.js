@@ -54,25 +54,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   var updateInfoText = function() {
     infoText = name;
     infoText += '<br><br>Cost: ' + cost.toString();
-    if(!completed && cost.seeds.neqr(0)) {
-      var percent = cost.seeds.div(state.res.seeds).mulr(100); // TODO: take other resources into account if used
-      if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
-      if(percent.gtr(100)) {
-        var time = cost.seeds.sub(state.res.seeds).div(gain.seeds);
-        infoText += ' (' + util.formatDuration(time.valueOf(), true) + ')';
-      } else {
-        infoText += ' (' + percent.toString() + '% of stacks)';
-      }
-    } else if(!completed && cost.spores.neqr(0)) {
-      var percent = cost.spores.div(state.res.spores).mulr(100); // TODO: take other resources into account if used
-      if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
-      if(percent.gtr(100)) {
-        var time = cost.spores.sub(state.res.spores).div(gain.spores);
-        infoText += ' (' + util.formatDuration(time.valueOf(), true) + ')';
-      } else {
-        infoText += ' (' + percent.toString() + '% of stacks)';
-      }
-    }
+    if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
     if(u.cropid != undefined) {
       infoText += '<br><br>' + 'have of this crop: ' + state.cropcount[u.cropid];
     }
@@ -103,10 +85,12 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
         var funa = function() {
           actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
           dialog.cancelFun();
+          update();
         };
         var funb = function() {
           actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
           dialog.cancelFun();
+          update();
         };
         dialog = createDialog(undefined, funa, u.choicename_a, undefined, funb, u.choicename_b);
         var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.3);
@@ -115,6 +99,10 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
         actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
         update();
       }
+
+      // misclicking with shift on often creates unwanted text selection, fix that here
+      if(window.getSelection) window.getSelection().removeAllRanges();
+      else if(document.selection) document.selection.empty();
     }, i);
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();

@@ -60,7 +60,7 @@ function createTranscendDialog() {
   text += '<br/>';
   text += 'What will be kept:<br/>';
   text += '• Achievements<br/>';
-  text += '• Resin and fruit essence<br/>';
+  text += '• Resin, twigs and fruit essence<br/>';
   text += '• Ethereal field and ethereal crops<br/>';
   text += '• Ethereal upgrades<br/>';
   text += '• Fruits in the active and storage slots<br/>';
@@ -123,7 +123,7 @@ function getCropInfoHTMLBreakdown(f, c) {
 
 // get crop info in HTML
 function getCropInfoHTML(f, c, opt_detailed) {
-  var result = util.upperCaseFirstWord(c.name);
+  var result = upper(c.name);
   result += '<br/>';
   result += 'Crop type: ' + getCropTypeName(c.type);
   var help = getCropTypeHelp(c.type);
@@ -137,11 +137,12 @@ function getCropInfoHTML(f, c, opt_detailed) {
   if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
     if(opt_detailed) {
       // the detailed dialog is not dynamically updated, so show the total growth time statically instead.
-      result += 'Growing. Total growing time: ' + c.getPlantTime();
+      result += 'Growing. Total growing time: ' + util.formatDuration(c.getPlantTime());
+      if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
     } else {
       result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
     }
-
+    result += '<br/>';
   } else {
     if(c.type == CROPTYPE_SHORT) {
       if(opt_detailed) {
@@ -154,6 +155,10 @@ function getCropInfoHTML(f, c, opt_detailed) {
       }
 
       result += '<br/>';
+    } else {
+      result += 'Growing time: ' + util.formatDuration(c.getPlantTime());
+      if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+      result += '<br/><br/>';
     }
     var prod = p.prod3;
     if(!prod.empty() || c.type == CROPTYPE_MUSH) {
@@ -162,6 +167,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         if(p.prod0.neq(p.prod3)) {
           if(c.type == CROPTYPE_MUSH) {
             result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + p.prod0.toString() + '<br/>';
+            result += 'Satisfied: ' + prod.seeds.div(p.prod0.seeds).mulr(100).toString() + ' %<br/>';
           } else if(c.type == CROPTYPE_SHORT) {
             // nothing to print.
           } else {
@@ -170,10 +176,16 @@ function getCropInfoHTML(f, c, opt_detailed) {
         } else {
           // commented out, the crop type description already says this
           //result += 'Consumes a resource produced by neighboring crops.<br/>';
+          // NOTE: always shows 100% even if the berry produces more than enough. Making that show more than 100% would require a completely separate production/consumption computation in precomputeField with a hypothetical mushroom requesting way more seeds, and that'd be unecessarily expensive to compute for just this display.
+          result += 'Satisfied: >= 100%<br/>';
         }
       } else if(p.prod3.neq(p.prod2)) {
         result += 'After consumption: ' + p.prod2.toString() + '<br/>';
       }
+    }
+    if(c.type == CROPTYPE_MUSH) {
+      result += 'Efficiency: ' + p.prod0.spores.div(p.prod0.seeds.neg()).toString() + ' spores/seed, ' +
+          p.prod0.seeds.div(p.prod0.spores.neg()).toString() + ' seeds/spore<br/>';
     }
     if(c.boost.neqr(0)) {
       if(c.type == CROPTYPE_NETTLE) {
@@ -195,7 +207,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
     result += ' • Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
   } else {
-    result += 'Next planting cost: ' + c.getCost().toString() + '<br>';
+    result += 'Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
     result += 'Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
   }
 
@@ -221,9 +233,9 @@ function makeFieldDialog(x, y) {
     if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
     var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.3 + buttonshift, 0.01], 0.5, 0.35 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.37 + buttonshift, 0.01], 0.5, 0.42 + buttonshift, 0.8).div;
-    var button2 = new Flex(dialog, [0.01, 0.2], [0.44 + buttonshift, 0.01], 0.5, 0.49 + buttonshift, 0.8).div;
+    var button0 = new Flex(dialog, [0.01, 0.2], [0.4 + buttonshift, 0.01], 0.5, 0.45 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog, [0.01, 0.2], [0.45 + buttonshift, 0.01], 0.5, 0.5 + buttonshift, 0.8).div;
+    var button2 = new Flex(dialog, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -286,10 +298,10 @@ function makeFieldDialog(x, y) {
     var ysize = 0.1;
 
     var f0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.25, 0.3);
-    var f1 = new Flex(dialog, [0.01, 0.2], 0.5, 1, 0.75, 0.3);
+    var f1 = new Flex(dialog, [0.01, 0.2], 0.7, 1, 0.9, 0.3);
     var text;
 
-    text = '<b>' + util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
+    text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
     text += 'Tree level: ' + state.treelevel + '<br/>';
     if(state.treelevel == 0) {
       text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
@@ -297,6 +309,9 @@ function makeFieldDialog(x, y) {
     } else {
       text += '<br/>';
       text += 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br/>';
+      if(state.mistletoes > 0) {
+        text += 'This requirement was increased ' + (getMistletoeLeech().subr(1).mulr(100)).toString() + '% by ' + state.mistletoes + ' mistletoes' + '<br/>';
+      }
 
       var tlevel = Math.floor(state.treelevel / min_transcension_level);
       var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
@@ -304,26 +319,33 @@ function makeFieldDialog(x, y) {
 
       text += '<br/>';
       text += 'Resin ready: ' + state.resin.toString() + '<br/>';
-      text += 'Resin added at next tree level: ' + currentTreeLevelResin(state.treelevel + 1).toString() + '<br/>';
-      if(getSeason() == 3) {
-        text += 'This includes resin winter bonus of ' + (getWinterTreeResinBonus().subr(1).mulr(100)) + '%<br/>';
+      var resin_breakdown = [];
+      text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
+      if(resin_breakdown.length > 1) {
+        text += formatBreakdown(resin_breakdown, false, 'Resin breakdown');
+      }
+      text += '<br>';
+      if(state.mistletoes > 0) {
+        text += 'Twigs from mistletoes at next tree level: ' + nextTwigs().toString() + '<br/>';
       }
       if(tlevel > 1) {
+        text += '<br/>';
         text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+        text += 'Resulting total resin on transcension:' + state.resin.mulr(tlevel_mul).toString() + '<br/>';
       }
 
       text += '<br/>';
-      text += 'Tree level production boost to crops: ' + (100 * treeboost * state.treelevel) + '%' + '<br>';
+      text += 'Tree level production boost to crops: ' + (getTreeBoost().mulr(100)).toString() + '%' + '<br>';
 
       if(getSeason() == 3) {
         text += '<br/>';
         text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).mulr(100).toString() + '% berry / mushroom / flower stats for crops next to the tree<br>';
       }
 
-      if(state.upgrades[upgrade_fogunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
+      if(state.upgrades[upgrade_mistunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
         text += '<br/>';
         text += 'Abilities discovered:<br>';
-        if(state.upgrades[upgrade_fogunlock].unlocked) text += '• Fog: benefits mushrooms when active<br>';
+        if(state.upgrades[upgrade_mistunlock].unlocked) text += '• Mist: benefits mushrooms when active<br>';
         if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sun: benefits berries when active<br>';
         if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
       }
@@ -333,7 +355,7 @@ function makeFieldDialog(x, y) {
       if(state.treelevel < min_transcension_level) {
         if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
       } else {
-        var button = new Flex(f1, 0, 0, 0.5, 0.2, 0.8).div;
+        var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
         styleButton(button);
         button.textEl.innerText = 'Transcension ' + roman;
         button.textEl.style.boxShadow = '0px 0px 5px #ff0';
@@ -412,7 +434,7 @@ function initFieldUI() {
             if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
             return result;
           } else {
-            return util.upperCaseFirstWord(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+            return upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
           }
         }
         return result;
@@ -432,7 +454,7 @@ function initFieldUI() {
             makeFieldDialog(x, y);
         } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           if(e.shiftKey) {
-            if(state.lastPlanted >= 0) {
+            if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
               actions.push({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
               update();

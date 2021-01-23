@@ -26,6 +26,8 @@ var upgradesButtonLastText = '';
 var fruitButtonLastText = '';
 var upgrades2ButtonLastText = '';
 var medalsButtonLastText = '';
+var fieldButtonLastText = '';
+var field2ButtonLastText = '';
 
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
@@ -82,6 +84,21 @@ function updateTabButtons2() {
 
   var tabnum;
 
+  tabnum = tabindex_field;
+  if(tabbuttons[tabnum]) {
+    var text = 'field';
+
+    if(state.treelevel > 0) {
+      text += '<br/>(' + state.treelevel + ')';
+    }
+
+    if(text != fieldButtonLastText) {
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
+      fieldButtonLastText = text;
+    }
+  }
+
   tabnum = tabindex_upgrades;
   if(tabbuttons[tabnum]) {
     var text = 'upgrades<br/>(' + state.upgrades_affordable + '/' + state.upgrades_upgradable + ')';
@@ -116,6 +133,21 @@ function updateTabButtons2() {
       tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
       tabbuttons[tabnum].textEl.innerHTML  = text;
       fruitButtonLastText = text;
+    }
+  }
+
+  tabnum = tabindex_field2;
+  if(tabbuttons[tabnum]) {
+    var text = 'ethereal field';
+
+    if(state.treelevel2 > 0) {
+      text += '<br/>(' + state.treelevel2 + ')';
+    }
+
+    if(text != field2ButtonLastText) {
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
+      field2ButtonLastText = text;
     }
   }
 
@@ -206,6 +238,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
     tabbuttons[tabnum].textEl.innerText = 'field';
+    fieldButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
 
@@ -236,6 +269,7 @@ function updateTabButtons() {
     tabbuttons[tabnum].onclick = bind(function(tabnum) { setTab(tabnum); }, tabnum);
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
+    field2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
 

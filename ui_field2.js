@@ -23,7 +23,7 @@ var field2Divs;
 
 // get crop info in HTML
 function getCropInfoHTML2(f, c, opt_detailed) {
-  var result = 'Ethereal ' + util.upperCaseFirstWord(c.name);
+  var result = 'Ethereal ' + upper(c.name);
   result += '<br/>Crop type: ' + getCropTypeName(c.type);
   result += '<br/><br/>';
 
@@ -63,8 +63,8 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
   result += '<br/>Cost: ';
   if(opt_detailed) result += '<br/>• Base planting cost: ' + c.cost.toString();
-  result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
   result += '<br/>• Next planting cost: ' + c.getCost().toString();
+  result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
   result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
 
   if(opt_detailed) {
@@ -137,6 +137,14 @@ function makeField2Dialog(x, y) {
 
     var text = '<b>Ethereal Tree</b>';
     text += '<br><br>';
+
+    text += '<b>Twigs required for next level: </b>' + treeLevel2Req(state.treelevel2 + 1).toString();
+    text += '<br><br>';
+
+    if(state.treelevel2 > 0) {
+      text += '<b>Resin production bonus to basic tree: </b>' + treelevel2_resin_bonus.mulr(state.treelevel2).mulr(100).toString() + '%';
+      text += '<br><br>';
+    }
 
     text += '<b>Ethereal boosts from this field to basic field:</b><br>';
     text += '• starter resources: ' + getStarterResources().toString() + '<br>';
@@ -212,7 +220,7 @@ function initField2UI() {
           makeField2Dialog(x, y);
         } else if(f.index == 0) {
           if(e.shiftKey) {
-            if(state.lastPlanted2 >= 0) {
+            if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
               var c = crops2[state.lastPlanted2];
               actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c, shiftPlanted:true});
               update();
@@ -255,6 +263,12 @@ function updateField2CellUI(x, y) {
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   var season = 4; // the ethereal season
 
+  var progresspixel = -1;
+  if(f.index == FIELD_TREE_BOTTOM && (state.treelevel2 > 0 || state.res.twigs.gtr(0))) {
+    var nextlevelprogress = Math.min(0.99, state.res.twigs.div(treeLevel2Req(state.treelevel2 + 1).twigs).valueOf());
+    progresspixel = Math.round(nextlevelprogress * 5);
+  }
+
   var ferncode = 0;
 
   if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || ferncode != fd.ferncode) {
@@ -280,7 +294,7 @@ function updateField2CellUI(x, y) {
       renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][season], fd.canvas);
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][season], fd.canvas);
-      if(state.treelevel2 > 0) renderLevel(fd.canvas, state.treelevel2, 0, 11);
+      if(state.treelevel2 > 0 || state.res.twigs.gtr(0)) renderLevel(fd.canvas, state.treelevel2, 0, 11, progresspixel);
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';

@@ -178,7 +178,12 @@ function softReset() {
 
   showMessage(message, '#40f', '#ffd');
   if(state.g_numresets == 0) {
-    showMessage('This is your first transcension. Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.', helpFG, helpBG);
+    showHelpDialog(1, 'You performed your first transcension! Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.',
+      undefined,
+      '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all type of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
+      [[undefined,clover[4],undefined],
+       [blackberry[4],whitelotus[4],champignon[4]],
+       [undefined,blackberry[4],undefined]]);
   }
 
   // state.c_runtime = util.getTime() - state.c_starttime; // state.c_runtime was computed by incrementing each delta, but this should be numerically more precise
@@ -292,7 +297,7 @@ function softReset() {
 
   gain = new Res();
 
-  state.fogtime = 0;
+  state.misttime = 0;
   state.suntime = 0;
   state.rainbowtime = 0;
 
@@ -305,6 +310,10 @@ function softReset() {
   state.upgrades = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
     state.upgrades[registered_upgrades[i]] = new UpgradeState();
+  }
+
+  if(state.upgrades2[upgrade2_blackberrysecret].count) {
+    upgrades[berryunlock_0].fun();
   }
 
   setTab(0);
@@ -483,6 +492,10 @@ function PreCell(f) {
 
   // how many neighbors this was leeching (for watercress. For visual effects.)
   this.leechnum = 0;
+
+  // for mistletoe
+  // could also be used for winter warmth but isn't yet currently, it's only computed for mistletoe now
+  this.treeneighbor = false;
 };
 
 // field with precomputed info, 2D array, separate from state.field because not saved but precomputed at each update()
@@ -509,7 +522,9 @@ function precomputeField() {
     }
   }
 
-  // pass 1: compute boosts of flowers and nettles
+  state.mistletoes = 0;
+
+  // pass 1: compute boosts of flowers and nettles, and other misc position related features
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -518,6 +533,19 @@ function precomputeField() {
         var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
           p.boost = c.getBoost(f, p.breakdown);
+        }
+        if(c.type == CROPTYPE_MISTLETOE && f.growth >= 1) {
+          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            var f2 = state.field[y2][x2];
+            if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
+              p.treeneighbor = true;
+              state.mistletoes++;
+              break;
+            }
+          }
         }
       }
     }
@@ -717,17 +745,8 @@ function precomputeField() {
   }
 };
 
-
-
-// Use this rather than Math.random() to avoid using refresh to get better random fruits
-// opt_state is optional, if not given the global state is used
-function getRandomFruitRoll(opt_state) {
-  var state2 = opt_state || state;
-  if(state2.fruit_seed < 0) {
-    // this means the seed is uninitialized and must be randominzed now
-    state2.fruit_seed = Math.floor(Math.random() * 281474976710656);
-  }
-
+// returns array of updated seed and the random roll in range [0, 1)
+function getRandomRoll(seed) {
   var mul48 = function(a, b) {
     var a0 = a & 16777215;
     var b0 = b & 16777215;
@@ -739,10 +758,22 @@ function getRandomFruitRoll(opt_state) {
   };
 
   // drand48, because 48 bits fit in JS's 52-bit integers
-  var s = state2.fruit_seed;
-  s = (mul48(25214903917, s) + 11) % 281474976710656;
-  state2.fruit_seed = s;
-  return s / 281474976710656;
+  seed = (mul48(25214903917, seed) + 11) % 281474976710656;
+  return [seed, seed / 281474976710656];
+}
+
+
+// Use this rather than Math.random() to avoid using refresh to get better random fruits
+function getRandomFruitRoll() {
+  if(state.fruit_seed < 0) {
+    // console.log('fruit seed not initialized');
+    // this means the seed is uninitialized and must be randominzed now. Normally this shouldn't happen since initing a new state sets it, and loading an old savegame without the seed also sets it
+    state.fruit_seed = Math.floor(Math.random() * 281474976710656);
+  }
+
+  var roll = getRandomRoll(state.fruit_seed);
+  state.fruit_seed = roll[0];
+  return roll[1];
 }
 
 function addRandomFruit() {
@@ -778,26 +809,30 @@ function addRandomFruit() {
   state.c_numfruits++;
   state.g_numfruits++;
 
-  if(state.g_numfruits == 1) {
-    showMessage('You received your first fruit! Fruits provide boosts and can be upgraded. See the "fruit" tab.', helpFG, helpBG);
-  }
-
   updateFruitUI();
   return fruit;
 }
 
-
-
+// unlocks and shows message, if not already unlocked
+function unlockEtherealCrop(id) {
+  var c = crops2[id];
+  var c2 = state.crops2[id];
+  if(c2.unlocked) return;
+  showMessage('Ethereal crop available: "' + c.name + '"', '#44f', '#ff8');
+  c2.unlocked = true;
+}
 
 
 // when is the next time that something happens that requires a separate update()
 // run. E.g. if the time difference is 1 hour (due to closing the tab for 1 hour),
-// and 10 minutes of the fog ability were remaining, then update must be broken
+// and 10 minutes of the mist ability were remaining, then update must be broken
 // in 2 parts: the first 10 minutes, and the remaining 50 minutes. This function
 // will return that 10. Idem for season changes, ... The function returns the
 // first one.
 // the returned value is amount of seconds before the first next event
 // the value used to determine current time is state.time
+// TODO: tree level-ups must be added here, both ethereal and basic tree, as these affect production boost and resin income
+// TODO: ethereal crops and their plant time must be added here
 function nextEventTime() {
 
   var time = timeTilNextSeason();
@@ -806,7 +841,7 @@ function nextEventTime() {
     time = Math.min(time, time2);
   };
 
-  if((state.time - state.fogtime) < getFogDuration()) addtime(getFogDuration() - state.time + state.fogtime);
+  if((state.time - state.misttime) < getMistDuration()) addtime(getMistDuration() - state.time + state.misttime);
   if((state.time - state.suntime) < getSunDuration()) addtime(getSunDuration() - state.time + state.suntime);
   if((state.time - state.rainbowtime) < getRainbowDuration()) addtime(getRainbowDuration() - state.time + state.rainbowtime);
 
@@ -944,8 +979,54 @@ var update = function(opt_fromTick) {
         if(num) {
           updateUI();
           if(action.u == berryunlock_0) {
-            showMessage('You unlocked your first permanent type of plant. Plants like this stay on the field forever and have much more powerful production upgrades too.', helpFG, helpBG);
-            showMessage('If you plant watercress next to permanent plants, the watercress will add all its neighbors production to its own ("leech"), so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns.', helpFG2, helpBG2);
+            showHelpDialog(3,
+                           'You unlocked your first permanent type of plant. Plants like this stay on the field forever and have much more powerful production upgrades too.' +
+                           '<br><br>'+
+                           'If you plant watercress next to permanent plants, the watercress will add all its neighbors production to its own ("leech"), so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense. The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the plant has later in the game.' +
+                           '<br><br>'+
+                           'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
+                           undefined,
+                           '<br><br>'+
+                           'The image below shows an optimal configuration to use for watercress leeching: the single watercress duplicates the production of 4 blackberries:',
+                           [[undefined,blackberry[4],undefined],[blackberry[4],watercress[4],blackberry[4]],[undefined,blackberry[4],undefined]]);
+          }
+          if(action.u == mushunlock_0) {
+            showHelpDialog(19,
+                           'You unlocked your first type of mushroom. Mushrooms produce spores, but they consume seeds. Mushrooms must touch berries to get their seeds. If the berry cannot produce enough seeds for the mushroom, the mushroom produces less spores. If the berry produces more seeds than needed, the remaining seeds go to the regular seeds stack<br><br>Spores let the tree level up, unlocking next kinds of bonuses.<br><br>Spores are used by the tree, but the mushroom is not required to touch the tree.',
+                           undefined,
+                           '<br><br>'+
+                           'The image shows a possible configuration for mushrooms: it extracts some seeds from the berries it touches.',
+                           [[champignon[4],blueberry[4]],[blueberry[4],undefined]]);
+          }
+          if(action.u == flowerunlock_0) {
+            showHelpDialog(20,
+                           'You unlocked your first type of flower. Flowers boost berries and mushrooms. In case of mushrooms, it boosts their spore production, but also increases their seed consumption equally',
+                           undefined,
+                           '<br><br>'+
+                           'The image shows a possible good configuration for flower boost: many flowers boost many different berries or mushrooms. Note that in practice the mushroom also needs to touch some berries to get seeds from, not shown in this image.',
+                           [[blackberry[4],clover[4],blackberry[4]],[clover[4],blackberry[4],clover[4]],[blackberry[4],clover[4],champignon[4]]]);
+          }
+          if(action.u == nettle_0) {
+            if(state.g_numresets > 0) {
+              showHelpDialog(21,
+                'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower next to a mushroom works even greater.',
+                nettle[4],
+                '<br><br>'+
+                'The image shows a possible configuration where the mushroom receives boost from both nettle (top) and flower (bower). The top left flower and top right blackberry in this image however are negatively affected by the nettle.',
+                [[clover[4],nettle[4],blackberry[4]],
+                 [blueberry[4],champignon[4],blueberry[4]],
+                 [undefined,clover[4],undefined]]);
+            }
+          }
+          if(action.u == mistletoeunlock_0) {
+            if(state.g_numresets > 0) {
+              showHelpDialog(17,
+                'Unlocked a new crop: mistletoe. Mistletoe can be placed next to the basic field tree to create twigs. Twigs help the ethereal field tree. However the mistletoe increases the spore requirement for leveling the basic tree and slightly decreases resin gain. More mistletoes give diminishing returns, but still increase the negative effects by as much, so having max 1 or 2 is sensible. Mistletoes that are not planted next to the tree do nothing at all.',
+                mistletoe[4],
+                '<br><br>'+
+                'The image shows a possible configuration where mistletoes are next to the tree and thus give twigs on tree level up.',
+                [[tree_images[treeLevelIndex(state.treelevel)][1][0], mistletoe[4]], [tree_images[treeLevelIndex(state.treelevel)][2][0], mistletoe[4]]]);
+            }
           }
         }
       } else if(type == ACTION_UPGRADE2) {
@@ -986,8 +1067,12 @@ var update = function(opt_fromTick) {
             state.g_numplantedshort++;
             state.c_numplantedshort++;
             if(state.c_numplantedshort == 1 && state.c_numplanted == 0) {
-              showMessage('you planted your first plant! It\'s producing seeds. This one (unlike most later ones) is short-lived so will need to be replanted soon. Watercress will remain useful later on as well since it can leech.', helpFG, helpBG);
-              showMessage('TIP: hold SHIFT to plant last crop type, CTRL to plant watercress', helpFG, helpBG);
+              // commented out: this help dialog pops up together with the "first upgrade" one, one of them is enough. The upgrades one contains a note about permanent crops now, and the SHIFT/CTRL tip is moved to first permanent crop dialog
+              /*showHelpDialog(4,
+                'you planted your first plant! It\'s producing seeds. This one (unlike most later ones) is short-lived so will need to be replanted soon. Watercress will remain useful later on as well since it can leech.' +
+                '<br><br>' +
+                'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
+                watercress[4]);*/
             }
           } else {
             state.g_numplanted++;
@@ -1115,21 +1200,21 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_ABILITY) {
         var a = action.ability;
-        var fogd = state.time - state.fogtime;
+        var mistd = state.time - state.misttime;
         var sund = state.time - state.suntime;
         var rainbowd = state.time - state.rainbowtime;
         var already_ability = false;
-        if(fogd < getFogDuration() || sund < getSunDuration() || rainbowd < getRainbowDuration()) already_ability = true;
+        if(mistd < getMistDuration() || sund < getSunDuration() || rainbowd < getRainbowDuration()) already_ability = true;
         if(a == 0) {
-          if(!state.upgrades[upgrade_fogunlock].count) {
+          if(!state.upgrades[upgrade_mistunlock].count) {
             // not possible, ignore
-          } else if(fogd < getFogWait()) {
-            showMessage(fogd < getFogDuration() ? 'fog is already active' : 'fog is not ready yet', invalidFG, invalidBG);
+          } else if(mistd < getMistWait()) {
+            showMessage(mistd < getMistDuration() ? 'mist is already active' : 'mist is not ready yet', invalidFG, invalidBG);
           } else if(already_ability) {
             showMessage('there already is an active weather ability', invalidFG, invalidBG);
           } else {
-            state.fogtime = state.time;
-            showMessage('fog activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
+            state.misttime = state.time;
+            showMessage('mist activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
             store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
@@ -1280,10 +1365,6 @@ var update = function(opt_fromTick) {
                   f.growth = 1;
                   state.g_numfullgrown++;
                   state.c_numfullgrown++;
-                  if(state.c_numfullgrown == 1) {
-                    showMessage('your first permanent (non-withering) plant has fully grown! Click plants for details and extra actions.', helpFG2, helpBG2);
-                    showMessage('plant watercress next to blackberry to leech for extra production! This gets less effective with more watercress, 1-2 max in world is advisable, placed in best spot between multiple berries.', helpFG2, helpBG2);
-                  }
                   // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
                 }
               }
@@ -1314,7 +1395,7 @@ var update = function(opt_fromTick) {
                 f.growth = 1;
                 state.g_numfullgrown2++;
                 if(state.c_numfullgrown2 == 1) {
-                  showMessage('your first ethereal plant has fullgrown! It provides a bonus to your basic field.', helpFG2, helpBG2);
+                  showHelpDialog(5, 'your first ethereal plant in the ethereal field has fullgrown! It provides a bonus to your basic field.');
                 }
               }
             }
@@ -1371,10 +1452,12 @@ var update = function(opt_fromTick) {
 
     var req = treeLevelReq(state.treelevel + 1);
     if(state.res.ge(req)) {
+      var resin = nextTreeLevelResin();
+      var twigs = nextTwigs();
+      actualgain.addInPlace(twigs);
       state.treelevel++;
       state.lasttreeleveluptime = state.time;
       num_tree_levelups++;
-      var resin = currentTreeLevelResin();
       if(getSeason() == 3) {
         showMessage('Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1).mulr(100)) + '%');
       }
@@ -1383,45 +1466,81 @@ var update = function(opt_fromTick) {
       state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
       var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
           '. Consumed: ' + req.toString() +
-          '. Tree boost: ' + Num((state.treelevel * treeboost) * 100).toString(2, Num.N_FULL) + '%' +
+          '. Tree boost: ' + getTreeBoost().mulr(100).toString(2, Num.N_FULL) + '%' +
           '. Resin added: ' + resin.toString() + '. Total resin ready: ' + state.resin.toString();
+      if(!twigs.empty()) message += '. Twigs from mistletoe added: ' + twigs.toString();
       if(state.treelevel == 9) {
         message += '. The tree is so close to becoming an adult tree now.';
       }
       showMessage(message, '#2f2');
+      var fruit = undefined;
       if(state.treelevel == 2) {
-        showMessage('The tree discovered a new ability!', '#cfc', '#800');
+        showHelpDialog(12, 'The tree reached level ' + state.treelevel + ' and discovered the sun ability!<br><br>' + upgrades[upgrade_sununlock].description, image_sun);
       } else if(state.treelevel == 3) {
-        showMessage('The tree is providing a choice, choose one of the two choices under "upgrades"', '#cfc', '#800');
+        showHelpDialog(-13, 'The tree reached level ' + state.treelevel + ' and is providing a choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 4) {
-        showMessage('The tree discovered another ability', '#cfc', '#800');
+        showHelpDialog(14, 'The tree reached level ' + state.treelevel + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
       } else if(state.treelevel == 5) {
-        var fruit = addRandomFruit();
-        showMessage('The tree is halfway to adulthood. The tree dropped a fruit! ' + util.upperCaseFirstWord(fruit.toString()) + ': ' + fruit.abilitiesToString(), '#800', '#cfc');
+        fruit = addRandomFruit();
+        showHelpDialog(2, 'The tree reached level ' + state.treelevel + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab.', images_apple[0]);
       } else if(state.treelevel == 6) {
-        showMessage('The tree discovered another new ability!', '#cfc', '#800');
+        showHelpDialog(15, 'The tree reached level ' + state.treelevel + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
       } else if(state.treelevel == 8) {
-        showMessage('The tree is providing a choice again, under "upgrades"', '#cfc', '#800');
+        showHelpDialog(-16, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 15) {
-        var fruit = addRandomFruit();
-        showMessage('The tree dropped another fruit! ' + util.upperCaseFirstWord(fruit.toString()) + ': ' + fruit.abilitiesToString(), '#800', '#cfc');
-      } /* else if(state.treelevel == 25) {
-        // No random fruit here yet: more play time is needed to determine what costs, levels, boost percentages, ... are good here
-      }*/
+        fruit = addRandomFruit();
+        showHelpDialog(18, 'The tree reached level ' + state.treelevel + ' and dropped another fruit! Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
+      } else if(state.treelevel == 20) {
+        showHelpDialog(18, 'The tree reached level ' + state.treelevel + '. Transcension now turned into Transcension II, and doubles the amount of resin you receive upon transcending.', images_apple[2]);
+      } else if(state.treelevel == 25) {
+        fruit = addRandomFruit();
+      }
       if(state.treelevel == 1) {
-        showMessage('Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree for more info.', helpFG, helpBG);
+        showHelpDialog(6, 'Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree in the field for more info.',
+            undefined, undefined, [[undefined, tree_images[treeLevelIndex(state.treelevel)][1][0]], [undefined, tree_images[treeLevelIndex(state.treelevel)][2][0]]]);
       } else if(state.treelevel == min_transcension_level) {
-        showMessage('The tree reached adulthood, and is now able to transcend! Click the tree to view the transcension dialog.', helpFG, helpBG);
+        showHelpDialog(7, 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog.',
+        undefined, undefined, [[undefined, tree_images[treeLevelIndex(state.treelevel)][1][0]], [undefined, tree_images[treeLevelIndex(state.treelevel)][2][0]]]);
+      }
+      if(fruit) {
+        showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString());
       }
     }
+
+
+    if(state.g_numresets > 0) {
+      var req2 = treeLevel2Req(state.treelevel2 + 1);
+      if(state.res.ge(req2)) {
+        state.treelevel2++;
+        var message = 'Ethereal tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel2)][0] + ', level ' + state.treelevel2 +
+            '. Consumed: ' + req2.toString();
+        message += '. Higher ethereal tree levels can unlock more ethereal upgrades and ethereal crops';
+        state.res.subInPlace(req2);
+        showMessage(message, '#88f', '#ff0');
+
+        if(state.treelevel2 >= 1) {
+          showHelpDialog(22,
+              'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.',
+              undefined, undefined, [[undefined, tree_images[treeLevelIndex(state.treelevel)][1][4]], [undefined, tree_images[treeLevelIndex(state.treelevel)][2][4]]]);
+          unlockEtherealCrop(berry2_1);
+        }
+        if(state.treelevel2 >= 2) {
+          unlockEtherealCrop(nettle2_0);
+        }
+        if(state.treelevel2 >= 3) {
+          //unlockEtherealCrop(mush2_1);
+        }
+        if(state.treelevel2 >= 4) {
+          //unlockEtherealCrop(flower2_1);
+        }
+      }
+    }
+
 
     // compensation for savegames below version 0.1.17
     if(state.treelevel >= 5 && state.g_numfruits == 0 && state.fruit_seed == -1) {
       showMessage('Your tree level is higher than 5 but you didn\'t get a random fruit yet! Must have come from a previous version of the game before the "Fruit Update". One random fruit added now to get you started with this new feature.', '#ff0');
-      state.fruit_seed = Math.floor(state.g_starttime) & 0xffffffff; // to avoid abuse with the free fruit from old savegame (reloading it to get a randomly different one each time), use one fixed seed so this is the same always.
       addRandomFruit();
-      state.fruit_seed = -1; // now truly randomly initialize the random seed with this and next function call
-      getRandomFruitRoll();
     }
 
 
@@ -1434,13 +1553,13 @@ var update = function(opt_fromTick) {
       if(upgrades[j].pre()) {
         if(state.upgrades[j].unlocked) {
           // the pre function itself already unlocked it, so perhaps it auto applied the upgrade. Nothing to do anymore here other than show a different message.
-          showMessage('Received: "' + upgrades[j].getName() + '". ' + upgrades[j].description, '#cfc', '#800');
+          showMessage('Received: "' + upgrades[j].getName() + '"', '#ffc', '#008');
         } else {
           state.upgrades[j].unlocked = true;
           state.c_numupgrades_unlocked++;
           state.g_numupgrades_unlocked++;
           if(state.c_numupgrades_unlocked == 1) {
-            showMessage('You unlocked your first upgrade! Check the "upgrades" tab to view it.', helpFG, helpBG);
+            showHelpDialog(8, 'You unlocked your first upgrade! Check the "upgrades" tab to view it. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
           }
           showMessage('Upgrade available: "' + upgrades[j].getName() + '"', '#ffc', '#008');
         }
@@ -1460,7 +1579,7 @@ var update = function(opt_fromTick) {
         }
       }
       if(num_unlocked && is_first) {
-        showMessage('You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable', helpFG, helpBG);
+        showHelpDialog(9, 'You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable');
       }
     }
     // check medals
@@ -1474,11 +1593,12 @@ var update = function(opt_fromTick) {
         showMessage('Achievement unlocked: ' + medals[j].name, '#fe0', '#430');
         updateMedalUI();
 
-        if(j == medal_crowded_id) {
-          showMessage('The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear safely on top of crops, no need to make room for them.', helpFG, helpBG);
+        if(j == medal_crowded_id && state.g_numresets == 0) {
+          //showHelpDialog(10, 'The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear safely on top of crops, no need to make room for them.');
         }
         if(state.g_nummedals == 1) {
-          showMessage('You got your first achievement! Achievements give a slight production boost.', helpFG, helpBG);
+          // TODO: have non intrusive achievement badges instead
+          showHelpDialog(-11, 'You got your first achievement! Achievements give a slight production boost. See the "achievements" tab.');
         }
       }
     }
@@ -1559,3 +1679,17 @@ var update = function(opt_fromTick) {
 }
 
 
+
+document.addEventListener('keydown', function(e) {
+  if(e.key == 'w') {
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f = state.field[y][x];
+        if(f.index == FIELD_REMAINDER) {
+          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
+        }
+      }
+    }
+    update();
+  }
+});

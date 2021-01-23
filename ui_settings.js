@@ -101,26 +101,36 @@ function createNumberFormatHelp(notations, precision) {
   }
 
   text += '<br><br>';
-  text += '<b>SI suffixes:</b>';
-  text += '<br><br>';
 
+  var have_si = false;
+  for(var i = 0; i < notations.length; i++) {
+    if(notations[i] == Num.N_SI) {
+      have_si = true;
+      break;
+    }
+  }
 
-  num = 9;
-  for(var i = 1; i < num; i++) {
-    var suffix = '', suffixname = '', numeric = '';
-    numeric = ', 1';
-    for(var j = 0; j < i; j++) numeric += ',000';
-    numeric += ' (1e' + (i * 3) + ')';
-    if(i==1){suffix = ' K'; suffixname = ' kilo';}
-    else if(i==2){suffix = ' M'; suffixname = ' mega';}
-    else if(i==3){suffix = ' G'; suffixname = ' giga';}
-    else if(i==4){suffix = ' T'; suffixname = ' tera';}
-    else if(i==5){suffix =' P'; suffixname = ' peta';}
-    else if(i==6){suffix =' E'; suffixname = ' exa';}
-    else if(i==7){suffix =' Z'; suffixname = ' zetta';}
-    else if(i==8){suffix =' Y'; suffixname = ' yotta';}
+  if(have_si) {
+    text += '<b>SI suffixes:</b>';
+    text += '<br><br>';
 
-    text += '<b>' + suffix + '</b>' + (suffixname ? ': ' : '') + suffixname + numeric + '<br>';
+    num = 9;
+    for(var i = 1; i < num; i++) {
+      var suffix = '', suffixname = '', numeric = '';
+      numeric = ', 1';
+      for(var j = 0; j < i; j++) numeric += ',000';
+      numeric += ' (1e' + (i * 3) + ')';
+      if(i==1){suffix = ' K'; suffixname = ' kilo';}
+      else if(i==2){suffix = ' M'; suffixname = ' mega';}
+      else if(i==3){suffix = ' G'; suffixname = ' giga';}
+      else if(i==4){suffix = ' T'; suffixname = ' tera';}
+      else if(i==5){suffix =' P'; suffixname = ' peta';}
+      else if(i==6){suffix =' E'; suffixname = ' exa';}
+      else if(i==7){suffix =' Z'; suffixname = ' zetta';}
+      else if(i==8){suffix =' Y'; suffixname = ' yotta';}
+
+      text += '<b>' + suffix + '</b>' + (suffixname ? ': ' : '') + suffixname + numeric + '<br>';
+    }
   }
 
 
@@ -140,7 +150,7 @@ function createNumberFormatHelp(notations, precision) {
 
   for(var i = 0; i < notations.length; i++) {
     var j = notations[i];
-    text += '<b>' + util.upperCaseFirstWord(Num.N_Names[j]) + '</b><br>';
+    text += '<b>' + upper(Num.N_Names[j]) + '</b><br>';
     text += Num.N_Help[j] + '<br><br>';
   }
 
@@ -290,9 +300,9 @@ function createAdvancedSettingsDialog() {
 
   var pos = 0.05;
   var buttondiv;
+  var h = 0.05;
 
   var makeSettingsButton = function() {
-    var h = 0.05;
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
     var buttonFlex = new Flex(dialogFlex, 0.1, pos, 0.9, pos + h, 0.5);
     var button = buttonFlex.div;
@@ -300,6 +310,11 @@ function createAdvancedSettingsDialog() {
     pos += h * 1.1;
     return button;
   };
+
+  var addSettingsSpacer = function() {
+    pos += h * 0.5;
+  };
+
   var button;
   var updatebuttontext;
 
@@ -309,6 +324,26 @@ function createAdvancedSettingsDialog() {
   button.onclick = function(e) {
     createNumberFormatDialog();
   };
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) {
+    var style = '?';
+    if(state.tooltipstyle == 0) style = 'none';
+    if(state.tooltipstyle == 1) style = 'dark';
+    if(state.tooltipstyle == 2) style = 'light';
+    if(state.tooltipstyle == 3) style = 'translucent';
+    button.textEl.innerText = 'tooltip style: ' + style;
+  };
+  updatebuttontext(button);
+  registerTooltip(button, 'Change the tooltip style or disable them');
+  button.onclick = bind(function(button, updatebuttontext, e) {
+    state.tooltipstyle++;
+    if(state.tooltipstyle >= 4) state.tooltipstyle = 0;
+    updatebuttontext(button);
+    removeAllTooltips();
+  }, button, updatebuttontext);
+
+  addSettingsSpacer();
 
   button = makeSettingsButton();
   updatebuttontext = function(button) { button.textEl.innerText = 'save on close: ' + (state.saveonexit ? 'yes' : 'no'); };
@@ -329,27 +364,42 @@ function createAdvancedSettingsDialog() {
     updatebuttontext(button);
   }, button, updatebuttontext);
 
+  addSettingsSpacer();
+
   button = makeSettingsButton();
-  updatebuttontext = function(button) {
-    var style = '?';
-    if(state.tooltipstyle == 0) style = 'none';
-    if(state.tooltipstyle == 1) style = 'dark';
-    if(state.tooltipstyle == 2) style = 'light';
-    if(state.tooltipstyle == 3) style = 'translucent';
-    button.textEl.innerText = 'tooltip style: ' + style;
+  button.textEl.innerText = 'reset "never show again" help dialogs';
+  registerTooltip(button, 'Resets the "never show again" of all help dialogs, so you\'ll see them again next time until you disable them individually again.');
+  button.onclick = function(e) {
+    var dialog = createDialog(DIALOG_MEDIUM, function() {
+      state.help_disable = {};
+      dialog.cancelFun();
+      closeAllDialogs();
+    }, 'reset', 'cancel');
+    var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.35);
+    flex.div.innerHTML = 'This resets the "never show again" setting of all individual help dialogs. You\'ll get the help dialogs again in the situations that make them appear. You can individually disable them again.';
   };
+
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'enable help dialogs: ' + (state.disableHelp ? 'no' : 'yes'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Change the tooltip style or disable them');
+  registerTooltip(button, 'Whether to enable pop-up help dialogs. Set to no if you consider the dialogs too intrusive. However, if you leave them enabled, you can also always disable individual help dialogs with their "never show again" button, so you can still see new ones, which may be useful to get information about new game mechanics that unlock later.');
   button.onclick = bind(function(button, updatebuttontext, e) {
-    state.tooltipstyle++;
-    if(state.tooltipstyle >= 4) state.tooltipstyle = 0;
+    state.disableHelp = !state.disableHelp;
     updatebuttontext(button);
-    removeAllTooltips();
+    saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
   }, button, updatebuttontext);
 }
 
+
+var showing_stats = false;
+
+
 function createStatsDialog() {
-  var dialogFlex = createDialog();
+  showing_stats = true;
+  var dialogFlex = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+    showing_stats = false;
+  });
 
   var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
@@ -384,11 +434,11 @@ function createStatsDialog() {
   }
   if(state.g_numresets > 0 || state.treelevel > 0) text += '• weather abilities activated: ' + open + state.c_numabilities + close + '<br>';
   if(state.upgrades[upgrade_sununlock].count > 0) text += '• sun ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait() - getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait(), true) + close + '<br>';
-  if(state.upgrades[upgrade_fogunlock].count > 0) text += '• fog ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getFogDuration(), true) + close + ', ' + open + util.formatDuration(getFogWait() - getFogDuration(), true) + close + ', ' + open + util.formatDuration(getFogWait(), true) + close + '<br>';
+  if(state.upgrades[upgrade_mistunlock].count > 0) text += '• mist ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait() - getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait(), true) + close + '<br>';
   if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
-  text += '<br>';
 
   if(state.g_numresets > 0) {
+    text += '<br>';
     text += '<b>Total</b><br>';
     text += '• highest tree level: ' + open + state.g_treelevel + close + '<br>';
     text += '• achievements: ' + open + state.g_nummedals + close + '<br>';
@@ -410,11 +460,17 @@ function createStatsDialog() {
     text += '• season changes seen: ' + open + state.g_seasons + close + '<br>';
     text += '• fastest run: ' + open + util.formatDuration(state.g_fastestrun) + close + '<br>';
     text += '• longest run: ' + open + util.formatDuration(state.g_slowestrun) + close + '<br>';
-    text += '<br>';
+
   }
+
+  // these stats either are at the end of current run, or total, depending on whether "total" is visuble due to having done transcensions
+  text += '• achievements: ' + open + state.medals_earned + close + '<br>';
+  text += '• achievements production bonus: ' + open + '+' + state.medal_prodmul.subr(1).mulr(100).toString() + '%' + close + '<br>';
+  text += '<br>';
 
   if(state.g_numresets > 0) {
     text += '<b>Ethereal</b><br>';
+    text += '• ethereal tree level: ' + open + state.treelevel2 + close + '<br>';
     text += '• transcensions: ' + open + state.g_numresets + close + '<br>';
     if(state.reset_stats.length == 1) {
       text += '• last transcension level: ' + open;
@@ -457,9 +513,13 @@ function createStatsDialog() {
   div.innerHTML = text;
 }
 
+var showing_changelog = false;
 
 function createChangelogDialog() {
-  var dialogFlex = createDialog();
+  showing_changelog = true;
+  var dialogFlex = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+    showing_changelog = false;
+  });
 
   var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
@@ -493,8 +553,13 @@ function createChangelogDialog() {
 }
 
 
+var showing_help = false; // for medal
+
 function createHelpDialog() {
-  var dialogFlex = createDialog();
+  showing_help = true;
+  var dialogFlex = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+    showing_help = false;
+  });
 
   var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
@@ -515,6 +580,8 @@ function createHelpDialog() {
   text += '<b>List of keyboard shortcuts:</b>';
   text += '<br/><br/>';
   text += ' • <b>"1" , "2" , "3"</b>: activate one of the weather abilities';
+  text += '<br/>';
+  text += ' • <b>"w"</b>: plant watercress on all field tiles that have a watercress remainder. Such a remainder appears for watercress that have been leeching from multiple plants, that is, a good leech spot. Leeching has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective.';
   text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted type';
   text += '<br/>';

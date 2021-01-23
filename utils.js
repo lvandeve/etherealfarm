@@ -348,6 +348,8 @@ var Utils = (function() {
   // opt_inv: inverses direction of max sections. If false, starts from largest and leaves out smaller. If true, leaves out larger ones instead
   var formatDuration = function(s, opt_short, opt_maxSections, opt_inv) {
     var maxSections = opt_maxSections || 3;
+    if(isNaN(s)) return 'NaN';
+    if(s < 0) return '-' + formatDuration(-s);
 
     if(s == Infinity) return 'Infinity ' + (opt_short ? 's' : ' seconds');
 
@@ -616,4 +618,5 @@ var util = Utils;
 var bind = util.bind;
 var makeDiv = util.makeDiv;
 var addEvent = util.addEvent;
+var upper = util.upperCaseFirstWord;
 
