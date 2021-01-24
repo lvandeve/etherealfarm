@@ -229,6 +229,7 @@ function encState(state, opt_raw_only) {
   processBool(state.allowshiftdelete);
   processUint16(state.tooltipstyle);
   processBool(state.disableHelp);
+  processUint16(state.uistyle);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -698,6 +699,7 @@ function decState(s) {
     state.allowshiftdelete = processBool();
     state.tooltipstyle = processUint16();
     if(save_version >= 4096*1+20) state.disableHelp = processBool();
+    if(save_version >= 4096*1+22) state.uistyle = processUint16();
     if(error) return err(4);
 
 

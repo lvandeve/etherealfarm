@@ -26,7 +26,7 @@ function createTranscendDialog() {
       update();
   }, 'transcend', 'cancel');
 
-  dialog.div.style.backgroundColor = '#ff9';
+  dialog.div.className = 'efDialogEthereal';
 
   var tlevel = Math.floor(state.treelevel / min_transcension_level);
   var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
@@ -236,7 +236,7 @@ function makeFieldDialog(x, y) {
     var div;
 
     var dialog = createDialog();
-    dialog.div.style.backgroundColor = '#efec'; // slightly translucent to see resources through it
+    dialog.div.className = 'efDialogTranslucent';
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
@@ -265,7 +265,7 @@ function makeFieldDialog(x, y) {
     registerTooltip(button1, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     button1.onclick = function() {
       var dialog = createDialog(DIALOG_LARGE);
-      dialog.div.style.backgroundColor = '#fedc'; // slightly translucent to see resources through it
+      dialog.div.className = 'efDialogTranslucent';
       var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.8, 0.3);
       var text = '';
 
@@ -298,7 +298,7 @@ function makeFieldDialog(x, y) {
     var div;
 
     var dialog = createDialog();
-    dialog.div.style.backgroundColor = '#fedc'; // slightly translucent to see resources through it
+    dialog.div.className = 'efDialogTranslucent';
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);

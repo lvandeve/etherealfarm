@@ -188,6 +188,7 @@ function State() {
   this.allowshiftdelete = false; // allow deleting a crop without dialog or confirmation by shift+clicking it
   this.tooltipstyle = 1;
   this.disableHelp = false; // disable all popup help dialogs
+  this.uistyle = 1; // 0=default (1), 1=light, 2=dark
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog

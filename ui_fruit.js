@@ -56,7 +56,7 @@ function createFruitDialog(f, opt_selected) {
     closeAllDialogs();
     createFruitDialog(f, selected);
   };
-  dialog.div.style.backgroundColor = '#efec';
+  dialog.div.className = 'efDialogTranslucent';
 
   var canvasFlex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.15], [0, 0.15], 0.3);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -87,7 +87,7 @@ function createFruitDialog(f, opt_selected) {
 
     var div = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3).div;
     div.style.overflowY = 'scroll';
-    div.style.backgroundColor = '#aca';
+    div.className = 'efScrollBg';
 
     var text = '';
 
@@ -164,6 +164,7 @@ function createFruitDialog(f, opt_selected) {
         flexes[i].div.style.border = '1px solid #000';
         flexes[i].div.style.backgroundColor = '#8d8';
       }
+      flexes[i].div.style.color = '#000';
     }
 
     if(selected < 0) {
@@ -191,7 +192,7 @@ function createFruitDialog(f, opt_selected) {
     var cost = getFruitAbilityCost(a, level, f.tier);
     button.textEl.innerText = 'Level up: ' + cost.toString();
     var available = state.res.essence.sub(f.essence);
-    if(available.lt(cost.essence)) button.textEl.style.color = '#666';
+    if(available.lt(cost.essence)) button.className = 'efButtonCantAfford';
     else button.textEl.style.color = '';
     registerTooltip(button, 'Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits. Hold shift to level up multiple times but with only up to 25% of available essence');
     button.onclick = function(e) {

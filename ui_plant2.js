@@ -59,7 +59,7 @@ function makePlantDialog2(x, y, show_only) {
   var ty = 0;
 
   var flex = new Flex(dialog, 0, 0, 1, 0.05, 0.5);
-  dialog.div.style.backgroundColor = '#eefc'; // slightly translucent to see resources through it
+  dialog.div.className = 'efDialogEthereal';
   centerText2(flex.div);
 
   if(show_only) {

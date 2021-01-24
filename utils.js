@@ -341,6 +341,21 @@ var Utils = (function() {
   result.darkenColor = darkenColor;
 
 
+
+  var negateLightness = function(css) {
+    var rgb = parseCSSColor(css);
+    var r = rgb[0];
+    var g = rgb[1];
+    var b = rgb[2];
+    var mm = Math.min(Math.min(r, g), b) + Math.max(Math.max(r, g), b);
+    r = 255 - mm + r;
+    g = 255 - mm + g;
+    b = 255 - mm + b;
+    return formatCSSColor([r, g, b]);
+  };
+  result.negateLightness = negateLightness;
+
+
   // formats time given in second as years, months, days, hours, minutes, seconds
   // opt_maxSections is how many different sections to print, or leave out smaller ones. Default is 3, max is 9.
   // the sections are: giga-annum, mega-annum, millenium, year, month, day, hour, minute, second.

@@ -25,7 +25,7 @@ function createNumberFormatHelp(notations, precision) {
 
   var div = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3).div;
   div.style.overflowY = 'scroll';
-  div.style.backgroundColor = '#aaa';
+  div.className = 'efScrollBg';
 
   var text = '';
 
@@ -217,14 +217,14 @@ function createNumberFormatDialog() {
     tableText += '<tr><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td><td width="10%" style="border:none"></td><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td></tr>';
     for(var i = 0; i * 2 < examples.length; i++) {
       tableText += '<tr>';
-      tableText += '<td style="padding:8px; color:#444">';
+      tableText += '<td style="padding:8px;">';
       tableText += examples[i].valueOf();
       tableText += '</td><td style="padding:8px">'
       tableText += Num(examples[i]).toString(precision, notation);
       tableText += '</td>';
       var j = i + Math.floor(examples.length / 2);
       tableText += '<td style="border:none"> </td>';
-      tableText += '<td style="padding:8px; color:#444">';
+      tableText += '<td style="padding:8px;">';
       tableText += examples[j].valueOf();
       tableText += '</td><td style="padding:8px">'
       tableText += Num(examples[j]).toString(precision, notation);
@@ -277,15 +277,26 @@ function createAdvancedSettingsDialog() {
   var button;
   var updatebuttontext;
 
-  button = makeSettingsButton();
-  button.textEl.innerText = 'number format';
-  registerTooltip(button, 'Change the precision and display type for large numbers.');
-  button.onclick = function(e) {
-    createNumberFormatDialog();
-  };
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) {
+  var updateuistylebuttontext = function(button) {
+    var style = '?';
+    if(state.uistyle == 2) style = 'dark';
+    else style = 'light';
+    button.textEl.innerText = 'interface theme: ' + style;
+  };
+  updateuistylebuttontext(button);
+  registerTooltip(button, 'Change the interface style');
+  button.onclick = bind(function(button, updateuistylebuttontext, e) {
+    state.uistyle++;
+    if(state.uistyle > 2) state.uistyle = 1;
+    updateuistylebuttontext(button);
+    setStyle();
+  }, button, updateuistylebuttontext);
+
+
+  button = makeSettingsButton();
+  var updatetooltipbuttontext = function(button) {
     var style = '?';
     if(state.tooltipstyle == 0) style = 'none';
     if(state.tooltipstyle == 1) style = 'dark';
@@ -293,14 +304,23 @@ function createAdvancedSettingsDialog() {
     if(state.tooltipstyle == 3) style = 'translucent';
     button.textEl.innerText = 'tooltip style: ' + style;
   };
-  updatebuttontext(button);
+  updatetooltipbuttontext(button);
   registerTooltip(button, 'Change the tooltip style or disable them');
-  button.onclick = bind(function(button, updatebuttontext, e) {
+  button.onclick = bind(function(button, updatetooltipbuttontext, e) {
     state.tooltipstyle++;
     if(state.tooltipstyle >= 4) state.tooltipstyle = 0;
-    updatebuttontext(button);
+    updatetooltipbuttontext(button);
     removeAllTooltips();
-  }, button, updatebuttontext);
+  }, button, updatetooltipbuttontext);
+
+
+  button = makeSettingsButton();
+  button.textEl.innerText = 'number format';
+  registerTooltip(button, 'Change the precision and display type for large numbers.');
+  button.onclick = function(e) {
+    createNumberFormatDialog();
+  };
+
 
   addSettingsSpacer();
 
@@ -366,7 +386,7 @@ function createStatsDialog() {
 
   var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.35).div;
   div.style.overflowY = 'scroll';
-  div.style.backgroundColor = '#aac';
+  div.className = 'efScrollBg';
 
   var text = '';
 
@@ -486,7 +506,7 @@ function createChangelogDialog() {
 
   var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3).div;
   div.style.overflowY = 'scroll';
-  div.style.backgroundColor = '#aac';
+  div.className = 'efScrollBg';
 
   var text = '';
 
@@ -526,7 +546,7 @@ function createHelpDialog() {
 
   var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3).div;
   div.style.overflowY = 'scroll';
-  div.style.backgroundColor = '#aac';
+  div.className = 'efScrollBg';
 
   var text = '';
 

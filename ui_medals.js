@@ -168,6 +168,7 @@ function showMedalChip(medal_id) {
 
   var textFlex = new Flex(medalChipFlex, [0, 0.7], [0.5, -0.35], 0.99, [0.5, 0.35]);
   //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
   textFlex.div.innerHTML = 'Achievement Unlocked' + '<br><br>' + upper(m.name);
 
   medalChipFlex.div.onclick = removeMedalChip;

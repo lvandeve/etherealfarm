@@ -21,8 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
 function renderUpgradeChip(u, x, y, w, flex, completed) {
   var div = flex.div;
-  div.style.border = '1px solid black';
-  div.style.backgroundColor = '#ffe';
+  div.className = 'efUpgradeChip';
 
   var cost = u.getCost(completed ? -1 : 0);
   var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 1);
@@ -49,6 +48,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   }
 
   var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.9);
+  styleButton(buyFlex.div);
 
   var infoText = '';
   var updateInfoText = function() {
@@ -70,14 +70,9 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   if(!completed) {
     var buyText = (u.is_choice ? 'Choice: ' : 'Buy: ') + cost.toString();
 
-    buyFlex.div.innerText = buyText;
-    buyFlex.setCentered();
+    buyFlex.div.textEl.innerText = buyText;
 
-    buyFlex.div.style.border = '1px solid black';
-    buyFlex.div.style.backgroundColor = '#ccc';
-    styleButton0(buyFlex.div);
-
-    if(state.res.lt(cost)) buyFlex.div.style.color = '#aaa';
+    if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
 
     buyFlex.div.onclick = bind(function(i, e) {
       if(u.is_choice) {
@@ -105,7 +100,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       else if(document.selection) document.selection.empty();
     }, i);
   } else {
-    buyFlex.div.innerText = 'Cost: ' + cost.toString();
+    buyFlex.div.textEl.innerText = 'Cost: ' + cost.toString();
     //buyFlex.setCentered();
   }
 

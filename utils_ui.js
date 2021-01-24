@@ -72,53 +72,24 @@ function styleButton0(div) {
   div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   if(div.textEl) div.textEl.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
-  if(!!div.style.backgroundColor) {
-    addEvent(div, 'onmouseover', function() { div.style.filter = 'brightness(0.93)'; });
-    addEvent(div, 'onmouseout', function() { div.style.filter = ''; });
-  } else {
-    // if it has no backgroundcolor, then get the effect instead by giving it a translucent one
-    addEvent(div, 'onmouseover', function() { div.style.backgroundColor = '#0002'; });
-    addEvent(div, 'onmouseout', function() { div.style.backgroundColor = ''; });
-  }
+  addEvent(div, 'onmouseover', function() { div.style.filter = 'brightness(0.93)'; });
+  addEvent(div, 'onmouseout', function() { div.style.filter = ''; });
 }
 
 // somewhat like makeDiv, but gives mouseover/pointer/... styles
 // also sets some fields on the div: hightlight/hover colors, textEl, ...
 function styleButton(div, opt_color) {
-  div.color0 =  opt_color ?  '#fee' : '#bbb';
-  div.color0h = opt_color ?  '#edd' : '#aaa';
-  div.color1 =  opt_color ?  '#aaa' : '#aaa';
-  div.color1h = opt_color ?  '#bbb' : '#bbb';
-  div.color2 =  opt_color ?  '#eee' : '#eee';
-  div.color2h = opt_color ?  '#ddd' : '#ddd';
-  div.color = div.color0;
-  div.colorh = div.color0h;
-  div.style.backgroundColor = div.color;
+  div.className = 'efButton';
+
   div.textEl = div; // for consistency with what different centerText varieties do
   centerText2(div);
-
-  div.style.border = '1px solid black';
 
   styleButton0(div);
 }
 
-// highlight 0: standard look without highlighting, highlight 1: highlighted, highlight 2: un-highlighted
 function highlightButton(div, highlight) {
-  if(highlight == 0) {
-    div.color = div.color0;
-    div.colorh = div.color0h;
-  } else if(highlight == 1) {
-    div.color = div.color1;
-    div.colorh = div.color1h;
-  } else if(highlight == 2) {
-    div.color = div.color2;
-    div.colorh = div.color2h;
-  }
-  if(div.style_ == 2) {
-    div.style.color = div.color;
-  } else {
-    div.style.backgroundColor = div.color;
-  }
+  if(highlight) div.className = 'efButtonHighlighted';
+  else div.className = 'efButton';
 }
 
 // div must already have the position and size (the arguments are used to compute stuff inside of it)
@@ -196,8 +167,8 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   created_dialogs.push(dialogFlex);
   var dialog = dialogFlex.div;
 
-  dialog.style.backgroundColor = '#ddd';
-  dialog.style.border = '1px solid black';
+  dialog.className = 'efDialog';
+
   dialog.style.zIndex = '' + (dialog_level * 10 + 5);
 
   var button;

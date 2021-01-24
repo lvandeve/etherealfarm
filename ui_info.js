@@ -95,18 +95,16 @@ function prodBreakdown2() {
   }
 }
 
-
-var season_colors = [ '#dbecc8', '#c3e4bc', '#d3be9c', '#eef'];
+var season_styles = [ 'efSeasonBgSpring', 'efSeasonBgSummer', 'efSeasonBgAutumn', 'efSeasonBgWinter' ];
 
 function updateResourceUI() {
   var infoDiv = infoFlex.div;
-  infoDiv.style.backgroundColor = season_colors[getSeason()];
   if(!resourceDivs.length) {
     for(var y = 0; y < 2; y++) {
       for(var x = 0; x < 4; x++) {
         var i = y * 4 + x;
         var div = makeDiv((x * 25) + '%', (y * 50) + '%', '25%', '50%', infoDiv);
-        div.style.border = '1px solid black';
+        div.className = 'efInfo ' + season_styles[getSeason()];;
         centerText2(div);
         div.style.textOverflow = 'hidden';
         div.style.whiteSpace = 'nowrap';
@@ -313,7 +311,7 @@ function updateResourceUI() {
       div.style.cursor = 'pointer';
       div.onclick = function() {
         var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM);
-        dialog.div.style.backgroundColor = '#cccd'; // slightly translucent to see resources through it
+        dialog.div.className = 'efDialogTranslucent';
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);
         var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.3);
@@ -346,9 +344,9 @@ function updateResourceUI() {
   if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.twigs.eqr(0)) showResource(true, 3, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  //if(!state.g_max_res.seeds2.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  //if(!state.g_max_res.spores2.eqr(0)) showResource(false, 5, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  //if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.essence.eqr(0)) showResource(true, 7, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
 
 }

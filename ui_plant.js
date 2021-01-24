@@ -26,7 +26,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   }
   var flex = new Flex(parent, x * w + 0.01, [0, y * w * 0.9 + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w * 0.9 - 0.01, 0.5], 0.75);
   var div = flex.div;
-  div.style.border = '1px solid black';
+  div.className = 'efPlantChip';
 
   var canvasFlex = new Flex(flex, 0, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -71,7 +71,7 @@ function makePlantDialog(x, y, show_only) {
   if(num_unlocked >= 15) dialogsize = DIALOG_LARGE;
 
   var dialog = createDialog(dialogsize);
-  dialog.div.style.backgroundColor = '#efec'; // slightly translucent to see resources through it
+  dialog.div.className = 'efDialogTranslucent';
   var tx = 0;
   var ty = 0;
 

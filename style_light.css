@@ -1,0 +1,87 @@
+a {
+  color: #00f;
+}
+
+a:visited {
+  color: #808;
+}
+
+.efBackground {
+  background-color: #def;
+  color: #000;
+}
+
+.efDialog {
+  background-color: #ddd;
+  border: 1px solid black;
+  color: #000;
+}
+
+.efDialogTranslucent {
+  background-color: #cccd;
+  border: 1px solid #bbb;
+  color: #000;
+}
+
+.efDialogEthereal {
+  background-color: #adfd;
+  border: 1px solid #bbb;
+  color: #000;
+}
+
+.efButton {
+  background-color: #ccc;
+  border: 1px solid black;
+  color: #000;
+}
+
+.efButtonCantAfford {
+  background-color: #ccc;
+  border: 1px solid black;
+  color: #666;
+}
+
+.efButtonHighlighted {
+  background-color: #888;
+  border: 1px solid black;
+  color: #000;
+}
+
+.efInfo {
+  border: 1px solid black;
+}
+
+.efSeasonBgSpring {
+  background-color: #dbecc8;
+}
+
+.efSeasonBgSummer {
+  background-color: #c3e4bc;
+}
+
+.efSeasonBgAutumn {
+  background-color: #d3be9c;
+}
+
+.efSeasonBgWinter {
+  background-color: #eef;
+}
+
+.efScrollBg {
+  background-color: #88a;
+}
+
+.efUpgradeChip {
+  background-color: #ffe;
+  border: 1px solid #000;
+}
+
+.efEtherealUpgradeChip {
+  background-color: #9df;
+  border: 1px solid #ff0;
+}
+
+.efPlantChip {
+  border: 1px solid #000;
+}
+

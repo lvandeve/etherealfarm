@@ -24,8 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
 function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   var div = flex.div;
-  div.style.border = '1px solid yellow';
-  div.style.backgroundColor = '#9df';
+  div.className = 'efEtherealUpgradeChip';
 
   var cost = u.getCost(completed ? -1 : 0);
   var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 1);
@@ -50,6 +49,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   }
 
   var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.8);
+  styleButton(buyFlex.div);
 
   var infoText = upper(name);
   infoText += '<br><br>Cost: ' + cost.toString();
@@ -61,21 +61,16 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   if(!completed) {
     var buyText = 'Cost: ' + cost.toString();
 
-    buyFlex.div.innerText = buyText;
-    buyFlex.setCentered();
+    buyFlex.div.textEl.innerText = buyText;
 
-    buyFlex.div.style.border = '1px solid black';
-    buyFlex.div.style.backgroundColor = '#ccc';
-    styleButton0(buyFlex.div);
-
-    if(state.res.lt(cost)) buyFlex.div.style.color = '#aaa';
+    if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
 
     buyFlex.div.onclick = bind(function(i, e) {
       actions.push({type:ACTION_UPGRADE2, u:u.index});
       update();
     }, i);
   } else {
-    buyFlex.div.innerText = 'Cost: ' + cost.toString();
+    buyFlex.div.textEl.innerText = 'Cost: ' + cost.toString();
     //buyFlex.setCentered();
   }
 

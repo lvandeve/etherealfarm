@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.22 (2021-01-24):';
+  text += '<br/>• Added dark mode UI. Option available under preferences.';
+  text += '<br/>• Added support for CSS stylesheets for this.';
+  text += '<br/><br/>';
+
   text += '0.1.21 (2021-01-24):';
   text += '<br/>• Added achievements chips when new achievement unlocked.';
   text += '<br/>• Other related UI tweaks: latin number tweaks, tooltip infos';

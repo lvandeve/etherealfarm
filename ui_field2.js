@@ -87,7 +87,7 @@ function makeField2Dialog(x, y) {
     var div;
 
     var dialog = createDialog();
-    dialog.div.style.backgroundColor = '#eefc'; // slightly translucent to see resources through it
+    dialog.div.className = 'efDialogTranslucent';
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
@@ -132,7 +132,7 @@ function makeField2Dialog(x, y) {
     var div;
 
     var dialog = createDialog();
-    dialog.div.style.backgroundColor = '#eefc'; // slightly translucent to see resources through it
+    dialog.div.className = 'efDialogTranslucent';
     var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.9, 0.3);
 
     var text = '<b>Ethereal Tree</b>';

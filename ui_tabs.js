@@ -39,7 +39,7 @@ function setTab(i, opt_temp) {
   }
   for(var j = 0; j < tabbuttons.length; j++) {
     if(!tabbuttons[j]) continue;
-    highlightButton(tabbuttons[j], i == j ? 1 : 2);
+    highlightButton(tabbuttons[j], i == j);
   }
 
   if(i == tabindex_upgrades) updateUpgradeUI();

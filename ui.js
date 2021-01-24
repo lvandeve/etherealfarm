@@ -124,7 +124,7 @@ function showHelpDialog(id, text, image, opt_text2, images, opt_recursive) {
       showHelpDialog.apply(this, args);
     }
   });
-  dialog.div.style.backgroundColor = '#bbbe';
+  dialog.div.className = 'efDialogTranslucent';
   var fx0 = 0.01;
   var fy0 = 0.01;
   var fx1 = 0.99;
@@ -188,6 +188,10 @@ function initUI() {
   //contentDiv.innerHTML = '';
   //logDiv.innerHTML = '';
 
+  setStyle();
+
+  document.body.className = 'efBackground';
+
   contentFlex.clear();
   tabFlex.clear();
 
@@ -250,4 +254,17 @@ if(oldfont) {
   //document.body.style.fontSize = '1em';
 }
 
-document.body.style.backgroundColor = '#def';
+////////////////////////////////////////////////////////////////////////////////
+
+function setCSSFile(file) {
+  var link = document.getElementById('csslink');
+  link.setAttribute("href", file);
+}
+
+function setStyle() {
+  if(state.uistyle == 2) {
+    setCSSFile('style_dark.css');
+  } else {
+    setCSSFile('style_light.css');
+  }
+}
