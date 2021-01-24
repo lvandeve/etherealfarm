@@ -1459,7 +1459,7 @@ var update = function(opt_fromTick) {
       state.lasttreeleveluptime = state.time;
       num_tree_levelups++;
       if(getSeason() == 3) {
-        showMessage('Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1).mulr(100)) + '%');
+        showMessage('Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1).mulr(100)).toString() + '%');
       }
       state.resin.addInPlace(resin);
       state.res.subInPlace(req);

@@ -16,47 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-
-// Full names of the first few latin number suffixes
-var suffixnames = [
-  '',
-  'thousand',
-  'million',
-  'billion',
-  'trillion',
-  'quadrillion',
-  'quintillion',
-  'sextillion',
-  'septillion',
-  'octillion',
-  'nonillion',
-  'decillion',
-  'undecillion',
-  'duodecillion',
-  'tredecillion',
-  'quattuordecillion',
-  'quindecillion',
-  'sexdecillion',
-  'septendecillion',
-  'octodecillion',
-  'novemdecillion',
-  'vigintillion',
-  'unvigintillion',
-  'duovigintillion',
-  'trevigintillion',
-  'quattuorvigintillion',
-  'quinvigintillion',
-  'sexvigintillion',
-  'septenvigintillion',
-  'octovigintillion',
-  'novemvigintillion',
-  'trigintillion',
-  'untrigintillion',
-  'duotrigintillion',
-  //'tretrigintillion',
-  //'quattuortrigintillion',
-];
-
 function createNumberFormatHelp(notations, precision) {
   var dialog = createDialog(DIALOG_LARGE);
 
@@ -76,12 +35,12 @@ function createNumberFormatHelp(notations, precision) {
   text += '<b>Latin suffixes:</b>';
   text += '<br><br>';
 
-  var num = suffixnames.length + 2;
+  var num = 34 + 2;
   for(var i = 1; i < num; i++) {
     var suffix = '', suffixname = '', numeric = '';
     if(i < num - 2) {
       suffix = getLatinSuffix(i * 3);
-      suffixname = suffixnames[i];
+      suffixname = getLatinSuffixFullName(i * 3);
       if(i <= 4) {
         numeric = ', 1';
         for(var j = 0; j < i; j++) numeric += ',000';

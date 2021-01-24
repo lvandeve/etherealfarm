@@ -1102,3 +1102,132 @@ Num.valueOf = function(a) {
 Num.prototype.valueOf = function() {
   return Num.valueOf(this);
 };
+
+
+// units when standalone
+var full_suffix_units = [
+  'thousand',
+  'million',
+  'billion',
+  'trillion',
+  'quadrillion',
+  'quintillion',
+  'sextillion',
+  'septillion',
+  'octillion',
+  'nonillion',
+];
+
+// tens standalone
+var full_suffix_tens = [
+  '',
+  'decillion',
+  'vigintillion',
+  'trigintillion',
+  'quadragintillion',
+  'quinquagintillion',
+  'sexagintillion',
+  'septuagintillion',
+  'octagintillion',
+  'nonagintillion',
+];
+
+// hundreds standalone
+var full_suffix_hundreds = [
+  '',
+  'centillion',
+  'ducentillion',
+  'trecentillion',
+  'quadringentillion',
+  'quingentillion',
+  'sescentillion',
+  'septingentillion',
+  'octingentillion',
+  'nongentillion'
+];
+
+// units when in front of a ten or cent
+var full_suffix_units_pre = [
+  '',
+  'un',
+  'duo',
+  'tres',
+  'quattuor',
+  'quin',
+  'sex',
+  'septen',
+  'octo',
+  'novem'
+];
+
+
+// tens when in front of a centillion
+var full_suffix_tens_pre = [
+  '',
+  'deci',
+  'viginti',
+  'triginta',
+  'quadriginta',
+  'quinqua',
+  'sexaginta',
+  'septuaginta',
+  'octoginta',
+  'nonaginta'
+];
+
+
+
+// here e is the actual latin number represented, e.g. 100 for Centum
+function getLatinSuffixFullNameV(e) {
+  if(e == -Infinity) return '[-Inf]';
+  if(e == Infinity) return '[Inf]';
+  if(e < 0) return '[Neg]';
+  if(isNaN(e)) return '[NaN]';
+
+  // larger than millillion not yet supported
+  if(e > 1000) return '[TooBigForFullName]';
+
+  if(e == 1000) return 'millillion';
+
+  /*
+  NOTE: the order of the full latin words is different (more correct) than what we use for the short suffixes:
+  101 is uncentillion, but for the short suffixes we use CU ("centillionun")
+  102 is duocentillion while 200 is ducentillion. The short suffixes are respectively CD and DC, rather than both DC.
+  400 is quadringentillion so centillion with a g, but the short suffix is QC with a C.
+  500 is quingentillion and here the short suffix is QG
+  these rules for the short suffixes are to keep them distinguishable given that they are just a few short letters, but for the full latin names we can use the proper ordering and naming rules
+  */
+
+  var u = e % 10;
+  var d = Math.floor(e / 10) % 10;
+  var c = Math.floor(e / 100) % 10;
+
+  if(e < 10) {
+    return full_suffix_units[u];
+  }
+
+  var unit = full_suffix_units_pre[u];
+  var ten = (e >= 100) ? full_suffix_tens_pre[u] : full_suffix_tens[d];
+  if(u == 3 && d > 0 && (ten[0] == 'd' || ten[0] == 's')) unit = 'tre'; // exceptions where tres becomes tre
+  return unit + ten + full_suffix_hundreds[c];
+}
+
+// exponent e must be multiple of 3
+// returns undefined if out of range
+function getLatinSuffixFullName(e) {
+  if(e == 0) return '';
+  if(e == 1) return 'ten';
+  if(e == 2) return 'hundred';
+  var result = '';
+  if((e % 3) == 1) result = 'ten ';
+  if((e % 3) == 2) result = 'hundred ';
+  result += getLatinSuffixFullNameV(Math.floor(e / 3) - 1);
+  return result;
+}
+
+// returns only the full latin suffix the number would get when its exponent spelled out in full
+// does not have lower granularity than multiples of tens
+function getLatinSuffixFullNameForNumber(v) {
+  var e = Math.floor(v.abs().logr(10));
+  return getLatinSuffixFullName(e);
+}

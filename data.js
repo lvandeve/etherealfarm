@@ -1369,25 +1369,24 @@ registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { 
 var prevmedal;
 
 medal_register_id = 4;
-var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60];
-var seeds_achievement_bonuses_percent =   [0.1, 0.2, 0.3,  0.4, 0.5,  0.75,    1,  1.5,    2,    3,    4,    5,  7.5,   10,   15];
+var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e72];
+var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   4,     5,    6,    7,    8,   10,   12,   15,   30,   50];
 for(var i = 0; i < seeds_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
   var num = Num(seeds_achievement_values[i]);
+  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
   var s0 = num.toString(3, Num.N_LATIN);
   var s1 = num.toString(3, Num.N_SCI);
-  var name = 'seeds ' + s0;
-  var id = registerMedal(name, 'have over ' + s1 + ' seeds', image_seed,
+  var name = full + ' seeds';
+  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
       bind(function(num) { return state.g_res.seeds.gt(num); }, num),
       Num(seeds_achievement_bonuses_percent[i]).mulr(0.01));
   if(i > 0) medals[id].hint = prevmedal;
   prevmedal = id;
 }
-medal_register_id += 20; // a few spares for this one. TODO: don't do this like this, start a new medal_register_id for next series instead
 
 
-
-
+medal_register_id = 39;
 var planted_achievement_values =  [   5,   50,  100,  200,  500,  1000,  1500, 2000, 5000];
 var planted_achievement_bonuses = [0.01, 0.01, 0.02, 0.02, 0.05,  0.05,   0.1,  0.1,  0.2];
 for(var i = 0; i < planted_achievement_values.length; i++) {
@@ -1569,15 +1568,17 @@ for(var i = 0; i < level_achievement_values.length; i++) {
 
 medal_register_id = 700;
 
-var resin_achievement_values =           [10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e10,1e11,1e12,1e13,1e14,1e15];
+var resin_achievement_values =           [10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e12,1e15,1e18,1e21,1e24,1e27];
 var resin_achievement_bonuses_percent =  [ 1,  2,  5, 10, 15, 20, 25, 30, 40,  50,  60,  70,  80,  90, 100];
 for(var i = 0; i < resin_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
   var num = Num(resin_achievement_values[i]);
+  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
   var s0 = num.toString(3, Num.N_LATIN);
   var s1 = num.toString(3, Num.N_SCI);
-  var name = 'resin ' + s0;
-  var id = registerMedal(name, 'earned over ' + s1 + ' resin in total', image_resin,
+  var name = full + ' resin ';
+  var name2 = (num.ltr(900)) ? (s0) : (s0 + ' (' + s1 + ')');
+  var id = registerMedal(name, 'earned over ' + name2 + ' resin in total', image_resin,
       bind(function(num) { return state.g_res.resin.gt(num); }, num),
       Num(resin_achievement_bonuses_percent[i]).mulr(0.01));
   if(i > 0) medals[id].hint = prevmedal;
@@ -2009,7 +2010,7 @@ upgrade2_register_id = 100;
 var upgrade2_resin_bonus = Num(0.25);
 var upgrade2_resin = registerUpgrade2('resin gain', 1, Res({resin:50}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase resin gain from tree by ' + (upgrade2_resin_bonus * 100) + '% (additive).', undefined, undefined, tree_images[0][2][0]);
+}, function(){return true;}, 0, 'increase resin gain from tree by ' + (upgrade2_resin_bonus * 100) + '% (additive).', undefined, undefined, image_resin);
 
 var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', 1, Res({resin:100}), 2, function() {
   upgrades[berryunlock_0].fun();

@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.21 (2021-01-24):';
+  text += '<br/>• Only minor number-display related UI tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.20 (2021-01-23):';
   text += '<br/>• New mechanic: mistletoes, twigs resource and ethereal tree leveling.';
   text += '<br/>• Added new ethereal upgrades and crops, both first-tier and higher ethereal-tree-level-tier ones.';
