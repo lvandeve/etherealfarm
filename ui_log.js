@@ -93,6 +93,7 @@ function initMessageUI() {
   sameMessageCount = 1;
 
   logDiv.style.backgroundColor = '#000';
+  logDiv.onclick = removeMedalChip;
 }
 
 // Show a debug error, these should normally never happen in the released version, if they do they are a bug

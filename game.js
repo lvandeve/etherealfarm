@@ -1016,7 +1016,7 @@ var update = function(opt_fromTick) {
                 'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower next to a mushroom works even greater.',
                 nettle[4],
                 '<br><br>'+
-                'The image shows a possible configuration where the mushroom receives boost from both nettle (top) and flower (bower). The top left flower and top right blackberry in this image however are negatively affected by the nettle.',
+                'The image shows a possible configuration where the mushroom receives boost from both nettle (top) and flower (bottom). The top left flower and top right blackberry in this image however are negatively affected by the nettle.',
                 [[clover[4],nettle[4],blackberry[4]],
                  [blueberry[4],champignon[4],blueberry[4]],
                  [undefined,clover[4],undefined]]);
@@ -1594,8 +1594,9 @@ var update = function(opt_fromTick) {
         state.g_nummedals++;
         state.medals[j].earned = true;
         //medals_new = true;
-        showMessage('Achievement unlocked: ' + medals[j].name, '#fe0', '#430');
+        showMessage('Achievement unlocked: ' + upper(medals[j].name), '#fe0', '#430');
         updateMedalUI();
+        showMedalChip(j);
 
         if(j == medal_crowded_id && state.g_numresets == 0) {
           //showHelpDialog(10, 'The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear safely on top of crops, no need to make room for them.');

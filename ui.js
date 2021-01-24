@@ -161,6 +161,8 @@ function showHelpDialog(id, text, image, opt_text2, images, opt_recursive) {
 }
 
 
+
+
 // UI that persists even through loading of savegame, hard resets, etc...
 function initUIGlobal() {
   makeMainDivs();

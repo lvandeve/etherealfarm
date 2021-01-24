@@ -48,8 +48,13 @@ function setTab(i, opt_temp) {
     lastTouchedFruit = null;
     updateFruitUI();
   }
-  if(i == tabindex_medals) updateMedalUI();
-  if(i == tabindex_upgrades2) updateUpgrade2UI();
+  if(i == tabindex_medals) {
+    updateMedalUI();
+    removeMedalChip();
+  }
+  if(i == tabindex_upgrades2) {
+    updateUpgrade2UI();
+  }
 
   updateTabButtons();
 }

@@ -21,7 +21,8 @@ function getChangeLog() {
   var text = '';
 
   text += '0.1.21 (2021-01-24):';
-  text += '<br/>• Only minor number-display related UI tweaks.';
+  text += '<br/>• Added achievements chips when new achievement unlocked.';
+  text += '<br/>• Other related UI tweaks: latin number tweaks, tooltip infos';
   text += '<br/><br/>';
 
   text += '0.1.20 (2021-01-23):';

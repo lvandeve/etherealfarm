@@ -964,7 +964,7 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun)
   if(!crop.prod.empty()) description += ' Base production: ' + crop.prod.toString() + '/s.';
   if(!crop.boost.eqr(0)) {
     if(crop.type == CROPTYPE_NETTLE) {
-      description += ' Boosts neighbor mushroom spores production ' + (crop.boost.mulr(100).toString(3, Num.N_FULL)) + '% without increasing seed consumption. However, negatively affects neighboring berries, so avoid touching berries with this plant.';
+      description += ' Boosts neighbor mushroom spores production ' + (crop.boost.mulr(100).toString(3, Num.N_FULL)) + '% without increasing seed consumption. However, negatively affects neighboring berries and flowers, so avoid touching those with this plant.';
     } else {
       description += ' Boosts neighbors: ' + (crop.boost.mulr(100).toString(3, Num.N_FULL)) + '%. Does not boost watercress directly, but watercress gets same boosts as its neighbor resource-producing crops.';
     }
@@ -1308,6 +1308,8 @@ function Medal() {
   this.prodmul = Num(0);
 
   this.hint = undefined; // if the medal with id hint is unlocked, then reveals the existance of this medal in the UI (but does not unlock it)
+
+  this.icon = undefined;
 };
 
 var tierNames = ['zinc', 'bronze', 'silver', 'electrum', 'gold', 'platinum', 'rhodium', 'sapphire', 'emerald', 'ruby', 'diamond'];
@@ -1379,7 +1381,7 @@ for(var i = 0; i < seeds_achievement_values.length; i++) {
   var s1 = num.toString(3, Num.N_SCI);
   var name = full + ' seeds';
   var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
-      bind(function(num) { return state.g_res.seeds.gt(num); }, num),
+      bind(function(num) { return state.res.seeds.gt(num); }, num),
       Num(seeds_achievement_bonuses_percent[i]).mulr(0.01));
   if(i > 0) medals[id].hint = prevmedal;
   prevmedal = id;

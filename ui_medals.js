@@ -144,3 +144,32 @@ function updateMedalUI() {
     }, getMedalText);
   }
 }
+
+// the "achievement unlocked" chip at the bottom
+var medalChipFlex = undefined;
+
+function removeMedalChip() {
+  if(!medalChipFlex) return;
+
+  medalChipFlex.removeSelf();
+  medalChipFlex = undefined;
+}
+
+function showMedalChip(medal_id) {
+  removeMedalChip();
+  var m = medals[medal_id];
+
+  medalChipFlex = new Flex(mainFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
+  medalChipFlex.div.style.backgroundColor = '#ddde';
+
+  var canvasFlex = new Flex(medalChipFlex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+  renderImage(m.icon, canvas);
+
+  var textFlex = new Flex(medalChipFlex, [0, 0.7], [0.5, -0.35], 0.99, [0.5, 0.35]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.innerHTML = 'Achievement Unlocked' + '<br><br>' + upper(m.name);
+
+  medalChipFlex.div.onclick = removeMedalChip;
+}
+
