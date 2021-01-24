@@ -134,6 +134,13 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
   var p = prefield[f.y][f.x];
 
+  if(c.type == CROPTYPE_MISTLETOE) {
+    if(!p.treeneighbor) {
+      result += '<font color="#f88">This mistletoe is not planted next to the tree and therefore does nothing at all. Plant next to tree to be able to get twigs.</font>';
+      result += '<br/><br/>';
+    }
+  }
+
   if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
     if(opt_detailed) {
       // the detailed dialog is not dynamically updated, so show the total growth time statically instead.
@@ -143,6 +150,8 @@ function getCropInfoHTML(f, c, opt_detailed) {
       result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
     }
     result += '<br/>';
+    result += 'Expected production/sec: ' + c.getProd(f, true).toString();
+    result += '<br/><br/>';
   } else {
     if(c.type == CROPTYPE_SHORT) {
       if(opt_detailed) {
@@ -182,6 +191,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       } else if(p.prod3.neq(p.prod2)) {
         result += 'After consumption: ' + p.prod2.toString() + '<br/>';
       }
+      result += '<br/>';
     }
     if(c.type == CROPTYPE_MUSH) {
       result += 'Efficiency: ' + p.prod0.spores.div(p.prod0.seeds.neg()).toString() + ' spores/seed, ' +
@@ -193,10 +203,11 @@ function getCropInfoHTML(f, c, opt_detailed) {
       } else {
         result += 'Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
       }
+      result += '<br/>';
     }
   }
 
-  result += '<br/>';
+  var recoup = (c.type == CROPTYPE_SHORT) ? Res() : c.getCost(-1).mulr(cropRecoup);
 
   if(opt_detailed) {
     result += 'Num planted of this type: ' + state.cropcount[c.index] + '<br>';
@@ -205,10 +216,11 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += ' • Base planting cost: ' + c.cost.toString() + '<br>';
     result += ' • Last planting cost: ' + c.getCost(-1).toString() + '<br>';
     result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
-    result += ' • Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+
+    result += ' • Recoup on delete: ' + recoup.toString();
   } else {
     result += 'Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
-    result += 'Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup).toString();
+    result += 'Recoup on delete: ' + recoup.toString();
   }
 
   return result;

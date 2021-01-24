@@ -959,7 +959,11 @@ var update = function(opt_fromTick) {
             state.res.subInPlace(cost);
             u.fun(action.choice);
             num++;
-            if(!shift) showMessage('upgraded: ' + u.getName() + ', consumed: ' + cost.toString(), '#ff0', '#000');
+            var message = 'upgraded: ' + u.getName() + ', consumed: ' + cost.toString();
+            if(u.is_choice) {
+              message += '. Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+            }
+            if(!shift) showMessage(message, '#ff0', '#000');
             store_undo = true;
             state.c_numupgrades++;
             state.g_numupgrades++;
