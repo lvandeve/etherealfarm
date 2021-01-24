@@ -279,24 +279,24 @@ function createAdvancedSettingsDialog() {
 
 
   button = makeSettingsButton();
-  var updateuistylebuttontext = function(button) {
+  var updatebuttontext = function(button) {
     var style = '?';
     if(state.uistyle == 2) style = 'dark';
     else style = 'light';
     button.textEl.innerText = 'interface theme: ' + style;
   };
-  updateuistylebuttontext(button);
+  updatebuttontext(button);
   registerTooltip(button, 'Change the interface style');
-  button.onclick = bind(function(button, updateuistylebuttontext, e) {
+  button.onclick = bind(function(button, updatebuttontext, e) {
     state.uistyle++;
     if(state.uistyle > 2) state.uistyle = 1;
-    updateuistylebuttontext(button);
+    updatebuttontext(button);
     setStyle();
-  }, button, updateuistylebuttontext);
+  }, button, updatebuttontext);
 
 
   button = makeSettingsButton();
-  var updatetooltipbuttontext = function(button) {
+  var updatebuttontext = function(button) {
     var style = '?';
     if(state.tooltipstyle == 0) style = 'none';
     if(state.tooltipstyle == 1) style = 'dark';
@@ -304,14 +304,14 @@ function createAdvancedSettingsDialog() {
     if(state.tooltipstyle == 3) style = 'translucent';
     button.textEl.innerText = 'tooltip style: ' + style;
   };
-  updatetooltipbuttontext(button);
+  updatebuttontext(button);
   registerTooltip(button, 'Change the tooltip style or disable them');
-  button.onclick = bind(function(button, updatetooltipbuttontext, e) {
+  button.onclick = bind(function(button, updatebuttontext, e) {
     state.tooltipstyle++;
     if(state.tooltipstyle >= 4) state.tooltipstyle = 0;
-    updatetooltipbuttontext(button);
+    updatebuttontext(button);
     removeAllTooltips();
-  }, button, updatetooltipbuttontext);
+  }, button, updatebuttontext);
 
 
   button = makeSettingsButton();
@@ -531,76 +531,6 @@ function createChangelogDialog() {
   div.innerHTML = text;
 }
 
-
-var showing_help = false; // for medal
-
-function createHelpDialog() {
-  showing_help = true;
-  var dialogFlex = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
-    showing_help = false;
-  });
-
-  var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Help';
-
-  var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3).div;
-  div.style.overflowY = 'scroll';
-  div.className = 'efScrollBg';
-
-  var text = '';
-
-  text += 'Ethereal farm is an incremental game that begins by growing and upgrading crops in this ethereal world.';
-  text += '<br/><br/>';
-  text += 'The text in the message log at the bottom will guide you through how to play. A short summary of the first steps: initially you have no resources but can get some from clicking ferns. Then you can click on field tiles to plant crops and soon resources are gained automatically. The rest will be revealed when the time is ready.';
-  text += '<br/><br/>';
-  text += 'You can click resources in the resource panel to see more detailed breakdown. You can click fullgrown crops to see detailed stats. As the game progresses, more types of information may appear in there.';
-  text += '<br/><br/>';
-  text += '<b>List of keyboard shortcuts:</b>';
-  text += '<br/><br/>';
-  text += ' • <b>"1" , "2" , "3"</b>: activate one of the weather abilities';
-  text += '<br/>';
-  text += ' • <b>"w"</b>: plant watercress on all field tiles that have a watercress remainder. Such a remainder appears for watercress that have been leeching from multiple plants, that is, a good leech spot. Leeching has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective.';
-  text += '<br/>';
-  text += ' • <b>shift + click empty field</b>: plant last planted type';
-  text += '<br/>';
-  text += ' • <b>shift + click non-empty field</b>: delete plant, only if this is enabled in preferences';
-  text += '<br/>';
-  text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key)';
-  text += '<br/>';
-  text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford';
-  text += '<br/>';
-  text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you do actions a minute later.';
-  text += '<br/>';
-  text += ' • <b>shift + click save import dialog</b>: import and old savegame, but do not run the time, so you get the resources at the time of saving rather than with all production during that time added.';
-  text += '<br/>';
-  text += ' • <b>shift + click fruit: move to sacrificial pool or from sacrificial pool to storage.';
-  text += '<br/>';
-  text += ' • <b>ctrl + click fruit: swap to active slot.';
-  text += '<br/>';
-  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of current available essence';
-  text += '<br/>';
-  text += ' • <b>esc</b>: close dialogs.';
-  text += '<br/><br/>';
-
-  text += '<b>Savegame recovery:</b>';
-  text += '<br/><br/>';
-  text += 'This game auto-saves every few minutes in local storage in the web browser, but please use <i>settings -> export save</i> regularly for backups, because a local storage savegame can easily get lost.';
-  text += '<br/><br/>';
-  text += 'If something goes wrong with your savegame, there may be a few older recovery savegames. Click <a style="color:#44f;" id="recovery">here</a> to view them.';
-
-  text += '<br/><br/><br/>';
-  text += 'Game version: ' + programname + ' v' + formatVersion();
-  text += '<br/><br/>';
-  text += 'Copyright (c) 2020-2021 by Lode Vandevenne';
-
-  div.innerHTML = text;
-
-  var el = document.getElementById('recovery');
-  el.onclick = function() {
-    showSavegameRecoveryDialog();
-  };
-}
 
 // if opt_failed_save is true, the dialog is shown due to an actual failed save so the message is different.
 function showSavegameRecoveryDialog(opt_failed_save) {

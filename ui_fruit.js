@@ -48,6 +48,40 @@ function getFruitAbilityDescription(ability) {
 
 var lastTouchedFruit = null; // for some visual indication only
 
+function createFruitHelp() {
+  var dialog = createDialog();
+
+  var titleDiv = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  centerText2(titleDiv);
+  titleDiv.textEl.innerText = 'Fruit help';
+
+  var div = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3).div;
+  div.style.overflowY = 'scroll';
+  div.className = 'efScrollBg';
+
+  var text = '';
+
+  text += 'Fruits have one or more abilities from a random set.';
+  text += '<br/><br/>';
+  text += 'You can move fruits between the active, stored and sacrificial slots with the buttons in the fruit dialog. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time.';
+  text += '<br/><br/>';
+  text += 'Fruit essence can be used to level up abilities, increasing their effect. If the fruit has mutliple abilities, click the ability you want to upgrade first.';
+  text += '<br/><br/>';
+  text += 'All fruit essence is available for all fruits, leveling up an ability in one fruit does not consume any fruit essence for other fruits. Example: if you have 50 fruit essence and 3 fruits, then you can use 50 essence in fruit 1, you can also use 50 essence in fruit 2, and you can also use 50 essence in fruit 3, and in any future fruits as well. If you now sacrifice a fruit that gives 10 essence, you have 10 more essence available for all the others.';
+  text += '<br/><br/>';
+  text += 'Leveling up abilities permanently affects this fruit, you cannot undo it. This only matters if this fruit has more than one ability so that you have to choose which ones to level up. And if unhappy with this fruit, you can always wait for a next one and sacrifice this one.';
+  text += '<br/><br/>';
+  text += 'To get more fruit essence, sacrifice fruits by putting them in the sacrificial pool and transcending (available at high enough tree level). The amount of fruit essence of sacrificed fruits depends on their tier (zinc, bronze, ...), the ability levels or how much essence you\'ve used to level them up don\'t matter for this.';
+  text += '<br/><br/>';
+  text += 'The active and stored fruits do not get sacrificed and stay after transcension.';
+  text += '<br/><br/>';
+  text += 'Higher tier fruits may have more abilities, and abilities provide more boost.';
+  text += '<br/><br/>';
+  text += 'Click the fruit logo in the fruit dialog to mark as favorite and alter color effects (visual effect only).';
+
+  div.innerHTML = text;
+}
+
 function createFruitDialog(f, opt_selected) {
   lastTouchedFruit = f;
   updateFruitUI(); // to update lastTouchedFruit style
@@ -78,39 +112,7 @@ function createFruitDialog(f, opt_selected) {
   var button = new Flex(dialog, [0.01, 0.15], 0.16, 0.3, 0.19, 1.5).div;
   styleButton(button);
   button.textEl.innerText = 'help';
-  button.textEl.onclick = function() {
-    var dialog = createDialog();
-
-    var titleDiv = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.4).div;
-    centerText2(titleDiv);
-    titleDiv.textEl.innerText = 'Fruit help';
-
-    var div = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3).div;
-    div.style.overflowY = 'scroll';
-    div.className = 'efScrollBg';
-
-    var text = '';
-
-    text += 'Fruits have one or more abilities from a random set.';
-    text += '<br/><br/>';
-    text += 'You can move fruits between the active, stored and sacrificial slots with the buttons in the fruit dialog. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time.';
-    text += '<br/><br/>';
-    text += 'Fruit essence can be used to level up abilities, increasing their effect. If the fruit has mutliple abilities, click the ability you want to upgrade first.';
-    text += '<br/><br/>';
-    text += 'All fruit essence is available for all fruits, leveling up an ability in one fruit does not consume any fruit essence for other fruits. Example: if you have 50 fruit essence and 3 fruits, then you can use 50 essence in fruit 1, you can also use 50 essence in fruit 2, and you can also use 50 essence in fruit 3, and in any future fruits as well. If you now sacrifice a fruit that gives 10 essence, you have 10 more essence available for all the others.';
-    text += '<br/><br/>';
-    text += 'Leveling up abilities permanently affects this fruit, you cannot undo it. This only matters if this fruit has more than one ability so that you have to choose which ones to level up. And if unhappy with this fruit, you can always wait for a next one and sacrifice this one.';
-    text += '<br/><br/>';
-    text += 'To get more fruit essence, sacrifice fruits by putting them in the sacrificial pool and transcending (available at high enough tree level). The amount of fruit essence of sacrificed fruits depends on their tier (zinc, bronze, ...), the ability levels or how much essence you\'ve used to level them up don\'t matter for this.';
-    text += '<br/><br/>';
-    text += 'The active and stored fruits do not get sacrificed and stay after transcension.';
-    text += '<br/><br/>';
-    text += 'Higher tier fruits may have more abilities, and abilities provide more boost.';
-    text += '<br/><br/>';
-    text += 'Click the fruit logo in the fruit dialog to mark as favorite and alter color effects (visual effect only).';
-
-    div.innerHTML = text;
-  };
+  button.textEl.onclick = createFruitHelp;
 
   var selected = (opt_selected == undefined) ? (f.abilities.length > 1 ? -1 : 0) : opt_selected; // the selected ability for details and upgrade button
   var flexes = [];

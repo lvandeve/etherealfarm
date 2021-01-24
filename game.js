@@ -178,12 +178,7 @@ function softReset() {
 
   showMessage(message, '#40f', '#ffd');
   if(state.g_numresets == 0) {
-    showHelpDialog(1, 'You performed your first transcension! Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.',
-      undefined,
-      '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all type of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
-      [[undefined,clover[4],undefined],
-       [blackberry[4],whitelotus[4],champignon[4]],
-       [undefined,blackberry[4],undefined]]);
+    showRegisteredHelpDialog(1);
   }
 
   // state.c_runtime = util.getTime() - state.c_starttime; // state.c_runtime was computed by incrementing each delta, but this should be numerically more precise
@@ -983,53 +978,22 @@ var update = function(opt_fromTick) {
         if(num) {
           updateUI();
           if(action.u == berryunlock_0) {
-            showHelpDialog(3,
-                           'You unlocked your first permanent type of plant. Plants like this stay on the field forever and have much more powerful production upgrades too.' +
-                           '<br><br>'+
-                           'If you plant watercress next to permanent plants, the watercress will add all its neighbors production to its own ("leech"), so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense. The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the plant has later in the game.' +
-                           '<br><br>'+
-                           'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
-                           undefined,
-                           '<br><br>'+
-                           'The image below shows an optimal configuration to use for watercress leeching: the single watercress duplicates the production of 4 blackberries:',
-                           [[undefined,blackberry[4],undefined],[blackberry[4],watercress[4],blackberry[4]],[undefined,blackberry[4],undefined]]);
+            showRegisteredHelpDialog(3);
           }
           if(action.u == mushunlock_0) {
-            showHelpDialog(19,
-                           'You unlocked your first type of mushroom. Mushrooms produce spores, but they consume seeds. Mushrooms must touch berries to get their seeds. If the berry cannot produce enough seeds for the mushroom, the mushroom produces less spores. If the berry produces more seeds than needed, the remaining seeds go to the regular seeds stack<br><br>Spores let the tree level up, unlocking next kinds of bonuses.<br><br>Spores are used by the tree, but the mushroom is not required to touch the tree.',
-                           undefined,
-                           '<br><br>'+
-                           'The image shows a possible configuration for mushrooms: it extracts some seeds from the berries it touches.',
-                           [[champignon[4],blueberry[4]],[blueberry[4],undefined]]);
+            showRegisteredHelpDialog(19);
           }
           if(action.u == flowerunlock_0) {
-            showHelpDialog(20,
-                           'You unlocked your first type of flower. Flowers boost berries and mushrooms. In case of mushrooms, it boosts their spore production, but also increases their seed consumption equally',
-                           undefined,
-                           '<br><br>'+
-                           'The image shows a possible good configuration for flower boost: many flowers boost many different berries or mushrooms. Note that in practice the mushroom also needs to touch some berries to get seeds from, not shown in this image.',
-                           [[blackberry[4],clover[4],blackberry[4]],[clover[4],blackberry[4],clover[4]],[blackberry[4],clover[4],champignon[4]]]);
+            showRegisteredHelpDialog(20);
           }
           if(action.u == nettle_0) {
             if(state.g_numresets > 0) {
-              showHelpDialog(21,
-                'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower next to a mushroom works even greater.',
-                nettle[4],
-                '<br><br>'+
-                'The image shows a possible configuration where the mushroom receives boost from both nettle (top) and flower (bottom). The top left flower and top right blackberry in this image however are negatively affected by the nettle.',
-                [[clover[4],nettle[4],blackberry[4]],
-                 [blueberry[4],champignon[4],blueberry[4]],
-                 [undefined,clover[4],undefined]]);
+              showRegisteredHelpDialog(21);
             }
           }
           if(action.u == mistletoeunlock_0) {
             if(state.g_numresets > 0) {
-              showHelpDialog(17,
-                'Unlocked a new crop: mistletoe. Mistletoe can be placed next to the basic field tree to create twigs. Twigs help the ethereal field tree. However the mistletoe increases the spore requirement for leveling the basic tree and slightly decreases resin gain. More mistletoes give diminishing returns, but still increase the negative effects by as much, so having max 1 or 2 is sensible. Mistletoes that are not planted next to the tree do nothing at all.',
-                mistletoe[4],
-                '<br><br>'+
-                'The image shows a possible configuration where mistletoes are next to the tree and thus give twigs on tree level up.',
-                [[tree_images[treeLevelIndex(state.treelevel)][1][0], mistletoe[4]], [tree_images[treeLevelIndex(state.treelevel)][2][0], mistletoe[4]]]);
+              showRegisteredHelpDialog(17);
             }
           }
         }
@@ -1398,8 +1362,8 @@ var update = function(opt_fromTick) {
               if(f.growth >= 1) {
                 f.growth = 1;
                 state.g_numfullgrown2++;
-                if(state.c_numfullgrown2 == 1) {
-                  showHelpDialog(5, 'your first ethereal plant in the ethereal field has fullgrown! It provides a bonus to your basic field.');
+                if(state.g_numfullgrown2 == 1) {
+                  showMessage('your first ethereal plant in the ethereal field has fullgrown! It provides a bonus to your basic field.', helpFG, helpBG);
                 }
               }
             }
@@ -1479,38 +1443,35 @@ var update = function(opt_fromTick) {
       showMessage(message, '#2f2');
       var fruit = undefined;
       if(state.treelevel == 2) {
-        showHelpDialog(12, 'The tree reached level ' + state.treelevel + ' and discovered the sun ability!<br><br>' + upgrades[upgrade_sununlock].description, image_sun);
+        showRegisteredHelpDialog(12);
       } else if(state.treelevel == 3) {
         showHelpDialog(-13, 'The tree reached level ' + state.treelevel + ' and is providing a choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 4) {
-        showHelpDialog(14, 'The tree reached level ' + state.treelevel + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
+        showRegisteredHelpDialog(14);
       } else if(state.treelevel == 5) {
         fruit = addRandomFruit();
-        showHelpDialog(2, 'The tree reached level ' + state.treelevel + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab.', images_apple[0]);
+        showRegisteredHelpDialog(2);
       } else if(state.treelevel == 6) {
-        showHelpDialog(15, 'The tree reached level ' + state.treelevel + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
+        showRegisteredHelpDialog(15);
       } else if(state.treelevel == 8) {
         showHelpDialog(-16, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 15) {
         fruit = addRandomFruit();
-        showHelpDialog(18, 'The tree reached level ' + state.treelevel + ' and dropped another fruit! Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
+        showRegisteredHelpDialog(18);
       } else if(state.treelevel == 20) {
-        showHelpDialog(18, 'The tree reached level ' + state.treelevel + '. Transcension now turned into Transcension II, and doubles the amount of resin you receive upon transcending.', images_apple[2]);
+        showRegisteredHelpDialog(23);
       } else if(state.treelevel == 25) {
         fruit = addRandomFruit();
       }
       if(state.treelevel == 1) {
-        showHelpDialog(6, 'Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree in the field for more info.',
-            undefined, undefined, [[undefined, tree_images[treeLevelIndex(state.treelevel)][1][0]], [undefined, tree_images[treeLevelIndex(state.treelevel)][2][0]]]);
+        showRegisteredHelpDialog(6);
       } else if(state.treelevel == min_transcension_level) {
-        showHelpDialog(7, 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog.',
-        undefined, undefined, [[undefined, tree_images[treeLevelIndex(state.treelevel)][1][0]], [undefined, tree_images[treeLevelIndex(state.treelevel)][2][0]]]);
+        showRegisteredHelpDialog(7);
       }
       if(fruit) {
         showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString());
       }
     }
-
 
     if(state.g_numresets > 0) {
       var req2 = treeLevel2Req(state.treelevel2 + 1);
@@ -1523,9 +1484,7 @@ var update = function(opt_fromTick) {
         showMessage(message, '#88f', '#ff0');
 
         if(state.treelevel2 >= 1) {
-          showHelpDialog(22,
-              'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.',
-              undefined, undefined, [[undefined, tree_images[treeLevelIndex(state.treelevel)][1][4]], [undefined, tree_images[treeLevelIndex(state.treelevel)][2][4]]]);
+          showRegisteredHelpDialog(22);
           unlockEtherealCrop(berry2_1);
         }
         if(state.treelevel2 >= 2) {
@@ -1563,7 +1522,7 @@ var update = function(opt_fromTick) {
           state.c_numupgrades_unlocked++;
           state.g_numupgrades_unlocked++;
           if(state.c_numupgrades_unlocked == 1) {
-            showHelpDialog(8, 'You unlocked your first upgrade! Check the "upgrades" tab to view it. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
+            showRegisteredHelpDialog(8);
           }
           showMessage('Upgrade available: "' + upgrades[j].getName() + '"', '#ffc', '#008');
         }

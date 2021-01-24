@@ -150,7 +150,10 @@ function getCropInfoHTML(f, c, opt_detailed) {
       result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
     }
     result += '<br/>';
-    result += 'Expected production/sec: ' + c.getProd(f, true).toString();
+    var expected_prod = c.getProd(f, true);
+    var expected_boost = c.getBoost(f);
+    if(!expected_prod.empty()) result += 'Expected production/sec: ' +expected_prod.toString();
+    if(expected_boost.neqr(0)) result += 'Expected boost: ' + expected_boost.mulr(100).toString() + '%';
     result += '<br/><br/>';
   } else {
     if(c.type == CROPTYPE_SHORT) {

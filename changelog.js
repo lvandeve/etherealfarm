@@ -23,6 +23,7 @@ function getChangeLog() {
   text += '0.1.22 (2021-01-24):';
   text += '<br/>• Added dark mode UI. Option available under preferences.';
   text += '<br/>• Added support for CSS stylesheets for this.';
+  text += '<br/>• Made all unlocked dynamic in-game help dialogs available in the main help from the settings. More appear as more get unlocked during the game progression.';
   text += '<br/><br/>';
 
   text += '0.1.21 (2021-01-24):';
