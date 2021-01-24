@@ -241,9 +241,9 @@ function createNumberFormatDialog() {
   var button = new Flex(infoFlex, 0.01, 0.16, 0.3, 0.8, 1).div;
   styleButton(button);
   button.textEl.innerText = 'help';
-  button.textEl.onclick = function() {
+  addButtonAction(button.textEl, function() {
     createNumberFormatHelp(notations, precision);
-  };
+  });
 
   fill();
 }
@@ -287,12 +287,12 @@ function createAdvancedSettingsDialog() {
   };
   updatebuttontext(button);
   registerTooltip(button, 'Change the interface style');
-  button.onclick = bind(function(button, updatebuttontext, e) {
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.uistyle++;
     if(state.uistyle > 2) state.uistyle = 1;
     updatebuttontext(button);
     setStyle();
-  }, button, updatebuttontext);
+  }, button, updatebuttontext));
 
 
   button = makeSettingsButton();
@@ -306,20 +306,20 @@ function createAdvancedSettingsDialog() {
   };
   updatebuttontext(button);
   registerTooltip(button, 'Change the tooltip style or disable them');
-  button.onclick = bind(function(button, updatebuttontext, e) {
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.tooltipstyle++;
     if(state.tooltipstyle >= 4) state.tooltipstyle = 0;
     updatebuttontext(button);
     removeAllTooltips();
-  }, button, updatebuttontext);
+  }, button, updatebuttontext));
 
 
   button = makeSettingsButton();
   button.textEl.innerText = 'number format';
   registerTooltip(button, 'Change the precision and display type for large numbers.');
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     createNumberFormatDialog();
-  };
+  });
 
 
   addSettingsSpacer();
@@ -328,27 +328,27 @@ function createAdvancedSettingsDialog() {
   updatebuttontext = function(button) { button.textEl.innerText = 'save on close: ' + (state.saveonexit ? 'yes' : 'no'); };
   updatebuttontext(button);
   registerTooltip(button, 'Whether to auto-save when closing the browser window or tab. If off, then still auto-saves every few minutes, but no longer on unload. Toggling this setting will also immediately cause a save.');
-  button.onclick = bind(function(button, updatebuttontext, e) {
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.saveonexit = !state.saveonexit;
     updatebuttontext(button);
     saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
-  }, button, updatebuttontext);
+  }, button, updatebuttontext));
 
   button = makeSettingsButton();
   updatebuttontext = function(button) { button.textEl.innerText = 'shift+click deletes plant: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
   updatebuttontext(button);
   registerTooltip(button, 'Allow directly deleting plant without any dialog or confirmation by shift+clicking it on the field. Note that you can also always shift+click empty fields to repeat last planted type (opposite of deleting), that always works regardless of this setting.');
-  button.onclick = bind(function(button, updatebuttontext, e) {
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.allowshiftdelete = !state.allowshiftdelete;
     updatebuttontext(button);
-  }, button, updatebuttontext);
+  }, button, updatebuttontext));
 
   addSettingsSpacer();
 
   button = makeSettingsButton();
   button.textEl.innerText = 'reset "never show again" help dialogs';
   registerTooltip(button, 'Resets the "never show again" of all help dialogs, so you\'ll see them again next time until you disable them individually again.');
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     var dialog = createDialog(DIALOG_MEDIUM, function() {
       state.help_disable = {};
       dialog.cancelFun();
@@ -356,18 +356,18 @@ function createAdvancedSettingsDialog() {
     }, 'reset', 'cancel');
     var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.35);
     flex.div.innerHTML = 'This resets the "never show again" setting of all individual help dialogs. You\'ll get the help dialogs again in the situations that make them appear. You can individually disable them again.';
-  };
+  });
 
 
   button = makeSettingsButton();
   updatebuttontext = function(button) { button.textEl.innerText = 'enable help dialogs: ' + (state.disableHelp ? 'no' : 'yes'); };
   updatebuttontext(button);
   registerTooltip(button, 'Whether to enable pop-up help dialogs. Set to no if you consider the dialogs too intrusive. However, if you leave them enabled, you can also always disable individual help dialogs with their "never show again" button, so you can still see new ones, which may be useful to get information about new game mechanics that unlock later.');
-  button.onclick = bind(function(button, updatebuttontext, e) {
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.disableHelp = !state.disableHelp;
     updatebuttontext(button);
     saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
-  }, button, updatebuttontext);
+  }, button, updatebuttontext));
 }
 
 
@@ -643,19 +643,19 @@ function initSettingsUI_in(dialogFlex) {
   button = makeSettingsButton();
   button.textEl.innerText = 'save now';
   registerTooltip(button, 'Save to local storage now. The game also autosaves every few minutes so you don\'t need this button often.');
-  button.onclick = function() {
+  addButtonAction(button, function() {
     saveNow(function(s) {
       showMessage(manualSavedStateMessage);
       util.setLocalStorage(s, localstorageName_manual);
       closeAllDialogs();
     });
-  };
+  });
 
 
   button = makeSettingsButton();
   button.textEl.innerText = 'export save';
   registerTooltip(button, 'Export an encoded savegame, for backups.');
-  button.onclick = function() {
+  addButtonAction(button, function() {
     state.g_numexports++;
     // this gets updated even if user would then close the dialog without actually saving it, we can't know whether they actually properly stored the text or not
     state.g_lastexporttime = util.getTime();
@@ -663,12 +663,12 @@ function initSettingsUI_in(dialogFlex) {
       var title = 'Export a savegame backup: copy or download the encoded savegame below, and store it somewhere safe. Do this regularly: even though the game autosaves in the web browser, browsers can easily lose this data. This contains all your progress!';
       showExportTextDialog(title, s, 'ethereal-farm-' + util.formatDate(util.getTime(), true) + '.txt', true);
     });
-  };
+  });
 
   button = makeSettingsButton();
   button.textEl.innerText = 'import save';
   registerTooltip(button, 'Import a save, which you created with "export save"');
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     var w = 500, h = 500;
     var dialog = createDialog(false, function(e) {
       var shift = e.shiftKey;
@@ -707,12 +707,12 @@ function initSettingsUI_in(dialogFlex) {
     var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.div);
     area.select();
     area.focus();
-  };
+  });
 
   button = makeSettingsButton();
   button.textEl.innerText = 'hard reset';
   registerTooltip(button, hardresetwarning);
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     var w = 500, h = 500;
     var dialog = createDialog(false, function(e) {
       dialog.cancelFun();
@@ -722,51 +722,52 @@ function initSettingsUI_in(dialogFlex) {
     var warningFlex = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.4);
     warningFlex.div.innerText = hardresetwarning;
     warningFlex.div.style.color = 'red';
-  };
+  });
 
   pos += gap;
 
   button = makeSettingsButton();
   button.textEl.innerText = 'preferences';
   registerTooltip(button, 'Various UI, saving, gameplay and other settings.');
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     createAdvancedSettingsDialog();
-  };
+  });
 
   button = makeSettingsButton();
   button.textEl.innerText = 'number format';
   registerTooltip(button, 'Change the precision and display type for large numbers.');
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     createNumberFormatDialog();
-  };
+  });
 
   pos += gap;
 
   button = makeSettingsButton();
   button.textEl.innerText = 'player stats';
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     createStatsDialog();
-  };
+  });
 
   pos += gap;
 
   button = makeSettingsButton();
   button.textEl.innerText = 'help';
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     createHelpDialog();
-  };
+  });
 
   button = makeSettingsButton();
   button.textEl.innerText = 'about & changelog';
-  button.onclick = function(e) {
+  addButtonAction(button, function(e) {
     createChangelogDialog();
-  };
+  });
 }
 
 function initSettingsUI() {
   var gearbutton = new Flex(topFlex, [0,0.1], [0,0.1], [0,0.9], [0,0.9]).div;
-  gearbutton.style.cursor = 'pointer';
-  gearbutton.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+  styleButton0(gearbutton);
+  //gearbutton.style.cursor = 'pointer';
+  //gearbutton.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   gearbutton.title = 'Settings';
 
   // gear image
@@ -777,10 +778,10 @@ function initSettingsUI() {
   addEvent(gearbutton, 'onmouseover', function() { gearbutton.style.filter = 'brightness(0.4)'; });
   addEvent(gearbutton, 'onmouseout', function() { gearbutton.style.filter = ''; });
 
-  gearbutton.onclick = function() {
+  addButtonAction(gearbutton, function() {
     var dialogFlex = createDialog();
     initSettingsUI_in(dialogFlex);
-  }
+  }, 'settings');
 
   // changelog / about button
   var aboutbutton = new Flex(topFlex, [1,-0.9], [0,0.1], [1,-0.1], [0,0.9]).div;
@@ -791,14 +792,14 @@ function initSettingsUI() {
   aboutbutton.classList.add('pixelated');
   aboutbutton.classList.add('changelogbutton');
 
-  aboutbutton.onclick = function() {
+  addButtonAction(aboutbutton, function() {
     createChangelogDialog();
-  }
+  }, 'about');
 
   var undobutton = new Flex(topFlex, [0,1.6], [0,0.15], [0,3.3], [0,0.85], 2);
   styleButton(undobutton.div);
   undobutton.div.textEl.innerText = 'Undo';
-  undobutton.div.onclick = function(e) {
+  addButtonAction(undobutton.div, function(e) {
     if(e.shiftKey) {
       showMessage('held shift key while pressing undo button, so saving undo instad.');
       storeUndo(state);
@@ -807,7 +808,7 @@ function initSettingsUI() {
       update();
     }
     removeAllTooltips();
-  };
+  });
   registerTooltip(undobutton.div,
       'Undo your last action(s). Press again to redo.<br><br>' +
       'Undo is saved when doing an action, but with at least a minute in-between, so multiple actions in quick succession may all be undone.<br><br>' +

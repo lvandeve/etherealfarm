@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-var state = createInitialState();
+var state = undefined;
 
 initUIGlobal();
 
@@ -1542,7 +1542,7 @@ var update = function(opt_fromTick) {
         }
       }
       if(num_unlocked && is_first) {
-        showHelpDialog(9, 'You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable');
+        showRegisteredHelpDialog(9);
       }
     }
     // check medals

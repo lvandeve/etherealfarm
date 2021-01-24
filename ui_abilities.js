@@ -68,10 +68,10 @@ function updateAbilitiesUI() {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
     renderImage(image_sun, canvas);
 
-    sunbutton.div.onclick = function() {
+    addButtonAction(sunbutton.div, function() {
       actions.push({type:ACTION_ABILITY, ability:1});
       update();
-    };
+    });
 
     registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
   }
@@ -110,11 +110,11 @@ function updateAbilitiesUI() {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
     renderImage(image_mist, canvas);
 
-    mistbutton.div.onclick = function() {
+    var fun = function() {
       actions.push({type:ACTION_ABILITY, ability:0});
       update();
     };
-    misttimerflex.div.onclick = mistbutton.div.onclick;
+    addButtonAction(mistbutton.div, fun);
 
     registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText('mist ability', 'mushrooms produce more spores, consume less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
   }
@@ -154,10 +154,10 @@ function updateAbilitiesUI() {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
     renderImage(image_rainbow, canvas);
 
-    rainbowbutton.div.onclick = function() {
+    addButtonAction(rainbowbutton.div, function() {
       actions.push({type:ACTION_ABILITY, ability:2});
       update();
-    };
+    });
 
     registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
   }

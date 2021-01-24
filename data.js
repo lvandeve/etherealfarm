@@ -1236,7 +1236,7 @@ var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(
     return true;
   }
   return false;
-}, 1, 'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or the "2" key.', '#ccf', '#00f', image_rainbow, undefined);
+}, 1, 'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or the "3" key.', '#ccf', '#00f', image_rainbow, undefined);
 
 
 

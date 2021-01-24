@@ -257,16 +257,16 @@ function makeFieldDialog(x, y) {
     button0.textEl.innerText = 'delete';
     button0.textEl.style.color = '#800';
     registerTooltip(button0, 'Delete crop and get some of its cost back.');
-    button0.onclick = function() {
+    addButtonAction(button0, function() {
       actions.push({type:ACTION_DELETE, x:x, y:y});
       dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
-    };
+    });
 
     styleButton(button1);
     button1.textEl.innerText = 'detailed stats / bonuses';
     registerTooltip(button1, 'Show breakdown of multipliers and bonuses and other detailed stats.');
-    button1.onclick = function() {
+    addButtonAction(button1, function() {
       var dialog = createDialog(DIALOG_LARGE);
       dialog.div.className = 'efDialogTranslucent';
       var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.8, 0.3);
@@ -277,14 +277,14 @@ function makeFieldDialog(x, y) {
       text += '<br/>';
       text += getCropInfoHTMLBreakdown(f, c);
       flex.div.innerHTML = text;
-    };
+    });
 
     styleButton(button2);
     button2.textEl.innerText = 'see unlocked crops';
     registerTooltip(button2, 'Show the crop dialog with unlocked plants.');
-    button2.onclick = function() {
+    addButtonAction(button2, function() {
       makePlantDialog(x, y, true);
-    };
+    });
 
     updatedialogfun = bind(function(f, c, flex) {
       var html0 = getCropInfoHTML(f, c);
@@ -376,9 +376,9 @@ function makeFieldDialog(x, y) {
         button.textEl.style.boxShadow = '0px 0px 5px #ff0';
         button.textEl.style.textShadow = '0px 0px 5px #ff0';
         registerTooltip(button, 'Show the transcension dialog');
-        button.onclick = function() {
+        addButtonAction(button, function() {
           createTranscendDialog();
-        };
+        });
       }
     }
 
@@ -456,7 +456,7 @@ function initFieldUI() {
       }, x, y, div), true);
 
       div.style.cursor = 'pointer';
-      div.onclick = bind(function(x, y, div, e) {
+      addButtonAction(div, bind(function(x, y, div, e) {
         var f = state.field[y][x];
         var fern = state.fern && x == state.fernx && y == state.ferny;
 
@@ -495,7 +495,7 @@ function initFieldUI() {
             makeFieldDialog(x, y);
           }
         }
-      }, x, y, div);
+      }, x, y, div), 'field tile ' + x + ', ' + y);
 
       var pw = tw >> 1;
       var ph = Math.round(th / 16);

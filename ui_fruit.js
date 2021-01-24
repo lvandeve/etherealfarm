@@ -112,7 +112,7 @@ function createFruitDialog(f, opt_selected) {
   var button = new Flex(dialog, [0.01, 0.15], 0.16, 0.3, 0.19, 1.5).div;
   styleButton(button);
   button.textEl.innerText = 'help';
-  button.textEl.onclick = createFruitHelp;
+  addButtonAction(button.textEl, createFruitHelp);
 
   var selected = (opt_selected == undefined) ? (f.abilities.length > 1 ? -1 : 0) : opt_selected; // the selected ability for details and upgrade button
   var flexes = [];
@@ -135,10 +135,10 @@ function createFruitDialog(f, opt_selected) {
 
     flex.div.style.backgroundColor = '#fff'; // temporary, to make styleButton0 use the filter instead of backgroundColor
     styleButton0(flex.div);
-    flex.div.onclick = bind(function(i) {
+    addButtonAction(flex.div, bind(function(i) {
       selected = i;
       updateSelected();
-    }, i);
+    }, i));
   }
 
   y += 0.02;
@@ -197,11 +197,11 @@ function createFruitDialog(f, opt_selected) {
     if(available.lt(cost.essence)) button.className = 'efButtonCantAfford';
     else button.textEl.style.color = '';
     registerTooltip(button, 'Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits. Hold shift to level up multiple times but with only up to 25% of available essence');
-    button.onclick = function(e) {
+    addButtonAction(button, function(e) {
       actions.push({type:ACTION_FRUIT_LEVEL, f:f, index:selected, shift:e.shiftKey});
       update();
       recreate();
-    };
+    });
   };
 
   y += 0.05;
@@ -213,12 +213,12 @@ function createFruitDialog(f, opt_selected) {
     styleButton(moveButton1);
     moveButton1.textEl.innerText = 'to active slot';
     if(f.slot < 10) moveButton1.textEl.style.color = '#666';
-    moveButton1.onclick = function() {
+    addButtonAction(moveButton1, function() {
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
       update();
       //recreate();
       closeAllDialogs();
-    };
+    });
   }
 
   if(!(f.slot >= 10 && f.slot < 20)) {
@@ -228,12 +228,12 @@ function createFruitDialog(f, opt_selected) {
     moveButton2.textEl.innerText = 'to storage slot';
     if(f.slot >= 10 && f.slot < 20) moveButton2.textEl.style.color = '#666';
     if(state.fruit_stored.length >= state.fruit_slots) moveButton2.textEl.style.color = '#666';
-    moveButton2.onclick = function() {
+    addButtonAction(moveButton2, function() {
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:1});
       update();
       //recreate();
       closeAllDialogs();
-    };
+    });
   }
 
   if(!(f.slot >= 20)) {
@@ -242,38 +242,20 @@ function createFruitDialog(f, opt_selected) {
     styleButton(moveButton3);
     moveButton3.textEl.innerText = 'to sacrificial pool';
     if(f.slot >= 20) moveButton3.textEl.style.color = '#666';
-    moveButton3.onclick = function() {
+    addButtonAction(moveButton3, function() {
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:2});
       update();
       //recreate();
       closeAllDialogs();
-    };
+    });
   }
 
-  /*var markButton = new Flex(dialog, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
-  y += h * 1.1;
-  styleButton(markButton);
-  var setMarkButtonText = function() {
-    if(f.mark == 0) markButton.textEl.innerText = 'mark favorite';
-    else if(f.mark == 4) markButton.textEl.innerText = 'unmark favorite';
-    else markButton.textEl.innerText = 'next color';
-  };
-  setMarkButtonText();
-  markButton.onclick = function() {
-    f.mark = ((f.mark || 0) + 1) % 5;
-    updateFruitUI();
-    setMarkButtonText();
-    recreate();
-  };
-  markButton.title = 'mark as favorite: visual effect only: renders the fruit in different ways to distinguish it. Does not stop fruits in the sacrificial pool from being sacrificed.';*/
-
-
   styleButton0(canvas);
-  canvas.onclick = function() {
+  addButtonAction(canvas, function() {
     f.mark = ((f.mark || 0) + 1) % 5;
     updateFruitUI();
     recreate();
-  };
+  }, 'mark favorite');
   registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');
 
   updateSelected();
@@ -319,7 +301,7 @@ function makeFruitChip(flex, f) {
   registerTooltip(flex.div, text);
   flex.div.style.userSelect = 'none';
 
-  flex.div.onclick = function(e) {
+  addButtonAction(flex.div, function(e) {
     if(e.shiftKey) {
       var slot = 2;
       if(f.slot >= 20) slot = 1;
@@ -331,7 +313,7 @@ function makeFruitChip(flex, f) {
     } else {
       createFruitDialog(f);
     }
-  };
+  }, 'fruit: ' + f.toString());
 }
 
 function updateFruitUI() {
@@ -367,11 +349,11 @@ function updateFruitUI() {
     canvasFlex.div.style.backgroundColor = '#ccc';
     registerTooltip(canvasFlex.div, 'No active fruit present in this slot. ' + help);
 
-    canvasFlex.div.onclick = bind(function(help) {
+    addButtonAction(canvasFlex.div, bind(function(help) {
       lastTouchedFruit = null;
       updateFruitUI();
       showMessage('No active fruit present in this slot. ' + help);
-    }, help);
+    }, help));
   }
 
   ////////
@@ -395,11 +377,11 @@ function updateFruitUI() {
       canvasFlex.div.style.backgroundColor = '#ccc';
       registerTooltip(canvasFlex.div, 'No stored fruit present in this slot. ' + help);
 
-      canvasFlex.div.onclick = bind(function(help) {
+      addButtonAction(canvasFlex.div, bind(function(help) {
         lastTouchedFruit = null;
         updateFruitUI();
         showMessage('No stored fruit present in this slot. ' + help);
-      }, help);
+      }, help));
     }
   }
   y += s;
@@ -442,11 +424,11 @@ function updateFruitUI() {
 
       registerTooltip(canvasFlex.div, 'No fruit present in this sacrificial pool slot. ' + help);
 
-      canvasFlex.div.onclick = bind(function(help) {
+      addButtonAction(canvasFlex.div, bind(function(help) {
         lastTouchedFruit = null;
         updateFruitUI();
         showMessage('No fruit present in this sacrificial pool slot. ' + help);
-      }, help);
+      }, help));
     }
   }
   y += s;

@@ -29,7 +29,7 @@ var helpNeverAgainLocal = {};
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recursive) {
-  state.help_seen_text[Math.abs(id)] = true;
+  state.help_seen_text[Math.abs(id)] = Math.abs(id);
   if(!opt_recursive) showMessage(text, helpFG, helpBG);
 
   if(id < 0) return; // showMessage-only
@@ -138,9 +138,9 @@ function showRegisteredHelpDialog(id, opt_force)  {
 registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade! Check the "upgrades" tab to view it. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
 
 registerHelpDialog(3, 'Permanent crop & leech',
-    'You unlocked your first permanent type of plant. Plants like this stay on the field forever and have much more powerful production upgrades too.' +
+    'You unlocked your first permanent type of plant. Plants like this stay on the field forever, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
-    'If you plant watercress next to permanent plants, the watercress will add all its neighbors production to its own ("leech"), so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense. The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the plant has later in the game.' +
+    'If you plant watercress next to permanent plants, the watercress copy all its neighbors production for free (called "leech", but in a good way), so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (which is by design to not need to plant many of them all the time). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the plant has later in the game.' +
     '<br><br>'+
     'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
     undefined,
@@ -197,7 +197,7 @@ registerHelpDialog(1, 'Transcension', 'You performed your first transcension! Ch
 
 registerHelpDialog(23, 'Transcension II', 'The tree reached level ' + 20 + '. Transcension now turned into Transcension II, and doubles the amount of resin you receive upon transcending.', images_apple[2]);
 
-
+registerHelpDialog(9, 'Ethereal upgrades', 'You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable');
 
 registerHelpDialog(17, 'Mistletoes',
   'Unlocked a new crop: mistletoe. Mistletoe can be placed next to the basic field tree to create twigs, orthogonally, not diagonally. Twigs help the ethereal field tree. However the mistletoe increases the spore requirement for leveling the basic tree and slightly decreases resin gain. More mistletoes give diminishing returns, but still increase the negative effects by as much, so having max 1 or 2 is sensible. Mistletoes that are not planted next to the tree do nothing at all.',
@@ -288,9 +288,9 @@ function createMainHelpDialog() {
   div.innerHTML = text;
 
   var el = document.getElementById('recovery');
-  el.onclick = function() {
+  addButtonAction(el, function() {
     showSavegameRecoveryDialog();
-  };
+  });
 }
 
 var showing_help = false; // for medal
@@ -327,17 +327,17 @@ function createHelpDialog() {
   var button;
 
   button = makeButton('Main help');
-  button.onclick = createMainHelpDialog;
+  addButtonAction(button, createMainHelpDialog);
 
   button = makeButton('Keyboard shortcuts');
-  button.onclick = createKeyboardHelpDialog;
+  addButtonAction(button, createKeyboardHelpDialog);
 
   button = makeButton('Number format help');
-  button.onclick = function() {createNumberFormatHelp(notations, Num.precision)};
+  addButtonAction(button, function() {createNumberFormatHelp(notations, Num.precision)});
 
   if(state.g_numfruits > 0) {
     button = makeButton('Fruit help');
-    button.onclick = createFruitHelp;
+    addButtonAction(button, createFruitHelp);
   }
 
   addSpacer();
@@ -357,9 +357,9 @@ function createHelpDialog() {
     }
 
     button = makeButton(d.name);
-    button.onclick = bind(function(id) {
+    addButtonAction(button, bind(function(id) {
       showRegisteredHelpDialog(id, true);},
-    id);
+    id));
   }
 
   addSpacer();

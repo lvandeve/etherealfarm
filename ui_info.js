@@ -129,7 +129,7 @@ function updateResourceUI() {
   }
   resourceDivs[0].textEl.innerHTML = title + '<br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
-  resourceDivs[0].onclick = function() {
+  addButtonAction(resourceDivs[0], function() {
     var dialog = createDialog(DIALOG_MEDIUM);
     var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.35);
     var getText = function() {
@@ -174,7 +174,7 @@ function updateResourceUI() {
     updatedialogfun = function() {
       flex.div.innerHTML = getText();
     };
-  };
+  });
   registerTooltip(resourceDivs[0], function() {
     var text = '';
     text += 'Season change in: ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
@@ -309,7 +309,7 @@ function updateResourceUI() {
         return div.tooltiptext;
       }, /*opt_poll=*/true, /*allow_mobile=*/true);
       div.style.cursor = 'pointer';
-      div.onclick = function() {
+      addButtonAction(div, function() {
         var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM);
         dialog.div.className = 'efDialogTranslucent';
         // computed here rather than inside of updatedialogfun to avoid it being too slow
@@ -327,7 +327,7 @@ function updateResourceUI() {
           }
         }, div, flex);
         updatedialogfun();
-      };
+      });
     }
   };
 

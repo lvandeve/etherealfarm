@@ -137,11 +137,11 @@ function updateMedalUI() {
 
     registerTooltip(div, getMedalText);
 
-    div.onclick = bind(function(getMedalText) {
+    addButtonAction(div, bind(function(getMedalText) {
       var dialog = createDialog(DIALOG_SMALL);
       var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.9, 0.5);
       flex.div.innerHTML = getMedalText();
-    }, getMedalText);
+    }, getMedalText));
   }
 }
 
@@ -171,6 +171,6 @@ function showMedalChip(medal_id) {
   textFlex.div.style.color = '#000';
   textFlex.div.innerHTML = 'Achievement Unlocked' + '<br><br>' + upper(m.name);
 
-  medalChipFlex.div.onclick = removeMedalChip;
+  addButtonAction(medalChipFlex.div, removeMedalChip);
 }
 

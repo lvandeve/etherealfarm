@@ -63,6 +63,15 @@ function centerContent(parent, child) {
   child.style.top = Math.floor((ph - ch) / 2) + 'px';
 }
 
+// use this instead of ".onclick = ..." for more accessible buttons
+// opt_label is an optional textual name for image-icon-buttons
+function addButtonAction(div, fun, opt_label) {
+  div.onclick = fun;
+  div.tabIndex = 0;
+  div.role = 'button';
+  div.setAttribute('aria-pressed', 'false'); // TODO: is this needed?
+  if(opt_label) div.setAttribute('aria-label', opt_label);
+}
 
 // styles only a few of the essential properties for button
 // does not do centering (can be used for other text position), or colors/borders/....
@@ -179,9 +188,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     buttonshift++;
     styleButton(button);
     button.textEl.innerText = opt_okname || 'ok';
-    button.onclick = function(e) {
+    addButtonAction(button, function(e) {
       opt_okfun(e);
-    };
+    });
   }
   if(opt_extrafun) {
     button = (new Flex(dialogFlex, [1.0, -0.3 * (buttonshift + 1)], [1.0, -0.12], [1.0, -0.01 - 0.3 * buttonshift], [1.0, -0.01], 1)).div;
@@ -189,9 +198,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     buttonshift++;
     styleButton(button);
     button.textEl.innerText = opt_extraname || 'extra';
-    button.onclick = function(e) {
+    addButtonAction(button, function(e) {
       opt_extrafun(e);
-    };
+    });
   }
   dialog.cancelFun = function() {
     updatedialogfun = undefined;
@@ -222,7 +231,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   buttonshift++;
   styleButton(button);
   button.textEl.innerText = opt_cancelname || (opt_okfun ? 'cancel' : 'back');
-  button.onclick = dialog.cancelFun;
+  addButtonAction(button, dialog.cancelFun);
   var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
   created_overlays.push(overlay);
   overlay.style.width = '100%';
@@ -282,6 +291,8 @@ opt_allowmobile, if true, then the tooltip will show when clicking the item. It 
 */
 function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
   if((typeof fun == 'string') || !fun) fun = bind(function(text) { return text; }, fun);
+  // can't set this if opt_poll, fun() then most likely returns something incorrect now (e.g. on the field tiles)
+  if(!opt_poll) el.setAttribute('aria-description', fun());
   var div = undefined;
 
   var MOBILEMODE = isTouchDevice();

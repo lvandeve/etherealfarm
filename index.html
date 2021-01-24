@@ -24,6 +24,8 @@ practice it does.*/
 .changelogbutton:hover {
   filter: opacity(0.6);
 }
+/*prevent the tabindex from creating visible borders, which do not fit the look of the game*/
+:focus { outline: none; }
 </style>
 <link id="csslink" rel="stylesheet" href="style_light.css">
 </head>
@@ -39,6 +41,6 @@ Ethereal Farm. Copyright (c) 2020 by Lode Vandevenne
 <script type="text/javascript">
   var localstorageNameHTML = 'state';
 </script>
-<script src="minified.js?v=20210124b"></script>
+<script src="minified.js?v=20210124c"></script>
 </body>
 </html>

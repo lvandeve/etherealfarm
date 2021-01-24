@@ -48,7 +48,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   }
 
   var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.9);
-  styleButton(buyFlex.div);
+
 
   var infoText = '';
   var updateInfoText = function() {
@@ -68,13 +68,14 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   updateInfoText();
 
   if(!completed) {
+    styleButton(buyFlex.div);
     var buyText = (u.is_choice ? 'Choice: ' : 'Buy: ') + cost.toString();
 
     buyFlex.div.textEl.innerText = buyText;
 
     if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
 
-    buyFlex.div.onclick = bind(function(i, e) {
+    addButtonAction(buyFlex.div, bind(function(i, e) {
       if(u.is_choice) {
         var dialog;
         var funa = function() {
@@ -98,9 +99,9 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       // misclicking with shift on often creates unwanted text selection, fix that here
       if(window.getSelection) window.getSelection().removeAllRanges();
       else if(document.selection) document.selection.empty();
-    }, i);
+    }, i));
   } else {
-    buyFlex.div.textEl.innerText = 'Cost: ' + cost.toString();
+    buyFlex.div.innerText = 'Cost: ' + cost.toString();
     //buyFlex.setCentered();
   }
 
@@ -112,12 +113,12 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
 
   styleButton0(canvasFlex.div);
 
-  canvasFlex.div.onclick = function() {
+  addButtonAction(canvasFlex.div, function() {
     updateInfoText();
     var dialog = createDialog(DIALOG_SMALL);
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
     flex.div.innerHTML = infoText;
-  };
+  }, 'upgrade icon for ' + name);
 
 
   return flex;
@@ -320,11 +321,11 @@ function updateUpgradeUI() {
     flex.div.innerText = 'See Completed Upgrades';
     flex.setCentered();
 
-    flex.div.onclick = function() {
+    addButtonAction(flex.div, function() {
       var dialog = createDialog();
       var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
 
-      var scrollFlex = new Flex(dialog, 0, 0.1, 1, 0.9);
+      var scrollFlex = new Flex(dialog, 0, 0.1, 1, 0.85);
 
       scrollFlex.div.innerText = '';
       scrollFlex.div.style.overflowY = 'scroll';
@@ -341,8 +342,7 @@ function updateUpgradeUI() {
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';
       }
-
-    };
+    });
   }
 
   //upgradeFlex.div.appendChild(scrollFlex.div);

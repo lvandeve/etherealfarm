@@ -988,6 +988,17 @@ function decState(s) {
     }
   }
 
+  if(save_version < 4096*1+23) {
+    // a few help dialogs are only unlocked once when doing something, in older save where the dialogs didn't exist yet they'll never happen anymore,
+    // indicate them so that they at learst appear under the main help
+    if(state.g_numresets) {
+      state.help_seen_text[1] = 1;
+      state.help_seen_text[9] = 9;
+    } else {
+      state.help_seen_text[1] = state.help_seen[1] = undefined; // accidently wrote all help_text_seen as 1 due to saving bool true instead of integer
+    }
+  }
+
   state.g_numloads++;
   return state;
 }
@@ -1278,6 +1289,7 @@ var presave = function(state) {
 var postload = function(new_state) {
   state = new_state;
   computeDerived(state);
+  precomputeField();
 
   // a few variables that are external to state
   Num.notation = state.notation;

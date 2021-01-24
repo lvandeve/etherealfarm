@@ -49,7 +49,6 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   }
 
   var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.8);
-  styleButton(buyFlex.div);
 
   var infoText = upper(name);
   infoText += '<br><br>Cost: ' + cost.toString();
@@ -59,18 +58,19 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   infoText += '<br><br>' + 'This ethereal upgrade is non-refundable and permanent. Lasts through transcensions.';
 
   if(!completed) {
+    styleButton(buyFlex.div);
     var buyText = 'Cost: ' + cost.toString();
 
     buyFlex.div.textEl.innerText = buyText;
 
     if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
 
-    buyFlex.div.onclick = bind(function(i, e) {
+    addButtonAction(buyFlex.div, bind(function(i, e) {
       actions.push({type:ACTION_UPGRADE2, u:u.index});
       update();
-    }, i);
+    }, i));
   } else {
-    buyFlex.div.textEl.innerText = 'Cost: ' + cost.toString();
+    buyFlex.div.innerText = 'Cost: ' + cost.toString();
     //buyFlex.setCentered();
   }
 
@@ -79,11 +79,11 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
   styleButton0(canvasFlex.div);
 
-  canvasFlex.div.onclick = function() {
+  addButtonAction(canvasFlex.div, function() {
     var dialog = createDialog(DIALOG_SMALL);
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
     flex.div.innerHTML = infoText;
-  };
+  }, 'ethereal upgrade icon for ' + name);
 
 
   return flex;
@@ -152,7 +152,7 @@ function updateUpgrade2UI() {
     flex.div.innerText = 'See Completed Upgrades';
     flex.setCentered();
 
-    flex.div.onclick = function() {
+    addButtonAction(flex.div, function() {
       var dialog = createDialog();
       var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
 
@@ -174,8 +174,7 @@ function updateUpgrade2UI() {
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';
       }
-
-    };
+    });
   }
 
   upgrade2ScrollFlex.div.scrollTop = scrollPos;

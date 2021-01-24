@@ -131,20 +131,20 @@ function makePlantDialog(x, y, show_only) {
     registerTooltip(chip.div, tooltipfun, true);
 
     if(show_only) {
-      chip.div.onclick = bind(function(tooltipfun) {
+      addButtonAction(chip.div, bind(function(tooltipfun) {
         var text = tooltipfun();
         var dialog = createDialog(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM);
         var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.4);
         flex.div.innerHTML = text;
-      }, tooltipfun);
+      }, tooltipfun));
     } else {
-      chip.div.onclick = bind(function(index) {
+      addButtonAction(chip.div, bind(function(index) {
         var c = crops[index];
         actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});
         state.lastPlanted = index; // for shift key
         dialog.cancelFun();
         update(); // do update immediately rather than wait for tick, for faster feeling response time
-      }, index);
+      }, index));
       styleButton0(chip.div);
     }
   }

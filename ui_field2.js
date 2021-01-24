@@ -105,18 +105,18 @@ function makeField2Dialog(x, y) {
     if(f.justplanted && (c.planttime <= 2 || f.growth >= 1)) button0.textEl.style.color = '#888';
     if(!state.delete2tokens) button0.textEl.style.color = '#888';
     registerTooltip(button0, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
-    button0.onclick = function() {
+    addButtonAction(button0, function() {
       actions.push({type:ACTION_DELETE2, x:x, y:y});
       dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
-    };
+    });
 
     styleButton(button1);
     button1.textEl.innerText = 'see unlocked crops';
     registerTooltip(button1, 'Show the crop dialog with unlocked ethereal plants.');
-    button1.onclick = function() {
+    addButtonAction(button1, function() {
       makePlantDialog2(x, y, true);
-    };
+    });
 
     updatedialogfun = bind(function(f, c, flex) {
       var html0 = getCropInfoHTML2(f, c, true);
@@ -214,7 +214,7 @@ function initField2UI() {
         return result;
       }, x, y, div), true);
 
-      div.onclick = bind(function(x, y, div, e) {
+      addButtonAction(div, bind(function(x, y, div, e) {
         var f = state.field2[y][x];
         if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           makeField2Dialog(x, y);
@@ -243,7 +243,7 @@ function initField2UI() {
             makeField2Dialog(x, y);
           }
         }
-      }, x, y, div);
+      }, x, y, div), 'ethereal field tile ' + x + ', ' + y);
 
       var pw = tw >> 1;
       var ph = Math.round(th / 16);
