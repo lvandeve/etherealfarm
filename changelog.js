@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.24 (2021-01-26):';
+  text += '<br/>• Renamed watercress "leech" to "copy". It\'s still the exact same effect, but the name copy is more clear, since it is a strictly positive effect.';
+  text += '<br/>• Increased weather cooldown, growth speed and mushroom economy effects of fruits.';
+  text += '<br/>• "w" keyboard shortcut now also replants existing watercress.';
+  text += '<br/>• More UI tweaks and fixes.';
+  text += '<br/><br/>';
+
   text += '0.1.23 (2021-01-24):';
   text += '<br/>• UI tweaks and fixes.';
   text += '<br/><br/>';

@@ -48,6 +48,11 @@ function createTranscendDialog() {
   var actual_resin = state.resin.mul(tlevel_mul);
   text += 'You will get:<br/>';
   text += '• ' + actual_resin.toString() + ' resin from your tree level ' + state.treelevel + '<br/>';
+  if(state.res.resin.eqr(0)) {
+    text += '• ' + ' Unused resin boost: ' + getUnusedResinBonusFor(actual_resin).subr(1).mulr(100).toString() + '%<br/>';
+  } else {
+    text += '• ' + ' Unused resin boost (including existing): ' + getUnusedResinBonusFor(actual_resin.add(state.res.resin)).subr(1).mulr(100).toString() + '%<br/>';
+  }
   text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool<br/>';
   if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) text += '<font color="#a00">→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before ascending</font><br/>';
   text += '<br/>';
@@ -163,7 +168,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += leechInfo + '<br/>';
       } else {
         result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + '<br/><br/>';
-        result += '<font color="#040">Can leech: to copy full production of long-lived neighbors</font><br/>';
+        if(state.upgrades[berryunlock_0].count) result += '<font color="#060">Copies neighbors: to duplicate full production of long-lived berry and mushroom neighbors for free (mushroom copy also consumes more seeds)</font><br/>';
       }
 
       result += '<br/>';
@@ -436,9 +441,11 @@ function initFieldUI() {
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
           return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a fern appeared, letting it sit longer does not change the amount gives.';
-        } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
+        } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
+        } else if(f.index == FIELD_REMAINDER) {
+          result = 'Remains of a watercress that was copying from multiple plants. Visual reminder of good copying-spot only, this is an empty field spot and does nothing. Allows replanting this watercress with "w" key.';
         } else if(f.hasCrop()) {
           var c = f.getCrop();
           result = getCropInfoHTML(f, c);

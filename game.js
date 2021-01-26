@@ -729,10 +729,10 @@ function precomputeField() {
           p.leechnum = num;
           // also add this to the breakdown
           if(!total.empty()) {
-            p.breakdown.push(['<b><i><font color="#040">leeching neighbors (' + num + ')</font></i></b>', false, total, p.prod3.clone()]);
+            p.breakdown.push(['<b><i><font color="#060">copying neighbors (' + num + ')</font></i></b>', false, total, p.prod3.clone()]);
             c.getLeech(f, p.breakdown_leech);
           } else {
-            p.breakdown.push(['no neighbors, not leeching', false, total, p.prod3.clone()]);
+            if(state.upgrades[berryunlock_0].count) p.breakdown.push(['no neighbors, not copying', false, total, p.prod3.clone()]);
           }
         }
       }
@@ -1030,7 +1030,6 @@ var update = function(opt_fromTick) {
           showMessage('not enough resources to plant ' + c.name + ': need ' + cost.toString() +
                       ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
         } else {
-          showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
           if(c.type == CROPTYPE_SHORT) {
             state.g_numplantedshort++;
             state.c_numplantedshort++;
@@ -1052,6 +1051,8 @@ var update = function(opt_fromTick) {
           if(c.type == CROPTYPE_SHORT) f.growth = 1;
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
+          var nextcost = c.getCost(0);
+          if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
         }
       } else if(type == ACTION_PLANT2) {
         var f = state.field2[action.y][action.x];
@@ -1092,7 +1093,7 @@ var update = function(opt_fromTick) {
           var recoup = c.getCost(-1).mulr(cropRecoup);
           if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
             recoup = c.getCost(-1);
-            showMessage('plant was still growing, full refund given', '#f8a');
+            if(!action.silent) showMessage('plant was still growing, full refund given', '#f8a');
             state.g_numplanted--;
             state.c_numplanted--;
           } else {
@@ -1103,10 +1104,10 @@ var update = function(opt_fromTick) {
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
           if(c.type == CROPTYPE_SHORT) {
-            showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
+            if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
           } else {
             state.res.addInPlace(recoup);
-            showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
+            if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
           }
           store_undo = true;
         }
@@ -1646,14 +1647,24 @@ var update = function(opt_fromTick) {
 
 document.addEventListener('keydown', function(e) {
   if(e.key == 'w') {
+    var replanted = false;
+    var refreshed = false;
     for(var y = 0; y < state.numh; y++) {
       for(var x = 0; x < state.numw; x++) {
         var f = state.field[y][x];
         if(f.index == FIELD_REMAINDER) {
-          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
+          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          replanted = true;
+        }
+        if(f.index == CROPINDEX + short_0 && state.res.seeds.gtr(1000)) {
+          actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          refreshed = true;
         }
       }
     }
+    if(replanted) showMessage('replanting watercress');
+    else if(refreshed) showMessage('refreshing watercress');
     update();
   }
 });

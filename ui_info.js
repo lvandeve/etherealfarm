@@ -33,6 +33,7 @@ var gain_hyp_neg = Res();
 
 
 var resourceDivs;
+var lastRenderedInfoSeasonBackground = -1;
 
 // breakdown of which crops produce/consume how much of a particular resource type
 function prodBreakdown(index) {
@@ -100,17 +101,24 @@ var season_styles = [ 'efSeasonBgSpring', 'efSeasonBgSummer', 'efSeasonBgAutumn'
 function updateResourceUI() {
   var infoDiv = infoFlex.div;
   if(!resourceDivs.length) {
+    lastRenderedInfoSeasonBackground = -1;
     for(var y = 0; y < 2; y++) {
       for(var x = 0; x < 4; x++) {
         var i = y * 4 + x;
         var div = makeDiv((x * 25) + '%', (y * 50) + '%', '25%', '50%', infoDiv);
-        div.className = 'efInfo ' + season_styles[getSeason()];;
+        div.className = 'efInfo';
         centerText2(div);
         div.style.textOverflow = 'hidden';
         div.style.whiteSpace = 'nowrap';
         resourceDivs[i] = div;
         div.style.lineHeight = '90%';
       }
+    }
+  }
+  if(getSeason() != lastRenderedInfoSeasonBackground) {
+    lastRenderedInfoSeasonBackground = getSeason();
+    for(var i = 0; i < resourceDivs.length; i++) {
+      resourceDivs[i].className = 'efInfo ' + season_styles[getSeason()];;
     }
   }
 
@@ -249,11 +257,13 @@ function updateResourceUI() {
         // resin
         var text = '<b>' + upper(name) + '</b><br/><br/>';
         text += 'Current amount: ' + res.toString() + '<br/><br/>';
+        text += 'Current production boost for unspent resin: ' + getUnusedResinBonus().subr(1).mulr(100).toString() + '%<br/><br/>';
         if(tlevel > 1) {
           text += 'Collected upcoming resin: ' + upcoming.toString() + '<br/><br/>';
           text += 'Upcoming resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
         }
         text += 'Total upcoming amount: ' + upcoming2.toString() + '<br/><br/>';
+        if(upcoming2.neqr(0)) text += 'Upcoming production boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).mulr(100).toString() + '%<br/><br/>';
       }
       if(index == 3) {
         // twigs

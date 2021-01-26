@@ -12,13 +12,13 @@ a:visited {
 }
 
 .efDialog {
-  background-color: #ddd;
+  background-color: #ccc;
   border: 1px solid black;
   color: #000;
 }
 
 .efDialogTranslucent {
-  background-color: #cccd;
+  background-color: #dddd;
   border: 1px solid #bbb;
   color: #000;
 }
@@ -30,7 +30,7 @@ a:visited {
 }
 
 .efButton {
-  background-color: #ccc;
+  background-color: #ddd;
   border: 1px solid black;
   color: #000;
 }
@@ -38,7 +38,7 @@ a:visited {
 .efButtonCantAfford {
   background-color: #ccc;
   border: 1px solid black;
-  color: #666;
+  color: #777;
 }
 
 .efButtonHighlighted {
@@ -84,4 +84,16 @@ a:visited {
 .efPlantChip {
   border: 1px solid #000;
 }
+
+.efWeatherOn {
+  text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
+  color: #f00;
+}
+
+.efWeatherOff {
+  text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
+  color: #000;
+}
+
+
 

@@ -81,8 +81,8 @@ function styleButton0(div) {
   div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   if(div.textEl) div.textEl.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
-  addEvent(div, 'onmouseover', function() { div.style.filter = 'brightness(0.93)'; });
-  addEvent(div, 'onmouseout', function() { div.style.filter = ''; });
+  util.setEvent(div, 'onmouseover', 'buttonstyle', function() { div.style.filter = 'brightness(0.93)'; });
+  util.setEvent(div, 'onmouseout', 'buttonstyle', function() { div.style.filter = ''; });
 }
 
 // somewhat like makeDiv, but gives mouseover/pointer/... styles
@@ -306,13 +306,13 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
     el.tooltipfun = fun;
     if(el.tooltipregistered) return; // prevent keeping adding event listeners, and make sure re-calling registerTooltip is fast (can be done every frame), just update the minimum needed to change the text
     el.tooltipregistered = true;
-    addEvent(el, 'onmouseover', function(e) {
+    util.setEvent(el, 'onmouseover', 'tooltip', function(e) {
       if(MOBILEMODE && !opt_allowmobile) return;
       maketip(el.tooltipfun(), e, false);
     });
 
     // NOTE: mouseout unwantedly also triggers when over child elements of el (solved inside) or when over the tooltip itself (solved by making tooltip never overlap el)
-    addEvent(el, 'onmouseout', function(e) {
+    util.setEvent(el, 'onmouseout', 'tooltip', function(e) {
       if(MOBILEMODE && !opt_allowmobile) return;
       // avoid the tooltip triggering many times while hovering over child nodes, which does cause mouseout events
       var e_el = e.toElement || e.relatedTarget;
@@ -384,6 +384,7 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
       document.body.appendChild(div);
       var tw = div.clientWidth;
       var maxw = Math.max(300, Math.floor(mainFlex.div.clientWidth * 0.3));
+      if(text.length > 100) maxw = Math.max(400, Math.floor(mainFlex.div.clientWidth * 0.4));
       var maxr = mainFlex.div.clientWidth;
       if(tw > maxw) tw = maxw;
       if(x + maxw > maxr) x = maxr - maxw;
@@ -401,7 +402,11 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
       var tipbottom = rect.y + rect.height;
       var tiph = rect.height;
       var doch = window.innerHeight;
-      if(tipbottom > doch) div.style.top = (tipy0 - tiph) + 'px';
+      if(tipbottom > doch) {
+        var bottom_loss = tipbottom - doch;
+        var top_loss = tiph - tipy0;
+        if(bottom_loss > top_loss) div.style.top = (tipy0 - tiph) + 'px';
+      }
 
       if(opt_poll) {
         updatetooltipfun = function() {
@@ -615,7 +620,7 @@ Flex.prototype.clear = function() {
 // intended for dynamically updating tooltips
 function getCostAffordTimer(cost) {
   var time = Num(0);
-  var percent = Num(9999);
+  var percent = Num(Infinity);
 
 
   if(cost.seeds.gtr(0)) {
@@ -640,7 +645,7 @@ function getCostAffordTimer(cost) {
   }*/
 
   var result = '';
-  if(percent.gtr(100)) {
+  if(percent.gtr(100) && !time.eqr(Infinity)) {
     result += util.formatDuration(time.valueOf(), true);
   } else {
     if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'

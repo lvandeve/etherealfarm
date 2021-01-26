@@ -41,12 +41,11 @@ function createNumberFormatHelp(notations, precision) {
     if(i < num - 2) {
       suffix = getLatinSuffix(i * 3);
       suffixname = getLatinSuffixFullName(i * 3);
+      numeric = ', 1e' + (i * 3);
       if(i <= 4) {
-        numeric = ', 1';
+        numeric += ' (1';
         for(var j = 0; j < i; j++) numeric += ',000';
-        numeric += ' (1e' + (i * 3) + ')';
-      } else {
-        numeric = ', 1e' + (i * 3);
+        numeric += ')';
       }
     } else if(i == num - 2) {
       suffixname = 'centillion';
@@ -775,8 +774,8 @@ function initSettingsUI() {
   gearbutton.style.backgroundSize = 'cover';
   gearbutton.classList.add('pixelated');
 
-  addEvent(gearbutton, 'onmouseover', function() { gearbutton.style.filter = 'brightness(0.4)'; });
-  addEvent(gearbutton, 'onmouseout', function() { gearbutton.style.filter = ''; });
+  util.setEvent(gearbutton, 'onmouseover', 'gearstyle', function() { gearbutton.style.filter = 'brightness(0.4)'; });
+  util.setEvent(gearbutton, 'onmouseout', 'gearstyle', function() { gearbutton.style.filter = ''; });
 
   addButtonAction(gearbutton, function() {
     var dialogFlex = createDialog();

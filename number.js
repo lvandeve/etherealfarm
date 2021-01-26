@@ -518,8 +518,8 @@ Num.prototype.eqr = function(r) {
   return r == this.scaleTo(0);
 };
 Num.eqr = function(a, r) { return a.eqr(r); };
-Num.prototype.neqr = function(b) { return this.neq(Num(b)); };
-Num.neqr = function(a, b) { return a.neq(Num(b)); };
+Num.prototype.neqr = function(b) { return !this.eqr(b); };
+Num.neqr = function(a, b) { return !a.eqr(b); };
 Num.prototype.gtr = function(b) { return this.gt(Num(b)); };
 Num.gtr = function(a, b) { return a.gt(Num(b)); };
 Num.prototype.ger = function(b) { return this.ge(Num(b)); };

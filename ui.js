@@ -171,9 +171,12 @@ function setCSSFile(file) {
 }
 
 function setStyle() {
+  // add version code, otherwise the CSS files get cached for a long time and if new styles are added they won't be picked up when loading a next game version
+  // caching within a game version is desired though
+  var version_code = '?v=' + formatVersion().replace(/\./g, '_');
   if(state.uistyle == 2) {
-    setCSSFile('style_dark.css');
+    setCSSFile('style_dark.css' + version_code);
   } else {
-    setCSSFile('style_light.css');
+    setCSSFile('style_light.css' + version_code);
   }
 }

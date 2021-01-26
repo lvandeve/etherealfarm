@@ -45,12 +45,12 @@ function getCropTypeName(type) {
 
 function getCropTypeHelp(type) {
   switch(type) {
-    case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers and nettles. Neighboring watercress can leech its production (but also consumption), producing more spores overall given enough seeds.';
+    case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers and nettles. Neighboring watercress can copy its production (but also consumption).';
     case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption. Negatively affected by neighboring nettles.';
-    case CROPTYPE_SHORT: return 'Produces a small amount of seeds on its own, but can produce much more resources by leeching from berry and mushroom neighbors';
-    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. Negatively affected by nettles. Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can leech its production, producing more seeds overall.';
-    case CROPTYPE_MISTLETOE: return 'Produces twigs, when next to the tree only, only when the tree levels up. Increases level up spores requirement of the tree and slightly decreases resin gain. The twigs level up the ethereal tree.';
+    case CROPTYPE_SHORT: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those';
+    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. Negatively affected by nettles. Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
+    case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Increases level up spores requirement and slightly decreases resin gain.';
   }
   return undefined;
 }
@@ -446,7 +446,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // teelevel boost
-  // CROPTYPE_SHORT is excluded simply to remove noise in the breakdown display: it's only a bonus on its 1 seed production. At the point where the tree is leveled, its real income comes from the neighbor leeching.
+  // CROPTYPE_SHORT is excluded simply to remove noise in the breakdown display: it's only a bonus on its 1 seed production. At the point where the tree is leveled, its real income comes from the neighbor copying.
   if(state.treelevel > 0 && this.type != CROPTYPE_SHORT) {
     var tree_boost = Num(1).add(getTreeBoost());
     result.mulInPlace(tree_boost);
@@ -509,11 +509,11 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) {
       if(!total.empty()) {
         if(leech.ltr(1)) {
-          breakdown.push(['leech reduction due to multiple watercress globally', true, leech, undefined]);
+          breakdown.push(['copy reduction due to multiple watercress globally', true, leech, undefined]);
         }
-        breakdown.push(['<b><i><font color="#040">leeching neighbors (' + num + ')</font></i></b>', false, total, result.clone()]);
+        breakdown.push(['<b><i><font color="#060">copying neighbors (' + num + ')</font></i></b>', false, total, result.clone()]);
       } else {
-        breakdown.push(['no neighbors, not leeching', false, total, result.clone()]);
+        breakdown.push(['no neighbors, not copying', false, total, result.clone()]);
       }
     }
   }
@@ -1083,7 +1083,7 @@ function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_nu
     }
   };
 
-  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive), and adds 50% base production excluding leech (additive)';
+  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive), and adds 50% base production excluding the neighbor coppying effect. (additive)';
 
   var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
@@ -1617,6 +1617,17 @@ for(var i = 0; i < gametime_achievement_values.length; i++) {
       Num(gametime_achievement_bonuses_percent[i]).mulr(0.01));
 }
 
+medal_register_id = 820;
+
+registerMedal('higher transcension', 'performed transcension II or higher', undefined, function() {
+  // This is a bit of a hacky way to check this, but the goal is that you get the medal when
+  // you transcended (so tree level is definitely smaller than 20) and have had at least the
+  // tree level 20 to do so. Since this medal was only added to the game at a later point in time,
+  // this method of checking also allows players who did transcenscion II in the past but not
+  // during the current run to receive it
+  return state.g_treelevel >= 20 && state.treelevel < 20;
+}, Num(0.1));
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2070,7 +2081,7 @@ var FRUIT_FERN = fruit_index++;
 // BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
 var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
 // TODO: one that extends lifetime of watercress
-// TODO: one that boosts nettles
+// TODO: one that boosts nettles; can be for later tier fruits with 3+ slots only, since it's similar to mushboost and musheff, but would be its own separate multiplier so in combination can be really powerful
 // TODO: seasonal ones, but only for fruits with 2+ slots, to avoid a very disappointing single-slot fruit in the wrong season
 
 // returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
@@ -2084,8 +2095,8 @@ function getFruitBoost(ability, level, tier) {
     return Num(base * level);
   }
   if(ability == FRUIT_MUSHEFF) {
-    var amount = towards1(level, 10);
-    var max = 0.2 + tier * 0.05;
+    var amount = towards1(level, 5);
+    var max = 0.3 * (1 + 0.5 * tier / 11);
     return Num(max * amount);
   }
   if(ability == FRUIT_FLOWERBOOST) {
@@ -2098,13 +2109,13 @@ function getFruitBoost(ability, level, tier) {
     return Num(base * 1.5 * level);
   }
   if(ability == FRUIT_GROWSPEED) {
-    var amount = towards1(level, 10);
-    var max = 0.2 + tier * 0.05;
+    var amount = towards1(level, 5);
+    var max = 0.4 * (1 + 0.6 * tier / 11);
     return Num(max * amount);
   }
   if(ability == FRUIT_COOLDOWN) {
-    var amount = towards1(level, 10);
-    var max = 0.2 + tier * 0.05;
+    var amount = towards1(level, 5);
+    var max = 0.3 * (1 + 0.5 * tier / 11);
     return Num(max * amount);
   }
   if(ability == FRUIT_FERN) {
@@ -2309,8 +2320,12 @@ function getStarterResources(opt_adjust) {
   return Res({seeds:ethereal_seeds});
 }
 
-function getUnusedResinBonus(){
-  return Num(Num.log10(state.res.resin.addr(1))).mulr(0.1).addr(1);
+function getUnusedResinBonusFor(resin){
+  return Num(Num.log10(resin.addr(1))).mulr(0.1).addr(1);
+}
+
+function getUnusedResinBonus() {
+  return getUnusedResinBonusFor(state.res.resin);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

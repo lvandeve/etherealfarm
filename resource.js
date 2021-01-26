@@ -57,7 +57,8 @@ Res.prototype.toArray = function() {
 Res.toArray = function(v) { return v.toArray(); }
 
 Res.prototype.clone = function() {
-  return util.clone(this);
+  // Res.clone gets called a lot in computations of the game, and using util.clone is slow, so implemented manually here
+  return new Res(this);
 };
 
 // in-place

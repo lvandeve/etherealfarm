@@ -137,15 +137,15 @@ function showRegisteredHelpDialog(id, opt_force)  {
 
 registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade! Check the "upgrades" tab to view it. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
 
-registerHelpDialog(3, 'Permanent crop & leech',
+registerHelpDialog(3, 'Permanent crop & watercress copying',
     'You unlocked your first permanent type of plant. Plants like this stay on the field forever, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
-    'If you plant watercress next to permanent plants, the watercress copy all its neighbors production for free (called "leech", but in a good way), so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (which is by design to not need to plant many of them all the time). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the plant has later in the game.' +
+    'If you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonal, not diagonal) production for free, so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (which is by design to not need to plant many of them all the time). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the plant has later in the game.' +
     '<br><br>'+
     'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
     undefined,
     '<br><br>'+
-    'The image below shows an optimal configuration to use for watercress leeching: the single watercress duplicates the production of 4 blackberries:',
+    'The image below shows an optimal configuration to use for watercress copying: the single watercress duplicates the production of 4 blackberries:',
     [[undefined,blackberry[4],undefined],[blackberry[4],watercress[4],blackberry[4]],[undefined,blackberry[4],undefined]]);
 
 
@@ -180,7 +180,7 @@ registerHelpDialog(6, 'Tree leveled up', 'Thanks to spores, the tree completely 
 registerHelpDialog(12, 'Sun ability', 'The tree reached level ' + 2 + ' and discovered the sun ability!<br><br>' + upgrades[upgrade_sununlock].description, image_sun);
 registerHelpDialog(14, 'Mist ability', 'The tree reached level ' + 4 + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
 registerHelpDialog(15, 'Rainbow ability', 'The tree reached level ' + 6 + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
-registerHelpDialog(2, 'Tree dropped fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab.', images_apple[0]);
+registerHelpDialog(2, 'Tree dropped fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surpluss fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
 registerHelpDialog(18, 'Tree dropped better fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
 
 
@@ -228,7 +228,7 @@ function createKeyboardHelpDialog() {
   text += '<br/><br/>';
   text += ' • <b>"1" , "2" , "3"</b>: activate one of the weather abilities';
   text += '<br/>';
-  text += ' • <b>"w"</b>: plant watercress on all field tiles that have a watercress remainder. Such a remainder appears for watercress that have been leeching from multiple plants, that is, a good leech spot. Leeching has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective.';
+  text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
   text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted type';
   text += '<br/>';
@@ -267,9 +267,9 @@ function createMainHelpDialog() {
 
   var text = '';
 
-  text += 'Ethereal farm is an incremental game that begins by growing and upgrading crops in this ethereal world.';
+  text += 'Ethereal farm is an incremental game taking place on a field with a mysterious tree in the center. Most crops are permanent and there\'s no harvesting/selling/withering as in many farm games, instead it\'s about growing better and better plant types, with various neighbor-interaction rules with other plants in the field.';
   text += '<br/><br/>';
-  text += 'The text in the message log at the bottom will guide you through how to play. A short summary of the first steps: initially you have no resources but can get some from clicking ferns. Then you can click on field tiles to plant crops and soon resources are gained automatically. The rest will be revealed when the time is ready.';
+  text += 'The text in the message log at the bottom will guide you through how to play. A short summary of the first steps: initially you have no resources but can get some from clicking ferns. Then you can click on field tiles to plant crops and soon resources are gained automatically and soon after that permanently. The rest will be revealed when the time is ready.';
   text += '<br/><br/>';
   text += 'You can click resources in the resource panel to see more detailed breakdown. You can click fullgrown crops to see detailed stats. As the game progresses, more types of information may appear in there.';
   text += '<br/><br/>';
@@ -301,6 +301,10 @@ function createHelpDialog() {
     showing_help = false;
   });
   var dialog = dialogFlex.div;
+
+  var titleFlex = new Flex(dialogFlex, 0, 0.01, 1, 0.11, 0.5);
+  centerText2(titleFlex.div);
+  titleFlex.div.textEl.innerText = 'Help';
 
   var scrollFlex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
   scrollFlex.div.style.overflowY = 'scroll';

@@ -120,14 +120,16 @@ function updateMedalUI() {
       medal_canvases2[i] = undefined;
     }
 
-    var getMedalText = bind(function(m, m2, div, canvas2, i){
+    var seenfun = bind(function(m, m2, div, canvas2, i) {
       if(m2.earned && !m2.seen) {
         m2.seen = true;
         div.style.border = '3px solid black';
         util.removeElement(canvas2);
         medal_canvases2[i] = undefined;
       }
+    }, m, m2, div, canvas2, i);
 
+    var getMedalText = bind(function(m, m2, div, canvas2, i) {
       var tier = m.getTier();
       if(!m2.earned) {
         return upper(m.name) + '<br><br>Not yet earned. Unearned achievements are normally hidden, except hinted ones like this shown as "?"<br><br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
@@ -136,12 +138,14 @@ function updateMedalUI() {
     }, m, m2, div, canvas2, i);
 
     registerTooltip(div, getMedalText);
+    util.setEvent(div, 'onmouseover', 'medalseen', seenfun);
 
-    addButtonAction(div, bind(function(getMedalText) {
+    addButtonAction(div, bind(function(getMedalText, seenfun) {
       var dialog = createDialog(DIALOG_SMALL);
       var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.9, 0.5);
       flex.div.innerHTML = getMedalText();
-    }, getMedalText));
+      seenfun();
+    }, getMedalText, seenfun));
   }
 }
 

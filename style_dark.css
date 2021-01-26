@@ -30,14 +30,14 @@ a:visited {
 
 .efButton {
   background-color: #555;
-  border: 1px solid #aaa;
-  color: #bbb;
+  border: 1px solid #ccc;
+  color: #ccc;
 }
 
 .efButtonCantAfford {
   background-color: #555;
-  border: 1px solid #aaa;
-  color: #877;
+  border: 1px solid #777;
+  color: #777;
 }
 
 .efButtonHighlighted {
@@ -83,4 +83,14 @@ a:visited {
 .efPlantChip {
   background-color: #010;
   border: 1px solid #090;
+}
+
+.efWeatherOn {
+  text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
+  color: #f00;
+}
+
+.efWeatherOff {
+  text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
+  color: #000;
 }

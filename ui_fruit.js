@@ -26,7 +26,7 @@ function getFruitAbilityName(ability) {
     case FRUIT_FLOWERBOOST: return 'flower boost';
     case FRUIT_GROWSPEED: return 'growing speed';
     case FRUIT_COOLDOWN: return 'weather cooldown';
-    case FRUIT_LEECH: return 'leech';
+    case FRUIT_LEECH: return 'watercress copying';
     case FRUIT_FERN: return 'fern';
   }
   return 'unknown';
@@ -40,7 +40,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_FLOWERBOOST: return 'boosts flowers effect';
     case FRUIT_GROWSPEED: return 'reduces plants growing time';
     case FRUIT_COOLDOWN: return 'reduces weather ability cooldown time';
-    case FRUIT_LEECH: return 'increases the leech effect of watercress';
+    case FRUIT_LEECH: return 'increases the copy effect of watercress';
     case FRUIT_FERN: return 'increases the contents of ferns';
   }
   return 'unknown';

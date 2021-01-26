@@ -611,7 +611,7 @@ var Utils = (function() {
   var addEvent = function(el, event, fun) {
     if(!el.util_added_events_) el.util_added_events_ = {};
     if(!el.util_added_events_[event]) el.util_added_events_[event] = [];
-    if(el.util_added_events_[event].length > 16) {
+    if(el.util_added_events_[event].length > 8) {
       throw 'excessive amount of events added, there may be a bug where something keeps adding the same one';
     }
     el.util_added_events_[event].push(fun);
@@ -623,6 +623,18 @@ var Utils = (function() {
   };
   result.addEvent = addEvent;
 
+  var setEvent = function(el, event, idname, fun) {
+    if(!el.util_set_events_) el.util_set_events_ = {};
+    if(!el.util_set_events_[event]) el.util_set_events_[event] = {};
+    el.util_set_events_[event][idname] = fun;
+    el[event] = bind(function(o, e) {
+      for(var id in o) {
+        if(o.hasOwnProperty(id)) o[id](e);
+      }
+    }, el.util_set_events_[event]);
+  };
+  result.setEvent = setEvent;
+
 
   return result;
 }());
@@ -632,6 +644,5 @@ var util = Utils;
 // allow to use very often used utility functions directly
 var bind = util.bind;
 var makeDiv = util.makeDiv;
-var addEvent = util.addEvent;
 var upper = util.upperCaseFirstWord;
 

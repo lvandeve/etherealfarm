@@ -27,14 +27,6 @@ var suntimerflex = undefined;
 var rainbowbutton = undefined;
 var rainbowtimerflex = undefined;
 
-
-var shadow = '0 0 0.3em #fff';
-var ability_text_shadow = shadow + ', ' + shadow + ', ' + shadow + ', ' + shadow + ', ' + shadow + ', ' + shadow; // for legibility
-var ability_charging_open = 'ready in:<br> ';
-var ability_charging_close = '';
-var ability_active_open = '<font color="red">active:<br> ';
-var ability_active_close = '</font>';
-
 // just like how the numbers are defined in data: duration is the running time, wait is the cooldown time plus the running time (total cycle time)
 function formatAbilityDurationTooltipText(name, description, duration, wait) {
   var cooldown = wait - duration;
@@ -59,8 +51,8 @@ function updateAbilitiesUI() {
     styleButton0(sunbutton.div);
 
     suntimerflex = new Flex(topFlex, [0,5], [0,0.1], [0,6.5], [0,0.9], 2);
+    suntimerflex.div.className = 'efWeatherOff';
     suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
-    suntimerflex.div.style.textShadow = ability_text_shadow;
     suntimerflex.div.style.pointerEvents = 'none';
 
 
@@ -81,9 +73,11 @@ function updateAbilitiesUI() {
     if(d > getSunWait()) {
       suntimerflex.div.innerHTML = '';
     } else if(d > getSunDuration()) {
-      suntimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getSunWait() - d, true) + ability_charging_close;
+      suntimerflex.div.className = 'efWeatherOff';
+      suntimerflex.div.innerHTML = 'ready in:<br>' + util.formatDuration(getSunWait() - d, true);
     } else {
-      suntimerflex.div.innerHTML = ability_active_open + util.formatDuration(getSunDuration() - d, true) + ability_active_close;
+      suntimerflex.div.className = 'efWeatherOn';
+      suntimerflex.div.innerHTML = 'active:<br>' + util.formatDuration(getSunDuration() - d, true);
     }
   }
 
@@ -102,7 +96,6 @@ function updateAbilitiesUI() {
 
     misttimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
     misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
-    misttimerflex.div.style.textShadow = ability_text_shadow;
     misttimerflex.div.style.pointerEvents = 'none';
 
 
@@ -124,9 +117,11 @@ function updateAbilitiesUI() {
     if(d > getMistWait()) {
       misttimerflex.div.innerHTML = '';
     } else if(d > getMistDuration()) {
-      misttimerflex.div.innerHTML = ability_charging_open + util.formatDuration(getMistWait() - d, true) + ability_charging_close;
+      misttimerflex.div.className = 'efWeatherOff';
+      misttimerflex.div.innerHTML = 'ready in:<br>' + util.formatDuration(getMistWait() - d, true);
     } else {
-      misttimerflex.div.innerHTML = ability_active_open + util.formatDuration(getMistDuration() - d, true) + ability_active_close;
+      misttimerflex.div.className = 'efWeatherOn';
+      misttimerflex.div.innerHTML = 'active:<br>' + util.formatDuration(getMistDuration() - d, true);
     }
   }
 
@@ -146,7 +141,6 @@ function updateAbilitiesUI() {
 
     rainbowtimerflex = new Flex(topFlex, [0,9], [0,0.1], [0,10.5], [0,0.9], 2);
     rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
-    rainbowtimerflex.div.style.textShadow = ability_text_shadow;
     rainbowtimerflex.div.style.pointerEvents = 'none';
 
 
@@ -167,9 +161,11 @@ function updateAbilitiesUI() {
     if(d > getRainbowWait()) {
       rainbowtimerflex.div.innerHTML = '';
     } else if(d > getRainbowDuration()) {
-      rainbowtimerflex.div.innerHTML = 'ready in:<br> ' + util.formatDuration(getRainbowWait() - d, true);
+      rainbowtimerflex.div.className = 'efWeatherOff';
+      rainbowtimerflex.div.innerHTML = 'ready in:<br>' + util.formatDuration(getRainbowWait() - d, true);
     } else {
-      rainbowtimerflex.div.innerHTML = '<font color="red">active:<br> ' + util.formatDuration(getRainbowDuration() - d, true) + '</font>';
+      rainbowtimerflex.div.className = 'efWeatherOn';
+      rainbowtimerflex.div.innerHTML = 'active:<br>' + util.formatDuration(getRainbowDuration() - d, true);
     }
   }
 
