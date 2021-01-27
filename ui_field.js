@@ -346,7 +346,8 @@ function makeFieldDialog(x, y) {
       }
       text += '<br>';
       if(state.mistletoes > 0) {
-        text += 'Twigs from mistletoes at next tree level: ' + nextTwigs().toString() + '<br/>';
+        text += 'Twigs from mistletoes at next tree level: ' + nextTwigs().toString() + '.<br>'
+        text += 'Total gotten so far this transcension: ' + state.c_res.twigs.toString() + ' twigs.<br/>';
       }
       if(tlevel > 1) {
         text += '<br/>';
@@ -365,8 +366,8 @@ function makeFieldDialog(x, y) {
       if(state.upgrades[upgrade_mistunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
         text += '<br/>';
         text += 'Abilities discovered:<br>';
-        if(state.upgrades[upgrade_mistunlock].unlocked) text += '• Mist: benefits mushrooms when active<br>';
         if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sun: benefits berries when active<br>';
+        if(state.upgrades[upgrade_mistunlock].unlocked) text += '• Mist: benefits mushrooms when active<br>';
         if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
       }
 

@@ -1016,7 +1016,16 @@ var testamount = 0;
 
 
 
-// reason: 0: unknown, 1:string too short, 2: not base64, 3:signature EF missing, 4:format, 5:compression, 6:checksum mismatch, 7:save version newer than game version
+/*
+reasons: 0: unknown
+1:string too short
+2: not base64
+3:signature EF missing
+4:format
+5:compression
+6:checksum mismatch
+7:save version newer than game version
+8:save of too old version of the game*/
 var err = function(reason) {
   if(!reason) reason = 0;
   return {save_error:true, error_reason:reason};

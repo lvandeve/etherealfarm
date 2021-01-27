@@ -210,7 +210,6 @@ function createNumberFormatDialog() {
   var examples = [0, 0.002, 0.3, 1, 7.123456, 12, 150, 1712.29, 14348907.5, 4294967296, 2048e20, 800e27, 7.10915e50, 2.1065e85];
 
   var fill = function() {
-
     var tableText = '';
     tableText += '<table border="1" style="border-collapse:collapse">';
     tableText += '<tr><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td><td width="10%" style="border:none"></td><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td></tr>';
@@ -234,6 +233,8 @@ function createNumberFormatDialog() {
     descriptionDiv.innerHTML = '<b>Notation description:</b> ' + Num.N_Help[notation];
 
     div.innerHTML = tableText;
+
+    updateUI();
   };
 
 
@@ -697,6 +698,7 @@ function initSettingsUI_in(dialogFlex) {
         if(state && state.error_reason == 5) message += '\n' + loadfailreason_decompression;
         if(state && state.error_reason == 6) message += '\n' + loadfailreason_checksum;
         if(state && state.error_reason == 7) message += '\n' + loadfailreason_toonew;
+        if(state && state.error_reason == 8) message += '\n' + loadfailreason_tooold;
         textFlex.div.innerText = message;
         textFlex.div.style.color = 'black';
       });

@@ -21,8 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function makePlantChip2(crop, x, y, w, parent) {
   var flex = new Flex(parent, x * w + 0.01, [0, y * w + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.5], 0.8);
   var div = flex.div;
-  div.style.border = '1px solid black';
-  div.style.backgroundColor = '#9df';
+  div.className = 'efEtherealPlantChip';
 
   var canvasFlex = new Flex(flex, 0, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);

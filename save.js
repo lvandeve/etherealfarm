@@ -79,6 +79,8 @@ function encState(state, opt_raw_only) {
   id = 15; // the inner copy of version is saved in section 0, id 15
   processUint(version); // redundancy inner (as opposed to the outer one at front) game version value. important to ensure save-version checks are correct.
   processInt(state.seed0);
+  id = 17;
+  processInt(state.fern_seed);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -457,453 +459,462 @@ function decState(s) {
   var reader = {s:s, pos:0};
 
   if(save_version <= 4096*1 + 7) {
-    var e = decStateOLD(reader, state, save_version);
-    if(e != undefined) return e; // error
+    return err(8);
+  }
+
+  var tokens = decTokens(reader);
+  if(reader.error) return err(4);
+
+  var found, error;
+
+  var section;
+  var id;
+
+  // def = default value, or undefined to make it required to be there and indicate error if not there
+  var process = function(def, type) {
+    var token = tokens[section * 64 + id];
+    id++;
+    if(token == undefined || token.type != type) {
+      found = false;
+      if(def == undefined) error = true;
+      return def;
+    }
+    found = true;
+    return token.value;
+  };
+  var processBool = function(def) { return process(def, TYPE_BOOL); };
+  var processUint6 = function(def) { return process(def, TYPE_UINT6); };
+  var processInt = function(def) { return process(def, TYPE_INT); };
+  var processUint = function(def) { return process(def, TYPE_UINT); };
+  var processUint16 = function(def) { return process(def, TYPE_UINT16); };
+  var processFloat = function(def) { return process(def, TYPE_FLOAT); };
+  var processFloat2 = function(def) { return process(def, TYPE_FLOAT2); };
+  var processNum = function(def) { return process(def, TYPE_NUM); };
+  var processString = function(def) { return process(def, TYPE_STRING); };
+  var processRes = function(def) { return process(def, TYPE_RES); };
+  var processBoolArray = function(def) { return process(def, TYPE_ARRAY_BOOL); };
+  var processUint6Array = function(def) { return process(def, TYPE_ARRAY_UINT6); };
+  var processIntArray = function(def) { return process(def, TYPE_ARRAY_INT); };
+  var processUintArray = function(def) { return process(def, TYPE_ARRAY_UINT); };
+  var processUint16Array = function(def) { return process(def, TYPE_ARRAY_UINT16); };
+  var processFloatArray = function(def) { return process(def, TYPE_ARRAY_FLOAT); };
+  var processFloat2Array = function(def) { return process(def, TYPE_ARRAY_FLOAT2); };
+  var processNumArray = function(def) { return process(def, TYPE_ARRAY_NUM); };
+  var processStringArray = function(def) { return process(def, TYPE_ARRAY_STRING); };
+  var processResArray = function(def) { return process(def, TYPE_ARRAY_RES); };
+
+  var array, array0, array1, array2, array3, array4, array5, array6;
+  var index, index0, index1, index2, index3, index4, index5, index6;
+
+
+  section = 0; id = 0; // main/misc
+  state.prevtime = processFloat();
+  state.res = processRes();
+  state.treelevel = processUint();
+  // id=3 now unused, it used to be "ethereal_upgrade_spent" pre 0.1.9
+  id = 4;
+  state.treelevel2 = processUint();
+  state.resin = processNum();
+  state.fern = processUint();
+  if(state.fern) {
+    state.fernx = processUint();
+    state.ferny = processUint();
+    state.fernres = processRes();
+  }
+  id = 10;
+  if(save_version <= 4096*1+9 && !state.fern) id -= 3; // fix mistake in pre-0.1.10 savegame version, values lastFernTime, lastBackupWarningTime, currentTab, lastPlanted, lastPlanted2 all got an id of 3 too low if state.fern was false. id should not depend on ifs.
+  state.lastFernTime = processFloat();
+  state.lastBackupWarningTime = processFloat();
+  if(save_version >= 4096*1+9) state.currentTab = processInt();
+  if(save_version >= 4096*1+9) state.lastPlanted = processInt();
+  if(save_version >= 4096*1+9) state.lastPlanted2 = processInt();
+  id = 15;
+  if(save_version >= 4096*1+10) {
+    var save_version2 = processUint();
+    if(save_version2 != save_version) return err(4); // non-matching outer and inner version: error, save_version checks invalid.
+  }
+  if(save_version >= 4096*1+20) {
+    state.seed0 = processInt();
   } else {
-    var tokens = decTokens(reader);
-    if(reader.error) return err(4);
+    state.seed0 = Math.floor(Math.random() * 281474976710656);
+  }
+  id = 17;
+  if(save_version >= 4096*1+25) {
+    state.fern_seed = processInt();
+  } else {
+    // doesn't need seed0 since the "exploitation" potential is not that big,
+    // one can refresh the tab with old savegame to get a bushy fern once, not
+    // too big deal.
+    state.fern_seed = Math.floor(Math.random() * 281474976710656);
+  }
+  if(error) return err(4);
 
-    var found, error;
 
-    var section;
-    var id;
-
-    // def = default value, or undefined to make it required to be there and indicate error if not there
-    var process = function(def, type) {
-      var token = tokens[section * 64 + id];
-      id++;
-      if(token == undefined || token.type != type) {
-        found = false;
-        if(def == undefined) error = true;
-        return def;
+  section = 1; id = 0; // field
+  state.numw = processUint();
+  state.numh = processUint();
+  if(error) return err(4);
+  if(state.numw > 15 || state.numh > 15) return err(4); // that large size is not supported
+  if(state.numw < 3 || state.numh < 3) return err(4); // that small size is not supported
+  var w = state.numw;
+  var h = state.numh;
+  array0 = processIntArray();
+  array1 = processFloat2Array();
+  if(error) return err(4);
+  index0 = 0;
+  index1 = 0;
+  for(var y = 0; y < h; y++) {
+    state.field[y] = [];
+    for(var x = 0; x < w; x++) {
+      state.field[y][x] = new Cell(x, y);
+      var f = state.field[y][x];
+      f.index = array0[index0++];
+      if(f.hasCrop()) {
+        f.growth = array1[index1++];
       }
-      found = true;
-      return token.value;
-    };
-    var processBool = function(def) { return process(def, TYPE_BOOL); };
-    var processUint6 = function(def) { return process(def, TYPE_UINT6); };
-    var processInt = function(def) { return process(def, TYPE_INT); };
-    var processUint = function(def) { return process(def, TYPE_UINT); };
-    var processUint16 = function(def) { return process(def, TYPE_UINT16); };
-    var processFloat = function(def) { return process(def, TYPE_FLOAT); };
-    var processFloat2 = function(def) { return process(def, TYPE_FLOAT2); };
-    var processNum = function(def) { return process(def, TYPE_NUM); };
-    var processString = function(def) { return process(def, TYPE_STRING); };
-    var processRes = function(def) { return process(def, TYPE_RES); };
-    var processBoolArray = function(def) { return process(def, TYPE_ARRAY_BOOL); };
-    var processUint6Array = function(def) { return process(def, TYPE_ARRAY_UINT6); };
-    var processIntArray = function(def) { return process(def, TYPE_ARRAY_INT); };
-    var processUintArray = function(def) { return process(def, TYPE_ARRAY_UINT); };
-    var processUint16Array = function(def) { return process(def, TYPE_ARRAY_UINT16); };
-    var processFloatArray = function(def) { return process(def, TYPE_ARRAY_FLOAT); };
-    var processFloat2Array = function(def) { return process(def, TYPE_ARRAY_FLOAT2); };
-    var processNumArray = function(def) { return process(def, TYPE_ARRAY_NUM); };
-    var processStringArray = function(def) { return process(def, TYPE_ARRAY_STRING); };
-    var processResArray = function(def) { return process(def, TYPE_ARRAY_RES); };
-
-    var array, array0, array1, array2, array3, array4, array5, array6;
-    var index, index0, index1, index2, index3, index4, index5, index6;
-
-
-    section = 0; id = 0; // main/misc
-    state.prevtime = processFloat();
-    state.res = processRes();
-    state.treelevel = processUint();
-    // id=3 now unused, it used to be "ethereal_upgrade_spent" pre 0.1.9
-    id = 4;
-    state.treelevel2 = processUint();
-    state.resin = processNum();
-    state.fern = processUint();
-    if(state.fern) {
-      state.fernx = processUint();
-      state.ferny = processUint();
-      state.fernres = processRes();
     }
-    id = 10;
-    if(save_version <= 4096*1+9 && !state.fern) id -= 3; // fix mistake in pre-0.1.10 savegame version, values lastFernTime, lastBackupWarningTime, currentTab, lastPlanted, lastPlanted2 all got an id of 3 too low if state.fern was false. id should not depend on ifs.
-    state.lastFernTime = processFloat();
-    state.lastBackupWarningTime = processFloat();
-    if(save_version >= 4096*1+9) state.currentTab = processInt();
-    if(save_version >= 4096*1+9) state.lastPlanted = processInt();
-    if(save_version >= 4096*1+9) state.lastPlanted2 = processInt();
-    id = 15;
-    if(save_version >= 4096*1+10) {
-      var save_version2 = processUint();
-      if(save_version2 != save_version) return err(4); // non-matching outer and inner version: error, save_version checks invalid.
+  }
+  if(index0 > array0.length) return err(4);
+  if(index1 > array1.length) return err(4);
+
+  section = 2; id = 0; // field2
+  state.numw2 = processUint();
+  state.numh2 = processUint();
+  if(error) return err(4);
+  if(state.numw2 > 15 || state.numh2 > 15) return err(4); // that large size is not supported
+  if(state.numw2 < 3 || state.numh2 < 3) return err(4); // that small size is not supported
+  var w2 = state.numw2;
+  var h2 = state.numh2;
+  array0 = processIntArray();
+  array1 = (save_version >= 4096*1+9) ? processFloat2Array() : null;
+  array2 = (save_version >= 4096*1+15) ? processBoolArray() : null;
+  index0 = 0;
+  index1 = 0;
+  index2 = 0;
+  if(error) return err(4);
+  for(var y = 0; y < h2; y++) {
+    state.field2[y] = [];
+    for(var x = 0; x < w2; x++) {
+      state.field2[y][x] = new Cell(x, y);
+      var f = state.field2[y][x];
+      f.index = array0[index0++];
+      if(f.hasCrop()) {
+        if(save_version >= 4096*1+9) f.growth = array1[index1++];
+        if(save_version >= 4096*1+15) f.justplanted = array2[index2++];
+      }
     }
-    if(save_version >= 4096*1+20) {
-      state.seed0 = processInt();
+  }
+  if(index0 > array0.length) return err(4);
+  if((save_version >= 4096*1+9) && index1 > array1.length) return err(4);
+  if((save_version >= 4096*1+15) && index2 > array2.length) return err(4);
+
+
+  var unlocked;
+  var prev;
+
+
+  section = 3; id = 0; // upgrades
+  array0 = processUintArray();
+  array1 = processBoolArray();
+  array2 = processUintArray();
+  if(error) return err(4);
+  if(array0.length != array1.length || array0.length != array2.length) return err(4);
+  prev = 0;
+  for(var i = 0; i < array0.length; i++) {
+    var index = array0[i] + prev;
+    prev = index;
+    if(!upgrades[index]) return err(4);
+    state.upgrades[index].unlocked = true;
+    state.upgrades[index].seen = array1[i];
+    state.upgrades[index].count = array2[i];
+    if(upgrades[index].deprecated) {
+      state.upgrades[index].unlocked = false;
+      state.upgrades[index].count = 0;
+      // this version, the choice upgrades changed from 2 separate ones, to a single one that uses "count" as the choice
+      if(save_version <= 4096*1+14) {
+        if(index == fern_choice0_b && array2[i]) {state.upgrades[fern_choice0].unlocked = true; state.upgrades[fern_choice0].count = 2;}
+        if(index == active_choice0_b && array2[i]) {state.upgrades[active_choice0].unlocked = true; state.upgrades[active_choice0].count = 2;}
+      }
+    }
+  }
+
+
+  section = 4; id = 0; // crops
+  array0 = processUintArray();
+  if(error) return err(4);
+  prev = 0;
+  for(var i = 0; i < array0.length; i++) {
+    var index = array0[i] + prev;
+    prev = index;
+    if(!crops[index]) return err(4);
+    state.crops[index].unlocked = true;
+  }
+
+
+  section = 5; id = 0; // upgrades2
+  array0 = processUintArray();
+  array1 = processBoolArray();
+  array2 = processUintArray();
+  if(error) return err(4);
+  if(array0.length != array1.length || array0.length != array2.length) return err(4);
+  prev = 0;
+  for(var i = 0; i < array0.length; i++) {
+    var index = array0[i] + prev;
+    prev = index;
+    if(!upgrades2[index]) return err(4);
+    state.upgrades2[index].unlocked = true;
+    state.upgrades2[index].seen = array1[i];
+    state.upgrades2[index].count = array2[i];
+    if(upgrades2[index].deprecated) state.upgrades2[index].unlocked = false;
+  }
+
+
+  section = 6; id = 0; // crops2
+  array0 = processUintArray();
+  if(error) return err(4);
+  prev = 0;
+  for(var i = 0; i < array0.length; i++) {
+    var index = array0[i] + prev;
+    prev = index;
+    if(!crops2[index]) return err(4);
+    state.crops2[index].unlocked = true;
+  }
+
+
+  section = 7; id = 0; // medals
+  array0 = processUintArray();
+  array1 = processBoolArray();
+  if(error) return err(4);
+  if(array0.length != array1.length) return err(4);
+  prev = 0;
+  for(var i = 0; i < array0.length; i++) {
+    var index = array0[i] + prev;
+    prev = index;
+    if(!medals[index]) return err(4);
+    state.medals[index].earned = true;
+    state.medals[index].seen = array1[i];
+  }
+
+
+  section = 8; id = 0; // cooldown times
+  state.misttime = processFloat();
+  state.suntime = processFloat();
+  state.rainbowtime = processFloat();
+  if(error) return err(4);
+
+
+  section = 9; id = 0; // settings
+  state.notation = processUint16();
+  state.precision = processUint16();
+  state.saveonexit = processBool();
+  state.allowshiftdelete = processBool();
+  state.tooltipstyle = processUint16();
+  if(save_version >= 4096*1+20) state.disableHelp = processBool();
+  if(save_version >= 4096*1+22) state.uistyle = processUint16();
+  if(error) return err(4);
+
+
+  section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
+  state.g_numresets = processUint();
+  state.g_numsaves = processUint();
+  state.g_numautosaves = processUint();
+  state.g_numloads = processUint();
+  state.g_numimports = processUint();
+  state.g_numexports = processUint();
+  state.g_lastexporttime = processFloat();
+  state.g_lastimporttime = processFloat();
+  state.g_nummedals = processUint();
+  state.g_treelevel = processUint();
+  state.g_numplanted2 = processUint();
+  state.g_numunplanted2 = processUint();
+  state.g_numupgrades2 = processUint();
+  state.g_numupgrades2_unlocked = processUint();
+  state.p_treelevel = processUint();
+  if(save_version >= 4096*1+9) state.g_numfullgrown2 = processUint();
+  if(save_version >= 4096*1+9) state.g_seasons = processUint();
+  if(save_version >= 4096*1+10) {
+    if(save_version >= 4096*1+14) {
+      state.g_resin_from_transcends = processNum();
     } else {
-      state.seed0 = Math.floor(Math.random() * 281474976710656);
+      state.g_resin_from_transcends = Num(processUint()); // was accidentally encoded as Uint
     }
-    if(error) return err(4);
+  }
+  if(save_version >= 4096*1+14) {
+    state.g_delete2tokens = processUint();
+    state.g_fastestrun = processFloat();
+    state.g_slowestrun = processFloat();
+  }
+
+  if(error) return err(4);
 
 
-    section = 1; id = 0; // field
-    state.numw = processUint();
-    state.numh = processUint();
-    if(error) return err(4);
-    if(state.numw > 15 || state.numh > 15) return err(4); // that large size is not supported
-    if(state.numw < 3 || state.numh < 3) return err(4); // that small size is not supported
-    var w = state.numw;
-    var h = state.numh;
-    array0 = processIntArray();
-    array1 = processFloat2Array();
-    if(error) return err(4);
-    index0 = 0;
-    index1 = 0;
-    for(var y = 0; y < h; y++) {
-      state.field[y] = [];
-      for(var x = 0; x < w; x++) {
-        state.field[y][x] = new Cell(x, y);
-        var f = state.field[y][x];
-        f.index = array0[index0++];
-        if(f.hasCrop()) {
-          f.growth = array1[index1++];
-        }
-      }
-    }
-    if(index0 > array0.length) return err(4);
-    if(index1 > array1.length) return err(4);
+  section = 11; id = 0; // global run stats
+  state.g_starttime = processFloat();
+  state.g_runtime = processFloat();
+  state.g_numticks = processUint();
+  state.g_res = processRes();
+  state.g_max_res = processRes();
+  state.g_max_prod = processRes();
+  state.g_numferns = processUint();
+  state.g_numplantedshort = processUint();
+  state.g_numplanted = processUint();
+  state.g_numfullgrown = processUint();
+  state.g_numunplanted = processUint();
+  state.g_numupgrades = processUint();
+  state.g_numupgrades_unlocked = processUint();
+  if(save_version >= 4096*1+9) state.g_numabilities = processUint();
+  if(save_version >= 4096*1+17) state.g_numfruits = processUint();
+  if(save_version >= 4096*1+17) state.g_numfruitupgrades = processUint();
+  if(error) return err(4);
 
-    section = 2; id = 0; // field2
-    state.numw2 = processUint();
-    state.numh2 = processUint();
+
+  section = 12; id = 0; // current run stats
+  state.c_starttime = processFloat();
+  state.c_runtime = processFloat();
+  state.c_numticks = processUint();
+  state.c_res = processRes();
+  state.c_max_res = processRes();
+  state.c_max_prod = processRes();
+  state.c_numferns = processUint();
+  state.c_numplantedshort = processUint();
+  state.c_numplanted = processUint();
+  state.c_numfullgrown = processUint();
+  state.c_numunplanted = processUint();
+  state.c_numupgrades = processUint();
+  state.c_numupgrades_unlocked = processUint();
+  if(save_version >= 4096*1+9) state.c_numabilities = processUint();
+  if(save_version >= 4096*1+17) state.c_numfruits = processUint();
+  if(save_version >= 4096*1+17) state.c_numfruitupgrades = processUint();
+  if(error) return err(4);
+
+
+  section = 13; id = 0; // previous run stats
+  if(state.g_numresets > 0) {
+    state.p_starttime = processFloat();
+    state.p_runtime = processFloat();
+    state.p_numticks = processUint();
+    state.p_res = processRes();
+    state.p_max_res = processRes();
+    state.p_max_prod = processRes();
+    state.p_numferns = processUint();
+    state.p_numplantedshort = processUint();
+    state.p_numplanted = processUint();
+    state.p_numfullgrown = processUint();
+    state.p_numunplanted = processUint();
+    state.p_numupgrades = processUint();
+    state.p_numupgrades_unlocked = processUint();
+    if(save_version >= 4096*1+9) state.p_numabilities = processUint(0);
+  if(save_version >= 4096*1+17) state.p_numfruits = processUint();
+  if(save_version >= 4096*1+17) state.p_numfruitupgrades = processUint();
     if(error) return err(4);
-    if(state.numw2 > 15 || state.numh2 > 15) return err(4); // that large size is not supported
-    if(state.numw2 < 3 || state.numh2 < 3) return err(4); // that small size is not supported
-    var w2 = state.numw2;
-    var h2 = state.numh2;
-    array0 = processIntArray();
-    array1 = (save_version >= 4096*1+9) ? processFloat2Array() : null;
-    array2 = (save_version >= 4096*1+15) ? processBoolArray() : null;
+  }
+
+
+  section = 14; id = 0; // reset stats
+  var array0 = processIntArray();
+  if(error) return err(4);
+  var prev = 0;
+  state.reset_stats = [];
+  for(var i = 0; i < array0.length; i++) {
+    prev += array0[i];
+    if(prev < 0) return err(4);
+    state.reset_stats[i] = prev;
+  }
+
+
+  section = 15; id = 0;
+  // this section was used until v 0.1.15, with id 0..13
+  // do not reuse to not break backwards compatibility.
+
+  section = 16; id = 0; // misc
+  if(save_version >= 4096*1+14) state.delete2tokens = processUint();
+  if(save_version >= 4096*1+19) state.lasttreeleveluptime = processFloat();
+
+  section = 17; id = 0; // fruits
+  if(save_version >= 4096*1+17) {
+    state.fruit_seed = processInt();
+    state.fruit_seen = processBool();
+    state.fruit_slots = processUint();
+    state.fruit_active.length = processUint(0);
+    state.fruit_stored.length = processUint(0);
+    state.fruit_sacr.length = processUint(0);
+    if(state.fruit_active.length > 1) return err(4);
+    if(state.fruit_stored.length > state.fruit_slots) return err(4);
+
+    id = 8;
+    array0 = processUintArray();
+    array1 = processUintArray();
+    array2 = processUintArray();
+    array3 = processUintArray();
+    array4 = processUintArray();
+    array5 = processNumArray();
+    array6 = processUintArray();
+    if(error) return err(4);
     index0 = 0;
     index1 = 0;
     index2 = 0;
-    if(error) return err(4);
-    for(var y = 0; y < h2; y++) {
-      state.field2[y] = [];
-      for(var x = 0; x < w2; x++) {
-        state.field2[y][x] = new Cell(x, y);
-        var f = state.field2[y][x];
-        f.index = array0[index0++];
-        if(f.hasCrop()) {
-          if(save_version >= 4096*1+9) f.growth = array1[index1++];
-          if(save_version >= 4096*1+15) f.justplanted = array2[index2++];
-        }
+    index3 = 0;
+    index4 = 0;
+    index5 = 0;
+    index6 = 0;
+    var decfruit = function() {
+      var f = new Fruit();
+      f.type = array0[index0++];
+      f.tier = array1[index1++];
+      f.abilities.length = array2[index2++];
+      for(var i = 0; i < f.abilities.length; i++) {
+        f.abilities[i] = array3[index3++];
+        f.levels[i] = array4[index4++];
       }
+      f.essence = array5[index5++];
+      f.mark = array6[index6++];
+      return f;
+    };
+    for(var i = 0; i < state.fruit_active.length; i++) {
+      state.fruit_active[i] = decfruit();
     }
-    if(index0 > array0.length) return err(4);
-    if((save_version >= 4096*1+9) && index1 > array1.length) return err(4);
-    if((save_version >= 4096*1+15) && index2 > array2.length) return err(4);
-
-
-    var unlocked;
-    var prev;
-
-
-    section = 3; id = 0; // upgrades
-    array0 = processUintArray();
-    array1 = processBoolArray();
-    array2 = processUintArray();
-    if(error) return err(4);
-    if(array0.length != array1.length || array0.length != array2.length) return err(4);
-    prev = 0;
-    for(var i = 0; i < array0.length; i++) {
-      var index = array0[i] + prev;
-      prev = index;
-      if(!upgrades[index]) return err(4);
-      state.upgrades[index].unlocked = true;
-      state.upgrades[index].seen = array1[i];
-      state.upgrades[index].count = array2[i];
-      if(upgrades[index].deprecated) {
-        state.upgrades[index].unlocked = false;
-        state.upgrades[index].count = 0;
-        // this version, the choice upgrades changed from 2 separate ones, to a single one that uses "count" as the choice
-        if(save_version <= 4096*1+14) {
-          if(index == fern_choice0_b && array2[i]) {state.upgrades[fern_choice0].unlocked = true; state.upgrades[fern_choice0].count = 2;}
-          if(index == active_choice0_b && array2[i]) {state.upgrades[active_choice0].unlocked = true; state.upgrades[active_choice0].count = 2;}
-        }
-      }
+    for(var i = 0; i < state.fruit_stored.length; i++) {
+      state.fruit_stored[i] = decfruit();
     }
-
-
-    section = 4; id = 0; // crops
-    array0 = processUintArray();
-    if(error) return err(4);
-    prev = 0;
-    for(var i = 0; i < array0.length; i++) {
-      var index = array0[i] + prev;
-      prev = index;
-      if(!crops[index]) return err(4);
-      state.crops[index].unlocked = true;
+    for(var i = 0; i < state.fruit_sacr.length; i++) {
+      state.fruit_sacr[i] = decfruit();
     }
-
-
-    section = 5; id = 0; // upgrades2
-    array0 = processUintArray();
-    array1 = processBoolArray();
-    array2 = processUintArray();
-    if(error) return err(4);
-    if(array0.length != array1.length || array0.length != array2.length) return err(4);
-    prev = 0;
-    for(var i = 0; i < array0.length; i++) {
-      var index = array0[i] + prev;
-      prev = index;
-      if(!upgrades2[index]) return err(4);
-      state.upgrades2[index].unlocked = true;
-      state.upgrades2[index].seen = array1[i];
-      state.upgrades2[index].count = array2[i];
-      if(upgrades2[index].deprecated) state.upgrades2[index].unlocked = false;
-    }
-
-
-    section = 6; id = 0; // crops2
-    array0 = processUintArray();
-    if(error) return err(4);
-    prev = 0;
-    for(var i = 0; i < array0.length; i++) {
-      var index = array0[i] + prev;
-      prev = index;
-      if(!crops2[index]) return err(4);
-      state.crops2[index].unlocked = true;
-    }
-
-
-    section = 7; id = 0; // medals
-    array0 = processUintArray();
-    array1 = processBoolArray();
-    if(error) return err(4);
-    if(array0.length != array1.length) return err(4);
-    prev = 0;
-    for(var i = 0; i < array0.length; i++) {
-      var index = array0[i] + prev;
-      prev = index;
-      if(!medals[index]) return err(4);
-      state.medals[index].earned = true;
-      state.medals[index].seen = array1[i];
-    }
-
-
-    section = 8; id = 0; // cooldown times
-    state.misttime = processFloat();
-    state.suntime = processFloat();
-    state.rainbowtime = processFloat();
-    if(error) return err(4);
-
-
-    section = 9; id = 0; // settings
-    state.notation = processUint16();
-    state.precision = processUint16();
-    state.saveonexit = processBool();
-    state.allowshiftdelete = processBool();
-    state.tooltipstyle = processUint16();
-    if(save_version >= 4096*1+20) state.disableHelp = processBool();
-    if(save_version >= 4096*1+22) state.uistyle = processUint16();
-    if(error) return err(4);
-
-
-    section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
-    state.g_numresets = processUint();
-    state.g_numsaves = processUint();
-    state.g_numautosaves = processUint();
-    state.g_numloads = processUint();
-    state.g_numimports = processUint();
-    state.g_numexports = processUint();
-    state.g_lastexporttime = processFloat();
-    state.g_lastimporttime = processFloat();
-    state.g_nummedals = processUint();
-    state.g_treelevel = processUint();
-    state.g_numplanted2 = processUint();
-    state.g_numunplanted2 = processUint();
-    state.g_numupgrades2 = processUint();
-    state.g_numupgrades2_unlocked = processUint();
-    state.p_treelevel = processUint();
-    if(save_version >= 4096*1+9) state.g_numfullgrown2 = processUint();
-    if(save_version >= 4096*1+9) state.g_seasons = processUint();
-    if(save_version >= 4096*1+10) {
-      if(save_version >= 4096*1+14) {
-        state.g_resin_from_transcends = processNum();
-      } else {
-        state.g_resin_from_transcends = Num(processUint()); // was accidentally encoded as Uint
-      }
-    }
-    if(save_version >= 4096*1+14) {
-      state.g_delete2tokens = processUint();
-      state.g_fastestrun = processFloat();
-      state.g_slowestrun = processFloat();
-    }
-
-    if(error) return err(4);
-
-
-    section = 11; id = 0; // global run stats
-    state.g_starttime = processFloat();
-    state.g_runtime = processFloat();
-    state.g_numticks = processUint();
-    state.g_res = processRes();
-    state.g_max_res = processRes();
-    state.g_max_prod = processRes();
-    state.g_numferns = processUint();
-    state.g_numplantedshort = processUint();
-    state.g_numplanted = processUint();
-    state.g_numfullgrown = processUint();
-    state.g_numunplanted = processUint();
-    state.g_numupgrades = processUint();
-    state.g_numupgrades_unlocked = processUint();
-    if(save_version >= 4096*1+9) state.g_numabilities = processUint();
-    if(save_version >= 4096*1+17) state.g_numfruits = processUint();
-    if(save_version >= 4096*1+17) state.g_numfruitupgrades = processUint();
-    if(error) return err(4);
-
-
-    section = 12; id = 0; // current run stats
-    state.c_starttime = processFloat();
-    state.c_runtime = processFloat();
-    state.c_numticks = processUint();
-    state.c_res = processRes();
-    state.c_max_res = processRes();
-    state.c_max_prod = processRes();
-    state.c_numferns = processUint();
-    state.c_numplantedshort = processUint();
-    state.c_numplanted = processUint();
-    state.c_numfullgrown = processUint();
-    state.c_numunplanted = processUint();
-    state.c_numupgrades = processUint();
-    state.c_numupgrades_unlocked = processUint();
-    if(save_version >= 4096*1+9) state.c_numabilities = processUint();
-    if(save_version >= 4096*1+17) state.c_numfruits = processUint();
-    if(save_version >= 4096*1+17) state.c_numfruitupgrades = processUint();
-    if(error) return err(4);
-
-
-    section = 13; id = 0; // previous run stats
-    if(state.g_numresets > 0) {
-      state.p_starttime = processFloat();
-      state.p_runtime = processFloat();
-      state.p_numticks = processUint();
-      state.p_res = processRes();
-      state.p_max_res = processRes();
-      state.p_max_prod = processRes();
-      state.p_numferns = processUint();
-      state.p_numplantedshort = processUint();
-      state.p_numplanted = processUint();
-      state.p_numfullgrown = processUint();
-      state.p_numunplanted = processUint();
-      state.p_numupgrades = processUint();
-      state.p_numupgrades_unlocked = processUint();
-      if(save_version >= 4096*1+9) state.p_numabilities = processUint(0);
-    if(save_version >= 4096*1+17) state.p_numfruits = processUint();
-    if(save_version >= 4096*1+17) state.p_numfruitupgrades = processUint();
-      if(error) return err(4);
-    }
-
-
-    section = 14; id = 0; // reset stats
-    var array0 = processIntArray();
-    if(error) return err(4);
-    var prev = 0;
-    state.reset_stats = [];
-    for(var i = 0; i < array0.length; i++) {
-      prev += array0[i];
-      if(prev < 0) return err(4);
-      state.reset_stats[i] = prev;
-    }
-
-
-    section = 15; id = 0;
-    // this section was used until v 0.1.15, with id 0..13
-    // do not reuse to not break backwards compatibility.
-
-    section = 16; id = 0; // misc
-    if(save_version >= 4096*1+14) state.delete2tokens = processUint();
-    if(save_version >= 4096*1+19) state.lasttreeleveluptime = processFloat();
-
-    section = 17; id = 0; // fruits
-    if(save_version >= 4096*1+17) {
-      state.fruit_seed = processInt();
-      state.fruit_seen = processBool();
-      state.fruit_slots = processUint();
-      state.fruit_active.length = processUint(0);
-      state.fruit_stored.length = processUint(0);
-      state.fruit_sacr.length = processUint(0);
-      if(state.fruit_active.length > 1) return err(4);
-      if(state.fruit_stored.length > state.fruit_slots) return err(4);
-
-      id = 8;
-      array0 = processUintArray();
-      array1 = processUintArray();
-      array2 = processUintArray();
-      array3 = processUintArray();
-      array4 = processUintArray();
-      array5 = processNumArray();
-      array6 = processUintArray();
-      if(error) return err(4);
-      index0 = 0;
-      index1 = 0;
-      index2 = 0;
-      index3 = 0;
-      index4 = 0;
-      index5 = 0;
-      index6 = 0;
-      var decfruit = function() {
-        var f = new Fruit();
-        f.type = array0[index0++];
-        f.tier = array1[index1++];
-        f.abilities.length = array2[index2++];
-        for(var i = 0; i < f.abilities.length; i++) {
-          f.abilities[i] = array3[index3++];
-          f.levels[i] = array4[index4++];
-        }
-        f.essence = array5[index5++];
-        f.mark = array6[index6++];
-        return f;
-      };
-      for(var i = 0; i < state.fruit_active.length; i++) {
-        state.fruit_active[i] = decfruit();
-      }
-      for(var i = 0; i < state.fruit_stored.length; i++) {
-        state.fruit_stored[i] = decfruit();
-      }
-      for(var i = 0; i < state.fruit_sacr.length; i++) {
-        state.fruit_sacr[i] = decfruit();
-      }
-      if(index0 != array0.length) return err(4);
-      if(index1 != array1.length) return err(4);
-      if(index2 != array2.length) return err(4);
-      if(index3 != array3.length) return err(4);
-      if(index4 != array4.length) return err(4);
-      if(index5 != array5.length) return err(4);
-      if(index6 != array6.length) return err(4);
-    }
-
-    if(state.fruit_seed < 0) {
-      // before version 0.1.17, fruit seed did not exist yet, and seed0 neither,
-      // so initialize it based on start time. Do not use Math.random() here to
-      // avoid cheesing the free fruit drop by reloading the same save
-      // 0x6672756974 is ASCII for fruit
-      state.fruit_seed = (Math.floor(state.g_starttime) & 0xffffffff) ^ 0x6672756974;
-    }
-
-    section = 18; id = 0; // help dialogs
-    if(save_version >= 4096*1+20) {
-      array0 = processUintArray();
-      array1 = processUintArray();
-      array2 = processUintArray();
-      if(error) return err(4);
-      index0 = 0;
-      index1 = 0;
-      index2 = 0;
-
-      for(var i = 1; i < array0.length; i++) array0[i] += array0[i - 1];
-      for(var i = 1; i < array1.length; i++) array1[i] += array1[i - 1];
-      for(var i = 1; i < array2.length; i++) array2[i] += array2[i - 1];
-
-      for(var i = 0; i < array0.length; i++) state.help_seen[array0[i]] = array0[i];
-      for(var i = 0; i < array1.length; i++) state.help_seen_text[array1[i]] = array1[i];
-      for(var i = 0; i < array2.length; i++) state.help_disable[array2[i]] = array2[i];
-    }
+    if(index0 != array0.length) return err(4);
+    if(index1 != array1.length) return err(4);
+    if(index2 != array2.length) return err(4);
+    if(index3 != array3.length) return err(4);
+    if(index4 != array4.length) return err(4);
+    if(index5 != array5.length) return err(4);
+    if(index6 != array6.length) return err(4);
   }
+
+  if(state.fruit_seed < 0) {
+    // before version 0.1.17, fruit seed did not exist yet, and seed0 neither,
+    // so initialize it based on start time. Do not use Math.random() here to
+    // avoid cheesing the free fruit drop by reloading the same save
+    // 0x6672756974 is ASCII for fruit
+    state.fruit_seed = (Math.floor(state.g_starttime) & 0xffffffff) ^ 0x6672756974;
+  }
+
+  section = 18; id = 0; // help dialogs
+  if(save_version >= 4096*1+20) {
+    array0 = processUintArray();
+    array1 = processUintArray();
+    array2 = processUintArray();
+    if(error) return err(4);
+    index0 = 0;
+    index1 = 0;
+    index2 = 0;
+
+    for(var i = 1; i < array0.length; i++) array0[i] += array0[i - 1];
+    for(var i = 1; i < array1.length; i++) array1[i] += array1[i - 1];
+    for(var i = 1; i < array2.length; i++) array2[i] += array2[i - 1];
+
+    for(var i = 0; i < array0.length; i++) state.help_seen[array0[i]] = array0[i];
+    for(var i = 0; i < array1.length; i++) state.help_seen_text[array1[i]] = array1[i];
+    for(var i = 0; i < array2.length; i++) state.help_disable[array2[i]] = array2[i];
+  }
+
 
   if(save_version <= 4096*1+8) {
     // ethereal upgrades have been refactored, refund all old stuff
@@ -1003,258 +1014,6 @@ function decState(s) {
   return state;
 }
 
-
-// old save format of 0.1.7 and older, kept for backwards compatiblity for now (but probably not forever, at some point late enough in the future this can be removed when there shouldn't be anyone left with this old alpha-version format)
-function decStateOLD(reader, state, save_version) {
-  // time of last tick. BEWARE: do not treat a prevtime that's in the future as an error, since timezone changes, daylight saving, ... can legitimately cause this
-  state.prevtime = decFloat(reader);
-  state.res = decRes(reader);
-  state.resin = decNum(reader);
-  state.treelevel = decUint(reader);
-  if(state.treelevel > 65536) return err(4); // this is way more than tree level can normally be
-  state.treelevel2 = decUint(reader);
-  if(state.treelevel2 > 65536) return err(4); // this is way more than tree level can normally be
-  state.fern = decUint(reader);
-  if(state.fern) {
-    state.fernx = decUint(reader);
-    state.ferny = decUint(reader);
-    state.fernres = decRes(reader);
-    if(reader.error) return err(4);
-  }
-  state.numw = decUint(reader);
-  state.numh = decUint(reader);
-  if(reader.error) return err(4);
-  if(state.numw > 15 || state.numh > 15) return err(4); // that large size is not supported
-  if(state.numw < 3 || state.numh < 3) return err(4); // that small size is not supported
-  if(state.fernx >= state.numw || state.ferny >= state.numh) return err(4);
-  state.numw2 = decUint(reader);
-  state.numh2 = decUint(reader);
-  if(state.numw2 > 15 || state.numh2 > 15) return err(4); // that large size is not supported
-  if(state.numw2 < 3 || state.numh2 < 3) return err(4); // that small size is not supported
-
-  var w = state.numw;
-  var h = state.numh;
-  for(var y = 0; y < h; y++) {
-    state.field[y] = [];
-    for(var x = 0; x < w; x++) {
-      state.field[y][x] = new Cell(x, y);
-      var f = state.field[y][x];
-      f.index = decInt(reader);
-      if(save_version < 4096*1 + 7 && f.index == 79 + CROPINDEX) f.index = 100 + CROPINDEX; // fix mistake where nettle was accidentially registered in the flower series
-      if(f.hasCrop()) {
-        f.growth = decFloat2(reader);
-      }
-    }
-  }
-  if(reader.error) return err(4);
-
-  var w2 = state.numw2;
-  var h2 = state.numh2;
-  for(var y = 0; y < h2; y++) {
-    state.field2[y] = [];
-    for(var x = 0; x < w2; x++) {
-      state.field2[y][x] = new Cell(x, y);
-      var f = state.field2[y][x];
-      f.index = decInt(reader);
-    }
-  }
-  if(reader.error) return err(4);
-
-  var unlocked;
-  var prev;
-
-  unlocked = [];
-  unlocked.length = decUint(reader);
-  prev = 0;
-  for(var i = 0; i < unlocked.length; i++) {
-    if(reader.error) return err(4);
-    var index = decUint16(reader) + prev;
-    prev = index;
-    if(!upgrades[index]) return err(4);
-    unlocked[i] = index;
-    state.upgrades[unlocked[i]].unlocked = true;
-    if(upgrades[unlocked[i]].deprecated) state.upgrades[unlocked[i]].unlocked = false;
-  }
-  for(var i = 0; i < unlocked.length; i++) {
-    state.upgrades[unlocked[i]].seen = decBool(reader);
-    state.upgrades[unlocked[i]].count = decUint(reader);
-  }
-  if(reader.error) return err(4);
-
-  unlocked = [];
-  unlocked.length = decUint(reader);
-  prev = 0;
-  for(var i = 0; i < unlocked.length; i++) {
-    if(reader.error) return err(4);
-    var index = decUint16(reader) + prev;
-    prev = index;
-    if(save_version < 4096*1 + 7 && index == 79) index = 100; // fix mistake where nettle was accidentially registered in the flower series
-    if(!crops[index]) return err(4);
-    unlocked[i] = index;
-    state.crops[unlocked[i]].unlocked = true;
-  }
-
-  if(save_version <= 4096*1+7) {
-    state.crops[short_0].unlocked = true; // this newly introduced crop should be unlocked for everyone
-  }
-
-  unlocked = [];
-  unlocked.length = decUint(reader);
-  prev = 0;
-  for(var i = 0; i < unlocked.length; i++) {
-    if(reader.error) return err(4);
-    var index = decUint16(reader) + prev;
-    prev = index;
-    if(!upgrades2[index]) return err(4);
-    unlocked[i] = index;
-    state.upgrades2[unlocked[i]].unlocked = true;
-    if(upgrades2[unlocked[i]].deprecated) state.upgrades2[unlocked[i]].unlocked = false;
-  }
-  for(var i = 0; i < unlocked.length; i++) {
-    state.upgrades2[unlocked[i]].seen = decBool(reader);
-    state.upgrades2[unlocked[i]].count = decUint(reader);
-  }
-  if(reader.error) return err(4);
-
-  unlocked = [];
-  unlocked.length = decUint(reader);
-  prev = 0;
-  for(var i = 0; i < unlocked.length; i++) {
-    if(reader.error) return err(4);
-    var index = decUint16(reader) + prev;
-    prev = index;
-    if(!crops[index]) return err(4);
-    unlocked[i] = index;
-    state.crops2[unlocked[i]].unlocked = true;
-  }
-
-  unlocked = [];
-  unlocked.length = decUint(reader);
-  prev = 0;
-  for(var i = 0; i < unlocked.length; i++) {
-    if(reader.error) return err(4);
-    var index = decUint16(reader) + prev;
-    prev = index;
-    if(!medals[index]) return err(4);
-    unlocked[i] = index;
-    state.medals[unlocked[i]].earned = true;
-  }
-  for(var i = 0; i < unlocked.length; i++) {
-    state.medals[unlocked[i]].seen = decBool(reader);
-  }
-
-  decRes(reader); // was ethereal_upgrade_spent, no longer used
-  if(save_version <= 4096*1 + 2) {
-    // old version ethereal bonuses
-    decRes(reader);
-    decNum(reader);
-    decNum(reader);
-    decNum(reader);
-    decNum(reader);
-    decRes(reader);
-  } else {
-    state.misttime = decFloat(reader);
-    state.suntime = decFloat(reader);
-    decFloat(reader);
-    state.rainbowtime = decFloat(reader);
-    decFloat(reader);
-    decFloat(reader);
-    decFloat(reader);
-  }
-  if(save_version >= 4096*1 + 6) {
-    state.lastFernTime = decFloat(reader);
-    state.lastBackupWarningTime = decFloat(reader);
-  }
-  if(reader.error) return err(4);
-
-  state.notation = decUint16(reader);
-  state.precision = decUint16(reader);
-  state.saveonexit = decBool(reader);
-  state.allowshiftdelete = decBool(reader);
-  if(save_version >= 4096*1 + 6) {
-    state.tooltipstyle = decUint16(reader);
-  }
-  if(reader.error) return err(4);
-
-  state.g_numresets = decUint(reader);
-  state.g_numsaves = decUint(reader);
-  state.g_numautosaves = decUint(reader);
-  state.g_numloads = decUint(reader);
-  state.g_numimports = decUint(reader);
-  state.g_numexports = decUint(reader);
-  state.g_lastexporttime = decFloat(reader);
-  state.g_lastimporttime = decFloat(reader);
-  state.g_nummedals = decUint(reader);
-  state.g_treelevel = decUint(reader);
-  state.g_numplanted2 = decUint(reader);
-  state.g_numunplanted2 = decUint(reader);
-  state.g_numupgrades2 = decUint(reader);
-  state.g_numupgrades2_unlocked = decUint(reader);
-
-  state.g_starttime = decFloat(reader);
-  state.g_runtime = decFloat(reader);
-  state.g_numticks = decUint(reader);
-  state.g_res = decRes(reader);
-  state.g_max_res = decRes(reader);
-  state.g_max_prod = decRes(reader);
-  state.g_numferns = decUint(reader);
-  if(save_version >= 4096*1 + 7) state.g_numplantedshort = decUint(reader);
-  state.g_numplanted = decUint(reader);
-  state.g_numfullgrown = decUint(reader);
-  state.g_numunplanted = decUint(reader);
-  state.g_numupgrades = decUint(reader);
-  state.g_numupgrades_unlocked = decUint(reader);
-
-  if(reader.error) return err(4);
-
-  state.c_starttime = decFloat(reader);
-  state.c_runtime = decFloat(reader);
-  state.c_numticks = decUint(reader);
-  state.c_res = decRes(reader);
-  state.c_max_res = decRes(reader);
-  state.c_max_prod = decRes(reader);
-  state.c_numferns = decUint(reader);
-  if(save_version >= 4096*1 + 7) state.c_numplantedshort = decUint(reader);
-  state.c_numplanted = decUint(reader);
-  state.c_numfullgrown = decUint(reader);
-  state.c_numunplanted = decUint(reader);
-  state.c_numupgrades = decUint(reader);
-  state.c_numupgrades_unlocked = decUint(reader);
-  if(reader.error) return err(4);
-
-  if(state.g_numresets > 0) {
-    state.p_starttime = decFloat(reader);
-    state.p_runtime = decFloat(reader);
-    state.p_numticks = decUint(reader);
-    state.p_res = decRes(reader);
-    state.p_max_res = decRes(reader);
-    state.p_max_prod = decRes(reader);
-    state.p_numferns = decUint(reader);
-    if(save_version >= 4096*1 + 7) state.p_numplantedshort = decUint(reader);
-    state.p_numplanted = decUint(reader);
-    state.p_numfullgrown = decUint(reader);
-    state.p_numunplanted = decUint(reader);
-    state.p_numupgrades = decUint(reader);
-    state.p_numupgrades_unlocked = decUint(reader);
-
-    state.p_treelevel = decUint(reader);
-    if(reader.error) return err(4);
-  }
-
-  var num_stats = decUint(reader);
-  state.reset_stats = [];
-  if(num_stats > 1000) return err(4);
-  var prev = 0;
-  for(var i = 0; i < num_stats; i++) {
-    var d = decInt(reader);
-    prev += d;
-    if(prev < 0) return err(4);
-    state.reset_stats[i] = prev;
-  }
-  if(reader.error) return err(4);
-
-  return undefined; // no error
-}
 
 var computeChecksum = function(b) {
   var h = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];

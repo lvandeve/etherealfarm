@@ -195,7 +195,8 @@ registerHelpDialog(1, 'Transcension', 'You performed your first transcension! Ch
    [blackberry[4],whitelotus[4],champignon[4]],
    [undefined,blackberry[4],undefined]]);
 
-registerHelpDialog(23, 'Transcension II', 'The tree reached level ' + 20 + '. Transcension now turned into Transcension II, and doubles the amount of resin you receive upon transcending.', images_apple[2]);
+registerHelpDialog(23, 'Transcension II', 'The tree reached level ' + 20 + '. Transcension now turned into Transcension II, and doubles the amount of resin you receive upon transcending. This will continue at later tree levels as well: tree level 30 unlocks transcension III which triples resin, and so on',
+    undefined, undefined, [[undefined, tree_images[treeLevelIndex(20)][1][0]], [undefined, tree_images[treeLevelIndex(20)][2][0]]]);
 
 registerHelpDialog(9, 'Ethereal upgrades', 'You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable');
 

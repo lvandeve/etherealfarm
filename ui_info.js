@@ -270,6 +270,7 @@ function updateResourceUI() {
         var text = '<b>Twigs</b><br/><br/>';
         text += 'Current amount: ' + res.toString() + '<br/><br/>';
         text += 'Amount from next tree level up with the current mistletoes: ' + nextTwigs().toString() + '<br/><br/>';
+        text += 'Amount earned during this transcension so far: ' + state.c_res.twigs.toString() + '<br/><br/>';
         text += 'Twigs can be gotten by planting mistletoes next to the basic field tree, and appear when the tree levels up. This does increase the spore requirement for tree level up. More mistletoes gives diminishing returns while still increasing spores as much, so max 1 or 2 mistletoes makes sense.<br/><br/>';
       }
       if(index == 7) {

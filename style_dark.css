@@ -85,6 +85,12 @@ a:visited {
   border: 1px solid #090;
 }
 
+.efEtherealPlantChip {
+  background-color: #9df;
+  border: 1px solid black;
+  color: #000;
+}
+
 .efWeatherOn {
   text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
   color: #f00;

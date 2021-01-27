@@ -123,7 +123,6 @@ function updateMedalUI() {
     var seenfun = bind(function(m, m2, div, canvas2, i) {
       if(m2.earned && !m2.seen) {
         m2.seen = true;
-        div.style.border = '3px solid black';
         util.removeElement(canvas2);
         medal_canvases2[i] = undefined;
       }

@@ -29,6 +29,7 @@ var CROPTYPE_SHORT = croptype_index++;
 var CROPTYPE_SPECIAL = croptype_index++; // used for some ethereal crops
 var CROPTYPE_LOTUS = croptype_index++; // ethereal field only, this is an ethereal crop that boost their ethereal neighbors, so a flower type, but regular flowers in ethereal field boost the basic field flowers instead
 var CROPTYPE_MISTLETOE = croptype_index++;
+var CROPTYPE_BEE = croptype_index++; // boosts flowers
 var NUM_CROPTYPES = croptype_index;
 
 function getCropTypeName(type) {
@@ -40,6 +41,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_SPECIAL) return 'special';
   if(type == CROPTYPE_LOTUS) return 'lotus';
   if(type == CROPTYPE_MISTLETOE) return 'mistletoe';
+  if(type == CROPTYPE_BEE) return 'beehive';
   return 'unknown';
 }
 
@@ -51,6 +53,7 @@ function getCropTypeHelp(type) {
     case CROPTYPE_SHORT: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those';
     case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. Negatively affected by nettles. Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
     case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Increases level up spores requirement and slightly decreases resin gain.';
+    case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
   }
   return undefined;
 }
@@ -610,6 +613,32 @@ Crop.prototype.getBoost = function(f, breakdown) {
   return result;
 };
 
+
+// beehive boosting the boost of flowers
+Crop.prototype.getBoostBoost = function(f, breakdown) {
+  var result = Num(0);
+  if(this.type != CROPTYPE_BEE) {
+    if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+    return result;
+  }
+  result = this.boost.clone();
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  // upgrades
+  if(this.basic_upgrade != null) {
+    var u = state.upgrades[this.basic_upgrade];
+    var u2 = upgrades[this.basic_upgrade];
+    if(u.count > 0) {
+      var mul_upgrade = u2.bonus.mulr(u.count).addr(1); // the flower upgrades are additive, unlike the crop upgrades which are multiplicative. This because the flower bonus itself is already multiplicative to the plants.
+      result.mulInPlace(mul_upgrade);
+      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+      // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
+    }
+  }
+
+  return result;
+};
+
 // This returns the leech ratio of this plant, not the actual resource amount leeched
 // Only correct for already planted leeching plants (for the penalty of multiple planted ones computation)
 Crop.prototype.getLeech = function(f, breakdown) {
@@ -727,6 +756,15 @@ function registerMistletoe(name, tier, planttime, image, opt_tagline) {
   return index;
 }
 
+function registerBeehive(name, tier, boost, planttime, image, opt_tagline) {
+  var cost = getFlowerCost(tier);
+  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline);
+  var crop = crops[index];
+  crop.type = CROPTYPE_BEE;
+  crop.tier = tier;
+  return index;
+}
+
 // should return 1 for i=0
 function getBerryBase(i) {
   return Num.rpow(2000, Num(i));
@@ -818,6 +856,10 @@ var short_0 = registerShortLived('watercress', 0, Res({seeds:1}), 60, watercress
 
 crop_register_id = 110;
 var mistletoe_0 = registerMistletoe('mistletoe', 0, 60, mistletoe);
+
+crop_register_id = 120;
+// not yet implemented!
+//var bee_0 = registerBeehive('beehive', 0, Num(0.5), flowerplanttime0, images_beehive);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1155,6 +1197,10 @@ upgrade_register_id = 110;
 var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), 1, berry_1, function() {
   return state.g_numresets > 0 && state.upgrades2[upgrade2_mistletoe].count;
 });
+
+upgrade_register_id = 120;
+// not yet implemented!
+//var beeunlock_0 = registerCropUnlock(bee_0, getFlowerCost(3), 1, berry_6);
 
 //shortunlock_0 does not exist, you start with that berry type already unlocked
 
@@ -2407,7 +2453,6 @@ function getWinterTreeResinBonus() {
   var result = Num(1.5);
   var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
   if(ethereal_season) {
-    // winter, since it's a malus, the bonus applies in reverse direction, and never gets completely reduced (using the towards1 function)
     var t = towards1(ethereal_season, 10) * 0.5;
     result.addrInPlace(t);
   }

@@ -124,6 +124,7 @@ function State() {
   this.fernx = 0;
   this.ferny = 0;
   this.fernres = Res(0);
+  this.fern_seed = -1; // random seed for the fern drops
 
   // field size in amount of cells
   this.numw = 5;
@@ -461,6 +462,7 @@ function createInitialState() {
   computeDerived(state);
   state.seed0 = Math.floor(Math.random() * 281474976710656);
   state.fruit_seed = Math.floor(Math.random() * 281474976710656);
+  state.fern_seed = Math.floor(Math.random() * 281474976710656);
 
   return state;
 }

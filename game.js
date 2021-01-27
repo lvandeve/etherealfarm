@@ -86,6 +86,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
       if(state && state.error_reason == 5) text += ' ' + loadfailreason_decompression;
       if(state && state.error_reason == 6) text += ' ' + loadfailreason_checksum;
       if(state && state.error_reason == 7) text += ' ' + loadfailreason_toonew;
+      if(state && state.error_reason == 8) text += ' ' + loadfailreason_tooold;
 
       showMessage(text, '#f00', '#ff0');
       showSavegameRecoveryDialog(true);
@@ -758,6 +759,20 @@ function getRandomRoll(seed) {
 }
 
 
+// Use this rather than Math.random() to avoid using refresh to get better random ferns
+function getRandomFernRoll() {
+  if(state.fern_seed < 0) {
+    // console.log('fern seed not initialized');
+    // this means the seed is uninitialized and must be randominzed now. Normally this shouldn't happen since initing a new state sets it, and loading an old savegame without the seed also sets it
+    state.fern_seed = Math.floor(Math.random() * 281474976710656);
+  }
+
+  var roll = getRandomRoll(state.fern_seed);
+  state.fern_seed = roll[0];
+  return roll[1];
+}
+
+
 // Use this rather than Math.random() to avoid using refresh to get better random fruits
 function getRandomFruitRoll() {
   if(state.fruit_seed < 0) {
@@ -1399,10 +1414,10 @@ var update = function(opt_fromTick) {
     if(fern) {
       var s = getRandomPreferablyEmptyFieldSpot();
       if(s) {
-        var r = fernTimeWorth * (Math.random() + 0.5);
+        var r = fernTimeWorth * (getRandomFernRoll() + 0.5);
         if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
         var g = gain.mulr(r);
-        if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(Math.random() * 2 + 1));
+        if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
         var fernres = new Res({seeds:g.seeds, spores:g.spores});
 
         var level = getFruitAbility(FRUIT_FERN);
@@ -1415,7 +1430,7 @@ var update = function(opt_fromTick) {
         state.fern = 1;
         state.fernx = s[0];
         state.ferny = s[1];
-        if(state.g_numferns == 6 || (state.g_numferns > 10 && Math.random() < 0.1)) state.fern = 2; // extra bushy fern
+        if(state.g_numferns == 6 || (state.g_numferns > 10 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
       }
     }
 
