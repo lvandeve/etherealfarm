@@ -175,7 +175,7 @@ function State() {
 
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits
-  this.fruit_seen = false; // whether ever seen the fruits tab at all (for red color)
+  this.fruit_seen = false; // whether seen latest fruit drop (for red color)
   this.fruit_active = []; // current active fruit (array length is 0 or 1 only)
   this.fruit_stored = []; // fruits in storage that stay after transcension
   this.fruit_slots = 2; // amount of slots for fruit_stored
@@ -276,7 +276,12 @@ function State() {
   this.c_numfruitupgrades = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
-  this.reset_stats = []; // reset at what tree level for each reset
+  // progress stats
+  this.reset_stats_level = []; // reset at what tree level for each reset
+  this.reset_stats_level2 = []; // tree level 2 at end of this run
+  this.reset_stats_time = []; // time of this run, as integer of 15-minute intervals to keep the stat compact
+  this.reset_stats_resin = []; // log2 of 1 + total resin earned in total at start of this run, as integer
+  this.reset_stats_challenge = []; // what type of challenge, if any, for this run
 
   // amount of fields with nothing on them (index 0)
   // derived stat, not to be saved

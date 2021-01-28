@@ -125,14 +125,6 @@ function updateTabButtons2() {
     if(!state.fruit_seen) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
-    var highest = 0, highestsacr = 0;
-    for(var i = 0; i < state.fruit_active.length; i++) highest = Math.max(highest, state.fruit_active[i].tier);
-    for(var i = 0; i < state.fruit_stored.length; i++) highest = Math.max(highest, state.fruit_stored[i].tier);
-    for(var i = 0; i < state.fruit_sacr.length; i++) highestsacr = Math.max(highestsacr, state.fruit_sacr[i].tier);
-    if(highestsacr > highest) {
-      // fruit of highest tier is in sacrificial pool, indicate this to prevent accidently losing it
-      text = '<b><font color="red">' + text + '</font></b>';
-    }
 
     if(text != fruitButtonLastText) {
       tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead

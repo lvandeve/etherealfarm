@@ -318,13 +318,20 @@ function encState(state, opt_raw_only) {
 
 
   section = 14; id = 0; // reset stats
-  array0 = [];
-  var prev = 0;
-  for(var i = 0; i < state.reset_stats.length; i++) {
-    array0.push(state.reset_stats[i] - prev);
-    prev = state.reset_stats[i];
+  var deltaEnc = function(array) {
+    var prev = 0;
+    var result = [];
+    for(var i = 0; i < array.length; i++) {
+      result.push(array[i] - prev);
+      prev = array[i];
+    }
+    processIntArray(result);
   }
-  processIntArray(array0);
+  deltaEnc(state.reset_stats_level);
+  deltaEnc(state.reset_stats_level2);
+  deltaEnc(state.reset_stats_time);
+  deltaEnc(state.reset_stats_resin);
+  deltaEnc(state.reset_stats_challenge);
 
 
   section = 15; id = 0; // first run stats
@@ -811,15 +818,23 @@ function decState(s) {
 
 
   section = 14; id = 0; // reset stats
-  var array0 = processIntArray();
-  if(error) return err(4);
-  var prev = 0;
-  state.reset_stats = [];
-  for(var i = 0; i < array0.length; i++) {
-    prev += array0[i];
-    if(prev < 0) return err(4);
-    state.reset_stats[i] = prev;
+  var deltaDec = function(array) {
+    var result = [];
+    var prev = 0;
+    for(var i = 0; i < array.length; i++) {
+      prev += array[i];
+      result[i] = prev;
+    }
+    return result;
+  };
+  state.reset_stats_level = deltaDec(processIntArray());
+  if(save_version >= 4096+1*26) {
+    state.reset_stats_level2 = deltaDec(processIntArray());
+    state.reset_stats_time = deltaDec(processIntArray());
+    state.reset_stats_resin = deltaDec(processIntArray());
+    state.reset_stats_challenge = deltaDec(processIntArray());
   }
+  if(error) return err(4);
 
 
   section = 15; id = 0;

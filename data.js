@@ -514,7 +514,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
         if(leech.ltr(1)) {
           breakdown.push(['copy reduction due to multiple watercress globally', true, leech, undefined]);
         }
-        breakdown.push(['<b><i><font color="#060">copying neighbors (' + num + ')</font></i></b>', false, total, result.clone()]);
+        breakdown.push(['<span class="efWatercressHighlight">copying neighbors (' + num + ')</span>', false, total, result.clone()]);
       } else {
         breakdown.push(['no neighbors, not copying', false, total, result.clone()]);
       }

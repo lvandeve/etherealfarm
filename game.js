@@ -194,8 +194,17 @@ function softReset() {
   state.time = util.getTime();
   state.prevtime = state.time;
 
-  state.reset_stats.push(state.treelevel);
-  if(state.reset_stats.length > 100) state.reset_stats = state.reset_stats.shift();
+  var addStat = function(array, stat) {
+    array.push(stat);
+    var maxlen = 25;
+    if(array.length > maxlen) array = array.slice(array.length - maxlen, array.length);
+  };
+
+  addStat(state.reset_stats_level, state.treelevel);
+  addStat(state.reset_stats_level2, state.treelevel2);
+  addStat(state.reset_stats_time, Math.floor((state.time - state.c_starttime) / 900));
+  addStat(state.reset_stats_resin, Math.floor(Num.log2(state.g_res.resin.addr(1)).valueOf()));
+  addStat(state.reset_stats_challenge, 0);
 
   state.p_starttime = state.c_starttime;
   state.p_runtime = state.c_runtime;
@@ -268,6 +277,7 @@ function softReset() {
   state.g_res.addInPlace(essence);
   state.c_res.addInPlace(essence);
   state.fruit_sacr = [];
+  state.fruit_seen = false; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
 
   // fix the accidental grow time ethereal upgrade that accidentally gave 7x7 field due to debug code in version 0.1.11
   // TODO: update this code to match next such upgrades this code once a 7x7 upgrade exists!
@@ -467,6 +477,8 @@ function PreCell(f) {
   this.prod0b = Res();
   // during consumption/production computation, not useful for any UI, intermediate stage only
   this.prod1 = Res();
+  this.wanted = Res();
+  this.gotten = Res();
   // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
   this.prod2 = Res();
@@ -578,10 +590,14 @@ function precomputeField() {
         var prod = c.getProd(f, false, p.breakdown);
         p.prod0 = prod;
         p.prod0b = Res(prod); // a separate copy
-        // prod1 is, for the case of mushrooms and seeds, a negative amount of seeds, and if there is leech, the total amount of seeds needed included for the leeched spores.
-        // pass 4 will then add positive seeds from berry neighbors to prod1, and when prod1 reaches 0 (or higher), the full consumption has been satisfied, otherwise it's partial
+        // used by pass 4, production that berry has avaialble for mushrooms, which is then subtarcted from
         p.prod1 = Res(prod);
-        if(p.prod1.seeds.ltr(0)) p.prod1.seeds.mulInPlace(p.leech.addr(1));
+        if(prod.seeds.ltr(0)) {
+          // how much input mushrooms want
+          p.wanted.seeds = prod.seeds.neg();
+          // if there is leech on the mushroom, it wants more seeds
+          p.wanted.seeds.mulInPlace(p.leech.addr(1));
+        }
       }
     }
   }
@@ -637,8 +653,7 @@ function precomputeField() {
             if(p.producers.length == 0) continue; // no producers at all for this mushroom
             // want is how much seeds we want, but only for the slice allocated to this producer
             // computed outside of the producers loop to ensure it's calculated the same for all producers
-            //var want = p.prod1.seeds.neg().divr(p.producers.length).mul(p.leech.addr(1));
-            var want = p.prod1.seeds.neg().divr(p.producers.length);
+            var want = p.wanted.seeds.sub(p.gotten.seeds).divr(p.producers.length);
             for(var i = 0; i < p.producers.length; i++) {
               var p2 = p.producers[i];
               if(p2.last_it != it) {
@@ -653,13 +668,13 @@ function precomputeField() {
                 // in last iteration, just greedily take everything. This means that there is some unintended positional advantage to some
                 // locations, but it should be small with enough iterations.
                 // TODO: use better algo that prevents this
-                want = p.prod1.seeds.neg().mul(p.leech.addr(1));
+                want = p.wanted.seeds.sub(p.gotten.seeds);
                 have = p2.prod1.seeds;
               }
               var amount = Num.min(want, have);
               if(amount.gter(0)) {
                 did_something = true;
-                p.prod1.seeds.addInPlace(amount);
+                p.gotten.seeds.addInPlace(amount);
                 p2.prod1.seeds.subInPlace(amount);
               }
             }
@@ -680,10 +695,8 @@ function precomputeField() {
         p.prod2 = Res(p.prod1);
         p.prod3 = Res(p.prod0);
         if(c.type == CROPTYPE_MUSH) {
-          var wanted = p.prod0.seeds.neg().mul(p.leech.addr(1));
-          if(wanted.eqr(0)) continue; // zero input required, so nothing to do (no current mushroom has this case though, but avoid NaNs if it'd happen)
-          var gotten = wanted.add(p.prod1.seeds); // prod1.seeds is <= 0 so is a subtraction
-          var ratio = gotten.div(wanted);
+          if(p.wanted.seeds.eqr(0)) continue; // zero input required, so nothing to do (no current mushroom has this case though, but avoid NaNs if it'd happen)
+          var ratio = p.gotten.seeds.div(p.wanted.seeds);
           // the actual amount of spores produced based on satisfied input amount
           // if there was watercress leeching from this mushroom, then the amount may be less if the multiplied-by-leech input was not satisfied, but the output of the watercress makes up for that in a next pass
           p.prod2.spores.mulInPlace(ratio);
@@ -730,7 +743,7 @@ function precomputeField() {
           p.leechnum = num;
           // also add this to the breakdown
           if(!total.empty()) {
-            p.breakdown.push(['<b><i><font color="#060">copying neighbors (' + num + ')</font></i></b>', false, total, p.prod3.clone()]);
+            p.breakdown.push(['<span class="efWatercressHighlight">copying neighbors (' + num + ')</span>', false, total, p.prod3.clone()]);
             c.getLeech(f, p.breakdown_leech);
           } else {
             if(state.upgrades[berryunlock_0].count) p.breakdown.push(['no neighbors, not copying', false, total, p.prod3.clone()]);
@@ -818,6 +831,8 @@ function addRandomFruit() {
 
   state.c_numfruits++;
   state.g_numfruits++;
+
+  state.fruit_seen = false;
 
   updateFruitUI();
   return fruit;

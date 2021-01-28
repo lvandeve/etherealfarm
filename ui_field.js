@@ -54,7 +54,20 @@ function createTranscendDialog() {
     text += '• ' + ' Unused resin boost (including existing): ' + getUnusedResinBonusFor(actual_resin.add(state.res.resin)).subr(1).mulr(100).toString() + '%<br/>';
   }
   text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool<br/>';
-  if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) text += '<font color="#a00">→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before ascending</font><br/>';
+  if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) {
+    text += '<font color="#a00">→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before ascending</font><br/>';
+  }
+
+
+  var highest = 0, highestsacr = 0;
+  for(var i = 0; i < state.fruit_active.length; i++) highest = Math.max(highest, state.fruit_active[i].tier);
+  for(var i = 0; i < state.fruit_stored.length; i++) highest = Math.max(highest, state.fruit_stored[i].tier);
+  for(var i = 0; i < state.fruit_sacr.length; i++) highestsacr = Math.max(highestsacr, state.fruit_sacr[i].tier);
+  if(highestsacr > highest) {
+    // fruit of highest tier is in sacrificial pool, indicate this to prevent accidently losing it
+    text += '<font color="#955">→ Warning: you have a fruit in sacrificial pool of higher tier than any active or stored fruit, check the fruit tab if you want to keep it</font><br/>';
+  }
+
   text += '<br/>';
   text += 'What will be reset:<br/>';
   text += '• Basic field with all crops<br/>';
@@ -167,8 +180,8 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += 'Short-lived plant. Total lifetime: ' + c.getPlantTime() + 's<br/><br/>';
         result += leechInfo + '<br/>';
       } else {
-        result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + '<br/><br/>';
-        if(state.upgrades[berryunlock_0].count) result += '<font color="#060">Copies neighbors: to duplicate full production of long-lived berry and mushroom neighbors for free (mushroom copy also consumes more seeds)</font><br/>';
+        result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + '<br/>';
+        if(state.upgrades[berryunlock_0].count) result += '<br/><span class="efWatercressHighlight">Copies neighbors: to duplicate full production of long-lived berry and mushroom neighbors for free (mushroom copy also consumes more seeds)</span><br/>';
       }
 
       result += '<br/>';

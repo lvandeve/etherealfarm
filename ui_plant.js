@@ -39,7 +39,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   text += '<b>cost:</b>' + cost.toString() + '<br>';
 
   if(crop.type == CROPTYPE_SHORT && state.upgrades[berryunlock_0].count) {
-    text += '<b><i><font color="#060">Copies neighbors</font></i></b><br>';
+    text += '<span class="efWatercressHighlight">Copies neighbors</span><br>';
   }
   //if(crop.type == CROPTYPE_SHORT) text += '<b>short-lived</b><br>';
   var prod = crop.getProd(f, true);

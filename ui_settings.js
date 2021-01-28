@@ -451,17 +451,19 @@ function createStatsDialog() {
     text += '<b>Ethereal</b><br>';
     text += '• ethereal tree level: ' + open + state.treelevel2 + close + '<br>';
     text += '• transcensions: ' + open + state.g_numresets + close + '<br>';
-    if(state.reset_stats.length == 1) {
-      text += '• last transcension level: ' + open;
-    } else {
-      text += '• last transcension levels (recent first): ' + open;
+    var n = Math.min(Math.min(10, state.reset_stats_time.length), state.reset_stats_level.length);
+    if(n > 0) {
+      if(n == 1) {
+        text += '• last transcension level: ' + open;
+      } else {
+        text += '• last transcension levels (recent first): ' + open;
+      }
+      for(var i = 0; i < n; i++) {
+        var j = n - 1 - i;
+        text += (i == 0 ? ' ' : ', ') + state.reset_stats_level[state.reset_stats_level.length - 1 - i] + ' (' + (state.reset_stats_time[j] / 4) + 'h)';
+      }
+      text += close + '<br>';
     }
-    for(var i = 0; i < 10; i++) {
-      var j = state.reset_stats.length - 1 - i;
-      if(j < 0) break;
-      text += (i == 0 ? ' ' : ', ') + state.reset_stats[j];
-    }
-    text += close + '<br>';
     text += '• ethereal planted: ' + open + state.g_numfullgrown2 + close + '<br>';
     text += '• ethereal deleted: ' + open + state.g_numunplanted2 + close + '<br>';
     text += '• ethereal delete tokens: ' + open + state.delete2tokens + close + '<br>';
@@ -514,6 +516,8 @@ function createChangelogDialog() {
   text += '<br/><br/>';
 
   text += 'Reddit: <a target="_blank" href="https://www.reddit.com/r/etherealfarm/">https://www.reddit.com/r/etherealfarm/</a>';
+  text += '<br/>';
+  text += 'Discord: <a target="_blank" href="https://discord.gg/WaHmTBtY">https://discord.gg/WaHmTBtY</a>';
   text += '<br/>';
   text += 'Github: <a target="_blank" href="https://github.com/lvandeve/etherealfarm">https://github.com/lvandeve/etherealfarm</a>';
   text += '<br/><br/>';

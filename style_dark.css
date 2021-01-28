@@ -100,3 +100,7 @@ a:visited {
   text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
   color: #000;
 }
+
+.efWatercressHighlight {
+  text-shadow: 0 0 0.3em #0f0;
+}
