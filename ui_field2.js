@@ -146,7 +146,10 @@ function makeField2Dialog(x, y) {
       text += '<br><br>';
     }
 
-    text += '<b>Ethereal boosts from this field to basic field:</b><br>';
+    text += '<b>Total resin earned entire game: </b>' + state.g_res.resin.toString();
+    text += '<br/><br/>';
+
+    text += '<b>Ethereal boosts from crops on this field to basic field:</b><br>';
     text += '• starter resources: ' + getStarterResources().toString() + '<br>';
     text += '• berry boost: ' + state.ethereal_berry_bonus.mulr(100).toString() + '%<br>';
     text += '• mushroom boost: ' + state.ethereal_mush_bonus.mulr(100).toString() + '%<br>';

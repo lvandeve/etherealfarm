@@ -61,16 +61,28 @@ function getCropTypeHelp(type) {
 var fern_wait_minutes = 2; // default fern wait minutes (in very game they go faster)
 
 
-// apply bonuses that apply to all ability waits
+// apply bonuses that apply to all weather ability waits
 function adjustWait(result) {
   if(state.upgrades[active_choice0].count == 1) result *= 2;
 
-  var level = getFruitAbility(FRUIT_COOLDOWN);
+  // FRUIT_COOLDOWN effect was removed, but code kept to copypaste some different future upgrade that'd do this from.
+  /*var level = getFruitAbility(FRUIT_COOLDOWN);
   if(level > 0) {
     var mul = Num(1).sub(getFruitBoost(FRUIT_COOLDOWN, level, getFruitTier())).valueOf();
     result *= mul;
-  }
+  }*/
 
+  return result;
+}
+
+function getWeatherBoost() {
+  var result = Num(1);
+
+  var level = getFruitAbility(FRUIT_WEATHER);
+  if(level > 0) {
+    var mul = Num(1).add(getFruitBoost(FRUIT_WEATHER, level, getFruitTier()));
+    result.mulInPlace(mul);
+  }
   return result;
 }
 
@@ -142,6 +154,7 @@ function Crop() {
   this.index = 0; // index in the crops array
   this.planttime = 0; // in seconds
   this.boost = Num(0); // how much this boosts neighboring crops, 0 means no boost, 1 means +100%, etc... (do not use directly, use getBoost() to get all multipliers taken into account)
+  this.boostboost = Num(0); // for beehives
   this.tagline = '';
 
   this.basic_upgrade = null; // id of registered upgrade that does basic upgrades of this plant
@@ -169,6 +182,25 @@ var delete2maxBuildup = delete2perSeason * 4; // how many deletions can be saved
 var delete2initial = delete2perSeason * 2; // how many deletions received at game start (NOTE: delete2perSeason only gotten at next season change, not at game start)
 
 
+
+/*
+s shaped function that goes towards diagonal asymptote on the right (and left but negative doesn't matter for the purpose)
+s = a measure of how fast to reach the asymptote, must be in range (0, 1], above 1 the function becomes non-monotonic
+d = distance of the diagonal asymptote from the origin. Its slope is always 1.
+*/
+function towardsdiag(x, s, d) {
+  if(d == 0) return x;
+  if(s == 0) return x; // can never reach the asymptote
+
+  var ax = x * s / d;
+  var p = 4; // the higher the faster it goes towards the asymptote; TODO: this could replace the s parameter since the s parameter has limitations
+  var a = ax / Math.pow((Math.pow(ax, p) + 1),  1 / p);
+  a *= d;
+
+  return -a + x;
+}
+
+
 /*
 The goal of this function is to reduce the grow time by the amount of time given in time. E.g. a 20 minute grow time, with a reduction of 1 minute, becomes a 19 minute grow time
 however, the goal of this is also to not reduce plants that already grow fast by that amount. E.g. if a plant has a 1-minute growtime, and we reduce by 2 minutes, the plant should not have a negative growtime of course.
@@ -177,15 +209,13 @@ the lower bound could be linear: reduce max 50%. However, I believe that for pla
 So the lower bound should be something non-linear. An example: it could be ln(t * f + 1) / f, with t in seconds and f some hard-coded factor tuned to have appropriate lower bounds for 1 minute, 10 minutes, etc...
 */
 function reduceGrowTime(time, reduce) {
+  if(reduce == 0) return time;
+
   var f = 0.02;
   var min = Math.log(time * f + 1) / f;
   time -= min;
 
-  if(time > reduce) {
-    time -= reduce;
-  } else {
-    time *= (1 - towards1(reduce, time * 2));
-  }
+  time = towardsdiag(time, 1, reduce);
 
   time += min;
 
@@ -418,9 +448,20 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown && num > 0) breakdown.push(['flowers (' + num + ')', true, mul_boost, result.clone()]);
   }
 
+  // nettle malus
+  if(f && (this.type == CROPTYPE_BERRY)) {
+    var p = prefield[f.y][f.x];
+    var malus = p.nettlemalus_received;
+    var num = p.num_nettle;
+
+    if(num > 0) {
+      result.mulInPlace(malus);
+      if(breakdown) breakdown.push(['nettles malus (' + num + ')', true, malus, result.clone()]);
+    }
+  }
+
   // nettle boost
-  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
-    var seed_malus = Num(1);
+  if(f && (this.type == CROPTYPE_MUSH)) {
     var spore_boost = Num(1);
     var num = 0;
 
@@ -428,11 +469,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(n.hasCrop() && n.growth >= 1 && n.getCrop().type == CROPTYPE_NETTLE) {
         var boost = n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
-          if(self.type == CROPTYPE_MUSH) {
-            spore_boost.addInPlace(boost);
-          } else {
-            seed_malus.divInPlace(boost.addr(1));
-          }
+          spore_boost.addInPlace(boost);
           return true;
         }
       }
@@ -443,9 +480,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(f.y > 0 && getboost(this, state.field[f.y - 1][f.x])) num++;
     if(f.x + 1 < state.numw && getboost(this, state.field[f.y][f.x + 1])) num++;
     if(f.y + 1 < state.numh && getboost(this, state.field[f.y + 1][f.x])) num++;
-    result.seeds.mulInPlace(seed_malus);
     result.spores.mulInPlace(spore_boost);
-    if(breakdown && num > 0) breakdown.push(['nettles (' + num + ')', true, (this.type == CROPTYPE_MUSH) ? spore_boost : seed_malus, result.clone()]);
+    if(breakdown && num > 0) breakdown.push(['nettles (' + num + ')', true, spore_boost, result.clone()]);
   }
 
   // teelevel boost
@@ -469,10 +505,12 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   // mist
   if(mist_active && this.type == CROPTYPE_MUSH) {
     var bonus_mist0 = Num(0.75);
+    // weather boost not applied to the less seeds effect, it's a multiplier intended for things that increase something plus would make it doubly-powerful
     if(state.upgrades[active_choice0].count == 2) bonus_mist0.divrInPlace(1 + active_choice0_b_bonus);
     result.seeds.mulInPlace(bonus_mist0);
     if(breakdown) breakdown.push(['mist (less seeds)', true, bonus_mist0, result.clone()]);
     var bonus_mist1 = Num(0.25);
+    bonus_mist1.mulInPlace(getWeatherBoost());
     if(state.upgrades[active_choice0].count == 2) bonus_mist1.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_mist1.addrInPlace(1);
     result.spores.mulInPlace(bonus_mist1);
@@ -482,6 +520,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   // sun
   if(sun_active && this.type == CROPTYPE_BERRY) {
     var bonus_sun = Num(0.5);
+    bonus_sun.mulInPlace(getWeatherBoost());
     if(state.upgrades[active_choice0].count == 2) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_sun.addrInPlace(1);
     result.seeds.mulrInPlace(bonus_sun);
@@ -580,6 +619,7 @@ Crop.prototype.getBoost = function(f, breakdown) {
   if(this.type == CROPTYPE_FLOWER) {
     if(rainbow_active) {
       var bonus_rainbow = Num(0.5);
+      bonus_rainbow.mulInPlace(getWeatherBoost());
       if(state.upgrades[active_choice0].count == 2) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
       bonus_rainbow.addrInPlace(1);
       result.mulrInPlace(bonus_rainbow);
@@ -587,23 +627,25 @@ Crop.prototype.getBoost = function(f, breakdown) {
     }
   }
 
+
+  // beehives boostboost
+  if(f && (this.type == CROPTYPE_FLOWER)) {
+    var p = prefield[f.y][f.x];
+    var bonus = p.beeboostboost_received.addr(1);
+    var num = p.num_bee;
+
+    if(num > 0) {
+      result.mulInPlace(bonus);
+      if(breakdown) breakdown.push(['beehives (' + num + ')', true, bonus, result.clone()]);
+    }
+  }
+
   // nettle negatively affecting flowers
   if(f && (this.type == CROPTYPE_FLOWER)) {
-    var malus = Num(1);
-    var num = 0;
+    var p = prefield[f.y][f.x];
+    var malus = p.nettlemalus_received;
+    var num = p.num_nettle;
 
-    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
-      if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
-      var f2 = state.field[y2][x2];
-      var c2 = f2.getCrop();
-      if(c2 && f2.growth >= 1 && c2.type == CROPTYPE_NETTLE) {
-        var boost = c2.getBoost(f2);
-        malus.divInPlace(boost.addr(1));
-        num++;
-      }
-    }
     if(num > 0) {
       result.mulInPlace(malus);
       if(breakdown) breakdown.push(['nettles malus (' + num + ')', true, malus, result.clone()]);
@@ -621,7 +663,7 @@ Crop.prototype.getBoostBoost = function(f, breakdown) {
     if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
     return result;
   }
-  result = this.boost.clone();
+  result = this.boostboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   // upgrades
@@ -756,10 +798,11 @@ function registerMistletoe(name, tier, planttime, image, opt_tagline) {
   return index;
 }
 
-function registerBeehive(name, tier, boost, planttime, image, opt_tagline) {
+function registerBeehive(name, tier, boostboost, planttime, image, opt_tagline) {
   var cost = getFlowerCost(tier);
-  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline);
+  var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline);
   var crop = crops[index];
+  crop.boostboost = boostboost;
   crop.type = CROPTYPE_BEE;
   crop.tier = tier;
   return index;
@@ -858,8 +901,7 @@ crop_register_id = 110;
 var mistletoe_0 = registerMistletoe('mistletoe', 0, 60, mistletoe);
 
 crop_register_id = 120;
-// not yet implemented!
-//var bee_0 = registerBeehive('beehive', 0, Num(0.5), flowerplanttime0, images_beehive);
+///var bee_0 = registerBeehive('beehive', 0, Num(0.5), flowerplanttime0, images_beehive);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1199,8 +1241,7 @@ var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(
 });
 
 upgrade_register_id = 120;
-// not yet implemented!
-//var beeunlock_0 = registerCropUnlock(bee_0, getFlowerCost(3), 1, berry_6);
+//var beeunlock_0 = registerCropUnlock(bee_0, getFlowerCost(1.5), 1, flower_1);
 
 //shortunlock_0 does not exist, you start with that berry type already unlocked
 
@@ -1679,6 +1720,32 @@ registerMedal('higher transcension', 'performed transcension II or higher', unde
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+
+// @constructor
+function Challenge() {
+  this.name = 'a';
+  this.description = 'a';
+  this.index = 0;
+
+  // actual implementation of the challenge is not here, but depends on currently active state.challenge
+};
+
+var registered_challenges = []; // indexed consecutively, gives the index to medal
+var challenges = []; // indexed by medal index (not necessarily consectuive
+
+// 0 means no challenge
+var challenge_register_id = 1;
+
+function registerChallenge(name) {
+  return challenge_register_id;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 // @constructor
 function Crop2() {
   this.name = 'a';
@@ -2039,7 +2106,7 @@ var upgrade2_time_reduce_0_amount = 60;
 
 upgrade2_register_id = 25;
 var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', 0, Res({resin:25}), 2, function() {
-}, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, this upgrade has more effect on plants that are already slow (5+ minutes).', undefined, undefined, blackberry[0]);
+}, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, this upgrade has more effect on plants that are slow compared to the upgrade level (e.g. 5+ minute plant for 1 minute upgrade).', undefined, undefined, blackberry[0]);
 
 var upgrade2_basic_tree_bonus = Num(0.02);
 
@@ -2106,8 +2173,7 @@ function towards1(x, h) {
   // *) erf(x): goes too fast to 1 and too horizontal once 1 reached
   // *) x / sqrt(x * x + 1)
   if(h == 0) return 1;
-  x *= 0.57735;
-  x /= h;
+  x *= 0.57735 / h; // 0.57735 is the value such that towards1(h, h) returns 0.5
   return x / Math.sqrt(x * x + 1);
 }
 
@@ -2122,7 +2188,7 @@ var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (bu
 var FRUIT_FLOWERBOOST = fruit_index++;
 var FRUIT_LEECH = fruit_index++;
 var FRUIT_GROWSPEED = fruit_index++;
-var FRUIT_COOLDOWN = fruit_index++;
+var FRUIT_WEATHER = fruit_index++;
 var FRUIT_FERN = fruit_index++;
 // BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
 var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
@@ -2159,10 +2225,8 @@ function getFruitBoost(ability, level, tier) {
     var max = 0.4 * (1 + 0.6 * tier / 11);
     return Num(max * amount);
   }
-  if(ability == FRUIT_COOLDOWN) {
-    var amount = towards1(level, 5);
-    var max = 0.3 * (1 + 0.5 * tier / 11);
-    return Num(max * amount);
+  if(ability == FRUIT_WEATHER) {
+    return Num(base * 1.5 * level);
   }
   if(ability == FRUIT_FERN) {
     return Num(base * 2 * level);

@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.27 (2021-01-29):';
+  // The cooldown ability caused weird interaction with the timings of the weather and may require too much manual work with swapping in/out the fruit
+  text += '<br/>• Changed fruit weather cooldown ability into weather boost.';
+  text += '<br/>• Fixed issue with ethreal grow speed upgrade soft capping, now it should no longer accidently increase some times.';
+  text += '<br/>• Various UI fixes.';
+  text += '<br/><br/>';
+
   text += '0.1.26 (2021-01-28):';
   text += '<br/>• Minor numerical and UI fixes.';
   text += '<br/><br/>';
@@ -152,7 +159,7 @@ function getChangeLog() {
 
   text += '0.1.6 (2020-12-22):';
   text += '<br/>• Added undo button.';
-  text += '• Removed the free replant of same plant type at same spot since undo can be used instead now.';
+  text += '<br/>• Removed the free replant of same plant type at same spot since undo can be used instead now.';
   text += '<br/>• Weather abilities unlock immediately rather than through extra upgrade step, and merged their choice upgrades.';
   text += '<br/><br/>';
 

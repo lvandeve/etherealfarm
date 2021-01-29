@@ -25,7 +25,7 @@ function getFruitAbilityName(ability) {
     case FRUIT_MUSHEFF: return 'mushroom economy';
     case FRUIT_FLOWERBOOST: return 'flower boost';
     case FRUIT_GROWSPEED: return 'growing speed';
-    case FRUIT_COOLDOWN: return 'weather cooldown';
+    case FRUIT_WEATHER: return 'weather boost';
     case FRUIT_LEECH: return 'watercress copying';
     case FRUIT_FERN: return 'fern';
   }
@@ -39,7 +39,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_MUSHEFF: return 'reduces mushroom consumption';
     case FRUIT_FLOWERBOOST: return 'boosts flowers effect';
     case FRUIT_GROWSPEED: return 'reduces plants growing time';
-    case FRUIT_COOLDOWN: return 'reduces weather ability cooldown time';
+    case FRUIT_WEATHER: return 'increases the weather effect abilities';
     case FRUIT_LEECH: return 'increases the copy effect of watercress';
     case FRUIT_FERN: return 'increases the contents of ferns';
   }
@@ -194,8 +194,11 @@ function createFruitDialog(f, opt_selected) {
     var cost = getFruitAbilityCost(a, level, f.tier);
     button.textEl.innerText = 'Level up: ' + cost.toString();
     var available = state.res.essence.sub(f.essence);
-    if(available.lt(cost.essence)) button.className = 'efButtonCantAfford';
-    else button.textEl.style.color = '';
+    if(available.lt(cost.essence)) {
+      button.className = 'efButtonCantAfford';
+    } else {
+      button.className = 'efButton';
+    }
     registerTooltip(button, 'Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits. Hold shift to level up multiple times but with only up to 25% of available essence');
     addButtonAction(button, function(e) {
       actions.push({type:ACTION_FRUIT_LEVEL, f:f, index:selected, shift:e.shiftKey});

@@ -261,14 +261,19 @@ function updateResourceUI() {
       if(index == 2) {
         // resin
         var text = '<b>' + upper(name) + '</b><br/><br/>';
-        text += 'Current amount: ' + res.toString() + '<br/><br/>';
-        text += 'Current production boost for unspent resin: ' + getUnusedResinBonus().subr(1).mulr(100).toString() + '%<br/><br/>';
+        text += 'Total resin earned entire game: ' + state.g_res.resin.toString();
+        text += '<br/><br/>';
+        text += 'Unspent resin: ' + res.toString() + '<br/>';
+        text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).mulr(100).toString() + '%';
+        text += '<br><br>';
+        text += 'Collected upcoming resin: ' + upcoming.toString() + '<br>';
         if(tlevel > 1) {
-          text += 'Collected upcoming resin: ' + upcoming.toString() + '<br/><br/>';
-          text += 'Upcoming resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/><br/>';
+          text += '→ Bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x, so total: ' + upcoming2.toString();
         }
-        text += 'Total upcoming amount: ' + upcoming2.toString() + '<br/><br/>';
-        if(upcoming2.neqr(0)) text += 'Upcoming production boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).mulr(100).toString() + '%<br/><br/>';
+        text += '<br>';
+        if(upcoming2.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).mulr(100).toString() + '%';
+
+
       }
       if(index == 3) {
         // twigs

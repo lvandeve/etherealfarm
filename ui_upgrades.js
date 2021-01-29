@@ -24,7 +24,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   div.className = 'efUpgradeChip';
 
   var cost = u.getCost(completed ? -1 : 0);
-  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 1);
+  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 0.95);
   var name = completed ? u.getName() : u.getNextName();
   titleFlex.div.innerHTML = name;
   titleFlex.div.style.whiteSpace = 'nowrap';
@@ -294,13 +294,15 @@ function updateUpgradeUI() {
     if(upgrades[j].canUpgrade()) unlocked.push(j);
   }
 
+  var w = 0.49;
+  var h = 0.45;
+
   for(var i = 0; i < unlocked.length; i++) {
     var u = upgrades[unlocked[i]];
 
     var x = (i & 1);
     var y = (i >> 1);
-    var w = 0.45;
-    var chip = new Flex(scrollFlex, x * w + 0.01, [0.15, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0.15, (y + 1) * w - 0.01, 0.27], 0.75);
+    var chip = new Flex(scrollFlex, x * w + 0.01, [0.15, y * h + 0.01, 0.27], [(x + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.75);
     renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
   }
 
@@ -314,9 +316,8 @@ function updateUpgradeUI() {
   if(researched.length > 0) {
     var x = 0;
     var y = ((unlocked.length + 1) >> 1) + 0.33;
-    var w = 0.45;
 
-    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.15, y * w + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.15, (y + 1) * w - 0.01, 0.27], 0.6);
+    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.15, y * h + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.6);
     styleButton(flex.div);
     flex.div.innerText = 'See Completed Upgrades';
     flex.setCentered();
@@ -336,8 +337,7 @@ function updateUpgradeUI() {
 
         var x = (i & 1);
         var y = i >> 1;
-        var w = 0.45;
-        var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * w + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.27], 0.75);
+        var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * h + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * h - 0.01, 0.27], 0.75);
         renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, true);
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';

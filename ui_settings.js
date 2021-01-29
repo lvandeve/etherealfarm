@@ -450,6 +450,7 @@ function createStatsDialog() {
   if(state.g_numresets > 0) {
     text += '<b>Ethereal</b><br>';
     text += '• ethereal tree level: ' + open + state.treelevel2 + close + '<br>';
+    text += '• total resin: ' + open + state.g_res.resin.toString() + close + '<br>';
     text += '• transcensions: ' + open + state.g_numresets + close + '<br>';
     var n = Math.min(Math.min(10, state.reset_stats_time.length), state.reset_stats_level.length);
     if(n > 0) {
@@ -517,7 +518,7 @@ function createChangelogDialog() {
 
   text += 'Reddit: <a target="_blank" href="https://www.reddit.com/r/etherealfarm/">https://www.reddit.com/r/etherealfarm/</a>';
   text += '<br/>';
-  text += 'Discord: <a target="_blank" href="https://discord.gg/WaHmTBtY">https://discord.gg/WaHmTBtY</a>';
+  text += 'Discord: <a target="_blank" href="https://discord.gg/WaHmTBtY">https://discord.gg/qxXrG8WGcd</a>';
   text += '<br/>';
   text += 'Github: <a target="_blank" href="https://github.com/lvandeve/etherealfarm">https://github.com/lvandeve/etherealfarm</a>';
   text += '<br/><br/>';
@@ -689,6 +690,7 @@ function initSettingsUI_in(dialogFlex) {
         state.g_numimports++;
         state.g_lastimporttime = util.getTime();
         closeAllDialogs();
+        removeMedalChip();
         initUI();
         update();
         util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
@@ -806,7 +808,7 @@ function initSettingsUI() {
   undobutton.div.textEl.innerText = 'Undo';
   addButtonAction(undobutton.div, function(e) {
     if(e.shiftKey) {
-      showMessage('held shift key while pressing undo button, so saving undo instad.');
+      showMessage('held shift key while pressing undo button, so saving undo instead.');
       storeUndo(state);
     } else {
       loadUndo();

@@ -193,7 +193,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     var prod = p.prod3;
     if(!prod.empty() || c.type == CROPTYPE_MUSH) {
       result += 'Production per second: ' + prod.toString() + '<br/>';
-      if(prod.hasNeg()) {
+      if(prod.hasNeg() || c.type == CROPTYPE_MUSH) {
         if(p.prod0.neq(p.prod3)) {
           if(c.type == CROPTYPE_MUSH) {
             result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + p.prod0.toString() + '<br/>';
@@ -454,7 +454,7 @@ function initFieldUI() {
 
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
-          return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a fern appeared, letting it sit longer does not change the amount gives.';
+          return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a has fern appeared, letting it sit longer does not change the amount it gives.';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there

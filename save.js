@@ -256,6 +256,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_delete2tokens);
   processFloat(state.g_fastestrun);
   processFloat(state.g_slowestrun);
+  processFloat(state.g_fastestrun2);
+  processFloat(state.g_slowestrun2);
 
 
   section = 11; id = 0; // global run stats
@@ -750,6 +752,10 @@ function decState(s) {
     state.g_delete2tokens = processUint();
     state.g_fastestrun = processFloat();
     state.g_slowestrun = processFloat();
+  }
+  if(save_version >= 4096*1+27) {
+    state.g_fastestrun2 = processFloat();
+    state.g_slowestrun2 = processFloat();
   }
 
   if(error) return err(4);
