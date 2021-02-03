@@ -5,6 +5,7 @@ a {
 a:visited {
   color: #f8f;
 }
+
 .efBackground {
   background-color: #345;
   color: #bbb;
@@ -30,20 +31,23 @@ a:visited {
 
 .efButton {
   background-color: #555;
-  border: 1px solid #ccc;
+  border: 1px solid #aaa;
   color: #ccc;
+  box-sizing: border-box;
 }
 
 .efButtonCantAfford {
   background-color: #555;
-  border: 1px solid #777;
+  border: 1px solid #666;
   color: #777;
+  box-sizing: border-box;
 }
 
 .efButtonHighlighted {
   background-color: #888;
-  border: 1px solid black;
-  color: #000;
+  border: 1px solid #ddd;
+  color: #ddd;
+  box-sizing: border-box;
 }
 
 .efInfo {

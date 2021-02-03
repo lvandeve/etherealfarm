@@ -43,14 +43,14 @@ function getCropInfoHTML2(f, c, opt_detailed) {
       if(prod.hasNeg()) result += 'Consumes a resource produced by other crops<br/>';
     }
     if(c.boost.neqr(0)) {
-      result += '<br/>Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
+      result += '<br/>Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
     }
 
     if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER) {
       var boost = Crop2.getNeighborBoost(f);
       if(boost.neqr(0)) {
         result += '<br/>';
-        result += 'This effect is boosted by neighbors here: ' + (boost.mulr(100)).toString() + '%<br/>';
+        result += 'This effect is boosted by neighbors here: ' + (boost).toPercentString() + '<br/>';
       }
     }
   }
@@ -142,7 +142,7 @@ function makeField2Dialog(x, y) {
     text += '<br><br>';
 
     if(state.treelevel2 > 0) {
-      text += '<b>Resin production bonus to basic tree: </b>' + treelevel2_resin_bonus.mulr(state.treelevel2).mulr(100).toString() + '%';
+      text += '<b>Resin production bonus to basic tree: </b>' + treelevel2_resin_bonus.mulr(state.treelevel2).toPercentString();
       text += '<br><br>';
     }
 
@@ -151,9 +151,9 @@ function makeField2Dialog(x, y) {
 
     text += '<b>Ethereal boosts from crops on this field to basic field:</b><br>';
     text += '• starter resources: ' + getStarterResources().toString() + '<br>';
-    text += '• berry boost: ' + state.ethereal_berry_bonus.mulr(100).toString() + '%<br>';
-    text += '• mushroom boost: ' + state.ethereal_mush_bonus.mulr(100).toString() + '%<br>';
-    text += '• flower boost: ' + state.ethereal_flower_bonus.mulr(100).toString() + '%<br>';
+    text += '• berry boost: ' + state.ethereal_berry_bonus.toPercentString() + '<br>';
+    text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
+    text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
     text += '<br><br>';
 
     flex.div.innerHTML = text;

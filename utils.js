@@ -635,6 +635,16 @@ var Utils = (function() {
   };
   result.setEvent = setEvent;
 
+  var eventHasShiftKey = function(e) {
+    return e.shiftKey;
+  };
+  result.eventHasShiftKey = eventHasShiftKey;
+
+  var eventHasCtrlKey = function(e) {
+    return e.ctrlKey || e.metaKey; // metakey is for macs where ctrl doesn't work and meta represents cmd key instead which is basically what one normally uses as ctrl there
+  };
+  result.eventHasCtrlKey = eventHasCtrlKey;
+
 
   return result;
 }());
@@ -645,4 +655,5 @@ var util = Utils;
 var bind = util.bind;
 var makeDiv = util.makeDiv;
 var upper = util.upperCaseFirstWord;
+var eventHasCtrlKey = util.eventHasCtrlKey;
 

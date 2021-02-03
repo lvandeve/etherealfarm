@@ -161,19 +161,19 @@ function updateResourceUI() {
       result += '<b>' + upper(seasonNames[getSeason()]) + ' Effects:</b><br>';
       var s = getSeason();
       if(s == 0) {
-        result += '• +' + getSpringFlowerBonus().subr(1).mulr(100).toString() + '% bonus to flower boost<br>';
+        result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
       }
       if(s == 1) {
-        result += '• +' + getSummerBerryBonus().subr(1).mulr(100).toString() + '% bonus to berry seed production<br>';
+        result += '• +' + getSummerBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
       }
       if(s == 2) {
-        result += '• +' + getAutumnMushroomBonus().subr(1).mulr(100).toString() + '% bonus to mushroom spores production, without increasing consumption<br>';
+        result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, without increasing consumption<br>';
       }
       if(s == 3) {
-        result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).mulr(100).toString() + '% berry / mushroom / flower stats when not next to the tree<br>';
+        result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower stats when not next to the tree<br>';
         var winterwarmth_location_text = state.upgrades2[upgrade2_diagonal].count ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
-        result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).mulr(100).toString() + '% berry / mushroom / flower stats when next to the tree ' + winterwarmth_location_text + '<br>';
-        result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).mulr(100).toString() + '% more resin added when tree levels up during the winter<br>';
+        result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom / flower stats when next to the tree ' + winterwarmth_location_text + '<br>';
+        result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
       }
       result += '<br><br>';
       result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
@@ -264,16 +264,14 @@ function updateResourceUI() {
         text += 'Total resin earned entire game: ' + state.g_res.resin.toString();
         text += '<br/><br/>';
         text += 'Unspent resin: ' + res.toString() + '<br/>';
-        text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).mulr(100).toString() + '%';
+        text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).toPercentString();
         text += '<br><br>';
         text += 'Collected upcoming resin: ' + upcoming.toString() + '<br>';
         if(tlevel > 1) {
           text += '→ Bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x, so total: ' + upcoming2.toString();
+          text += '<br>';
         }
-        text += '<br>';
-        if(upcoming2.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).mulr(100).toString() + '%';
-
-
+        if(upcoming2.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).toPercentString();
       }
       if(index == 3) {
         // twigs

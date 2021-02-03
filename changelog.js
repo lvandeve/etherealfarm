@@ -20,6 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  // not yet
+  /*text += '0.1.29 (2021-02-03):';
+  text += '<br/>• Added the bee challenge, which unlocks when planting a daisy (third tier flower, so it requires significant progress in the game to reach).';
+  text += '<br/>• Added beehives, only available after successfully completing the bee challenge.';
+  text += '<br/>• Since the necessary logic for challenges in general is added to the game for this, more will be added later.';
+  text += '<br/><br/>';*/
+
+  text += '0.1.28 (2021-02-03):';
+  //
+  text += '<br/>• Fixed a bug with the previous runs level/time statistics.';
+  text += '<br/>• Various other UI tweaks and fixes.';
+  text += '<br/>• A larger update (bees) is coming soon, still work in progress.';
+  text += '<br/><br/>';
+
   text += '0.1.27 (2021-01-29):';
   // The cooldown ability caused weird interaction with the timings of the weather and may require too much manual work with swapping in/out the fruit
   text += '<br/>• Changed fruit weather cooldown ability into weather boost.';

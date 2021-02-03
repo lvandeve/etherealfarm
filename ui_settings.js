@@ -444,7 +444,7 @@ function createStatsDialog() {
 
   // these stats either are at the end of current run, or total, depending on whether "total" is visuble due to having done transcensions
   text += '• achievements: ' + open + state.medals_earned + close + '<br>';
-  text += '• achievements production bonus: ' + open + '+' + state.medal_prodmul.subr(1).mulr(100).toString() + '%' + close + '<br>';
+  text += '• achievements production bonus: ' + open + '+' + state.medal_prodmul.subr(1).toPercentString() + close + '<br>';
   text += '<br>';
 
   if(state.g_numresets > 0) {
@@ -461,7 +461,9 @@ function createStatsDialog() {
       }
       for(var i = 0; i < n; i++) {
         var j = n - 1 - i;
-        text += (i == 0 ? ' ' : ', ') + state.reset_stats_level[state.reset_stats_level.length - 1 - i] + ' (' + (state.reset_stats_time[j] / 4) + 'h)';
+        text += (i == 0 ? ' ' : ', ') +
+            state.reset_stats_level[state.reset_stats_level.length - 1 - i] +
+            ' (' + (state.reset_stats_time[state.reset_stats_time.length - 1 - i] / 4) + 'h)';
       }
       text += close + '<br>';
     }
@@ -471,8 +473,36 @@ function createStatsDialog() {
     text += '<br>';
   }
 
+  if(state.g_numresets > 0 && state.challenges_unlocked) {
+    text += '<b>Challenges</b><br>';
+    if(state.challenge) {
+      text += '• current challenge: ' + open + upper(challenges[state.challenge].name) + close + '<br>';
+    } else {
+      text += '• current challenge: ' + open + 'None' + close + '<br>';
+    }
+    text += '• challenges attempted: ' + open + state.g_numresets_challenge + close + '<br>';
+    text += '• challenges unlocked: ' + open + state.challenges_unlocked + close + '<br>';
+    text += '• challenges completed: ' + open + state.challenges_completed + close + '<br>';
+    text += '• total challenge production bonus: ' + open + state.challenge_bonus.toPercentString() + close + '<br>';
+
+    for(var i = 0; i < registered_challenges.length; i++) {
+      var c = challenges[registered_challenges[i]];
+      var c2 = state.challenges[registered_challenges[i]];
+      if(!c2.unlocked) continue;
+      text += '• ' + c.name + ': completed: ' + open +  (c2.completed ? 'yes' : 'no') + close + ', runs: ' + open + c2.num + close +
+                              ', highest level: ' + open + c2.maxlevel + close + ', bonus per level: ' + open + c.bonus.toPercentString() + close +
+                              ', production bonus: ' + open +  (c.bonus.mulr(c2.maxlevel)).toPercentString() + close + '<br>';
+    }
+
+    text += '<br>';
+  }
+
   if(state.g_numresets > 0) {
-    text += '<b>Previous Run</b><br>';
+    if(state.challenge) {
+      text += '<b>Previous Run (Non-challenge)</b><br>';
+    } else {
+      text += '<b>Previous Run</b><br>';
+    }
     text += '• tree level: ' + open + state.p_treelevel + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.p_starttime) + close + '<br>';
     text += '• duration: ' + open + util.formatDuration(state.p_runtime) + close + '<br>';

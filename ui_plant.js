@@ -45,7 +45,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   var prod = crop.getProd(f, true);
   if(!prod.empty()) text += '<b>prod:</b>' + prod.toString();
   var boost = crop.getBoost(f);
-  if(boost.neqr(0)) text += '<b>boost:</b>' + boost.mulr(100).toString() + '%';
+  if(boost.neqr(0)) text += '<b>boost:</b>' + boost.toPercentString();
   infoFlex.div.innerHTML = text;
 
   if(state.res.lt(crop.getCost())) {

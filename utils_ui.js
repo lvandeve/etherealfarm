@@ -327,6 +327,7 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
   };
 
   var maketip = function(text, e, mobilemode) {
+    if(!state) return; // game not yet loaded
     if(state.tooltipstyle == 0) {
       removeAllTooltips();
       return;

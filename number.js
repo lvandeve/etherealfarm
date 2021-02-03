@@ -1092,6 +1092,10 @@ Num.prototype.toString = function(opt_precision, opt_notation) {
   return this.b + 'e' + this.e;
 };
 
+Num.prototype.toPercentString = function(opt_precision, opt_notation) {
+  return this.mulr(100).toString(opt_precision, opt_notation) + '%';
+};
+
 // This only gives an accurate result if it fits in a double precision floating point number
 Num.valueOf = function(a) {
   var res = new Num(a);

@@ -78,6 +78,14 @@ function createFruitHelp() {
   text += 'Higher tier fruits may have more abilities, and abilities provide more boost.';
   text += '<br/><br/>';
   text += 'Click the fruit logo in the fruit dialog to mark as favorite and alter color effects (visual effect only).';
+  text += '<br/><br/>';
+  text += 'Fruit related hotkeys:';
+  text += '<br/>';
+  text += ' • <b>shift + click fruit</b>: move to sacrificial pool or from sacrificial pool to storage.';
+  text += '<br/>';
+  text += ' • <b>ctrl + click fruit</b>: swap to active slot.';
+  text += '<br/>';
+  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of current available essence';
 
   div.innerHTML = text;
 }
@@ -125,7 +133,7 @@ function createFruitDialog(f, opt_selected) {
     var a = f.abilities[i];
     var level = f.levels[i];
 
-    text = upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).mulr(100).toString() + '%)';
+    text = upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
 
     flex.div.innerHTML = text;
 
@@ -185,9 +193,9 @@ function createFruitDialog(f, opt_selected) {
     //text += 'Cost to level: ????';
     text += upper(getFruitAbilityDescription(a));
     text += '<br>';
-    text += 'Current level: ' + getFruitBoost(a, level, f.tier).mulr(100).toString() + '%';
+    text += 'Current level: ' + getFruitBoost(a, level, f.tier).toPercentString();
     text += '<br>';
-    text += 'Next level: ' + getFruitBoost(a, level + 1, f.tier).mulr(100).toString() + '%';
+    text += 'Next level: ' + getFruitBoost(a, level + 1, f.tier).toPercentString();
     textFlex.div.innerHTML = text;
 
 
@@ -296,7 +304,7 @@ function makeFruitChip(flex, f) {
     var a = f.abilities[i];
     var level = f.levels[i];
     text += '<br>';
-    text += 'Ability: ' + upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).mulr(100).toString() + '%)';
+    text += 'Ability: ' + upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
   }
 
   styleFruitChip(flex, f);
@@ -310,7 +318,7 @@ function makeFruitChip(flex, f) {
       if(f.slot >= 20) slot = 1;
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:slot});
       update();
-    } else if(e.ctrlKey) {
+    } else if(eventHasCtrlKey(e)) {
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
       update();
     } else {

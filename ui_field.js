@@ -19,75 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var fieldDivs;
 
-function createTranscendDialog() {
-  var dialog = createDialog(DIALOG_MEDIUM, function(e) {
-      actions.push({type:ACTION_TRANCSEND});
-      closeAllDialogs();
-      update();
-  }, 'transcend', 'cancel');
-
-  dialog.div.className = 'efDialogEthereal';
-
-  var tlevel = Math.floor(state.treelevel / min_transcension_level);
-  var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
-  var tlevel_mul = Num(tlevel);
-
-  var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [1, -0.01], 0.75, 0.3);
-  var text = '<b>Transcension' + roman + '</b><br/>';
-  text += '<br/>';
-  if(tlevel > 1) {
-    text += 'Higher transcensions work like transcension but give extra resin multiplier.<br/>';
-  } else {
-    text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These crops give bonuses to the basic field in various ways. Resin can also be used for other ethereal upgrades. Unused resin also gives a slight boost. <br/>';
-  }
-  text += '<br/>';
-  if(tlevel > 1) {
-    text += 'Collected resin: ' + state.resin.toString() + '<br/>';
-    text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-  }
-  var actual_resin = state.resin.mul(tlevel_mul);
-  text += 'You will get:<br/>';
-  text += '• ' + actual_resin.toString() + ' resin from your tree level ' + state.treelevel + '<br/>';
-  if(state.res.resin.eqr(0)) {
-    text += '• ' + ' Unused resin boost: ' + getUnusedResinBonusFor(actual_resin).subr(1).mulr(100).toString() + '%<br/>';
-  } else {
-    text += '• ' + ' Unused resin boost (including existing): ' + getUnusedResinBonusFor(actual_resin.add(state.res.resin)).subr(1).mulr(100).toString() + '%<br/>';
-  }
-  text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool<br/>';
-  if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) {
-    text += '<font color="#a00">→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before ascending</font><br/>';
-  }
-
-
-  var highest = 0, highestsacr = 0;
-  for(var i = 0; i < state.fruit_active.length; i++) highest = Math.max(highest, state.fruit_active[i].tier);
-  for(var i = 0; i < state.fruit_stored.length; i++) highest = Math.max(highest, state.fruit_stored[i].tier);
-  for(var i = 0; i < state.fruit_sacr.length; i++) highestsacr = Math.max(highestsacr, state.fruit_sacr[i].tier);
-  if(highestsacr > highest) {
-    // fruit of highest tier is in sacrificial pool, indicate this to prevent accidently losing it
-    text += '<font color="#955">→ Warning: you have a fruit in sacrificial pool of higher tier than any active or stored fruit, check the fruit tab if you want to keep it</font><br/>';
-  }
-
-  text += '<br/>';
-  text += 'What will be reset:<br/>';
-  text += '• Basic field with all crops<br/>';
-  text += '• Basic upgrades<br/>';
-  text += '• Basic resources: seeds, spores<br/>';
-  text += '• Tree level<br/>';
-  text += '• Fruits in the sacrificial pool<br/>';
-  text += '<br/>';
-  text += 'What will be kept:<br/>';
-  text += '• Achievements<br/>';
-  text += '• Resin, twigs and fruit essence<br/>';
-  text += '• Ethereal field and ethereal crops<br/>';
-  text += '• Ethereal upgrades<br/>';
-  text += '• Fruits in the active and storage slots<br/>';
-  text += '• Current season<br/>';
-  text += '<br/><br/>';
-
-  flex.div.innerHTML = text;
-}
-
 // works both if it's a breakdown of numbers or of resources
 // percent will multiply by 100 and show percentage, this only makes sense for numbers
 function formatBreakdown(breakdown, percent, title) {
@@ -97,7 +28,7 @@ function formatBreakdown(breakdown, percent, title) {
     result += '• ' + breakdown[i][0];
     if(breakdown[i][1]) {
       // multiplicative
-      if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2].subr(1).mulr(100)).toString() + '%'; // first is base production
+      if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2].subr(1)).toPercentString(); // first is base production
     } else {
       // additive
       if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2]).toString();
@@ -105,7 +36,7 @@ function formatBreakdown(breakdown, percent, title) {
     if(breakdown[i][3] != undefined) {
       result += (i == 0) ? ': ' : ' ⇒ ';
       if(percent) {
-        result += breakdown[i][3].mulr(100).toString() + '%';
+        result += breakdown[i][3].toPercentString();
       } else {
         result += breakdown[i][3].toString();
       }
@@ -122,7 +53,7 @@ function getCropInfoHTMLBreakdown(f, c) {
   if(f.isFullGrown()) {
     var p = prefield[f.y][f.x];
     var prod = c.getProd(f);
-    if(!prod.empty()) {
+    if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
       var breakdown = p.breakdown;
       result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
     }
@@ -130,9 +61,13 @@ function getCropInfoHTMLBreakdown(f, c) {
       var breakdown = p.breakdown;
       result += formatBreakdown(breakdown, true, 'Breakdown (neighboor boost +%)');
     }
+    if(c.boostboost.neqr(0)) {
+      var breakdown = p.breakdown;
+      result += formatBreakdown(breakdown, true, 'Breakdown (flower boost +%)');
+    }
     if(p.breakdown_leech && p.breakdown_leech.length > 0) {
       var breakdown = p.breakdown_leech;
-      result += formatBreakdown(breakdown, true, 'Breakdown (leech)');
+      result += formatBreakdown(breakdown, true, 'Breakdown (copy)');
     }
   }
 
@@ -148,6 +83,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   if(help) {
     result += '<br/>' + help;
   }
+  if(c.tagline) result += '<br/>' + upper(c.tagline);
   result += '<br/><br/>';
 
   var p = prefield[f.y][f.x];
@@ -155,6 +91,13 @@ function getCropInfoHTML(f, c, opt_detailed) {
   if(c.type == CROPTYPE_MISTLETOE) {
     if(!p.treeneighbor) {
       result += '<font color="#f88">This mistletoe is not planted next to the tree and therefore does nothing at all. Plant next to tree to be able to get twigs.</font>';
+      result += '<br/><br/>';
+    }
+  }
+
+  if(c.index == challengecrop_1) {
+    if(!p.flowerneighbor) {
+      result += '<font color="#f88">This bee is not next to a flower and therefore does nothing at all. Plant next to a flower to get worker bee boost.</font>';
       result += '<br/><br/>';
     }
   }
@@ -171,7 +114,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     var expected_prod = c.getProd(f, true);
     var expected_boost = c.getBoost(f);
     if(!expected_prod.empty()) result += 'Expected production/sec: ' +expected_prod.toString();
-    if(expected_boost.neqr(0)) result += 'Expected boost: ' + expected_boost.mulr(100).toString() + '%';
+    if(expected_boost.neqr(0)) result += 'Expected boost: ' + expected_boost.toPercentString();
     result += '<br/><br/>';
   } else {
     if(c.type == CROPTYPE_SHORT) {
@@ -191,13 +134,13 @@ function getCropInfoHTML(f, c, opt_detailed) {
       result += '<br/><br/>';
     }
     var prod = p.prod3;
-    if(!prod.empty() || c.type == CROPTYPE_MUSH) {
+    if(!prod.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY) {
       result += 'Production per second: ' + prod.toString() + '<br/>';
       if(prod.hasNeg() || c.type == CROPTYPE_MUSH) {
         if(p.prod0.neq(p.prod3)) {
           if(c.type == CROPTYPE_MUSH) {
             result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + p.prod0.toString() + '<br/>';
-            result += 'Satisfied: ' + prod.seeds.div(p.prod0.seeds).mulr(100).toString() + ' %<br/>';
+            result += 'Satisfied: ' + prod.seeds.div(p.prod0.seeds).toPercentString() + '<br/>';
           } else if(c.type == CROPTYPE_SHORT) {
             // nothing to print.
           } else {
@@ -220,10 +163,14 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
     if(c.boost.neqr(0)) {
       if(c.type == CROPTYPE_NETTLE) {
-        result += 'Boosting spores: ' + (c.getBoost(f).mulr(100).toString()) + '%. Nerfing neighbor berries and flowers<br/>';
+        result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing neighbor berries and flowers<br/>';
       } else {
-        result += 'Boosting neighbors: ' + (c.getBoost(f).mulr(100).toString()) + '%<br/>';
+        result += 'Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
       }
+      result += '<br/>';
+    }
+    if(c.boostboost.neqr(0)) {
+      result += 'Boosting flowers: ' + (c.getBoostBoost(f).toPercentString()) + '<br/>';
       result += '<br/>';
     }
   }
@@ -343,7 +290,7 @@ function makeFieldDialog(x, y) {
       text += '<br/>';
       text += 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br/>';
       if(state.mistletoes > 0) {
-        text += 'This requirement was increased ' + (getMistletoeLeech().subr(1).mulr(100)).toString() + '% by ' + state.mistletoes + ' mistletoes' + '<br/>';
+        text += 'This requirement was increased ' + (getMistletoeLeech().subr(1)).toPercentString() + ' by ' + state.mistletoes + ' mistletoes' + '<br/>';
       }
 
       var tlevel = Math.floor(state.treelevel / min_transcension_level);
@@ -369,11 +316,11 @@ function makeFieldDialog(x, y) {
       }
 
       text += '<br/>';
-      text += 'Tree level production boost to crops: ' + (getTreeBoost().mulr(100)).toString() + '%' + '<br>';
+      text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString() + '<br>';
 
       if(getSeason() == 3) {
         text += '<br/>';
-        text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).mulr(100).toString() + '% berry / mushroom / flower stats for crops next to the tree<br>';
+        text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom / flower stats for crops next to the tree<br>';
       }
 
       if(state.upgrades[upgrade_mistunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
@@ -385,21 +332,57 @@ function makeFieldDialog(x, y) {
       }
 
       f0.div.innerHTML = text;
+    }
 
-      if(state.treelevel < min_transcension_level) {
-        if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
+    if(state.challenge) {
+      var targetlevel = challenges[state.challenge].targetlevel;
+      var success = state.treelevel >= targetlevel;
+      var already_completed = state.challenges[state.challenge].completed;
+
+      var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
+      styleButton(button);
+      if(already_completed) {
+        button.textEl.innerText = 'End challenge';
+        registerTooltip(button, 'End the challenge. If you broke the max level record, your challenge production bonus will increase.');
+      } else if(success) {
+        button.textEl.innerText = 'Complete challenge';
+        registerTooltip(button, 'Successfully finish the challenge for the first time.');
       } else {
-        var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
+        button.textEl.innerText = 'Abort challenge';
+        registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its one-time reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');
+      }
+
+      button.textEl.style.boxShadow = '0px 0px 5px #f40';
+      button.textEl.style.textShadow = '0px 0px 5px #f40';
+      addButtonAction(button, function() {
+        createFinishChallengeDialog();
+      });
+    } else if(state.treelevel < min_transcension_level) {
+      if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
+    } else {
+      var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
+      styleButton(button);
+      button.textEl.innerText = 'Transcension ' + roman;
+      button.textEl.style.boxShadow = '0px 0px 5px #ff0';
+      button.textEl.style.textShadow = '0px 0px 5px #ff0';
+      registerTooltip(button, 'Show the transcension dialog');
+      addButtonAction(button, function() {
+        createTranscendDialog();
+      });
+
+      if(state.challenges_unlocked) {
+        button = new Flex(f1, 0, 0.32, 0.5, 0.6, 0.8).div;
         styleButton(button);
-        button.textEl.innerText = 'Transcension ' + roman;
-        button.textEl.style.boxShadow = '0px 0px 5px #ff0';
-        button.textEl.style.textShadow = '0px 0px 5px #ff0';
-        registerTooltip(button, 'Show the transcension dialog');
+        button.textEl.innerText = 'Challenges';
+        button.textEl.style.boxShadow = '0px 0px 5px #f60';
+        button.textEl.style.textShadow = '0px 0px 5px #f60';
+        registerTooltip(button, 'Transcend and start a challenge');
         addButtonAction(button, function() {
-          createTranscendDialog();
+          createChallengeDialog();
         });
       }
     }
+
 
   } else {
     makePlantDialog(x, y, false);
@@ -497,14 +480,14 @@ function initFieldUI() {
             } else {
               showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
             }
-          } else if(e.ctrlKey) {
+          } else if(eventHasCtrlKey(e)) {
             actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
             update();
           } else if(!fern) {
             makeFieldDialog(x, y);
           }
         } else if(!fern && f.hasCrop()) {
-          if(e.shiftKey || (e.ctrlKey && f.cropIndex() == short_0)) {
+          if(e.shiftKey || (eventHasCtrlKey(e) && f.cropIndex() == short_0)) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];
               actions.push({type:ACTION_DELETE, x:x, y:y});

@@ -25,7 +25,7 @@ var helpDialogQueue = [];
 var helpNeverAgainLocal = {};
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 23
+// highest used id: 26
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recursive) {
@@ -140,7 +140,7 @@ registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade! Check the "u
 registerHelpDialog(3, 'Permanent crop & watercress copying',
     'You unlocked your first permanent type of plant. Plants like this stay on the field forever, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
-    'If you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonal, not diagonal) production for free, so watercress remains relevant if you like to use it. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (which is by design to not need to plant many of them all the time). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the plant has later in the game.' +
+    'If you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonal, not diagonal) production for free. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plant has later in the game.' +
     '<br><br>'+
     'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
     undefined,
@@ -212,6 +212,27 @@ registerHelpDialog(22, 'Ethereal tree leveled up',
     'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(1)][1][4]], [undefined, tree_images[treeLevelIndex(1)][2][4]]]);
 
+registerHelpDialog(24, 'Challenges',
+    'You unlocked a challenge! Challenges can be accessed from the tree, as an alternative to regular transcension. All challenges give a production bonus for highest tree level reached. Challenges may also give one-timer rewards for successfully reaching a certain level. Challenges can be ran as many times as desired, redoing them can increase the max level reached.',
+    undefined);
+
+
+registerHelpDialog(25, 'Bee challenge',
+    'You started the bee challenge! Rules are different from the standard game. You can click the tree at any time to view the current challenge rules. If you successfully complete this challenge the first time, you unlock beehives in the regular game after planting daisies from then on. The highest level reached of the challenge also gives a permanent production bonus, even if not sucessfully completed.',
+    images_queenbee[4],
+    '<br><br>'+
+    'The image below shows a possible configuration for worker bees: all workers touch a flower, some workers touch the queen and provide extra bonus. In addition you must get berries and mushrooms in the field',
+    [[images_aster[4], images_aster[4], images_workerbee[4], undefined],
+     [images_workerbee[4], images_workerbee[4], images_queenbee[4], images_workerbee[4]],
+     [images_workerbee[4], images_workerbee[4], images_workerbee[4], images_aster[4]],
+     [images_aster[4], images_aster[4], images_workerbee[4], images_workerbee[4]],
+    ]);
+
+registerHelpDialog(26, 'Challenge completed',
+    'The tree reached the challenge\'s target level, you can successfully complete the challenge and can get its main reward! You can complete the challenge from the tree dialog, or continue to reach a higher level for more challenge max-level bonus. You can also replay the challenge at any later time to increase the max level.',
+    undefined);
+
+
 function createKeyboardHelpDialog() {
   var dialogFlex = createDialog();
 
@@ -226,6 +247,8 @@ function createKeyboardHelpDialog() {
   var text = '';
 
   text += '<b>List of keyboard shortcuts:</b>';
+  text += '<br/><br/>';
+  text += 'Note: on mac, ctrl means command instead.';
   text += '<br/><br/>';
   text += ' • <b>"1" , "2" , "3"</b>: activate one of the weather abilities';
   text += '<br/>';
@@ -243,9 +266,9 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click save import dialog</b>: import and old savegame, but do not run the time, so you get the resources at the time of saving rather than with all production during that time added.';
   text += '<br/>';
-  text += ' • <b>shift + click fruit: move to sacrificial pool or from sacrificial pool to storage.';
+  text += ' • <b>shift + click fruit</b>: move to sacrificial pool or from sacrificial pool to storage.';
   text += '<br/>';
-  text += ' • <b>ctrl + click fruit: swap to active slot.';
+  text += ' • <b>ctrl + click fruit</b>: swap to active slot.';
   text += '<br/>';
   text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of current available essence';
   text += '<br/>';

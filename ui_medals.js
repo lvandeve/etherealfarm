@@ -39,7 +39,7 @@ function updateMedalUI() {
   }
 
   var infoText = ''
-  infoText += 'Achievement production bonus: +' + (state.medal_prodmul.subr(1).mulr(100)).toString() + '%';
+  infoText += 'Achievement production bonus: +' + (state.medal_prodmul.subr(1)).toPercentString();
 
   medalText.div.innerHTML = infoText;
 
@@ -131,9 +131,9 @@ function updateMedalUI() {
     var getMedalText = bind(function(m, m2, div, canvas2, i) {
       var tier = m.getTier();
       if(!m2.earned) {
-        return upper(m.name) + '<br><br>Not yet earned. Unearned achievements are normally hidden, except hinted ones like this shown as "?"<br><br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
+        return upper(m.name) + '<br><br>Not yet earned. Unearned achievements are normally hidden, except hinted ones like this shown as "?"<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
       }
-      return upper(m.name) + '<br><br>' + upper(m.description) + '<br><br>' + 'Production bonus: +' + m.prodmul.mulr(100).toString() + '%' + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
+      return upper(m.name) + '<br><br>' + upper(m.description) + '<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
     }, m, m2, div, canvas2, i);
 
     registerTooltip(div, getMedalText);

@@ -35,7 +35,7 @@ function makePlantChip2(crop, x, y, w, parent) {
     text += '<b>effect:</b>' + crop.effect_description_short + '<br>';
   }
   var boost = crop.getBoost();
-  if(boost.neqr(0)) text += '<b>boost here:</b>' + boost.mulr(100).toString() + '%';
+  if(boost.neqr(0)) text += '<b>boost here:</b>' + boost.toPercentString();
   infoFlex.div.innerHTML = text;
 
   if(state.res.lt(crop.getCost())) {

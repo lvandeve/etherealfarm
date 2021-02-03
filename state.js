@@ -92,9 +92,9 @@ function MedalState() {
 
 function ChallengeState() {
   this.unlocked = false;
-  this.started = 0; // amount started, whether successful or not
-  this.completed = 0; // amount successfully finished
-  this.maxlevel = 0; // max level reached with this challenge
+  this.completed = false; // whether the challenge was successfully completed at least once (excluding currently ongoing challenge, if any)
+  this.num = 0; // amount of times started, whether successful or not, including the current one
+  this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any)
 }
 
 
@@ -154,6 +154,11 @@ function State() {
     this.medals[registered_medals[i]] = new MedalState();
   }
 
+  this.challenges = [];
+  for(var i = 0; i < registered_challenges.length; i++) {
+    this.challenges[registered_challenges[i]] = new ChallengeState();
+  }
+
   // ethereal field and crops
   this.numw2 = 5;
   this.numh2 = 5;
@@ -205,11 +210,9 @@ function State() {
 
   // challenges
   this.challenge = 0;
-  // the state objects for individual challenges
-  this.challenges = [];
 
   // saved stats, global across all runs
-  this.g_numresets = 0; // amount of soft resets done
+  this.g_numresets = 0; // amount of soft resets done, non-challenge
   this.g_numsaves = 0;
   this.g_numautosaves = 0;
   this.g_numloads = 0;
@@ -231,6 +234,7 @@ function State() {
   this.g_slowestrun = 0; // runtime of slowest transcension
   this.g_fastestrun2 = 0; // as measured on wall clock instead of the runtime that gets deltas added each time
   this.g_slowestrun2 = 0;
+  this.g_numresets_challenge = 0; // amount of soft resets done to start a challenge
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -290,7 +294,7 @@ function State() {
   this.c_numfruitupgrades = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
-  // progress stats
+  // progress stats, most recent stat at the end
   this.reset_stats_level = []; // reset at what tree level for each reset
   this.reset_stats_level2 = []; // tree level 2 at end of this run
   this.reset_stats_time = []; // time of this run, as integer of 15-minute intervals to keep the stat compact
@@ -369,10 +373,23 @@ function State() {
   this.ethereal_flower_bonus = Num(0);
   this.ethereal_nettle_bonus = Num(0);
 
+  // derived stat, not to be saved.
+  this.challenges_unlocked = 0;
+  this.challenges_completed = 0;
+
   // how many mistletoes are correctly touching the tree
   // computed by precomputeField
   // derived stat, not to be saved.
   this.mistletoes = 0;
+
+  // for bee challenge only, how many worker bees are next to at least 1 flower
+  // derived stat, not to be saved.
+  this.workerbees = 0;
+  this.queenworkerbees = 0; // workerbees that also touch a queen
+
+  // total production bonus from all challenges
+  // derived stat, not to be saved.
+  this.challenge_bonus = Num(0);
 }
 
 function clearField(state) {
@@ -581,7 +598,7 @@ function computeDerived(state) {
     var u2 = upgrades[registered_upgrades[i]];
     if(u.unlocked) {
       state.upgrades_unlocked++;
-      if(!u.seen) state.upgrades_new++;
+      if(!u.seen && !u.count) state.upgrades_new++;
       if(!u2.isExhausted()) {
         state.upgrades_upgradable++; // same as u2.canUpgrade()
         if(u2.getCost().le(state.res)) state.upgrades_affordable++;
@@ -665,6 +682,21 @@ function computeDerived(state) {
   for(var i = 0; i < state.fruit_active.length; i++) state.fruit_active[i].slot = i;
   for(var i = 0; i < state.fruit_stored.length; i++) state.fruit_stored[i].slot = i + 10;
   for(var i = 0; i < state.fruit_sacr.length; i++) state.fruit_sacr[i].slot = i + 20;
+
+  //////////////////////////////////////////////////////////////////////////////
+
+  state.challenges_unlocked = 0;
+  state.challenges_completed = 0;
+  state.challenge_bonus = Num(0);
+  for(var i = 0; i < registered_challenges.length; i++) {
+    var index = registered_challenges[i];
+    var c = state.challenges[index];
+    if(c.unlocked) state.challenges_unlocked++;
+    if(c.completed) state.challenges_completed++;
+    if(c.maxlevel > 0) {
+      state.challenge_bonus.addInPlace(getChallengeBonus(index, c.maxlevel));
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
