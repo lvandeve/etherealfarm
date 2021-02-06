@@ -168,15 +168,15 @@ function startChallenge(challenge_id) {
   if(challenge_id == challenge_bees) {
     state.crops[challengecrop_0].unlocked = true;
     state.crops[challengecrop_1].unlocked = true;
+    state.crops[challengecrop_2].unlocked = true;
     state.crops[challengeflower_0].unlocked = true;
     state.crops[mush_0].unlocked = true;
     state.crops[berry_0].unlocked = true;
 
     state.upgrades[berryunlock_0].unlocked = false;
-    state.upgrades[berrymul_0].unlocked = true;
-    state.upgrades[challengeflowermul_0].unlocked = true;
-    state.upgrades[mushmul_0].unlocked = true;
-    state.upgrades[shortmul_0].unlocked = true;
+    state.upgrades[challengecropmul_0].unlocked = true;
+    state.upgrades[challengecropmul_1].unlocked = true;
+    state.upgrades[challengecropmul_2].unlocked = true;
   }
 }
 
@@ -543,10 +543,10 @@ function PreCell(f) {
   // if this is a malus-type, e.g. nettle for flower and berry, then this boost is still the positive value (nettle to mushroom boost),
   // and must be used as follows to apply the malus: with a malus value starting at 1 for no neighbors, per bad neighbor, divide malus through (boost + 1). That is multiplicative (division), while the possitive bonus is additive.
   // --> this is already calculated in for flowers. For berries it must be done as above.
+  // for other crops, like beehives and challenge crops, this value may have other crop specific meanings.
   this.boost = Num(0);
-  this.boostboost = Num(0);
 
-  // boostboost from beehives to flowers. This is precomputed (unloke boost from flowers and nettles to plants, which is not implemented like this yet) to avoid too many recursive computations
+  // boostboost from beehives to flowers. This is precomputed (unlike boost from flowers and nettles to plants, which is not implemented like this yet) to avoid too many recursive computations
   this.beeboostboost_received = Num(0);
   this.num_bee = 0; // num beehive neighbors, if receiving boostboost
 
@@ -625,10 +625,61 @@ function precomputeField() {
   }
 
   state.mistletoes = 0;
-  state.workerbees = 0;
-  state.queenworkerbees = 0;
+  state.workerbeeboost = Num(0);
 
   // pass 0: precompute several types of boost to avoid too many recursive calls when computing regular boosts
+  if(state.challenge == challenge_bees) {
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var f = state.field[y][x];
+        var c = f.getCrop();
+        if(c && c.index == challengecrop_1 && f.growth >= 1) {
+          var p = prefield[y][x];
+          var boost = c.getBoostBoost(f);
+          p.boost = Num(boost);
+          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            var f2 = state.field[y2][x2];
+            var c2 = f2.getCrop();
+            if(c2 && c2.index == challengecrop_2 && f2.growth >= 1) {
+              p.boost.addInPlace(boost.mul(c2.getBoostBoost(f2)));
+            }
+          }
+        }
+      }
+    }
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var f = state.field[y][x];
+        var c = f.getCrop();
+        if(c && c.index == challengecrop_0) {
+          var p = prefield[y][x];
+          var boost = c.getBoostBoost(f);
+          if(f.growth >= 1) p.boost = Num(boost);
+          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            var f2 = state.field[y2][x2];
+            var c2 = f2.getCrop();
+            var p2 = prefield[y2][x2];
+            if(c2 && c2.index == challengecrop_1 && f2.growth >= 1 && f.growth >= 1) {
+              p.boost.addInPlace(boost.mul(p2.boost));
+            }
+            if(c2 && c2.index == challengeflower_0 && f2.growth >= 1) {
+              p.flowerneighbor = true;
+            }
+          }
+          if(p.flowerneighbor && f.growth >= 1) {
+            state.workerbeeboost.addInPlace(p.boost);
+          }
+        }
+      }
+    }
+  } // end of bee challenge
+
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -687,7 +738,7 @@ function precomputeField() {
           p.boost = c.getBoost(f, p.breakdown);
         }
         if(c.type == CROPTYPE_BEE) {
-          p.boostboost = c.getBoostBoost(f, p.breakdown);
+          p.boost = c.getBoostBoost(f, p.breakdown);
         }
         if(c.type == CROPTYPE_MISTLETOE) {
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -700,30 +751,6 @@ function precomputeField() {
               if(f.growth >= 1) state.mistletoes++;
               break;
             }
-          }
-        }
-        if(c.index == challengecrop_1) {
-          var hasflower = false;
-          var hasqueen = false;
-          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
-            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
-            var f2 = state.field[y2][x2];
-            var c2 = f2.getCrop();
-            if(c2 && c2.type == CROPTYPE_FLOWER && f2.growth >= 1) {
-              hasflower = true;
-            }
-            if(c2 && c2.index == challengecrop_0 && f2.growth >= 1) {
-              hasqueen = true;
-            }
-          }
-          if(hasflower && f.growth >= 1) {
-            state.workerbees++;
-            if(hasqueen) state.queenworkerbees++;
-          }
-          if(hasflower) {
-            p.flowerneighbor = true;
           }
         }
       }
@@ -1185,6 +1212,9 @@ var update = function(opt_fromTick) {
           if(action.u == flowerunlock_0) {
             showRegisteredHelpDialog(20);
           }
+          if(action.u == beeunlock_0) {
+            showRegisteredHelpDialog(27);
+          }
           if(action.u == nettle_0) {
             if(state.g_numresets > 0) {
               showRegisteredHelpDialog(21);
@@ -1225,10 +1255,6 @@ var update = function(opt_fromTick) {
             state.lastPlanted = -1;
             showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
           }
-        } else if(c.index == challengecrop_0 && state.cropcount[challengecrop_0] >= 1) {
-          showMessage('already have a queen bee', invalidFG, invalidBG);
-        } else if(c.index == challengecrop_1 && state.fullgrowncropcount[challengecrop_0] == 0) {
-          showMessage('must have a full grown queen bee first to place worker bees', invalidFG, invalidBG);
         } else if(state.res.lt(cost)) {
           showMessage('not enough resources to plant ' + c.name + ': need ' + cost.toString() +
                       ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
@@ -1541,11 +1567,11 @@ var update = function(opt_fromTick) {
                   state.c_numfullgrown++;
                   // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
 
-                  //// if(c.index == flower_2 && !state.challenges[challenge_bees].unlocked && state.g_numresets > 0) {
-                  ////   state.challenges[challenge_bees].unlocked = true;
-                  ////   showRegisteredHelpDialog(24);
-                  ////   showMessage('Unlocked challenge: ' + upper(challenges[challenge_bees].name));
-                  //// }
+                  if(c.index == flower_2 && !state.challenges[challenge_bees].unlocked && state.g_numresets > 0) {
+                    state.challenges[challenge_bees].unlocked = true;
+                    showRegisteredHelpDialog(24);
+                    showMessage('Unlocked challenge: ' + upper(challenges[challenge_bees].name));
+                  }
                 }
               }
             } else {
@@ -1626,7 +1652,7 @@ var update = function(opt_fromTick) {
         state.fern = 1;
         state.fernx = s[0];
         state.ferny = s[1];
-        if(state.g_numferns == 6 || (state.g_numferns > 10 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
+        if(state.g_numferns == 3 || (state.g_numferns > 7 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
       }
     }
 
@@ -1689,6 +1715,8 @@ var update = function(opt_fromTick) {
         showRegisteredHelpDialog(7);
       }
       if(state.challenge && state.treelevel == challenges[state.challenge].targetlevel) {
+        var c = state.challenges[state.challenge];
+        if(c.besttime == 0 || state.c_runtime < c.besttime) c.besttime = state.c_runtime;
         showRegisteredHelpDialog(26);
       }
       if(fruit) {

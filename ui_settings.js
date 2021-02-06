@@ -480,7 +480,7 @@ function createStatsDialog() {
     } else {
       text += '• current challenge: ' + open + 'None' + close + '<br>';
     }
-    text += '• challenges attempted: ' + open + state.g_numresets_challenge + close + '<br>';
+    text += '• challenges attempted: ' + open + (state.g_numresets_challenge + (state.challenge ? 1 : 0)) + close + '<br>';
     text += '• challenges unlocked: ' + open + state.challenges_unlocked + close + '<br>';
     text += '• challenges completed: ' + open + state.challenges_completed + close + '<br>';
     text += '• total challenge production bonus: ' + open + state.challenge_bonus.toPercentString() + close + '<br>';
@@ -490,6 +490,7 @@ function createStatsDialog() {
       var c2 = state.challenges[registered_challenges[i]];
       if(!c2.unlocked) continue;
       text += '• ' + c.name + ': completed: ' + open +  (c2.completed ? 'yes' : 'no') + close + ', runs: ' + open + c2.num + close +
+                              ', fastest target level time: ' + open + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + close +
                               ', highest level: ' + open + c2.maxlevel + close + ', bonus per level: ' + open + c.bonus.toPercentString() + close +
                               ', production bonus: ' + open +  (c.bonus.mulr(c2.maxlevel)).toPercentString() + close + '<br>';
     }

@@ -25,7 +25,7 @@ var helpDialogQueue = [];
 var helpNeverAgainLocal = {};
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 26
+// highest used id: 27
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recursive) {
@@ -160,8 +160,13 @@ registerHelpDialog(20, 'Flowers',
                'You unlocked your first type of flower. Flowers boost berries and mushrooms. In case of mushrooms, it boosts their spore production, but also increases their seed consumption equally',
                undefined,
                '<br><br>'+
-               'The image shows a possible good configuration for flower boost: many flowers boost many different berries or mushrooms. Note that in practice the mushroom also needs to touch some berries to get seeds from, not shown in this image.',
-               [[blackberry[4],clover[4],blackberry[4]],[clover[4],blackberry[4],clover[4]],[blackberry[4],clover[4],champignon[4]]]);
+               'The image shows a possible good configuration for flower boost: multiple flowers boost multiple berries or mushrooms. It\'s also ensured that both the mushroom and the berry it consumes from both have a flower.',
+               [
+                 [blackberry[4],clover[4],blackberry[4],undefined],
+                 [clover[4],blackberry[4],clover[4],clover[4]],
+                 [blackberry[4],clover[4],blackberry[4],champignon[4]],
+                 [    undefined,undefined,undefined,undefined]
+               ]);
 
 registerHelpDialog(21, 'Nettles',
   'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower next to a mushroom works even greater.',
@@ -180,7 +185,7 @@ registerHelpDialog(6, 'Tree leveled up', 'Thanks to spores, the tree completely 
 registerHelpDialog(12, 'Sun ability', 'The tree reached level ' + 2 + ' and discovered the sun ability!<br><br>' + upgrades[upgrade_sununlock].description, image_sun);
 registerHelpDialog(14, 'Mist ability', 'The tree reached level ' + 4 + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
 registerHelpDialog(15, 'Rainbow ability', 'The tree reached level ' + 6 + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
-registerHelpDialog(2, 'Tree dropped fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surpluss fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
+registerHelpDialog(2, 'Tree dropped fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surplus fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
 registerHelpDialog(18, 'Tree dropped better fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
 
 
@@ -213,24 +218,36 @@ registerHelpDialog(22, 'Ethereal tree leveled up',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(1)][1][4]], [undefined, tree_images[treeLevelIndex(1)][2][4]]]);
 
 registerHelpDialog(24, 'Challenges',
-    'You unlocked a challenge! Challenges can be accessed from the tree, as an alternative to regular transcension. All challenges give a production bonus for highest tree level reached. Challenges may also give one-timer rewards for successfully reaching a certain level. Challenges can be ran as many times as desired, redoing them can increase the max level reached.',
+    'You unlocked a challenge! Challenges can be accessed from the tree, as an alternative to regular transcension. All challenges give a production bonus for highest tree level reached. Challenges may also give one-time rewards for successfully reaching a certain level. Challenges can be ran as many times as desired, redoing them can increase the max level reached.',
     undefined);
 
 
 registerHelpDialog(25, 'Bee challenge',
-    'You started the bee challenge! Rules are different from the standard game. You can click the tree at any time to view the current challenge rules. If you successfully complete this challenge the first time, you unlock beehives in the regular game after planting daisies from then on. The highest level reached of the challenge also gives a permanent production bonus, even if not sucessfully completed.',
+    'You started the bee challenge! Rules are different from the standard game. You can click the tree at any time to view the current challenge rules, reward and stats.',
     images_queenbee[4],
     '<br><br>'+
-    'The image below shows a possible configuration for worker bees: all workers touch a flower, some workers touch the queen and provide extra bonus. In addition you must get berries and mushrooms in the field',
-    [[images_aster[4], images_aster[4], images_workerbee[4], undefined],
-     [images_workerbee[4], images_workerbee[4], images_queenbee[4], images_workerbee[4]],
-     [images_workerbee[4], images_workerbee[4], images_workerbee[4], images_aster[4]],
-     [images_aster[4], images_aster[4], images_workerbee[4], images_workerbee[4]],
+    'The image below shows a possible configuration for the bees: all workers touch a flower as required, queens optionally touch workers for extra boost (so beehives provide a boost-boost), and hives touch queens to make that boost stronger (a boost-boost-boost). More than 1 flower does not increase boost but multiple queens or hives do. The rightmost worker bee gives most boost because it touches 3 queens, and the topmost queen gives least boost since it touches the least hives. You can fill in gaps in the picture where more queens or hives would increase the boost more. Not shown in the picture is that you also need some mushroom and berry production running somewhere, which can also be boosted by flowers in the standard way.',
+    [[undefined, images_workerbee[4], images_queenbee[4], images_beehive[4]],
+     [images_workerbee[4], images_aster[4], images_workerbee[4], images_queenbee[4]],
+     [undefined, images_workerbee[4], images_queenbee[4], images_beehive[4]],
+     [undefined, images_queenbee[4], images_beehive[4], undefined],
     ]);
 
 registerHelpDialog(26, 'Challenge completed',
     'The tree reached the challenge\'s target level, you can successfully complete the challenge and can get its main reward! You can complete the challenge from the tree dialog, or continue to reach a higher level for more challenge max-level bonus. You can also replay the challenge at any later time to increase the max level.',
     undefined);
+
+registerHelpDialog(27, 'Beehives',
+  'You unlocked beehives! Beehives boost orthogonally neighboring flowers, while flowers boost berries and mushrooms (beehives boost-boost). This adds a new independent multiplier that can be upgraded to the game.',
+  images_beehive[4],
+  '<br><br>'+
+  'The image shows a possible configuration for beehives, such that the beehives boost flowers, which in turn boost berries and mushrooms. It\'s ensured both the mushroom and the berry it consumes from have a hive-boosted flower.',
+  [
+    [undefined,grape[4],daisy[4],grape[4]],
+    [grape[4],daisy[4],images_beehive[4],daisy[4]],
+    [undefined,grape[4],daisy[4],grape[4]],
+    [undefined,images_beehive[4],daisy[4],amanita[4]],
+  ]);
 
 
 function createKeyboardHelpDialog() {

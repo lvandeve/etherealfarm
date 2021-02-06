@@ -154,6 +154,7 @@ function makeField2Dialog(x, y) {
     text += '• berry boost: ' + state.ethereal_berry_bonus.toPercentString() + '<br>';
     text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
     text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
+    if(state.ethereal_nettle_bonus.neqr(0)) text += '• nettle boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
     text += '<br><br>';
 
     flex.div.innerHTML = text;

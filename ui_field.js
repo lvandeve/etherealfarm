@@ -57,11 +57,11 @@ function getCropInfoHTMLBreakdown(f, c) {
       var breakdown = p.breakdown;
       result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
     }
-    if(c.boost.neqr(0)) {
+    if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
       var breakdown = p.breakdown;
       result += formatBreakdown(breakdown, true, 'Breakdown (neighboor boost +%)');
     }
-    if(c.boostboost.neqr(0)) {
+    if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
       var breakdown = p.breakdown;
       result += formatBreakdown(breakdown, true, 'Breakdown (flower boost +%)');
     }
@@ -95,9 +95,9 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
   }
 
-  if(c.index == challengecrop_1) {
+  if(c.index == challengecrop_0) {
     if(!p.flowerneighbor) {
-      result += '<font color="#f88">This bee is not next to a flower and therefore does nothing at all. Plant next to a flower to get worker bee boost.</font>';
+      result += '<font color="#f88">This worker bee is not next to a flower and therefore does nothing at all. Plant next to a flower to get worker bee boost.</font>';
       result += '<br/><br/>';
     }
   }
@@ -129,7 +129,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
       result += '<br/>';
     } else {
-      result += 'Growing time: ' + util.formatDuration(c.getPlantTime());
+      result += 'Growth time: ' + util.formatDuration(c.getPlantTime());
       if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       result += '<br/><br/>';
     }
@@ -150,7 +150,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
           // commented out, the crop type description already says this
           //result += 'Consumes a resource produced by neighboring crops.<br/>';
           // NOTE: always shows 100% even if the berry produces more than enough. Making that show more than 100% would require a completely separate production/consumption computation in precomputeField with a hypothetical mushroom requesting way more seeds, and that'd be unecessarily expensive to compute for just this display.
-          result += 'Satisfied: >= 100%<br/>';
+          result += 'Satisfied: >= 100%.<br/>Tip: flowers next to mushrooms give them a large boost.<br/>';
         }
       } else if(p.prod3.neq(p.prod2)) {
         result += 'After consumption: ' + p.prod2.toString() + '<br/>';
@@ -161,7 +161,21 @@ function getCropInfoHTML(f, c, opt_detailed) {
       result += 'Efficiency: ' + p.prod0.spores.div(p.prod0.seeds.neg()).toString() + ' spores/seed, ' +
           p.prod0.seeds.div(p.prod0.spores.neg()).toString() + ' seeds/spore<br/>';
     }
-    if(c.boost.neqr(0)) {
+    if(c.index == challengecrop_0) {
+      result += 'Global field-wide boost to berries, flowers and mushrooms: ' + p.boost.toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
+      result += 'All worker bees together: ' + getWorkerBeeBonus().toPercentString() + '<br/>';
+      //result += 'One worker bee: ' + challenge_worker_bees_boost.mulr(state.upgrades[challengecropmul_1].count * challengecropmul_1_boost + 1).toPercentString() + ' (double if next to queen)<br/>';
+      result += '<br/>';
+    }
+    if(c.index == challengecrop_1) {
+      result += 'Boost to neighbor worker bees: ' + p.boost.toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
+      result += '<br/>';
+    }
+    if(c.index == challengecrop_2) {
+      result += 'Boost to neighbor queen bees: ' + c.getBoostBoost(f).toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
+      result += '<br/>';
+    }
+    if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
       if(c.type == CROPTYPE_NETTLE) {
         result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing neighbor berries and flowers<br/>';
       } else {
@@ -169,7 +183,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       }
       result += '<br/>';
     }
-    if(c.boostboost.neqr(0)) {
+    if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
       result += 'Boosting flowers: ' + (c.getBoostBoost(f).toPercentString()) + '<br/>';
       result += '<br/>';
     }
@@ -298,21 +312,27 @@ function makeFieldDialog(x, y) {
       var tlevel_mul = Num(tlevel);
 
       text += '<br/>';
-      text += 'Resin ready: ' + state.resin.toString() + '<br/>';
+      if(tlevel > 1) {
+        text += 'Resin ready (unmultiplied): ' + state.resin.toString();
+      } else {
+        text += 'Resin ready: ' + state.resin.toString();
+      }
+      text += '<br/>';
       var resin_breakdown = [];
       text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
       if(resin_breakdown.length > 1) {
         text += formatBreakdown(resin_breakdown, false, 'Resin breakdown');
       }
-      text += '<br>';
+
+      if(tlevel > 1) {
+        text += '<br>';
+        text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+        text += 'Resulting total resin on transcension:<b>' + state.resin.mulr(tlevel_mul).toString() + ' resin</b><br/>';
+      }
       if(state.mistletoes > 0) {
+        text += '<br>';
         text += 'Twigs from mistletoes at next tree level: ' + nextTwigs().toString() + '.<br>'
         text += 'Total gotten so far this transcension: ' + state.c_res.twigs.toString() + ' twigs.<br/>';
-      }
-      if(tlevel > 1) {
-        text += '<br/>';
-        text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        text += 'Resulting total resin on transcension:' + state.resin.mulr(tlevel_mul).toString() + '<br/>';
       }
 
       text += '<br/>';
@@ -341,9 +361,12 @@ function makeFieldDialog(x, y) {
 
       var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
       styleButton(button);
-      if(already_completed) {
+      if(already_completed && success) {
+        button.textEl.innerText = 'Finish challenge';
+        registerTooltip(button, 'Finish the challenge. If you broke the max level record, your challenge production bonus will increase.');
+      } else if(already_completed && !success) {
         button.textEl.innerText = 'End challenge';
-        registerTooltip(button, 'End the challenge. If you broke the max level record, your challenge production bonus will increase.');
+        registerTooltip(button, 'End the challenge.');
       } else if(success) {
         button.textEl.innerText = 'Complete challenge';
         registerTooltip(button, 'Successfully finish the challenge for the first time.');
@@ -356,6 +379,15 @@ function makeFieldDialog(x, y) {
       button.textEl.style.textShadow = '0px 0px 5px #f40';
       addButtonAction(button, function() {
         createFinishChallengeDialog();
+      });
+
+
+      button = new Flex(f1, 0, 0.32, 0.5, 0.6, 0.8).div;
+      styleButton(button);
+      button.textEl.innerText = 'Current challenge info';
+      registerTooltip(button, 'Transcend and start a challenge');
+      addButtonAction(button, function() {
+        createChallengeDescriptionDialog(state.challenge, true);
       });
     } else if(state.treelevel < min_transcension_level) {
       if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';

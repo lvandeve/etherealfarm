@@ -47,7 +47,7 @@ function getTranscendValueInfo(opt_from_challenge) {
     have_item = true;
     text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool<br/>';
     if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) {
-      text += '<font color="#a00">→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before transcending</font><br/>';
+      text += '→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before transcending<br/>';
     }
     var highest = 0, highestsacr = 0;
     for(var i = 0; i < state.fruit_active.length; i++) highest = Math.max(highest, state.fruit_active[i].tier);
@@ -60,7 +60,7 @@ function getTranscendValueInfo(opt_from_challenge) {
   }
 
   if(!have_item) {
-      text += '• Nothing. Even during a challenge, must reach at least tree level 10 to get something.<br/>';
+    text += '• Nothing. But, see current challenge rules for challenge specific results.<br/>';
   }
 
   return text;
@@ -117,6 +117,45 @@ function createTranscendDialog(opt_from_challenge) {
   flex.div.innerHTML = text;
 }
 
+function createChallengeDescriptionDialog(challenge_id, info_only) {
+  var c = challenges[challenge_id];
+  var c2 = state.challenges[challenge_id];
+
+  var dialog;
+  if(info_only) {
+    dialog = createDialog();
+  } else {
+    var okfun = function() {
+      actions.push({type:ACTION_TRANCSEND, challenge:c.index});
+      closeAllDialogs();
+      update();
+    };
+    dialog = createDialog(undefined, okfun, 'start');
+  }
+
+  var titleFlex = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.5);
+  centerText2(titleFlex.div);
+  titleFlex.div.textEl.innerText = upper(c.name);
+
+  var scrollFlex = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3);
+  scrollFlex.div.style.overflowY = 'scroll';
+  scrollFlex.div.className = 'efScrollBg';
+
+  var text = '';
+  text += c.description;
+  text += '<br>';
+
+  text += '<b>Current stats:</b><br>';
+  text += '• Production bonus per max level reached: ' + c.bonus.toPercentString() + '<br>';
+  text += '• Max level reached: ' + c2.maxlevel + '<br>';
+  text += '• Production bonus: ' + c.bonus.mulr(c2.maxlevel).toPercentString() + '<br>';
+  text += '• Times ran: ' + c2.num + '<br>';
+  text += '• Best target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';
+  text += '• Completed: ' + (c2.completed ? 'yes' : 'no') + '<br>';
+
+  scrollFlex.div.innerHTML = text;
+}
+
 
 // opt_from_challenge = whether you open this dialog after just having completed a challenge as well
 function createChallengeDialog(opt_from_challenge) {
@@ -155,38 +194,9 @@ function createChallengeDialog(opt_from_challenge) {
     pos += h;
     styleButton(button.div);
     button.div.textEl.innerText = upper(c.name);
-    button.div.onclick = bind(function(c, c2) {
-      var okfun = function() {
-        actions.push({type:ACTION_TRANCSEND, challenge:c.index});
-        closeAllDialogs();
-        update();
-      };
-      var dialog = createDialog(undefined, okfun, 'start');
-
-      var titleFlex = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.5);
-      centerText2(titleFlex.div);
-      titleFlex.div.textEl.innerText = upper(c.name);
-
-      var scrollFlex = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3);
-      scrollFlex.div.style.overflowY = 'scroll';
-      scrollFlex.div.className = 'efScrollBg';
-
-      var text = '';
-      text += '<br><br>';
-      text += c.description;
-      text += '<br>';
-
-      text += '<b>Current stats:</b><br>';
-      text += '• Production bonus per max level reached: ' + c.bonus.toPercentString() + '<br>';
-      text += '• Max level reached: ' + c2.maxlevel + '<br>';
-      text += '• Production bonus: ' + c.bonus.mulr(c2.maxlevel).toPercentString() + '<br>';
-      text += '• Times ran: ' + c2.num + '<br>';
-      text += '• Completed: ' + (c2.completed ? 'yes' : 'no') + '<br>';
-
-
-      scrollFlex.div.innerHTML = text;
-
-    }, c, c2);
+    button.div.onclick = bind(function(c) {
+      createChallengeDescriptionDialog(c.index, false);
+    }, c);
   }
 }
 
@@ -208,7 +218,7 @@ function createFinishChallengeDialog() {
 
   if(already_completed) {
     // nothing to display here
-  } if(success) {
+  } else if(success) {
     text += 'You successfully completed the challenge for the first time!';
 
     if(state.challenge == challenge_bees) {
@@ -222,6 +232,8 @@ function createFinishChallengeDialog() {
   if(c2.num > 0) {
     text += '<br><br>';
     text += 'Previous highest level: ' + c2.maxlevel;
+    text += '<br>';
+    text += 'Current level: ' + state.treelevel;
   }
 
   var newmax = Math.max(state.treelevel, c2.maxlevel);
@@ -232,7 +244,7 @@ function createFinishChallengeDialog() {
   if(state.treelevel > c2.maxlevel ) {
     text += '• New at max level ' + newmax + ': ' + getChallengeBonus(state.challenge, newmax).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
   } else {
-    text += '• New stays the same, max level not beaten for this challenge';
+    text += '• New stays the same, max level not beaten';
   }
 
   text += '<br><br>';

@@ -20,15 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
-  // not yet
-  /*text += '0.1.29 (2021-02-03):';
+  text += '0.1.29 "Bee update" (2021-02-06):';
   text += '<br/>• Added the bee challenge, which unlocks when planting a daisy (third tier flower, so it requires significant progress in the game to reach).';
   text += '<br/>• Added beehives, only available after successfully completing the bee challenge.';
   text += '<br/>• Since the necessary logic for challenges in general is added to the game for this, more will be added later.';
-  text += '<br/><br/>';*/
+  text += '<br/><br/>';
 
   text += '0.1.28 (2021-02-03):';
-  //
   text += '<br/>• Fixed a bug with the previous runs level/time statistics.';
   text += '<br/>• Various other UI tweaks and fixes.';
   text += '<br/>• A larger update (bees) is coming soon, still work in progress.';
@@ -96,7 +94,7 @@ function getChangeLog() {
   text += '<br/>• Fixed bugs related to leeching and transcension II.';
   text += '<br/><br/>';
 
-  text += '0.1.17 "Fruit Update" (2021-01-16):';
+  text += '0.1.17 "Fruit update" (2021-01-16):';
   text += '<br/>• Added fruits.';
   // Because possibly future updates will allow making weather more passive than active, but then there should be a choice between which you have available, all three permanently on is uninteresting.
   text += '<br/>• Only one weather ability can be active at the same time now.';

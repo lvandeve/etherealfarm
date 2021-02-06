@@ -429,31 +429,34 @@ function encState(state, opt_raw_only) {
 
 
 
-  //// section = 19; id = 0; // challenges
-  ////
-  //// unlocked = [];
-  //// for(var i = 0; i < registered_challenges.length; i++) {
-  ////   if(state.challenges[registered_challenges[i]].unlocked) unlocked.push(registered_challenges[i]);
-  //// }
-  //// array0 = [];
-  //// array1 = [];
-  //// array2 = [];
-  //// array3 = [];
-  //// prev = 0;
-  //// for(var i = 0; i < unlocked.length; i++) {
-  ////   if(unlocked[i] - prev < 0) throw 'challenges must be registered in increasing order';
-  ////   array0.push(unlocked[i] - prev);
-  ////   prev = unlocked[i];
-  ////   array1.push(state.challenges[unlocked[i]].completed);
-  ////   array2.push(state.challenges[unlocked[i]].num);
-  ////   array3.push(state.challenges[unlocked[i]].maxlevel);
-  //// }
-  //// processUintArray(array0);
-  //// processBoolArray(array1);
-  //// processUintArray(array2);
-  //// processUintArray(array3);
-  ////
-  //// processUint(state.challenge);
+  section = 19; id = 0; // challenges
+
+  unlocked = [];
+  for(var i = 0; i < registered_challenges.length; i++) {
+    if(state.challenges[registered_challenges[i]].unlocked) unlocked.push(registered_challenges[i]);
+  }
+  array0 = [];
+  array1 = [];
+  array2 = [];
+  array3 = [];
+  array4 = [];
+  prev = 0;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(unlocked[i] - prev < 0) throw 'challenges must be registered in increasing order';
+    array0.push(unlocked[i] - prev);
+    prev = unlocked[i];
+    array1.push(state.challenges[unlocked[i]].completed);
+    array2.push(state.challenges[unlocked[i]].num);
+    array3.push(state.challenges[unlocked[i]].maxlevel);
+    array4.push(state.challenges[unlocked[i]].besttime);
+  }
+  processUintArray(array0);
+  processBoolArray(array1);
+  processUintArray(array2);
+  processUintArray(array3);
+  processFloatArray(array4);
+
+  processUint(state.challenge);
 
 
   var e = encTokens(tokens);
@@ -969,27 +972,31 @@ function decState(s) {
     for(var i = 0; i < array2.length; i++) state.help_disable[array2[i]] = array2[i];
   }
 
-  //// section = 19; id = 0; // challenges
-  //// if(save_version >= 4096*1+29) {
-  ////   array0 = processUintArray();
-  ////   array1 = processBoolArray();
-  ////   array2 = processUintArray();
-  ////   array3 = processUintArray();
-  ////   if(error) return err(4);
-  ////   if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length) return err(4);
-  ////   prev = 0;
-  ////   for(var i = 0; i < array0.length; i++) {
-  ////     var index = array0[i] + prev;
-  ////     prev = index;
-  ////     if(!challenges[index]) return err(4);
-  ////     state.challenges[index].unlocked = true;
-  ////     state.challenges[index].completed = array1[i];
-  ////     state.challenges[index].num = array2[i];
-  ////     state.challenges[index].maxlevel = array3[i];
-  ////   }
-  ////
-  ////   state.challenge = processUint();
-  //// }
+  section = 19; id = 0; // challenges
+  if(save_version >= 4096*1+29) {
+    array0 = processUintArray();
+    array1 = processBoolArray();
+    array2 = processUintArray();
+    array3 = processUintArray();
+    array4 = processFloatArray();
+    if(error) return err(4);
+    if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length) {
+      return err(4);
+    }
+    prev = 0;
+    for(var i = 0; i < array0.length; i++) {
+      var index = array0[i] + prev;
+      prev = index;
+      if(!challenges[index]) return err(4);
+      state.challenges[index].unlocked = true;
+      state.challenges[index].completed = array1[i];
+      state.challenges[index].num = array2[i];
+      state.challenges[index].maxlevel = array3[i];
+      state.challenges[index].besttime = array4[i];
+    }
+
+    state.challenge = processUint();
+  }
 
 
 

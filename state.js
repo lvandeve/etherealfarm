@@ -95,6 +95,7 @@ function ChallengeState() {
   this.completed = false; // whether the challenge was successfully completed at least once (excluding currently ongoing challenge, if any)
   this.num = 0; // amount of times started, whether successful or not, including the current one
   this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any)
+  this.besttime = 0; // best time for reaching targetlevel, even when not resetting. If continuing the challenge for higher maxlevel, still only the time to reach targetlevel is counted, so it's the best time for completing the main reward part of the challenge.
 }
 
 
@@ -325,13 +326,14 @@ function State() {
   // derived stat, not to be saved
   this.cropcount = [];
   this.crop2count = [];
+  this.croptypecount = [];
 
   // amount of fully grown plants of this type planted in fields
   // does not include partially growing ones
   // derived stat, not to be saved
   this.fullgrowncropcount = [];
   this.fullgrowncrop2count = [];
-  this.croptypecount = [];
+  this.fullgrowncroptypecount = [];
 
   // count of non-crop fields, such as fern
   this.specialfieldcount = [];
@@ -382,10 +384,9 @@ function State() {
   // derived stat, not to be saved.
   this.mistletoes = 0;
 
-  // for bee challenge only, how many worker bees are next to at least 1 flower
+  // for bee challenge only, how many worker bees bonus is being applied to the world
   // derived stat, not to be saved.
-  this.workerbees = 0;
-  this.queenworkerbees = 0; // workerbees that also touch a queen
+  this.workerbeeboost = Num(0);
 
   // total production bonus from all challenges
   // derived stat, not to be saved.
@@ -520,6 +521,7 @@ function computeDerived(state) {
   state.numfullpermanentcropfields = 0;
   state.fullgrowncropcount = [];
   state.cropcount = [];
+  state.fullgrowncroptypecount = [];
   state.croptypecount = [];
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
@@ -529,6 +531,7 @@ function computeDerived(state) {
     state.specialfieldcount[i] = 0;
   }
   for(var i = 0; i < NUM_CROPTYPES; i++) {
+    state.fullgrowncroptypecount[i] = 0;
     state.croptypecount[i] = 0;
   }
   for(var y = 0; y < state.numh; y++) {
@@ -538,9 +541,10 @@ function computeDerived(state) {
         var c = f.getCrop();
         state.cropcount[c.index]++;
         state.numcropfields++;
+        state.croptypecount[c.type]++;
         if(f.isFullGrown()) {
           state.fullgrowncropcount[c.index]++;
-          state.croptypecount[c.type]++;
+          state.fullgrowncroptypecount[c.type]++;
           state.numfullgrowncropfields++;
           if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++
         }

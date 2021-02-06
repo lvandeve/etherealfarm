@@ -122,7 +122,7 @@ function makePlantDialog(x, y, show_only) {
       if(c.type == CROPTYPE_SHORT) {
         result += '.<br><br>Living time: ' + util.formatDuration(c.getPlantTime());
       } else {
-        result += '.<br><br>Growing time: ' + util.formatDuration(c.getPlantTime());
+        result += '.<br><br>Growth time: ' + util.formatDuration(c.getPlantTime());
         if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       }
       result += '.<br><br>Production/sec:' + c.getProd(state.field[y][x], true).toString();
