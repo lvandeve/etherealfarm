@@ -109,6 +109,28 @@ function State() {
   // so that saving, and browsers pausing tabs, both have no effect on game
   this.prevtime = 0; // time of previous update frame, in fractional seconds since unix epoch
 
+  /*
+  Compensate for switching between different computers with different clocks: This handles the following scenario:
+  Sombody plays the game in two locations with different computer clock or timezone: this is common (e.g. home and non-home computer): even though javascript returns UTC time so timezones shouldn't matter, it can happen that computers display the correct local time but have the wrong UTC time.
+  This mechanism is not there to prevent computer clock related cheating: that is impossible to prevent in a single player game. But the 2-different-computer-clock situation is legitimate and shouldn't affect the gameplay in a bad (like ferns not spawning for hours) nor in a too good (like big production time delta) way.
+
+  Say location B is 2 hours farther in the future than location A.
+  when moving from A to B, this gives 2 hours of not-actually-deserved production bonus.
+  when moving from B to A, this should in theory punish by taking away 2 hours of production bonus. However, this should not be punished: there are legit situations where this can occur.
+  So the mechanism will work as follows:
+  when moving from B to A, then when loading savegame you see a savegame time in the future. This time difference is added to negative_time.
+  when moving from A to B, then when loading savegame, you see that more than 2 hours have passed. But, before applying the 2 hour produciton bonus, first any negative_time is subtracted from that (only partially if negative_time is even greater than this 2h)
+
+  Side note: other things that must be done when going from B to A (going to the past, negative time delta):
+  -adjust last fern time, such that it won't take hours before a fern appears
+  -similar adjustments for last ability time, etc...
+  */
+  this.negative_time = 0;
+  // total and max negative time ever seen, for debugging in case something goes wrong with this
+  this.total_negative_time = 0;
+  this.max_negative_time = 0;
+  this.last_negative_time = 0;
+
   // current time, this is usually the same as util.getTime(), but if an update() is broken into multiple pieces, then it is
   // the end of the current piece.
   // not saved. set by update(). recommended to use instead of util.getTime() for game time duration related computations such as special abilities

@@ -96,6 +96,9 @@ function updateTabButtons2() {
     if(state.treelevel > 0) {
       text += '<br/>(' + state.treelevel + ')';
     }
+    if(state.fern /*&& state.currentTab != tabindex_field*/) {
+      text = '<b><font color="red">' + text + '</font></b>';
+    }
 
     if(text != fieldButtonLastText) {
       tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead

@@ -177,6 +177,9 @@ function startChallenge(challenge_id) {
     state.upgrades[challengecropmul_0].unlocked = true;
     state.upgrades[challengecropmul_1].unlocked = true;
     state.upgrades[challengecropmul_2].unlocked = true;
+
+    // add the watercress upgrade as well so one isn't forced to refresh it every minute during this challenge
+    state.upgrades[shortmul_0].unlocked = true;
   }
 }
 
@@ -392,6 +395,8 @@ function softReset(opt_challenge) {
 
   if(state.upgrades2[upgrade2_blackberrysecret].count) {
     upgrades[berryunlock_0].fun();
+    state.upgrades[berryunlock_1].unlocked = true; // like the blackberry is normally unlocked, now the blueberry is, without needing to plant a blackberry first
+    state.upgrades[shortmul_0].unlocked = true; // and while at it, also let the watercress behave like others and have its upgrade already visible, since the upgrade tab already exists now from the start anyway
   }
 
   state.challenge = opt_challenge || 0;
@@ -449,7 +454,13 @@ var postupdate = function() {
 
 var undoSave = '';
 var lastUndoSaveTime = 0;
-var minUndoTime = 60;
+var minUndoTime = 10;
+var maxUndoTime = 3600;
+
+function clearUndo() {
+  undoSave = '';
+  lastUndoSaveTime = 0;
+}
 
 function storeUndo(state) {
   lastUndoSaveTime = util.getTime();
@@ -463,14 +474,27 @@ function storeUndo(state) {
 }
 
 function loadUndo() {
+  if(lastUndoSaveTime != 0 && state.time - lastUndoSaveTime > maxUndoTime) {
+    // prevent undoing something from super long ago, even though it may seem like a cool feature, it can be confusing and even damaging. Use export save to do long term things.
+    clearUndo();
+  }
   if(undoSave == '' || !undoSave) {
     showMessage('No undo present. Undo is stored when performing an action.', invalidFG, invalidBG);
     return;
   }
   save(state, function(redoSave) {
+    var planted_before = state.g_numplanted;
+    var unplanted_before = state.g_numunplanted;
     load(undoSave, function(state) {
-      //showMessage('Last group of actions undone. Press undo again now to redo. Once you do other actions, a new undo is saved instead. "group of actions" means actions such as planting, upgrades, ... that occured roughly within the span of a minute. If the last action was a very long time ago, then an undo from that long ago will be loaded, but all production should be computed correctly. When you reload the page, the undo is gone.');
-      showMessage('Undone', '#f8a');
+      var planted_after = state.g_numplanted;
+      var unplanted_after = state.g_numunplanted;
+      if((planted_after == planted_before - 1 && unplanted_after == unplanted_before  -1) || (planted_after == planted_before + 1 && unplanted_after == unplanted_before  + 1)) {
+        // if you plant, then delete, in quick succession, undo causes both of those things undone, which looks as if nothing happened. However, you definitely got your money back.
+        // so, print in the log that this happened
+        showMessage('Undone both the planting and the deleting, so got all related resources back', '#f8a');
+      } else {
+        showMessage('Undone', '#f8a');
+      }
       initUI();
       update();
       undoSave = redoSave;
@@ -1104,6 +1128,14 @@ var update = function(opt_fromTick) {
 
   var preseasongain = undefined;
 
+  // compensate for computer clock mismatch things
+  if(state.lastFernTime > state.time) state.lastFernTime = state.time;
+  if(state.misttime > state.time) state.misttime = 0;
+  if(state.suntime > state.time) state.suntime = 0;
+  if(state.rainbowtime > state.time) state.rainbowtime = 0;
+
+  var negative_time_used = false;
+
   var oldres = Res(state.res);
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
   var done = false;
@@ -1115,10 +1147,38 @@ var update = function(opt_fromTick) {
     var prevtime = state.prevtime;
     var time = util.getTime(); // in seconds
 
-    state.time = state.prevtime; // to let the nextEventTime() computation work as desired now
-    var d = (state.prevtime == 0 || state.prevtime > time) ? 0 : (time - state.prevtime); // delta time for this tick. Set to 0 if in future (e.g. timezone change or daylight saving could have happened)
+    var d; // time delta
+    if(state.prevtime == 0) {
+      d = 0;
+    } else if(prevtime > time) {
+      // time was in the future. See description of negative_time in state.js for more info.
+      var future = prevtime - time;
+      state.negative_time += future;
+      state.total_negative_time += future;
+      state.max_negative_time = Math.max(state.max_negative_time, future);
+      state.last_negative_time = future;
+      d = 0;
+    } else {
+      d = time - prevtime;
+
+      // when negative time is registered, then you don't get large time deltas anymore.
+      if(d > 60 && state.negative_time > 0) {
+        var neg = Math.min(state.negative_time, d);
+        d -= neg;
+        state.negative_time -= neg;
+        negative_time_used = true;
+      }
+    }
+
+
+    //var d = (state.prevtime == 0 || state.prevtime > time) ? 0 : (time - state.prevtime); // delta time for this tick. Set to 0 if in future (e.g. timezone change or daylight saving could have happened)
     var rem = 0;
-    if(d > 1) rem = nextEventTime() + 0.5; // for numerical reasons, ensure it's not exactly at the border of the event
+
+    if(d > 1) {
+      state.time = state.prevtime; // to let the nextEventTime() computation work as desired now
+      rem = nextEventTime() + 0.5; // for numerical reasons, ensure it's not exactly at the border of the event
+    }
+
     if(d > rem && rem > 2) {
       d = rem;
       time = state.prevtime + d;
@@ -1320,15 +1380,8 @@ var update = function(opt_fromTick) {
         if(f.hasCrop()) {
           var c = f.getCrop();
           var recoup = c.getCost(-1).mulr(cropRecoup);
-          if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
-            recoup = c.getCost(-1);
-            if(!action.silent) showMessage('plant was still growing, full refund given', '#f8a');
-            state.g_numplanted--;
-            state.c_numplanted--;
-          } else {
-            state.g_numunplanted++;
-            state.c_numunplanted++;
-          }
+          state.g_numunplanted++;
+          state.c_numunplanted++;
           f.index = 0;
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
@@ -1360,15 +1413,9 @@ var update = function(opt_fromTick) {
             state.g_res.subInPlace(remstarter);
             state.c_res.subInPlace(remstarter);
           }
-          if(f.growth < 1) {
-            recoup = c.getCost(-1);
-            showMessage('plant was still growing, resin refunded and no delete token used', '#f8a');
-            state.g_numplanted2--;
-          } else {
-            state.g_numunplanted2++;
-            if(state.delete2tokens > 0) state.delete2tokens--;
-            showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
-          }
+          state.g_numunplanted2++;
+          if(state.delete2tokens > 0) state.delete2tokens--;
+          showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
           f.index = 0;
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
@@ -1394,7 +1441,8 @@ var update = function(opt_fromTick) {
           if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
             showMessage('You have enough resources to plant. Click an empty field to plant', helpFG2, helpBG2);
           }
-          store_undo = true;
+          // do not store undo on fern: it's not a destructive action, and may cause an actual destructive action one wanted to undo to be overwritten by this fern action
+          //store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
         var a = action.ability;
@@ -1872,7 +1920,8 @@ var update = function(opt_fromTick) {
     if(num_tree_levelups > 0) {
       tree_message = '. The tree leveled up ' + num_tree_levelups + ' times';
     }
-    showMessage('Large time delta: ' + util.formatDuration(d_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, '#999');
+    // if negative time was used, this message won't make sense, it may say 'none', which is indeed what you got when compensating for negative time. But the message might then be misleading.
+    if(!negative_time_used) showMessage('Large time delta: ' + util.formatDuration(d_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, '#999');
   }
 
   // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.

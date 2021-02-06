@@ -112,6 +112,7 @@ function makePlantDialog(x, y, show_only) {
       if(help) {
         result += '.<br>' + help;
       }
+      if(c.tagline) result += '<br/>' + upper(c.tagline);
 
 
       if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;

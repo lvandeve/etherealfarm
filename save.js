@@ -81,6 +81,11 @@ function encState(state, opt_raw_only) {
   processInt(state.seed0);
   id = 17;
   processInt(state.fern_seed);
+  id = 18;
+  processFloat(state.negative_time);
+  processFloat(state.total_negative_time);
+  processFloat(state.max_negative_time);
+  processFloat(state.last_negative_time);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -590,6 +595,13 @@ function decState(s) {
     state.fern_seed = Math.floor(Math.random() * 281474976710656);
   }
   if(error) return err(4);
+  id = 18;
+  if(save_version >= 4096*1+30) {
+    state.negative_time = processFloat();
+    state.total_negative_time = processFloat();
+    state.max_negative_time = processFloat();
+    state.last_negative_time = processFloat();
+  }
 
 
   section = 1; id = 0; // field
@@ -1093,6 +1105,13 @@ function decState(s) {
       state.help_seen_text[9] = 9;
     } else {
       state.help_seen_text[1] = state.help_seen[1] = undefined; // accidently wrote all help_text_seen as 1 due to saving bool true instead of integer
+    }
+  }
+
+  if(save_version < 4096*1+30) {
+    // add this extra research that wasn't unlocked during this challenge to it now, just like game.js does since version 0.1.30
+    if(state.challenge == challenge_bees && !state.upgrades[shortmul_0].unlocked) {
+      state.upgrades[shortmul_0].unlocked = true;
     }
   }
 

@@ -1652,7 +1652,7 @@ registerMedal('unbeetable', 'fill the entire field with beehives during the bees
 
 medal_register_id = 125;
 var numreset_achievement_values =   [   1,    5,   10,   20,   50,  100,  200,  500, 1000];
-var numreset_achievement_bonuses =  [0.03, 0.05, 0.07,  0.1, 0.15,  0.2,  0.3,  0.4,  0.5]; // TODO: give a bit more bonus for some of those
+var numreset_achievement_bonuses =  [ 0.1,  0.2,  0.25,  0.3,  0.5,   1,    2,    3,    4];
 for(var i = 0; i < numreset_achievement_values.length; i++) {
   var level = numreset_achievement_values[i];
   var bonus = Num(numreset_achievement_bonuses[i]);
@@ -2336,7 +2336,7 @@ var FRUIT_NONE = fruit_index++; // 0 means no ability
 var firstFruitAbility = fruit_index;
 var FRUIT_BERRYBOOST = fruit_index++; // boosts seed production of berries
 var FRUIT_MUSHBOOST = fruit_index++; // boosts muchrooms spore production but also seed consumption
-var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (but same spore production output)
+var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (but same spore production output) (mushroom ecomony)
 var FRUIT_FLOWERBOOST = fruit_index++;
 var FRUIT_LEECH = fruit_index++;
 var FRUIT_GROWSPEED = fruit_index++;
@@ -2360,7 +2360,7 @@ function getFruitBoost(ability, level, tier) {
   }
   if(ability == FRUIT_MUSHEFF) {
     var amount = towards1(level, 5);
-    var max = 0.3 * (1 + 0.5 * tier / 11);
+    var max = 0.4 * (1 + 0.6 * tier / 11);
     return Num(max * amount);
   }
   if(ability == FRUIT_FLOWERBOOST) {

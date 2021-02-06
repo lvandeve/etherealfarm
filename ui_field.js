@@ -153,7 +153,9 @@ function getCropInfoHTML(f, c, opt_detailed) {
           result += 'Satisfied: >= 100%.<br/>Tip: flowers next to mushrooms give them a large boost.<br/>';
         }
       } else if(p.prod3.neq(p.prod2)) {
-        result += 'After consumption: ' + p.prod2.toString() + '<br/>';
+        if(!(p.prod2.seeds.ltr(0) && p.prod2.seeds.gtr(-1e-6))) { // avoid a possible numerical display issue
+          result += 'After consumption: ' + p.prod2.toString() + '<br/>';
+        }
       }
       result += '<br/>';
     }
@@ -311,28 +313,34 @@ function makeFieldDialog(x, y) {
       var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
       var tlevel_mul = Num(tlevel);
 
-      text += '<br/>';
-      if(tlevel > 1) {
-        text += 'Resin ready (unmultiplied): ' + state.resin.toString();
-      } else {
-        text += 'Resin ready: ' + state.resin.toString();
-      }
-      text += '<br/>';
-      var resin_breakdown = [];
-      text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
-      if(resin_breakdown.length > 1) {
-        text += formatBreakdown(resin_breakdown, false, 'Resin breakdown');
-      }
+      if(!state.challenge) {
+        text += '<br/>';
+        if(tlevel > 1) {
+          text += 'Resin ready (unmultiplied): ' + state.resin.toString();
+        } else {
+          text += 'Resin ready: ' + state.resin.toString();
+        }
+        text += '<br/>';
+        var resin_breakdown = [];
+        text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
+        if(resin_breakdown.length > 1) {
+          text += formatBreakdown(resin_breakdown, false, 'Resin breakdown');
+        }
 
-      if(tlevel > 1) {
-        text += '<br>';
-        text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        text += 'Resulting total resin on transcension:<b>' + state.resin.mulr(tlevel_mul).toString() + ' resin</b><br/>';
-      }
-      if(state.mistletoes > 0) {
-        text += '<br>';
-        text += 'Twigs from mistletoes at next tree level: ' + nextTwigs().toString() + '.<br>'
-        text += 'Total gotten so far this transcension: ' + state.c_res.twigs.toString() + ' twigs.<br/>';
+        if(tlevel > 1) {
+          text += '<br>';
+          text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+          text += 'Resulting total resin on transcension:<b>' + state.resin.mulr(tlevel_mul).toString() + ' resin</b><br/>';
+        }
+        if(state.mistletoes > 0) {
+          text += '<br>';
+          text += 'Twigs from mistletoes at next tree level: ' + nextTwigs().toString() + '.<br>'
+          text += 'Total gotten so far this transcension: ' + state.c_res.twigs.toString() + ' twigs.<br/>';
+        }
+      } else {
+        text += '<br/>';
+        text += 'The tree doesn\'t produce resin, twigs or fruits during this challenge.';
+        text += '<br/>';
       }
 
       text += '<br/>';

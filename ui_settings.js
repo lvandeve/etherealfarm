@@ -549,7 +549,7 @@ function createChangelogDialog() {
 
   text += 'Reddit: <a target="_blank" href="https://www.reddit.com/r/etherealfarm/">https://www.reddit.com/r/etherealfarm/</a>';
   text += '<br/>';
-  text += 'Discord: <a target="_blank" href="https://discord.gg/WaHmTBtY">https://discord.gg/qxXrG8WGcd</a>';
+  text += 'Discord: <a target="_blank" href="https://discord.gg/9eaTxXvMT2">https://discord.gg/9eaTxXvMT2</a>';
   text += '<br/>';
   text += 'Github: <a target="_blank" href="https://github.com/lvandeve/etherealfarm">https://github.com/lvandeve/etherealfarm</a>';
   text += '<br/><br/>';
@@ -722,6 +722,7 @@ function initSettingsUI_in(dialogFlex) {
         state.g_lastimporttime = util.getTime();
         closeAllDialogs();
         removeMedalChip();
+        clearUndo();
         initUI();
         update();
         util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
@@ -847,9 +848,10 @@ function initSettingsUI() {
     }
     removeAllTooltips();
   });
-  registerTooltip(undobutton.div,
-      'Undo your last action(s). Press again to redo.<br><br>' +
-      'Undo is saved when doing an action, but with at least a minute in-between, so multiple actions in quick succession may all be undone.<br><br>' +
-      'No matter how long ago the undo was saved, you still get the correct produced resources now for that timespan.' +
-      '');
+  registerTooltip(undobutton.div, function() {
+    return 'Undo your last action(s). Press again to redo.<br><br>' +
+      'Undo is saved when doing an action, but with at least ' + util.formatDuration(minUndoTime) + ' of time in-between, so multiple actions in quick succession may all be undone.<br><br>' +
+      'Undo save time duration is limited to ' + util.formatDuration(maxUndoTime) + '. If you undo a long time duration, you\'ll still get the correct amount of resources gained during that time.' +
+      '';
+    });
 }
