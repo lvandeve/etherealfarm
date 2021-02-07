@@ -142,8 +142,22 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   scrollFlex.div.className = 'efScrollBg';
 
   var text = '';
-  text += c.description;
+  text += '<b>Challenge info:</b>';
   text += '<br>';
+  text += '• Reach tree level ' + c.targetlevel + ' to successfully complete the challenge and get the one-time main reward';
+  text += '<br>';
+  text += '• The main reward is: ' + c.rewarddescription;
+  text += '<br>';
+  text += '• The challenge can be exited early at any time through the tree dialog and replayed later.';
+  text += '<br>';
+  text += '• Max level reached with this challenge gives a general production bonus to the game, whether successfully completed or not.';
+  text += '<br>';
+  text += '<br><br>';
+
+  text += '<b>Challenge-specific description:</b>';
+  text += '<br>';
+  text += c.description;
+  text += '<br><br>';
 
   text += '<b>Current stats:</b><br>';
   text += '• Production bonus per max level reached: ' + c.bonus.toPercentString() + '<br>';
@@ -221,12 +235,8 @@ function createFinishChallengeDialog() {
   if(already_completed) {
     // nothing to display here
   } else if(success) {
-    text += 'You successfully completed the challenge for the first time!';
-
-    if(state.challenge == challenge_bees) {
-      text += '<br><br>';
-      text += 'Challenge reward: beehives unlocked. They are part of the regular game from now on and unlock whenever planting daisies. Beehives boost neighboring flowers in the regular game.';
-    }
+    text += 'You successfully completed the challenge for the first time!<br><br>Reward: ';
+    text += c.rewarddescription;
   } else {
     text += 'You didn\'t successfully complete the challenge, but can still get the challenge bonus for highest tree level reached.';
   }

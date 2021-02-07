@@ -237,6 +237,7 @@ function encState(state, opt_raw_only) {
   processUint16(state.tooltipstyle);
   processBool(state.disableHelp);
   processUint16(state.uistyle);
+  processUint16(state.sidepanel);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -456,7 +457,7 @@ function encState(state, opt_raw_only) {
     array4.push(state.challenges[unlocked[i]].besttime);
   }
   processUintArray(array0);
-  processBoolArray(array1);
+  processUintArray(array1);
   processUintArray(array2);
   processUintArray(array3);
   processFloatArray(array4);
@@ -765,6 +766,7 @@ function decState(s) {
   state.tooltipstyle = processUint16();
   if(save_version >= 4096*1+20) state.disableHelp = processBool();
   if(save_version >= 4096*1+22) state.uistyle = processUint16();
+  if(save_version >= 4096*1+32) state.sidepanel = processUint16();
   if(error) return err(4);
 
 
@@ -987,7 +989,13 @@ function decState(s) {
   section = 19; id = 0; // challenges
   if(save_version >= 4096*1+29) {
     array0 = processUintArray();
-    array1 = processBoolArray();
+    if(save_version >= 4096*1+32) {
+      array1 = processUintArray();
+    } else {
+      // old format when completed was a boolean
+      array1 = processBoolArray();
+      for(var i = 0; i < array1.length; i++) array1[i] = (array1[i] ? 1 : 0);
+    }
     array2 = processUintArray();
     array3 = processUintArray();
     array4 = processFloatArray();

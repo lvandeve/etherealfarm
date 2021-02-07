@@ -646,6 +646,10 @@ function updateFieldCellUI(x, y) {
     } else if(f.index == FIELD_REMAINDER) {
       renderImage(image_watercress_remainder, fd.canvas);
       setProgressBar(fd.progress, -1, undefined);
+    } else if(f.index == FIELD_ROCK) {
+      var image_index = Math.floor(util.pseudoRandom2D(x, y, 245643) * 4);
+      renderImage(images_rock[image_index], fd.canvas);
+      setProgressBar(fd.progress, -1, undefined);
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';

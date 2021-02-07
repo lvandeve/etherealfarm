@@ -313,6 +313,19 @@ function createAdvancedSettingsDialog() {
     removeAllTooltips();
   }, button, updatebuttontext));
 
+  button = makeSettingsButton();
+  var updatebuttontext = function(button) {
+    button.textEl.innerText = state.sidepanel ? 'side panel: auto' : 'side panel: off';
+  };
+  updatebuttontext(button);
+  registerTooltip(button, 'Choose whether the side panel with upgrade shortcuts and stats summary may appear or not. If on, the side panel only appears if the window is wide enough.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.sidepanel = (state.sidepanel ? 0 : 1);
+    updatebuttontext(button);
+    removeAllTooltips();
+    updateRightPane();
+  }, button, updatebuttontext));
+
 
   button = makeSettingsButton();
   button.textEl.innerText = 'number format';

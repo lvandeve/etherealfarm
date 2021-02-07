@@ -20,6 +20,7 @@ var CROPINDEX = 16;
 var FIELD_TREE_TOP = 1;
 var FIELD_TREE_BOTTOM = 2;
 var FIELD_REMAINDER = 3; // remainder debris of temporary plant. Counts as empty field (same as index == 0) for all purposes. Purely a visual effect, to remember that this is the spot you're using for watercress (and not accidently put a flower there or so)
+var FIELD_ROCK = 4; // for challenges with rocks
 
 // field cell
 function Cell(x, y) {
@@ -92,7 +93,7 @@ function MedalState() {
 
 function ChallengeState() {
   this.unlocked = false;
-  this.completed = false; // whether the challenge was successfully completed at least once (excluding currently ongoing challenge, if any)
+  this.completed = 0; // whether, and how often, the challenge was successfully completed (excluding currently ongoing challenge, if any)
   this.num = 0; // amount of times started, whether successful or not, including the current one
   this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any)
   this.besttime = 0; // best time for reaching targetlevel, even when not resetting. If continuing the challenge for higher maxlevel, still only the time to reach targetlevel is counted, so it's the best time for completing the main reward part of the challenge.
@@ -225,6 +226,7 @@ function State() {
   this.tooltipstyle = 1;
   this.disableHelp = false; // disable all popup help dialogs
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark
+  this.sidepanel = 1; // 0=disabled, 1=automatic
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog

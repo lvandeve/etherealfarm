@@ -75,9 +75,10 @@ function makeMainDivs() {
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
   rightFlex = new Flex(mainFlex, [0, 0.99, 0.75], 0, [0, 0.99, 1.1], 1);
+  rightFlex.div.style.overflow = 'hidden'; // avoid creating unwanted global scrollbars
   //rightFlex.div.style.border = '4px solid red';
   topRightFlex = new Flex(rightFlex, 0.02, 0.02, 0.98, 0.25, 0.64);
-  bottomRightFlex = new Flex(rightFlex, 0, 0.25, 1, 1);
+  bottomRightFlex = new Flex(rightFlex, 0, 0.25, 1, 0.99);
 
   mainFlex.update();
 }
@@ -157,7 +158,7 @@ function updateRightPane() {
 
   var w = window.innerWidth;
   var h = window.innerHeight;
-  if(w / h < 0.9) {
+  if(w / h < 0.9 || !state.sidepanel) {
     rightFlex.div.style.display = 'none';
   } else {
     rightFlex.div.style.display = 'block';

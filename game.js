@@ -161,11 +161,21 @@ function hardReset() {
   update();
 }
 
+// use at the start of challenges that only have some specific of their own upgrades, ...
+function lockAllUpgrades() {
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = state.upgrades[registered_upgrades[i]];
+    u.unlocked = false;
+  }
+}
+
 // set up everything for a challenge after softreset
 function startChallenge(challenge_id) {
   if(!challenge_id) return; // nothing to do
 
   if(challenge_id == challenge_bees) {
+    lockAllUpgrades();
+
     state.crops[challengecrop_0].unlocked = true;
     state.crops[challengecrop_1].unlocked = true;
     state.crops[challengecrop_2].unlocked = true;
@@ -173,13 +183,39 @@ function startChallenge(challenge_id) {
     state.crops[mush_0].unlocked = true;
     state.crops[berry_0].unlocked = true;
 
-    state.upgrades[berryunlock_0].unlocked = false;
     state.upgrades[challengecropmul_0].unlocked = true;
     state.upgrades[challengecropmul_1].unlocked = true;
     state.upgrades[challengecropmul_2].unlocked = true;
 
     // add the watercress upgrade as well so one isn't forced to refresh it every minute during this challenge
     state.upgrades[shortmul_0].unlocked = true;
+  }
+
+  if(challenge_id == challenge_rocks) {
+    // use a fixed seed for the random, which changes every 3 hours, and is the same for all players (depends only on the time)
+    // changing the seed only every 4 hours ensures you can't quickly restart the challenge to find a good pattern
+    // making it the same for everyone makes it fair
+    var timeseed = Math.floor(util.getTime() / (3600 * 3));
+    var seed = xor48(timeseed, 0x726f636b73); // ascii for "rocks"
+    var num_rocks = Math.floor(state.numw * state.numh / 3);
+    var array = [];
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f = state.field[y][x];
+        if(f.index != 0) continue;
+        array.push([x, y]);
+      }
+    }
+    for(var i = 0; i < num_rocks; i++) {
+      if(array.length == 0) break;
+      var roll = getRandomRoll(seed);
+      seed = roll[0];
+      var r = Math.floor(roll[1] * array.length);
+      var x = array[r][0];
+      var y = array[r][1];
+      array.splice(r, 1);
+      state.field[y][x].index = FIELD_ROCK;
+    }
   }
 }
 
@@ -196,7 +232,11 @@ function softReset(opt_challenge) {
     var c2 = state.challenges[state.challenge];
     c2.maxlevel = Math.max(state.treelevel, c2.maxlevel);
     if(c2.maxlevel >= c.targetlevel) {
-      c2.completed = true;
+      if(!c2.completed) {
+        showMessage('Completed the challenge and got reward: ' + c.rewarddescription);
+        c.rewardfun();
+      }
+      c2.completed++;
     }
   }
 
@@ -205,7 +245,7 @@ function softReset(opt_challenge) {
   if(tlevel < 1) tlevel = 1;
   resin = resin.mulr(tlevel);
 
-  var do_fruit = state.treelevel >= min_transcension_level;
+  var do_fruit = true; // sacrifice the fruits even if not above transcension level (e.g. when resetting a challenge)
   var do_resin = state.treelevel >= min_transcension_level && (!state.challenge || resin.gtr(0));
 
   var essence = Num(0);
@@ -375,6 +415,7 @@ function softReset(opt_challenge) {
 
   state.fernres = new Res();
   state.fern = false;
+  state.lastFernTime = state.time;
 
   gain = new Res();
 
@@ -1005,6 +1046,17 @@ function precomputeField() {
     }
   }
 };
+
+// xor two 48-bit numbers, given that javascript can only up to 31-bit numbers (plus sign) normally
+function xor48(x, y) {
+  var lowx = x % 16777216;
+  var lowy = y % 16777216;
+  var highx = Math.floor(x / 16777216);
+  var highy = Math.floor(y / 16777216);
+  var lowz = lowx ^ lowy;
+  var highz = highx ^ highy;
+  return lowz + (highz * 16777216);
+}
 
 // returns array of updated seed and the random roll in range [0, 1)
 function getRandomRoll(seed) {
@@ -1715,7 +1767,7 @@ var update = function(opt_fromTick) {
     if(!state.fern && !clickedfern) {
       var progress = state.res.seeds;
       var mintime = 0;
-      if(progress.eqr(0) && gain.empty()) mintime = 0;
+      if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 2 : 0);
       else if(progress.ltr(15)) mintime = 3;
       else if(progress.ltr(150)) mintime = 10;
       else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
@@ -1853,6 +1905,7 @@ var update = function(opt_fromTick) {
       var u2 = state.upgrades[j];
       if(u2.unlocked) continue;
       if(state.challenge == challenge_bees && !u.istreebasedupgrade) continue;
+      if(j == mistletoeunlock_0 && state.challenge) continue; // mistletoe doesn't work during challenges
       if(u.pre()) {
         if(u2.unlocked) {
           // the pre function itself already unlocked it, so perhaps it auto applied the upgrade. Nothing to do anymore here other than show a different message.

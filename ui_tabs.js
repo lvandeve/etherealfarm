@@ -97,7 +97,7 @@ function updateTabButtons2() {
       text += '<br/>(' + state.treelevel + ')';
     }
     if(state.fern /*&& state.currentTab != tabindex_field*/) {
-      text = '<b><font color="red">' + text + '</font></b>';
+      text = '<b><font color="#2d0">' + text + '</font></b>';
     }
 
     if(text != fieldButtonLastText) {

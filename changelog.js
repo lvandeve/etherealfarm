@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.32 (2021-02-07):';
+  text += '<br/>• Added the "rocks" challenge, available at tree level 15.';
+  text += '<br/>• Added ethereal upgrades for fruit slots.';
+  text += '<br/>• Other balancing.';
+  text += '<br/><br/>';
+
   text += '0.1.31 (2021-02-07):';
   // The fern boost idea had a problem: the bigger the boost, the more important ferns become, especially for future fruits, but ferns are an active play thing, and this would make the difference between active and passive too large
   // The nettle boost should be a very powerful replacement of this.

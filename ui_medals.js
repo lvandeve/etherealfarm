@@ -162,7 +162,7 @@ function showMedalChip(medal_id) {
   removeMedalChip();
   var m = medals[medal_id];
 
-  medalChipFlex = new Flex(mainFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
+  medalChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
   medalChipFlex.div.style.backgroundColor = '#ddde';
 
   var canvasFlex = new Flex(medalChipFlex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);

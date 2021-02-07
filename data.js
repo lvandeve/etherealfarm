@@ -938,16 +938,16 @@ var berry_8 = registerBerry('juniper', 8, berryplanttime0 * 30, juniper);
 // mushrooms: give spores
 crop_register_id = 50;
 var mush_0 = registerMushroom('champignon', 0, mushplanttime0 * 1, champignon);
-var mush_1 = registerMushroom('morel', 1, mushplanttime0 * 4, morel);
-var mush_2 = registerMushroom('amanita', 2, mushplanttime0 * 12, amanita); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
-var mush_3 = registerMushroom('portobello', 3, mushplanttime0 * 20, portobello);
+var mush_1 = registerMushroom('morel', 1, mushplanttime0 * 3, morel);
+var mush_2 = registerMushroom('amanita', 2, mushplanttime0 * 6, amanita); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
+var mush_3 = registerMushroom('portobello', 3, mushplanttime0 * 9, portobello);
 
 // flowers: give boost to neighbors
 crop_register_id = 75;
 var flower_0 = registerFlower('clover', 0, Num(0.5), flowerplanttime0, clover);
-var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 4, cornflower);
-var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 12, daisy);
-var flower_3 = registerFlower('dandelion', 3, Num(1024.0), flowerplanttime0 * 20, dandelion);
+var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 3, cornflower);
+var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 6, daisy);
+var flower_3 = registerFlower('dandelion', 3, Num(1024.0), flowerplanttime0 * 9, dandelion);
 // ideas for more flowers: forget me not, iris, lavender, orchid, sun flower, tulip, violet
 
 crop_register_id = 100;
@@ -1326,7 +1326,7 @@ var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(
 
 upgrade_register_id = 120;
 var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), 1, flower_2, function() {
-  return state.challenges[challenge_bees].completed;
+  return !!state.challenges[challenge_bees].completed;
 });
 
 //shortunlock_0 does not exist, you start with that berry type already unlocked
@@ -1834,8 +1834,12 @@ registerMedal('higher transcension', 'performed transcension II or higher', unde
 medal_register_id = 900;
 
 registerMedal('the bees knees', 'completed the bees challenge', images_queenbee[4], function() {
-  return state.challenges[challenge_bees].completed;
+  return !!state.challenges[challenge_bees].completed;
 }, Num(0.1));
+
+registerMedal('on the rocks', 'completed the rocks challenge', images_rock[1], function() {
+  return !!state.challenges[challenge_rocks].completed;
+}, Num(0.05));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1847,6 +1851,7 @@ registerMedal('the bees knees', 'completed the bees challenge', images_queenbee[
 function Challenge() {
   this.name = 'a';
   this.description = 'a';
+  this.rewarddescription = 'a';
   this.index = 0;
 
   this.targetlevel = 0;
@@ -1859,6 +1864,8 @@ function Challenge() {
   this.prefun = function() {
     return false;
   };
+  this.rewardfun = function() {
+  };
 
   // actual implementation of the challenge is not here, but depends on currently active state.challenge
 };
@@ -1870,7 +1877,8 @@ var challenges = []; // indexed by medal index (not necessarily consectuive
 var challenge_register_id = 1;
 
 // prefun = precondition to unlock the challenge
-function registerChallenge(name, targetlevel, bonus, description, prefun) {
+// rewardfun = for completing the challenge the first time. This function may be ran only once.
+function registerChallenge(name, targetlevel, bonus, description, rewarddescription, prefun, rewardfun) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
   var challenge = new Challenge();
@@ -1880,9 +1888,11 @@ function registerChallenge(name, targetlevel, bonus, description, prefun) {
 
   challenge.name = name;
   challenge.description = description;
+  challenge.rewarddescription = rewarddescription;
   challenge.targetlevel = targetlevel;
   challenge.bonus = bonus;
   challenge.prefun = prefun;
+  challenge.rewardfun = rewardfun;
 
   return challenge.index;
 }
@@ -1898,31 +1908,29 @@ var challenge_bees = registerChallenge('bee challenge', 10, Num(0.05),
 • Worker beest must be next to a flower for their boost to apply, being next to a queen for the queen boost is optional but recommended.<br>
 • "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching.<br>
 • The tree does not produce resin, fruits or twigs.<br>
-• Reach tree level 10 or higher for the first time to successfully complete the challenge for the main reward, or still get the generic challenge boost otherwise.<br>
-• The main reward is: beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers.<br>
-<br>
-The challenge can be exited early at any time through the tree dialog and replayed later.
 <br><br>
-This challenge has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the bees in this challenge.
-<br><br>
-`, function() {
+This challenge has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the one in this challenge.
+`,
+'beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers.',
+function() {
   return state.fullgrowncropcount[flower_2] >= 1;
+}, function() {
+  // nothing here: the reward is unlocked indirectly by having this challenge marked complete
 });
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', 10, Num(0.05),
+var challenge_rocks = registerChallenge('rocks challenge', 12, Num(0.03),
 `The rocks challenge has the following rules:<br>
 • All regular crops, upgrades, ... are available and work as usual<br>
-• There are randomly spread unremovable rocks on the field, blocking the planting of crops<br>
+• There are randomized unremovable rocks on the field, blocking the planting of crops<br>
 • The tree does not produce resin, fruits or twigs.<br>
-• Reach tree level 10 or higher for the first time to successfully complete the challenge for the main reward, or still get the generic challenge boost otherwise.<br>
-• The main reward is: one extra storage slot for fruits.<br>
-<br>
-The challenge can be exited early at any time through the tree dialog and replayed later.
-<br><br>
-`, function() {
-  return false;
-  //return state.treelevel >= 15;
+`,
+'one extra storage slot for fruits',
+function() {
+  //return false;
+  return state.treelevel >= 15;
+}, function() {
+  state.fruit_slots++;
 });
 // idea: there could be "rockier" challenges with more rocks at higher levels later
 
@@ -2299,6 +2307,9 @@ var upgrade2_basic_tree_bonus = Num(0.02);
 var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', 0, Res({resin:10}), 1.5, function() {
 }, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (additive). For example, if the level 1 basic tree production bonus is normally 5%, it is now 7%, and at tree level 2 it is then 14% instead of 10%', undefined, undefined, tree_images[5][1][1]);
 
+registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
+  state.fruit_slots++;
+}, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[1]);
 
 
 upgrade2_register_id = 50;
@@ -2342,6 +2353,14 @@ var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', 2, Res({resin:2
   changeField2Size(state, numw2, numh2);
   initField2UI();
 }, function(){return state.numw2 >= 5 && state.numh2 >= 5}, 1, 'increase ethereal field size to 6x6 tiles', undefined, undefined, field_ethereal[0]);
+
+///////////////////////////
+
+upgrade2_register_id = 140;
+
+registerUpgrade2('extra fruit slot', 3, Res({resin:1000,essence:250}), 2, function() {
+  state.fruit_slots++;
+}, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[2]);
 
 
 ////////////////////////////////////////////////////////////////////////////////
