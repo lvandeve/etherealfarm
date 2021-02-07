@@ -187,11 +187,13 @@ function createChallengeDialog(opt_from_challenge) {
   var pos = 0;
   var h = 0.1;
 
+  // TODO: the display order should be different than the registered order, by difficulty level
   for(var i = 0; i < registered_challenges.length; i++) {
     var c = challenges[registered_challenges[i]];
     var c2 = state.challenges[registered_challenges[i]];
+    if(!c2.unlocked) continue;
     var button = new Flex(buttonFlex, 0.25, pos, 0.75, pos + h);
-    pos += h;
+    pos += h * 1.05;
     styleButton(button.div);
     button.div.textEl.innerText = upper(c.name);
     button.div.onclick = bind(function(c) {

@@ -1061,7 +1061,7 @@ function addRandomFruit() {
 
   var num_abilities = getNumFruitAbilities(tier);
 
-  var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_LEECH, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_FERN];
+  var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_LEECH, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
 
   for(var i = 0; i < num_abilities; i++) {
     var roll = Math.floor(getRandomFruitRoll() * abilities.length);
@@ -1257,8 +1257,8 @@ var update = function(opt_fromTick) {
           var cost = u.getCost();
           if(state.res.lt(cost)) {
             if(!(shift && num > 0)) {
-              showMessage('not enough resources for upgrade: need ' + cost.toString() +
-                  ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
+              showMessage('not enough resources for upgrade: have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
+                  ', need ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')', invalidFG, invalidBG);
             }
             break;
           } else if(!u.canUpgrade()) {
@@ -1320,8 +1320,8 @@ var update = function(opt_fromTick) {
         var u = upgrades2[action.u];
         var cost = u.getCost();
         if(state.res.lt(cost)) {
-          showMessage('not enough resources for ethereal upgrade: need ' + cost.toString() +
-              ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
+          showMessage('not enough resources for ethereal upgrade: have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
+              ', need ' + cost.toString(), invalidFG, invalidBG);
         } else if(!u.canUpgrade()) {
           showMessage('this ethereal upgrade is not currently available', invalidFG, invalidBG);
         } else  {
@@ -1346,8 +1346,11 @@ var update = function(opt_fromTick) {
             showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
           }
         } else if(state.res.lt(cost)) {
-          showMessage('not enough resources to plant ' + c.name + ': need ' + cost.toString() +
-                      ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
+          showMessage('not enough resources to plant ' + c.name +
+                      ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
+                      ', need ' + cost.toString() +
+                      ' (' + getCostAffordTimer(cost) + ')',
+                      invalidFG, invalidBG);
         } else {
           if(c.type == CROPTYPE_SHORT) {
             state.g_numplantedshort++;
@@ -1387,8 +1390,8 @@ var update = function(opt_fromTick) {
             showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
           }
         } else if(state.res.lt(cost)) {
-          showMessage('not enough resources to plant ' + c.name + ': need ' + cost.toString() +
-                      ', have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(), invalidFG, invalidBG);
+          showMessage('not enough resources to plant ' + c.name + ': have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
+                      ', need: ' + cost.toString(), invalidFG, invalidBG);
         } else {
           showMessage('planted ethereal ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
@@ -1410,8 +1413,15 @@ var update = function(opt_fromTick) {
         if(f.hasCrop()) {
           var c = f.getCrop();
           var recoup = c.getCost(-1).mulr(cropRecoup);
-          state.g_numunplanted++;
-          state.c_numunplanted++;
+          if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+            recoup = c.getCost(-1);
+            if(!action.silent) showMessage('plant was still growing, full refund given', '#f8a');
+            state.g_numplanted--;
+            state.c_numplanted--;
+          } else {
+            state.g_numunplanted++;
+            state.c_numunplanted++;
+          }
           f.index = 0;
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
@@ -1437,15 +1447,20 @@ var update = function(opt_fromTick) {
           showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', invalidFG, invalidBG);
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
-          var recoup = c.getCost(-1).mulr(cropRecoup2);
           if(f.cropIndex() == special2_0) {
             state.res.subInPlace(remstarter);
             state.g_res.subInPlace(remstarter);
             state.c_res.subInPlace(remstarter);
           }
-          state.g_numunplanted2++;
-          if(state.delete2tokens > 0) state.delete2tokens--;
-          showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
+          if(f.growth < 1) {
+            recoup = c.getCost(-1);
+            showMessage('plant was still growing, resin refunded and no delete token used', '#f8a');
+            state.g_numplanted2--;
+          } else {
+            state.g_numunplanted2++;
+            if(state.delete2tokens > 0) state.delete2tokens--;
+            showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
+          }
           f.index = 0;
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
@@ -1644,12 +1659,6 @@ var update = function(opt_fromTick) {
                   state.g_numfullgrown++;
                   state.c_numfullgrown++;
                   // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
-
-                  if(c.index == flower_2 && !state.challenges[challenge_bees].unlocked && state.g_numresets > 0) {
-                    state.challenges[challenge_bees].unlocked = true;
-                    showRegisteredHelpDialog(24);
-                    showMessage('Unlocked challenge: ' + upper(challenges[challenge_bees].name));
-                  }
                 }
               }
             } else {
@@ -1720,12 +1729,6 @@ var update = function(opt_fromTick) {
         if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
         var fernres = new Res({seeds:g.seeds, spores:g.spores});
 
-        var level = getFruitAbility(FRUIT_FERN);
-        if(level > 0) {
-          var mul = Num(1).add(getFruitBoost(FRUIT_FERN, level, getFruitTier()));
-          fernres.mulInPlace(mul);
-        }
-
         state.fernres = fernres;
         state.fern = 1;
         state.fernx = s[0];
@@ -1737,7 +1740,8 @@ var update = function(opt_fromTick) {
     var req = treeLevelReq(state.treelevel + 1);
     if(state.res.ge(req)) {
       var resin = nextTreeLevelResin();
-      var twigs = nextTwigs();
+      var twigs = Res();
+      if(!state.challenge) twigs = nextTwigs();
       actualgain.addInPlace(twigs);
       state.treelevel++;
       state.lasttreeleveluptime = state.time;
@@ -1896,6 +1900,20 @@ var update = function(opt_fromTick) {
       }
     }
 
+    // check unlocked challenges
+    if(state.g_numresets > 0) { // all challenges require having done at least 1 regular transcension first
+      for(var i = 0; i < registered_challenges.length; i++) {
+        var c = challenges[registered_challenges[i]];
+        var c2 = state.challenges[registered_challenges[i]];
+        if(c2.unlocked) continue;
+        if(c.prefun()) {
+          c2.unlocked = true;
+          showMessage('Unlocked challenge: ' + upper(c.name));
+          showRegisteredHelpDialog(24);
+        }
+      }
+    }
+
     state.g_res.addInPlace(actualgain);
     state.c_res.addInPlace(actualgain);
     state.g_max_res = Res.max(state.g_max_res, state.res);
@@ -1983,26 +2001,3 @@ var update = function(opt_fromTick) {
 
 
 
-document.addEventListener('keydown', function(e) {
-  if(e.key == 'w') {
-    var replanted = false;
-    var refreshed = false;
-    for(var y = 0; y < state.numh; y++) {
-      for(var x = 0; x < state.numw; x++) {
-        var f = state.field[y][x];
-        if(f.index == FIELD_REMAINDER) {
-          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
-          replanted = true;
-        }
-        if(f.index == CROPINDEX + short_0 && state.res.seeds.gtr(1000)) {
-          actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
-          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
-          refreshed = true;
-        }
-      }
-    }
-    if(replanted) showMessage('replanting watercress');
-    else if(refreshed) showMessage('refreshing watercress');
-    update();
-  }
-});

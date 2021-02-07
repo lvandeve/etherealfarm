@@ -27,6 +27,9 @@ var suntimerflex = undefined;
 var rainbowbutton = undefined;
 var rainbowtimerflex = undefined;
 
+// not really an ability, but part of the same toolbar so handled here for now
+var watercressbutton = undefined;
+
 // just like how the numbers are defined in data: duration is the running time, wait is the cooldown time plus the running time (total cycle time)
 function formatAbilityDurationTooltipText(name, description, duration, wait) {
   var cooldown = wait - duration;
@@ -47,10 +50,12 @@ function updateAbilitiesUI() {
   }
 
   if(!sunbutton && state.upgrades[upgrade_sununlock].count) {
-    sunbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
+    //sunbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
+    //sunbutton = new Flex(topFlex, [0,4], [0,0.1], [0,4.8], [0,0.9], 2);
+    sunbutton = new Flex(topFlex, [0,4], [0,0.1], [0,4.8], [0,0.9]);
     styleButton0(sunbutton.div);
 
-    suntimerflex = new Flex(topFlex, [0,5], [0,0.1], [0,6.5], [0,0.9], 2);
+    suntimerflex = new Flex(topFlex, [0,4], [0,0.1], [0,5.5], [0,0.9], 2);
     suntimerflex.div.className = 'efWeatherOff';
     suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     suntimerflex.div.style.pointerEvents = 'none';
@@ -91,10 +96,10 @@ function updateAbilitiesUI() {
   }
 
   if(!mistbutton && state.upgrades[upgrade_mistunlock].count) {
-    mistbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
+    mistbutton = new Flex(topFlex, [0,5.5], [0,0.1], [0,6.3], [0,0.9]);
     styleButton0(mistbutton.div);
 
-    misttimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
+    misttimerflex = new Flex(topFlex, [0,5.5], [0,0.1], [0,6], [0,0.9], 2);
     misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     misttimerflex.div.style.pointerEvents = 'none';
 
@@ -136,10 +141,10 @@ function updateAbilitiesUI() {
   }
 
   if(!rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
-    rainbowbutton = new Flex(topFlex, [0,9], [0,0.1], [0,9.8], [0,0.9]);
+    rainbowbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
     styleButton0(rainbowbutton.div);
 
-    rainbowtimerflex = new Flex(topFlex, [0,9], [0,0.1], [0,10.5], [0,0.9], 2);
+    rainbowtimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
     rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     rainbowtimerflex.div.style.pointerEvents = 'none';
 
@@ -171,10 +176,53 @@ function updateAbilitiesUI() {
 
 
   //////////////////////////////////////////////////////////////////////////////
+
+  // this button becomes available once more enough resources to fully replant all watercress
+  if(state.res.seeds.gtr(1000)) {
+    if(!watercressbutton) {
+      watercressbutton = new Flex(topFlex, [1,-2.1], [0,0.1], [1,-1.3], [0,0.9]);
+      watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w';
+      styleButton0(watercressbutton.div);
+      var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
+      var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+      renderImage(watercress[4], canvas);
+
+      addButtonAction(watercressbutton.div, function() {
+        refreshWatercress();
+      });
+    }
+  } else if(watercressbutton) {
+    watercressbutton.clear();
+    watercressbutton.removeSelf();
+    watercressbutton = undefined;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
 }
 
 
-
+function refreshWatercress() {
+  var replanted = false;
+  var refreshed = false;
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      var f = state.field[y][x];
+      if(f.index == FIELD_REMAINDER) {
+        actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+        replanted = true;
+      }
+      if(f.index == CROPINDEX + short_0 && state.res.seeds.gtr(1000)) {
+        actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+        actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+        refreshed = true;
+      }
+    }
+  }
+  if(replanted) showMessage('replanting watercress');
+  else if(refreshed) showMessage('refreshing watercress');
+  else showMessage('nothing done: only refreshes existing watercress or remainders of watercress');
+  update();
+}
 
 document.addEventListener('keydown', function(e) {
   /*if(e.key == 'a') {
@@ -197,6 +245,10 @@ document.addEventListener('keydown', function(e) {
   if(e.key == '3') {
     actions.push({type:ACTION_ABILITY, ability:2});
     update();
+  }
+
+  if(e.key == 'w') {
+    refreshWatercress();
   }
 });
 

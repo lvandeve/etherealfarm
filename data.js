@@ -620,6 +620,15 @@ Crop.prototype.getBoost = function(f, breakdown) {
     }
   }
 
+  if(this.type == CROPTYPE_NETTLE) {
+    var level = getFruitAbility(FRUIT_NETTLEBOOST);
+    if(level > 0) {
+      var mul = getFruitBoost(FRUIT_NETTLEBOOST, level, getFruitTier()).addr(1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_NETTLEBOOST), true, mul, result.clone()]);
+    }
+  }
+
   // ethereal crops bonus to basic crops
   if(this.type == CROPTYPE_FLOWER) {
     var ethereal_boost = state.ethereal_flower_bonus.addr(1);
@@ -1619,35 +1628,35 @@ registerMedal('watercress', 'plant the entire field full of watercress', watercr
   return state.croptypecount[CROPTYPE_SHORT] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('berries', 'plant the entire field full of berries', blackberry[4], function() {
-  return state.croptypecount[CROPTYPE_BERRY] == state.numw * state.numh - 2;
+  return state.fullgrowncroptypecount[CROPTYPE_BERRY] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at least that\'s something', clover[4], function() {
-  return state.croptypecount[CROPTYPE_FLOWER] == state.numw * state.numh - 2;
+  return state.fullgrowncroptypecount[CROPTYPE_FLOWER] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one, respect our new fungus overlords.', champignon[4], function() {
-  return state.croptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
+  return state.fullgrowncroptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('nettles', 'plant the entire field full of nettles. This is a stingy situation.', nettle[4], function() {
-  return state.croptypecount[CROPTYPE_NETTLE] == state.numw * state.numh - 2;
+  return state.fullgrowncroptypecount[CROPTYPE_NETTLE] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', mistletoe[4], function() {
-  return state.croptypecount[CROPTYPE_MISTLETOE] == state.numw * state.numh - 2;
+  return state.fullgrowncroptypecount[CROPTYPE_MISTLETOE] == state.numw * state.numh - 2;
 }, Num(0.05));
 registerMedal('not the bees', 'build the entire field full of beehives.', images_beehive[0], function() {
-  return state.croptypecount[CROPTYPE_BEE] == state.numw * state.numh - 2;
+  return state.fullgrowncroptypecount[CROPTYPE_BEE] == state.numw * state.numh - 2;
 }, Num(0.1));
 registerMedal('unbeelievable', 'fill the entire field with bees and/or beehives during the bees challenge.', images_workerbee[4], function() {
-  var num = state.cropcount[challengecrop_0] + state.fullgrowncropcount[challengecrop_1] + state.fullgrowncropcount[challengecrop_2];
+  var num = state.fullgrowncropcount[challengecrop_0] + state.fullgrowncropcount[challengecrop_1] + state.fullgrowncropcount[challengecrop_2];
   return num == state.numw * state.numh - 2;
 }, Num(0.2));
 registerMedal('buzzy', 'fill the entire field with worker bees during the bees challenge.', images_workerbee[4], function() {
-  return state.cropcount[challengecrop_0] == state.numw * state.numh - 2;
+  return state.fullgrowncropcount[challengecrop_0] == state.numw * state.numh - 2;
 }, Num(0.3));
 registerMedal('royal buzz', 'fill the entire field with queen bees during the bees challenge.', images_queenbee[4], function() {
-  return state.cropcount[challengecrop_1] == state.numw * state.numh - 2;
+  return state.fullgrowncropcount[challengecrop_1] == state.numw * state.numh - 2;
 }, Num(0.4));
 registerMedal('unbeetable', 'fill the entire field with beehives during the bees challenge.', images_beehive[4], function() {
-  return state.cropcount[challengecrop_2] == state.numw * state.numh - 2;
+  return state.fullgrowncropcount[challengecrop_2] == state.numw * state.numh - 2;
 }, Num(0.5));
 
 medal_register_id = 125;
@@ -1675,9 +1684,8 @@ function registerPlantTypeMedal(cropid, num) {
   var num2 = (Math.floor(num / 10) + 1);
   var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
   var mul = t * num2 / 100 * 0.25;
-  return registerMedal(c.name + ' ' + num, 'have ' + num + ' ' + c.name, c.image[4], function() {
-    // using non-fullgrown cropcount, so you see the medal appearing when doing the action
-    return state.cropcount[cropid] >= num;
+  return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
+    return state.fullgrowncropcount[cropid] >= num;
   }, Num(mul));
 };
 
@@ -1848,6 +1856,10 @@ function Challenge() {
   // this is additive for all challenges together.
   this.bonus = Num(0);
 
+  this.prefun = function() {
+    return false;
+  };
+
   // actual implementation of the challenge is not here, but depends on currently active state.challenge
 };
 
@@ -1857,7 +1869,8 @@ var challenges = []; // indexed by medal index (not necessarily consectuive
 // 0 means no challenge
 var challenge_register_id = 1;
 
-function registerChallenge(name, targetlevel, bonus, description) {
+// prefun = precondition to unlock the challenge
+function registerChallenge(name, targetlevel, bonus, description, prefun) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
   var challenge = new Challenge();
@@ -1869,11 +1882,13 @@ function registerChallenge(name, targetlevel, bonus, description) {
   challenge.description = description;
   challenge.targetlevel = targetlevel;
   challenge.bonus = bonus;
+  challenge.prefun = prefun;
 
   return challenge.index;
 }
 
-var challenge_bees = 1; // temp disabled
+
+// 1
 var challenge_bees = registerChallenge('bee challenge', 10, Num(0.05),
 `The bee challenge has the following rules:<br>
 • The only types of crop available are 1 berry type, 1 mushroom type, 1 flower type and 3 types of bee/beehive. They\'re all available from the beginning, and no others unlock.<br>
@@ -1890,7 +1905,25 @@ The challenge can be exited early at any time through the tree dialog and replay
 <br><br>
 This challenge has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the bees in this challenge.
 <br><br>
-`);
+`, function() {
+  return state.fullgrowncropcount[flower_2] >= 1;
+});
+
+// 2
+var challenge_rocks = registerChallenge('rocks challenge', 10, Num(0.05),
+`The rocks challenge has the following rules:<br>
+• All regular crops, upgrades, ... are available and work as usual<br>
+• There are randomly spread unremovable rocks on the field, blocking the planting of crops<br>
+• The tree does not produce resin, fruits or twigs.<br>
+• Reach tree level 10 or higher for the first time to successfully complete the challenge for the main reward, or still get the generic challenge boost otherwise.<br>
+• The main reward is: one extra storage slot for fruits.<br>
+<br>
+The challenge can be exited early at any time through the tree dialog and replayed later.
+<br><br>
+`, function() {
+  return false; // this challenge is not yet implemented, work in progress.
+});
+// idea: there could be "rockier" challenges with more rocks at higher levels later
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2338,15 +2371,19 @@ var FRUIT_BERRYBOOST = fruit_index++; // boosts seed production of berries
 var FRUIT_MUSHBOOST = fruit_index++; // boosts muchrooms spore production but also seed consumption
 var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (but same spore production output) (mushroom ecomony)
 var FRUIT_FLOWERBOOST = fruit_index++;
-var FRUIT_LEECH = fruit_index++;
-var FRUIT_GROWSPEED = fruit_index++;
-var FRUIT_WEATHER = fruit_index++;
-var FRUIT_FERN = fruit_index++;
+var FRUIT_LEECH = fruit_index++; // watercress copying
+var FRUIT_GROWSPEED = fruit_index++; // this one can be swapped when planting something. It's ok to have a few fruit types that require situational swapping
+var FRUIT_WEATHER = fruit_index++; // idem
+var FRUIT_NETTLEBOOST = fruit_index++;
 // BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
 var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
-// TODO: one that extends lifetime of watercress
+// NOT TODO: one that extends lifetime of watercress --> do not do this: too much manual work required with swapping fruits when active playing with watercress then
+// NOT TODO: one affecting ferns: same issue: causes too much manual work during active playing and counting on fern spawn times
+// NOT TODO: one decreating cost: would cause an annoying technique where you have to swap fruits all the time before planting anything
+// NOT TODO, unless method of tracking resin multiplier over time is added: one increasing resin gain (or tree spore consumption), since then one can swap it right before tree levels
 // TODO: one that boosts nettles; can be for later tier fruits with 3+ slots only, since it's similar to mushboost and musheff, but would be its own separate multiplier so in combination can be really powerful
 // TODO: seasonal ones, but only for fruits with 2+ slots, to avoid a very disappointing single-slot fruit in the wrong season
+// TODO: one that improves beehives, but only higher level fruits when it's very likely one already finished bee challenge
 
 // returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
 function getFruitBoost(ability, level, tier) {
@@ -2359,6 +2396,7 @@ function getFruitBoost(ability, level, tier) {
     return Num(base * level);
   }
   if(ability == FRUIT_MUSHEFF) {
+    // this is a worse version of FRUIT_NETTLE, but not all fruits should have an awesome ability plus for later fruits with many slots this one still combines well together with FRUIT_NETTLE.
     var amount = towards1(level, 5);
     var max = 0.4 * (1 + 0.6 * tier / 11);
     return Num(max * amount);
@@ -2380,8 +2418,9 @@ function getFruitBoost(ability, level, tier) {
   if(ability == FRUIT_WEATHER) {
     return Num(base * 1.5 * level);
   }
-  if(ability == FRUIT_FERN) {
-    return Num(base * 2 * level);
+  if(ability == FRUIT_NETTLEBOOST) {
+    // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
+    return Num(base * 0.33 * level);
   }
 
   return Num(0.1);
