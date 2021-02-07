@@ -29,6 +29,7 @@ function getChangeLog() {
   // not a 100% fix since the game can't get more info than local clock vs what is in savegame, but avoids situations like not having ferns for hours
   text += '<br/>• Fix issues related to playing on multiple computers with different UTC time set.';
   text += '<br/>• Various bee challenge bugfixes and tweaks.';
+  text += '<br/>• Mushrooms now try to consume all resources of private berry before berries shared with other mushrooms.';
   text += '<br/><br/>';
 
   text += '0.1.29 "Bee update" (2021-02-06):';

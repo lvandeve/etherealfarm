@@ -2430,8 +2430,8 @@ function getNewFruitTier(roll, treelevel) {
   } else if(treelevel < 35) {
     tier = (roll > 0.66) ? 2 : 1;
   } else  {
-    // Higher tree levels are not yet implemented for the fruits
-    tier = (roll > 0.66) ? 2 : 1;
+    // Higher tree levels are not yet implemented for the fruits, they drop same as the level 25 one for now but with increased chance of silver
+    tier = (roll > 0.66) ? 1 : 2;
   }
   return tier;
 }

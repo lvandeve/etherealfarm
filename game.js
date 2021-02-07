@@ -488,7 +488,7 @@ function loadUndo() {
     load(undoSave, function(state) {
       var planted_after = state.g_numplanted;
       var unplanted_after = state.g_numunplanted;
-      if((planted_after == planted_before - 1 && unplanted_after == unplanted_before  -1) || (planted_after == planted_before + 1 && unplanted_after == unplanted_before  + 1)) {
+      if(planted_after != planted_before && (planted_after - planted_before) == (unplanted_after - unplanted_before)) {
         // if you plant, then delete, in quick succession, undo causes both of those things undone, which looks as if nothing happened. However, you definitely got your money back.
         // so, print in the log that this happened
         showMessage('Undone both the planting and the deleting, so got all related resources back', '#f8a');
@@ -830,6 +830,7 @@ function precomputeField() {
       var f = state.field[y][x];
       var c = f.getCrop();
       if(c) {
+        if(f.growth < 1) continue;
         if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
           var p = prefield[y][x];
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -837,6 +838,7 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
+            if(f2.growth < 1) continue;
             var c2 = f2.getCrop();
             if(c2) {
               var p2 = prefield[y2][x2];
@@ -872,7 +874,33 @@ function precomputeField() {
         if(c) {
           if(c.type == CROPTYPE_MUSH) {
             var p = prefield[y][x];
-            if(p.producers.length == 0) continue; // no producers at all for this mushroom
+
+            // during the first iteration, greedily take everything from producers private to us only, and then remove them from the list
+            // this ensures mushrooms with both a shared and a private flower, take everyhing possible from the private one, leaving more of the shared one for the other mushroom and avoiding situation where the private one has leftover production that is then unused but needed by the other mushroom
+            // NOTE: this does not solve everything, this is just a heuristic. We won't do full linear programming here for optimal solution.
+            // e.g. this breaks down if we have a berry that is almost private except a much lower level mushroom shares it with us so that it no longer counts as private even though optimal result is almost the same
+            // NOTE: no matter what other heuristics get added here, ensure that they are not field rotation/mirror dependent: do not favor certain directions or corners.
+            if(it == 0) {
+              var producers2 = [];
+              for(var i = 0; i < p.producers.length; i++) {
+                var p2 = p.producers[i];
+                if(p2.consumers.length > 1) {
+                  producers2.push(p2);
+                  continue;
+                }
+                var want = p.wanted.seeds.sub(p.gotten.seeds);
+                var have = p2.prod1.seeds;
+                var amount = Num.min(want, have);
+                if(amount.gter(0)) {
+                  did_something = true;
+                  p.gotten.seeds.addInPlace(amount);
+                  p2.prod1.seeds.subInPlace(amount);
+                }
+              }
+              p.producers = producers2;
+            }
+
+            if(p.producers.length == 0) continue; // no producers at all (anymore) for this mushroom
             // want is how much seeds we want, but only for the slice allocated to this producer
             // computed outside of the producers loop to ensure it's calculated the same for all producers
             var want = p.wanted.seeds.sub(p.gotten.seeds).divr(p.producers.length);
@@ -1129,10 +1157,12 @@ var update = function(opt_fromTick) {
   var preseasongain = undefined;
 
   // compensate for computer clock mismatch things
-  if(state.lastFernTime > state.time) state.lastFernTime = state.time;
-  if(state.misttime > state.time) state.misttime = 0;
-  if(state.suntime > state.time) state.suntime = 0;
-  if(state.rainbowtime > state.time) state.rainbowtime = 0;
+  if(state.time > 0) {
+    if(state.lastFernTime > state.time) state.lastFernTime = state.time;
+    if(state.misttime > state.time) state.misttime = 0;
+    if(state.suntime > state.time) state.suntime = 0;
+    if(state.rainbowtime > state.time) state.rainbowtime = 0;
+  }
 
   var negative_time_used = false;
 
@@ -1736,27 +1766,23 @@ var update = function(opt_fromTick) {
         showHelpDialog(-13, 'The tree reached level ' + state.treelevel + ' and is providing a choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 4) {
         showRegisteredHelpDialog(14);
-      } else if(state.treelevel == 5) {
-        if(!state.challenge) {
-          fruit = addRandomFruit();
-          showRegisteredHelpDialog(2);
-        }
       } else if(state.treelevel == 6) {
         showRegisteredHelpDialog(15);
       } else if(state.treelevel == 8) {
         showHelpDialog(-16, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
-      } else if(state.treelevel == 15) {
-        if(!state.challenge) {
-          fruit = addRandomFruit();
-          showRegisteredHelpDialog(18);
-        }
       } else if(state.treelevel == 20) {
         showRegisteredHelpDialog(23);
-      } else if(state.treelevel == 25) {
+      }
+
+      // fruits at tree level 5, 15, 25, 35, ...
+      if(state.treelevel % 10 == 5) {
         if(!state.challenge) {
+          if(state.treelevel == 5) showRegisteredHelpDialog(2);
+          if(state.treelevel == 15) showRegisteredHelpDialog(18);
           fruit = addRandomFruit();
         }
       }
+
       if(state.treelevel == 1) {
         showRegisteredHelpDialog(6);
       } else if(state.treelevel == min_transcension_level) {
