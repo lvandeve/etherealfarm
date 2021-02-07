@@ -37,6 +37,11 @@ var logFlex;
 var medalFlex;
 
 var mainFlex = null;
+var gameFlex = null;
+
+var rightFlex;
+var topRightFlex;
+var bottomRightFlex;
 
 window.onresize = function() {
   if(mainFlex) mainFlex.update();
@@ -48,27 +53,31 @@ function makeMainDivs() {
   var has_top_notice = !!document.getElementById('topnotice');
 
   if(mainFlex) mainFlex.removeSelf();
-  mainFlex = new Flex(null, [0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0.99, 0.75], 0.99);
-  if(showdebugborders) mainFlex.div.style.border = '2px solid green';
+  mainFlex = new Flex(null, 0, 0, 1, 1);
 
-  topFlex = new Flex(mainFlex, 0, 0, 1, 0.05);
+  gameFlex = new Flex(mainFlex, [0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0.99, 0.75], 0.99);
+  if(showdebugborders) gameFlex.div.style.border = '2px solid green';
+
+  topFlex = new Flex(gameFlex, 0, 0, 1, 0.05);
   if(showdebugborders) topFlex.div.style.border = '2px solid red';
 
-  infoFlex = new Flex(mainFlex, 0, 0.05, 1, 0.18, 0.25);
+  infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.18, 0.25);
   if(showdebugborders) infoFlex.div.style.border = '2px solid blue';
 
-  tabFlex = new Flex(mainFlex, 0, 0.18, 1, 0.28, 0.25);
+  tabFlex = new Flex(gameFlex, 0, 0.18, 1, 0.28, 0.25);
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
-  contentFlex = new Flex(mainFlex, 0, 0.285, 1, 0.79);
+  contentFlex = new Flex(gameFlex, 0, 0.285, 1, 0.79);
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
 
-  logFlex = new Flex(mainFlex, 0, 0.8, 1, 1, 0.25);
+  logFlex = new Flex(gameFlex, 0, 0.8, 1, 1, 0.25);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
-  /*rightFlex = new Flex(mainFlex, 1, 0, 1.3, 1);
-  rightFlex.div.style.border = '4px solid red';*/
+  rightFlex = new Flex(mainFlex, [0, 0.99, 0.75], 0, [0, 0.99, 1.1], 1);
+  //rightFlex.div.style.border = '4px solid red';
+  topRightFlex = new Flex(rightFlex, 0.02, 0.02, 0.98, 0.25, 0.64);
+  bottomRightFlex = new Flex(rightFlex, 0, 0.25, 1, 1);
 
   mainFlex.update();
 }
@@ -91,8 +100,6 @@ var tabindex_medals;
 var tabindex_field2;
 var tabindex_upgrades2;
 var tabindex_tree;
-
-var rightFlex;
 
 // init the UI after a reset, save load, .... Keeps log messages
 // assume state is already correctly initialized
@@ -145,29 +152,78 @@ function initUI() {
   else setTab(0, true);
 }
 
-function updateRightPane() {return; // not yet implemented
+function updateRightPane() {
   if(!rightFlex) return;
 
-  rightFlex.clear();
-
-  var unlocked = [];
-  for(var i = 0; i < upgrades_order.length; i++) {
-    var j = upgrades_order[i];
-    if(upgrades[j].canUpgrade()) unlocked.push(j);
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  if(w / h < 0.9) {
+    rightFlex.div.style.display = 'none';
+  } else {
+    rightFlex.div.style.display = 'block';
   }
 
-  var maxnum = 7;
+  topRightFlex.clear();
 
-  for(var i = 0; i < unlocked.length; i++) {
-    if(i >= maxnum) break;
-    var u = upgrades[unlocked[i]];
-    var chip = new Flex(rightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.75);
-    if(i + 1 == maxnum && unlocked.length > maxnum) {
-      chip.div.innerText = 'more in upgrades tab...';
-    } else {
-      renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
+  if(upgradeUIUpdated) {
+    upgradeUIUpdated = false;
+    bottomRightFlex.clear();
+
+    var unlocked = [];
+    for(var i = 0; i < upgrades_order.length; i++) {
+      var j = upgrades_order[i];
+      if(upgrades[j].canUpgrade()) unlocked.push(j);
+    }
+
+    var maxnum = 10;
+
+    for(var i = 0; i <= unlocked.length; i++) {
+      if(i >= maxnum) break;
+      if(!unlocked.length) return;
+
+      var chip = new Flex(bottomRightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.65);
+      if(i == 0) {
+        centerText2(chip.div);
+        chip.div.textEl.innerText = 'upgrades';
+      } else if(i + 1 == maxnum && unlocked.length > maxnum) {
+        centerText2(chip.div);
+        chip.div.textEl.innerText = 'more in upgrades tab...';
+      } else {
+        var u = upgrades[unlocked[i - 1]];
+        renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
+      }
     }
   }
+
+
+  var text = '<center>summary</center>';
+  text += '<br>';
+  if(state.g_res.resin.gtr(0)) {
+    text += '• Total resin earned ever: ' + state.g_res.resin.toString();
+    text += '<br>';
+  }
+  if(state.g_numresets > 0) {
+    //text += '• #Transcensions: ' + state.g_numresets;
+    //text += '<br>';
+    text += '• Max tree level ever: ' + state.g_treelevel;
+    text += '<br>';
+  }
+  if(state.treelevel >= 1) {
+    var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+    text += '• Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')';
+    text += '<br>';
+  }
+  if(state.g_numresets > 0) {
+    text += '• Ethereal delete tokens: ' + state.delete2tokens;
+    text += '<br>';
+  }
+  text += '• Season change in: ' + util.formatDuration(timeTilNextSeason(), true);
+  text += '<br>';
+  if(state.fruit_active.length) {
+    text += '• Fruit: ' + state.fruit_active[0].toString() + ': ' + state.fruit_active[0].abilitiesToString(true);
+    text += '<br>';
+  }
+  topRightFlex.div.innerHTML = text;
 }
 
 

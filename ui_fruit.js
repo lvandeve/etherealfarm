@@ -18,7 +18,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-function getFruitAbilityName(ability) {
+function getFruitAbilityName(ability, opt_abbreviation) {
+  if(opt_abbreviation) {
+    switch(ability) {
+      case FRUIT_BERRYBOOST: return 'B';
+      case FRUIT_MUSHBOOST: return 'M';
+      case FRUIT_MUSHEFF: return 'ME';
+      case FRUIT_FLOWERBOOST: return 'F';
+      case FRUIT_GROWSPEED: return 'G';
+      case FRUIT_WEATHER: return 'WB';
+      case FRUIT_LEECH: return 'WC';
+      case FRUIT_NETTLEBOOST: return 'N';
+    }
+    return '?';
+  }
   switch(ability) {
     case FRUIT_BERRYBOOST: return 'berry boost';
     case FRUIT_MUSHBOOST: return 'mushroom boost';

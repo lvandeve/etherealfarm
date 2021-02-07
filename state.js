@@ -748,11 +748,11 @@ function Fruit() {
     return tierNames[this.tier] + ' apple';
   };
 
-  this.abilitiesToString = function() {
+  this.abilitiesToString = function(opt_abbreviated) {
     var result = '';
     for(var i = 0; i < this.abilities.length; i++) {
       if(i > 0) result += ', ';
-      result += getFruitAbilityName(this.abilities[i]) + ' ' + util.toRoman(this.levels[i]);
+      result += getFruitAbilityName(this.abilities[i], opt_abbreviated) + ' ' + util.toRoman(this.levels[i]);
     }
     return result;
   };

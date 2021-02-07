@@ -100,6 +100,11 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       if(window.getSelection) window.getSelection().removeAllRanges();
       else if(document.selection) document.selection.empty();
     }, i));
+
+    util.setEvent(flex.div, 'onmouseover', 'upgradeseen', function() {
+      state.upgrades[u.index].seen = true;
+    });
+
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();
     //buyFlex.setCentered();
@@ -137,6 +142,9 @@ var upgradeScrollFlex = null;
 // crops higher up.
 var moveunplantedtobottom = false;
 
+
+// communicate to the right-panel upgrade panel that an update was needed
+var upgradeUIUpdated = false;
 
 
 var upgrades_order = [];
@@ -349,6 +357,8 @@ function updateUpgradeUI() {
   //upgradeFlex.update();
 
   upgradeScrollFlex.div.scrollTop = scrollPos;
+
+  upgradeUIUpdated = true;
 }
 
 var upgrade_ui_cache = [];

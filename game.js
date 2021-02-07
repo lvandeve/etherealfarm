@@ -351,7 +351,7 @@ function softReset(opt_challenge) {
     state.g_res.addInPlace(essence);
     state.c_res.addInPlace(essence);
     state.fruit_sacr = [];
-    state.fruit_seen = false; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
+    state.fruit_seen = true; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
   }
 
   // fix the accidental grow time ethereal upgrade that accidentally gave 7x7 field due to debug code in version 0.1.11
@@ -1249,6 +1249,13 @@ var update = function(opt_fromTick) {
       var action = actions[i];
       var type = action.type;
       if(type == ACTION_UPGRADE) {
+        if(state.upgrades_new) {
+          // applied upgrade, must have been from side panel, do not show upgrade tab in red anymore
+          for(var j = 0; j < registered_upgrades.length; j++) {
+            var u = state.upgrades[registered_upgrades[j]];
+            if(u.unlocked && !u.seen) u.seen = true;
+          }
+        }
         var u = upgrades[action.u];
         var shift = action.shift && (u.maxcount != 1);
         var num = 0;

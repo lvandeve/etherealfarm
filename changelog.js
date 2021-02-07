@@ -25,6 +25,7 @@ function getChangeLog() {
   // The nettle boost should be a very powerful replacement of this.
   text += '<br/>• Changed fern boost fruit ability into nettle boost.';
   text += '<br/>• Brought back the "refund for still growing plant" and made achievements based on fullgrown plants again: it turns out the QoL of this feature was more important.';
+  text += '<br/>• Added a side panel with extra info and shortcut upgrade buttons. This only appears if the screen is wide enough.';
   // refresh watercress button, estimated time in the "need more resources" messages of plants and researches, grayed fruit ability buttons if can't afford, ...
   text += '<br/>• Other UI tweaks.';
   text += '<br/><br/>';
