@@ -1991,6 +1991,7 @@ var update = function(opt_fromTick) {
   updateUpgrade2UIIfNeeded();
   updateTabButtons();
   updateAbilitiesUI();
+  updateRightPane();
   if(updatetooltipfun) updatetooltipfun();
   if(updatedialogfun) updatedialogfun();
 

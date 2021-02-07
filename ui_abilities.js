@@ -99,7 +99,7 @@ function updateAbilitiesUI() {
     mistbutton = new Flex(topFlex, [0,5.5], [0,0.1], [0,6.3], [0,0.9]);
     styleButton0(mistbutton.div);
 
-    misttimerflex = new Flex(topFlex, [0,5.5], [0,0.1], [0,6], [0,0.9], 2);
+    misttimerflex = new Flex(topFlex, [0,5.5], [0,0.1], [0,7], [0,0.9], 2);
     misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     misttimerflex.div.style.pointerEvents = 'none';
 

@@ -67,6 +67,9 @@ function makeMainDivs() {
   logFlex = new Flex(mainFlex, 0, 0.8, 1, 1, 0.25);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
+  /*rightFlex = new Flex(mainFlex, 1, 0, 1.3, 1);
+  rightFlex.div.style.border = '4px solid red';*/
+
   mainFlex.update();
 }
 
@@ -88,6 +91,8 @@ var tabindex_medals;
 var tabindex_field2;
 var tabindex_upgrades2;
 var tabindex_tree;
+
+var rightFlex;
 
 // init the UI after a reset, save load, .... Keeps log messages
 // assume state is already correctly initialized
@@ -140,6 +145,30 @@ function initUI() {
   else setTab(0, true);
 }
 
+function updateRightPane() {return; // not yet implemented
+  if(!rightFlex) return;
+
+  rightFlex.clear();
+
+  var unlocked = [];
+  for(var i = 0; i < upgrades_order.length; i++) {
+    var j = upgrades_order[i];
+    if(upgrades[j].canUpgrade()) unlocked.push(j);
+  }
+
+  var maxnum = 7;
+
+  for(var i = 0; i < unlocked.length; i++) {
+    if(i >= maxnum) break;
+    var u = upgrades[unlocked[i]];
+    var chip = new Flex(rightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.75);
+    if(i + 1 == maxnum && unlocked.length > maxnum) {
+      chip.div.innerText = 'more in upgrades tab...';
+    } else {
+      renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
+    }
+  }
+}
 
 
 // some parts of the UI are updated more often than just in initUI, their functions, even for initial creation, are called 'update' instead of 'init'
