@@ -1921,7 +1921,8 @@ var challenge_rocks = registerChallenge('rocks challenge', 10, Num(0.05),
 The challenge can be exited early at any time through the tree dialog and replayed later.
 <br><br>
 `, function() {
-  return false; // this challenge is not yet implemented, work in progress.
+  return false;
+  //return state.treelevel >= 15;
 });
 // idea: there could be "rockier" challenges with more rocks at higher levels later
 

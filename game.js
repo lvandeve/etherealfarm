@@ -1454,6 +1454,7 @@ var update = function(opt_fromTick) {
           showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', invalidFG, invalidBG);
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
+          var recoup = c.getCost(-1).mulr(cropRecoup2);
           if(f.cropIndex() == special2_0) {
             state.res.subInPlace(remstarter);
             state.g_res.subInPlace(remstarter);
