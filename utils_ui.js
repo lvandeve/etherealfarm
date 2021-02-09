@@ -655,3 +655,19 @@ function getCostAffordTimer(cost) {
 
   return result;
 }
+
+
+// adds scrollbar and shadow effect if needed, otherwise not.
+function makeScrollable(flex) {
+  flex.div.style.overflowY = 'auto';
+
+  // TODO: let this dynamically update if the flex changes size
+  // timeout: ensure the computation happens after text was assigned to the div, ...
+  window.setTimeout(function() {
+    if(flex.div.scrollHeight > flex.div.clientHeight) {
+      flex.div.className = 'efScrollGradient';
+    } else {
+      flex.div.className = '';
+    }
+  });
+}

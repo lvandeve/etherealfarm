@@ -70,10 +70,6 @@ a:visited {
   background-color: #eef;
 }
 
-.efScrollBg {
-  background-color: #88a;
-}
-
 .efUpgradeChip {
   background-color: #ffe;
   border: 1px solid #000;
@@ -105,6 +101,21 @@ a:visited {
 
 .efWatercressHighlight {
   text-shadow: 0 0 0.3em #0f0;
+}
+
+.efWarningOnDialogText {
+  color: #c00;
+}
+
+
+/* Indicates the element is scrollable, especially in case the device decides not to show scrollbars.
+There exists a scrollbox concept in CSS that can automatically make the shadows appear/disappear,
+but it doesn't work on translucent background, so cannot use it here. So this must be combined with some JS*/
+.efScrollGradient {
+  background:
+  radial-gradient(farthest-side at 50% 0, #0003, #0000), radial-gradient(farthest-side at 50% 100%, #0003, #0000) 0 100%;
+  background-repeat: no-repeat;
+	background-size: 100% 5%, 100% 5%, 100% 5%, 100% 5%;
 }
 
 

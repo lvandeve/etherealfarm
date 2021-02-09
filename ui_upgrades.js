@@ -283,20 +283,24 @@ function computeUpgradeUIOrder() {
 var upgrades_order_cache = [];
 // this is just to avoid all the sorting of computeUpgradeUIOrder when not necessary
 function computeUpgradeUIOrderIfNeeded() {
-  var cropcount = [];
+  var counts = [];
   for(var i = 0; i < registered_crops.length; i++) {
     var count = state.cropcount[registered_crops[i]];
-    cropcount[i] = !!count;
+    counts[i] = !!count;
+  }
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var count = state.upgrades[registered_upgrades[i]].count;
+    counts[registered_crops.length + i] = !!count;
   }
   var same = true;
-  for(var i = 0; i < cropcount.length; i++) {
-    if(i >= upgrades_order_cache || upgrades_order_cache[i] != cropcount[i]) {
+  for(var i = 0; i < counts.length; i++) {
+    if(i >= upgrades_order_cache || upgrades_order_cache[i] != counts[i]) {
       same = false;
       break;
     }
   }
   if(same) return false;
-  upgrades_order_cache = cropcount;
+  upgrades_order_cache = counts;
   computeUpgradeUIOrder();
   return true; // actually not guaranteed that it changed, but at least the right pane must be updated sometimes if planting a crop changed the relevance of some
 }

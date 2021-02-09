@@ -55,7 +55,7 @@ function getTranscendValueInfo(opt_from_challenge) {
     for(var i = 0; i < state.fruit_sacr.length; i++) highestsacr = Math.max(highestsacr, state.fruit_sacr[i].tier);
     if(highestsacr > highest) {
       // fruit of highest tier is in sacrificial pool, indicate this to prevent accidently losing it
-      text += '<font color="#955">→ Warning: you have a fruit in sacrificial pool of higher tier than any active or stored fruit, check the fruit tab if you want to keep it</font><br/>';
+      text += '<span class="efWarningOnDialogText">→ Warning: you have a fruit in sacrificial pool of higher tier than any active or stored fruit, check the fruit tab if you want to keep it</span><br/>';
     }
   }
 
@@ -138,8 +138,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   titleFlex.div.textEl.innerText = upper(c.name);
 
   var scrollFlex = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3);
-  scrollFlex.div.style.overflowY = 'scroll';
-  scrollFlex.div.className = 'efScrollBg';
+  makeScrollable(scrollFlex);
 
   var text = '';
   text += '<b>Challenge info:</b>';

@@ -415,6 +415,10 @@ function State() {
   // total production bonus from all challenges
   // derived stat, not to be saved.
   this.challenge_bonus = Num(0);
+
+  // how many challenges are unlocked but never attempted
+  // derived stat, not to be saved.
+  this.untriedchallenges = 0;
 }
 
 function clearField(state) {
@@ -716,11 +720,13 @@ function computeDerived(state) {
   state.challenges_unlocked = 0;
   state.challenges_completed = 0;
   state.challenge_bonus = Num(0);
+  state.untriedchallenges = 0;
   for(var i = 0; i < registered_challenges.length; i++) {
     var index = registered_challenges[i];
     var c = state.challenges[index];
     if(c.unlocked) state.challenges_unlocked++;
     if(c.completed) state.challenges_completed++;
+    if(c.unlocked && c.num == 0) state.untriedchallenges++;
     if(c.maxlevel > 0) {
       state.challenge_bonus.addInPlace(getChallengeBonus(index, c.maxlevel));
     }

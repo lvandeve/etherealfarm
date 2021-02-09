@@ -68,9 +68,9 @@ function createFruitHelp() {
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Fruit help';
 
-  var div = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3).div;
-  div.style.overflowY = 'scroll';
-  div.className = 'efScrollBg';
+  var flex = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
 
   var text = '';
 

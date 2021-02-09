@@ -23,9 +23,9 @@ function createNumberFormatHelp(notations, precision) {
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Number Format help';
 
-  var div = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3).div;
-  div.style.overflowY = 'scroll';
-  div.className = 'efScrollBg';
+  var flex = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
 
   var text = '';
 
@@ -397,9 +397,9 @@ function createStatsDialog() {
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Player Statistics';
 
-  var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.35).div;
-  div.style.overflowY = 'scroll';
-  div.className = 'efScrollBg';
+  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.35);
+  var div = flex.div;
+  makeScrollable(flex);
 
   var text = '';
 
@@ -551,9 +551,9 @@ function createChangelogDialog() {
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'About';
 
-  var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3).div;
-  div.style.overflowY = 'scroll';
-  div.className = 'efScrollBg';
+  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
 
   var text = '';
 

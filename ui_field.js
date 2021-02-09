@@ -287,6 +287,8 @@ function makeFieldDialog(x, y) {
     var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
+
+
     flex = new Flex(dialog, [0, 0.01], [0, 0.199], [0, 0.2], [0, 0.4], 0.3);
     canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
@@ -294,7 +296,8 @@ function makeFieldDialog(x, y) {
     var ypos = 0;
     var ysize = 0.1;
 
-    var f0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.25, 0.3);
+    var f0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 0.98, 0.65, 0.3);
+    makeScrollable(f0);
     var f1 = new Flex(dialog, [0.01, 0.2], 0.7, 1, 0.9, 0.3);
     var text;
 
@@ -355,6 +358,11 @@ function makeFieldDialog(x, y) {
       if(getSeason() == 3) {
         text += '<br/>';
         text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom / flower stats for crops next to the tree<br>';
+      }
+
+      if(state.untriedchallenges) {
+        text += '<br/>';
+        text += '<span class="efWarningOnDialogText">New challenge available!</span><br>';
       }
 
       if(state.upgrades[upgrade_mistunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {

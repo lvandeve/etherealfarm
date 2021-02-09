@@ -64,6 +64,132 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
 }
 
 
+// get the array of unlocked crops in the plant dialog, in order they should be displayed:
+// most expensive ones first, with nettle, watercress, mistletoe in a good location not at the bottom either
+function getCropOrder() {
+  var unlocked = [];
+  for(var i = 0; i < registered_crops.length; i++) {
+    if(state.crops[registered_crops[i]].unlocked) unlocked.push(registered_crops[i]);
+  }
+
+  var result = [];
+
+  var added = {};
+
+  // challenge specific crops
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_CHALLENGE) {
+      result.push(c.index);
+      added[c.index] = true;
+    }
+  }
+
+  var highest;
+
+  // most expensive berry
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_BERRY && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
+  // most expensive mushroom
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_MUSH && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
+  // most expensive flower
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_FLOWER && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
+  // most expensive beehive
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_BEE && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
+  // most expensive nettle
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_NETTLE && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
+  // most expensive watercress
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_SHORT && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
+  // most expensive mistletoe
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_MISTLETOE && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
+  // everything else
+  var array = [];
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    array.push(unlocked[i]);
+  }
+  array.sort(function(a, b) {
+    return crops[a].cost.seeds.lt(crops[b].cost.seeds) ? 1 : -1;
+  });
+  for(var i = 0; i < array.length; i++) {
+    result.push(array[i]);
+    added[array[i]] = true;
+  }
+
+  return result;
+}
+
+
 function makePlantDialog(x, y, show_only) {
 
   var numplants = 0;
@@ -94,10 +220,12 @@ function makePlantDialog(x, y, show_only) {
   }
 
   flex = new Flex(dialog, 0, 0.1, 1, 0.85);
+  makeScrollable(flex);
 
-  for(var i = 0; i < registered_crops.length; i++) {
-    if(!state.crops[registered_crops[i]].unlocked) continue;
-    var index = registered_crops[i];
+  var crops_order = getCropOrder();
+
+  for(var i = 0; i < crops_order.length; i++) {
+    var index = crops_order[i];
     var c = crops[index];
     var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y);
     tx++;
@@ -159,5 +287,7 @@ function makePlantDialog(x, y, show_only) {
       styleButton0(chip.div);
     }
   }
+
+  flex.update(); // something about the makeScrollable above misplaces some of the flex-managed sub positions, this update fixes it
 }
 

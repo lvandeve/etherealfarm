@@ -257,9 +257,9 @@ function createKeyboardHelpDialog() {
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Help';
 
-  var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3).div;
-  div.style.overflowY = 'scroll';
-  div.className = 'efScrollBg';
+  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
 
   var text = '';
 
@@ -302,9 +302,9 @@ function createMainHelpDialog() {
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Help';
 
-  var div = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3).div;
-  div.style.overflowY = 'scroll';
-  div.className = 'efScrollBg';
+  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
 
   var text = '';
 
@@ -348,8 +348,7 @@ function createHelpDialog() {
   titleFlex.div.textEl.innerText = 'Help';
 
   var scrollFlex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
-  scrollFlex.div.style.overflowY = 'scroll';
-  scrollFlex.div.className = 'efScrollBg';
+  makeScrollable(scrollFlex);
 
   var pos = 0.05;
   var buttondiv;
