@@ -64,6 +64,26 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     if(u.is_choice && completed) {
       infoText += '<br><br>chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
     }
+    if(u.cropid != undefined) {
+      var c = crops[u.cropid];
+      infoText += '<hr>';
+      infoText += 'Crop info (' + c.name + '):<br><br>';
+      var cropcost = c.getCost();
+      infoText += 'Planting cost: ' + cropcost.toString() + ' (' + getCostAffordTimer(cropcost) + ')<br>';
+      if(c.type == CROPTYPE_SHORT) {
+        infoText += 'Living time: ' + util.formatDuration(c.getPlantTime());
+      } else {
+        infoText += 'Growth time: ' + util.formatDuration(c.getPlantTime());
+        if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
+      }
+      infoText += '<br>';
+      infoText += 'Type: ' + getCropTypeName(c.type) + '<br>';
+      // standard as in: none of the field-location boosts are taken into account
+      //var cropprod = c.getProd(undefined, true);
+      //if(!cropprod.empty()) {
+      //  infoText += 'Standard production/sec: ' + c.getProd(undefined, true).toString() + '<br>';
+      //}
+    }
   };
   updateInfoText();
 
@@ -133,15 +153,6 @@ var upgradeScrollFlex = null;
 
 
 
-// if true, moves upgrades related to unplanted crops to the bottom. However,
-// this may cause players to not see that upgrade and hence not remember that
-// they had this higher level crop unlocked in the first place.
-// So disabled now, better to have a reminder of your best crop visibile
-// at the top of the upgrades panel, than to have it at the bottom because
-// it's not planted yet. Without this the sort order places more expensive
-// crops higher up.
-var moveunplantedtobottom = false;
-
 
 // communicate to the right-panel upgrade panel that an update was needed
 var upgradeUIUpdated = false;
@@ -152,9 +163,12 @@ function computeUpgradeUIOrder() {
   var array;
   upgrades_order = [];
 
+  var added = {};
+
   // one-time upgrades (unlocks, ...) that cost spores (= special tree related ones)
   array = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
+    if(added[registered_upgrades[i]]) continue;
     var u = upgrades[registered_upgrades[i]];
     if(u.maxcount == 1 && u.cost.spores.neqr(0)) array.push(registered_upgrades[i]);
   }
@@ -165,11 +179,13 @@ function computeUpgradeUIOrder() {
   });
   for(var i = 0; i < array.length; i++) {
     upgrades_order.push(array[i]);
+    added[array[i]] = true;
   }
 
   // one-time upgrades (unlocks, ...) that cost seeds
   array = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
+    if(added[registered_upgrades[i]]) continue;
     var u = upgrades[registered_upgrades[i]];
     if(u.maxcount == 1 && u.cost.spores.eqr(0)) array.push(registered_upgrades[i]);
   }
@@ -180,11 +196,13 @@ function computeUpgradeUIOrder() {
   });
   for(var i = 0; i < array.length; i++) {
     upgrades_order.push(array[i]);
+    added[array[i]] = true;
   }
 
   // finite amount of time upgrades (those don't yet exist actually)
   array = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
+    if(added[registered_upgrades[i]]) continue;
     var u = upgrades[registered_upgrades[i]];
     if(u.maxcount > 1) array.push(registered_upgrades[i]);
   }
@@ -195,54 +213,70 @@ function computeUpgradeUIOrder() {
   });
   for(var i = 0; i < array.length; i++) {
     upgrades_order.push(array[i]);
+    added[array[i]] = true;
   }
 
-  // infinite amount of times upgrades, sorted by costs, that are relevant (has plants they apply to in the field, or for the limited-time watercress)
+  // first the two most expensive infinite times upgrades related to a crop that are unlocked
+  // this ensures their upgrade is at the top of the upgrades even if you didn't plant this crop in the field yet (if it's just unlocked)
   array = [];
-  var highest = Num(0);
   for(var i = 0; i < registered_upgrades.length; i++) {
+    if(added[registered_upgrades[i]]) continue;
     var u = upgrades[registered_upgrades[i]];
+    var u2 = state.upgrades[registered_upgrades[i]];
+    if(!u2.unlocked) continue;
     if(u.maxcount != 0) continue;
-    var relevant = !moveunplantedtobottom || (u.cropid == undefined) || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
-    if(!relevant) continue;
+    if(u.cropid == undefined) continue;
     array.push(registered_upgrades[i]);
-    if(u.cost && state.upgrades[registered_upgrades[i]].unlocked) highest = Num.max(u.cost.seeds, highest);
   }
-  // a bit of a hack to move watercress higher up since it's always relevant. Make it take second place.
-  var fakewatercresscost = highest.divr(2);
   array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
     var costa = a.cost.seeds;
     var costb = b.cost.seeds;
-    if(a.cropid != undefined && crops[a.cropid].type == CROPTYPE_SHORT) {
-      costa = fakewatercresscost;
-    }
-    if(b.cropid != undefined && crops[b.cropid].type == CROPTYPE_SHORT) costb = fakewatercresscost;
     return costa.lt(costb) ? 1 : -1;
   });
   for(var i = 0; i < array.length; i++) {
+    if(i >= 2) break;
     upgrades_order.push(array[i]);
+    added[array[i]] = true;
   }
 
-  if(moveunplantedtobottom) {
-    // infinite amount of times upgrades, sorted by costs, that are currently not relevant (has no plants they apply to in the field)
-    array = [];
-    for(var i = 0; i < registered_upgrades.length; i++) {
-      var u = upgrades[registered_upgrades[i]];
-      if(u.maxcount != 0) continue;
-      var relevant = !u.cropid || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
-      if(relevant) continue;
-      array.push(registered_upgrades[i]);
-    }
-    array = array.sort(function(a, b) {
-      a = upgrades[a];
-      b = upgrades[b];
-      return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
-    });
-    for(var i = 0; i < array.length; i++) {
-      upgrades_order.push(array[i]);
-    }
+  // then nettle and watercress
+  if(!added[nettlemul_0] && state.cropcount[nettle_0]) {
+    upgrades_order.push(nettlemul_0);
+    added[nettlemul_0] = true;
+  }
+  if(!added[shortmul_0]) {
+    upgrades_order.push(shortmul_0);
+    added[shortmul_0] = true;
+  }
+
+  // then "relevant" infinite time upgrades: such as crops you have in the field
+  array = [];
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    if(added[registered_upgrades[i]]) continue;
+    var u = upgrades[registered_upgrades[i]];
+    if(u.maxcount != 0) continue;
+    var relevant = (u.cropid == undefined) || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
+    if(!relevant) continue;
+    array.push(registered_upgrades[i]);
+  }
+  for(var i = 0; i < array.length; i++) {
+    upgrades_order.push(array[i]);
+    added[array[i]] = true;
+  }
+
+  // then all remaining infinite time upgrades
+  array = [];
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    if(added[registered_upgrades[i]]) continue;
+    var u = upgrades[registered_upgrades[i]];
+    if(u.maxcount != 0) continue;
+    array.push(registered_upgrades[i]);
+  }
+  for(var i = 0; i < array.length; i++) {
+    upgrades_order.push(array[i]);
+    added[array[i]] = true;
   }
 }
 
@@ -261,9 +295,10 @@ function computeUpgradeUIOrderIfNeeded() {
       break;
     }
   }
-  if(same) return;
+  if(same) return false;
   upgrades_order_cache = cropcount;
   computeUpgradeUIOrder();
+  return true; // actually not guaranteed that it changed, but at least the right pane must be updated sometimes if planting a crop changed the relevance of some
 }
 
 
@@ -364,7 +399,7 @@ function updateUpgradeUI() {
 var upgrade_ui_cache = [];
 
 function updateUpgradeUIIfNeeded() {
-  computeUpgradeUIOrderIfNeeded();
+  var order_changed = computeUpgradeUIOrderIfNeeded();
 
   var unlocked = [];
   for(var i = 0; i < upgrades_order.length; i++) {
@@ -391,8 +426,9 @@ function updateUpgradeUIIfNeeded() {
     }
   }
 
-  if(!eq) {
+  if(!eq || order_changed) {
     updateUpgradeUI();
+    upgradeUIUpdated = true;
     upgrade_ui_cache = cache;
   }
 }

@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.33 (2021-02-08):';
+  text += '<br/>• Some challenges can have tree resin, fruit and/or twigs drop now.';
+  text += '<br/>• Side panel upgrade tooltips now also show cost and growtime of the related plant itself.';
+  text += '<br/>• Other UI tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.32 (2021-02-07):';
   text += '<br/>• Added the "rocks" challenge, available at tree level 15.';
   text += '<br/>• Added ethereal upgrades for fruit slots.';

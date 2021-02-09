@@ -293,7 +293,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
-  if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER)) {
+  if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER) && f) {
     var mist_active = state.upgrades[upgrade_mistunlock].count && this.type == CROPTYPE_MUSH && (state.time - state.misttime) < getMistDuration();
     var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (state.time - state.suntime) < getSunDuration();
     var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && (state.time - state.rainbowtime) < getRainbowDuration();
@@ -549,7 +549,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // leech, only computed here in case of "pretend", without pretent leech is computed in more correct way in precomputeField()
-  if(pretend && this.type == CROPTYPE_SHORT) {
+  if(pretend && this.type == CROPTYPE_SHORT && f) {
     var leech = this.getLeech(f);
     var p = prefield[f.y][f.x];
     var total = Res();
@@ -934,6 +934,7 @@ var berry_5 = registerBerry('gooseberry', 5, berryplanttime0 * 16, gooseberry);
 var berry_6 = registerBerry('grape', 6, berryplanttime0 * 20, grape);
 var berry_7 = registerBerry('honeyberry', 7, berryplanttime0 * 25, honeyberry);
 var berry_8 = registerBerry('juniper', 8, berryplanttime0 * 30, juniper);
+// next ones: lingonberry, raspberry, strawberry, ...
 
 // mushrooms: give spores
 crop_register_id = 50;
@@ -948,7 +949,7 @@ var flower_0 = registerFlower('clover', 0, Num(0.5), flowerplanttime0, clover);
 var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 3, cornflower);
 var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 6, daisy);
 var flower_3 = registerFlower('dandelion', 3, Num(1024.0), flowerplanttime0 * 9, dandelion);
-// ideas for more flowers: forget me not, iris, lavender, orchid, sun flower, tulip, violet
+// ideas for more flowers: (forget me not), iris, lavender, orchid, sunflower, tulip, violet
 
 crop_register_id = 100;
 var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, nettle);
@@ -1036,6 +1037,8 @@ function Upgrade() {
   this.deprecated = false; // no longer existing upgrade from earlier game version
 
   this.cropid = undefined; // if not undefined, it means the upgrade is related to this crop
+
+  //this.isupgrade = false; // if true, this is one of the standard crop upgrades, matching to the crop with cropid
 
   this.istreebasedupgrade = false; // is one of the upgrades that comes from the tree, such as weather and choice upgrades.
 
@@ -1854,6 +1857,27 @@ function Challenge() {
   this.rewarddescription = 'a';
   this.index = 0;
 
+  // whether during this challenge, resin/twigs/fruit is given out or not
+  // should be "false" for challenges that can have a benefit (even if it doesn't appear they do, like the bees challenge: it is much harder than main game, but has its own special bee crops that could theoretically give an advantage, so do not let such challenge farm resin)
+  // can be true for challenges that are strictly harder than main game, e.g. "rocks" challenge where everything is the same except rocks that give no advantage, only guaranteed disadvantage
+  // NOTE:
+  // only can gain the resin if at least level 10 reached, to be similar to regular game (since challenges can be quit early which would allow quick farming)
+  // also cannot gain resin if you reach higher level than highest level in main game: this in case a challenge is accidently broken, super easy, and allows gaining resin too easy that way
+  this.allowsresin = false;
+  // NOTE:
+  // don't give out the lvl 5 fruit (or give it only at 10), to be similar to regular game (since challenges can be quit early which would allow quick farming)
+  // also don't give out fruit if reaching higher level than with a regular run
+  this.allowsfruits = false;
+  // NOTE:
+  // doesn't give out twigs before level 10, to be similar to regular game (since challenges can be quit early which would allow quick farming)
+  // also don't give out fruit if reaching higher level than with a regular run
+  this.allowstwigs = false;
+  // for any of the above things: whether they're also allowed above the highest level of tree ever reached in regular game
+  // this serves as a protection in case a challenge turns out to be too easy and makes farming easier than the main game
+  // but for something like the rock challenge, this can be enabled
+  // To be clear: you can still go beyond the highest level with this challenge if this is false. It just won't drop the above things.
+  this.allowbeyondhighestlevel = false;
+
   this.targetlevel = 0;
 
   // how much does this challenge contribute to the global challenge bonus pool, per level
@@ -1878,7 +1902,7 @@ var challenge_register_id = 1;
 
 // prefun = precondition to unlock the challenge
 // rewardfun = for completing the challenge the first time. This function may be ran only once.
-function registerChallenge(name, targetlevel, bonus, description, rewarddescription, prefun, rewardfun) {
+function registerChallenge(name, targetlevel, bonus, description, rewarddescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
   var challenge = new Challenge();
@@ -1894,6 +1918,11 @@ function registerChallenge(name, targetlevel, bonus, description, rewarddescript
   challenge.prefun = prefun;
   challenge.rewardfun = rewardfun;
 
+  challenge.allowsresin = !!(allowflags & 1);
+  challenge.allowsfruits = !!(allowflags & 2);
+  challenge.allowstwigs = !!(allowflags & 4);
+  challenge.allowbeyondhighestlevel = !!(allowflags & 8);
+
   return challenge.index;
 }
 
@@ -1907,7 +1936,6 @@ var challenge_bees = registerChallenge('bee challenge', 10, Num(0.05),
 • Worker bees boost the global ecosystem: berries, mushrooms and flowers (so effectively cubic scaling). No neighboring require for this.<br>
 • Worker beest must be next to a flower for their boost to apply, being next to a queen for the queen boost is optional but recommended.<br>
 • "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching.<br>
-• The tree does not produce resin, fruits or twigs.<br>
 <br><br>
 This challenge has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the one in this challenge.
 `,
@@ -1916,14 +1944,16 @@ function() {
   return state.fullgrowncropcount[flower_2] >= 1;
 }, function() {
   // nothing here: the reward is unlocked indirectly by having this challenge marked complete
-});
+}, 0);
 
 // 2
 var challenge_rocks = registerChallenge('rocks challenge', 12, Num(0.03),
 `The rocks challenge has the following rules:<br>
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
-• The tree does not produce resin, fruits or twigs.<br>
+<br>
+The rock pattern is determined at the start of the challenge, and is randomly genererated with a 3-hour UTC time interval as the pseudorandom seed, so you can get a new pattern every 3 hours if desired.
+<br>
 `,
 'one extra storage slot for fruits',
 function() {
@@ -1931,7 +1961,7 @@ function() {
   return state.treelevel >= 15;
 }, function() {
   state.fruit_slots++;
-});
+}, 11);
 // idea: there could be "rockier" challenges with more rocks at higher levels later
 
 
@@ -2277,19 +2307,19 @@ var upgrade2_season = [];
 
 upgrade2_season[0] = registerUpgrade2('improve spring', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (additive). Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
+}, function(){return true;}, 0, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (additive) of the original effect. Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
 
 upgrade2_season[1] = registerUpgrade2('improve summer', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (additive). Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
+}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (additive) of the original effect. Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
 
 upgrade2_season[2] = registerUpgrade2('improve autumn', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (additive). Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
+}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (additive) of the original effect. Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
 
 upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive). In addition, slightly increase the winter resin bonus and gradually reduce the negative winter effect.', undefined, undefined, tree_images[3][1][3]);
+}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive) of the original effect. In addition, slightly increase the winter resin bonus and gradually reduce the negative winter effect.', undefined, undefined, tree_images[3][1][3]);
 
 
 

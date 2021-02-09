@@ -152,6 +152,37 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += '<br>';
   text += '• Max level reached with this challenge gives a general production bonus to the game, whether successfully completed or not.';
   text += '<br>';
+  if(c.allowsresin) {
+    if(c.allowbeyondhighestlevel) {
+      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10, otherwise it\'s dropped';
+    } else {
+      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10, and the tree cannot gain resin when reaching a higher level during the challenge than ever gotten during a regular run';
+    }
+  } else {
+    text += '• Tree does not gain any resin';
+  }
+  text += '<br>';
+  if(c.allowsfruits) {
+    if(c.allowbeyondhighestlevel) {
+      text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead';
+    } else {
+      text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead, and the tree cannot drop fruits when reaching a higher level during the challenge than ever gotten during a regular run';
+    }
+  } else {
+    text += '• Tree does drop any fruits';
+  }
+  text += '<br>';
+  if(c.allowstwigs) {
+    if(c.allowbeyondhighestlevel) {
+      text += '• Twigs can be gained from mistletoes, but only starting at tree level 10';
+    } else {
+      text += '• Twigs can be gained from mistletoes, but only starting at tree level 10 and up to the max level ever reached with a regular run';
+    }
+  } else {
+    text += '• No twigs can be gained from mistletoes';
+  }
+  text += '<br>';
+
   text += '<br><br>';
 
   text += '<b>Challenge-specific description:</b>';

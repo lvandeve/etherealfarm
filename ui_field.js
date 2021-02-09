@@ -50,25 +50,26 @@ function formatBreakdown(breakdown, percent, title) {
 function getCropInfoHTMLBreakdown(f, c) {
   var result = '';
 
-  if(f.isFullGrown()) {
-    var p = prefield[f.y][f.x];
-    var prod = c.getProd(f);
-    if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
-      var breakdown = p.breakdown;
-      result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
-    }
-    if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
-      var breakdown = p.breakdown;
-      result += formatBreakdown(breakdown, true, 'Breakdown (neighboor boost +%)');
-    }
-    if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
-      var breakdown = p.breakdown;
-      result += formatBreakdown(breakdown, true, 'Breakdown (flower boost +%)');
-    }
-    if(p.breakdown_leech && p.breakdown_leech.length > 0) {
-      var breakdown = p.breakdown_leech;
-      result += formatBreakdown(breakdown, true, 'Breakdown (copy)');
-    }
+
+  var bdname = f.isFullGrown() ? 'Breakdown' : 'Preliminary breakdown';
+
+  var p = prefield[f.y][f.x];
+  var prod = c.getProd(f);
+  if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
+    var breakdown = p.breakdown;
+    result += formatBreakdown(breakdown, false, bdname + ' (production/s)');
+  }
+  if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
+    var breakdown = p.breakdown;
+    result += formatBreakdown(breakdown, true, bdname + ' (neighboor boost +%)');
+  }
+  if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
+    var breakdown = p.breakdown;
+    result += formatBreakdown(breakdown, true, bdname + ' (flower boost +%)');
+  }
+  if(p.breakdown_leech && p.breakdown_leech.length > 0) {
+    var breakdown = p.breakdown_leech;
+    result += formatBreakdown(breakdown, true, bdname + ' (copy)');
   }
 
   return result;
@@ -313,7 +314,7 @@ function makeFieldDialog(x, y) {
       var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
       var tlevel_mul = Num(tlevel);
 
-      if(!state.challenge) {
+      if(!state.challenge || challenges[state.challenge].allowsresin) {
         text += '<br/>';
         if(tlevel > 1) {
           text += 'Resin ready (unmultiplied): ' + state.resin.toString();
@@ -321,26 +322,31 @@ function makeFieldDialog(x, y) {
           text += 'Resin ready: ' + state.resin.toString();
         }
         text += '<br/>';
-        var resin_breakdown = [];
-        text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
-        if(resin_breakdown.length > 1) {
-          text += formatBreakdown(resin_breakdown, false, 'Resin breakdown');
+        if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
+          text += 'No further resin gained during this challenge, higher level than max regular level reached';
+        } else {
+          var resin_breakdown = [];
+          text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
+          if(resin_breakdown.length > 1) {
+            text += formatBreakdown(resin_breakdown, false, 'Resin breakdown');
+          }
         }
-
         if(tlevel > 1) {
           text += '<br>';
           text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
           text += 'Resulting total resin on transcension:<b>' + state.resin.mulr(tlevel_mul).toString() + ' resin</b><br/>';
         }
-        if(state.mistletoes > 0) {
-          text += '<br>';
-          text += 'Twigs from mistletoes at next tree level: ' + nextTwigs().toString() + '.<br>'
-          text += 'Total gotten so far this transcension: ' + state.c_res.twigs.toString() + ' twigs.<br/>';
-        }
       } else {
-        text += '<br/>';
-        text += 'The tree doesn\'t produce resin, twigs or fruits during this challenge.';
-        text += '<br/>';
+        text += 'The tree doesn\'t produce resin during this challenge.';
+      }
+
+
+      if(state.mistletoes > 0) {
+        text += '<br>';
+        var next = nextTwigs();
+        if(state.challenge && state.treelevel < 9) next = Res();
+        text += 'Twigs from mistletoes at next tree level: ' + next.toString() + '.<br>'
+        text += 'Total gotten so far this transcension: ' + state.c_res.twigs.toString() + ' twigs.<br/>';
       }
 
       text += '<br/>';
@@ -393,7 +399,7 @@ function makeFieldDialog(x, y) {
       button = new Flex(f1, 0, 0.32, 0.5, 0.6, 0.8).div;
       styleButton(button);
       button.textEl.innerText = 'Current challenge info';
-      registerTooltip(button, 'Transcend and start a challenge');
+      registerTooltip(button, 'Description and statistics for the current challenge');
       addButtonAction(button, function() {
         createChallengeDescriptionDialog(state.challenge, true);
       });

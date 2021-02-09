@@ -246,7 +246,10 @@ function softReset(opt_challenge) {
   resin = resin.mulr(tlevel);
 
   var do_fruit = true; // sacrifice the fruits even if not above transcension level (e.g. when resetting a challenge)
-  var do_resin = state.treelevel >= min_transcension_level && (!state.challenge || resin.gtr(0));
+  // if false, still sets the upcoming resin to 0!
+  var do_resin = state.treelevel >= min_transcension_level;
+  if(resin.eqr(0)) do_resin = false;
+  if(state.challenge && !challenges[state.challenge].allowsresin) do_resin = false;
 
   var essence = Num(0);
   var message = '';
@@ -644,7 +647,8 @@ function PreCell(f) {
 
   this.leech = Num(0); // how much leech there is on this plant. e.g. if 4 watercress neighbors leech 100% each, this value is 4 (in reality that high is not possible due to the penalty for multiple watercress)
 
-  // breakdown of the production for UI. Is like prod0, but with leech result added. Does not take consumption into account, and shows the negative consumption value of mushroom.
+  // breakdown of the production for UI. Is like prod0, but with leech result added, and also given if still growing.
+  // Does not take consumption into account, and shows the negative consumption value of mushroom.
   this.breakdown = [];
 
   // breakdown of the leech %
@@ -800,10 +804,10 @@ function precomputeField() {
       if(c) {
         var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
-          p.boost = c.getBoost(f, p.breakdown);
+          p.boost = c.getBoost(f, p.breakdown); // includes preliminary non-fullgrown case
         }
         if(c.type == CROPTYPE_BEE) {
-          p.boost = c.getBoostBoost(f, p.breakdown);
+          p.boost = c.getBoostBoost(f, p.breakdown); // includes preliminary non-fullgrown case
         }
         if(c.type == CROPTYPE_MISTLETOE) {
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -851,6 +855,7 @@ function precomputeField() {
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) continue; // don't overwrite their boost breakdown with production breakdown
         var p = prefield[y][x];
         var prod = c.getProd(f, false, p.breakdown);
+        if(!f.isFullGrown()) c.getProd(f, true, p.breakdown); // preliminary breakdown if still growing
         p.prod0 = prod;
         p.prod0b = Res(prod); // a separate copy
         // used by pass 4, production that berry has avaialble for mushrooms, which is then subtarcted from
@@ -1189,6 +1194,14 @@ function nextEventTime() {
   }
 
   return time;
+}
+
+// for misc things in UI that update themselves
+// updatefun must return true if the listener must stay, false if the listener must be removed
+var update_listeners = [];
+function registerUpdateListener(updatefun) {
+  if(update_listeners.length > 50) return;
+  update_listeners.push(updatefun);
 }
 
 var update = function(opt_fromTick) {
@@ -1801,12 +1814,24 @@ var update = function(opt_fromTick) {
     if(state.res.ge(req)) {
       var resin = nextTreeLevelResin();
       var twigs = Res();
-      if(!state.challenge) twigs = nextTwigs();
-      actualgain.addInPlace(twigs);
+
+      var do_twigs = true;
+      if(state.challenge && !challenges[state.challenge].allowstwigs) do_twigs = false;
+      if(state.challenge && !challenges[state.challenge].allowbeyondhighestlevel && state.treelevel > state.g_treelevel) do_twigs = false;
+
+      if(do_twigs) {
+        twigs = nextTwigs();
+        actualgain.addInPlace(twigs);
+      }
       state.treelevel++;
       state.lasttreeleveluptime = state.time;
       num_tree_levelups++;
-      if(!state.challenge) {
+
+      var do_resin = true;
+      if(state.challenge && !challenges[state.challenge].allowsresin) do_resin = false;
+      if(state.challenge && !challenges[state.challenge].allowbeyondhighestlevel && state.treelevel > state.g_treelevel) do_resin = false;
+
+      if(do_resin) {
         if(getSeason() == 3) {
           showMessage('Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1)).toPercentString());
         }
@@ -1835,16 +1860,21 @@ var update = function(opt_fromTick) {
       } else if(state.treelevel == 8) {
         showHelpDialog(-16, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 20) {
-        showRegisteredHelpDialog(23);
+        if(!state.challenge) showRegisteredHelpDialog(23);
       }
 
       // fruits at tree level 5, 15, 25, 35, ...
       if(state.treelevel % 10 == 5) {
-        if(!state.challenge) {
+        if(!state.challenge || (challenges[state.challenge].allowsfruits && state.treelevel >= 10 && (challenges[state.challenge].allowbeyondhighestlevel || state.treelevel <= state.g_treelevel))) {
           if(state.treelevel == 5) showRegisteredHelpDialog(2);
           if(state.treelevel == 15) showRegisteredHelpDialog(18);
           fruit = addRandomFruit();
         }
+      }
+      // drop the level 5 fruit during challenges at level 10
+      if(state.treelevel == 10 && state.challenge && challenges[state.challenge].allowsfruits) {
+        fruit = addRandomFruit();
+        showMessage('The tree dropped the level 5 fruit at level 10 during this challenge');
       }
 
       if(state.treelevel == 1) {
@@ -1905,7 +1935,7 @@ var update = function(opt_fromTick) {
       var u2 = state.upgrades[j];
       if(u2.unlocked) continue;
       if(state.challenge == challenge_bees && !u.istreebasedupgrade) continue;
-      if(j == mistletoeunlock_0 && state.challenge) continue; // mistletoe doesn't work during challenges
+      if(j == mistletoeunlock_0 && state.challenge && !challenges[state.challenge].allowstwigs) continue; // mistletoe doesn't work during this challenge
       if(u.pre()) {
         if(u2.unlocked) {
           // the pre function itself already unlocked it, so perhaps it auto applied the upgrade. Nothing to do anymore here other than show a different message.
@@ -2057,6 +2087,13 @@ var update = function(opt_fromTick) {
   if(updatedialogfun) updatedialogfun();
 
   showLateMessages();
+
+  for(var i = 0; i < update_listeners.length; i++) {
+    if(!update_listeners[i]()) {
+      update_listeners.splice(i, 1);
+      i--;
+    }
+  }
 
   postupdate();
 }

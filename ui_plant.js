@@ -50,6 +50,14 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
 
   if(state.res.lt(crop.getCost())) {
     infoFlex.div.style.color = '#666';
+    registerUpdateListener(function() {
+      if(!flex || !document.body.contains(infoFlex.div)) return false;
+      if(state.res.gte(crop.getCost())) {
+        infoFlex.div.style.color = '';
+        return false;
+      }
+      return true;
+    });
   }
 
   return flex;
