@@ -262,7 +262,13 @@ function makePlantDialog(x, y, show_only) {
         result += '.<br><br>Growth time: ' + util.formatDuration(c.getPlantTime());
         if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       }
-      result += '.<br><br>Production/sec:' + c.getProd(state.field[y][x], true).toString();
+      if(c.type == CROPTYPE_FLOWER) {
+        result += '.<br><br>Neighbor boost: ' + c.getBoost(state.field[y][x]).toPercentString();
+      } else if(c.type == CROPTYPE_BEE) {
+        result += '.<br><br>Flower boost: ' + c.getBoostBoost(state.field[y][x]).toPercentString();
+      } else {
+        result += '.<br><br>Production/sec: ' + c.getProd(state.field[y][x], true).toString();
+      }
       result += '.';
       return result;
     }, index);

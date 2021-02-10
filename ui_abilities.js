@@ -68,7 +68,7 @@ function updateAbilitiesUI() {
     addButtonAction(sunbutton.div, function() {
       actions.push({type:ACTION_ABILITY, ability:1});
       update();
-    });
+    }, 'sun ability');
 
     registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
   }
@@ -112,7 +112,7 @@ function updateAbilitiesUI() {
       actions.push({type:ACTION_ABILITY, ability:0});
       update();
     };
-    addButtonAction(mistbutton.div, fun);
+    addButtonAction(mistbutton.div, fun, 'mist ability');
 
     registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText('mist ability', 'mushrooms produce more spores, consume less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
   }
@@ -156,7 +156,7 @@ function updateAbilitiesUI() {
     addButtonAction(rainbowbutton.div, function() {
       actions.push({type:ACTION_ABILITY, ability:2});
       update();
-    });
+    }, 'rainbow ability');
 
     registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
   }
@@ -189,7 +189,7 @@ function updateAbilitiesUI() {
 
       addButtonAction(watercressbutton.div, function() {
         refreshWatercress();
-      });
+      }, 'refresh watercress');
     }
   } else if(watercressbutton) {
     watercressbutton.clear();

@@ -63,14 +63,18 @@ function centerContent(parent, child) {
   child.style.top = Math.floor((ph - ch) / 2) + 'px';
 }
 
+function setAriaLabel(div, label) {
+  div.setAttribute('aria-label', label);
+}
+
 // use this instead of ".onclick = ..." for more accessible buttons
 // opt_label is an optional textual name for image-icon-buttons
 function addButtonAction(div, fun, opt_label) {
   div.onclick = fun;
   div.tabIndex = 0;
-  div.role = 'button';
+  div.setAttribute('role', 'button');
   div.setAttribute('aria-pressed', 'false'); // TODO: is this needed?
-  if(opt_label) div.setAttribute('aria-label', opt_label);
+  if(opt_label) setAriaLabel(div, opt_label);
 }
 
 // styles only a few of the essential properties for button

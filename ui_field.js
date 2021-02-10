@@ -553,7 +553,7 @@ function initFieldUI() {
             makeFieldDialog(x, y);
           }
         }
-      }, x, y, div), 'field tile ' + x + ', ' + y);
+      }, x, y, div));
 
       var pw = tw >> 1;
       var ph = Math.round(th / 16);
@@ -642,6 +642,8 @@ function updateFieldCellUI(x, y) {
     fd.ferncode = ferncode;
     fd.progresspixel = progresspixel;
 
+    var label = 'field tile ' + x + ', ' + y;
+
     fd.index = f.index;
     fd.growstage = growstage;
     if(f.hasCrop()) {
@@ -652,10 +654,13 @@ function updateFieldCellUI(x, y) {
         // fullgrown, so hide progress bar
         setProgressBar(fd.progress, -1, undefined);
       }
+      label = c.name + '. ' + label;
     } else if(f.index == FIELD_TREE_TOP) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
+      label = 'tree level ' + state.treelevel + '. ' + label;
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
+      label = 'tree level ' + state.treelevel + '. ' + label;
       if(state.treelevel > 0 || state.res.spores.gtr(0)) renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
     } else if(f.index == FIELD_REMAINDER) {
       renderImage(image_watercress_remainder, fd.canvas);
@@ -663,6 +668,7 @@ function updateFieldCellUI(x, y) {
     } else if(f.index == FIELD_ROCK) {
       var image_index = Math.floor(util.pseudoRandom2D(x, y, 245643) * 4);
       renderImage(images_rock[image_index], fd.canvas);
+      label = 'rock. ' + label;
       setProgressBar(fd.progress, -1, undefined);
     } else {
       setProgressBar(fd.progress, -1, undefined);
@@ -671,7 +677,12 @@ function updateFieldCellUI(x, y) {
     }
     if(state.fern && x == state.fernx && y == state.ferny) {
       blendImage((state.fern == 2 ? images_fern2 : images_fern)[season], fd.canvas);
+      label = 'fern. ' + label;
+    } else if(f.index == 0) {
+      label = 'empty ' + label;
     }
+
+    setAriaLabel(fd.div, label);
   }
   if(f.hasCrop() && f.growth < 1) {
     var c = f.getCrop();

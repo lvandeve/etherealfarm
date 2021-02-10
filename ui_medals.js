@@ -101,6 +101,11 @@ function updateMedalUI() {
     var div = flex.div;
 
     renderImage(icon, canvas);
+    if(m2.earned) {
+      setAriaLabel(div, 'achievement: ' + m.name);
+    } else {
+      setAriaLabel(div, 'not-yet-earned achievement: ' + m.name);
+    }
 
     div.style.border = m2.earned ? ('3px solid ' + tierColors[m.getTier()]) : '';
     div.style.backgroundColor = m2.earned ? util.darkenColor(tierColors[m.getTier()], 0.35) : '#8888';

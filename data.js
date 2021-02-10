@@ -934,7 +934,8 @@ var berry_5 = registerBerry('gooseberry', 5, berryplanttime0 * 16, gooseberry);
 var berry_6 = registerBerry('grape', 6, berryplanttime0 * 20, grape);
 var berry_7 = registerBerry('honeyberry', 7, berryplanttime0 * 25, honeyberry);
 var berry_8 = registerBerry('juniper', 8, berryplanttime0 * 30, juniper);
-// next ones: lingonberry, raspberry, strawberry, ...
+///var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry);
+///var berry_10 = registerBerry('raspberry', 10, berryplanttime0 * 40, raspberry);
 
 // mushrooms: give spores
 crop_register_id = 50;
@@ -942,6 +943,7 @@ var mush_0 = registerMushroom('champignon', 0, mushplanttime0 * 1, champignon);
 var mush_1 = registerMushroom('morel', 1, mushplanttime0 * 3, morel);
 var mush_2 = registerMushroom('amanita', 2, mushplanttime0 * 6, amanita); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
 var mush_3 = registerMushroom('portobello', 3, mushplanttime0 * 9, portobello);
+///var mush_4 = registerMushroom('shiitake', 4, mushplanttime0 * 12, shiitake);
 
 // flowers: give boost to neighbors
 crop_register_id = 75;
@@ -949,6 +951,7 @@ var flower_0 = registerFlower('clover', 0, Num(0.5), flowerplanttime0, clover);
 var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 3, cornflower);
 var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 6, daisy);
 var flower_3 = registerFlower('dandelion', 3, Num(1024.0), flowerplanttime0 * 9, dandelion);
+///var flower_4 = registerFlower('iris', 4, Num(8192.0), flowerplanttime0 * 12, iris);
 // ideas for more flowers: (forget me not), iris, lavender, orchid, sunflower, tulip, violet
 
 crop_register_id = 100;
@@ -1254,7 +1257,7 @@ function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_nu
     }
   };
 
-  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive), and adds 50% base production excluding the neighbor coppying effect. (additive)';
+  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive), and adds 50% base production excluding the neighbor copying effect. (additive)';
 
   var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
@@ -1306,18 +1309,22 @@ var berryunlock_5 = registerCropUnlock(berry_5, getBerryCost(5), 1, berry_4);
 var berryunlock_6 = registerCropUnlock(berry_6, getBerryCost(6), 1, berry_5);
 var berryunlock_7 = registerCropUnlock(berry_7, getBerryCost(7), 1, berry_6);
 var berryunlock_8 = registerCropUnlock(berry_8, getBerryCost(8), 1, berry_7);
+///var berryunlock_9 = registerCropUnlock(berry_9, getBerryCost(9), 1, berry_8);
+///var berryunlock_10 = registerCropUnlock(berry_10, getBerryCost(10), 1, berry_9);
 
 upgrade_register_id = 50;
 var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), 1, berry_1);
 var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), 1, berry_3);
 var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), 1, berry_5);
 var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), 1, berry_7);
+///var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), 1, berry_9);
 
 upgrade_register_id = 75;
 var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), 1, berry_2);
 var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), 1, berry_4);
 var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), 1, berry_6);
 var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8);
+///var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(3), 1, berry_10);
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, mush_1);
@@ -1361,18 +1368,22 @@ var berrymul_5 = registerCropMultiplier(berry_5, getBerryCost(5).mulr(basic_upgr
 var berrymul_6 = registerCropMultiplier(berry_6, getBerryCost(6).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_6);
 var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_7);
 var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_8);
+///var berrymul_9 = registerCropMultiplier(berry_9, getBerryCost(9).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_9);
+///var berrymul_10 = registerCropMultiplier(berry_10, getBerryCost(10).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_10);
 
 upgrade_register_id = 150;
 var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_0);
 var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_1);
 var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_2);
 var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_3);
+///var mushmul_4 = registerCropMultiplier(mush_4, getMushroomCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_4);
 
 upgrade_register_id = 175;
 var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0, flower_upgrade_cost_increase);
 var flowermul_1 = registerBoostMultiplier(flower_1, getFlowerCost(1).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_1, flower_upgrade_cost_increase);
 var flowermul_2 = registerBoostMultiplier(flower_2, getFlowerCost(2).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_2, flower_upgrade_cost_increase);
 var flowermul_3 = registerBoostMultiplier(flower_3, getFlowerCost(3).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_3, flower_upgrade_cost_increase);
+///var flowermul_4 = registerBoostMultiplier(flower_3, getFlowerCost(4).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_4, flower_upgrade_cost_increase);
 
 upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0, flower_upgrade_cost_increase);
@@ -1713,16 +1724,20 @@ registerPlantTypeMedals(berry_5);
 registerPlantTypeMedals(berry_6);
 registerPlantTypeMedals(berry_7);
 registerPlantTypeMedals(berry_8);
+///registerPlantTypeMedals(berry_9);
+///registerPlantTypeMedals(berry_10);
 medal_register_id = 249;
 registerPlantTypeMedals(mush_0);
 registerPlantTypeMedals(mush_1);
 registerPlantTypeMedals(mush_2);
 registerPlantTypeMedals(mush_3);
+///registerPlantTypeMedals(mush_4);
 medal_register_id = 299;
 registerPlantTypeMedals(flower_0);
 registerPlantTypeMedals(flower_1);
 registerPlantTypeMedals(flower_2);
 registerPlantTypeMedals(flower_3);
+///registerPlantTypeMedals(flower_4);
 medal_register_id = 349;
 registerPlantTypeMedals(nettle_0);
 medal_register_id = 359;
@@ -2132,6 +2147,7 @@ var special2_0 = registerSpecial2('fern', Res({resin:10}), 1.5, 'gives 100 * n^3
 crop2_register_id = 25;
 var berry2_0 = registerBerry2('blackberry', Res({resin:10}), 60, 'boosts berries 25% (additive)', 'boosts berries in the basic field 25% (additive)', blackberry);
 var berry2_1 = registerBerry2('blueberry', Res({resin:100}), 120, 'boosts berries 100% (additive)', 'boosts berries in the basic field 100% (additive)', blueberry);
+///var berry2_2 = registerBerry2('cranberry', Res({resin:2000}), 180, 'boosts berries 400% (additive)', 'boosts berries in the basic field 400% (additive)', cranberry);
 /*var berry2_2 = registerBerry2('cranberry', getBerry2Cost(2), getBerry2Prod(2), cranberry);
 var berry2_3 = registerBerry2('currant', getBerry2Cost(3), getBerry2Prod(3), currant);
 var berry2_4 = registerBerry2('goji', getBerry2Cost(4), getBerry2Prod(4), goji);
@@ -2143,6 +2159,7 @@ var berry2_8 = registerBerry2('juniper', getBerry2Cost(8), getBerry2Prod(8), jun
 // mushrooms2
 crop2_register_id = 50;
 var mush2_0 = registerMushroom2('champignon', Res({resin:20}), 120, 'boosts mushrooms 25% (additive)', 'boosts mushrooms spore production in the basic field 25% without increasing seeds consumption (additive)', champignon);
+///var mush2_1 = registerMushroom2('morel', Res({resin:4000}), 120, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', champignon);
 //var mush2_1 = registerMushroom2('morel', Res({resin:500}), 240, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', champignon);
 /*var mush2_1 = registerMushroom2('morel', getMushroom2Cost(1), getMushroom2Prod(1), morel);
 var mush2_2 = registerMushroom2('amanita', getMushroom2Cost(2), getMushroom2Prod(2), amanita);

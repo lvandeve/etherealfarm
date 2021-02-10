@@ -1257,7 +1257,11 @@ var update = function(opt_fromTick) {
       d = time - prevtime;
 
       // when negative time is registered, then you don't get large time deltas anymore.
-      if(d > 60 && state.negative_time > 0) {
+      // choosing 3000 seconds (something close enough to, but less than, an hour) for this: the most common scenario where negative time happens is switching between two computers
+      // with different UTC time set. That difference will be at least an hour. Optimally the compensation wuold only happen when
+      // loading the savegame on the future computer, where there'll then at leats be an hour of difference. The compensation
+      // should not happen when keeping the game in a background tab for 5 minutes.
+      if(d > 3000 && state.negative_time > 0) {
         var neg = Math.min(state.negative_time, d);
         d -= neg;
         state.negative_time -= neg;

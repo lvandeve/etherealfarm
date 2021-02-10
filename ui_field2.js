@@ -247,7 +247,7 @@ function initField2UI() {
             makeField2Dialog(x, y);
           }
         }
-      }, x, y, div), 'ethereal field tile ' + x + ', ' + y);
+      }, x, y, div));
 
       var pw = tw >> 1;
       var ph = Math.round(th / 16);
@@ -285,6 +285,8 @@ function updateField2CellUI(x, y) {
     fd.treelevel2 = state.treelevel2;
     fd.ferncode = ferncode;
 
+    var label = 'ethereal field tile ' + x + ', ' + y;
+
     fd.index = f.index;
     fd.growstage = growstage;
     if(f.hasCrop()) {
@@ -294,16 +296,25 @@ function updateField2CellUI(x, y) {
         // fullgrown, so hide progress bar
         setProgressBar(fd.progress, -1, undefined);
       }
+      label = c.name + '. ' + label;
     } else if(f.index == FIELD_TREE_TOP) {
       renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][season], fd.canvas);
+      label = 'ethereal tree level ' + state.treelevel2 + '. ' + label;
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][season], fd.canvas);
       if(state.treelevel2 > 0 || state.res.twigs.gtr(0)) renderLevel(fd.canvas, state.treelevel2, 0, 11, progresspixel);
+      label = 'ethereal tree level ' + state.treelevel2 + '. ' + label;
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
       unrenderImage(fd.canvas);
     }
+
+    if(f.index == 0) {
+      label = 'empty ' + label;
+    }
+
+    setAriaLabel(fd.div, label);
   }
   if(f.hasCrop() && f.growth < 1) {
     var c = crops2[f.cropIndex()];

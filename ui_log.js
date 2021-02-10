@@ -88,6 +88,7 @@ function initMessageUI() {
   var logDiv = logFlex.div;
   logDiv.innerText = '';
   logDiv.style.overflowY = 'scroll';
+  logDiv.setAttribute('role', 'log'); // aria role. Goal: indicate that this is a log to which messages are appended, possibly have it announce them without special action needed. TODO: should aria-live="assertive" be set?
   lastMessageElement = undefined;
   lastMessage = '';
   sameMessageCount = 1;
