@@ -216,39 +216,37 @@ function computeUpgradeUIOrder() {
     added[array[i]] = true;
   }
 
-  // first the two most expensive infinite times upgrades related to a crop that are unlocked
+  // first the most expensive of each type of crop and put those at the top
   // this ensures their upgrade is at the top of the upgrades even if you didn't plant this crop in the field yet (if it's just unlocked)
+  var findtop = function(type, array) {
+    var highest = undefined;
+    for(var i = 0; i < registered_upgrades.length; i++) {
+      if(added[registered_upgrades[i]]) continue;
+      var u = upgrades[registered_upgrades[i]];
+      var u2 = state.upgrades[registered_upgrades[i]];
+      if(!u2.unlocked) continue;
+      if(u.maxcount != 0) continue;
+      if(u.cropid == undefined) continue;
+      if(crops[u.cropid].type != type) continue;
+      if(highest == undefined || u.cost.gt(highest.cost)) highest = u;
+    }
+    if(highest) array.push(highest.index);
+  };
   array = [];
-  for(var i = 0; i < registered_upgrades.length; i++) {
-    if(added[registered_upgrades[i]]) continue;
-    var u = upgrades[registered_upgrades[i]];
-    var u2 = state.upgrades[registered_upgrades[i]];
-    if(!u2.unlocked) continue;
-    if(u.maxcount != 0) continue;
-    if(u.cropid == undefined) continue;
-    array.push(registered_upgrades[i]);
-  }
+  findtop(CROPTYPE_BERRY, array);
+  findtop(CROPTYPE_MUSH, array);
+  findtop(CROPTYPE_FLOWER, array);
+  findtop(CROPTYPE_BEE, array);
+  findtop(CROPTYPE_NETTLE, array);
+  findtop(CROPTYPE_SHORT, array);
   array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
-    var costa = a.cost.seeds;
-    var costb = b.cost.seeds;
-    return costa.lt(costb) ? 1 : -1;
+    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
   });
   for(var i = 0; i < array.length; i++) {
-    if(i >= 2) break;
     upgrades_order.push(array[i]);
     added[array[i]] = true;
-  }
-
-  // then nettle and watercress
-  if(!added[nettlemul_0] && state.cropcount[nettle_0]) {
-    upgrades_order.push(nettlemul_0);
-    added[nettlemul_0] = true;
-  }
-  if(!added[shortmul_0]) {
-    upgrades_order.push(shortmul_0);
-    added[shortmul_0] = true;
   }
 
   // then "relevant" infinite time upgrades: such as crops you have in the field
@@ -261,6 +259,11 @@ function computeUpgradeUIOrder() {
     if(!relevant) continue;
     array.push(registered_upgrades[i]);
   }
+  array = array.sort(function(a, b) {
+    a = upgrades[a];
+    b = upgrades[b];
+    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+  });
   for(var i = 0; i < array.length; i++) {
     upgrades_order.push(array[i]);
     added[array[i]] = true;
@@ -274,6 +277,11 @@ function computeUpgradeUIOrder() {
     if(u.maxcount != 0) continue;
     array.push(registered_upgrades[i]);
   }
+  array = array.sort(function(a, b) {
+    a = upgrades[a];
+    b = upgrades[b];
+    return a.cost.seeds.lt(b.cost.seeds) ? 1 : -1;
+  });
   for(var i = 0; i < array.length; i++) {
     upgrades_order.push(array[i]);
     added[array[i]] = true;
