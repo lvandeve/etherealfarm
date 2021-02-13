@@ -168,6 +168,9 @@ function updateResourceUI() {
       }
       if(s == 2) {
         result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, without increasing consumption<br>';
+        if(state.upgrades2[upgrade2_mistletoe].count) {
+          result += '• Twigs bonus: ' + getAutumnMistletoeBonus().subr(1).toPercentString() + ' more twigs added when tree levels with mistletoes<br>';
+        }
       }
       if(s == 3) {
         result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower stats when not next to the tree<br>';
@@ -183,7 +186,7 @@ function updateResourceUI() {
     updatedialogfun = function() {
       flex.div.innerHTML = getText();
     };
-  });
+  }, 'info box: time and level');
   registerTooltip(resourceDivs[0], function() {
     var text = '';
     text += 'Season change in: ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
@@ -346,7 +349,7 @@ function updateResourceUI() {
           }
         }, div, flex);
         updatedialogfun();
-      });
+      }, 'info box: ' + name + ' resource');
     }
   };
 

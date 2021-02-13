@@ -25,16 +25,21 @@ The materials in increasing level are:
 
 -0: zinc: dark gray
 -1: bronze: brown
--2: silver: light gray
--3: electrum: green-ish
+-2: silver: medium gray
+-3: electrum: yellow-green
 -4: gold: yellow
--5: platinum: white
--6: rhodium: rose-ish
+-5: platinum: light gray
+-6: rhodium: rose
 -7: sapphire: blue
 -8: emerald: green
 -9: ruby: red
 -10: diamond: white
 */
+
+// These tiers are also used for other things than medals, e.g. fruits and some of the tree images
+var tierNames =     ['zinc', 'bronze', 'silver', 'electrum', 'gold', 'platinum', 'rhodium', 'sapphire', 'emerald', 'ruby', 'diamond'];
+var tierColors =    ['#444',   '#840',   '#888',     '#bf6', '#ff0',     '#ddd',    '#fdd',     '#00f',    '#0c4', '#f00',    '#fff'];
+var tierColors_BG = ['#000',   '#420',   '#666',     '#8a4', '#bb0',     '#aaa',    '#a88',     '#00a',    '#092', '#a00',    '#eee'];
 
 
 // medals, too, get more saturation

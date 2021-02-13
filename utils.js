@@ -316,9 +316,9 @@ var Utils = (function() {
 
 
   var formatCSSColor = function(rgb) {
-    var r = rgb[0].toString(16);
-    var g = rgb[1].toString(16);
-    var b = rgb[2].toString(16);
+    var r = Math.floor(rgb[0]).toString(16);
+    var g = Math.floor(rgb[1]).toString(16);
+    var b = Math.floor(rgb[2]).toString(16);
     if(r.length == 1) r = '0' + r;
     if(g.length == 1) g = '0' + g;
     if(b.length == 1) b = '0' + b;
@@ -355,6 +355,26 @@ var Utils = (function() {
   };
   result.negateLightness = negateLightness;
 
+  // returns the farthest away color from the given css color. the result is either black or white. This is the color with highest contrast.
+  var farthestColor = function(css) {
+    var rgb = parseCSSColor(css);
+    var lightness = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2];
+    return lightness > 128 ? '#000' : '#fff';
+  };
+  result.farthestColor = farthestColor;
+
+  // similar to farthestColor, but somewhat preserves the hue
+  var farthestColorHue = function(css) {
+    var rgb = parseCSSColor(css);
+    var lightness = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2];
+    if(lightness > 128) {
+      return formatCSSColor([rgb[0] * 0.25, rgb[1] * 0.25, rgb[2] * 0.25]);
+    } else {
+      return formatCSSColor([255 - (255 - rgb[0]) * 0.25, 255 - (255 - rgb[1]) * 0.25, 255 - (255 - rgb[2]) * 0.25]);
+    }
+  };
+  result.farthestColorHue = farthestColorHue;
+
 
   // formats time given in second as years, months, days, hours, minutes, seconds
   // opt_maxSections is how many different sections to print, or leave out smaller ones. Default is 3, max is 9.
@@ -371,42 +391,42 @@ var Utils = (function() {
     var orig = s;
     s = Math.floor(s);
 
-    var GG = 0, MM = 0, mm = 0, Y = 0, M = 0, D = 0, h = 0, m = 0;
-    if(!(opt_inv && maxSections < 9) && s >= 31556952000000000) { // seconds in a billion years. NOTE: it cannot actually distinguish seconds anymore at this timescale with 53-bit ints, they go to 9007199254740992, about 0.28 Ga
-      GG = Math.floor(s / 31556952000000000);
-      s -= GG * 31556952000000000;
-    }
-    if(!(opt_inv && maxSections < 8) && s >= 31556952000000) { // seconds in a million years
-      MM = Math.floor(s / 31556952000000);
-      s -= MM * 31556952000000;
-    }
-    if(!(opt_inv && maxSections < 7) && s >= 31556952000) { // seconds in a millenium with 242.5 leap years
-      mm = Math.floor(s / 31556952000);
-      s -= mm * 31556952000;
-    }
+    var Y = 0, M = 0, D = 0, h = 0, m = 0;
     if(!(opt_inv && maxSections < 6) && s >= 31557600) {  // seconds in a 365.25 day year
       Y = Math.floor(s / 31557600);
       s -= Y * 31557600;
     }
-    if(!(opt_inv && maxSections < 5) && s >= 2635200) {  // seconds in a 30.5 day month
-      M = Math.floor(s / 2635200);
-      s -= M * 2635200;
-    }
-    if(!(opt_inv && maxSections < 4) && s >= 86400) {  // seconds in a day
-      D = Math.floor(s / 86400);
-      s -= D * 86400;
-    }
-    if(!(opt_inv && maxSections < 3) && s >= 3600) {
-      h = Math.floor(s / 3600);
-      s -= h * 3600;
-    }
-    if(!(opt_inv && maxSections < 2) && s >= 60) {
-      m = Math.floor(s / 60);
-      s -= m * 60;
+
+    // If many years, the months and days are no longer relevant to print
+    var many_years = Y >= 100;
+
+
+    if(!many_years) {
+      if(!(opt_inv && maxSections < 5) && s >= 2635200) {  // seconds in a 30.5 day month
+        M = Math.floor(s / 2635200);
+        s -= M * 2635200;
+      }
+      if(!(opt_inv && maxSections < 4) && s >= 86400) {  // seconds in a day
+        D = Math.floor(s / 86400);
+        s -= D * 86400;
+      }
+      if(!(opt_inv && maxSections < 3) && s >= 3600) {
+        h = Math.floor(s / 3600);
+        s -= h * 3600;
+      }
+      if(!(opt_inv && maxSections < 2) && s >= 60) {
+        m = Math.floor(s / 60);
+        s -= m * 60;
+      }
     }
 
-    var names_single = opt_short ? ['Ga', 'Ma', 'mm', 'Y', 'M', 'd', 'h', 'm', 's'] : [' Ga', ' Ma', ' millenium', ' year', ' month', ' day', ' hour', ' minute', ' second'];
-    var names_plural = opt_short ? ['Ga', 'Ma', 'mm', 'Y', 'M', 'd', 'h', 'm', 's'] : [' Ga', ' Ma', ' millenia', ' years', ' months', ' days', ' hours', ' minutes', ' seconds'];
+    var names_single = opt_short ? ['Y', 'M', 'd', 'h', 'm', 's'] : [' year', ' month', ' day', ' hour', ' minute', ' second'];
+    var names_plural = opt_short ? ['Y', 'M', 'd', 'h', 'm', 's'] : [' years', ' months', ' days', ' hours', ' minutes', ' seconds'];
+    if(many_years) {
+      // add a space (and full name even if short), so you see e.g. "10K years" instead of "10KY" which might be more confusing
+      names_single[0] = ' years';
+      names_plural[0] = ' years';
+    }
 
     var result = '';
 
@@ -415,33 +435,27 @@ var Utils = (function() {
     }
 
     if(opt_inv) {
-      if(GG > 0) { result += sp() + GG + names_single[0]; }
-      if(MM > 0) { result += sp() + MM + names_single[1]; }
-      if(mm > 0) { result += sp() + mm + names_single[2]; }
-      if(Y > 0 ) { result += sp() + Y + names_single[3]; }
-      if(M > 0 ) { result += sp() + M + names_single[4]; }
-      if(D > 0 ) { result += sp() + D + names_single[5]; }
-      if(h > 0 ) { result += sp() + h + names_single[6]; }
-      if(m > 0 ) { result += sp() + m + names_single[7]; }
-      if(s > 0 ) { result += sp() + s + names_single[8]; }
+      if(Y > 0 ) { result += sp() + Num(Y).toString() + names_single[0]; }
+      if(!many_years) {
+        if(M > 0 ) { result += sp() + M + names_single[1]; }
+        if(D > 0 ) { result += sp() + D + names_single[2]; }
+        if(h > 0 ) { result += sp() + h + names_single[3]; }
+        if(m > 0 ) { result += sp() + m + names_single[4]; }
+        if(s > 0 ) { result += sp() + s + names_single[5]; }
+      }
     } else {
       var sections = 0;
-      // giga-annum
-      if(GG > 100) ++sections;
-      if(GG > 10) ++sections;
-      if(GG > 0) { result += GG + names_single[0]; if((++sections) >= maxSections) return result; }
-      // mega-annum
-      if(MM > 0) { result += sp() + MM + names_single[1]; if((++sections) >= maxSections) return result; }
-      if(mm > 0) { result += sp() + mm + (mm == 1 ? names_single[2] : names_plural[2]); if((++sections) >= maxSections) return result; }
-      if(Y > 0) { result += sp() + Y + (Y == 1 ? names_single[3] : names_plural[3]); if((++sections) >= maxSections) return result; }
-      if(M > 0) { result += sp() + M + (M == 1 ? names_single[4] : names_plural[4]); if((++sections) >= maxSections) return result; }
-      if(D > 0) { result += sp() + D + (D == 1 ? names_single[5] : names_plural[5]); if((++sections) >= maxSections) return result; }
-      if(h > 0) { result += sp() + h + (h == 1 ? names_single[6] : names_plural[6]); if((++sections) >= maxSections) return result; }
-      if(m > 0) { result += sp() + m + (m == 1 ? names_single[7] : names_plural[7]); if((++sections) >= maxSections) return result; }
-      if(s > 0) { result += sp() + s + (s == 1 ? names_single[8] : names_plural[8]); if((++sections) >= maxSections) return result; }
+      if(Y > 0) { result += sp() + Num(Y).toString() + (Y == 1 ? names_single[0] : names_plural[0]); if((++sections) >= maxSections) return result; }
+      if(!many_years) {
+        if(M > 0) { result += sp() + M + (M == 1 ? names_single[1] : names_plural[1]); if((++sections) >= maxSections) return result; }
+        if(D > 0) { result += sp() + D + (D == 1 ? names_single[2] : names_plural[2]); if((++sections) >= maxSections) return result; }
+        if(h > 0) { result += sp() + h + (h == 1 ? names_single[3] : names_plural[3]); if((++sections) >= maxSections) return result; }
+        if(m > 0) { result += sp() + m + (m == 1 ? names_single[4] : names_plural[4]); if((++sections) >= maxSections) return result; }
+        if(s > 0) { result += sp() + s + (s == 1 ? names_single[5] : names_plural[5]); if((++sections) >= maxSections) return result; }
+      }
     }
 
-    if(result == '') result = orig.toFixed(3) + names_plural[8];
+    if(result == '') result = orig.toFixed(3) + names_plural[5];
 
     return result;
   };

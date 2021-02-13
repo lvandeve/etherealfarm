@@ -292,13 +292,7 @@ function createFruitDialog(f, opt_selected) {
 
 function styleFruitChip(flex, f) {
   var ratio = state.res.essence
-  var power = 0;
-  for(var i = 0; i < f.levels.length; i++) power = Math.max(power, f.levels[i]);
-  power = towards1(power, 20);
-  var hsl = [power * 192, 255, 32, 112];
-  // give fruits with higher level upgrades a slightly different background color, just as a way to distinguish them a bit
-  var color = RGBtoCSS(HSLtoRGB(hsl));
-  flex.div.style.backgroundColor = color;
+  flex.div.style.backgroundColor = tierColors_BG[f.tier];
   if(f.mark) {
     var color = f.mark == 1 ? '#f008' : (f.mark == 2 ? '#fe08' : (f.mark == 3 ? '#4c48' : '#06c8'));
     flex.div.style.border = '3px solid ' + color;
@@ -312,7 +306,8 @@ function styleFruitChip(flex, f) {
   }
 }
 
-function makeFruitChip(flex, f) {
+// type: 0=active, 1=storage, 2=sacrificial
+function makeFruitChip(flex, f, type) {
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(images_apple[f.tier], canvas);
 
@@ -324,11 +319,15 @@ function makeFruitChip(flex, f) {
     text += '<br>';
     text += 'Ability: ' + upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
   }
+  text += '<br>';
+  text += 'Get on sacrifice: ' + getFruitSacrifice(f).toString();
 
   styleFruitChip(flex, f);
 
   registerTooltip(flex.div, text);
   flex.div.style.userSelect = 'none';
+
+  var typename = (type == 0) ? 'active' : (type == 1 ? 'storage' : 'sacrificial');
 
   addButtonAction(flex.div, function(e) {
     if(e.shiftKey) {
@@ -342,7 +341,7 @@ function makeFruitChip(flex, f) {
     } else {
       createFruitDialog(f);
     }
-  }, 'fruit: ' + f.toString());
+  }, typename + ' fruit slot: ' + f.toString());
 }
 
 function updateFruitUI() {
@@ -373,7 +372,7 @@ function updateFruitUI() {
   y += s;
   canvasFlex.div.style.border = '1px solid black';
   if(state.fruit_active.length) {
-    makeFruitChip(canvasFlex, state.fruit_active[0]);
+    makeFruitChip(canvasFlex, state.fruit_active[0], 0);
   } else {
     canvasFlex.div.style.backgroundColor = '#ccc';
     registerTooltip(canvasFlex.div, 'No active fruit present in this slot. ' + help);
@@ -382,7 +381,7 @@ function updateFruitUI() {
       lastTouchedFruit = null;
       updateFruitUI();
       showMessage('No active fruit present in this slot. ' + help);
-    }, help));
+    }, help), 'empty active fruit slot');
   }
 
   ////////
@@ -401,7 +400,7 @@ function updateFruitUI() {
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
     if(f) {
-      makeFruitChip(canvasFlex, f);
+      makeFruitChip(canvasFlex, f, 1);
     } else {
       canvasFlex.div.style.backgroundColor = '#ccc';
       registerTooltip(canvasFlex.div, 'No stored fruit present in this slot. ' + help);
@@ -410,7 +409,7 @@ function updateFruitUI() {
         lastTouchedFruit = null;
         updateFruitUI();
         showMessage('No stored fruit present in this slot. ' + help);
-      }, help));
+      }, help), 'empty storage fruit slot');
     }
   }
   y += s;
@@ -435,7 +434,7 @@ function updateFruitUI() {
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_sacr.length ? state.fruit_sacr[i] : undefined;
     if(f) {
-      makeFruitChip(canvasFlex, f);
+      makeFruitChip(canvasFlex, f, 2);
     } else {
       if(i == 0) {
         canvasFlex.div.style.border = '1px solid #000';
@@ -457,7 +456,7 @@ function updateFruitUI() {
         lastTouchedFruit = null;
         updateFruitUI();
         showMessage('No fruit present in this sacrificial pool slot. ' + help);
-      }, help));
+      }, help), 'empty sacrificial fruit slot');
     }
   }
   y += s;

@@ -176,7 +176,7 @@ function updateRightPane() {
       if(upgrades[j].canUpgrade()) unlocked.push(j);
     }
 
-    var maxnum = 10;
+    var maxnum = 11;
 
     for(var i = 0; i <= unlocked.length; i++) {
       if(i >= maxnum) break;
@@ -186,6 +186,7 @@ function updateRightPane() {
       if(i == 0) {
         centerText2(chip.div);
         chip.div.textEl.innerText = 'upgrades';
+        setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
       } else if(i + 1 == maxnum && unlocked.length > maxnum) {
         centerText2(chip.div);
         chip.div.textEl.innerText = 'more in upgrades tab...';

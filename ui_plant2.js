@@ -102,13 +102,13 @@ function makePlantDialog2(x, y, show_only) {
     }, index));
 
     if(!show_only) {
-      chip.div.onclick = bind(function(index) {
+      addButtonAction(chip.div, bind(function(index) {
         var c = crops2[index];
         actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c});
         state.lastPlanted2 = index; // for shift key
         dialog.cancelFun();
         update(); // do update immediately rather than wait for tick, for faster feeling response time
-      }, index);
+      }, index), 'plant ethereal crop: ' + crops2[index].name);
       styleButton0(chip.div);
     }
   }

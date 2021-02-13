@@ -215,8 +215,10 @@ So the lower bound should be something non-linear. An example: it could be ln(t 
 function reduceGrowTime(time, reduce) {
   if(reduce == 0) return time;
 
-  var f = 0.02;
-  var min = Math.log(time * f + 1) / f;
+  //var f = 0.02;
+  //var min = Math.log(time * f + 1) / f;
+  //var min = 30;
+  var min = 30 + Math.log(time);
   time -= min;
 
   time = towardsdiag(time, 1, reduce);
@@ -934,8 +936,8 @@ var berry_5 = registerBerry('gooseberry', 5, berryplanttime0 * 16, gooseberry);
 var berry_6 = registerBerry('grape', 6, berryplanttime0 * 20, grape);
 var berry_7 = registerBerry('honeyberry', 7, berryplanttime0 * 25, honeyberry);
 var berry_8 = registerBerry('juniper', 8, berryplanttime0 * 30, juniper);
-///var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry);
-///var berry_10 = registerBerry('raspberry', 10, berryplanttime0 * 40, raspberry);
+var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry);
+var berry_10 = registerBerry('raspberry', 10, berryplanttime0 * 40, raspberry);
 
 // mushrooms: give spores
 crop_register_id = 50;
@@ -943,7 +945,7 @@ var mush_0 = registerMushroom('champignon', 0, mushplanttime0 * 1, champignon);
 var mush_1 = registerMushroom('morel', 1, mushplanttime0 * 3, morel);
 var mush_2 = registerMushroom('amanita', 2, mushplanttime0 * 6, amanita); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
 var mush_3 = registerMushroom('portobello', 3, mushplanttime0 * 9, portobello);
-///var mush_4 = registerMushroom('shiitake', 4, mushplanttime0 * 12, shiitake);
+var mush_4 = registerMushroom('shiitake', 4, mushplanttime0 * 12, shiitake);
 
 // flowers: give boost to neighbors
 crop_register_id = 75;
@@ -951,7 +953,7 @@ var flower_0 = registerFlower('clover', 0, Num(0.5), flowerplanttime0, clover);
 var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 3, cornflower);
 var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 6, daisy);
 var flower_3 = registerFlower('dandelion', 3, Num(1024.0), flowerplanttime0 * 9, dandelion);
-///var flower_4 = registerFlower('iris', 4, Num(8192.0), flowerplanttime0 * 12, iris);
+var flower_4 = registerFlower('iris', 4, Num(8192.0), flowerplanttime0 * 12, iris);
 // ideas for more flowers: (forget me not), iris, lavender, orchid, sunflower, tulip, violet
 
 crop_register_id = 100;
@@ -1309,22 +1311,22 @@ var berryunlock_5 = registerCropUnlock(berry_5, getBerryCost(5), 1, berry_4);
 var berryunlock_6 = registerCropUnlock(berry_6, getBerryCost(6), 1, berry_5);
 var berryunlock_7 = registerCropUnlock(berry_7, getBerryCost(7), 1, berry_6);
 var berryunlock_8 = registerCropUnlock(berry_8, getBerryCost(8), 1, berry_7);
-///var berryunlock_9 = registerCropUnlock(berry_9, getBerryCost(9), 1, berry_8);
-///var berryunlock_10 = registerCropUnlock(berry_10, getBerryCost(10), 1, berry_9);
+var berryunlock_9 = registerCropUnlock(berry_9, getBerryCost(9), 1, berry_8);
+var berryunlock_10 = registerCropUnlock(berry_10, getBerryCost(10), 1, berry_9);
 
 upgrade_register_id = 50;
 var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), 1, berry_1);
 var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), 1, berry_3);
 var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), 1, berry_5);
 var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), 1, berry_7);
-///var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), 1, berry_9);
+var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), 1, berry_9);
 
 upgrade_register_id = 75;
 var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), 1, berry_2);
 var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), 1, berry_4);
 var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), 1, berry_6);
 var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8);
-///var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(3), 1, berry_10);
+var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), 1, berry_10);
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, mush_1);
@@ -1368,22 +1370,22 @@ var berrymul_5 = registerCropMultiplier(berry_5, getBerryCost(5).mulr(basic_upgr
 var berrymul_6 = registerCropMultiplier(berry_6, getBerryCost(6).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_6);
 var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_7);
 var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_8);
-///var berrymul_9 = registerCropMultiplier(berry_9, getBerryCost(9).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_9);
-///var berrymul_10 = registerCropMultiplier(berry_10, getBerryCost(10).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_10);
+var berrymul_9 = registerCropMultiplier(berry_9, getBerryCost(9).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_9);
+var berrymul_10 = registerCropMultiplier(berry_10, getBerryCost(10).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_10);
 
 upgrade_register_id = 150;
 var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_0);
 var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_1);
 var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_2);
 var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_3);
-///var mushmul_4 = registerCropMultiplier(mush_4, getMushroomCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_4);
+var mushmul_4 = registerCropMultiplier(mush_4, getMushroomCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_4);
 
 upgrade_register_id = 175;
 var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0, flower_upgrade_cost_increase);
 var flowermul_1 = registerBoostMultiplier(flower_1, getFlowerCost(1).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_1, flower_upgrade_cost_increase);
 var flowermul_2 = registerBoostMultiplier(flower_2, getFlowerCost(2).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_2, flower_upgrade_cost_increase);
 var flowermul_3 = registerBoostMultiplier(flower_3, getFlowerCost(3).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_3, flower_upgrade_cost_increase);
-///var flowermul_4 = registerBoostMultiplier(flower_3, getFlowerCost(4).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_4, flower_upgrade_cost_increase);
+var flowermul_4 = registerBoostMultiplier(flower_4, getFlowerCost(4).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_4, flower_upgrade_cost_increase);
 
 upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0, flower_upgrade_cost_increase);
@@ -1524,9 +1526,6 @@ function Medal() {
 
   this.icon = undefined;
 };
-
-var tierNames = ['zinc', 'bronze', 'silver', 'electrum', 'gold', 'platinum', 'rhodium', 'sapphire', 'emerald', 'ruby', 'diamond'];
-var tierColors = ['#444',  '#840',   '#888',     '#8f8', '#ff0',     '#eee',    '#fcc',     '#88f',    '#8f8', '#f00',    '#fff'];
 
 // Tier for achievement images if no specific one given, maps to zinc, copper, silver, electrum, gold, etc..., see images_medals.js
 Medal.prototype.getTier = function() {
@@ -1724,20 +1723,20 @@ registerPlantTypeMedals(berry_5);
 registerPlantTypeMedals(berry_6);
 registerPlantTypeMedals(berry_7);
 registerPlantTypeMedals(berry_8);
-///registerPlantTypeMedals(berry_9);
-///registerPlantTypeMedals(berry_10);
+registerPlantTypeMedals(berry_9);
+registerPlantTypeMedals(berry_10);
 medal_register_id = 249;
 registerPlantTypeMedals(mush_0);
 registerPlantTypeMedals(mush_1);
 registerPlantTypeMedals(mush_2);
 registerPlantTypeMedals(mush_3);
-///registerPlantTypeMedals(mush_4);
+registerPlantTypeMedals(mush_4);
 medal_register_id = 299;
 registerPlantTypeMedals(flower_0);
 registerPlantTypeMedals(flower_1);
 registerPlantTypeMedals(flower_2);
 registerPlantTypeMedals(flower_3);
-///registerPlantTypeMedals(flower_4);
+registerPlantTypeMedals(flower_4);
 medal_register_id = 349;
 registerPlantTypeMedals(nettle_0);
 medal_register_id = 359;
@@ -2343,11 +2342,11 @@ upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2,
 
 
 
-var upgrade2_time_reduce_0_amount = 60;
+var upgrade2_time_reduce_0_amount = 90;
 
 upgrade2_register_id = 25;
 var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', 0, Res({resin:25}), 2, function() {
-}, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes 60 seconds, will not get much faster. This improves the higher level slower plants more.', undefined, undefined, blackberry[0]);
+}, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes ' + upgrade2_time_reduce_0_amount + ' seconds, will not get much faster. This improves the higher level slower plants more.', undefined, undefined, blackberry[0]);
 
 var upgrade2_basic_tree_bonus = Num(0.02);
 
@@ -2595,13 +2594,13 @@ function treeLevelReq(level) {
 // NOTE: must be such that at 10, the first time the name "adult tree" is used to fit the storyline
 function treeLevelIndex(level) {
   var result = 0;
-  // 0-4: one image for each level
-  if(level < 5) result = level;
-  // 5-49: one image per 5 levels
-  else if(level < 50) result = 4 + Math.floor(level / 5);
+  // 0-9: one image for each level
+  if(level < 10) result = level;
+  // 10-45: one image per 5 levels
+  else if(level < 50) result = 10 + Math.floor((level - 10) / 5);
   //50-...: 1 image per 10 levels
-  else result = 14 + Math.floor((level - 50) / 10);
-  if (result >= tree_images.length) result = tree_images.length - 1;
+  else result = 18 + Math.floor((level - 50) / 10);
+  if(result >= tree_images.length) result = tree_images.length - 1;
   return result;
 }
 
@@ -2655,6 +2654,10 @@ function getTwigs(level) {
   var res = new Res();
   res.twigs = Num(Math.log2(state.mistletoes + 1));
   res.twigs.mulInPlace(Num(1.07).powr(level));
+  if(getSeason() == 2) {
+    var bonus = getAutumnMistletoeBonus();
+    res.twigs.mulInPlace(bonus);
+  }
   return res;
 }
 
@@ -2712,7 +2715,8 @@ winter: tree
 
 var bonus_season_flower_spring = 1.25;
 var bonus_season_berry_summer = 1.5;
-var bonus_season_mushroom_autumn = 2;
+var bonus_season_autumn_mushroom = 2.5;
+var bonus_season_autumn_mistletoe = 1.5;
 var malus_season_winter = 0.75;
 var bonus_season_winter_tree = 1.5;
 var bonus_season_winter_resin = 1.5;
@@ -2739,11 +2743,21 @@ function getSummerBerryBonus() {
 }
 
 function getAutumnMushroomBonus() {
-  var bonus = Num(bonus_season_mushroom_autumn);
+  var bonus = Num(bonus_season_autumn_mushroom);
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
     bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+  }
+  return bonus;
+}
+
+function getAutumnMistletoeBonus() {
+  var bonus = Num(bonus_season_autumn_mistletoe);
+  var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
+  if(ethereal_season) {
+    var t = towards1(ethereal_season, 10) * 0.5;
+    bonus.addrInPlace(t);
   }
   return bonus;
 }

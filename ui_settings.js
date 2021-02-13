@@ -860,7 +860,7 @@ function initSettingsUI() {
       update();
     }
     removeAllTooltips();
-  });
+  }, 'undo');
   registerTooltip(undobutton.div, function() {
     return 'Undo your last action(s). Press again to redo.<br><br>' +
       'Undo is saved when doing an action, but with at least ' + util.formatDuration(minUndoTime) + ' of time in-between, so multiple actions in quick succession may all be undone.<br><br>' +

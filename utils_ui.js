@@ -67,12 +67,17 @@ function setAriaLabel(div, label) {
   div.setAttribute('aria-label', label);
 }
 
+
+function setAriaRole(div, role) {
+  div.setAttribute('role', role);
+}
+
 // use this instead of ".onclick = ..." for more accessible buttons
 // opt_label is an optional textual name for image-icon-buttons
 function addButtonAction(div, fun, opt_label) {
   div.onclick = fun;
   div.tabIndex = 0;
-  div.setAttribute('role', 'button');
+  setAriaRole(div, 'button');
   div.setAttribute('aria-pressed', 'false'); // TODO: is this needed?
   if(opt_label) setAriaLabel(div, opt_label);
 }
@@ -181,6 +186,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   var dialog = dialogFlex.div;
 
   dialog.className = 'efDialog';
+  setAriaRole(dialog, 'dialog');
 
   dialog.style.zIndex = '' + (dialog_level * 10 + 5);
 
@@ -664,6 +670,7 @@ function getCostAffordTimer(cost) {
 // adds scrollbar and shadow effect if needed, otherwise not.
 function makeScrollable(flex) {
   flex.div.style.overflowY = 'auto';
+  flex.div.style.overflowX = 'hidden';
 
   // TODO: let this dynamically update if the flex changes size
   // timeout: ensure the computation happens after text was assigned to the div, ...

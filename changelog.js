@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.34 (2021-02-13):';
+  text += '<br/>• Added next higher level crop types for berry, mushroom and flower.';
+  text += '<br/>• Autumn mushroom boost increased, and now also boosts mistletoe twigs.';
+  text += '<br/>• Buffed the ethereal grow speed upgrade.';
+  text += '<br/>• Made more clearly defined colors for the metal tiers (used in medals, fruits, ...).';
+  text += '<br/>• HTML ARIA annotation improvements.';
+  text += '<br/><br/>';
+
   text += '0.1.33 (2021-02-08):';
   text += '<br/>• Some challenges can have tree resin, fruit and/or twigs drop now.';
   text += '<br/>• Side panel upgrade tooltips now also show cost and growtime of the related plant itself.';

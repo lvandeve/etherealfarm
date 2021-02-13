@@ -1168,17 +1168,19 @@ function unlockEtherealCrop(id) {
 // TODO: tree level-ups must be added here, both ethereal and basic tree, as these affect production boost and resin income
 // TODO: ethereal crops and their plant time must be added here
 function nextEventTime() {
-
+  // next season
   var time = timeTilNextSeason();
 
   var addtime = function(time2) {
     time = Math.min(time, time2);
   };
 
+  // ability times
   if((state.time - state.misttime) < getMistDuration()) addtime(getMistDuration() - state.time + state.misttime);
   if((state.time - state.suntime) < getSunDuration()) addtime(getSunDuration() - state.time + state.suntime);
   if((state.time - state.rainbowtime) < getRainbowDuration()) addtime(getRainbowDuration() - state.time + state.rainbowtime);
 
+  // plants growing / disappearing
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
@@ -1192,6 +1194,9 @@ function nextEventTime() {
       }
     }
   }
+
+  // tree level up
+  addtime(treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores));
 
   return time;
 }
@@ -1508,6 +1513,10 @@ var update = function(opt_fromTick) {
             if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
           }
           store_undo = true;
+        } else if(f.index == FIELD_REMAINDER) {
+          f.index = 0;
+          f.growth = 0;
+          if(!action.silent) showMessage('cleared watercress remainder');
         }
       } else if(type == ACTION_DELETE2) {
         var f = state.field2[action.y][action.x];
@@ -1824,6 +1833,9 @@ var update = function(opt_fromTick) {
       if(state.challenge && !challenges[state.challenge].allowbeyondhighestlevel && state.treelevel > state.g_treelevel) do_twigs = false;
 
       if(do_twigs) {
+        if(getSeason() == 2) {
+          showMessage('Autumn twigs bonus: ' + (getAutumnMistletoeBonus().subr(1)).toPercentString());
+        }
         twigs = nextTwigs();
         actualgain.addInPlace(twigs);
       }
@@ -1849,7 +1861,7 @@ var update = function(opt_fromTick) {
           '. Resin added: ' + resin.toString() + '. Total resin ready: ' + state.resin.toString();
       if(!twigs.empty()) message += '. Twigs from mistletoe added: ' + twigs.toString();
       if(state.treelevel == 9) {
-        message += '. The tree is so close to becoming an adult tree now.';
+        message += '. The tree is almost an adult tree now.';
       }
       showMessage(message, '#2f2');
       var fruit = undefined;

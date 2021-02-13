@@ -187,9 +187,9 @@ function updateAbilitiesUI() {
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(watercress[4], canvas);
 
-      addButtonAction(watercressbutton.div, function() {
-        refreshWatercress();
-      }, 'refresh watercress');
+      addButtonAction(watercressbutton.div, function(e) {
+        refreshWatercress(e.shiftKey);
+      }, 'refresh watercress. with shift: deletes all watercress');
     }
   } else if(watercressbutton) {
     watercressbutton.clear();
@@ -201,25 +201,32 @@ function updateAbilitiesUI() {
 }
 
 
-function refreshWatercress() {
+function refreshWatercress(opt_clear) {
   var replanted = false;
   var refreshed = false;
+  var remcleared = false;
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
       if(f.index == FIELD_REMAINDER) {
-        actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
-        replanted = true;
+        if(opt_clear) {
+          actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+          remcleared = true;
+        } else {
+          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          replanted = true;
+        }
       }
       if(f.index == CROPINDEX + short_0 && state.res.seeds.gtr(1000)) {
         actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
-        actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+        if(!opt_clear) actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
         refreshed = true;
       }
     }
   }
   if(replanted) showMessage('replanting watercress');
-  else if(refreshed) showMessage('refreshing watercress');
+  else if(refreshed) showMessage(opt_clear ? 'deleting watercress' : 'refreshing watercress');
+  else if(remcleared) showMessage('cleared watercress remainders');
   else showMessage('nothing done: only refreshes existing watercress or remainders of watercress');
   update();
 }

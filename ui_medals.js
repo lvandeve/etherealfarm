@@ -34,8 +34,9 @@ function updateMedalUI() {
 
     medalText = new Flex(medalFlex, 0.02, 0.02, 1, 0.05, 1.2);
     medalGrid = new Flex(medalFlex, 0.02, 0.15, 0.9, 2.0);
-    medalFlex.div.style.overflowY = 'scroll';
-    medalFlex.div.style.overflowX = 'hidden';
+    //medalFlex.div.style.overflowY = 'scroll';
+    //medalFlex.div.style.overflowX = 'hidden';
+    makeScrollable(medalFlex);
   }
 
   var infoText = ''
@@ -49,7 +50,7 @@ function updateMedalUI() {
   var w = 64;
   var h = 64;
   var num = registered_medals.length;
-  var numx = 10;
+  var numx = tierColors.length;
   //medalFlex.div.removeChild(medalGrid.div);
 
   var i = -1;
@@ -108,7 +109,7 @@ function updateMedalUI() {
     }
 
     div.style.border = m2.earned ? ('3px solid ' + tierColors[m.getTier()]) : '';
-    div.style.backgroundColor = m2.earned ? util.darkenColor(tierColors[m.getTier()], 0.35) : '#8888';
+    div.style.backgroundColor = m2.earned ? tierColors_BG[m.getTier()] : '#8888';
 
     var canvas2 = medal_canvases2[i];
     if(m2.earned && !m2.seen) {
@@ -150,6 +151,22 @@ function updateMedalUI() {
       flex.div.innerHTML = getMedalText();
       seenfun();
     }, getMedalText, seenfun));
+  }
+
+  var xpos = 0;
+  var ypos = Math.floor(i / numx) + 2;
+  var flex = new Flex(medalGrid, [0, xpos / 10], [0, ypos / 10], [(xpos + numx - 1) / 10 - 0.005], [0, (ypos + 1) / 10 - 0.005], 0.3);
+  flex.div.innerText = 'Key: tiers from lowest to highest:';
+
+  for(var j = 0; j < tierColors.length; j++) {
+    var xpos = j % numx;
+    var ypos = Math.floor(i / numx) + 3;
+    var flex = new Flex(medalGrid, [0, xpos / 10], [0, ypos / 10], [(xpos + 1) / 10 - 0.005], [0, (ypos + 1) / 10 - 0.005], 2);
+    flex.div.style.backgroundColor = tierColors_BG[j];
+    flex.div.style.color = util.farthestColorHue(tierColors_BG[j]);
+    flex.div.style.border = '4px solid ' + tierColors[j];
+    centerText2(flex.div);
+    flex.div.textEl.innerText = tierNames[j];
   }
 }
 

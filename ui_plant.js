@@ -289,7 +289,7 @@ function makePlantDialog(x, y, show_only) {
         state.lastPlanted = index; // for shift key
         dialog.cancelFun();
         update(); // do update immediately rather than wait for tick, for faster feeling response time
-      }, index));
+      }, index), 'plant crop: ' + crops[index].name);
       styleButton0(chip.div);
     }
   }

@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 
+var fieldRows;
 var fieldDivs;
 
 // works both if it's a breakdown of numbers or of resources
@@ -229,11 +230,13 @@ function makeFieldDialog(x, y) {
     var buttonshift = 0;
     if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
+    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.5, 0.29);
     var button0 = new Flex(dialog, [0.01, 0.2], [0.4 + buttonshift, 0.01], 0.5, 0.45 + buttonshift, 0.8).div;
     var button1 = new Flex(dialog, [0.01, 0.2], [0.45 + buttonshift, 0.01], 0.5, 0.5 + buttonshift, 0.8).div;
     var button2 = new Flex(dialog, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
     var last0 = undefined;
+
+    makeScrollable(flex0);
 
     styleButton(button0);
     button0.textEl.innerText = 'delete';
@@ -253,6 +256,8 @@ function makeFieldDialog(x, y) {
       dialog.div.className = 'efDialogTranslucent';
       var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.8, 0.3);
       var text = '';
+
+      makeScrollable(flex);
 
 
       text += getCropInfoHTML(f, c, true);
@@ -446,6 +451,7 @@ function makeFieldDialog(x, y) {
 function initFieldUI() {
   fieldFlex.clear();
 
+  fieldRows = [];
   fieldDivs = [];
   for(var y = 0; y < state.numh; y++) {
     fieldDivs[y] = [];
@@ -462,6 +468,9 @@ function initFieldUI() {
   var w = fieldDiv.clientWidth;
   var h = fieldDiv.clientHeight;
 
+  setAriaRole(fieldGrid.div, 'grid'); // intended for 2D navigation, combined with the row and cell roles given to the elements below
+  setAriaLabel(fieldGrid.div, 'basic field');
+
   var tw = Math.floor(w / state.numw) - 1;
   var th = Math.floor(h / state.numh) - 1;
   tw = th = Math.min(tw, th);
@@ -469,17 +478,20 @@ function initFieldUI() {
   var y0 = 2;
 
   for(var y = 0; y < state.numh; y++) {
+    var row = makeDiv('0', (y / state.numh * 100) + '%', '100%', (101 / state.numh) + '%', fieldGrid.div);
+    setAriaRole(row, 'row');
+    fieldRows[y] = row;
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
       // the widths are made a tiny bit bigger, to avoid some gridding (1-pixel gaps between field tiles) that can occur for some field sizes otherwise
       var extra = 0.1;
-      var bgdiv = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (101 / state.numw) + '%', (101 / state.numh) + '%', fieldGrid.div);
-      var fgdiv = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (101 / state.numw) + '%', (101 / state.numh) + '%', fieldGrid.div);
-      var div = makeDiv((x / state.numw * 100) + '%', (y / state.numh * 100) + '%', (101 / state.numw) + '%', (101 / state.numh) + '%', fieldGrid.div);
+      var celldiv = makeDiv((x / state.numw * 100) + '%', '0', (101 / state.numw) + '%', '101%', row);
+      var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
+      var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
+      var div = makeDiv('0', '0', '100%', '100%', celldiv);
+      setAriaRole(celldiv, 'cell');
       div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
       centerText(div);
-      var bgcanvas = createCanvas('0%', '0%', '100%', '100%', bgdiv); // canvas with the field background image
-      var canvas = createCanvas('0%', '0%', '100%', '100%', fgdiv); // canvas for the plant itself
 
       fieldDivs[y][x].div = div;
       fieldDivs[y][x].canvas = canvas;
