@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.35 (2021-02-14):';
+  text += '<br/>• Added electrum and gold tier fruits. Electrum starts having a chance to drop at level 35.';
+  text += '<br/>• Added seasonal fruits with extra inherent seasonal ability, can drop with lower probability then regular fruits.';
+  text += '<br/><br/>';
+
   text += '0.1.34 (2021-02-13):';
   text += '<br/>• Added next higher level crop types for berry, mushroom and flower.';
   text += '<br/>• Autumn mushroom boost increased, and now also boosts mistletoe twigs.';

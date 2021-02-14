@@ -78,7 +78,7 @@ function addButtonAction(div, fun, opt_label) {
   div.onclick = fun;
   div.tabIndex = 0;
   setAriaRole(div, 'button');
-  div.setAttribute('aria-pressed', 'false'); // TODO: is this needed?
+  //div.setAttribute('aria-pressed', 'false'); // TODO: is this needed? maybe it's only for toggle buttons? which addButtonAction is not.
   if(opt_label) setAriaLabel(div, opt_label);
 }
 

@@ -2441,14 +2441,18 @@ var FRUIT_LEECH = fruit_index++; // watercress copying
 var FRUIT_GROWSPEED = fruit_index++; // this one can be swapped when planting something. It's ok to have a few fruit types that require situational swapping
 var FRUIT_WEATHER = fruit_index++; // idem
 var FRUIT_NETTLEBOOST = fruit_index++;
+// These seasonal abilities only exist for the appropriate seasonal fruit and do not take up a regular slot
+var FRUIT_SPRING = fruit_index++;
+var FRUIT_SUMMER = fruit_index++;
+var FRUIT_AUTUMN = fruit_index++;
+var FRUIT_WINTER = fruit_index++;
 // BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
 var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
 // NOT TODO: one that extends lifetime of watercress --> do not do this: too much manual work required with swapping fruits when active playing with watercress then
 // NOT TODO: one affecting ferns: same issue: causes too much manual work during active playing and counting on fern spawn times
-// NOT TODO: one decreating cost: would cause an annoying technique where you have to swap fruits all the time before planting anything
+// NOT TODO: one decreasing cost: would cause an annoying technique where you have to swap fruits all the time before planting anything
 // NOT TODO, unless method of tracking resin multiplier over time is added: one increasing resin gain (or tree spore consumption), since then one can swap it right before tree levels
 // TODO: one that boosts nettles; can be for later tier fruits with 3+ slots only, since it's similar to mushboost and musheff, but would be its own separate multiplier so in combination can be really powerful
-// TODO: seasonal ones, but only for fruits with 2+ slots, to avoid a very disappointing single-slot fruit in the wrong season
 // TODO: one that improves beehives, but only higher level fruits when it's very likely one already finished bee challenge
 
 // returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
@@ -2488,8 +2492,30 @@ function getFruitBoost(ability, level, tier) {
     // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
     return Num(base * 0.33 * level);
   }
+  if(ability == FRUIT_SPRING) {
+    return Num(0.25); // not upgradeable
+  }
+  if(ability == FRUIT_SUMMER) {
+    return Num(0.25); // not upgradeable
+  }
+  if(ability == FRUIT_AUTUMN) {
+    return Num(0.25); // not upgradeable
+  }
+  if(ability == FRUIT_WINTER) {
+    return Num(0.25); // not upgradeable
+  }
 
   return Num(0.1);
+}
+
+// Is an ability that doesn't take up a regular fruit ability slot, but comes in addition
+// Such ability cannot be upgraded
+function isInherentAbility(ability) {
+  if(ability == FRUIT_SPRING) return true;
+  if(ability == FRUIT_SUMMER) return true;
+  if(ability == FRUIT_AUTUMN) return true;
+  if(ability == FRUIT_WINTER) return true;
+  return false;
 }
 
 // cost for next level if ability is at this level
@@ -2502,6 +2528,8 @@ function getFruitAbilityCost(ability, level, tier) {
 
 function getFruitSacrifice(f) {
   var result = getFruitTierCost(f.tier) * 10;
+
+  if(f.type > 0) result *= 1.25;
 
   return Res({essence:result});
 }
@@ -2527,21 +2555,52 @@ function getFruitTierCost(tier) {
 // get fruit tier given random roll and tree level
 function getNewFruitTier(roll, treelevel) {
   var tier = 0;
-  // Higher tree levels are not yet implemented for the fruits
-  if(treelevel < 15) {
-    tier = (roll > 0.75) ? 1 : 0;
-  } else if(treelevel < 25) {
-    tier = (roll < 0.25) ? 0 : ((roll < 0.75) ? 1 : 2);
-  } else if(treelevel < 35) {
-    tier = (roll > 0.66) ? 2 : 1;
-  } else  {
-    // Higher tree levels are not yet implemented for the fruits, they drop same as the level 25 one for now but with increased chance of silver
-    tier = (roll > 0.66) ? 1 : 2;
+
+  // normally doesn't happen
+  if(treelevel < 5) {
+    return 0;
   }
-  return tier;
+
+  // level 5: zinc and bronze introduced
+  if(treelevel >= 5 && treelevel <= 14) {
+    return (roll > 0.75) ? 1 : 0;
+  }
+
+  // level 15: silver introduced
+  if(treelevel >= 15 && treelevel <= 24) {
+    return (roll < 0.25) ? 0 : ((roll < 0.75) ? 1 : 2);
+  }
+
+  // level 25
+  if(treelevel >= 25 && treelevel <= 34) {
+    return (roll > 0.66) ? 2 : 1;
+  }
+
+  // level 35: electrum introduced
+  if(treelevel >= 35 && treelevel <= 44) {
+    return (roll < 0.25) ? 1 : ((roll < 0.75) ? 2 : 3);
+  }
+
+  // level 45
+  if(treelevel >= 45 && treelevel <= 54) {
+    return (roll > 0.66) ? 3 : 2;
+  }
+
+  // level 55: gold introduced
+  if(treelevel >= 45 && treelevel <= 54) {
+    return (roll < 0.25) ? 2 : ((roll < 0.75) ? 3 : 4);
+  }
+
+  // level 65
+  if(treelevel >= 45 && treelevel <= 54) {
+    return (roll > 0.66) ? 4 : 3;
+  }
+
+  // Higher tree levels are not yet implemented for the fruits
+  return 4;
 }
 
-// how many abilities should a fruit of this tier have
+// how many abilities should a fruit of this tier have (excluding any seasonal ability)
 function getNumFruitAbilities(tier) {
   var num_abilities = 1;
   if(tier >= 1) num_abilities = 2;
@@ -2724,36 +2783,61 @@ var bonus_season_winter_resin = 1.5;
 
 function getSpringFlowerBonus() {
   var bonus = Num(bonus_season_flower_spring);
+
   var ethereal_season = state.upgrades2[upgrade2_season[0]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[0]).addr(1);
     bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
   }
+
+  var level = getFruitAbility(FRUIT_SPRING);
+  if(level > 0) {
+    var mul = Num(1).add(getFruitBoost(FRUIT_SPRING, level, getFruitTier()));
+    bonus.mulInPlace(mul);
+  }
+
   return bonus;
 }
 
 function getSummerBerryBonus() {
   var bonus = Num(bonus_season_berry_summer);
+
   var ethereal_season = state.upgrades2[upgrade2_season[1]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[1]).addr(1);
     bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
   }
+
+  var level = getFruitAbility(FRUIT_SUMMER);
+  if(level > 0) {
+    var mul = Num(1).add(getFruitBoost(FRUIT_SUMMER, level, getFruitTier()));
+    bonus.mulInPlace(mul);
+  }
+
   return bonus;
 }
 
 function getAutumnMushroomBonus() {
   var bonus = Num(bonus_season_autumn_mushroom);
+
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
     bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
   }
+
+  var level = getFruitAbility(FRUIT_AUTUMN);
+  if(level > 0) {
+    var mul = Num(1).add(getFruitBoost(FRUIT_AUTUMN, level, getFruitTier()));
+    bonus.mulInPlace(mul);
+  }
+
   return bonus;
 }
 
 function getAutumnMistletoeBonus() {
   var bonus = Num(bonus_season_autumn_mistletoe);
+
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
   if(ethereal_season) {
     var t = towards1(ethereal_season, 10) * 0.5;
@@ -2777,11 +2861,20 @@ function getWinterMalus() {
 
 function getWinterTreeWarmth() {
   var bonus = Num(bonus_season_winter_tree);
+
   var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[3]).addr(1);
     bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
   }
+
+  var level = getFruitAbility(FRUIT_WINTER);
+  if(level > 0) {
+    var mul = Num(1).add(getFruitBoost(FRUIT_WINTER, level, getFruitTier()));
+    bonus.mulInPlace(mul);
+  }
+
+
   return bonus;
 }
 

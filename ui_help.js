@@ -283,11 +283,11 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click save import dialog</b>: import and old savegame, but do not run the time, so you get the resources at the time of saving rather than with all production during that time added.';
   text += '<br/>';
-  text += ' • <b>shift + click fruit</b>: move to sacrificial pool or from sacrificial pool to storage.';
+  text += ' • <b>ctrl + click fruit</b>: move downwards: to storage if available, otherwise to sacrificial pool.';
   text += '<br/>';
-  text += ' • <b>ctrl + click fruit</b>: swap to active slot.';
+  text += ' • <b>shift + click fruit</b>: move upwards: to storage if available, otherwise swap to active slot.';
   text += '<br/>';
-  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of current available essence';
+  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence';
   text += '<br/>';
   text += ' • <b>esc</b>: close dialogs.';
   text += '<br/><br/>';

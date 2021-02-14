@@ -1108,6 +1108,7 @@ function getRandomFruitRoll() {
   return roll[1];
 }
 
+
 function addRandomFruit() {
   var level = state.treelevel;
 
@@ -1130,12 +1131,34 @@ function addRandomFruit() {
     fruit.levels.push(level);
   }
 
+  if(getRandomFruitRoll() > 0.75) {
+    fruit.type = 1 + getSeason();
+  }
+
+  if(fruit.type == 1) {
+    fruit.abilities.push(FRUIT_SPRING);
+    fruit.levels.push(1);
+  }
+  if(fruit.type == 2) {
+    fruit.abilities.push(FRUIT_SUMMER);
+    fruit.levels.push(1);
+  }
+  if(fruit.type == 3) {
+    fruit.abilities.push(FRUIT_AUTUMN);
+    fruit.levels.push(1);
+  }
+  if(fruit.type == 4) {
+    fruit.abilities.push(FRUIT_WINTER);
+    fruit.levels.push(1);
+  }
+
+
   if(state.fruit_active.length == 0) {
     setFruit(0, fruit);
   } else if(state.fruit_stored.length < state.fruit_slots) {
     setFruit(10 + state.fruit_stored.length, fruit);
   } else {
-    setFruit(20 + state.fruit_sacr.length, fruit);
+    setFruit(100 + state.fruit_sacr.length, fruit);
   }
 
   state.c_numfruits++;
@@ -1628,7 +1651,7 @@ var update = function(opt_fromTick) {
       } else if(type == ACTION_FRUIT_SLOT) {
         var f = action.f;
         var slottype = action.slot; // 0:active, 1:stored, 2:sacrificial
-        var currenttype = ((f.slot < 10) ? 0 : ((f.slot < 20) ? 1 : 2));
+        var currenttype = ((f.slot < 10) ? 0 : ((f.slot < 100) ? 1 : 2));
         if(slottype == currenttype) {
           // nothing to do
         } else if(slottype == 0) {
@@ -1645,7 +1668,7 @@ var update = function(opt_fromTick) {
             setFruit(slot, f);
           }
         } else if(slottype == 2) {
-          var slot = 20 + state.fruit_sacr.length;
+          var slot = 100 + state.fruit_sacr.length;
           setFruit(f.slot, undefined);
           setFruit(slot, f);
         }
@@ -1657,7 +1680,9 @@ var update = function(opt_fromTick) {
         var level = f.levels[index];
         var cost = getFruitAbilityCost(a, level, f.tier).essence;
         var available = state.res.essence.sub(f.essence);
-        if(action.shift) {
+        if(isInherentAbility(a)) {
+          // silently do nothing, is invalid and no UI allows this
+        } else if(action.shift) {
           available.mulrInPlace(0.25); // do not use up ALL essence here, up to 25% only
           var num = 0;
           while(available.gte(cost)) {

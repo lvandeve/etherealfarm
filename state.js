@@ -713,7 +713,7 @@ function computeDerived(state) {
 
   for(var i = 0; i < state.fruit_active.length; i++) state.fruit_active[i].slot = i;
   for(var i = 0; i < state.fruit_stored.length; i++) state.fruit_stored[i].slot = i + 10;
-  for(var i = 0; i < state.fruit_sacr.length; i++) state.fruit_sacr[i].slot = i + 20;
+  for(var i = 0; i < state.fruit_sacr.length; i++) state.fruit_sacr[i].slot = i + 100;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -736,7 +736,12 @@ function computeDerived(state) {
 ////////////////////////////////////////////////////////////////////////////////
 
 function Fruit() {
-  this.type = 0; // type 0 = apple, no other types implemented yet
+  // type 0: apple, no seasonality
+  // type 1: apricot, spring
+  // type 2: pineapple, summer
+  // type 3: pear, autumn
+  // type 4: medlar, winter
+  this.type = 0;
   this.tier = 0;
   this.abilities = []; // array of the FRUIT_... abilities
 
@@ -748,19 +753,24 @@ function Fruit() {
 
   this.mark = 0; // mark as favorite etc...
 
-  // the slot in which this fruit is: 0 for the active slot, 10+ storage slots, and 20+ for sacrificial slots
+  // the slot in which this fruit is: 0 for the active slot, 10+ storage slots, and 100+ for sacrificial slots
   // not saved, this must be updated to match the slot the fruit is placed in, this is cache for fast reverse lookup only
   this.slot = 0;
 
+  this.typeName = function() {
+    return ['apple', 'apricot (spring)', 'pineapple (summer)', 'pear (autumn)', 'medlar (winter)'][this.type];
+  };
+
   this.toString = function() {
-    return tierNames[this.tier] + ' apple';
+    return tierNames[this.tier] + ' ' + this.typeName();
   };
 
   this.abilitiesToString = function(opt_abbreviated) {
     var result = '';
     for(var i = 0; i < this.abilities.length; i++) {
       if(i > 0) result += ', ';
-      result += getFruitAbilityName(this.abilities[i], opt_abbreviated) + ' ' + util.toRoman(this.levels[i]);
+      result += getFruitAbilityName(this.abilities[i], opt_abbreviated);
+      if(!isInherentAbility(this.abilities[i])) result += ' ' + util.toRoman(this.levels[i]);
     }
     return result;
   };
@@ -784,16 +794,16 @@ function getFruitTier() {
   return state.fruit_active[0].tier;
 }
 
-// slot is 0 for active, 10+ for stored, 20+ for sacrificial pool
+// slot is 0 for active, 10+ for stored, 100+ for sacrificial pool
 // returns undefined if no fruit in that slot
 function getFruit(slot) {
   if(slot < 10) {
     return state.fruit_active[slot];
   }
-  if(slot < 20) {
+  if(slot < 100) {
     return state.fruit_stored[slot - 10];
   }
-  return state.fruit_sacr[slot - 20];
+  return state.fruit_sacr[slot - 100];
 }
 
 // set f to something falsy to unset the fruit
@@ -812,7 +822,7 @@ function setFruit(slot, f) {
       }
       state.fruit_active.length = state.fruit_active.length - 1;
     }
-  } else if(slot < 20) {
+  } else if(slot < 100) {
     var j = slot - 10;
     if(f) {
       if(j > state.fruit_stored.length) j = state.fruit_stored.length;
@@ -826,15 +836,15 @@ function setFruit(slot, f) {
       state.fruit_stored.length = state.fruit_stored.length - 1;
     }
   } else {
-    var j = slot - 20;
+    var j = slot - 100;
     if(f) {
       if(j > state.fruit_sacr.length) j = state.fruit_sacr.length;
       state.fruit_sacr[j] = f;
-      f.slot = j + 20;
+      f.slot = j + 100;
     } else {
       for(var i = j; i + 1 < state.fruit_sacr.length; i++) {
         state.fruit_sacr[i] = state.fruit_sacr[i + 1];
-        state.fruit_sacr[i].slot = i + 20;
+        state.fruit_sacr[i].slot = i + 100;
       }
       state.fruit_sacr.length = state.fruit_sacr.length - 1;
     }
