@@ -109,8 +109,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
           update();
         };
         dialog = createDialog(undefined, funa, u.choicename_a, undefined, funb, u.choicename_b);
-        var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.3);
-        flex.div.innerHTML = u.description;
+        dialog.content.div.innerHTML = u.description;
       } else {
         actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
         update();
@@ -139,10 +138,27 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   styleButton0(canvasFlex.div);
 
   addButtonAction(canvasFlex.div, function() {
+    var okfun = undefined;
+    var okname = undefined;
+    if(!u.is_choice) {
+      okfun = function() {
+        actions.push({type:ACTION_UPGRADE, u:u.index, shift:false});
+        update();
+      };
+      okname = u.maxcount == 1 ? 'buy' : 'buy one';
+    }
+    var extrafun = undefined;
+    var extraname = undefined;
+    if(!u.is_choice && u.maxcount != 1) {
+      extrafun = function() {
+        actions.push({type:ACTION_UPGRADE, u:u.index, shift:true});
+        update();
+      };
+      extraname = 'buy many';
+    }
     updateInfoText();
-    var dialog = createDialog(DIALOG_SMALL);
-    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
-    flex.div.innerHTML = infoText;
+    var dialog = createDialog(DIALOG_SMALL, okfun, okname, undefined, extrafun, extraname);
+    dialog.content.div.innerHTML = infoText;
   }, 'upgrade icon for ' + name);
 
 
@@ -379,12 +395,9 @@ function updateUpgradeUI() {
 
     addButtonAction(flex.div, function() {
       var dialog = createDialog();
-      var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
 
-      var scrollFlex = new Flex(dialog, 0, 0.1, 1, 0.85);
-
-      scrollFlex.div.innerText = '';
-      scrollFlex.div.style.overflowY = 'scroll';
+      var scrollFlex = dialog.content;
+      makeScrollable(scrollFlex);
 
       for(var i = 0; i < researched.length; i++) {
         var u = upgrades[researched[i]];
@@ -397,6 +410,8 @@ function updateUpgradeUI() {
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';
       }
+
+      scrollFlex.update(); // something goes wrong with the last chip in the scrollflex when not updating this now.
     });
   }
 

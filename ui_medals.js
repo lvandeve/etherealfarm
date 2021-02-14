@@ -152,8 +152,7 @@ function updateMedalUI() {
 
     addButtonAction(div, bind(function(getMedalText, seenfun) {
       var dialog = createDialog(DIALOG_SMALL);
-      var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.9, 0.5);
-      flex.div.innerHTML = getMedalText();
+      dialog.content.div.innerHTML = getMedalText();
       seenfun();
     }, getMedalText, seenfun));
   }

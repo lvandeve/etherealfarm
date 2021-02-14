@@ -82,7 +82,7 @@ function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recur
   var fy1 = 0.8;
 
   if(image) {
-    var canvasflex = new Flex(dialog, 0.01, 0.01, 0.1, 0.1);
+    var canvasflex = new Flex(dialog.content, 0.01, 0.01, 0.1, 0.1);
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasflex.div);
     renderImage(image, canvas);
     fx0 = 0.11;
@@ -98,7 +98,7 @@ function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recur
         var y0 = -0.2 + 0.4 * y / h;
         var x1 = -0.2 + 0.4 * (x + 1) / w;
         var y1 = -0.2 + 0.4 * (y + 1) / h;
-        var canvasflex = new Flex(dialog, [0.25, x0], [0.7, y0], [0.25, x1], [0.7, y1]);
+        var canvasflex = new Flex(dialog.content, [0.25, x0], [0.7, y0], [0.25, x1], [0.7, y1]);
         var canvas = createCanvas('0%', '0%', '100%', '100%', canvasflex.div);
         renderImage(images[y][x], canvas);
       }
@@ -106,7 +106,7 @@ function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recur
     fy1 = 0.65;
   }
 
-  var flex = new Flex(dialog, fx0, fy0, fx1, fy1, 0.32);
+  var flex = new Flex(dialog.content, fx0, fy0, fx1, fy1, 0.32);
 
   flex.div.innerHTML = text;
 }
@@ -251,13 +251,13 @@ registerHelpDialog(27, 'Beehives',
 
 
 function createKeyboardHelpDialog() {
-  var dialogFlex = createDialog();
+  var dialog = createDialog();
 
-  var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Help';
 
-  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -296,13 +296,13 @@ function createKeyboardHelpDialog() {
 }
 
 function createMainHelpDialog() {
-  var dialogFlex = createDialog();
+  var dialog = createDialog();
 
-  var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Help';
 
-  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -338,16 +338,15 @@ var showing_help = false; // for medal
 
 function createHelpDialog() {
   showing_help = true;
-  var dialogFlex = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     showing_help = false;
   });
-  var dialog = dialogFlex.div;
 
-  var titleFlex = new Flex(dialogFlex, 0, 0.01, 1, 0.11, 0.5);
+  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11, 0.5);
   centerText2(titleFlex.div);
   titleFlex.div.textEl.innerText = 'Help';
 
-  var scrollFlex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
   makeScrollable(scrollFlex);
 
   var pos = 0.05;

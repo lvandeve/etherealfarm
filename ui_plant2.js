@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ui for planting a new ethereal plant
 
-function makePlantChip2(crop, x, y, w, parent) {
+function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_tooltipfun) {
   var flex = new Flex(parent, x * w + 0.01, [0, y * w + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.5], 0.8);
   var div = flex.div;
   div.className = 'efEtherealPlantChip';
@@ -42,6 +42,31 @@ function makePlantChip2(crop, x, y, w, parent) {
     infoFlex.div.style.color = '#666';
   }
 
+  if(opt_showfun) {
+    styleButton0(canvasFlex.div, true);
+    addButtonAction(canvasFlex.div, opt_showfun, 'Ethereal ' + upper(crop.name) + ' info');
+  }
+  if(opt_plantfun) {
+    styleButton0(infoFlex.div);
+    addButtonAction(infoFlex.div, opt_plantfun, 'Plant ethereal ' + crop.name);
+  }
+
+  if(opt_tooltipfun) {
+    if(opt_showfun) {
+      registerTooltip(canvasFlex.div, function() {
+        return 'Show ethereal ' + crop.name + ' info<br><br>' + opt_tooltipfun();
+      }, true);
+    }
+    if(opt_plantfun) {
+      registerTooltip(infoFlex.div, function() {
+        return 'Plant ethereal ' + crop.name + '<br><br>' + opt_tooltipfun();
+      }, true);
+    }
+  } else {
+    if(opt_showfun) registerTooltip(canvasFlex.div, 'Show ethereal ' + crop.name + ' info');
+    if(opt_plantfun) registerTooltip(canvasFlex.div, 'Plant ethereal ' + crop.name);
+  }
+
   return flex;
 }
 
@@ -54,11 +79,12 @@ function makePlantDialog2(x, y, show_only) {
   }
 
   var dialog = createDialog();
+  dialog.div.className = 'efDialogEthereal';
   var tx = 0;
   var ty = 0;
+  var contentFlex = dialog.content;
 
-  var flex = new Flex(dialog, 0, 0, 1, 0.05, 0.5);
-  dialog.div.className = 'efDialogEthereal';
+  var flex = new Flex(contentFlex, 0, 0, 1, 0.05, 0.5);
   centerText2(flex.div);
 
   if(show_only) {
@@ -67,20 +93,14 @@ function makePlantDialog2(x, y, show_only) {
     flex.div.textEl.innerHTML = 'Choose an ethereal crop to plant.<br>They cost resin, so choose wisely.<br>Ethereal crops give various bonuses to the basic field';
   }
 
-  flex = new Flex(dialog, 0, 0.1, 1, 0.85);
+  flex = new Flex(contentFlex, 0, 0.1, 1, 0.85);
 
   for(var i = 0; i < registered_crops2.length; i++) {
     if(!state.crops2[registered_crops2[i]].unlocked) continue;
     var index = registered_crops2[i];
     var c = crops2[index];
-    var chip = makePlantChip2(c, tx, ty, 0.33, flex);
-    tx++;
-    if(tx >= 3) {
-      tx = 0;
-      ty++;
-    }
 
-    registerTooltip(chip.div, bind(function(index) {
+    var tooltipfun = bind(function(index) {
       var result = '';
       var c = crops2[index];
       if(show_only) {
@@ -99,17 +119,29 @@ function makePlantDialog2(x, y, show_only) {
       }
 
       return result;
-    }, index));
+    }, index);
 
-    if(!show_only) {
-      addButtonAction(chip.div, bind(function(index) {
+
+    var plantfun = show_only ? undefined : bind(function(index) {
         var c = crops2[index];
         actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c});
         state.lastPlanted2 = index; // for shift key
         dialog.cancelFun();
         update(); // do update immediately rather than wait for tick, for faster feeling response time
-      }, index), 'plant ethereal crop: ' + crops2[index].name);
-      styleButton0(chip.div);
+    }, index);
+
+    var showfun = bind(function(tooltipfun) {
+        var text = tooltipfun();
+        var dialog = createDialog(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM);
+        dialog.content.div.innerHTML = text;
+    }, tooltipfun);
+
+
+    var chip = makePlantChip2(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun);
+    tx++;
+    if(tx >= 3) {
+      tx = 0;
+      ty++;
     }
   }
 }

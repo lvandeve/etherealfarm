@@ -19,11 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function createNumberFormatHelp(notations, precision) {
   var dialog = createDialog(DIALOG_LARGE);
 
-  var titleDiv = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Number Format help';
 
-  var flex = new Flex(dialog, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -126,39 +126,38 @@ var notations_inv = [];
 for(var i = 0; i < notations.length; i++) notations_inv[notations[i]] = i;
 
 function createNumberFormatDialog() {
-  var dialogFlex = createDialog(DIALOG_LARGE);
-  var dialog = dialogFlex.div;
+  var dialog = createDialog(DIALOG_LARGE);
 
   var y2 = 0;
   var h2;
 
   h2 = 0.05;
-  var titleFlex = new Flex(dialogFlex, 0, y2, 1, y2 + h2, 0.5);
+  var titleFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.5);
   var titleDiv = titleFlex.div;
   //titleDiv.style.border = '1px solid red';
   centerText2(titleDiv);
   y2 += h2;
 
   h2 = 0.1;
-  var choiceFlex = new Flex(dialogFlex, 0, y2, 1, y2 + h2, 0.3);
+  var choiceFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.3);
   var choiceDiv = choiceFlex.div;
   //choiceFlex.div.style.border = '1px solid green';
   y2 += h2 + 0.02;
 
   h2 = 0.08;
-  var descriptionFlex = new Flex(dialogFlex, 0.01, y2, 0.99, y2 + h2, 0.3);
+  var descriptionFlex = new Flex(dialog.content, 0.01, y2, 0.99, y2 + h2, 0.3);
   var descriptionDiv = descriptionFlex.div;
   //descriptionFlex.div.style.border = '1px solid blue';
   y2 += h2;
 
   h2 = 0.05;
-  var infoFlex = new Flex(dialogFlex, 0, y2, 1, y2 + h2, 0.3);
+  var infoFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.3);
   var infoDiv = infoFlex.div;
   //infoFlex.div.style.border = '1px solid blue';
   y2 += h2 + 0.02;
 
   h2 = 0.25;
-  var examplesFlex = new Flex(dialogFlex, 0, y2, 1, y2 + h2, 0.3);
+  var examplesFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.3);
   var examplesDiv = examplesFlex.div;
   //examplesFlex.div.style.border = '1px solid blue';
   y2 += h2;
@@ -249,10 +248,9 @@ function createNumberFormatDialog() {
 }
 
 function createAdvancedSettingsDialog() {
-  var dialogFlex = createDialog();
-  var dialog = dialogFlex.div;
+  var dialog = createDialog();
 
-  var title = new Flex(dialogFlex, 0, 0, 1, 0.05, 0.4);
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
   centerText2(title.div);
   title.div.textEl.innerText = 'Preferences';
   title.div.textEl.style.fontWeight = 'bold';
@@ -263,7 +261,7 @@ function createAdvancedSettingsDialog() {
 
   var makeSettingsButton = function() {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(dialogFlex, 0.1, pos, 0.9, pos + h, 0.5);
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -367,8 +365,7 @@ function createAdvancedSettingsDialog() {
       dialog.cancelFun();
       closeAllDialogs();
     }, 'reset', 'cancel');
-    var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.35);
-    flex.div.innerHTML = 'This resets the "never show again" setting of all individual help dialogs. You\'ll get the help dialogs again in the situations that make them appear. You can individually disable them again.';
+    dialog.content.div.innerHTML = 'This resets the "never show again" setting of all individual help dialogs. You\'ll get the help dialogs again in the situations that make them appear. You can individually disable them again.';
   });
 
 
@@ -389,15 +386,15 @@ var showing_stats = false;
 
 function createStatsDialog() {
   showing_stats = true;
-  var dialogFlex = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     showing_stats = false;
   });
 
-  var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Player Statistics';
 
-  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.35);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.35);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -543,15 +540,15 @@ var showing_changelog = false;
 
 function createChangelogDialog() {
   showing_changelog = true;
-  var dialogFlex = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     showing_changelog = false;
   });
 
-  var titleDiv = new Flex(dialogFlex, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'About';
 
-  var flex = new Flex(dialogFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -655,27 +652,24 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
   }, 'download', 'back', extrafun, extraname);
 
 
-  var textFlex = new Flex(dialog, 0.02, 0.01, 0.98, 0.15, 0.3);
+  var textFlex = new Flex(dialog.content, 0.02, 0.01, 0.98, 0.15, 0.3);
   textFlex.div.innerHTML = title;
 
-  var areaFlex = new Flex(dialog, 0.02, 0.2, 0.98, 0.8, 0.3);
+  var areaFlex = new Flex(dialog.content, 0.02, 0.2, 0.98, 1, 0.3);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', areaFlex.div);
 
   area.value = text;
 }
 
 
-function initSettingsUI_in(dialogFlex) {
+function initSettingsUI_in(dialog) {
 
   var pos = 0.05;
-  var gap = 0.02;
-
-  var parent = dialogFlex.div;
+  var gap = 0.025;
 
   var makeSettingsButton = function() {
-    var h = 0.05;
-    //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(dialogFlex, 0.1, pos, 0.9, pos + h, 0.5);
+    var h = 0.06;
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -684,7 +678,7 @@ function initSettingsUI_in(dialogFlex) {
 
 
 
-  var title = new Flex(dialogFlex, 0, 0, 1, 0.05, 0.4);
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
   centerText2(title.div);
   title.div.textEl.innerText = 'Settings';
   title.div.textEl.style.fontWeight = 'bold';
@@ -754,9 +748,9 @@ function initSettingsUI_in(dialogFlex) {
         textFlex.div.style.color = 'black';
       });
     }, 'import', 'cancel');
-    var textFlex = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.4);
+    var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
     textFlex.div.innerHTML = 'Import a savegame backup. You can create a backup with "export save". Paste in here and press "import".<br/><font color="red">Warning: this overwrites your current game!</font>';
-    var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.div);
+    var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.content.div);
     area.select();
     area.focus();
   });
@@ -771,7 +765,7 @@ function initSettingsUI_in(dialogFlex) {
       hardReset();
       closeAllDialogs();
     }, 'reset');
-    var warningFlex = new Flex(dialog, 0.01, 0.01, 0.99, 0.1, 0.4);
+    var warningFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
     warningFlex.div.innerText = hardresetwarning;
     warningFlex.div.style.color = 'red';
   });
@@ -831,8 +825,8 @@ function initSettingsUI() {
   util.setEvent(gearbutton, 'onmouseout', 'gearstyle', function() { gearbutton.style.filter = ''; });
 
   addButtonAction(gearbutton, function() {
-    var dialogFlex = createDialog();
-    initSettingsUI_in(dialogFlex);
+    var dialog = createDialog();
+    initSettingsUI_in(dialog);
   }, 'settings');
 
   // changelog / about button

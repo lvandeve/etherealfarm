@@ -223,23 +223,25 @@ function makeFieldDialog(x, y) {
 
     var dialog = createDialog();
     dialog.div.className = 'efDialogTranslucent';
-    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
+
+    var contentFlex = dialog.content;
+    var flex = new Flex(contentFlex, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
     if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.5, 0.29);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.4 + buttonshift, 0.01], 0.5, 0.45 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.45 + buttonshift, 0.01], 0.5, 0.5 + buttonshift, 0.8).div;
-    var button2 = new Flex(dialog, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
+    var flex0 = new Flex(contentFlex, [0.01, 0.2], [0, 0.01], 1, 0.5, 0.29);
+    var button0 = new Flex(contentFlex, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
+    var button1 = new Flex(contentFlex, [0.01, 0.2], [0.55 + buttonshift, 0.01], 0.5, 0.6 + buttonshift, 0.8).div;
+    var button2 = new Flex(contentFlex, [0.01, 0.2], [0.6 + buttonshift, 0.01], 0.5, 0.65 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     makeScrollable(flex0);
 
     styleButton(button0);
-    button0.textEl.innerText = 'delete';
+    button0.textEl.innerText = 'Delete';
     button0.textEl.style.color = '#800';
     registerTooltip(button0, 'Delete crop and get some of its cost back.');
     addButtonAction(button0, function() {
@@ -249,12 +251,12 @@ function makeFieldDialog(x, y) {
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'detailed stats / bonuses';
+    button1.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button1, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button1, function() {
       var dialog = createDialog(DIALOG_LARGE);
       dialog.div.className = 'efDialogTranslucent';
-      var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.8, 0.3);
+      var flex = dialog.content;
       var text = '';
 
       makeScrollable(flex);
@@ -267,8 +269,8 @@ function makeFieldDialog(x, y) {
     });
 
     styleButton(button2);
-    button2.textEl.innerText = 'see unlocked crops';
-    registerTooltip(button2, 'Show the crop dialog with unlocked plants.');
+    button2.textEl.innerText = 'Replace crop';
+    registerTooltip(button2, 'Replace the crop with a new one, sane as delete then plant. Shows the list of unlocked crops.');
     addButtonAction(button2, function() {
       makePlantDialog(x, y, true);
     });
@@ -289,21 +291,23 @@ function makeFieldDialog(x, y) {
 
     var dialog = createDialog();
     dialog.div.className = 'efDialogTranslucent';
-    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
+
+    var contentFlex = dialog.content;
+    var flex = new Flex(contentFlex, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
 
 
-    flex = new Flex(dialog, [0, 0.01], [0, 0.199], [0, 0.2], [0, 0.4], 0.3);
+    flex = new Flex(contentFlex, [0, 0.01], [0, 0.199], [0, 0.2], [0, 0.4], 0.3);
     canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
 
     var ypos = 0;
     var ysize = 0.1;
 
-    var f0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 0.98, 0.65, 0.3);
+    var f0 = new Flex(contentFlex, [0.01, 0.2], [0, 0.01], 0.98, 0.65, 0.3);
     makeScrollable(f0);
-    var f1 = new Flex(dialog, [0.01, 0.2], 0.7, 1, 0.9, 0.3);
+    var f1 = new Flex(contentFlex, [0.01, 0.2], 0.7, 1, 0.9, 0.3);
     var text;
 
     text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';

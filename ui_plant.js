@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ui for planting a new plant
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
-function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
+function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace) {
   var f = undefined;
   if(fieldx != undefined && fieldy != undefined) {
     f = state.field[fieldy][fieldx];
@@ -31,10 +31,11 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
   var canvasFlex = new Flex(flex, 0, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
+  //canvasFlex.div.style.border = '1px solid white';
 
   var infoFlex = new Flex(flex, [0, 0.7], 0, 1, [0, 1]);
   var text = '';
-  text +=  '<b>' + crop.name + '</b><br>';
+  text +=  '<b>' + (opt_plantfun ? 'plant ' : '') + crop.name + '</b><br>';
   var cost = crop.getCost();
   text += '<b>cost:</b>' + cost.toString() + '<br>';
 
@@ -59,6 +60,33 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy) {
       return true;
     });
   }
+
+  if(opt_showfun) {
+    styleButton0(canvasFlex.div, true);
+    addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');
+  }
+  if(opt_plantfun) {
+    styleButton0(infoFlex.div);
+    addButtonAction(infoFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
+  }
+
+  if(opt_tooltipfun) {
+    if(opt_showfun) {
+      registerTooltip(canvasFlex.div, function() {
+        return 'Show ' + crop.name + ' info<br><br>' + opt_tooltipfun();
+      }, true);
+    }
+    if(opt_plantfun) {
+      registerTooltip(infoFlex.div, function() {
+        return (opt_replace ? 'Replace with ' : 'Plant ') + crop.name + '<br><br>' + opt_tooltipfun();
+      }, true);
+    }
+  } else {
+    if(opt_showfun) registerTooltip(canvasFlex.div, 'Show ' + crop.name + ' info');
+    if(opt_plantfun) registerTooltip(canvasFlex.div, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
+  }
+
+
 
   return flex;
 }
@@ -190,7 +218,7 @@ function getCropOrder() {
 }
 
 
-function makePlantDialog(x, y, show_only) {
+function makePlantDialog(x, y, opt_replace) {
 
   var numplants = 0;
   for(var i = 0; i < registered_crops.length; i++) {
@@ -203,47 +231,38 @@ function makePlantDialog(x, y, show_only) {
   }
 
   var dialogsize = DIALOG_SMALL;
-  if(num_unlocked >= 12) dialogsize = DIALOG_MEDIUM;
-  if(num_unlocked >= 15) dialogsize = DIALOG_LARGE;
+  if(num_unlocked > 9) dialogsize = DIALOG_MEDIUM;
+  if(num_unlocked > 12) dialogsize = DIALOG_LARGE;
 
   var dialog = createDialog(dialogsize);
   dialog.div.className = 'efDialogTranslucent';
   var tx = 0;
   var ty = 0;
 
-  var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.05, 0.7);
-  if(show_only) {
+  var flex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.05, 0.7);
+  if(opt_replace) {
     centerText2(flex.div);
-    flex.div.textEl.innerHTML = 'Unlocked crops...';
+    flex.div.textEl.innerHTML = 'Replace crop with...';
   } else {
     flex.div.innerHTML = 'Choose a crop to plant<br>Tip: use SHIFT key on the field to plant last plant type, or CTRL for watercress.';
   }
 
-  flex = new Flex(dialog, 0, 0.1, 1, 0.85);
+  flex = new Flex(dialog.content, 0, 0.1, 1, 1);
   makeScrollable(flex);
 
   var crops_order = getCropOrder();
 
   for(var i = 0; i < crops_order.length; i++) {
+
+
     var index = crops_order[i];
     var c = crops[index];
-    var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y);
-    tx++;
-    if(tx >= 3) {
-      tx = 0;
-      ty++;
-    }
 
     var tooltipfun = bind(function(index) {
       var result = '';
       var c = crops[index];
-      if(show_only) {
-        result = upper(c.name);
-      } else {
-        result = 'Plant ' + c.name;
-      }
 
-      result += '.<br><br>Crop type: ' + getCropTypeName(c.type);
+      result += 'Crop type: ' + getCropTypeName(c.type);
       var help = getCropTypeHelp(c.type);
       if(help) {
         result += '.<br>' + help;
@@ -273,24 +292,35 @@ function makePlantDialog(x, y, show_only) {
       return result;
     }, index);
 
-    registerTooltip(chip.div, tooltipfun, true);
 
-    if(show_only) {
-      addButtonAction(chip.div, bind(function(tooltipfun) {
-        var text = tooltipfun();
-        var dialog = createDialog(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM);
-        var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.4);
-        flex.div.innerHTML = text;
-      }, tooltipfun));
-    } else {
-      addButtonAction(chip.div, bind(function(index) {
-        var c = crops[index];
-        actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});
-        state.lastPlanted = index; // for shift key
+    var plantfun = bind(function(index) {
+      state.lastPlanted = index; // for shift key
+      if(opt_replace && state.field[y][x].index == CROPINDEX + index) {
+        showMessage('Already have this crop here');
         dialog.cancelFun();
-        update(); // do update immediately rather than wait for tick, for faster feeling response time
-      }, index), 'plant crop: ' + crops[index].name);
-      styleButton0(chip.div);
+        return;
+      }
+      var c = crops[index];
+      if(opt_replace) actions.push({type:ACTION_DELETE, x:x, y:y, crop:c});
+      actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});
+      dialog.cancelFun();
+      closeAllDialogs();
+      update(); // do update immediately rather than wait for tick, for faster feeling response time
+    }, index);
+
+    var showfun = bind(function(tooltipfun) {
+      var text = tooltipfun();
+      var dialog = createDialog(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM);
+      dialog.content.div.innerHTML = text;
+    }, tooltipfun);
+
+
+
+    var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y, plantfun, showfun, tooltipfun, opt_replace);
+    tx++;
+    if(tx >= 3) {
+      tx = 0;
+      ty++;
     }
   }
 

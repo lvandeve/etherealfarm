@@ -139,7 +139,7 @@ function updateResourceUI() {
   resourceDivs[0].style.cursor = 'pointer';
   addButtonAction(resourceDivs[0], function() {
     var dialog = createDialog(DIALOG_MEDIUM);
-    var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.35);
+    var flex = dialog.content;
     var getText = function() {
       var result = '';
       if(state.treelevel > 0) {
@@ -336,7 +336,7 @@ function updateResourceUI() {
         dialog.div.className = 'efDialogTranslucent';
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);
-        var flex = new Flex(dialog, 0.01, 0.01, 0.99, 0.8, 0.3);
+        var flex = dialog.content;
         var last = undefined;
         updatedialogfun = bind(function(div, flex) {
           if(div.tooltiptext != last) {

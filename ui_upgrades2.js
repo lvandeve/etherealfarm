@@ -56,6 +56,9 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     infoText += '<br><br>' + u.description;
   }
   infoText += '<br><br>' + 'This ethereal upgrade is non-refundable and permanent. Lasts through transcensions.';
+  if(u.treelevel2 > 0 || state.treelevel2 > 0) {
+    infoText += '<br><br>' + 'Ethereal tree level: ' + u.treelevel2;
+  }
 
   if(!completed) {
     styleButton(buyFlex.div);
@@ -81,8 +84,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
   addButtonAction(canvasFlex.div, function() {
     var dialog = createDialog(DIALOG_SMALL);
-    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
-    flex.div.innerHTML = infoText;
+    dialog.content.div.innerHTML = infoText;
   }, 'ethereal upgrade icon for ' + name);
 
 
@@ -154,13 +156,9 @@ function updateUpgrade2UI() {
 
     addButtonAction(flex.div, function() {
       var dialog = createDialog();
-      var flex = new Flex(dialog, [0, 0.01], [0, 0.01], 0.99, 0.9, 0.3);
 
-      var scrollFlex = new Flex(dialog, 0, 0.1, 1, 0.85);
-
-      scrollFlex.div.innerText = '';
-      scrollFlex.div.style.overflowY = 'scroll';
-      scrollFlex.div.style.overflowX = 'visible';
+      var scrollFlex = dialog.content;
+      makeScrollable(scrollFlex);
 
       for(var i = 0; i < researched.length; i++) {
         var u = upgrades2[researched[i]];
@@ -174,6 +172,8 @@ function updateUpgrade2UI() {
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';
       }
+
+      scrollFlex.update(); // something goes wrong with the last chip in the scrollflex when not updating this now.
     });
   }
 

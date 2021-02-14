@@ -53,7 +53,7 @@ function updateAbilitiesUI() {
     //sunbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
     //sunbutton = new Flex(topFlex, [0,4], [0,0.1], [0,4.8], [0,0.9], 2);
     sunbutton = new Flex(topFlex, [0,4], [0,0.1], [0,4.8], [0,0.9]);
-    styleButton0(sunbutton.div);
+    styleButton0(sunbutton.div, true);
 
     suntimerflex = new Flex(topFlex, [0,4], [0,0.1], [0,5.5], [0,0.9], 2);
     suntimerflex.div.className = 'efWeatherOff';
@@ -97,7 +97,7 @@ function updateAbilitiesUI() {
 
   if(!mistbutton && state.upgrades[upgrade_mistunlock].count) {
     mistbutton = new Flex(topFlex, [0,5.5], [0,0.1], [0,6.3], [0,0.9]);
-    styleButton0(mistbutton.div);
+    styleButton0(mistbutton.div, true);
 
     misttimerflex = new Flex(topFlex, [0,5.5], [0,0.1], [0,7], [0,0.9], 2);
     misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
@@ -142,7 +142,7 @@ function updateAbilitiesUI() {
 
   if(!rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
     rainbowbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
-    styleButton0(rainbowbutton.div);
+    styleButton0(rainbowbutton.div, true);
 
     rainbowtimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
     rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
@@ -182,7 +182,7 @@ function updateAbilitiesUI() {
     if(!watercressbutton) {
       watercressbutton = new Flex(topFlex, [1,-2.1], [0,0.1], [1,-1.3], [0,0.9]);
       watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w';
-      styleButton0(watercressbutton.div);
+      styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(watercress[4], canvas);

@@ -89,15 +89,15 @@ function makeField2Dialog(x, y) {
 
     var dialog = createDialog();
     dialog.div.className = 'efDialogTranslucent';
-    var flex = new Flex(dialog, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
+    var flex = new Flex(dialog.content, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
 
-    var flex0 = new Flex(dialog, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
-    var button0 = new Flex(dialog, [0.01, 0.2], [0.6 + buttonshift, 0.01], 0.5, 0.65 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog, [0.01, 0.2], [0.67 + buttonshift, 0.01], 0.5, 0.72 + buttonshift, 0.8).div;
+    var flex0 = new Flex(dialog.content, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
+    var button0 = new Flex(dialog.content, [0.01, 0.2], [0.7 + buttonshift, 0.01], 0.5, 0.75 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog.content, [0.01, 0.2], [0.77 + buttonshift, 0.01], 0.5, 0.82 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -134,7 +134,7 @@ function makeField2Dialog(x, y) {
 
     var dialog = createDialog();
     dialog.div.className = 'efDialogTranslucent';
-    var flex = new Flex(dialog, 0.05, 0.05, 0.95, 0.9, 0.3);
+    var flex = dialog.content;
 
     var text = '<b>Ethereal Tree</b>';
     text += '<br><br>';
