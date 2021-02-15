@@ -257,7 +257,7 @@ function createAdvancedSettingsDialog() {
 
   var pos = 0.05;
   var buttondiv;
-  var h = 0.05;
+  var h = 0.06;
 
   var makeSettingsButton = function() {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);

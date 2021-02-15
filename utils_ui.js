@@ -265,7 +265,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   xbutton.div.textEl.innerText = 'x';
   addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
 
-  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, -0.05], 0.8, 0.3);
+  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, -0.05], 0.88, 0.3);
 
   return dialogFlex;
 }

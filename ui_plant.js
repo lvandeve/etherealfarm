@@ -28,46 +28,35 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   var div = flex.div;
   div.className = 'efPlantChip';
 
-  var canvasFlex = new Flex(flex, 0, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  var canvasFlex = new Flex(flex, 0, [0.5, -0.33], [0, 0.66], [0.5, 0.33]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
   //canvasFlex.div.style.border = '1px solid white';
 
-  var infoFlex = new Flex(flex, [0, 0.7], 0, 1, [0, 1]);
+  var infoFlex = new Flex(flex, [0, 0.7], 0, 1, [0, 0.5]);
   var text = '';
-  text +=  '<b>' + (opt_plantfun ? 'plant ' : '') + crop.name + '</b><br>';
+  //text +=  '<b>' + (opt_plantfun ? 'plant ' : '') + crop.name + '</b><br>';
+  text +=  '<b>' + crop.name + '</b><br>';
   var cost = crop.getCost();
-  text += '<b>cost:</b>' + cost.toString() + '<br>';
+  if(!opt_plantfun) text += '<b>cost:</b>' + cost.toString() + '<br>';
 
-  if(crop.type == CROPTYPE_SHORT && state.upgrades[berryunlock_0].count) {
-    text += '<span class="efWatercressHighlight">Copies neighbors</span><br>';
-  }
-  //if(crop.type == CROPTYPE_SHORT) text += '<b>short-lived</b><br>';
-  var prod = crop.getProd(f, true);
-  if(!prod.empty()) text += '<b>prod:</b>' + prod.toString();
-  var boost = crop.getBoost(f);
-  if(boost.neqr(0)) text += '<b>boost:</b>' + boost.toPercentString();
+  text += 'type: ' + getCropTypeName(crop.type);
+
   infoFlex.div.innerHTML = text;
 
-  if(state.res.lt(crop.getCost())) {
-    infoFlex.div.style.color = '#666';
-    registerUpdateListener(function() {
-      if(!flex || !document.body.contains(infoFlex.div)) return false;
-      if(state.res.gte(crop.getCost())) {
-        infoFlex.div.style.color = '';
-        return false;
-      }
-      return true;
-    });
-  }
+  var buyFlex = undefined;
 
   if(opt_showfun) {
     styleButton0(canvasFlex.div, true);
     addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');
   }
   if(opt_plantfun) {
-    styleButton0(infoFlex.div);
-    addButtonAction(infoFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
+    buyFlex = new Flex(flex, [0, 0.7], [0, 0.4], [1, -0.02], [0, 0.98]);
+    //styleButton0(buyFlex.div);
+    //buyFlex.div.className = 'efButton';
+    styleButton(buyFlex.div);
+    buyFlex.div.textEl.innerHTML = '<b>plant: </b>' + cost.toString();
+    addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
   }
 
   if(opt_tooltipfun) {
@@ -77,16 +66,29 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
       }, true);
     }
     if(opt_plantfun) {
-      registerTooltip(infoFlex.div, function() {
+      registerTooltip(buyFlex.div, function() {
         return (opt_replace ? 'Replace with ' : 'Plant ') + crop.name + '<br><br>' + opt_tooltipfun();
       }, true);
     }
+    registerTooltip(infoFlex.div, function() {
+      return upper(crop.name) + '<br><br>' + opt_tooltipfun();
+    }, true);
   } else {
     if(opt_showfun) registerTooltip(canvasFlex.div, 'Show ' + crop.name + ' info');
     if(opt_plantfun) registerTooltip(canvasFlex.div, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
   }
 
-
+  if(opt_plantfun && state.res.lt(crop.getCost())) {
+    buyFlex.div.className = 'efButtonCantAfford';
+    registerUpdateListener(function() {
+      if(!flex || !document.body.contains(buyFlex.div)) return false;
+      if(state.res.gte(crop.getCost())) {
+        buyFlex.div.className = 'efButton';
+        return false;
+      }
+      return true;
+    });
+  }
 
   return flex;
 }
@@ -244,10 +246,10 @@ function makePlantDialog(x, y, opt_replace) {
     centerText2(flex.div);
     flex.div.textEl.innerHTML = 'Replace crop with...';
   } else {
-    flex.div.innerHTML = 'Choose a crop to plant<br>Tip: use SHIFT key on the field to plant last plant type, or CTRL for watercress.';
+    flex.div.innerHTML = 'Choose a crop to plant, or click its icon for info.<br>Tip: use SHIFT key on the field to plant last plant type, or CTRL for watercress.';
   }
 
-  flex = new Flex(dialog.content, 0, 0.1, 1, 1);
+  flex = new Flex(dialog.content, 0, 0.12, 1, 1);
   makeScrollable(flex);
 
   var crops_order = getCropOrder();
