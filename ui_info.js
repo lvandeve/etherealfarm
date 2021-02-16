@@ -207,6 +207,10 @@ function updateResourceUI() {
         // resin
         upcoming = state.resin;
       }
+      if(index == 3) {
+        // twigs
+        upcoming = state.twigs;
+      }
       if(index == 7) {
         // essence
         upcoming = getUpcomingFruitEssence().essence;
@@ -227,17 +231,14 @@ function updateResourceUI() {
 
     text = '';
     if(special) {
-      if(index == 2) {
-        // resin
+      if(index == 2 || index == 3) {
+        // 2=resin, 3=twigs
         var tlevel = Math.floor(state.treelevel / min_transcension_level);
         if(tlevel < 1) tlevel = 1;
         var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
         var tlevel_mul = Num(tlevel);
         var upcoming2 = upcoming.mul(tlevel_mul);
         text = name + '<br>' + res.toString() + '<br>(→ +' + upcoming2.toString() + ')';
-      } else if(index == 3) {
-        // twigs
-        text = name + '<br>' + res.toString();
       } else {
         text = name + '<br>' + res.toString();
         if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
@@ -283,6 +284,18 @@ function updateResourceUI() {
         text += 'Amount from next tree level up with the current mistletoes: ' + nextTwigs().toString() + '<br/><br/>';
         text += 'Amount earned during this transcension so far: ' + state.c_res.twigs.toString() + '<br/><br/>';
         text += 'Twigs can be gotten by planting mistletoes next to the basic field tree, and appear when the tree levels up. This does increase the spore requirement for tree level up. More mistletoes gives diminishing returns while still increasing spores as much, so max 1 or 2 mistletoes makes sense.<br/><br/>';
+
+
+        // resin
+        var text = '<b>' + upper(name) + '</b><br/><br/>';
+        text += 'Total resin earned entire game: ' + state.g_res.twigs.toString();
+        text += '<br><br>';
+        text += 'Collected upcoming twigs: ' + upcoming.toString() + '<br>';
+        if(tlevel > 1) {
+          text += '→ Bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x, so total: ' + upcoming2.toString();
+          text += '<br>';
+        }
+
       }
       if(index == 7) {
         // fruit essence

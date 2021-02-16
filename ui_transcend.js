@@ -41,6 +41,16 @@ function getTranscendValueInfo(opt_from_challenge) {
     }
   }
 
+  var actual_twigs = state.twigs.mul(tlevel_mul);
+  if(!opt_from_challenge || actual_twigs.neqr(0)) {
+    have_item = true;
+    text += '• ' + actual_twigs.toString() + ' twigs from mistletoes';
+    if(tlevel > 1) {
+      text += ' (' + state.twigs.toString() + ' collected, ' + tlevel_mul.toString() + 'x for Transcension ' + roman + ')';
+    }
+    text += '<br>';
+  }
+
   var do_fruit = state.treelevel >= min_transcension_level;
 
   if(do_fruit) {
@@ -139,7 +149,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   centerText2(titleFlex.div);
   titleFlex.div.textEl.innerText = upper(c.name);
 
-  var scrollFlex = new Flex(contentFlex, 0.01, 0.11, 0.99, 0.85, 0.3);
+  var scrollFlex = new Flex(contentFlex, 0.01, 0.11, 0.99, 1, 0.3);
   makeScrollable(scrollFlex);
 
   var text = '';
@@ -175,9 +185,9 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += '<br>';
   if(c.allowstwigs) {
     if(c.allowbeyondhighestlevel) {
-      text += '• Twigs can be gained from mistletoes, but only starting at tree level 10';
+      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10, otherwise it\'s dropped';
     } else {
-      text += '• Twigs can be gained from mistletoes, but only starting at tree level 10 and up to the max level ever reached with a regular run';
+      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10, and the tree cannot gain twigs when reaching a higher level during the challenge than ever gotten during a regular run';
     }
   } else {
     text += '• No twigs can be gained from mistletoes';
@@ -289,9 +299,9 @@ function createFinishChallengeDialog() {
   text += 'Production bonus from this challenge\'s max reached level (and total from all challenges):<br>';
   text += '• Before: ' + getChallengeBonus(state.challenge, c2.maxlevel).toPercentString() + ' (' + state.challenge_bonus.toPercentString() + ' total for all challenges)<br>';
   if(state.treelevel > c2.maxlevel ) {
-    text += '• New at max level ' + newmax + ': ' + getChallengeBonus(state.challenge, newmax).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
+    text += '• After at max level ' + newmax + ': ' + getChallengeBonus(state.challenge, newmax).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
   } else {
-    text += '• New stays the same, max level not beaten';
+    text += '• After stays the same, max level not beaten';
   }
 
   text += '<br><br>';

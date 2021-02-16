@@ -1916,6 +1916,7 @@ var challenge_register_id = 1;
 
 // prefun = precondition to unlock the challenge
 // rewardfun = for completing the challenge the first time. This function may be ran only once.
+// allowflags: 1=resin, 2=fruits, 3=twigs, 8=beyond highest level
 function registerChallenge(name, targetlevel, bonus, description, rewarddescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
@@ -1975,7 +1976,7 @@ function() {
   return state.treelevel >= 15;
 }, function() {
   state.fruit_slots++;
-}, 11);
+}, 15);
 // idea: there could be "rockier" challenges with more rocks at higher levels later
 
 
@@ -2709,9 +2710,12 @@ function nextTreeLevelResin(breakdown) {
 }
 
 // get twig drop at tree going to this level from mistletoes
+// this excludes the transcension II+ bonus
 function getTwigs(level) {
   var res = new Res();
   res.twigs = Num(Math.log2(state.mistletoes + 1));
+  res.twigs.mulrInPlace(0.66);
+  // TODO: increase the 1.07 factor with ethereal upgrades
   res.twigs.mulInPlace(Num(1.07).powr(level));
   if(getSeason() == 2) {
     var bonus = getAutumnMistletoeBonus();

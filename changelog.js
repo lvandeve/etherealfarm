@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.36 (2021-02-16):';
+  text += '<br/>• Twigs now receive the 2x, 3x, ... higher transcenscion bonus like resin does.';
+  text += '<br/>• Twigs gain reduced for lower tree levels, but when reaching tree level 20+ this update is a net win.';
+  text += '<br/>• Twigs are now given at transcension rather than immediately.';
+  text += '<br/>• Rocks challenge now also gives twigs.';
+  text += '<br/><br/>';
+
   text += '0.1.35 (2021-02-14):';
   text += '<br/>• Added electrum and gold tier fruits. Electrum starts having a chance to drop at level 35.';
   text += '<br/>• Added seasonal fruits with extra inherent seasonal ability, can drop with lower probability then regular fruits.';

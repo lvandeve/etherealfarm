@@ -310,6 +310,10 @@ function makeFieldDialog(x, y) {
     var f1 = new Flex(contentFlex, [0.01, 0.2], 0.7, 1, 0.9, 0.3);
     var text;
 
+    var show_resin = !state.challenge || challenges[state.challenge].allowsresin;
+    var show_twigs = !state.challenge || challenges[state.challenge].allowstwigs;
+    var resin_breakdown = [];
+
     text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
     text += 'Tree level: ' + state.treelevel + '<br/>';
     if(state.treelevel == 0) {
@@ -325,43 +329,59 @@ function makeFieldDialog(x, y) {
       var tlevel = Math.floor(state.treelevel / min_transcension_level);
       var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
       var tlevel_mul = Num(tlevel);
-
-      if(!state.challenge || challenges[state.challenge].allowsresin) {
+      if(tlevel > 1) {
         text += '<br/>';
-        if(tlevel > 1) {
-          text += 'Resin ready (unmultiplied): ' + state.resin.toString();
-        } else {
-          text += 'Resin ready: ' + state.resin.toString();
+        if(show_resin && show_twigs) {
+          text += 'Resin + twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+        } else if(show_resin) {
+          text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+        } else if(show_twigs) {
+          text += 'Twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
         }
-        text += '<br/>';
+      }
+      text += '<br>';
+
+      if(show_resin) {
         if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
           text += 'No further resin gained during this challenge, higher level than max regular level reached';
         } else {
-          var resin_breakdown = [];
           text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
-          if(resin_breakdown.length > 1) {
-            text += formatBreakdown(resin_breakdown, false, 'Resin breakdown');
-          }
         }
+
+        text += '<br/>';
         if(tlevel > 1) {
-          text += '<br>';
-          text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-          text += 'Resulting total resin on transcension:<b>' + state.resin.mulr(tlevel_mul).toString() + ' resin</b><br/>';
+          text += 'Total resin ready: ' + state.resin.toString() + ' x ' + tlevel + ' = ' + state.resin.mulr(tlevel_mul).toString();
+        } else {
+          text += 'Total resin ready: ' + state.resin.toString();
         }
+        text += '<br/>';
       } else {
-        text += 'The tree doesn\'t produce resin during this challenge.';
+        text += 'The tree doesn\'t produce resin during this challenge.<br/>';
       }
+      text += '<br/>';
 
 
       if(state.mistletoes > 0) {
-        text += '<br>';
-        var next = nextTwigs();
-        if(state.challenge && state.treelevel < 9) next = Res();
-        text += 'Twigs from mistletoes at next tree level: ' + next.toString() + '.<br>'
-        text += 'Total gotten so far this transcension: ' + state.c_res.twigs.toString() + ' twigs.<br/>';
+        if(show_twigs) {
+          if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
+            text += 'No further twigs gained during this challenge, higher level than max regular level reached';
+          } else {
+            text += 'Twigs added at next tree level: ' + nextTwigs().twigs.toString();
+          }
+
+          text += '<br>';
+          if(tlevel > 1) {
+            text += 'Total twigs ready: ' + state.twigs.toString() + ' x ' + tlevel + ' = ' + state.twigs.mulr(tlevel_mul).toString();
+          } else {
+            text += 'Total twigs ready: ' + state.twigs.toString();
+          }
+          text += '<br/>';
+        } else {
+          text += 'The tree doesn\'t produce twigs during this challenge.<br/>';
+        }
+        text += '<br/>';
       }
 
-      text += '<br/>';
       text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString() + '<br>';
 
       if(getSeason() == 3) {
@@ -380,6 +400,10 @@ function makeFieldDialog(x, y) {
         if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sun: benefits berries when active<br>';
         if(state.upgrades[upgrade_mistunlock].unlocked) text += '• Mist: benefits mushrooms when active<br>';
         if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
+      }
+
+      if(resin_breakdown && resin_breakdown.length > 1) {
+        text += formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
       }
 
       f0.div.innerHTML = text;

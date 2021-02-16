@@ -143,6 +143,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     if(!u.is_choice) {
       okfun = function() {
         actions.push({type:ACTION_UPGRADE, u:u.index, shift:false});
+        closeAllDialogs();
         update();
       };
       okname = u.maxcount == 1 ? 'buy' : 'buy one';
@@ -152,6 +153,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     if(!u.is_choice && u.maxcount != 1) {
       extrafun = function() {
         actions.push({type:ACTION_UPGRADE, u:u.index, shift:true});
+        closeAllDialogs();
         update();
       };
       extraname = 'buy many';

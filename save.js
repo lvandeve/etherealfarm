@@ -86,6 +86,8 @@ function encState(state, opt_raw_only) {
   processFloat(state.total_negative_time);
   processFloat(state.max_negative_time);
   processFloat(state.last_negative_time);
+  id = 22;
+  processNum(state.twigs);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -603,6 +605,8 @@ function decState(s) {
     state.max_negative_time = processFloat();
     state.last_negative_time = processFloat();
   }
+  id = 22;
+  if(save_version >= 4096*1+36) state.twigs = processNum();
 
 
   section = 1; id = 0; // field

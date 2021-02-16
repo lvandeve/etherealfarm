@@ -147,6 +147,8 @@ function State() {
   this.res = undefined;
   // resin that will be gained at the next soft reset, not added to res until the soft reset
   this.resin = Num(0);
+  // twigs that will be gained at the next soft reset, not added to res until the soft reset
+  this.twigs = Num(0);
 
   this.treelevel = 0;
   this.lasttreeleveluptime = 0;
