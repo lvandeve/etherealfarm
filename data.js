@@ -47,11 +47,12 @@ function getCropTypeName(type) {
   return 'unknown';
 }
 
-function getCropTypeHelp(type) {
+// opt_crop is cropid for specific crop in case it has a slightly different description
+function getCropTypeHelp(type, opt_no_nettles) {
   switch(type) {
-    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. Negatively affected by nettles. Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
-    case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers and nettles. Neighboring watercress can copy its production (but also consumption).';
-    case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption. Negatively affected by neighboring nettles.';
+    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (opt_no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
+    case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers' + (opt_no_nettles ? '' : ' and nettles') + '. Neighboring watercress can copy its production (but also consumption).';
+    case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
     case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
     case CROPTYPE_SHORT: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those';
     case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Increases level up spores requirement and slightly decreases resin gain.';
@@ -231,6 +232,7 @@ function reduceGrowTime(time, reduce) {
 
 Crop.prototype.getPlantTime = function() {
   var result = this.planttime;
+  if(result == 0) return result;
 
   // This is the opposite for croptype_short, it's not planttime but live time. TODO: make two separate functions for this
   if(this.type == CROPTYPE_SHORT) {
@@ -518,7 +520,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(state.upgrades[active_choice0].count == 2) bonus_mist0.divrInPlace(1 + active_choice0_b_bonus);
     result.seeds.mulInPlace(bonus_mist0);
     if(breakdown) breakdown.push(['mist (less seeds)', true, bonus_mist0, result.clone()]);
-    var bonus_mist1 = Num(0.25);
+    var bonus_mist1 = Num(1);
     bonus_mist1.mulInPlace(getWeatherBoost());
     if(state.upgrades[active_choice0].count == 2) bonus_mist1.mulrInPlace(1 + active_choice0_b_bonus);
     bonus_mist1.addrInPlace(1);
@@ -1302,7 +1304,7 @@ function registerDeprecatedUpgrade() {
 
 
 upgrade_register_id = 25;
-var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), 1, short_0);
+var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), 5, short_0);
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), 1, berry_0);
 var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), 1, berry_1);
 var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), 1, berry_2);
@@ -1391,7 +1393,7 @@ upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0, flower_upgrade_cost_increase);
 
 upgrade_register_id = 205;
-var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 1);
+var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 5);
 
 upgrade_register_id = 215;
 var beemul_0 = registerBoostMultiplier(bee_0, crops[bee_0].cost.mulr(10), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
@@ -2146,6 +2148,7 @@ var special2_0 = registerSpecial2('fern', Res({resin:10}), 1.5, 'gives 100 * n^3
 // berries2
 crop2_register_id = 25;
 var berry2_0 = registerBerry2('blackberry', Res({resin:10}), 60, 'boosts berries 25% (additive)', 'boosts berries in the basic field 25% (additive)', blackberry);
+// for treelevel2=1
 var berry2_1 = registerBerry2('blueberry', Res({resin:100}), 120, 'boosts berries 100% (additive)', 'boosts berries in the basic field 100% (additive)', blueberry);
 ///var berry2_2 = registerBerry2('cranberry', Res({resin:2000}), 180, 'boosts berries 400% (additive)', 'boosts berries in the basic field 400% (additive)', cranberry);
 /*var berry2_2 = registerBerry2('cranberry', getBerry2Cost(2), getBerry2Prod(2), cranberry);
@@ -2159,7 +2162,8 @@ var berry2_8 = registerBerry2('juniper', getBerry2Cost(8), getBerry2Prod(8), jun
 // mushrooms2
 crop2_register_id = 50;
 var mush2_0 = registerMushroom2('champignon', Res({resin:20}), 120, 'boosts mushrooms 25% (additive)', 'boosts mushrooms spore production in the basic field 25% without increasing seeds consumption (additive)', champignon);
-///var mush2_1 = registerMushroom2('morel', Res({resin:4000}), 120, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', champignon);
+// for treelevel2=3
+var mush2_1 = registerMushroom2('morel', Res({resin:20000}), 180, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', morel);
 //var mush2_1 = registerMushroom2('morel', Res({resin:500}), 240, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', champignon);
 /*var mush2_1 = registerMushroom2('morel', getMushroom2Cost(1), getMushroom2Prod(1), morel);
 var mush2_2 = registerMushroom2('amanita', getMushroom2Cost(2), getMushroom2Prod(2), amanita);
@@ -2176,6 +2180,7 @@ var flower2_3 = registerFlower2('dandelion', getFlower2Cost(3), Num(1), dandelio
 
 
 crop2_register_id = 100;
+// for treelevel2=2
 var nettle2_0 = registerNettle2('nettle', Res({resin:200}), 0.5, 60, 'boosts nettles by 25% (additive)', 'boosts nettles in the basic field.', nettle);
 
 crop2_register_id = 150;
@@ -2336,22 +2341,22 @@ upgrade2_season[2] = registerUpgrade2('improve autumn', 0, Res({resin:10}), 2, f
 
 upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive) of the original effect. In addition, slightly increase the winter resin bonus and gradually reduce the negative winter effect.', undefined, undefined, tree_images[3][1][3]);
+}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive) of the original effect.', undefined, undefined, tree_images[3][1][3]);
 
 
 
 
-
+var LEVEL2 = 0; // variable used for the required treelevel2 for groups of upgrades below
 
 var upgrade2_time_reduce_0_amount = 90;
 
 upgrade2_register_id = 25;
-var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', 0, Res({resin:25}), 2, function() {
+var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', LEVEL2, Res({resin:25}), 2, function() {
 }, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes ' + upgrade2_time_reduce_0_amount + ' seconds, will not get much faster. This improves the higher level slower plants more.', undefined, undefined, blackberry[0]);
 
 var upgrade2_basic_tree_bonus = Num(0.02);
 
-var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', 0, Res({resin:10}), 1.5, function() {
+var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', LEVEL2, Res({resin:10}), 1.5, function() {
 }, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (additive). For example, if the level 1 basic tree production bonus is normally 5%, it is now 7%, and at tree level 2 it is then 14% instead of 10%', undefined, undefined, tree_images[5][1][1]);
 
 registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
@@ -2360,7 +2365,7 @@ registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function(
 
 
 upgrade2_register_id = 50;
-var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', 0, Res({resin:100}), 1, function() {
+var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', LEVEL2, Res({resin:100}), 1, function() {
   var numw = Math.max(6, state.numw);
   var numh = Math.max(6, state.numh);
   changeFieldSize(state, numw, numh);
@@ -2369,45 +2374,83 @@ var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', 0, Res({resin:100})
 
 
 upgrade2_register_id = 99;
-var upgrade2_mistletoe = registerUpgrade2('unlock mistletoe', 0, Res({resin:25}), 1, function() {
+var upgrade2_mistletoe = registerUpgrade2('unlock mistletoe', LEVEL2, Res({resin:25}), 1, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true}, 1, 'Unlock mistletoe crop in the basic field. This crop will allow leveling up the ethereal tree through a basic field mechanic giving twigs, and the ethereal tree levels then allow to get next sets of ethereal upgrades and crops. The mistletoe will become available in the basic field when mushrooms become available and then needs to then be unlocked with a regular upgrade first as usual. Then it can be planted next to the basic tree to start getting twigs. This ethereal upgrade is the first step in that process, and this is ultimately required to progress to next stages of the game.', undefined, undefined, mistletoe[4]);
 
 ///////////////////////////
+LEVEL2 = 1;
 
 upgrade2_register_id = 100;
 
 var upgrade2_resin_bonus = Num(0.25);
-var upgrade2_resin = registerUpgrade2('resin gain', 1, Res({resin:50}), 2, function() {
+var upgrade2_resin = registerUpgrade2('resin gain', LEVEL2, Res({resin:50}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'increase resin gain from tree by ' + (upgrade2_resin_bonus * 100) + '% (additive).', undefined, undefined, image_resin);
 
-var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', 1, Res({resin:100}), 2, function() {
+var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
   upgrades[berryunlock_0].fun();
+  state.upgrades[berryunlock_1].unlocked = true;
+  state.upgrades[shortmul_0].unlocked = true;
 }, function(){return true;}, 1, 'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free', undefined, undefined, blackberry[4]);
 
-var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', 1, Res({resin:150}), 2, function() {
+var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({resin:150}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 1, 'the winter warmth effect of the tree works also diagonally, adding 4 more possible neighbor spots for this effect.', undefined, undefined, tree_images[5][1][3]);
 
 ///////////////////////////
+LEVEL2 = 2;
 
 upgrade2_register_id = 120;
 
-var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', 2, Res({resin:2000}), 1, function() {
+var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', LEVEL2, Res({resin:2000}), 1, function() {
   var numw2 = Math.max(6, state.numw2);
   var numh2 = Math.max(6, state.numh2);
   changeField2Size(state, numw2, numh2);
   initField2UI();
 }, function(){return state.numw2 >= 5 && state.numh2 >= 5}, 1, 'increase ethereal field size to 6x6 tiles', undefined, undefined, field_ethereal[0]);
 
+var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res({resin:10000}), 1, function() {
+}, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher levels', undefined, undefined, mistletoe[1]);
+
 ///////////////////////////
+LEVEL2 = 3;
 
 upgrade2_register_id = 140;
 
-registerUpgrade2('extra fruit slot', 3, Res({resin:1000,essence:250}), 2, function() {
+// NOTE: this upgrade is way too cheap for being at ethereal tree level 2. But too late to fix it since it's already been bought. It could be seen as a nice bonus for reaching ethereal tree level 3.
+registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:1000,essence:250}), 2, function() {
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[2]);
+
+var upgrade2_resin_extraction = registerUpgrade2('resin extraction', LEVEL2, Res({resin:50e3}), 1, function() {
+}, function(){return true;}, 1, 'increase the multiplier per level for resin, giving exponentially more resin at higher levels', undefined, undefined, image_resin);
+
+var upgrade2_diagonal_mistletoes = registerUpgrade2('diagonal mistletoes', LEVEL2, Res({resin:75e3}), 1, function() {
+}, function(){return true;}, 1, 'mistletoes also work diagonally to the tree (10 instead of 6 possible spots)', undefined, undefined, mistletoe[4]);
+
+
+upgrade2_register_id = 145;
+var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:100e3}), 1, function() {
+  var numw = Math.max(7, state.numw);
+  var numh = Math.max(6, state.numh);
+  changeFieldSize(state, numw, numh);
+  initFieldUI();
+}, function(){return state.numw >= 6 && state.numh >= 6}, 1, 'increase basic field size to 7x6 tiles', undefined, undefined, field_summer[0]);
+
+///////////////////////////
+LEVEL2 = 4;
+
+upgrade2_register_id = 160;
+
+
+// TODO: figure out what is a good resin price for upgrades at ethereal tree level 4
+/*var upgrade2_field2_7x6 = registerUpgrade2('ethereal field 7x6', LEVEL2, Res({resin:1e6}), 1, function() {
+  var numw2 = Math.max(7, state.numw2);
+  var numh2 = Math.max(6, state.numh2);
+  changeField2Size(state, numw2, numh2);
+  initField2UI();
+}, function(){return state.numw2 >= 6 && state.numh2 >= 6}, 1, 'increase ethereal field size to 7x6 tiles', undefined, undefined, field_ethereal[0]);*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2666,8 +2709,10 @@ function treeLevelIndex(level) {
 
 // The resin given by tree going to this level
 // this is the base amount
-function treeLevelResin(level) {
-  return Num.rpow(1.141, Num(level)).mulr(0.5); // 1.41 is such that at tree level 10, you get 11 resin, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
+function treeLevelResinBase(level) {
+  var base = 1.141;  // 1.41 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
+  if(state.upgrades2[upgrade2_resin_extraction].count) base = 1.17;
+  return Num.rpow(base, Num(level)).mulr(0.5);
 }
 
 var mistletoe_resin_malus = Num(0.05);
@@ -2675,8 +2720,8 @@ var mistletoe_resin_malus = Num(0.05);
 var treelevel2_resin_bonus = Num(0.05);
 
 // amount with bonuses etc...
-function nextTreeLevelResin(breakdown) {
-  var resin = treeLevelResin(state.treelevel + 1);
+function treeLevelResin(level, breakdown) {
+  var resin = treeLevelResinBase(level);
   if(breakdown) breakdown.push(['base', true, Num(0), resin.clone()]);
 
   if(getSeason() == 3) {
@@ -2709,14 +2754,25 @@ function nextTreeLevelResin(breakdown) {
   return resin;
 }
 
+function currentTreeLevelResin(breakdown) {
+  return treeLevelResin(state.treelevel);
+}
+
+function nextTreeLevelResin(breakdown) {
+  return treeLevelResin(state.treelevel + 1);
+}
+
 // get twig drop at tree going to this level from mistletoes
 // this excludes the transcension II+ bonus
 function getTwigs(level) {
   var res = new Res();
   res.twigs = Num(Math.log2(state.mistletoes + 1));
   res.twigs.mulrInPlace(0.66);
-  // TODO: increase the 1.07 factor with ethereal upgrades
-  res.twigs.mulInPlace(Num(1.07).powr(level));
+
+  var base = 1.07;
+  if(state.upgrades2[upgrade2_twigs_extraction].count) base = 1.1;
+
+  res.twigs.mulInPlace(Num(base).powr(level));
   if(getSeason() == 2) {
     var bonus = getAutumnMistletoeBonus();
     res.twigs.mulInPlace(bonus);

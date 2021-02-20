@@ -828,9 +828,11 @@ function precomputeField() {
           p.boost = c.getBoostBoost(f, p.breakdown); // includes preliminary non-fullgrown case
         }
         if(c.type == CROPTYPE_MISTLETOE) {
-          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+          var num_neighbors = 4;
+          if(state.upgrades2[upgrade2_diagonal_mistletoes].count) num_neighbors = 8;
+          for(var dir = 0; dir < num_neighbors; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+            var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+            var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
@@ -1149,7 +1151,7 @@ function addRandomFruit() {
     fruit.levels.push(level);
   }
 
-  if(getRandomFruitRoll() > 0.75) {
+  if(state.g_numfruits > 2 && getRandomFruitRoll() > 0.75) {
     fruit.type = 1 + getSeason();
   }
 
@@ -1190,9 +1192,10 @@ function addRandomFruit() {
 
 // unlocks and shows message, if not already unlocked
 function unlockEtherealCrop(id) {
-  var c = crops2[id];
   var c2 = state.crops2[id];
   if(c2.unlocked) return;
+
+  var c = crops2[id];
   showMessage('Ethereal crop available: "' + c.name + '"', '#44f', '#ff8');
   c2.unlocked = true;
 }
@@ -1836,8 +1839,8 @@ var update = function(opt_fromTick) {
     if(!state.fern && !clickedfern) {
       var progress = state.res.seeds;
       var mintime = 0;
-      if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 2 : 0);
-      else if(progress.ltr(15)) mintime = 3;
+      if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
+      else if(progress.ltr(15)) mintime = 1;
       else if(progress.ltr(150)) mintime = 10;
       else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
       else mintime = fern_wait_minutes * 60;
@@ -1891,7 +1894,7 @@ var update = function(opt_fromTick) {
       if(state.challenge && !challenges[state.challenge].allowbeyondhighestlevel && state.treelevel > state.g_treelevel) do_resin = false;
 
       if(do_resin) {
-        resin = nextTreeLevelResin();
+        resin = currentTreeLevelResin(); // treelevel already ++'d above
         if(getSeason() == 3) {
           showMessage('Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1)).toPercentString());
         }
@@ -1964,17 +1967,19 @@ var update = function(opt_fromTick) {
 
         if(state.treelevel2 >= 1) {
           showRegisteredHelpDialog(22);
-          unlockEtherealCrop(berry2_1);
         }
-        if(state.treelevel2 >= 2) {
-          unlockEtherealCrop(nettle2_0);
-        }
-        if(state.treelevel2 >= 3) {
-          //unlockEtherealCrop(mush2_1);
-        }
-        if(state.treelevel2 >= 4) {
-          //unlockEtherealCrop(flower2_1);
-        }
+      }
+      if(state.treelevel2 >= 1) {
+        unlockEtherealCrop(berry2_1);
+      }
+      if(state.treelevel2 >= 2) {
+        unlockEtherealCrop(nettle2_0);
+      }
+      if(state.treelevel2 >= 3) {
+        unlockEtherealCrop(mush2_1);
+      }
+      if(state.treelevel2 >= 4) {
+        //unlockEtherealCrop(flower2_1);
       }
     }
 
@@ -2158,5 +2163,200 @@ var update = function(opt_fromTick) {
   postupdate();
 }
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+// the "shift+plant" chip at the bottom
+var shiftCropFlex = undefined;
+var shiftCropFlexId;
+var shiftCropFlexShift;
+var shiftCropFlexX;
+var shiftCropFlexY;
+var shiftCropFlexShowing;
+
+function removeShiftCropChip() {
+  shiftCropFlexShowing = false;
+
+  if(!shiftCropFlex) return;
+
+  shiftCropFlex.removeSelf();
+  shiftCropFlex = undefined;
+}
+
+// not shift means ctrl
+function showShiftCropChip(crop_id, shift) {
+  removeShiftCropChip();
+  var c = crop_id >= 0 ? crops[crop_id] : undefined;
+
+  shiftCropFlexShowing = true; // even when invisible due to not mouse over relevant field tile
+
+  shiftCropFlexId = crop_id;
+  shiftCropFlexShift = shift;
+
+  var x = shiftCropFlexX;
+  var y = shiftCropFlexY;
+
+  if(x < 0 || y < 0) return;
+
+  var f = state.field[y][x];
+
+  var planting = f.isEmpty();
+  var deleting = ((f.hasCrop() && shift) || (f.index == CROPINDEX + short_0)) && state.allowshiftdelete;
+
+  if(!planting && !deleting) return;
+
+  var keyname = shift ? 'Shift' : 'Ctrl';
+
+
+  shiftCropFlex = new Flex(gameFlex, 0.25, 0.85, 0.75, 0.95, 0.5);
+  shiftCropFlex.div.style.backgroundColor = planting ? '#dfd' : '#fdd';
+  shiftCropFlex.div.style.zIndex = 100; // above medal chip
+
+  var textFlex = new Flex(shiftCropFlex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  centerText2(textFlex.div);
+
+  if(deleting) {
+    var recoup = f.getCrop().getCost(-1).mulr(cropRecoup);
+    textFlex.div.textEl.innerHTML = keyname + '+deleting' + '<br><br>recoup: ' + recoup.toString();
+  } else {
+    if(c) {
+      var canvasFlex = new Flex(shiftCropFlex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+      var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+      renderImage(c.image[4], canvas);
+      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + upper(c.name);
+    } else {
+      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + 'none set';
+    }
+  }
+
+  addButtonAction(shiftCropFlex.div, removeShiftCropChip);
+}
+
+function updateFieldMouseOver(x, y) {
+  shiftCropFlexX = x;
+  shiftCropFlexY = y;
+  if(shiftCropFlexShowing) showShiftCropChip(shiftCropFlexId, shiftCropFlexShift);
+}
+
+function updateFieldMouseOut(x, y) {
+  if(x == shiftCropFlexX && y == shiftCropFlexY) updateFieldMouseOver(-1, -1);
+}
+
+function updateFieldMouseClick(x, y) {
+  updateFieldMouseOver(x, y);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+// the "shift+plant" chip at the bottom
+var shiftCrop2Flex = undefined;
+var shiftCrop2FlexId;
+var shiftCrop2FlexX;
+var shiftCrop2FlexY;
+var shiftCrop2FlexShowing;
+
+function removeShiftCrop2Chip() {
+  shiftCrop2FlexShowing = false;
+
+  if(!shiftCrop2Flex) return;
+
+  shiftCrop2Flex.removeSelf();
+  shiftCrop2Flex = undefined;
+}
+
+// not shift means ctrl
+function showShiftCrop2Chip(crop_id) {
+  removeShiftCrop2Chip();
+  var c = crop_id >= 0 ? crops2[crop_id] : undefined;
+
+  shiftCrop2FlexShowing = true; // even when invisible due to not mouse over relevant field tile
+
+  shiftCrop2FlexId = crop_id;
+
+  var x = shiftCrop2FlexX;
+  var y = shiftCrop2FlexY;
+
+  if(x < 0 || y < 0) return;
+
+  var f = state.field2[y][x];
+
+  var planting = f.isEmpty();
+  var deleting = f.hasCrop() && state.allowshiftdelete;
+
+  if(!planting && !deleting) return;
+
+  var keyname = 'Shift';
+
+
+  shiftCrop2Flex = new Flex(gameFlex, 0.25, 0.85, 0.75, 0.95, 0.5);
+  shiftCrop2Flex.div.style.backgroundColor = planting ? '#dfd' : '#fdd';
+  shiftCrop2Flex.div.style.zIndex = 100; // above medal chip
+
+  var textFlex = new Flex(shiftCrop2Flex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  centerText2(textFlex.div);
+
+  if(deleting) {
+
+    var recoup = f.getCrop2().getCost(-1).mulr(cropRecoup2);
+    textFlex.div.textEl.innerHTML = keyname + '+deleting' + '<br><br>recoup: ' + recoup.toString();
+  } else {
+    if(c) {
+      var canvasFlex = new Flex(shiftCrop2Flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+      var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+      renderImage(c.image[4], canvas);
+      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + upper(c.name);
+    } else {
+      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + 'none set';
+    }
+  }
+
+  addButtonAction(shiftCrop2Flex.div, removeShiftCrop2Chip);
+}
+
+function updateField2MouseOver(x, y) {
+  shiftCrop2FlexX = x;
+  shiftCrop2FlexY = y;
+  if(shiftCrop2FlexShowing) showShiftCrop2Chip(shiftCrop2FlexId);
+}
+
+function updateField2MouseOut(x, y) {
+  if(x == shiftCrop2FlexX && y == shiftCrop2FlexY) updateField2MouseOver(-1, -1);
+}
+
+function updateField2MouseClick(x, y) {
+  updateField2MouseOver(x, y);
+}
+
+
+// some keys here are not related to abilities, this function handles all global keys for now
+document.addEventListener('keydown', function(e) {
+  if(e.key == 'Shift' || e.key == 'Control' || e.key == 'Meta') {
+    var shift = (e.key == 'Shift');
+
+    // Show plant that will be planted when holding down shift or ctrl or cmd, but
+    // only if in the field tab and no dialogs are visible
+    if(state.currentTab == tabindex_field && dialog_level == 0) {
+      var plant = shift ? state.lastPlanted : short_0;
+      showShiftCropChip(plant, shift);
+    }
+    if(state.currentTab == tabindex_field2 && dialog_level == 0 && shift) {
+      var plant = state.lastPlanted2;
+      showShiftCrop2Chip(plant, shift);
+    }
+  }
+});
+
+document.addEventListener('keyup', function(e) {
+  removeShiftCropChip();
+  removeShiftCrop2Chip();
+});
 
 

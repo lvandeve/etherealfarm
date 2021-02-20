@@ -379,53 +379,66 @@ var Utils = (function() {
   // formats time given in second as years, months, days, hours, minutes, seconds
   // opt_maxSections is how many different sections to print, or leave out smaller ones. Default is 3, max is 9.
   // the sections are: giga-annum, mega-annum, millenium, year, month, day, hour, minute, second.
-  // opt_short: if true, uses e.g. "D" instead of " days", "h" instead of " hours", etc...
+  // opt_short: if true, uses e.g. "h" instead of " hours", etc..., and no longer uses sections for anything above a day.
   // opt_inv: inverses direction of max sections. If false, starts from largest and leaves out smaller. If true, leaves out larger ones instead
   var formatDuration = function(s, opt_short, opt_maxSections, opt_inv) {
     var maxSections = opt_maxSections || 3;
     if(isNaN(s)) return 'NaN';
     if(s < 0) return '-' + formatDuration(-s);
-
     if(s == Infinity) return 'Infinity ' + (opt_short ? 's' : ' seconds');
+
+    if(opt_short) {
+      // For durations longer than 'days', everything involving abbreviations such as 'M' for month, Ga for giga-annum, ... is pretty
+      // unclear (e.g. M can be confused with million), so return those instead as formatted number with the full word 'years' or 'days'
+      if(s >= 31557600000) { // 31557600000 = seconds in 1000 365.25-day years
+      var formatted = Num(s / 31557600000).toString();
+      return formatted + ((formatted == '1') ? ' millenium' : ' millenia');
+      }
+      if(s >= 31557600) { // 31557600 = seconds in a 365.25 day year
+      var formatted = Num(s / 31557600).toString();
+      return formatted + ((formatted == '1') ? ' year' : ' years');
+      }
+      if(s >= 27 * 86400) { // 86400 = seconds in a day
+      var formatted = Num(s / 86400).toString();
+      return formatted + ((formatted == '1') ? ' day' : ' days');
+      }
+    }
 
     var orig = s;
     s = Math.floor(s);
 
-    var Y = 0, M = 0, D = 0, h = 0, m = 0;
+    var mm = 0, Y = 0, M = 0, D = 0, h = 0, m = 0;
+    if(!(opt_inv && maxSections < 6) && s >= 31557600) {  // seconds in 1000 365.25-day years
+      mm = Math.floor(s / 31557600000);
+      s -= mm * 31557600000;
+    }
     if(!(opt_inv && maxSections < 6) && s >= 31557600) {  // seconds in a 365.25 day year
       Y = Math.floor(s / 31557600);
       s -= Y * 31557600;
     }
-
-    // If many years, the months and days are no longer relevant to print
-    var many_years = Y >= 100;
-
-
-    if(!many_years) {
-      if(!(opt_inv && maxSections < 5) && s >= 2635200) {  // seconds in a 30.5 day month
-        M = Math.floor(s / 2635200);
-        s -= M * 2635200;
-      }
-      if(!(opt_inv && maxSections < 4) && s >= 86400) {  // seconds in a day
-        D = Math.floor(s / 86400);
-        s -= D * 86400;
-      }
-      if(!(opt_inv && maxSections < 3) && s >= 3600) {
-        h = Math.floor(s / 3600);
-        s -= h * 3600;
-      }
-      if(!(opt_inv && maxSections < 2) && s >= 60) {
-        m = Math.floor(s / 60);
-        s -= m * 60;
-      }
+    if(!(opt_inv && maxSections < 5) && s >= 2635200) {  // seconds in a 30.5 day month
+      M = Math.floor(s / 2635200);
+      s -= M * 2635200;
+    }
+    if(!(opt_inv && maxSections < 4) && s >= 86400) {  // seconds in a day
+      D = Math.floor(s / 86400);
+      s -= D * 86400;
+    }
+    if(!(opt_inv && maxSections < 3) && s >= 3600) {
+      h = Math.floor(s / 3600);
+      s -= h * 3600;
+    }
+    if(!(opt_inv && maxSections < 2) && s >= 60) {
+      m = Math.floor(s / 60);
+      s -= m * 60;
     }
 
-    var names_single = opt_short ? ['Y', 'M', 'd', 'h', 'm', 's'] : [' year', ' month', ' day', ' hour', ' minute', ' second'];
-    var names_plural = opt_short ? ['Y', 'M', 'd', 'h', 'm', 's'] : [' years', ' months', ' days', ' hours', ' minutes', ' seconds'];
-    if(many_years) {
-      // add a space (and full name even if short), so you see e.g. "10K years" instead of "10KY" which might be more confusing
-      names_single[0] = ' years';
-      names_plural[0] = ' years';
+    var names_single = opt_short ? ['mm', 'Y', 'M', 'd', 'h', 'm', 's'] : [' millenium', ' year', ' month', ' day', ' hour', ' minute', ' second'];
+    var names_plural = opt_short ? ['mm', 'Y', 'M', 'd', 'h', 'm', 's'] : [' millenia', ' years', ' months', ' days', ' hours', ' minutes', ' seconds'];
+
+    // 'd' on its own can be too confusing
+    if(opt_short && h == 0 && m == 0 && s == 0 && D != 0 && mm == 0 && Y == 0 && M == 0) {
+      return Num(D).toString() + (D == 1 ? ' day' : ' days');
     }
 
     var result = '';
@@ -435,27 +448,25 @@ var Utils = (function() {
     }
 
     if(opt_inv) {
-      if(Y > 0 ) { result += sp() + Num(Y).toString() + names_single[0]; }
-      if(!many_years) {
-        if(M > 0 ) { result += sp() + M + names_single[1]; }
-        if(D > 0 ) { result += sp() + D + names_single[2]; }
-        if(h > 0 ) { result += sp() + h + names_single[3]; }
-        if(m > 0 ) { result += sp() + m + names_single[4]; }
-        if(s > 0 ) { result += sp() + s + names_single[5]; }
-      }
+      if(mm > 0 ) { result += sp() + Num(mm).toString() + names_single[0]; }
+      if(Y > 0 ) { result += sp() + Y + names_single[1]; }
+      if(M > 0 ) { result += sp() + M + names_single[2]; }
+      if(D > 0 ) { result += sp() + D + names_single[3]; }
+      if(h > 0 ) { result += sp() + h + names_single[4]; }
+      if(m > 0 ) { result += sp() + m + names_single[5]; }
+      if(s > 0 ) { result += sp() + s + names_single[6]; }
     } else {
       var sections = 0;
-      if(Y > 0) { result += sp() + Num(Y).toString() + (Y == 1 ? names_single[0] : names_plural[0]); if((++sections) >= maxSections) return result; }
-      if(!many_years) {
-        if(M > 0) { result += sp() + M + (M == 1 ? names_single[1] : names_plural[1]); if((++sections) >= maxSections) return result; }
-        if(D > 0) { result += sp() + D + (D == 1 ? names_single[2] : names_plural[2]); if((++sections) >= maxSections) return result; }
-        if(h > 0) { result += sp() + h + (h == 1 ? names_single[3] : names_plural[3]); if((++sections) >= maxSections) return result; }
-        if(m > 0) { result += sp() + m + (m == 1 ? names_single[4] : names_plural[4]); if((++sections) >= maxSections) return result; }
-        if(s > 0) { result += sp() + s + (s == 1 ? names_single[5] : names_plural[5]); if((++sections) >= maxSections) return result; }
-      }
+      if(mm > 0) { result += sp() + Num(mm).toString() + (mm == 1 ? names_single[0] : names_plural[0]); if((++sections) >= maxSections) return result; }
+      if(Y > 0) { result += sp() + Y + (Y == 1 ? names_single[1] : names_plural[1]); if((++sections) >= maxSections) return result; }
+      if(M > 0) { result += sp() + M + (M == 1 ? names_single[2] : names_plural[2]); if((++sections) >= maxSections) return result; }
+      if(D > 0) { result += sp() + D + (D == 1 ? names_single[3] : names_plural[3]); if((++sections) >= maxSections) return result; }
+      if(h > 0) { result += sp() + h + (h == 1 ? names_single[4] : names_plural[4]); if((++sections) >= maxSections) return result; }
+      if(m > 0) { result += sp() + m + (m == 1 ? names_single[5] : names_plural[5]); if((++sections) >= maxSections) return result; }
+      if(s > 0) { result += sp() + s + (s == 1 ? names_single[6] : names_plural[6]); if((++sections) >= maxSections) return result; }
     }
 
-    if(result == '') result = orig.toFixed(3) + names_plural[5];
+    if(result == '') result = orig.toFixed(3) + names_plural[6];
 
     return result;
   };

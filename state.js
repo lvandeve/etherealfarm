@@ -62,7 +62,20 @@ Cell.prototype.getCrop = function() {
   return crops[this.index - CROPINDEX];
 };
 
+// for ethereal field. TODO: don't have the distinction this way, have a Cell2 class instead
+Cell.prototype.getCrop2 = function() {
+  if(this.index < CROPINDEX) return undefined;
+  return crops2[this.index - CROPINDEX];
+};
 
+
+// is empty so that you can plant on it (rocks do not count for this)
+Cell.prototype.isEmpty = function() {
+  return this.index == 0 || this.index == FIELD_REMAINDER;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
 
 function CropState() {
   this.unlocked = false;
@@ -692,10 +705,10 @@ function computeDerived(state) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(0.25));
         }
-        /*if(index == mush2_1) {
+        if(index == mush2_1) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(1));
-        }*/
+        }
         if(index == flower2_0) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(0.25));

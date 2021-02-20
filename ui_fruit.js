@@ -175,7 +175,7 @@ function createFruitDialog(f, opt_selected) {
   }
 
   y += 0.02;
-  h = 0.15;
+  h = 0.2;
   var bottomflex = new Flex(dialog.content, [0.01, 0.15], y, 0.7, y + h);
   bottomflex.div.style.backgroundColor = '#0f02';
   bottomflex.div.style.border = '1px solid black';
@@ -396,9 +396,7 @@ function updateFruitUI() {
 
   var scrollFlex = new Flex(fruitFlex, 0, 0.01, 1, 1);
   fruitScrollFlex = scrollFlex;
-  scrollFlex.div.style.overflowY = 'scroll';
-  scrollFlex.div.style.overflowX = 'visible';
-  scrollFlex.div.style.border = '5px solid #ccc';
+  makeScrollable(scrollFlex);
 
   var titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15, 0.3);
 

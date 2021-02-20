@@ -81,7 +81,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
   result += '<br/>';
   result += 'Crop type: ' + getCropTypeName(c.type);
-  var help = getCropTypeHelp(c.type);
+  var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
   if(help) {
     result += '<br/>' + help;
   }
@@ -308,106 +308,121 @@ function makeFieldDialog(x, y) {
     var f0 = new Flex(contentFlex, [0.01, 0.2], [0, 0.01], 0.98, 0.65, 0.3);
     makeScrollable(f0);
     var f1 = new Flex(contentFlex, [0.01, 0.2], 0.7, 1, 0.9, 0.3);
-    var text;
 
-    var show_resin = !state.challenge || challenges[state.challenge].allowsresin;
-    var show_twigs = !state.challenge || challenges[state.challenge].allowstwigs;
-    var resin_breakdown = [];
+    var createText = function() {
+      var text;
 
-    text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
-    text += 'Tree level: ' + state.treelevel + '<br/>';
-    if(state.treelevel == 0) {
-      text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
-      f0.div.innerHTML = text;
-    } else {
-      text += '<br/>';
-      text += 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br/>';
-      if(state.mistletoes > 0) {
-        text += 'This requirement was increased ' + (getMistletoeLeech().subr(1)).toPercentString() + ' by ' + state.mistletoes + ' mistletoes' + '<br/>';
-      }
+      var show_resin = !state.challenge || challenges[state.challenge].allowsresin;
+      var show_twigs = !state.challenge || challenges[state.challenge].allowstwigs;
+      var resin_breakdown = [];
 
-      var tlevel = Math.floor(state.treelevel / min_transcension_level);
-      var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
-      var tlevel_mul = Num(tlevel);
-      if(tlevel > 1) {
-        text += '<br/>';
-        if(show_resin && show_twigs) {
-          text += 'Resin + twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        } else if(show_resin) {
-          text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        } else if(show_twigs) {
-          text += 'Twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        }
-      }
-      text += '<br>';
-
-      if(show_resin) {
-        if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
-          text += 'No further resin gained during this challenge, higher level than max regular level reached';
-        } else {
-          text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
-        }
-
-        text += '<br/>';
-        if(tlevel > 1) {
-          text += 'Total resin ready: ' + state.resin.toString() + ' x ' + tlevel + ' = ' + state.resin.mulr(tlevel_mul).toString();
-        } else {
-          text += 'Total resin ready: ' + state.resin.toString();
-        }
-        text += '<br/>';
+      text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
+      text += 'Tree level: ' + state.treelevel + '<br/>';
+      if(state.treelevel == 0) {
+        text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
       } else {
-        text += 'The tree doesn\'t produce resin during this challenge.<br/>';
-      }
-      text += '<br/>';
+        text += '<br/>';
+        text += 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br/>';
+        if(state.mistletoes > 0) {
+          text += 'This requirement was increased ' + (getMistletoeLeech().subr(1)).toPercentString() + ' by ' + state.mistletoes + ' mistletoes' + '<br/>';
+        }
 
+        var tlevel = Math.floor(state.treelevel / min_transcension_level);
+        var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
+        var tlevel_mul = Num(tlevel);
+        if(tlevel > 1) {
+          text += '<br/>';
+          if(show_resin && show_twigs) {
+            text += 'Resin + twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+          } else if(show_resin) {
+            text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+          } else if(show_twigs) {
+            text += 'Twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
+          }
+        }
+        text += '<br>';
 
-      if(state.mistletoes > 0) {
-        if(show_twigs) {
+        if(show_resin) {
           if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
-            text += 'No further twigs gained during this challenge, higher level than max regular level reached';
+            text += 'No further resin gained during this challenge, higher level than max regular level reached';
           } else {
-            text += 'Twigs added at next tree level: ' + nextTwigs().twigs.toString();
+            text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
           }
 
-          text += '<br>';
+          text += '<br/>';
           if(tlevel > 1) {
-            text += 'Total twigs ready: ' + state.twigs.toString() + ' x ' + tlevel + ' = ' + state.twigs.mulr(tlevel_mul).toString();
+            text += 'Total resin ready: ' + state.resin.toString() + ' x ' + tlevel + ' = ' + state.resin.mulr(tlevel_mul).toString();
           } else {
-            text += 'Total twigs ready: ' + state.twigs.toString();
+            text += 'Total resin ready: ' + state.resin.toString();
           }
           text += '<br/>';
         } else {
-          text += 'The tree doesn\'t produce twigs during this challenge.<br/>';
+          text += 'The tree doesn\'t produce resin during this challenge.<br/>';
         }
         text += '<br/>';
+
+
+        if(state.mistletoes > 0) {
+          if(show_twigs) {
+            if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
+              text += 'No further twigs gained during this challenge, higher level than max regular level reached';
+            } else {
+              text += 'Twigs added at next tree level: ' + nextTwigs().twigs.toString();
+            }
+
+            text += '<br>';
+            if(tlevel > 1) {
+              text += 'Total twigs ready: ' + state.twigs.toString() + ' x ' + tlevel + ' = ' + state.twigs.mulr(tlevel_mul).toString();
+            } else {
+              text += 'Total twigs ready: ' + state.twigs.toString();
+            }
+            text += '<br/>';
+          } else {
+            text += 'The tree doesn\'t produce twigs during this challenge.<br/>';
+          }
+          text += '<br/>';
+        }
+
+        text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString() + '<br>';
+
+        if(getSeason() == 3) {
+          text += '<br/>';
+          text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom / flower stats for crops next to the tree<br>';
+        }
+
+        if(state.untriedchallenges) {
+          text += '<br/>';
+          text += '<span class="efWarningOnDialogText">New challenge available!</span><br>';
+        }
+
+        if(state.upgrades[upgrade_mistunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
+          text += '<br/>';
+          text += 'Abilities discovered:<br>';
+          if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sun: benefits berries when active<br>';
+          if(state.upgrades[upgrade_mistunlock].unlocked) text += '• Mist: benefits mushrooms when active<br>';
+          if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
+        }
+
+        if(resin_breakdown && resin_breakdown.length > 1) {
+          text += formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
+        }
       }
+      return text;
+    };
 
-      text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString() + '<br>';
+    var text = createText();
+    f0.div.innerHTML = text;
 
-      if(getSeason() == 3) {
-        text += '<br/>';
-        text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom / flower stats for crops next to the tree<br>';
+    var lastseentreelevel = state.treelevel;
+    registerUpdateListener(function() {
+      if(!flex || !document.body.contains(flex.div)) return false;
+      if(lastseentreelevel != state.treelevel) {
+        lastseentreelevel = state.treelevel;
+        var text = createText();
+        f0.div.innerHTML = text;
       }
-
-      if(state.untriedchallenges) {
-        text += '<br/>';
-        text += '<span class="efWarningOnDialogText">New challenge available!</span><br>';
-      }
-
-      if(state.upgrades[upgrade_mistunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
-        text += '<br/>';
-        text += 'Abilities discovered:<br>';
-        if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sun: benefits berries when active<br>';
-        if(state.upgrades[upgrade_mistunlock].unlocked) text += '• Mist: benefits mushrooms when active<br>';
-        if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
-      }
-
-      if(resin_breakdown && resin_breakdown.length > 1) {
-        text += formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
-      }
-
-      f0.div.innerHTML = text;
-    }
+      return true;
+    });
 
     if(state.challenge) {
       var targetlevel = challenges[state.challenge].targetlevel;
@@ -448,6 +463,8 @@ function makeFieldDialog(x, y) {
       if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
     } else {
       var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
+      var tlevel = Math.floor(state.treelevel / min_transcension_level);
+      var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
       styleButton(button);
       button.textEl.innerText = 'Transcension ' + roman;
       button.textEl.style.boxShadow = '0px 0px 5px #ff0';
@@ -469,8 +486,6 @@ function makeFieldDialog(x, y) {
         });
       }
     }
-
-
   } else {
     makePlantDialog(x, y, false);
   }
@@ -513,7 +528,7 @@ function initFieldUI() {
       var f = state.field[y][x];
       // the widths are made a tiny bit bigger, to avoid some gridding (1-pixel gaps between field tiles) that can occur for some field sizes otherwise
       var extra = 0.1;
-      var celldiv = makeDiv((x / state.numw * 100) + '%', '0', (101 / state.numw) + '%', '101%', row);
+      var celldiv = makeDiv((x / state.numw * 100) + '%', '0', (101 / state.numw) + '%', '100%', row);
       var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
       var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
       var div = makeDiv('0', '0', '100%', '100%', celldiv);
@@ -524,6 +539,17 @@ function initFieldUI() {
       fieldDivs[y][x].div = div;
       fieldDivs[y][x].canvas = canvas;
       fieldDivs[y][x].bgcanvas = bgcanvas;
+
+      util.setEvent(div, 'onmouseover', 'fieldover', bind(function(x, y) {
+        updateFieldMouseOver(x, y);
+      }, x, y));
+      util.setEvent(div, 'onmouseout', 'fieldout', bind(function(x, y) {
+        updateFieldMouseOut(x, y);
+      }, x, y));
+      // on mouse up and with timeout so that the state is fully updated after the action that the click caused
+      util.setEvent(div, 'onmouseup', 'fieldclick', bind(function(x, y) {
+        window.setTimeout(function(){updateFieldMouseClick(x, y)});
+      }, x, y));
 
       registerTooltip(div, bind(function(x, y, div) {
         var f = state.field[y][x];
@@ -563,7 +589,7 @@ function initFieldUI() {
           update();
         }
 
-        if(!fern && f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
+        if(!fern && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
             makeFieldDialog(x, y);
         } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           if(e.shiftKey) {
@@ -580,7 +606,7 @@ function initFieldUI() {
           } else if(!fern) {
             makeFieldDialog(x, y);
           }
-        } else if(!fern && f.hasCrop()) {
+        } else if(f.hasCrop()) {
           if(e.shiftKey || (eventHasCtrlKey(e) && f.cropIndex() == short_0)) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];
@@ -589,7 +615,7 @@ function initFieldUI() {
             } else {
               showMessage('shift+click to delete must be enabled in the settings before it is allowed', invalidFG, invalidBG);
             }
-          } else {
+          } else if(!fern) {
             makeFieldDialog(x, y);
           }
         }

@@ -16,10 +16,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+var use_blossom_spring = true;
+var leaves_spring_header;
+var leaves_summer_header;
 
-// headers for leaves for seasons
-var leaves_spring_header = 'q:#484 g:#6a6 G:#8f8 Q:#afa';
-var leaves_summer_header = 'q:#040 g:#080 G:#0b0 Q:#0f0';
+if(use_blossom_spring) {
+  leaves_spring_header = 'q:#c8a g:#dac G:#ecd Q:#fed'; // blossom leaves version
+  leaves_summer_header = 'q:#151 g:#292 G:#4c4 Q:#5f4';
+} else {
+  leaves_spring_header = 'q:#484 g:#6a6 G:#8f8 Q:#afa'; // spring green leaves version
+  leaves_summer_header = 'q:#040 g:#080 G:#0b0 Q:#0f0'; // pretty dark green version to distinguish from spring
+}
+
 var leaves_autumn_header = 'q:#f30 g:#f70 G:#fa0 Q:#fe0';
 var leaves_winter_header = 'q:#88f g:#aaf G:#ccf Q:#eef';
 var leaves_ethereal_header = 'q:#bb8 g:#dda G:#ffa Q:#ffe';
@@ -460,18 +468,18 @@ createTreeImages('young tree', `
 createTreeImages('adult tree', `
 ................
 ................
-.......GGGG.....
-...QGGgGQQGG....
+....QGQGQGQ.....
+...QGQgGQQGG....
 ..QGgGgQGGGQG...
 .QGQGgQGQGgQGq..
-.QGGGgQGGGQGGGq.
+.QGGGgQQGGQGQGq.
 .QQGgQGgGgqQgGq.
-.QGgggQGgqqQGgq.
-..GgqqQgqqGGgq..
-...go.goo.GGqq..
-....oo.oo..xx...
+.QGgggQQgqqQGgq.
+..GgqqQgqqQGgq..
+...ggGgogGgGqq..
+....qo.oo.Ggx...
 .....oooo.xx....
-......ooxxx.....
+.....oooxxx.....
 ......ooxx......
 ......ooxx......
 `,`

@@ -93,7 +93,59 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
 var upgrade2ScrollFlex = null;
 
+
+
+var upgrades2_order = [];
+function computeUpgrade2UIOrder() {
+  var array;
+  upgrades2_order = [];
+
+  var added = {};
+
+  // one-time upgrades (unlocks, ...) that cost spores (= special tree related ones)
+  array = [];
+  for(var i = 0; i < registered_upgrades2.length; i++) {
+    if(added[registered_upgrades2[i]]) continue;
+    var u = upgrades2[registered_upgrades2[i]];
+    array.push(registered_upgrades2[i]);
+  }
+  array = array.sort(function(a, b) {
+    a = upgrades2[a];
+    b = upgrades2[b];
+    if(a.treelevel2 != b.treelevel2) return a.treelevel2 < b.treelevel2 ? 1 : -1;
+    return a.cost.resin.lt(b.cost.resin) ? 1 : -1;
+  });
+  for(var i = 0; i < array.length; i++) {
+    upgrades2_order.push(array[i]);
+    added[array[i]] = true;
+  }
+}
+
+var upgrades2_order_cache = [];
+// this is just to avoid all the sorting of computeUpgrade2UIOrder when not necessary
+function computeUpgrade2UIOrderIfNeeded() {
+  var counts = [];
+  for(var i = 0; i < registered_upgrades2.length; i++) {
+    var count = state.upgrades2[registered_upgrades2[i]].count;
+  }
+  var same = true;
+  for(var i = 0; i < counts.length; i++) {
+    if(i >= upgrades2_order_cache || upgrades2_order_cache[i] != counts[i]) {
+      same = false;
+      break;
+    }
+  }
+  if(same) return false;
+  upgrades2_order_cache = counts;
+  computeUpgrade2UIOrder();
+  return true; // actually not guaranteed that it changed, but at least the right pane must be updated sometimes if planting a crop changed the relevance of some
+}
+
+
+
 function updateUpgrade2UI() {
+  if(upgrades2_order.length == 0) computeUpgrade2UIOrder();
+
   var scrollPos = 0;
   if(upgrade2ScrollFlex) scrollPos = upgrade2ScrollFlex.div.scrollTop;
 
@@ -101,16 +153,14 @@ function updateUpgrade2UI() {
 
   var scrollFlex = new Flex(upgrade2Flex, 0, 0.01, 1, 1);
   upgrade2ScrollFlex = scrollFlex;
-  scrollFlex.div.style.overflowY = 'scroll';
-  scrollFlex.div.style.overflowX = 'visible';
-  scrollFlex.div.style.border = '5px solid #ccc';
+  makeScrollable(scrollFlex);
 
   var titleFlex = new Flex(scrollFlex, 0.01, 0, 0.99, 0.2, 0.25);
 
 
   var unlocked = [];
-  for(var i = 0; i < registered_upgrades2.length; i++) {
-    var j = registered_upgrades2[i];
+  for(var i = 0; i < upgrades2_order.length; i++) {
+    var j = upgrades2_order[i];
     if(upgrades2[j].canUpgrade()) unlocked.push(j);
   }
 
@@ -138,9 +188,9 @@ function updateUpgrade2UI() {
   }
 
   var researched = [];
-  for(var i = 0; i < registered_upgrades2.length; i++) {
-    var j = registered_upgrades2[i];
-    //if(upgrades2[j].isExhausted()) researched.push(j);
+  for(var i = 0; i < upgrades2_order.length; i++) {
+    var j = upgrades2_order[i];
+    //if(upgrades[j].isExhausted()) researched.push(j);
     if(state.upgrades2[j].count) researched.push(j);
   }
 
@@ -176,6 +226,9 @@ function updateUpgrade2UI() {
       scrollFlex.update(); // something goes wrong with the last chip in the scrollflex when not updating this now.
     });
   }
+
+  //appearance of scrollbar can shift positions of some flexes, causing some boxes to shift, hence update entire flex again
+  scrollFlex.update();
 
   upgrade2ScrollFlex.div.scrollTop = scrollPos;
 }

@@ -265,7 +265,7 @@ function makePlantDialog(x, y, opt_replace) {
       var c = crops[index];
 
       result += 'Crop type: ' + getCropTypeName(c.type);
-      var help = getCropTypeHelp(c.type);
+      var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
       if(help) {
         result += '.<br>' + help;
       }

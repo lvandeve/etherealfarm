@@ -20,6 +20,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.37 (2021-02-20):';
+  // resin increase, twig increase, 7x6 field, diagonal mistletoes. Cannot add higher upgrades yet because no idea what kind of resin amounts are appropriate for ethereal tree level 4
+  text += '<br/>• Added new high level ethereal upgrades.';
+  // it's a mushroom. can't add higher ones for higher level yet for same reason. a new berry or flower is more powerful, but the mushroom is the next one in line so it has to be this one
+  text += '<br/>• Added a new high level ethereal crop.';
+  // these include: winter hardening no longer reduces winter malus, resin accidently level + 1 fix, increased effect from the mist ability, now require 5 watercress before first upgrades unlock in new game, faster spawing ferns at game start, ...
+  text += '<br/>• Other balance changes.';
+  text += '<br/>• Added icons indicating what shift/ctrl click on field will do.';
+  text += '<br/>• Changed spring leaves color into blossom color.';
+  // more tooltip for ethereal tree, dialog size bugfix, don't mention nettles in bee challenge, remove ugly border from upgrades/fruit tabs, duration formatting tweaks, ethereal upgrades sorting order, auto update tree dialog on levelup, ...
+  text += '<br/>• Other UI tweaks';
+  text += '<br/><br/>';
+
   text += '0.1.36 (2021-02-16):';
   text += '<br/>• Twigs now receive the 2x, 3x, ... higher transcenscion bonus like resin does.';
   text += '<br/>• Twigs gain reduced for lower tree levels, but when reaching tree level 20+ this update is a net win.';

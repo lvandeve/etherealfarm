@@ -345,9 +345,7 @@ function updateUpgradeUI() {
 
   var scrollFlex = new Flex(upgradeFlex, 0, 0.01, 1, 1);
   upgradeScrollFlex = scrollFlex;
-  scrollFlex.div.style.overflowY = 'scroll';
-  scrollFlex.div.style.overflowX = 'visible';
-  scrollFlex.div.style.border = '5px solid #ccc';
+  makeScrollable(scrollFlex);
 
 
   var titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15, 0.3);
@@ -417,8 +415,8 @@ function updateUpgradeUI() {
     });
   }
 
-  //upgradeFlex.div.appendChild(scrollFlex.div);
-  //upgradeFlex.update();
+  //appearance of scrollbar can shift positions of some flexes, causing some boxes to shift, hence update entire flex again
+  scrollFlex.update();
 
   upgradeScrollFlex.div.scrollTop = scrollPos;
 

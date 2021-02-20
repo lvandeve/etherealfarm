@@ -265,7 +265,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   xbutton.div.textEl.innerText = 'x';
   addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
 
-  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, -0.05], 0.88, 0.3);
+  var h = 0.88;
+  if(opt_size == DIALOG_SMALL) h = 0.8; // ensure content doesn't go over the buttons
+  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, -0.05], h, 0.3);
 
   return dialogFlex;
 }
@@ -288,7 +290,7 @@ function closeAllDialogs() {
 }
 
 document.addEventListener('keyup', function(e) {
-  if(e.keyCode == 27) {
+  if(e.keyCode == 27) { // escape key
     closeAllDialogs();
   }
 });

@@ -37,7 +37,7 @@ function showMessage(text, opt_color, opt_bgcolor, opt_forcenew, opt_showlate) {
     return;
   }
   var time = (state && state.prevtime) ? state.prevtime : util.getTime();
-  var title = util.formatDate(time);
+  var title = util.formatDate(time);// + '. gain/s before: ' + gain;
   var logDiv = logFlex.div;
   // automatically capitalize the message. Reason: consistency.
   text = upper(text);

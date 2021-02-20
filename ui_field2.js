@@ -136,7 +136,13 @@ function makeField2Dialog(x, y) {
     dialog.div.className = 'efDialogTranslucent';
     var flex = dialog.content;
 
-    var text = '<b>Ethereal Tree</b>';
+    var text = '';
+
+    if(state.treelevel2 > 0) {
+      text += '<b>Ethereal tree level ' + state.treelevel2 + '</b>';
+    } else {
+      text += '<b>Ethereal tree</b>';
+    }
     text += '<br><br>';
 
     text += '<b>Twigs required for next level: </b>' + treeLevel2Req(state.treelevel2 + 1).toString();
@@ -210,6 +216,17 @@ function initField2UI() {
       field2Divs[y][x].canvas = canvas;
       field2Divs[y][x].bgcanvas = bgcanvas;
 
+      util.setEvent(div, 'onmouseover', 'fieldover', bind(function(x, y) {
+        updateField2MouseOver(x, y);
+      }, x, y));
+      util.setEvent(div, 'onmouseout', 'fieldout', bind(function(x, y) {
+        updateField2MouseOut(x, y);
+      }, x, y));
+      // on mouse up and with timeout so that the state is fully updated after the action that the click caused
+      util.setEvent(div, 'onmouseup', 'fieldclick', bind(function(x, y) {
+        window.setTimeout(function(){updateField2MouseClick(x, y)});
+      }, x, y));
+
       registerTooltip(div, bind(function(x, y, div) {
         var f = state.field2[y][x];
         var fd = field2Divs[y][x];
@@ -221,7 +238,12 @@ function initField2UI() {
           var c = crops2[f.cropIndex()];
           result = getCropInfoHTML2(f, c, false);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-          return 'ethereal tree';
+          if(state.treelevel2 > 0) {
+            result = 'Ethereal tree level ' + state.treelevel2;
+          } else {
+            result = 'Ethereal tree';
+          }
+          result += '<br><br>Twigs required for next level: </b>' + treeLevel2Req(state.treelevel2 + 1).toString();
         }
         return result;
       }, x, y, div), true);
