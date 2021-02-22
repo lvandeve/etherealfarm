@@ -21,7 +21,7 @@ var leaves_spring_header;
 var leaves_summer_header;
 
 if(use_blossom_spring) {
-  leaves_spring_header = 'q:#c8a g:#dac G:#ecd Q:#fed'; // blossom leaves version
+  leaves_spring_header = 'q:#d8a g:#dac G:#ecd Q:#fde'; // blossom leaves version
   leaves_summer_header = 'q:#151 g:#292 G:#4c4 Q:#5f4';
 } else {
   leaves_spring_header = 'q:#484 g:#6a6 G:#8f8 Q:#afa'; // spring green leaves version
@@ -29,7 +29,7 @@ if(use_blossom_spring) {
 }
 
 var leaves_autumn_header = 'q:#f30 g:#f70 G:#fa0 Q:#fe0';
-var leaves_winter_header = 'q:#88f g:#aaf G:#ccf Q:#eef';
+var leaves_winter_header = 'q:#77f g:#99f G:#bbf Q:#eef';
 var leaves_ethereal_header = 'q:#bb8 g:#dda G:#ffa Q:#ffe';
 
 var stem_metal_header0 = 'ho:#999'; // zinc
@@ -468,15 +468,15 @@ createTreeImages('young tree', `
 createTreeImages('adult tree', `
 ................
 ................
-....QGQGQGQ.....
+....QGQQQGQ.....
 ...QGQgGQQGG....
-..QGgGgQGGGQG...
+..QGQGgQGGGGG...
 .QGQGgQGQGgQGq..
-.QGGGgQQGGQGQGq.
+.QGGQgQQGGQGGqq.
 .QQGgQGgGgqQgGq.
-.QGgggQQgqqQGgq.
-..GgqqQgqqQGgq..
-...ggGgogGgGqq..
+.QGQggQQgqqGqgq.
+..GQqqQgqqQGgq..
+...QgGgogGgqqq..
 ....qo.oo.Ggx...
 .....oooo.xx....
 .....oooxxx.....
@@ -506,13 +506,13 @@ createTreeImages('adult tree', `
 ........Q.......
 ....QQQQGQQQ....
 ...QGQGGGGGgq...
-..QGgGGQQgggqq..
-..QGggQgGqgqqq..
-.QQgGgGGgGqqQQG.
-.QGGGqQGggqQGGg.
-.QGggqQgGqqQGgg.
-.QGGgqqGqqQgggq.
-..Ggqq.gqQGggq..
+..QGQQGQQgqgqq..
+..QGgQQgGqgqqq..
+.QQQGgGGgGqqGQG.
+.GQGGqQGggqQGGq.
+.QQGgqQqGqqGGqg.
+.QGQgqqGqqQgqgq.
+..Ggqq.gqQGqgq..
 ..ooo..oxqQgqq..
 ...ooo.ox..xxx..
 ....oooox.xxx...
@@ -540,15 +540,15 @@ createTreeImages('adult tree', `
 createTreeImages('adult tree', `
 ................
 ........G.......
-..QGGQQggQgQ....
-.QGgGgGGgGGgggq.
-QGggQGGGQggggqg.
-QgGGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
+..QQQQQggQgQ....
+.QGQGgQGgGGgggq.
+QQQgQQGGQggggqg.
+QgQGQgQgGqQqGQG.
+QGGQgGGGgGqQGGgq
+QQgGGqgGggQGgGqq
+GGQGGgggGqqGGggq
+QggQggqGqqQGgqqq
+.GQQggqgqQGgqgqq
 .Qggq..oxqQGgqq.
 .Qqqqo.ox..xxq..
 ....oooox.xxx...
@@ -576,16 +576,16 @@ QggGggqGqqQGgggq
 createTreeImages('adult tree', `
 ................
 ...QQ...G...Qg..
-..QGGQQggQgQggq.
-.QGgGgGGgGGgggq.
-QGggQGGGQgggqqg.
-QgGGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq..oxqQGgqq.
+..QQQQQggQgQggq.
+.QGgGQGGgGGgggq.
+QGQgQGGGQgggqqg.
+QQQGggQgGqQqQQG.
+QGGggQGGgGqQGGqq
+QQgQGqgGggQGgqgq
+QGQGQgggGqqQGgqq
+QQgGggqGqqQGqqgq
+.GGgggqgqQGqGgqq
+.Qggq..oxqQGqqq.
 .Qqqqo.ox..xxq..
 ....oooQg.xxx...
 .....oogqxxx....
@@ -612,16 +612,16 @@ QggGggqGqqQGgggq
 createTreeImages('large tree', `
 ................
 ......QQQGG.....
-...GGQgGgQgQ.g..
-.QGgGgGGgGGQQgq.
-QGggQGGGQggggqg.
-QgGGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
+...QQQgGgQgQ.g..
+.QGQGQGGgGGQQgq.
+QQQGQGGGQggggqg.
+GgQGggQgGqQqQQq.
+QGGggQGGgGqQGggq
+GQgQGqgGggQGgGqq
+QGQGQgggGqqGGggq
+QQgGggqGqqQGqgqq
+.GGgggqgqQGgGqqq
+.Qggq.ox.qQGqqq.
 .Qqqq.ox.ox.xq..
 ..oox.oQgqx.xx..
 ...ooxQGgqxxx...
@@ -647,17 +647,17 @@ QggGggqGqqQGgggq
 // tree level 35
 createTreeImages('large tree', `
 ................
-...GG.QQQGG.Q...
-.QGGGQgGgQgGGgq.
-.QGgGgGGgGGgGgq.
-QGggQGGGQggqgqg.
-QgGGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
+...QG.QQQGG.Q...
+.QGGQQgGgQgGGgq.
+.QQQGgGGgGGgGgq.
+QQgQQGGGQggqgqg.
+GgQGggQgGqQqQQG.
+QQGggQGGgGqQGGqq
 QGgGGqgGggQGgGgq
-QGGGQgggGqQGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
+GQGGQgggGqQGGgqq
+QggGggqGqqQGqqgq
+.QGgggqgqQGGGgqq
+.Qggq.ox.qQqqqq.
 .Qqqq.ox.ox.xqG.
 .Qoox.oQgqx.xGg.
 .GGooxQGgqxxxggq
@@ -684,15 +684,15 @@ QggGggqGqqQGgggq
 createTreeImages('grand tree', `
 ................
 ..QQQ..QQGGQQ...
-.QgGgqgGgQgQGG..
-.GqgggGGgGGQGGq.
-QGgqqGGGQggggqq.
-GqgGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
+.QgQgQgGgQgQGG..
+.GqgQgGGgGGQGGq.
+QGQqqGGGQggggqq.
+GqQGggQgGqQqQQG.
+QQGggQGGgGqQGGqq
 QGgGGqgGggQGgGgq
-QGGGGQggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
+QQQGGQggGqqGGgqq
+QggGggqGqqQGgqqq
+.GGgggqgqQGGqgqq
 ..ggq.ox.qQGgqq.
 ..Qqq.ox.ox.QQ..
 .QGgx.oQgqxQQGq.
@@ -719,20 +719,20 @@ QggGggqGqqQGgggq
 // tree level 45
 createTreeImages('grand tree', `
 ................
-..Qgg.QQQGGQQ...
-.QgGgqgGgQgQGG..
-.QqgqgGGgGGQGGq.
-.GgGqGGGQggggqq.
+..QgQ.QQQGGQQ...
+.QgQQqgGgQgQGG..
+.QQgqgGGgGGQGGq.
+.QgQqGGGQggggqq.
 GqqGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
-.QQqq.ox.ox.QQQ.
-.QGgx.oQgqxQQGG.
-..GgqxQGgqxxGGg.
+QQGggQGGgGqQGGgq
+QQQGGqgGggQGgGgq
+QGGGQgggGqqGGgqq
+QQgGggqGqqQGgqgq
+.GGgggqgqQGGGqqq
+.Qggq.ox.qQqqqq.
+.QQqq.ox.ox.QGQ.
+.QGgx.oQgqxGQGG.
+..GgqxQGgqxxGGq.
 ..qqqooqqxxxg...
 `,`
 .Q...oooxxx.....
@@ -755,21 +755,21 @@ Ggqoooooxxx.....
 // tree level 50
 createTreeImages('curly tree', `
 ................
-..Qgg.QQQGGQQ...
-.QgGgqgGgQgQGG..
-.QqgqgGGgGGQGGq.
-.GgGqGGGQggggqq.
-GqqGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
+..QgQ.QQQGGQQ...
+.QgQgqgGgQgQGG..
+.QQgQQGGgGGQGGq.
+.QgQqGGGQggggqq.
+GqQGggQgGqQqQQG.
+QQGggQGGgGqQGGqq
+QGQGGqgGggQGgGgq
+QQGGQgggGqqGGqqq
+QggGggqGqqQGgqgq
+.QGgggqgqQGGqgqq
+.Qggq.ox.qQGqqq.
 .QQqq.ox.ox.QQQ.
-.QGgx.oQgqxQQGG.
-..GgqxQGgqxxGGg.
-..qqqooqqxxxg...
+.QGgx.oQgqxQGgG.
+..GgqxQGgqxxgqq.
+..qqqooqqxxxq...
 `,`
 .Q...xoooxxx....
 QGg...xoooxx....
@@ -791,21 +791,21 @@ Ggqooxoooxx.....
 // tree level 60
 createTreeImages('curly tree', `
 ................
-..Qgg.QQQGGQQ...
-.QgGgqgGgQgQGG..
-.QqgqgGGgGGQGGq.
+..QgQ.QQQGGQQ...
+.QgQgqgGgQgQGG..
+.QQQQgGGgGGQGGq.
 .GgGqGGGQggggqq.
-GqqGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
+GqQGggQgGqQqQQG.
+QQGQgQGGgGqQGGqq
+QQgGGqgGggQGgGqq
 QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
-.QQqq.ox.ox.QQQ.
-.QGgx.oQgqxQQGG.
-..GgqxQGgqxxGGg.
-..qqqooqqxxxg...
+QQgGggqGqqQGgqqq
+.GGgggqgqQGGqgqq
+.Qggq.ox.qQGqqq.
+.QQqq.ox.ox.QQG.
+.QGgx.oQgqxQgGg.
+..GgqxQGgqxxGgq.
+..qqqooqqxxxq...
 `,`
 .Q...xoooxxx....
 QGg...xoooxx..Q.
@@ -827,21 +827,21 @@ Ggqooxoooxx..Qgq
 // tree level 70
 createTreeImages('hollow tree', `
 ................
-..Qgg.QQQGGQQ...
-.QgGgqgGgQgQGG..
-.QqgqgGGgGGQGGq.
+..QgQ.QQQGGQQ...
+.QgQQqgGgQgQGG..
+.QQgqgGGgGGQGGq.
 .GgGqGGGQggggqq.
-GqqGggQgGqQqQQG.
+GQQGggQgGqQqQQG.
 QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
+QQgGGqgGggQGgGqq
+QQGGQgggGqqGGggq
+QggGggqGqqQGgqqq
 .GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
+.Qggq.ox.qQGqqq.
 .QQqq.ox.ox.QQQ.
-.QGgx.oQgqxQQGG.
-..GgqxQGgqxxGGg.
-..qqqooqqxxxg...
+.QGgx.oQgqxQGGg.
+..GgqxQGgqxxGgq.
+..qqqooqqxxxq...
 `,`
 .Q...oooxxxx....
 QGg.oooxxxxxx...
@@ -863,20 +863,20 @@ Ggqooox..oxxx...
 // tree level 80
 createTreeImages('hollow tree', `
 ................
-..Qgg.QQQGGQQ...
-.QgGgqgGgQgQGG..
-.QqgqgGGgGGQGGq.
+..QQg.QQQGGQQ...
+.QgGQqgGgQgQGG..
+.QqQqgGGgGGQGGq.
 .GgGqGGGQggggqq.
-GqqGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
+GqQGggQgGqQqQQG.
+QQGggQGGgGqQGGgq
+QGgGGqgGggQGgGqq
+QQGGQgggGqqGGgqq
+QggGggqGqqQGgqgq
 .GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
+.Qggq.ox.qQqqqq.
 .QQqq.ox.ox.QQQ.
-.QGgx.oQgqxQQGG.
-..GgqxQGgqxxGGg.
+.QGgx.oQgqxQQGq.
+..GgqxQGgqxxGqg.
 ..qqqooqqxxxg...
 `,`
 .Q...oooxxxx....
@@ -899,21 +899,21 @@ QGg..ooxxxox.Q..
 // tree level 90
 createTreeImages('massive tree', `
 ................
-..Qgg.QQQGGQQ...
-.QgGgqgGgQgQGG..
-.QqgqgGGgGGQGGq.
-.GgGqGGGQggggqq.
-GqqGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
-QGgGGqgGggQGgGgq
+..QQg.QQQGGQQ...
+.QgGQqgGgQgQGG..
+.QQgqgGGgGGQGGq.
+.GQQqGGGQggggqq.
+GqQGggQgGqQqQQG.
+QQGggQGGgGqQGGgq
+QGgGGqgGggQGgGqq
 QGGGQgggGqqGGggq
-QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
+QggGggqGqqQGgqgq
+.GGgggqgqQGGGqqq
+.Qggq.ox.qQqgqq.
 .QQqq.ox.ox.QQQ.
-.QGgx.oQgqxQQGG.
-..GgqxQGgqxxGGg.
-..qqqooqqxxxg...
+.QGgx.oQgqxQQGq.
+..GgqxQGgqxxGqg.
+..qqqooqqxxxq...
 `,`
 .....Ooooxxx....
 ....oOoooxxx....
@@ -947,16 +947,16 @@ createTreeImages('diamond tree', image_metal_tree_top, image_metal_tree_stem, st
 createTreeImages('magnificent tree', `
 ................
 ......QQQGG.....
-...GGQgGgQgQ.g..
-.QGgGgGGgGGQQgq.
-QGggQGGGQggggqg.
-QgGGggQgGqQqQQG.
-QGGggQGGgGqQGGgq
+...GQQgGgQgQ.g..
+.QQgGgGGgGGQQgq.
+QGgQQGGGQggggqg.
+QQQGggQgGqQqQQG.
+QQGggQGGgGqQGGqq
 QGgGGqgGggQGgGgq
-QGGGQgggGqqGGggq
+QQGGQgggGqqGGqqq
 QggGggqGqqQGgggq
-.GGgggqgqQGGGgqq
-.Qggq.ox.qQGgqq.
+.GGgggqgqQGGqqqq
+.Qggq.ox.qQqgqq.
 .Qqqq.ox.ox.xq..
 ..oox.oQgqx.xx..
 ...ooxQGgqxxx...

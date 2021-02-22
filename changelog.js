@@ -20,6 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.38 (2021-02-22):';
+  // Increased base of exponentiation both before and after Twigs Extraction upgrade. Twigs start lower to compensate, but starting at around level 15-20 they become more than before
+  text += '<br/>• Increased twigs tree level multiplier, decreased starting value to compensate: higher tree levels now give more twigs.';
+  // The goal for the balance changes is: spring gives mix of seeds/spores thanks to flowers, summer really gives some good berries, autumn really gives some good spores (and twigs), winter is special with the tree warmth (and gives extra resin)
+  text += '<br/>• Season effect balancing: spring and summer should be competitive now.';
+  // Now the boost is applied to entire season multiplier, so boost*mul rather than ((boost-1)*mul)+1. The old formula had unintended effect of making the different ethereal seasonal upgrades different in relative effect to each other
+  text += '<br/>• Ethereal season upgrades improved and should now have same relative strength for each season.';
+  text += '<br/>• Other minor tweaks & fixes.';
+  text += '<br/><br/>';
+
+
   text += '0.1.37 (2021-02-20):';
   // resin increase, twig increase, 7x6 field, diagonal mistletoes. Cannot add higher upgrades yet because no idea what kind of resin amounts are appropriate for ethereal tree level 4
   text += '<br/>• Added new high level ethereal upgrades.';

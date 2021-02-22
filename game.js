@@ -1517,6 +1517,8 @@ var update = function(opt_fromTick) {
         } else if(state.res.lt(cost)) {
           showMessage('not enough resources to plant ' + c.name + ': have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
                       ', need: ' + cost.toString(), invalidFG, invalidBG);
+        } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
+          showMessage('already have automaton, cannot place more', invalidFG, invalidBG);
         } else {
           showMessage('planted ethereal ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
@@ -1564,12 +1566,13 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_DELETE2) {
         var f = state.field2[action.y][action.x];
+        var freedelete = (f.index == CROPINDEX + automaton2_0);
 
         var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
         if(f.cropIndex() == special2_0) remstarter = getStarterResources(0).sub(getStarterResources(-1));
-        if(state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
+        if(!freedelete && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
           showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)' , invalidFG, invalidBG);
-        } else if(f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
+        } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
           // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
           showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.');
         } else if(f.cropIndex() == special2_0 && state.res.lt(remstarter)) {
@@ -1582,7 +1585,11 @@ var update = function(opt_fromTick) {
             state.g_res.subInPlace(remstarter);
             state.c_res.subInPlace(remstarter);
           }
-          if(f.growth < 1) {
+          if(freedelete) {
+            recoup = c.getCost(-1);
+            showMessage('this crop is free to delete, resin refunded and no delete token used', '#f8a');
+            state.g_numplanted2--;
+          } else if(f.growth < 1) {
             recoup = c.getCost(-1);
             showMessage('plant was still growing, resin refunded and no delete token used', '#f8a');
             state.g_numplanted2--;
@@ -1974,6 +1981,8 @@ var update = function(opt_fromTick) {
       }
       if(state.treelevel2 >= 2) {
         unlockEtherealCrop(nettle2_0);
+        // not yet fully implemented, do not actually unlock yet
+        //unlockEtherealCrop(automaton2_0);
       }
       if(state.treelevel2 >= 3) {
         unlockEtherealCrop(mush2_1);
@@ -2172,8 +2181,8 @@ var update = function(opt_fromTick) {
 var shiftCropFlex = undefined;
 var shiftCropFlexId;
 var shiftCropFlexShift;
-var shiftCropFlexX;
-var shiftCropFlexY;
+var shiftCropFlexX = -1;
+var shiftCropFlexY = -1;
 var shiftCropFlexShowing;
 
 function removeShiftCropChip() {
@@ -2198,9 +2207,9 @@ function showShiftCropChip(crop_id, shift) {
   var x = shiftCropFlexX;
   var y = shiftCropFlexY;
 
-  if(x < 0 || y < 0) return;
-
-  var f = state.field[y][x];
+  var f;
+  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(); // fake empty field cell to make it indicate "planting"
+  else f = state.field[y][x];
 
   var planting = f.isEmpty();
   var deleting = ((f.hasCrop() && shift) || (f.index == CROPINDEX + short_0)) && state.allowshiftdelete;
@@ -2257,8 +2266,8 @@ function updateFieldMouseClick(x, y) {
 // the "shift+plant" chip at the bottom
 var shiftCrop2Flex = undefined;
 var shiftCrop2FlexId;
-var shiftCrop2FlexX;
-var shiftCrop2FlexY;
+var shiftCrop2FlexX = -1;
+var shiftCrop2FlexY = -1;
 var shiftCrop2FlexShowing;
 
 function removeShiftCrop2Chip() {
@@ -2282,9 +2291,9 @@ function showShiftCrop2Chip(crop_id) {
   var x = shiftCrop2FlexX;
   var y = shiftCrop2FlexY;
 
-  if(x < 0 || y < 0) return;
-
-  var f = state.field2[y][x];
+  var f;
+  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(); // fake empty field cell to make it indicate "planting"
+  else f = state.field2[y][x];
 
   var planting = f.isEmpty();
   var deleting = f.hasCrop() && state.allowshiftdelete;

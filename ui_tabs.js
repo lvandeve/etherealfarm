@@ -28,6 +28,7 @@ var upgrades2ButtonLastText = '';
 var medalsButtonLastText = '';
 var fieldButtonLastText = '';
 var field2ButtonLastText = '';
+var automationButtonLastText = '';
 
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
@@ -192,6 +193,7 @@ function updateTabButtons() {
   wanted[tabindex_fruit] = state.g_numfruits > 0;
   wanted[tabindex_field2] = state.g_numresets > 0;
   wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
+  wanted[tabindex_automation] = haveAutomaton();
   wanted[tabindex_medals] = state.medals_earned > 0;
 
   var num = 0;
@@ -281,6 +283,17 @@ function updateTabButtons() {
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     upgrades2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    index++;
+  }
+
+  tabnum = tabindex_automation;
+  if(wanted[tabnum]) {
+    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
+    tabbuttons[tabnum].textEl.innerText = 'automation';
+    tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
+    automationButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
 

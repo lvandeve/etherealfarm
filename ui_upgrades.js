@@ -68,6 +68,17 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       var c = crops[u.cropid];
       infoText += '<hr>';
       infoText += 'Crop info (' + c.name + '):<br><br>';
+
+      if(!c.prod.empty()) {
+        infoText += 'Base production: ' + c.prod.toString() + '<br>';
+        infoText += 'Upgraded production: ' + c.getProd().toString() + '<br>';
+      }
+      if(c.boost.neqr(0)) {
+        infoText += 'Base boost: ' + c.boost.toString() + '<br>';
+        infoText += 'Upgraded boost: ' + (c.type == CROPTYPE_BEE ? c.getBoostBoost() : c.getBoost()).toString() + '<br>';
+      }
+
+
       var cropcost = c.getCost();
       infoText += 'Planting cost: ' + cropcost.toString() + ' (' + getCostAffordTimer(cropcost) + ')<br>';
       if(c.type == CROPTYPE_SHORT) {

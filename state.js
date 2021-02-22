@@ -74,6 +74,9 @@ Cell.prototype.isEmpty = function() {
   return this.index == 0 || this.index == FIELD_REMAINDER;
 };
 
+Cell.prototype.isTree = function() {
+  return this.index == FIELD_TREE_BOTTOM || this.index == FIELD_TREE_TOP;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -870,4 +873,11 @@ function getUpcomingFruitEssence() {
   var res = Res();
   for(var j = 0; j < state.fruit_sacr.length; j++) res.addInPlace(getFruitSacrifice(state.fruit_sacr[j]));
   return res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+function haveAutomaton() {
+  return !!state.crop2count[automaton2_0];
 }

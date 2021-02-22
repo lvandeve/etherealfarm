@@ -1138,15 +1138,19 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun)
   };
 
   var description = 'Unlocks new crop: ' + crop.name + '.';
-  //if(!crop.prod.empty()) description += ' Base planting cost: ' + crop.cost.toString() + '.'; // not necessary to show since it's same as the unlock-research cost.
-  if(!crop.prod.empty()) description += ' Base production: ' + crop.prod.toString() + '/s.';
+  if(crop.prod.seeds.gtr(0)) description += ' Produces seeds.';
+  if(crop.prod.spores.gtr(0)) description += ' Produces spores.';
   if(!crop.boost.eqr(0)) {
     if(crop.type == CROPTYPE_NETTLE) {
-      description += ' Boosts neighbor mushroom spores production ' + (crop.boost.toPercentString()) + ' without increasing seed consumption. However, negatively affects neighboring berries and flowers, so avoid touching those with this plant.';
+      description += ' Boosts neighbor mushroom spores production without increasing seed consumption. However, negatively affects neighboring berries and flowers, so avoid touching those with this plant.';
+    } else if(crop.type == CROPTYPE_BEE) {
+      description += ' Boosts neighboring flower\'s boost.';
     } else {
-      description += ' Boosts neighbors: ' + (crop.boost.toPercentString()) + '. Does not boost watercress directly, but watercress gets same boosts as its neighbor resource-producing crops.';
+      description += ' Boosts neighbors. Does not boost watercress directly, but watercress gets same boosts as its neighbor resource-producing crops.';
     }
   }
+
+
   description += ' Crop type: ' + getCropTypeName(crop.type);
 
   var result = registerUpgrade(name, cost, fun, pre, 1, description, '#dfc', '#0a0', crop.image[4], undefined);
@@ -1627,7 +1631,7 @@ for(var i = 0; i < level_achievement_values.length; i++) {
   var s = level.toString(5, Num.N_FULL);
   var name = 'tree level ' + s;
   //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + s + '.';
-  var id = registerMedal(name, 'Reached tree level ' + s, tree_images[5][1][0],
+  var id = registerMedal(name, 'Reached tree level ' + s, tree_images[treeLevelIndex(level)][1][1],
       bind(function(level) { return level.lter(state.treelevel); }, level),
       bonus);
   if(i > 0) medals[id].hint = prevmedal;
@@ -1783,7 +1787,7 @@ for(var i = 0; i < level_achievement_values.length; i++) {
   var s = level.toString(5, Num.N_FULL);
   var name = 'ethereal tree level ' + s;
   //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + s + '.';
-  var id = registerMedal(name, 'Reached ethereal tree level ' + s, tree_images[5][1][4],
+  var id = registerMedal(name, 'Reached ethereal tree level ' + s, tree_images[treeLevelIndex(level)][1][4],
       bind(function(level) { return level.lter(state.treelevel2); }, level),
       bonus);
   if(i > 0) medals[id].hint = prevmedal;
@@ -2145,6 +2149,9 @@ function registerSpecial2(name, cost, planttime, effect_description_short, effec
 crop2_register_id = 0;
 var special2_0 = registerSpecial2('fern', Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
 
+crop2_register_id = 10;
+var automaton2_0 = registerSpecial2('automaton', Res({resin:1000}), 1.5, 'Automates things', 'Automates things. Can have max 1', images_automaton);
+
 // berries2
 crop2_register_id = 25;
 var berry2_0 = registerBerry2('blackberry', Res({resin:10}), 60, 'boosts berries 25% (additive)', 'boosts berries in the basic field 25% (additive)', blackberry);
@@ -2329,19 +2336,19 @@ var upgrade2_season = [];
 
 upgrade2_season[0] = registerUpgrade2('improve spring', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (additive) of the original effect. Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
+}, function(){return true;}, 0, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (additive). Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
 
 upgrade2_season[1] = registerUpgrade2('improve summer', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (additive) of the original effect. Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
+}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (additive). Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
 
 upgrade2_season[2] = registerUpgrade2('improve autumn', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (additive) of the original effect. Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
+}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (additive). Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
 
 upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive) of the original effect.', undefined, undefined, tree_images[3][1][3]);
+}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive).', undefined, undefined, tree_images[3][1][3]);
 
 
 
@@ -2357,7 +2364,7 @@ var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', LEVEL2, Res({res
 var upgrade2_basic_tree_bonus = Num(0.02);
 
 var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', LEVEL2, Res({resin:10}), 1.5, function() {
-}, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (additive). For example, if the level 1 basic tree production bonus is normally 5%, it is now 7%, and at tree level 2 it is then 14% instead of 10%', undefined, undefined, tree_images[5][1][1]);
+}, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (additive). For example, if the level 1 basic tree production bonus is normally 5%, it is now 7%, and at tree level 2 it is then 14% instead of 10%', undefined, undefined, tree_images[10][1][1]);
 
 registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
   state.fruit_slots++;
@@ -2710,7 +2717,7 @@ function treeLevelIndex(level) {
 // The resin given by tree going to this level
 // this is the base amount
 function treeLevelResinBase(level) {
-  var base = 1.141;  // 1.41 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
+  var base = 1.141;  // 1.141 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
   if(state.upgrades2[upgrade2_resin_extraction].count) base = 1.17;
   return Num.rpow(base, Num(level)).mulr(0.5);
 }
@@ -2767,10 +2774,10 @@ function nextTreeLevelResin(breakdown) {
 function getTwigs(level) {
   var res = new Res();
   res.twigs = Num(Math.log2(state.mistletoes + 1));
-  res.twigs.mulrInPlace(0.66);
+  res.twigs.mulrInPlace(0.25);
 
-  var base = 1.07;
-  if(state.upgrades2[upgrade2_twigs_extraction].count) base = 1.1;
+  var base = 1.14;
+  if(state.upgrades2[upgrade2_twigs_extraction].count) base = 1.17;
 
   res.twigs.mulInPlace(Num(base).powr(level));
   if(getSeason() == 2) {
@@ -2832,9 +2839,9 @@ autumn: mushrooms
 winter: tree
 */
 
-var bonus_season_flower_spring = 1.25;
-var bonus_season_berry_summer = 1.5;
-var bonus_season_autumn_mushroom = 2.5;
+var bonus_season_flower_spring = 1.5;
+var bonus_season_berry_summer = 2;
+var bonus_season_autumn_mushroom = 2;
 var bonus_season_autumn_mistletoe = 1.5;
 var malus_season_winter = 0.75;
 var bonus_season_winter_tree = 1.5;
@@ -2847,7 +2854,7 @@ function getSpringFlowerBonus() {
   var ethereal_season = state.upgrades2[upgrade2_season[0]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[0]).addr(1);
-    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+    bonus = bonus.mul(ethereal_season_bonus);
   }
 
   var level = getFruitAbility(FRUIT_SPRING);
@@ -2865,7 +2872,7 @@ function getSummerBerryBonus() {
   var ethereal_season = state.upgrades2[upgrade2_season[1]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[1]).addr(1);
-    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+    bonus = bonus.mul(ethereal_season_bonus);
   }
 
   var level = getFruitAbility(FRUIT_SUMMER);
@@ -2883,7 +2890,7 @@ function getAutumnMushroomBonus() {
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
-    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+    bonus = bonus.mul(ethereal_season_bonus);
   }
 
   var level = getFruitAbility(FRUIT_AUTUMN);
@@ -2908,14 +2915,6 @@ function getAutumnMistletoeBonus() {
 
 function getWinterMalus() {
   var malus = Num(malus_season_winter);
-  var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
-  if(ethereal_season) {
-    // winter, since it's a malus, the bonus applies in reverse direction, and never gets completely reduced (using the towards1 function)
-    var t = towards1(ethereal_season, 10) * 0.75;
-    var antimalus = 1 - malus_season_winter;
-    antimalus *= (1 - t);
-    malus = Num(1 - antimalus);
-  }
   return malus;
 }
 
@@ -2925,7 +2924,7 @@ function getWinterTreeWarmth() {
   var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
   if(ethereal_season) {
     var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[3]).addr(1);
-    bonus = bonus.subr(1).mul(ethereal_season_bonus).addr(1);
+    bonus = bonus.mul(ethereal_season_bonus);
   }
 
   var level = getFruitAbility(FRUIT_WINTER);
@@ -2939,7 +2938,7 @@ function getWinterTreeWarmth() {
 }
 
 function getWinterTreeResinBonus() {
-  var result = Num(1.5);
+  var result = Num(bonus_season_winter_resin);
   var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
   if(ethereal_season) {
     var t = towards1(ethereal_season, 10) * 0.5;

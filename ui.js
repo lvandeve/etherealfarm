@@ -23,6 +23,7 @@ var fruitFlex;
 var medalDiv;
 var field2Flex;
 var upgrade2Flex;
+var automationFlex;
 
 
 var mainw;
@@ -64,7 +65,7 @@ function makeMainDivs() {
   infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.18, 0.25);
   if(showdebugborders) infoFlex.div.style.border = '2px solid blue';
 
-  tabFlex = new Flex(gameFlex, 0, 0.18, 1, 0.28, 0.25);
+  tabFlex = new Flex(gameFlex, 0, 0.18, 1, 0.28, 0.22);
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
@@ -97,10 +98,10 @@ function initUIGlobal() {
 var tabindex_field;
 var tabindex_upgrades;
 var tabindex_fruit;
-var tabindex_medals;
 var tabindex_field2;
 var tabindex_upgrades2;
-var tabindex_tree;
+var tabindex_automation;
+var tabindex_medals;
 
 // init the UI after a reset, save load, .... Keeps log messages
 // assume state is already correctly initialized
@@ -130,6 +131,7 @@ function initUI() {
   tabindex_field2 = tabnum++;
   tabindex_upgrades2 = tabnum++;
   tabindex_medals = tabnum++;
+  tabindex_automation = tabnum++;
 
   for(var i = 0; i < tabnum; i++) tabs[i] = new Flex(contentFlex, 0, 0, 1, 1);
 
@@ -141,6 +143,7 @@ function initUI() {
   field2Flex = tabs[tabindex_field2];
   field2Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   upgrade2Flex = tabs[tabindex_upgrades2];
+  automationFlex = tabs[tabindex_automation];
 
   updateTabButtons();
 

@@ -178,7 +178,7 @@ function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
 
   // this button becomes available once more enough resources to fully replant all watercress
-  if(state.res.seeds.gtr(1000)) {
+  if(state.g_res.seeds.gtr(1000)) {
     if(!watercressbutton) {
       watercressbutton = new Flex(topFlex, [1,-2.1], [0,0.1], [1,-1.3], [0,0.9]);
       watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w';
