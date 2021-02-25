@@ -1151,7 +1151,7 @@ function addRandomFruit() {
     fruit.levels.push(level);
   }
 
-  if(state.g_numfruits > 2 && getRandomFruitRoll() > 0.75) {
+  if(state.g_numfruits >= 4 && getRandomFruitRoll() > 0.75) {
     fruit.type = 1 + getSeason();
   }
 
@@ -1170,6 +1170,19 @@ function addRandomFruit() {
   if(fruit.type == 4) {
     fruit.abilities.push(FRUIT_WINTER);
     fruit.levels.push(1);
+  }
+
+
+  var season_before = state.seen_seasonal_fruit;
+  if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
+  var season_after = state.seen_seasonal_fruit;
+  if(!season_before && season_after) {
+    showMessage('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', '#f94', '#548');
+    state.fruit_slots++;
+  }
+  if(season_before != 15 && season_after == 15) {
+    showMessage('You \'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', '#f94', '#548');
+    state.fruit_slots++;
   }
 
 
@@ -1480,14 +1493,6 @@ var update = function(opt_fromTick) {
           if(c.type == CROPTYPE_SHORT) {
             state.g_numplantedshort++;
             state.c_numplantedshort++;
-            if(state.c_numplantedshort == 1 && state.c_numplanted == 0) {
-              // commented out: this help dialog pops up together with the "first upgrade" one, one of them is enough. The upgrades one contains a note about permanent crops now, and the SHIFT/CTRL tip is moved to first permanent crop dialog
-              /*showHelpDialog(4,
-                'you planted your first plant! It\'s producing seeds. This one (unlike most later ones) is short-lived so will need to be replanted soon. Watercress will remain useful later on as well since it can leech.' +
-                '<br><br>' +
-                'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
-                watercress[4]);*/
-            }
           } else {
             state.g_numplanted++;
             state.c_numplanted++;
@@ -1922,13 +1927,13 @@ var update = function(opt_fromTick) {
       if(state.treelevel == 2) {
         showRegisteredHelpDialog(12);
       } else if(state.treelevel == 3) {
-        showHelpDialog(-13, 'The tree reached level ' + state.treelevel + ' and is providing a choice, see the new upgrade that provides two choices under "upgrades".');
+        showHelpDialog(-13, undefined, 'The tree reached level ' + state.treelevel + ' and is providing a choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 4) {
         showRegisteredHelpDialog(14);
       } else if(state.treelevel == 6) {
         showRegisteredHelpDialog(15);
       } else if(state.treelevel == 8) {
-        showHelpDialog(-16, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
+        showHelpDialog(-16, undefined, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
       } else if(state.treelevel == 20) {
         if(!state.challenge) showRegisteredHelpDialog(23);
       }
@@ -2056,11 +2061,10 @@ var update = function(opt_fromTick) {
         showMedalChip(j);
 
         if(j == medal_crowded_id && state.g_numresets == 0) {
-          //showHelpDialog(10, 'The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear safely on top of crops, no need to make room for them.');
+          //showHelpDialog(10, undefined, 'The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear safely on top of crops, no need to make room for them.');
         }
         if(state.g_nummedals == 1) {
-          // TODO: have non intrusive achievement badges instead
-          showHelpDialog(-11, 'You got your first achievement! Achievements give a slight production boost. See the "achievements" tab.');
+          showHelpDialog(-11, undefined, 'You got your first achievement! Achievements give a slight production boost. See the "achievements" tab.');
         }
       }
     }

@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.39 (2021-02-25):';
+  text += '<br/>• Added two more obtainable fruit storage slots, when seeing 1 or all seasonal fruits dropped for the first time (for existing saves, this starts from 0)';
+  text += '<br/>• Various tweaks and fixes';
+  text += '<br/><br/>';
+
   text += '0.1.38 (2021-02-22):';
   // Increased base of exponentiation both before and after Twigs Extraction upgrade. Twigs start lower to compensate, but starting at around level 15-20 they become more than before
   text += '<br/>• Increased twigs tree level multiplier, decreased starting value to compensate: higher tree levels now give more twigs.';

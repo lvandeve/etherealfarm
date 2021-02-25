@@ -234,6 +234,7 @@ function State() {
   this.fruit_stored = []; // fruits in storage that stay after transcension
   this.fruit_slots = 2; // amount of slots for fruit_stored
   this.fruit_sacr = []; // fruits outside of storage that will be sacrificed on transcension
+  this.seen_seasonal_fruit = 0; // 4 flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit. For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
 
   // settings
   this.notation = Num.N_LATIN; // number notation

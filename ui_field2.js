@@ -145,7 +145,8 @@ function makeField2Dialog(x, y) {
     }
     text += '<br><br>';
 
-    text += '<b>Twigs required for next level: </b>' + treeLevel2Req(state.treelevel2 + 1).toString();
+    var twigs_req = treeLevel2Req(state.treelevel2 + 1);
+    text += '<b>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' (total: ' + twigs_req.toString() + ')';
     text += '<br><br>';
 
     if(state.treelevel2 > 0) {
@@ -243,7 +244,8 @@ function initField2UI() {
           } else {
             result = 'Ethereal tree';
           }
-          result += '<br><br>Twigs required for next level: </b>' + treeLevel2Req(state.treelevel2 + 1).toString();
+          var twigs_req = treeLevel2Req(state.treelevel2 + 1);
+          result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' (total: ' + twigs_req.toString() + ')';
         }
         return result;
       }, x, y, div), true);

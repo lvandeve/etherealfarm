@@ -399,6 +399,9 @@ function encState(state, opt_raw_only) {
   processNumArray(array5);
   processUintArray(array6);
 
+  id = 20; // a few spares for the above
+  processUint(state.seen_seasonal_fruit);
+
 
 
 
@@ -963,6 +966,11 @@ function decState(s) {
     if(index6 != array6.length) return err(4);
   }
 
+  if(save_version >= 4096*1+39) {
+    id = 20; // a few spares for the above
+    state.seen_seasonal_fruit = processUint();
+  }
+
   if(state.fruit_seed < 0) {
     // before version 0.1.17, fruit seed did not exist yet, and seed0 neither,
     // so initialize it based on start time. Do not use Math.random() here to
@@ -970,6 +978,7 @@ function decState(s) {
     // 0x6672756974 is ASCII for fruit
     state.fruit_seed = (Math.floor(state.g_starttime) & 0xffffffff) ^ 0x6672756974;
   }
+
 
   section = 18; id = 0; // help dialogs
   if(save_version >= 4096*1+20) {

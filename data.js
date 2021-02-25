@@ -1655,7 +1655,7 @@ registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at lea
 registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one, respect our new fungus overlords.', champignon[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
 }, Num(0.01));
-registerMedal('nettles', 'plant the entire field full of nettles. This is a stingy situation.', nettle[4], function() {
+registerMedal('stingy situation', 'plant the entire field full of nettles', nettle[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_NETTLE] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', mistletoe[4], function() {
@@ -2188,7 +2188,7 @@ var flower2_3 = registerFlower2('dandelion', getFlower2Cost(3), Num(1), dandelio
 
 crop2_register_id = 100;
 // for treelevel2=2
-var nettle2_0 = registerNettle2('nettle', Res({resin:200}), 0.5, 60, 'boosts nettles by 25% (additive)', 'boosts nettles in the basic field.', nettle);
+var nettle2_0 = registerNettle2('nettle', Res({resin:200}), 0.5, 60, 'boosts nettles by 25% (additive)', 'boosts nettles in the basic field by 25% (additive).', nettle);
 
 crop2_register_id = 150;
 var lotus2_0 = registerLotus2('white lotus', Res({resin:50}), 0.5, 300, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom and flower by 50%. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
@@ -2358,7 +2358,7 @@ var LEVEL2 = 0; // variable used for the required treelevel2 for groups of upgra
 var upgrade2_time_reduce_0_amount = 90;
 
 upgrade2_register_id = 25;
-var upgrade2_time_reduce_0 = registerUpgrade2('faster growing', LEVEL2, Res({resin:25}), 2, function() {
+var upgrade2_time_reduce_0 = registerUpgrade2('growth speed', LEVEL2, Res({resin:25}), 2, function() {
 }, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes ' + upgrade2_time_reduce_0_amount + ' seconds, will not get much faster. This improves the higher level slower plants more.', undefined, undefined, blackberry[0]);
 
 var upgrade2_basic_tree_bonus = Num(0.02);

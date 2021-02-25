@@ -28,9 +28,25 @@ var helpNeverAgainLocal = {};
 // highest used id: 27
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
-function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recursive) {
+// text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
+function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_force, opt_recursive) {
   state.help_seen_text[Math.abs(id)] = Math.abs(id);
-  if(!opt_recursive) showMessage(text, helpFG, helpBG);
+  if(!opt_recursive) {
+    var use_short = false;
+    if(id >= 0) {
+      if(state.help_disable[id]) use_short = true;
+      if(state.disableHelp) {
+        use_short = !!state.help_seen[id];
+        state.help_seen[id] = id;
+      }
+    }
+
+    if(use_short) {
+      if(text_short != '') showMessage(text_short || text, helpFG, helpBG);
+    } else {
+      showMessage(text, helpFG, helpBG);
+    }
+  }
 
   if(id < 0) return; // showMessage-only
 
@@ -116,11 +132,12 @@ function showHelpDialog(id, text, image, opt_text2, images, opt_force, opt_recur
 var registered_help_dialogs_order = [];
 var registered_help_dialogs = {};
 
-function registerHelpDialog(id, name, text, image, opt_text2, images) {
+function registerHelpDialog(id, name, text_short, text, image, opt_text2, images) {
   registered_help_dialogs_order.push(id);
   registered_help_dialogs[id] = {};
   var d = registered_help_dialogs[id];
   d.id = id;
+  d.text_short = text_short; // text shown in message log when the help message was already seen and disabled, or undefined to use same as text, or empty string '' to show nothing in this case
   d.name = name;
   d.text = text;
   d.image = image;
@@ -131,13 +148,13 @@ function registerHelpDialog(id, name, text, image, opt_text2, images) {
 function showRegisteredHelpDialog(id, opt_force)  {
   var d = registered_help_dialogs[id];
   if(!d) return;
-  showHelpDialog(d.id, d.text, d.image, d.opt_text2, d.images, opt_force);
+  showHelpDialog(d.id, d.text_short, d.text, d.image, d.opt_text2, d.images, opt_force);
 }
 
 
-registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade! Check the "upgrades" tab to view it. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
+registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!', 'You unlocked your first upgrade! Check the "upgrades" tab to view it. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
 
-registerHelpDialog(3, 'Permanent crop & watercress copying',
+registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your first permanent type of plant.',
     'You unlocked your first permanent type of plant. Plants like this stay on the field forever, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
     'If you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonal, not diagonal) production for free. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plant has later in the game.' +
@@ -150,13 +167,13 @@ registerHelpDialog(3, 'Permanent crop & watercress copying',
 
 
 
-registerHelpDialog(19, 'Mushrooms',
+registerHelpDialog(19, 'Mushrooms', 'You unlocked your first type of mushroom',
                'You unlocked your first type of mushroom. Mushrooms produce spores, but they consume seeds. Mushrooms must touch berries to get their seeds. If the berry cannot produce enough seeds for the mushroom, the mushroom produces less spores. If the berry produces more seeds than needed, the remaining seeds go to the regular seeds stack<br><br>Spores let the tree level up, unlocking next kinds of bonuses.<br><br>Spores are used by the tree, but the mushroom is not required to touch the tree.',
                undefined,
                '<br><br>'+
                'The image shows a possible configuration for mushrooms: it extracts some seeds from the berries it touches.',
                [[champignon[4],blueberry[4]],[blueberry[4],undefined]]);
-registerHelpDialog(20, 'Flowers',
+registerHelpDialog(20, 'Flowers', 'You unlocked your first type of flower',
                'You unlocked your first type of flower. Flowers boost berries and mushrooms. In case of mushrooms, it boosts their spore production, but also increases their seed consumption equally',
                undefined,
                '<br><br>'+
@@ -168,7 +185,7 @@ registerHelpDialog(20, 'Flowers',
                  [    undefined,undefined,undefined,undefined]
                ]);
 
-registerHelpDialog(21, 'Nettles',
+registerHelpDialog(21, 'Nettles', 'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches.',
   'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower next to a mushroom works even greater.',
   nettle[4],
   '<br><br>'+
@@ -178,34 +195,34 @@ registerHelpDialog(21, 'Nettles',
    [undefined,clover[4],undefined]]);
 
 
-registerHelpDialog(6, 'Tree leveled up', 'Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(1)][0] + ', level ' + 1 + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree in the field for more info.',
+registerHelpDialog(6, 'Tree leveled up', 'Tree leveled up', 'Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(1)][0] + ', level ' + 1 + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree in the field for more info.',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(1)][1][0]], [undefined, tree_images[treeLevelIndex(1)][2][0]]]);
 
 
-registerHelpDialog(12, 'Sun ability', 'The tree reached level ' + 2 + ' and discovered the sun ability!<br><br>' + upgrades[upgrade_sununlock].description, image_sun);
-registerHelpDialog(14, 'Mist ability', 'The tree reached level ' + 4 + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
-registerHelpDialog(15, 'Rainbow ability', 'The tree reached level ' + 6 + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
-registerHelpDialog(2, 'Tree dropped fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surplus fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
-registerHelpDialog(18, 'Tree dropped better fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
+registerHelpDialog(12, 'Sun ability', '', 'The tree reached level ' + 2 + ' and discovered the sun ability!<br><br>' + upgrades[upgrade_sununlock].description, image_sun);
+registerHelpDialog(14, 'Mist ability', '', 'The tree reached level ' + 4 + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
+registerHelpDialog(15, 'Rainbow ability', '', 'The tree reached level ' + 6 + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
+registerHelpDialog(2, 'Tree dropped fruit', '', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surplus fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
+registerHelpDialog(18, 'Tree dropped better fruit', '', 'The tree reached level ' + 15 + ' and dropped another fruit! Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
 
 
-registerHelpDialog(7, 'Tree can transcend', 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog.',
+registerHelpDialog(7, 'Tree can transcend', undefined, 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog.',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(10)][1][0]], [undefined, tree_images[treeLevelIndex(10)][2][0]]]);
 
 
-registerHelpDialog(1, 'Transcension', 'You performed your first transcension! Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.',
+registerHelpDialog(1, 'Transcension', undefined, 'You performed your first transcension! Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.',
   undefined,
   '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all type of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
   [[undefined,clover[4],undefined],
    [blackberry[4],whitelotus[4],champignon[4]],
    [undefined,blackberry[4],undefined]]);
 
-registerHelpDialog(23, 'Transcension II', 'The tree reached level ' + 20 + '. Transcension now turned into Transcension II, and doubles the amount of resin you receive upon transcending. This will continue at later tree levels as well: tree level 30 unlocks transcension III which triples resin, and so on',
+registerHelpDialog(23, 'Transcension II', '', 'The tree reached level ' + 20 + '. Transcension now turned into Transcension II, and doubles the amount of resin you receive upon transcending. This will continue at later tree levels as well: tree level 30 unlocks transcension III which triples resin, and so on',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(20)][1][0]], [undefined, tree_images[treeLevelIndex(20)][2][0]]]);
 
-registerHelpDialog(9, 'Ethereal upgrades', 'You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable');
+registerHelpDialog(9, 'Ethereal upgrades', undefined, 'You unlocked your first ethereal upgrade! Check the "ethereal upgrades" tab to view it. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable');
 
-registerHelpDialog(17, 'Mistletoes',
+registerHelpDialog(17, 'Mistletoes', 'Unlocked a new crop: mistletoe',
   'Unlocked a new crop: mistletoe. Mistletoe can be placed next to the basic field tree to create twigs, orthogonally, not diagonally. Twigs help the ethereal field tree. However the mistletoe increases the spore requirement for leveling the basic tree and slightly decreases resin gain. More mistletoes give diminishing returns, but still increase the negative effects by as much, so having max 1 or 2 is sensible. Mistletoes that are not planted next to the tree do nothing at all.',
   mistletoe[4],
   '<br><br>'+
@@ -213,16 +230,16 @@ registerHelpDialog(17, 'Mistletoes',
   [[tree_images[treeLevelIndex(2)][1][0], mistletoe[4]], [tree_images[treeLevelIndex(2)][2][0], mistletoe[4]]]);
 
 
-registerHelpDialog(22, 'Ethereal tree leveled up',
+registerHelpDialog(22, 'Ethereal tree leveled up', '',
     'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(1)][1][4]], [undefined, tree_images[treeLevelIndex(1)][2][4]]]);
 
-registerHelpDialog(24, 'Challenges',
+registerHelpDialog(24, 'Challenges', '',
     'You unlocked a challenge! Challenges can be accessed from the tree, as an alternative to regular transcension. All challenges give a production bonus for highest tree level reached. Challenges may also give one-time rewards for successfully reaching a certain level. Challenges can be ran as many times as desired, redoing them can increase the max level reached.',
     undefined);
 
 
-registerHelpDialog(25, 'Bee challenge',
+registerHelpDialog(25, 'Bee challenge', undefined,
     'You started the bee challenge! Rules are different from the standard game. You can click the tree at any time to view the current challenge rules, reward and stats.',
     images_queenbee[4],
     '<br><br>'+
@@ -233,11 +250,11 @@ registerHelpDialog(25, 'Bee challenge',
      [undefined, images_queenbee[4], images_beehive[4], undefined],
     ]);
 
-registerHelpDialog(26, 'Challenge completed',
+registerHelpDialog(26, 'Challenge completed', 'The tree reached the challenge\'s target level!',
     'The tree reached the challenge\'s target level, you can successfully complete the challenge and can get its main reward! You can complete the challenge from the tree dialog, or continue to reach a higher level for more challenge max-level bonus. You can also replay the challenge at any later time to increase the max level.',
     undefined);
 
-registerHelpDialog(27, 'Beehives',
+registerHelpDialog(27, 'Beehives', undefined,
   'You unlocked beehives! Beehives boost orthogonally neighboring flowers, while flowers boost berries and mushrooms (beehives boost-boost). This adds a new independent multiplier that can be upgraded to the game.',
   images_beehive[4],
   '<br><br>'+

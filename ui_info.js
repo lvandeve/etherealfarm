@@ -288,7 +288,7 @@ function updateResourceUI() {
 
         // resin
         var text = '<b>' + upper(name) + '</b><br/><br/>';
-        text += 'Total resin earned entire game: ' + state.g_res.twigs.toString();
+        text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
         text += '<br><br>';
         text += 'Collected upcoming twigs: ' + upcoming.toString() + '<br>';
         if(tlevel > 1) {
