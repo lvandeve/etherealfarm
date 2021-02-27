@@ -315,6 +315,7 @@ function makeFieldDialog(x, y) {
       var show_resin = !state.challenge || challenges[state.challenge].allowsresin;
       var show_twigs = !state.challenge || challenges[state.challenge].allowstwigs;
       var resin_breakdown = [];
+      var twigs_breakdown = [];
 
       text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
       text += 'Tree level: ' + state.treelevel + '<br/>';
@@ -367,7 +368,7 @@ function makeFieldDialog(x, y) {
             if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
               text += 'No further twigs gained during this challenge, higher level than max regular level reached';
             } else {
-              text += 'Twigs added at next tree level: ' + nextTwigs().twigs.toString();
+              text += 'Twigs added at next tree level: ' + nextTwigs(twigs_breakdown).twigs.toString();
             }
 
             text += '<br>';
@@ -403,8 +404,12 @@ function makeFieldDialog(x, y) {
           if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
         }
 
-        if(resin_breakdown && resin_breakdown.length > 1) {
+        if(resin_breakdown && resin_breakdown.length >= 1) {
           text += formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
+        }
+
+        if(twigs_breakdown && twigs_breakdown.length >= 1) {
+          text += formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
         }
       }
       return text;

@@ -2724,13 +2724,6 @@ function treeLevelIndex(level) {
   return result;
 }
 
-// The resin given by tree going to this level
-// this is the base amount
-function treeLevelResinBase(level) {
-  var base = 1.141;  // 1.141 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
-  if(state.upgrades2[upgrade2_resin_extraction].count) base = 1.17;
-  return Num.rpow(base, Num(level)).mulr(0.5);
-}
 
 var mistletoe_resin_malus = Num(0.05);
 
@@ -2738,8 +2731,11 @@ var treelevel2_resin_bonus = Num(0.05);
 
 // amount with bonuses etc...
 function treeLevelResin(level, breakdown) {
-  var resin = treeLevelResinBase(level);
-  if(breakdown) breakdown.push(['base', true, Num(0), resin.clone()]);
+  var base = 1.141;  // 1.141 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
+  if(state.upgrades2[upgrade2_resin_extraction].count) base = 1.17;
+  var resin = Num.rpow(base, Num(level)).mulr(0.5);
+
+  if(breakdown) breakdown.push(['base (per tree level x' + base + ')', true, Num(0), resin.clone()]);
 
   if(getSeason() == 3) {
     var bonus = getWinterTreeResinBonus();
@@ -2772,33 +2768,35 @@ function treeLevelResin(level, breakdown) {
 }
 
 function currentTreeLevelResin(breakdown) {
-  return treeLevelResin(state.treelevel);
+  return treeLevelResin(state.treelevel, breakdown);
 }
 
 function nextTreeLevelResin(breakdown) {
-  return treeLevelResin(state.treelevel + 1);
+  return treeLevelResin(state.treelevel + 1, breakdown);
 }
 
 // get twig drop at tree going to this level from mistletoes
 // this excludes the transcension II+ bonus
-function getTwigs(level) {
+function getTwigs(level, breakdown) {
   var res = new Res();
   res.twigs = Num(Math.log2(state.mistletoes + 1));
   res.twigs.mulrInPlace(0.25);
-
   var base = 1.14;
   if(state.upgrades2[upgrade2_twigs_extraction].count) base = 1.17;
-
   res.twigs.mulInPlace(Num(base).powr(level));
+
+  if(breakdown) breakdown.push(['base (per tree level x' + base + ')', true, Num(0), res.clone()]);
+
   if(getSeason() == 2) {
     var bonus = getAutumnMistletoeBonus();
     res.twigs.mulInPlace(bonus);
+    if(breakdown) breakdown.push(['autumn bonus', true, bonus, res.clone()]);
   }
   return res;
 }
 
-function nextTwigs() {
-  return getTwigs(state.treelevel + 1);
+function nextTwigs(breakdown) {
+  return getTwigs(state.treelevel + 1, breakdown);
 }
 
 function treeLevel2ReqBase(level) {

@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 function updateAutomatonUI() {
+  automatonFlex.clear();
   var choiceupgrades = [fern_choice0, active_choice0];
 
   var h = 0.15;

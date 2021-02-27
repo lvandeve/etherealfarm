@@ -23,6 +23,7 @@ function getChangeLog() {
   text += '0.1.40 (2021-02-27):';
   text += '<br/>• Added automaton. Can automate the choice upgrades. More features planned for later game versions';
   text += '<br/>• Fixed high level flower boost accidently set too low';
+  text += '<br/>• Various tweaks and fixes';
   text += '<br/><br/>';
 
   text += '0.1.39 (2021-02-25):';
