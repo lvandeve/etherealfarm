@@ -26,7 +26,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   var cost = u.getCost(completed ? -1 : 0);
   var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 0.95);
   var name = completed ? u.getName() : u.getNextName();
-  titleFlex.div.innerHTML = name;
+  titleFlex.div.innerHTML = upper(name);
   titleFlex.div.style.whiteSpace = 'nowrap';
 
   var canvasFlex = new Flex(flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
@@ -52,7 +52,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
 
   var infoText = '';
   var updateInfoText = function() {
-    infoText = name;
+    infoText = upper(name);
     infoText += '<br><br>Cost: ' + cost.toString();
     if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
     if(u.cropid != undefined) {
@@ -62,7 +62,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       infoText += '<br><br>' + u.description;
     }
     if(u.is_choice && completed) {
-      infoText += '<br><br>chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+      infoText += '<br><br>Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
     }
     if(u.cropid != undefined) {
       var c = crops[u.cropid];
@@ -74,8 +74,8 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
         infoText += 'Upgraded production: ' + c.getProd().toString() + '<br>';
       }
       if(c.boost.neqr(0)) {
-        infoText += 'Base boost: ' + c.boost.toString() + '<br>';
-        infoText += 'Upgraded boost: ' + (c.type == CROPTYPE_BEE ? c.getBoostBoost() : c.getBoost()).toString() + '<br>';
+        infoText += 'Base boost: ' + c.boost.toPercentString() + '<br>';
+        infoText += 'Upgraded boost: ' + (c.type == CROPTYPE_BEE ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
       }
 
 
@@ -100,7 +100,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
 
   if(!completed) {
     styleButton(buyFlex.div);
-    var buyText = (u.is_choice ? 'Choice: ' : 'Buy: ') + cost.toString();
+    var buyText = (u.is_choice ? 'Choose' : ('Buy: ' + cost.toString()));
 
     buyFlex.div.textEl.innerText = buyText;
 
@@ -136,7 +136,11 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     });
 
   } else {
-    buyFlex.div.innerText = 'Cost: ' + cost.toString();
+    if(u.is_choice && completed) {
+      buyFlex.div.innerText = 'Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+    } else {
+      buyFlex.div.innerText = 'Cost: ' + cost.toString();
+    }
     //buyFlex.setCentered();
   }
 

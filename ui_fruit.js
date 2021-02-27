@@ -434,7 +434,7 @@ function updateFruitUI() {
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.33, [0, y + s], 0.66);
   y += s;
-  titleFlex.div.innerText = 'stored fruits';
+  titleFlex.div.innerText = 'stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
   help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage.';
   registerTooltip(titleFlex.div, help);
 
@@ -464,7 +464,7 @@ function updateFruitUI() {
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.33, [0, y + s], 0.66);
   y += s;
-  titleFlex.div.innerText = 'sacrificial fruit pool';
+  titleFlex.div.innerText = 'sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
   help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
   registerTooltip(titleFlex.div, help);
 

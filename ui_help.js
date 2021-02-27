@@ -25,7 +25,7 @@ var helpDialogQueue = [];
 var helpNeverAgainLocal = {};
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 27
+// highest used id: 28
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
@@ -266,6 +266,10 @@ registerHelpDialog(27, 'Beehives', undefined,
     [undefined,images_beehive[4],daisy[4],amanita[4]],
   ]);
 
+
+registerHelpDialog(28, 'Automaton', 'You unlocked the automaton!',
+    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab unlocks, allowing to automate various parts of the game.<br><br>You must place the automaton, go to the tab and enable settings before it actually automates anything.<br><br>More and more automation features will become available later in the game.<br><br>When removing the automaton from the ethereal field, the automaton tab and all automation features will be disabled, but they all come back the way they were when placing the automaton again.',
+    images_automaton[4]);
 
 function createKeyboardHelpDialog() {
   var dialog = createDialog();

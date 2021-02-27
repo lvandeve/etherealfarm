@@ -954,9 +954,9 @@ crop_register_id = 75;
 var flower_0 = registerFlower('clover', 0, Num(0.5), flowerplanttime0, clover);
 var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 3, cornflower);
 var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 6, daisy);
-var flower_3 = registerFlower('dandelion', 3, Num(1024.0), flowerplanttime0 * 9, dandelion);
-var flower_4 = registerFlower('iris', 4, Num(8192.0), flowerplanttime0 * 12, iris);
-// ideas for more flowers: (forget me not), iris, lavender, orchid, sunflower, tulip, violet
+var flower_3 = registerFlower('dandelion', 3, Num(2048.0), flowerplanttime0 * 9, dandelion);
+var flower_4 = registerFlower('iris', 4, Num(32768.0), flowerplanttime0 * 12, iris);
+// ideas for more flowers: (forget me not), lavender, orchid, sunflower, tulip, violet
 
 crop_register_id = 100;
 var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, nettle);
@@ -1106,6 +1106,10 @@ function registerUpgrade(name, cost, fun, pre, maxcount, description, bgcolor, b
     } else {
       state.upgrades[this.index].count++;
     }
+    // ensure it's also marked as unlocked. Most upgrades are unlocked before you can apply them, but in some cases like
+    // auto-unlocked ones for challenges, blackberry secret, ... that may not be so.
+    // and: upgrades are only saved in the savegame when unlocked, so must be set now or its count won't be saved
+    state.upgrades[this.index].unlocked = true;
     fun();
   };
 
@@ -1281,7 +1285,7 @@ function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_nu
 }
 
 // an upgrade that increases the multiplier of a crop
-function registerChoiceUpgrade(name, cost, pre, fun, name_a, name_b, description_a, description_b, bgcolor, bordercolor, image0, image1) {
+function registerChoiceUpgrade(name, pre, fun, name_a, name_b, description_a, description_b, bgcolor, bordercolor, image0, image1) {
   // the index this new upgrade will get
   var index = upgrade_register_id;
 
@@ -1289,7 +1293,7 @@ function registerChoiceUpgrade(name, cost, pre, fun, name_a, name_b, description
 
   var description = 'Choice upgrade, pick one of the two proposed effects. Choose wisely. <br><br><b>' + name_a + '</b>:<br>' + description_a + '<br><br><b>' + name_b + '</b>:<br>' + description_b;
 
-  var result = registerUpgrade(name, cost, fun, pre, maxcount, description, bgcolor, bordercolor, image0, image1);
+  var result = registerUpgrade(name, Res(), fun, pre, maxcount, description, bgcolor, bordercolor, image0, image1);
   var u = upgrades[result];
   u.is_choice = true;
   u.choicename_a = name_a;
@@ -1322,17 +1326,17 @@ var berryunlock_10 = registerCropUnlock(berry_10, getBerryCost(10), 1, berry_9);
 
 upgrade_register_id = 50;
 var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), 1, berry_1);
-var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), 1, berry_3);
-var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), 1, berry_5);
-var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), 1, berry_7);
-var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), 1, berry_9);
+var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), 1, berry_3, function(){return !!state.upgrades[mushunlock_0].count;});
+var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), 1, berry_5, function(){return !!state.upgrades[mushunlock_1].count;});
+var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), 1, berry_7, function(){return !!state.upgrades[mushunlock_2].count;});
+var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), 1, berry_9, function(){return !!state.upgrades[mushunlock_3].count;});
 
 upgrade_register_id = 75;
 var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), 1, berry_2);
-var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), 1, berry_4);
-var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), 1, berry_6);
-var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8);
-var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), 1, berry_10);
+var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), 1, berry_4, function(){return !!state.upgrades[flowerunlock_0].count;});
+var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), 1, berry_6, function(){return !!state.upgrades[flowerunlock_1].count;});
+var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8, function(){return !!state.upgrades[flowerunlock_2].count;});
+var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), 1, berry_10, function(){return !!state.upgrades[flowerunlock_3].count;});
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, mush_1);
@@ -1452,7 +1456,7 @@ upgrade_register_id = 275;
 var fern_choice0_a_minutes = 7;
 var fern_choice0_b_bonus = 0.25;
 
-var fern_choice0 = registerChoiceUpgrade('fern choice', treeLevelReqBase(3).mulr(0.05),
+var fern_choice0 = registerChoiceUpgrade('fern choice',
   function() {
     return state.treelevel >= 3;
   }, function() {
@@ -1478,7 +1482,7 @@ var rainbow_choice0_b = registerDeprecatedUpgrade();
 
 var active_choice0_b_bonus = 0.25;
 
-var active_choice0 = registerChoiceUpgrade('weather choice', treeLevelReqBase(8).mulr(0.05),
+var active_choice0 = registerChoiceUpgrade('weather choice',
   function() {
     return state.treelevel >= 8;
   }, function() {
@@ -2150,7 +2154,7 @@ crop2_register_id = 0;
 var special2_0 = registerSpecial2('fern', Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
 
 crop2_register_id = 10;
-var automaton2_0 = registerSpecial2('automaton', Res({resin:1000}), 1.5, 'Automates things', 'Automates things. Can have max 1', images_automaton);
+var automaton2_0 = registerSpecial2('automaton', Res({resin:10}), 1.5, 'Automates things', 'Automates things. Can have max 1. See automaton tab.', images_automaton);
 
 // berries2
 crop2_register_id = 25;
@@ -2404,6 +2408,12 @@ var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Re
 var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({resin:150}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 1, 'the winter warmth effect of the tree works also diagonally, adding 4 more possible neighbor spots for this effect.', undefined, undefined, tree_images[5][1][3]);
+
+
+var upgrade2_automaton = registerUpgrade2('unlock automaton', LEVEL2, Res({resin:100}), 2, function() {
+  unlockEtherealCrop(automaton2_0);
+  showRegisteredHelpDialog(28);
+}, function(){return true;}, 1, 'the automaton can be placed in the ethereal field, and when placed, unlocks the automaton tab, allowing automating things', undefined, undefined, images_automaton[4]);
 
 ///////////////////////////
 LEVEL2 = 2;

@@ -252,6 +252,24 @@ function State() {
   this.help_seen_text = {}; // ever seen this help message at all as text
   this.help_disable = {}; // disabled this help message (available once seeing it the second time)
 
+  // automaton
+  this.automaton_enabled = true; // default is true, but is not active until you actually placed the automaton
+
+  /*
+  unlocked automation features. If array too short, means everything behind that counts as false.
+  0: automation of choice upgrades
+  */
+  this.automaton_unlocked = [];
+
+  /*
+  for each choice upgrade:
+  0 (or array too short): not yet unlocked for this choice upgrade, so nothing to set
+  1: manual mode, player chooses to do the choice upgrades manually and not let automaton do it
+  2: auto choose first choice
+  3: auto choose second choice
+  */
+  this.automaton_choice = [];
+
   // challenges
   this.challenge = 0;
 
@@ -881,4 +899,8 @@ function getUpcomingFruitEssence() {
 
 function haveAutomaton() {
   return !!state.crop2count[automaton2_0];
+}
+
+function automatonAnabled() {
+  return haveAutomaton() && state.automaton_enabled;
 }

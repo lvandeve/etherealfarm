@@ -28,7 +28,7 @@ var upgrades2ButtonLastText = '';
 var medalsButtonLastText = '';
 var fieldButtonLastText = '';
 var field2ButtonLastText = '';
-var automationButtonLastText = '';
+var automatonButtonLastText = '';
 
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
@@ -48,6 +48,9 @@ function setTab(i, opt_temp) {
     state.fruit_seen = true;
     lastTouchedFruit = null;
     updateFruitUI();
+  }
+  if(i == tabindex_automaton) {
+    updateAutomatonUI();
   }
   if(i == tabindex_medals) {
     updateMedalUI();
@@ -166,6 +169,20 @@ function updateTabButtons2() {
     }
   }
 
+  tabnum = tabindex_automaton;
+  if(tabbuttons[tabnum]) {
+    var text = 'automaton';
+    if(!automatonAnabled()) {
+      text += '<br>(off)';
+    }
+
+    if(text != automatonButtonLastText) {
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
+      automatonButtonLastText = text;
+    }
+  }
+
   tabnum = tabindex_medals;
   if(tabbuttons[tabnum]) {
     var text = 'achievements<br/>(' + state.medals_earned + ')';
@@ -193,7 +210,7 @@ function updateTabButtons() {
   wanted[tabindex_fruit] = state.g_numfruits > 0;
   wanted[tabindex_field2] = state.g_numresets > 0;
   wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
-  wanted[tabindex_automation] = haveAutomaton();
+  wanted[tabindex_automaton] = haveAutomaton();
   wanted[tabindex_medals] = state.medals_earned > 0;
 
   var num = 0;
@@ -286,14 +303,14 @@ function updateTabButtons() {
     index++;
   }
 
-  tabnum = tabindex_automation;
+  tabnum = tabindex_automaton;
   if(wanted[tabnum]) {
     tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
-    tabbuttons[tabnum].textEl.innerText = 'automation';
+    tabbuttons[tabnum].textEl.innerText = 'automaton';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
-    automationButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    automatonButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
 

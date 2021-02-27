@@ -1537,6 +1537,12 @@ var update = function(opt_fromTick) {
             state.g_res.addInPlace(extrastarter);
             state.c_res.addInPlace(extrastarter);
           }
+          if(c.index == automaton2_0) {
+            if(!state.automaton_unlocked[0]) {
+              state.automaton_unlocked[0] = true;
+              showMessage('Automation of choice upgrades unlocked!', '#840', '#8f1');
+            }
+          }
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
@@ -1986,8 +1992,6 @@ var update = function(opt_fromTick) {
       }
       if(state.treelevel2 >= 2) {
         unlockEtherealCrop(nettle2_0);
-        // not yet fully implemented, do not actually unlock yet
-        //unlockEtherealCrop(automaton2_0);
       }
       if(state.treelevel2 >= 3) {
         unlockEtherealCrop(mush2_1);
@@ -2026,7 +2030,20 @@ var update = function(opt_fromTick) {
           if(state.c_numupgrades_unlocked == 1) {
             showRegisteredHelpDialog(8);
           }
-          showMessage('Upgrade available: "' + u.getName() + '"', '#ffc', '#008');
+          var already = false;
+          if(automatonAnabled() && state.automaton_unlocked[0] && (j == fern_choice0 || j == active_choice0)) {
+            var choice = -1;
+            if(j == fern_choice0 && state.automaton_choice[0] == 2) choice = 0;
+            if(j == fern_choice0 && state.automaton_choice[0] == 3) choice = 1;
+            if(j == active_choice0 && state.automaton_choice[1] == 2) choice = 0;
+            if(j == active_choice0 && state.automaton_choice[1] == 3) choice = 1;
+            if(choice >= 0) {
+              showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 0 ? u.choicename_a : u.choicename_b), '#ff0');
+              u2.count = choice + 1;
+              already = true;
+            }
+          }
+          if(!already) showMessage('Upgrade available: "' + u.getName() + '"', '#ffc', '#008');
         }
       }
     }

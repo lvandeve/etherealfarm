@@ -119,4 +119,12 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 	background-size: 100% 5%, 100% 5%, 100% 5%, 100% 5%;
 }
 
+.efAutomatonManual {
+  color: #fff;
+  background-color: #800;
+}
 
+.efAutomatonAuto {
+  color: #fff;
+  background-color: #080;
+}

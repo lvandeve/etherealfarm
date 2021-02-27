@@ -118,5 +118,15 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 	background-size: 100% 5%, 100% 5%, 100% 5%, 100% 5%;
 }
 
+.efAutomatonManual {
+  color: #000;
+  background-color: #f00;
+}
+
+.efAutomatonAuto {
+  color: #000;
+  background-color: #0f0;
+}
+
 
 

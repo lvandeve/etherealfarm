@@ -470,6 +470,15 @@ function encState(state, opt_raw_only) {
   processUint(state.challenge);
 
 
+
+  section = 20; id = 0; // automaton
+  processBool(state.automaton_enabled);
+  processBoolArray(state.automaton_unlocked);
+  processUintArray(state.automaton_choice);
+
+
+  //////////////////////////////////////////////////////////////////////////////
+
   var e = encTokens(tokens);
 
   if(opt_raw_only) return e;
@@ -1032,6 +1041,13 @@ function decState(s) {
   }
 
 
+
+  section = 20; id = 0; // automaton
+  if(save_version >= 4096*1+40) {
+    state.automaton_enabled = processBool();
+    state.automaton_unlocked = processBoolArray();
+    state.automaton_choice = processUintArray();
+  }
 
   //////////////////////////////////////////////////////////////////////////////
 

@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.40 (2021-02-27):';
+  text += '<br/>• Added automaton. Can automate the choice upgrades. More features planned for later game versions';
+  text += '<br/>• Fixed high level flower boost accidently set too low';
+  text += '<br/><br/>';
+
   text += '0.1.39 (2021-02-25):';
   text += '<br/>• Added two more obtainable fruit storage slots, when seeing 1 or all seasonal fruits dropped for the first time (for existing saves, this starts from 0)';
   text += '<br/>• Various tweaks and fixes';
