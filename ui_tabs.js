@@ -257,6 +257,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: field tab');
     tabbuttons[tabnum].textEl.innerText = 'field';
+    tabbuttons[tabnum].id = 'field_tab';
     fieldButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
@@ -267,6 +268,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: upgrades tab');
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
+    tabbuttons[tabnum].id = 'upgrades_tab';
     upgradesButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
@@ -277,6 +279,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab');
     tabbuttons[tabnum].textEl.innerText = 'fruit';
+    tabbuttons[tabnum].id = 'fruit_tab';
     fruitButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
@@ -287,6 +290,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
+    tabbuttons[tabnum].id = 'ethereal_field_tab';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     field2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
@@ -298,6 +302,7 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal upgrades tab');
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
+    tabbuttons[tabnum].id = 'ethereal_upgrades_tab';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     upgrades2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
@@ -309,7 +314,8 @@ function updateTabButtons() {
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
     tabbuttons[tabnum].textEl.innerText = 'automaton';
-    tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
+    tabbuttons[tabnum].id = 'achievements_tab';
+    //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
     automatonButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;
   }
@@ -319,6 +325,7 @@ function updateTabButtons() {
     tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: achievements tab');
+    tabbuttons[tabnum].id = 'achievements_tab';
     tabbuttons[tabnum].textEl.innerText = 'achievements';
     medalsButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     index++;

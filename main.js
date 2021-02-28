@@ -26,7 +26,7 @@ var version = 4096*1+40;
 // sub-version: if non-0, adds 'b', 'c'. ... to the version name.
 // Should not affect savegame format. No changelog entry needed.
 // Cosmetic changes only. Version name including this part is appended to CSS URL query part to ensure no stale cached CSS file is used.
-var version_sub = 0;
+var version_sub = 1;
 
 function formatVersion() {
   var a = '' + ((version >> 12) / 10.0);
@@ -41,7 +41,7 @@ function formatVersion() {
 
 document.title = programname + ' v' + formatVersion();
 
-showMessage('Welcome to ' + programname + ' v' + formatVersion(), 'yellow', 'gray');
+showMessage('Welcome to ' + programname + ' v' + formatVersion(), C_META, 0, 0);
 
 function begin() {
   initUI();
@@ -52,7 +52,7 @@ function begin() {
 }
 
 loadFromLocalStorage(function() {
-  showMessage(loadedFromLocalStorageMessage, '#888');
+  showMessage(loadedFromLocalStorageMessage, C_UNIMPORTANT, 0, 0);
   begin();
 }, function() {
   // failed to load from local storage

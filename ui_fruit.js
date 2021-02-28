@@ -21,14 +21,19 @@ var fruitScrollFlex = undefined;
 function getFruitAbilityName(ability, opt_abbreviation) {
   if(opt_abbreviation) {
     switch(ability) {
-      case FRUIT_BERRYBOOST: return 'B';
-      case FRUIT_MUSHBOOST: return 'M';
+      case FRUIT_BERRYBOOST: return 'BB';
+      case FRUIT_MUSHBOOST: return 'MB';
       case FRUIT_MUSHEFF: return 'ME';
-      case FRUIT_FLOWERBOOST: return 'F';
+      case FRUIT_FLOWERBOOST: return 'FB';
       case FRUIT_GROWSPEED: return 'G';
       case FRUIT_WEATHER: return 'WB';
       case FRUIT_LEECH: return 'WC';
-      case FRUIT_NETTLEBOOST: return 'N';
+      case FRUIT_NETTLEBOOST: return 'NB';
+      // SB from "season boost", the actual season is known due to the fruit's name which includes the season in it
+      case FRUIT_SPRING: return 'SB';
+      case FRUIT_SUMMER: return 'SB';
+      case FRUIT_AUTUMN: return 'SB';
+      case FRUIT_WINTER: return 'SB';
     }
     return '?';
   }
@@ -426,7 +431,7 @@ function updateFruitUI() {
     addButtonAction(canvasFlex.div, bind(function(help) {
       lastTouchedFruit = null;
       updateFruitUI();
-      showMessage('No active fruit present in this slot. ' + help);
+      showMessage('No active fruit present in this slot. ' + help, C_INVALID, 0, 0);
     }, help), 'empty active fruit slot');
   }
 
@@ -454,7 +459,7 @@ function updateFruitUI() {
       addButtonAction(canvasFlex.div, bind(function(help) {
         lastTouchedFruit = null;
         updateFruitUI();
-        showMessage('No stored fruit present in this slot. ' + help);
+        showMessage('No stored fruit present in this slot. ' + help, C_INVALID, 0, 0);
       }, help), 'empty storage fruit slot');
     }
   }
@@ -501,7 +506,7 @@ function updateFruitUI() {
       addButtonAction(canvasFlex.div, bind(function(help) {
         lastTouchedFruit = null;
         updateFruitUI();
-        showMessage('No fruit present in this sacrificial pool slot. ' + help);
+        showMessage('No fruit present in this sacrificial pool slot. ' + help, C_INVALID, 0, 0);
       }, help), 'empty sacrificial fruit slot');
     }
   }

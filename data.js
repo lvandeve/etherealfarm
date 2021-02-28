@@ -1130,8 +1130,8 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun)
   var index = upgrade_register_id;
 
   var fun = function() {
-    if(cropid == flower_0) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', helpFG, helpBG);
-    if(cropid == mushunlock_0) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', helpFG, helpBG);
+    if(cropid == flower_0) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', C_HELP, 456645);
+    if(cropid == mushunlock_0) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', C_HELP, 8932);
     state.crops[crop.index].unlocked = true;
   };
 
@@ -1972,12 +1972,12 @@ function() {
 }, 0);
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', 12, Num(0.03),
+var challenge_rocks = registerChallenge('rocks challenge', 15, Num(0.03),
 `The rocks challenge has the following rules:<br>
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
 <br>
-The rock pattern is determined at the start of the challenge, and is randomly genererated with a 3-hour UTC time interval as the pseudorandom seed, so you can get a new pattern every 3 hours if desired.
+The rock pattern is determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours.
 <br>
 `,
 'one extra storage slot for fruits',
@@ -1988,6 +1988,7 @@ function() {
   state.fruit_slots++;
 }, 15);
 // idea: there could be "rockier" challenges with more rocks at higher levels later
+
 
 
 ////////////////////////////////////////////////////////////////////////////////

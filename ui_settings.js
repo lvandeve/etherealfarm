@@ -291,6 +291,7 @@ function createAdvancedSettingsDialog() {
     updatebuttontext(button);
     setStyle();
   }, button, updatebuttontext));
+  button.id = 'preferences_theme';
 
 
   button = makeSettingsButton();
@@ -310,6 +311,7 @@ function createAdvancedSettingsDialog() {
     updatebuttontext(button);
     removeAllTooltips();
   }, button, updatebuttontext));
+  button.id = 'preferences_tooltip';
 
   button = makeSettingsButton();
   var updatebuttontext = function(button) {
@@ -323,6 +325,7 @@ function createAdvancedSettingsDialog() {
     removeAllTooltips();
     updateRightPane();
   }, button, updatebuttontext));
+  button.id = 'preferences_sidepanel';
 
 
   button = makeSettingsButton();
@@ -331,6 +334,7 @@ function createAdvancedSettingsDialog() {
   addButtonAction(button, function(e) {
     createNumberFormatDialog();
   });
+  button.id = 'preferences_number';
 
 
   addSettingsSpacer();
@@ -344,6 +348,7 @@ function createAdvancedSettingsDialog() {
     updatebuttontext(button);
     saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
   }, button, updatebuttontext));
+  button.id = 'preferences_saveonclose';
 
   button = makeSettingsButton();
   updatebuttontext = function(button) { button.textEl.innerText = 'shift+click deletes plant: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
@@ -353,6 +358,7 @@ function createAdvancedSettingsDialog() {
     state.allowshiftdelete = !state.allowshiftdelete;
     updatebuttontext(button);
   }, button, updatebuttontext));
+  button.id = 'preferences_shiftdelete';
 
   addSettingsSpacer();
 
@@ -367,6 +373,7 @@ function createAdvancedSettingsDialog() {
     }, 'reset', 'cancel');
     dialog.content.div.innerHTML = 'This resets the "never show again" setting of all individual help dialogs. You\'ll get the help dialogs again in the situations that make them appear. You can individually disable them again.';
   });
+  button.id = 'preferences_resethelp';
 
 
   button = makeSettingsButton();
@@ -378,6 +385,7 @@ function createAdvancedSettingsDialog() {
     updatebuttontext(button);
     saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
   }, button, updatebuttontext));
+  button.id = 'preferences_enablehelp';
 }
 
 
@@ -628,13 +636,13 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
       try {
         document.execCommand('copy');
       } catch(e) {
-        showMessage('failed to copy to clipboard', '#f00', '#ff0');
+        showMessage('failed to copy to clipboard', C_ERROR, 0, 0);
         textFlex.div.innerText = 'failed to copy to clipboard, copy it manually with ctrl+c instead';
         textFlex.div.style.color = 'red';
         return;
       }
       if(opt_close_on_clipboard) closeAllDialogs();
-      showMessage('save copied to clipboard', '#aaa');
+      showMessage('save copied to clipboard');
     };
     extraname = 'to clipboard';
   }
@@ -648,7 +656,7 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
     a.click();
     document.body.removeChild(a);
     if(opt_close_on_clipboard) closeAllDialogs();
-    showMessage('save exported to file', '#aaa');
+    showMessage('save exported to file');
   }, 'download', 'back', extrafun, extraname);
 
 
@@ -693,6 +701,7 @@ function initSettingsUI_in(dialog) {
       closeAllDialogs();
     });
   });
+  button.id = 'settings_save';
 
 
   button = makeSettingsButton();
@@ -707,6 +716,7 @@ function initSettingsUI_in(dialog) {
       showExportTextDialog(title, s, 'ethereal-farm-' + util.formatDate(util.getTime(), true) + '.txt', true);
     });
   });
+  button.id = 'settings_export';
 
   button = makeSettingsButton();
   button.textEl.innerText = 'import save';
@@ -754,6 +764,7 @@ function initSettingsUI_in(dialog) {
     area.select();
     area.focus();
   });
+  button.id = 'settings_import';
 
   button = makeSettingsButton();
   button.textEl.innerText = 'hard reset';
@@ -769,6 +780,7 @@ function initSettingsUI_in(dialog) {
     warningFlex.div.innerText = hardresetwarning;
     warningFlex.div.style.color = 'red';
   });
+  button.id = 'settings_hardreset';
 
   pos += gap;
 
@@ -778,6 +790,7 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function(e) {
     createAdvancedSettingsDialog();
   });
+  button.id = 'settings_preferences';
 
   button = makeSettingsButton();
   button.textEl.innerText = 'number format';
@@ -785,6 +798,7 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function(e) {
     createNumberFormatDialog();
   });
+  button.id = 'settings_number';
 
   pos += gap;
 
@@ -793,6 +807,7 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function(e) {
     createStatsDialog();
   });
+  button.id = 'settings_stats';
 
   pos += gap;
 
@@ -801,12 +816,14 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function(e) {
     createHelpDialog();
   });
+  button.id = 'settings_help';
 
   button = makeSettingsButton();
   button.textEl.innerText = 'about & changelog';
   addButtonAction(button, function(e) {
     createChangelogDialog();
   });
+  button.id = 'settings_about';
 }
 
 function initSettingsUI() {
@@ -828,6 +845,7 @@ function initSettingsUI() {
     var dialog = createDialog();
     initSettingsUI_in(dialog);
   }, 'settings');
+  gearbutton.id = 'settings_button';
 
   // changelog / about button
   var aboutbutton = new Flex(topFlex, [1,-0.9], [0,0.1], [1,-0.1], [0,0.9]).div;
@@ -841,6 +859,7 @@ function initSettingsUI() {
   addButtonAction(aboutbutton, function() {
     createChangelogDialog();
   }, 'about');
+  aboutbutton.id = 'about_button';
 
   var undobutton = new Flex(topFlex, [0,1.6], [0,0.15], [0,3.3], [0,0.85], 2);
   styleButton(undobutton.div);
@@ -855,6 +874,7 @@ function initSettingsUI() {
     }
     removeAllTooltips();
   }, 'undo');
+  undobutton.div.id = 'undo_button';
   registerTooltip(undobutton.div, function() {
     return 'Undo your last action(s). Press again to redo.<br><br>' +
       'Undo is saved when doing an action, but with at least ' + util.formatDuration(minUndoTime) + ' of time in-between, so multiple actions in quick succession may all be undone.<br><br>' +

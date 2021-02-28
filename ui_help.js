@@ -42,9 +42,9 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     }
 
     if(use_short) {
-      if(text_short != '') showMessage(text_short || text, helpFG, helpBG);
+      if(text_short != '') showMessage(text_short || text, C_HELP, 175786661);
     } else {
-      showMessage(text, helpFG, helpBG);
+      showMessage(text, C_HELP, 175786661);
     }
   }
 

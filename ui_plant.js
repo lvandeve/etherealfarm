@@ -298,7 +298,7 @@ function makePlantDialog(x, y, opt_replace) {
     var plantfun = bind(function(index) {
       state.lastPlanted = index; // for shift key
       if(opt_replace && state.field[y][x].index == CROPINDEX + index) {
-        showMessage('Already have this crop here');
+        showMessage('Already have this crop here', C_INVALID, 0, 0);
         dialog.cancelFun();
         return;
       }

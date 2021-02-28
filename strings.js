@@ -43,16 +43,3 @@ var loadedFromLocalStorageMessage = 'Loaded local save';
 var hardresetwarning = 'Perform a hard reset. This removes all savegame data, deletes your entire game and starts a new game from the beginning.\n\nWARNING: This is not a soft reset: nothing is kept, everything will be deleted, including achievements, settings and recovery saves. This starts over with a new, blank, savegame, and cannot be reverted. Are you sure you want to do this?';
 var shiftClickPlantUnset = 'shift+click repeats last planted plant, but no last plant is set, plant the regular way first';
 var leechInfo = 'Copy ability: if this plant has resource-producing long-lived neighbors (orthogonal, not diagonal) of type berry or mushroom, the watercress will duplicate all their production (but also consumption), no matter how high their tier! This has diminishing returns if there are multiple watercress plants in the entire field, max 1 or 2 watercress makes sense. A badly placed watercress can even negatively affect the copying of all others. If you have no other crop types this is not yet relevant, plant as many watercress as you want then!';
-
-
-
-// for any message about help/progression/tutorial
-var helpFG = '#0ff';
-var helpBG = '#044';
-// variant 2 exists to make a new help message distinguishable compared to an old one, so the eye can catch the change in the log
-var helpFG2 = '#4ff';
-var helpBG2 = '#088';
-
-// for any message regarding invalid actions (such as not enough resources for something)
-var invalidFG = '#fee';
-var invalidBG = '#400';

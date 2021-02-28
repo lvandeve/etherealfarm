@@ -224,7 +224,7 @@ function RGBtoCSS(rgba) {
   var r = Math.floor(rgba[0]).toString(16);
   var g = Math.floor(rgba[1]).toString(16);
   var b = Math.floor(rgba[2]).toString(16);
-  var a = Math.floor(rgba[3]).toString(16);
+  var a = rgba.length >= 4 ? Math.floor(rgba[3]).toString(16) : 'ff';
   if(r.length == 1) r = '0' + r;
   if(g.length == 1) g = '0' + g;
   if(b.length == 1) b = '0' + b;

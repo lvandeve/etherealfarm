@@ -69,6 +69,7 @@ function updateAbilitiesUI() {
       actions.push({type:ACTION_ABILITY, ability:1});
       update();
     }, 'sun ability');
+    sunbutton.div.id = 'sun_button';
 
     registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
   }
@@ -113,6 +114,7 @@ function updateAbilitiesUI() {
       update();
     };
     addButtonAction(mistbutton.div, fun, 'mist ability');
+    mistbutton.div.id = 'mist_button';
 
     registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText('mist ability', 'mushrooms produce more spores, consume less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
   }
@@ -157,6 +159,7 @@ function updateAbilitiesUI() {
       actions.push({type:ACTION_ABILITY, ability:2});
       update();
     }, 'rainbow ability');
+    rainbowbutton.div.id = 'rainbow_button';
 
     registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
   }
@@ -190,6 +193,7 @@ function updateAbilitiesUI() {
       addButtonAction(watercressbutton.div, function(e) {
         refreshWatercress(e.shiftKey);
       }, 'refresh watercress. with shift: deletes all watercress');
+      watercressbutton.div.id = 'watercress_button';
     }
   } else if(watercressbutton) {
     watercressbutton.clear();
@@ -239,7 +243,7 @@ document.addEventListener('keydown', function(e) {
     update();
   }*/
   if(e.key == 'a') {
-    showMessage('a key no longer works since only 1 weather ability can be active at once now, use 1, 2 or 3 to enable an ability instead.');
+    showMessage('a key no longer works since only 1 weather ability can be active at once now, use 1, 2 or 3 to enable an ability instead.', C_INVALID, 98764561);
   }
   if(e.key == '1') {
     actions.push({type:ACTION_ABILITY, ability:1});

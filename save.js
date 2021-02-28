@@ -1066,7 +1066,7 @@ function decState(s) {
       showMessage('Due to an update, the resin and transcension system has been reset. All your resin has been refunded so you can re-use it with the new system. The pericarps resource has been removed from the game.' +
           ' There are now multiple ethereal field plant types and they give direct boosts to the basic field. Unused resin also gives a small boost now.' +
           ' The ethereal upgrades are currently removed, but new ones, probably costing resin, may be added back in a future game update.',
-          '#d56', '#5e8', false, true);
+          C_META, 0, 0, false, true);
     }
     state.res.seeds2 = Num(0);
     state.g_res.seeds2 = Num(0);
@@ -1129,7 +1129,7 @@ function decState(s) {
       }
     }
     if(resin.gtr(0)) {
-      showMessage('ethereal season upgrades became cheaper in version v0.1.20, compensated ' + resin.toString() + ' resin to your stacks');
+      showMessage('ethereal season upgrades became cheaper in version v0.1.20, compensated ' + resin.toString() + ' resin to your stacks', C_META, 0, 0);
       state.res.resin.addInPlace(resin);
     }
   }

@@ -261,7 +261,7 @@ function initField2UI() {
               actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c, shiftPlanted:true});
               update();
             } else {
-              showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
+              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
           } else {
             makeField2Dialog(x, y);
@@ -273,7 +273,7 @@ function initField2UI() {
               actions.push({type:ACTION_DELETE2, x:x, y:y});
               update();
             } else {
-              showMessage('shift+click to delete must be enabled in the settings before it is allowed', invalidFG, invalidBG);
+              showMessage('shift+click to delete must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
             }
           } else {
             makeField2Dialog(x, y);

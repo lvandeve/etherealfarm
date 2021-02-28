@@ -76,10 +76,10 @@ function loadFromLocalStorage(onsuccess, onfail) {
 
       var saves = getRecoverySaves();
       for(var i = 0; i < saves.length; i++) {
-        showMessage(saves[i][0] + ' : ' + saves[i][1], '#f00', '#ff0');
+        showMessage(saves[i][0] + ' : ' + saves[i][1], C_ERROR, 0, 0);
       }
       if(saves.length == 0) {
-        showMessage('current: ' + e, '#f00', '#ff0');
+        showMessage('current: ' + e, C_ERROR, 0, 0);
       }
       var text = loadlocalstoragefailedmessage;
       if(state && state.error_reason == 4) text += ' ' + loadfailreason_format;
@@ -88,7 +88,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
       if(state && state.error_reason == 7) text += ' ' + loadfailreason_toonew;
       if(state && state.error_reason == 8) text += ' ' + loadfailreason_tooold;
 
-      showMessage(text, '#f00', '#ff0');
+      showMessage(text, C_ERROR, 0, 0);
       showSavegameRecoveryDialog(true);
 
       savegame_recovery_situation = true;
@@ -139,7 +139,7 @@ function getRecoverySaves() {
 }
 
 function hardReset() {
-  showMessage('Hard reset performed, everything reset');
+  showMessage('Hard reset performed, everything reset', C_META, 0, 0);
   util.clearLocalStorage(localstorageName);
   util.clearLocalStorage(localstorageName_recover);
   util.clearLocalStorage(localstorageName_success);
@@ -233,7 +233,7 @@ function softReset(opt_challenge) {
     c2.maxlevel = Math.max(state.treelevel, c2.maxlevel);
     if(c2.maxlevel >= c.targetlevel) {
       if(!c2.completed) {
-        showMessage('Completed the challenge and got reward: ' + c.rewarddescription);
+        showMessage('Completed the challenge and got reward: ' + c.rewarddescription, C_UNLOCK, 38658833);
         c.rewardfun();
       }
       c2.completed++;
@@ -282,7 +282,7 @@ function softReset(opt_challenge) {
     if(state.fruit_sacr.length) message += '. Sacrificed ' + state.fruit_sacr.length + ' fruits and got ' + essence.toString();
   }
 
-  showMessage(message, '#40f', '#ffd');
+  showMessage(message, C_ETHEREAL, 669840411);
   if(state.g_numresets == 0) {
     showRegisteredHelpDialog(1);
   }
@@ -541,7 +541,7 @@ function loadUndo() {
     clearUndo();
   }
   if(undoSave == '' || !undoSave) {
-    showMessage('No undo present. Undo is stored when performing an action.', invalidFG, invalidBG);
+    showMessage('No undo present. Undo is stored when performing an action.', C_INVALID, 0, 0);
     return;
   }
   save(state, function(redoSave) {
@@ -553,19 +553,19 @@ function loadUndo() {
       if(planted_after != planted_before && (planted_after - planted_before) == (unplanted_after - unplanted_before)) {
         // if you plant, then delete, in quick succession, undo causes both of those things undone, which looks as if nothing happened. However, you definitely got your money back.
         // so, print in the log that this happened
-        showMessage('Undone both the planting and the deleting, so got all related resources back', '#f8a');
+        showMessage('Undone both the planting and the deleting, so got all related resources back', C_UNDO, 1294596818);
       } else {
-        showMessage('Undone', '#f8a');
+        showMessage('Undone', C_UNDO, 217654408);
       }
       initUI();
       update();
       undoSave = redoSave;
       util.setLocalStorage(undoSave, localstorageName_undo);
     }, function(state) {
-      showMessage('Not undone, failed to load undo-save');
+      showMessage('Not undone, failed to load undo-save', C_ERROR, 0, 0);
     });
   }, function() {
-    showMessage('Not undone, failed to save redo save');
+    showMessage('Not undone, failed to save redo save', C_ERROR, 0, 0);
   });
 
   lastUndoSaveTime = 0; // now ensure next action saves undo again, pressing undo is a break in the action sequence, let the next action save so that pressing undo again brings us back to thie same undo-result-state
@@ -1177,11 +1177,11 @@ function addRandomFruit() {
   if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
   var season_after = state.seen_seasonal_fruit;
   if(!season_before && season_after) {
-    showMessage('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', '#f94', '#548');
+    showMessage('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
     state.fruit_slots++;
   }
   if(season_before != 15 && season_after == 15) {
-    showMessage('You \'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', '#f94', '#548');
+    showMessage('You \'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
     state.fruit_slots++;
   }
 
@@ -1209,7 +1209,7 @@ function unlockEtherealCrop(id) {
   if(c2.unlocked) return;
 
   var c = crops2[id];
-  showMessage('Ethereal crop available: "' + c.name + '"', '#44f', '#ff8');
+  showMessage('Ethereal crop available: "' + c.name + '"', C_ETHEREAL, 494369596);
   c2.unlocked = true;
 }
 
@@ -1396,12 +1396,12 @@ var update = function(opt_fromTick) {
           if(state.res.lt(cost)) {
             if(!(shift && num > 0)) {
               showMessage('not enough resources for upgrade: have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
-                  ', need ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')', invalidFG, invalidBG);
+                  ', need ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')', C_INVALID, 0, 0);
             }
             break;
           } else if(!u.canUpgrade()) {
             if(!(shift && num > 0)) {
-              showMessage('this upgrade is not currently available', invalidFG, invalidBG);
+              showMessage('this upgrade is not currently available', C_INVALID, 0, 0);
             }
             break;
           } else {
@@ -1412,7 +1412,7 @@ var update = function(opt_fromTick) {
             if(u.is_choice) {
               message += '. Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
             }
-            if(!shift) showMessage(message, '#ff0', '#000');
+            if(!shift) showMessage(message);
             store_undo = true;
             state.c_numupgrades++;
             state.g_numupgrades++;
@@ -1424,9 +1424,9 @@ var update = function(opt_fromTick) {
         if(shift && num) {
           var total_cost = res_before.sub(state.res);
           if(num == 1) {
-            showMessage('upgraded: ' + u.getName() + ', consumed: ' + total_cost.toString(), '#ff0', '#000');
+            showMessage('upgraded: ' + u.getName() + ', consumed: ' + total_cost.toString());
           } else {
-            showMessage('upgraded ' + u.name + ' ' + num + ' times to ' + u.getName() + ', consumed: ' + total_cost.toString(), '#ff0', '#000');
+            showMessage('upgraded ' + u.name + ' ' + num + ' times to ' + u.getName() + ', consumed: ' + total_cost.toString());
           }
         }
         if(num) {
@@ -1459,13 +1459,13 @@ var update = function(opt_fromTick) {
         var cost = u.getCost();
         if(state.res.lt(cost)) {
           showMessage('not enough resources for ethereal upgrade: have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
-              ', need ' + cost.toString(), invalidFG, invalidBG);
+              ', need ' + cost.toString(), C_INVALID, 0, 0);
         } else if(!u.canUpgrade()) {
-          showMessage('this ethereal upgrade is not currently available', invalidFG, invalidBG);
+          showMessage('this ethereal upgrade is not currently available', C_INVALID, 0, 0);
         } else  {
           state.res.subInPlace(cost);
           u.fun();
-          showMessage('Ethereal upgrade applied: ' + u.getName() + ', consumed: ' + cost.toString(), '#ffc', '#640');
+          showMessage('Ethereal upgrade applied: ' + u.getName() + ', consumed: ' + cost.toString());
           store_undo = true;
           state.g_numupgrades2++;
         }
@@ -1475,20 +1475,20 @@ var update = function(opt_fromTick) {
         var c = action.crop;
         var cost = c.getCost();
         if(f.hasCrop()) {
-          showMessage('field already has crop', invalidFG, invalidBG);
+          showMessage('field already has crop', C_INVALID, 0, 0);
         } else if(f.index != 0 && f.index != FIELD_REMAINDER) {
-          showMessage('field already has something', invalidFG, invalidBG);
+          showMessage('field already has something', C_INVALID, 0, 0);
         } else if(!state.crops[c.index].unlocked) {
           if(action.shiftPlanted) {
             state.lastPlanted = -1;
-            showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
+            showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
           }
         } else if(state.res.lt(cost)) {
           showMessage('not enough resources to plant ' + c.name +
                       ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
                       ', need ' + cost.toString() +
                       ' (' + getCostAffordTimer(cost) + ')',
-                      invalidFG, invalidBG);
+                      C_INVALID, 0, 0);
         } else {
           if(c.type == CROPTYPE_SHORT) {
             state.g_numplantedshort++;
@@ -1511,19 +1511,19 @@ var update = function(opt_fromTick) {
         var c = action.crop;
         var cost = c.getCost();
         if(f.hasCrop()) {
-          showMessage('field already has crop', invalidFG, invalidBG);
+          showMessage('field already has crop', C_INVALID, 0, 0);
         } else if(f.index != 0) {
-          showMessage('field already has something', invalidFG, invalidBG);
+          showMessage('field already has something', C_INVALID, 0, 0);
         } else if(!state.crops2[c.index].unlocked) {
           if(action.shiftPlanted) {
             state.lastPlanted2 = -1;
-            showMessage(shiftClickPlantUnset, invalidFG, invalidBG);
+            showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
           }
         } else if(state.res.lt(cost)) {
           showMessage('not enough resources to plant ' + c.name + ': have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
-                      ', need: ' + cost.toString(), invalidFG, invalidBG);
+                      ', need: ' + cost.toString(), C_INVALID, 0, 0);
         } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
-          showMessage('already have automaton, cannot place more', invalidFG, invalidBG);
+          showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
         } else {
           showMessage('planted ethereal ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
@@ -1540,7 +1540,7 @@ var update = function(opt_fromTick) {
           if(c.index == automaton2_0) {
             if(!state.automaton_unlocked[0]) {
               state.automaton_unlocked[0] = true;
-              showMessage('Automation of choice upgrades unlocked!', '#840', '#8f1');
+              showMessage('Automation of choice upgrades unlocked!', C_AUTOMATON, 1067714398);
             }
           }
           computeDerived(state); // correctly update derived stats based on changed field state
@@ -1553,7 +1553,7 @@ var update = function(opt_fromTick) {
           var recoup = c.getCost(-1).mulr(cropRecoup);
           if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
             recoup = c.getCost(-1);
-            if(!action.silent) showMessage('plant was still growing, full refund given', '#f8a');
+            if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
             state.g_numplanted--;
             state.c_numplanted--;
           } else {
@@ -1582,12 +1582,12 @@ var update = function(opt_fromTick) {
         var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
         if(f.cropIndex() == special2_0) remstarter = getStarterResources(0).sub(getStarterResources(-1));
         if(!freedelete && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
-          showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)' , invalidFG, invalidBG);
+          showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
         } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
           // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
-          showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.');
+          showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
         } else if(f.cropIndex() == special2_0 && state.res.lt(remstarter)) {
-          showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', invalidFG, invalidBG);
+          showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', C_INVALID, 0, 0);
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
           var recoup = c.getCost(-1).mulr(cropRecoup2);
@@ -1598,11 +1598,11 @@ var update = function(opt_fromTick) {
           }
           if(freedelete) {
             recoup = c.getCost(-1);
-            showMessage('this crop is free to delete, resin refunded and no delete token used', '#f8a');
+            showMessage('this crop is free to delete, resin refunded and no delete token used', C_UNDO, 1624770609);
             state.g_numplanted2--;
           } else if(f.growth < 1) {
             recoup = c.getCost(-1);
-            showMessage('plant was still growing, resin refunded and no delete token used', '#f8a');
+            showMessage('plant was still growing, resin refunded and no delete token used', C_UNDO, 1624770609);
             state.g_numplanted2--;
           } else {
             state.g_numunplanted2++;
@@ -1622,17 +1622,17 @@ var update = function(opt_fromTick) {
           state.c_numferns++;
           var fernres = state.fernres;
           if(state.fern == 1) {
-            showMessage('That fern gave: ' + fernres.toString(), '#4a0', '#120', true);
+            showMessage('That fern gave: ' + fernres.toString(), C_NATURE, 989456955, 0.5, true);
           } else {
             fernres = fernres.mulr(5);
-            showMessage('This fern is extra bushy! It gave ' + fernres.toString(), '#4a0', '#120', true);
+            showMessage('This fern is extra bushy! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
           }
           actualgain.addInPlace(fernres);
           state.lastFernTime = state.time; // in seconds
           state.fern = 0;
           clickedfern = true;
           if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
-            showMessage('You have enough resources to plant. Click an empty field to plant', helpFG2, helpBG2);
+            showMessage('You have enough resources to plant. Click an empty field to plant', C_HELP, 64721);
           }
           // do not store undo on fern: it's not a destructive action, and may cause an actual destructive action one wanted to undo to be overwritten by this fern action
           //store_undo = true;
@@ -1648,9 +1648,9 @@ var update = function(opt_fromTick) {
           if(!state.upgrades[upgrade_mistunlock].count) {
             // not possible, ignore
           } else if(mistd < getMistWait()) {
-            showMessage(mistd < getMistDuration() ? 'mist is already active' : 'mist is not ready yet', invalidFG, invalidBG);
+            showMessage(mistd < getMistDuration() ? 'mist is already active' : 'mist is not ready yet', C_INVALID, 0, 0);
           } else if(already_ability) {
-            showMessage('there already is an active weather ability', invalidFG, invalidBG);
+            showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.misttime = state.time;
             showMessage('mist activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
@@ -1662,9 +1662,9 @@ var update = function(opt_fromTick) {
           if(!state.upgrades[upgrade_sununlock].count) {
             // not possible, ignore
           } else if(sund < getSunWait()) {
-            showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', invalidFG, invalidBG);
+            showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', C_INVALID, 0, 0);
           } else if(already_ability) {
-            showMessage('there already is an active weather ability', invalidFG, invalidBG);
+            showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.suntime = state.time;
             showMessage('sun activated, berries get a boost and aren\'t affected by winter');
@@ -1676,9 +1676,9 @@ var update = function(opt_fromTick) {
           if(!state.upgrades[upgrade_rainbowunlock].count) {
             // not possible, ignore
           } else if(rainbowd < getRainbowWait()) {
-            showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', invalidFG, invalidBG);
+            showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', C_INVALID, 0, 0);
           } else if(already_ability) {
-            showMessage('there already is an active weather ability', invalidFG, invalidBG);
+            showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.rainbowtime = state.time;
             showMessage('rainbow activated, flowers get a boost and aren\'t affected by winter');
@@ -1700,7 +1700,7 @@ var update = function(opt_fromTick) {
           setFruit(action.slot, f);
         } else if(slottype == 1) {
           if(state.fruit_stored.length >= state.fruit_slots) {
-            showMessage('stored slots already full', invalidFG, invalidBG);
+            showMessage('stored slots already full', C_INVALID, 0, 0);
           } else {
             var slot = 10 + state.fruit_stored.length;
             setFruit(f.slot, undefined);
@@ -1741,7 +1741,7 @@ var update = function(opt_fromTick) {
         } else {
           if(available.lt(cost)) {
             showMessage('not enough essence for fruit upgrade: need ' + cost.toString() +
-                ', available for this fruit: ' + available.toString(), invalidFG, invalidBG);
+                ', available for this fruit: ' + available.toString(), C_INVALID, 0, 0);
           } else {
             f.essence.addInPlace(cost);
             f.levels[index]++;
@@ -1838,7 +1838,7 @@ var update = function(opt_fromTick) {
                 f.growth = 1;
                 state.g_numfullgrown2++;
                 if(state.g_numfullgrown2 == 1) {
-                  showMessage('your first ethereal plant in the ethereal field has fullgrown! It provides a bonus to your basic field.', helpFG, helpBG);
+                  showMessage('your first ethereal plant in the ethereal field has fullgrown! It provides a bonus to your basic field.', C_HELP, 126850492);
                 }
               }
             }
@@ -1928,7 +1928,7 @@ var update = function(opt_fromTick) {
       if(state.treelevel == 9) {
         message += '. The tree is almost an adult tree now.';
       }
-      showMessage(message, '#2f2');
+      showMessage(message, C_NATURE, 109168563);
       var fruit = undefined;
       if(state.treelevel == 2) {
         showRegisteredHelpDialog(12);
@@ -1955,7 +1955,7 @@ var update = function(opt_fromTick) {
       // drop the level 5 fruit during challenges at level 10
       if(state.treelevel == 10 && state.challenge && challenges[state.challenge].allowsfruits) {
         fruit = addRandomFruit();
-        showMessage('The tree dropped the level 5 fruit at level 10 during this challenge');
+        showMessage('The tree dropped the level 5 fruit at level 10 during this challenge', C_NATURE, 1340887270);
       }
 
       if(state.treelevel == 1) {
@@ -1969,7 +1969,7 @@ var update = function(opt_fromTick) {
         showRegisteredHelpDialog(26);
       }
       if(fruit) {
-        showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString());
+        showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString(), C_NATURE, 1284767498);
       }
     }
 
@@ -1981,7 +1981,7 @@ var update = function(opt_fromTick) {
             '. Consumed: ' + req2.toString();
         message += '. Higher ethereal tree levels can unlock more ethereal upgrades and ethereal crops';
         state.res.subInPlace(req2);
-        showMessage(message, '#88f', '#ff0');
+        showMessage(message, C_ETHEREAL, 48352772);
 
         if(state.treelevel2 >= 1) {
           showRegisteredHelpDialog(22);
@@ -2004,7 +2004,7 @@ var update = function(opt_fromTick) {
 
     // compensation for savegames below version 0.1.17
     if(state.treelevel >= 5 && state.g_numfruits == 0 && state.fruit_seed == -1) {
-      showMessage('Your tree level is higher than 5 but you didn\'t get a random fruit yet! Must have come from a previous version of the game before the "Fruit Update". One random fruit added now to get you started with this new feature.', '#ff0');
+      showMessage('Your tree level is higher than 5 but you didn\'t get a random fruit yet! Must have come from a previous version of the game before the "Fruit Update". One random fruit added now to get you started with this new feature.', C_NATURE, 1095294239);
       addRandomFruit();
     }
 
@@ -2022,7 +2022,7 @@ var update = function(opt_fromTick) {
       if(u.pre()) {
         if(u2.unlocked) {
           // the pre function itself already unlocked it, so perhaps it auto applied the upgrade. Nothing to do anymore here other than show a different message.
-          showMessage('Received: "' + u.getName() + '"', '#ffc', '#008');
+          showMessage('Received: "' + u.getName() + '"', C_UNLOCK, 2043573365);
         } else {
           u2.unlocked = true;
           state.c_numupgrades_unlocked++;
@@ -2038,12 +2038,12 @@ var update = function(opt_fromTick) {
             if(j == active_choice0 && state.automaton_choice[1] == 2) choice = 0;
             if(j == active_choice0 && state.automaton_choice[1] == 3) choice = 1;
             if(choice >= 0) {
-              showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 0 ? u.choicename_a : u.choicename_b), '#ff0');
+              showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 0 ? u.choicename_a : u.choicename_b), C_AUTOMATON, 101550953);
               u2.count = choice + 1;
               already = true;
             }
           }
-          if(!already) showMessage('Upgrade available: "' + u.getName() + '"', '#ffc', '#008');
+          if(!already) showMessage('Upgrade available: "' + u.getName() + '"', C_UNLOCK, 193917138);
         }
       }
     }
@@ -2058,7 +2058,7 @@ var update = function(opt_fromTick) {
           state.upgrades2[j].unlocked = true;
           state.g_numupgrades2_unlocked++;
           num_unlocked++;
-          showMessage('Ethereal upgrade available: "' + upgrades2[j].getName() + '"', '#44f', '#ff8');
+          showMessage('Ethereal upgrade available: "' + upgrades2[j].getName() + '"', C_ETHEREAL, 833862648);
         }
       }
       if(num_unlocked && is_first) {
@@ -2073,7 +2073,7 @@ var update = function(opt_fromTick) {
         state.g_nummedals++;
         state.medals[j].earned = true;
         //medals_new = true;
-        showMessage('Achievement unlocked: ' + upper(medals[j].name), '#fe0', '#430');
+        showMessage('Achievement unlocked: ' + upper(medals[j].name), C_UNLOCK, 34776048, 0.75);
         updateMedalUI();
         showMedalChip(j);
 
@@ -2094,7 +2094,7 @@ var update = function(opt_fromTick) {
         if(c2.unlocked) continue;
         if(c.prefun()) {
           c2.unlocked = true;
-          showMessage('Unlocked challenge: ' + upper(c.name));
+          showMessage('Unlocked challenge: ' + upper(c.name), C_UNLOCK, 66240736, 0.75);
           showRegisteredHelpDialog(24);
         }
       }
@@ -2112,7 +2112,7 @@ var update = function(opt_fromTick) {
 
 
   if(state.g_numticks == 0) {
-    showMessage('You need to gather some resources. Click a fern to get some.', helpFG, helpBG);
+    showMessage('You need to gather some resources. Click a fern to get some.', C_HELP, 5646478);
   }
 
   if(state.c_numticks == 0 && state.challenge == challenge_bees) {
@@ -2129,10 +2129,10 @@ var update = function(opt_fromTick) {
       saveNow(function() {
         // Remind to make backups if not done any save importing or exporting for 2 or more days
         if(time > Math.max(state.lastBackupWarningTime, Math.max(state.g_lastexporttime, state.g_lastimporttime)) + 2 * 24 * 3600) {
-          showMessage(autoSavedStateMessageWithReminder, '#000', '#ff0');
+          showMessage(autoSavedStateMessageWithReminder, C_META, 0, 0);
           state.lastBackupWarningTime = util.getTime();
         } else {
-          showMessage(autoSavedStateMessage, '#888');
+          showMessage(autoSavedStateMessage, C_UNIMPORTANT, 0, 0);
         }
       });
       lastSaveTime = time;
@@ -2151,7 +2151,7 @@ var update = function(opt_fromTick) {
       tree_message = '. The tree leveled up ' + num_tree_levelups + ' times';
     }
     // if negative time was used, this message won't make sense, it may say 'none', which is indeed what you got when compensating for negative time. But the message might then be misleading.
-    if(!negative_time_used) showMessage('Large time delta: ' + util.formatDuration(d_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, '#999');
+    if(!negative_time_used) showMessage('Large time delta: ' + util.formatDuration(d_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, C_UNIMPORTANT, 0, 0);
   }
 
   // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.
@@ -2159,7 +2159,7 @@ var update = function(opt_fromTick) {
   if(num_season_changes == 1) {
     var gainchangemessage = '';
     if(preseasongain) gainchangemessage = '. Income before: ' + preseasongain.toString() + '. Income now: ' + gain.toString();
-    showMessage('The season changed, it is now ' + seasonNames[getSeason()] + gainchangemessage, '#fff', '#260');
+    showMessage('The season changed, it is now ' + seasonNames[getSeason()] + gainchangemessage, C_NATURE, 17843969, 0.75);
   }
 
 
@@ -2169,7 +2169,7 @@ var update = function(opt_fromTick) {
     if(state.delete2tokens + num_tokens > delete2maxBuildup) num_tokens = delete2maxBuildup - state.delete2tokens;
     state.delete2tokens += num_tokens;
     state.g_delete2tokens += num_tokens;
-    if(num_tokens > 0 && state.g_numresets > 0) showMessage('Received ' + num_tokens + ' ethereal deletion tokens', '#45d', '#9de');
+    if(num_tokens > 0 && state.g_numresets > 0) showMessage('Received ' + num_tokens + ' ethereal deletion tokens', C_ETHEREAL, 510324665);
   }
 
   updateResourceUI();
