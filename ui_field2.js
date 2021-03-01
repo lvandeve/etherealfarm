@@ -70,9 +70,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
   if(opt_detailed) {
     result += '<br><br>';
-    result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)';
+    result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)';
     result += '<br><br>';
-    result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + delete2maxBuildup + ')';
+    result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + getDelete2maxBuildup() + ')';
     result += '<br><br>';
   }
 

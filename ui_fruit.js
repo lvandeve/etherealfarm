@@ -323,6 +323,49 @@ function createFruitDialog(f, opt_selected) {
   updateSelected();
 }
 
+function showStorageFruitSourceDialog() {
+  var dialog = createDialog();
+
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  centerText2(titleDiv);
+  titleDiv.textEl.innerText = 'Fruit storage slot sources';
+
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
+
+  var text = '';
+
+  text += 'You have ' + state.fruit_slots + ' fruit storage slots available. Here\'s where they came from:';
+  text += '<br/><br/>';
+  text += ' • 2: initial amount';
+  text += '<br/>';
+
+  if(state.seen_seasonal_fruit != 0) {
+    text += ' • 1: for having seen at least 1 seasonal fruit';
+    text += '<br/>';
+  }
+  if(state.seen_seasonal_fruit == 15) {
+    text += ' • 1: for having seen all types of seasonal fruit';
+    text += '<br/>';
+  }
+
+  var num_ethereal_upgrades = 0;
+  if(state.upgrades2[upgrade2_extra_fruit_slot].count) num_ethereal_upgrades++;
+  if(state.upgrades2[upgrade2_extra_fruit_slot2].count) num_ethereal_upgrades++;
+  if(num_ethereal_upgrades > 0) {
+    text += ' • ' + num_ethereal_upgrades + ': ethereal upgrades';
+    text += '<br/>';
+  }
+
+  if(state.challenges[challenge_rocks].completed) {
+    text += ' • 1: for completing the rocks challenge';
+    text += '<br/>';
+  }
+
+  div.innerHTML = text;
+}
+
 function styleFruitChip(flex, f) {
   var ratio = state.res.essence
   flex.div.style.backgroundColor = tierColors_BG[f.tier] + '8';
@@ -442,6 +485,9 @@ function updateFruitUI() {
   titleFlex.div.innerText = 'stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
   help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage.';
   registerTooltip(titleFlex.div, help);
+
+  styleButton0(titleFlex.div);
+  addButtonAction(titleFlex.div, showStorageFruitSourceDialog);
 
   var num = state.fruit_slots;
   var x = 0;

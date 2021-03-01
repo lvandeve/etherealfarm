@@ -321,7 +321,18 @@ function makeFieldDialog(x, y) {
       text += 'Tree level: ' + state.treelevel + '<br/>';
       if(state.treelevel == 0) {
         text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
-      } else {
+      }
+
+      if(state.challenge) {
+        text += '<br>';
+        text += '<b>Challenge active</b>: ' + upper(challenges[state.challenge].name);
+        if(!state.challenges[state.challenge].completed && state.treelevel < challenges[state.challenge].targetlevel) {
+          text += '<br>Challenge target level: ' + challenges[state.challenge].targetlevel;
+        }
+        text += '<br>';
+      }
+
+      if(state.treelevel > 0) {
         text += '<br/>';
         text += 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br/>';
         if(state.mistletoes > 0) {
@@ -412,6 +423,7 @@ function makeFieldDialog(x, y) {
           text += formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
         }
       }
+
       return text;
     };
 
@@ -490,6 +502,14 @@ function makeFieldDialog(x, y) {
           createChallengeDialog();
         });
       }
+    }
+    if(state.challenges_unlocked) {
+      button = new Flex(f1, 0, 0.62, 0.5, 0.9, 0.8).div;
+      styleButton(button);
+      button.textEl.innerText = 'Challenge Stats';
+      addButtonAction(button, function() {
+        createAllChallengeStatsDialog();
+      });
     }
   } else {
     makePlantDialog(x, y, false);

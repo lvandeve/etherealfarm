@@ -200,35 +200,36 @@ function updateRightPane() {
     }
   }
 
-
-  var text = '<center>summary</center>';
-  text += '<br>';
-  if(state.g_res.resin.gtr(0)) {
-    text += '• Total resin earned ever: ' + state.g_res.resin.toString();
+  if(state.g_numresets > 0 || state.upgrades_unlocked > 0) {
+    var text = '<center>summary</center>';
     text += '<br>';
-  }
-  if(state.g_numresets > 0) {
-    //text += '• #Transcensions: ' + state.g_numresets;
-    //text += '<br>';
-    text += '• Max tree level ever: ' + state.g_treelevel;
+    if(state.g_res.resin.gtr(0)) {
+      text += '• Total resin earned ever: ' + state.g_res.resin.toString();
+      text += '<br>';
+    }
+    if(state.g_numresets > 0) {
+      //text += '• #Transcensions: ' + state.g_numresets;
+      //text += '<br>';
+      text += '• Max tree level ever: ' + state.g_treelevel;
+      text += '<br>';
+    }
+    if(state.treelevel >= 1) {
+      var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+      text += '• Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')';
+      text += '<br>';
+    }
+    if(state.g_numresets > 0) {
+      text += '• Ethereal delete tokens: ' + state.delete2tokens + ' / ' + getDelete2maxBuildup();
+      text += '<br>';
+    }
+    text += '• Season change in: ' + util.formatDuration(timeTilNextSeason(), true);
     text += '<br>';
+    if(state.fruit_active.length) {
+      text += '• Fruit: ' + state.fruit_active[0].toString() + ': ' + state.fruit_active[0].abilitiesToString(true);
+      text += '<br>';
+    }
+    topRightFlex.div.innerHTML = text;
   }
-  if(state.treelevel >= 1) {
-    var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-    text += '• Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')';
-    text += '<br>';
-  }
-  if(state.g_numresets > 0) {
-    text += '• Ethereal delete tokens: ' + state.delete2tokens;
-    text += '<br>';
-  }
-  text += '• Season change in: ' + util.formatDuration(timeTilNextSeason(), true);
-  text += '<br>';
-  if(state.fruit_active.length) {
-    text += '• Fruit: ' + state.fruit_active[0].toString() + ': ' + state.fruit_active[0].abilitiesToString(true);
-    text += '<br>';
-  }
-  topRightFlex.div.innerHTML = text;
 }
 
 

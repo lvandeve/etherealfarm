@@ -16,22 +16,12 @@ practice it does.*/
   image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
 }
-.changelogbutton {
-  background: url(https://lodev.org/etherealfarm/eflogo.png);
-  background-size: cover;
-  filter: opacity(0.4);
-}
-.changelogbutton:hover {
-  filter: opacity(0.6);
-}
 /*prevent the tabindex from creating visible borders, which do not fit the look of the game*/
 :focus { outline: none; }
+
 </style>
 <link id="csslink" rel="stylesheet" href="style_light.css">
 </head>
-<div id = "topnotice">
-The game moved to <a target="_blank" href="https://lodev.org/etherealfarm">https://lodev.org/etherealfarm</a>, to use the up to date location please export your savegame (see under gear icon), visit the new location, and import your savegame there.
-</div>
 <body>
 <noscript>
 This game requires JavaScript. The game runs fully locally.
@@ -39,8 +29,42 @@ This game requires JavaScript. The game runs fully locally.
 Ethereal Farm. Copyright (c) 2020 by Lode Vandevenne
 </noscript>
 <script type="text/javascript">
-  var localstorageNameHTML = 'state';
+  var localstorageNameHTML = 'state_soft';
 </script>
-<script src="minified.js?v=20210227"></script>
+<script src="utils.js"></script>
+<script src="utils_ui.js"></script>
+<script src="image.js"></script>
+<script src="images.js"></script>
+<script src="images_plants.js"></script>
+<script src="images_tree.js"></script>
+<script src="images_medals.js"></script>
+<script src="number.js"></script>
+<script src="resource.js"></script>
+<script src="strings.js"></script>
+<script src="data.js"></script>
+<script src="state.js"></script>
+<script src="utils_save.js"></script>
+<script src="save.js"></script>
+<script src="changelog.js"></script>
+<script src="ui_settings.js"></script>
+<script src="ui_abilities.js"></script>
+<script src="ui_automaton.js"></script>
+<script src="ui_transcend.js"></script>
+<script src="ui_field.js"></script>
+<script src="ui_field2.js"></script>
+<script src="ui_plant.js"></script>
+<script src="ui_plant2.js"></script>
+<script src="ui_tabs.js"></script>
+<script src="ui_log.js"></script>
+<script src="ui_info.js"></script>
+<script src="ui_medals.js"></script>
+<script src="ui_upgrades.js"></script>
+<script src="ui_upgrades2.js"></script>
+<script src="ui_fruit.js"></script>
+<script src="ui_help.js"></script>
+<script src="ui.js"></script>
+<script src="game.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
+

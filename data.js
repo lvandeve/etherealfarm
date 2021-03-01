@@ -182,10 +182,17 @@ var sameTypeCostMultiplier_Special2 = 1.5;
 var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 //for state.delete2tokes
-var delete2perSeason = 2; // how many deletions on the ethereal field may be done per season
-var delete2maxBuildup = delete2perSeason * 4; // how many deletions can be saved up for future use when seasons change
-var delete2initial = delete2perSeason * 2; // how many deletions received at game start (NOTE: delete2perSeason only gotten at next season change, not at game start)
+var delete2initial = 4; // how many deletions received at game start
 
+// how many deletions on the ethereal field may be done per season
+var getDelete2PerSeason = function() {
+  return state.challenges[challenge_nodelete].completed ? 3 : 2;
+}
+
+// how many deletions can be saved up for future use when seasons change
+var getDelete2maxBuildup = function() {
+  return getDelete2PerSeason() * 4;
+}
 
 
 /*
@@ -1169,7 +1176,7 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun)
 }
 
 // an upgrade that increases the multiplier of a crop
-function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_unlock_id) {
+function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_unlock_id, opt_pre_fun) {
   var crop = crops[cropid];
   var name = crop.name;
 
@@ -1181,6 +1188,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
   var fun = function() {};
 
   var pre = function() {
+    if(opt_pre_fun && !opt_pre_fun()) return false;
     if(crop_unlock_id == undefined) {
       return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
     } else {
@@ -1249,7 +1257,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
 }
 
 // an upgrade that increases the multiplier of a crop
-function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_num, crop_unlock_id) {
+function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_num, crop_unlock_id, opt_pre_fun) {
   var crop = crops[cropid];
   var name = crop.name;
 
@@ -1261,6 +1269,7 @@ function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_nu
   var fun = function() {};
 
   var pre = function() {
+    if(opt_pre_fun && !opt_pre_fun()) return false;
     if(crop_unlock_id == undefined) {
       return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
     } else {
@@ -1312,7 +1321,9 @@ function registerDeprecatedUpgrade() {
 
 
 upgrade_register_id = 25;
-var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), 5, short_0);
+var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), 1, short_0, function(){
+  return (state.c_numplanted + state.c_numplantedshort) >= 5;
+});
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), 1, berry_0);
 var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), 1, berry_1);
 var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), 1, berry_2);
@@ -1339,16 +1350,32 @@ var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8, 
 var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), 1, berry_10, function(){return !!state.upgrades[flowerunlock_3].count;});
 
 upgrade_register_id = 100;
-var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, mush_1);
+var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, undefined, function() {
+  // prev_crop is mush_1, but also unlock once higher level berries available, in case player skips placing this mushroom
+  if(state.fullgrowncropcount[mush_1]) return true;
+  if(state.upgrades[berryunlock_4].count) return true; // the berry after mush_1
+  return false;
+});
 
 upgrade_register_id = 110;
-var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), 1, berry_1, function() {
-  return state.g_numresets > 0 && state.upgrades2[upgrade2_mistletoe].count;
+var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), 1, undefined, function() {
+  if(!(state.g_numresets > 0 && state.upgrades2[upgrade2_mistletoe].count)) return false;
+
+  // prev_crop is berry_1, but also unlock once higher level berries available, in case player skips placing this berry
+  if(state.fullgrowncropcount[berry_1]) return true;
+  if(state.upgrades[berryunlock_2].count) return true; // the berry after berry_1
+  return false;
 });
 
 upgrade_register_id = 120;
-var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), 1, flower_2, function() {
-  return !!state.challenges[challenge_bees].completed;
+var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), 1, undefined, function() {
+  if(!state.challenges[challenge_bees].completed) return false;
+
+  // prev_crop is flower_2, but also unlock once higher level berries available, in case player skips placing this flower
+  if(state.fullgrowncropcount[flower_2]) return true;
+  if(state.upgrades[berryunlock_7].count) return true; // the berry after flower_2
+
+  return false;
 });
 
 //shortunlock_0 does not exist, you start with that berry type already unlocked
@@ -1401,7 +1428,9 @@ upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0, flower_upgrade_cost_increase);
 
 upgrade_register_id = 205;
-var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 5);
+var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 1, undefined, function(){
+  return (state.c_numplanted + state.c_numplantedshort) >= 5;
+});
 
 upgrade_register_id = 215;
 var beemul_0 = registerBoostMultiplier(bee_0, crops[bee_0].cost.mulr(10), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
@@ -1868,6 +1897,10 @@ registerMedal('on the rocks', 'completed the rocks challenge', images_rock[1], f
   return !!state.challenges[challenge_rocks].completed;
 }, Num(0.05));
 
+registerMedal('undeleted', 'completed the undeletable challenge', undefined, function() {
+  return !!state.challenges[challenge_nodelete].completed;
+}, Num(0.25));
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1927,7 +1960,8 @@ var challenge_register_id = 1;
 // prefun = precondition to unlock the challenge
 // rewardfun = for completing the challenge the first time. This function may be ran only once.
 // allowflags: 1=resin, 2=fruits, 3=twigs, 8=beyond highest level
-function registerChallenge(name, targetlevel, bonus, description, rewarddescription, prefun, rewardfun, allowflags) {
+// rulesdescription must be a list of bullet points
+function registerChallenge(name, targetlevel, bonus, description, rulesdescription, rewarddescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
   var challenge = new Challenge();
@@ -1937,6 +1971,7 @@ function registerChallenge(name, targetlevel, bonus, description, rewarddescript
 
   challenge.name = name;
   challenge.description = description;
+  challenge.rulesdescription = rulesdescription;
   challenge.rewarddescription = rewarddescription;
   challenge.targetlevel = targetlevel;
   challenge.bonus = bonus;
@@ -1954,15 +1989,14 @@ function registerChallenge(name, targetlevel, bonus, description, rewarddescript
 
 // 1
 var challenge_bees = registerChallenge('bee challenge', 10, Num(0.05),
-`The bee challenge has the following rules:<br>
+'Grow bees during this challenge! This has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the one in this challenge.',
+`
 • The only types of crop available are 1 berry type, 1 mushroom type, 1 flower type and 3 types of bee/beehive. They\'re all available from the beginning, and no others unlock.<br>
 • Beehives boost neighboring queen bees<br>
 • Queen bees boost neighboring worker bees.<br>
 • Worker bees boost the global ecosystem: berries, mushrooms and flowers (so effectively cubic scaling). No neighboring require for this.<br>
 • Worker beest must be next to a flower for their boost to apply, being next to a queen for the queen boost is optional but recommended.<br>
 • "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching.<br>
-<br><br>
-This challenge has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the one in this challenge.
 `,
 'beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers.',
 function() {
@@ -1973,22 +2007,46 @@ function() {
 
 // 2
 var challenge_rocks = registerChallenge('rocks challenge', 15, Num(0.03),
-`The rocks challenge has the following rules:<br>
+`The field has rocks on which you can't plant. The rock pattern is determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours.
+`,
+`
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
-<br>
-The rock pattern is determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours.
-<br>
 `,
 'one extra storage slot for fruits',
 function() {
-  //return false;
   return state.treelevel >= 15;
 }, function() {
   state.fruit_slots++;
 }, 15);
 // idea: there could be "rockier" challenges with more rocks at higher levels later
 
+
+
+var challenge_nodelete = registerChallenge('undeletable challenge', 25, Num(0.07),
+`
+During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops!
+`,
+`
+• All regular crops, upgrades, ... are available and work as usual<br>
+• No crops can be deleted, except watercress<br>
+`,
+'get and store 50% more ethereal deletion tokens',
+function() {
+  return state.treelevel >= 27;
+}, function() {
+  // nothing here: the reward is unlocked indirectly by having this challenge marked complete
+}, 15);
+// idea: a harder version of this challenge that takes place on a fixed size field (5x5)
+
+
+// the register order is not suitable for display order, so use different array
+// this should be roughly the order challenges are unlocked in the game
+var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete];
+
+if(challenges_order.length != registered_challenges.length) {
+  throw 'challenges order not same length as challenges!';
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2371,7 +2429,7 @@ var upgrade2_basic_tree_bonus = Num(0.02);
 var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', LEVEL2, Res({resin:10}), 1.5, function() {
 }, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (additive). For example, if the level 1 basic tree production bonus is normally 5%, it is now 7%, and at tree level 2 it is then 14% instead of 10%', undefined, undefined, tree_images[10][1][1]);
 
-registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
+var upgrade2_extra_fruit_slot = registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[1]);
 
@@ -2437,7 +2495,7 @@ LEVEL2 = 3;
 upgrade2_register_id = 140;
 
 // NOTE: this upgrade is way too cheap for being at ethereal tree level 2. But too late to fix it since it's already been bought. It could be seen as a nice bonus for reaching ethereal tree level 3.
-registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:1000,essence:250}), 2, function() {
+var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:1000,essence:250}), 2, function() {
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[2]);
 

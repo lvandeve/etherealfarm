@@ -487,7 +487,7 @@ function createStatsDialog() {
     }
     text += '• ethereal planted: ' + open + state.g_numfullgrown2 + close + '<br>';
     text += '• ethereal deleted: ' + open + state.g_numunplanted2 + close + '<br>';
-    text += '• ethereal delete tokens: ' + open + state.delete2tokens + close + '<br>';
+    text += '• ethereal delete tokens: ' + open + state.delete2tokens + ' / ' + getDelete2maxBuildup() + close + '<br>';
     text += '<br>';
   }
 
@@ -503,13 +503,12 @@ function createStatsDialog() {
     text += '• challenges completed: ' + open + state.challenges_completed + close + '<br>';
     text += '• total challenge production bonus: ' + open + state.challenge_bonus.toPercentString() + close + '<br>';
 
-    for(var i = 0; i < registered_challenges.length; i++) {
-      var c = challenges[registered_challenges[i]];
-      var c2 = state.challenges[registered_challenges[i]];
+    for(var i = 0; i < challenges_order.length; i++) {
+      var c = challenges[challenges_order[i]];
+      var c2 = state.challenges[challenges_order[i]];
       if(!c2.unlocked) continue;
-      text += '• ' + c.name + ': completed: ' + open +  (c2.completed ? 'yes' : 'no') + close + ', runs: ' + open + c2.num + close +
-                              ', fastest target level time: ' + open + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + close +
-                              ', highest level: ' + open + c2.maxlevel + close + ', bonus per level: ' + open + c.bonus.toPercentString() + close +
+      text += '• ' + c.name + ': completed: ' + open +  (c2.completed ? 'yes' : 'no') + close +
+                              ', highest level: ' + open + c2.maxlevel + close +
                               ', production bonus: ' + open +  (c.bonus.mulr(c2.maxlevel)).toPercentString() + close + '<br>';
     }
 

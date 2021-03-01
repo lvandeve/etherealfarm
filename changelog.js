@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.41 (2021-03-01):';
+  text += '<br/>• Added the undeletable challenge';
+  text += '<br/>• Increased rocks challenge reward target level from 12 to 15 (nothing changes if you already got it)';
+  text += '<br/>• Crops that depend on planting a specific crop (nettle, mistletoe and beehive) now also unlock when next higher berry is unlocked';
+  text += '<br/>• Clicking the text "stored fruits" in fruit tab now shows where you got each slot from';
+  text += '<br/><br/>';
+
   text += '0.1.40 (2021-02-27):';
   text += '<br/>• Added automaton. Can automate the choice upgrades. More features planned for later game versions';
   text += '<br/>• Fixed high level flower boost accidently set too low';

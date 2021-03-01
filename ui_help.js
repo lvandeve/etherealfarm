@@ -250,7 +250,7 @@ registerHelpDialog(25, 'Bee challenge', undefined,
      [undefined, images_queenbee[4], images_beehive[4], undefined],
     ]);
 
-registerHelpDialog(26, 'Challenge completed', 'The tree reached the challenge\'s target level!',
+registerHelpDialog(26, 'Challenge completed', 'Challenge target level reached, challenge successfully finished!',
     'The tree reached the challenge\'s target level, you can successfully complete the challenge and can get its main reward! You can complete the challenge from the tree dialog, or continue to reach a higher level for more challenge max-level bonus. You can also replay the challenge at any later time to increase the max level.',
     undefined);
 

@@ -153,15 +153,20 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   makeScrollable(scrollFlex);
 
   var text = '';
-  text += '<b>Challenge info:</b>';
+
+  text += c.description;
+  text += '<br><br>';
+
+  text += '<b>Challenge rules:</b>';
   text += '<br>';
+  text += c.rulesdescription;
   text += '• Reach tree level ' + c.targetlevel + ' to successfully complete the challenge and get the one-time main reward';
   text += '<br>';
   text += '• The main reward is: ' + c.rewarddescription;
   text += '<br>';
   text += '• The challenge can be exited early at any time through the tree dialog and replayed later.';
   text += '<br>';
-  text += '• Max level reached with this challenge gives a general production bonus to the game, whether successfully completed or not.';
+  text += '• Max level reached with this challenge gives a general production bonus of ' + c.bonus.toPercentString() + ' per level to the game, whether successfully completed or not.';
   text += '<br>';
   if(c.allowsresin) {
     if(c.allowbeyondhighestlevel) {
@@ -180,7 +185,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
       text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead, and the tree cannot drop fruits when reaching a higher level during the challenge than ever gotten during a regular run';
     }
   } else {
-    text += '• Tree does drop any fruits';
+    text += '• Tree does not drop any fruits';
   }
   text += '<br>';
   if(c.allowstwigs) {
@@ -194,11 +199,6 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   }
   text += '<br>';
 
-  text += '<br><br>';
-
-  text += '<b>Challenge-specific description:</b>';
-  text += '<br>';
-  text += c.description;
   text += '<br><br>';
 
   text += '<b>Current stats:</b><br>';
@@ -246,9 +246,9 @@ function createChallengeDialog(opt_from_challenge) {
   var h = 0.1;
 
   // TODO: the display order should be different than the registered order, by difficulty level
-  for(var i = 0; i < registered_challenges.length; i++) {
-    var c = challenges[registered_challenges[i]];
-    var c2 = state.challenges[registered_challenges[i]];
+  for(var i = 0; i < challenges_order.length; i++) {
+    var c = challenges[challenges_order[i]];
+    var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
     var button = new Flex(buttonFlex, 0.25, pos, 0.75, pos + h);
     pos += h * 1.05;
@@ -333,3 +333,81 @@ function createFinishChallengeDialog() {
   });
 }
 
+
+
+function createAllChallengeStatsDialog() {
+  var dialog = createDialog(DIALOG_LARGE);
+
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  centerText2(titleDiv);
+  titleDiv.textEl.innerText = 'Challenge Stats';
+
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
+
+  var text = '';
+
+  var pos = 0;
+  var h = 0.1;
+
+  text += 'total challenge production bonus: +' + state.challenge_bonus.toPercentString() + '<br><br>';
+
+  // TODO: the display order should be different than the registered order, by difficulty level
+  for(var i = 0; i < challenges_order.length; i++) {
+    var c = challenges[challenges_order[i]];
+    var c2 = state.challenges[challenges_order[i]];
+    if(!c2.unlocked) continue;
+    text += '<b>' + upper(c.name) + '</b>';
+    text += '<br>';
+    text += 'completed: ' + (c2.completed ? 'yes' : 'no');
+    text += '<br>';
+    text += 'runs: ' + c2.num;
+    text += '<br>';
+    text += 'highest level: ' + c2.maxlevel;
+    text += '<br>';
+    text += 'fastest target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') ;
+    text += '<br>';
+    text += 'bonus per level: ' + c.bonus.toPercentString();
+    text += '<br>';
+    text += 'production bonus: ' + (c.bonus.mulr(c2.maxlevel)).toPercentString();
+    text += '<br>';
+    if(c2.completed) {
+      text += 'reward gotten: ' + c.rewarddescription;
+    } else {
+      text += '(unclaimed reward: ' + c.rewarddescription + ')';
+    }
+    text += '<br><br>';
+  }
+
+  div.innerHTML = text;
+}
+
+
+
+// the "challenge finished" chip at the bottom
+var challengeChipFlex = undefined;
+
+function removeChallengeChip() {
+  if(!challengeChipFlex) return;
+
+  challengeChipFlex.removeSelf();
+  challengeChipFlex = undefined;
+}
+
+function showChallengeChip(challenge) {
+  removeChallengeChip();
+  var c = challenges[challenge];
+
+  challengeChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
+  challengeChipFlex.div.style.backgroundColor = '#fcce';
+  challengeChipFlex.div.style.zIndex = 15;
+
+  var textFlex = new Flex(challengeChipFlex, 0.01, [0.5, -0.35], 0.99, [0.5, 0.35]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  centerText2(textFlex.div);
+  textFlex.div.textEl.innerHTML = 'Challenge Completed!' + '<br><br>\"' + upper(c.name) + '\"';
+
+  addButtonAction(challengeChipFlex.div, removeChallengeChip);
+}

@@ -471,6 +471,7 @@ function softReset(opt_challenge) {
 
   setTab(0);
 
+  removeChallengeChip();
 
   postupdate();
 
@@ -1548,32 +1549,36 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_DELETE) {
         var f = state.field[action.y][action.x];
-        if(f.hasCrop()) {
-          var c = f.getCrop();
-          var recoup = c.getCost(-1).mulr(cropRecoup);
-          if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
-            recoup = c.getCost(-1);
-            if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
-            state.g_numplanted--;
-            state.c_numplanted--;
-          } else {
-            state.g_numunplanted++;
-            state.c_numunplanted++;
+        if(state.challenge == challenge_nodelete && f.index != CROPINDEX + short_0 && f.growth >= 1) {
+          showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
+        } else {
+          if(f.hasCrop()) {
+            var c = f.getCrop();
+            var recoup = c.getCost(-1).mulr(cropRecoup);
+            if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+              recoup = c.getCost(-1);
+              if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
+              state.g_numplanted--;
+              state.c_numplanted--;
+            } else {
+              state.g_numunplanted++;
+              state.c_numunplanted++;
+            }
+            f.index = 0;
+            f.growth = 0;
+            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
+            if(c.type == CROPTYPE_SHORT) {
+              if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
+            } else {
+              state.res.addInPlace(recoup);
+              if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
+            }
+            store_undo = true;
+          } else if(f.index == FIELD_REMAINDER) {
+            f.index = 0;
+            f.growth = 0;
+            if(!action.silent) showMessage('cleared watercress remainder');
           }
-          f.index = 0;
-          f.growth = 0;
-          computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
-          if(c.type == CROPTYPE_SHORT) {
-            if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
-          } else {
-            state.res.addInPlace(recoup);
-            if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
-          }
-          store_undo = true;
-        } else if(f.index == FIELD_REMAINDER) {
-          f.index = 0;
-          f.growth = 0;
-          if(!action.silent) showMessage('cleared watercress remainder');
         }
       } else if(type == ACTION_DELETE2) {
         var f = state.field2[action.y][action.x];
@@ -1582,7 +1587,7 @@ var update = function(opt_fromTick) {
         var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
         if(f.cropIndex() == special2_0) remstarter = getStarterResources(0).sub(getStarterResources(-1));
         if(!freedelete && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
-          showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + delete2perSeason + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
+          showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
         } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
           // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
           showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
@@ -1967,6 +1972,7 @@ var update = function(opt_fromTick) {
         var c = state.challenges[state.challenge];
         if(c.besttime == 0 || state.c_runtime < c.besttime) c.besttime = state.c_runtime;
         showRegisteredHelpDialog(26);
+        if(!c.completed) showChallengeChip(state.challenge);
       }
       if(fruit) {
         showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString(), C_NATURE, 1284767498);
@@ -2164,9 +2170,13 @@ var update = function(opt_fromTick) {
 
 
   if(num_season_changes > 0) {
+    var num_get = getDelete2PerSeason();
+    var max_num = getDelete2maxBuildup();
+
+
     state.g_seasons++;
-    var num_tokens = num_season_changes * delete2perSeason;
-    if(state.delete2tokens + num_tokens > delete2maxBuildup) num_tokens = delete2maxBuildup - state.delete2tokens;
+    var num_tokens = num_season_changes * num_get;
+    if(state.delete2tokens + num_tokens > max_num) num_tokens = max_num - state.delete2tokens;
     state.delete2tokens += num_tokens;
     state.g_delete2tokens += num_tokens;
     if(num_tokens > 0 && state.g_numresets > 0) showMessage('Received ' + num_tokens + ' ethereal deletion tokens', C_ETHEREAL, 510324665);
