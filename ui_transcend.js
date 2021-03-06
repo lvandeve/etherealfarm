@@ -162,8 +162,6 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += c.rulesdescription;
   text += '• Reach tree level ' + c.targetlevel + ' to successfully complete the challenge, or reach any other max level to increase challenge production bonus.';
   text += '<br>';
-  text += '• Completion reward: ' + c.rewarddescription;
-  text += '<br>';
   text += '• Max level reached with this challenge gives ' + c.bonus.toPercentString() + ' production bonus per level to the game, whether successfully completed or not.';
   text += '<br>';
   if(c.allowsresin) {
@@ -196,6 +194,11 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
     text += '• No twigs can be gained from mistletoes';
   }
   text += '<br>';
+  text += '<br><br>';
+
+  text += '<b>First completion reward:</b> ' + c.rewarddescription;
+  text += '<br><br>';
+  text += '<b>This challenge was unlocked by:</b> ' + c.unlockdescription;
 
   text += '<br><br>';
 

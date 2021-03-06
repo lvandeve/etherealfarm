@@ -1970,7 +1970,7 @@ var challenge_register_id = 1;
 // rewardfun = for completing the challenge the first time. This function may be ran only once.
 // allowflags: 1=resin, 2=fruits, 3=twigs, 8=beyond highest level
 // rulesdescription must be a list of bullet points
-function registerChallenge(name, targetlevel, bonus, description, rulesdescription, rewarddescription, prefun, rewardfun, allowflags) {
+function registerChallenge(name, targetlevel, bonus, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
   var challenge = new Challenge();
@@ -1982,6 +1982,7 @@ function registerChallenge(name, targetlevel, bonus, description, rulesdescripti
   challenge.description = description;
   challenge.rulesdescription = rulesdescription;
   challenge.rewarddescription = rewarddescription;
+  challenge.unlockdescription = unlockdescription;
   challenge.targetlevel = targetlevel;
   challenge.bonus = bonus;
   challenge.prefun = prefun;
@@ -2007,7 +2008,8 @@ var challenge_bees = registerChallenge('bee challenge', 10, Num(0.05),
 • Worker beest must be next to a flower for their boost to apply, being next to a queen for the queen boost is optional but recommended.<br>
 • "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching.<br>
 `,
-'beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers.',
+'Beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers.',
+'having grown a daisy.',
 function() {
   return state.fullgrowncropcount[flower_2] >= 1;
 }, function() {
@@ -2023,6 +2025,7 @@ var challenge_rocks = registerChallenge('rocks challenge', 15, Num(0.03),
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
 `,
 'one extra storage slot for fruits',
+'reaching tree level 15',
 function() {
   return state.treelevel >= 15;
 }, function() {
@@ -2041,6 +2044,7 @@ During this challenge, no crops can be removed, only added. Ensure to leave spot
 • No crops can be deleted, except watercress<br>
 `,
 'get and store 50% more ethereal deletion tokens',
+'reaching tree level 27',
 function() {
   return state.treelevel >= 27;
 }, function() {
@@ -2059,6 +2063,7 @@ During this challenge, crops cannot be upgraded.
 • Ethereal upgrades, achievement boost, etc..., still apply as normal<br>
 `,
 'unlock the auto-upgrade ability of the automaton',
+'reaching ethereal tree level 2 and having automaton',
 function() {
   return state.treelevel2 >= 2 && haveAutomaton();
 }, function() {

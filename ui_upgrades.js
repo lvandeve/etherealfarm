@@ -452,16 +452,17 @@ function updateUpgradeUIIfNeeded() {
   var cache = [];
   for(var i = 0; i < unlocked.length; i++) {
     var u = upgrades[unlocked[i]];
+    var u2 = state.upgrades[unlocked[i]];
     var cost = u.getCost(0);
-    if(state.res.lt(cost)) cache[i] = true;
-    else cache[i] = false;
+    if(state.res.lt(cost)) cache[i] = [true, u2.count, u.index];
+    else cache[i] = [false, u2.count, u.index];
   }
 
   var eq = false;
   if(upgrade_ui_cache.length == cache.length) {
     eq = true;
     for(var i = 0; i < cache.length; i++) {
-      if(cache[i] != upgrade_ui_cache[i]) {
+      if(cache[i][0] != upgrade_ui_cache[i][0] || cache[i][1] != upgrade_ui_cache[i][1] || cache[i][2] != upgrade_ui_cache[i][2]) {
         eq = false;
         break;
       }
