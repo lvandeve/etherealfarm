@@ -469,11 +469,11 @@ createTreeImages('adult tree', `
 ................
 ................
 ....QGQQQGQ.....
-...QGQgGQQGG....
+...GGQgGQQGG....
 ..QGQGgQGGGGG...
 .QGQGgQGQGgQGq..
 .QGGQgQQGGQGGqq.
-.QQGgQGgGgqQgGq.
+.GQGgQGgGgqQgGq.
 .QGQggQQgqqGqgq.
 ..GQqqQgqqQGgq..
 ...QgGgogGgqqq..
@@ -504,11 +504,11 @@ createTreeImages('adult tree', `
 createTreeImages('adult tree', `
 ................
 ........Q.......
-....QQQQGQQQ....
+....QGQQGQQQ....
 ...QGQGGGGGgq...
 ..QGQQGQQgqgqq..
 ..QGgQQgGqgqqq..
-.QQQGgGGgGqqGQG.
+.GQQGgGGgGqqGQG.
 .GQGGqQGggqQGGq.
 .QQGgqQqGqqGGqg.
 .QGQgqqGqqQgqgq.
@@ -540,10 +540,10 @@ createTreeImages('adult tree', `
 createTreeImages('adult tree', `
 ................
 ........G.......
-..QQQQQggQgQ....
+..QGQQQggQgQ....
 .QGQGgQGgGGgggq.
 QQQgQQGGQggggqg.
-QgQGQgQgGqQqGQG.
+GgQGQgQgGqQqGQG.
 QGGQgGGGgGqQGGgq
 QQgGGqgGggQGgGqq
 GGQGGgggGqqGGggq
@@ -575,11 +575,11 @@ QggQggqGqqQGgqqq
 // tree level 25
 createTreeImages('adult tree', `
 ................
-...QQ...G...Qg..
+...GQ...G...Qg..
 ..QQQQQggQgQggq.
 .QGgGQGGgGGgggq.
 QGQgQGGGQgggqqg.
-QQQGggQgGqQqQQG.
+GQQGggQgGqQqQQG.
 QGGggQGGgGqQGGqq
 QQgQGqgGggQGgqgq
 QGQGQgggGqqQGgqq

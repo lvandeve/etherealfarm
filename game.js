@@ -332,7 +332,8 @@ function softReset(opt_challenge) {
     state.p_numupgrades_unlocked = state.c_numupgrades_unlocked;
     state.p_numabilities = state.c_numabilities;
     state.p_numfruits = state.c_numfruits;
-    state.p_numfruitupgrades = state.p_numfruitupgrades;
+    state.p_numfruitupgrades = state.c_numfruitupgrades;
+    state.p_numautoupgrades = state.c_numautoupgrades;
 
     state.p_treelevel = state.treelevel;
   }
@@ -370,10 +371,12 @@ function softReset(opt_challenge) {
   state.c_numabilities = 0;
   state.c_numfruits = 0;
   state.c_numfruitupgrades = 0;
+  state.c_numautoupgrades = 0;
 
   // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
   if(!state.challenge) {
     state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
+    state.g_p_treelevel = Math.max(state.treelevel, state.g_p_treelevel);
   }
 
   if(state.challenge) {
@@ -472,6 +475,8 @@ function softReset(opt_challenge) {
   setTab(0);
 
   removeChallengeChip();
+
+  removeAllDropdownElements();
 
   postupdate();
 
@@ -1187,11 +1192,17 @@ function addRandomFruit() {
   }
 
 
-  if(state.fruit_active.length == 0) {
-    setFruit(0, fruit);
-  } else if(state.fruit_stored.length < state.fruit_slots) {
-    setFruit(10 + state.fruit_stored.length, fruit);
+  if(state.g_numfruits == 0) {
+    // add fruit to highest possible slot type. Now only if this is the first ever fruit
+    if(state.fruit_active.length == 0) {
+      setFruit(0, fruit);
+    } else if(state.fruit_stored.length < state.fruit_slots) {
+      setFruit(10 + state.fruit_stored.length, fruit);
+    } else {
+      setFruit(100 + state.fruit_sacr.length, fruit);
+    }
   } else {
+    // add fruit to sacrificial pool, player is responsible for choosing to move fruits to storage or active lots
     setFruit(100 + state.fruit_sacr.length, fruit);
   }
 
@@ -1212,6 +1223,47 @@ function unlockEtherealCrop(id) {
   var c = crops2[id];
   showMessage('Ethereal crop available: "' + c.name + '"', C_ETHEREAL, 494369596);
   c2.unlocked = true;
+}
+
+
+// upgrades that are applicable for auto upgrade. This are crop multiplier/boost upgrades, not the unlock ones, and only relevant ones such as those with a crop in the field
+var auto_upgrades = [];
+
+// compute the auto_upgrades list
+function computeAutoUpgrades() {
+  auto_upgrades = [];
+
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    var u2 = state.upgrades[registered_upgrades[i]];
+    if(!u.iscropupgrade) continue;
+    if(!u2.unlocked) continue;
+    if(u.maxcount != 0 && u2.count >= u.maxcount) continue;
+    if(u.cropid == undefined) continue
+    if(!state.cropcount[u.cropid]) continue;
+
+    auto_upgrades.push(registered_upgrades[i]);
+  }
+}
+
+function autoUpgrade() {
+  // how much resources willing to spend
+  var res = state.res.mulr(state.automaton_autoupgrade_fraction);
+
+  for(var i = 0; i < auto_upgrades.length; i++) {
+    var u = upgrades[auto_upgrades[i]];
+
+    var count = 0;
+    for(;;) {
+      var cost = u.getCost(count);
+      if(cost.gt(res)) break;
+      count++;
+      res.subInPlace(cost);
+    }
+    if(count > 0) {
+      actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, auto_upgrade:true, num:count});
+    }
+  }
 }
 
 
@@ -1254,7 +1306,18 @@ function nextEventTime() {
   }
 
   // tree level up
-  addtime(treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores));
+  var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores);
+  var treetime = treereq.div(gain.spores).valueOf();
+  addtime(treetime);
+
+  // auto-upgrades
+  if(autoUpgradesEnabled()) {
+    for(var i = 0; i < auto_upgrades.length; i++) {
+      var cost = upgrades[auto_upgrades[i]].getCost();
+      if(cost.seeds.gtr(0)) addtime(cost.seeds.divr(gain.seeds));
+      if(cost.spores.gtr(0)) addtime(cost.spores.divr(gain.spores));
+    }
+  }
 
   return time;
 }
@@ -1302,6 +1365,11 @@ var update = function(opt_fromTick) {
     if(done) break;
     if(numloops++ > 365) break;
 
+    if(autoUpgradesEnabled()) {
+      computeAutoUpgrades();
+      autoUpgrade();
+    }
+
     var prevtime = state.prevtime;
     var time = util.getTime(); // in seconds
 
@@ -1333,16 +1401,18 @@ var update = function(opt_fromTick) {
     }
 
 
-    //var d = (state.prevtime == 0 || state.prevtime > time) ? 0 : (time - state.prevtime); // delta time for this tick. Set to 0 if in future (e.g. timezone change or daylight saving could have happened)
-    var rem = 0;
+    var next = 0;
+
+    var d0 = d;
 
     if(d > 1) {
       state.time = state.prevtime; // to let the nextEventTime() computation work as desired now
-      rem = nextEventTime() + 0.5; // for numerical reasons, ensure it's not exactly at the border of the event
+      next = nextEventTime() + 0.5; // for numerical reasons, ensure it's not exactly at the border of the event
+      if(next < 3) next = 3;
     }
 
-    if(d > rem && rem > 2) {
-      d = rem;
+    if(d > next && d0 > 2) {
+      d = next;
       time = state.prevtime + d;
       done = false;
       state.time = time - 2; // as opposed to the numerical fix above that added 1 second, now subtract 2 seconds from state.time so that it's for sure in the interval of the current intended event (before the ability ran out, before the season changed to the next, ...)
@@ -1356,8 +1426,6 @@ var update = function(opt_fromTick) {
       if(gain) preseasongain = Res(gain);
       num_season_changes++;
     }
-
-    //if(numloops > 1 || !done) console.log('d: ' + d + ', rem: ' + rem + ', prevtime: ' + util.formatDate(prevtime)  + ', time: ' + util.formatDate(state.time) + ', season: ' + getSeason() + ' ' + getSeasonAt(prevtime) + ', done: ' + done);
 
     var d1 = d; // d without timemul
 
@@ -1376,6 +1444,9 @@ var update = function(opt_fromTick) {
 
     var clickedfern = false; // if fern just clicked, don't do the next fern computation yet, since #resources is not yet taken into account
 
+    var upgrades_done = false;
+    var upgrades2_done = false;
+
     // action
     for(var i = 0; i < actions.length; i++) {
       var action = actions[i];
@@ -1390,11 +1461,14 @@ var update = function(opt_fromTick) {
         }
         var u = upgrades[action.u];
         var shift = action.shift && (u.maxcount != 1);
+        var amount_wanted = action.num ? action.num : 1; // if shift, amount_wanted is effectively infinite
         var num = 0;
         var res_before = Res(state.res);
         for(;;) {
           var cost = u.getCost();
-          if(state.res.lt(cost)) {
+          if(state.challenge == challenge_noupgrades && isNoUpgrade(u)) {
+            break; // not allowed to do such upgrade during the no upgrades challenge
+          } else if(state.res.lt(cost)) {
             if(!(shift && num > 0)) {
               showMessage('not enough resources for upgrade: have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
                   ', need ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')', C_INVALID, 0, 0);
@@ -1413,16 +1487,20 @@ var update = function(opt_fromTick) {
             if(u.is_choice) {
               message += '. Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
             }
-            if(!shift) showMessage(message);
+            if(!shift && !action.auto_upgrade) showMessage(message);
             store_undo = true;
             state.c_numupgrades++;
             state.g_numupgrades++;
+            if(action.auto_upgrade) {
+              state.c_numautoupgrades++;
+              state.g_numautoupgrades++;
+            }
           }
-          if(!shift) break;
-          if(shift && u.isExhausted()) break;
+          if(!shift && num >= amount_wanted) break;
+          if(u.isExhausted()) break;
           if(num > 1000) break; // this is a bit long, infinite loop?
         }
-        if(shift && num) {
+        if(shift && num && !action.auto_upgrade) {
           var total_cost = res_before.sub(state.res);
           if(num == 1) {
             showMessage('upgraded: ' + u.getName() + ', consumed: ' + total_cost.toString());
@@ -1431,7 +1509,7 @@ var update = function(opt_fromTick) {
           }
         }
         if(num) {
-          updateUI();
+          upgrades_done = true;
           if(action.u == berryunlock_0) {
             showRegisteredHelpDialog(3);
           }
@@ -1470,7 +1548,7 @@ var update = function(opt_fromTick) {
           store_undo = true;
           state.g_numupgrades2++;
         }
-        updateUI();
+        upgrades2_done = true;
       } else if(type == ACTION_PLANT) {
         var f = state.field[action.y][action.x];
         var c = action.crop;
@@ -1773,11 +1851,12 @@ var update = function(opt_fromTick) {
       storeUndo(undostate);
     }
 
-    precomputeField();
 
+    //if(upgrades_done || upgrades2_done) updateUI();
 
     ////////////////////////////////////////////////////////////////////////////
 
+    precomputeField();
 
     gain = Res();
 
@@ -2022,8 +2101,10 @@ var update = function(opt_fromTick) {
       var j = registered_upgrades[i];
       var u = upgrades[j];
       var u2 = state.upgrades[j];
+      if(u2.unlocked && state.challenge == challenge_noupgrades && isNoUpgrade(u)) u2.unlocked = false; // fix up other things that may unlock certain upgrades during this challenge
       if(u2.unlocked) continue;
       if(state.challenge == challenge_bees && !u.istreebasedupgrade) continue;
+      if(state.challenge == challenge_noupgrades && isNoUpgrade(u)) continue;
       if(j == mistletoeunlock_0 && state.challenge && !challenges[state.challenge].allowstwigs) continue; // mistletoe doesn't work during this challenge
       if(u.pre()) {
         if(u2.unlocked) {
@@ -2037,7 +2118,7 @@ var update = function(opt_fromTick) {
             showRegisteredHelpDialog(8);
           }
           var already = false;
-          if(automatonAnabled() && state.automaton_unlocked[0] && (j == fern_choice0 || j == active_choice0)) {
+          if(automatonEnabled() && state.automaton_unlocked[0] && (j == fern_choice0 || j == active_choice0)) {
             var choice = -1;
             if(j == fern_choice0 && state.automaton_choice[0] == 2) choice = 0;
             if(j == fern_choice0 && state.automaton_choice[0] == 3) choice = 1;

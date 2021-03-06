@@ -437,7 +437,7 @@ function createStatsDialog() {
   if(state.g_numresets > 0) {
     text += '<br>';
     text += '<b>Total</b><br>';
-    text += '• highest tree level: ' + open + state.g_treelevel + close + '<br>';
+    text += '• highest tree level: ' + open + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')' + close + '<br>';
     text += '• achievements: ' + open + state.g_nummedals + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.g_starttime) + close + '<br>';
     text += '• duration: ' + open + util.formatDuration(util.getTime() - state.g_starttime) + close + '<br>';
@@ -666,6 +666,7 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', areaFlex.div);
 
   area.value = text;
+  area.select();
 }
 
 

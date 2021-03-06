@@ -160,19 +160,17 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += '<b>Challenge rules:</b>';
   text += '<br>';
   text += c.rulesdescription;
-  text += '• Reach tree level ' + c.targetlevel + ' to successfully complete the challenge and get the one-time main reward';
+  text += '• Reach tree level ' + c.targetlevel + ' to successfully complete the challenge, or reach any other max level to increase challenge production bonus.';
   text += '<br>';
-  text += '• The main reward is: ' + c.rewarddescription;
+  text += '• Completion reward: ' + c.rewarddescription;
   text += '<br>';
-  text += '• The challenge can be exited early at any time through the tree dialog and replayed later.';
-  text += '<br>';
-  text += '• Max level reached with this challenge gives a general production bonus of ' + c.bonus.toPercentString() + ' per level to the game, whether successfully completed or not.';
+  text += '• Max level reached with this challenge gives ' + c.bonus.toPercentString() + ' production bonus per level to the game, whether successfully completed or not.';
   text += '<br>';
   if(c.allowsresin) {
     if(c.allowbeyondhighestlevel) {
-      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10, otherwise it\'s dropped';
+      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10';
     } else {
-      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10, and the tree cannot gain resin when reaching a higher level during the challenge than ever gotten during a regular run';
+      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10 and not when reaching higher level than highest regular run';
     }
   } else {
     text += '• Tree does not gain any resin';
@@ -182,7 +180,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
     if(c.allowbeyondhighestlevel) {
       text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead';
     } else {
-      text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead, and the tree cannot drop fruits when reaching a higher level during the challenge than ever gotten during a regular run';
+      text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead, and no fruits are dropped above highest level ever reached with a regular run';
     }
   } else {
     text += '• Tree does not drop any fruits';
@@ -190,9 +188,9 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += '<br>';
   if(c.allowstwigs) {
     if(c.allowbeyondhighestlevel) {
-      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10, otherwise it\'s dropped';
+      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10';
     } else {
-      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10, and the tree cannot gain twigs when reaching a higher level during the challenge than ever gotten during a regular run';
+      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10 and not when reaching higher level than highest regular run';
     }
   } else {
     text += '• No twigs can be gained from mistletoes';
@@ -250,10 +248,13 @@ function createChallengeDialog(opt_from_challenge) {
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
+    var isnew = !c2.completed;
     var button = new Flex(buttonFlex, 0.25, pos, 0.75, pos + h);
     pos += h * 1.05;
     styleButton(button.div);
-    button.div.textEl.innerText = upper(c.name);
+    var text = upper(c.name);
+    if(isnew) text += ' (New!)';
+    button.div.textEl.innerText = text;
     button.div.onclick = bind(function(c) {
       createChallengeDescriptionDialog(c.index, false);
     }, c);

@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.42 (2021-03-06):';
+  text += '<br/>• Added auto-upgrade to the automaton, requires high enough ethereal tree level and a challenge to become available';
+  text += '<br/>• Added the no-upgrades challenge';
+  text += '<br/>• New fruits now appear in sacrificial slots rather than storage or active slots, except the first one ever';
+  text += '<br/>• Fix tree level-up computation during long time intervals';
+  text += '<br/>• Other tweaks and fixes';
+  text += '<br/><br/>';
+
   text += '0.1.41 (2021-03-01):';
   text += '<br/>• Added the undeletable challenge';
   text += '<br/>• Increased rocks challenge reward target level from 12 to 15 (nothing changes if you already got it)';

@@ -751,6 +751,32 @@ function decResArray(reader) {
   return arr;
 }
 
+
+// encode a fraction from a dropdown for storing choices such as "how much fraction of resource may auto upgrade max consume per upgrade"
+// fraction to uint6 (uint6 value 0 means fraction=1 or 100%, higher uint6 values mean lower fraction, towards 0)
+// e is integer encoding in range 0..63. examples of e:f pairs:
+// 63:1, 62:0.5, 61:0.2, 60:0.1, 59:0.05, 58:0.02, 57:0.01, 56:0.005, ..., 3:0.00000000000000000001, 2:0.000000000000000000005, 1:0.000000000000000000002, 0:0
+function encFractionChoice(f) {
+  if(f <= 0) return 0;
+  if(f >= 1) return 63;
+  var l = -Math.log(f) / 2.302585092994046;
+  l = Math.floor(l);
+  var p = Math.pow(10, -l);
+  var r = f / p; // 0.1, 0.2 or 0.5 for the typical inputs, but may due to rounding also become 1, in which case we go to the previous log bucket
+  var q = (r < 0.15) ? 3 : ((r < 0.35) ? 2 : ((r < 0.75) ? 1 : 0)); // 3 for 0.1, 2 for 0.2, 1 for 0.5, 0 for 1 to go to the previous log bucket
+  return 63 - (l * 3 + q);
+}
+
+function decFractionChoice(e) {
+  e = 63 - Math.round(e);
+  if(e <= 0) return 1;
+  if(e >= 63) return 0;
+  var q = (e % 3);
+  var p = Math.floor(e / 3);
+  var l = Math.pow(10, -p);
+  return l * [1, 0.5, 0.2][q];
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -981,7 +1007,6 @@ function encTokens(tokens) {
 }
 
 function decTokens(reader) {
-var testdone = false;
   var result = {};
   for(;;) {
     if(reader.pos == reader.s.length) break;
@@ -1008,9 +1033,6 @@ var testdone = false;
   }
   return result;
 }
-
-var inctestamount = false;
-var testamount = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -210,7 +210,11 @@ function updateRightPane() {
     if(state.g_numresets > 0) {
       //text += '• #Transcensions: ' + state.g_numresets;
       //text += '<br>';
-      text += '• Max tree level ever: ' + state.g_treelevel;
+      if(state.g_p_treelevel && (state.treelevel >= state.g_p_treelevel)) {
+        text += '• Max tree level before: ' + state.g_p_treelevel;
+      } else {
+        text += '• Max tree level ever: ' + state.g_treelevel;
+      }
       text += '<br>';
     }
     if(state.treelevel >= 1) {

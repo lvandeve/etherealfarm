@@ -128,5 +128,15 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   background-color: #0f0;
 }
 
+.efAutomatonGlobalOff {
+  color: #000;
+  background-color: #888;
+}
+
+.efDropDown {
+  color: #000;
+  background-color: #888;
+}
+
 
 

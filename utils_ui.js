@@ -502,7 +502,7 @@ example: same as previous example but not square but rectangle that must keep co
 example: button in bottom right corner with always a width/height ratio (of butotn itself) of 2/1 (here 0.3/0.15): [1.0, -0.3], [1.0, -0.15], [1.0, -0.01], [1.0, -0.01]
 The fontSize lets the Flex also manage font size. This value does not support the 3-element array, just single number, and will be based on min(w*10, h) of the current element's computed size.
 */
-function Flex(parent, x0, y0, x1, y1, opt_fontSize) {
+function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_overrideParent) {
   this.parent = parent || null;
   this.fontSize = opt_fontSize;
   if(x0.length) {
@@ -545,7 +545,7 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize) {
     parent.elements.push(this);
   }
 
-  this.parentdiv = parent ? parent.div : document.body;
+  this.parentdiv = opt_overrideParent ? opt_overrideParent : (parent ? parent.div : document.body);
   this.div = makeDiv(0, 0, 0, 0, this.parentdiv);
   this.div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
   this.elements = [];
@@ -700,4 +700,65 @@ function makeScrollable(flex) {
       flex.div.className = '';
     }
   });
+}
+
+var dropdownEl = undefined;
+
+function removeAllDropdownElements() {
+  if(dropdownEl) dropdownEl.showFun(false);
+}
+
+function makeDropdown(flex, title, current, choices, fun) {
+  var el = flex.div.textEl ? flex.div.textEl : flex.div;
+  flex.div.style.border = '1px solid #fff';
+  flex.choice = current;
+  el.innerText = title + ': ' + choices[flex.choice];
+
+  var x0 = 0.25;
+  var x1 = 0.75;
+  var h = choices.length * 0.02;
+  var y0 = 0.5 - h;
+  var y1 = 0.5 + h;
+
+  // added to root, rather than flex itself, because otherwise any mouse action or styling applied to flex, also occurs on those choices, while that's not desired
+  var choiceFlex = new Flex(gameFlex, x0, y0, x1, y1, 0.6);
+
+  choiceFlex.div.style.zIndex = '1000';
+  choiceFlex.div.className = 'efDropDown';
+  var showing = true;
+  choiceFlex.showFun = function(show) {
+    if(show == showing) return;
+    if(show && dropdownEl == choiceFlex) return;
+    if(dropdownEl && dropdownEl != choiceFlex) {
+      dropdownEl.showFun(false);
+    }
+    showing = show;
+    choiceFlex.div.style.display = showing ? 'block' : 'none';
+    if(show) {
+      dropdownEl = choiceFlex;
+    } else {
+      dropdownEl = undefined;
+    }
+    if(showing) choiceFlex.update();
+  };
+  choiceFlex.showFun(false);
+
+  for(var i = 0; i < choices.length; i++) {
+    var choice = new Flex(choiceFlex, 0, i / choices.length, 1, (i + 1) / choices.length);
+    styleButton0(choice.div);
+    centerText2(choice.div);
+    choice.div.textEl.innerText = choices[i];
+    choice.div.className = 'efDropDown';
+
+    addButtonAction(choice.div, bind(function(i) {
+      flex.choice = i;
+      flex.div.textEl.innerText = title + ': ' + choices[i];
+      if(fun) fun(i);
+      choiceFlex.showFun(false);
+    }, i));
+  }
+
+  addButtonAction(flex.div, function() {
+    choiceFlex.showFun(!showing);
+  }, 'dropdown');
 }

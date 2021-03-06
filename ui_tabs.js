@@ -60,6 +60,8 @@ function setTab(i, opt_temp) {
     updateUpgrade2UI();
   }
 
+  removeAllDropdownElements();
+
   updateTabButtons();
 }
 
@@ -172,7 +174,7 @@ function updateTabButtons2() {
   tabnum = tabindex_automaton;
   if(tabbuttons[tabnum]) {
     var text = 'automaton';
-    if(!automatonAnabled()) {
+    if(!automatonEnabled()) {
       text += '<br>(off)';
     }
 

@@ -258,6 +258,7 @@ function State() {
   /*
   unlocked automation features. If array too short, means everything behind that counts as false.
   0: automation of choice upgrades
+  1: automation of crop upgrades
   */
   this.automaton_unlocked = [];
 
@@ -269,6 +270,19 @@ function State() {
   3: auto choose second choice
   */
   this.automaton_choice = [];
+
+  /*
+  0: auto upgrades diabled
+  1: auto upgrades diabled
+  */
+  this.automaton_autoupgrade = 0;
+
+  /*
+  fraction of resources the automaton is allowed to use for auto-upgrades, e.g. 0.1 to allow to use up to 10% of resources for auto upgrades
+  */
+  this.automaton_autoupgrade_fraction = 0.5;
+
+
 
   // challenges
   this.challenge = 0;
@@ -297,6 +311,7 @@ function State() {
   this.g_fastestrun2 = 0; // as measured on wall clock instead of the runtime that gets deltas added each time
   this.g_slowestrun2 = 0;
   this.g_numresets_challenge = 0; // amount of soft resets done to start a challenge
+  this.g_p_treelevel = 0; // max tree level of any run, but not including the current run
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -314,6 +329,7 @@ function State() {
   this.g_numabilities = 0; // weather abilities ran
   this.g_numfruits = 0; // fruits received
   this.g_numfruitupgrades = 0;
+  this.g_numautoupgrades = 0; // upgrades done with automaton. These are also counted in the standard g_numupgrades as well.
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -335,6 +351,7 @@ function State() {
   this.p_numabilities = 0;
   this.p_numfruits = 0;
   this.p_numfruitupgrades = 0;
+  this.p_numautoupgrades = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -354,6 +371,7 @@ function State() {
   this.c_numabilities = 0;
   this.c_numfruits = 0;
   this.c_numfruitupgrades = 0;
+  this.c_numautoupgrades = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
@@ -901,6 +919,12 @@ function haveAutomaton() {
   return !!state.crop2count[automaton2_0];
 }
 
-function automatonAnabled() {
+function automatonEnabled() {
   return haveAutomaton() && state.automaton_enabled;
+}
+
+function autoUpgradesEnabled() {
+  if(!automatonEnabled()) return false;
+  if(!state.automaton_unlocked[1]) return false;
+  return !!state.automaton_autoupgrade;
 }

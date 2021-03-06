@@ -1042,6 +1042,8 @@ function Upgrade() {
   // how this field is used, if at all, depends on the upgrade type
   this.bonus = undefined;
 
+  this.iscropupgrade = false; // is a berry/flower/... multiplier or additive upgrade (not an unlock, choice upgrade, ...)
+
   // style related, for the upgrade chip in upgrade UI
   this.bgcolor = '#ff0';
   this.bordercolor = '000';
@@ -1209,6 +1211,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
   var u = upgrades[result];
   u.bonus = Num(multiplier);
   u.cropid = cropid;
+  u.iscropupgrade = true;
 
   u.getCost = function(opt_adjust_count) {
     var countfactor = Num.powr(Num(basic_upgrade_cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
@@ -1247,6 +1250,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
   var u = upgrades[result];
   u.bonus = Num(adder);
   u.cropid = cropid;
+  u.iscropupgrade = true;
 
   u.getCost = function(opt_adjust_count) {
     var countfactor = Num.powr(Num(cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
@@ -1284,6 +1288,7 @@ function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_nu
   var u = upgrades[result];
   u.bonus = Num(time_increase);
   u.cropid = cropid;
+  u.iscropupgrade = true;
 
   u.getCost = function(opt_adjust_count) {
     var countfactor = Num.powr(Num(basic_upgrade_cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
@@ -1901,6 +1906,10 @@ registerMedal('undeleted', 'completed the undeletable challenge', undefined, fun
   return !!state.challenges[challenge_nodelete].completed;
 }, Num(0.25));
 
+registerMedal('upgraded', 'completed the no upgrades challenge', upgrade_arrow, function() {
+  return !!state.challenges[challenge_noupgrades].completed;
+}, Num(0.25));
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2040,9 +2049,32 @@ function() {
 // idea: a harder version of this challenge that takes place on a fixed size field (5x5)
 
 
+
+var challenge_noupgrades = registerChallenge('no upgrades challenge', 21, Num(0.1),
+`
+During this challenge, crops cannot be upgraded.
+`,
+`
+• Crops cannot be upgraded, except watercress<br>
+• Ethereal upgrades, achievement boost, etc..., still apply as normal<br>
+`,
+'unlock the auto-upgrade ability of the automaton',
+function() {
+  return state.treelevel2 >= 2 && haveAutomaton();
+}, function() {
+  state.automaton_unlocked[1] = true;
+}, 15);
+
+// is an upgrade not available during challenge_noupgrades
+// that is all crop upgrades, except watercress
+function isNoUpgrade(u) {
+  return u.iscropupgrade && u.index != shortmul_0;
+}
+
+
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete];
+var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete, challenge_noupgrades];
 
 if(challenges_order.length != registered_challenges.length) {
   throw 'challenges order not same length as challenges!';
@@ -2707,12 +2739,12 @@ function getNewFruitTier(roll, treelevel) {
   }
 
   // level 55: gold introduced
-  if(treelevel >= 45 && treelevel <= 54) {
+  if(treelevel >= 55 && treelevel <= 64) {
     return (roll < 0.25) ? 2 : ((roll < 0.75) ? 3 : 4);
   }
 
   // level 65
-  if(treelevel >= 45 && treelevel <= 54) {
+  if(treelevel >= 65 && treelevel <= 74) {
     return (roll > 0.66) ? 4 : 3;
   }
 

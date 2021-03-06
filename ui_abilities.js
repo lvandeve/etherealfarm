@@ -235,16 +235,10 @@ function refreshWatercress(opt_clear) {
   update();
 }
 
+
 document.addEventListener('keydown', function(e) {
-  /*if(e.key == 'a') {
-    if(state.upgrades[upgrade_sununlock].count && util.getTime() - state.suntime > getSunWait()) actions.push({type:ACTION_ABILITY, ability:1});
-    if(state.upgrades[upgrade_mistunlock].count && util.getTime() - state.misttime > getMistWait()) actions.push({type:ACTION_ABILITY, ability:0});
-    if(state.upgrades[upgrade_rainbowunlock].count && util.getTime() - state.rainbowtime > getRainbowWait()) actions.push({type:ACTION_ABILITY, ability:2});
-    update();
-  }*/
-  if(e.key == 'a') {
-    showMessage('a key no longer works since only 1 weather ability can be active at once now, use 1, 2 or 3 to enable an ability instead.', C_INVALID, 98764561);
-  }
+  if(util.eventHasShiftKey(e) || util.eventHasCtrlKey(e)) return;
+
   if(e.key == '1') {
     actions.push({type:ACTION_ABILITY, ability:1});
     update();

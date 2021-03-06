@@ -43,6 +43,7 @@ function encState(state, opt_raw_only) {
   var processNum = function(value) { process(value, TYPE_NUM); };
   var processString = function(value) { process(value, TYPE_STRING); };
   var processRes = function(value) { process(value, TYPE_RES); };
+  var processFractionChoice = function(value) { process(encFractionChoice(value), TYPE_UINT6); };
   var processBoolArray = function(value) { process(value, TYPE_ARRAY_BOOL); };
   var processUint6Array = function(value) { process(value, TYPE_ARRAY_UINT6); };
   var processIntArray = function(value) { process(value, TYPE_ARRAY_INT); };
@@ -53,6 +54,11 @@ function encState(state, opt_raw_only) {
   var processNumArray = function(value) { process(value, TYPE_ARRAY_NUM); };
   var processStringArray = function(value) { process(value, TYPE_ARRAY_STRING); };
   var processResArray = function(value) { process(value, TYPE_ARRAY_RES); };
+  var processFractionChoiceArray = function(value) {
+    var arr = [];
+    for(var i = 0; i < value.length; i++) arr[i] = encFractionChoice(value[i]);
+    process(arr, TYPE_ARRAY_UINT6);
+  };
 
   var array, array0, array1, array2, array3, array4, array5, array6;
 
@@ -267,6 +273,7 @@ function encState(state, opt_raw_only) {
   processFloat(state.g_fastestrun2);
   processFloat(state.g_slowestrun2);
   processUint(state.g_numresets_challenge);
+  processUint(state.g_p_treelevel);
 
 
   section = 11; id = 0; // global run stats
@@ -286,6 +293,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numabilities);
   processUint(state.g_numfruits);
   processUint(state.g_numfruitupgrades);
+  processUint(state.g_numautoupgrades);
 
 
   section = 12; id = 0; // current run stats
@@ -305,6 +313,7 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numabilities);
   processUint(state.c_numfruits);
   processUint(state.c_numfruitupgrades);
+  processUint(state.c_numautoupgrades);
 
 
   section = 13; id = 0; // previous run stats
@@ -325,6 +334,7 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numabilities);
     processUint(state.p_numfruits);
     processUint(state.p_numfruitupgrades);
+    processUint(state.p_numautoupgrades);
   }
 
 
@@ -475,6 +485,8 @@ function encState(state, opt_raw_only) {
   processBool(state.automaton_enabled);
   processBoolArray(state.automaton_unlocked);
   processUintArray(state.automaton_choice);
+  processUint(state.automaton_autoupgrade);
+  processFractionChoice(state.automaton_autoupgrade_fraction);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -554,6 +566,7 @@ function decState(s) {
   var processNum = function(def) { return process(def, TYPE_NUM); };
   var processString = function(def) { return process(def, TYPE_STRING); };
   var processRes = function(def) { return process(def, TYPE_RES); };
+  var processFractionChoice = function(def) { return decFractionChoice(process(def, TYPE_UINT6)); };
   var processBoolArray = function(def) { return process(def, TYPE_ARRAY_BOOL); };
   var processUint6Array = function(def) { return process(def, TYPE_ARRAY_UINT6); };
   var processIntArray = function(def) { return process(def, TYPE_ARRAY_INT); };
@@ -564,6 +577,11 @@ function decState(s) {
   var processNumArray = function(def) { return process(def, TYPE_ARRAY_NUM); };
   var processStringArray = function(def) { return process(def, TYPE_ARRAY_STRING); };
   var processResArray = function(def) { return process(def, TYPE_ARRAY_RES); };
+  var processFractionChoiceArray = function(def) {
+    var arr = process(def, TYPE_ARRAY_UINT6);
+    for(var i = 0; i < arr.length; i++) arr[i] = decFractionChoice(arr[i]);
+    return arr;
+  };
 
   var array, array0, array1, array2, array3, array4, array5, array6;
   var index, index0, index1, index2, index3, index4, index5, index6;
@@ -823,6 +841,9 @@ function decState(s) {
   if(save_version >= 4096*1+28) {
     state.g_numresets_challenge = processUint();
   }
+  if(save_version >= 4096*1+42) {
+    state.g_p_treelevel = processUint();
+  }
 
   if(error) return err(4);
 
@@ -844,6 +865,7 @@ function decState(s) {
   if(save_version >= 4096*1+9) state.g_numabilities = processUint();
   if(save_version >= 4096*1+17) state.g_numfruits = processUint();
   if(save_version >= 4096*1+17) state.g_numfruitupgrades = processUint();
+  if(save_version >= 4096*1+42) state.g_numautoupgrades = processUint();
   if(error) return err(4);
 
 
@@ -864,6 +886,7 @@ function decState(s) {
   if(save_version >= 4096*1+9) state.c_numabilities = processUint();
   if(save_version >= 4096*1+17) state.c_numfruits = processUint();
   if(save_version >= 4096*1+17) state.c_numfruitupgrades = processUint();
+  if(save_version >= 4096*1+42) state.c_numautoupgrades = processUint();
   if(error) return err(4);
 
 
@@ -883,8 +906,9 @@ function decState(s) {
     state.p_numupgrades = processUint();
     state.p_numupgrades_unlocked = processUint();
     if(save_version >= 4096*1+9) state.p_numabilities = processUint(0);
-  if(save_version >= 4096*1+17) state.p_numfruits = processUint();
-  if(save_version >= 4096*1+17) state.p_numfruitupgrades = processUint();
+    if(save_version >= 4096*1+17) state.p_numfruits = processUint();
+    if(save_version >= 4096*1+17) state.p_numfruitupgrades = processUint();
+    if(save_version >= 4096*1+42) state.p_numautoupgrades = processUint();
     if(error) return err(4);
   }
 
@@ -1047,6 +1071,10 @@ function decState(s) {
     state.automaton_enabled = processBool();
     state.automaton_unlocked = processBoolArray();
     state.automaton_choice = processUintArray();
+  }
+  if(save_version >= 4096*1+42) {
+    state.automaton_autoupgrade = processUint();
+    state.automaton_autoupgrade_fraction = processFractionChoice();
   }
 
   //////////////////////////////////////////////////////////////////////////////
