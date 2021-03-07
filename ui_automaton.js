@@ -16,7 +16,69 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+function showConfigureAutoUpgradesDialog() {
+  var dialog = createDialog();
+  var scrollFlex = dialog.content;
+  makeScrollable(scrollFlex);
 
+  var texth = 0;
+  var h = 0.06;
+  var y = 0;
+
+  var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0];
+  var typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'challenge'];
+  var order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+
+
+  var current;
+  var flex;
+
+
+  texth = 0.15;
+  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07, 0.45);
+  flex.div.innerText = 'Select max resource amount for upgrades of each crop type:';
+  y += texth;
+
+  for(var d = 0; d < typenames.length; d++) {
+    var d2 = order[d];
+
+    flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.75);
+    y += h * 1.2;
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    var names = [];
+    current = 0;
+    var bestdist = 1;
+    for(var i = 0; i < fractions.length; i++) {
+      names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
+      var dist = Math.abs(fractions[i] - state.automaton_autoupgrade_fraction[d2]);
+      if(dist < bestdist) {
+        current = i;
+        bestdist = dist;
+      }
+    }
+    // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
+    state.automaton_autoupgrade_fraction[d2] = fractions[current];
+    makeDropdown(flex, typenames[d], current, names, bind(function(d2, i) {
+      state.automaton_autoupgrade_fraction[d2] = fractions[i];
+    }, d2));
+    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on this type of autoupgrades');
+  }
+
+  y += h / 2;
+  var flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.75);
+  y += h * 1.2;
+  styleButton0(flex.div);
+  centerText2(flex.div);
+  makeDropdown(flex, 'set all to', current, names, function(i) {
+    for(var d = 0; d < typenames.length; d++) {
+      var d2 = order[d];
+      state.automaton_autoupgrade_fraction[d2] = fractions[i];
+    }
+    closeTopDialog();
+    showConfigureAutoUpgradesDialog();
+  });
+}
 
 function updateAutomatonUI() {
   automatonFlex.clear();
@@ -80,7 +142,6 @@ function updateAutomatonUI() {
   //////////////////////////////////////////////////////////////////////////////
 
   var canvasFlex = new Flex(automatonFlex, [1, -0.25], [0, 0.01], [1, -0.06], [0, 0.2], 0.3);
-  //var canvasFlex = new Flex(automatonFlex, 0,0,0.2,0.2);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(images_automaton[4], canvas);
 
@@ -150,7 +211,6 @@ function updateAutomatonUI() {
   //////////////////////////////////////////////////////////////////////////////
 
   if(state.automaton_unlocked[1]) {
-
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
     flex.div.innerText = 'Automate crop upgrades:';
@@ -179,27 +239,38 @@ function updateAutomatonUI() {
       //update();
     }, flex));
 
-    flex = addButton();
-    styleButton0(flex.div);
-    centerText2(flex.div);
-    var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.002, 0.002, 0.001];
-    var names = [];
-    var current = 0;
-    var bestdist = 1;
-    for(var i = 0; i < fractions.length; i++) {
-      names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
-      var dist = Math.abs(fractions[i] - state.automaton_autoupgrade_fraction);
-      if(dist < bestdist) {
-        current = i;
-        bestdist = dist;
+    var advanced = state.automaton_unlocked[1] >= 2;
+    if(advanced) {
+      flex = addButton();
+      styleButton(flex.div);
+      centerText2(flex.div);
+      flex.div.textEl.innerText = 'Configure...';
+      addButtonAction(flex.div, function() {
+        showConfigureAutoUpgradesDialog();
+      });
+    } else {
+      flex = addButton();
+      styleButton0(flex.div);
+      centerText2(flex.div);
+      var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
+      var names = [];
+      var current = 0;
+      var bestdist = 1;
+      for(var i = 0; i < fractions.length; i++) {
+        names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
+        var dist = Math.abs(fractions[i] - state.automaton_autoupgrade_fraction[0]);
+        if(dist < bestdist) {
+          current = i;
+          bestdist = dist;
+        }
       }
+      // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
+      state.automaton_autoupgrade_fraction[0] = fractions[current];
+      makeDropdown(flex, 'max cost', current, names, function(i) {
+        state.automaton_autoupgrade_fraction[0] = fractions[i];
+      });
+      registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on autoupgrades');
     }
-    // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
-    state.automaton_autoupgrade_fraction = fractions[current];
-    makeDropdown(flex, 'max cost', current, names, function(i) {
-      state.automaton_autoupgrade_fraction = fractions[i];
-    });
-    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on autoupgrades');
 
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
@@ -216,6 +287,13 @@ function updateAutomatonUI() {
       return true;
     });
 
+    if(!advanced) {
+      texth = 0.1;
+      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+      flex.div.innerText = 'Complete the next stage of the no-upgrades challenge to unlock more finetuning options for auto-upgrade';
+      y += texth * 1.2;
+    }
+
   } else {
     texth = 0.15;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
@@ -225,12 +303,4 @@ function updateAutomatonUI() {
 
 
   //////////////////////////////////////////////////////////////////////////////
-
-  if(state.automaton_unlocked[1]) {
-    addHR();
-    texth = 0.15;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
-    flex.div.innerText = '[More higher level automation, like auto-planting, is planned for future game versions.]';
-    y += texth;
-  }
 }

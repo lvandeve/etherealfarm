@@ -109,10 +109,13 @@ function MedalState() {
 
 function ChallengeState() {
   this.unlocked = false;
-  this.completed = 0; // whether, and how often, the challenge was successfully completed (excluding currently ongoing challenge, if any)
-  this.num = 0; // amount of times started, whether successful or not, including the current one
+  this.completed = 0; // whether the challenge was successfully completed, or higher values if higher versions of the challenge with extra rewards were completed
+  this.num = 0; // amount of times started, whether successful or not, excluding the current one
+  this.num_completed = 0; // how often, the challenge was successfully completed (excluding currently ongoing challenge, if any)
+  this.num_completed2 = 0; // how often, the challenge was successfully completed to final stage, or 0 if this challenge only has 1 stage
   this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any)
-  this.besttime = 0; // best time for reaching targetlevel, even when not resetting. If continuing the challenge for higher maxlevel, still only the time to reach targetlevel is counted, so it's the best time for completing the main reward part of the challenge.
+  this.besttime = 0; // best time for reaching first targetlevel, even when not resetting. If continuing the challenge for higher maxlevel, still only the time to reach targetlevel is counted, so it's the best time for completing the first main reward part of the challenge.
+  this.besttime2 = 0; // best time for reaching last targetlevel, or 0 if this challenge only has 1 stage. NOTE: so best time of first and last stage are tracked, if there are more intermediate stages, those are not tracked
 }
 
 
@@ -256,9 +259,10 @@ function State() {
   this.automaton_enabled = true; // default is true, but is not active until you actually placed the automaton
 
   /*
-  unlocked automation features. If array too short, means everything behind that counts as false.
+  array of integers. unlocked automation features. If array too short, means everything behind that counts as false.
+  at each index (value 0 means not yet unlocked):
   0: automation of choice upgrades
-  1: automation of crop upgrades
+  1: automation of crop upgrades (1=basic, 2=more options enabled)
   */
   this.automaton_unlocked = [];
 
@@ -272,15 +276,24 @@ function State() {
   this.automaton_choice = [];
 
   /*
-  0: auto upgrades diabled
-  1: auto upgrades diabled
+  0: auto upgrades disabled
+  1: auto upgrades enabled
   */
   this.automaton_autoupgrade = 0;
 
   /*
   fraction of resources the automaton is allowed to use for auto-upgrades, e.g. 0.1 to allow to use up to 10% of resources for auto upgrades
+  meaning of each index:
+  0: global, when there is no distinction made between plant types
+  1: other / challenge-specific crops
+  2: watercress
+  3: berry
+  4: mushroom
+  5: flower
+  6: nettle
+  7: beehive
   */
-  this.automaton_autoupgrade_fraction = 0.5;
+  this.automaton_autoupgrade_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
 
 
@@ -310,7 +323,9 @@ function State() {
   this.g_slowestrun = 0; // runtime of slowest transcension
   this.g_fastestrun2 = 0; // as measured on wall clock instead of the runtime that gets deltas added each time
   this.g_slowestrun2 = 0;
-  this.g_numresets_challenge = 0; // amount of soft resets done to start a challenge
+  this.g_numresets_challenge = 0; // amount of soft resets done after a challenge, excluding g_numresets_challenge_0
+  this.g_numresets_challenge_0 = 0; // amount of challenges quit immediately, before tree leveled even to level 1, so these do not count for stats, not even num runs of a challenge
+  this.g_numresets_challenge_10 = 0; // amount of soft resets done after a challenge where at least level 10 was reached, so that it can be counted as at least as good as a regular g_numresets value
   this.g_p_treelevel = 0; // max tree level of any run, but not including the current run
 
   this.g_starttime = 0; // starttime of the game (when first run started)
@@ -456,7 +471,9 @@ function State() {
 
   // derived stat, not to be saved.
   this.challenges_unlocked = 0;
-  this.challenges_completed = 0;
+  this.challenges_completed = 0; // completed at least 1 stage
+  this.challenges_completed2 = 0; // completed all stages
+  this.challenges_completed3 = 0; // stages completed
 
   // how many mistletoes are correctly touching the tree
   // computed by precomputeField
@@ -774,16 +791,23 @@ function computeDerived(state) {
 
   state.challenges_unlocked = 0;
   state.challenges_completed = 0;
+  state.challenges_completed2 = 0;
+  state.challenges_completed3 = 0;
   state.challenge_bonus = Num(0);
   state.untriedchallenges = 0;
   for(var i = 0; i < registered_challenges.length; i++) {
     var index = registered_challenges[i];
-    var c = state.challenges[index];
-    if(c.unlocked) state.challenges_unlocked++;
-    if(c.completed) state.challenges_completed++;
-    if(c.unlocked && c.num == 0) state.untriedchallenges++;
-    if(c.maxlevel > 0) {
-      state.challenge_bonus.addInPlace(getChallengeBonus(index, c.maxlevel));
+    var c = challenges[index];
+    var c2 = state.challenges[index];
+    if(c2.unlocked) state.challenges_unlocked++;
+    if(c2.completed) {
+      state.challenges_completed++;
+      if(c.fullyCompleted()) state.challenges_completed2++;
+      state.challenges_completed3 += c2.completed;
+    }
+    if(c2.unlocked && c.num == 0) state.untriedchallenges++;
+    if(c2.maxlevel > 0) {
+      state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevel));
     }
   }
 }

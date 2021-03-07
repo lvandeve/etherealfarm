@@ -184,7 +184,7 @@ function updateAbilitiesUI() {
   if(state.g_res.seeds.gtr(1000)) {
     if(!watercressbutton) {
       watercressbutton = new Flex(topFlex, [1,-2.1], [0,0.1], [1,-1.3], [0,0.9]);
-      watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w';
+      watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w. With shift, deletes all watercress.';
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);

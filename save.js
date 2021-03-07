@@ -60,7 +60,7 @@ function encState(state, opt_raw_only) {
     process(arr, TYPE_ARRAY_UINT6);
   };
 
-  var array, array0, array1, array2, array3, array4, array5, array6;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7;
 
   section = 0; id = 0; // main/misc
   processFloat(state.prevtime);
@@ -274,6 +274,8 @@ function encState(state, opt_raw_only) {
   processFloat(state.g_slowestrun2);
   processUint(state.g_numresets_challenge);
   processUint(state.g_p_treelevel);
+  processUint(state.g_numresets_challenge_0);
+  processUint(state.g_numresets_challenge_10);
 
 
   section = 11; id = 0; // global run stats
@@ -461,6 +463,9 @@ function encState(state, opt_raw_only) {
   array2 = [];
   array3 = [];
   array4 = [];
+  array5 = [];
+  array6 = [];
+  array7 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'challenges must be registered in increasing order';
@@ -470,23 +475,29 @@ function encState(state, opt_raw_only) {
     array2.push(state.challenges[unlocked[i]].num);
     array3.push(state.challenges[unlocked[i]].maxlevel);
     array4.push(state.challenges[unlocked[i]].besttime);
+    array5.push(state.challenges[unlocked[i]].besttime2);
+    array6.push(state.challenges[unlocked[i]].num_completed);
+    array7.push(state.challenges[unlocked[i]].num_completed2);
   }
   processUintArray(array0);
   processUintArray(array1);
   processUintArray(array2);
   processUintArray(array3);
   processFloatArray(array4);
-
   processUint(state.challenge);
+  processFloatArray(array5);
+  processUintArray(array6);
+  processUintArray(array7);
+
 
 
 
   section = 20; id = 0; // automaton
   processBool(state.automaton_enabled);
-  processBoolArray(state.automaton_unlocked);
+  processUintArray(state.automaton_unlocked);
   processUintArray(state.automaton_choice);
   processUint(state.automaton_autoupgrade);
-  processFractionChoice(state.automaton_autoupgrade_fraction);
+  processFractionChoiceArray(state.automaton_autoupgrade_fraction);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -579,12 +590,13 @@ function decState(s) {
   var processResArray = function(def) { return process(def, TYPE_ARRAY_RES); };
   var processFractionChoiceArray = function(def) {
     var arr = process(def, TYPE_ARRAY_UINT6);
+    if(!arr) return arr;
     for(var i = 0; i < arr.length; i++) arr[i] = decFractionChoice(arr[i]);
     return arr;
   };
 
-  var array, array0, array1, array2, array3, array4, array5, array6;
-  var index, index0, index1, index2, index3, index4, index5, index6;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7;
+  var index, index0, index1, index2, index3, index4, index5, index6, index7;
 
 
   section = 0; id = 0; // main/misc
@@ -844,6 +856,10 @@ function decState(s) {
   if(save_version >= 4096*1+42) {
     state.g_p_treelevel = processUint();
   }
+  if(save_version >= 4096*1+43) {
+    state.g_numresets_challenge_0 = processUint();
+    state.g_numresets_challenge_10 = processUint();
+  }
 
   if(error) return err(4);
 
@@ -1045,6 +1061,22 @@ function decState(s) {
     array2 = processUintArray();
     array3 = processUintArray();
     array4 = processFloatArray();
+    state.challenge = processUint();
+    if(save_version >= 4096*1+43) {
+      array5 = processFloatArray();
+      array6 = processUintArray();
+      array7 = processUintArray();
+    } else {
+      array5 = [];
+      array6 = [];
+      array7 = [];
+      for(var i = 0; i < array1.length; i++) {
+        array5[i] = 0; // challenge with only 1 stage does not set besttime2
+        array6[i] = array1[i]; // moved num completions from .completed to .num_completed in v0.1.43
+        array1[i] = array1[i] ? 1 : 0; // this now represents the stage reached rather than single completion
+        array7[i] = 0;
+      }
+    }
     if(error) return err(4);
     if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length) {
       return err(4);
@@ -1059,9 +1091,27 @@ function decState(s) {
       state.challenges[index].num = array2[i];
       state.challenges[index].maxlevel = array3[i];
       state.challenges[index].besttime = array4[i];
+      state.challenges[index].besttime2 = array5[i];
+      state.challenges[index].num_completed = array6[i];
+      state.challenges[index].num_completed2 = array7[i];
     }
 
-    state.challenge = processUint();
+  }
+  // fix up the fact that the more fair g_numresets_challenge_10 stat didn't exist yet before v 0.1.43, and a few other stat changes
+  if(save_version < 4096*1+43) {
+    state.g_numresets_challenge_10 = 0;
+    for(var i = 0; i < registered_challenges.length; i++) {
+      var j = registered_challenges[i];
+      state.g_numresets_challenge_10 += state.challenges[j].num_completed;
+      if(state.challenge == j) state.challenges[j].num--; // no longer counts current challenge
+    }
+  }
+  // if a new update adds a new challenge stage, invalidate besttime2 and num_completed2, since those only count for the final stage
+  for(var i = 0; i < registered_challenges.length; i++) {
+    var c = challenges[registered_challenges[i]];
+    var c2 = state.challenges[registered_challenges[i]];
+    if(c2.besttime2 != 0 && c2.completed < c.targetlevel.length) c2.besttime2 = 0;
+    if(c2.num_completed2 != 0 && c2.completed < c.targetlevel.length) c2.num_completed2 = 0;
   }
 
 
@@ -1069,12 +1119,29 @@ function decState(s) {
   section = 20; id = 0; // automaton
   if(save_version >= 4096*1+40) {
     state.automaton_enabled = processBool();
-    state.automaton_unlocked = processBoolArray();
+    if(save_version >= 4096*1+43) {
+      state.automaton_unlocked = processUintArray();
+    } else {
+      state.automaton_unlocked = processBoolArray();
+      for(var i = 0; i < state.automaton_unlocked.length; i++) state.automaton_unlocked[i] = (state.automaton_unlocked[i] ? 1 : 0);
+    }
     state.automaton_choice = processUintArray();
   }
   if(save_version >= 4096*1+42) {
     state.automaton_autoupgrade = processUint();
-    state.automaton_autoupgrade_fraction = processFractionChoice();
+    var fraction = [];
+    if(save_version >= 4096*1+43) {
+      fraction = processFractionChoiceArray();
+    } else {
+      fraction = [processFractionChoice()];
+    }
+    if(error) return err(4);
+    for(var i = 0; i < fraction.length; i++) {
+      state.automaton_autoupgrade_fraction[i] = fraction[i];
+    }
+    for(var i = fraction.length; i < state.automaton_autoupgrade_fraction.length; i++) {
+      state.automaton_autoupgrade_fraction[i] = fraction[1];
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////

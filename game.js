@@ -231,13 +231,25 @@ function softReset(opt_challenge) {
     var c = challenges[state.challenge];
     var c2 = state.challenges[state.challenge];
     c2.maxlevel = Math.max(state.treelevel, c2.maxlevel);
-    if(c2.maxlevel >= c.targetlevel) {
-      if(!c2.completed) {
-        showMessage('Completed the challenge and got reward: ' + c.rewarddescription, C_UNLOCK, 38658833);
-        c.rewardfun();
+    if(state.treelevel >= c.targetlevel[0]) {
+      var i = c2.completed;
+      // whether a next stage of the challenge completed. Note, you can only complete one stage at the time, even if you immediately reach the target level of the highest stage, you only get 1 stage for now
+      if(i < c.targetlevel.length && state.treelevel >= c.targetlevel[i]) {
+        if(c.targetlevel.length > 1) {
+          showMessage('Completed the next stage of the challenge and got reward: ' + c.rewarddescription[i], C_UNLOCK, 38658833);
+        } else {
+          showMessage('Completed the challenge and got reward: ' + c.rewarddescription[i], C_UNLOCK, 38658833);
+        }
+        c.rewardfun[i]();
+        c2.completed++;
       }
-      c2.completed++;
+      c2.num_completed++;
     }
+    if(c.targetlevel.length > 1 && c2.completed >= c.targetlevel.length) {
+      c2.num_completed2++;
+    }
+    // even for the "attempt" counter, do not count attempts that don't even level up the tree, those are counted as state.g_numresets_challenge_0 instead
+    if(state.treelevel) c2.num++;
   }
 
 
@@ -380,7 +392,12 @@ function softReset(opt_challenge) {
   }
 
   if(state.challenge) {
-    state.g_numresets_challenge++;
+    if(state.treelevel) {
+      state.g_numresets_challenge++;
+      if(state.treelevel >= 10) state.g_numresets_challenge_10++;
+    } else {
+      state.g_numresets_challenge_0++;
+    }
   } else {
     state.g_numresets++;
   }
@@ -469,7 +486,6 @@ function softReset(opt_challenge) {
     startChallenge(opt_challenge);
     var c = challenges[opt_challenge];
     var c2 = state.challenges[opt_challenge];
-    c2.num++;
   }
 
   setTab(0);
@@ -573,6 +589,9 @@ function loadUndo() {
   }, function() {
     showMessage('Not undone, failed to save redo save', C_ERROR, 0, 0);
   });
+
+  removeChallengeChip();
+  removeMedalChip();
 
   lastUndoSaveTime = 0; // now ensure next action saves undo again, pressing undo is a break in the action sequence, let the next action save so that pressing undo again brings us back to thie same undo-result-state
 }
@@ -680,8 +699,8 @@ function PreCell(f) {
 
   this.last_it = -1;
 
-  // how many neighbors this was leeching (for watercress. For visual effects.)
-  this.leechnum = 0;
+  // how many neighbors this was touching (for watercress. For deciding if there'll be a remainder.)
+  this.touchnum = 0;
 
   // for mistletoe
   // could also be used for winter warmth but isn't yet currently, it's only computed for mistletoe now
@@ -1049,6 +1068,7 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             var c2 = f2.getCrop();
             if(c2) {
+              if(c2.type != CROPTYPE_SHORT) p.touchnum++;
               var p2 = prefield[y2][x2];
               if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
                 var leech2 = p2.prod2.mul(leech);
@@ -1064,7 +1084,6 @@ function precomputeField() {
               }
             }
           }
-          p.leechnum = num;
           // also add this to the breakdown
           if(!total.empty()) {
             p.breakdown.push(['<span class="efWatercressHighlight">copying neighbors (' + num + ')</span>', false, total, p.prod3.clone()]);
@@ -1240,23 +1259,37 @@ function computeAutoUpgrades() {
     if(!u2.unlocked) continue;
     if(u.maxcount != 0 && u2.count >= u.maxcount) continue;
     if(u.cropid == undefined) continue
-    if(!state.cropcount[u.cropid]) continue;
+    if(!state.fullgrowncropcount[u.cropid]) continue; // only do fullgrown crops, don't already start spending money on upgrades that have no effect on non-fullgrown crops
 
     auto_upgrades.push(registered_upgrades[i]);
   }
 }
 
 function autoUpgrade() {
-  // how much resources willing to spend
-  var res = state.res.mulr(state.automaton_autoupgrade_fraction);
+  var res = Res(state.res);
 
   for(var i = 0; i < auto_upgrades.length; i++) {
     var u = upgrades[auto_upgrades[i]];
 
+    // how much resources willing to spend
+    var fraction = state.automaton_autoupgrade_fraction[0];
+    var advanced = state.automaton_unlocked[1] >= 2;
+    if(advanced && u.cropid != undefined) {
+      var c = crops[u.cropid];
+      if(c.type == CROPTYPE_BERRY) fraction = state.automaton_autoupgrade_fraction[3];
+      if(c.type == CROPTYPE_MUSH) fraction = state.automaton_autoupgrade_fraction[4];
+      if(c.type == CROPTYPE_FLOWER) fraction = state.automaton_autoupgrade_fraction[5];
+      if(c.type == CROPTYPE_NETTLE) fraction = state.automaton_autoupgrade_fraction[6];
+      if(c.type == CROPTYPE_BEE) fraction = state.automaton_autoupgrade_fraction[7];
+      if(c.type == CROPTYPE_SHORT) fraction = state.automaton_autoupgrade_fraction[2];
+      if(c.type == CROPTYPE_CHALLENGE) fraction = state.automaton_autoupgrade_fraction[1];
+    }
+
     var count = 0;
     for(;;) {
+      var maxcost = Res.min(res, state.res.mulr(fraction));
       var cost = u.getCost(count);
-      if(cost.gt(res)) break;
+      if(cost.gt(maxcost)) break;
       count++;
       res.subInPlace(cost);
     }
@@ -1618,7 +1651,7 @@ var update = function(opt_fromTick) {
           }
           if(c.index == automaton2_0) {
             if(!state.automaton_unlocked[0]) {
-              state.automaton_unlocked[0] = true;
+              state.automaton_unlocked[0] = 1;
               showMessage('Automation of choice upgrades unlocked!', C_AUTOMATON, 1067714398);
             }
           }
@@ -1874,7 +1907,7 @@ var update = function(opt_fromTick) {
             if(f.growth <= 0) {
               f.growth = 0;
               // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses
-              if(p.leechnum >= 2) f.index = FIELD_REMAINDER;
+              if(p.touchnum >= 2) f.index = FIELD_REMAINDER;
               else f.index = 0;
             }
             // it's ok to have the production when growth becoame 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
@@ -2047,11 +2080,19 @@ var update = function(opt_fromTick) {
       } else if(state.treelevel == min_transcension_level) {
         showRegisteredHelpDialog(7);
       }
-      if(state.challenge && state.treelevel == challenges[state.challenge].targetlevel) {
-        var c = state.challenges[state.challenge];
-        if(c.besttime == 0 || state.c_runtime < c.besttime) c.besttime = state.c_runtime;
+      if(state.challenge && state.treelevel == challenges[state.challenge].targetlevel[0]) {
+        var c = challenges[state.challenge];
+        var c2 = state.challenges[state.challenge];
+        if(c2.besttime == 0 || state.c_runtime < c2.besttime) c2.besttime = state.c_runtime;
+      }
+      if(state.challenge && state.treelevel == challenges[state.challenge].nextTargetLevel()) {
+        var c = challenges[state.challenge];
+        var c2 = state.challenges[state.challenge];
+        if(!c.fullyCompleted()) showChallengeChip(state.challenge);
         showRegisteredHelpDialog(26);
-        if(!c.completed) showChallengeChip(state.challenge);
+        if(c.targetlevel.length > 1 && state.treelevel >= c.finalTargetLevel()) {
+          if(c2.besttime2 == 0 || state.c_runtime < c2.besttime2) c2.besttime2 = state.c_runtime;
+        }
       }
       if(fruit) {
         showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString(), C_NATURE, 1284767498);
@@ -2476,6 +2517,12 @@ document.addEventListener('keydown', function(e) {
 });
 
 document.addEventListener('keyup', function(e) {
+  removeShiftCropChip();
+  removeShiftCrop2Chip();
+});
+
+// if keyup happens outside of window, ctrl or shift up are not detected, reset the chips then too to avoid leftover chips while shift or ctrl are not down (e.g. when using some ctrl shortcut that goes to another window in the OS)
+window.addEventListener('blur', function(e) {
   removeShiftCropChip();
   removeShiftCrop2Chip();
 });

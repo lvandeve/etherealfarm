@@ -381,6 +381,18 @@ Res.max = function(a, b) {
   return Res.fromArray(arr);
 };
 
+// min of each individual resource
+Res.min = function(a, b) {
+  var arra = a.toArray();
+  var arrb = b.toArray();
+  var arr = [];
+  for(var i = 0; i < arra.length; i++) {
+    arr[i] = Num.min(arra[i], arrb[i]);
+  }
+  return Res.fromArray(arr);
+};
+
+
 
 // Get some measure of progress of the player through value of resources
 // Not very accurate, except during earlier stages of the game.

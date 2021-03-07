@@ -25,7 +25,7 @@ var helpDialogQueue = [];
 var helpNeverAgainLocal = {};
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 28
+// highest used id: 30
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
@@ -271,6 +271,14 @@ registerHelpDialog(28, 'Automaton', 'You unlocked the automaton!',
     'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab unlocks, allowing to automate various parts of the game.<br><br>You must place the automaton, go to the tab and enable settings before it actually automates anything.<br><br>More and more automation features will become available later in the game.<br><br>When removing the automaton from the ethereal field, the automaton tab and all automation features will be disabled, but they all come back the way they were when placing the automaton again.',
     images_automaton[4]);
 
+registerHelpDialog(29, 'Auto upgrades', 'You unlocked auto upgrades!',
+    'You unlocked auto-upgrades for the automaton! See the automaton tab. You can enable or disable auto-upgrades, and choose a max cost the automaton is allowed to spend. All basic upgrades that boost crops, will be automatically performed by the automaton, at their normal cost, when enabled.',
+    images_automaton[4]);
+
+registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upgrade options!',
+    'You unlocked more finetuning options for the auto upgrades. See the automaton tab. The controls have changed: you can now configure the max cost per crop type (berry, mushroom, flower, ...).',
+    images_automaton[4]);
+
 function createKeyboardHelpDialog() {
   var dialog = createDialog();
 
@@ -288,17 +296,17 @@ function createKeyboardHelpDialog() {
   text += '<br/><br/>';
   text += 'Note: on mac, ctrl means command instead.';
   text += '<br/><br/>';
-  text += ' • <b>"1" , "2" , "3"</b>: activate one of the weather abilities';
+  text += ' • <b>"1" , "2" , "3"</b>: activate one of the weather abilities.';
   text += '<br/>';
   text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
   text += '<br/>';
-  text += ' • <b>shift + click empty field</b>: plant last planted type';
+  text += ' • <b>shift + click empty field</b>: plant last planted type.';
   text += '<br/>';
-  text += ' • <b>shift + click non-empty field</b>: delete plant, only if this is enabled in preferences';
+  text += ' • <b>shift + click non-empty field</b>: delete plant, only if this is enabled in preferences.';
   text += '<br/>';
-  text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key)';
+  text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key).';
   text += '<br/>';
-  text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford';
+  text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford.';
   text += '<br/>';
   text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you do actions a minute later.';
   text += '<br/>';
@@ -308,9 +316,9 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click fruit</b>: move upwards: to storage if available, otherwise swap to active slot.';
   text += '<br/>';
-  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence';
+  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence.';
   text += '<br/>';
-  text += ' • <b>esc</b>: close dialogs.';
+  text += ' • <b>esc</b>: close dialog.';
   text += '<br/><br/>';
 
   div.innerHTML = text;

@@ -1920,7 +1920,8 @@ registerMedal('upgraded', 'completed the no upgrades challenge', upgrade_arrow, 
 function Challenge() {
   this.name = 'a';
   this.description = 'a';
-  this.rewarddescription = 'a';
+  this.rewarddescription = ['a'];
+  this.unlockdescription = 'a';
   this.index = 0;
 
   // whether during this challenge, resin/twigs/fruit is given out or not
@@ -1944,7 +1945,7 @@ function Challenge() {
   // To be clear: you can still go beyond the highest level with this challenge if this is false. It just won't drop the above things.
   this.allowbeyondhighestlevel = false;
 
-  this.targetlevel = 0;
+  this.targetlevel = [0];
 
   // how much does this challenge contribute to the global challenge bonus pool, per level
   // e.g. at 0.1, this challenge provides +10% production bonus per tree level reached during this challenge
@@ -1954,7 +1955,22 @@ function Challenge() {
   this.prefun = function() {
     return false;
   };
-  this.rewardfun = function() {
+  this.rewardfun = [function() {
+  }];
+
+  // use stage.challenges[i].completed to check if any stage at all was completed, challenges[i].fullyCompleted to check all stages are completed
+  this.fullyCompleted = function() {
+    return state.challenges[this.index].completed >= this.targetlevel.length;
+  };
+
+  // returns either the reward level of the next stage, or if fully completed, that of the last stage
+  this.nextTargetLevel = function() {
+    if(this.fullyCompleted()) return this.targetlevel[this.targetlevel.length - 1];
+    return this.targetlevel[state.challenges[this.index].completed];
+  };
+
+  this.finalTargetLevel = function() {
+    return this.targetlevel[this.targetlevel.length - 1];
   };
 
   // actual implementation of the challenge is not here, but depends on currently active state.challenge
@@ -1972,6 +1988,10 @@ var challenge_register_id = 1;
 // rulesdescription must be a list of bullet points
 function registerChallenge(name, targetlevel, bonus, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
+
+  if(!Array.isArray(targetlevel)) targetlevel = [targetlevel];
+  if(!Array.isArray(rewarddescription)) rewarddescription = [rewarddescription];
+  if(!Array.isArray(rewardfun)) rewardfun = [rewardfun];
 
   var challenge = new Challenge();
   challenge.index = challenge_register_id++;
@@ -2053,8 +2073,8 @@ function() {
 // idea: a harder version of this challenge that takes place on a fixed size field (5x5)
 
 
-
-var challenge_noupgrades = registerChallenge('no upgrades challenge', 21, Num(0.1),
+// reason why watercress upgrade is still present: otherwise it disappears after a minute, requiring too much manual work when one wants to upkeep the watercress
+var challenge_noupgrades = registerChallenge('no upgrades challenge', [21, 25], Num(0.1),
 `
 During this challenge, crops cannot be upgraded.
 `,
@@ -2062,13 +2082,26 @@ During this challenge, crops cannot be upgraded.
 • Crops cannot be upgraded, except watercress<br>
 • Ethereal upgrades, achievement boost, etc..., still apply as normal<br>
 `,
-'unlock the auto-upgrade ability of the automaton',
+['unlock the auto-upgrade ability of the automaton' ,'add more options to the auto-upgrade ability of the automaton'],
 'reaching ethereal tree level 2 and having automaton',
 function() {
   return state.treelevel2 >= 2 && haveAutomaton();
-}, function() {
-  state.automaton_unlocked[1] = true;
-}, 15);
+},
+[
+function() {
+  state.automaton_unlocked[1] = Math.max(1, state.automaton_unlocked[1] || 0);
+  showRegisteredHelpDialog(29);
+  showMessage('Auto-upgrade unlocked!', C_AUTOMATON, 1067714398);
+},
+function() {
+  state.automaton_unlocked[1] = Math.max(2, state.automaton_unlocked[1] || 0);
+  for(var i = 1; i < state.automaton_autoupgrade_fraction.length; i++) {
+    state.automaton_autoupgrade_fraction[i] = state.automaton_autoupgrade_fraction[0];
+  }
+  showRegisteredHelpDialog(30);
+  showMessage('Auto-upgrade extra options unlocked!', C_AUTOMATON, 1067714398);
+}
+], 15);
 
 // is an upgrade not available during challenge_noupgrades
 // that is all crop upgrades, except watercress

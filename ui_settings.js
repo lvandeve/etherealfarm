@@ -501,13 +501,23 @@ function createStatsDialog() {
     text += '• challenges attempted: ' + open + (state.g_numresets_challenge + (state.challenge ? 1 : 0)) + close + '<br>';
     text += '• challenges unlocked: ' + open + state.challenges_unlocked + close + '<br>';
     text += '• challenges completed: ' + open + state.challenges_completed + close + '<br>';
+    if(state.challenges_completed != state.challenges_completed2) {
+      text += '• challenge stages completed: ' + open + state.challenges_completed3 + close + '<br>';
+      text += '• challenge fully completed: ' + open + state.challenges_completed2 + close + '<br>';
+    }
     text += '• total challenge production bonus: ' + open + state.challenge_bonus.toPercentString() + close + '<br>';
 
     for(var i = 0; i < challenges_order.length; i++) {
       var c = challenges[challenges_order[i]];
       var c2 = state.challenges[challenges_order[i]];
       if(!c2.unlocked) continue;
-      text += '• ' + c.name + ': completed: ' + open +  (c2.completed ? 'yes' : 'no') + close +
+      var completedtext;
+      if(c.targetlevel.length == 1 || !c2.completed) {
+        completedtext = (c2.completed ? 'yes' : 'no');
+      } else {
+        completedtext = '' + c2.completed + ' of ' + c.targetlevel.length;
+      }
+      text += '• ' + c.name + ': completed: ' + open +  completedtext + close +
                               ', highest level: ' + open + c2.maxlevel + close +
                               ', production bonus: ' + open +  (c.bonus.mulr(c2.maxlevel)).toPercentString() + close + '<br>';
     }
@@ -738,6 +748,7 @@ function initSettingsUI_in(dialog) {
         state.g_numimports++;
         state.g_lastimporttime = util.getTime();
         closeAllDialogs();
+        removeChallengeChip();
         removeMedalChip();
         clearUndo();
         initUI();
@@ -828,18 +839,10 @@ function initSettingsUI_in(dialog) {
 
 function initSettingsUI() {
   var gearbutton = new Flex(topFlex, [0,0.1], [0,0.1], [0,0.9], [0,0.9]).div;
-  styleButton0(gearbutton);
-  //gearbutton.style.cursor = 'pointer';
-  //gearbutton.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+  var canvas = createCanvas('0%', '0%', '100%', '100%', gearbutton);
+  renderImage(image_gear, canvas);
+  styleButton0(gearbutton, true);
   gearbutton.title = 'Settings';
-
-  // gear image
-  gearbutton.style.background = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABwUlEQVR4Ac3Xs7tfQRDG8Y2ddLHtPvb/ESdlbLsNythsYtu27VSx8eZbz3P3nLn4ofhs/a7mmQnTp08viik4hft4iNOYiwD4FTXAGci4ls0ATyDjXUkGqIItGI8A6xtk/EU5BGMIdqCGN0BdXIYgLEN5BATUgiKaIiCgLJZAEG6gYVqAKrgMGSfQA+vwDYr4jk3oiYOQcRM1kgJshjJsV1KAgVCGjbYBrMVQhqzyPMKyOAA5/MFvyOEkKni/YWco4jPmoC1KoxRaYQY+QhH93HUAqyELj9ASIaIJ7kAWtnkD1McXyPiCVggpmuADZPxEU5SyAabgAl7iFxSxAMFpGhTxG69wEXMDy1HIoSOCU3PI4WKI3ZnxD+UQnErhO5TieWC57QxQPgMBnuXFFUzDJbzC70w/QvzBa1zBvIKOrkHkG351fsOm+Bj5hs1QGkUuRA8zU4iKXopLZaIUl8V+yOE3fkEOJ1DeE2ARlCEr0wIMgDJsZFKATVCG7UxrSi8lNKVrHU3pxpSmtLoNYNUxnfFy08nUhiKaJ7TlN9EQ7sFkG0aVwGAy3D+Y+D3O6GjmcDrXw+k0nMYDPMIZzEMA/P4DcB3trAqvUhUAAAAASUVORK5CYII=)';
-  gearbutton.style.backgroundSize = 'cover';
-  gearbutton.classList.add('pixelated');
-
-  util.setEvent(gearbutton, 'onmouseover', 'gearstyle', function() { gearbutton.style.filter = 'brightness(0.4)'; });
-  util.setEvent(gearbutton, 'onmouseout', 'gearstyle', function() { gearbutton.style.filter = ''; });
 
   addButtonAction(gearbutton, function() {
     var dialog = createDialog();
@@ -849,12 +852,10 @@ function initSettingsUI() {
 
   // changelog / about button
   var aboutbutton = new Flex(topFlex, [1,-0.9], [0,0.1], [1,-0.1], [0,0.9]).div;
-  aboutbutton.style.cursor = 'pointer';
-  aboutbutton.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
+  canvas = createCanvas('0%', '0%', '100%', '100%', aboutbutton);
+  renderImage(images_fern[1], canvas);
+  styleButton0(aboutbutton, true);
   aboutbutton.title = 'About';
-
-  aboutbutton.classList.add('pixelated');
-  aboutbutton.classList.add('changelogbutton');
 
   addButtonAction(aboutbutton, function() {
     createChangelogDialog();

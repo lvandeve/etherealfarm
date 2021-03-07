@@ -156,6 +156,9 @@ function initUI() {
   else setTab(0, true);
 }
 
+var rightPanelPrevAutomationEnabled = -1;
+var rightPanelPrevUpgradeAutomationEnabled = -1;
+
 function updateRightPane() {
   if(!rightFlex) return;
 
@@ -169,9 +172,12 @@ function updateRightPane() {
 
   topRightFlex.clear();
 
-  if(upgradeUIUpdated) {
+  if(upgradeUIUpdated || rightPanelPrevAutomationEnabled != automatonEnabled() || rightPanelPrevUpgradeAutomationEnabled != autoUpgradesEnabled()) {
     upgradeUIUpdated = false;
     bottomRightFlex.clear();
+
+    rightPanelPrevAutomationEnabled = automatonEnabled();
+    rightPanelPrevUpgradeAutomationEnabled = autoUpgradesEnabled();
 
     var unlocked = [];
     for(var i = 0; i < upgrades_order.length; i++) {
@@ -188,7 +194,21 @@ function updateRightPane() {
       var chip = new Flex(bottomRightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.65);
       if(i == 0) {
         centerText2(chip.div);
-        chip.div.textEl.innerText = 'upgrades';
+        var text = 'upgrades';
+        if(automatonEnabled() && state.automaton_unlocked[1]) {
+          addButtonAction(chip.div, function() {
+            if(!automatonEnabled()) return;
+            state.automaton_autoupgrade = 1 - state.automaton_autoupgrade;
+            //updateUpgradeUI();
+            updateAutomatonUI();
+            updateRightPane();
+            //update();
+          });
+          text = 'upgrades (' + (autoUpgradesEnabled() ? 'auto' : 'manual') + ')';
+          styleButton0(chip.div);
+          chip.div.title = 'quick toggle auto-upgrades';
+        }
+        chip.div.textEl.innerText = text;
         setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
       } else if(i + 1 == maxnum && unlocked.length > maxnum) {
         centerText2(chip.div);

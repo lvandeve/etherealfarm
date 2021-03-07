@@ -33,8 +33,6 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   var cost = crop.getCost();
   text += 'type: ' + getCropTypeName(crop.type);
 
-  infoFlex.div.innerHTML = text;
-
   var buyFlex = undefined;
 
   if(opt_showfun) {
@@ -48,6 +46,8 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
     styleButton(buyFlex.div);
     buyFlex.div.textEl.innerHTML = '<b>plant: </b>' + cost.toString();
     addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
+  } else {
+    text += '<br>cost: ' + cost.toString();
   }
 
   if(opt_tooltipfun) {
@@ -72,6 +72,8 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   if(opt_plantfun && state.res.lt(crop.getCost())) {
     buyFlex.div.className = 'efButtonCantAfford';
   }
+
+  infoFlex.div.innerHTML = text;
 
   return flex;
 }

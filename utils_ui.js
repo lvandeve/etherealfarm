@@ -179,6 +179,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   dialog_level++;
 
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
+  removeAllDropdownElements();
 
   var dialogFlex;
   if(opt_size == DIALOG_SMALL) {
@@ -289,9 +290,27 @@ function closeAllDialogs() {
   removeAllTooltips();
 }
 
+function closeTopDialog() {
+  if(created_dialogs && created_dialogs.length > 0) {
+    created_dialogs[created_dialogs.length - 1].div.removeSelfFun();
+    dialog_level--;
+    created_dialogs.pop();
+    // a tooltip created by an element from a dialog could remain, make sure those are removed too
+    removeAllTooltips();
+  }
+  if(created_overlays && created_overlays.length > 0) {
+    util.removeElement(created_overlays[created_overlays.length - 1]);
+    created_overlays.pop();
+  }
+}
+
 document.addEventListener('keyup', function(e) {
   if(e.keyCode == 27) { // escape key
-    closeAllDialogs();
+    if(dropdownEl) {
+    removeAllDropdownElements();
+    } else {
+      closeTopDialog();
+    }
   }
 });
 
@@ -710,15 +729,17 @@ function removeAllDropdownElements() {
 
 function makeDropdown(flex, title, current, choices, fun) {
   var el = flex.div.textEl ? flex.div.textEl : flex.div;
-  flex.div.style.border = '1px solid #fff';
+  //flex.div.style.border = '1px solid #fff';
   flex.choice = current;
   el.innerText = title + ': ' + choices[flex.choice];
 
   var x0 = 0.25;
   var x1 = 0.75;
-  var h = choices.length * 0.02;
+  var h = (choices.length + 1) * 0.02;
   var y0 = 0.5 - h;
   var y1 = 0.5 + h;
+
+  flex.div.className = 'efDropDown';
 
   // added to root, rather than flex itself, because otherwise any mouse action or styling applied to flex, also occurs on those choices, while that's not desired
   var choiceFlex = new Flex(gameFlex, x0, y0, x1, y1, 0.6);
@@ -743,19 +764,26 @@ function makeDropdown(flex, title, current, choices, fun) {
   };
   choiceFlex.showFun(false);
 
-  for(var i = 0; i < choices.length; i++) {
-    var choice = new Flex(choiceFlex, 0, i / choices.length, 1, (i + 1) / choices.length);
+  for(var i = 0; i <= choices.length; i++) {
+    var iscancel = (i == choices.length);
+    var choice = new Flex(choiceFlex, 0, i / (choices.length + 1), 1, (i + 1) / (choices.length + 1));
     styleButton0(choice.div);
     centerText2(choice.div);
-    choice.div.textEl.innerText = choices[i];
+    choice.div.textEl.innerText = iscancel ? 'cancel' : choices[i];
     choice.div.className = 'efDropDown';
 
-    addButtonAction(choice.div, bind(function(i) {
-      flex.choice = i;
-      flex.div.textEl.innerText = title + ': ' + choices[i];
-      if(fun) fun(i);
-      choiceFlex.showFun(false);
-    }, i));
+    if(iscancel) {
+      addButtonAction(choice.div, bind(function(i) {
+        choiceFlex.showFun(false);
+      }, i));
+    } else {
+      addButtonAction(choice.div, bind(function(i) {
+        flex.choice = i;
+        flex.div.textEl.innerText = title + ': ' + choices[i];
+        if(fun) fun(i);
+        choiceFlex.showFun(false);
+      }, i));
+    }
   }
 
   addButtonAction(flex.div, function() {

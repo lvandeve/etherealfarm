@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.43 (2021-03-07):';
+  text += '<br/>• Added a second stage to the no-upgrades challenge';
+  text += '<br/>• Added more finetuning settings for auto-upgrades, unlocked by the new stage';
+  // watercress remainder also when non-leeched neighbor types,changed some top bar icons, fixed/tweaked challenge completion counters, click upgrades on right pane to toggle auto-upgrades, add cost to ethereal "see unlocked crops", esc key closes top instead of all dialogs, ...
+  text += '<br/>• Many other small tweaks';
+  text += '<br/><br/>';
+
   text += '0.1.42 (2021-03-06):';
   text += '<br/>• Added auto-upgrade to the automaton, requires high enough ethereal tree level and a challenge to become available';
   text += '<br/>• Added the no-upgrades challenge';

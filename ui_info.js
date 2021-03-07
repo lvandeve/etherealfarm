@@ -252,7 +252,7 @@ function updateResourceUI() {
       // using near: the computations of gain and gain_hyp may numerically differ, even when they are theoretically the same
       // this could cause the seeds to display a hypothetical number in brackets even though it's the same
       // if this problem persists even with larger tolerance, a different measure  must be taken, such as only displaying hyp if at least one of the resources (like spores) has a significant difference
-      var hyp_neq = !gain.near(gain_hyp, 0.001);
+      var hyp_neq = !gain.near(gain_hyp, 0.01);
 
       text = name + '<br>' + res.toString() + '<br>' + gain.toString() + '/s';
       if(hyp_neq) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
