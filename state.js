@@ -393,7 +393,8 @@ function State() {
   this.reset_stats_level = []; // reset at what tree level for each reset
   this.reset_stats_level2 = []; // tree level 2 at end of this run
   this.reset_stats_time = []; // time of this run, as integer of 15-minute intervals to keep the stat compact
-  this.reset_stats_resin = []; // log2 of 1 + total resin earned in total at start of this run, as integer
+  this.reset_stats_total_resin = []; // log2 of 1 + total resin earned in total at start of this run, as integer
+  this.reset_stats_resin = []; // log2 of 1 + resin earned during this run
   this.reset_stats_challenge = []; // what type of challenge, if any, for this run
 
   // amount of fields with nothing on them (index 0)
@@ -758,6 +759,10 @@ function computeDerived(state) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(1));
         }
+        if(index == berry2_2) {
+          var boost = Crop2.getNeighborBoost(f);
+          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(4));
+        }
         if(index == mush2_0) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(0.25));
@@ -770,10 +775,10 @@ function computeDerived(state) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(0.25));
         }
-        /*if(index == flower2_1) {
+        if(index == flower2_1) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(1));
-        }*/
+        }
         if(index == nettle2_0) {
           var boost = Crop2.getNeighborBoost(f);
           state.ethereal_nettle_bonus.addInPlace(boost.addr(1).mulr(0.25));

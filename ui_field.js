@@ -85,7 +85,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   if(help) {
     result += '<br/>' + help;
   }
-  if(c.tagline) result += '<br/>' + upper(c.tagline);
+  if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
   result += '<br/><br/>';
 
   var p = prefield[f.y][f.x];

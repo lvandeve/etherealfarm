@@ -946,15 +946,21 @@ var berry_6 = registerBerry('grape', 6, berryplanttime0 * 20, grape);
 var berry_7 = registerBerry('honeyberry', 7, berryplanttime0 * 25, honeyberry);
 var berry_8 = registerBerry('juniper', 8, berryplanttime0 * 30, juniper);
 var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry);
-var berry_10 = registerBerry('raspberry', 10, berryplanttime0 * 40, raspberry);
+var berry_10 = registerBerry('mulberry', 10, berryplanttime0 * 40, mulberry);
+var berry_11 = registerBerry('physalis', 11, berryplanttime0 * 45, physalis);
+var berry_12 = registerBerry('raspberry', 12, berryplanttime0 * 50, raspberry);
+var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'actually not a berry... (but here it acts as one)');
+var berry_14 = registerBerry('whitecurrant', 14, berryplanttime0 * 60, whitecurrant);
 
 // mushrooms: give spores
 crop_register_id = 50;
 var mush_0 = registerMushroom('champignon', 0, mushplanttime0 * 1, champignon);
 var mush_1 = registerMushroom('morel', 1, mushplanttime0 * 3, morel);
-var mush_2 = registerMushroom('amanita', 2, mushplanttime0 * 6, amanita); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
-var mush_3 = registerMushroom('portobello', 3, mushplanttime0 * 9, portobello);
-var mush_4 = registerMushroom('shiitake', 4, mushplanttime0 * 12, shiitake);
+var mush_2 = registerMushroom('matsutake', 2, mushplanttime0 * 6, matsutake);
+var mush_3 = registerMushroom('amanita', 3, mushplanttime0 * 9, amanita); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
+var mush_4 = registerMushroom('portobello', 4, mushplanttime0 * 12, portobello);
+var mush_5 = registerMushroom('shiitake', 5, mushplanttime0 * 15, shiitake);
+var mush_6 = registerMushroom('truffle', 6, mushplanttime0 * 18, truffle);
 
 // flowers: give boost to neighbors
 crop_register_id = 75;
@@ -963,7 +969,9 @@ var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 3, c
 var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 6, daisy);
 var flower_3 = registerFlower('dandelion', 3, Num(2048.0), flowerplanttime0 * 9, dandelion);
 var flower_4 = registerFlower('iris', 4, Num(32768.0), flowerplanttime0 * 12, iris);
-// ideas for more flowers: (forget me not), lavender, orchid, sunflower, tulip, violet
+var flower_5 = registerFlower('lavendar', 5, Num(262144.0), flowerplanttime0 * 15, lavendar);
+var flower_6 = registerFlower('orchid', 6, Num(2097152.0), flowerplanttime0 * 18, orchid);
+
 
 crop_register_id = 100;
 var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, nettle);
@@ -997,7 +1005,7 @@ var challengecrop_2 = registerChallengeCrop('beehive', 0, Res({seeds:2000000}), 
 crops[challengecrop_2].challengecroppricemul = Num(25);
 crops[challengecrop_2].boost = Num(1);
 
-var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Num(0), Num(0.1), 60, images_aster, 'This flower is only available during the bee challenge');
+var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0.1), 60, images_aster, 'This flower is only available during the bee challenge');
 crops[challengeflower_0].type = CROPTYPE_FLOWER;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1339,6 +1347,10 @@ var berryunlock_7 = registerCropUnlock(berry_7, getBerryCost(7), 1, berry_6);
 var berryunlock_8 = registerCropUnlock(berry_8, getBerryCost(8), 1, berry_7);
 var berryunlock_9 = registerCropUnlock(berry_9, getBerryCost(9), 1, berry_8);
 var berryunlock_10 = registerCropUnlock(berry_10, getBerryCost(10), 1, berry_9);
+var berryunlock_11 = registerCropUnlock(berry_11, getBerryCost(11), 1, berry_10);
+var berryunlock_12 = registerCropUnlock(berry_12, getBerryCost(12), 1, berry_11);
+var berryunlock_13 = registerCropUnlock(berry_13, getBerryCost(13), 1, berry_12);
+var berryunlock_14 = registerCropUnlock(berry_14, getBerryCost(14), 1, berry_13);
 
 upgrade_register_id = 50;
 var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), 1, berry_1);
@@ -1346,6 +1358,8 @@ var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), 1, berry_3, fu
 var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), 1, berry_5, function(){return !!state.upgrades[mushunlock_1].count;});
 var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), 1, berry_7, function(){return !!state.upgrades[mushunlock_2].count;});
 var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), 1, berry_9, function(){return !!state.upgrades[mushunlock_3].count;});
+var mushunlock_5 = registerCropUnlock(mush_5, getMushroomCost(5), 1, berry_11, function(){return !!state.upgrades[mushunlock_4].count;});
+var mushunlock_6 = registerCropUnlock(mush_6, getMushroomCost(6), 1, berry_13, function(){return !!state.upgrades[mushunlock_5].count;});
 
 upgrade_register_id = 75;
 var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), 1, berry_2);
@@ -1353,6 +1367,8 @@ var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), 1, berry_4, 
 var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), 1, berry_6, function(){return !!state.upgrades[flowerunlock_1].count;});
 var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8, function(){return !!state.upgrades[flowerunlock_2].count;});
 var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), 1, berry_10, function(){return !!state.upgrades[flowerunlock_3].count;});
+var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), 1, berry_12, function(){return !!state.upgrades[flowerunlock_4].count;});
+var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), 1, berry_14, function(){return !!state.upgrades[flowerunlock_5].count;});
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, undefined, function() {
@@ -1414,6 +1430,10 @@ var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgr
 var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_8);
 var berrymul_9 = registerCropMultiplier(berry_9, getBerryCost(9).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_9);
 var berrymul_10 = registerCropMultiplier(berry_10, getBerryCost(10).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_10);
+var berrymul_11 = registerCropMultiplier(berry_11, getBerryCost(11).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_11);
+var berrymul_12 = registerCropMultiplier(berry_12, getBerryCost(12).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_12);
+var berrymul_13 = registerCropMultiplier(berry_13, getBerryCost(13).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_13);
+var berrymul_14 = registerCropMultiplier(berry_14, getBerryCost(14).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_14);
 
 upgrade_register_id = 150;
 var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_0);
@@ -1421,6 +1441,8 @@ var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upg
 var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_2);
 var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_3);
 var mushmul_4 = registerCropMultiplier(mush_4, getMushroomCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_4);
+var mushmul_5 = registerCropMultiplier(mush_5, getMushroomCost(5).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_5);
+var mushmul_6 = registerCropMultiplier(mush_6, getMushroomCost(6).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_6);
 
 upgrade_register_id = 175;
 var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0, flower_upgrade_cost_increase);
@@ -1428,6 +1450,8 @@ var flowermul_1 = registerBoostMultiplier(flower_1, getFlowerCost(1).mulr(flower
 var flowermul_2 = registerBoostMultiplier(flower_2, getFlowerCost(2).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_2, flower_upgrade_cost_increase);
 var flowermul_3 = registerBoostMultiplier(flower_3, getFlowerCost(3).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_3, flower_upgrade_cost_increase);
 var flowermul_4 = registerBoostMultiplier(flower_4, getFlowerCost(4).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_4, flower_upgrade_cost_increase);
+var flowermul_5 = registerBoostMultiplier(flower_5, getFlowerCost(5).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_5, flower_upgrade_cost_increase);
+var flowermul_6 = registerBoostMultiplier(flower_6, getFlowerCost(6).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_6, flower_upgrade_cost_increase);
 
 upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0, flower_upgrade_cost_increase);
@@ -1769,18 +1793,26 @@ registerPlantTypeMedals(berry_7);
 registerPlantTypeMedals(berry_8);
 registerPlantTypeMedals(berry_9);
 registerPlantTypeMedals(berry_10);
+registerPlantTypeMedals(berry_11);
+registerPlantTypeMedals(berry_12);
+registerPlantTypeMedals(berry_13);
+registerPlantTypeMedals(berry_14);
 medal_register_id = 249;
 registerPlantTypeMedals(mush_0);
 registerPlantTypeMedals(mush_1);
 registerPlantTypeMedals(mush_2);
 registerPlantTypeMedals(mush_3);
 registerPlantTypeMedals(mush_4);
+registerPlantTypeMedals(mush_5);
+registerPlantTypeMedals(mush_6);
 medal_register_id = 299;
 registerPlantTypeMedals(flower_0);
 registerPlantTypeMedals(flower_1);
 registerPlantTypeMedals(flower_2);
 registerPlantTypeMedals(flower_3);
 registerPlantTypeMedals(flower_4);
+registerPlantTypeMedals(flower_5);
+registerPlantTypeMedals(flower_6);
 medal_register_id = 349;
 registerPlantTypeMedals(nettle_0);
 medal_register_id = 359;
@@ -1907,8 +1939,12 @@ registerMedal('undeleted', 'completed the undeletable challenge', undefined, fun
 }, Num(0.25));
 
 registerMedal('upgraded', 'completed the no upgrades challenge', upgrade_arrow, function() {
-  return !!state.challenges[challenge_noupgrades].completed;
+  return state.challenges[challenge_noupgrades].completed >= 1;
 }, Num(0.25));
+
+registerMedal('upgradeder', 'completed the no upgrades challenge state 2', upgrade_arrow, function() {
+  return state.challenges[challenge_noupgrades].completed >= 2;
+}, Num(0.5));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2134,6 +2170,7 @@ function Crop2() {
   this.boost = Num(0);
   this.tagline = '';
   this.image = undefined;
+  this.treelevel2 = 0; // minimum treelevel2 to unlock this crop, this is for display purposes
 };
 
 
@@ -2207,7 +2244,7 @@ var crops2ByName = {};
 // 16-bit ID, auto incremented with registerCrop2, but you can also set it to a value yourself, to ensure consistent IDs for various crops2 (between savegames) in case of future upgrades
 var crop2_register_id = -1;
 
-function registerCrop2(name, cost, prod, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
   if(!image) image = missingplant;
   if(crops2[crop2_register_id] || crop2_register_id < 0 || crop2_register_id > 65535) throw 'crop2 id already exists or is invalid!';
   var crop = new Crop2();
@@ -2226,53 +2263,55 @@ function registerCrop2(name, cost, prod, boost, planttime, effect_description_sh
   crop.tagline = opt_tagline || '';
   crop.boost = boost;
 
+  crop.treelevel2 = treelevel2;
+
   return crop.index;
 }
 
-function registerBerry2(name, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerBerry2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_BERRY;
   return index;
 }
 
-function registerMushroom2(name, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerMushroom2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_MUSH;
   return index;
 }
 
-function registerFlower2(name, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerFlower2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_FLOWER;
   return index;
 }
 
-function registerNettle2(name, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerNettle2(name, treelevel2, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_NETTLE;
   return index;
 }
 
-function registerLotus2(name, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, cost, Res({}), Num(boost), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerLotus2(name, treelevel2, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(boost), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_LOTUS;
   return index;
 }
 
-function registerShortLived2(name, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerShortLived2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_SHORT;
   return index;
 }
 
-function registerSpecial2(name, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerSpecial2(name,treelevel2,  cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_SPECIAL;
   return index;
@@ -2280,51 +2319,36 @@ function registerSpecial2(name, cost, planttime, effect_description_short, effec
 
 
 crop2_register_id = 0;
-var special2_0 = registerSpecial2('fern', Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
+var special2_0 = registerSpecial2('fern', 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
+var special2_1 = registerSpecial2('fern II', 2, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
 
 crop2_register_id = 10;
-var automaton2_0 = registerSpecial2('automaton', Res({resin:10}), 1.5, 'Automates things', 'Automates things. Can have max 1. See automaton tab.', images_automaton);
+var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Automates things', 'Automates things. Can have max 1. See automaton tab.', images_automaton);
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', Res({resin:10}), 60, 'boosts berries 25% (additive)', 'boosts berries in the basic field 25% (additive)', blackberry);
+var berry2_0 = registerBerry2('blackberry', 0, Res({resin:10}), 60, 'boosts berries 25% (additive)', 'boosts berries in the basic field 25% (additive)', blackberry);
 // for treelevel2=1
-var berry2_1 = registerBerry2('blueberry', Res({resin:100}), 120, 'boosts berries 100% (additive)', 'boosts berries in the basic field 100% (additive)', blueberry);
-///var berry2_2 = registerBerry2('cranberry', Res({resin:2000}), 180, 'boosts berries 400% (additive)', 'boosts berries in the basic field 400% (additive)', cranberry);
-/*var berry2_2 = registerBerry2('cranberry', getBerry2Cost(2), getBerry2Prod(2), cranberry);
-var berry2_3 = registerBerry2('currant', getBerry2Cost(3), getBerry2Prod(3), currant);
-var berry2_4 = registerBerry2('goji', getBerry2Cost(4), getBerry2Prod(4), goji);
-var berry2_5 = registerBerry2('gooseberry', getBerry2Cost(5), getBerry2Prod(5), gooseberry);
-var berry2_6 = registerBerry2('grape', getBerry2Cost(6), getBerry2Prod(6), grape);
-var berry2_7 = registerBerry2('honeyberry', getBerry2Cost(7), getBerry2Prod(7), honeyberry);
-var berry2_8 = registerBerry2('juniper', getBerry2Cost(8), getBerry2Prod(8), juniper);*/
+var berry2_1 = registerBerry2('blueberry', 1, Res({resin:100}), 120, 'boosts berries 100% (additive)', 'boosts berries in the basic field 100% (additive)', blueberry);
+var berry2_2 = registerBerry2('cranberry', 4, Res({resin:100000}), 180, 'boosts berries 400% (additive)', 'boosts berries in the basic field 400% (additive)', cranberry);
 
 // mushrooms2
 crop2_register_id = 50;
-var mush2_0 = registerMushroom2('champignon', Res({resin:20}), 120, 'boosts mushrooms 25% (additive)', 'boosts mushrooms spore production in the basic field 25% without increasing seeds consumption (additive)', champignon);
-// for treelevel2=3
-var mush2_1 = registerMushroom2('morel', Res({resin:20000}), 180, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', morel);
-//var mush2_1 = registerMushroom2('morel', Res({resin:500}), 240, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', champignon);
-/*var mush2_1 = registerMushroom2('morel', getMushroom2Cost(1), getMushroom2Prod(1), morel);
-var mush2_2 = registerMushroom2('amanita', getMushroom2Cost(2), getMushroom2Prod(2), amanita);
-var mush2_3 = registerMushroom2('portobello', getMushroom2Cost(3), getMushroom2Prod(3), portobello);*/
+var mush2_0 = registerMushroom2('champignon', 0, Res({resin:20}), 120, 'boosts mushrooms 25% (additive)', 'boosts mushrooms spore production in the basic field 25% without increasing seeds consumption (additive)', champignon);
+var mush2_1 = registerMushroom2('morel', 3, Res({resin:20000}), 180, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', morel);
 
 // flowers2
 crop2_register_id = 75;
-var flower2_0 = registerFlower2('clover', Res({resin:50}), 180, 'boosts flowers by 25% (additive)', 'boosts the boosting effect of flowers in the basic field by 25% (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
-//var flower2_1 = registerFlower2('cornflower', Res({resin:500}), 360, 'boosts flowers by 100% (additive)', 'boosts the boosting effect of flowers in the basic field by 100% (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
-/*var flower2_2 = registerFlower2('daisy', getFlower2Cost(2), Num(2), daisy);
-var flower2_3 = registerFlower2('dandelion', getFlower2Cost(3), Num(1), dandelion);*/
-
-
+var flower2_0 = registerFlower2('clover', 0, Res({resin:50}), 120, 'boosts flowers by 25% (additive)', 'boosts the boosting effect of flowers in the basic field by 25% (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
+var flower2_1 = registerFlower2('cornflower', 3, Res({resin:25000}), 180, 'boosts flowers by 100% (additive)', 'boosts the boosting effect of flowers in the basic field by 100% (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
 
 
 crop2_register_id = 100;
-// for treelevel2=2
-var nettle2_0 = registerNettle2('nettle', Res({resin:200}), 0.5, 60, 'boosts nettles by 25% (additive)', 'boosts nettles in the basic field by 25% (additive).', nettle);
+var nettle2_0 = registerNettle2('nettle', 2, Res({resin:200}), 0.25, 60, 'boosts nettles by 25% (additive)', 'boosts nettles in the basic field by 25% (additive).', nettle);
 
 crop2_register_id = 150;
-var lotus2_0 = registerLotus2('white lotus', Res({resin:50}), 0.5, 300, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom and flower by 50%. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
+var lotus2_0 = registerLotus2('white lotus', 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom and flower by 50%. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
+var lotus2_1 = registerLotus2('pink lotus', 4, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom and flower by 400%. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', pinklotus);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2946,11 +2970,21 @@ function treeLevel2Req(level) {
 ////////////////////////////////////////////////////////////////////////////////
 
 
-// adjust returns amount with 1 less (if set to -1) or 1 more (if set to 1), etc...
-function getStarterResources(opt_adjust) {
-  var count = state.fullgrowncrop2count[special2_0];
-  if(opt_adjust) count += opt_adjust;
-  var ethereal_seeds = count * count * count * 100;
+// opt_add_type and opt_sub_type: when adding or removing one of that type
+function getStarterResources(opt_add_type, opt_sub_type) {
+  var count;
+  var ethereal_seeds = 0;
+
+  count = state.fullgrowncrop2count[special2_0];
+  if(opt_add_type == special2_0) count++;
+  if(opt_sub_type == special2_0) count--;
+  ethereal_seeds += count * count * count * 100;
+
+  count = state.fullgrowncrop2count[special2_1];
+  if(opt_add_type == special2_1) count++;
+  if(opt_sub_type == special2_1) count--;
+  ethereal_seeds += count * count * count * 1000;
+
   return Res({seeds:ethereal_seeds});
 }
 

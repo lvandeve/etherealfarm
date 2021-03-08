@@ -47,7 +47,11 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
     buyFlex.div.textEl.innerHTML = '<b>plant: </b>' + cost.toString();
     addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
   } else {
-    text += '<br>cost: ' + cost.toString();
+    if(state.res.lt(crop.getCost())) {
+      text += '<br><font color="#666">cost: ' + cost.toString() + '</font>';
+    } else {
+      text += '<br>cost: ' + cost.toString();
+    }
   }
 
   if(opt_tooltipfun) {
@@ -121,6 +125,8 @@ function makePlantDialog2(x, y, show_only) {
       } else if(c.effect_description_short) {
         result += '<br><br>Effect: ' + c.effect_description_short;
       }
+
+      result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
 
       return result;
     }, index);

@@ -285,10 +285,10 @@ function softReset(opt_challenge) {
     message += 'Transcended';
   }
   if(do_resin) {
-    message += ' Got resin: ' + resin.toString();
+    message += '. Got resin: ' + resin.toString();
   }
   if(do_twigs) {
-    message += ' Got twigs: ' + twigs.toString();
+    message += '. Got twigs: ' + twigs.toString();
   }
   if(do_fruit) {
     if(state.fruit_sacr.length) message += '. Sacrificed ' + state.fruit_sacr.length + ' fruits and got ' + essence.toString();
@@ -311,11 +311,11 @@ function softReset(opt_challenge) {
   state.time = util.getTime();
   state.prevtime = state.time;
 
-  if(!state.challenge) {
+  if(state.treelevel > 0) {
     var addStat = function(array, stat) {
       array.push(stat);
       var maxlen = 50;
-      if(array.length > maxlen) array = array.slice(array.length - maxlen, array.length);
+      if(array.length > maxlen) array.splice(0, array.length - maxlen);
     };
 
     addStat(state.reset_stats_level, state.treelevel);
@@ -323,8 +323,9 @@ function softReset(opt_challenge) {
     // 900 seconds: use 15-minute granularity, to not use up too much space in the savegame for this
     addStat(state.reset_stats_time, Math.floor((state.time - state.c_starttime) / 900));
     // same here: only store log2 of resin to have it up to a factor of 2, to not use too much space
-    addStat(state.reset_stats_resin, Math.floor(Num.log2(state.g_res.resin.addr(1)).valueOf()));
-    addStat(state.reset_stats_challenge, 0);
+    addStat(state.reset_stats_total_resin, Math.floor(Num.log2(state.g_res.resin.addr(1)).valueOf()));
+    addStat(state.reset_stats_resin, Math.floor(Num.log2(resin.addr(1)).valueOf()));
+    addStat(state.reset_stats_challenge, state.challenge);
   }
 
   // The previous run stats are to compare regular runs with previous ones, so don't count it in case of a challenge
@@ -1206,7 +1207,7 @@ function addRandomFruit() {
     state.fruit_slots++;
   }
   if(season_before != 15 && season_after == 15) {
-    showMessage('You \'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+    showMessage('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
     state.fruit_slots++;
   }
 
@@ -1294,7 +1295,7 @@ function autoUpgrade() {
       res.subInPlace(cost);
     }
     if(count > 0) {
-      actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, auto_upgrade:true, num:count});
+      actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, num:count});
     }
   }
 }
@@ -1520,11 +1521,11 @@ var update = function(opt_fromTick) {
             if(u.is_choice) {
               message += '. Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
             }
-            if(!shift && !action.auto_upgrade) showMessage(message);
-            store_undo = true;
+            if(!shift && !action.by_automaton) showMessage(message);
+            if(!action.by_automaton) store_undo = true;
             state.c_numupgrades++;
             state.g_numupgrades++;
-            if(action.auto_upgrade) {
+            if(action.by_automaton) {
               state.c_numautoupgrades++;
               state.g_numautoupgrades++;
             }
@@ -1533,7 +1534,7 @@ var update = function(opt_fromTick) {
           if(u.isExhausted()) break;
           if(num > 1000) break; // this is a bit long, infinite loop?
         }
-        if(shift && num && !action.auto_upgrade) {
+        if(shift && num && !action.by_automaton) {
           var total_cost = res_before.sub(state.res);
           if(num == 1) {
             showMessage('upgraded: ' + u.getName() + ', consumed: ' + total_cost.toString());
@@ -1644,7 +1645,13 @@ var update = function(opt_fromTick) {
           f.growth = 0;
           f.justplanted = true;
           if(f.cropIndex() == special2_0) {
-            var extrastarter = getStarterResources(1).sub(getStarterResources(0));
+            var extrastarter = getStarterResources(special2_0).sub(getStarterResources());
+            state.res.addInPlace(extrastarter);
+            state.g_res.addInPlace(extrastarter);
+            state.c_res.addInPlace(extrastarter);
+          }
+          if(f.cropIndex() == special2_1) {
+            var extrastarter = getStarterResources(special2_1).sub(getStarterResources());
             state.res.addInPlace(extrastarter);
             state.g_res.addInPlace(extrastarter);
             state.c_res.addInPlace(extrastarter);
@@ -1696,7 +1703,8 @@ var update = function(opt_fromTick) {
         var freedelete = (f.index == CROPINDEX + automaton2_0);
 
         var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
-        if(f.cropIndex() == special2_0) remstarter = getStarterResources(0).sub(getStarterResources(-1));
+        if(f.cropIndex() == special2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_0));
+        if(f.cropIndex() == special2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_1));
         if(!freedelete && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
           showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
         } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
@@ -2118,22 +2126,17 @@ var update = function(opt_fromTick) {
       }
       if(state.treelevel2 >= 2) {
         unlockEtherealCrop(nettle2_0);
+        unlockEtherealCrop(special2_1);
       }
       if(state.treelevel2 >= 3) {
         unlockEtherealCrop(mush2_1);
+        unlockEtherealCrop(flower2_1);
       }
       if(state.treelevel2 >= 4) {
-        //unlockEtherealCrop(flower2_1);
+        unlockEtherealCrop(berry2_2);
+        unlockEtherealCrop(lotus2_1);
       }
     }
-
-
-    // compensation for savegames below version 0.1.17
-    if(state.treelevel >= 5 && state.g_numfruits == 0 && state.fruit_seed == -1) {
-      showMessage('Your tree level is higher than 5 but you didn\'t get a random fruit yet! Must have come from a previous version of the game before the "Fruit Update". One random fruit added now to get you started with this new feature.', C_NATURE, 1095294239);
-      addRandomFruit();
-    }
-
 
     state.res.addInPlace(actualgain);
 

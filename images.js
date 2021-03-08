@@ -18,11 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-var fern_spring_header = '#l0:#844 l1:#d66 hg:#2f0';
-var fern_summer_header = '#hg:#0f4';
-var fern_autumn_header = '#q:#a30 g:#f70';
-var fern_winter_header = '#q:#88f g:#aaf G:#ccf Q:#eef';
-var fern_ethereal_header = '#q:#ff8 g:#ffa G:#ffc Q:#ffe';
+var fern_spring_header = 'l0:#844 l1:#d66 hg:#2f0';
+var fern_summer_header = 'hg:#0f4';
+var fern_autumn_header = 'q:#a30 g:#f70';
+var fern_winter_header = 'q:#88f g:#aaf G:#ccf Q:#eef';
+var fern_ethereal_header = 'q:#ff8 g:#ffa G:#ffc Q:#ffe';
 
 var fern_base_image = `
 ................
@@ -81,19 +81,19 @@ var images_fern2 = [
 // default header is: '#l0:#400 l1:#822 l2:#a55 l3:#faa'
 
 // less saturated than the default for fields
-var fieldimageheader = '#l0:#622 l1:#966 l2:#a88 l3:#fcc';
+var fieldimageheader = 'l0:#622 l1:#966 l2:#a88 l3:#fcc';
 // a header with much higher saturation, for fruits and flowers
-var fruitimageheader = '#l0:#800 l1:#c22 l2:#f44 l3:#f88';
+var fruitimageheader = 'l0:#800 l1:#c22 l2:#f44 l3:#f88';
 // a header for green plants, the difference with standard palette is that it has less shadow, so you can make subtler shades
-var subtleplantimageheader = '#l0:#600 l1:#822 l2:#a55 l3:#faa';
+var subtleplantimageheader = 'l0:#600 l1:#822 l2:#a55 l3:#faa';
 
 
 
-var fieldheader_spring = '#+:#dbecc8 -:#b5d571';
-var fieldheader_summer = '#+:#c3e4bc -:#c9bb9d';
-var fieldheader_autumn = '#+:#d3be9c -:#cea78b';
-var fieldheader_winter = '#+:#fff -:#eef';
-var fieldheader_ethereal = '#+:#9df -:#ffd';
+var fieldheader_spring = '+:#dbecc8 -:#b5d571';
+var fieldheader_summer = '+:#c3e4bc -:#c9bb9d';
+var fieldheader_autumn = '+:#d3be9c -:#cea78b';
+var fieldheader_winter = '+:#fff -:#eef';
+var fieldheader_ethereal = '+:#9df -:#ffd';
 
 var field0 = `
 ++++++++++++++++
@@ -443,7 +443,7 @@ a@@@@@@@@@@@@@@a
 `);
 
 var image_sun = generateImageCanvas(`
-#+:#ff08
++:#ff08
 ................
 ................
 ......+---+.....
@@ -600,69 +600,69 @@ var image_medlar = `
 
 // the different metal tiers for the fruits
 var images_apple = [
-generateImageCanvas('#' + metalheader0 + image_apple),
-generateImageCanvas('#' + metalheader1 + image_apple),
-generateImageCanvas('#' + metalheader2 + image_apple),
-generateImageCanvas('#' + metalheader3 + image_apple),
-generateImageCanvas('#' + metalheader4 + image_apple),
-generateImageCanvas('#' + metalheader5 + image_apple),
-generateImageCanvas('#' + metalheader6 + image_apple),
-generateImageCanvas('#' + metalheader7 + image_apple),
-generateImageCanvas('#' + metalheader8 + image_apple),
-generateImageCanvas('#' + metalheader9 + image_apple),
-generateImageCanvas('#' + metalheader10 + image_apple),
+generateImageCanvas(metalheader0 + image_apple),
+generateImageCanvas(metalheader1 + image_apple),
+generateImageCanvas(metalheader2 + image_apple),
+generateImageCanvas(metalheader3 + image_apple),
+generateImageCanvas(metalheader4 + image_apple),
+generateImageCanvas(metalheader5 + image_apple),
+generateImageCanvas(metalheader6 + image_apple),
+generateImageCanvas(metalheader7 + image_apple),
+generateImageCanvas(metalheader8 + image_apple),
+generateImageCanvas(metalheader9 + image_apple),
+generateImageCanvas(metalheader10 + image_apple),
 ];
 var images_apricot = [
-generateImageCanvas('#' + metalheader0 + image_apricot),
-generateImageCanvas('#' + metalheader1 + image_apricot),
-generateImageCanvas('#' + metalheader2 + image_apricot),
-generateImageCanvas('#' + metalheader3 + image_apricot),
-generateImageCanvas('#' + metalheader4 + image_apricot),
-generateImageCanvas('#' + metalheader5 + image_apricot),
-generateImageCanvas('#' + metalheader6 + image_apricot),
-generateImageCanvas('#' + metalheader7 + image_apricot),
-generateImageCanvas('#' + metalheader8 + image_apricot),
-generateImageCanvas('#' + metalheader9 + image_apricot),
-generateImageCanvas('#' + metalheader10 + image_apricot),
+generateImageCanvas(metalheader0 + image_apricot),
+generateImageCanvas(metalheader1 + image_apricot),
+generateImageCanvas(metalheader2 + image_apricot),
+generateImageCanvas(metalheader3 + image_apricot),
+generateImageCanvas(metalheader4 + image_apricot),
+generateImageCanvas(metalheader5 + image_apricot),
+generateImageCanvas(metalheader6 + image_apricot),
+generateImageCanvas(metalheader7 + image_apricot),
+generateImageCanvas(metalheader8 + image_apricot),
+generateImageCanvas(metalheader9 + image_apricot),
+generateImageCanvas(metalheader10 + image_apricot),
 ];
 var images_pineapple = [
-generateImageCanvas('#' + metalheader0 + image_pineapple),
-generateImageCanvas('#' + metalheader1 + image_pineapple),
-generateImageCanvas('#' + metalheader2 + image_pineapple),
-generateImageCanvas('#' + metalheader3 + image_pineapple),
-generateImageCanvas('#' + metalheader4 + image_pineapple),
-generateImageCanvas('#' + metalheader5 + image_pineapple),
-generateImageCanvas('#' + metalheader6 + image_pineapple),
-generateImageCanvas('#' + metalheader7 + image_pineapple),
-generateImageCanvas('#' + metalheader8 + image_pineapple),
-generateImageCanvas('#' + metalheader9 + image_pineapple),
-generateImageCanvas('#' + metalheader10 + image_pineapple),
+generateImageCanvas(metalheader0 + image_pineapple),
+generateImageCanvas(metalheader1 + image_pineapple),
+generateImageCanvas(metalheader2 + image_pineapple),
+generateImageCanvas(metalheader3 + image_pineapple),
+generateImageCanvas(metalheader4 + image_pineapple),
+generateImageCanvas(metalheader5 + image_pineapple),
+generateImageCanvas(metalheader6 + image_pineapple),
+generateImageCanvas(metalheader7 + image_pineapple),
+generateImageCanvas(metalheader8 + image_pineapple),
+generateImageCanvas(metalheader9 + image_pineapple),
+generateImageCanvas(metalheader10 + image_pineapple),
 ];
 var images_pear = [
-generateImageCanvas('#' + metalheader0 + image_pear),
-generateImageCanvas('#' + metalheader1 + image_pear),
-generateImageCanvas('#' + metalheader2 + image_pear),
-generateImageCanvas('#' + metalheader3 + image_pear),
-generateImageCanvas('#' + metalheader4 + image_pear),
-generateImageCanvas('#' + metalheader5 + image_pear),
-generateImageCanvas('#' + metalheader6 + image_pear),
-generateImageCanvas('#' + metalheader7 + image_pear),
-generateImageCanvas('#' + metalheader8 + image_pear),
-generateImageCanvas('#' + metalheader9 + image_pear),
-generateImageCanvas('#' + metalheader10 + image_pear),
+generateImageCanvas(metalheader0 + image_pear),
+generateImageCanvas(metalheader1 + image_pear),
+generateImageCanvas(metalheader2 + image_pear),
+generateImageCanvas(metalheader3 + image_pear),
+generateImageCanvas(metalheader4 + image_pear),
+generateImageCanvas(metalheader5 + image_pear),
+generateImageCanvas(metalheader6 + image_pear),
+generateImageCanvas(metalheader7 + image_pear),
+generateImageCanvas(metalheader8 + image_pear),
+generateImageCanvas(metalheader9 + image_pear),
+generateImageCanvas(metalheader10 + image_pear),
 ];
 var images_medlar = [
-generateImageCanvas('#' + metalheader0 + image_medlar),
-generateImageCanvas('#' + metalheader1 + image_medlar),
-generateImageCanvas('#' + metalheader2 + image_medlar),
-generateImageCanvas('#' + metalheader3 + image_medlar),
-generateImageCanvas('#' + metalheader4 + image_medlar),
-generateImageCanvas('#' + metalheader5 + image_medlar),
-generateImageCanvas('#' + metalheader6 + image_medlar),
-generateImageCanvas('#' + metalheader7 + image_medlar),
-generateImageCanvas('#' + metalheader8 + image_medlar),
-generateImageCanvas('#' + metalheader9 + image_medlar),
-generateImageCanvas('#' + metalheader10 + image_medlar),
+generateImageCanvas(metalheader0 + image_medlar),
+generateImageCanvas(metalheader1 + image_medlar),
+generateImageCanvas(metalheader2 + image_medlar),
+generateImageCanvas(metalheader3 + image_medlar),
+generateImageCanvas(metalheader4 + image_medlar),
+generateImageCanvas(metalheader5 + image_medlar),
+generateImageCanvas(metalheader6 + image_medlar),
+generateImageCanvas(metalheader7 + image_medlar),
+generateImageCanvas(metalheader8 + image_medlar),
+generateImageCanvas(metalheader9 + image_medlar),
+generateImageCanvas(metalheader10 + image_medlar),
 ];
 
 

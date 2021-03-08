@@ -245,16 +245,16 @@ function updateUpgrade2UIIfNeeded() {
   var cache = [];
   for(var i = 0; i < unlocked.length; i++) {
     var u = upgrades2[unlocked[i]];
+    var u2 = state.upgrades2[unlocked[i]];
     var cost = u.getCost(0);
-    if(state.res.lt(cost)) cache[i] = true;
-    else cache[i] = false;
+    cache[i] = [state.res.lt(cost), u2.count, u.index];
   }
 
   var eq = false;
   if(upgrade2_ui_cache.length == cache.length) {
     eq = true;
     for(var i = 0; i < cache.length; i++) {
-      if(cache[i] != upgrade2_ui_cache[i]) {
+      if(cache[i][0] != upgrade2_ui_cache[i][0] || cache[i][1] != upgrade2_ui_cache[i][1] || cache[i][2] != upgrade2_ui_cache[i][2]) {
         eq = false;
         break;
       }

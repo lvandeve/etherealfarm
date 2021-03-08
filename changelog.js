@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.44 (2021-03-08):';
+  text += '<br/>• Added more ethereal crops';
+  text += '<br/>• Added next tiers of basic crops';
+  text += '<br/>• Re-ordered some crop names. This has no effect on stats of current games, only visual/naming. This to keep the alphabetical tier ordering after inserting new ones, noting that amanita is sorted as "muscaria"';
+  text += '<br/>• Some crop graphics redrawn, e.g. daisy for visible contrast in winter';
+  text += '<br/>• Auto-upgrades no longer store undo';
+  text += '<br/>• Various fixes';
+  text += '<br/><br/>';
+
   text += '0.1.43 (2021-03-07):';
   text += '<br/>• Added a second stage to the no-upgrades challenge';
   text += '<br/>• Added more finetuning settings for auto-upgrades, unlocked by the new stage';

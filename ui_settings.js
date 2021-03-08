@@ -470,7 +470,7 @@ function createStatsDialog() {
     text += '• ethereal tree level: ' + open + state.treelevel2 + close + '<br>';
     text += '• total resin: ' + open + state.g_res.resin.toString() + close + '<br>';
     text += '• transcensions: ' + open + state.g_numresets + close + '<br>';
-    var n = Math.min(Math.min(10, state.reset_stats_time.length), state.reset_stats_level.length);
+    var n = Math.min(Math.min(15, state.reset_stats_time.length), state.reset_stats_level.length);
     if(n > 0) {
       if(n == 1) {
         text += '• last transcension level: ' + open;
@@ -481,7 +481,9 @@ function createStatsDialog() {
         var j = n - 1 - i;
         text += (i == 0 ? ' ' : ', ') +
             state.reset_stats_level[state.reset_stats_level.length - 1 - i] +
-            ' (' + (state.reset_stats_time[state.reset_stats_time.length - 1 - i] / 4) + 'h)';
+            ' (' + (state.reset_stats_time[state.reset_stats_time.length - 1 - i] / 4) + 'h' +
+            (state.reset_stats_challenge[state.reset_stats_challenge.length - 1 - i] ? ', C' : '') +
+            ')';
       }
       text += close + '<br>';
     }

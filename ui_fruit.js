@@ -346,7 +346,7 @@ function showStorageFruitSourceDialog() {
     text += '<br/>';
   }
   if(state.seen_seasonal_fruit == 15) {
-    text += ' • 1: for having seen all types of seasonal fruit';
+    text += ' • 1: for having seen all 4 types of seasonal fruit';
     text += '<br/>';
   }
 

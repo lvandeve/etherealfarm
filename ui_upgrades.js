@@ -334,10 +334,14 @@ function computeUpgradeUIOrderIfNeeded() {
     counts[registered_crops.length + i] = !!count;
   }
   var same = true;
-  for(var i = 0; i < counts.length; i++) {
-    if(i >= upgrades_order_cache || upgrades_order_cache[i] != counts[i]) {
-      same = false;
-      break;
+  if(upgrades_order_cache.length != counts.length) {
+    same = false;
+  } else {
+    for(var i = 0; i < counts.length; i++) {
+      if(upgrades_order_cache[i] != counts[i]) {
+        same = false;
+        break;
+      }
     }
   }
   if(same) return false;
@@ -454,8 +458,7 @@ function updateUpgradeUIIfNeeded() {
     var u = upgrades[unlocked[i]];
     var u2 = state.upgrades[unlocked[i]];
     var cost = u.getCost(0);
-    if(state.res.lt(cost)) cache[i] = [true, u2.count, u.index];
-    else cache[i] = [false, u2.count, u.index];
+    cache[i] = [state.res.lt(cost), u2.count, u.index];
   }
 
   var eq = false;

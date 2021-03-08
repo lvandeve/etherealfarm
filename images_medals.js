@@ -43,8 +43,8 @@ var tierColors_BG = ['#000',   '#420',   '#666',     '#8a4', '#bb0',     '#aaa',
 
 
 // medals, too, get more saturation
-var medalimageheader = '#l0:#c22 l1:#d44 l2:#e66 l3:#f88';
-var hiddenmedalimageheader = '#l0:#8558 l1:#a778 l2:#c998 l3:#fcc8';
+var medalimageheader = 'l0:#c22 l1:#d44 l2:#e66 l3:#f88';
+var hiddenmedalimageheader = 'l0:#8558 l1:#a778 l2:#c998 l3:#fcc8';
 
 var medalheader0 = ' hm:#999';
 var medalheader1 = ' hm:#c70';

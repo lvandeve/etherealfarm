@@ -271,8 +271,6 @@ function generatePalette(header) {
   // so e.g. to indicate a lightness+saturation, give any color (like, some shade of red) with the desired lightness and saturation encoded in it
   // they can also optionally indicate alpha
 
-  if(header && header[0] == '#') header = header.substr(1);
-
   // These hues are 12 30-degree equispaced RGB hues, plus in addition 4 hues inserted between: red-orange, orange-yellow, lime-green, blue-violet.
   // This allows to use any desired subset or all of them, including any desired 12-color color circle: RGB (opposing pairs RC, GM and BY), RYB (opposing pairs RG, YV and BO) or RYGB (opposing pairs RG and YB).
   var hues = [
@@ -455,7 +453,7 @@ var defaultpal = generatePalette();
 
 /*
 Generates an image from ASCII text as follows:
--if first line starts with a # character, it's a header
+-if first line contains a : character after one of the header keywords, it's a header, not a line of pixels
 -newline of first non-header line: indicates width of image
 -amount of lines after first non-header line, excluding a possible final empty line which is ignored: indicates height of image
 -characters making up the image:
@@ -499,9 +497,9 @@ function generateImage(text) {
   var pal = defaultpal;
   var lines = text.split('\n');
 
-  // if has header (header start is always indicated with #)
-  if(lines[0][0] == '#') {
-    var header = lines[0].substr(1);
+  // if has header (header contains a colon after a 1-, 2- or 3-letter keyword, and also allow a redundant space in front)
+  if(lines[0][1] == ':' || lines[0][2] == ':' || lines[0][3] == ':' || lines[0][4] == ':') {
+    var header = lines[0];
     lines.shift();
     pal = generatePalette(header);
   }

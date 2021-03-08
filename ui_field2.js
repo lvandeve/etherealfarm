@@ -68,6 +68,8 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
   result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
 
+  result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
+
   if(opt_detailed) {
     result += '<br><br>';
     result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)';
