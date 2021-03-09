@@ -28,16 +28,19 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   result += '<br/>Crop type: ' + getCropTypeName(c.type);
   result += '<br/><br/>';
 
-
   if(f.growth < 1) {
     result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
-  } else {
-    if(c.effect_description_long) {
-      result += '<br/>Effect: ' + c.effect_description_long + '<br/>';
-    } else if(c.effect_description_short) {
-      result += '<br/>Effect: ' + c.effect_description_short + '<br/>';
-    }
+    result += '<br/><br/>';
+  }
 
+  if(c.effect_description_long) {
+    result += 'Effect: ' + c.effect_description_long + '<br/>';
+  } else if(c.effect_description_short) {
+    result += 'Effect: ' + c.effect_description_short + '<br/>';
+  }
+
+
+  if(f.growth >= 1) {
     var prod = c.getProd(f);
     if(!prod.empty()) {
       result += 'Production per second: ' + prod.toString() + '<br/>';

@@ -26,7 +26,7 @@ var version = 4096*1+44;
 // sub-version: if non-0, adds 'b', 'c'. ... to the version name.
 // Should not affect savegame format. No changelog entry needed.
 // Cosmetic changes only. Version name including this part is appended to CSS URL query part to ensure no stale cached CSS file is used.
-var version_sub = 0;
+var version_sub = 1;
 
 function formatVersion() {
   var a = '' + ((version >> 12) / 10.0);

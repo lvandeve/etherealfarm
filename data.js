@@ -955,9 +955,9 @@ var berry_14 = registerBerry('whitecurrant', 14, berryplanttime0 * 60, whitecurr
 // mushrooms: give spores
 crop_register_id = 50;
 var mush_0 = registerMushroom('champignon', 0, mushplanttime0 * 1, champignon);
-var mush_1 = registerMushroom('morel', 1, mushplanttime0 * 3, morel);
-var mush_2 = registerMushroom('matsutake', 2, mushplanttime0 * 6, matsutake);
-var mush_3 = registerMushroom('amanita', 3, mushplanttime0 * 9, amanita); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
+var mush_1 = registerMushroom('matsutake', 1, mushplanttime0 * 3, matsutake);
+var mush_2 = registerMushroom('morel', 2, mushplanttime0 * 6, morel);
+var mush_3 = registerMushroom('muscaria', 3, mushplanttime0 * 9, amanita, 'amanita muscaria'); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
 var mush_4 = registerMushroom('portobello', 4, mushplanttime0 * 12, portobello);
 var mush_5 = registerMushroom('shiitake', 5, mushplanttime0 * 15, shiitake);
 var mush_6 = registerMushroom('truffle', 6, mushplanttime0 * 18, truffle);
