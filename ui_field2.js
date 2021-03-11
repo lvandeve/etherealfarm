@@ -118,10 +118,10 @@ function makeField2Dialog(x, y) {
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'see unlocked crops';
-    registerTooltip(button1, 'Show the crop dialog with unlocked ethereal plants.');
+    button1.textEl.innerText = 'Replace crop';
+    registerTooltip(button1, 'Replace the crop with a new one, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
     addButtonAction(button1, function() {
-      makePlantDialog2(x, y, true);
+      makePlantDialog2(x, y, true, c.getRecoup());
     });
 
     updatedialogfun = bind(function(f, c, flex) {
@@ -272,13 +272,27 @@ function initField2UI() {
             makeField2Dialog(x, y);
           }
         } else if(f.hasCrop()) {
-          if(e.shiftKey) {
+          var shift = e.shiftKey;
+          var ctrl = eventHasCtrlKey(e);
+          if(shift && !ctrl && state.allowshiftdelete) {
+            var c = crops2[state.lastPlanted2];
+            var c2 = f.getCrop();
+            if(c2.index == state.lastPlanted2 && !f.isFullGrown()) {
+              // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+              // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+              // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+              actions.push({type:ACTION_DELETE2, x:x, y:y});
+            } else {
+              actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c, shiftPlanted:true});
+            }
+            update();
+          } else if(ctrl && !shift) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];
               actions.push({type:ACTION_DELETE2, x:x, y:y});
               update();
             } else {
-              showMessage('shift+click to delete must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
+              showMessage('ctrl+click to delete must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
             }
           } else {
             makeField2Dialog(x, y);

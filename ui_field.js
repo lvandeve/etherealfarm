@@ -80,7 +80,7 @@ function getCropInfoHTMLBreakdown(f, c) {
 function getCropInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
   result += '<br/>';
-  result += 'Crop type: ' + getCropTypeName(c.type);
+  result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
   var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
   if(help) {
     result += '<br/>' + help;
@@ -115,8 +115,10 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += '<br/>';
     var expected_prod = c.getProd(f, true);
     var expected_boost = c.getBoost(f);
+    var expected_boostboost = c.getBoostBoost(f);
     if(!expected_prod.empty()) result += 'Expected production/sec: ' +expected_prod.toString();
     if(expected_boost.neqr(0)) result += 'Expected boost: ' + expected_boost.toPercentString();
+    if(expected_boostboost.neqr(0)) result += 'Expected boost: ' + expected_boostboost.toPercentString();
     result += '<br/><br/>';
   } else {
     if(c.type == CROPTYPE_SHORT) {
@@ -512,9 +514,9 @@ function makeFieldDialog(x, y) {
 
     styleButton(button2);
     button2.textEl.innerText = 'Replace crop';
-    registerTooltip(button2, 'Replace the crop with a new one, sane as delete then plant. Shows the list of unlocked crops.');
+    registerTooltip(button2, 'Replace the crop with a new one, same as delete then plant. Shows the list of unlocked crops.');
     addButtonAction(button2, function() {
-      makePlantDialog(x, y, true);
+      makePlantDialog(x, y, true, c.getRecoup());
     });
 
     updatedialogfun = bind(function(f, c, flex) {
@@ -635,7 +637,9 @@ function initFieldUI() {
         if(!fern && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
             makeFieldDialog(x, y);
         } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
-          if(e.shiftKey) {
+          var shift = e.shiftKey;
+          var ctrl = eventHasCtrlKey(e);
+          if(shift && !ctrl) {
             if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
               actions.push({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
@@ -643,20 +647,33 @@ function initFieldUI() {
             } else {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
-          } else if(eventHasCtrlKey(e)) {
+          } else if(ctrl && !shift) {
             actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
             update();
           } else if(!fern) {
             makeFieldDialog(x, y);
           }
         } else if(f.hasCrop()) {
-          if(e.shiftKey || (eventHasCtrlKey(e) && f.cropIndex() == short_0)) {
+          var shift = e.shiftKey;
+          var ctrl = eventHasCtrlKey(e);
+          if(shift && !ctrl && state.allowshiftdelete) {
+            var c = crops[state.lastPlanted];
+            var c2 = f.getCrop();
+            if(c2.index == state.lastPlanted && c2.type != CROPTYPE_SHORT && !f.isFullGrown()) {
+              // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+              // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+              // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+              actions.push({type:ACTION_DELETE, x:x, y:y});
+            } else {
+              actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
+            }
+            update();
+          } else if(ctrl && !shift && state.allowshiftdelete) {
             if(state.allowshiftdelete) {
-              var c = crops[state.lastPlanted];
               actions.push({type:ACTION_DELETE, x:x, y:y});
               update();
             } else {
-              showMessage('shift+click to delete must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
+              showMessage('ctrl+click to delete must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
             }
           } else if(!fern) {
             makeFieldDialog(x, y);

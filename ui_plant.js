@@ -19,7 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ui for planting a new plant
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
-function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace) {
+// opt_recoup is the cost you get back when opt_replace is true
+function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup) {
   var f = undefined;
   if(fieldx != undefined && fieldy != undefined) {
     f = state.field[fieldy][fieldx];
@@ -38,6 +39,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   //text +=  '<b>' + (opt_plantfun ? 'plant ' : '') + crop.name + '</b><br>';
   text +=  '<b>' + crop.name + '</b><br>';
   var cost = crop.getCost();
+  if(opt_recoup) cost = cost.sub(opt_recoup);
   if(!opt_plantfun) text += '<b>cost:</b>' + cost.toString() + '<br>';
 
   text += 'type: ' + getCropTypeName(crop.type);
@@ -78,11 +80,13 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
     if(opt_plantfun) registerTooltip(canvasFlex.div, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
   }
 
-  if(opt_plantfun && state.res.lt(crop.getCost())) {
+  if(opt_plantfun && state.res.lt(cost)) {
     buyFlex.div.className = 'efButtonCantAfford';
     registerUpdateListener(function() {
       if(!flex || !document.body.contains(buyFlex.div)) return false;
-      if(state.res.gte(crop.getCost())) {
+      var cost = crop.getCost();
+      if(opt_recoup) cost = cost.sub(opt_recoup);
+      if(state.res.gte(cost)) {
         buyFlex.div.className = 'efButton';
         return false;
       }
@@ -220,7 +224,7 @@ function getCropOrder() {
 }
 
 
-function makePlantDialog(x, y, opt_replace) {
+function makePlantDialog(x, y, opt_replace, opt_recoup) {
 
   var numplants = 0;
   for(var i = 0; i < registered_crops.length; i++) {
@@ -264,7 +268,7 @@ function makePlantDialog(x, y, opt_replace) {
       var result = '';
       var c = crops[index];
 
-      result += 'Crop type: ' + getCropTypeName(c.type);
+      result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
       var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
       if(help) {
         result += '.<br>' + help;
@@ -297,14 +301,9 @@ function makePlantDialog(x, y, opt_replace) {
 
     var plantfun = bind(function(index) {
       state.lastPlanted = index; // for shift key
-      if(opt_replace && state.field[y][x].index == CROPINDEX + index) {
-        showMessage('Already have this crop here', C_INVALID, 0, 0);
-        dialog.cancelFun();
-        return;
-      }
       var c = crops[index];
-      if(opt_replace) actions.push({type:ACTION_DELETE, x:x, y:y, crop:c});
-      actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});
+      if(opt_replace) actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c});
+      else actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});
       dialog.cancelFun();
       closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
@@ -318,7 +317,7 @@ function makePlantDialog(x, y, opt_replace) {
 
 
 
-    var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y, plantfun, showfun, tooltipfun, opt_replace);
+    var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y, plantfun, showfun, tooltipfun, opt_replace, opt_recoup);
     tx++;
     if(tx >= 3) {
       tx = 0;

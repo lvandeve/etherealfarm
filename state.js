@@ -23,7 +23,7 @@ var FIELD_REMAINDER = 3; // remainder debris of temporary plant. Counts as empty
 var FIELD_ROCK = 4; // for challenges with rocks
 
 // field cell
-function Cell(x, y) {
+function Cell(x, y, is_ethereal) {
   // index of crop, but with different numerical values:
   // 0 = empty
   // 1..(CROPINDEX-1): special: 1=tree top, 2=tree bottom, ...
@@ -36,6 +36,8 @@ function Cell(x, y) {
 
   // only used for ethereal field. TODO: make a Cell2 class for ethereal field instead
   this.justplanted = false; // planted during this run (this transcension), so can't be deleted until next one.
+
+  this.is_ethereal = is_ethereal;
 }
 
 Cell.prototype.isFullGrown = function() {
@@ -59,13 +61,8 @@ Cell.prototype.cropIndex = function() {
 // TODO: make a class Cell2 for ethereal field instead
 Cell.prototype.getCrop = function() {
   if(this.index < CROPINDEX) return undefined;
+  if(this.is_ethereal) return crops2[this.index - CROPINDEX];
   return crops[this.index - CROPINDEX];
-};
-
-// for ethereal field. TODO: don't have the distinction this way, have a Cell2 class instead
-Cell.prototype.getCrop2 = function() {
-  if(this.index < CROPINDEX) return undefined;
-  return crops2[this.index - CROPINDEX];
 };
 
 
@@ -492,6 +489,13 @@ function State() {
   // how many challenges are unlocked but never attempted
   // derived stat, not to be saved.
   this.untriedchallenges = 0;
+
+  // highest tier crop of this croptype on the basic field, including growing ones
+  // derived stat, not to be saved.
+  this.highestoftypeplanted = [];
+
+  // higest tier unlocked by research for this croptype
+  this.highestoftypeunlocked = [];
 }
 
 function clearField(state) {
@@ -499,7 +503,7 @@ function clearField(state) {
   for(var y = 0; y < state.numh; y++) {
     state.field[y] = [];
     for(var x = 0; x < state.numw; x++) {
-      state.field[y][x] = new Cell(x, y);
+      state.field[y][x] = new Cell(x, y, false);
     }
   }
   var treex = Math.floor((state.numw - 1) / 2); // for even field size, tree will be shifted to the left, not the right.
@@ -513,7 +517,7 @@ function clearField2(state) {
   for(var y = 0; y < state.numh2; y++) {
     state.field2[y] = [];
     for(var x = 0; x < state.numw2; x++) {
-      state.field2[y][x] = new Cell(x, y);
+      state.field2[y][x] = new Cell(x, y, true);
     }
   }
   var treex2 = Math.floor((state.numw2 - 1) / 2); // for even field size, tree will be shifted to the left, not the right.
@@ -535,7 +539,7 @@ function changeFieldSize(state, w, h) {
     for(var x = 0; x < w; x++) {
       var x2 = x + xs;
       var y2 = y + ys;
-      field[y][x] = (x2 >= 0 && x2 < state.numw && y2 >= 0 && y2 < state.numh) ? state.field[y2][x2] : new Cell(x, y);
+      field[y][x] = (x2 >= 0 && x2 < state.numw && y2 >= 0 && y2 < state.numh) ? state.field[y2][x2] : new Cell(x, y, false);
       field[y][x].x = x;
       field[y][x].y = y;
     }
@@ -561,7 +565,7 @@ function changeField2Size(state, w, h) {
     for(var x = 0; x < w; x++) {
       var x2 = x + xs;
       var y2 = y + ys;
-      field[y][x] = (x2 >= 0 && x2 < state.numw2 && y2 >= 0 && y2 < state.numh2) ? state.field2[y2][x2] : new Cell(x, y);
+      field[y][x] = (x2 >= 0 && x2 < state.numw2 && y2 >= 0 && y2 < state.numh2) ? state.field2[y2][x2] : new Cell(x, y, true);
       field[y][x].x = x;
       field[y][x].y = y;
     }
@@ -624,6 +628,8 @@ function computeDerived(state) {
   state.cropcount = [];
   state.fullgrowncroptypecount = [];
   state.croptypecount = [];
+  state.highestoftypeplanted = [];
+  state.highestoftypeunlocked = [];
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
@@ -634,6 +640,8 @@ function computeDerived(state) {
   for(var i = 0; i < NUM_CROPTYPES; i++) {
     state.fullgrowncroptypecount[i] = 0;
     state.croptypecount[i] = 0;
+    state.highestoftypeplanted[i] = 0;
+    state.highestoftypeunlocked[i] = 0;
   }
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
@@ -647,8 +655,9 @@ function computeDerived(state) {
           state.fullgrowncropcount[c.index]++;
           state.fullgrowncroptypecount[c.type]++;
           state.numfullgrowncropfields++;
-          if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++
+          if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++;
         }
+        state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.numemptyfields++;
       } else {
@@ -707,6 +716,10 @@ function computeDerived(state) {
       if(!u2.isExhausted()) {
         state.upgrades_upgradable++; // same as u2.canUpgrade()
         if(u2.getCost().le(state.res)) state.upgrades_affordable++;
+      }
+      if(u2.count && u.iscropunlock && u.cropid != undefined) {
+        var c = crops[u.cropid];
+        state.highestoftypeunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypeunlocked[c.type]);
       }
     }
   }
@@ -849,12 +862,12 @@ function Fruit() {
     return tierNames[this.tier] + ' ' + this.typeName();
   };
 
-  this.abilitiesToString = function(opt_abbreviated) {
+  this.abilitiesToString = function(opt_abbreviated, opt_nolevels) {
     var result = '';
     for(var i = 0; i < this.abilities.length; i++) {
       if(i > 0) result += ', ';
       result += getFruitAbilityName(this.abilities[i], opt_abbreviated);
-      if(!isInherentAbility(this.abilities[i])) result += ' ' + util.toRoman(this.levels[i]);
+      if(!opt_nolevels && !isInherentAbility(this.abilities[i])) result += ' ' + util.toRoman(this.levels[i]);
     }
     return result;
   };

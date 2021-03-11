@@ -33,7 +33,7 @@ var watercressbutton = undefined;
 // just like how the numbers are defined in data: duration is the running time, wait is the cooldown time plus the running time (total cycle time)
 function formatAbilityDurationTooltipText(name, description, duration, wait) {
   var cooldown = wait - duration;
-  return name + ': ' + description + '<br><br>' + 'Running time: ' + util.formatDuration(duration) + '<br>Cooldown time: ' + util.formatDuration(cooldown) + '<br>Total cycle: ' + util.formatDuration(wait);
+  return name + ': ' + description + '<br>' + 'Run time: ' + util.formatDuration(duration) + '. Cooldown time: ' + util.formatDuration(cooldown);
 }
 
 

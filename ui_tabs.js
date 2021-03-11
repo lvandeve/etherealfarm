@@ -33,6 +33,15 @@ var automatonButtonLastText = '';
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
 
+  if(state.currentTab == tabindex_medals && state.currentTab != i && state.medals_new) {
+    // when leaving the achievements tab and there are unseen medals, mark them all as seen now, to not let the player hunt for which
+    // medals to mouseover to remove the red indication
+    for(var j = 0; j < registered_medals.length; j++) {
+      var m2 = state.medals[registered_medals[j]];
+      if(m2.earned) m2.seen = true;
+    }
+  }
+
   if(!opt_temp) state.currentTab = i;
 
   for(var j = 0; j < tabs.length; j++) {

@@ -279,6 +279,11 @@ Crop.prototype.getCost = function(opt_adjust_count) {
   return this.cost.mulr(countfactor);
 };
 
+
+Crop.prototype.getRecoup = function() {
+  return this.getCost(-1).mulr(cropRecoup);
+};
+
 // used for multiple possible aspects, such as production, boost if this is a flower, etc...
 // f is field, similar to in Crop.prototype.getProd
 // result is change in-place and may be either Num or Res. Nothing is returned.
@@ -1051,6 +1056,7 @@ function Upgrade() {
   this.bonus = undefined;
 
   this.iscropupgrade = false; // is a berry/flower/... multiplier or additive upgrade (not an unlock, choice upgrade, ...)
+  this.iscropunlock = false;
 
   // style related, for the upgrade chip in upgrade UI
   this.bgcolor = '#ff0';
@@ -1150,6 +1156,7 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun)
     if(cropid == flower_0) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', C_HELP, 456645);
     if(cropid == mushunlock_0) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', C_HELP, 8932);
     state.crops[crop.index].unlocked = true;
+    state.lastPlanted = crop.index;
   };
 
   var pre = function() {
@@ -1177,6 +1184,7 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun)
   var result = registerUpgrade(name, cost, fun, pre, 1, description, '#dfc', '#0a0', crop.image[4], undefined);
   var u = upgrades[result];
   u.cropid = cropid;
+  u.iscropunlock = true;
 
   u.getCost = function(opt_adjust_count) {
     return cost;
@@ -2180,6 +2188,11 @@ Crop2.prototype.getCost = function(opt_adjust_count) {
   if(this.type == CROPTYPE_SPECIAL) mul = sameTypeCostMultiplier_Special2;
   var countfactor = Math.pow(mul, state.crop2count[this.index] + (opt_adjust_count || 0));
   return this.cost.mulr(countfactor);
+};
+
+
+Crop2.prototype.getRecoup = function() {
+  return this.getCost(-1).mulr(cropRecoup2);
 };
 
 

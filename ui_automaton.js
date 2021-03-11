@@ -290,7 +290,7 @@ function updateAutomatonUI() {
     if(!advanced) {
       texth = 0.1;
       flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
-      flex.div.innerText = 'Complete the next stage of the no-upgrades challenge to unlock more finetuning options for auto-upgrade';
+      flex.div.innerText = 'Start the no-upgrades challenge again and beat its next stage to unlock more finetuning options for auto-upgrade';
       y += texth * 1.2;
     }
 

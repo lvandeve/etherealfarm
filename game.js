@@ -30,16 +30,29 @@ var paused = false;
 
 var savegame_recovery_situation = false; // if true, makes it less likely to autosave, to ensure local storage preserves a valid older save
 
+function saveDailyCycle(e) {
+  if(!window_unloading) {
+    var day_cycle = (Math.floor(util.getTime() / (24 * 3600)) % 3);
+    if(day_cycle == 0) util.setLocalStorage(e, localstorageName_daily1);
+    if(day_cycle == 1) util.setLocalStorage(e, localstorageName_daily2);
+    if(day_cycle == 2) util.setLocalStorage(e, localstorageName_daily3);
+  }
+}
+
 // saves to local storage
 function saveNow(onsuccess) {
   save(state, function(s) {
     util.setLocalStorage(s, localstorageName);
+    saveDailyCycle(s);
     if(onsuccess) onsuccess(s);
   });
 }
 
 function loadFromLocalStorage(onsuccess, onfail) {
   var e = util.getLocalStorage(localstorageName);
+  if(!e) {
+    e = util.getLocalStorage(localstorageName_undo);
+  }
   if(!e) {
     if(onfail) onfail(undefined); // there was no save in local storage
     return;
@@ -56,6 +69,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
       util.setLocalStorage(e, localstorageName_prev_version);
     }
   }
+  saveDailyCycle(e);
   load(e, function(state) {
     initUI();
     update();
@@ -119,6 +133,19 @@ function getRecoverySaves() {
   if(transcend) {
     result.push(['last transcend', transcend]);
   }
+  var day;
+  day = util.getLocalStorage(localstorageName_daily1);
+  if(day) {
+    result.push(['daily cycle A', day]);
+  }
+  day = util.getLocalStorage(localstorageName_daily2);
+  if(day) {
+    result.push(['daily cycle B', day]);
+  }
+  day = util.getLocalStorage(localstorageName_daily3);
+  if(day) {
+    result.push(['daily cycle C', day]);
+  }
   var undo = util.getLocalStorage(localstorageName_undo);
   if(undo) {
     result.push(['last save for undo feature', undo]);
@@ -148,6 +175,9 @@ function hardReset() {
   util.clearLocalStorage(localstorageName_undo);
   util.clearLocalStorage(localstorageName_manual);
   util.clearLocalStorage(localstorageName_transcend);
+  util.clearLocalStorage(localstorageName_daily1);
+  util.clearLocalStorage(localstorageName_daily2);
+  util.clearLocalStorage(localstorageName_daily3);
   postload(createInitialState());
 
   undoSave = '';
@@ -311,6 +341,29 @@ function softReset(opt_challenge) {
   state.time = util.getTime();
   state.prevtime = state.time;
 
+
+  state.res.resin.addInPlace(resin);
+  state.g_res.resin.addInPlace(resin);
+  state.c_res.resin.addInPlace(resin);
+  state.g_resin_from_transcends.addInPlace(resin);
+  state.resin = Num(0); // future resin from next tree
+
+
+  state.res.twigs.addInPlace(twigs);
+  state.g_res.twigs.addInPlace(twigs);
+  state.c_res.twigs.addInPlace(twigs);
+  state.twigs = Num(0);
+
+  // fruits
+  if(do_fruit) {
+    state.res.addInPlace(essence);
+    state.g_res.addInPlace(essence);
+    state.c_res.addInPlace(essence);
+    state.fruit_sacr = [];
+    state.fruit_seen = true; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
+  }
+
+
   if(state.treelevel > 0) {
     var addStat = function(array, stat) {
       array.push(stat);
@@ -333,6 +386,7 @@ function softReset(opt_challenge) {
     state.p_starttime = state.c_starttime;
     state.p_runtime = state.c_runtime;
     state.p_numticks = state.c_numticks;
+    // NOTE: state.c_res records resin/twigs/essense from *start* of the run so actually that from the previous run, and so state.p_res will have it from 2 runs ago.
     state.p_res = state.c_res;
     state.p_max_res = state.c_max_res;
     state.p_max_prod = state.c_max_prod;
@@ -404,7 +458,7 @@ function softReset(opt_challenge) {
   }
 
   state.lastPlanted = -1;
-  state.lastPlanted2 = -1;
+  //state.lastPlanted2 = -1;
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
@@ -414,27 +468,6 @@ function softReset(opt_challenge) {
   state.res.addInPlace(starterResources);
   state.g_res.addInPlace(starterResources);
   state.c_res.addInPlace(starterResources);
-
-  state.res.resin.addInPlace(resin);
-  state.g_res.resin.addInPlace(resin);
-  state.c_res.resin.addInPlace(resin);
-  state.g_resin_from_transcends.addInPlace(resin);
-  state.resin = Num(0); // future resin from next tree
-
-
-  state.res.twigs.addInPlace(twigs);
-  state.g_res.twigs.addInPlace(twigs);
-  state.c_res.twigs.addInPlace(twigs);
-  state.twigs = Num(0);
-
-  // fruits
-  if(do_fruit) {
-    state.res.addInPlace(essence);
-    state.g_res.addInPlace(essence);
-    state.c_res.addInPlace(essence);
-    state.fruit_sacr = [];
-    state.fruit_seen = true; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
-  }
 
   // fix the accidental grow time ethereal upgrade that accidentally gave 7x7 field due to debug code in version 0.1.11
   // TODO: update this code to match next such upgrades this code once a 7x7 upgrade exists!
@@ -517,9 +550,11 @@ var action_index = 0;
 var ACTION_FERN = action_index++;
 var ACTION_PLANT = action_index++;
 var ACTION_DELETE = action_index++; //un-plant
+var ACTION_REPLACE = action_index++; //same as delete+plant, in one go (prevents hving situation where plant gets deleted but then not having enough resources to plant the other one)
 var ACTION_UPGRADE = action_index++;
 var ACTION_PLANT2 = action_index++;
 var ACTION_DELETE2 = action_index++;
+var ACTION_REPLACE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++;
 var ACTION_TRANCSEND = action_index++; // also includes starting a challenge
@@ -1261,6 +1296,8 @@ function computeAutoUpgrades() {
     if(u.maxcount != 0 && u2.count >= u.maxcount) continue;
     if(u.cropid == undefined) continue
     if(!state.fullgrowncropcount[u.cropid]) continue; // only do fullgrown crops, don't already start spending money on upgrades that have no effect on non-fullgrown crops
+    // TODO: highestoftypeplanted or highestoftypeunlocked? Maybe should be an option, both have pros and cons. a con of using highestoftypeunlocked is that then no progress is made on the field if the game is left to run alone for a long time but the highest plant is not planted yet
+    if(crops[u.cropid].tier < state.highestoftypeplanted[crops[u.cropid].type]) continue; // don't upgrade lower types anymore once a higher type of berry/mushroom/... is on the field
 
     auto_upgrades.push(registered_upgrades[i]);
   }
@@ -1583,26 +1620,96 @@ var update = function(opt_fromTick) {
           state.g_numupgrades2++;
         }
         upgrades2_done = true;
-      } else if(type == ACTION_PLANT) {
+      } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
+        // These 3 actions are handled together here, to be able to implement replace:
+        // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field[action.y][action.x];
-        var c = action.crop;
-        var cost = c.getCost();
-        if(f.hasCrop()) {
-          showMessage('field already has crop', C_INVALID, 0, 0);
-        } else if(f.index != 0 && f.index != FIELD_REMAINDER) {
-          showMessage('field already has something', C_INVALID, 0, 0);
-        } else if(!state.crops[c.index].unlocked) {
-          if(action.shiftPlanted) {
-            state.lastPlanted = -1;
-            showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+
+        var recoup = undefined;
+
+        if(type == ACTION_DELETE || type == ACTION_REPLACE) {
+          if(f.hasCrop()) {
+            var c = f.getCrop();
+            recoup = c.getRecoup();
+            if(f.growth < 1 && c.type != CROPTYPE_SHORT) recoup = c.getCost(-1);
+          } else {
+            recoup = Res();
           }
-        } else if(state.res.lt(cost)) {
-          showMessage('not enough resources to plant ' + c.name +
-                      ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
-                      ', need ' + cost.toString() +
-                      ' (' + getCostAffordTimer(cost) + ')',
-                      C_INVALID, 0, 0);
-        } else {
+        }
+
+        var ok = true;
+
+        if(ok && type == ACTION_REPLACE) {
+          if(action.crop && f.index == CROPINDEX + action.crop.index) {
+            showMessage('Already have this crop here', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
+          if(state.challenge == challenge_nodelete && f.index != CROPINDEX + short_0 && f.growth >= 1) {
+            showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
+          var c = action.crop;
+          var cost = c.getCost();
+          if(type == ACTION_REPLACE && f.hasCrop()) cost = cost.sub(recoup);
+          if(type != ACTION_REPLACE && f.hasCrop()) {
+            showMessage('field already has crop', C_INVALID, 0, 0);
+            ok = false;
+          } else if(f.index != 0 && f.index != FIELD_REMAINDER && !f.hasCrop()) {
+            showMessage('field already has something', C_INVALID, 0, 0);
+            ok = false;
+          } else if(!state.crops[c.index].unlocked) {
+            if(action.shiftPlanted) {
+              state.lastPlanted = -1;
+              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+            }
+            ok = false;
+          } else if(state.res.lt(cost)) {
+            showMessage('not enough resources to plant ' + c.name +
+                        ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
+                        ', need ' + cost.toString() +
+                        ' (' + getCostAffordTimer(cost) + ')',
+                        C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
+          if(f.hasCrop()) {
+            var c = f.getCrop();
+            if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+              if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
+              state.g_numplanted--;
+              state.c_numplanted--;
+            } else {
+              state.g_numunplanted++;
+              state.c_numunplanted++;
+            }
+            f.index = 0;
+            f.growth = 0;
+            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
+            if(c.type == CROPTYPE_SHORT) {
+              if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
+            } else {
+              state.res.addInPlace(recoup);
+              if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
+            }
+            store_undo = true;
+          } else if(f.index == FIELD_REMAINDER) {
+            f.index = 0;
+            f.growth = 0;
+            if(!action.silent) showMessage('cleared watercress remainder');
+          }
+        }
+
+        if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
+          var c = action.crop;
+          var cost = c.getCost();
           if(c.type == CROPTYPE_SHORT) {
             state.g_numplantedshort++;
             state.c_numplantedshort++;
@@ -1619,25 +1726,106 @@ var update = function(opt_fromTick) {
           var nextcost = c.getCost(0);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
         }
-      } else if(type == ACTION_PLANT2) {
+      } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
+        // These 3 actions are handled together here, to be able to implement replace:
+        // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field2[action.y][action.x];
-        var c = action.crop;
-        var cost = c.getCost();
-        if(f.hasCrop()) {
-          showMessage('field already has crop', C_INVALID, 0, 0);
-        } else if(f.index != 0) {
-          showMessage('field already has something', C_INVALID, 0, 0);
-        } else if(!state.crops2[c.index].unlocked) {
-          if(action.shiftPlanted) {
-            state.lastPlanted2 = -1;
-            showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+
+        var recoup = undefined;
+
+        var freedelete = (f.index == CROPINDEX + automaton2_0);
+
+        if(type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
+          if(f.hasCrop()) {
+            var c = f.getCrop();
+            recoup = c.getRecoup();
+            if(freedelete || f.growth < 1) recoup = c.getCost(-1);
+          } else {
+            recoup = Res();
           }
-        } else if(state.res.lt(cost)) {
-          showMessage('not enough resources to plant ' + c.name + ': have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
-                      ', need: ' + cost.toString(), C_INVALID, 0, 0);
-        } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
-          showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
-        } else {
+        }
+
+        var ok = true;
+
+        if(ok && type == ACTION_REPLACE2) {
+          if(action.crop && f.index == CROPINDEX + action.crop.index) {
+            showMessage('Already have this crop here', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE2 || type == ACTION_REPLACE2)) {
+          var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
+          if(f.cropIndex() == special2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_0));
+          if(f.cropIndex() == special2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_1));
+          if(!freedelete && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
+            showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
+            ok = false;
+          } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
+            // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
+            showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
+            ok = false;
+          } else if(f.cropIndex() == special2_0 && state.res.lt(remstarter)) {
+            showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_PLANT2 || type == ACTION_REPLACE2)) {
+          var c = action.crop;
+          var cost = c.getCost();
+          if(type == ACTION_REPLACE2 && f.hasCrop()) cost = cost.sub(recoup);
+          if(type != ACTION_REPLACE2 && f.hasCrop()) {
+            showMessage('field already has crop', C_INVALID, 0, 0);
+            ok = false;
+          } else if(f.index != 0 && !f.hasCrop()) {
+            showMessage('field already has something', C_INVALID, 0, 0);
+            ok = false;
+          } else if(!state.crops2[c.index].unlocked) {
+            if(action.shiftPlanted) {
+              state.lastPlanted2 = -1;
+              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+            }
+            ok = false;
+          } else if(state.res.lt(cost)) {
+            showMessage('not enough resources to plant ' + c.name + ': have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
+                        ', need: ' + cost.toString(), C_INVALID, 0, 0);
+            ok = false;
+          } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
+            showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE2 || type == ACTION_REPLACE2)) {
+          var c = crops2[f.cropIndex()];
+          if(f.cropIndex() == special2_0) {
+            state.res.subInPlace(remstarter);
+            state.g_res.subInPlace(remstarter);
+            state.c_res.subInPlace(remstarter);
+          }
+          if(freedelete) {
+            showMessage('this crop is free to delete, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
+            state.g_numplanted2--;
+          } else if(f.growth < 1) {
+            showMessage('plant was still growing, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
+            state.g_numplanted2--;
+          } else {
+            state.g_numunplanted2++;
+            if(state.delete2tokens > 0) state.delete2tokens--;
+            showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
+          }
+          f.index = 0;
+          f.growth = 0;
+          computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
+          state.res.addInPlace(recoup);
+
+          store_undo = true;
+        }
+
+        if(ok && (type == ACTION_PLANT2 || type == ACTION_REPLACE2)) {
+          var c = action.crop;
+          var cost = c.getCost();
           showMessage('planted ethereal ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
           state.res.subInPlace(cost);
@@ -1665,81 +1853,6 @@ var update = function(opt_fromTick) {
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
-      } else if(type == ACTION_DELETE) {
-        var f = state.field[action.y][action.x];
-        if(state.challenge == challenge_nodelete && f.index != CROPINDEX + short_0 && f.growth >= 1) {
-          showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
-        } else {
-          if(f.hasCrop()) {
-            var c = f.getCrop();
-            var recoup = c.getCost(-1).mulr(cropRecoup);
-            if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
-              recoup = c.getCost(-1);
-              if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
-              state.g_numplanted--;
-              state.c_numplanted--;
-            } else {
-              state.g_numunplanted++;
-              state.c_numunplanted++;
-            }
-            f.index = 0;
-            f.growth = 0;
-            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
-            if(c.type == CROPTYPE_SHORT) {
-              if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
-            } else {
-              state.res.addInPlace(recoup);
-              if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
-            }
-            store_undo = true;
-          } else if(f.index == FIELD_REMAINDER) {
-            f.index = 0;
-            f.growth = 0;
-            if(!action.silent) showMessage('cleared watercress remainder');
-          }
-        }
-      } else if(type == ACTION_DELETE2) {
-        var f = state.field2[action.y][action.x];
-        var freedelete = (f.index == CROPINDEX + automaton2_0);
-
-        var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
-        if(f.cropIndex() == special2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_0));
-        if(f.cropIndex() == special2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_1));
-        if(!freedelete && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
-          showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
-        } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
-          // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
-          showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
-        } else if(f.cropIndex() == special2_0 && state.res.lt(remstarter)) {
-          showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', C_INVALID, 0, 0);
-        } else if(f.hasCrop()) {
-          var c = crops2[f.cropIndex()];
-          var recoup = c.getCost(-1).mulr(cropRecoup2);
-          if(f.cropIndex() == special2_0) {
-            state.res.subInPlace(remstarter);
-            state.g_res.subInPlace(remstarter);
-            state.c_res.subInPlace(remstarter);
-          }
-          if(freedelete) {
-            recoup = c.getCost(-1);
-            showMessage('this crop is free to delete, resin refunded and no delete token used', C_UNDO, 1624770609);
-            state.g_numplanted2--;
-          } else if(f.growth < 1) {
-            recoup = c.getCost(-1);
-            showMessage('plant was still growing, resin refunded and no delete token used', C_UNDO, 1624770609);
-            state.g_numplanted2--;
-          } else {
-            state.g_numunplanted2++;
-            if(state.delete2tokens > 0) state.delete2tokens--;
-            showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
-          }
-          f.index = 0;
-          f.growth = 0;
-          computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
-          state.res.addInPlace(recoup);
-
-          store_undo = true;
-        }
       } else if(type == ACTION_FERN) {
         if(state.fern && state.fernx == action.x && state.ferny == action.y) {
           state.g_numferns++;
@@ -1758,8 +1871,8 @@ var update = function(opt_fromTick) {
           if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
             showMessage('You have enough resources to plant. Click an empty field to plant', C_HELP, 64721);
           }
-          // do not store undo on fern: it's not a destructive action, and may cause an actual destructive action one wanted to undo to be overwritten by this fern action
-          //store_undo = true;
+          // store undo for fern too, because resources from fern can trigger auto-upgrades
+          store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
         var a = action.ability;
@@ -2336,7 +2449,6 @@ var update = function(opt_fromTick) {
 // the "shift+plant" chip at the bottom
 var shiftCropFlex = undefined;
 var shiftCropFlexId;
-var shiftCropFlexShift;
 var shiftCropFlexX = -1;
 var shiftCropFlexY = -1;
 var shiftCropFlexShowing;
@@ -2350,33 +2462,39 @@ function removeShiftCropChip() {
   shiftCropFlex = undefined;
 }
 
-// not shift means ctrl
-function showShiftCropChip(crop_id, shift) {
+function showShiftCropChip(crop_id) {
   removeShiftCropChip();
+  var shift = cropChipShiftDown;
+  var ctrl = cropChipCtrlDown;
+  if(!shift && !ctrl) return;
+  if(shift && ctrl) return; // both combined currently does nothing
+
   var c = crop_id >= 0 ? crops[crop_id] : undefined;
 
   shiftCropFlexShowing = true; // even when invisible due to not mouse over relevant field tile
 
   shiftCropFlexId = crop_id;
-  shiftCropFlexShift = shift;
 
   var x = shiftCropFlexX;
   var y = shiftCropFlexY;
 
   var f;
-  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(); // fake empty field cell to make it indicate "planting"
+  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, false); // fake empty field cell to make it indicate "planting"
   else f = state.field[y][x];
 
   var planting = f.isEmpty();
-  var deleting = ((f.hasCrop() && shift) || (f.index == CROPINDEX + short_0)) && state.allowshiftdelete;
+  var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
+  var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
+  if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
 
-  if(!planting && !deleting) return;
+  if(!planting && !deleting && !replacing) return;
 
-  var keyname = shift ? 'Shift' : 'Ctrl';
+  var keyname = (shift ? 'Shift' : 'Ctrl');
+  var verb = planting ? 'planting' : (deleting ? 'deleting' : 'replacing');
 
 
   shiftCropFlex = new Flex(gameFlex, 0.25, 0.85, 0.75, 0.95, 0.5);
-  shiftCropFlex.div.style.backgroundColor = planting ? '#dfd' : '#fdd';
+  shiftCropFlex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCropFlex.div.style.zIndex = 100; // above medal chip
 
   var textFlex = new Flex(shiftCropFlex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35]);
@@ -2386,15 +2504,15 @@ function showShiftCropChip(crop_id, shift) {
 
   if(deleting) {
     var recoup = f.getCrop().getCost(-1).mulr(cropRecoup);
-    textFlex.div.textEl.innerHTML = keyname + '+deleting' + '<br><br>recoup: ' + recoup.toString();
+    textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
       var canvasFlex = new Flex(shiftCropFlex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(c.image[4], canvas);
-      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + upper(c.name);
+      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + upper(c.name);
     } else {
-      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + 'none set';
+      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + 'none set';
     }
   }
 
@@ -2404,7 +2522,7 @@ function showShiftCropChip(crop_id, shift) {
 function updateFieldMouseOver(x, y) {
   shiftCropFlexX = x;
   shiftCropFlexY = y;
-  if(shiftCropFlexShowing) showShiftCropChip(shiftCropFlexId, shiftCropFlexShift);
+  if(shiftCropFlexShowing) showShiftCropChip(shiftCropFlexId);
 }
 
 function updateFieldMouseOut(x, y) {
@@ -2435,8 +2553,11 @@ function removeShiftCrop2Chip() {
   shiftCrop2Flex = undefined;
 }
 
-// not shift means ctrl
 function showShiftCrop2Chip(crop_id) {
+  var shift = cropChipShiftDown;
+  var ctrl = cropChipCtrlDown;
+  if(!shift && !ctrl) return;
+  if(shift && ctrl) return;
   removeShiftCrop2Chip();
   var c = crop_id >= 0 ? crops2[crop_id] : undefined;
 
@@ -2448,19 +2569,24 @@ function showShiftCrop2Chip(crop_id) {
   var y = shiftCrop2FlexY;
 
   var f;
-  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(); // fake empty field cell to make it indicate "planting"
+  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, true); // fake empty field cell to make it indicate "planting"
   else f = state.field2[y][x];
 
   var planting = f.isEmpty();
-  var deleting = f.hasCrop() && state.allowshiftdelete;
+  var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
+  var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
+  if(replacing && f.getCrop().index == state.lastPlanted2) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
 
-  if(!planting && !deleting) return;
+  if(!planting && !deleting && !replacing) return;
 
-  var keyname = 'Shift';
+
+
+  var keyname = (shift ? 'Shift' : 'Ctrl');
+  var verb = planting ? 'planting' : (deleting ? 'deleting' : 'replacing');
 
 
   shiftCrop2Flex = new Flex(gameFlex, 0.25, 0.85, 0.75, 0.95, 0.5);
-  shiftCrop2Flex.div.style.backgroundColor = planting ? '#dfd' : '#fdd';
+  shiftCrop2Flex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCrop2Flex.div.style.zIndex = 100; // above medal chip
 
   var textFlex = new Flex(shiftCrop2Flex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35]);
@@ -2470,16 +2596,16 @@ function showShiftCrop2Chip(crop_id) {
 
   if(deleting) {
 
-    var recoup = f.getCrop2().getCost(-1).mulr(cropRecoup2);
-    textFlex.div.textEl.innerHTML = keyname + '+deleting' + '<br><br>recoup: ' + recoup.toString();
+    var recoup = f.getCrop().getCost(-1).mulr(cropRecoup2);
+    textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
       var canvasFlex = new Flex(shiftCrop2Flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(c.image[4], canvas);
-      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + upper(c.name);
+      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + upper(c.name);
     } else {
-      textFlex.div.textEl.innerHTML = keyname + '+planting' + '<br><br>' + 'none set';
+      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + 'none set';
     }
   }
 
@@ -2500,32 +2626,49 @@ function updateField2MouseClick(x, y) {
   updateField2MouseOver(x, y);
 }
 
+var cropChipShiftDown = false;
+var cropChipCtrlDown = false;
+
+function showCropChips() {
+  // Show plant that will be planted when holding down shift or ctrl or cmd, but
+  // only if in the field tab and no dialogs are visible
+  if(state.currentTab == tabindex_field && dialog_level == 0) {
+    var plant = cropChipShiftDown ? state.lastPlanted : short_0;
+    showShiftCropChip(plant);
+  }
+  if(state.currentTab == tabindex_field2 && dialog_level == 0) {
+    var plant = state.lastPlanted2;
+    showShiftCrop2Chip(plant);
+  }
+}
 
 // some keys here are not related to abilities, this function handles all global keys for now
 document.addEventListener('keydown', function(e) {
   if(e.key == 'Shift' || e.key == 'Control' || e.key == 'Meta') {
-    var shift = (e.key == 'Shift');
-
-    // Show plant that will be planted when holding down shift or ctrl or cmd, but
-    // only if in the field tab and no dialogs are visible
-    if(state.currentTab == tabindex_field && dialog_level == 0) {
-      var plant = shift ? state.lastPlanted : short_0;
-      showShiftCropChip(plant, shift);
-    }
-    if(state.currentTab == tabindex_field2 && dialog_level == 0 && shift) {
-      var plant = state.lastPlanted2;
-      showShiftCrop2Chip(plant, shift);
-    }
+    if(e.key == 'Shift') cropChipShiftDown = true;
+    if(e.key == 'Control' || e.key == 'Meta') cropChipCtrlDown = true;
+    showCropChips();
   }
 });
 
 document.addEventListener('keyup', function(e) {
-  removeShiftCropChip();
-  removeShiftCrop2Chip();
+  if(e.key == 'Shift' || e.key == 'Control' || e.key == 'Meta') {
+    if(e.key == 'Shift') cropChipShiftDown = false;
+    if(e.key == 'Control' || e.key == 'Meta') cropChipCtrlDown = false;
+    if(!cropChipShiftDown && !cropChipCtrlDown) {
+      removeShiftCropChip();
+      removeShiftCrop2Chip();
+    } else {
+      showCropChips();
+    }
+  }
 });
 
 // if keyup happens outside of window, ctrl or shift up are not detected, reset the chips then too to avoid leftover chips while shift or ctrl are not down (e.g. when using some ctrl shortcut that goes to another window in the OS)
 window.addEventListener('blur', function(e) {
+  cropChipShiftDown = false;
+  cropChipCtrlDown = false;
+
   removeShiftCropChip();
   removeShiftCrop2Chip();
 });

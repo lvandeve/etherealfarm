@@ -300,11 +300,13 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
   text += '<br/>';
-  text += ' • <b>shift + click empty field</b>: plant last planted type.';
-  text += '<br/>';
-  text += ' • <b>shift + click non-empty field</b>: delete plant, only if this is enabled in preferences.';
+  text += ' • <b>shift + click empty field</b>: plant last planted or unlocked crop type.';
   text += '<br/>';
   text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key).';
+  text += '<br/>';
+  text += ' • <b>ctrl + click non-empty field</b>: delete crop, only if this is enabled in preferences.';
+  text += '<br/>';
+  text += ' • <b>shift + click non-empty field</b>: replace crop, only if this is enabled in preferences.';
   text += '<br/>';
   text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford.';
   text += '<br/>';
@@ -411,6 +413,11 @@ function createHelpDialog() {
     button = makeButton('Fruit help');
     addButtonAction(button, createFruitHelp);
   }
+
+  button = makeButton('Recovery saves');
+  addButtonAction(button, function(e) {
+    showSavegameRecoveryDialog()
+  });
 
   addSpacer();
 

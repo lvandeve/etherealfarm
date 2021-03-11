@@ -88,7 +88,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
         if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
       }
       infoText += '<br>';
-      infoText += 'Type: ' + getCropTypeName(c.type) + '<br>';
+      infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
       // standard as in: none of the field-location boosts are taken into account
       //var cropprod = c.getProd(undefined, true);
       //if(!cropprod.empty()) {

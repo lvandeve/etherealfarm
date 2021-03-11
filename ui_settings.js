@@ -351,9 +351,9 @@ function createAdvancedSettingsDialog() {
   button.id = 'preferences_saveonclose';
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'shift+click deletes plant: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
+  updatebuttontext = function(button) { button.textEl.innerText = 'shift or ctrl click may delete crop: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Allow directly deleting plant without any dialog or confirmation by shift+clicking it on the field. Note that you can also always shift+click empty fields to repeat last planted type (opposite of deleting), that always works regardless of this setting.');
+  registerTooltip(button, 'Allow deleting crop without any dialog or confirmation by ctrl+clicking it on the field, or replacing by shift+clicking it. Note that you can always shift+click empty fields to repeat last planted type (opposite of deleting), regardless of this setting.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.allowshiftdelete = !state.allowshiftdelete;
     updatebuttontext(button);
@@ -417,7 +417,12 @@ function createStatsDialog() {
   if(state.g_numresets > 0 || state.treelevel > 0) text += '• tree level: ' + open + state.treelevel + close + '<br>';
   text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
   text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
-  text += '• total earned: ' + open + state.c_res.toString(true) + close + '<br>';
+  var c_res = Res(state.c_res);
+  var tlevel = Math.floor(state.treelevel / min_transcension_level);
+  c_res.resin.addInPlace(state.resin.mulr(tlevel));
+  c_res.twigs.addInPlace(state.twigs.mulr(tlevel));
+  c_res.essence.addInPlace(getUpcomingFruitEssence().essence);
+  text += '• total earned: ' + open + c_res.toString(true) + close + '<br>';
   text += '• highest resources: ' + open + state.c_max_res.toString(true) + close + '<br>';
   text += '• highest production/s: ' + open + state.c_max_prod.toString(true) + close + '<br>';
   text += '• ferns: ' + open + state.c_numferns + close + '<br>';
@@ -603,7 +608,7 @@ function showSavegameRecoveryDialog(opt_failed_save) {
   if(opt_failed_save) {
     title = '<font color="red"><b>Loading failed</b></font>. Read this carefully to help recover your savegame if you don\'t have backups. Copypaste all the recovery savegame(s) below and save them in a text file. Once they\'re stored safely by you, try some of them in the "import save" dialog under settings. One of them may be recent enough and work. Even if the recovery saves don\'t work now, a future version of the game may fix it. Apologies for this.';
   } else {
-    title = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues.';
+    title = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues. Try importing each of them, hopefully at least one will be good and recent enough.';
   }
 
   var saves = getRecoverySaves();

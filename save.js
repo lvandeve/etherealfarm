@@ -668,7 +668,7 @@ function decState(s) {
   for(var y = 0; y < h; y++) {
     state.field[y] = [];
     for(var x = 0; x < w; x++) {
-      state.field[y][x] = new Cell(x, y);
+      state.field[y][x] = new Cell(x, y, false);
       var f = state.field[y][x];
       f.index = array0[index0++];
       if(f.hasCrop()) {
@@ -697,7 +697,7 @@ function decState(s) {
   for(var y = 0; y < h2; y++) {
     state.field2[y] = [];
     for(var x = 0; x < w2; x++) {
-      state.field2[y][x] = new Cell(x, y);
+      state.field2[y][x] = new Cell(x, y, true);
       var f = state.field2[y][x];
       f.index = array0[index0++];
       if(f.hasCrop()) {
@@ -1247,6 +1247,14 @@ function decState(s) {
     if(state.challenge == challenge_bees && !state.upgrades[shortmul_0].unlocked) {
       state.upgrades[shortmul_0].unlocked = true;
     }
+  }
+
+  // it was accidently storing these resources gotten at start of run from previous run, rather than end of current run.
+  // displaying the ones you actually got from the run itself is more logical
+  if(save_version < 4096*1+45) {
+    state.c_res.resin = Num(0);
+    state.c_res.twigs = Num(0);
+    state.c_res.essence = Num(0);
   }
 
   state.g_numloads++;
