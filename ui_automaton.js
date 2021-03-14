@@ -16,7 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-function showConfigureAutoUpgradesDialog() {
+// planting: if false, is for the auto upgrades, if true is for auto planting
+function showConfigureAutoResourcesDialog(planting) {
   var dialog = createDialog();
   var scrollFlex = dialog.content;
   makeScrollable(scrollFlex);
@@ -26,8 +27,19 @@ function showConfigureAutoUpgradesDialog() {
   var y = 0;
 
   var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0];
-  var typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'challenge'];
-  var order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+
+  var typenames, order;
+  var statefraction;
+
+  if(planting) {
+    typenames = ['berry', 'mushroom', 'flower'];
+    order = [3, 4, 5]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    statefraction = state.automaton_autoplant_fraction;
+  } else {
+    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'challenge'];
+    order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    statefraction = state.automaton_autoupgrade_fraction;
+  }
 
 
   var current;
@@ -36,7 +48,7 @@ function showConfigureAutoUpgradesDialog() {
 
   texth = 0.15;
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07, 0.45);
-  flex.div.innerText = 'Select max resource amount for upgrades of each crop type:';
+  flex.div.innerText = 'Select max resource amount for ' + (planting ? 'planting' : 'upgrades') + ' of each crop type:';
   y += texth;
 
   for(var d = 0; d < typenames.length; d++) {
@@ -51,18 +63,18 @@ function showConfigureAutoUpgradesDialog() {
     var bestdist = 1;
     for(var i = 0; i < fractions.length; i++) {
       names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
-      var dist = Math.abs(fractions[i] - state.automaton_autoupgrade_fraction[d2]);
+      var dist = Math.abs(fractions[i] - statefraction[d2]);
       if(dist < bestdist) {
         current = i;
         bestdist = dist;
       }
     }
     // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
-    state.automaton_autoupgrade_fraction[d2] = fractions[current];
+    statefraction[d2] = fractions[current];
     makeDropdown(flex, typenames[d], current, names, bind(function(d2, i) {
-      state.automaton_autoupgrade_fraction[d2] = fractions[i];
+      statefraction[d2] = fractions[i];
     }, d2));
-    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on this type of autoupgrades');
+    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on this type of ' + (planting ? 'auto-planting' : 'autoupgrades'));
   }
 
   y += h / 2;
@@ -73,10 +85,10 @@ function showConfigureAutoUpgradesDialog() {
   makeDropdown(flex, 'set all to', current, names, function(i) {
     for(var d = 0; d < typenames.length; d++) {
       var d2 = order[d];
-      state.automaton_autoupgrade_fraction[d2] = fractions[i];
+      statefraction[d2] = fractions[i];
     }
     closeTopDialog();
-    showConfigureAutoUpgradesDialog();
+    showConfigureAutoResourcesDialog(planting);
   });
 }
 
@@ -246,7 +258,7 @@ function updateAutomatonUI() {
       centerText2(flex.div);
       flex.div.textEl.innerText = 'Configure...';
       addButtonAction(flex.div, function() {
-        showConfigureAutoUpgradesDialog();
+        showConfigureAutoResourcesDialog(false);
       });
     } else {
       flex = addButton();
@@ -302,5 +314,80 @@ function updateAutomatonUI() {
   }
 
 
+  addHR();
+
   //////////////////////////////////////////////////////////////////////////////
+
+  if(state.automaton_unlocked[2]) {
+    texth = 0.1;
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex.div.innerText = 'Auto-plant:';
+    registerTooltip(flex.div, 'Automatically plants crops. Only replaces existing crops to higher tiers of the same type (e.g. berries stay berries), does not plant anything on empty field cells.');
+    y += texth;
+
+    var updatePlantButton = function(flex) {
+      var div = flex.div.textEl;
+      if(state.automaton_autoplant) {
+        div.innerText = 'Auto-plant on';
+        flex.enabledStyle = 1;
+      } else {
+        div.innerText = 'Auto-plant off';
+        flex.enabledStyle = 0;
+      }
+      setButtonIndicationStyle(flex);
+    };
+
+    flex = addButton();
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    updatePlantButton(flex);
+    addButtonAction(flex.div, bind(function(flex) {
+      state.automaton_autoplant = state.automaton_autoplant ? 0 : 1;
+      updatePlantButton(flex);
+      //update();
+    }, flex));
+
+    var advanced = state.automaton_unlocked[2] >= 2;
+    if(advanced) {
+      flex = addButton();
+      styleButton(flex.div);
+      centerText2(flex.div);
+      flex.div.textEl.innerText = 'Configure...';
+      addButtonAction(flex.div, function() {
+        showConfigureAutoResourcesDialog(true);
+      });
+    } else {
+      flex = addButton();
+      styleButton0(flex.div);
+      centerText2(flex.div);
+      var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
+      var names = [];
+      var current = 0;
+      var bestdist = 1;
+      for(var i = 0; i < fractions.length; i++) {
+        names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
+        var dist = Math.abs(fractions[i] - state.automaton_autoplant_fraction[0]);
+        if(dist < bestdist) {
+          current = i;
+          bestdist = dist;
+        }
+      }
+      // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
+      state.automaton_autoplant_fraction[0] = fractions[current];
+      makeDropdown(flex, 'max cost', current, names, function(i) {
+        state.automaton_autoplant_fraction[0] = fractions[i];
+      });
+      registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on autoplanting');
+    }
+
+  } else if(state.automaton_unlocked[1]) {
+    texth = 0.15;
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    //not yet implemented
+    //flex.div.innerText = 'Reach ethereal tree level 3 and beat the withering-challenge to unlock auto-plant';
+    y += texth;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+
 }

@@ -16,8 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-var rightPanelPrevAutomationEnabled = -1;
-var rightPanelPrevUpgradeAutomationEnabled = -1;
+var rightPanelPrevAutomationState = -1;
 
 function updateRightPane() {
   if(!rightFlex) return;
@@ -32,12 +31,13 @@ function updateRightPane() {
 
   topRightFlex.clear();
 
-  if(upgradeUIUpdated || rightPanelPrevAutomationEnabled != automatonEnabled() || rightPanelPrevUpgradeAutomationEnabled != autoUpgradesEnabled()) {
+  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0);
+
+  if(upgradeUIUpdated || automatonState != rightPanelPrevAutomationState) {
     upgradeUIUpdated = false;
     bottomRightFlex.clear();
 
-    rightPanelPrevAutomationEnabled = automatonEnabled();
-    rightPanelPrevUpgradeAutomationEnabled = autoUpgradesEnabled();
+    rightPanelPrevAutomationState = automatonState;
 
     var unlocked = [];
     for(var i = 0; i < upgrades_order.length; i++) {
@@ -53,23 +53,51 @@ function updateRightPane() {
 
       var chip = new Flex(bottomRightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.65);
       if(i == 0) {
-        centerText2(chip.div);
         var text = 'upgrades';
-        if(automatonEnabled() && state.automaton_unlocked[1]) {
+        if(automatonEnabled() && state.automaton_unlocked[1] && state.automaton_unlocked[2]) {
+          var chip0 = new Flex(chip, 0, 0, 1, 0.5);
+          var chip1 = new Flex(chip, 0, 0.5, 1, 1);
+          addButtonAction(chip0.div, function() {
+            if(!automatonEnabled()) return;
+            state.automaton_autoplant = 1 - state.automaton_autoplant;
+            updateAutomatonUI();
+            updateRightPane();
+          });
+          addButtonAction(chip1.div, function() {
+            if(!automatonEnabled()) return;
+            state.automaton_autoupgrade = 1 - state.automaton_autoupgrade;
+            updateAutomatonUI();
+            updateRightPane();
+          });
+          var text0 = 'plant ' + (autoPlantEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
+          var text1 = 'upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
+          styleButton0(chip0.div);
+          styleButton0(chip1.div);
+          centerText2(chip0.div);
+          centerText2(chip1.div);
+          chip0.div.title = 'quick toggle auto-plant';
+          chip1.div.title = 'quick toggle auto-upgrades';
+          chip0.div.textEl.innerHTML = text0;
+          chip1.div.textEl.innerHTML = text1;
+          setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
+        } else if(automatonEnabled() && state.automaton_unlocked[1]) {
           addButtonAction(chip.div, function() {
             if(!automatonEnabled()) return;
             state.automaton_autoupgrade = 1 - state.automaton_autoupgrade;
-            //updateUpgradeUI();
             updateAutomatonUI();
             updateRightPane();
-            //update();
           });
           text = 'upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
           styleButton0(chip.div);
+          centerText2(chip.div);
           chip.div.title = 'quick toggle auto-upgrades';
+          chip.div.textEl.innerHTML = text;
+          setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
+        } else {
+          centerText2(chip.div);
+          chip.div.textEl.innerHTML = text;
+          setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
         }
-        chip.div.textEl.innerHTML = text;
-        setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
       } else if(i + 1 == maxnum && unlocked.length > maxnum) {
         centerText2(chip.div);
         chip.div.textEl.innerText = 'more in upgrades tab...';

@@ -372,7 +372,7 @@ Num.prototype.sqrtInPlace = function() {
   }
   var e2 = this.e / 2;
   var e = Math.trunc(e2);
-  var f = 2 ** (e2 - e);
+  var f = Math.pow(2, e2 - e);
   var b = Math.sqrt(this.b) * f;
 
   this.b = b;
@@ -392,17 +392,9 @@ Num.sqrt = function(a) { return a.sqrt(); };
 Num.prototype.powrInPlace = function(r) {
   if(this.b < 0 && r != Math.floor(r)) {
     this.b = this.e = NaN;
-    return;
+    return this;
   }
-  var e2 = this.e * r;
-  var e = Math.trunc(e2);
-  var f = 2 ** (e2 - e);
-  var b = Math.pow(this.b, r) * f;
-
-  this.b = b;
-  this.e = e;
-  this.scaleInPlace();
-  return this;
+  return this.powInPlace(Num(r));
 };
 Num.prototype.powr = function(r) {
   var res = Num(this);
@@ -422,7 +414,7 @@ Num.prototype.rpowInPlace = function(r) {
     var e = this.e * (Math.log(r) / log2_ln);
     var e2 = Math.floor(e);
     this.e = e2;
-    var f = 2 ** (e - e2);
+    var f = Math.pow(2, e - e2);
     this.b *= f;
   }
   this.scaleInPlace();
@@ -436,6 +428,13 @@ Num.prototype.rpow = function(r) {
 Num.rpow = function(r, a) { return a.rpow(r); };
 
 // NOTE: Number can have big values but not unlimited, pow can very easily reach the limit. Use this function carefully.
+Num.prototype.powInPlace = function(b) {
+  var r = Num.log(this); // regular JS number
+  var e = Num.exp(b.mulr(r));
+  this.b = e.b;
+  this.e = e.e;
+  return this;
+};
 Num.prototype.pow = function(b) {
   var r = Num.log(this); // regular JS number
   return Num.exp(b.mulr(r));
@@ -556,9 +555,19 @@ Num.near = function(a, b, f) {
   return a.near(b, f);
 };
 
+// Only b indicates NaN or Infinity, but for savety, e is also checked
+Num.prototype.isNaN = function() { return isNaN(this.b) || isNaN(this.e); };
+Num.isNaN = function(a) { return isNaN(a.b) || isNaN(a.e); };
 
-Num.prototype.isNaN = function() { return isNaN(this.b); };
-Num.isNaN = function(a) { return isNaN(a.b); };
+Num.prototype.isInfinity = function() { return this.b == Infinity; };
+Num.isInfinity = function(a) { return a.b == Infinity; };
+
+Num.prototype.isNegInfinity = function() { return this.b == -Infinity; };
+Num.isNegInfinity = function(a) { return a.b == -Infinity; };
+
+// mostly for the result of invalid computations, so also exponent is checked in similar way
+Num.prototype.isNaNOrInfinity = function() { return isNaN(this.b) || isNaN(this.e) || this.b == Infinity || this.e == Infinity || this.b == -Infinity || this.e == -Infinity; };
+Num.isNaNOrInfinity = function(a) { return isNaN(a.b) || isNaN(a.e) || a.b == Infinity || a.e == Infinity || a.b == -Infinity || a.e == -Infinity; };
 
 // return 1-2-5 sequence number with index i (i is regular JS number, 0 corresponds to return value 1)
 // the sequence is 1, 2, 5, 10, 20, 50, 100, 200, 500, etc... [search key: 1,2,5,10,20,50]
@@ -806,14 +815,14 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 
   var e = Math.floor(v.abs().logr(base));
 
-  var b = v.b * (base ** (e_orig - e));
+  var b = v.b * Math.pow(base, e_orig - e);
 
   // the goal (for e.g. base 10) is to bring b in the range [1..10). But actually, range [0.9999..9.999) because 0.999 will round to 1, and 9.999 would round to 10 which we don't want displayed
   // this checks not just b >= base, but also that when rounded to the fixed precision, it'll not display as base
-  if(b + (base ** -precision) >= base) {
+  if(b + Math.pow(base, -precision) >= base) {
     b /= base;
     e++;
-  } else if(b + (base ** (-precision - 1)) < 1) {
+  } else if(b + Math.pow(base, -precision - 1) < 1) {
     b *= base;
     e--;
   }
@@ -881,7 +890,7 @@ Num.notationAbr = function(v, precision, suffixtype) {
   var e = v.e * log2_log10;
   var e2 = v.abs().log10();
   // we take the floor of e2 to determine amount of digits, but due to numerical imprecision, e.g. Num(1000).log10 = 2.9999999999999996. Fix that here.
-  if(e2 > 0) e2 += 10 ** (-e2 - 1);
+  if(e2 > 0) e2 += Math.pow(10, -e2 - 1);
   var b = v.b;
   var result = '';
 
@@ -896,7 +905,7 @@ Num.notationAbr = function(v, precision, suffixtype) {
     ef = 0;
   }
 
-  var f = 10 ** (e - ef);
+  var f = Math.pow(10, e - ef);
   b *= f;
 
   if(e <= 0) {
@@ -912,12 +921,12 @@ Num.notationAbr = function(v, precision, suffixtype) {
     // TODO: very sometimes it can happen that e.g something that should be displayed as e.g. 1mNSg instead becomes 1000mOSg
     // the goal (for e.g. base 10) is to bring b in the range [1..1000). But actually, range [0.9999..999.999) because 0.999 will round to 1, and 999.999 would round to 1000 which we don't want displayed
     // this checks not just b >= base, but also that when rounded to the fixed precision, it'll not display as base
-    if(b + (10 ** (-precision + 2)) >= 1000) {
-      b /= 10 ** 3;
+    if(b + Math.pow(10, -precision + 2) >= 1000) {
+      b /= 1000;
       ef += 3;
       e += 3;
-    } else if(b + (10 ** (-precision - 1)) < 1) {
-      b *= 10 ** 3;
+    } else if(b + Math.pow(10, -precision - 1) < 1) {
+      b *= 1000;
       ef -= 3;
       e -= 3;
     }

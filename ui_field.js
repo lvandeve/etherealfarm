@@ -105,12 +105,16 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
 
   if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
-    if(opt_detailed) {
-      // the detailed dialog is not dynamically updated, so show the total growth time statically instead.
-      result += 'Growing. Total growing time: ' + util.formatDuration(c.getPlantTime());
-      if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+    if(state.challenge == challenge_wither) {
+      result += 'Withering. Time left: ' + util.formatDuration(witherDuration() * f.growth);
     } else {
-      result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
+      if(opt_detailed) {
+        // the detailed dialog is not dynamically updated, so show the total growth time statically instead.
+        result += 'Growing. Total growing time: ' + util.formatDuration(c.getPlantTime());
+        if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+      } else {
+        result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
+      }
     }
     result += '<br/>';
     var expected_prod = c.getProd(f, true);
@@ -449,7 +453,7 @@ function makeTreeDialog() {
   if(state.challenges_unlocked) {
     button = new Flex(f1, 0, 0.62, 0.5, 0.9, 0.8).div;
     styleButton(button);
-    button.textEl.innerText = 'Challenge Stats';
+    button.textEl.innerText = state.challenge ? 'All Challenge Stats' : 'Challenge Stats';
     addButtonAction(button, function() {
       createAllChallengeStatsDialog();
     });
@@ -656,19 +660,23 @@ function initFieldUI() {
         } else if(f.hasCrop()) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(shift && !ctrl && state.allowshiftdelete) {
-            var c = crops[state.lastPlanted];
-            var c2 = f.getCrop();
-            if(c2.index == state.lastPlanted && c2.type != CROPTYPE_SHORT && !f.isFullGrown()) {
-              // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
-              // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
-              // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-              actions.push({type:ACTION_DELETE, x:x, y:y});
+          if(shift && !ctrl) {
+            if(state.allowshiftdelete) {
+              var c = crops[state.lastPlanted];
+              var c2 = f.getCrop();
+              if(c2.index == state.lastPlanted && c2.type != CROPTYPE_SHORT && !f.isFullGrown()) {
+                // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+                // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+                // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+                actions.push({type:ACTION_DELETE, x:x, y:y});
+              } else {
+                actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
+              }
+              update();
             } else {
-              actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
+              showMessage('ctrl+click to delete must be enabled in the settings before replacing crops with shift is allowed', C_INVALID, 0, 0);
             }
-            update();
-          } else if(ctrl && !shift && state.allowshiftdelete) {
+          } else if(ctrl && !shift) {
             if(state.allowshiftdelete) {
               actions.push({type:ACTION_DELETE, x:x, y:y});
               update();
@@ -747,6 +755,7 @@ function updateFieldCellUI(x, y) {
   var fd = fieldDivs[y][x];
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   if(!(growstage >= 0 && growstage <= 4)) growstage = 0;
+  if(state.challenge == challenge_wither && f.hasCrop() && f.getCrop().type != CROPTYPE_SHORT) growstage = 4;
   var season = getSeason();
 
   var progresspixel = -1;

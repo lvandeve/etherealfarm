@@ -44,6 +44,7 @@ Cell.prototype.isFullGrown = function() {
   if(this.index < CROPINDEX) return false; // not relevant for non-crops
   var c = this.getCrop();
   if(c.type == CROPTYPE_SHORT) return this.growth > 0;
+  if(state.challenge == challenge_wither) return this.growth > 0;
   return this.growth >= 1;
 };
 
@@ -119,8 +120,6 @@ function ChallengeState() {
 
 // all the state that should be able to get saved
 function State() {
-  this.timemul = 1; // global total time speed multiplier. TODO: this should NOT be in the state, probably. Try to get this to exist in the debug interface only.
-
   // prevtime is used to know how much time elapsed at next tick, including after loading a savegame
   // everything in the game such work such that no matter if there was 1 tick of 100 seconds, or 100 ticks of 1 second, the result is the same (other than numerical precision possibly), and this too even if many days of duration in between
   // so that saving, and browsers pausing tabs, both have no effect on game
@@ -260,6 +259,7 @@ function State() {
   at each index (value 0 means not yet unlocked):
   0: automation of choice upgrades
   1: automation of crop upgrades (1=basic, 2=more options enabled)
+  2: automation of planting
   */
   this.automaton_unlocked = [];
 
@@ -291,6 +291,18 @@ function State() {
   7: beehive
   */
   this.automaton_autoupgrade_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+
+  /*
+  0: auto plant disabled
+  1: auto plant enabled
+  */
+  this.automaton_autoplant = 0;
+
+  /*
+  fraction of resources automation is allowed to use for auto-plant
+  the indices are the same as for automaton_autoupgrade_fraction, even though some are unused (e.g. watercress)
+  */
+  this.automaton_autoplant_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
 
 
@@ -708,14 +720,14 @@ function computeDerived(state) {
   state.upgrades2_affordable = 0;
 
   for(var i = 0; i < registered_upgrades.length; i++) {
-    var u = state.upgrades[registered_upgrades[i]];
-    var u2 = upgrades[registered_upgrades[i]];
-    if(u.unlocked) {
+    var u = upgrades[registered_upgrades[i]];
+    var u2 = state.upgrades[registered_upgrades[i]];
+    if(u2.unlocked) {
       state.upgrades_unlocked++;
-      if(!u.seen && !u.count) state.upgrades_new++;
-      if(!u2.isExhausted()) {
-        state.upgrades_upgradable++; // same as u2.canUpgrade()
-        if(u2.getCost().le(state.res)) state.upgrades_affordable++;
+      if(!u2.seen && !u2.count) state.upgrades_new++;
+      if(!u.isExhausted()) {
+        state.upgrades_upgradable++; // same as u.canUpgrade()
+        if(u.getCost().le(state.res)) state.upgrades_affordable++;
       }
       if(u2.count && u.iscropunlock && u.cropid != undefined) {
         var c = crops[u.cropid];
@@ -725,14 +737,14 @@ function computeDerived(state) {
   }
 
   for(var i = 0; i < registered_upgrades2.length; i++) {
-    var u = state.upgrades2[registered_upgrades2[i]];
-    var u2 = upgrades2[registered_upgrades2[i]];
-    if(u.unlocked) {
+    var u = upgrades2[registered_upgrades2[i]];
+    var u2 = state.upgrades2[registered_upgrades2[i]];
+    if(u2.unlocked) {
       state.upgrades2_unlocked++;
-      if(!u.seen) state.upgrades2_new++;
-      if(!u2.isExhausted()) {
+      if(!u2.seen) state.upgrades2_new++;
+      if(!u.isExhausted()) {
         state.upgrades2_upgradable++; // same as u2.canUpgrade()
-        if(u2.getCost().le(state.res)) state.upgrades2_affordable++;
+        if(u.getCost().le(state.res)) state.upgrades2_affordable++;
       }
     }
   }
@@ -823,7 +835,7 @@ function computeDerived(state) {
       if(c.fullyCompleted()) state.challenges_completed2++;
       state.challenges_completed3 += c2.completed;
     }
-    if(c2.unlocked && c.num == 0) state.untriedchallenges++;
+    if(c2.unlocked && c2.num == 0) state.untriedchallenges++;
     if(c2.maxlevel > 0) {
       state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevel));
     }
@@ -969,4 +981,10 @@ function autoUpgradesEnabled() {
   if(!automatonEnabled()) return false;
   if(!state.automaton_unlocked[1]) return false;
   return !!state.automaton_autoupgrade;
+}
+
+function autoPlantEnabled() {
+  if(!automatonEnabled()) return false;
+  if(!state.automaton_unlocked[2]) return false;
+  return !!state.automaton_autoplant;
 }

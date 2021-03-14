@@ -274,6 +274,18 @@ Res.prototype.eq = function(b) {
 };
 Res.eq = function(a, b) { return a.eq(b); };
 
+/*
+Beware: ge, le, gt and lt have gotcha's, since ordering rules of single numbers don't apply to multi-valued objects like the resources
+ge is implemented as: all individual resources ge, so means "all resources are greater than or equal"
+le is implemented as: all individual resources le, so means "all resources are lesser than or equal"
+gt is implmemeted as !le, so means "any resource is strictly greater than"
+lt is implmemeted as !ge, so means "any resource is strictly lesser than"
+Reason why lt and gt are different than ge and le: an lt or gt for all (rather than any) resources would almost always return false since there'll always be some irrelevant resource type that's 0 on both sides.
+For cost computations, use the following:
+for can_afford: have.ge(cost) or cost.le(have)
+for cannot_afford: have.lt(cost) or cost.gt(have)
+*/
+
 // greater than or equal for all resources
 Res.prototype.ge = function(b) {
   if(!this.seeds.ge(b.seeds)) return false;
@@ -304,12 +316,14 @@ Res.le = function(a, b) { return a.le(b); };
 
 Res.prototype.neq = function(b) { return !this.eq(b); }
 Res.neq = function(a, b) { return !Res.eq(a, b); }
+
+// strictly greater than for any resource
 Res.prototype.gt = function(b) { return !this.le(b); }
 Res.gt = function(a, b) { return !Res.le(a, b); }
+
+// strictly lesser than for any resource
 Res.prototype.lt = function(b) { return !this.ge(b); }
 Res.lt = function(a, b) { return !Res.ge(a, b); }
-
-
 
 // synonyms
 Res.prototype.lte = Res.prototype.le;
@@ -331,6 +345,15 @@ Res.prototype.empty = function() {
   return true;
 };
 Res.empty = function(a) { return a.empty(); };
+
+Res.prototype.hasNaNOrInfinity = function() {
+  var arr = this.toArray();
+  for(var i = 0; i < arr.length; i++) {
+    if(arr[i].isNaNOrInfinity()) return true;
+  }
+  return false;
+};
+Res.hasNaNOrInfinity = function(a) { return a.hasNaNOrInfinity(); };
 
 // returns whether any resource is negative (any one, must not be all)
 Res.prototype.hasNeg = function() {

@@ -355,7 +355,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   var result = Res(this.prod);
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-  if(!pretend && f && f.growth < 1 && this.type != CROPTYPE_SHORT) {
+  if(!pretend && f && !f.isFullGrown()) {
     return Res();
   }
 
@@ -449,7 +449,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     var num = 0;
 
     var getboost = function(self, n) {
-      if(n.hasCrop() && n.growth >= 1 && n.getCrop().type != CROPTYPE_NETTLE) {
+      if(n.hasCrop() && n.isFullGrown() && n.getCrop().type != CROPTYPE_NETTLE) {
         var boost = n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
           //if(season == 2 || season == 3) {
@@ -489,7 +489,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     var num = 0;
 
     var getboost = function(self, n) {
-      if(n.hasCrop() && n.growth >= 1 && n.getCrop().type == CROPTYPE_NETTLE) {
+      if(n.hasCrop() && n.isFullGrown() && n.getCrop().type == CROPTYPE_NETTLE) {
         var boost = n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
           spore_boost.addInPlace(boost);
@@ -780,10 +780,13 @@ var registered_crops = []; // indexed consecutively, gives the index to crops
 var crops = []; // indexed by crop index
 var cropsByName = {};
 
+// array of arrays, first index is croptype, second index is tier, value is crop of that tier for that cropindex
+var croptype_tiers = [];
+
 // 16-bit ID, auto incremented with registerCrop, but you can also set it to a value yourself, to ensure consistent IDs for various crops (between savegames) in case of future upgrades
 var crop_register_id = -1;
 
-function registerCrop(name, cost, prod, boost, planttime, image, opt_tagline) {
+function registerCrop(name, cost, prod, boost, planttime, image, opt_tagline, opt_croptype, opt_tier) {
   if(!image) image = missingplant;
   if(crops[crop_register_id] || crop_register_id < 0 || crop_register_id > 65535) throw 'crop id already exists or is invalid!';
   var crop = new Crop();
@@ -800,81 +803,73 @@ function registerCrop(name, cost, prod, boost, planttime, image, opt_tagline) {
   crop.tagline = opt_tagline || '';
   crop.boost = boost;
 
+  crop.type = opt_croptype;
+  crop.tier = opt_tier;
+
+  if(opt_croptype != undefined && opt_tier != undefined) {
+    if(!croptype_tiers[opt_croptype]) croptype_tiers[opt_croptype] = [];
+    croptype_tiers[opt_croptype][opt_tier] = crop;
+  }
+
   return crop.index;
 }
 
 function registerBerry(name, tier, planttime, image, opt_tagline) {
   var cost = getBerryCost(tier);
   var prod = getBerryProd(tier);
-  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
-  var crop = crops[index];
-  crop.type = CROPTYPE_BERRY;
-  crop.tier = tier;
+  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_BERRY, tier);
+  //var crop = crops[index];
   return index;
 }
 
 function registerMushroom(name, tier, planttime, image, opt_tagline) {
   var cost = getMushroomCost(tier);
   var prod = getMushroomProd(tier);
-  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
-  var crop = crops[index];
-  crop.type = CROPTYPE_MUSH;
-  crop.tier = tier;
+  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_MUSH, tier);
+  //var crop = crops[index];
   return index;
 }
 
 function registerFlower(name, tier, boost, planttime, image, opt_tagline) {
   var cost = getFlowerCost(tier);
-  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline);
-  var crop = crops[index];
-  crop.type = CROPTYPE_FLOWER;
-  crop.tier = tier;
+  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline, CROPTYPE_FLOWER, tier);
+  //var crop = crops[index];
   return index;
 }
 
 function registerNettle(name, tier, boost, planttime, image, opt_tagline) {
   var cost = getNettleCost(tier);
-  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline);
-  var crop = crops[index];
-  crop.type = CROPTYPE_NETTLE;
-  crop.tier = tier;
+  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline, CROPTYPE_NETTLE, tier);
+  //var crop = crops[index];
   return index;
 }
 
 function registerShortLived(name, tier, prod, planttime, image, opt_tagline) {
   var cost = Res({seeds:10});
-  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
-  var crop = crops[index];
-  crop.type = CROPTYPE_SHORT;
-  crop.tier = tier;
+  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_SHORT, tier);
+  //var crop = crops[index];
   return index;
 }
 
 function registerMistletoe(name, tier, planttime, image, opt_tagline) {
   var cost = getMushroomCost(0).mulr(2);
   var prod = Res({});
-  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline);
-  var crop = crops[index];
-  crop.type = CROPTYPE_MISTLETOE;
-  crop.tier = tier;
+  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_MISTLETOE, tier);
+  //var crop = crops[index];
   return index;
 }
 
 function registerBeehive(name, tier, boost, planttime, image, opt_tagline) {
   var cost = getBeehiveCost(tier);
-  var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline);
+  var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline, CROPTYPE_BEE, tier);
   var crop = crops[index];
   crop.boost = boost;
-  crop.type = CROPTYPE_BEE;
-  crop.tier = tier;
   return index;
 }
 
 function registerChallengeCrop(name, tier, cost, planttime, image, opt_tagline) {
-  var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline);
-  var crop = crops[index];
-  crop.type = CROPTYPE_CHALLENGE;
-  crop.tier = tier;
+  var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline, CROPTYPE_CHALLENGE, tier);
+  //var crop = crops[index];
   return index;
 }
 
@@ -998,7 +993,7 @@ var bee_0 = registerBeehive('beehive', 0, Num(3.0), /*growtime=*/300, images_bee
 crop_register_id = 200;
 
 var challengecrop_0 = registerChallengeCrop('worker bee', 0, Res({seeds:20000}), 60, images_workerbee,
-    'provides bonus to all crops, but only if next to a flower. Double bonus if next to a queen bee. Since it boosts berries, flowers, mushrooms and mushroom economy, it scales cubically rather than just linearly. Can be boosted by queen bees.');
+    'provides bonus to all crops, but only if next to a flower. This bonus is boosted if next to a queen bee. Since it boosts berries, flowers, mushrooms and mushroom economy, it scales cubically rather than just linearly.');
 crops[challengecrop_0].challengecroppricemul = Num(25);
 crops[challengecrop_0].boost = Num(0.2);
 
@@ -1144,8 +1139,12 @@ function registerUpgrade(name, cost, fun, pre, maxcount, description, bgcolor, b
   return upgrade.index;
 }
 
-// prev_crop_num, prev_crop: how many previous crops of that type must be planted before this next upgrade will become unlocked
-function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun) {
+// prev_berry: the previous berry tier that's required to exist for this crop.
+// for berries themselves, this must be the previous berry
+// for other crop types, the following applies: a requirement for this upgrade to unlock, is that either there is a fullgrown instance of that berry on the field, or the next higher berry type is unlocked.
+// So having the next berry tier unlocked counts as if previous tier was planted. Example: you research 10 berry types but never unlock any mushroom. Now you unlock the first mushroom type. If next berry tier unlocked didn't count, then next mushroom would require you to plant some old berries on the field.
+// If undefined, then this system is not used and only opt_pre_fun is used. If defined, then opt_pre_fun is an optional additional requirement (stricter, not less strict).
+function registerCropUnlock(cropid, cost, prev_berry, opt_pre_fun) {
   var crop = crops[cropid];
   var name = 'Unlock ' + crop.name;
 
@@ -1161,8 +1160,10 @@ function registerCropUnlock(cropid, cost, prev_crop_num, prev_crop, opt_pre_fun)
 
   var pre = function() {
     if(opt_pre_fun && !opt_pre_fun()) return false;
-    if(prev_crop == undefined) return true;
-    return state.fullgrowncropcount[prev_crop] >= prev_crop_num;
+    if(prev_berry == undefined) return true;
+    var berry_tier = crops[prev_berry].tier;
+    if(state.highestoftypeunlocked[CROPTYPE_BERRY] > berry_tier) return true; // next berry tier unlocked: counts as better than having some planted of prev berry tier
+    return !!state.fullgrowncropcount[prev_berry]; // some planted of prev berry tier
   };
 
   var description = 'Unlocks new crop: ' + crop.name + '.';
@@ -1342,44 +1343,44 @@ function registerDeprecatedUpgrade() {
 
 
 upgrade_register_id = 25;
-var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), 1, short_0, function(){
+var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), short_0, function(){
   return (state.c_numplanted + state.c_numplantedshort) >= 5;
 });
-var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), 1, berry_0);
-var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), 1, berry_1);
-var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), 1, berry_2);
-var berryunlock_4 = registerCropUnlock(berry_4, getBerryCost(4), 1, berry_3);
-var berryunlock_5 = registerCropUnlock(berry_5, getBerryCost(5), 1, berry_4);
-var berryunlock_6 = registerCropUnlock(berry_6, getBerryCost(6), 1, berry_5);
-var berryunlock_7 = registerCropUnlock(berry_7, getBerryCost(7), 1, berry_6);
-var berryunlock_8 = registerCropUnlock(berry_8, getBerryCost(8), 1, berry_7);
-var berryunlock_9 = registerCropUnlock(berry_9, getBerryCost(9), 1, berry_8);
-var berryunlock_10 = registerCropUnlock(berry_10, getBerryCost(10), 1, berry_9);
-var berryunlock_11 = registerCropUnlock(berry_11, getBerryCost(11), 1, berry_10);
-var berryunlock_12 = registerCropUnlock(berry_12, getBerryCost(12), 1, berry_11);
-var berryunlock_13 = registerCropUnlock(berry_13, getBerryCost(13), 1, berry_12);
-var berryunlock_14 = registerCropUnlock(berry_14, getBerryCost(14), 1, berry_13);
+var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0);
+var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), berry_1);
+var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), berry_2);
+var berryunlock_4 = registerCropUnlock(berry_4, getBerryCost(4), berry_3);
+var berryunlock_5 = registerCropUnlock(berry_5, getBerryCost(5), berry_4);
+var berryunlock_6 = registerCropUnlock(berry_6, getBerryCost(6), berry_5);
+var berryunlock_7 = registerCropUnlock(berry_7, getBerryCost(7), berry_6);
+var berryunlock_8 = registerCropUnlock(berry_8, getBerryCost(8), berry_7);
+var berryunlock_9 = registerCropUnlock(berry_9, getBerryCost(9), berry_8);
+var berryunlock_10 = registerCropUnlock(berry_10, getBerryCost(10), berry_9);
+var berryunlock_11 = registerCropUnlock(berry_11, getBerryCost(11), berry_10);
+var berryunlock_12 = registerCropUnlock(berry_12, getBerryCost(12), berry_11);
+var berryunlock_13 = registerCropUnlock(berry_13, getBerryCost(13), berry_12);
+var berryunlock_14 = registerCropUnlock(berry_14, getBerryCost(14), berry_13);
 
 upgrade_register_id = 50;
-var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), 1, berry_1);
-var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), 1, berry_3, function(){return !!state.upgrades[mushunlock_0].count;});
-var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), 1, berry_5, function(){return !!state.upgrades[mushunlock_1].count;});
-var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), 1, berry_7, function(){return !!state.upgrades[mushunlock_2].count;});
-var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), 1, berry_9, function(){return !!state.upgrades[mushunlock_3].count;});
-var mushunlock_5 = registerCropUnlock(mush_5, getMushroomCost(5), 1, berry_11, function(){return !!state.upgrades[mushunlock_4].count;});
-var mushunlock_6 = registerCropUnlock(mush_6, getMushroomCost(6), 1, berry_13, function(){return !!state.upgrades[mushunlock_5].count;});
+var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), berry_1);
+var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), berry_3, function(){return !!state.upgrades[mushunlock_0].count;});
+var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), berry_5, function(){return !!state.upgrades[mushunlock_1].count;});
+var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), berry_7, function(){return !!state.upgrades[mushunlock_2].count;});
+var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), berry_9, function(){return !!state.upgrades[mushunlock_3].count;});
+var mushunlock_5 = registerCropUnlock(mush_5, getMushroomCost(5), berry_11, function(){return !!state.upgrades[mushunlock_4].count;});
+var mushunlock_6 = registerCropUnlock(mush_6, getMushroomCost(6), berry_13, function(){return !!state.upgrades[mushunlock_5].count;});
 
 upgrade_register_id = 75;
-var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), 1, berry_2);
-var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), 1, berry_4, function(){return !!state.upgrades[flowerunlock_0].count;});
-var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), 1, berry_6, function(){return !!state.upgrades[flowerunlock_1].count;});
-var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), 1, berry_8, function(){return !!state.upgrades[flowerunlock_2].count;});
-var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), 1, berry_10, function(){return !!state.upgrades[flowerunlock_3].count;});
-var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), 1, berry_12, function(){return !!state.upgrades[flowerunlock_4].count;});
-var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), 1, berry_14, function(){return !!state.upgrades[flowerunlock_5].count;});
+var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), berry_2);
+var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), berry_4, function(){return !!state.upgrades[flowerunlock_0].count;});
+var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), berry_6, function(){return !!state.upgrades[flowerunlock_1].count;});
+var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), berry_8, function(){return !!state.upgrades[flowerunlock_2].count;});
+var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), berry_10, function(){return !!state.upgrades[flowerunlock_3].count;});
+var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), berry_12, function(){return !!state.upgrades[flowerunlock_4].count;});
+var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), berry_14, function(){return !!state.upgrades[flowerunlock_5].count;});
 
 upgrade_register_id = 100;
-var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, undefined, function() {
+var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, function() {
   // prev_crop is mush_1, but also unlock once higher level berries available, in case player skips placing this mushroom
   if(state.fullgrowncropcount[mush_1]) return true;
   if(state.upgrades[berryunlock_4].count) return true; // the berry after mush_1
@@ -1387,7 +1388,7 @@ var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), 1, undefined
 });
 
 upgrade_register_id = 110;
-var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), 1, undefined, function() {
+var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), undefined, function() {
   if(!(state.g_numresets > 0 && state.upgrades2[upgrade2_mistletoe].count)) return false;
 
   // prev_crop is berry_1, but also unlock once higher level berries available, in case player skips placing this berry
@@ -1397,7 +1398,7 @@ var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(
 });
 
 upgrade_register_id = 120;
-var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), 1, undefined, function() {
+var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, function() {
   if(!state.challenges[challenge_bees].completed) return false;
 
   // prev_crop is flower_2, but also unlock once higher level berries available, in case player skips placing this flower
@@ -2154,9 +2155,46 @@ function isNoUpgrade(u) {
 }
 
 
+// This challenge does not give resin, twigs or fruits. This challenge plants crops immediately, so it's easier to reach higher level faster while manually present
+// if this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
+var challenge_wither = registerChallenge('wither challenge', [30, 35], Num(0.1),
+`
+During this challenge, crops wither and must be replanted.
+`,
+`
+• Planted crops are fullgrown immediately<br>
+• Planted crops wither, they only exist for a limited time<br>
+`,
+['unlock the auto-plant ability of the automaton' ,'add more options to the auto-plant ability of the automaton'],
+'reaching ethereal tree level 2 and having automaton',
+function() {
+  return false; // implementation not yet finished
+  //return state.treelevel2 >= 3 && haveAutomaton() && state.automaton_unlocked[1];
+},
+[
+function() {
+  state.automaton_unlocked[2] = Math.max(1, state.automaton_unlocked[1] || 0);
+  showRegisteredHelpDialog(31);
+  showMessage('Auto-upgrade unlocked!', C_AUTOMATON, 1067714398);
+},
+function() {
+  state.automaton_unlocked[1] = Math.max(2, state.automaton_unlocked[1] || 0);
+  for(var i = 1; i < state.automaton_autoupgrade_fraction.length; i++) {
+    state.automaton_autoupgrade_fraction[i] = state.automaton_autoupgrade_fraction[0];
+  }
+  showRegisteredHelpDialog(32);
+  showMessage('Auto-upgrade extra options unlocked!', C_AUTOMATON, 1067714398);
+}
+], 0);
+
+function witherDuration() {
+  return 120;
+  //return crops[short_0].getPlantTime();
+}
+
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete, challenge_noupgrades];
+var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither];
 
 if(challenges_order.length != registered_challenges.length) {
   throw 'challenges order not same length as challenges!';
@@ -2202,7 +2240,7 @@ Crop2.prototype.getPlantTime = function() {
 
 // Ethereal production
 Crop2.prototype.getProd = function(f, assume_fullgrown, breakdown) {
-  if(!assume_fullgrown && f && f.growth < 1) {
+  if(!assume_fullgrown && f && !f.isFullGrown()) {
     return Res();
   }
 
@@ -2222,7 +2260,7 @@ Crop2.getNeighborBoost = function(f) {
     var num = 0;
 
     var getboost = function(n) {
-      if(n.hasCrop() && n.growth >= 1 && crops2[n.cropIndex()].type != CROPTYPE_NETTLE) {
+      if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type != CROPTYPE_NETTLE) {
         var boost = crops2[n.cropIndex()].getBoost(n);
         if(boost.neqr(0)) {
           result.addInPlace(boost);

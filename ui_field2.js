@@ -274,18 +274,22 @@ function initField2UI() {
         } else if(f.hasCrop()) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(shift && !ctrl && state.allowshiftdelete) {
-            var c = crops2[state.lastPlanted2];
-            var c2 = f.getCrop();
-            if(c2.index == state.lastPlanted2 && !f.isFullGrown()) {
-              // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
-              // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
-              // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-              actions.push({type:ACTION_DELETE2, x:x, y:y});
+          if(shift && !ctrl) {
+            if(state.allowshiftdelete) {
+              var c = crops2[state.lastPlanted2];
+              var c2 = f.getCrop();
+              if(c2.index == state.lastPlanted2 && !f.isFullGrown()) {
+                // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+                // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+                // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+                actions.push({type:ACTION_DELETE2, x:x, y:y});
+              } else {
+                actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c, shiftPlanted:true});
+              }
+              update();
             } else {
-              actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c, shiftPlanted:true});
+              showMessage('ctrl+click to delete must be enabled in the settings before replacing crops with shift is allowed', C_INVALID, 0, 0);
             }
-            update();
           } else if(ctrl && !shift) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];

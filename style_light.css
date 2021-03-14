@@ -135,7 +135,7 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 
 .efDropDown {
   color: #000;
-  background-color: #888;
+  background-color: #aaa;
   border: 1px solid #000;
 }
 

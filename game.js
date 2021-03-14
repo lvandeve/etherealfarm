@@ -256,7 +256,6 @@ function softReset(opt_challenge) {
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
   savegame_recovery_situation = false;
 
-
   if(state.challenge) {
     var c = challenges[state.challenge];
     var c2 = state.challenges[state.challenge];
@@ -338,6 +337,7 @@ function softReset(opt_challenge) {
   state.crops2[special2_0].unlocked = true;
   state.crops2[lotus2_0].unlocked = true;
 
+  // todo: remove this? softReset is called during the update() function, that one already manages the time
   state.time = util.getTime();
   state.prevtime = state.time;
 
@@ -663,7 +663,9 @@ function getRandomPreferablyEmptyFieldSpot() {
 function getSeasonAt(time) {
   var t = time - state.g_starttime;
   t /= (24 * 3600);
-  return Math.floor(t) % 4;
+  var result = Math.floor(t) % 4;
+  if(result < 0) result = 4 + result;
+  return result;
 }
 
 // result: 0=spring, 1=summer, 2=autumn, 3=winter
@@ -781,7 +783,7 @@ function precomputeField() {
       for(var x = 0; x < w; x++) {
         var f = state.field[y][x];
         var c = f.getCrop();
-        if(c && c.index == challengecrop_1 && f.growth >= 1) {
+        if(c && c.index == challengecrop_1 && f.isFullGrown()) {
           var p = prefield[y][x];
           var boost = c.getBoostBoost(f);
           p.boost = Num(boost);
@@ -791,7 +793,7 @@ function precomputeField() {
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getCrop();
-            if(c2 && c2.index == challengecrop_2 && f2.growth >= 1) {
+            if(c2 && c2.index == challengecrop_2 && f2.isFullGrown()) {
               p.boost.addInPlace(boost.mul(c2.getBoostBoost(f2)));
             }
           }
@@ -805,7 +807,7 @@ function precomputeField() {
         if(c && c.index == challengecrop_0) {
           var p = prefield[y][x];
           var boost = c.getBoostBoost(f);
-          if(f.growth >= 1) p.boost = Num(boost);
+          if(f.isFullGrown()) p.boost = Num(boost);
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
@@ -813,14 +815,14 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             var c2 = f2.getCrop();
             var p2 = prefield[y2][x2];
-            if(c2 && c2.index == challengecrop_1 && f2.growth >= 1 && f.growth >= 1) {
+            if(c2 && c2.index == challengecrop_1 && f2.isFullGrown() && f.isFullGrown()) {
               p.boost.addInPlace(boost.mul(p2.boost));
             }
-            if(c2 && c2.index == challengeflower_0 && f2.growth >= 1) {
+            if(c2 && c2.index == challengeflower_0 && f2.isFullGrown()) {
               p.flowerneighbor = true;
             }
           }
-          if(p.flowerneighbor && f.growth >= 1) {
+          if(p.flowerneighbor && f.isFullGrown()) {
             state.workerbeeboost.addInPlace(p.boost);
           }
         }
@@ -864,7 +866,7 @@ function precomputeField() {
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getCrop();
-            if(c2 && c2.type == CROPTYPE_BEE && f2.growth >= 1) {
+            if(c2 && c2.type == CROPTYPE_BEE && f2.isFullGrown()) {
               var boostboost = c2.getBoostBoost(f2);
               p.beeboostboost_received.addInPlace(boostboost);
               p.num_bee++;
@@ -898,7 +900,7 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
               p.treeneighbor = true;
-              if(f.growth >= 1) state.mistletoes++;
+              if(f.isFullGrown()) state.mistletoes++;
               break;
             }
           }
@@ -957,7 +959,7 @@ function precomputeField() {
       var f = state.field[y][x];
       var c = f.getCrop();
       if(c) {
-        if(f.growth < 1) continue;
+        if(!f.isFullGrown()) continue;
         if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
           var p = prefield[y][x];
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -965,7 +967,7 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
-            if(f2.growth < 1) continue;
+            if(!f2.isFullGrown()) continue;
             var c2 = f2.getCrop();
             if(c2) {
               var p2 = prefield[y2][x2];
@@ -1281,12 +1283,32 @@ function unlockEtherealCrop(id) {
 }
 
 
-// upgrades that are applicable for auto upgrade. This are crop multiplier/boost upgrades, not the unlock ones, and only relevant ones such as those with a crop in the field
-var auto_upgrades = [];
+// next chosen auto upgrade, if applicable.
+// type: either undefined, or object {index:upgrade id, time:time until reached given current resource gain}
+var next_auto_upgrade = undefined;
 
-// compute the auto_upgrades list
-function computeAutoUpgrades() {
-  auto_upgrades = [];
+
+function getAutoFraction(advanced, fractions, cropid) {
+  var fraction = fractions[0];
+  if(advanced && cropid != undefined) {
+    var c = crops[cropid];
+    if(c.type == CROPTYPE_BERRY) fraction = fractions[3];
+    if(c.type == CROPTYPE_MUSH) fraction = fractions[4];
+    if(c.type == CROPTYPE_FLOWER) fraction = fractions[5];
+    if(c.type == CROPTYPE_NETTLE) fraction = fractions[6];
+    if(c.type == CROPTYPE_BEE) fraction = fractions[7];
+    if(c.type == CROPTYPE_SHORT) fraction = fractions[2];
+    if(c.type == CROPTYPE_CHALLENGE) fraction = fractions[1];
+  }
+  return fraction;
+}
+
+
+// compute next_auto_upgrade
+// this is the next upgrade that auto upgrade will do.
+// this must be chosen to be the first one done given the resource fraction choices, since the nextEventTime computation also uses this
+function computeNextAutoUpgrade() {
+  next_auto_upgrade = undefined;
 
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
@@ -1299,44 +1321,79 @@ function computeAutoUpgrades() {
     // TODO: highestoftypeplanted or highestoftypeunlocked? Maybe should be an option, both have pros and cons. a con of using highestoftypeunlocked is that then no progress is made on the field if the game is left to run alone for a long time but the highest plant is not planted yet
     if(crops[u.cropid].tier < state.highestoftypeplanted[crops[u.cropid].type]) continue; // don't upgrade lower types anymore once a higher type of berry/mushroom/... is on the field
 
-    auto_upgrades.push(registered_upgrades[i]);
-  }
-}
-
-function autoUpgrade() {
-  var res = Res(state.res);
-
-  for(var i = 0; i < auto_upgrades.length; i++) {
-    var u = upgrades[auto_upgrades[i]];
-
     // how much resources willing to spend
-    var fraction = state.automaton_autoupgrade_fraction[0];
     var advanced = state.automaton_unlocked[1] >= 2;
-    if(advanced && u.cropid != undefined) {
-      var c = crops[u.cropid];
-      if(c.type == CROPTYPE_BERRY) fraction = state.automaton_autoupgrade_fraction[3];
-      if(c.type == CROPTYPE_MUSH) fraction = state.automaton_autoupgrade_fraction[4];
-      if(c.type == CROPTYPE_FLOWER) fraction = state.automaton_autoupgrade_fraction[5];
-      if(c.type == CROPTYPE_NETTLE) fraction = state.automaton_autoupgrade_fraction[6];
-      if(c.type == CROPTYPE_BEE) fraction = state.automaton_autoupgrade_fraction[7];
-      if(c.type == CROPTYPE_SHORT) fraction = state.automaton_autoupgrade_fraction[2];
-      if(c.type == CROPTYPE_CHALLENGE) fraction = state.automaton_autoupgrade_fraction[1];
+    var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, u.cropid);
+
+    var cost = u.getCost();
+
+    // e.g. if fraction is 50%, then state needs to have at least 2x as much resources before this upgrade will be auto-bought
+    var res_needed = cost.divr(fraction);
+
+    var time = 0;
+    if(!res_needed.le(state.res)) {
+      var rem = res_needed.sub(state.res);
+      var time = -Infinity;
+      if(rem.seeds.gtr(0)) time = Math.max(time, rem.seeds.div(gain.seeds).valueOf());
+      if(rem.spores.gtr(0)) time = Math.max(time, rem.spores.div(gain.spores).valueOf());
+      if(time == -Infinity) continue; // this upgrade may cost some new resource, TODO: implement here too
+      if(time == Infinity) continue;
     }
 
-    var count = 0;
-    for(;;) {
-      var maxcost = Res.min(res, state.res.mulr(fraction));
-      var cost = u.getCost(count);
-      if(cost.gt(maxcost)) break;
-      count++;
-      res.subInPlace(cost);
-    }
-    if(count > 0) {
-      actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, num:count});
-    }
+    if(next_auto_upgrade == undefined || time < next_auto_upgrade.time) next_auto_upgrade = {index:u.index, time:time};
   }
 }
 
+// res must be a copy of the available resources for all auto-actions, and will be modified in place
+function autoUpgrade(res) {
+  if(!next_auto_upgrade) return;
+
+  var u = upgrades[next_auto_upgrade.index];
+
+  // how much resources willing to spend
+  var advanced = state.automaton_unlocked[1] >= 2;
+  var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, u.cropid);
+
+  var count = 0;
+  for(;;) {
+    var maxcost = Res.min(res, state.res.mulr(fraction));
+    var cost = u.getCost(count);
+    if(cost.gt(maxcost)) break;
+    if(cost.hasNaNOrInfinity()) {
+      count--;
+      break;
+    }
+    if(count > 100) break;
+    count++;
+    res.subInPlace(cost);
+  }
+  if(count > 0) {
+    actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, num:count});
+  }
+}
+
+// res must be a copy of the available resources for all auto-actions, and will be modified in place
+function autoPlant(res) {
+  var types = [CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER];
+
+  for(var i = 0; i < types.length; i++) {
+    var type = types[i];
+    var tier = state.highestoftypeunlocked[type];
+    var crop = croptype_tiers[type][tier];
+
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f = state.field[y][x];
+        if(!f.hasCrop()) continue;
+        var c = f.getCrop();
+        if(c.type != type) continue;
+        if(c.tier >= tier) continue;
+        actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true});
+        return;
+      }
+    }
+  }
+}
 
 // when is the next time that something happens that requires a separate update()
 // run. E.g. if the time difference is 1 hour (due to closing the tab for 1 hour),
@@ -1351,8 +1408,10 @@ function autoUpgrade() {
 function nextEventTime() {
   // next season
   var time = timeTilNextSeason();
+  var name = 'season';
 
-  var addtime = function(time2) {
+  var addtime = function(time2, opt_name) {
+    if(time2 < time) name = opt_name || 'other';
     time = Math.min(time, time2);
   };
 
@@ -1369,6 +1428,8 @@ function nextEventTime() {
       if(c) {
         if(c.type == CROPTYPE_SHORT) {
           addtime(c.getPlantTime() * (f.growth));
+        } else if(state.challenge == challenge_wither) {
+          addtime(witherDuration() * (f.growth));
         } else if(f.growth < 1) {
           addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
         }
@@ -1379,16 +1440,14 @@ function nextEventTime() {
   // tree level up
   var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores);
   var treetime = treereq.div(gain.spores).valueOf();
-  addtime(treetime);
+  addtime(treetime, 'tree');
 
   // auto-upgrades
-  if(autoUpgradesEnabled()) {
-    for(var i = 0; i < auto_upgrades.length; i++) {
-      var cost = upgrades[auto_upgrades[i]].getCost();
-      if(cost.seeds.gtr(0)) addtime(cost.seeds.divr(gain.seeds));
-      if(cost.spores.gtr(0)) addtime(cost.spores.divr(gain.spores));
-    }
+  if(autoUpgradesEnabled() && !!next_auto_upgrade) {
+    addtime(next_auto_upgrade.time);
   }
+
+  // auto-plant
 
   return time;
 }
@@ -1400,6 +1459,9 @@ function registerUpdateListener(updatefun) {
   if(update_listeners.length > 50) return;
   update_listeners.push(updatefun);
 }
+
+var prev_season = undefined;
+var prev_season_gain = undefined;
 
 var update = function(opt_fromTick) {
   var undostate = undefined;
@@ -1414,49 +1476,68 @@ var update = function(opt_fromTick) {
 
   if(!preupdate(opt_fromTick)) return;
 
-  if(state.prevtime == 0) state.prevtime = util.getTime();
-
-  var preseasongain = undefined;
-
-  // compensate for computer clock mismatch things
-  if(state.time > 0) {
+  if(state.prevtime == 0) {
+    state.prevtime = util.getTime();
+  } else {
+    // compensate for computer clock mismatch issues
     if(state.lastFernTime > state.time) state.lastFernTime = state.time;
     if(state.misttime > state.time) state.misttime = 0;
     if(state.suntime > state.time) state.suntime = 0;
     if(state.rainbowtime > state.time) state.rainbowtime = 0;
   }
 
+  var prevseasongain = undefined;
+
   var negative_time_used = false;
+
+  var season_changed = 0;
 
   var oldres = Res(state.res);
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
   var done = false;
   var numloops = 0;
-  for(;;) {
+
+  for(;;) { ////////////////////////////////////////////////////////////////////
     if(done) break;
     if(numloops++ > 365) break;
 
+    /*
+    During an update, there's a time interval in which we operate.
+    The time interval represents a period of time where properties (season, tree level,...) are constant.
+    The time given by nextEventTime() indicates when a next event happens and properties change.
+    So if t0 is the beginning of the interval, then t1 = t0 + nextEventTime() is the end, and d = t1 - t0 the time of that interval, deciding how much resources you get based on gain/s during this interval
+
+    state.prevtime represents t0. state.time is set to state.prevtime. so state.time and state.prevtime are equal during the update, but time will be used and prevtime may already be set to the next one for state keeping. state.prevtime is the one getting saved and remembered, state.time is the one used for computations such as getSeason(), but during the update loop, they're the same, they're different variables outside of update for bookkeeping.
+    */
+
+    var autores = Res(state.res);
+
     if(autoUpgradesEnabled()) {
-      computeAutoUpgrades();
-      autoUpgrade();
+      // computeNextAutoUpgrade is used both for autoUpgrade, and for nextEventTime. The autoUpgrade function may do nothing now, but nextEventTime can compute when autoUpgrade will happen given the current income
+      computeNextAutoUpgrade();
+      autoUpgrade(autores);
     }
 
-    var prevtime = state.prevtime;
-    var time = util.getTime(); // in seconds
+    if(autoPlantEnabled()) {
+      // implementation not yet finished
+      //autoPlant(autores);
+    }
+
+    var nexttime = util.getTime(); // in seconds. This is nexttime compared to the current state.time/state.prevtime
 
     var d; // time delta
     if(state.prevtime == 0) {
       d = 0;
-    } else if(prevtime > time) {
+    } else if(state.prevtime > nexttime) {
       // time was in the future. See description of negative_time in state.js for more info.
-      var future = prevtime - time;
+      var future = state.prevtime - nexttime;
       state.negative_time += future;
       state.total_negative_time += future;
       state.max_negative_time = Math.max(state.max_negative_time, future);
       state.last_negative_time = future;
       d = 0;
     } else {
-      d = time - prevtime;
+      d = nexttime - state.prevtime;
 
       // when negative time is registered, then you don't get large time deltas anymore.
       // choosing 3000 seconds (something close enough to, but less than, an hour) for this: the most common scenario where negative time happens is switching between two computers
@@ -1471,36 +1552,45 @@ var update = function(opt_fromTick) {
       }
     }
 
+    var is_long = d > 2;
 
     var next = 0;
 
     var d0 = d;
+    state.time = state.prevtime; // the computations happen with the state (getSeason() etc...) at start of interval. the end of interval is when things (season, ...) may change, but that is not during this but during next update computation
 
-    if(d > 1) {
-      state.time = state.prevtime; // to let the nextEventTime() computation work as desired now
-      next = nextEventTime() + 0.5; // for numerical reasons, ensure it's not exactly at the border of the event
-      if(next < 3) next = 3;
+    if(is_long) {
+      next = nextEventTime() + 1; // for numerical reasons, ensure it's not exactly at the border of the event
+      if(next < 2) next = 2; // ensure there is at least some progress.
     }
 
-    if(d > next && d0 > 2) {
+    if(d > next && is_long) {
+      // reduce the time delta to only be up to the next event
       d = next;
-      time = state.prevtime + d;
+      nexttime = state.prevtime + d;
       done = false;
-      state.time = time - 2; // as opposed to the numerical fix above that added 1 second, now subtract 2 seconds from state.time so that it's for sure in the interval of the current intended event (before the ability ran out, before the season changed to the next, ...)
     } else {
+      // next event is after the current util.getTime(), so the update loop is done after this one
       done = true;
-      state.time = time;
     }
-    state.prevtime = time;
+    // the current time for computations below is at the beginning of the current interval
+    state.time = state.prevtime;
+    // set prevtime ready for the next update tick
+    state.prevtime = nexttime;
 
-    if(getSeasonAt(prevtime) != getSeasonAt(time)) {
-      if(gain) preseasongain = Res(gain);
+    /*
+    season_will_change computes that season will change next tick. This is one tick too early, but reliable, even across multiple sessions where game was closed and reopened in between. this is the one to use for deletion token get and num season stat computations
+    season_changed (integer) computes that the season changed during this tick. This may miss some events if game was closed/reopened at some very particular time. But this one will have the correct prev_season_gain and current gain, so is the one to use for the message that shows resources before and after season change
+    */
+    var current_season = getSeasonAt(state.time);
+    var season_will_change = current_season != getSeasonAt(nexttime);
+    if(current_season != prev_season && prev_season != undefined) season_changed++;
+    prev_season = current_season;
+
+    if(season_will_change) {
       num_season_changes++;
     }
 
-    var d1 = d; // d without timemul
-
-    d *= state.timemul;
     state.g_runtime += d;
     state.c_runtime += d;
 
@@ -1631,7 +1721,7 @@ var update = function(opt_fromTick) {
           if(f.hasCrop()) {
             var c = f.getCrop();
             recoup = c.getRecoup();
-            if(f.growth < 1 && c.type != CROPTYPE_SHORT) recoup = c.getCost(-1);
+            if(f.growth < 1 && c.type != CROPTYPE_SHORT && state.challenge != challenge_wither) recoup = c.getCost(-1);
           } else {
             recoup = Res();
           }
@@ -1682,13 +1772,15 @@ var update = function(opt_fromTick) {
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
           if(f.hasCrop()) {
             var c = f.getCrop();
-            if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+            if(f.growth < 1 && c.type != CROPTYPE_SHORT && state.challenge != challenge_wither) {
               if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
               state.g_numplanted--;
               state.c_numplanted--;
             } else {
-              state.g_numunplanted++;
-              state.c_numunplanted++;
+              if(state.challenge != challenge_wither) {
+                state.g_numunplanted++;
+                state.c_numunplanted++;
+              }
             }
             f.index = 0;
             f.growth = 0;
@@ -1710,17 +1802,20 @@ var update = function(opt_fromTick) {
         if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
           var c = action.crop;
           var cost = c.getCost();
-          if(c.type == CROPTYPE_SHORT) {
-            state.g_numplantedshort++;
-            state.c_numplantedshort++;
-          } else {
-            state.g_numplanted++;
-            state.c_numplanted++;
+          if(state.challenge != challenge_wither) {
+            if(c.type == CROPTYPE_SHORT) {
+              state.g_numplantedshort++;
+              state.c_numplantedshort++;
+            } else {
+              state.g_numplanted++;
+              state.c_numplanted++;
+            }
           }
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
           if(c.type == CROPTYPE_SHORT) f.growth = 1;
+          if(state.challenge == challenge_wither) f.growth = 1;
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
           var nextcost = c.getCost(0);
@@ -2021,17 +2116,19 @@ var update = function(opt_fromTick) {
           var p = prefield[y][x];
           var c = f.getCrop();
           var prod = Res();
-          if(c.type == CROPTYPE_SHORT) {
-            var g = d / c.getPlantTime();
+          if(c.type == CROPTYPE_SHORT || state.challenge == challenge_wither) {
+            var short = c.type == CROPTYPE_SHORT;
+            var croptime = short ? c.getPlantTime() : witherDuration();
+            var g = d / croptime;
             var growth0 = f.growth;
             f.growth -= g;
             if(f.growth <= 0) {
               f.growth = 0;
               // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses
-              if(p.touchnum >= 2) f.index = FIELD_REMAINDER;
+              if(short && p.touchnum >= 2) f.index = FIELD_REMAINDER;
               else f.index = 0;
             }
-            // it's ok to have the production when growth becoame 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
+            // it's ok to have the production when growth became 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
             prod = p.prod2;
           } else { // long lived plant
             if(f.growth < 1) {
@@ -2044,8 +2141,10 @@ var update = function(opt_fromTick) {
                 if(f.growth >= 1) {
                   // just fullgrown now
                   f.growth = 1;
-                  state.g_numfullgrown++;
-                  state.c_numfullgrown++;
+                  if(state.challenge != challenge_wither) {
+                    state.g_numfullgrown++;
+                    state.c_numfullgrown++;
+                  }
                   // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
                 }
               }
@@ -2096,7 +2195,7 @@ var update = function(opt_fromTick) {
       var progress = state.res.seeds;
       var mintime = 0;
       if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
-      else if(progress.ltr(15)) mintime = 1;
+      else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 7 : 1);
       else if(progress.ltr(150)) mintime = 10;
       else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
       else mintime = fern_wait_minutes * 60;
@@ -2344,6 +2443,10 @@ var update = function(opt_fromTick) {
       }
     }
 
+    if(season_will_change && num_season_changes == 1) {
+      prev_season_gain = Res(gain);
+    }
+
     state.g_res.addInPlace(actualgain);
     state.c_res.addInPlace(actualgain);
     state.g_max_res = Res.max(state.g_max_res, state.res);
@@ -2352,8 +2455,7 @@ var update = function(opt_fromTick) {
     state.c_max_prod = Res.max(state.c_max_prod, gain);
 
     computeDerived(state);
-  } // end of loop for long ticks
-
+  } // end of loop for long ticks //////////////////////////////////////////////
 
   if(state.g_numticks == 0) {
     showMessage('You need to gather some resources. Click a fern to get some.', C_HELP, 5646478);
@@ -2366,7 +2468,7 @@ var update = function(opt_fromTick) {
   state.g_numticks++;
   state.c_numticks++;
 
-  time = util.getTime();
+  var time = util.getTime();
   if(time > lastSaveTime + 180) {
     if(autoSaveOk()) {
       state.g_numautosaves++;
@@ -2400,9 +2502,9 @@ var update = function(opt_fromTick) {
 
   // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.
   // if num_season_changes > 1, it's already printed in the large time delta message above instead.
-  if(num_season_changes == 1) {
+  if(season_changed == 1) {
     var gainchangemessage = '';
-    if(preseasongain) gainchangemessage = '. Income before: ' + preseasongain.toString() + '. Income now: ' + gain.toString();
+    if(prev_season_gain) gainchangemessage = '. Income before: ' + prev_season_gain.toString() + '. Income now: ' + gain.toString();
     showMessage('The season changed, it is now ' + seasonNames[getSeason()] + gainchangemessage, C_NATURE, 17843969, 0.75);
   }
 

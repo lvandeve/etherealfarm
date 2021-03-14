@@ -499,6 +499,8 @@ function encState(state, opt_raw_only) {
   processUintArray(state.automaton_choice);
   processUint(state.automaton_autoupgrade);
   processFractionChoiceArray(state.automaton_autoupgrade_fraction);
+  processUint(state.automaton_autoplant);
+  processFractionChoiceArray(state.automaton_autoplant_fraction);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1144,6 +1146,11 @@ function decState(s) {
     for(var i = fraction.length; i < state.automaton_autoupgrade_fraction.length; i++) {
       state.automaton_autoupgrade_fraction[i] = fraction[1];
     }
+  }
+  if(save_version >= 4096*1+46) {
+    state.automaton_autoplant = processUint();
+    state.automaton_autoplant_fraction = processFractionChoiceArray();
+    if(error) return err(4);
   }
 
   //////////////////////////////////////////////////////////////////////////////

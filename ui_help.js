@@ -25,7 +25,7 @@ var helpDialogQueue = [];
 var helpNeverAgainLocal = {};
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 30
+// highest used id: 32
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
@@ -277,6 +277,14 @@ registerHelpDialog(29, 'Auto upgrades', 'You unlocked auto upgrades!',
 
 registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upgrade options!',
     'You unlocked more finetuning options for the auto upgrades. See the automaton tab. The controls have changed: you can now configure the max cost per crop type (berry, mushroom, flower, ...).',
+    images_automaton[4]);
+
+registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
+    'Auto plant [todo text]',
+    images_automaton[4]);
+
+registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more options!',
+    'Auto plant more options [todo text].',
     images_automaton[4]);
 
 function createKeyboardHelpDialog() {

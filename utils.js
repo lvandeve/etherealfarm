@@ -379,28 +379,28 @@ var Utils = (function() {
   // formats time given in second as years, months, days, hours, minutes, seconds
   // opt_maxSections is how many different sections to print, or leave out smaller ones. Default is 3, max is 9.
   // the sections are: giga-annum, mega-annum, millenium, year, month, day, hour, minute, second.
-  // opt_short: if true, uses e.g. "h" instead of " hours", etc..., and no longer uses sections for anything above a day.
+  // opt_short: if false or 0, default long notation. if 1 or true, uses e.g. "h" instead of " hours", etc..., and no longer uses sections for anything above a day. if 2, uses a sprecise but less human readable short notation
   // opt_inv: inverses direction of max sections. If false, starts from largest and leaves out smaller. If true, leaves out larger ones instead
   var formatDuration = function(s, opt_short, opt_maxSections, opt_inv) {
-    var maxSections = opt_maxSections || 3;
+    var maxSections = opt_maxSections || (opt_short == 2 ? 4 : 3);
     if(isNaN(s)) return 'NaN';
     if(s < 0) return '-' + formatDuration(-s);
     if(s == Infinity) return 'Infinity ' + (opt_short ? 's' : ' seconds');
 
-    if(opt_short) {
+    if(opt_short == 1) {
       // For durations longer than 'days', everything involving abbreviations such as 'M' for month, Ga for giga-annum, ... is pretty
       // unclear (e.g. M can be confused with million), so return those instead as formatted number with the full word 'years' or 'days'
       if(s >= 31557600000) { // 31557600000 = seconds in 1000 365.25-day years
-      var formatted = Num(s / 31557600000).toString();
-      return formatted + ((formatted == '1') ? ' millenium' : ' millenia');
+        var formatted = Num(s / 31557600000).toString();
+        return formatted + ((formatted == '1') ? ' millenium' : ' millenia');
       }
       if(s >= 31557600) { // 31557600 = seconds in a 365.25 day year
-      var formatted = Num(s / 31557600).toString();
-      return formatted + ((formatted == '1') ? ' year' : ' years');
+        var formatted = Num(s / 31557600).toString();
+        return formatted + ((formatted == '1') ? ' year' : ' years');
       }
       if(s >= 27 * 86400) { // 86400 = seconds in a day
-      var formatted = Num(s / 86400).toString();
-      return formatted + ((formatted == '1') ? ' day' : ' days');
+        var formatted = Num(s / 86400).toString();
+        return formatted + ((formatted == '1') ? ' day' : ' days');
       }
     }
 
@@ -437,7 +437,7 @@ var Utils = (function() {
     var names_plural = opt_short ? ['mm', 'Y', 'M', 'd', 'h', 'm', 's'] : [' millenia', ' years', ' months', ' days', ' hours', ' minutes', ' seconds'];
 
     // 'd' on its own can be too confusing
-    if(opt_short && h == 0 && m == 0 && s == 0 && D != 0 && mm == 0 && Y == 0 && M == 0) {
+    if(opt_short == 1 && h == 0 && m == 0 && s == 0 && D != 0 && mm == 0 && Y == 0 && M == 0) {
       return Num(D).toString() + (D == 1 ? ' day' : ' days');
     }
 

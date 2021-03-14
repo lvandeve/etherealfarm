@@ -294,6 +294,7 @@ function createChallengeDialog(opt_from_challenge) {
     var text = upper(c.name);
     if(isnew) text += ' (New!)';
     else if(isnotfull) text += ' (New stage!)';
+    else text += ' (' + c2.maxlevel + ')';
     button.div.textEl.innerText = text;
     button.div.onclick = bind(function(c) {
       createChallengeDescriptionDialog(c.index, false);

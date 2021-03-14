@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.46 (2021-03-14):';
+  // This is also in preparation for auto-plant, which is half-implemented but not yet its own update timing computations as that revealed the bugs with auto upgrade
+  text += '<br/>• Bugfixes related to update timing and automaton computation.';
+  text += '<br/>• Internal changes in preparation for future auto-plant feature (not yet finished).';
+  text += '<br/>• Buttons to start challenges now show max reached level.';
+  text += '<br/><br/>';
+
   text += '0.1.45 (2021-03-11):';
   // another option was to let ctrl do the replacing. But, actually, allowing holding shift to both plant and replace everything may be more convenient, shift always makes the selected plant appear on field, ctrl always deletes (except for planting watercress). And in addition, ctrl for delete also matches the fruits panel where ctrl moves it towards the sacrificial pool
   text += '<br/>• It\'s now possible to replace crops with shift+click. Deleting is now done with ctrl+click on a crop instead.';
