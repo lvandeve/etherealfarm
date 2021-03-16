@@ -281,6 +281,8 @@ Crop.prototype.getCost = function(opt_adjust_count) {
 
 
 Crop.prototype.getRecoup = function() {
+  if(this.type == CROPTYPE_SHORT) return Res(0);
+  if(state.challenge == challenge_wither) return Res(0);
   return this.getCost(-1).mulr(cropRecoup);
 };
 
@@ -341,7 +343,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     }
 
     // winter tree warmth
-    if(next_to_tree) {
+    if(next_to_tree && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
       var bonus = getWinterTreeWarmth();
       result.posmulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
@@ -413,8 +415,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     ethereal_prodmul.seeds = state.ethereal_berry_bonus.addr(1);
   }
   if(this.type == CROPTYPE_MUSH) {
-    // seeds commented out: ethereal mushrooms now boost spores without increasing seed consumption (v0.1.16)
-    //ethereal_prodmul.seeds = state.ethereal_mush_bonus.addr(1);
+    // seeds commented out in v0.1.16 but enabled again in v0.1.47 because otherwise the seed prod/consumption balance will get lost with higher level etherela field.
+    ethereal_prodmul.seeds = state.ethereal_mush_bonus.addr(1);
     ethereal_prodmul.spores = state.ethereal_mush_bonus.addr(1);
   }
   var e = result.elmul(ethereal_prodmul);
@@ -551,7 +553,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // challenges
-  if(this.type == CROPTYPE_BERRY && state.challenge_bonus.neqr(0)) {
+  if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.challenge_bonus.neqr(0)) {
     var challenge_bonus = state.challenge_bonus.addr(1);
     result.mulInPlace(challenge_bonus);
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, result.clone()]);
@@ -1041,6 +1043,9 @@ function Upgrade() {
   this.maxcount = 1; // how many times can this upgrade be done in total (typical 1, some upgrades have many series, 0 for infinity)
 
   this.is_choice = false; // if true, it's an upgrade that allows you to choose between effects with a dialog
+  this.iscropupgrade = false; // is a berry/flower/... multiplier or additive upgrade (not an unlock, choice upgrade, ...), matching with the cropid
+  this.iscropunlock = false; // matches with cropid
+  this.istreebasedupgrade = false; // is one of the upgrades that comes from the tree, such as weather and choice upgrades.
 
   this.cost = Res();
 
@@ -1050,8 +1055,6 @@ function Upgrade() {
   // how this field is used, if at all, depends on the upgrade type
   this.bonus = undefined;
 
-  this.iscropupgrade = false; // is a berry/flower/... multiplier or additive upgrade (not an unlock, choice upgrade, ...)
-  this.iscropunlock = false;
 
   // style related, for the upgrade chip in upgrade UI
   this.bgcolor = '#ff0';
@@ -1063,9 +1066,6 @@ function Upgrade() {
 
   this.cropid = undefined; // if not undefined, it means the upgrade is related to this crop
 
-  //this.isupgrade = false; // if true, this is one of the standard crop upgrades, matching to the crop with cropid
-
-  this.istreebasedupgrade = false; // is one of the upgrades that comes from the tree, such as weather and choice upgrades.
 
   // gets the name, taking stage into account if it has stages
   this.getName = function() {
@@ -2210,7 +2210,8 @@ if(challenges_order.length != registered_challenges.length) {
 function Crop2() {
   this.name = 'a';
   this.cost = Res();
-  this.prod = Res();
+  this.prod = Res(); // unused for ethereal crops...
+  this.effect = Num(0); // amount of boost to basic field this crop gives, if any, for the relevant crop type
   this.index = 0;
   this.planttime = 0;
   this.boost = Num(0);
@@ -2312,6 +2313,8 @@ function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_de
   crop.planttime = planttime;
   crop.image = image;
   crop.tagline = opt_tagline || '';
+
+  // this boost is for lotuses only, that is, for crops that boost neighboring ethereal crops, not for crops that boost basic fields crops
   crop.boost = boost;
 
   crop.treelevel2 = treelevel2;
@@ -2319,31 +2322,35 @@ function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_de
   return crop.index;
 }
 
-function registerBerry2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+function registerBerry2(name, treelevel2, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_BERRY;
+  crop.effect = effect;
   return index;
 }
 
-function registerMushroom2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+function registerMushroom2(name, treelevel2, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_MUSH;
+  crop.effect = effect;
   return index;
 }
 
-function registerFlower2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+function registerFlower2(name, treelevel2, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_FLOWER;
+  crop.effect = effect;
   return index;
 }
 
-function registerNettle2(name, treelevel2, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+function registerNettle2(name, treelevel2, cost, boost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
   var crop = crops2[index];
   crop.type = CROPTYPE_NETTLE;
+  crop.effect = effect;
   return index;
 }
 
@@ -2378,28 +2385,28 @@ var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Autom
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', 0, Res({resin:10}), 60, 'boosts berries 25% (additive)', 'boosts berries in the basic field 25% (additive)', blackberry);
+var berry2_0 = registerBerry2('blackberry', 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field 25% (additive)', blackberry);
 // for treelevel2=1
-var berry2_1 = registerBerry2('blueberry', 1, Res({resin:100}), 120, 'boosts berries 100% (additive)', 'boosts berries in the basic field 100% (additive)', blueberry);
-var berry2_2 = registerBerry2('cranberry', 4, Res({resin:100000}), 180, 'boosts berries 400% (additive)', 'boosts berries in the basic field 400% (additive)', cranberry);
+var berry2_1 = registerBerry2('blueberry', 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
+var berry2_2 = registerBerry2('cranberry', 4, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
 
 // mushrooms2
 crop2_register_id = 50;
-var mush2_0 = registerMushroom2('champignon', 0, Res({resin:20}), 120, 'boosts mushrooms 25% (additive)', 'boosts mushrooms spore production in the basic field 25% without increasing seeds consumption (additive)', champignon);
-var mush2_1 = registerMushroom2('morel', 3, Res({resin:20000}), 180, 'boosts mushrooms 100% (additive)', 'boosts mushrooms spore production in the basic field 100% without increasing seeds consumption (additive)', morel);
+var mush2_0 = registerMushroom2('champignon', 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
+var mush2_1 = registerMushroom2('morel', 3, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
 
 // flowers2
 crop2_register_id = 75;
-var flower2_0 = registerFlower2('clover', 0, Res({resin:50}), 120, 'boosts flowers by 25% (additive)', 'boosts the boosting effect of flowers in the basic field by 25% (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
-var flower2_1 = registerFlower2('cornflower', 3, Res({resin:25000}), 180, 'boosts flowers by 100% (additive)', 'boosts the boosting effect of flowers in the basic field by 100% (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
+var flower2_0 = registerFlower2('clover', 0, Res({resin:50}), 120, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
+var flower2_1 = registerFlower2('cornflower', 3, Res({resin:25000}), 180, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
 
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, Res({resin:200}), 0.25, 60, 'boosts nettles by 25% (additive)', 'boosts nettles in the basic field by 25% (additive).', nettle);
+var nettle2_0 = registerNettle2('nettle', 2, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', nettle);
 
 crop2_register_id = 150;
-var lotus2_0 = registerLotus2('white lotus', 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom and flower by 50%. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
-var lotus2_1 = registerLotus2('pink lotus', 4, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom and flower by 400%. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', pinklotus);
+var lotus2_0 = registerLotus2('white lotus', 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
+var lotus2_1 = registerLotus2('pink lotus', 4, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', pinklotus);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2544,21 +2551,19 @@ var upgrade2_season = [];
 
 upgrade2_season[0] = registerUpgrade2('improve spring', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (additive). Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
+}, function(){return true;}, 0, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (scales by n^1.25). Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
 
 upgrade2_season[1] = registerUpgrade2('improve summer', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (additive). Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
+}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (scales by n^1.25). Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
 
 upgrade2_season[2] = registerUpgrade2('improve autumn', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (additive). Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
+}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (scales by n^1.25). Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
 
 upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (additive).', undefined, undefined, tree_images[3][1][3]);
-
-
+}, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (scales by n^1.25).', undefined, undefined, tree_images[3][1][3]);
 
 
 var LEVEL2 = 0; // variable used for the required treelevel2 for groups of upgrades below
@@ -3066,8 +3071,9 @@ var bonus_season_berry_summer = 2;
 var bonus_season_autumn_mushroom = 2;
 var bonus_season_autumn_mistletoe = 1.5;
 var malus_season_winter = 0.75;
-var bonus_season_winter_tree = 1.5;
+var bonus_season_winter_tree = 1.65;
 var bonus_season_winter_resin = 1.5;
+var season_ethereal_upgrade_exponent = 1.25;
 
 
 function getSpringFlowerBonus() {
@@ -3075,7 +3081,9 @@ function getSpringFlowerBonus() {
 
   var ethereal_season = state.upgrades2[upgrade2_season[0]].count;
   if(ethereal_season) {
-    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[0]).addr(1);
+    //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[0]).addr(1);
+    var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
+    var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[0]).addr(1);
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
@@ -3093,7 +3101,9 @@ function getSummerBerryBonus() {
 
   var ethereal_season = state.upgrades2[upgrade2_season[1]].count;
   if(ethereal_season) {
-    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[1]).addr(1);
+    //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[1]).addr(1);
+    var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
+    var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[1]).addr(1);
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
@@ -3111,7 +3121,9 @@ function getAutumnMushroomBonus() {
 
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
   if(ethereal_season) {
-    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
+    //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
+    var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
+    var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[2]).addr(1);
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
@@ -3145,7 +3157,9 @@ function getWinterTreeWarmth() {
 
   var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
   if(ethereal_season) {
-    var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[3]).addr(1);
+    //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[3]).addr(1);
+    var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
+    var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[3]).addr(1);
     bonus = bonus.mul(ethereal_season_bonus);
   }
 

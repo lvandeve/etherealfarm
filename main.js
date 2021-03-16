@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // meaning:
 // -major: 0..63 represents decimal 0.0..6.3, e.g. 1 to set to version 0.1, 10 to set to version 1.0.
 // -minor: 0..4095: increment for any minor features and fixes, e.g. if major has value 1 and this has value 1234, then the version is shown as 0.1.1234
-var version = 4096*1+46;
+var version = 4096*1+47;
 var version_sub = 0;
 // ^ sub-version: if non-0, adds 'b', 'c'. ... to the version name.
 // Should not affect savegame format. No changelog entry needed.

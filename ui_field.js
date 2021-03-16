@@ -606,7 +606,7 @@ function initFieldUI() {
 
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
-          return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a has fern appeared, letting it sit longer does not change the amount it gives.';
+          return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a fern has appeared, letting it sit longer does not change the amount it gives.';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there

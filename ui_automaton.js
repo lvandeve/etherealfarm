@@ -167,8 +167,9 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   updateEnableButton(flex);
   addButtonAction(flex.div, bind(function(flex) {
-    state.automaton_enabled = !state.automaton_enabled;
-    updateEnableButton(flex);
+    actions.push({type:ACTION_TOGGLE_AUTOMATON, what:0, on:(!state.automaton_enabled), function() {
+      updateEnableButton(flex);
+    }});
     update();
   }, flex));
   flex.isGlobalButtonItself = true;
@@ -246,9 +247,10 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updateUpgradeButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      state.automaton_autoupgrade = state.automaton_autoupgrade ? 0 : 1;
-      updateUpgradeButton(flex);
-      //update();
+      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), function() {
+        updateEnableButton(flex);
+      }});
+      update();
     }, flex));
 
     var advanced = state.automaton_unlocked[1] >= 2;
@@ -342,9 +344,10 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updatePlantButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      state.automaton_autoplant = state.automaton_autoplant ? 0 : 1;
-      updatePlantButton(flex);
-      //update();
+      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), function() {
+        updateEnableButton(flex);
+      }});
+      update();
     }, flex));
 
     var advanced = state.automaton_unlocked[2] >= 2;

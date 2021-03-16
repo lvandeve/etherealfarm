@@ -20,6 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.47 (2021-03-16):';
+  text += '<br/>• Challenge production bonus now also applies to mushrooms, significantly boosting spores output';
+  // this is because otherwise the mushroom/berry produciton/consumption balance will get lost with higher level ethereal fields
+  text += '<br/>• Ethereal mushroom boost also boosts consumption now, ethereal nettles buffed a bit to compensate';
+  text += '<br/>• Season effect rebalancing to fix the winter imbalance: before, winter scaled quadratically while other seasons only linearly with ethereal upgrades. After, all scale by n^1.25 instead.';
+  text += '<br/>• Winter warmth now only boosts berries and mushrooms (since boosting flowers too is what made it quadratic)';
+  text += '<br/>• Clarified in tooltip that lotus also boosts ethereal nettles';
+  // display cost in shift+plant chips, ethereal crop bonus breakdown, unlock crop research message shows cost of first planting, toggling automaton undo-able, ...
+  text += '<br/>• Various small UI improvements';
+  text += '<br/><br/>';
+
   text += '0.1.46 (2021-03-14):';
   // This is also in preparation for auto-plant, which is half-implemented but not yet its own update timing computations as that revealed the bugs with auto upgrade
   text += '<br/>• Bugfixes related to update timing and automaton computation.';

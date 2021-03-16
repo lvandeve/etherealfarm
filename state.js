@@ -774,39 +774,24 @@ function computeDerived(state) {
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
-      if(f.hasCrop() && f.growth >= 1) {
-        var index = f.cropIndex();
-        if(index == berry2_0) {
+      var c = f.getCrop();
+      if(!!c && f.growth >= 1) {
+        var type = c.type;
+        if(type == CROPTYPE_BERRY) {
           var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(0.25));
+          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mul(c.effect));
         }
-        if(index == berry2_1) {
+        if(type == CROPTYPE_MUSH) {
           var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(1));
+          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mul(c.effect));
         }
-        if(index == berry2_2) {
+        if(type == CROPTYPE_FLOWER) {
           var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mulr(4));
+          state.ethereal_flower_bonus.addInPlace(boost.addr(1).mul(c.effect));
         }
-        if(index == mush2_0) {
+        if(type == CROPTYPE_NETTLE) {
           var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(0.25));
-        }
-        if(index == mush2_1) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mulr(1));
-        }
-        if(index == flower2_0) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(0.25));
-        }
-        if(index == flower2_1) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_flower_bonus.addInPlace(boost.addr(1).mulr(1));
-        }
-        if(index == nettle2_0) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_nettle_bonus.addInPlace(boost.addr(1).mulr(0.25));
+          state.ethereal_nettle_bonus.addInPlace(boost.addr(1).mul(c.effect));
         }
       }
     }

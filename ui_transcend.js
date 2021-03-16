@@ -78,7 +78,7 @@ function getTranscendValueInfo(opt_from_challenge) {
 
 function createTranscendDialog(opt_from_challenge) {
   var dialog = createDialog(DIALOG_MEDIUM, function(e) {
-      actions.push({type:ACTION_TRANCSEND, challenge:0});
+      actions.push({type:ACTION_TRANSCEND, challenge:0});
       closeAllDialogs();
       update();
   }, 'transcend', 'cancel');
@@ -136,7 +136,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
     dialog = createDialog();
   } else {
     var okfun = function() {
-      actions.push({type:ACTION_TRANCSEND, challenge:c.index});
+      actions.push({type:ACTION_TRANSCEND, challenge:c.index});
       closeAllDialogs();
       update();
     };

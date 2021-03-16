@@ -40,6 +40,22 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   }
 
 
+
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
+    var effect = c.effect;
+    var boost = Crop2.getNeighborBoost(f);
+    var total = effect.mul(boost.addr(1));
+    result += '<br/>';
+    result += 'Boost: ' + total.toPercentString() + '<br/>';
+    if(boost.neqr(0)) {
+      result += '<br/>';
+      result += 'Breakdown:';
+      result += '<br/>';
+      result += ' • Base: ' + effect.toPercentString() + '<br/>';
+      result += ' • Lotuses: +' + (boost).toPercentString() + ': ' + total.toPercentString() + '<br/>';
+    }
+  }
+
   if(f.growth >= 1) {
     var prod = c.getProd(f);
     if(!prod.empty()) {
@@ -48,14 +64,6 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     }
     if(c.boost.neqr(0)) {
       result += '<br/>Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
-    }
-
-    if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER) {
-      var boost = Crop2.getNeighborBoost(f);
-      if(boost.neqr(0)) {
-        result += '<br/>';
-        result += 'This effect is boosted by neighbors here: ' + (boost).toPercentString() + '<br/>';
-      }
     }
   }
 

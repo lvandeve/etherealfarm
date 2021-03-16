@@ -24,9 +24,11 @@ function updateRightPane() {
   var w = window.innerWidth;
   var h = window.innerHeight;
   if(w / h < 0.9 || !state.sidepanel) {
-    rightFlex.div.style.display = 'none';
+    //rightFlex.div.style.display = 'none';
+    rightFlex.div.style.visibility = 'hidden';
   } else {
-    rightFlex.div.style.display = 'block';
+    //rightFlex.div.style.display = 'block';
+    rightFlex.div.style.visibility = 'visible';
   }
 
   topRightFlex.clear();
@@ -59,15 +61,19 @@ function updateRightPane() {
           var chip1 = new Flex(chip, 0, 0.5, 1, 1);
           addButtonAction(chip0.div, function() {
             if(!automatonEnabled()) return;
-            state.automaton_autoplant = 1 - state.automaton_autoplant;
-            updateAutomatonUI();
-            updateRightPane();
+            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(1 - state.automaton_autoplant), function() {
+              updateAutomatonUI();
+              updateRightPane();
+            }});
+            update();
           });
           addButtonAction(chip1.div, function() {
             if(!automatonEnabled()) return;
-            state.automaton_autoupgrade = 1 - state.automaton_autoupgrade;
-            updateAutomatonUI();
-            updateRightPane();
+            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), function() {
+              updateAutomatonUI();
+              updateRightPane();
+            }});
+            update();
           });
           var text0 = 'plant ' + (autoPlantEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
           var text1 = 'upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
@@ -83,9 +89,11 @@ function updateRightPane() {
         } else if(automatonEnabled() && state.automaton_unlocked[1]) {
           addButtonAction(chip.div, function() {
             if(!automatonEnabled()) return;
-            state.automaton_autoupgrade = 1 - state.automaton_autoupgrade;
-            updateAutomatonUI();
-            updateRightPane();
+            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), function() {
+              updateAutomatonUI();
+              updateRightPane();
+            }});
+            update();
           });
           text = 'upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
           styleButton0(chip.div);
@@ -142,5 +150,7 @@ function updateRightPane() {
     }
     topRightFlex.div.innerHTML = text;
   }
+
+  //rightFlex.update();
 }
 

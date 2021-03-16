@@ -557,9 +557,10 @@ var ACTION_DELETE2 = action_index++;
 var ACTION_REPLACE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++;
-var ACTION_TRANCSEND = action_index++; // also includes starting a challenge
+var ACTION_TRANSCEND = action_index++; // also includes starting a challenge
 var ACTION_FRUIT_SLOT = action_index++;
 var ACTION_FRUIT_LEVEL = action_index++;
+var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 
 var lastSaveTime = util.getTime();
 
@@ -1648,6 +1649,10 @@ var update = function(opt_fromTick) {
             if(u.is_choice) {
               message += '. Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
             }
+            if(u.iscropunlock) {
+              var cost = crops[u.cropid].getCost();
+              message += '. Planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+            }
             if(!shift && !action.by_automaton) showMessage(message);
             if(!action.by_automaton) store_undo = true;
             state.c_numupgrades++;
@@ -2084,7 +2089,20 @@ var update = function(opt_fromTick) {
           }
         }
         updateFruitUI();
-      } else if(type == ACTION_TRANCSEND) {
+      } else if(type == ACTION_TOGGLE_AUTOMATON) {
+        // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
+        if(action.what == 0) {
+          state.automaton_enabled = action.on;
+        }
+        if(action.what == 1) {
+          state.automaton_autoupgrade = action.on;
+        }
+        if(action.what == 2) {
+          state.automaton_autoplant = action.on;
+        }
+        if(action.fun) action.fun();
+        store_undo = true;
+      } else if(type == ACTION_TRANSCEND) {
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
           // do nothing, invalid reset attempt
         } else if(state.treelevel >= min_transcension_level || state.challenge) {
@@ -2595,11 +2613,11 @@ function showShiftCropChip(crop_id) {
   var verb = planting ? 'planting' : (deleting ? 'deleting' : 'replacing');
 
 
-  shiftCropFlex = new Flex(gameFlex, 0.25, 0.85, 0.75, 0.95, 0.5);
+  shiftCropFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.5);
   shiftCropFlex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCropFlex.div.style.zIndex = 100; // above medal chip
 
-  var textFlex = new Flex(shiftCropFlex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35]);
+  var textFlex = new Flex(shiftCropFlex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35], 0.4);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
@@ -2612,7 +2630,19 @@ function showShiftCropChip(crop_id) {
       var canvasFlex = new Flex(shiftCropFlex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(c.image[4], canvas);
-      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + upper(c.name);
+      var updatefun = function() {
+        var recoup = Res(0);
+        if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup2);
+        var cost = c.getCost().sub(recoup);
+        var afford = cost.le(state.res);
+        textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br>' + upper(c.name) + '<br>' + (afford ? '' : '<font color="#888">') + 'Cost: ' + cost + ' (' + getCostAffordTimer(cost) + ')' + (afford ? '' : '</font>');
+      };
+      updatefun();
+      registerUpdateListener(function() {
+        if((!cropChipShiftDown && !cropChipCtrlDown) || !shiftCropFlexShowing) return false;
+        updatefun();
+        return true;
+      });
     } else {
       textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + 'none set';
     }
@@ -2691,21 +2721,24 @@ function showShiftCrop2Chip(crop_id) {
   shiftCrop2Flex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCrop2Flex.div.style.zIndex = 100; // above medal chip
 
-  var textFlex = new Flex(shiftCrop2Flex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35]);
+  var textFlex = new Flex(shiftCrop2Flex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35], 0.5);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
 
   if(deleting) {
-
     var recoup = f.getCrop().getCost(-1).mulr(cropRecoup2);
     textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
+      var recoup = Res(0);
+      if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup2);
+      var cost = c.getCost().sub(recoup);
+      var afford = cost.le(state.res);
       var canvasFlex = new Flex(shiftCrop2Flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(c.image[4], canvas);
-      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + upper(c.name);
+      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br>' + upper(c.name) + '<br>' + (afford ? '' : '<font color="#888">') + 'Cost: ' + cost + (afford ? '' : '</font>');
     } else {
       textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + 'none set';
     }
