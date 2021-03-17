@@ -61,7 +61,7 @@ function updateRightPane() {
           var chip1 = new Flex(chip, 0, 0.5, 1, 1);
           addButtonAction(chip0.div, function() {
             if(!automatonEnabled()) return;
-            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(1 - state.automaton_autoplant), function() {
+            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(1 - state.automaton_autoplant), fun:function() {
               updateAutomatonUI();
               updateRightPane();
             }});
@@ -69,7 +69,7 @@ function updateRightPane() {
           });
           addButtonAction(chip1.div, function() {
             if(!automatonEnabled()) return;
-            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), function() {
+            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
               updateAutomatonUI();
               updateRightPane();
             }});
@@ -89,7 +89,7 @@ function updateRightPane() {
         } else if(automatonEnabled() && state.automaton_unlocked[1]) {
           addButtonAction(chip.div, function() {
             if(!automatonEnabled()) return;
-            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), function() {
+            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
               updateAutomatonUI();
               updateRightPane();
             }});

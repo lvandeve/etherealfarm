@@ -1481,10 +1481,10 @@ var update = function(opt_fromTick) {
     state.prevtime = util.getTime();
   } else {
     // compensate for computer clock mismatch issues
-    if(state.lastFernTime > state.time) state.lastFernTime = state.time;
-    if(state.misttime > state.time) state.misttime = 0;
-    if(state.suntime > state.time) state.suntime = 0;
-    if(state.rainbowtime > state.time) state.rainbowtime = 0;
+    if(state.lastFernTime > state.prevtime) state.lastFernTime = state.prevtime;
+    if(state.misttime > state.prevtime) state.misttime = 0;
+    if(state.suntime > state.prevtime) state.suntime = 0;
+    if(state.rainbowtime > state.prevtime) state.rainbowtime = 0;
   }
 
   var prevseasongain = undefined;

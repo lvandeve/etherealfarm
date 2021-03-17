@@ -167,7 +167,7 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   updateEnableButton(flex);
   addButtonAction(flex.div, bind(function(flex) {
-    actions.push({type:ACTION_TOGGLE_AUTOMATON, what:0, on:(!state.automaton_enabled), function() {
+    actions.push({type:ACTION_TOGGLE_AUTOMATON, what:0, on:(!state.automaton_enabled), fun:function() {
       updateEnableButton(flex);
     }});
     update();
@@ -247,7 +247,7 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updateUpgradeButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), function() {
+      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), fun:function() {
         updateEnableButton(flex);
       }});
       update();
@@ -344,7 +344,7 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updatePlantButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), function() {
+      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), fun:function() {
         updateEnableButton(flex);
       }});
       update();
