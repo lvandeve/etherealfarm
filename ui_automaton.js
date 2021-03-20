@@ -383,6 +383,21 @@ function updateAutomatonUI() {
       registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on autoplanting');
     }
 
+    texth = 0.1;
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex.div.innerText = 'Auto-plants done: ' + state.c_numautoplant;
+    y += texth;
+    var numflex = flex;
+    var lastseennum = state.c_numautoplant;
+    registerUpdateListener(function() {
+      if(!numflex || !document.body.contains(numflex.div)) return false;
+      if(lastseennum != state.c_numautoplant) {
+        numflex.div.innerText = 'Auto-plants done: ' + state.c_numautoplant;
+        lastseennum = state.c_numautoplant;
+      }
+      return true;
+    });
+
   } else if(state.automaton_unlocked[1]) {
     texth = 0.15;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);

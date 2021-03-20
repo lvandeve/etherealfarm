@@ -38,7 +38,7 @@ function updateRightPane() {
 
   topRightFlex.clear();
 
-  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0);
+  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (state.automaton_unlocked[1] ? 8 : 0) | (state.automaton_unlocked[2] ? 16 : 0);
 
   if(upgradeUIUpdated || automatonState != rightPanelPrevAutomationState) {
     upgradeUIUpdated = false;
@@ -69,7 +69,7 @@ function updateRightPane() {
 
       if(i == 0) {
         chip.clear();
-        var text = 'upgrades';
+        var text = 'Upgrades';
         if(automatonEnabled() && state.automaton_unlocked[1] && state.automaton_unlocked[2]) {
           var chip0 = new Flex(chip, 0, 0, 1, 0.5);
           var chip1 = new Flex(chip, 0, 0.5, 1, 1);
@@ -89,8 +89,8 @@ function updateRightPane() {
             }});
             update();
           });
-          var text0 = 'plant ' + (autoPlantEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
-          var text1 = 'upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
+          var text0 = 'Plant ' + (autoPlantEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
+          var text1 = 'Upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
           styleButton0(chip0.div);
           styleButton0(chip1.div);
           centerText2(chip0.div);
@@ -110,11 +110,11 @@ function updateRightPane() {
             }});
             update();
           });
-          text = 'upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
-          styleButton0(chip.div);
-          centerText2(chip.div);
-          chip.div.title = 'quick toggle auto-upgrades';
-          chip.div.textEl.innerHTML = text;
+          text = 'Upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
+          styleButton0(chip0.div);
+          centerText2(chip0.div);
+          chip0.div.title = 'quick toggle auto-upgrades';
+          chip0.div.textEl.innerHTML = text;
           setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
         } else {
           centerText2(chip.div);
@@ -138,7 +138,7 @@ function updateRightPane() {
   }
 
   if(state.g_numresets > 0 || state.upgrades_unlocked > 0) {
-    var text = '<center>summary</center>';
+    var text = '<center>Summary</center>';
     text += '<br>';
     if(state.g_res.resin.gtr(0)) {
       text += '• Total resin earned ever: ' + state.g_res.resin.toString();

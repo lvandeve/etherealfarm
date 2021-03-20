@@ -78,7 +78,7 @@ function makeMainDivs() {
   rightFlex = new Flex(mainFlex, [0, 0.99, 0.75], 0, [0, 0.99, 1.1], 1);
   rightFlex.div.style.overflow = 'hidden'; // avoid creating unwanted global scrollbars
   //rightFlex.div.style.border = '4px solid red';
-  topRightFlex = new Flex(rightFlex, 0.02, 0.02, 0.98, 0.25, 0.64);
+  topRightFlex = new Flex(rightFlex, 0.02, 0.02, 0.98, 0.25, 0.6);
   bottomRightFlex = new Flex(rightFlex, 0, 0.25, 1, 0.99);
 
   mainFlex.update();

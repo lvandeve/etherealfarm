@@ -286,15 +286,15 @@ function createChallengeDialog(opt_from_challenge) {
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
-    var isnew = !c2.completed;
-    var isnotfull = !c.fullyCompleted();
+    var isnew = !c2.completed && !(state.challenge == c.index && state.treelevel >= c.targetlevel[0]);
+    var isnotfull = !c.fullyCompleted() && !(state.challenge == c.index && c2.completed == c.targetlevel.length - 1 && state.treelevel >= c.targetlevel[c2.completed])
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;
     styleButton(button.div);
     var text = upper(c.name);
     if(isnew) text += ' (New!)';
     else if(isnotfull) text += ' (New stage!)';
-    else text += ' (' + c2.maxlevel + ')';
+    else text += ' (' + Math.max(c2.maxlevel, state.challenge == c.index ? state.treelevel : 0) + ')';
     button.div.textEl.innerText = text;
     button.div.onclick = bind(function(c) {
       createChallengeDescriptionDialog(c.index, false);

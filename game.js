@@ -401,6 +401,8 @@ function softReset(opt_challenge) {
     state.p_numfruits = state.c_numfruits;
     state.p_numfruitupgrades = state.c_numfruitupgrades;
     state.p_numautoupgrades = state.c_numautoupgrades;
+    state.p_numautoplant = state.c_numautoplant;
+    state.p_numautodelete = state.c_numautodelete;
 
     state.p_treelevel = state.treelevel;
   }
@@ -439,6 +441,8 @@ function softReset(opt_challenge) {
   state.c_numfruits = 0;
   state.c_numfruitupgrades = 0;
   state.c_numautoupgrades = 0;
+  state.c_numautoplant = 0;
+  state.c_numautodelete = 0;
 
   // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
   if(!state.challenge) {
@@ -663,6 +667,7 @@ function getRandomPreferablyEmptyFieldSpot() {
 
 function getSeasonAt(time) {
   var t = time - state.g_starttime;
+  if(isNaN(t)) return 0;
   t /= (24 * 3600);
   var result = Math.floor(t) % 4;
   if(result < 0) result = 4 + result;
@@ -1848,6 +1853,10 @@ var update = function(opt_fromTick) {
               if(state.challenge != challenge_wither) {
                 state.g_numunplanted++;
                 state.c_numunplanted++;
+                if(action.by_automaton) {
+                  state.c_numautodelete++;
+                  state.g_numautodelete++;
+                }
               }
             }
             f.index = 0;
@@ -1877,6 +1886,10 @@ var update = function(opt_fromTick) {
             } else {
               state.g_numplanted++;
               state.c_numplanted++;
+              if(action.by_automaton) {
+                state.c_numautoplant++;
+                state.g_numautoplant++;
+              }
             }
           }
           state.res.subInPlace(cost);

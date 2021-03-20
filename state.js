@@ -354,6 +354,8 @@ function State() {
   this.g_numfruits = 0; // fruits received
   this.g_numfruitupgrades = 0;
   this.g_numautoupgrades = 0; // upgrades done with automaton. These are also counted in the standard g_numupgrades as well.
+  this.g_numautoplant = 0;
+  this.g_numautodelete = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -376,6 +378,8 @@ function State() {
   this.p_numfruits = 0;
   this.p_numfruitupgrades = 0;
   this.p_numautoupgrades = 0;
+  this.p_numautoplant = 0;
+  this.p_numautodelete = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -396,6 +400,8 @@ function State() {
   this.c_numfruits = 0;
   this.c_numfruitupgrades = 0;
   this.c_numautoupgrades = 0;
+  this.c_numautoplant = 0;
+  this.c_numautodelete = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
@@ -825,7 +831,9 @@ function computeDerived(state) {
       if(c.fullyCompleted()) state.challenges_completed2++;
       state.challenges_completed3 += c2.completed;
     }
-    if(c2.unlocked && c2.num == 0) state.untriedchallenges++;
+    if(c2.unlocked && c2.num == 0 && state.challenge != c.index) {
+      state.untriedchallenges++;
+    }
     if(c2.maxlevel > 0) {
       state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevel));
     }

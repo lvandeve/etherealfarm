@@ -296,6 +296,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numfruits);
   processUint(state.g_numfruitupgrades);
   processUint(state.g_numautoupgrades);
+  processUint(state.g_numautoplant);
+  processUint(state.g_numautodelete);
 
 
   section = 12; id = 0; // current run stats
@@ -316,6 +318,8 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numfruits);
   processUint(state.c_numfruitupgrades);
   processUint(state.c_numautoupgrades);
+  processUint(state.c_numautoplant);
+  processUint(state.c_numautodelete);
 
 
   section = 13; id = 0; // previous run stats
@@ -337,6 +341,8 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numfruits);
     processUint(state.p_numfruitupgrades);
     processUint(state.p_numautoupgrades);
+    processUint(state.p_numautoplant);
+    processUint(state.p_numautodelete);
   }
 
 
@@ -885,6 +891,8 @@ function decState(s) {
   if(save_version >= 4096*1+17) state.g_numfruits = processUint();
   if(save_version >= 4096*1+17) state.g_numfruitupgrades = processUint();
   if(save_version >= 4096*1+42) state.g_numautoupgrades = processUint();
+  if(save_version >= 4096*1+49) state.g_numautoplant = processUint();
+  if(save_version >= 4096*1+49) state.g_numautodelete = processUint();
   if(error) return err(4);
 
 
@@ -906,6 +914,8 @@ function decState(s) {
   if(save_version >= 4096*1+17) state.c_numfruits = processUint();
   if(save_version >= 4096*1+17) state.c_numfruitupgrades = processUint();
   if(save_version >= 4096*1+42) state.c_numautoupgrades = processUint();
+  if(save_version >= 4096*1+49) state.c_numautoplant = processUint();
+  if(save_version >= 4096*1+49) state.c_numautodelete = processUint();
   if(error) return err(4);
 
 
@@ -928,6 +938,8 @@ function decState(s) {
     if(save_version >= 4096*1+17) state.p_numfruits = processUint();
     if(save_version >= 4096*1+17) state.p_numfruitupgrades = processUint();
     if(save_version >= 4096*1+42) state.p_numautoupgrades = processUint();
+    if(save_version >= 4096*1+49) state.p_numautoplant = processUint();
+    if(save_version >= 4096*1+49) state.p_numautodelete = processUint();
     if(error) return err(4);
   }
 

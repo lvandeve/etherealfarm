@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.49 (2021-03-20):';
+  text += '<br/>• Bugfixes';
+  text += '<br/><br/>';
+
   text += '0.1.48 (2021-03-20):';
   text += '<br/>• Added auto-plant for automaton, which auto-replaces crops with better versions. Requires high enough ethereal tree and completing a new challenge to unlock';
   text += '<br/>• Added wither challenge';
