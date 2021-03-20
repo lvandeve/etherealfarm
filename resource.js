@@ -281,7 +281,7 @@ le is implemented as: all individual resources le, so means "all resources are l
 gt is implmemeted as !le, so means "any resource is strictly greater than"
 lt is implmemeted as !ge, so means "any resource is strictly lesser than"
 Reason why lt and gt are different than ge and le: an lt or gt for all (rather than any) resources would almost always return false since there'll always be some irrelevant resource type that's 0 on both sides.
-For cost computations, use the following:
+For cost computations (including treating NaN in have as can't afford), use the following:
 for can_afford: have.ge(cost) or cost.le(have)
 for cannot_afford: have.lt(cost) or cost.gt(have)
 */
@@ -317,11 +317,11 @@ Res.le = function(a, b) { return a.le(b); };
 Res.prototype.neq = function(b) { return !this.eq(b); }
 Res.neq = function(a, b) { return !Res.eq(a, b); }
 
-// strictly greater than for any resource
+// strictly greater than for any resource. This is same as !this.le(b)
 Res.prototype.gt = function(b) { return !this.le(b); }
 Res.gt = function(a, b) { return !Res.le(a, b); }
 
-// strictly lesser than for any resource
+// strictly lesser than for any resource. This is same as !this.ge(b)
 Res.prototype.lt = function(b) { return !this.ge(b); }
 Res.lt = function(a, b) { return !Res.ge(a, b); }
 
@@ -345,6 +345,15 @@ Res.prototype.empty = function() {
   return true;
 };
 Res.empty = function(a) { return a.empty(); };
+
+Res.prototype.hasNaN = function() {
+  var arr = this.toArray();
+  for(var i = 0; i < arr.length; i++) {
+    if(arr[i].isNaN()) return true;
+  }
+  return false;
+};
+Res.hasNaN = function(a) { return a.hasNaN(); };
 
 Res.prototype.hasNaNOrInfinity = function() {
   var arr = this.toArray();

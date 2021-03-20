@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.48 (2021-03-20):';
+  text += '<br/>• Added auto-plant for automaton, which auto-replaces crops with better versions. Requires high enough ethereal tree and completing a new challenge to unlock';
+  text += '<br/>• Added wither challenge';
+  text += '<br/>• There is no auto-unlock yet (which is needed to fully automate a run), that is planned for a future version but it\'s useful to already release auto-plant now even without auto-unlock.';
+  text += '<br/>• Fixed issue that made upgrade buttons sometimes unresponsive while automaton is doing upgrades even when having more than enough resources';
+  text += '<br/><br/>';
+
   text += '0.1.47 (2021-03-16):';
   text += '<br/>• Challenge production bonus now also applies to mushrooms, significantly boosting spores output';
   // this is because otherwise the mushroom/berry produciton/consumption balance will get lost with higher level ethereal fields

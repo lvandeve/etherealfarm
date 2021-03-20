@@ -566,6 +566,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['worker bees (challenge)', true, bonus_bees, result.clone()]);
   }
 
+  // wither challenge
+  if(f && state.challenge == challenge_wither) {
+    var t = Num(f.growth);
+    result.posmulInPlace(t);
+    if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
+  }
+
   // leech, only computed here in case of "pretend", without pretent leech is computed in more correct way in precomputeField()
   if(pretend && this.type == CROPTYPE_SHORT && f) {
     var leech = this.getLeech(f);
@@ -2156,34 +2163,37 @@ function isNoUpgrade(u) {
 
 
 // This challenge does not give resin, twigs or fruits. This challenge plants crops immediately, so it's easier to reach higher level faster while manually present
-// if this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
+// If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
+// The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
+// would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
 var challenge_wither = registerChallenge('wither challenge', [30, 35], Num(0.1),
 `
 During this challenge, crops wither and must be replanted.
 `,
 `
 • Planted crops are fullgrown immediately<br>
-• Planted crops wither, they only exist for a limited time<br>
+• Planted crops wither and disappear after 2 minutes<br>
+• Crops gradually produce less and less as they wither<br>
+• Cannot delete crops, they'll disappear over time instead, but you can replace crops immediately by more expensive crops of the same type.<br>
 `,
 ['unlock the auto-plant ability of the automaton' ,'add more options to the auto-plant ability of the automaton'],
-'reaching ethereal tree level 2 and having automaton',
+'reaching ethereal tree level 3 and having automaton with autoupgrade',
 function() {
-  return false; // implementation not yet finished
-  //return state.treelevel2 >= 3 && haveAutomaton() && state.automaton_unlocked[1];
+  return state.treelevel2 >= 3 && haveAutomaton() && state.automaton_unlocked[1];
 },
 [
 function() {
-  state.automaton_unlocked[2] = Math.max(1, state.automaton_unlocked[1] || 0);
+  state.automaton_unlocked[2] = Math.max(1, state.automaton_unlocked[2] || 0);
   showRegisteredHelpDialog(31);
-  showMessage('Auto-upgrade unlocked!', C_AUTOMATON, 1067714398);
+  showMessage('Auto-plant unlocked!', C_AUTOMATON, 1067714398);
 },
 function() {
-  state.automaton_unlocked[1] = Math.max(2, state.automaton_unlocked[1] || 0);
-  for(var i = 1; i < state.automaton_autoupgrade_fraction.length; i++) {
-    state.automaton_autoupgrade_fraction[i] = state.automaton_autoupgrade_fraction[0];
+  state.automaton_unlocked[2] = Math.max(2, state.automaton_unlocked[2] || 0);
+  for(var i = 1; i < state.automaton_autoplant_fraction.length; i++) {
+    state.automaton_autoplant_fraction[i] = state.automaton_autoplant_fraction[0];
   }
   showRegisteredHelpDialog(32);
-  showMessage('Auto-upgrade extra options unlocked!', C_AUTOMATON, 1067714398);
+  showMessage('Auto-plant extra options unlocked!', C_AUTOMATON, 1067714398);
 }
 ], 0);
 
@@ -2393,7 +2403,7 @@ var berry2_2 = registerBerry2('cranberry', 4, Res({resin:100000}), 180, Num(4), 
 // mushrooms2
 crop2_register_id = 50;
 var mush2_0 = registerMushroom2('champignon', 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
-var mush2_1 = registerMushroom2('morel', 3, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
+var mush2_1 = registerMushroom2('matsutake', 3, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
 
 // flowers2
 crop2_register_id = 75;
@@ -2923,6 +2933,7 @@ function treeLevelReq(level) {
 // NOTE: must be such that at 10, the first time the name "adult tree" is used to fit the storyline
 function treeLevelIndex(level) {
   var result = 0;
+  if(!level || level < 0) return 0;
   // 0-9: one image for each level
   if(level < 10) result = level;
   // 10-45: one image per 5 levels

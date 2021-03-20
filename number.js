@@ -492,21 +492,34 @@ Num.prototype.gt = function(b) {
   return this.b > b.scaleTo(this.e).b;
 };
 Num.gt = function(a, b) { return a.gt(b); };
+
 Num.prototype.ge = function(b) {
   if(b.eqr(0)) return this.b >= 0 && !isNaN(this.e); // avoid scaling in place to 0
   if(this.eqr(0)) return b.b < 0 && !isNaN(b.e); // avoid scaling in place to 0
   return this.b >= b.scaleTo(this.e).b;
 };
 Num.ge = function(a, b) { return a.ge(b); };
+
 Num.prototype.eq = function(b) {
   if(b.eqr(0)) return this.eqr(0); // avoid scaling in place to 0
   return this.b == b.scaleTo(this.e).b;
 };
 Num.eq = function(a, b) { return a.eq(b); };
-Num.prototype.lt = function(b) { return !this.ge(b); };
+
+Num.prototype.lt = function(b) {
+  if(b.eqr(0)) return this.b < 0 && !isNaN(this.e); // avoid scaling in place to 0
+  if(this.eqr(0)) return b.b >= 0 && !isNaN(b.e); // avoid scaling in place to 0
+  return this.b < b.scaleTo(this.e).b;
+}
 Num.lt = function(a, b) { return a.lt(b); };
-Num.prototype.le = function(b) { return !this.gt(b); };
+
+Num.prototype.le = function(b) {
+  if(b.eqr(0)) return this.b <= 0 && !isNaN(this.e); // avoid scaling in place to 0
+  if(this.eqr(0)) return b.b > 0 && !isNaN(b.e); // avoid scaling in place to 0
+  return this.b <= b.scaleTo(this.e).b;
+};
 Num.le = function(a, b) { return a.le(b); };
+
 Num.prototype.neq = function(b) { return !this.eq(b); };
 Num.neq = function(a, b) { return a.neq(b); };
 

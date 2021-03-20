@@ -406,6 +406,11 @@ function State() {
   this.reset_stats_resin = []; // log2 of 1 + resin earned during this run
   this.reset_stats_challenge = []; // what type of challenge, if any, for this run
 
+  // temp variables for visual effect, not to be saved
+  this.automatonx = 0; // for the visual planting effect
+  this.automatony = 0;
+  this.automatonfieldtime = 0; // for the visual planting effect
+
   // amount of fields with nothing on them (index 0)
   // derived stat, not to be saved
   this.numemptyfields = 0;

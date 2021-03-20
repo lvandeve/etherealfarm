@@ -647,7 +647,7 @@ Flex.prototype.removeSelf = function() {
   }
 }
 
-// removes all children and inner HTML of own div as well, but keeps self existing
+// removes all children and inner HTML (but not style)  of own div as well, but keeps self existing
 Flex.prototype.clear = function() {
   if(this.div == Flex_prevParent) Flex_prevParent = undefined;
   for(var i = 0; i < this.elements.length; i++) {
@@ -658,6 +658,14 @@ Flex.prototype.clear = function() {
   this.div.innerHTML = '';
 }
 
+// Like clear, but also clears style of own div, recreated it in fact
+Flex.prototype.clearFully = function() {
+  this.clear();
+  util.removeElement(this.div);
+  this.div = makeDiv(0, 0, 0, 0, this.parentdiv);
+  this.div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
+  this.updateSelf();
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

@@ -104,7 +104,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
   }
 
-  if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+  if(f.growth < 1 && c.type != CROPTYPE_SHORT && state.challenge != challenge_wither) {
     if(state.challenge == challenge_wither) {
       result += 'Withering. Time left: ' + util.formatDuration(witherDuration() * f.growth);
     } else {
@@ -136,6 +136,8 @@ function getCropInfoHTML(f, c, opt_detailed) {
       }
 
       result += '<br/>';
+    } else if(state.challenge == challenge_wither) {
+      result += 'Withering. Time left: ' + util.formatDuration(f.growth * witherDuration(), true, 4, true) + '<br/><br/>';
     } else {
       result += 'Growth time: ' + util.formatDuration(c.getPlantTime());
       if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
@@ -262,7 +264,7 @@ function makeTreeDialog() {
       text += '<b>Challenge active</b>: ' + upper(c.name);
       if(c.targetlevel.length > 1) {
         if(!c.fullyCompleted()) {
-          text += '<br>Next challenge target level: ' + c.targetlevel[c2.completed];
+          text += '<br>Current challenge target level: ' + c.targetlevel[c2.completed];
         }
       } else {
         if(!c2.completed) {
@@ -339,7 +341,7 @@ function makeTreeDialog() {
 
       if(getSeason() == 3) {
         text += '<br/>';
-        text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom / flower stats for crops next to the tree<br>';
+        text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats and no negative winter effect for any crop next to the tree<br>';
       }
 
       if(state.untriedchallenges) {
@@ -490,7 +492,7 @@ function makeFieldDialog(x, y) {
 
     styleButton(button0);
     button0.textEl.innerText = 'Delete';
-    button0.textEl.style.color = '#800';
+    button0.textEl.style.color = '#c00';
     registerTooltip(button0, 'Delete crop and get some of its cost back.');
     addButtonAction(button0, function() {
       actions.push({type:ACTION_DELETE, x:x, y:y});
@@ -639,11 +641,29 @@ function initFieldUI() {
         }
 
         if(!fern && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
-            makeFieldDialog(x, y);
+          makeFieldDialog(x, y);
         } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(shift && !ctrl) {
+          if(shift && ctrl) {
+            // experimental hidden feature for now, most convenient behavior needs to be found
+            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still to expensive and you wait for automaton to upgrade the plant
+            if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
+              var c = crops[state.lastPlanted];
+              var tier = state.highestoftypeunlocked[c.type];
+              var c3 = croptype_tiers[c.type][tier];
+              if(c3.getCost().gt(state.res) && tier > 0) {
+                tier--;
+                var c3 = croptype_tiers[c.type][tier];
+              }
+              if(c3.getCost().gt(state.res) && tier > 0) {
+                tier--;
+                var c3 = croptype_tiers[c.type][tier];
+              }
+              actions.push({type:ACTION_PLANT, x:x, y:y, crop:c3, shiftPlanted:true});
+              update();
+            }
+          } else if(shift && !ctrl) {
             if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
               actions.push({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
@@ -660,28 +680,48 @@ function initFieldUI() {
         } else if(f.hasCrop()) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(shift && !ctrl) {
-            if(state.allowshiftdelete) {
+          if(shift && ctrl) {
+            // experimental hidden feature for now, most convenient behavior needs to be found
+            // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
+            // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
+            var c2 = f.getCrop();
+            var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
+            state.lastPlanted = c3.index;
+            if(state.allowshiftdelete && c3.tier > c2.tier) {
+              actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
+              update();
+            }
+          } else if(shift && !ctrl) {
+            if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
               var c2 = f.getCrop();
-              if(c2.index == state.lastPlanted && c2.type != CROPTYPE_SHORT && !f.isFullGrown()) {
-                // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
-                // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
-                // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-                actions.push({type:ACTION_DELETE, x:x, y:y});
+              var safe = false;
+              if(state.allowshiftdelete) safe = true;
+              if(c.cost.gt(c2.cost) && c.type == c2.type) safe = true; // allow to use shift+click to upgrade even if the "allowshiftdelete" setting is false, since replacing to higher type is safe and not a problem if not intended (while deleting or replacing with lower type may be unsafe)
+              // the shift+delete just growing crop of same type behavior is not considered safe if state.allowshiftdelete is not enabled, since it may be surprising that shift that normally plants or replaces something can delete something too
+              if(safe) {
+                if(c2.index == state.lastPlanted && c2.type != CROPTYPE_SHORT && !f.isFullGrown()) {
+                  // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+                  // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+                  // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+                  actions.push({type:ACTION_DELETE, x:x, y:y});
+                } else {
+                  actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
+                }
+                update();
               } else {
-                actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
+                showMessage('"shift or ctrl may delete crop" must be enabled in the settings before replacing crops with shift is allowed', C_INVALID, 0, 0);
               }
-              update();
-            } else {
-              showMessage('ctrl+click to delete must be enabled in the settings before replacing crops with shift is allowed', C_INVALID, 0, 0);
             }
           } else if(ctrl && !shift) {
-            if(state.allowshiftdelete) {
+            var safe = false;
+            if(state.allowshiftdelete) safe = true;
+            if(f.growth < 0.25) safe = true; // growing crop gives full refund, so if not too much time was spent yet growing this is safe to do even if the state.allowshiftdelete setting is false.
+            if(safe) {
               actions.push({type:ACTION_DELETE, x:x, y:y});
               update();
             } else {
-              showMessage('ctrl+click to delete must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
+              showMessage('"shift or ctrl may delete crop" must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
             }
           } else if(!fern) {
             makeFieldDialog(x, y);
@@ -766,7 +806,9 @@ function updateFieldCellUI(x, y) {
 
   var ferncode = ((state.fernx + state.ferny * state.numw) << 3) | state.fern;
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode || progresspixel != fd.progresspixel) {
+  var automatonplant = (x == state.automatonx && y == state.automatony && (state.time - state.automatontime < 0.5));
+
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
@@ -776,12 +818,15 @@ function updateFieldCellUI(x, y) {
     fd.treelevel = state.treelevel;
     fd.ferncode = ferncode;
     fd.progresspixel = progresspixel;
+    fd.automatonplant = automatonplant;
 
     var label = 'field tile ' + x + ', ' + y;
 
     fd.index = f.index;
     fd.growstage = growstage;
-    if(f.hasCrop()) {
+    if(automatonplant) {
+      renderImage(images_automaton[4], fd.canvas);
+    } else if(f.hasCrop()) {
       var c = f.getCrop();
       //fd.div.innerText = c.name;
       renderImage(c.image[growstage], fd.canvas);

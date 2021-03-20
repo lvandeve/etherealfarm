@@ -152,7 +152,7 @@ function showRegisteredHelpDialog(id, opt_force)  {
 }
 
 
-registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!', 'You unlocked your first upgrade! Check the "upgrades" tab to view it. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
+registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!', 'You unlocked your first upgrade! Check the "upgrades" tab to view it, or if the sidebar on the right is visible, you can also see it there. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
 
 registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your first permanent type of plant.',
     'You unlocked your first permanent type of plant. Plants like this stay on the field forever, keep producing forever, and have much more powerful production upgrades too.' +
@@ -280,11 +280,11 @@ registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upg
     images_automaton[4]);
 
 registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
-    'Auto plant [todo text]',
+    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will upgrade existing crops crop to a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only upgrade crops to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically upgrade all planted blackberries in the field to blueberries, given enough resources.',
     images_automaton[4]);
 
 registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more options!',
-    'Auto plant more options [todo text].',
+    'You unlocked more finetuning options for auto planting, you can now choose how many resources the automaton can spend on crops of each type.',
     images_automaton[4]);
 
 function createKeyboardHelpDialog() {

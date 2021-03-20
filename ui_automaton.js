@@ -386,8 +386,7 @@ function updateAutomatonUI() {
   } else if(state.automaton_unlocked[1]) {
     texth = 0.15;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
-    //not yet implemented
-    //flex.div.innerText = 'Reach ethereal tree level 3 and beat the withering-challenge to unlock auto-plant';
+    flex.div.innerText = 'Reach ethereal tree level 3 and beat the withering challenge to unlock auto-plant';
     y += texth;
   }
 

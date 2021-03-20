@@ -1304,6 +1304,20 @@ function getAutoFraction(advanced, fractions, cropid) {
   return fraction;
 }
 
+function computeFractionTime(cost, fraction) {
+  // e.g. if fraction is 50%, then state needs to have at least 2x as much resources before this upgrade will be auto-bought
+  var res_needed = cost.divr(fraction);
+
+  var time = 0;
+  if(res_needed.gt(state.res)) {
+    var rem = res_needed.sub(state.res);
+    var time = -Infinity;
+    if(rem.seeds.gtr(0)) time = Math.max(time, rem.seeds.div(gain.seeds).valueOf());
+    if(rem.spores.gtr(0)) time = Math.max(time, rem.spores.div(gain.spores).valueOf());
+    if(time == -Infinity) time = Infinity; // this upgrade may cost some new resource, TODO: implement here too
+  }
+  return time;
+}
 
 // compute next_auto_upgrade
 // this is the next upgrade that auto upgrade will do.
@@ -1328,18 +1342,8 @@ function computeNextAutoUpgrade() {
 
     var cost = u.getCost();
 
-    // e.g. if fraction is 50%, then state needs to have at least 2x as much resources before this upgrade will be auto-bought
-    var res_needed = cost.divr(fraction);
-
-    var time = 0;
-    if(!res_needed.le(state.res)) {
-      var rem = res_needed.sub(state.res);
-      var time = -Infinity;
-      if(rem.seeds.gtr(0)) time = Math.max(time, rem.seeds.div(gain.seeds).valueOf());
-      if(rem.spores.gtr(0)) time = Math.max(time, rem.spores.div(gain.spores).valueOf());
-      if(time == -Infinity) continue; // this upgrade may cost some new resource, TODO: implement here too
-      if(time == Infinity) continue;
-    }
+    var time = computeFractionTime(cost, fraction);
+    if(time == Infinity) continue;
 
     if(next_auto_upgrade == undefined || time < next_auto_upgrade.time) next_auto_upgrade = {index:u.index, time:time};
   }
@@ -1373,14 +1377,31 @@ function autoUpgrade(res) {
   }
 }
 
-// res must be a copy of the available resources for all auto-actions, and will be modified in place
-function autoPlant(res) {
+
+
+// next chosen auto plant, if applicable.
+// type: either undefined, or object {index:plant id, x:xpos, y:ypos, time:time until reached given current resource gain}
+var next_auto_plant = undefined;
+
+function computeNextAutoPlant() {
+  next_auto_plant = undefined;
+
+  if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
+
   var types = [CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
     var tier = state.highestoftypeunlocked[type];
     var crop = croptype_tiers[type][tier];
+
+    // how much resources willing to spend
+    var advanced = state.automaton_unlocked[2] >= 2;
+    var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.index);
+    var cost = crop.getCost();
+
+    var time = computeFractionTime(cost, fraction);
+    if(time == Infinity) continue;
 
     for(var y = 0; y < state.numh; y++) {
       for(var x = 0; x < state.numw; x++) {
@@ -1389,11 +1410,34 @@ function autoPlant(res) {
         var c = f.getCrop();
         if(c.type != type) continue;
         if(c.tier >= tier) continue;
-        actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true});
-        return;
+        if(next_auto_plant == undefined || time < next_auto_plant.time) next_auto_plant = {index:crop.index, x:x, y:y, time:time};
+        x = state.numw;
+        y = state.numh;
+        break;
       }
     }
   }
+}
+
+// res must be a copy of the available resources for all auto-actions, and will be modified in place
+function autoPlant(res) {
+  if(!next_auto_plant) return;
+
+  var crop = crops[next_auto_plant.index];
+  var x = next_auto_plant.x;
+  var y = next_auto_plant.y;
+
+  // how much resources willing to spend
+  var advanced = state.automaton_unlocked[2] >= 2;
+  var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.index);
+
+  var maxcost = Res.min(res, state.res.mulr(fraction));
+  var cost = crop.getCost();
+  if(cost.gt(maxcost)) return;
+
+  res.subInPlace(cost);
+
+  actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true});
 }
 
 // when is the next time that something happens that requires a separate update()
@@ -1430,7 +1474,11 @@ function nextEventTime() {
         if(c.type == CROPTYPE_SHORT) {
           addtime(c.getPlantTime() * (f.growth));
         } else if(state.challenge == challenge_wither) {
-          addtime(witherDuration() * (f.growth));
+          //addtime(witherDuration() * (f.growth));
+          // since the income value of the crop changes over time as it withers, return a short time interval so the computation happens correctly during the few minutes the withering happens.
+          // also return, no need to calculate the rest, short time intervals like this are precise enough for anything
+          addtime(2);
+          return time;
         } else if(f.growth < 1) {
           addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
         }
@@ -1449,6 +1497,9 @@ function nextEventTime() {
   }
 
   // auto-plant
+  if(autoPlantEnabled() && !!next_auto_plant) {
+    addtime(next_auto_plant.time);
+  }
 
   return time;
 }
@@ -1520,8 +1571,8 @@ var update = function(opt_fromTick) {
     }
 
     if(autoPlantEnabled()) {
-      // implementation not yet finished
-      //autoPlant(autores);
+      computeNextAutoPlant();
+      autoPlant(autores);
     }
 
     var nexttime = util.getTime(); // in seconds. This is nexttime compared to the current state.time/state.prevtime
@@ -1720,6 +1771,12 @@ var update = function(opt_fromTick) {
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field[action.y][action.x];
 
+        if(action.by_automaton) {
+          state.automatonx = action.x;
+          state.automatony = action.y;
+          state.automatontime = state.time;
+        }
+
         var recoup = undefined;
 
         if(type == ACTION_DELETE || type == ACTION_REPLACE) {
@@ -1745,6 +1802,12 @@ var update = function(opt_fromTick) {
           if(state.challenge == challenge_nodelete && f.index != CROPINDEX + short_0 && f.growth >= 1) {
             showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
             ok = false;
+          } else if(state.challenge == challenge_wither && f.index != CROPINDEX + short_0) {
+            var more_expensive_same_type = type == ACTION_REPLACE && f.hasCrop() && action.crop.cost.gt(f.getCrop().cost) && action.crop.type == f.getCrop().type;
+            if(!more_expensive_same_type) {
+              showMessage('Cannot delete or downgrade crops during the wither challenge, but they\'ll naturally disappear over time. However, you can replace crops with more expensive crops (see the replace dialog).', C_INVALID, 0, 0);
+              ok = false;
+            }
           }
         }
 
@@ -1796,7 +1859,7 @@ var update = function(opt_fromTick) {
               state.res.addInPlace(recoup);
               if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
             }
-            store_undo = true;
+            if(!action.by_automaton) store_undo = true;
           } else if(f.index == FIELD_REMAINDER) {
             f.index = 0;
             f.growth = 0;
@@ -1822,7 +1885,7 @@ var update = function(opt_fromTick) {
           if(c.type == CROPTYPE_SHORT) f.growth = 1;
           if(state.challenge == challenge_wither) f.growth = 1;
           computeDerived(state); // correctly update derived stats based on changed field state
-          store_undo = true;
+          if(!action.by_automaton) store_undo = true;
           var nextcost = c.getCost(0);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
         }
@@ -2213,7 +2276,7 @@ var update = function(opt_fromTick) {
       var progress = state.res.seeds;
       var mintime = 0;
       if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
-      else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 7 : 1);
+      else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 1);
       else if(progress.ltr(150)) mintime = 10;
       else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
       else mintime = fern_wait_minutes * 60;
@@ -2523,7 +2586,7 @@ var update = function(opt_fromTick) {
   if(season_changed == 1) {
     var gainchangemessage = '';
     if(prev_season_gain) gainchangemessage = '. Income before: ' + prev_season_gain.toString() + '. Income now: ' + gain.toString();
-    showMessage('The season changed, it is now ' + seasonNames[getSeason()] + gainchangemessage, C_NATURE, 17843969, 0.75);
+    showMessage('The season changed to ' + seasonNames[getSeason()] + gainchangemessage, C_NATURE, 17843969, 0.75);
   }
 
 
@@ -2587,7 +2650,7 @@ function showShiftCropChip(crop_id) {
   var shift = cropChipShiftDown;
   var ctrl = cropChipCtrlDown;
   if(!shift && !ctrl) return;
-  if(shift && ctrl) return; // both combined currently does nothing
+  //if(shift && ctrl) return; // both combined currently does nothing
 
   var c = crop_id >= 0 ? crops[crop_id] : undefined;
 
@@ -2605,7 +2668,7 @@ function showShiftCropChip(crop_id) {
   var planting = f.isEmpty();
   var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
   var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
-  if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
+  //if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
 
   if(!planting && !deleting && !replacing) return;
 

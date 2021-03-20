@@ -17,19 +17,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 
-
-// make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
-function renderUpgradeChip(u, x, y, w, flex, completed) {
-  var div = flex.div;
+function rerenderUpgradeChip(u, chip, completed) {
+  var div = chip.div;
   div.className = 'efUpgradeChip';
 
+  chip.u = u; // the upgrade this chip now represents
+
   var cost = u.getCost(completed ? -1 : 0);
-  var titleFlex = new Flex(flex, [0, 0.8], 0.05, 1, 0.3, 0.95);
+  var titleFlex = chip.titleFlex
   var name = completed ? u.getName() : u.getNextName();
   titleFlex.div.innerHTML = upper(name);
   titleFlex.div.style.whiteSpace = 'nowrap';
 
-  var canvasFlex = new Flex(flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  var canvasFlex = chip.canvasFlex;
+  canvasFlex.clear();
   canvasFlex.div.style.backgroundColor = '#ccc';
   canvasFlex.div.style.border = '1px solid black';
   if(u.bgcolor) {
@@ -47,12 +48,53 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     renderImage(u.image1, canvas);
   }
 
-  var buyFlex = new Flex(flex, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.9);
+  var buyFlex = chip.buyFlex;
+
+  if(!completed) {
+    var buyText = (u.is_choice ? 'Choose' : ('Buy: ' + cost.toString()));
+
+    buyFlex.div.textEl.innerText = buyText;
+
+    if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
+    else buyFlex.div.className = 'efButton';
+
+    util.setEvent(chip.div, 'onmouseover', 'upgradeseen', function() {
+      state.upgrades[u.index].seen = true;
+    });
+
+  } else {
+    if(u.is_choice && completed) {
+      buyFlex.div.innerText = 'Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+    } else {
+      buyFlex.div.innerText = 'Cost: ' + cost.toString();
+    }
+    //buyFlex.setCentered();
+  }
+
+  return chip;
+}
+
+// make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
+function renderUpgradeChip(u, x, y, w, chip, completed) {
+  if(chip.titleFlex) {
+    rerenderUpgradeChip(u, chip, completed);
+    chip.updateInfoText();
+    return;
+  }
+  var div = chip.div;
+  var titleFlex = new Flex(chip, [0, 0.8], 0.05, 1, 0.3, 0.95);
+  chip.titleFlex = titleFlex;
+  var canvasFlex = new Flex(chip, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  chip.canvasFlex = canvasFlex;
+  var buyFlex = new Flex(chip, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.9);
+  chip.buyFlex = buyFlex;
 
 
   var infoText = '';
   var updateInfoText = function() {
-    infoText = upper(name);
+    var u = chip.u;
+    var cost = u.getCost(completed ? -1 : 0);
+    infoText = upper(u.name);
     infoText += '<br><br>Cost: ' + cost.toString();
     if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
     if(u.cropid != undefined) {
@@ -96,17 +138,12 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       //}
     }
   };
-  updateInfoText();
 
   if(!completed) {
     styleButton(buyFlex.div);
-    var buyText = (u.is_choice ? 'Choose' : ('Buy: ' + cost.toString()));
-
-    buyFlex.div.textEl.innerText = buyText;
-
-    if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
 
     addButtonAction(buyFlex.div, bind(function(i, e) {
+      var u = chip.u;
       if(u.is_choice) {
         var dialog;
         var funa = function() {
@@ -131,21 +168,15 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
       else if(document.selection) document.selection.empty();
     }, i));
 
-    util.setEvent(flex.div, 'onmouseover', 'upgradeseen', function() {
+    util.setEvent(chip.div, 'onmouseover', 'upgradeseen', function() {
+      var u = chip.u;
       state.upgrades[u.index].seen = true;
     });
 
-  } else {
-    if(u.is_choice && completed) {
-      buyFlex.div.innerText = 'Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
-    } else {
-      buyFlex.div.innerText = 'Cost: ' + cost.toString();
-    }
-    //buyFlex.setCentered();
   }
 
 
-  registerTooltip(flex.div, function() {
+  registerTooltip(chip.div, function() {
     updateInfoText();
     return infoText;
   }, true);
@@ -153,6 +184,7 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
   styleButton0(canvasFlex.div);
 
   addButtonAction(canvasFlex.div, function() {
+    var u = chip.u;
     var okfun = undefined;
     var okname = undefined;
     if(!u.is_choice) {
@@ -178,9 +210,13 @@ function renderUpgradeChip(u, x, y, w, flex, completed) {
     dialog.content.div.innerHTML = infoText;
   }, 'upgrade icon for ' + name);
 
+  chip.updateInfoText = updateInfoText;
+  rerenderUpgradeChip(u, chip, completed);
+  chip.updateInfoText();
 
-  return flex;
+  return chip;
 }
+
 
 var upgradeScrollFlex = null;
 
@@ -352,6 +388,11 @@ function computeUpgradeUIOrderIfNeeded() {
 
 
 
+// cache the existing upgrade-chips to reuse them. This avoids following problem:
+// if chips are rerendered whenever anything related to upgrades updates, then if you click on the buy button with mouse and before you release mouse it updated, the onclick does not work. This causes clicking upgrades to ignore your click when automaton did updates in between
+var upgradeFlexCache = [];
+var upgradeFlexCacheParent = undefined;
+
 function updateUpgradeUI() {
   if(upgrades_order.length == 0) computeUpgradeUIOrder();
 
@@ -359,22 +400,34 @@ function updateUpgradeUI() {
   var scrollPos = 0;
   if(upgradeScrollFlex) scrollPos = upgradeScrollFlex.div.scrollTop;
 
-  upgradeFlex.clear();
+  var titleFlex;
+  var scrollFlex;
+
+  if(upgradeFlexCacheParent != upgradeFlex) {
+    upgradeFlex.clear();
+    upgradeFlexCache = [];
+    upgradeFlexCacheParent = upgradeFlex;
+
+    // TODO: use a cache of chips similar to bottomrightSidePanelFlexCache for the side-panel to avoid hard to click upgrade chips
+    scrollFlex = new Flex(upgradeFlex, 0, 0.01, 1, 1);
+    upgradeScrollFlex = scrollFlex;
+    makeScrollable(scrollFlex);
 
 
-  var scrollFlex = new Flex(upgradeFlex, 0, 0.01, 1, 1);
-  upgradeScrollFlex = scrollFlex;
-  makeScrollable(scrollFlex);
+    titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15, 0.3);
 
+    var titleText = '';
+    titleText = 'Hold shift to buy as many as possible';
+    titleText += '<br>';
+    titleText += 'Click icon or see tooltip for more info';
+    titleFlex.div.innerHTML = titleText;
 
-  var titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15, 0.3);
-
-  var titleText = '';
-  titleText = 'Hold shift to buy as many as possible';
-  titleText += '<br>';
-  titleText += 'Click icon or see tooltip for more info';
-  titleFlex.div.innerHTML = titleText;
-
+    upgradeFlex.scrollFlex = scrollFlex;
+    upgradeFlex.titleFlex = titleFlex;
+  } else {
+    scrollFlex = upgradeFlex.scrollFlex;
+    titleFlex = upgradeFlex.titleFlex;
+  }
 
   var pos = [0, 0];
 
@@ -392,8 +445,16 @@ function updateUpgradeUI() {
 
     var x = (i & 1);
     var y = (i >> 1);
-    var chip = new Flex(scrollFlex, x * w + 0.01, [0.15, y * h + 0.01, 0.27], [(x + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.75);
+
+    var chip = upgradeFlexCache[i] || new Flex(scrollFlex, x * w + 0.01, [0.15, y * h + 0.01, 0.27], [(x + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.75);
+    upgradeFlexCache[i] = chip;
+
     renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
+  }
+  for(var i = unlocked.length; i < upgradeFlexCache.length; i++) {
+    if(!upgradeFlexCache[i]) continue;
+    upgradeFlexCache[i].removeSelf();
+    upgradeFlexCache[i] = undefined;
   }
 
   var researched = [];
@@ -407,12 +468,15 @@ function updateUpgradeUI() {
     var x = 0;
     var y = ((unlocked.length + 1) >> 1) + 0.33;
 
-    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.15, y * h + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.6);
-    styleButton(flex.div);
-    flex.div.innerText = 'See Completed Upgrades';
-    flex.setCentered();
 
-    addButtonAction(flex.div, function() {
+    var chip = new Flex(scrollFlex, 0 * w + 0.01, [0.15, y * h + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.6);
+    upgradeFlexCache[i] = chip;
+
+    styleButton(chip.div);
+    chip.div.innerText = 'See Completed Upgrades';
+    chip.setCentered();
+
+    addButtonAction(chip.div, function() {
       var dialog = createDialog();
 
       var scrollFlex = dialog.content;

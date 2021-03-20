@@ -18,6 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var rightPanelPrevAutomationState = -1;
 
+// cache the existing upgrade-chips to reuse them. This avoids following problem:
+// if chips are rerendered whenever anything related to upgrades updates, then if you click on the buy button with mouse and before you release mouse it updated, the onclick does not work. This causes clicking upgrades to ignore your click when automaton did updates in between
+var bottomrightSidePanelFlexCache = [];
+var bottomrightSidePanelFlexCacheParent = undefined;
+
 function updateRightPane() {
   if(!rightFlex) return;
 
@@ -37,7 +42,12 @@ function updateRightPane() {
 
   if(upgradeUIUpdated || automatonState != rightPanelPrevAutomationState) {
     upgradeUIUpdated = false;
-    bottomRightFlex.clear();
+
+    if(bottomrightSidePanelFlexCacheParent != bottomRightFlex) {
+      bottomRightFlex.clear();
+      bottomrightSidePanelFlexCache = [];
+      bottomrightSidePanelFlexCacheParent = bottomRightFlex;
+    }
 
     rightPanelPrevAutomationState = automatonState;
 
@@ -49,12 +59,16 @@ function updateRightPane() {
 
     var maxnum = 11;
 
-    for(var i = 0; i <= unlocked.length; i++) {
+    var i = 0;
+    for(i = 0; i <= unlocked.length; i++) {
       if(i >= maxnum) break;
       if(!unlocked.length) return;
 
-      var chip = new Flex(bottomRightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.65);
+      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.65);
+      bottomrightSidePanelFlexCache[i] = chip;
+
       if(i == 0) {
+        chip.clear();
         var text = 'upgrades';
         if(automatonEnabled() && state.automaton_unlocked[1] && state.automaton_unlocked[2]) {
           var chip0 = new Flex(chip, 0, 0, 1, 0.5);
@@ -87,7 +101,8 @@ function updateRightPane() {
           chip1.div.textEl.innerHTML = text1;
           setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
         } else if(automatonEnabled() && state.automaton_unlocked[1]) {
-          addButtonAction(chip.div, function() {
+          var chip0 = new Flex(chip, 0, 0, 1, 1);
+          addButtonAction(chip0.div, function() {
             if(!automatonEnabled()) return;
             actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
               updateAutomatonUI();
@@ -107,12 +122,18 @@ function updateRightPane() {
           setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
         }
       } else if(i + 1 == maxnum && unlocked.length > maxnum) {
+        chip.clear();
         centerText2(chip.div);
         chip.div.textEl.innerText = 'more in upgrades tab...';
       } else {
         var u = upgrades[unlocked[i - 1]];
         renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
       }
+    }
+    for(; i < bottomrightSidePanelFlexCache.length; i++) {
+      if(!bottomrightSidePanelFlexCache[i]) continue;
+      bottomrightSidePanelFlexCache[i].removeSelf();
+      bottomrightSidePanelFlexCache[i] = undefined;
     }
   }
 
