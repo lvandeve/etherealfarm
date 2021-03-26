@@ -32,8 +32,13 @@ function showConfigureAutoResourcesDialog(planting) {
   var statefraction;
 
   if(planting) {
-    typenames = ['berry', 'mushroom', 'flower'];
-    order = [3, 4, 5]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    if(state.automaton_unlocked[3]) {
+      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive'];
+      order = [3, 4, 5, 6, 7]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    } else {
+      typenames = ['berry', 'mushroom', 'flower'];
+      order = [3, 4, 5]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    }
     statefraction = state.automaton_autoplant_fraction;
   } else {
     typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'challenge'];
@@ -151,6 +156,14 @@ function updateAutomatonUI() {
   var texth;
   var flex;
 
+  if(!haveAutomaton()) {
+    texth = 0.1;
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.6);
+    flex.div.innerText = 'Place automaton in ethereal field to enable automation options. Reach higher ethereal tree level and beat new challenges to unlock more automaton features.';
+    y += texth;
+    return;
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   var canvasFlex = new Flex(automatonFlex, [1, -0.25], [0, 0.01], [1, -0.06], [0, 0.2], 0.3);
@@ -248,7 +261,7 @@ function updateAutomatonUI() {
     updateUpgradeButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
       actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), fun:function() {
-        updateEnableButton(flex);
+        updateUpgradeButton(flex);
       }});
       update();
     }, flex));
@@ -345,7 +358,7 @@ function updateAutomatonUI() {
     updatePlantButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
       actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), fun:function() {
-        updateEnableButton(flex);
+        updatePlantButton(flex);
       }});
       update();
     }, flex));
@@ -397,6 +410,46 @@ function updateAutomatonUI() {
       }
       return true;
     });
+
+    var updateAutoUnlockButton = function(flex) {
+      var div = flex.div.textEl;
+      if(state.automaton_autounlock) {
+        div.innerText = 'Auto-unlock on';
+        flex.enabledStyle = 1;
+      } else {
+        div.innerText = 'Auto-unlock off';
+        flex.enabledStyle = 0;
+      }
+      setButtonIndicationStyle(flex);
+    };
+
+    if(state.automaton_unlocked[3]) {
+      flex = addButton();
+      styleButton0(flex.div);
+      centerText2(flex.div);
+      updateAutoUnlockButton(flex);
+      addButtonAction(flex.div, bind(function(flex) {
+        actions.push({type:ACTION_TOGGLE_AUTOMATON, what:3, on:(state.automaton_autounlock ? 0 : 1), fun:function() {
+          updateAutoUnlockButton(flex);
+        }});
+        update();
+      }, flex));
+    }
+
+
+    if(!advanced) {
+      texth = 0.1;
+      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+      flex.div.innerText = 'Start the withering challenge again and beat its next stage to unlock more finetuning options for auto-plant';
+      y += texth * 1.2;
+    }
+
+    if(!state.automaton_unlocked[3]) {
+      texth = 0.15;
+      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+      flex.div.innerText = 'Reach ethereal tree level 4 and beat the blackberry challenge to unlock auto-unlock of next-tier plants';
+      y += texth;
+    }
 
   } else if(state.automaton_unlocked[1]) {
     texth = 0.15;

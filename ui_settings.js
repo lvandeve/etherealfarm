@@ -757,6 +757,7 @@ function initSettingsUI_in(dialog) {
         closeAllDialogs();
         removeChallengeChip();
         removeMedalChip();
+        removeHelpChip();
         clearUndo();
         initUI();
         update();

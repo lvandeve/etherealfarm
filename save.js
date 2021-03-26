@@ -507,6 +507,7 @@ function encState(state, opt_raw_only) {
   processFractionChoiceArray(state.automaton_autoupgrade_fraction);
   processUint(state.automaton_autoplant);
   processFractionChoiceArray(state.automaton_autoplant_fraction);
+  processUint(state.automaton_autounlock);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1162,6 +1163,10 @@ function decState(s) {
   if(save_version >= 4096*1+46) {
     state.automaton_autoplant = processUint();
     state.automaton_autoplant_fraction = processFractionChoiceArray();
+    if(error) return err(4);
+  }
+  if(save_version >= 4096*1+50) {
+    state.automaton_autounlock = processUint();
     if(error) return err(4);
   }
 

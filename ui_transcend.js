@@ -209,7 +209,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
     if(c.targetlevel.length > 1) {
       text += '<b>Next completion reward:</b> ' + c.rewarddescription[c2.completed];
     } else {
-      text += '<b>First completion reward:</b> ' + c.rewarddescription[0];
+      text += '<b>Reward:</b> ' + c.rewarddescription[0];
     }
   }
 
@@ -224,10 +224,11 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
 
   text += '<br><br>';
 
+  var maxlevel = Math.max(c2.maxlevel, state.challenge == c.index ? state.treelevel : 0);
   text += '<b>Current stats:</b><br>';
   text += '• Production bonus per max level reached: ' + c.bonus.toPercentString() + '<br>';
-  text += '• Max level reached: ' + c2.maxlevel + '<br>';
-  text += '• Production bonus: ' + c.bonus.mulr(c2.maxlevel).toPercentString() + '<br>';
+  text += '• Max level reached: ' + maxlevel + '<br>';
+  text += '• Production bonus: ' + c.bonus.mulr(maxlevel).toPercentString() + '<br>';
   text += '• Times ran: ' + c2.num + '<br>';
   if(c.targetlevel.length > 1 && c.fullyCompleted()) {
     text += '• Fastest first stage target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';

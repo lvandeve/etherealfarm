@@ -187,6 +187,12 @@ function hardReset() {
 
   prefield = [];
 
+
+  removeChallengeChip();
+  removeMedalChip();
+  removeHelpChip();
+
+
   initUI();
   update();
 }
@@ -245,6 +251,28 @@ function startChallenge(challenge_id) {
       var y = array[r][1];
       array.splice(r, 1);
       state.field[y][x].index = FIELD_ROCK;
+    }
+  }
+
+  if(challenge_id == challenge_blackberry) {
+    lockAllUpgrades();
+
+    state.crops[short_0].unlocked = true;
+    state.crops[mush_0].unlocked = true;
+    state.crops[berry_0].unlocked = true;
+    state.crops[flower_0].unlocked = true;
+    state.crops[mistletoe_0].unlocked = true;
+    state.crops[nettle_0].unlocked = true;
+
+    state.upgrades[shortmul_0].unlocked = true;
+    state.upgrades[mushmul_0].unlocked = true;
+    state.upgrades[berrymul_0].unlocked = true;
+    state.upgrades[flowermul_0].unlocked = true;
+    state.upgrades[nettlemul_0].unlocked = true;
+
+    if(state.challenges[challenge_bees].completed) {
+      state.crops[bee_0].unlocked = true;
+      state.upgrades[beemul_0].unlocked = true;
     }
   }
 }
@@ -461,9 +489,6 @@ function softReset(opt_challenge) {
     state.g_numresets++;
   }
 
-  state.lastPlanted = -1;
-  //state.lastPlanted2 = -1;
-
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
 
@@ -522,8 +547,14 @@ function softReset(opt_challenge) {
   state.challenge = opt_challenge || 0;
   if(opt_challenge) {
     startChallenge(opt_challenge);
-    var c = challenges[opt_challenge];
-    var c2 = state.challenges[opt_challenge];
+  }
+
+  state.lastPlanted = -1;
+  //state.lastPlanted2 = -1;
+  if(state.crops[berry_0].unlocked) {
+    state.lastPlanted = berry_0;
+  } else if(state.crops[short_0].unlocked) {
+    state.lastPlanted = short_0;
   }
 
   setTab(0);
@@ -608,18 +639,8 @@ function loadUndo() {
     return;
   }
   save(state, function(redoSave) {
-    var planted_before = state.g_numplanted;
-    var unplanted_before = state.g_numunplanted;
     load(undoSave, function(state) {
-      var planted_after = state.g_numplanted;
-      var unplanted_after = state.g_numunplanted;
-      if(planted_after != planted_before && (planted_after - planted_before) == (unplanted_after - unplanted_before)) {
-        // if you plant, then delete, in quick succession, undo causes both of those things undone, which looks as if nothing happened. However, you definitely got your money back.
-        // so, print in the log that this happened
-        showMessage('Undone both the planting and the deleting, so got all related resources back', C_UNDO, 1294596818);
-      } else {
-        showMessage('Undone', C_UNDO, 217654408);
-      }
+      showMessage('Undone', C_UNDO, 217654408);
       initUI();
       update();
       undoSave = redoSave;
@@ -633,6 +654,7 @@ function loadUndo() {
 
   removeChallengeChip();
   removeMedalChip();
+  removeHelpChip();
 
   lastUndoSaveTime = 0; // now ensure next action saves undo again, pressing undo is a break in the action sequence, let the next action save so that pressing undo again brings us back to thie same undo-result-state
 }
@@ -1445,6 +1467,55 @@ function autoPlant(res) {
   actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true});
 }
 
+
+// next chosen auto unlock, if applicable.
+// type: either undefined, or object {index:upgrade id, time:time until reached given current resource gain}
+var next_auto_unlock = undefined;
+
+// compute next_auto_unlock
+// this is the next unlock-upgrade that auto unlock will do.
+// this must be chosen to be the first one done given the resource fraction choices, since the nextEventTime computation also uses this
+function computeNextAutoUnlock() {
+  next_auto_unlock = undefined;
+
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    var u2 = state.upgrades[registered_upgrades[i]];
+    if(!u.iscropunlock) continue;
+    if(!u2.unlocked) continue;
+    if(u2.count) continue;
+    if(u.cropid == undefined) continue
+
+    // how much resources willing to spend. This uses the same fractions as autoplant does.
+    var advanced = state.automaton_unlocked[2] >= 2;
+    var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, u.cropid);
+
+    var cost = u.getCost();
+
+    var time = computeFractionTime(cost, fraction);
+    if(time == Infinity) continue;
+
+    if(next_auto_unlock == undefined || time < next_auto_unlock.time) next_auto_unlock = {index:u.index, time:time};
+  }
+}
+
+// res must be a copy of the available resources for all auto-actions, and will be modified in place
+function autoUnlock(res) {
+  if(!next_auto_unlock) return;
+
+  var u = upgrades[next_auto_unlock.index];
+
+  // how much resources willing to spend
+  var advanced = state.automaton_unlocked[2] >= 2;
+  var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, u.cropid);
+
+  var maxcost = Res.min(res, state.res.mulr(fraction));
+  var cost = u.getCost();
+  if(cost.gt(maxcost)) return;
+  res.subInPlace(cost);
+  actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true});
+}
+
 // when is the next time that something happens that requires a separate update()
 // run. E.g. if the time difference is 1 hour (due to closing the tab for 1 hour),
 // and 10 minutes of the mist ability were remaining, then update must be broken
@@ -1504,6 +1575,11 @@ function nextEventTime() {
   // auto-plant
   if(autoPlantEnabled() && !!next_auto_plant) {
     addtime(next_auto_plant.time);
+  }
+
+  // auto-unlock
+  if(autoUnlockEnabled() && !!next_auto_unlock) {
+    addtime(next_auto_unlock.time);
   }
 
   return time;
@@ -1568,6 +1644,11 @@ var update = function(opt_fromTick) {
     */
 
     var autores = Res(state.res);
+
+    if(autoUnlockEnabled()) {
+      computeNextAutoUnlock();
+      autoUnlock(autores);
+    }
 
     if(autoUpgradesEnabled()) {
       // computeNextAutoUpgrade is used both for autoUpgrade, and for nextEventTime. The autoUpgrade function may do nothing now, but nextEventTime can compute when autoUpgrade will happen given the current income
@@ -1711,6 +1792,9 @@ var update = function(opt_fromTick) {
             }
             if(!shift && !action.by_automaton) showMessage(message);
             if(!action.by_automaton) store_undo = true;
+            if(u.iscropunlock && !action.by_automaton) {
+              state.lastPlanted = u.cropid;
+            }
             state.c_numupgrades++;
             state.g_numupgrades++;
             if(action.by_automaton) {
@@ -2176,6 +2260,9 @@ var update = function(opt_fromTick) {
         if(action.what == 2) {
           state.automaton_autoplant = action.on;
         }
+        if(action.what == 3) {
+          state.automaton_autounlock = action.on;
+        }
         if(action.fun) action.fun();
         store_undo = true;
       } else if(type == ACTION_TRANSCEND) {
@@ -2454,6 +2541,7 @@ var update = function(opt_fromTick) {
       if(u2.unlocked && state.challenge == challenge_noupgrades && isNoUpgrade(u)) u2.unlocked = false; // fix up other things that may unlock certain upgrades during this challenge
       if(u2.unlocked) continue;
       if(state.challenge == challenge_bees && !u.istreebasedupgrade) continue;
+      if(state.challenge == challenge_blackberry && u.iscropunlock) continue;
       if(state.challenge == challenge_noupgrades && isNoUpgrade(u)) continue;
       if(j == mistletoeunlock_0 && state.challenge && !challenges[state.challenge].allowstwigs) continue; // mistletoe doesn't work during this challenge
       if(u.pre()) {
@@ -2678,15 +2766,19 @@ function showShiftCropChip(crop_id) {
   if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, false); // fake empty field cell to make it indicate "planting"
   else f = state.field[y][x];
 
-  var planting = f.isEmpty();
+  var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
   var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
   var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
   //if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
+  var upgrading = f.hasCrop() && shift && ctrl && state.allowshiftdelete && f.getCrop().tier < state.highestoftypeunlocked[f.getCrop().type];
+  if(upgrading) c = croptype_tiers[f.getCrop().type][state.highestoftypeunlocked[f.getCrop().type]];
+  var selecting = f.hasCrop() && shift && ctrl && (!state.allowshiftdelete || f.getCrop().tier >= state.highestoftypeunlocked[f.getCrop().type]);
+  if(selecting) c = f.getCrop();
 
-  if(!planting && !deleting && !replacing) return;
+  if(!planting && !deleting && !replacing && !upgrading && !selecting) return;
 
-  var keyname = (shift ? 'Shift' : 'Ctrl');
-  var verb = planting ? 'planting' : (deleting ? 'deleting' : 'replacing');
+  var keyname = (shift ? (ctrl ? 'Shift+ctrl' : 'Shift') : 'Ctrl');
+  var verb = planting ? 'planting' : (deleting ? 'deleting' : (replacing ? 'replacing' : (selecting ? 'selecting' : 'upgrading')));
 
 
   shiftCropFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.5);
@@ -2780,7 +2872,7 @@ function showShiftCrop2Chip(crop_id) {
   if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, true); // fake empty field cell to make it indicate "planting"
   else f = state.field2[y][x];
 
-  var planting = f.isEmpty();
+  var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
   var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
   var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
   if(replacing && f.getCrop().index == state.lastPlanted2) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing

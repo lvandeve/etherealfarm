@@ -259,7 +259,8 @@ function State() {
   at each index (value 0 means not yet unlocked):
   0: automation of choice upgrades
   1: automation of crop upgrades (1=basic, 2=more options enabled)
-  2: automation of planting
+  2: automation of planting (1=basic, 2=more options enabled)
+  3: automation of crop-unlock upgrades (1=unlocked. The advanced options are shared with automation of planting)
   */
   this.automaton_unlocked = [];
 
@@ -304,7 +305,11 @@ function State() {
   */
   this.automaton_autoplant_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
-
+  /*
+  0: autounlock disabled
+  1: autounlock enabled, but only if also autoplant is enabled
+  */
+  this.automaton_autounlock = 0;
 
   // challenges
   this.challenge = 0;
@@ -985,4 +990,11 @@ function autoPlantEnabled() {
   if(!automatonEnabled()) return false;
   if(!state.automaton_unlocked[2]) return false;
   return !!state.automaton_autoplant;
+}
+
+function autoUnlockEnabled() {
+  if(!automatonEnabled()) return false;
+  if(!state.automaton_unlocked[3]) return false;
+  if(!autoPlantEnabled()) return false; // auto unlock also gets disabled when auto plant is disabled
+  return !!state.automaton_autounlock;
 }

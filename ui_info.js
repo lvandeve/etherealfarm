@@ -270,12 +270,13 @@ function updateResourceUI() {
         text += 'Unspent resin: ' + res.toString() + '<br/>';
         text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).toPercentString();
         text += '<br><br>';
-        text += 'Collected upcoming resin: ' + upcoming.toString() + '<br>';
-        if(tlevel > 1) {
-          text += '→ Bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x, so total: ' + upcoming2.toString();
-          text += '<br>';
+        text += 'Collected upcoming resin: ' + upcoming2.toString() + '<br>';
+        if(tlevel > 1 && upcoming.gtr(0)) {
+          text += '→ ' + upcoming.toString() + ' x ' + tlevel_mul.toString() + ' for Transcension ' + roman + '<br>';
         }
         if(upcoming2.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).toPercentString();
+        text += '<br><br>';
+        text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + '<br>';
       }
       if(index == 3) {
         // twigs

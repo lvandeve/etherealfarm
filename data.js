@@ -1162,7 +1162,6 @@ function registerCropUnlock(cropid, cost, prev_berry, opt_pre_fun) {
     if(cropid == flower_0) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', C_HELP, 456645);
     if(cropid == mushunlock_0) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', C_HELP, 8932);
     state.crops[crop.index].unlocked = true;
-    state.lastPlanted = crop.index;
   };
 
   var pre = function() {
@@ -1474,7 +1473,7 @@ var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), f
 
 upgrade_register_id = 205;
 var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 1, undefined, function(){
-  return (state.c_numplanted + state.c_numplantedshort) >= 5;
+  return (state.c_numplanted >= 1 || state.c_numplantedshort >= 5) && (state.c_numplantedshort >= 1);
 });
 
 upgrade_register_id = 215;
@@ -1958,9 +1957,25 @@ registerMedal('upgraded', 'completed the no upgrades challenge', upgrade_arrow, 
   return state.challenges[challenge_noupgrades].completed >= 1;
 }, Num(0.25));
 
-registerMedal('upgradeder', 'completed the no upgrades challenge state 2', upgrade_arrow, function() {
+registerMedal('upgradeder', 'completed the no upgrades challenge stage 2', upgrade_arrow, function() {
   return state.challenges[challenge_noupgrades].completed >= 2;
 }, Num(0.5));
+
+registerMedal('withering', 'completed the wither challenge', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 1;
+}, Num(0.35));
+
+registerMedal('withered', 'completed the wither challenge state 2', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 2;
+}, Num(0.7));
+
+registerMedal('berry basic', 'completed the blackberry challenge', blackberry[4], function() {
+  return state.challenges[challenge_blackberry].completed >= 1;
+}, Num(1.0));
+
+registerMedal('B', 'place a beehive during the blackberry challenge', images_beehive[4], function() {
+  return state.challenge == challenge_blackberry && state.fullgrowncropcount[bee_0] > 0;
+}, Num(1.5));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2202,9 +2217,31 @@ function witherDuration() {
   //return crops[short_0].getPlantTime();
 }
 
+
+var challenge_blackberry = registerChallenge('blackberry challenge', [24], Num(0.1),
+`
+During this challenge, only the first tier of each crop type is available.
+`,
+`
+• Only blackberries, champignons, clovers, nettle, beehives, watercress and mistletoe are available, from the beginning<br>
+• Everything else works as normal<br>
+`,
+['unlock the auto-unlock ability of the automaton'],
+'reaching ethereal tree level 4 and having automaton with auto-plant',
+function() {
+  return state.treelevel2 >= 4 && haveAutomaton() && state.automaton_unlocked[1] && state.automaton_unlocked[2];
+},
+[
+function() {
+  state.automaton_unlocked[3] = Math.max(1, state.automaton_unlocked[3] || 0);
+  showMessage('Auto-unlock unlocked!', C_AUTOMATON, 1067714398);
+  showRegisteredHelpDialog(33);
+},
+], 15);
+
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither];
+var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry];
 
 if(challenges_order.length != registered_challenges.length) {
   throw 'challenges order not same length as challenges!';
@@ -2391,7 +2428,7 @@ var special2_0 = registerSpecial2('fern', 0, Res({resin:10}), 1.5, 'gives 100 * 
 var special2_1 = registerSpecial2('fern II', 2, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
 
 crop2_register_id = 10;
-var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Automates things', 'Automates things. Can have max 1. See automaton tab.', images_automaton);
+var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Automates things', 'Automates things. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
 
 // berries2
 crop2_register_id = 25;

@@ -62,7 +62,6 @@ function updateRightPane() {
     var i = 0;
     for(i = 0; i <= unlocked.length; i++) {
       if(i >= maxnum) break;
-      if(!unlocked.length) return;
 
       var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.65);
       bottomrightSidePanelFlexCache[i] = chip;
@@ -89,8 +88,8 @@ function updateRightPane() {
             }});
             update();
           });
-          var text0 = 'Plant ' + (autoPlantEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
-          var text1 = 'Upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
+          var text0 = 'Plant: ' + (autoPlantEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
+          var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
           styleButton0(chip0.div);
           styleButton0(chip1.div);
           centerText2(chip0.div);
@@ -116,13 +115,15 @@ function updateRightPane() {
           chip0.div.title = 'quick toggle auto-upgrades';
           chip0.div.textEl.innerHTML = text;
           setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
-        } else {
+        } else if(unlocked.length) {
           centerText2(chip.div);
           chip.div.textEl.innerHTML = text;
           setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
+        } else {
+          // do nothing
         }
-      } else if(i + 1 == maxnum && unlocked.length > maxnum) {
-        chip.clear();
+      } else if(i + 1 == maxnum && unlocked.length + 1 >= maxnum) {
+        chip.clearFully();
         centerText2(chip.div);
         chip.div.textEl.innerText = 'more in upgrades tab...';
       } else {

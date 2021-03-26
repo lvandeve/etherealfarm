@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.50 (2021-03-26):';
+  text += '<br/>• Added auto-unlock for automaton, requires high enough ethereal tree and another new challenge';
+  text += '<br/>• Added the blackberry challenge';
+  text += '<br/>• UI tweaks';
+  text += '<br/><br/>';
+
   text += '0.1.49 (2021-03-20):';
   text += '<br/>• Bugfixes';
   text += '<br/><br/>';

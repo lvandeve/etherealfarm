@@ -221,7 +221,7 @@ function updateTabButtons() {
   wanted[tabindex_fruit] = state.g_numfruits > 0;
   wanted[tabindex_field2] = state.g_numresets > 0;
   wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
-  wanted[tabindex_automaton] = haveAutomaton();
+  wanted[tabindex_automaton] = haveAutomaton() || state.treelevel2 >= 2;
   wanted[tabindex_medals] = state.medals_earned > 0;
 
   var num = 0;
