@@ -146,12 +146,16 @@ function updateRightPane() {
       text += '<br>';
     }
     if(state.g_numresets > 0) {
-      //text += '• #Transcensions: ' + state.g_numresets;
-      //text += '<br>';
-      if(state.g_p_treelevel && (state.treelevel >= state.g_p_treelevel)) {
-        text += '• Max tree level before: ' + state.g_p_treelevel;
+      if(state.challenge) {
+        text += '• Max challenge level: ' + state.challenges[state.challenge].maxlevel;
       } else {
-        text += '• Max tree level ever: ' + state.g_treelevel;
+        //text += '• #Transcensions: ' + state.g_numresets;
+        //text += '<br>';
+        if(state.g_p_treelevel && (state.treelevel >= state.g_p_treelevel)) {
+          text += '• Max tree level before: ' + state.g_p_treelevel;
+        } else {
+          text += '• Max tree level ever: ' + state.g_treelevel;
+        }
       }
       text += '<br>';
     }

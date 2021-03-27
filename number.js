@@ -403,10 +403,16 @@ Num.prototype.powr = function(r) {
 };
 Num.powr = function(a, r) { return a.powr(r); };
 
-// r ** this (aka r ^ this); r is regular JS number
+// r ** this (aka r ^ this); r is regular JS number.
+// Negative r is not supported
 // NOTE: since r is a regular JS number, r only supports only up to JS float precision
 // NOTE: the exponent itself of a Num still only has JS float precision, and using powers like this can easily bring you beyond that, so this function easily reaches the limits of Num.
 Num.prototype.rpowInPlace = function(r) {
+  if(r == 0) {
+    if(this.gtr(0)) return Num(0);
+    if(this.ltr(0)) return Num(Infinity);
+    return Num(1); // 0**0
+  }
   this.scaleToInPlace(0);
   this.e = this.b;
   this.b = 1;
@@ -427,8 +433,14 @@ Num.prototype.rpow = function(r) {
 };
 Num.rpow = function(r, a) { return a.rpow(r); };
 
+// Negative this not supported
 // NOTE: Number can have big values but not unlimited, pow can very easily reach the limit. Use this function carefully.
 Num.prototype.powInPlace = function(b) {
+  if(this.eqr(0)) {
+    if(b.gtr(0)) return Num(0);
+    if(b.ltr(0)) return Num(Infinity);
+    return Num(1); // 0**0
+  }
   var r = Num.log(this); // regular JS number
   var e = Num.exp(b.mulr(r));
   this.b = e.b;
@@ -436,8 +448,9 @@ Num.prototype.powInPlace = function(b) {
   return this;
 };
 Num.prototype.pow = function(b) {
-  var r = Num.log(this); // regular JS number
-  return Num.exp(b.mulr(r));
+  var result = Num(this);
+  result.powInPlace(b);
+  return result;
 };
 Num.pow = function(a, b) {
   return a.pow(b);

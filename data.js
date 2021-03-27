@@ -1389,7 +1389,8 @@ upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, function() {
   // prev_crop is mush_1, but also unlock once higher level berries available, in case player skips placing this mushroom
   if(state.fullgrowncropcount[mush_1]) return true;
-  if(state.upgrades[berryunlock_4].count) return true; // the berry after mush_1
+  if(state.fullgrowncropcount[berry_4]) return true; // the berry after mush_1
+  //if(state.upgrades[berryunlock_4].count) return true; // the berry after mush_1
   return false;
 });
 
@@ -1399,7 +1400,6 @@ var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(
 
   // prev_crop is berry_1, but also unlock once higher level berries available, in case player skips placing this berry
   if(state.fullgrowncropcount[berry_1]) return true;
-  if(state.upgrades[berryunlock_2].count) return true; // the berry after berry_1
   return false;
 });
 
@@ -1409,7 +1409,8 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
 
   // prev_crop is flower_2, but also unlock once higher level berries available, in case player skips placing this flower
   if(state.fullgrowncropcount[flower_2]) return true;
-  if(state.upgrades[berryunlock_7].count) return true; // the berry after flower_2
+  if(state.fullgrowncropcount[berry_7]) return true; // the berry after flower_2
+  //if(state.upgrades[berryunlock_7].count) return true; // the berry after flower_2
 
   return false;
 });
@@ -2025,15 +2026,21 @@ function Challenge() {
   this.rewardfun = [function() {
   }];
 
-  // use stage.challenges[i].completed to check if any stage at all was completed, challenges[i].fullyCompleted to check all stages are completed
-  this.fullyCompleted = function() {
-    return state.challenges[this.index].completed >= this.targetlevel.length;
+  this.numCompleted = function(opt_include_current_run) {
+    var completed = state.challenges[this.index].completed;
+    if(opt_include_current_run && state.challenge == this.index && completed < this.targetlevel.length && state.treelevel >= this.targetlevel[completed]) completed++;
+    return completed;
+  };
+
+  // use numCompleted to check if any stage at all was completed, or fullyCompleted to check all stages are completed
+  this.fullyCompleted = function(opt_include_current_run) {
+    return this.numCompleted() >= this.targetlevel.length;
   };
 
   // returns either the reward level of the next stage, or if fully completed, that of the last stage
-  this.nextTargetLevel = function() {
-    if(this.fullyCompleted()) return this.targetlevel[this.targetlevel.length - 1];
-    return this.targetlevel[state.challenges[this.index].completed];
+  this.nextTargetLevel = function(opt_include_current_run) {
+    if(this.fullyCompleted(opt_include_current_run)) return this.targetlevel[this.targetlevel.length - 1];
+    return this.targetlevel[this.numCompleted(opt_include_current_run)];
   };
 
   this.finalTargetLevel = function() {

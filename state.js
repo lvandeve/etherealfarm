@@ -290,6 +290,7 @@ function State() {
   5: flower
   6: nettle
   7: beehive
+  8: mistletoe (not used for upgrade, but used for auto unlock for example in other fraction arrays below)
   */
   this.automaton_autoupgrade_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
@@ -303,13 +304,15 @@ function State() {
   fraction of resources automation is allowed to use for auto-plant
   the indices are the same as for automaton_autoupgrade_fraction, even though some are unused (e.g. watercress)
   */
-  this.automaton_autoplant_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autoplant_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
   /*
   0: autounlock disabled
   1: autounlock enabled, but only if also autoplant is enabled
   */
   this.automaton_autounlock = 0;
+  this.automaton_autounlock_copy_plant_fraction = false;
+  this.automaton_autounlock_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
   // challenges
   this.challenge = 0;

@@ -20,9 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.51 (2021-03-27):';
+  text += '<br/>• Allow separate configuration for auto-unlock prices and auto-plant prices';
+  text += '<br/>• Various tweaks';
+  text += '<br/><br/>';
+
   text += '0.1.50 (2021-03-26):';
   text += '<br/>• Added auto-unlock for automaton, requires high enough ethereal tree and another new challenge';
   text += '<br/>• Added the blackberry challenge';
+  text += '<br/>• Added ctrl+shift+click plant actions, see shortcut help dialog for info';
   text += '<br/>• UI tweaks';
   text += '<br/><br/>';
 

@@ -423,7 +423,7 @@ function makeTreeDialog() {
     button.textEl.innerText = 'Current challenge info';
     registerTooltip(button, 'Description and statistics for the current challenge');
     addButtonAction(button, function() {
-      createChallengeDescriptionDialog(state.challenge, true);
+      createChallengeDescriptionDialog(state.challenge, true, false);
     });
   } else if(state.treelevel < min_transcension_level) {
     if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';

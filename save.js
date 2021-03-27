@@ -508,6 +508,8 @@ function encState(state, opt_raw_only) {
   processUint(state.automaton_autoplant);
   processFractionChoiceArray(state.automaton_autoplant_fraction);
   processUint(state.automaton_autounlock);
+  processBool(state.automaton_autounlock_copy_plant_fraction);
+  processFractionChoiceArray(state.automaton_autounlock_fraction);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1167,6 +1169,11 @@ function decState(s) {
   }
   if(save_version >= 4096*1+50) {
     state.automaton_autounlock = processUint();
+    if(error) return err(4);
+  }
+  if(save_version >= 4096*1+51) {
+    state.automaton_autounlock_copy_plant_fraction = processBool();
+    state.automaton_autounlock_fraction = processFractionChoiceArray();
     if(error) return err(4);
   }
 

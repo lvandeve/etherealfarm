@@ -127,7 +127,9 @@ function createTranscendDialog(opt_from_challenge) {
   flex.div.innerHTML = text;
 }
 
-function createChallengeDescriptionDialog(challenge_id, info_only) {
+
+// include_current_run: whether to also count the current run as potentially having completed one more stage of this challenge
+function createChallengeDescriptionDialog(challenge_id, info_only, include_current_run) {
   var c = challenges[challenge_id];
   var c2 = state.challenges[challenge_id];
 
@@ -161,7 +163,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += '<br>';
   text += c.rulesdescription;
   if(c.targetlevel.length > 1) {
-    var targetlevel = c.nextTargetLevel();
+    var targetlevel = c.nextTargetLevel(include_current_run);
     text += '• Reach tree level ' + targetlevel + ' to successfully complete the next stage of the challenge, or reach any other max level to increase challenge production bonus.';
     text += '<br>';
     text += '• This challenge has ' + c.targetlevel.length + ' stages in total, each gives 1 reward, you can complete only 1 stage at the time';
@@ -203,11 +205,11 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += '<br>';
   text += '<br><br>';
 
-  if(c.fullyCompleted()) {
+  if(c.fullyCompleted(include_current_run)) {
     text += 'You already got all rewards for this challenge';
   } else {
     if(c.targetlevel.length > 1) {
-      text += '<b>Next completion reward:</b> ' + c.rewarddescription[c2.completed];
+      text += '<b>Next completion reward:</b> ' + c.rewarddescription[c.numCompleted(include_current_run)];
     } else {
       text += '<b>Reward:</b> ' + c.rewarddescription[0];
     }
@@ -230,7 +232,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   text += '• Max level reached: ' + maxlevel + '<br>';
   text += '• Production bonus: ' + c.bonus.mulr(maxlevel).toPercentString() + '<br>';
   text += '• Times ran: ' + c2.num + '<br>';
-  if(c.targetlevel.length > 1 && c.fullyCompleted()) {
+  if(c.targetlevel.length > 1 && c.fullyCompleted(include_current_run)) {
     text += '• Fastest first stage target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';
     text += '• Fastest final stage target level time: ' + (c2.besttime2 ? util.formatDuration(c2.besttime2) : '--') + '<br>';
   } else {
@@ -238,10 +240,10 @@ function createChallengeDescriptionDialog(challenge_id, info_only) {
   }
 
   var completedtext;
-  if(c.targetlevel.length == 1 || !c2.completed) {
-    completedtext = (c2.completed ? 'yes' : 'no');
+  if(c.targetlevel.length == 1 || !c.numCompleted(include_current_run)) {
+    completedtext = (c.numCompleted(include_current_run) ? 'yes' : 'no');
   } else {
-    completedtext = '' + c2.completed + ' of ' + c.targetlevel.length;
+    completedtext = '' + c.numCompleted(include_current_run) + ' of ' + c.targetlevel.length;
   }
 
   text += '• Completed: ' + completedtext + '<br>';
@@ -287,8 +289,8 @@ function createChallengeDialog(opt_from_challenge) {
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
-    var isnew = !c2.completed && !(state.challenge == c.index && state.treelevel >= c.targetlevel[0]);
-    var isnotfull = !c.fullyCompleted() && !(state.challenge == c.index && c2.completed == c.targetlevel.length - 1 && state.treelevel >= c.targetlevel[c2.completed])
+    var isnew = !c.numCompleted(true);
+    var isnotfull = !c.fullyCompleted(true)
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;
     styleButton(button.div);
@@ -298,7 +300,7 @@ function createChallengeDialog(opt_from_challenge) {
     else text += ' (' + Math.max(c2.maxlevel, state.challenge == c.index ? state.treelevel : 0) + ')';
     button.div.textEl.innerText = text;
     button.div.onclick = bind(function(c) {
-      createChallengeDescriptionDialog(c.index, false);
+      createChallengeDescriptionDialog(c.index, false, true);
     }, c);
   }
 }
@@ -350,10 +352,10 @@ function createFinishChallengeDialog() {
   var newmax = Math.max(state.treelevel, c2.maxlevel);
   var new_total = state.challenge_bonus.sub(getChallengeBonus(state.challenge, c2.maxlevel)).add(getChallengeBonus(state.challenge, newmax));
   text += '<br><br>';
-  text += 'Production bonus from this challenge\'s max reached level (and total from all challenges):<br>';
-  text += '• Before: ' + getChallengeBonus(state.challenge, c2.maxlevel).toPercentString() + ' (' + state.challenge_bonus.toPercentString() + ' total for all challenges)<br>';
+  text += 'Production bonus from max reached level<br>';
+  text += '• Before (level ' + c2.maxlevel + '): ' + getChallengeBonus(state.challenge, c2.maxlevel).toPercentString() + ' (' + state.challenge_bonus.toPercentString() + ' total for all challenges)<br>';
   if(state.treelevel > c2.maxlevel ) {
-    text += '• After at max level ' + newmax + ': ' + getChallengeBonus(state.challenge, newmax).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
+    text += '• After (level ' + newmax + '): ' + getChallengeBonus(state.challenge, newmax).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
   } else {
     text += '• After stays the same, max level not beaten';
   }

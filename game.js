@@ -1327,6 +1327,7 @@ function getAutoFraction(advanced, fractions, cropid) {
     if(c.type == CROPTYPE_BEE) fraction = fractions[7];
     if(c.type == CROPTYPE_SHORT) fraction = fractions[2];
     if(c.type == CROPTYPE_CHALLENGE) fraction = fractions[1];
+    if(c.type == CROPTYPE_MISTLETOE) fraction = fractions[8];
   }
   return fraction;
 }
@@ -1488,7 +1489,8 @@ function computeNextAutoUnlock() {
 
     // how much resources willing to spend. This uses the same fractions as autoplant does.
     var advanced = state.automaton_unlocked[2] >= 2;
-    var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, u.cropid);
+    var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
+    var fraction = getAutoFraction(advanced, fraction_array, u.cropid);
 
     var cost = u.getCost();
 
@@ -1507,7 +1509,8 @@ function autoUnlock(res) {
 
   // how much resources willing to spend
   var advanced = state.automaton_unlocked[2] >= 2;
-  var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, u.cropid);
+  var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
+  var fraction = getAutoFraction(advanced, fraction_array, u.cropid);
 
   var maxcost = Res.min(res, state.res.mulr(fraction));
   var cost = u.getCost();

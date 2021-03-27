@@ -16,8 +16,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// planting: if false, is for the auto upgrades, if true is for auto planting
-function showConfigureAutoResourcesDialog(planting) {
+// subject: 0=auto upgrade, 1=auto plant, 2=auto unlock
+function showConfigureAutoResourcesDialog(subject) {
   var dialog = createDialog();
   var scrollFlex = dialog.content;
   makeScrollable(scrollFlex);
@@ -31,30 +31,67 @@ function showConfigureAutoResourcesDialog(planting) {
   var typenames, order;
   var statefraction;
 
-  if(planting) {
-    if(state.automaton_unlocked[3]) {
-      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive'];
-      order = [3, 4, 5, 6, 7]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+  if(subject == 0) {
+    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'challenge'];
+    order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    statefraction = state.automaton_autoupgrade_fraction;
+  } else if(subject == 1 || subject == 2) {
+    if(state.automaton_unlocked[3] && (state.automaton_autounlock_copy_plant_fraction || subject == 2)) {
+      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
+      order = [3, 4, 5, 6, 7, 8]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     } else {
       typenames = ['berry', 'mushroom', 'flower'];
       order = [3, 4, 5]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     }
-    statefraction = state.automaton_autoplant_fraction;
-  } else {
-    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'challenge'];
-    order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
-    statefraction = state.automaton_autoupgrade_fraction;
+    if(subject == 1) {
+      statefraction = state.automaton_autoplant_fraction;
+    } else {
+      statefraction = state.automaton_autounlock_fraction;
+    }
   }
 
 
   var current;
   var flex;
 
+  var subjecttitle = subject == 0 ? 'upgrades' : (subject == 1 ? 'planting' : 'unlock');
+
 
   texth = 0.15;
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07, 0.45);
-  flex.div.innerText = 'Select max resource amount for ' + (planting ? 'planting' : 'upgrades') + ' of each crop type:';
+  flex.div.innerText = 'Select max resource amount for ' + subjecttitle + ' of each crop type:';
   y += texth;
+
+
+
+  if(subject == 2) {
+    var addButton = function() {
+      var h = 0.06;
+      var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.66);
+      y += h * 1.2;
+      return flex;
+    };
+    var button = addButton();
+    y += h * 0.5;
+    button.div.className = 'efButton';
+    var updateButton = function() {
+      button.div.textEl.innerText = state.automaton_autounlock_copy_plant_fraction ? 'shared with auto-plant' : 'customized below';
+    };
+    styleButton0(button.div);
+    centerText2(button.div);
+    updateButton();
+    addButtonAction(button.div, function() {
+      state.automaton_autounlock_copy_plant_fraction = !state.automaton_autounlock_copy_plant_fraction;
+      updateButton();
+      closeTopDialog();
+      showConfigureAutoResourcesDialog(subject);
+    }, 'share auto-unlock resource fraction settings with auto-plant');
+  }
+
+  var inactive = subject == 2 && state.automaton_autounlock_copy_plant_fraction;
+
+  if(inactive) return;
+
 
   for(var d = 0; d < typenames.length; d++) {
     var d2 = order[d];
@@ -79,7 +116,7 @@ function showConfigureAutoResourcesDialog(planting) {
     makeDropdown(flex, typenames[d], current, names, bind(function(d2, i) {
       statefraction[d2] = fractions[i];
     }, d2));
-    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on this type of ' + (planting ? 'auto-planting' : 'autoupgrades'));
+    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on this type of auto ' + subjecttitle);
   }
 
   y += h / 2;
@@ -93,8 +130,9 @@ function showConfigureAutoResourcesDialog(planting) {
       statefraction[d2] = fractions[i];
     }
     closeTopDialog();
-    showConfigureAutoResourcesDialog(planting);
+    showConfigureAutoResourcesDialog(subject);
   });
+
 }
 
 function updateAutomatonUI() {
@@ -118,7 +156,7 @@ function updateAutomatonUI() {
 
   var setButtonIndicationStyle = function(flex) {
     if(flex.enabledStyle != undefined) {
-      if(state.automaton_enabled || flex.isGlobalButtonItself) {
+      if((state.automaton_enabled || flex.isGlobalButtonItself) && !(flex.extraConditionFun && !flex.extraConditionFun())) {
         flex.div.className = flex.enabledStyle ? 'efAutomatonAuto' : 'efAutomatonManual';
       } else {
         flex.div.className = 'efAutomatonGlobalOff';
@@ -273,7 +311,7 @@ function updateAutomatonUI() {
       centerText2(flex.div);
       flex.div.textEl.innerText = 'Configure...';
       addButtonAction(flex.div, function() {
-        showConfigureAutoResourcesDialog(false);
+        showConfigureAutoResourcesDialog(0);
       });
     } else {
       flex = addButton();
@@ -359,6 +397,7 @@ function updateAutomatonUI() {
     addButtonAction(flex.div, bind(function(flex) {
       actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), fun:function() {
         updatePlantButton(flex);
+        setButtonIndicationStyles();
       }});
       update();
     }, flex));
@@ -370,7 +409,7 @@ function updateAutomatonUI() {
       centerText2(flex.div);
       flex.div.textEl.innerText = 'Configure...';
       addButtonAction(flex.div, function() {
-        showConfigureAutoResourcesDialog(true);
+        showConfigureAutoResourcesDialog(1);
       });
     } else {
       flex = addButton();
@@ -425,6 +464,9 @@ function updateAutomatonUI() {
 
     if(state.automaton_unlocked[3]) {
       flex = addButton();
+      flex.extraConditionFun = function() {
+        return !!state.automaton_autoplant;
+      };
       styleButton0(flex.div);
       centerText2(flex.div);
       updateAutoUnlockButton(flex);
@@ -434,6 +476,41 @@ function updateAutomatonUI() {
         }});
         update();
       }, flex));
+
+
+      // advanced for auto-unlock is shared with that of auto-plant (for now, maybe could become a stage 2 of the blackberry challenge in the future)
+      var advanced = state.automaton_unlocked[2] >= 2;
+      if(advanced) {
+        flex = addButton();
+        styleButton(flex.div);
+        centerText2(flex.div);
+        flex.div.textEl.innerText = 'Configure...';
+        addButtonAction(flex.div, function() {
+          showConfigureAutoResourcesDialog(2);
+        });
+      } else {
+        flex = addButton();
+        styleButton0(flex.div);
+        centerText2(flex.div);
+        var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
+        var names = [];
+        var current = 0;
+        var bestdist = 1;
+        for(var i = 0; i < fractions.length; i++) {
+          names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
+          var dist = Math.abs(fractions[i] - state.automaton_autounlock_fraction[0]);
+          if(dist < bestdist) {
+            current = i;
+            bestdist = dist;
+          }
+        }
+        // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
+        state.automaton_autounlock_fraction[0] = fractions[current];
+        makeDropdown(flex, 'max cost', current, names, function(i) {
+          state.automaton_autounlock_fraction[0] = fractions[i];
+        });
+        registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on auto unlocking');
+      }
     }
 
 
