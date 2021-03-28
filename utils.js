@@ -381,11 +381,14 @@ var Utils = (function() {
   // the sections are: giga-annum, mega-annum, millenium, year, month, day, hour, minute, second.
   // opt_short: if false or 0, default long notation. if 1 or true, uses e.g. "h" instead of " hours", etc..., and no longer uses sections for anything above a day. if 2, uses a sprecise but less human readable short notation
   // opt_inv: inverses direction of max sections. If false, starts from largest and leaves out smaller. If true, leaves out larger ones instead
-  var formatDuration = function(s, opt_short, opt_maxSections, opt_inv) {
+  // opt_fractional: print fractional seconds like 0.5. Default is false, then prints the ceil (not floor), e.g. 0.2s will print as 1s, good for countdowns.
+  var formatDuration = function(s, opt_short, opt_maxSections, opt_inv, opt_fractional) {
     var maxSections = opt_maxSections || (opt_short == 2 ? 4 : 3);
     if(isNaN(s)) return 'NaN';
     if(s < 0) return '-' + formatDuration(-s);
     if(s == Infinity) return 'Infinity ' + (opt_short ? 's' : ' seconds');
+
+    if(!opt_fractional) s = Math.ceil(s);
 
     if(opt_short == 1) {
       // For durations longer than 'days', everything involving abbreviations such as 'M' for month, Ga for giga-annum, ... is pretty

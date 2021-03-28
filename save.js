@@ -502,7 +502,7 @@ function encState(state, opt_raw_only) {
   section = 20; id = 0; // automaton
   processBool(state.automaton_enabled);
   processUintArray(state.automaton_unlocked);
-  processUintArray(state.automaton_choice);
+  processUintArray(state.automaton_choices);
   processUint(state.automaton_autoupgrade);
   processFractionChoiceArray(state.automaton_autoupgrade_fraction);
   processUint(state.automaton_autoplant);
@@ -510,6 +510,7 @@ function encState(state, opt_raw_only) {
   processUint(state.automaton_autounlock);
   processBool(state.automaton_autounlock_copy_plant_fraction);
   processFractionChoiceArray(state.automaton_autounlock_fraction);
+  processUint(state.automaton_autochoice);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1144,7 +1145,7 @@ function decState(s) {
       state.automaton_unlocked = processBoolArray();
       for(var i = 0; i < state.automaton_unlocked.length; i++) state.automaton_unlocked[i] = (state.automaton_unlocked[i] ? 1 : 0);
     }
-    state.automaton_choice = processUintArray();
+    state.automaton_choices = processUintArray();
   }
   if(save_version >= 4096*1+42) {
     state.automaton_autoupgrade = processUint();
@@ -1176,6 +1177,13 @@ function decState(s) {
     state.automaton_autounlock_fraction = processFractionChoiceArray();
     if(error) return err(4);
   }
+  if(save_version >= 4096*1+53) {
+    state.automaton_autochoice = processUint();
+    if(error) return err(4);
+  } else {
+    state.automaton_autochoice = 1;
+  }
+
 
   //////////////////////////////////////////////////////////////////////////////
 

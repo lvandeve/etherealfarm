@@ -264,6 +264,8 @@ function State() {
   */
   this.automaton_unlocked = [];
 
+  this.automaton_autochoice = 0;
+
   /*
   for each choice upgrade:
   0 (or array too short): not yet unlocked for this choice upgrade, so nothing to set
@@ -271,7 +273,7 @@ function State() {
   2: auto choose first choice
   3: auto choose second choice
   */
-  this.automaton_choice = [];
+  this.automaton_choices = [];
 
   /*
   0: auto upgrades disabled
@@ -975,12 +977,43 @@ function getUpcomingFruitEssence() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// get upcoming resin, excluding the higher transcenscion bonus multiplier
+function getUpcomingResinNoTMUL() {
+  var result = Num(state.resin);
+  if(state.treelevel >= min_transcension_level) {
+    var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+    var next = nextTreeLevelResin();
+    result.addInPlace(progress.mul(next));
+  }
+  return result;
+}
+
+// get upcoming twigs, excluding the higher transcenscion bonus multiplier
+function getUpcomingTwigsNoTMUL() {
+  var result = Num(state.twigs);
+  if(state.treelevel >= min_transcension_level) {
+    var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+    var next = nextTwigs().twigs;
+    result.addInPlace(progress.mul(next));
+  }
+  return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 function haveAutomaton() {
   return !!state.crop2count[automaton2_0];
 }
 
 function automatonEnabled() {
   return haveAutomaton() && state.automaton_enabled;
+}
+
+function autoChoiceEnabled() {
+  if(!automatonEnabled()) return false;
+  if(!state.automaton_unlocked[0]) return false;
+  return !!state.automaton_autochoice;
 }
 
 function autoUpgradesEnabled() {

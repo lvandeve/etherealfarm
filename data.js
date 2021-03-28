@@ -305,13 +305,27 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
+  // with ethereal upgrades, spring also benefits mushrooms a bit, to catch up with other seasons ethereal upgrades
+  if(season == 1 && this.type == CROPTYPE_MUSH) {
+    var bonus = getSummerMushroomBonus();
+    result.posmulInPlace(bonus);
+    if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
+  }
+
   if(season == 2 && this.type == CROPTYPE_MUSH) {
     var bonus = getAutumnMushroomBonus();
     result.posmulInPlace(bonus);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
-  if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER) && f) {
+  // with ethereal upgrades, autumn also benefits mushrooms a bit, to catch up with other seasons ethereal upgrades
+  if(season == 2 && this.type == CROPTYPE_BERRY) {
+    var bonus = getAutumnBerryBonus().mulr(0.5);
+    result.posmulInPlace(bonus);
+    if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
+  }
+
+  if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER || this.type == CROPTYPE_BEE) && f) {
     var mist_active = state.upgrades[upgrade_mistunlock].count && this.type == CROPTYPE_MUSH && (state.time - state.misttime) < getMistDuration();
     var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (state.time - state.suntime) < getSunDuration();
     var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && (state.time - state.rainbowtime) < getRainbowDuration();
@@ -345,7 +359,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     // winter tree warmth
     if(next_to_tree && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
       var bonus = getWinterTreeWarmth();
-      result.posmulInPlace(bonus);
+      result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
     }
   }
@@ -748,6 +762,8 @@ Crop.prototype.getBoostBoost = function(f, breakdown) {
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
     }
   }
+
+  this.addSeasonBonus_(result, getSeason(), f, breakdown);
 
   return result;
 };
@@ -2439,7 +2455,7 @@ var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Autom
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field 25% (additive)', blackberry);
+var berry2_0 = registerBerry2('blackberry', 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
 // for treelevel2=1
 var berry2_1 = registerBerry2('blueberry', 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
 var berry2_2 = registerBerry2('cranberry', 4, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
@@ -2690,8 +2706,12 @@ var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', LEVEL2, Res({re
   initField2UI();
 }, function(){return state.numw2 >= 5 && state.numh2 >= 5}, 1, 'increase ethereal field size to 6x6 tiles', undefined, undefined, field_ethereal[0]);
 
+// bases of exponentiation for getTwigs, depending on ethereal upgrade
+var twigs_base = 1.14;
+var twigs_base_twigs_extraction = 1.17;
+
 var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res({resin:10000}), 1, function() {
-}, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher levels', undefined, undefined, mistletoe[1]);
+}, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction, undefined, undefined, mistletoe[1]);
 
 ///////////////////////////
 LEVEL2 = 3;
@@ -2703,8 +2723,15 @@ var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Re
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[2]);
 
+
+
+
+// bases of exponentiation for treeLevelResin, depending on ethereal upgrade
+var resin_base = 1.141; // 1.141 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
+var resin_base_resin_extraction = 1.17;
+
 var upgrade2_resin_extraction = registerUpgrade2('resin extraction', LEVEL2, Res({resin:50e3}), 1, function() {
-}, function(){return true;}, 1, 'increase the multiplier per level for resin, giving exponentially more resin at higher levels', undefined, undefined, image_resin);
+}, function(){return true;}, 1, 'increase the multiplier per level for resin, giving exponentially more resin at higher tree levels: base of exponentiation before: ' + resin_base + ', after: ' + resin_base_resin_extraction, undefined, undefined, image_resin);
 
 var upgrade2_diagonal_mistletoes = registerUpgrade2('diagonal mistletoes', LEVEL2, Res({resin:75e3}), 1, function() {
 }, function(){return true;}, 1, 'mistletoes also work diagonally to the tree (10 instead of 6 possible spots)', undefined, undefined, mistletoe[4]);
@@ -2995,8 +3022,8 @@ var treelevel2_resin_bonus = Num(0.05);
 
 // amount with bonuses etc...
 function treeLevelResin(level, breakdown) {
-  var base = 1.141;  // 1.141 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
-  if(state.upgrades2[upgrade2_resin_extraction].count) base = 1.17;
+  var base = resin_base;
+  if(state.upgrades2[upgrade2_resin_extraction].count) base = resin_base_resin_extraction;
   var resin = Num.rpow(base, Num(level)).mulr(0.5);
 
   if(breakdown) breakdown.push(['base (per tree level x' + base + ')', true, Num(0), resin.clone()]);
@@ -3039,17 +3066,21 @@ function nextTreeLevelResin(breakdown) {
   return treeLevelResin(state.treelevel + 1, breakdown);
 }
 
+
 // get twig drop at tree going to this level from mistletoes
 // this excludes the transcension II+ bonus
 function getTwigs(level, breakdown) {
   var res = new Res();
-  res.twigs = Num(Math.log2(state.mistletoes + 1));
-  res.twigs.mulrInPlace(0.25);
-  var base = 1.14;
-  if(state.upgrades2[upgrade2_twigs_extraction].count) base = 1.17;
+  res.twigs = Num(0.25);
+  var base = twigs_base;
+  if(state.upgrades2[upgrade2_twigs_extraction].count) base = twigs_base_twigs_extraction;
   res.twigs.mulInPlace(Num(base).powr(level));
 
   if(breakdown) breakdown.push(['base (per tree level x' + base + ')', true, Num(0), res.clone()]);
+
+  var multi = Num(Math.log2(state.mistletoes + 1));
+  res.twigs.mulInPlace(multi);
+  if(breakdown && state.mistletoes != 1) breakdown.push(['#mistletoes', true, multi, res.clone()]);
 
   if(getSeason() == 2) {
     var bonus = getAutumnMistletoeBonus();
@@ -3123,10 +3154,10 @@ winter: tree
 
 var bonus_season_flower_spring = 1.5;
 var bonus_season_berry_summer = 2;
-var bonus_season_autumn_mushroom = 2;
+var bonus_season_autumn_mushroom = 2.5;
 var bonus_season_autumn_mistletoe = 1.5;
 var malus_season_winter = 0.75;
-var bonus_season_winter_tree = 1.65;
+var bonus_season_winter_tree = 2.5;
 var bonus_season_winter_resin = 1.5;
 var season_ethereal_upgrade_exponent = 1.25;
 
@@ -3155,7 +3186,7 @@ function getSummerBerryBonus() {
   var bonus = Num(bonus_season_berry_summer);
 
   var ethereal_season = state.upgrades2[upgrade2_season[1]].count;
-  if(ethereal_season) {
+  if(ethereal_season > 0) {
     //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[1]).addr(1);
     var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
     var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[1]).addr(1);
@@ -3171,11 +3202,15 @@ function getSummerBerryBonus() {
   return bonus;
 }
 
+function getSummerMushroomBonus() {
+  return getSummerBerryBonus().subr(bonus_season_berry_summer).mulr(0.33).addr(1);
+}
+
 function getAutumnMushroomBonus() {
   var bonus = Num(bonus_season_autumn_mushroom);
 
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
-  if(ethereal_season) {
+  if(ethereal_season > 0) {
     //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
     var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
     var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[2]).addr(1);
@@ -3189,6 +3224,10 @@ function getAutumnMushroomBonus() {
   }
 
   return bonus;
+}
+
+function getAutumnBerryBonus() {
+  return getAutumnMushroomBonus().subr(bonus_season_autumn_mushroom).mulr(0.5).addr(1);
 }
 
 function getAutumnMistletoeBonus() {

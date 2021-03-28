@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.53 (2021-03-28):';
+  text += '<br/>• Ethereal season upgrades now also give some mushroom benefit to summer and some berry benefit to autumn';
+  // the winter warmth increase compensates the beehives affected by cold loss, this is more a logical story change than a stat change since bees genuinely are affected by cold. The mushroom consumption increase is for stat reasons though.
+  text += '<br/>• Winter tweaks: more winter warmth base, winter warmth increases mushroom consumption, beehives affected by cold';
+  text += '<br/>• Transcenscion now gives an additional percentage of resin and twigs, based on how many spores towards next level collected';
+  text += '<br/>• Time countdowns now show ceil of time rather than floor and fractional seconds, and other UI tweaks';
+  text += '<br/><br/>';
+
+  // 0.1.52 was accidently skipped
+
   text += '0.1.51 (2021-03-27):';
   text += '<br/>• Allow separate configuration for auto-unlock prices and auto-plant prices';
   text += '<br/>• Various tweaks';

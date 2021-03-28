@@ -156,7 +156,6 @@ function updateResourceUI() {
         result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br><br>';
       }
       result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
-      result += '<b>Time since beginning:</b> ' + util.formatDuration(state.g_runtime, true, 4, true) + '<br><br>';
       result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
       result += '<b>' + upper(seasonNames[getSeason()]) + ' Effects:</b><br>';
       var s = getSeason();
@@ -165,9 +164,15 @@ function updateResourceUI() {
       }
       if(s == 1) {
         result += '• +' + getSummerBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
+        if(getSummerMushroomBonus().neqr(1)) {
+          result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production<br>';
+        }
       }
       if(s == 2) {
         result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, without increasing consumption<br>';
+        if(getAutumnBerryBonus().neqr(1)) {
+          result += '• +' + getAutumnBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
+        }
         if(state.upgrades2[upgrade2_mistletoe].count) {
           result += '• Twigs bonus: ' + getAutumnMistletoeBonus().subr(1).toPercentString() + ' more twigs added when tree levels with mistletoes<br>';
         }
@@ -178,7 +183,7 @@ function updateResourceUI() {
         result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
         result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
       }
-      result += '<br><br>';
+      result += '<br>';
       result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
       return result;
     };
@@ -205,11 +210,11 @@ function updateResourceUI() {
     if(special) {
       if(index == 2) {
         // resin
-        upcoming = state.resin;
+        upcoming = getUpcomingResinNoTMUL();
       }
       if(index == 3) {
         // twigs
-        upcoming = state.twigs;
+        upcoming = getUpcomingTwigsNoTMUL();
       }
       if(index == 7) {
         // essence
@@ -276,27 +281,21 @@ function updateResourceUI() {
         }
         if(upcoming2.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).toPercentString();
         text += '<br><br>';
-        text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + '<br>';
+        var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+        text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
       }
       if(index == 3) {
         // twigs
-        var text = '<b>Twigs</b><br/><br/>';
-        text += 'Current amount: ' + res.toString() + '<br/><br/>';
-        text += 'Amount from next tree level up with the current mistletoes: ' + nextTwigs().toString() + '<br/><br/>';
-        text += 'Amount earned during this transcension so far: ' + state.c_res.twigs.toString() + '<br/><br/>';
-        text += 'Twigs can be gotten by planting mistletoes next to the basic field tree, and appear when the tree levels up. This does increase the spore requirement for tree level up. More mistletoes gives diminishing returns while still increasing spores as much, so max 1 or 2 mistletoes makes sense.<br/><br/>';
-
-
-        // resin
         var text = '<b>' + upper(name) + '</b><br/><br/>';
         text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
         text += '<br><br>';
-        text += 'Collected upcoming twigs: ' + upcoming.toString() + '<br>';
+        text += 'Collected upcoming twigs: ' + upcoming2.toString() + '<br>';
         if(tlevel > 1) {
-          text += '→ Bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x, so total: ' + upcoming2.toString();
-          text += '<br>';
+          text += '→ ' + upcoming.toString() + ' x ' + tlevel_mul.toString() + ' for Transcension ' + roman + '<br>';
         }
-
+        text += '<br>';
+        var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+        text += 'Twigs added next tree level: ' + nextTwigs().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
       }
       if(index == 7) {
         // fruit essence

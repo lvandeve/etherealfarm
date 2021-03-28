@@ -313,7 +313,7 @@ function softReset(opt_challenge) {
   var tlevel = Math.floor(state.treelevel / min_transcension_level);
   if(tlevel < 1) tlevel = 1;
 
-  var resin = state.resin;
+  var resin = getUpcomingResinNoTMUL();
   resin = resin.mulr(tlevel);
 
   var do_fruit = true; // sacrifice the fruits even if not above transcension level (e.g. when resetting a challenge)
@@ -324,7 +324,7 @@ function softReset(opt_challenge) {
   if(state.challenge && !challenges[state.challenge].allowsresin) do_resin = false;
 
 
-  var twigs = state.twigs;
+  var twigs = getUpcomingTwigsNoTMUL();
   twigs = twigs.mulr(tlevel);
   var do_twigs = state.treelevel >= min_transcension_level;
   if(twigs.eqr(0)) do_twigs = false;
@@ -1311,6 +1311,30 @@ function unlockEtherealCrop(id) {
 }
 
 
+
+
+function doNextAutoChoice() {
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var j = registered_upgrades[i];
+    var u = upgrades[j];
+    var u2 = state.upgrades[j];
+    if(!u.is_choice) continue;
+    if(!u2.unlocked) continue;
+    if(u.maxcount != 0 && u2.count >= u.maxcount) continue;
+    var choice = 0;
+    if(j == fern_choice0 && state.automaton_choices[0] == 2) choice = 1;
+    if(j == fern_choice0 && state.automaton_choices[0] == 3) choice = 2;
+    if(j == active_choice0 && state.automaton_choices[1] == 2) choice = 1;
+    if(j == active_choice0 && state.automaton_choices[1] == 3) choice = 2;
+    if(choice > 0) {
+      showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 1 ? u.choicename_a : u.choicename_b), C_AUTOMATON, 101550953);
+      actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, choice:choice});
+    }
+  }
+}
+
+
+
 // next chosen auto upgrade, if applicable.
 // type: either undefined, or object {index:upgrade id, time:time until reached given current resource gain}
 var next_auto_upgrade = undefined;
@@ -1630,9 +1654,11 @@ var update = function(opt_fromTick) {
 
   var oldres = Res(state.res);
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
+
+  var do_transcend = undefined;
+
   var done = false;
   var numloops = 0;
-
   for(;;) { ////////////////////////////////////////////////////////////////////
     if(done) break;
     if(numloops++ > 365) break;
@@ -1647,6 +1673,10 @@ var update = function(opt_fromTick) {
     */
 
     var autores = Res(state.res);
+
+    if(autoChoiceEnabled()) {
+      doNextAutoChoice();
+    }
 
     if(autoUnlockEnabled()) {
       computeNextAutoUnlock();
@@ -2257,6 +2287,9 @@ var update = function(opt_fromTick) {
         if(action.what == 0) {
           state.automaton_enabled = action.on;
         }
+        if(action.what == 4) {
+          state.automaton_autochoice = action.on;
+        }
         if(action.what == 1) {
           state.automaton_autoupgrade = action.on;
         }
@@ -2272,10 +2305,22 @@ var update = function(opt_fromTick) {
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
           // do nothing, invalid reset attempt
         } else if(state.treelevel >= min_transcension_level || state.challenge) {
-          softReset(action.challenge);
+          do_transcend = action;
+
+          // the below is disabled, because not doing this will give more twigs (the fractional amount from going towards next tree level)
+          // perhaps this can be enabled as an option, or automaton feature: since this makes the tree level up, it may give more than not doing this...
+          /* // virtual remove all mistletoes: this may make the tree level up once more and extract some more resin from it
+          state.mistletoes = 0;
+          for(var y = 0; y < state.numh; y++) {
+            for(var x = 0; x < state.numw; x++) {
+              var f = state.field[y][x];
+              if(f.hasCrop() && f.getCrop().type == CROPTYPE_MISTLETOE) {
+                f.index = 0;
+              }
+            }
+          }*/
           store_undo = true;
         }
-        // TODO: the rest of the update, cost/prod computation shouldn't happen anymore after this action, delta times and such are no longer relevant now.
       }
     }
     actions = [];
@@ -2444,7 +2489,7 @@ var update = function(opt_fromTick) {
       var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
           '. Consumed: ' + req.toString() +
           '. Tree boost: ' + getTreeBoost().toPercentString();
-      if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + state.resin.toString();
+      if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResinNoTMUL().toString();
       if(twigs.neqr(0)) message += '. Twigs from mistletoe added: ' + twigs.toString();
       if(state.treelevel == 9) {
         message += '. The tree is almost an adult tree now.';
@@ -2558,20 +2603,7 @@ var update = function(opt_fromTick) {
           if(state.c_numupgrades_unlocked == 1) {
             showRegisteredHelpDialog(8);
           }
-          var already = false;
-          if(automatonEnabled() && state.automaton_unlocked[0] && (j == fern_choice0 || j == active_choice0)) {
-            var choice = -1;
-            if(j == fern_choice0 && state.automaton_choice[0] == 2) choice = 0;
-            if(j == fern_choice0 && state.automaton_choice[0] == 3) choice = 1;
-            if(j == active_choice0 && state.automaton_choice[1] == 2) choice = 0;
-            if(j == active_choice0 && state.automaton_choice[1] == 3) choice = 1;
-            if(choice >= 0) {
-              showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 0 ? u.choicename_a : u.choicename_b), C_AUTOMATON, 101550953);
-              u2.count = choice + 1;
-              already = true;
-            }
-          }
-          if(!already) showMessage('Upgrade available: "' + u.getName() + '"', C_UNLOCK, 193917138);
+          showMessage('Upgrade available: "' + u.getName() + '"', C_UNLOCK, 193917138);
         }
       }
     }
@@ -2705,6 +2737,11 @@ var update = function(opt_fromTick) {
     state.delete2tokens += num_tokens;
     state.g_delete2tokens += num_tokens;
     if(num_tokens > 0 && state.g_numresets > 0) showMessage('Received ' + num_tokens + ' ethereal deletion tokens', C_ETHEREAL, 510324665);
+  }
+
+  if(do_transcend) {
+    var action = do_transcend;
+    softReset(action.challenge);
   }
 
   updateResourceUI();

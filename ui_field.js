@@ -300,14 +300,15 @@ function makeTreeDialog() {
         if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
           text += 'No further resin gained during this challenge, higher level than max regular level reached';
         } else {
-          text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString();
+          var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+          text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString() + ' (getting ' + progress.toPercentString() + ' of this so far)';
         }
 
         text += '<br/>';
         if(tlevel > 1) {
-          text += 'Total resin ready: ' + state.resin.toString() + ' x ' + tlevel + ' = ' + state.resin.mulr(tlevel_mul).toString();
+          text += 'Total resin ready: ' + getUpcomingResinNoTMUL().toString() + ' x ' + tlevel + ' = ' + getUpcomingResinNoTMUL().mulr(tlevel_mul).toString();
         } else {
-          text += 'Total resin ready: ' + state.resin.toString();
+          text += 'Total resin ready: ' + getUpcomingResinNoTMUL().toString();
         }
         text += '<br/>';
       } else {
@@ -321,14 +322,15 @@ function makeTreeDialog() {
           if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
             text += 'No further twigs gained during this challenge, higher level than max regular level reached';
           } else {
-            text += 'Twigs added at next tree level: ' + nextTwigs(twigs_breakdown).twigs.toString();
+            var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+            text += 'Twigs added at next tree level: ' + nextTwigs(twigs_breakdown).twigs.toString() + ' (getting ' + progress.toPercentString() + ' of this so far)';
           }
 
           text += '<br>';
           if(tlevel > 1) {
-            text += 'Total twigs ready: ' + state.twigs.toString() + ' x ' + tlevel + ' = ' + state.twigs.mulr(tlevel_mul).toString();
+            text += 'Total twigs ready: ' + getUpcomingTwigsNoTMUL().toString() + ' x ' + tlevel + ' = ' + getUpcomingTwigsNoTMUL().mulr(tlevel_mul).toString();
           } else {
-            text += 'Total twigs ready: ' + state.twigs.toString();
+            text += 'Total twigs ready: ' + getUpcomingTwigsNoTMUL().toString();
           }
           text += '<br/>';
         } else {

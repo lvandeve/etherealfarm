@@ -26,12 +26,12 @@ function getTranscendValueInfo(opt_from_challenge) {
   var have_item = false;
 
   var text = '';
-  var actual_resin = state.resin.mul(tlevel_mul);
+  var actual_resin = getUpcomingResinNoTMUL().mul(tlevel_mul);
   if(!opt_from_challenge || actual_resin.neqr(0)) {
     have_item = true;
     text += '• ' + actual_resin.toString() + ' resin from tree level ' + state.treelevel;
     if(tlevel > 1) {
-      text += ' (' + state.resin.toString() + ' collected, ' + tlevel_mul.toString() + 'x for Transcension ' + roman + ')';
+      text += ' (' + getUpcomingResinNoTMUL().toString() + ' collected, ' + tlevel_mul.toString() + 'x for Transcension ' + roman + ')';
     }
     text += '<br>';
     if(state.res.resin.eqr(0)) {
@@ -41,12 +41,12 @@ function getTranscendValueInfo(opt_from_challenge) {
     }
   }
 
-  var actual_twigs = state.twigs.mul(tlevel_mul);
+  var actual_twigs = getUpcomingTwigsNoTMUL().mul(tlevel_mul);
   if(!opt_from_challenge || actual_twigs.neqr(0)) {
     have_item = true;
     text += '• ' + actual_twigs.toString() + ' twigs from mistletoes';
     if(tlevel > 1) {
-      text += ' (' + state.twigs.toString() + ' collected, ' + tlevel_mul.toString() + 'x for Transcension ' + roman + ')';
+      text += ' (' + getUpcomingTwigsNoTMUL().toString() + ' collected, ' + tlevel_mul.toString() + 'x for Transcension ' + roman + ')';
     }
     text += '<br>';
   }

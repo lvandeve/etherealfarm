@@ -119,7 +119,7 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
       var c = crops2[index];
 
       result += 'Cost: ' + c.getCost().toString();
-      result += '<br><br> Plant time: ' + util.formatDuration(c.planttime);
+      result += '<br><br>Growth time: ' + util.formatDuration(c.planttime);
       //result += '<br> Production/sec: ' + c.getProd(undefined).toString();
 
       if(c.effect_description_long) {
@@ -129,6 +129,16 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
       }
 
       result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
+
+      // effect to base field
+      if(c.effect.neqr(0)) {
+        // base here means: not taking lotuses into account (TODO: add function that computes it with that for here)
+        result += '.<br><br>Boost (base): ' + c.effect.toPercentString();
+      }
+      // effect of lotus here
+      if(c.boost.neqr(0)) {
+        result += '.<br><br>Boost here: ' + c.getBoost(state.field2[y][x]).toPercentString();
+      }
 
       return result;
     }, index);

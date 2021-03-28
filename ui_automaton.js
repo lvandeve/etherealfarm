@@ -135,9 +135,83 @@ function showConfigureAutoResourcesDialog(subject) {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+function showConfigureAutoChoiceDialog(subject) {
+  // temporary disable automaton_autochoice so it doesn't trigger while cycling through the button values
+  var temp = state.automaton_autochoice;
+  state.automaton_autochoice = 0;
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+    state.automaton_autochoice = temp;
+  });
+  var scrollFlex = dialog.content;
+  makeScrollable(scrollFlex);
+
+  var texth = 0;
+  var h = 0.06;
+  var y = 0;
+
+  var flex;
+
+
+  texth = 0.15;
+  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07, 0.45);
+  flex.div.innerText = 'Choose the action for each choice upgrade dropped by the tree';
+  y += texth;
+
+  var addButton = function() {
+    var h = 0.08;
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.66);
+    y += h * 1.2;
+    return flex;
+  };
+  var choiceupgrades = [fern_choice0, active_choice0];
+
+  var updateChoicesButton = function(flex, i) {
+    var div = flex.div.textEl;
+    var u = upgrades[choiceupgrades[i]];
+    var s = state.automaton_choices[i];
+    var text = upper(u.name) + ': ';
+    flex.enabledStyle = 1;
+    if(s == 2) {
+      text += upper(u.choicename_a);
+    } else if(s == 3) {
+      text += upper(u.choicename_b);
+    } else {
+      text += 'Manual';
+      flex.enabledStyle = 0;
+    }
+    div.innerText = text;
+    setButtonIndicationStyle(flex);
+  };
+
+  var setButtonIndicationStyle = function(flex) {
+    if(flex.enabledStyle != undefined) {
+      flex.div.className = flex.enabledStyle ? 'efAutomatonAuto' : 'efAutomatonManual';
+    }
+  };
+
+  for(var i = 0; i < choiceupgrades.length; i++) {
+    var u = upgrades[choiceupgrades[i]];
+    var u2 = state.upgrades[choiceupgrades[i]];
+    flex = addButton();
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    //flex.div.innerText = u.name;
+    updateChoicesButton(flex, i);
+    addButtonAction(flex.div, bind(function(flex, i) {
+      if(!state.automaton_choices[i]) state.automaton_choices[i] = 1;
+      state.automaton_choices[i]++;
+      if(state.automaton_choices[i] > 3) state.automaton_choices[i] = 1;
+      updateChoicesButton(flex, i);
+    }, flex, i));
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 function updateAutomatonUI() {
   automatonFlex.clear();
-  var choiceupgrades = [fern_choice0, active_choice0];
 
   makeScrollable(automatonFlex);
 
@@ -230,45 +304,44 @@ function updateAutomatonUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  var updateChoiceButton = function(flex, i) {
-    var div = flex.div.textEl;
-    var u = upgrades[choiceupgrades[i]];
-    var s = state.automaton_choice[i];
-    var text = upper(u.name) + ': ';
-    flex.enabledStyle = 1;
-    if(s == 2) {
-      text += upper(u.choicename_a);
-    } else if(s == 3) {
-      text += upper(u.choicename_b);
-    } else {
-      text += 'Manual';
-      flex.enabledStyle = 0;
-    }
-    div.innerText = text;
-    setButtonIndicationStyle(flex);
-  };
-
   texth = 0.1;
   flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
   flex.div.innerText = 'Automate choice upgrades:';
   registerTooltip(flex.div, 'Automate the choice upgrades that the tree drops at certain levels.\nThe choice is automatically made at the moment the corresponding upgrade unlocks, but not after the fact.');
   y += texth;
 
-  for(var i = 0; i < choiceupgrades.length; i++) {
-    var u = upgrades[choiceupgrades[i]];
-    var u2 = state.upgrades[choiceupgrades[i]];
-    flex = addButton();
-    styleButton0(flex.div);
-    centerText2(flex.div);
-    //flex.div.innerText = u.name;
-    updateChoiceButton(flex, i);
-    addButtonAction(flex.div, bind(function(flex, i) {
-      if(!state.automaton_choice[i]) state.automaton_choice[i] = 1;
-      state.automaton_choice[i]++;
-      if(state.automaton_choice[i] > 3) state.automaton_choice[i] = 1;
-      updateChoiceButton(flex, i);
-    }, flex, i));
-  }
+
+  var updateChoiceButton = function(flex) {
+    var div = flex.div.textEl;
+    if(state.automaton_autochoice) {
+      div.innerText = 'Auto-choice on';
+      flex.enabledStyle = 1;
+    } else {
+      div.innerText = 'Auto-choice off';
+      flex.enabledStyle = 0;
+    }
+    setButtonIndicationStyle(flex);
+  };
+
+  flex = addButton();
+  styleButton0(flex.div);
+  centerText2(flex.div);
+  updateChoiceButton(flex);
+  addButtonAction(flex.div, bind(function(flex) {
+    actions.push({type:ACTION_TOGGLE_AUTOMATON, what:4, on:(state.automaton_autochoice ? 0 : 1), fun:function() {
+      updateChoiceButton(flex);
+      }});
+    update();
+  }, flex));
+
+
+  flex = addButton();
+  styleButton(flex.div);
+  centerText2(flex.div);
+  flex.div.textEl.innerText = 'Configure...';
+  addButtonAction(flex.div, function() {
+    showConfigureAutoChoiceDialog();
+  });
 
   addHR();
 
