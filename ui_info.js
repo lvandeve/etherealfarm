@@ -165,7 +165,7 @@ function updateResourceUI() {
       if(s == 1) {
         result += '• +' + getSummerBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
         if(getSummerMushroomBonus().neqr(1)) {
-          result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production<br>';
+          result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production (but also consumption)<br>';
         }
       }
       if(s == 2) {
@@ -180,7 +180,7 @@ function updateResourceUI() {
       if(s == 3) {
         result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower stats when not next to the tree<br>';
         var winterwarmth_location_text = state.upgrades2[upgrade2_diagonal].count ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
-        result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
+        result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats (also consumption) and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
         result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
       }
       result += '<br>';

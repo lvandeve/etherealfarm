@@ -295,34 +295,34 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
 
   if(season == 0 && this.type == CROPTYPE_FLOWER) {
     var bonus = getSpringFlowerBonus();
-    result.posmulInPlace(bonus);
+    result.mulInPlace(bonus);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
   if(season == 1 && this.type == CROPTYPE_BERRY) {
     var bonus = getSummerBerryBonus();
-    result.posmulInPlace(bonus);
+    result.mulInPlace(bonus);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
   // with ethereal upgrades, spring also benefits mushrooms a bit, to catch up with other seasons ethereal upgrades
   if(season == 1 && this.type == CROPTYPE_MUSH) {
     var bonus = getSummerMushroomBonus();
-    result.posmulInPlace(bonus);
-    if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
+    result.mulInPlace(bonus);
+    if(breakdown && bonus.neqr(1)) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
   if(season == 2 && this.type == CROPTYPE_MUSH) {
     var bonus = getAutumnMushroomBonus();
-    result.posmulInPlace(bonus);
+    result.mulInPlace(bonus);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
   // with ethereal upgrades, autumn also benefits mushrooms a bit, to catch up with other seasons ethereal upgrades
   if(season == 2 && this.type == CROPTYPE_BERRY) {
-    var bonus = getAutumnBerryBonus().mulr(0.5);
+    var bonus = getAutumnBerryBonus();
     result.posmulInPlace(bonus);
-    if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
+    if(breakdown && bonus.neqr(1)) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
   if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER || this.type == CROPTYPE_BEE) && f) {
@@ -2625,11 +2625,11 @@ upgrade2_season[0] = registerUpgrade2('improve spring', 0, Res({resin:10}), 2, f
 
 upgrade2_season[1] = registerUpgrade2('improve summer', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (scales by n^1.25). Summer boosts berry production.', undefined, undefined, tree_images[3][1][1]);
+}, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (scales by n^1.25). Summer boosts berry production, this ethereal upgrade additionally slightly boosts mushrooms.', undefined, undefined, tree_images[3][1][1]);
 
 upgrade2_season[2] = registerUpgrade2('improve autumn', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (scales by n^1.25). Autumn boosts mushroom production.', undefined, undefined, tree_images[3][1][2]);
+}, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (scales by n^1.25). Autumn boosts mushroom production, this ethereal upgrade additionally slightly boosts berries.', undefined, undefined, tree_images[3][1][2]);
 
 upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
@@ -3152,6 +3152,7 @@ autumn: mushrooms
 winter: tree
 */
 
+// multipliers, e.g. 2 means +100%
 var bonus_season_flower_spring = 1.5;
 var bonus_season_berry_summer = 2;
 var bonus_season_autumn_mushroom = 2.5;
@@ -3203,7 +3204,7 @@ function getSummerBerryBonus() {
 }
 
 function getSummerMushroomBonus() {
-  return getSummerBerryBonus().subr(bonus_season_berry_summer).mulr(0.33).addr(1);
+  return getSummerBerryBonus().subr(bonus_season_berry_summer).mulr(0.35).addr(1);
 }
 
 function getAutumnMushroomBonus() {
