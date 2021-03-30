@@ -979,8 +979,12 @@ function getUpcomingFruitEssence() {
 
 // get upcoming resin, excluding the higher transcenscion bonus multiplier
 function getUpcomingResinNoTMUL() {
+  var suppress = false; // more resin suppressed by challenge
+  if(state.challenge && !challenges[state.challenge].allowsresin) suppress = true;
+  if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) suppress = true;
+
   var result = Num(state.resin);
-  if(state.treelevel >= min_transcension_level) {
+  if(state.treelevel >= min_transcension_level && !suppress) {
     var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
     var next = nextTreeLevelResin();
     result.addInPlace(progress.mul(next));
@@ -990,8 +994,12 @@ function getUpcomingResinNoTMUL() {
 
 // get upcoming twigs, excluding the higher transcenscion bonus multiplier
 function getUpcomingTwigsNoTMUL() {
+  var suppress = false; // more twigs suppressed by challenge
+  if(state.challenge && !challenges[state.challenge].allowstwigs) suppress = true;
+  if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) suppress = true;
+
   var result = Num(state.twigs);
-  if(state.treelevel >= min_transcension_level) {
+  if(state.treelevel >= min_transcension_level && !suppress) {
     var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
     var next = nextTwigs().twigs;
     result.addInPlace(progress.mul(next));
