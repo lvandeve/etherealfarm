@@ -528,6 +528,8 @@ function State() {
   this.highestoftypeplanted = [];
 
   // higest tier unlocked by research for this croptype
+  // NOTE: may be a crop type that's not actually unlocked and in that case must be ignored, can e.g. happen in challenges that don't have some types of crop, ...
+  // derived stat, not to be saved.
   this.highestoftypeunlocked = [];
 }
 

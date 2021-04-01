@@ -633,8 +633,8 @@ Num.N_Help = []; // help of the notations
 
 var n_i = 0;
 Num.N_LATIN = n_i; Num.N_Names[n_i] = 'suffixes latin'; Num.N_Help[n_i] = 'Latin suffixes for large numbers, such as T for trillion, Qa for quadrillion, V for vigintillion, ...'; n_i++; // abbreviation if available, else engineering, also full if fits in #digits precision: most human-like notation
-Num.N_HYBRID_T = n_i; Num.N_Names[n_i] = 'hybrid T'; Num.N_Help[n_i] = 'Latin suffixes, but only up to T (trillion, 1e12), then switches to engineering notation'; n_i++;
-Num.N_HYBRID_U = n_i; Num.N_Names[n_i] = 'hybrid U'; Num.N_Help[n_i] = 'Latin suffixes, but only up to U (undecillion, 1e36), then switches to engineering notation'; n_i++; // a later version of hybrid
+Num.N_HYBRID_T = n_i; Num.N_Names[n_i] = 'hybrid eng / latin T'; Num.N_Help[n_i] = 'Latin suffixes, but only up to T (trillion, 1e12), then switches to engineering notation'; n_i++;
+Num.N_HYBRID_U = n_i; Num.N_Names[n_i] = 'hybrid eng / latin U'; Num.N_Help[n_i] = 'Latin suffixes, but only up to U (undecillion, 1e36), then switches to engineering notation'; n_i++; // a later version of hybrid
 Num.N_SI = n_i; Num.N_Names[n_i] = 'suffixes SI'; Num.N_Help[n_i] = 'SI suffixes, such as K for kilo (1000), G for giga (1e9), up to Y for yotta (1e24). For larger numbers switches to engineering notation'; n_i++; // using the SI prefixes K,M,G,T,P,E,Z,Y, then engineering
 Num.N_ABC = n_i; Num.N_Names[n_i] = 'suffixes abc'; Num.N_Help[n_i] = 'abc suffixes, 1a for 1000, 1b for 1000000, 1aa for 1e81, etc...'; n_i++; // using the SI prefixes K,M,G,T,P,E,Z,Y, then engineering
 Num.N_ENG = n_i; Num.N_Names[n_i] = 'engineering'; Num.N_Help[n_i] = 'Use exponent notation, and the exponents are always multiples of 3. E.g. 10e6 for 10 million'; n_i++; // strict engineering notation
@@ -643,6 +643,9 @@ Num.N_LOG = n_i; Num.N_Names[n_i] = 'logarithm'; Num.N_Help[n_i] = 'Uses the bas
 Num.N_EXP = n_i; Num.N_Names[n_i] = 'natural'; Num.N_Help[n_i] = 'Uses the natural logarithm with e = 2.71828...'; n_i++; // exponential notation (not to be confused with scientific): e^ln(number)
 Num.N_HEX = n_i; Num.N_Names[n_i] = 'hexadecimal'; Num.N_Help[n_i] = 'Uses base 16'; n_i++; // hex notation with hex exponent (but otherwise behaves like scientific or engineering)
 Num.N_FULL = n_i; Num.N_Names[n_i] = 'full'; Num.N_Help[n_i] = 'Prints value with all digits, switches to scientific once unreasonably big'; n_i++;
+Num.N_HYBRID_T_SCI = n_i; Num.N_Names[n_i] = 'hybrid sci / latin T'; Num.N_Help[n_i] = 'Latin suffixes, but only up to T (trillion, 1e12), then switches to scientific notation'; n_i++;
+Num.N_HYBRID_U_SCI = n_i; Num.N_Names[n_i] = 'hybrid sci / latin U'; Num.N_Help[n_i] = 'Latin suffixes, but only up to U (undecillion, 1e36), then switches to scientific notation'; n_i++; // a later version of hybrid
+Num.N_SI_SCI = n_i; Num.N_Names[n_i] = 'suffixes SI'; Num.N_Help[n_i] = 'SI suffixes, such as K for kilo (1000), G for giga (1e9), up to Y for yotta (1e24). For larger numbers switches to scientific notation'; n_i++; // using the SI prefixes K,M,G,T,P,E,Z,Y, then engineering
 Num.N_Amount = n_i; // amount of notations
 
 // The settings for toString if none given to the parameters, changeable as user option
@@ -823,6 +826,7 @@ function getSuffixAbc(e) {
 /**
  * strict scientific notation (exponent always shows).
  * eng instead forces exponent to be multiple of 3 and will, unlike scientific, not show exponent if it's 0
+ * eng can be boolean (false, true) or a value like 3, 4. for pure scientific, set to 0 or false.
  * @param {number=} opt_base optional base other than 10
  */
 Num.notationSci = function(v, precision, eng, opt_base) {
@@ -906,8 +910,9 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 // also less strict: for small enough numbers (or large enough if between 0 and 1), uses regular notation, no suffixes at all
 // so this notation is more human-like and only becomes engineering notation when necessary
 // suffixtype: 0: a few: up to U, 1: all including centillion etc..., 2: SI symbols (M,G,T,P,E,Z,Y), 3: like 0 but even less: up to T, 4: abc notation
+// opt_sci: in case of hybrid, use scientific rather than engineering notation for the non-abbreviation
 // NOTE: uses short scale, not long scale.
-Num.notationAbr = function(v, precision, suffixtype) {
+Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
   if(v.b < 0) return '-' + Num.notationAbr(Num(-v.b, v.e), precision, suffixtype);
   if(isNaN(v.b)) return 'NaN';
   if(v.b == Infinity) return 'Inf';
@@ -976,7 +981,7 @@ Num.notationAbr = function(v, precision, suffixtype) {
         if(ef <= 36) {
           s += getLatinSuffix(ef);
         } else {
-          s += 'e' + ef;
+          return Num.notationSci(v, precision, !opt_sci);
         }
       } else if(suffixtype == 1) {
         var suffix = getLatinSuffix(ef);
@@ -994,20 +999,20 @@ Num.notationAbr = function(v, precision, suffixtype) {
         else if(ef == 18) s += 'E'; // exa
         else if(ef == 21) s += 'Z'; // zetta
         else if(ef == 24) s += 'Y'; // yotta
-        else s += 'e' + ef;
+        else return Num.notationSci(v, precision, !opt_sci);
       } else if(suffixtype == 3) {
         // use letter up to T
         if(ef <= 12) {
           s += getLatinSuffix(ef);
         } else {
-          s += 'e' + ef;
+          return Num.notationSci(v, precision, !opt_sci);
         }
       } else {
         var suffix = getSuffixAbc(ef);
         if(suffix != undefined) {
           s += suffix;
         } else {
-          s += 'e' + ef;
+          return Num.notationSci(v, precision, !opt_sci);
         }
       }
     }
@@ -1114,6 +1119,8 @@ Num.prototype.toString = function(opt_precision, opt_notation) {
   if(notation == Num.N_LATIN) return Num.notationAbr(this, precision, 1);
   if(notation == Num.N_HYBRID_U) return Num.notationAbr(this, precision, 0);
   if(notation == Num.N_HYBRID_T) return Num.notationAbr(this, precision, 3);
+  if(notation == Num.N_HYBRID_U_SCI) return Num.notationAbr(this, precision, 0, true);
+  if(notation == Num.N_HYBRID_T_SCI) return Num.notationAbr(this, precision, 3, true);
   if(notation == Num.N_SCI) return Num.notationSci(this, precision, false);
   if(notation == Num.N_ENG) return Num.notationSci(this, precision, true);
   if(notation == Num.N_SI) return Num.notationAbr(this, precision, 2);

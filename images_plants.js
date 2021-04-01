@@ -1714,7 +1714,7 @@ subtleplantimageheader + `
 ................
 `);
 
-var iris = createPlantImages2(seeds_flower1,
+var iris = createPlantImages2(seeds_flower0,
 // sprout
 subtleplantimageheader + `
 ................
@@ -1789,7 +1789,7 @@ subtleplantimageheader + `
 .......h........
 `);
 
-var lavendar = createPlantImages2(seeds_flower0,
+var lavendar = createPlantImages2(seeds_flower1,
 // sprout
 subtleplantimageheader + `
 ................

@@ -1446,6 +1446,7 @@ function computeNextAutoPlant() {
     var type = types[i];
     var tier = state.highestoftypeunlocked[type];
     var crop = croptype_tiers[type][tier];
+    if(!state.crops[crop.index].unlocked) continue; // can happen e.g. during a challenge where a different crop resuing some existing tier value exists (e.g. aster in bees challenge)
 
     // how much resources willing to spend
     var advanced = state.automaton_unlocked[2] >= 2;

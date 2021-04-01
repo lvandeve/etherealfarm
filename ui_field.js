@@ -654,6 +654,7 @@ function initFieldUI() {
               var c = crops[state.lastPlanted];
               var tier = state.highestoftypeunlocked[c.type];
               var c3 = croptype_tiers[c.type][tier];
+              if(!state.crops[c3.index].unlocked) c3 = c;
               if(c3.getCost().gt(state.res) && tier > 0) {
                 tier--;
                 var c3 = croptype_tiers[c.type][tier];
@@ -688,6 +689,7 @@ function initFieldUI() {
             // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
             var c2 = f.getCrop();
             var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
+            if(!state.crops[c3.index].unlocked) c3 = c2;
             state.lastPlanted = c3.index;
             if(state.allowshiftdelete && c3.tier > c2.tier) {
               actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});

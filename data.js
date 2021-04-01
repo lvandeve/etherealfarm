@@ -640,7 +640,11 @@ Crop.prototype.getBoost = function(f, breakdown) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
-      var mul_upgrade = u2.bonus.mulr(u.count).addr(1); // the flower upgrades are additive, unlike the crop upgrades which are multiplicative. This because the flower bonus itself is already multiplicative to the plants.
+      var n = u.count;
+      if(this.type == CROPTYPE_NETTLE) {
+        n = Math.pow(n, nettle_upgrade_power_exponent);
+      }
+      var mul_upgrade = u2.bonus.mulr(n).addr(1); // the flower upgrades are additive, unlike the crop upgrades which are multiplicative. This because the flower bonus itself is already multiplicative to the plants.
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
@@ -756,7 +760,10 @@ Crop.prototype.getBoostBoost = function(f, breakdown) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
-      var mul_upgrade = u2.bonus.mulr(u.count).addr(1); // the flower upgrades are additive, unlike the crop upgrades which are multiplicative. This because the flower bonus itself is already multiplicative to the plants.
+
+      var n = Num(u.count);
+      n.powrInPlace(beehive_upgrade_power_exponent);
+      var mul_upgrade = u2.bonus.mulr(n).addr(1);
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
@@ -974,7 +981,7 @@ var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry)
 var berry_10 = registerBerry('mulberry', 10, berryplanttime0 * 40, mulberry);
 var berry_11 = registerBerry('physalis', 11, berryplanttime0 * 45, physalis);
 var berry_12 = registerBerry('raspberry', 12, berryplanttime0 * 50, raspberry);
-var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'actually not a berry... (but here it acts as one)');
+var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'actually not a berry... (but in this game it acts as one)');
 var berry_14 = registerBerry('whitecurrant', 14, berryplanttime0 * 60, whitecurrant);
 
 // mushrooms: give spores
@@ -987,15 +994,19 @@ var mush_4 = registerMushroom('portobello', 4, mushplanttime0 * 12, portobello);
 var mush_5 = registerMushroom('shiitake', 5, mushplanttime0 * 15, shiitake);
 var mush_6 = registerMushroom('truffle', 6, mushplanttime0 * 18, truffle);
 
+
+var fower_base = Num(0.5);
+var flower_increase = Num(16);
+
 // flowers: give boost to neighbors
 crop_register_id = 75;
-var flower_0 = registerFlower('clover', 0, Num(0.5), flowerplanttime0, clover);
-var flower_1 = registerFlower('cornflower', 1, Num(8.0), flowerplanttime0 * 3, cornflower);
-var flower_2 = registerFlower('daisy', 2, Num(128.0), flowerplanttime0 * 6, daisy);
-var flower_3 = registerFlower('dandelion', 3, Num(2048.0), flowerplanttime0 * 9, dandelion);
-var flower_4 = registerFlower('iris', 4, Num(32768.0), flowerplanttime0 * 12, iris);
-var flower_5 = registerFlower('lavendar', 5, Num(262144.0), flowerplanttime0 * 15, lavendar);
-var flower_6 = registerFlower('orchid', 6, Num(2097152.0), flowerplanttime0 * 18, orchid);
+var flower_0 = registerFlower('clover', 0, fower_base.mul(flower_increase.powr(0)), flowerplanttime0, clover);
+var flower_1 = registerFlower('cornflower', 1, fower_base.mul(flower_increase.powr(1)), flowerplanttime0 * 3, cornflower);
+var flower_2 = registerFlower('daisy', 2, fower_base.mul(flower_increase.powr(2)), flowerplanttime0 * 6, daisy);
+var flower_3 = registerFlower('dandelion', 3, fower_base.mul(flower_increase.powr(3)), flowerplanttime0 * 9, dandelion);
+var flower_4 = registerFlower('iris', 4, fower_base.mul(flower_increase.powr(4)), flowerplanttime0 * 12, iris);
+var flower_5 = registerFlower('lavendar', 5, fower_base.mul(flower_increase.powr(5)), flowerplanttime0 * 15, lavendar);
+var flower_6 = registerFlower('orchid', 6, fower_base.mul(flower_increase.powr(6)), flowerplanttime0 * 18, orchid);
 
 
 crop_register_id = 100;
@@ -1243,7 +1254,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
 
   var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor(((multiplier - 1) * 100)) + '% (multiplicative)';
 
-  if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption! Get your seeds production up first!';
+  if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption. Get your seeds production up first!';
 
 
   var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
@@ -1253,8 +1264,12 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
   u.iscropupgrade = true;
 
   u.getCost = function(opt_adjust_count) {
-    var countfactor = Num.powr(Num(basic_upgrade_cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
-    return this.cost.mul(countfactor);
+    var i = state.upgrades[this.index].count + (opt_adjust_count || 0);
+    var countfactor = Num.powr(Num(basic_upgrade_cost_increase), i);
+    var result = this.cost.mul(countfactor);
+    // soft cap by a slight more than exponential increase of the cost: without soft cap, there'll be some tier of crops that is the best tier, and higher tiers will give less production compared to lower berry with as-expensive upgrades
+    if(i > 1) result = result.mul(Num.powr(Num(1.005), (i - 1) * (i - 1)));
+    return result;
   };
 
   return result;
@@ -1282,8 +1297,14 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
   };
 
   var aspect = 'boost';
-
-  var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (additive)';
+  var description;
+  if(crop.type == CROPTYPE_NETTLE) {
+    description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (scales by n^' + nettle_upgrade_power_exponent + ' )';
+  } else if(crop.type == CROPTYPE_BEE) {
+    description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (scales by n^' + beehive_upgrade_power_exponent + ' )';
+  } else {
+    description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (additive)';
+  }
 
   var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
@@ -1436,45 +1457,49 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
 ////////////////////////////////////////////////////////////////////////////////
 
 // power increase for crop production (not flower boost) by basic upgrades
-var basic_upgrade_power_increase = 1.25; // multiplicative
+var berry_upgrade_power_increase = 1.25; // multiplicative
+var mushroom_upgrade_power_increase = 1.3; // multiplicative
 // cost increase for crop production (not flower boost) by basic upgrades
 var basic_upgrade_cost_increase = 1.65;
 
 // how much more expensive than the base cost of the crop is the upgrade cost
 var basic_upgrade_initial_cost = 10;
 
-var flower_upgrade_power_increase = 0.5; // additive
+var flower_upgrade_power_increase = 0.5;
 var flower_upgrade_cost_increase = 2.5;
 var flower_upgrade_initial_cost = 15;
 
+var nettle_upgrade_power_exponent = 1.05;
+
 var beehive_upgrade_power_increase = 0.5; // additive
 var beehive_upgrade_cost_increase = 5;
+var beehive_upgrade_power_exponent = 1.05;
 
 upgrade_register_id = 125;
-var berrymul_0 = registerCropMultiplier(berry_0, getBerryCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_0);
-var berrymul_1 = registerCropMultiplier(berry_1, getBerryCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_1);
-var berrymul_2 = registerCropMultiplier(berry_2, getBerryCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_2);
-var berrymul_3 = registerCropMultiplier(berry_3, getBerryCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_3);
-var berrymul_4 = registerCropMultiplier(berry_4, getBerryCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_4);
-var berrymul_5 = registerCropMultiplier(berry_5, getBerryCost(5).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_5);
-var berrymul_6 = registerCropMultiplier(berry_6, getBerryCost(6).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_6);
-var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_7);
-var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_8);
-var berrymul_9 = registerCropMultiplier(berry_9, getBerryCost(9).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_9);
-var berrymul_10 = registerCropMultiplier(berry_10, getBerryCost(10).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_10);
-var berrymul_11 = registerCropMultiplier(berry_11, getBerryCost(11).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_11);
-var berrymul_12 = registerCropMultiplier(berry_12, getBerryCost(12).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_12);
-var berrymul_13 = registerCropMultiplier(berry_13, getBerryCost(13).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_13);
-var berrymul_14 = registerCropMultiplier(berry_14, getBerryCost(14).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, berryunlock_14);
+var berrymul_0 = registerCropMultiplier(berry_0, getBerryCost(0).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_0);
+var berrymul_1 = registerCropMultiplier(berry_1, getBerryCost(1).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_1);
+var berrymul_2 = registerCropMultiplier(berry_2, getBerryCost(2).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_2);
+var berrymul_3 = registerCropMultiplier(berry_3, getBerryCost(3).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_3);
+var berrymul_4 = registerCropMultiplier(berry_4, getBerryCost(4).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_4);
+var berrymul_5 = registerCropMultiplier(berry_5, getBerryCost(5).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_5);
+var berrymul_6 = registerCropMultiplier(berry_6, getBerryCost(6).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_6);
+var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_7);
+var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_8);
+var berrymul_9 = registerCropMultiplier(berry_9, getBerryCost(9).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_9);
+var berrymul_10 = registerCropMultiplier(berry_10, getBerryCost(10).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_10);
+var berrymul_11 = registerCropMultiplier(berry_11, getBerryCost(11).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_11);
+var berrymul_12 = registerCropMultiplier(berry_12, getBerryCost(12).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_12);
+var berrymul_13 = registerCropMultiplier(berry_13, getBerryCost(13).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_13);
+var berrymul_14 = registerCropMultiplier(berry_14, getBerryCost(14).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_14);
 
 upgrade_register_id = 150;
-var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_0);
-var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_1);
-var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_2);
-var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_3);
-var mushmul_4 = registerCropMultiplier(mush_4, getMushroomCost(4).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_4);
-var mushmul_5 = registerCropMultiplier(mush_5, getMushroomCost(5).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_5);
-var mushmul_6 = registerCropMultiplier(mush_6, getMushroomCost(6).mulr(basic_upgrade_initial_cost), basic_upgrade_power_increase, 1, mushunlock_6);
+var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_0);
+var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_1);
+var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_2);
+var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_3);
+var mushmul_4 = registerCropMultiplier(mush_4, getMushroomCost(4).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_4);
+var mushmul_5 = registerCropMultiplier(mush_5, getMushroomCost(5).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_5);
+var mushmul_6 = registerCropMultiplier(mush_6, getMushroomCost(6).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_6);
 
 upgrade_register_id = 175;
 var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0, flower_upgrade_cost_increase);
@@ -2645,9 +2670,11 @@ var upgrade2_time_reduce_0 = registerUpgrade2('growth speed', LEVEL2, Res({resin
 }, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes ' + upgrade2_time_reduce_0_amount + ' seconds, will not get much faster. This improves the higher level slower plants more.', undefined, undefined, blackberry[0]);
 
 var upgrade2_basic_tree_bonus = Num(0.02);
+var treeboost_exponent_1 = 1.05; // basic
+var treeboost_exponent_2 = 1.25; // from ethereal upgrade
 
 var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', LEVEL2, Res({resin:10}), 1.5, function() {
-}, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (additive). For example, if the level 1 basic tree production bonus is normally 5%, it is now 7%, and at tree level 2 it is then 14% instead of 10%', undefined, undefined, tree_images[10][1][1]);
+}, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (scales by n^' + treeboost_exponent_2 +  ').', undefined, undefined, tree_images[10][1][1]);
 
 var upgrade2_extra_fruit_slot = registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
   state.fruit_slots++;
@@ -2974,8 +3001,15 @@ var treeboost = Num(0.05); // additive production boost per tree level
 
 function getTreeBoost() {
   var result = Num(treeboost);
-  result.addInPlace(upgrade2_basic_tree_bonus.mulr(state.upgrades2[upgrade2_basic_tree].count));
-  result.mulrInPlace(state.treelevel);
+
+  var n = state.upgrades2[upgrade2_basic_tree].count;
+  n = Math.pow(n, treeboost_exponent_2);
+  result.addInPlace(upgrade2_basic_tree_bonus.mulr(n));
+
+  var l = state.treelevel;
+  l = Math.pow(l, treeboost_exponent_1);
+  result.mulrInPlace(l);
+
   return result;
 }
 
@@ -3154,7 +3188,7 @@ winter: tree
 
 // multipliers, e.g. 2 means +100%
 var bonus_season_flower_spring = 1.5;
-var bonus_season_berry_summer = 2;
+var bonus_season_summer_berry = 2.5;
 var bonus_season_autumn_mushroom = 2.5;
 var bonus_season_autumn_mistletoe = 1.5;
 var malus_season_winter = 0.75;
@@ -3162,6 +3196,9 @@ var bonus_season_winter_tree = 2.5;
 var bonus_season_winter_resin = 1.5;
 var season_ethereal_upgrade_exponent = 1.25;
 
+// multiplier of the corresponding berry / mushroom bonus of the season
+var bonus_season_summer_mushroom = 0.5; // with ethereal upgrades only
+var bonus_season_autumn_berry = 0.5; // with ethereal upgrades only
 
 function getSpringFlowerBonus() {
   var bonus = Num(bonus_season_flower_spring);
@@ -3184,7 +3221,7 @@ function getSpringFlowerBonus() {
 }
 
 function getSummerBerryBonus() {
-  var bonus = Num(bonus_season_berry_summer);
+  var bonus = Num(bonus_season_summer_berry);
 
   var ethereal_season = state.upgrades2[upgrade2_season[1]].count;
   if(ethereal_season > 0) {
@@ -3204,7 +3241,7 @@ function getSummerBerryBonus() {
 }
 
 function getSummerMushroomBonus() {
-  return getSummerBerryBonus().subr(bonus_season_berry_summer).mulr(0.35).addr(1);
+  return getSummerBerryBonus().subr(bonus_season_summer_berry).mulr(bonus_season_summer_mushroom).addr(1);
 }
 
 function getAutumnMushroomBonus() {
@@ -3228,7 +3265,7 @@ function getAutumnMushroomBonus() {
 }
 
 function getAutumnBerryBonus() {
-  return getAutumnMushroomBonus().subr(bonus_season_autumn_mushroom).mulr(0.5).addr(1);
+  return getAutumnMushroomBonus().subr(bonus_season_autumn_mushroom).mulr(bonus_season_autumn_berry).addr(1);
 }
 
 function getAutumnMistletoeBonus() {

@@ -119,7 +119,7 @@ function createNumberFormatHelp(notations, precision) {
 
 // Which of the number notations we support in the UI
 var notations = [
-  Num.N_LATIN, Num.N_ENG, Num.N_HYBRID_T, Num.N_HYBRID_U, Num.N_SCI,
+  Num.N_LATIN, Num.N_ENG, Num.N_HYBRID_T, Num.N_HYBRID_U, Num.N_SCI, Num.N_HYBRID_T_SCI, Num.N_HYBRID_U_SCI,
   // a few implemented but not added in initial version: Num.N_SI, Num.N_ABC, Num.N_LOG, Num.N_EXP, Num.N_HEX
 ];
 var notations_inv = [];

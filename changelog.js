@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.54 (2021-04-01):';
+  text += '<br/>• Balancing of berries and mushrooms to fix issue where higher tier ones became less worth the resources';
+  text += '<br/>• Berry and mushroom upgrades prices get a very gradual additional more-than-exponential cost increase, a soft cap to solve the above problem';
+  text += '<br/>• To compensate, a few other stats were buffed: beehive upgrades, nettle upgrades, treelevel production bonus, and ethereal upgrade for treelevel production bonus all became slightly better than linear';
+  text += '<br/>• Added new large number display options: hybrid with scientific instead of engineering notation';
+  text += '<br/><br/>';
+
   text += '0.1.53 (2021-03-28):';
   text += '<br/>• Ethereal season upgrades now also give some mushroom benefit to summer and some berry benefit to autumn';
   // the winter warmth increase compensates the beehives affected by cold loss, this is more a logical story change than a stat change since bees genuinely are affected by cold. The mushroom consumption increase is for stat reasons though.
