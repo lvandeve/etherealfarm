@@ -1268,7 +1268,9 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
     var countfactor = Num.powr(Num(basic_upgrade_cost_increase), i);
     var result = this.cost.mul(countfactor);
     // soft cap by a slight more than exponential increase of the cost: without soft cap, there'll be some tier of crops that is the best tier, and higher tiers will give less production compared to lower berry with as-expensive upgrades
-    if(i > 1) result = result.mul(Num.powr(Num(1.005), (i - 1) * (i - 1)));
+    var base = 1.002;
+    //if(crop.type == CROPTYPE_MUSH) base = 1.002; // same for now.
+    if(i > 1) result = result.mul(Num.powr(Num(base), (i - 1) * (i - 1)));
     return result;
   };
 
@@ -1458,7 +1460,7 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
 
 // power increase for crop production (not flower boost) by basic upgrades
 var berry_upgrade_power_increase = 1.25; // multiplicative
-var mushroom_upgrade_power_increase = 1.3; // multiplicative
+var mushroom_upgrade_power_increase = 1.25; // multiplicative
 // cost increase for crop production (not flower boost) by basic upgrades
 var basic_upgrade_cost_increase = 1.65;
 
@@ -2266,7 +2268,7 @@ function witherDuration() {
 }
 
 
-var challenge_blackberry = registerChallenge('blackberry challenge', [24], Num(0.1),
+var challenge_blackberry = registerChallenge('blackberry challenge', [22], Num(0.1),
 `
 During this challenge, only the first tier of each crop type is available.
 `,
@@ -2671,7 +2673,7 @@ var upgrade2_time_reduce_0 = registerUpgrade2('growth speed', LEVEL2, Res({resin
 
 var upgrade2_basic_tree_bonus = Num(0.02);
 var treeboost_exponent_1 = 1.05; // basic
-var treeboost_exponent_2 = 1.25; // from ethereal upgrade
+var treeboost_exponent_2 = 1.2; // from ethereal upgrade
 
 var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', LEVEL2, Res({resin:10}), 1.5, function() {
 }, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (scales by n^' + treeboost_exponent_2 +  ').', undefined, undefined, tree_images[10][1][1]);
@@ -2735,7 +2737,7 @@ var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', LEVEL2, Res({re
 
 // bases of exponentiation for getTwigs, depending on ethereal upgrade
 var twigs_base = 1.14;
-var twigs_base_twigs_extraction = 1.17;
+var twigs_base_twigs_extraction = 1.175;
 
 var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res({resin:10000}), 1, function() {
 }, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction, undefined, undefined, mistletoe[1]);
@@ -2755,7 +2757,7 @@ var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Re
 
 // bases of exponentiation for treeLevelResin, depending on ethereal upgrade
 var resin_base = 1.141; // 1.141 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
-var resin_base_resin_extraction = 1.17;
+var resin_base_resin_extraction = 1.175;
 
 var upgrade2_resin_extraction = registerUpgrade2('resin extraction', LEVEL2, Res({resin:50e3}), 1, function() {
 }, function(){return true;}, 1, 'increase the multiplier per level for resin, giving exponentially more resin at higher tree levels: base of exponentiation before: ' + resin_base + ', after: ' + resin_base_resin_extraction, undefined, undefined, image_resin);

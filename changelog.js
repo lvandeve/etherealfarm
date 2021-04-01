@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.55 (2021-04-01):';
+  text += '<br/>• Made the balancing changes of 0.1.54 milder. Depending on which state in the game, this means less extreme nerfs or less extreme buffs';
+  text += '<br/>• Increases the effect of the resin extraction and trigs extraction upgrades, giving more resin and twigs at earlier tree level when at high enough stage of the game, to compensate for nerfs from the balance change';
+  text += '<br/><br/>';
+
   text += '0.1.54 (2021-04-01):';
   text += '<br/>• Balancing of berries and mushrooms to fix issue where higher tier ones became less worth the resources';
   text += '<br/>• Berry and mushroom upgrades prices get a very gradual additional more-than-exponential cost increase, a soft cap to solve the above problem';
