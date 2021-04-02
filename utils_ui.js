@@ -798,3 +798,4 @@ function makeDropdown(flex, title, current, choices, fun) {
     choiceFlex.showFun(!showing);
   }, 'dropdown');
 }
+

@@ -205,6 +205,36 @@ function lockAllUpgrades() {
   }
 }
 
+// unlock any templates that are available, or lock them if not
+function unlockTemplates() {
+  // this type is always disable for now: there already exist watercress remainders for that one. Also, the automaton will never plant watercress, so having a template for it may cause confusion.
+  state.crops[watercress_template].unlocked = false;
+
+  if(haveAutomaton() && state.challenge != challenge_nodelete && state.challenge != challenge_wither && state.challenge != challenge_bees) {
+    state.crops[berry_template].unlocked = true;
+    state.crops[mush_template].unlocked = true;
+    state.crops[flower_template].unlocked = true;
+    state.crops[nettle_template].unlocked = true;
+    if(state.challenges[challenge_bees].completed) state.crops[bee_template].unlocked = true;
+    if(state.upgrades2[upgrade2_mistletoe].count) state.crops[mistletoe_template].unlocked = true;
+
+    if(state.challenge == challenge_bees) {
+      state.crops[bee_template].unlocked = false;
+      state.crops[nettle_template].unlocked = false;
+    }
+  } else {
+    // templates disabled in bee challenge because: no templates available for some challenge-specific crops, could be confusing. note also that the beehive template is not for the bee challenge's special beehive.
+    // templates disabled in nodelete challenge because: not a strong reason actually and the code to allow deleting templates in nodelete challenge is even implemented, but by default templates cause automaton to upgrade them, and that would cause nodelete challenge to fail early since the cropss ey cannot be upgraded to a better type
+    // templates disabled in wither challenge because: this challenge should be hard like that on purpose, plus all its corps wither and leave behind template-less field cells all the time anyway
+    state.crops[berry_template].unlocked = false;
+    state.crops[mush_template].unlocked = false;
+    state.crops[flower_template].unlocked = false;
+    state.crops[nettle_template].unlocked = false;
+    state.crops[bee_template].unlocked = false;
+    state.crops[mistletoe_template].unlocked = false;
+  }
+}
+
 // set up everything for a challenge after softreset
 function startChallenge(challenge_id) {
   if(!challenge_id) return; // nothing to do
@@ -810,7 +840,7 @@ function precomputeField() {
     for(var y = 0; y < h; y++) {
       for(var x = 0; x < w; x++) {
         var f = state.field[y][x];
-        var c = f.getCrop();
+        var c = f.getRealCrop();
         if(c && c.index == challengecrop_1 && f.isFullGrown()) {
           var p = prefield[y][x];
           var boost = c.getBoostBoost(f);
@@ -820,7 +850,7 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
-            var c2 = f2.getCrop();
+            var c2 = f2.getRealCrop();
             if(c2 && c2.index == challengecrop_2 && f2.isFullGrown()) {
               p.boost.addInPlace(boost.mul(c2.getBoostBoost(f2)));
             }
@@ -831,7 +861,7 @@ function precomputeField() {
     for(var y = 0; y < h; y++) {
       for(var x = 0; x < w; x++) {
         var f = state.field[y][x];
-        var c = f.getCrop();
+        var c = f.getRealCrop();
         if(c && c.index == challengecrop_0) {
           var p = prefield[y][x];
           var boost = c.getBoostBoost(f);
@@ -841,7 +871,7 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
-            var c2 = f2.getCrop();
+            var c2 = f2.getRealCrop();
             var p2 = prefield[y2][x2];
             if(c2 && c2.index == challengecrop_1 && f2.isFullGrown() && f.isFullGrown()) {
               p.boost.addInPlace(boost.mul(p2.boost));
@@ -861,7 +891,7 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BERRY) {
@@ -870,7 +900,7 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
-            var c2 = f2.getCrop();
+            var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_NETTLE) {
               var boost = c2.getBoost(f2);
               p.nettlemalus_received.divInPlace(boost.addr(1));
@@ -884,7 +914,7 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER) {
@@ -893,7 +923,7 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
-            var c2 = f2.getCrop();
+            var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_BEE && f2.isFullGrown()) {
               var boostboost = c2.getBoostBoost(f2);
               p.beeboostboost_received.addInPlace(boostboost);
@@ -909,7 +939,7 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
@@ -941,7 +971,7 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_SHORT) {
           var leech = c.getLeech(f);
@@ -961,7 +991,7 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) continue; // don't overwrite their boost breakdown with production breakdown
         var p = prefield[y][x];
@@ -985,7 +1015,7 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         if(!f.isFullGrown()) continue;
         if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
@@ -996,7 +1026,7 @@ function precomputeField() {
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             if(!f2.isFullGrown()) continue;
-            var c2 = f2.getCrop();
+            var c2 = f2.getRealCrop();
             if(c2) {
               var p2 = prefield[y2][x2];
               if(c.type == CROPTYPE_BERRY && c2.type == CROPTYPE_MUSH) {
@@ -1027,7 +1057,7 @@ function precomputeField() {
           x = w - x0 - 1;
         }
         var f = state.field[y][x];
-        var c = f.getCrop();
+        var c = f.getRealCrop();
         if(c) {
           if(c.type == CROPTYPE_MUSH) {
             var p = prefield[y][x];
@@ -1096,7 +1126,7 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
         p.prod2 = Res(p.prod1);
@@ -1120,7 +1150,7 @@ function precomputeField() {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
       var p = prefield[y][x];
-      var c = f.getCrop();
+      var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_SHORT) {
           var leech = c.getLeech(f);
@@ -1132,7 +1162,7 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
-            var c2 = f2.getCrop();
+            var c2 = f2.getRealCrop();
             if(c2) {
               if(c2.type != CROPTYPE_SHORT) p.touchnum++;
               var p2 = prefield[y2][x2];
@@ -1440,12 +1470,15 @@ function computeNextAutoPlant() {
 
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
-  var types = [CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER];
+  // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
+  var types = [CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
     var tier = state.highestoftypeunlocked[type];
+    if(tier < 0) continue;
     var crop = croptype_tiers[type][tier];
+    if(!crop) continue;
     if(!state.crops[crop.index].unlocked) continue; // can happen e.g. during a challenge where a different crop resuing some existing tier value exists (e.g. aster in bees challenge)
 
     // how much resources willing to spend
@@ -1695,6 +1728,9 @@ var update = function(opt_fromTick) {
       autoPlant(autores);
     }
 
+    // this function is simple and light enough that it can just be called every time. It can depend on changes mid-game hence needs to be updated regularly.
+    unlockTemplates();
+
     var nexttime = util.getTime(); // in seconds. This is nexttime compared to the current state.time/state.prevtime
 
     var d; // time delta
@@ -1922,10 +1958,10 @@ var update = function(opt_fromTick) {
         }
 
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
-          if(state.challenge == challenge_nodelete && f.index != CROPINDEX + short_0 && f.growth >= 1) {
+          if(state.challenge == challenge_nodelete && f.index != CROPINDEX + short_0 && f.growth >= 1 && !f.isTemplate()) {
             showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
             ok = false;
-          } else if(state.challenge == challenge_wither && f.index != CROPINDEX + short_0) {
+          } else if(state.challenge == challenge_wither && f.index != CROPINDEX + short_0 && !f.isTemplate()) {
             var more_expensive_same_type = type == ACTION_REPLACE && f.hasCrop() && action.crop.cost.gt(f.getCrop().cost) && action.crop.type == f.getCrop().type;
             if(!more_expensive_same_type) {
               showMessage('Cannot delete or downgrade crops during the wither challenge, but they\'ll naturally disappear over time. However, you can replace crops with more expensive crops (see the replace dialog).', C_INVALID, 0, 0);
@@ -1963,12 +1999,12 @@ var update = function(opt_fromTick) {
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
           if(f.hasCrop()) {
             var c = f.getCrop();
-            if(f.growth < 1 && c.type != CROPTYPE_SHORT && state.challenge != challenge_wither) {
-              if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
-              state.g_numplanted--;
-              state.c_numplanted--;
-            } else {
-              if(state.challenge != challenge_wither) {
+            if(state.challenge != challenge_wither && !c.istemplate) {
+              if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+                if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
+                state.g_numplanted--;
+                state.c_numplanted--;
+              } else {
                 state.g_numunplanted++;
                 state.c_numunplanted++;
                 if(action.by_automaton) {
@@ -1997,7 +2033,7 @@ var update = function(opt_fromTick) {
         if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
           var c = action.crop;
           var cost = c.getCost();
-          if(state.challenge != challenge_wither) {
+          if(state.challenge != challenge_wither && !c.istemplate) {
             if(c.type == CROPTYPE_SHORT) {
               state.g_numplantedshort++;
               state.c_numplantedshort++;

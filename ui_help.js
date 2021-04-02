@@ -307,7 +307,7 @@ registerHelpDialog(27, 'Beehives', 'You unlocked beehives!',
 
 
 registerHelpDialog(28, 'Automaton', 'You unlocked the automaton!',
-    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab unlocks, allowing to automate various parts of the game.<br><br>You must place the automaton, go to the tab and enable settings before it actually automates anything.<br><br>More and more automation features will become available later in the game.<br><br>When removing the automaton from the ethereal field, the automaton tab and all automation features will be disabled, but they all come back the way they were when placing the automaton again.',
+    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab and the ability to place templates unlock, allowing to automate various parts of the game.<br><br>You must place the automaton in the ethereal field, go to its tab and enable settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.',
     images_automaton[4]);
 
 registerHelpDialog(29, 'Auto upgrades', 'You unlocked auto upgrades!',
@@ -319,7 +319,7 @@ registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upg
     images_automaton[4]);
 
 registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
-    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will upgrade existing crops crop to a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only upgrade crops to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically upgrade all planted blackberries in the field to blueberries, given enough resources.',
+    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will upgrade existing crops or templates to a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only upgrade crops or templates to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically upgrade all planted blackberries in the field to blueberries, given enough resources.',
     images_automaton[4]);
 
 registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more options!',
@@ -327,7 +327,7 @@ registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more 
     images_automaton[4]);
 
 registerHelpDialog(33, 'Auto unlock', 'You unlocked auto-unlock!',
-    'You unlocked auto-unlock. This will unlock the next tiers of crops automatically. Combined with auto-plant, this can almost fully automate a run.<br><br>Once you planted the general shape of your field with cheap crops, everything will happen automatically from then on. Just place berries, mushrooms, flowers, and eventually nettles and beehives once to indicate the layout.<br><br>Tip: ensure there are some berries that don\'t touch a mushroom, because if a mushroom consumes all seeds of a berry, income will stop and the automaton won\'t get resources for further upgrades and planting.',
+    'You unlocked auto-unlock. This will unlock the next tiers of crops automatically. Combined with auto-plant and templates, this can almost fully automate a run.<br><br>Once you planted the general shape of your field with cheap crops or templates, everything will happen automatically from then on. Just place berries, mushrooms, flowers, nettles and beehives once to indicate the layout.<br><br>Tip: ensure there are some berries that don\'t touch a mushroom, because if a mushroom consumes all seeds of a berry, income will stop and the automaton won\'t get resources for further upgrades and planting, resulting in a deadlock.',
     images_automaton[4]);
 
 
@@ -360,7 +360,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click non-empty field</b>: replace crop, only if this is enabled in preferences.';
   text += '<br/>';
-  text += ' • <b>ctrl + shift + click field</b>: upgrade crop to highest unlocked level (if enabled in preferences), pick this crop type as last planted, and on empty field, plant highest of picked crop type you can afford.';
+  text += ' • <b>ctrl + shift + click field</b>: upgrade crop or template to highest unlocked level (if enabled in preferences), pick this crop type as last planted, and on empty field, plant highest of picked crop type you can afford.';
   text += '<br/>';
   text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford.';
   text += '<br/>';

@@ -52,6 +52,11 @@ Cell.prototype.hasCrop = function() {
   return this.index >= CROPINDEX;
 };
 
+// non-template
+Cell.prototype.hasRealCrop = function() {
+  return this.index >= CROPINDEX && !this.getCrop().istemplate;
+};
+
 // only valid if hasCrop()
 Cell.prototype.cropIndex = function() {
   return this.index - CROPINDEX;
@@ -67,6 +72,13 @@ Cell.prototype.getCrop = function() {
 };
 
 
+// non-template
+Cell.prototype.getRealCrop = function() {
+  var result = this.getCrop();
+  if(result && result.istemplate) return undefined;
+  return result;
+};
+
 // is empty so that you can plant on it (rocks do not count for this)
 Cell.prototype.isEmpty = function() {
   return this.index == 0 || this.index == FIELD_REMAINDER;
@@ -74,6 +86,10 @@ Cell.prototype.isEmpty = function() {
 
 Cell.prototype.isTree = function() {
   return this.index == FIELD_TREE_BOTTOM || this.index == FIELD_TREE_TOP;
+};
+
+Cell.prototype.isTemplate = function() {
+  return this.hasCrop() && this.getCrop().istemplate;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -432,8 +448,8 @@ function State() {
   this.numemptyfields = 0;
   this.numemptyfields2 = 0;
 
-  // amount of fields with a crop on them (hasCrop(), special types 1<=index<CROPINDEX are not counted)
-  // includes growing ones
+  // amount of fields with a crop on them (hasRealCrop(), special types 1<=index<CROPINDEX are not counted)
+  // includes growing ones, excludes templates
   // derived stat, not to be saved
   this.numcropfields = 0;
   this.numcropfields2 = 0;
@@ -447,14 +463,14 @@ function State() {
   // derived stat, not to be saved
   this.numfullpermanentcropfields = 0;
 
-  // amount of plants of this type planted in fields, including newly still growing ones
+  // amount of plants of this type planted in fields, including newly still growing ones, and excluding templates for croptypecount
   // derived stat, not to be saved
   this.cropcount = [];
   this.crop2count = [];
   this.croptypecount = [];
 
   // amount of fully grown plants of this type planted in fields
-  // does not include partially growing ones
+  // does not include partially growing ones, nor templates
   // derived stat, not to be saved
   this.fullgrowncropcount = [];
   this.fullgrowncrop2count = [];
@@ -524,11 +540,12 @@ function State() {
   this.untriedchallenges = 0;
 
   // highest tier crop of this croptype on the basic field, including growing ones
+  // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
   this.highestoftypeplanted = [];
 
   // higest tier unlocked by research for this croptype
-  // NOTE: may be a crop type that's not actually unlocked and in that case must be ignored, can e.g. happen in challenges that don't have some types of crop, ...
+  // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
   this.highestoftypeunlocked = [];
 }
@@ -675,8 +692,8 @@ function computeDerived(state) {
   for(var i = 0; i < NUM_CROPTYPES; i++) {
     state.fullgrowncroptypecount[i] = 0;
     state.croptypecount[i] = 0;
-    state.highestoftypeplanted[i] = 0;
-    state.highestoftypeunlocked[i] = 0;
+    state.highestoftypeplanted[i] = -Infinity;
+    state.highestoftypeunlocked[i] = -Infinity;
   }
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
@@ -684,13 +701,17 @@ function computeDerived(state) {
       if(f.hasCrop()) {
         var c = f.getCrop();
         state.cropcount[c.index]++;
-        state.numcropfields++;
-        state.croptypecount[c.type]++;
         if(f.isFullGrown()) {
           state.fullgrowncropcount[c.index]++;
-          state.fullgrowncroptypecount[c.type]++;
-          state.numfullgrowncropfields++;
-          if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++;
+        }
+        if(!f.isTemplate()) {
+          state.numcropfields++;
+          state.croptypecount[c.type]++;
+          if(f.isFullGrown()) {
+            state.fullgrowncroptypecount[c.type]++;
+            state.numfullgrowncropfields++;
+            if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++;
+          }
         }
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
@@ -752,10 +773,14 @@ function computeDerived(state) {
         state.upgrades_upgradable++; // same as u.canUpgrade()
         if(u.getCost().le(state.res)) state.upgrades_affordable++;
       }
-      if(u2.count && u.iscropunlock && u.cropid != undefined) {
-        var c = crops[u.cropid];
-        state.highestoftypeunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypeunlocked[c.type]);
-      }
+    }
+  }
+
+  for(var i = 0; i < registered_crops.length; i++) {
+    var c = crops[registered_crops[i]];
+    var c2 = state.crops[registered_crops[i]];
+    if(c2.unlocked) {
+      state.highestoftypeunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypeunlocked[c.type]);
     }
   }
 

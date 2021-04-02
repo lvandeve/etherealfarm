@@ -3306,7 +3306,6 @@ subtleplantimageheader + `
 ................
 `);
 
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3367,3 +3366,51 @@ var images_automaton = createPlantImages2(
   image_automaton,
   image_automaton
 );
+
+
+
+function blueprintifyImage(im) {
+  var w = im[1];
+  var h = im[2];
+  im = im[0];
+  var res = [];
+  for(var y = 0; y < h; y++) {
+    res[y] = [];
+    for(var x = 0; x < w; x++) {
+      var c = im[y][x];
+      var r = c[0];
+      var g = c[1];
+      var b = c[2];
+      var a = c[3];
+      var l = (r + g + b) / 3;
+      r = l;
+      g = l;
+      b = 255;
+      a = a * 0.5;
+      res[y][x] = [Math.floor(r), Math.floor(g), Math.floor(b), Math.floor(a)];
+    }
+  }
+  return [res, w, h];
+}
+
+var image_watercresstemplate = createCanvasImageFor(blueprintifyImage(watercress[4][4]));
+var images_watercresstemplate = [image_watercresstemplate, image_watercresstemplate, image_watercresstemplate, image_watercresstemplate, image_watercresstemplate];
+
+var image_berrytemplate = createCanvasImageFor(blueprintifyImage(blackberry[4][4]));
+var images_berrytemplate = [image_berrytemplate, image_berrytemplate, image_berrytemplate, image_berrytemplate, image_berrytemplate];
+
+var image_mushtemplate = createCanvasImageFor(blueprintifyImage(champignon[4][4]));
+var images_mushtemplate = [image_mushtemplate, image_mushtemplate, image_mushtemplate, image_mushtemplate, image_mushtemplate];
+
+var image_flowertemplate = createCanvasImageFor(blueprintifyImage(clover[4][4]));
+var images_flowertemplate = [image_flowertemplate, image_flowertemplate, image_flowertemplate, image_flowertemplate, image_flowertemplate];
+
+var image_nettletemplate = createCanvasImageFor(blueprintifyImage(nettle[4][4]));
+var images_nettletemplate = [image_nettletemplate, image_nettletemplate, image_nettletemplate, image_nettletemplate, image_nettletemplate];
+
+var image_beetemplate = createCanvasImageFor(blueprintifyImage(images_beehive[4][4]));
+var images_beetemplate = [image_beetemplate, image_beetemplate, image_beetemplate, image_beetemplate, image_beetemplate];
+
+var image_mistletoetemplate = createCanvasImageFor(blueprintifyImage(mistletoe[4][4]));
+var images_mistletoetemplate = [image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate];
+

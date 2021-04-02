@@ -79,6 +79,26 @@ function getCropInfoHTMLBreakdown(f, c) {
 // get crop info in HTML
 function getCropInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
+
+  var p = prefield[f.y][f.x];
+
+  if(c.istemplate) {
+    result += '<br/><br/>This template represents all crops of type ' + getCropTypeName(c.type);
+    result += '<br/><br/>It is a placeholder for planning the field layout and does nothing.';
+    result += '<br><br>Templates are a feature provided by the automaton.';
+    result += '<br><br>Tip: ctrl+shift+click a template to turn it into a crop of highest available tier of this type';
+
+    // TODO: p.treeneighbor isn't computed for templates, so this message doesn't work, implement a way to make it work.
+    /*if(c.type == CROPTYPE_MISTLETOE) {
+      if(!p.treeneighbor) {
+        result += '<br/><br/>';
+        result += '<font color="#f88">This mistletoe is not planted next to the tree and therefore won\'t do anything at all. Plant next to tree to be able to get twigs.</font>';
+      }
+    }*/
+
+    return result;
+  }
+
   result += '<br/>';
   result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
   var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
@@ -87,8 +107,6 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
   if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
   result += '<br/><br/>';
-
-  var p = prefield[f.y][f.x];
 
   if(c.type == CROPTYPE_MISTLETOE) {
     if(!p.treeneighbor) {
@@ -654,14 +672,21 @@ function initFieldUI() {
               var c = crops[state.lastPlanted];
               var tier = state.highestoftypeunlocked[c.type];
               var c3 = croptype_tiers[c.type][tier];
-              if(!state.crops[c3.index].unlocked) c3 = c;
+              if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
               if(c3.getCost().gt(state.res) && tier > 0) {
                 tier--;
-                var c3 = croptype_tiers[c.type][tier];
+                var c4 = croptype_tiers[c.type][tier];
+                if(c4 && state.crops[c4.index].unlocked) c3 = c4;
               }
               if(c3.getCost().gt(state.res) && tier > 0) {
                 tier--;
-                var c3 = croptype_tiers[c.type][tier];
+                var c4 = croptype_tiers[c.type][tier];
+                if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+              }
+              if(c3.getCost().gt(state.res)) {
+                tier = -1; // template
+                var c4 = croptype_tiers[c.type][tier];
+                if(c4 && state.crops[c4.index].unlocked) c3 = c4;
               }
               actions.push({type:ACTION_PLANT, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
@@ -689,9 +714,10 @@ function initFieldUI() {
             // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
             var c2 = f.getCrop();
             var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
-            if(!state.crops[c3.index].unlocked) c3 = c2;
+            if(!c3 || !state.crops[c3.index].unlocked) c3 = c2;
             state.lastPlanted = c3.index;
-            if(state.allowshiftdelete && c3.tier > c2.tier) {
+            if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
+            if((state.allowshiftdelete || c2.istemplate) && c3.tier > c2.tier) {
               actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }

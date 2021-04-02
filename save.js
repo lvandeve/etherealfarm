@@ -1165,7 +1165,9 @@ function decState(s) {
   }
   if(save_version >= 4096*1+46) {
     state.automaton_autoplant = processUint();
+    var orig_len = state.automaton_autoplant_fraction.length;
     state.automaton_autoplant_fraction = processFractionChoiceArray();
+    for(var i = state.automaton_autoplant_fraction.length; i < orig_len; i++) state.automaton_autoplant_fraction[i] = state.automaton_autoplant_fraction[0];
     if(error) return err(4);
   }
   if(save_version >= 4096*1+50) {
@@ -1174,7 +1176,9 @@ function decState(s) {
   }
   if(save_version >= 4096*1+51) {
     state.automaton_autounlock_copy_plant_fraction = processBool();
+    var orig_len = state.automaton_autoplant_fraction.length;
     state.automaton_autounlock_fraction = processFractionChoiceArray();
+    for(var i = state.automaton_autounlock_fraction.length; i < orig_len; i++) state.automaton_autounlock_fraction[i] = state.automaton_autounlock_fraction[0];
     if(error) return err(4);
   }
   if(save_version >= 4096*1+53) {

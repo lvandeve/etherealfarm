@@ -547,7 +547,7 @@ function createCanvasImageFor(image) {
   }
 
   ctx.putImageData(id, 0, 0);
-  return [id, w, h, canvas];
+  return [id, w, h, canvas, image];
 }
 
 

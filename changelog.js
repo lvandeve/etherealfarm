@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.56 (2021-04-02):';
+  text += '<br/>• Added templates, which are placeholders for crop types. They do nothing but allow planning the field layout.';
+  text += '<br/>• Templates are a new early automaton feature, unlocked immediately along with the existing automation of choice upgrades';
+  text += '<br/>• Templates can be turned into an actual crop using ctrl+shift+click once a crop of that type is unlocked';
+  text += '<br/>• Templates can be auto-planted by the automaton once auto-plant is available, this allows full run automation from the start';
+  text += '<br/>• Templates are placed individually. Full-field blueprint collections are a planned feature for later';
+  text += '<br/>• Templates are disabled during certain challenges';
+  text += '<br/>• Lowered target level for the blackberry challenge';
+  text += '<br/><br/>';
+
   text += '0.1.55 (2021-04-01):';
   text += '<br/>• Made the balancing changes of 0.1.54 milder. Depending on which state in the game, this means less extreme nerfs or less extreme buffs';
   text += '<br/>• Increases the effect of the resin extraction and trigs extraction upgrades, giving more resin and twigs at earlier tree level when at high enough stage of the game, to compensate for nerfs from the balance change';

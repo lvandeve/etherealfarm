@@ -36,13 +36,8 @@ function showConfigureAutoResourcesDialog(subject) {
     order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     statefraction = state.automaton_autoupgrade_fraction;
   } else if(subject == 1 || subject == 2) {
-    if(state.automaton_unlocked[3] && (state.automaton_autounlock_copy_plant_fraction || subject == 2)) {
-      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
-      order = [3, 4, 5, 6, 7, 8]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
-    } else {
-      typenames = ['berry', 'mushroom', 'flower'];
-      order = [3, 4, 5]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
-    }
+    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
+    order = [3, 4, 5, 6, 7, 8]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     if(subject == 1) {
       statefraction = state.automaton_autoplant_fraction;
     } else {
@@ -271,7 +266,7 @@ function updateAutomatonUI() {
   if(!haveAutomaton()) {
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.6);
-    flex.div.innerText = 'Place automaton in ethereal field to enable automation options. Reach higher ethereal tree level and beat new challenges to unlock more automaton features.';
+    flex.div.innerText = 'Place automaton in ethereal field to enable automation options and crop templates. Reach higher ethereal tree level and beat new challenges to unlock more automaton features.';
     y += texth;
     return;
   }

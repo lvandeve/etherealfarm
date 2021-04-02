@@ -168,6 +168,8 @@ function Crop() {
 
   this.type = undefined;
   this.tier = 0;
+
+  this.istemplate = false; // if true, is a placeholder template
 };
 
 var sameTypeCostMultiplier = 1.5;
@@ -1043,6 +1045,23 @@ crops[challengecrop_2].boost = Num(1);
 
 var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0.1), 60, images_aster, 'This flower is only available during the bee challenge');
 crops[challengeflower_0].type = CROPTYPE_FLOWER;
+
+// templates
+
+function makeTemplate(crop_id) {
+  crops[crop_id].istemplate = true;
+  crops[crop_id].cost = Res(0);
+  return crop_id;
+}
+
+crop_register_id = 300;
+var watercress_template = makeTemplate(registerShortLived('watercress template', 0, Res(0), 0, images_watercresstemplate));
+var berry_template = makeTemplate(registerBerry('berry template', -1, 0, images_berrytemplate));
+var mush_template = makeTemplate(registerMushroom('mushroom template', -1, 0, images_mushtemplate));
+var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0), 0, images_flowertemplate));
+var nettle_template = makeTemplate(registerNettle('nettle template', -1, Num(0), 0, images_nettletemplate));
+var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
+var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2077,7 +2096,7 @@ function Challenge() {
 
   // use numCompleted to check if any stage at all was completed, or fullyCompleted to check all stages are completed
   this.fullyCompleted = function(opt_include_current_run) {
-    return this.numCompleted() >= this.targetlevel.length;
+    return this.numCompleted(opt_include_current_run) >= this.targetlevel.length;
   };
 
   // returns either the reward level of the next stage, or if fully completed, that of the last stage
@@ -2268,7 +2287,7 @@ function witherDuration() {
 }
 
 
-var challenge_blackberry = registerChallenge('blackberry challenge', [22], Num(0.1),
+var challenge_blackberry = registerChallenge('blackberry challenge', [18], Num(0.1),
 `
 During this challenge, only the first tier of each crop type is available.
 `,
@@ -2478,7 +2497,7 @@ var special2_0 = registerSpecial2('fern', 0, Res({resin:10}), 1.5, 'gives 100 * 
 var special2_1 = registerSpecial2('fern II', 2, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
 
 crop2_register_id = 10;
-var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Automates things', 'Automates things. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
+var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
 
 // berries2
 crop2_register_id = 25;
@@ -2721,7 +2740,7 @@ var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({
 var upgrade2_automaton = registerUpgrade2('unlock automaton', LEVEL2, Res({resin:100}), 2, function() {
   unlockEtherealCrop(automaton2_0);
   showRegisteredHelpDialog(28);
-}, function(){return true;}, 1, 'the automaton can be placed in the ethereal field, and when placed, unlocks the automaton tab, allowing automating things', undefined, undefined, images_automaton[4]);
+}, function(){return true;}, 1, 'the automaton can be placed in the ethereal field, and when placed, unlocks the automaton tab, allows to automate things, and allows to place crop templates', undefined, undefined, images_automaton[4]);
 
 ///////////////////////////
 LEVEL2 = 2;
@@ -3088,7 +3107,7 @@ function treeLevelResin(level, breakdown) {
   if(count) {
     var malus = Num(1).sub(mistletoe_resin_malus).powr(count);
     resin.mulInPlace(malus);
-    if(breakdown) breakdown.push(['mistletoe malus', true, malus, resin.clone()]);
+    if(breakdown) breakdown.push(['mistletoe malus (' + count + ')', true, malus, resin.clone()]);
   }
 
   return resin;
@@ -3116,7 +3135,7 @@ function getTwigs(level, breakdown) {
 
   var multi = Num(Math.log2(state.mistletoes + 1));
   res.twigs.mulInPlace(multi);
-  if(breakdown && state.mistletoes != 1) breakdown.push(['#mistletoes', true, multi, res.clone()]);
+  if(breakdown && state.mistletoes != 1) breakdown.push(['#mistletoes (' + state.mistletoes + ')', true, multi, res.clone()]);
 
   if(getSeason() == 2) {
     var bonus = getAutumnMistletoeBonus();

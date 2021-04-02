@@ -268,33 +268,40 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
       var result = '';
       var c = crops[index];
 
-      result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
-      var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
-      if(help) {
-        result += '.<br>' + help;
-      }
-      if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
-
-
-      if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;
-      var cost = c.getCost();
-      result += '<br><br>Planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
-
-
-      if(c.type == CROPTYPE_SHORT) {
-        result += '.<br><br>Living time: ' + util.formatDuration(c.getPlantTime());
+      if(c.istemplate) {
+        result += 'This template represents all crops of type ' + getCropTypeName(c.type);
+        result += '<br/><br/>It is a placeholder for planning the field layout and does nothing.';
+        result += '<br><br>Templates are a feature provided by the automaton.';
+        result += '<br><br>Tip: ctrl+shift+click a template to turn it into a crop of highest available tier of this type.';
       } else {
-        result += '.<br><br>Growth time: ' + util.formatDuration(c.getPlantTime());
-        if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+        result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
+
+        var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
+        if(help) {
+          result += '.<br>' + help;
+        }
+        if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
+
+        if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;
+        var cost = c.getCost();
+        result += '<br><br>Planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+
+
+        if(c.type == CROPTYPE_SHORT) {
+          result += '.<br><br>Living time: ' + util.formatDuration(c.getPlantTime());
+        } else {
+          result += '.<br><br>Growth time: ' + util.formatDuration(c.getPlantTime());
+          if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+        }
+        if(c.type == CROPTYPE_FLOWER) {
+          result += '.<br><br>Neighbor boost: ' + c.getBoost(state.field[y][x]).toPercentString();
+        } else if(c.type == CROPTYPE_BEE) {
+          result += '.<br><br>Flower boost: ' + c.getBoostBoost(state.field[y][x]).toPercentString();
+        } else {
+          result += '.<br><br>Production/sec: ' + c.getProd(state.field[y][x], true).toString();
+        }
+        result += '.';
       }
-      if(c.type == CROPTYPE_FLOWER) {
-        result += '.<br><br>Neighbor boost: ' + c.getBoost(state.field[y][x]).toPercentString();
-      } else if(c.type == CROPTYPE_BEE) {
-        result += '.<br><br>Flower boost: ' + c.getBoostBoost(state.field[y][x]).toPercentString();
-      } else {
-        result += '.<br><br>Production/sec: ' + c.getProd(state.field[y][x], true).toString();
-      }
-      result += '.';
       return result;
     }, index);
 
