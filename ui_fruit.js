@@ -89,7 +89,7 @@ function createFruitHelp() {
 
   text += 'Fruits have one or more abilities from a random set.';
   text += '<br/><br/>';
-  text += 'You can move fruits between the active, stored and sacrificial slots with the buttons in the fruit dialog. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time.';
+  text += 'You can move fruits between the stored and sacrificial slots with the buttons in the fruit dialog. You can choose the active fruit with the arrows. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time.';
   text += '<br/><br/>';
   text += 'Fruit essence can be used to level up abilities, increasing their effect. If the fruit has mutliple abilities, click the ability you want to upgrade first.';
   text += '<br/><br/>';
@@ -107,22 +107,21 @@ function createFruitHelp() {
   text += '<br/><br/>';
   text += 'Fruit related hotkeys:';
   text += '<br/>';
-  text += ' • <b>ctrl + click fruit</b>: move downwards: to storage if available, otherwise to sacrificial pool.';
+  text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
   text += '<br/>';
-  text += ' • <b>shift + click fruit</b>: move upwards: to storage if available, otherwise swap to active slot.';
+  text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
   text += '<br/>';
   text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence';
 
   div.innerHTML = text;
 }
 
-function createFruitDialog(f, opt_selected) {
+function fillFruitDialog(dialog, f, opt_selected) {
+  dialog.content.clear();
   lastTouchedFruit = f;
   updateFruitUI(); // to update lastTouchedFruit style
-  var dialog = createDialog();
   var recreate = function() {
-    closeAllDialogs();
-    createFruitDialog(f, selected);
+    fillFruitDialog(dialog, f, selected);
   };
   dialog.div.className = 'efDialogTranslucent';
 
@@ -269,12 +268,12 @@ function createFruitDialog(f, opt_selected) {
   y += 0.05;
   var h = 0.05;
 
-  if(!(f.slot < 10)) {
+  if(f.slot >= 100) {
     var moveButton1 = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
     y += h * 1.1;
     styleButton(moveButton1);
-    moveButton1.textEl.innerText = 'to active slot';
-    if(f.slot < 10) moveButton1.textEl.style.color = '#666';
+    moveButton1.textEl.innerText = 'to storage slot';
+    if(state.fruit_stored.length >= state.fruit_slots) moveButton1.textEl.style.color = '#666';
     addButtonAction(moveButton1, function() {
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
       update();
@@ -283,29 +282,25 @@ function createFruitDialog(f, opt_selected) {
     });
   }
 
-  if(!(f.slot >= 10 && f.slot < 100)) {
+  if(f.slot < 100) {
     var moveButton2 = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
     y += h * 1.1;
     styleButton(moveButton2);
-    moveButton2.textEl.innerText = 'to storage slot';
-    if(f.slot >= 10 && f.slot < 100) moveButton2.textEl.style.color = '#666';
-    if(state.fruit_stored.length >= state.fruit_slots) moveButton2.textEl.style.color = '#666';
+    moveButton2.textEl.innerText = 'to sacrificial pool';
     addButtonAction(moveButton2, function() {
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:1});
       update();
       //recreate();
       closeAllDialogs();
     });
-  }
 
-  if(!(f.slot >= 100)) {
     var moveButton3 = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
     y += h * 1.1;
     styleButton(moveButton3);
-    moveButton3.textEl.innerText = 'to sacrificial pool';
-    if(f.slot >= 100) moveButton3.textEl.style.color = '#666';
+    moveButton3.textEl.innerText = 'make active';
     addButtonAction(moveButton3, function() {
-      actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:2});
+      state.fruit_active = f.slot;
+      updateFruitUI();
       update();
       //recreate();
       closeAllDialogs();
@@ -320,7 +315,43 @@ function createFruitDialog(f, opt_selected) {
   }, 'mark favorite');
   registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');
 
+
+  y += 0.03;
+  h = 0.03;
+  flex  = new Flex(dialog.content, [0.01, 0.15], y, 0.85, y + h, 0.66);
+  y += h * 1.2;
+  flex.div.innerText = 'Rename fruit, or empty to use default name:';
+
+  h = 0.06;
+  var inputFlex = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.66);
+  var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
+  var changefun = function(e) {
+    var name = area.value;
+    if(!name) {
+      name = '';
+    } else {
+      name = name.substr(0, 20);
+      name = name.replace(/\s/g, ' ');
+      name = name.replace(/</g, '');
+      name = name.replace(/>/g, '');
+      name = name.replace(/&/g, '');
+    }
+    f.name = name;
+    area.value = f.name;
+    updateFruitUI();
+    if(dialog_level) recreate();
+  };
+  area.value = f.name;
+  area.onchange = changefun;
+  y += h * 1.2;
+
+
   updateSelected();
+}
+
+function createFruitDialog(f, opt_selected) {
+  var dialog = createDialog();
+  fillFruitDialog(dialog, f, opt_selected);
 }
 
 function showStorageFruitSourceDialog() {
@@ -338,7 +369,7 @@ function showStorageFruitSourceDialog() {
 
   text += 'You have ' + state.fruit_slots + ' fruit storage slots available. Here\'s where they came from:';
   text += '<br/><br/>';
-  text += ' • 2: initial amount';
+  text += ' • 3: initial amount';
   text += '<br/>';
 
   if(state.seen_seasonal_fruit != 0) {
@@ -371,6 +402,9 @@ function styleFruitChip(flex, f) {
   flex.div.style.backgroundColor = tierColors_BG[f.tier] + '8';
   if(f.mark) {
     var color = f.mark == 1 ? '#f008' : (f.mark == 2 ? '#fe08' : (f.mark == 3 ? '#4c48' : '#06c8'));
+    flex.div.style.border = '3px solid ' + color;
+  } else if(f.name) {
+    var color = '#0008';
     flex.div.style.border = '3px solid ' + color;
   } else {
     flex.div.style.border = '1px solid black';
@@ -412,22 +446,16 @@ function makeFruitChip(flex, f, type) {
 
   styleButton0(flex.div);
   addButtonAction(flex.div, function(e) {
-    if(e.shiftKey) {
-      if(f.slot != 0) {
+    if(e.shiftKey || eventHasCtrlKey(e)) {
+      if(f.slot >= 100) {
         // move the fruit upwards
         var full = state.fruit_stored.length >= state.fruit_slots;
-        var slot = 1;
-        if((f.slot > 0 && f.slot < 100) || full) slot = 0;
-        actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:slot});
-        update();
-      }
-    } else if(eventHasCtrlKey(e)) {
-      if(f.slot < 100) {
-        // move the fruit downwards
-        var full = state.fruit_stored.length >= state.fruit_slots;
-        var slot = 1;
-        if(f.slot > 0 || full) slot = 2;
-        actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:slot});
+        if(!full) {
+          actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+          update();
+        }
+      } else { // move the fruit downwards
+        actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:1});
         update();
       }
     } else {
@@ -454,31 +482,20 @@ function updateFruitUI() {
   var y = 0.1;
   var help;
 
+  var num = state.fruit_slots;
+  var x;
+
   ////////
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.33, [0, y + s], 0.66);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.85, [0, y + s], 0.5);
   y += s;
-  titleFlex.div.innerText = 'active fruit';
-  help = 'Only the fruit in the active slot will grant the abilities. The fruit in the active slot is kept after transcensions, just like those in storage. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the active slot.';
+  var active_fruit_name = 'none';
+  var f_active = getActiveFruit();
+  if(f_active) active_fruit_name = f_active.toString() + ': ' + f_active.abilitiesToString(true, true);
+  titleFlex.div.innerText = 'active fruit: ' + active_fruit_name;
+  help = 'The chosen active fruit. You can choose it using the arrow buttons below.';
   registerTooltip(titleFlex.div, help);
 
-  var canvasFlex = new Flex(scrollFlex, [0.01, 0], [0, y], [0.01, s], [0, y + s]);
-  y += s;
-  canvasFlex.div.style.border = '1px solid black';
-  if(state.fruit_active.length) {
-    makeFruitChip(canvasFlex, state.fruit_active[0], 0);
-  } else {
-    canvasFlex.div.style.backgroundColor = '#ccc';
-    registerTooltip(canvasFlex.div, 'No active fruit present in this slot. ' + help);
-
-    addButtonAction(canvasFlex.div, bind(function(help) {
-      lastTouchedFruit = null;
-      updateFruitUI();
-      showMessage('No active fruit present in this slot. ' + help, C_INVALID, 0, 0);
-    }, help), 'empty active fruit slot');
-  }
-
-  ////////
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.33, [0, y + s], 0.66);
   y += s;
@@ -486,11 +503,32 @@ function updateFruitUI() {
   help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage.';
   registerTooltip(titleFlex.div, help);
 
+
+  x = 0;
+  for(var i = 0; i < num; i++) {
+    var canvasFlex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+    x += s;
+    //canvasFlex.div.style.border = '1px solid black';
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    var image = i == state.fruit_active ? image_fruitsel_active : image_fruitsel_inactive;
+    renderImage(image, canvas);
+
+    styleButton0(canvasFlex.div, true);
+    var fruit_name = 'none';
+    if(state.fruit_stored[i]) fruit_name = state.fruit_stored[i].toString();
+    addButtonAction(canvasFlex.div, bind(function(i) {
+      state.fruit_active = i;
+      updateFruitUI();
+    }, i), 'activate stored fruit ' + i + ': ' + fruit_name);
+  }
+  y += s * 1.1;
+
+  ////////
+
   styleButton0(titleFlex.div);
   addButtonAction(titleFlex.div, showStorageFruitSourceDialog);
 
-  var num = state.fruit_slots;
-  var x = 0;
+  x = 0;
   for(var i = 0; i < num; i++) {
     var canvasFlex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
     x += s;
@@ -519,7 +557,7 @@ function updateFruitUI() {
   help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
   registerTooltip(titleFlex.div, help);
 
-  var num = Math.max(4, state.fruit_sacr.length);
+  var num = Math.max(6, state.fruit_sacr.length);
   var x = 0;
   for(var i = 0; i < num; i++) {
     var canvasFlex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
@@ -541,10 +579,16 @@ function updateFruitUI() {
         canvasFlex.div.style.backgroundColor = '#ccc8';
       } else if(i == 2) {
         canvasFlex.div.style.border = '1px solid #0004';
-        canvasFlex.div.style.backgroundColor = '#ccc4';
+        canvasFlex.div.style.backgroundColor = '#ccc6';
       } else if(i == 3) {
         canvasFlex.div.style.border = '1px solid #0002';
+        canvasFlex.div.style.backgroundColor = '#ccc4';
+      } else if(i == 4) {
+        canvasFlex.div.style.border = '1px solid #0002';
         canvasFlex.div.style.backgroundColor = '#ccc2';
+      } else if(i == 5) {
+        canvasFlex.div.style.border = '1px solid #0002';
+        canvasFlex.div.style.backgroundColor = '#ccc1';
       }
 
       registerTooltip(canvasFlex.div, 'No fruit present in this sacrificial pool slot. ' + help);

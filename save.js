@@ -246,6 +246,7 @@ function encState(state, opt_raw_only) {
   processBool(state.disableHelp);
   processUint16(state.uistyle);
   processUint16(state.sidepanel);
+  processUint16Array(state.notificationsounds);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -378,7 +379,7 @@ function encState(state, opt_raw_only) {
   processInt(state.fruit_seed);
   processBool(state.fruit_seen);
   processUint(state.fruit_slots);
-  processUint(state.fruit_active.length);
+  processUint(state.fruit_active);
   processUint(state.fruit_stored.length);
   processUint(state.fruit_sacr.length);
 
@@ -390,6 +391,7 @@ function encState(state, opt_raw_only) {
   array4 = [];
   array5 = [];
   array6 = [];
+  array7 = [];
   var appendfruit = function(f) {
     array0.push(f.type);
     array1.push(f.tier);
@@ -400,10 +402,8 @@ function encState(state, opt_raw_only) {
     }
     array5.push(f.essence);
     array6.push(f.mark);
+    array7.push(f.name);
   };
-  for(var i = 0; i < state.fruit_active.length; i++) {
-    appendfruit(state.fruit_active[i]);
-  }
   for(var i = 0; i < state.fruit_stored.length; i++) {
     appendfruit(state.fruit_stored[i]);
   }
@@ -417,6 +417,7 @@ function encState(state, opt_raw_only) {
   processUintArray(array4);
   processNumArray(array5);
   processUintArray(array6);
+  processStringArray(array7);
 
   id = 20; // a few spares for the above
   processUint(state.seen_seasonal_fruit);
@@ -511,6 +512,7 @@ function encState(state, opt_raw_only) {
   processBool(state.automaton_autounlock_copy_plant_fraction);
   processFractionChoiceArray(state.automaton_autounlock_fraction);
   processUint(state.automaton_autochoice);
+  processNum(state.automaton_autounlock_max_cost);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -826,6 +828,7 @@ function decState(s) {
   if(save_version >= 4096*1+20) state.disableHelp = processBool();
   if(save_version >= 4096*1+22) state.uistyle = processUint16();
   if(save_version >= 4096*1+32) state.sidepanel = processUint16();
+  if(save_version >= 4096*1+57) state.notificationsounds = processUint16Array();
   if(error) return err(4);
 
 
@@ -982,10 +985,16 @@ function decState(s) {
     state.fruit_seed = processInt();
     state.fruit_seen = processBool();
     state.fruit_slots = processUint();
-    state.fruit_active.length = processUint(0);
+    var old_active_length = 0; // from when fruit_active was still an array
+    if(save_version < 4096*1+57) {
+      old_active_length = processUint(0);
+      if(old_active_length > 1) return err(4);
+      state.fruit_slots++; // the active slot became one of the regular fruit slots now
+    } else {
+      state.fruit_active = processUint(0);
+    }
     state.fruit_stored.length = processUint(0);
     state.fruit_sacr.length = processUint(0);
-    if(state.fruit_active.length > 1) return err(4);
     if(state.fruit_stored.length > state.fruit_slots) return err(4);
 
     id = 8;
@@ -996,6 +1005,12 @@ function decState(s) {
     array4 = processUintArray();
     array5 = processNumArray();
     array6 = processUintArray();
+    if(save_version >= 4096*1+57) {
+      array7 = processStringArray();
+    } else {
+      array7 = [];
+      for(var i = 0; i < array6.length; i++) array7[i] = '';
+    }
     if(error) return err(4);
     index0 = 0;
     index1 = 0;
@@ -1004,10 +1019,12 @@ function decState(s) {
     index4 = 0;
     index5 = 0;
     index6 = 0;
+    index7 = 0;
     var decfruit = function() {
       var f = new Fruit();
       f.type = array0[index0++];
       f.tier = array1[index1++];
+      if(index2 >= array2.length) return undefined;
       f.abilities.length = array2[index2++];
       for(var i = 0; i < f.abilities.length; i++) {
         f.abilities[i] = array3[index3++];
@@ -1015,16 +1032,29 @@ function decState(s) {
       }
       f.essence = array5[index5++];
       f.mark = array6[index6++];
+      f.name = array7[index7++];
       return f;
     };
-    for(var i = 0; i < state.fruit_active.length; i++) {
-      state.fruit_active[i] = decfruit();
+    if(save_version < 4096*1+57) {
+      if(old_active_length) {
+        state.fruit_stored.length = state.fruit_stored.length + 1;
+        var f = decfruit();
+        if(!f) return err(4);
+        state.fruit_stored[0] = f;
+        state.fruit_active = 0;
+      } else {
+        state.fruit_active = state.fruit_stored.length;
+      }
     }
-    for(var i = 0; i < state.fruit_stored.length; i++) {
-      state.fruit_stored[i] = decfruit();
+    for(var i = old_active_length; i < state.fruit_stored.length; i++) {
+      var f = decfruit();
+      if(!f) return err(4);
+      state.fruit_stored[i] = f;
     }
     for(var i = 0; i < state.fruit_sacr.length; i++) {
-      state.fruit_sacr[i] = decfruit();
+      var f = decfruit();
+      if(!f) return err(4);
+      state.fruit_sacr[i] = f;
     }
     if(index0 != array0.length) return err(4);
     if(index1 != array1.length) return err(4);
@@ -1033,6 +1063,7 @@ function decState(s) {
     if(index4 != array4.length) return err(4);
     if(index5 != array5.length) return err(4);
     if(index6 != array6.length) return err(4);
+    if(index7 != array7.length) return err(4);
   }
 
   if(save_version >= 4096*1+39) {
@@ -1186,6 +1217,9 @@ function decState(s) {
     if(error) return err(4);
   } else {
     state.automaton_autochoice = 1;
+  }
+  if(save_version >= 4096*1+57) {
+    state.automaton_autounlock_max_cost = processNum();
   }
 
 

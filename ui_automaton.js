@@ -26,7 +26,7 @@ function showConfigureAutoResourcesDialog(subject) {
   var h = 0.06;
   var y = 0;
 
-  var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0];
+  var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.0005, 0.0002, 0.0001, 0];
 
   var typenames, order;
   var statefraction;
@@ -57,7 +57,7 @@ function showConfigureAutoResourcesDialog(subject) {
   flex.div.innerText = 'Select max resource amount for ' + subjecttitle + ' of each crop type:';
   y += texth;
 
-
+  var orig_y = y;
 
   if(subject == 2) {
     var addButton = function() {
@@ -128,6 +128,55 @@ function showConfigureAutoResourcesDialog(subject) {
     showConfigureAutoResourcesDialog(subject);
   });
 
+  if(subject == 2) {
+    var x = 0.5;
+    y = orig_y;
+
+    h = 0.06;
+    var textFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h, 0.66);
+    y += h * 1.2;
+    var temp = state.automaton_autounlock_max_cost; // only actually stored in state.automaton_autounlock_max_cost if input field changed, rather than just receiving keypress, to avoid unwanted buys while typing
+    var setMaxCostText = function() {
+      var text = 'Cost limit: ' + temp.toString();
+      if(temp.eqr(0)) text += ' (unlimited)';
+      else text += ' seeds';
+      textFlex.div.innerText = text;
+    };
+    setMaxCostText();
+
+    h = 0.06;
+    var inputFlex = new Flex(scrollFlex, x, y, x + 0.4, y + h, 0.66);
+    var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
+    var changefun = function() {
+      var v = Num.parse(area.value);
+      if(!v || Num.isNaN(v) || v.ltr(0)) v = Num(0);
+      temp = v;
+      setMaxCostText();
+    };
+    area.onchange = function() {
+      changefun();
+      state.automaton_autounlock_max_cost = temp;
+    };
+    area.onkeyup = changefun;
+    y += h * 1.2;
+    /*area.value = state.automaton_autounlock_max_cost.toString(3, Num.N_SCI);
+    area.onclick = function() {
+      area.select();
+    };*/
+
+    y += 0.03;
+    h = 0.06;
+    var infoFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h, 0.66);
+    var info = '';
+    info += 'Change cost limit in the text box above. Automaton will not buy unlocks more expensive than this value.';
+    info += '<br><br>';
+    info += 'Use 0 to indicate unlimited (default). For example, set to 1001 to prevent auto-unlocking anything higher than blackberry.'
+    //info += '<br><br>'
+    //info += 'Supported input notation examples: 0, 1000000, 1e6, 100e48, 1M, 100QiD, ...'
+    //info += 'The output value above the box renders it in your preferred number notation for verification.';
+    infoFlex.div.innerHTML = info;
+    y += h * 1.2;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

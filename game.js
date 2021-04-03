@@ -1309,10 +1309,8 @@ function addRandomFruit() {
 
   if(state.g_numfruits == 0) {
     // add fruit to highest possible slot type. Now only if this is the first ever fruit
-    if(state.fruit_active.length == 0) {
-      setFruit(0, fruit);
-    } else if(state.fruit_stored.length < state.fruit_slots) {
-      setFruit(10 + state.fruit_stored.length, fruit);
+    if(state.fruit_stored.length < state.fruit_slots) {
+      setFruit(state.fruit_stored.length, fruit);
     } else {
       setFruit(100 + state.fruit_sacr.length, fruit);
     }
@@ -1545,17 +1543,23 @@ function computeNextAutoUnlock() {
     if(u2.count) continue;
     if(u.cropid == undefined) continue
 
+    var cost = u.getCost();
+    if(state.automaton_autounlock_max_cost.gtr(0) && cost.seeds.gtr(state.automaton_autounlock_max_cost)) continue;
+
     // how much resources willing to spend. This uses the same fractions as autoplant does.
     var advanced = state.automaton_unlocked[2] >= 2;
     var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
     var fraction = getAutoFraction(advanced, fraction_array, u.cropid);
 
-    var cost = u.getCost();
-
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
 
     if(next_auto_unlock == undefined || time < next_auto_unlock.time) next_auto_unlock = {index:u.index, time:time};
+    // prioritize mistletoe if close enough, so that mistletoes grow before mushrooms when player wants them in the blueprint
+    if(u.index == mistletoeunlock_0 && time < 2) {
+      next_auto_unlock = {index:u.index, time:time};
+      break;
+    }
   }
 }
 
@@ -1656,6 +1660,10 @@ function registerUpdateListener(updatefun) {
 
 var prev_season = undefined;
 var prev_season_gain = undefined;
+
+var last_fullgrown_sound_time0 = 0;
+var last_fullgrown_sound_time1 = 0;
+var last_fullgrown_sound_time2 = 0;
 
 var update = function(opt_fromTick) {
   var undostate = undefined;
@@ -2256,24 +2264,19 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_FRUIT_SLOT) {
         var f = action.f;
-        var slottype = action.slot; // 0:active, 1:stored, 2:sacrificial
-        var currenttype = ((f.slot < 10) ? 0 : ((f.slot < 100) ? 1 : 2));
+        var slottype = action.slot; // 0:stored, 1:sacrificial
+        var currenttype = (f.slot < 100) ? 0 : 1;
         if(slottype == currenttype) {
           // nothing to do
         } else if(slottype == 0) {
-          var f2 = getFruit(action.slot);
-          // swaps
-          setFruit(f.slot, f2);
-          setFruit(action.slot, f);
-        } else if(slottype == 1) {
           if(state.fruit_stored.length >= state.fruit_slots) {
             showMessage('stored slots already full', C_INVALID, 0, 0);
           } else {
-            var slot = 10 + state.fruit_stored.length;
+            var slot = state.fruit_stored.length;
             setFruit(f.slot, undefined);
             setFruit(slot, f);
           }
-        } else if(slottype == 2) {
+        } else if(slottype == 1) {
           var slot = 100 + state.fruit_sacr.length;
           setFruit(f.slot, undefined);
           setFruit(slot, f);
@@ -2411,6 +2414,24 @@ var update = function(opt_fromTick) {
                     state.g_numfullgrown++;
                     state.c_numfullgrown++;
                   }
+                  if(state.notificationsounds[1]) {
+                    if(c.type == CROPTYPE_BERRY) {
+                      if(util.getTime() > last_fullgrown_sound_time0 + 5) {
+                        playNotificationSound(2000);
+                        last_fullgrown_sound_time0 = util.getTime();
+                      }
+                    } else if(c.type == CROPTYPE_MUSH) {
+                      if(util.getTime() > last_fullgrown_sound_time1 + 5) {
+                        playNotificationSound(1800);
+                        last_fullgrown_sound_time1 = util.getTime();
+                      }
+                    } else {
+                      if(util.getTime() > last_fullgrown_sound_time2 + 5) {
+                        playNotificationSound(2200);
+                        last_fullgrown_sound_time2 = util.getTime();
+                      }
+                    }
+                  }
                   // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
                 }
               }
@@ -2487,6 +2508,7 @@ var update = function(opt_fromTick) {
         state.fernx = s[0];
         state.ferny = s[1];
         if(state.g_numferns == 3 || (state.g_numferns > 7 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
+        if(state.notificationsounds[0]) playNotificationSound(1000);
       }
     }
 

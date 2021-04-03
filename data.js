@@ -1019,7 +1019,7 @@ crop_register_id = 105;
 var short_0 = registerShortLived('watercress', 0, Res({seeds:1}), 60, watercress);
 
 crop_register_id = 110;
-var mistletoe_0 = registerMistletoe('mistletoe', 0, 60, mistletoe);
+var mistletoe_0 = registerMistletoe('mistletoe', 0, 50, mistletoe);
 
 crop_register_id = 120;
 // In theory, a beehive giving a 50% boost is already worth it: touching 4 flowers means getting 2 flowers worth of production bonus from 1 beehive,

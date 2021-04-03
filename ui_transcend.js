@@ -60,12 +60,11 @@ function getTranscendValueInfo(opt_from_challenge) {
       text += '→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before transcending<br/>';
     }
     var highest = 0, highestsacr = 0;
-    for(var i = 0; i < state.fruit_active.length; i++) highest = Math.max(highest, state.fruit_active[i].tier);
     for(var i = 0; i < state.fruit_stored.length; i++) highest = Math.max(highest, state.fruit_stored[i].tier);
     for(var i = 0; i < state.fruit_sacr.length; i++) highestsacr = Math.max(highestsacr, state.fruit_sacr[i].tier);
     if(highestsacr > highest) {
       // fruit of highest tier is in sacrificial pool, indicate this to prevent accidently losing it
-      text += '<span class="efWarningOnDialogText">→ Warning: you have a fruit in sacrificial pool of higher tier than any active or stored fruit, check the fruit tab if you want to keep it</span><br/>';
+      text += '<span class="efWarningOnDialogText">→ Warning: you have a fruit in sacrificial pool of higher tier than any stored fruit, check the fruit tab if you want to keep it</span><br/>';
     }
   }
 
@@ -120,7 +119,7 @@ function createTranscendDialog(opt_from_challenge) {
   text += '• Resin, twigs and fruit essence<br/>';
   text += '• Ethereal field and ethereal crops<br/>';
   text += '• Ethereal upgrades<br/>';
-  text += '• Fruits in the active and storage slots<br/>';
+  text += '• Fruits in the storage slots<br/>';
   text += '• Current season<br/>';
   text += '<br/><br/>';
 

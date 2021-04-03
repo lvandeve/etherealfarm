@@ -730,7 +730,7 @@ function initFieldUI() {
               if(c.cost.gt(c2.cost) && c.type == c2.type) safe = true; // allow to use shift+click to upgrade even if the "allowshiftdelete" setting is false, since replacing to higher type is safe and not a problem if not intended (while deleting or replacing with lower type may be unsafe)
               // the shift+delete just growing crop of same type behavior is not considered safe if state.allowshiftdelete is not enabled, since it may be surprising that shift that normally plants or replaces something can delete something too
               if(safe) {
-                if(c2.index == state.lastPlanted && c2.type != CROPTYPE_SHORT && !f.isFullGrown()) {
+                if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_SHORT && !f.isFullGrown()) || f.isTemplate())) {
                   // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
                   // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
                   // but player intended to have it gone anyway by shift+clicking it even when replace was intended)

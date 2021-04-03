@@ -799,3 +799,54 @@ function makeDropdown(flex, title, current, choices, fun) {
   }, 'dropdown');
 }
 
+
+
+var audioContext;
+var audioContextSource;
+
+function ensureAudioContext() {
+  var supportsAudio = !!(window.AudioContext || window.webkitAudioContext);
+  if(!supportsAudio) return false;
+  if(!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  if(!audioContext) return false;
+  audioContextSource = audioContext.createBufferSource();
+  if(!audioContextSource) return false;
+  audioContextSource.connect(audioContext.destination);
+  return true;
+}
+
+function createNotificationSound(f) {
+  if(!ensureAudioContext()) return undefined;
+
+  var s = audioContext.sampleRate;
+
+  var buffer = audioContext.createBuffer(2, s * 0.75, s);
+
+  for(var channel = 0; channel < buffer.numberOfChannels; channel++) {
+    var array = buffer.getChannelData(channel);
+    for(var i = 0; i < buffer.length; i++) {
+      var t = i / s;
+      var p = (i + 1) / buffer.length;
+      array[i] = Math.sin(t * Math.PI * 2 * f) * (1 - p) * (1 - p) * 0.25;
+    }
+  }
+
+  return buffer;
+}
+
+
+function playSound(buffer) {
+  if(!ensureAudioContext()) return;
+  audioContextSource.buffer = buffer;
+  audioContextSource.start();
+}
+
+var notificationSound = [];
+
+function playNotificationSound(f) {
+  if(!notificationSound[f]) notificationSound[f] = createNotificationSound(f);
+  if(!notificationSound[f]) return;
+  playSound(notificationSound[f]);
+}
+
+

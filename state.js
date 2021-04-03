@@ -245,9 +245,9 @@ function State() {
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits
   this.fruit_seen = false; // whether seen latest fruit drop (for red color)
-  this.fruit_active = []; // current active fruit (array length is 0 or 1 only)
+  this.fruit_active = 0; // index in fruit_stored of currently active fruit
   this.fruit_stored = []; // fruits in storage that stay after transcension
-  this.fruit_slots = 2; // amount of slots for fruit_stored
+  this.fruit_slots = 3; // amount of slots for fruit_stored
   this.fruit_sacr = []; // fruits outside of storage that will be sacrificed on transcension
   this.seen_seasonal_fruit = 0; // 4 flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit. For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
 
@@ -261,6 +261,7 @@ function State() {
   this.disableHelp = false; // disable all popup help dialogs
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark
   this.sidepanel = 1; // 0=disabled, 1=automatic
+  this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog
@@ -331,6 +332,7 @@ function State() {
   this.automaton_autounlock = 0;
   this.automaton_autounlock_copy_plant_fraction = false;
   this.automaton_autounlock_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autounlock_max_cost = Num(0);
 
   // challenges
   this.challenge = 0;
@@ -846,8 +848,7 @@ function computeDerived(state) {
   }
   //////////////////////////////////////////////////////////////////////////////
 
-  for(var i = 0; i < state.fruit_active.length; i++) state.fruit_active[i].slot = i;
-  for(var i = 0; i < state.fruit_stored.length; i++) state.fruit_stored[i].slot = i + 10;
+  for(var i = 0; i < state.fruit_stored.length; i++) state.fruit_stored[i].slot = i;
   for(var i = 0; i < state.fruit_sacr.length; i++) state.fruit_sacr[i].slot = i + 100;
 
   //////////////////////////////////////////////////////////////////////////////
@@ -901,11 +902,15 @@ function Fruit() {
   // not saved, this must be updated to match the slot the fruit is placed in, this is cache for fast reverse lookup only
   this.slot = 0;
 
+  // override standard name like 'electrum apple' with custom name
+  this.name = '';
+
   this.typeName = function() {
     return ['apple', 'apricot (spring)', 'pineapple (summer)', 'pear (autumn)', 'medlar (winter)'][this.type];
   };
 
   this.toString = function() {
+    if(this.name) return this.name;
     return tierNames[this.tier] + ' ' + this.typeName();
   };
 
@@ -920,11 +925,15 @@ function Fruit() {
   };
 }
 
+function getActiveFruit() {
+  if(state.fruit_active >= state.fruit_stored.length) return undefined;
+  return state.fruit_stored[state.fruit_active];
+}
+
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
 function getFruitAbility(ability) {
-  if(state.fruit_active.length == 0) return 0;
-
-  var f = state.fruit_active[0];
+  var f = getActiveFruit();
+  if(!f) return 0;
   for(var i = 0; i < f.abilities.length; i++) {
     if(f.abilities[i] == ability) return f.levels[i];
   }
@@ -933,19 +942,16 @@ function getFruitAbility(ability) {
 }
 
 function getFruitTier() {
-  if(state.fruit_active.length == 0) return 0;
-
-  return state.fruit_active[0].tier;
+  var f = getActiveFruit();
+  if(!f) return 0;
+  return f.tier;
 }
 
-// slot is 0 for active, 10+ for stored, 100+ for sacrificial pool
+// slot is 0..99 for stored, 100+ for sacrificial pool
 // returns undefined if no fruit in that slot
 function getFruit(slot) {
-  if(slot < 10) {
-    return state.fruit_active[slot];
-  }
   if(slot < 100) {
-    return state.fruit_stored[slot - 10];
+    return state.fruit_stored[slot];
   }
   return state.fruit_sacr[slot - 100];
 }
@@ -953,29 +959,16 @@ function getFruit(slot) {
 // set f to something falsy to unset the fruit
 // will shift/resize arrays to fit the updated collection
 function setFruit(slot, f) {
-  if(slot < 10) {
+  if(slot < 100) {
     var j = slot;
-    if(f) {
-      if(j > state.fruit_active.length) j = state.fruit_active.length;
-      state.fruit_active[j] = f;
-      f.slot = j;
-    } else {
-      for(var i = j; i + 1 < state.fruit_active.length; i++) {
-        state.fruit_active[i] = state.fruit_active[i + 1];
-        state.fruit_active[i].slot = i;
-      }
-      state.fruit_active.length = state.fruit_active.length - 1;
-    }
-  } else if(slot < 100) {
-    var j = slot - 10;
     if(f) {
       if(j > state.fruit_stored.length) j = state.fruit_stored.length;
       state.fruit_stored[j] = f;
-      f.slot = j + 10;
+      f.slot = j;
     } else {
       for(var i = j; i + 1 < state.fruit_stored.length; i++) {
         state.fruit_stored[i] = state.fruit_stored[i + 1];
-        state.fruit_stored[i].slot = i + 10;
+        state.fruit_stored[i].slot = i;
       }
       state.fruit_stored.length = state.fruit_stored.length - 1;
     }

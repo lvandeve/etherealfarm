@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.57 (2021-04-03):';
+  text += '<br/>• Added cost limit to the advanced automaton auto-unlock settings. Allows stopping auto-unlock when a crop of choice is reached.';
+  text += '<br/>• Added 0.01%, 0.02% and 0.05% options to all percentage automaton settings.';
+  text += '<br/>• Fruits can now be given a custom name.';
+  text += '<br/>• Active fruit selection now works with arrows rather than a separate slot.';
+  text += '<br/>• Added optional notification sounds in the preferences. This feature is experimental and may be removed again, because web browsers are restrictive about sound: it doesn\'t work in background tabs due to background tab pausing, doesn\'t work unless interaction with page happened, and may not work depending on other permissions.';
+  text += '<br/><br/>';
+
   text += '0.1.56 (2021-04-02):';
   text += '<br/>• Added templates, which are placeholders for crop types. They do nothing but allow planning the field layout.';
   text += '<br/>• Templates are a new early automaton feature, unlocked immediately along with the existing automation of choice upgrades';

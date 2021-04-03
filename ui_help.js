@@ -306,9 +306,13 @@ registerHelpDialog(27, 'Beehives', 'You unlocked beehives!',
   ]);
 
 
-registerHelpDialog(28, 'Automaton', 'You unlocked the automaton!',
-    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab and the ability to place templates unlock, allowing to automate various parts of the game.<br><br>You must place the automaton in the ethereal field, go to its tab and enable settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.',
-    images_automaton[4]);
+registerHelpDialog(28, 'Automaton & Templates', 'You unlocked the automaton!',
+    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab and the ability to place templates unlock, allowing to automate various parts of the game.<br><br>You must place the automaton in the ethereal field, go to its tab and enable settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>Templates can be placed in the field using the regular planting menu.',
+    images_automaton[4],
+    undefined,
+  [[undefined,images_flowertemplate[4],undefined],
+   [images_flowertemplate[4],images_berrytemplate[4],images_flowertemplate[4]],
+   [undefined,images_flowertemplate[4],undefined]]);
 
 registerHelpDialog(29, 'Auto upgrades', 'You unlocked auto upgrades!',
     'You unlocked auto-upgrades for the automaton! See the automaton tab. You can enable or disable auto-upgrades, and choose a max cost the automaton is allowed to spend. All basic upgrades that boost crops, will be automatically performed by the automaton, at their normal cost, when enabled.',
@@ -368,9 +372,9 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click save import dialog</b>: import and old savegame, but do not run the time, so you get the resources at the time of saving rather than with all production during that time added.';
   text += '<br/>';
-  text += ' • <b>ctrl + click fruit</b>: move downwards: to storage if available, otherwise to sacrificial pool.';
+  text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
   text += '<br/>';
-  text += ' • <b>shift + click fruit</b>: move upwards: to storage if available, otherwise swap to active slot.';
+  text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
   text += '<br/>';
   text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence.';
   text += '<br/>';

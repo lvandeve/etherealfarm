@@ -170,8 +170,9 @@ function updateRightPane() {
     }
     text += '• Season change in: ' + util.formatDuration(timeTilNextSeason(), true);
     text += '<br>';
-    if(state.fruit_active.length) {
-      text += '• Fruit: ' + state.fruit_active[0].toString() + ': ' + state.fruit_active[0].abilitiesToString(true, true);
+    var f_active = getActiveFruit();
+    if(f_active) {
+      text += '• Fruit: ' + f_active.toString() + ': ' + f_active.abilitiesToString(true, true);
       text += '<br>';
     }
     topRightFlex.div.innerHTML = text;

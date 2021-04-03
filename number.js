@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // Defines the number type, Num, for this incremental game: floating point with much bigger possible exponent.
 
 /**
- * NOTE: while this supports very large numbers, there's a limit: max exponent is 9007199254740992, min exponent is -9007199254740992
+ * NOTE: while this supports very large numbers, there's a limit: max exponent is 9007199254740992, min exponent is -9007199254740992. But there is already visible precision loss here, so to be safe only use a factor 100 of that less as exponent.
  * @param {number=} b base
  * @param {number=} e exponent in binary, not decimal!
  * @constructor
@@ -53,7 +53,7 @@ function makeNum(b, e) {
   if(e == undefined) e = 0;
   var e2 = e * log10_log2;
   var ef = Math.floor(e2);
-  var f = Math.pow(2, e2 - ef - NaN);
+  var f = Math.pow(2, e2 - ef);
   b *= f;
   return new Num(b, ef);
 }
@@ -69,6 +69,16 @@ Num.prototype.ensureIntegerExponent_ = function() {
     var e2 = Math.floor(this.e);
     this.b *= Math.pow(2, this.e - e2);
     this.e = e2;
+  }
+
+  // at this point, the exponent can no longer distinguish successive integers, so no longer supported.
+  if(this.e > 9007199254740992) {
+    this.b = Infinity;
+    this.e = 0;
+  }
+  if(this.e < -9007199254740992) {
+    this.b = 0;
+    this.e = 0;
   }
 }
 
@@ -139,6 +149,7 @@ Num.scaleTo = function(a, e) { return a.scaleTo(e); };
 
 // sales the exponent in a good range for this number's value
 Num.scaleInPlace = function(v) {
+  v.ensureIntegerExponent_();
   if(isNaN(v.b) || isNaN(v.e)) {
     v.b = NaN;
     v.e = 0;
@@ -159,7 +170,6 @@ Num.scaleInPlace = function(v) {
     v.e = 0;
     return;
   }
-  v.ensureIntegerExponent_();
   var neg = v.b < 0;
   if(neg) v.b = -v.b;
   var t = 1 / 256.0;
@@ -692,7 +702,7 @@ var suffix_units10 = [
   'Qi', // quin, latin 5
   'Sx', // sex, latin 6
   'Sp', // sept, latin 7
-  'Oc', // oct, latin 8
+  'Oc', // oct, latin 8 --> has the c since O is confusable with digit 0
   'N', // non, latin 9
 ];
 
@@ -707,8 +717,8 @@ var suffix_tens0 = [
   'Qq', // quinquagintillion, e153, latin 50
   'Sa', // sexagintillion, e183, latin 60
   'Su', // septuagintillion, e213, latin 70
-  'Og', // octagintillion, e243, latin 80
-  'Ng', // nonagintillion, e273, latin 90
+  'Oa', // octagintillion, e243, latin 80 --> not Og, to avoid collision with OG for units_cent when case is ignored
+  'Na', // nonagintillion, e273, latin 90 --> not Ng, to avoid collision with NG for units_cent when case is ignored
 ];
 
 
@@ -718,12 +728,12 @@ var suffix_tens1 = [
   'De', // decillion, e33, latin 10, --> the e is to disambiguate from Du (duo, 2)
   'V', // vigintillion, e63, latin 20, unique letter so far so doesn't need the g behind it
   'Tg', // trigintillion, e93, latin 30
-  'Qr', // quadragintillion, e123, latin 40 --> not Qag to avoid *three* letters which is a bit much
+  'Qr', // quadragintillion, e123, latin 40 --> not Qag to avoid *three* letters which is a bit much, not Qa to avoid collision with suffix_units
   'Qq', // quinquagintillion, e153, latin 50
   'Sa', // sexagintillion, e183, latin 60
   'Su', // septuagintillion, e213, latin 70
-  'Og', // octagintillion, e243, latin 80
-  'Ng', // nonagintillion, e273, latin 90
+  'Oa', // octagintillion, e243, latin 80 --> not Og, to avoid collision with OG for units_cent when case is ignored
+  'Na', // nonagintillion, e273, latin 90 --> not Ng, to avoid collision with NG for units_cent when case is ignored
 ];
 
 
@@ -804,6 +814,118 @@ function getLatinSuffix(e) {
   if(e < 3) return undefined;
   return getLatinSuffixV(Math.floor(e / 3) - 1);
 }
+
+var suffixes_inv = undefined;
+var suffixes_inv2 = undefined;
+
+// parses latin suffixes such as 'M', 'Qi' and 'DuMiMiC'. Case-insensitive. Returns the latin value itself, e.g. 100 for 'C'
+function parseLatinSuffixV(s) {
+  if(!s) return -1; // since 'K' represents 0, no suffix is below that, so -1
+  s = s.toLowerCase();
+  if(!suffixes_inv) {
+    suffixes_inv = {};
+    for(var i = 0; i < suffixes.length; i++) {
+      suffixes_inv[suffixes[i].toLowerCase()] = i;
+      //if(suffixes[i].length == 1) suffixes_inv[suffixes[i].toLowerCase()] = i;
+    }
+  }
+
+  var r = suffixes_inv[s];
+  if(r != undefined) return r;
+
+  if(!suffixes_inv2) {
+    suffixes_inv2 = [];
+    suffixes_inv2[1] = {};
+    suffixes_inv2[2] = {};
+    suffixes_inv2[3] = {};
+    suffixes_inv2[4] = {};
+    suffixes_inv2[5] = {};
+    suffixes_inv2[6] = {};
+    for(var i = 1; i < millsuffixes.length; i++) {
+      suffixes_inv2[millsuffixes[i].length][millsuffixes[i].toLowerCase()] = i;
+    }
+    suffixes_inv2[2]['mi'] = 0;
+  }
+
+  var mul = 1;
+  var result = 0;
+  var mi = false;
+  var first = true;
+
+  for(;;) {
+    var found = false;
+    for(var j = 6; j >= 1; j--) {
+      if(s.length < j) continue;
+      var suffix = s.substr(s.length - j);
+      var exp = suffixes_inv2[j][suffix];
+      if(exp != undefined) {
+        found = true;
+        if(j == 2 && suffix == 'mi') {
+          mul *= 1000;
+          mi = true;
+        } else {
+          result += exp * mul;
+          if(!first && !mi) return -1; // invalid, all must be separated by Mi
+          mi = false;
+        }
+        s = s.substr(0, s.length - j);
+        first = false;
+        break;
+      }
+    }
+
+    if(!found) return -1;
+    if(s.length == 0) break;
+  }
+
+  if(mi) result += mul;
+
+
+  return result;
+}
+
+
+// supports plain, scientific, engineering and latin notations.
+Num.parse = function(text) {
+  var isDigit = function(c) {
+    c = c.charCodeAt(0);
+    return c >= 48 && c <= 57;
+  };
+  var isDigitOrSign = function(c) {
+    return c == '-' || c == '+' || isDigit(c);
+  };
+  var isDigitOrSymbol = function(c) {
+    return c == '.' || isDigitOrSign(c);
+  };
+  var l = text.toLowerCase();
+  if(l == 'inf' || l == 'infinity') return Num(Infinity, 0);
+  if(l == '-inf' || l == '-infinity') return Num(-Infinity, 0);
+  if(l == 'nan') return Num(NaN, 0);
+  var e = text.indexOf('e');
+  if(e < 0) e = text.indexOf('E');
+  if(e > 0 && e + 1 < text.length && isDigitOrSign(text[e + 1])) {
+    var base = parseFloat(text.substr(0, e));
+    var exp = parseFloat(text.substr(e + 1));
+    if(exp != exp || exp == -Infinity) exp = 0;
+    return makeNum(base, exp);
+  } else {
+    var end = 0;
+    while(end < text.length && isDigitOrSymbol(text[end])) end++;
+    if(end == text.length) {
+      var f = parseFloat(text);
+      return Num(f);
+    } else {
+      var base = parseFloat(text.substr(0, end));
+      var suffix = text.substr(end);
+      var p = parseLatinSuffixV(suffix);
+      if(p < 0) return Num(NaN);
+      var exp = (p + 1) * 3;
+      return makeNum(base, exp);
+    }
+  }
+}
+
+
 
 // get Abc notation for numeric value that the exponent represents (so exponent / 3); this uses the same notation as excel rows, with v the row index, starting from 1
 // this is almost like base-26 with a-z, but there is an important difference:

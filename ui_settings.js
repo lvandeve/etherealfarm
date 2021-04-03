@@ -386,6 +386,31 @@ function createAdvancedSettingsDialog() {
     saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
   }, button, updatebuttontext));
   button.id = 'preferences_enablehelp';
+
+
+  addSettingsSpacer();
+
+  var notificationSoundWarning = 'Whether sound works at all depends on your browser and whether playing media is allowed by the settings. Browsers will only play the sound if the game is in a foreground tab. Browsers also require interaction with the page before they allow playing sounds at all, so sounds may not work after refreshing the page and not clicking anything.';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'fern notification sound: ' + (state.notificationsounds[0] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Notification "ding" sound when a fern pops up. ' + notificationSoundWarning);
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.notificationsounds[0] = !state.notificationsounds[0] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_fernsound';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'fullgrown notification sound: ' + (state.notificationsounds[1] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Notification "ding" sound when crops get fullgrown. ' + notificationSoundWarning);
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.notificationsounds[1] = !state.notificationsounds[1] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_growsound';
 }
 
 

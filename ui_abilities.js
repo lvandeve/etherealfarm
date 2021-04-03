@@ -239,6 +239,9 @@ function refreshWatercress(opt_clear) {
 document.addEventListener('keydown', function(e) {
   if(util.eventHasShiftKey(e) || util.eventHasCtrlKey(e)) return;
 
+  //if(e.target.matches('textarea')) return; // typing in a textarea, don't do global game shortcuts then
+  if(dialog_level > 0) return; // in a dialog, don't do global game shortcuts then
+
   if(e.key == '1') {
     actions.push({type:ACTION_ABILITY, ability:1});
     update();

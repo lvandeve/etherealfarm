@@ -138,7 +138,7 @@ function updateTabButtons2() {
 
   tabnum = tabindex_fruit;
   if(tabbuttons[tabnum]) {
-    var num = state.fruit_active.length + state.fruit_stored.length + state.fruit_sacr.length;
+    var num = state.fruit_stored.length + state.fruit_sacr.length;
     var text = 'fruit<br/>(' + num + ')';
     if(!state.fruit_seen) {
       text = '<b><font color="red">' + text + '</font></b>';
