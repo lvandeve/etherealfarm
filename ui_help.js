@@ -73,10 +73,13 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
       }
     }
 
-    if(use_short) {
-      if(text_short != '') showMessage(text_short || text, C_HELP, 175786661);
-    } else {
-      showMessage(text, C_HELP, 175786661);
+    // opt_force is set if dialog openend from the main help dialog, don't show in message log in that case.
+    if(!opt_force) {
+      if(use_short) {
+        if(text_short != '') showMessage(text_short || text, C_HELP, 175786661);
+      } else {
+        showMessage(text, C_HELP, 175786661);
+      }
     }
   }
 
@@ -98,6 +101,11 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
       showHelpChip(text_short);
     }
     return;
+  }
+
+  if(numhelpdialogs < 0) {
+    // some bug involving having many help dialogs pop up at once and rapidly closing them using multiple methods at the same time (esc key, click next to dialog, ...) can cause this, and negative dialog_level makes dialogs appear in wrong z-order
+    numhelpdialogs = 0;
   }
 
   if(numhelpdialogs) {
@@ -306,8 +314,8 @@ registerHelpDialog(27, 'Beehives', 'You unlocked beehives!',
   ]);
 
 
-registerHelpDialog(28, 'Automaton & Templates', 'You unlocked the automaton!',
-    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab and the ability to place templates unlock, allowing to automate various parts of the game.<br><br>You must place the automaton in the ethereal field, go to its tab and enable settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>Templates can be placed in the field using the regular planting menu.',
+registerHelpDialog(28, 'Automaton & Blueprints', 'You unlocked the automaton!',
+    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, the automaton tab and blueprints unlock, allowing to automate various parts of the game.<br><br>You must place the automaton in the ethereal field before this works, go to its tab, and configure its settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>Templates can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint button in the tree.',
     images_automaton[4],
     undefined,
   [[undefined,images_flowertemplate[4],undefined],
@@ -323,7 +331,7 @@ registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upg
     images_automaton[4]);
 
 registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
-    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will upgrade existing crops or templates to a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only upgrade crops or templates to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically upgrade all planted blackberries in the field to blueberries, given enough resources.',
+    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will upgrade existing crops or blueprint templates to a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only upgrade crops or blueprint templates to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically upgrade all planted blackberries in the field to blueberries, given enough resources.',
     images_automaton[4]);
 
 registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more options!',
@@ -331,7 +339,7 @@ registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more 
     images_automaton[4]);
 
 registerHelpDialog(33, 'Auto unlock', 'You unlocked auto-unlock!',
-    'You unlocked auto-unlock. This will unlock the next tiers of crops automatically. Combined with auto-plant and templates, this can almost fully automate a run.<br><br>Once you planted the general shape of your field with cheap crops or templates, everything will happen automatically from then on. Just place berries, mushrooms, flowers, nettles and beehives once to indicate the layout.<br><br>Tip: ensure there are some berries that don\'t touch a mushroom, because if a mushroom consumes all seeds of a berry, income will stop and the automaton won\'t get resources for further upgrades and planting, resulting in a deadlock.',
+    'You unlocked auto-unlock. This will unlock the next tiers of crops automatically. Combined with auto-plant and blueprint templates, this can almost fully automate a run.<br><br>Once you planted the general shape of your field with cheap crops or blueprint templates, everything will happen automatically from then on. Just place berries, mushrooms, flowers, nettles and beehives once to indicate the layout.<br><br>Tip: ensure there are some berries that don\'t touch a mushroom, because if a mushroom consumes all seeds of a berry, income will stop and the automaton won\'t get resources for further upgrades and planting, resulting in a deadlock.',
     images_automaton[4]);
 
 
@@ -356,6 +364,8 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
   text += '<br/>';
+  text += ' • <b>"t"</b>: show transcend dialog (if available)';
+  text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted or unlocked crop type.';
   text += '<br/>';
   text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key).';
@@ -378,7 +388,16 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence.';
   text += '<br/>';
+  text += ' • <b>], } or )</b>: select next active fruit';
+  text += '<br/>';
+  text += ' • <b>[, { or (</b>: select previous active fruit';
+  text += '<br/>';
   text += ' • <b>esc</b>: close dialog.';
+  text += '<br/>';
+  text += ' • <b>"b"</b>: open the blueprint library, when available.';
+  text += '<br/>';
+  text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
+  text += '<br/>';
   text += '<br/><br/>';
 
   div.innerHTML = text;
@@ -455,6 +474,9 @@ function createHelpDialog() {
   var addSpacer = function() {
     pos += h * 0.5;
   };
+  var tempFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
+  tempFlex.div.innerText = 'More help topics will appear here as more features unlock';
+  pos += h;
 
   var button;
 
@@ -470,6 +492,11 @@ function createHelpDialog() {
   if(state.g_numfruits > 0) {
     button = makeButton('Fruit help');
     addButtonAction(button, createFruitHelp);
+  }
+
+  if(haveAutomaton()) {
+    button = makeButton('Blueprint help');
+    addButtonAction(button, showBluePrintHelp);
   }
 
   button = makeButton('Recovery saves');

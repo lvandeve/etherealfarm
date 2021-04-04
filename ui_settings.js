@@ -206,7 +206,7 @@ function createNumberFormatDialog() {
   var div = makeDiv('1%', '0%', '98%', '10%', examplesDiv);
   div.innerHTML = '<b>Examples:</b>';
   var precision = Num.precision;
-  var examples = [0, 0.002, 0.3, 1, 7.123456, 12, 150, 1712.29, 14348907.5, 4294967296, 2048e20, 800e27, 7.10915e50, 2.1065e85];
+  var examples = [0, 0.03, 1, 7.123456, 150, 1712.29, 14348907.5, 4294967296, 2048e20, 800e27, 7.10915e50, 2.1065e85, 3e303];
 
   var fill = function() {
     var tableText = '';
@@ -539,21 +539,6 @@ function createStatsDialog() {
     }
     text += '• total challenge production bonus: ' + open + state.challenge_bonus.toPercentString() + close + '<br>';
 
-    for(var i = 0; i < challenges_order.length; i++) {
-      var c = challenges[challenges_order[i]];
-      var c2 = state.challenges[challenges_order[i]];
-      if(!c2.unlocked) continue;
-      var completedtext;
-      if(c.targetlevel.length == 1 || !c2.completed) {
-        completedtext = (c2.completed ? 'yes' : 'no');
-      } else {
-        completedtext = '' + c2.completed + ' of ' + c.targetlevel.length;
-      }
-      text += '• ' + c.name + ': completed: ' + open +  completedtext + close +
-                              ', highest level: ' + open + c2.maxlevel + close +
-                              ', production bonus: ' + open +  (c.bonus.mulr(c2.maxlevel)).toPercentString() + close + '<br>';
-    }
-
     text += '<br>';
   }
 
@@ -851,7 +836,16 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function(e) {
     createStatsDialog();
   });
-  button.id = 'settings_stats';
+  button.id = 'settings_player_stats';
+
+  if(state.challenges_unlocked) {
+    button = makeSettingsButton();
+    button.textEl.innerText = 'challenge stats';
+    addButtonAction(button, function(e) {
+      createAllChallengeStatsDialog();
+    });
+    button.id = 'settings_challenge_stats';
+  }
 
   pos += gap;
 

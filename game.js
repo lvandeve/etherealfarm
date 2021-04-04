@@ -1521,7 +1521,7 @@ function autoPlant(res) {
 
   res.subInPlace(cost);
 
-  actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true});
+  actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
 }
 
 
@@ -2072,6 +2072,7 @@ var update = function(opt_fromTick) {
         var recoup = undefined;
 
         var freedelete = (f.index == CROPINDEX + automaton2_0);
+        var freetoken = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type);
 
         if(type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
           if(f.hasCrop()) {
@@ -2096,7 +2097,7 @@ var update = function(opt_fromTick) {
           var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
           if(f.cropIndex() == special2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_0));
           if(f.cropIndex() == special2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_1));
-          if(!freedelete && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
+          if(!freedelete && !freetoken && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
             showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
             ok = false;
           } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
@@ -2145,6 +2146,8 @@ var update = function(opt_fromTick) {
           if(freedelete) {
             showMessage('this crop is free to delete, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
             state.g_numplanted2--;
+          } else if(freetoken) {
+            showMessage('replaced crop with same type, so no ethereal delete token used');
           } else if(f.growth < 1) {
             showMessage('plant was still growing, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
             state.g_numplanted2--;

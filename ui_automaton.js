@@ -264,11 +264,11 @@ function updateAutomatonUI() {
 
   var buttons = [];
 
-  var addButton = function() {
+  var addButton = function(opt_dont_manage) {
     var h = 0.08;
     var flex  = new Flex(automatonFlex, 0.01, y, 0.4, y + h, 0.66);
     y += h * 1.2;
-    buttons.push(flex);
+    if(!opt_dont_manage) buttons.push(flex);
     return flex;
   };
 
@@ -343,6 +343,33 @@ function updateAutomatonUI() {
   }, flex));
   flex.isGlobalButtonItself = true;
   flex.enabledStyle = true;
+
+
+  texth = 0.1;
+  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+  flex.div.innerText = 'Special actions:';
+  y += texth;
+
+  flex = addButton();
+  styleButton(flex.div);
+  centerText2(flex.div);
+  flex.div.textEl.innerText = 'Delete entire field';
+  addButtonAction(flex.div, bind(function() {
+    setTab(0);
+    window.setTimeout(function() {
+      for(var y = 0; y < state.numh; y++) {
+        for(var x = 0; x < state.numw; x++) {
+          var f;
+          f = state.field[y][x];
+          if(f.hasCrop()) {
+            actions.push({type:ACTION_DELETE, x:x, y:y});
+          }
+        }
+      }
+      update();
+    }, 333);
+  }));
+  registerTooltip(flex.div, 'Immediately delete all crops from the entire field');
 
   addHR();
 

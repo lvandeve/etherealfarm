@@ -472,12 +472,14 @@ function makeTreeDialog() {
       });
     }
   }
-  if(state.challenges_unlocked) {
+  if(haveAutomaton()) {
     button = new Flex(f1, 0, 0.62, 0.5, 0.9, 0.8).div;
     styleButton(button);
-    button.textEl.innerText = state.challenge ? 'All Challenge Stats' : 'Challenge Stats';
+    button.textEl.innerText = 'Blueprints';
+    button.textEl.style.boxShadow = '0px 0px 5px #44f';
+    button.textEl.style.textShadow = '0px 0px 5px #008';
     addButtonAction(button, function() {
-      createAllChallengeStatsDialog();
+      createBlueprintsDialog();
     });
   }
 }

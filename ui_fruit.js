@@ -112,6 +112,10 @@ function createFruitHelp() {
   text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
   text += '<br/>';
   text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence';
+  text += '<br/>';
+  text += ' • <b>], } or )</b>: select next active fruit';
+  text += '<br/>';
+  text += ' • <b>[, { or (</b>: select previous active fruit';
 
   div.innerHTML = text;
 }

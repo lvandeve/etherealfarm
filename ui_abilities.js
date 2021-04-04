@@ -237,26 +237,61 @@ function refreshWatercress(opt_clear) {
 
 
 document.addEventListener('keydown', function(e) {
-  if(util.eventHasShiftKey(e) || util.eventHasCtrlKey(e)) return;
+  var shift = util.eventHasShiftKey(e);
+  var ctrl = util.eventHasCtrlKey(e);
 
   //if(e.target.matches('textarea')) return; // typing in a textarea, don't do global game shortcuts then
   if(dialog_level > 0) return; // in a dialog, don't do global game shortcuts then
 
-  if(e.key == '1') {
+  if(e.key == '1' && !shift && !ctrl) {
     actions.push({type:ACTION_ABILITY, ability:1});
     update();
   }
-  if(e.key == '2') {
+  if(e.key == '2' && !shift && !ctrl) {
     actions.push({type:ACTION_ABILITY, ability:0});
     update();
   }
-  if(e.key == '3') {
+  if(e.key == '3' && !shift && !ctrl) {
     actions.push({type:ACTION_ABILITY, ability:2});
     update();
   }
 
-  if(e.key == 'w') {
+  if(e.key == 't' && !shift && !ctrl) {
+    if(state.challenge) {
+      createFinishChallengeDialog();
+    } else {
+      if(state.treelevel >= min_transcension_level) createTranscendDialog();
+    }
+  }
+
+  if(e.key == 'w' && !shift && !ctrl) {
     refreshWatercress();
+  }
+
+  if(e.key == 'b' && !shift && !ctrl) {
+    createBlueprintsDialog();
+  }
+
+  // these keys for prev and next fruit are chosen such that hopefully at least one set of them is reachable on any keyboard layout, even if in combination with shift if necessary
+  if((e.key == ']' || e.key == '}' || e.key == ')') && !ctrl) {
+    if(state.fruit_active + 1 < state.fruit_stored.length) {
+      state.fruit_active++;
+      updateFruitUI();
+      updateRightPane();
+      var f_active = getActiveFruit();
+      var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(true, true)) : 'none';
+      showMessage('Set active fruit: ' + name);
+    }
+  }
+  if((e.key == '[' || e.key == '{' || e.key == '(') && !ctrl) {
+    if(state.fruit_active > 0) {
+      state.fruit_active--;
+      updateFruitUI();
+      updateRightPane();
+      var f_active = getActiveFruit();
+      var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(true, true)) : 'none';
+      showMessage('Set active fruit: ' + name);
+    }
   }
 });
 

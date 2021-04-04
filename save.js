@@ -499,7 +499,6 @@ function encState(state, opt_raw_only) {
 
 
 
-
   section = 20; id = 0; // automaton
   processBool(state.automaton_enabled);
   processUintArray(state.automaton_unlocked);
@@ -514,6 +513,30 @@ function encState(state, opt_raw_only) {
   processUint(state.automaton_autochoice);
   processNum(state.automaton_autounlock_max_cost);
 
+
+
+  section = 21; id = 0; // blueprints
+  array0 = [];
+  array1 = [];
+  array2 = [];
+
+  for(var i = 0; i < state.blueprints.length; i++) {
+    var b = state.blueprints[i];
+    if(!b) b = new BluePrint();
+    var w = b.numw;
+    var h = b.numh;
+    array0[i] = w;
+    array1[i] = h;
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        array2.push(b.data[y][x]);
+      }
+    }
+  }
+
+  processUintArray(array0);
+  processUintArray(array1);
+  processUintArray(array2);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1220,6 +1243,39 @@ function decState(s) {
   }
   if(save_version >= 4096*1+57) {
     state.automaton_autounlock_max_cost = processNum();
+  }
+
+
+  section = 21; id = 0; // blueprints
+  if(save_version >= 4096*1+58) {
+    array0 = processUintArray();
+    array1 = processUintArray();
+    array2 = processUintArray();
+    if(error) return err(4);
+    if(array0.length != array1.length) return err(4);
+    index0 = 0;
+    index1 = 0;
+    index2 = 0;
+
+    state.blueprints = [];
+    for(var i = 0; i < array0.length; i++) {
+      var w = array0[i];
+      var h = array1[i];
+      if(w > 20 || h > 20) return err(4);
+      var b = new BluePrint();
+      state.blueprints[i] = b;
+      b.numw = w;
+      b.numh = h;
+      b.data = [];
+      for(var y = 0; y < h; y++) {
+        b.data[y] = [];
+        for(var x = 0; x < w; x++) {
+          var code = array2[index2++];
+          b.data[y][x] = code;
+        }
+      }
+    }
+    if(index2 != array2.length) return err(4);
   }
 
 

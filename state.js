@@ -132,6 +132,103 @@ function ChallengeState() {
   this.besttime2 = 0; // best time for reaching last targetlevel, or 0 if this challenge only has 1 stage. NOTE: so best time of first and last stage are tracked, if there are more intermediate stages, those are not tracked
 }
 
+function BluePrint() {
+  this.numw = 0;
+  this.numh = 0;
+
+  /*
+  2D array. meaning of codes roughly matches that of fraction arrays of automaton:
+  0: empty
+  1: N/A, unused
+  2: w: watercress
+  3: b: berry
+  4: m: mushroom
+  5: f: flower
+  6: n: nettle
+  7: h: beehive
+  8: i: mistletoe
+  */
+  this.data = [];
+}
+
+
+
+var watercress_template = makeTemplate(registerShortLived('watercress template', 0, Res(0), 0, images_watercresstemplate));
+var berry_template = makeTemplate(registerBerry('berry template', -1, 0, images_berrytemplate));
+var mush_template = makeTemplate(registerMushroom('mushroom template', -1, 0, images_mushtemplate));
+var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0), 0, images_flowertemplate));
+var nettle_template = makeTemplate(registerNettle('nettle template', -1, Num(0), 0, images_nettletemplate));
+var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
+var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
+
+// converts blueprint type code to a blueprint crop index, or -1 if empty
+BluePrint.toCrop = function(i) {
+  if(i == 0) return -1;
+  if(i == 2) return watercress_template;
+  if(i == 3) return berry_template;
+  if(i == 4) return mush_template;
+  if(i == 5) return flower_template;
+  if(i == 6) return nettle_template;
+  if(i == 7) return bee_template;
+  if(i == 8) return mistletoe_template;
+  return -1;
+}
+
+BluePrint.fromCrop = function(c) {
+  if(!c) return 0;
+  if(c.type == CROPTYPE_SHORT) return 2;
+  if(c.type == CROPTYPE_BERRY) return 3;
+  if(c.type == CROPTYPE_MUSH) return 4;
+  if(c.type == CROPTYPE_FLOWER) return 5;
+  if(c.type == CROPTYPE_NETTLE) return 6;
+  if(c.type == CROPTYPE_BEE) return 7;
+  if(c.type == CROPTYPE_MISTLETOE) return 8;
+  return 0;
+}
+
+BluePrint.toChar = function(i) {
+  if(i == 0) return '.';
+  if(i == 2) return 'W';
+  if(i == 3) return 'B';
+  if(i == 4) return 'M';
+  if(i == 5) return 'F';
+  if(i == 6) return 'N';
+  if(i == 7) return 'H';
+  if(i == 8) return 'I';
+  return -1;
+}
+
+BluePrint.fromChar = function(c) {
+  if(!c) return 0;
+  c = c.toUpperCase();
+  if(c == 'W') return 2;
+  if(c == 'B') return 3;
+  if(c == 'M') return 4;
+  if(c == 'F') return 5;
+  if(c == 'N') return 6;
+  if(c == 'H') return 7;
+  if(c == 'I') return 8;
+  return 0;
+}
+
+BluePrint.copyTo = function(from, to) {
+  if(!to) return;
+  if(!from) {
+    to.numw = 0;
+    to.numh = 0;
+    to.data = [];
+  }
+  to.numw = from.numw;
+  to.numh = from.numh;
+  to.data = util.clone(from.data);
+}
+
+BluePrint.copy = function(b) {
+  var result = new BluePrint();
+  BluePrint.copyTo(b, result);
+  return result;
+}
+
 
 
 // all the state that should be able to get saved
@@ -439,6 +536,10 @@ function State() {
   this.reset_stats_total_resin = []; // log2 of 1 + total resin earned in total at start of this run, as integer
   this.reset_stats_resin = []; // log2 of 1 + resin earned during this run
   this.reset_stats_challenge = []; // what type of challenge, if any, for this run
+
+
+  // array of BluePrint objects
+  this.blueprints = [];
 
   // temp variables for visual effect, not to be saved
   this.automatonx = 0; // for the visual planting effect

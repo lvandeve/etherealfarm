@@ -173,9 +173,14 @@ var DIALOG_LARGE = 2;
 // opt_okfun must call dialog.cancelFun when the dialog is to be closed
 // opt_extrafun and opt_extraname allow a third button in addition to cancel and ok. The order will be: cancel, extra, ok.
 // opt_nobgclose: don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
-// opt_onclose, if given, is called no matter what way the dialog closes
+// opt_onclose, if given, is called no matter what way the dialog closes.  You can also not give this argument but instead set dialog.onclose
 // any content should be put in the resulting dialog.content flex, not in the dialog flex itself
 function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose) {
+  if(dialog_level < 0) {
+    // some bug involving having many help dialogs pop up at once and rapidly closing them using multiple methods at the same time (esc key, click next to dialog, ...) can cause this, and negative dialog_level makes dialogs appear in wrong z-order
+    closeAllDialogs();
+    dialog_level = 0;
+  }
   dialog_level++;
 
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
@@ -190,6 +195,8 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     // default, medium. Designed to be as big as possible without covering up the resource display
     dialogFlex = new Flex(gameFlex, 0.05, 0.12, 0.95, 0.9);
   }
+
+  dialogFlex.onclose = opt_onclose;
 
   created_dialogs.push(dialogFlex);
   var dialog = dialogFlex.div;
@@ -243,7 +250,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   };
   dialog.removeSelfFun = function() {
     dialogFlex.removeSelf();
-    if(opt_onclose) opt_onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
+    if(dialogFlex.onclose) dialogFlex.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
   };
   dialogFlex.cancelFun = dialog.cancelFun;
   button = (new Flex(dialogFlex, [1.0, -0.3 * (buttonshift + 1)], [1.0, -0.12], [1.0, -0.01 - 0.3 * buttonshift], [1.0, -0.01], 1)).div;

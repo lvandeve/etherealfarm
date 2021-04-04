@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.58 (2021-04-04):';
+  text += '<br/>• Added blueprint library, available as soon as automaton and templates are available.';
+  text += '<br/>• Blueprint screen is accessed by clicking the tree, or pressing the "b" shortcut.';
+  text += '<br/>• Decreased probability of two-tier lower fruits at higher tree levels.';
+  text += '<br/>• Added shortcut keys for selecting next/previous active fruit using [ and ] (and a few alternatives).';
+  text += '<br/>• Added shortcut key for transcend (t).';
+  text += '<br/>• Added a "delete entire field" button to automaton that deletes all crops.';
+  text += '<br/>• No longer uses up ethereal token when using "replace crop" in ethereal field to replace a crop with the same type.';
+  text += '<br/><br/>';
+
   text += '0.1.57 (2021-04-03):';
   text += '<br/>• Added cost limit to the advanced automaton auto-unlock settings. Allows stopping auto-unlock when a crop of choice is reached.';
   text += '<br/>• Added 0.01%, 0.02% and 0.05% options to all percentage automaton settings.';

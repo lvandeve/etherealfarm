@@ -2962,7 +2962,7 @@ function getNewFruitTier(roll, treelevel) {
 
   // level 5: zinc and bronze introduced
   if(treelevel >= 5 && treelevel <= 14) {
-    return (roll > 0.75) ? 1 : 0;
+    return (roll > 0.25) ? 0 : 1;
   }
 
   // level 15: silver introduced
@@ -2972,27 +2972,27 @@ function getNewFruitTier(roll, treelevel) {
 
   // level 25
   if(treelevel >= 25 && treelevel <= 34) {
-    return (roll > 0.66) ? 2 : 1;
+    return (roll > 0.75) ? 1 : 2;
   }
 
   // level 35: electrum introduced
   if(treelevel >= 35 && treelevel <= 44) {
-    return (roll < 0.25) ? 1 : ((roll < 0.75) ? 2 : 3);
+    return (roll > 0.25) ? 2 : 3;
   }
 
   // level 45
   if(treelevel >= 45 && treelevel <= 54) {
-    return (roll > 0.66) ? 3 : 2;
+    return (roll > 0.75) ? 2 : 3;
   }
 
   // level 55: gold introduced
   if(treelevel >= 55 && treelevel <= 64) {
-    return (roll < 0.25) ? 2 : ((roll < 0.75) ? 3 : 4);
+    return (roll > 0.25) ? 3 : 4;
   }
 
   // level 65
   if(treelevel >= 65 && treelevel <= 74) {
-    return (roll > 0.66) ? 4 : 3;
+    return (roll > 0.75) ? 3 : 4;
   }
 
   // Higher tree levels are not yet implemented for the fruits
