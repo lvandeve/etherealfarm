@@ -206,7 +206,7 @@ registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your 
     '<br><br>'+
     'If you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonal, not diagonal) production for free. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plant has later in the game.' +
     '<br><br>'+
-    'TIP: hold SHIFT to plant last crop type, CTRL to plant watercress',
+    'TIP: hold SHIFT to plant last crop type, CTRL (or command) to plant watercress',
     undefined,
     '<br><br>'+
     'The image below shows an optimal configuration to use for watercress copying: the single watercress duplicates the production of 4 blackberries:',

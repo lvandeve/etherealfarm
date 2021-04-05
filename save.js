@@ -708,6 +708,8 @@ function decState(s) {
       state.field[y][x] = new Cell(x, y, false);
       var f = state.field[y][x];
       f.index = array0[index0++];
+      if(f.index >= 50000 + CROPINDEX && save_version <= 4096*1+58) f.index = f.index - 50000 + 300; //accidently wrong id in that version
+      else if(f.index >= 307 + CROPINDEX && save_version <= 4096*1+58) f.index = f.index - 307 + 300; //accidently wrong id in that version
       if(f.hasCrop()) {
         f.growth = array1[index1++];
       }
@@ -785,7 +787,11 @@ function decState(s) {
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
     prev = index;
-    if(!crops[index]) return err(4);
+    if(index >= 50000 && save_version <= 4096*1+58) index = index - 50000 + 300; //accidently wrong id in that version
+    else if(index >= 307 && save_version <= 4096*1+58) index = index - 307 + 300; //accidently wrong id in that version
+    if(!crops[index]) {
+      return err(4);
+    }
     state.crops[index].unlocked = true;
   }
 

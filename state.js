@@ -151,16 +151,6 @@ function BluePrint() {
   this.data = [];
 }
 
-
-
-var watercress_template = makeTemplate(registerShortLived('watercress template', 0, Res(0), 0, images_watercresstemplate));
-var berry_template = makeTemplate(registerBerry('berry template', -1, 0, images_berrytemplate));
-var mush_template = makeTemplate(registerMushroom('mushroom template', -1, 0, images_mushtemplate));
-var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0), 0, images_flowertemplate));
-var nettle_template = makeTemplate(registerNettle('nettle template', -1, Num(0), 0, images_nettletemplate));
-var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
-var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
-
 // converts blueprint type code to a blueprint crop index, or -1 if empty
 BluePrint.toCrop = function(i) {
   if(i == 0) return -1;

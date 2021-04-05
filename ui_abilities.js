@@ -220,11 +220,15 @@ function refreshWatercress(opt_clear) {
           actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
           replanted = true;
         }
-      }
-      if(f.index == CROPINDEX + short_0 && state.res.seeds.gtr(1000)) {
+      } else if(f.index == CROPINDEX + short_0 && state.res.seeds.gtr(1000)) {
         actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
         if(!opt_clear) actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
         refreshed = true;
+      } else if(f.index == CROPINDEX + watercress_template && state.res.seeds.gtr(1000)) {
+        if(!opt_clear) {
+          actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          refreshed = true;
+        }
       }
     }
   }

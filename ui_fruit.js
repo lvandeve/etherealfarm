@@ -107,9 +107,13 @@ function createFruitHelp() {
   text += '<br/><br/>';
   text += 'Fruit related hotkeys:';
   text += '<br/>';
+  text += 'Note: on mac, ctrl means command instead.';
+  text += '<br/>';
   text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
   text += '<br/>';
   text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
+  text += '<br/>';
+  text += ' • <b>drag & drop</b>: drag fruits between slots, re-order slots.';
   text += '<br/>';
   text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence';
   text += '<br/>';
@@ -420,7 +424,7 @@ function styleFruitChip(flex, f) {
   }
 }
 
-// type: 0=active, 1=storage, 2=sacrificial
+// type: 0=storage, 1=sacrificial
 function makeFruitChip(flex, f, type) {
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(images_fruittypes[f.type][f.tier], canvas);
@@ -446,7 +450,7 @@ function makeFruitChip(flex, f, type) {
   registerTooltip(flex.div, text);
   flex.div.style.userSelect = 'none';
 
-  var typename = (type == 0) ? 'active' : (type == 1 ? 'storage' : 'sacrificial');
+  var typename = type == 0 ? 'storage' : 'sacrificial';
 
   styleButton0(flex.div);
   addButtonAction(flex.div, function(e) {
@@ -466,6 +470,35 @@ function makeFruitChip(flex, f, type) {
       createFruitDialog(f);
     }
   }, typename + ' fruit slot: ' + f.toString());
+}
+
+function setupFruitDrag(flex, slot, f) {
+  if(f) {
+    flex.div.draggable = true;
+    util.addEvent(flex.div, 'ondragstart', function(e) {
+      e.dataTransfer.setData('text/plain', '' + f.slot);
+    });
+  }
+  util.addEvent(flex.div, 'ondrop', function(e) {
+    e.preventDefault(); // prevent firefox from actually trying to do a network request to http://0.0.0.<fruitindex> when trying to access e.dataTransfer
+    if(!e.dataTransfer) return;
+    var data = e.dataTransfer.getData('text/plain');
+    if(!data) return;
+    var origslot = parseInt(data);
+    if(!(origslot >= 0 && origslot <= 100 + state.fruit_sacr.length)) return;
+    var f = getFruit(origslot);
+    if(!f) return;
+    actions.push({type:ACTION_FRUIT_SLOT, f:f, precise_slot:slot});
+    update();
+  });
+  util.addEvent(flex.div, 'ondragenter', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  util.addEvent(flex.div, 'ondragover', function(e) {
+    e.preventDefault();
+    return false;
+  });
 }
 
 function updateFruitUI() {
@@ -493,11 +526,11 @@ function updateFruitUI() {
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.85, [0, y + s], 0.5);
   y += s;
-  var active_fruit_name = 'none';
+  var active_fruit_name = '<font color="red">none</font>';
   var f_active = getActiveFruit();
   if(f_active) active_fruit_name = f_active.toString() + ': ' + f_active.abilitiesToString(true, true);
-  titleFlex.div.innerText = 'active fruit: ' + active_fruit_name;
-  help = 'The chosen active fruit. You can choose it using the arrow buttons below.';
+  titleFlex.div.innerHTML = 'active fruit: ' + active_fruit_name;
+  help = 'The chosen active fruit. Active fruit requires a fruit in storage, and the arrow above it lit. You can choose it using the arrow buttons below.';
   registerTooltip(titleFlex.div, help);
 
 
@@ -539,7 +572,7 @@ function updateFruitUI() {
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
     if(f) {
-      makeFruitChip(canvasFlex, f, 1);
+      makeFruitChip(canvasFlex, f, 0);
     } else {
       canvasFlex.div.style.backgroundColor = '#ccc';
       registerTooltip(canvasFlex.div, 'No stored fruit present in this slot. ' + help);
@@ -550,6 +583,7 @@ function updateFruitUI() {
         showMessage('No stored fruit present in this slot. ' + help, C_INVALID, 0, 0);
       }, help), 'empty storage fruit slot');
     }
+    setupFruitDrag(canvasFlex, i, f);
   }
   y += s;
 
@@ -561,7 +595,7 @@ function updateFruitUI() {
   help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
   registerTooltip(titleFlex.div, help);
 
-  var num = Math.max(6, state.fruit_sacr.length);
+  var num = Math.max(6, state.fruit_sacr.length + 2);
   var x = 0;
   for(var i = 0; i < num; i++) {
     var canvasFlex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
@@ -573,24 +607,25 @@ function updateFruitUI() {
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_sacr.length ? state.fruit_sacr[i] : undefined;
     if(f) {
-      makeFruitChip(canvasFlex, f, 2);
+      makeFruitChip(canvasFlex, f, 1);
     } else {
-      if(i == 0) {
+      var j = Math.min(i, i - state.fruit_sacr.length + 4);
+      if(j == 0) {
         canvasFlex.div.style.border = '1px solid #000';
         canvasFlex.div.style.backgroundColor = '#ccc';
-      } else if(i == 1) {
+      } else if(j == 1) {
         canvasFlex.div.style.border = '1px solid #0008';
         canvasFlex.div.style.backgroundColor = '#ccc8';
-      } else if(i == 2) {
+      } else if(j == 2) {
         canvasFlex.div.style.border = '1px solid #0004';
         canvasFlex.div.style.backgroundColor = '#ccc6';
-      } else if(i == 3) {
+      } else if(j == 3) {
         canvasFlex.div.style.border = '1px solid #0002';
         canvasFlex.div.style.backgroundColor = '#ccc4';
-      } else if(i == 4) {
+      } else if(j == 4) {
         canvasFlex.div.style.border = '1px solid #0002';
         canvasFlex.div.style.backgroundColor = '#ccc2';
-      } else if(i == 5) {
+      } else if(j == 5) {
         canvasFlex.div.style.border = '1px solid #0002';
         canvasFlex.div.style.backgroundColor = '#ccc1';
       }
@@ -603,6 +638,7 @@ function updateFruitUI() {
         showMessage('No fruit present in this sacrificial pool slot. ' + help, C_INVALID, 0, 0);
       }, help), 'empty sacrificial fruit slot');
     }
+    setupFruitDrag(canvasFlex, i + 100, f);
   }
   y += s;
 

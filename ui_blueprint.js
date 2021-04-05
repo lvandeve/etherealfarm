@@ -164,6 +164,7 @@ function createBlueprintDialog(b) {
 
   addButton('To field', function() {
     plantBluePrint(b);
+    BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
     closeAllDialogs();
     update();
   });
@@ -258,6 +259,8 @@ function showBluePrintHelp() {
   text += ' • From text (TXT): Write a field layout on multiple lines of text using the following letters: B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, .=empty/tree. Export TXT does the opposite.';
   text += '<br/><br/>';
   text += 'Keyboard shotcuts for blueprints:';
+  text += '<br/>';
+  text += 'Note: on mac, ctrl means command instead.';
   text += '<br/>';
   text += ' • "b": open the blueprint dialog';
   text += '<br/>';

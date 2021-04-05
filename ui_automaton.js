@@ -39,6 +39,8 @@ function showConfigureAutoResourcesDialog(subject) {
     typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
     order = [3, 4, 5, 6, 7, 8]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     if(subject == 1) {
+      typenames.push('watercress');
+      order.push(2);
       statefraction = state.automaton_autoplant_fraction;
     } else {
       statefraction = state.automaton_autounlock_fraction;

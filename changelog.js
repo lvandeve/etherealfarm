@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.59 (2021-04-05):';
+  text += '<br/>• Made blueprint watercress work and added placeable template for watercress';
+  text += '<br/>• Added "upgrade crop" button to crop dialog, which does roughly the same as ctrl+shift+clicking it';
+  text += '<br/>• Fruits can now be drag and dropped between slots';
+  text += '<br/>• When no crops fullgrown yet, automaton will now upgrade blueprint to berry if can afford it even if cost limit % option is enabled (except if at 0%), to allow fast startup, as those cost limiting settings are normally used for later in a run only';
+  text += '<br/><br/>';
+
+
   text += '0.1.58 (2021-04-04):';
   text += '<br/>• Added blueprint library, available as soon as automaton and templates are available.';
   text += '<br/>• Blueprint screen is accessed by clicking the tree, or pressing the "b" shortcut.';

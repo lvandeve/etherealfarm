@@ -207,10 +207,9 @@ function lockAllUpgrades() {
 
 // unlock any templates that are available, or lock them if not
 function unlockTemplates() {
-  // this type is always disable for now: there already exist watercress remainders for that one. Also, the automaton will never plant watercress, so having a template for it may cause confusion.
-  state.crops[watercress_template].unlocked = false;
 
   if(haveAutomaton() && state.challenge != challenge_nodelete && state.challenge != challenge_wither && state.challenge != challenge_bees) {
+    state.crops[watercress_template].unlocked = true;
     state.crops[berry_template].unlocked = true;
     state.crops[mush_template].unlocked = true;
     state.crops[flower_template].unlocked = true;
@@ -226,6 +225,7 @@ function unlockTemplates() {
     // templates disabled in bee challenge because: no templates available for some challenge-specific crops, could be confusing. note also that the beehive template is not for the bee challenge's special beehive.
     // templates disabled in nodelete challenge because: not a strong reason actually and the code to allow deleting templates in nodelete challenge is even implemented, but by default templates cause automaton to upgrade them, and that would cause nodelete challenge to fail early since the cropss ey cannot be upgraded to a better type
     // templates disabled in wither challenge because: this challenge should be hard like that on purpose, plus all its corps wither and leave behind template-less field cells all the time anyway
+    state.crops[watercress_template].unlocked = false;
     state.crops[berry_template].unlocked = false;
     state.crops[mush_template].unlocked = false;
     state.crops[flower_template].unlocked = false;
@@ -1469,7 +1469,7 @@ function computeNextAutoPlant() {
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
   // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
-  var types = [CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE];
+  var types = [CROPTYPE_SHORT, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
@@ -1483,6 +1483,11 @@ function computeNextAutoPlant() {
     var advanced = state.automaton_unlocked[2] >= 2;
     var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.index);
     var cost = crop.getCost();
+
+    // NOTE: must match simimar checks in autoPlant()
+    if(state.c_numfullgrown == 0 && fraction > 0 && (type == CROPTYPE_SHORT || type == CROPTYPE_BERRY)) {
+      fraction = 1; // first watercress/berries allowed to be 100% (unless fully disabled) to get the game kickstarted when having 1000 seeds, using blueprints and having automaton berry% to something less than 100%
+    }
 
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
@@ -1514,6 +1519,12 @@ function autoPlant(res) {
   // how much resources willing to spend
   var advanced = state.automaton_unlocked[2] >= 2;
   var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.index);
+
+  var type = crop.type;
+  // NOTE: must match simimar checks in computeNextAutoPlant()
+  if(state.c_numfullgrown == 0 && fraction > 0 && (type == CROPTYPE_SHORT || type == CROPTYPE_BERRY)) {
+    fraction = 1; // first watercress/berries allowed to be 100% (unless fully disabled) to get the game kickstarted when having 1000 seeds, using blueprints and having automaton berry% to something less than 100%
+  }
 
   var maxcost = Res.min(res, state.res.mulr(fraction));
   var cost = crop.getCost();
@@ -2267,22 +2278,69 @@ var update = function(opt_fromTick) {
         }
       } else if(type == ACTION_FRUIT_SLOT) {
         var f = action.f;
-        var slottype = action.slot; // 0:stored, 1:sacrificial
-        var currenttype = (f.slot < 100) ? 0 : 1;
-        if(slottype == currenttype) {
-          // nothing to do
-        } else if(slottype == 0) {
-          if(state.fruit_stored.length >= state.fruit_slots) {
-            showMessage('stored slots already full', C_INVALID, 0, 0);
-          } else {
-            var slot = state.fruit_stored.length;
+        if(action.precise_slot != undefined) {
+          var to = action.precise_slot;
+          var from = f.slot;
+
+          var ok = true;
+          if(to < 100 && from >= 100 && state.fruit_stored.length >= state.fruit_slots) {
+            ok = false;
+            showMessage('stored fruits already full, move one out of there to sacrificial pool first to make room');
+          } else if(to < 100 && to >= state.fruit_slots) {
+            ok = false;
+          }
+
+          if(ok) {
+            if(from < 100) {
+              for(var i = from; i + 1 < state.fruit_stored.length; i++) {
+                state.fruit_stored[i] = state.fruit_stored[i + 1];
+                if(state.fruit_stored[i]) state.fruit_stored[i].slot = i;
+              }
+              state.fruit_stored.length--;
+            } else {
+              for(var i = from - 100; i + 1 < state.fruit_sacr.length; i++) {
+                state.fruit_sacr[i] = state.fruit_sacr[i + 1];
+                if(state.fruit_sacr[i]) state.fruit_sacr[i].slot = i;
+              }
+              state.fruit_sacr.length--;
+            }
+            if(to < 100) {
+              while(to > state.fruit_stored.length) to--;
+              for(var i = state.fruit_stored.length; i > to; i--) {
+                state.fruit_stored[i] = state.fruit_stored[i - 1];
+                if(state.fruit_stored[i]) state.fruit_stored[i].slot = i;
+              }
+              state.fruit_stored[to] = f;
+              f.slot = to;
+            } else {
+              var to2 = to - 100;
+              while(to2 > state.fruit_sacr.length) to2--;
+              for(var i = state.fruit_sacr.length; i > to2; i--) {
+                state.fruit_sacr[i] = state.fruit_sacr[i - 1];
+                if(state.fruit_sacr[i]) state.fruit_sacr[i].slot = i;
+              }
+              state.fruit_sacr[to2] = f;
+              f.slot = to;
+            }
+          }
+        } else {
+          var slottype = action.slot; // 0:stored, 1:sacrificial
+          var currenttype = (f.slot < 100) ? 0 : 1;
+          if(slottype == currenttype) {
+            // nothing to do
+          } else if(slottype == 0) {
+            if(state.fruit_stored.length >= state.fruit_slots) {
+              showMessage('stored slots already full', C_INVALID, 0, 0);
+            } else {
+              var slot = state.fruit_stored.length;
+              setFruit(f.slot, undefined);
+              setFruit(slot, f);
+            }
+          } else if(slottype == 1) {
+            var slot = 100 + state.fruit_sacr.length;
             setFruit(f.slot, undefined);
             setFruit(slot, f);
           }
-        } else if(slottype == 1) {
-          var slot = 100 + state.fruit_sacr.length;
-          setFruit(f.slot, undefined);
-          setFruit(slot, f);
         }
         updateFruitUI();
       } else if(type == ACTION_FRUIT_LEVEL) {
@@ -2384,7 +2442,7 @@ var update = function(opt_fromTick) {
     for(var y = 0; y < state.numh; y++) {
       for(var x = 0; x < state.numw; x++) {
         var f = state.field[y][x];
-        if(f.hasCrop()) {
+        if(f.hasRealCrop()) {
           var p = prefield[y][x];
           var c = f.getCrop();
           var prod = Res();
@@ -2445,6 +2503,8 @@ var update = function(opt_fromTick) {
           }
           gain.addInPlace(prod);
           actualgain.addInPlace(prod.mulr(d));
+        } else if(f.isTemplate()) {
+          f.growth = 1;
         }
         updateFieldCellUI(x, y);
       }

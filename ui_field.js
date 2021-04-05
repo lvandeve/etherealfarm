@@ -508,24 +508,63 @@ function makeFieldDialog(x, y) {
     var button0 = new Flex(contentFlex, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
     var button1 = new Flex(contentFlex, [0.01, 0.2], [0.55 + buttonshift, 0.01], 0.5, 0.6 + buttonshift, 0.8).div;
     var button2 = new Flex(contentFlex, [0.01, 0.2], [0.6 + buttonshift, 0.01], 0.5, 0.65 + buttonshift, 0.8).div;
+    var button3 = new Flex(contentFlex, [0.01, 0.2], [0.65 + buttonshift, 0.01], 0.5, 0.7 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     makeScrollable(flex0);
 
     styleButton(button0);
-    button0.textEl.innerText = 'Delete';
-    button0.textEl.style.color = '#c00';
-    registerTooltip(button0, 'Delete crop and get some of its cost back.');
+    button0.textEl.innerText = 'Upgrade crop';
+    registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      actions.push({type:ACTION_DELETE, x:x, y:y});
+      var tier = state.highestoftypeunlocked[c.type];
+      var c3 = croptype_tiers[c.type][tier];
+      if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
+      if(c3.getCost().gt(state.res) && tier > 0) {
+        tier--;
+        var c4 = croptype_tiers[c.type][tier];
+        if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+      }
+      if(c3.getCost().gt(state.res) && tier > 0) {
+        tier--;
+        var c4 = croptype_tiers[c.type][tier];
+        if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+      }
+      if(c3.getCost().gt(state.res)) {
+        tier = -1; // template
+        var c4 = croptype_tiers[c.type][tier];
+        if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+      }
+      if(c.index != c3.index) {
+        actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
+      } else {
+        showMessage('Crop not upgraded, no higher tier that you can afford available');
+      }
       dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Detailed stats / bonuses';
-    registerTooltip(button1, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    button1.textEl.innerText = 'Replace crop';
+    registerTooltip(button1, 'Replace the crop with a new one, same as delete then plant. Shows the list of unlocked crops.');
     addButtonAction(button1, function() {
+      makePlantDialog(x, y, true, c.getRecoup());
+    });
+
+    styleButton(button2);
+    button2.textEl.innerText = 'Delete';
+    button2.textEl.style.color = '#c00';
+    registerTooltip(button2, 'Delete crop and get some of its cost back.');
+    addButtonAction(button2, function() {
+      actions.push({type:ACTION_DELETE, x:x, y:y});
+      dialog.cancelFun();
+      update(); // do update immediately rather than wait for tick, for faster feeling response time
+    });
+
+    styleButton(button3);
+    button3.textEl.innerText = 'Detailed stats / bonuses';
+    registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    addButtonAction(button3, function() {
       var dialog = createDialog(DIALOG_LARGE);
       dialog.div.className = 'efDialogTranslucent';
       var flex = dialog.content;
@@ -538,13 +577,6 @@ function makeFieldDialog(x, y) {
       text += '<br/>';
       text += getCropInfoHTMLBreakdown(f, c);
       flex.div.innerHTML = text;
-    });
-
-    styleButton(button2);
-    button2.textEl.innerText = 'Replace crop';
-    registerTooltip(button2, 'Replace the crop with a new one, same as delete then plant. Shows the list of unlocked crops.');
-    addButtonAction(button2, function() {
-      makePlantDialog(x, y, true, c.getRecoup());
     });
 
     updatedialogfun = bind(function(f, c, flex) {

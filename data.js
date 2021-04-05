@@ -1055,7 +1055,7 @@ function makeTemplate(crop_id) {
 }
 
 crop_register_id = 300;
-var watercress_template = makeTemplate(registerShortLived('watercress template', 0, Res(0), 0, images_watercresstemplate));
+var watercress_template = makeTemplate(registerShortLived('watercress template', -1, Res(0), 0, images_watercresstemplate));
 var berry_template = makeTemplate(registerBerry('berry template', -1, 0, images_berrytemplate));
 var mush_template = makeTemplate(registerMushroom('mushroom template', -1, 0, images_mushtemplate));
 var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0), 0, images_flowertemplate));
@@ -2161,7 +2161,7 @@ var challenge_bees = registerChallenge('bee challenge', 10, Num(0.05),
 • Beehives boost neighboring queen bees<br>
 • Queen bees boost neighboring worker bees.<br>
 • Worker bees boost the global ecosystem: berries, mushrooms and flowers (so effectively cubic scaling). No neighboring require for this.<br>
-• Worker beest must be next to a flower for their boost to apply, being next to a queen for the queen boost is optional but recommended.<br>
+• Worker bees must be next to a flower for their boost to apply, being next to a queen for the queen boost is optional but recommended.<br>
 • "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching.<br>
 `,
 'Beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers.',
