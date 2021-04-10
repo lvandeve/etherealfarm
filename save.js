@@ -60,7 +60,7 @@ function encState(state, opt_raw_only) {
     process(arr, TYPE_ARRAY_UINT6);
   };
 
-  var array, array0, array1, array2, array3, array4, array5, array6, array7;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9;
 
   section = 0; id = 0; // main/misc
   processFloat(state.prevtime);
@@ -299,6 +299,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numautoupgrades);
   processUint(state.g_numautoplant);
   processUint(state.g_numautodelete);
+  processUint(state.g_numfused);
 
 
   section = 12; id = 0; // current run stats
@@ -321,6 +322,7 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numautoupgrades);
   processUint(state.c_numautoplant);
   processUint(state.c_numautodelete);
+  processUint(state.c_numfused);
 
 
   section = 13; id = 0; // previous run stats
@@ -344,6 +346,7 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numautoupgrades);
     processUint(state.p_numautoplant);
     processUint(state.p_numautodelete);
+    processUint(state.p_numfused);
   }
 
 
@@ -392,6 +395,8 @@ function encState(state, opt_raw_only) {
   array5 = [];
   array6 = [];
   array7 = [];
+  array8 = [];
+  array9 = [];
   var appendfruit = function(f) {
     array0.push(f.type);
     array1.push(f.tier);
@@ -399,10 +404,12 @@ function encState(state, opt_raw_only) {
     for(var i = 0; i < f.abilities.length; i++) {
       array3.push(f.abilities[i]);
       array4.push(f.levels[i]);
+      array8.push(f.charge[i]);
     }
     array5.push(f.essence);
     array6.push(f.mark);
     array7.push(f.name);
+    array9.push(f.fuses);
   };
   for(var i = 0; i < state.fruit_stored.length; i++) {
     appendfruit(state.fruit_stored[i]);
@@ -418,6 +425,8 @@ function encState(state, opt_raw_only) {
   processNumArray(array5);
   processUintArray(array6);
   processStringArray(array7);
+  processUintArray(array8);
+  processUintArray(array9);
 
   id = 20; // a few spares for the above
   processUint(state.seen_seasonal_fruit);
@@ -519,6 +528,7 @@ function encState(state, opt_raw_only) {
   array0 = [];
   array1 = [];
   array2 = [];
+  array3 = [];
 
   for(var i = 0; i < state.blueprints.length; i++) {
     var b = state.blueprints[i];
@@ -527,6 +537,7 @@ function encState(state, opt_raw_only) {
     var h = b.numh;
     array0[i] = w;
     array1[i] = h;
+    array3[i] = b.name;
     for(var y = 0; y < h; y++) {
       for(var x = 0; x < w; x++) {
         array2.push(b.data[y][x]);
@@ -537,6 +548,7 @@ function encState(state, opt_raw_only) {
   processUintArray(array0);
   processUintArray(array1);
   processUintArray(array2);
+  processStringArray(array3);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -633,8 +645,8 @@ function decState(s) {
     return arr;
   };
 
-  var array, array0, array1, array2, array3, array4, array5, array6, array7;
-  var index, index0, index1, index2, index3, index4, index5, index6, index7;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9;
+  var index, index0, index1, index2, index3, index4, index5, index6, index7, index8, index9;
 
 
   section = 0; id = 0; // main/misc
@@ -929,6 +941,7 @@ function decState(s) {
   if(save_version >= 4096*1+42) state.g_numautoupgrades = processUint();
   if(save_version >= 4096*1+49) state.g_numautoplant = processUint();
   if(save_version >= 4096*1+49) state.g_numautodelete = processUint();
+  if(save_version >= 4096*1+60) state.g_numfused = processUint();
   if(error) return err(4);
 
 
@@ -952,6 +965,7 @@ function decState(s) {
   if(save_version >= 4096*1+42) state.c_numautoupgrades = processUint();
   if(save_version >= 4096*1+49) state.c_numautoplant = processUint();
   if(save_version >= 4096*1+49) state.c_numautodelete = processUint();
+  if(save_version >= 4096*1+60) state.c_numfused = processUint();
   if(error) return err(4);
 
 
@@ -976,6 +990,7 @@ function decState(s) {
     if(save_version >= 4096*1+42) state.p_numautoupgrades = processUint();
     if(save_version >= 4096*1+49) state.p_numautoplant = processUint();
     if(save_version >= 4096*1+49) state.p_numautodelete = processUint();
+    if(save_version >= 4096*1+60) state.p_numfused = processUint();
     if(error) return err(4);
   }
 
@@ -1040,6 +1055,15 @@ function decState(s) {
       array7 = [];
       for(var i = 0; i < array6.length; i++) array7[i] = '';
     }
+    if(save_version >= 4096*1+60) {
+      array8 = processUintArray();
+      array9 = processUintArray();
+    } else {
+      array8 = [];
+      for(var i = 0; i < array3.length; i++) array8[i] = 0;
+      array9 = [];
+      for(var i = 0; i < array6.length; i++) array9[i] = 0;
+    }
     if(error) return err(4);
     index0 = 0;
     index1 = 0;
@@ -1049,6 +1073,8 @@ function decState(s) {
     index5 = 0;
     index6 = 0;
     index7 = 0;
+    index8 = 0;
+    index9 = 0;
     var decfruit = function() {
       var f = new Fruit();
       f.type = array0[index0++];
@@ -1058,10 +1084,12 @@ function decState(s) {
       for(var i = 0; i < f.abilities.length; i++) {
         f.abilities[i] = array3[index3++];
         f.levels[i] = array4[index4++];
+        f.charge[i] = array8[index8++];
       }
       f.essence = array5[index5++];
       f.mark = array6[index6++];
       f.name = array7[index7++];
+      f.fuses = array9[index9++];
       return f;
     };
     if(save_version < 4096*1+57) {
@@ -1093,6 +1121,8 @@ function decState(s) {
     if(index5 != array5.length) return err(4);
     if(index6 != array6.length) return err(4);
     if(index7 != array7.length) return err(4);
+    if(index8 != array8.length) return err(4);
+    if(index9 != array9.length) return err(4);
   }
 
   if(save_version >= 4096*1+39) {
@@ -1257,10 +1287,15 @@ function decState(s) {
     array0 = processUintArray();
     array1 = processUintArray();
     array2 = processUintArray();
+    if(save_version >= 4096*1+60) {
+      array3 = processStringArray();
+    } else {
+      array3 = [];
+      for(var i = 0; i < array0.length; i++) array3[i] = '';
+    }
     if(error) return err(4);
     if(array0.length != array1.length) return err(4);
-    index0 = 0;
-    index1 = 0;
+    if(array0.length != array3.length) return err(4);
     index2 = 0;
 
     state.blueprints = [];
@@ -1272,6 +1307,7 @@ function decState(s) {
       state.blueprints[i] = b;
       b.numw = w;
       b.numh = h;
+      b.name = array3[i];
       b.data = [];
       for(var y = 0; y < h; y++) {
         b.data[y] = [];

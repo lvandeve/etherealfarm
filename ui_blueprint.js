@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-function renderBlueprint(b, flex) {
+function renderBlueprint(b, flex, opt_index) {
   flex.clear();
   flex.div.style.backgroundColor = '#edc';
 
@@ -43,6 +43,22 @@ function renderBlueprint(b, flex) {
     centerText2(grid.div);
     grid.div.textEl.innerText = '[empty]';
   }
+
+  var name = b.name;
+  //if(!name && opt_index != undefined) name = 'blueprint ' + opt_index;
+
+  if(name) {
+    var nameFlex = new Flex(flex, 0, -0.1, 1, 0);
+    nameFlex.div.innerText = name + ':';
+  }
+
+  var name2 = 'blueprint';
+  if(opt_index != undefined) name2 += ' ' + opt_index;
+  if(b.name) name2 += ': ' + b.name;
+  var text = createBluePrintText(b);
+
+
+  flex.div.setAttribute('aria-description', name2 + ': ' + text);
 }
 
 function plantBluePrint(b) {
@@ -108,7 +124,7 @@ function sanitizeBluePrint(b) {
   b.data = [];
 }
 
-function exportBluePrint(b) {
+function createBluePrintText(b) {
   var text = '';
   if(b) {
     var w = b.numw;
@@ -121,6 +137,11 @@ function exportBluePrint(b) {
       text += '\n';
     }
   }
+  return text;
+}
+
+function exportBluePrint(b) {
+  var text = createBluePrintText(b);
   showExportTextDialog('export blueprint', text, 'blueprint-' + util.formatDate(util.getTime(), true) + '.txt', false);
 }
 
@@ -139,7 +160,7 @@ function importBluePrintDialog(fun) {
   area.focus();
 }
 
-function createBlueprintDialog(b) {
+function createBlueprintDialog(b, opt_index) {
   var orig = b;
   b = BluePrint.copy(b);
 
@@ -149,7 +170,7 @@ function createBlueprintDialog(b) {
   }, 'ok', 'cancel');
 
   var renderFlex = new Flex(dialog.content, [0, 0.05], [0, 0.05], [0, 0.5], [0, 0.5]);
-  renderBlueprint(b, renderFlex);
+  renderBlueprint(b, renderFlex, opt_index);
 
 
   var y = 0.5;
@@ -183,7 +204,7 @@ function createBlueprintDialog(b) {
       }
     }
     sanitizeBluePrint(b);
-    renderBlueprint(b, renderFlex);
+    renderBlueprint(b, renderFlex, opt_index);
   });
 
   addButton('To TXT', function() {
@@ -211,7 +232,14 @@ function createBlueprintDialog(b) {
         }
       }
       sanitizeBluePrint(b);
-      renderBlueprint(b, renderFlex);
+      renderBlueprint(b, renderFlex, opt_index);
+    });
+  });
+
+  addButton('Rename', function() {
+    makeTextInput('Enter new blueprint name, or empty for default', function(name) {
+      b.name = sanitizeName(name);
+      renderBlueprint(b, renderFlex, opt_index);
     });
   });
 
@@ -219,7 +247,8 @@ function createBlueprintDialog(b) {
     b.numw = 0;
     b.numh = 0;
     b.data = [];
-    renderBlueprint(b, renderFlex);
+    b.name = '';
+    renderBlueprint(b, renderFlex, opt_index);
   });
 
   addButton('Help', function() {
@@ -286,7 +315,7 @@ function createBlueprintsDialog() {
     var x = i % 3;
     var y = Math.floor(i / 3);
     var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
-    renderBlueprint(state.blueprints[i], flex);
+    renderBlueprint(state.blueprints[i], flex, i);
     styleButton0(flex.div, true);
     addButtonAction(flex.div, bind(function(index, flex, e) {
       for(var i = 0; i <= index; i++) {
@@ -297,9 +326,9 @@ function createBlueprintsDialog() {
         closeAllDialogs();
         update();
       } else {
-        var subdialog = createBlueprintDialog(state.blueprints[index]);
+        var subdialog = createBlueprintDialog(state.blueprints[index], index);
         subdialog.onclose = bind(function(i, flex) {
-          renderBlueprint(state.blueprints[i], flex);
+          renderBlueprint(state.blueprints[i], flex, index);
         }, index, flex);
       }
     }, i, flex));

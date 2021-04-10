@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.60 (2021-04-10):';
+  text += '<br/>• Added the ability to fuse fruits, this allows adding an ability of choice to a fruit if you can collect 3 fruits with that ability. Full explanation is in fruit help.';
+  text += '<br/>• Added ability to name blueprints';
+  text += '<br/><br/>';
+
   text += '0.1.59 (2021-04-05):';
   text += '<br/>• Made blueprint watercress work and added placeable template for watercress';
   text += '<br/>• Added "upgrade crop" button to crop dialog, which does roughly the same as ctrl+shift+clicking it';

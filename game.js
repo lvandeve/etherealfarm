@@ -461,6 +461,7 @@ function softReset(opt_challenge) {
     state.p_numautoupgrades = state.c_numautoupgrades;
     state.p_numautoplant = state.c_numautoplant;
     state.p_numautodelete = state.c_numautodelete;
+    state.p_numfused = state.c_numfused;
 
     state.p_treelevel = state.treelevel;
   }
@@ -501,6 +502,7 @@ function softReset(opt_challenge) {
   state.c_numautoupgrades = 0;
   state.c_numautoplant = 0;
   state.c_numautodelete = 0;
+  state.c_numfused = 0;
 
   // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
   if(!state.challenge) {
@@ -623,8 +625,10 @@ var ACTION_REPLACE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++;
 var ACTION_TRANSCEND = action_index++; // also includes starting a challenge
-var ACTION_FRUIT_SLOT = action_index++;
-var ACTION_FRUIT_LEVEL = action_index++;
+var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot
+var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
+var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
+var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 
 var lastSaveTime = util.getTime();
@@ -1270,6 +1274,7 @@ function addRandomFruit() {
 
     fruit.abilities.push(ability);
     fruit.levels.push(level);
+    fruit.charge.push(0);
   }
 
   if(state.g_numfruits >= 4 && getRandomFruitRoll() > 0.75) {
@@ -2383,6 +2388,46 @@ var update = function(opt_fromTick) {
           }
         }
         updateFruitUI();
+      } else if(type == ACTION_FRUIT_REORDER) {
+        var f = action.f;
+        var a = action.index;
+        var up = action.up;
+        // seasonal ability is not counted and not allowed to reorder
+        var n = getNumFruitAbilities(f.tier);
+        var ok = true;
+        if(up && a <= 0) ok = false;
+        if(!up && a + 1 >= n) ok = false;
+        if(ok) {
+          var b = a + (up ? -1 : 1);
+          var temp = f.abilities[a];
+          f.abilities[a] = f.abilities[b];
+          f.abilities[b] = temp;
+          var temp = f.levels[a];
+          f.levels[a] = f.levels[b];
+          f.levels[b] = temp;
+          var temp = f.charge[a];
+          f.charge[a] = f.charge[b];
+          f.charge[b] = temp;
+          updateFruitUI();
+        }
+      } else if(type == ACTION_FRUIT_FUSE) {
+        var a = action.a;
+        var b = action.b;
+        var f = fuseFruit(a, b);
+        if(f) {
+          f.slot = a.slot;
+          if(f.slot < 100) {
+            state.fruit_stored[f.slot] = f;
+          } else {
+            state.fruit_sacr[f.slot - 100] = f;
+          }
+          setFruit(b.slot, null);
+          state.c_numfused++;
+          state.g_numfused++;
+          store_undo = true;
+          lastTouchedFruit = f;
+          updateFruitUI();
+        }
       } else if(type == ACTION_TOGGLE_AUTOMATON) {
         // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
         if(action.what == 0) {

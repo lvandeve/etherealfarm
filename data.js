@@ -3003,11 +3003,116 @@ function getNewFruitTier(roll, treelevel) {
 function getNumFruitAbilities(tier) {
   var num_abilities = 1;
   if(tier >= 1) num_abilities = 2;
-  // These are not yet supported, this is preliminary
   if(tier >= 3) num_abilities = 3;
+  // These are not yet supported, this is preliminary
   if(tier >= 5) num_abilities = 4;
   if(tier >= 7) num_abilities = 5;
   return num_abilities;
+}
+
+
+function fuseFruit(a, b) {
+  if(!a || !b) return null;
+  if(a == b) return null;
+  if(a.tier != b.tier) return null;
+
+  var n = getNumFruitAbilities(a.tier);
+  var na = a.abilities.length;
+  var nb = b.abilities.length;
+
+  var f = new Fruit();
+  f.tier = a.tier;
+
+  f.type = a.type;
+
+  // the seasonal ability
+  if(f.type != 0) {
+    f.abilities[n] = a.abilities[n];
+    f.levels[n] = a.levels[n];
+    f.charge[n] = a.charge[n];
+  }
+
+  f.fuses = a.fuses + b.fuses + 1;
+
+  f.name = a.name || b.name;
+  f.mark = a.mark || b.mark;
+
+  for(var i = 0; i < n; i++) {
+    f.abilities[i] = a.abilities[i];
+    f.levels[i] = 1;
+    f.charge[i] = a.charge[i];
+  }
+
+  var skip = {FRUIT_NONE:true, FRUIT_SPRING:true, FRUIT_SUMMER:true, FRUIT_AUTUMN:true, FRUIT_WINTER:true};
+
+  var arr;
+
+  var ma = {};
+  for(var i = 0; i < na; i++) {
+    if(skip[a.abilities[i]]) continue;
+    ma[a.abilities[i]] = a.charge[i];
+  }
+
+  var mb = {};
+  for(var i = 0; i < nb; i++) {
+    if(skip[b.abilities[i]]) continue;
+    mb[b.abilities[i]] = b.charge[i];
+  }
+
+
+  // charge up duplicate abilities
+
+  for(var i = 0; i < n; i++) {
+    var ability = f.abilities[i];
+    if(skip[ability]) continue;
+    if(mb[ability] == undefined) continue; // not duplicate
+
+    var charge = ma[ability] + mb[ability] + 1;
+    if(charge > 2) charge = 2;
+    f.charge[i] = charge;
+  }
+
+  // transfer fusible abilities
+
+  arr = [];
+  // first add all fusible abilities of b to the array
+  for(var i = 0; i < nb; i++) {
+    if(b.charge[i] != 2) continue;
+    arr.push([b.abilities[i], 2]);
+  }
+  // now append the old non-fusible abilities to the end of the array
+  for(var i = 0; i < n; i++) {
+    if(mb[f.abilities[i]] == 2) continue; // already in the array, prevent duplicates
+    arr.push([f.abilities[i], f.charge[i]]);
+  }
+  for(var i = 0; i < arr.length; i++) {
+    if(i >= n) break;
+    f.abilities[i] = arr[i][0];
+    f.levels[i] = 1;
+    f.charge[i] = arr[i][1];
+  }
+
+  // if all resulting abilities are fusible, then they have only 1 use: if this
+  // is an apple, you can transfer all its abilities to a seasonal fruit of
+  // choice. However, we want to avoid having the ability to keep transfering
+  // this around to seasonal fruits indefinitely. For that reason, if all
+  // abilities are fusible, and it's already in a seasonal fruit, set them
+  // al to regular again.
+  if(f.type > 0) {
+    var fusible = 0;
+    for(var i = 0; i < n; i++) {
+      if(f.charge[i] == 2) fusible++;
+    }
+    if(fusible == n) {
+      for(var i = 0; i < n; i++) {
+        f.charge[i] = 0;
+        // excpet if it already had some charge in the first fruit, then it can be kept
+        if(ma[f.abilities[i]]) f.charge[i] = ma[f.abilities[i]];
+      }
+    }
+  }
+
+  return f;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

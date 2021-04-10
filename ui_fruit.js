@@ -21,6 +21,7 @@ var fruitScrollFlex = undefined;
 function getFruitAbilityName(ability, opt_abbreviation) {
   if(opt_abbreviation) {
     switch(ability) {
+      case FRUIT_NONE: return '/';
       case FRUIT_BERRYBOOST: return 'BB';
       case FRUIT_MUSHBOOST: return 'MB';
       case FRUIT_MUSHEFF: return 'ME';
@@ -38,6 +39,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     return '?';
   }
   switch(ability) {
+    case FRUIT_NONE: return 'none';
     case FRUIT_BERRYBOOST: return 'berry boost';
     case FRUIT_MUSHBOOST: return 'mushroom boost';
     case FRUIT_MUSHEFF: return 'mushroom economy';
@@ -56,6 +58,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
 
 function getFruitAbilityDescription(ability) {
   switch(ability) {
+    case FRUIT_NONE: return 'none, fuse fruits to fill this slot';
     case FRUIT_BERRYBOOST: return 'boosts berry production';
     case FRUIT_MUSHBOOST: return 'boosts mushroom production but also consumption';
     case FRUIT_MUSHEFF: return 'reduces mushroom consumption, with diminishing returns';
@@ -105,8 +108,36 @@ function createFruitHelp() {
   text += '<br/><br/>';
   text += 'Click the fruit logo in the fruit dialog to mark as favorite and alter color effects (visual effect only).';
   text += '<br/><br/>';
-  text += 'Fruit related hotkeys:';
+  text += '<b>Fusing Fruits</b>';
+  text += '<br/><br/>';
+  text += 'Fruits of the same tier (tier bronze and up) can be fused together to allow transfering abilities to create the fruit with the combination you want, when the random drops aren\'t giving it. Fusing does not increase strength of stats, it\'s only about allowing control of the combination.';
+  text += '<br/><br/>';
+  text += 'Fusing fruits destroys the two original fruits and creates a new one of same type as first fused fruit and a new set of abilities that depends on the two original ones, but mostly like the first. The rules are as follows:';
   text += '<br/>';
+  text += ' • The new fruit will initially have the same abilities as the first original fruit (but all reset to level 1), but some may be pushed out in a next step';
+  text += '<br/>';
+  text += ' • Any abilities in the second fruit that match the first fruit, will charge up the matching ability: it becomes charged (marked [*]), or fusible (marked [**]) if already charged';
+  text += '<br/>';
+  text += ' • Any abilities in the second fruit that are fusible [**] will be transfered to the result fruit and push out the last ability of the result fruit';
+  text += '<br/>';
+  text += ' • Any other abilities of the second fruit disappear and don\'t matter, the only abilities of the second fruit that matter are: abilities that match the first fruit, to charge them up, and fusible abilities, to replace abilities of the first fruit.';
+  text += '<br/>';
+  text += ' • The order of abilities of first and second fruit matters, and you can freely reorder abilities in the regular fruit dialog (where you level up abilities), so you can control which abilities of the first fruit stay and which get pushed out.';
+  text += '<br/><br/>';
+  text += 'Summary of the rules: get 3 fruits with ability you want, fuse them together, and fuse the result into a fruit to get that ability in there and push out an unwanted ability. Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:';
+  text += '<br/>';
+  text += ' • collect 3 silver fruits that have flower boost in any slot, fruits A, B and C';
+  text += '<br/>';
+  text += ' • fuse A with B, resulting in a fruit AB with charged flower boost, marked [*]';
+  text += '<br/>';
+  text += ' • fuse AB with C, resulting in a fruit ABC with fusible flower boost, marked [**]';
+  text += '<br/>';
+  text += ' • collect a fruit D that has berry boost, and if necessary, move berry boost to the first slot ';
+  text += '<br/>';
+  text += ' • fuse ABC into D, resulting in the desired fruit with flower boost and berry boost. Don\'t forget to level up its abilities, since they\'ll all be set to level 1.';
+  text += '<br/><br/>';
+  text += '<b>Fruit related hotkeys</b>';
+  text += '<br/><br/>';
   text += 'Note: on mac, ctrl means command instead.';
   text += '<br/>';
   text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
@@ -124,11 +155,159 @@ function createFruitHelp() {
   div.innerHTML = text;
 }
 
+function createFruitFuseDialog(f, parentdialogrecreatefun) {
+  lastTouchedFruit = null;
+
+  var selected = undefined;
+
+  var swapped = false;
+
+  var dialog = createDialog(undefined, function() {
+    if(selected) {
+      if(swapped) {
+        actions.push({type:ACTION_FRUIT_FUSE, a:selected, b:f});
+      } else {
+        actions.push({type:ACTION_FRUIT_FUSE, a:f, b:selected});
+      }
+    }
+    dialog.cancelFun();
+    update();
+    if(parentdialogrecreatefun) parentdialogrecreatefun(lastTouchedFruit);
+  }, 'fuse');
+  makeScrollable(dialog.content);
+
+  var make = function() {
+    var scrollFlex = dialog.content;
+    scrollFlex.clear();
+
+    var fruits = [];
+    for(var i = 0; i < state.fruit_stored.length + state.fruit_sacr.length; i++) {
+      var f2 = (i < state.fruit_stored.length) ? state.fruit_stored[i] : (state.fruit_sacr[i - state.fruit_stored.length]);
+      if(f2 == f) continue;
+      if(f2.tier != f.tier) continue;
+      fruits.push(f2);
+    }
+
+    var s = 0.1; // relative width and height of a chip
+    var x = 0;
+    var y = 0.03;
+
+    var addTitle = function(text) {
+      y += s * 0.5;
+      var flex = new Flex(scrollFlex, [0.01, 0], [0, y], 1, [0, y + s]);
+      flex.div.innerText = text;
+      y += s * 0.5;
+    };
+
+    addTitle('choose other fruit to fuse:');
+
+    for(var i = 0; i < fruits.length; i++) {
+      if(x > s * 8.5) {
+        x = 0;
+        y += s;
+      }
+      var flex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+      x += s;
+      var f2 = fruits[i]
+      makeFruitChip(flex, f2, 0, true);
+
+      styleButton0(flex.div);
+      addButtonAction(flex.div, bind(function(f) {
+        selected = f;
+        lastTouchedFruit = f;
+        make();
+      }, f2));
+    }
+    y += s;
+
+    if(fruits.length == 0) {
+      var flex = new Flex(scrollFlex, 0.01, [0, y], 0.9, [0, y + s]);
+      flex.div.innerText = 'No fruit to fuse, must have at least 1 other fruit of the same tier';
+    }
+
+    addTitle('fruits to fuse:');
+
+    var fruits2 = [f, selected];
+
+    x = 0;
+    for(var i = 0; i <= fruits2.length; i++) {
+      if(i == fruits2.length) x += s * 0.5;
+      var flex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+      x += s;
+      var f2 = fruits2[(swapped && i < fruits2.length) ? (fruits2.length - 1 - i) : i]
+      if(f2) {
+        makeFruitChip(flex, f2, 0, true, (i == 0 ? 'first' : 'second') + ' selected fuse fruit');
+        styleButton0(flex.div);
+        addButtonAction(flex.div, bind(function(f2) {
+          createFruitInfoDialog(f);
+        }, f));
+      } else if(i == fruits2.length) {
+        var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
+        renderImage(image_swap, canvas);
+        styleButton0(flex.div, true);
+        addButtonAction(flex.div, bind(function(f2, e) {
+          if(e.shiftKey) {
+            if(!selected) return;
+            var temp = f;
+            f = selected;
+            selected = temp;
+            make();
+          } else {
+            swapped = !swapped;
+            make();
+          }
+        }, f));
+        registerTooltip(flex.div, 'Swap the fuse order of the two fruits');
+      } else {
+        flex.div.style.backgroundColor = '#ccc';
+        registerTooltip(flex.div, 'Empty fuse fruit slot, select a fruit above to fuse');
+      }
+    }
+    y += s;
+
+
+    addTitle('fused fruit result:');
+
+    x = 0;
+    var flex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+    x += s;
+
+    var fuse = swapped ? fuseFruit(selected, f) : fuseFruit(f, selected);
+    if(fuse) {
+      makeFruitChip(flex, fuse, 0, true, 'fused fruit result');
+      styleButton0(flex.div);
+      addButtonAction(flex.div, bind(function(f) {
+        createFruitInfoDialog(f);
+      }, fuse));
+    } else {
+      flex.div.style.backgroundColor = '#ccc';
+      registerTooltip(flex.div, 'Fused fruit appears here when successful');
+    }
+    y += s;
+
+    if(fuse) {
+      for(var i = -1; i < fuse.abilities.length; i++) {
+        var flex = new Flex(scrollFlex, [0.01, 0], [0, y], 1, [0, y + s]);
+        if(i == -1) {
+          flex.div.innerText = fuse.toString() + ', fused ' + fuse.fuses + ' times';
+        } else {
+          var other = swapped ? selected : f;
+          flex.div.innerText = 'ability: ' + fuse.abilityToString(i) + '  (was: ' + other.abilityToString(i) + ')';
+        }
+        y += s * 0.5;
+      }
+    }
+  };
+
+  make();
+}
+
 function fillFruitDialog(dialog, f, opt_selected) {
   dialog.content.clear();
   lastTouchedFruit = f;
   updateFruitUI(); // to update lastTouchedFruit style
-  var recreate = function() {
+  var recreate = function(opt_f) {
+    if(opt_f) f = opt_f;
     fillFruitDialog(dialog, f, selected);
   };
   dialog.div.className = 'efDialogTranslucent';
@@ -148,17 +327,16 @@ function fillFruitDialog(dialog, f, opt_selected) {
   text += 'Fruit essence used: ' + f.essence.toString();
   text += '<br>';
   text += 'Get on sacrifice: ' + getFruitSacrifice(f).toString();
+  if(f.fuses) {
+    text += '<br>';
+    text += 'Fuses done: ' + f.fuses;
+  }
   topFlex.div.innerHTML = text;
-
-  var button = new Flex(dialog.content, [0.01, 0.15], 0.25, 0.3, 0.3, 1.5).div;
-  styleButton(button);
-  button.textEl.innerText = 'help';
-  addButtonAction(button.textEl, createFruitHelp);
 
   var selected = (opt_selected == undefined) ? (f.abilities.length > 1 ? -1 : 0) : opt_selected; // the selected ability for details and upgrade button
   var flexes = [];
 
-  var y = 0.32;
+  var y = 0.22;
   var h = 0.04;
   for(var i = 0; i < f.abilities.length; i++) {
     var flex = new Flex(dialog.content, [0.01, 0.15], y, 0.7, y + h, 0.5);
@@ -166,8 +344,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     var a = f.abilities[i];
     var level = f.levels[i];
 
-    text = upper(getFruitAbilityName(a));
-    if(!isInherentAbility(a)) text += ' ' + util.toRoman(level);
+    text = upper(f.abilityToString(i));
     text += ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
 
     flex.div.innerHTML = text;
@@ -193,10 +370,14 @@ function fillFruitDialog(dialog, f, opt_selected) {
   bottomflex.div.style.border = '1px solid black';
   y += h;
   var textFlex = new Flex(bottomflex, 0.01, 0.0, 0.99, 0.5, 0.4);
-  var button = new Flex(bottomflex, 0.01, 0.7, 0.5, 0.95, 0.7).div;
-  //var button = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h / 2, 0.8).div;
-  //y += h;
-  styleButton(button);
+  var levelButton = new Flex(bottomflex, 0.01, 0.7, 0.5, 0.95, 0.7).div;
+  styleButton(levelButton);
+
+  var upButton = new Flex(bottomflex, 0.55, 0.7, 0.7, 0.95).div;
+  styleButton(upButton);
+
+  var downButton = new Flex(bottomflex, 0.75, 0.7, 0.9, 0.95).div;
+  styleButton(downButton);
 
   //bottomflex.div.style.border = '1px solid black';
 
@@ -229,10 +410,14 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
     if(selected < 0 || isInherentAbility(a)) {
       textFlex.div.innerHTML = 'click ability to view or level up';
-      button.style.visibility = 'hidden';
+      levelButton.style.visibility = 'hidden';
+      upButton.style.visibility = 'hidden';
+      downButton.style.visibility = 'hidden';
       if(selected < 0) return;
     } else {
-      button.style.visibility = '';
+      levelButton.style.visibility = '';
+      upButton.style.visibility = '';
+      downButton.style.visibility = '';
     }
 
     y += h;
@@ -249,26 +434,59 @@ function fillFruitDialog(dialog, f, opt_selected) {
       text += 'Boost: ' + getFruitBoost(a, level, f.tier).toPercentString();
       text += '<br>';
       text += '<br>';
-      text += 'This is an inherent fruit ability. It doesn\'t take up a regular ability slot for this fruit tier. It cannot be upgraded.';
+      text += 'This is an inherent fruit ability. It doesn\'t take up a regular ability slot for this fruit tier. It cannot be upgraded nor moved.';
     } else {
       text += 'Current level: ' + getFruitBoost(a, level, f.tier).toPercentString();
       text += '<br>';
       text += 'Next level: ' + getFruitBoost(a, level + 1, f.tier).toPercentString();
 
       var cost = getFruitAbilityCost(a, level, f.tier);
-      button.textEl.innerText = 'Level up: ' + cost.toString();
+      levelButton.textEl.innerText = 'Level up: ' + cost.toString();
       var available = state.res.essence.sub(f.essence);
       if(available.lt(cost.essence)) {
-        button.className = 'efButtonCantAfford';
+        levelButton.className = 'efButtonCantAfford';
       } else {
-        button.className = 'efButton';
+        levelButton.className = 'efButton';
       }
-      registerTooltip(button, 'Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits. Hold shift to level up multiple times but with only up to 25% of available essence');
-      addButtonAction(button, function(e) {
+      registerTooltip(levelButton, 'Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits. Hold shift to level up multiple times but with only up to 25% of available essence');
+      addButtonAction(levelButton, function(e) {
         actions.push({type:ACTION_FRUIT_LEVEL, f:f, index:selected, shift:e.shiftKey});
         update();
         recreate();
       });
+
+
+      upButton.textEl.innerText = '^';
+      if(selected <= 0) {
+        upButton.className = 'efButtonCantAfford';
+      } else {
+        upButton.className = 'efButton';
+      }
+      registerTooltip(upButton, 'Moves up this ability in the order. This has no effect on ability strength, but can affect fusing of fruits');
+      addButtonAction(upButton, function(e) {
+        if(selected <= 0) return;
+        actions.push({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:true});
+        selected--;
+        update();
+        recreate();
+      });
+
+
+      downButton.textEl.innerText = 'v';
+      if(selected + 1 >= getNumFruitAbilities(f.tier)) {
+        downButton.className = 'efButtonCantAfford';
+      } else {
+        downButton.className = 'efButton';
+      }
+      registerTooltip(downButton, 'Moves down this ability in the order. This has no effect on ability strength, but can affect fusing of fruits');
+      addButtonAction(downButton, function(e) {
+        if(selected + 1 >= getNumFruitAbilities(f.tier)) return;
+        actions.push({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:false});
+        selected++;
+        update();
+        recreate();
+      });
+
     }
     textFlex.div.innerHTML = text;
   };
@@ -315,6 +533,36 @@ function fillFruitDialog(dialog, f, opt_selected) {
     });
   }
 
+  // can't do fusing on fruits that only have 1 ability
+  if(f.tier > 0) {
+    var fuseButton = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+    y += h * 1.1;
+    styleButton(fuseButton);
+    fuseButton.textEl.innerText = 'fuse';
+    addButtonAction(fuseButton, function() {
+      createFruitFuseDialog(f, recreate);
+    });
+  }
+
+  var renameButton = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+  y += h * 1.1;
+  styleButton(renameButton);
+  renameButton.textEl.innerText = 'rename';
+  addButtonAction(renameButton, function() {
+    makeTextInput('Enter new fruit name, or empty for default', function(name) {
+      f.name = sanitizeName(name);
+      updateFruitUI();
+      if(dialog_level) recreate();
+    });
+  });
+
+  var helpButton = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+  y += h * 1.1;
+  styleButton(helpButton);
+  helpButton.textEl.innerText = 'help';
+  addButtonAction(helpButton, createFruitHelp);
+
+
   styleButton0(canvas, true);
   addButtonAction(canvas, function() {
     f.mark = ((f.mark || 0) + 1) % 5;
@@ -324,34 +572,6 @@ function fillFruitDialog(dialog, f, opt_selected) {
   registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');
 
 
-  y += 0.03;
-  h = 0.03;
-  flex  = new Flex(dialog.content, [0.01, 0.15], y, 0.85, y + h, 0.66);
-  y += h * 1.2;
-  flex.div.innerText = 'Rename fruit, or empty to use default name:';
-
-  h = 0.06;
-  var inputFlex = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.66);
-  var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
-  var changefun = function(e) {
-    var name = area.value;
-    if(!name) {
-      name = '';
-    } else {
-      name = name.substr(0, 20);
-      name = name.replace(/\s/g, ' ');
-      name = name.replace(/</g, '');
-      name = name.replace(/>/g, '');
-      name = name.replace(/&/g, '');
-    }
-    f.name = name;
-    area.value = f.name;
-    updateFruitUI();
-    if(dialog_level) recreate();
-  };
-  area.value = f.name;
-  area.onchange = changefun;
-  y += h * 1.2;
 
 
   updateSelected();
@@ -360,6 +580,21 @@ function fillFruitDialog(dialog, f, opt_selected) {
 function createFruitDialog(f, opt_selected) {
   var dialog = createDialog();
   fillFruitDialog(dialog, f, opt_selected);
+}
+
+function createFruitInfoDialog(f) {
+  var dialog = createDialog();
+
+  var scrollFlex = dialog.content;
+
+  var y = 0;
+  var s = 0.1;
+
+  for(var i = -1; i < f.abilities.length; i++) {
+    var flex = new Flex(scrollFlex, [0.01, 0], [0, y], 1, [0, y + s]);
+    flex.div.innerText = (i == -1) ? (f.toString() + ', fused ' + f.fuses + ' times') : ('ability: ' + f.abilityToString(i));
+    y += s * 0.5;
+  }
 }
 
 function showStorageFruitSourceDialog() {
@@ -425,20 +660,27 @@ function styleFruitChip(flex, f) {
 }
 
 // type: 0=storage, 1=sacrificial
-function makeFruitChip(flex, f, type) {
+function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(images_fruittypes[f.type][f.tier], canvas);
 
-  var text = upper(f.toString());
+
+
+  var text = '';
+  if(opt_label) text += opt_label + '<br>';
+
+  text += upper(f.toString());
   text += ', fruit tier ' + util.toRoman(f.tier);
   for(var i = 0; i < f.abilities.length; i++) {
     var a = f.abilities[i];
     var level = f.levels[i];
     text += '<br>';
     if(isInherentAbility(a)) {
-      text += 'Extra ability: ' + upper(getFruitAbilityName(a)) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
+      text += 'Extra ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
+    } else if(a == FRUIT_NONE) {
+      text += 'Ability: ' + upper(f.abilityToString(i));
     } else {
-      text += 'Ability: ' + upper(getFruitAbilityName(a)) + ' ' + util.toRoman(level) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
+      text += 'Ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
     }
 
   }
@@ -452,24 +694,26 @@ function makeFruitChip(flex, f, type) {
 
   var typename = type == 0 ? 'storage' : 'sacrificial';
 
-  styleButton0(flex.div);
-  addButtonAction(flex.div, function(e) {
-    if(e.shiftKey || eventHasCtrlKey(e)) {
-      if(f.slot >= 100) {
-        // move the fruit upwards
-        var full = state.fruit_stored.length >= state.fruit_slots;
-        if(!full) {
-          actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+  if(!opt_nobuttonaction) {
+    styleButton0(flex.div);
+    addButtonAction(flex.div, function(e) {
+      if(e.shiftKey || eventHasCtrlKey(e)) {
+        if(f.slot >= 100) {
+          // move the fruit upwards
+          var full = state.fruit_stored.length >= state.fruit_slots;
+          if(!full) {
+            actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+            update();
+          }
+        } else { // move the fruit downwards
+          actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:1});
           update();
         }
-      } else { // move the fruit downwards
-        actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:1});
-        update();
+      } else {
+        createFruitDialog(f);
       }
-    } else {
-      createFruitDialog(f);
-    }
-  }, typename + ' fruit slot: ' + f.toString());
+    }, typename + ' fruit slot: ' + f.toString());
+  }
 }
 
 function setupFruitDrag(flex, slot, f) {

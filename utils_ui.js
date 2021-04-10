@@ -164,9 +164,10 @@ var dialog_level = 0;
 var created_dialogs = [];
 var created_overlays = [];
 
-var DIALOG_SMALL = 0;
-var DIALOG_MEDIUM = 1;
-var DIALOG_LARGE = 2;
+var DIALOG_TINY = 0;
+var DIALOG_SMALL = 1;
+var DIALOG_MEDIUM = 2;
+var DIALOG_LARGE = 3;
 
 // create a dialog for the settings menu
 // opt_size: see DIALOG_SMALL etc... values above
@@ -187,7 +188,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   removeAllDropdownElements();
 
   var dialogFlex;
-  if(opt_size == DIALOG_SMALL) {
+  if(opt_size == DIALOG_TINY) {
+    dialogFlex = new Flex(gameFlex, 0.05, 0.33, 0.95, 0.66);
+  } else if(opt_size == DIALOG_SMALL) {
     dialogFlex = new Flex(gameFlex, 0.05, 0.25, 0.95, 0.75);
   } else if(opt_size == DIALOG_LARGE) {
     dialogFlex = new Flex(gameFlex, 0.05, 0.05, 0.95, 0.9);
@@ -206,10 +209,13 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
 
   dialog.style.zIndex = '' + (dialog_level * 10 + 5);
 
+  var buttonsize = 0.3;
+  if(opt_size == DIALOG_TINY) buttonsize = 0.5;
+
   var button;
   var buttonshift = 0;
   if(opt_okfun) {
-    button = (new Flex(dialogFlex, [1.0, -0.3 * (buttonshift + 1)], [1.0, -0.12], [1.0, -0.01 - 0.3 * buttonshift], [1.0, -0.01], 1)).div;
+    button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
     button.style.fontWeight = 'bold';
     buttonshift++;
     styleButton(button);
@@ -219,7 +225,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     });
   }
   if(opt_extrafun) {
-    button = (new Flex(dialogFlex, [1.0, -0.3 * (buttonshift + 1)], [1.0, -0.12], [1.0, -0.01 - 0.3 * buttonshift], [1.0, -0.01], 1)).div;
+    button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
     button.style.fontWeight = 'bold';
     buttonshift++;
     styleButton(button);
@@ -253,7 +259,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     if(dialogFlex.onclose) dialogFlex.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
   };
   dialogFlex.cancelFun = dialog.cancelFun;
-  button = (new Flex(dialogFlex, [1.0, -0.3 * (buttonshift + 1)], [1.0, -0.12], [1.0, -0.01 - 0.3 * buttonshift], [1.0, -0.01], 1)).div;
+  button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
   buttonshift++;
   styleButton(button);
   button.textEl.innerText = opt_cancelname || (opt_okfun ? 'cancel' : 'back');
@@ -274,6 +280,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
 
   var h = 0.88;
+  if(opt_size == DIALOG_TINY) h = 0.8; // ensure content doesn't go over the buttons
   if(opt_size == DIALOG_SMALL) h = 0.8; // ensure content doesn't go over the buttons
   dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, -0.05], h, 0.3);
 
@@ -736,6 +743,8 @@ function makeScrollable(flex) {
   });
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 var dropdownEl = undefined;
 
 function removeAllDropdownElements() {
@@ -806,6 +815,26 @@ function makeDropdown(flex, title, current, choices, fun) {
   }, 'dropdown');
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+
+function makeTextInput(title, fun) {
+  var dialog = createDialog(DIALOG_TINY, function() {
+    fun(area.value);
+    dialog.cancelFun();
+  });
+
+  var titleFlex = new Flex(dialog.content, 0, 0.05, 1, 0.1);
+  centerText(titleFlex.div);
+  titleFlex.div.innerText = title;
+
+  var inputFlex = new Flex(dialog.content, 0.1, 0.4, 0.9, 0.6);
+  var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
+  area.focus();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 
 var audioContext;
@@ -856,4 +885,12 @@ function playNotificationSound(f) {
   playSound(notificationSound[f]);
 }
 
-
+function sanitizeName(name) {
+  if(!name) return '';
+  name = name.substr(0, 20);
+  name = name.replace(/\s/g, ' ');
+  name = name.replace(/</g, '');
+  name = name.replace(/>/g, '');
+  name = name.replace(/&/g, '');
+  return name;
+}

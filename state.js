@@ -149,6 +149,8 @@ function BluePrint() {
   8: i: mistletoe
   */
   this.data = [];
+
+  this.name = '';
 }
 
 // converts blueprint type code to a blueprint crop index, or -1 if empty
@@ -211,6 +213,7 @@ BluePrint.copyTo = function(from, to) {
   to.numw = from.numw;
   to.numh = from.numh;
   to.data = util.clone(from.data);
+  to.name = from.name;
 }
 
 BluePrint.copy = function(b) {
@@ -471,6 +474,7 @@ function State() {
   this.g_numautoupgrades = 0; // upgrades done with automaton. These are also counted in the standard g_numupgrades as well.
   this.g_numautoplant = 0;
   this.g_numautodelete = 0;
+  this.g_numfused = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -495,6 +499,7 @@ function State() {
   this.p_numautoupgrades = 0;
   this.p_numautoplant = 0;
   this.p_numautodelete = 0;
+  this.p_numfused = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -517,6 +522,7 @@ function State() {
   this.c_numautoupgrades = 0;
   this.c_numautoplant = 0;
   this.c_numautodelete = 0;
+  this.c_numfused = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
@@ -985,6 +991,12 @@ function Fruit() {
   // must be at least 1 for any ability, 0 is equivalent to not having the ability at all.
   this.levels = [];
 
+  // for fused fruits: charge of each ability. 0: normal, 1: charged, 2: fusible
+  this.charge = [];
+
+  // how many fuse-fruit actions were involved in this fruit
+  this.fuses = 0;
+
   this.essence = Num(0); // how much essence was already spent on upgrading this fruit
 
   this.mark = 0; // mark as favorite etc...
@@ -1005,12 +1017,22 @@ function Fruit() {
     return tierNames[this.tier] + ' ' + this.typeName();
   };
 
+  this.abilityToString = function(i, opt_abbreviated, opt_nolevels) {
+    var result = '';
+    result += getFruitAbilityName(this.abilities[i], opt_abbreviated);
+    if(this.abilities[i] != FRUIT_NONE) {
+      if(!opt_nolevels && !isInherentAbility(this.abilities[i])) result += ' ' + util.toRoman(this.levels[i]);
+      if(!opt_nolevels && this.charge[i] == 1) result += ' [*]';
+      if(!opt_nolevels && this.charge[i] == 2) result += ' [**]';
+    }
+    return result;
+  };
+
   this.abilitiesToString = function(opt_abbreviated, opt_nolevels) {
     var result = '';
     for(var i = 0; i < this.abilities.length; i++) {
       if(i > 0) result += ', ';
-      result += getFruitAbilityName(this.abilities[i], opt_abbreviated);
-      if(!opt_nolevels && !isInherentAbility(this.abilities[i])) result += ' ' + util.toRoman(this.levels[i]);
+      result += this.abilityToString(i, opt_abbreviated, opt_nolevels);
     }
     return result;
   };
