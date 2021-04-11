@@ -208,8 +208,10 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     text += 'You already got all rewards for this challenge';
   } else {
     if(c.targetlevel.length > 1) {
+      text += '<b>Next target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
       text += '<b>Next completion reward:</b> ' + c.rewarddescription[c.numCompleted(include_current_run)];
     } else {
+      text += '<b>Target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
       text += '<b>Reward:</b> ' + c.rewarddescription[0];
     }
   }

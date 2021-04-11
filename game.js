@@ -571,9 +571,7 @@ function softReset(opt_challenge) {
   }
 
   if(state.upgrades2[upgrade2_blackberrysecret].count) {
-    upgrades[berryunlock_0].fun();
-    state.upgrades[berryunlock_1].unlocked = true; // like the blackberry is normally unlocked, now the blueberry is, without needing to plant a blackberry first
-    state.upgrades[shortmul_0].unlocked = true; // and while at it, also let the watercress behave like others and have its upgrade already visible, since the upgrade tab already exists now from the start anyway
+    upgrades2[upgrade2_blackberrysecret].fun();
   }
 
   state.challenge = opt_challenge || 0;
@@ -759,7 +757,7 @@ function PreCell(f) {
 
   // boostboost from beehives to flowers. This is precomputed (unlike boost from flowers and nettles to plants, which is not implemented like this yet) to avoid too many recursive computations
   this.beeboostboost_received = Num(0);
-  this.num_bee = 0; // num beehive neighbors, if receiving boostboost
+  this.num_bee = 0; // num beehive neighbors, if receiving boostboost, used for display purposes in the breakdown
 
 
   this.nettlemalus_received = Num(1);
@@ -928,7 +926,7 @@ function precomputeField() {
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
-            if(c2 && c2.type == CROPTYPE_BEE && f2.isFullGrown()) {
+            if(c2 && c2.type == CROPTYPE_BEE) {
               var boostboost = c2.getBoostBoost(f2);
               p.beeboostboost_received.addInPlace(boostboost);
               p.num_bee++;
@@ -947,10 +945,10 @@ function precomputeField() {
       if(c) {
         var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
-          p.boost = c.getBoost(f, p.breakdown); // includes preliminary non-fullgrown case
+          p.boost = c.getBoost(f, false, p.breakdown); // includes preliminary non-fullgrown case
         }
         if(c.type == CROPTYPE_BEE) {
-          p.boost = c.getBoostBoost(f, p.breakdown); // includes preliminary non-fullgrown case
+          p.boost = c.getBoostBoost(f, false, p.breakdown); // includes preliminary non-fullgrown case
         }
         if(c.type == CROPTYPE_MISTLETOE) {
           var num_neighbors = 4;
@@ -1000,7 +998,7 @@ function precomputeField() {
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) continue; // don't overwrite their boost breakdown with production breakdown
         var p = prefield[y][x];
         var prod = c.getProd(f, false, p.breakdown);
-        if(!f.isFullGrown()) c.getProd(f, true, p.breakdown); // preliminary breakdown if still growing
+        //if(!f.isFullGrown()) c.getProd(f, true, p.breakdown); // preliminary breakdown if still growing
         p.prod0 = prod;
         p.prod0b = Res(prod); // a separate copy
         // used by pass 4, production that berry has avaialble for mushrooms, which is then subtarcted from
@@ -1021,7 +1019,6 @@ function precomputeField() {
       var f = state.field[y][x];
       var c = f.getRealCrop();
       if(c) {
-        if(!f.isFullGrown()) continue;
         if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
           var p = prefield[y][x];
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -1029,7 +1026,6 @@ function precomputeField() {
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
-            if(!f2.isFullGrown()) continue;
             var c2 = f2.getRealCrop();
             if(c2) {
               var p2 = prefield[y2][x2];
@@ -1373,18 +1369,17 @@ function doNextAutoChoice() {
 var next_auto_upgrade = undefined;
 
 
-function getAutoFraction(advanced, fractions, cropid) {
+function getAutoFraction(advanced, fractions, croptype) {
   var fraction = fractions[0];
-  if(advanced && cropid != undefined) {
-    var c = crops[cropid];
-    if(c.type == CROPTYPE_BERRY) fraction = fractions[3];
-    if(c.type == CROPTYPE_MUSH) fraction = fractions[4];
-    if(c.type == CROPTYPE_FLOWER) fraction = fractions[5];
-    if(c.type == CROPTYPE_NETTLE) fraction = fractions[6];
-    if(c.type == CROPTYPE_BEE) fraction = fractions[7];
-    if(c.type == CROPTYPE_SHORT) fraction = fractions[2];
-    if(c.type == CROPTYPE_CHALLENGE) fraction = fractions[1];
-    if(c.type == CROPTYPE_MISTLETOE) fraction = fractions[8];
+  if(advanced && croptype != undefined) {
+    if(croptype == CROPTYPE_BERRY) fraction = fractions[3];
+    if(croptype == CROPTYPE_MUSH) fraction = fractions[4];
+    if(croptype == CROPTYPE_FLOWER) fraction = fractions[5];
+    if(croptype == CROPTYPE_NETTLE) fraction = fractions[6];
+    if(croptype == CROPTYPE_BEE) fraction = fractions[7];
+    if(croptype == CROPTYPE_SHORT) fraction = fractions[2];
+    if(croptype == CROPTYPE_CHALLENGE) fraction = fractions[1];
+    if(croptype == CROPTYPE_MISTLETOE) fraction = fractions[8];
   }
   return fraction;
 }
@@ -1417,13 +1412,14 @@ function computeNextAutoUpgrade() {
     if(!u2.unlocked) continue;
     if(u.maxcount != 0 && u2.count >= u.maxcount) continue;
     if(u.cropid == undefined) continue
-    if(!state.fullgrowncropcount[u.cropid]) continue; // only do fullgrown crops, don't already start spending money on upgrades that have no effect on non-fullgrown crops
+    //if(!state.fullgrowncropcount[u.cropid]) continue; // only do fullgrown crops, don't already start spending money on upgrades that have no effect on non-fullgrown crops
+    if(!state.cropcount[u.cropid]) continue; // do any crop, even not fullgrown, because since version 0.1.61, crops already produce a fractional amount while growing
     // TODO: highestoftypeplanted or highestoftypeunlocked? Maybe should be an option, both have pros and cons. a con of using highestoftypeunlocked is that then no progress is made on the field if the game is left to run alone for a long time but the highest plant is not planted yet
     if(crops[u.cropid].tier < state.highestoftypeplanted[crops[u.cropid].type]) continue; // don't upgrade lower types anymore once a higher type of berry/mushroom/... is on the field
 
     // how much resources willing to spend
     var advanced = state.automaton_unlocked[1] >= 2;
-    var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, u.cropid);
+    var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, crops[u.cropid].type);
 
     var cost = u.getCost();
 
@@ -1442,7 +1438,7 @@ function autoUpgrade(res) {
 
   // how much resources willing to spend
   var advanced = state.automaton_unlocked[1] >= 2;
-  var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, u.cropid);
+  var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, crops[u.cropid].type);
 
   var count = 0;
   for(;;) {
@@ -1463,6 +1459,26 @@ function autoUpgrade(res) {
 }
 
 
+function getHighestAffordableCropOfType(type, res) {
+  var tier = state.highestoftypeunlocked[type];
+  for(;;) {
+    if(tier < 0) return null;
+    var crop = croptype_tiers[type][tier];
+    if(!crop) return null;
+    if(crop.getCost().le(res)) return crop;
+    tier--;
+  }
+}
+
+// get cheapest unlocked crop you can plant
+function getCheapestNextOfCropType(type) {
+  var tier = state.lowestoftypeplanted[type] + 1;
+  if(tier < 0 || tier == Infinity) return null;
+  var crop = croptype_tiers[type][tier];
+  if(!crop) return null;
+  if(!state.crops[crop.index].unlocked) return null;
+  return crop;
+}
 
 // next chosen auto plant, if applicable.
 // type: either undefined, or object {index:plant id, x:xpos, y:ypos, time:time until reached given current resource gain}
@@ -1478,15 +1494,12 @@ function computeNextAutoPlant() {
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
-    var tier = state.highestoftypeunlocked[type];
-    if(tier < 0) continue;
-    var crop = croptype_tiers[type][tier];
+    var crop = getCheapestNextOfCropType(type);
     if(!crop) continue;
-    if(!state.crops[crop.index].unlocked) continue; // can happen e.g. during a challenge where a different crop resuing some existing tier value exists (e.g. aster in bees challenge)
 
     // how much resources willing to spend
     var advanced = state.automaton_unlocked[2] >= 2;
-    var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.index);
+    var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.type);
     var cost = crop.getCost();
 
     // NOTE: must match simimar checks in autoPlant()
@@ -1503,7 +1516,7 @@ function computeNextAutoPlant() {
         if(!f.hasCrop()) continue;
         var c = f.getCrop();
         if(c.type != type) continue;
-        if(c.tier >= tier) continue;
+        if(c.tier >= crop.tier) continue;
         if(next_auto_plant == undefined || time < next_auto_plant.time) next_auto_plant = {index:crop.index, x:x, y:y, time:time};
         x = state.numw;
         y = state.numh;
@@ -1513,7 +1526,6 @@ function computeNextAutoPlant() {
   }
 }
 
-// res must be a copy of the available resources for all auto-actions, and will be modified in place
 function autoPlant(res) {
   if(!next_auto_plant) return;
 
@@ -1523,7 +1535,7 @@ function autoPlant(res) {
 
   // how much resources willing to spend
   var advanced = state.automaton_unlocked[2] >= 2;
-  var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.index);
+  var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.type);
 
   var type = crop.type;
   // NOTE: must match simimar checks in computeNextAutoPlant()
@@ -1535,11 +1547,19 @@ function autoPlant(res) {
   var cost = crop.getCost();
   if(cost.gt(maxcost)) return;
 
+  // check if we can't do a better crop
+  var crop2 = getHighestAffordableCropOfType(type, maxcost);
+  if(crop2 && crop2.getCost().le(maxcost)) {
+    crop = crop2;
+    cost = crop.getCost();
+  }
+
+
   res.subInPlace(cost);
 
   actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
+  return ;
 }
-
 
 // next chosen auto unlock, if applicable.
 // type: either undefined, or object {index:upgrade id, time:time until reached given current resource gain}
@@ -1565,7 +1585,7 @@ function computeNextAutoUnlock() {
     // how much resources willing to spend. This uses the same fractions as autoplant does.
     var advanced = state.automaton_unlocked[2] >= 2;
     var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
-    var fraction = getAutoFraction(advanced, fraction_array, u.cropid);
+    var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
 
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
@@ -1588,7 +1608,7 @@ function autoUnlock(res) {
   // how much resources willing to spend
   var advanced = state.automaton_unlocked[2] >= 2;
   var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
-  var fraction = getAutoFraction(advanced, fraction_array, u.cropid);
+  var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
 
   var maxcost = Res.min(res, state.res.mulr(fraction));
   var cost = u.getCost();
@@ -1637,7 +1657,8 @@ function nextEventTime() {
           addtime(2);
           return time;
         } else if(f.growth < 1) {
-          addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
+          //addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
+          addtime(3); // sicne v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
         }
       }
     }
@@ -2012,8 +2033,8 @@ var update = function(opt_fromTick) {
             ok = false;
           } else if(state.res.lt(cost)) {
             showMessage('not enough resources to plant ' + c.name +
-                        ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
-                        ', need ' + cost.toString() +
+                        ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                        ', need: ' + cost.toString(Math.max(5, Num.precision)) +
                         ' (' + getCostAffordTimer(cost) + ')',
                         C_INVALID, 0, 0);
             ok = false;
@@ -2143,8 +2164,8 @@ var update = function(opt_fromTick) {
             }
             ok = false;
           } else if(state.res.lt(cost)) {
-            showMessage('not enough resources to plant ' + c.name + ': have ' + Res.getMatchingResourcesOnly(cost, state.res).toString() +
-                        ', need: ' + cost.toString(), C_INVALID, 0, 0);
+            showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                        ', need: ' + cost.toString(Math.max(5, Num.precision)), C_INVALID, 0, 0);
             ok = false;
           } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
             showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
@@ -2506,41 +2527,39 @@ var update = function(opt_fromTick) {
             // it's ok to have the production when growth became 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
             prod = p.prod2;
           } else { // long lived plant
+            if(c.getPlantTime() == 0) f.growth = 1;
             if(f.growth < 1) {
-              if(c.getPlantTime() == 0) {
+              var g = d / c.getPlantTime();
+              var growth0 = f.growth;
+              f.growth += g;
+              if(f.growth >= 1) {
+                // just fullgrown now
                 f.growth = 1;
-              } else {
-                var g = d / c.getPlantTime();
-                var growth0 = f.growth;
-                f.growth += g;
-                if(f.growth >= 1) {
-                  // just fullgrown now
-                  f.growth = 1;
-                  if(state.challenge != challenge_wither) {
-                    state.g_numfullgrown++;
-                    state.c_numfullgrown++;
-                  }
-                  if(state.notificationsounds[1]) {
-                    if(c.type == CROPTYPE_BERRY) {
-                      if(util.getTime() > last_fullgrown_sound_time0 + 5) {
-                        playNotificationSound(2000);
-                        last_fullgrown_sound_time0 = util.getTime();
-                      }
-                    } else if(c.type == CROPTYPE_MUSH) {
-                      if(util.getTime() > last_fullgrown_sound_time1 + 5) {
-                        playNotificationSound(1800);
-                        last_fullgrown_sound_time1 = util.getTime();
-                      }
-                    } else {
-                      if(util.getTime() > last_fullgrown_sound_time2 + 5) {
-                        playNotificationSound(2200);
-                        last_fullgrown_sound_time2 = util.getTime();
-                      }
+                if(state.challenge != challenge_wither) {
+                  state.g_numfullgrown++;
+                  state.c_numfullgrown++;
+                }
+                if(state.notificationsounds[1]) {
+                  if(c.type == CROPTYPE_BERRY) {
+                    if(util.getTime() > last_fullgrown_sound_time0 + 5) {
+                      playNotificationSound(2000);
+                      last_fullgrown_sound_time0 = util.getTime();
+                    }
+                  } else if(c.type == CROPTYPE_MUSH) {
+                    if(util.getTime() > last_fullgrown_sound_time1 + 5) {
+                      playNotificationSound(1800);
+                      last_fullgrown_sound_time1 = util.getTime();
+                    }
+                  } else {
+                    if(util.getTime() > last_fullgrown_sound_time2 + 5) {
+                      playNotificationSound(2200);
+                      last_fullgrown_sound_time2 = util.getTime();
                     }
                   }
-                  // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
                 }
+                // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
               }
+              prod = p.prod2.mulr(f.growth);
             } else {
               // fullgrown
               prod = p.prod2;
@@ -2917,8 +2936,13 @@ var update = function(opt_fromTick) {
   updateTabButtons();
   updateAbilitiesUI();
   updateRightPane();
-  if(updatetooltipfun) updatetooltipfun();
-  if(updatedialogfun) updatedialogfun();
+  if(updatetooltipfun) {
+    updatetooltipfun();
+  }
+  if(updatedialogfun) {
+    updatedialogfun();
+    if(dialog_level == 0) updatedialogfun = undefined;
+  }
 
   showLateMessages();
 

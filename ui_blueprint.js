@@ -63,6 +63,12 @@ function renderBlueprint(b, flex, opt_index) {
 
 function plantBluePrint(b) {
   if(!b || b.numw == 0 || b.numh == 0) return;
+
+  if(state.challenge == challenge_wither) {
+    showMessage('blueprints are disabled during the wither challenge', C_INVALID);
+    return;
+  }
+
   // match up corners such that standard tree position overlap, in case field sizes are different
   // treex and treey are coordinates of the stem
   var treex0 = Math.floor((state.numw - 1) / 2);

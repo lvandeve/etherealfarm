@@ -123,6 +123,8 @@ function createFruitHelp() {
   text += ' • Any other abilities of the second fruit disappear and don\'t matter, the only abilities of the second fruit that matter are: abilities that match the first fruit, to charge them up, and fusible abilities, to replace abilities of the first fruit.';
   text += '<br/>';
   text += ' • The order of abilities of first and second fruit matters, and you can freely reorder abilities in the regular fruit dialog (where you level up abilities), so you can control which abilities of the first fruit stay and which get pushed out.';
+  text += '<br/>';
+  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participiate in fusing. The first fruit determines the type of the resulting fruit, if the second fruit has a seasonal ability, it will be lost.';
   text += '<br/><br/>';
   text += 'Summary of the rules: get 3 fruits with ability you want, fuse them together, and fuse the result into a fruit to get that ability in there and push out an unwanted ability. Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:';
   text += '<br/>';
@@ -347,9 +349,9 @@ function fillFruitDialog(dialog, f, opt_selected) {
     text = upper(f.abilityToString(i));
     text += ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
 
-    flex.div.innerHTML = text;
+    centerText2(flex.div);
 
-    centerText(flex.div);
+    flex.div.textEl.innerHTML = text;
 
     flexes[i] = flex;
 

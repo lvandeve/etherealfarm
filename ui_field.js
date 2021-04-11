@@ -136,11 +136,22 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
     result += '<br/>';
     var expected_prod = c.getProd(f, true);
-    var expected_boost = c.getBoost(f);
-    var expected_boostboost = c.getBoostBoost(f);
-    if(!expected_prod.empty()) result += 'Expected production/sec: ' +expected_prod.toString();
-    if(expected_boost.neqr(0)) result += 'Expected boost: ' + expected_boost.toPercentString();
-    if(expected_boostboost.neqr(0)) result += 'Expected boost: ' + expected_boostboost.toPercentString();
+    var expected_boost = c.getBoost(f, true);
+    var expected_boostboost = c.getBoostBoost(f, true);
+    if(!expected_prod.empty()) {
+      result += 'Current production/sec: ' + c.getProd(f, false).toString() + '<br>';
+      result += 'Expected production/sec: ' + expected_prod.toString();
+    }
+    if(expected_boost.neqr(0)) {
+      var current_boost = c.getBoost(f, false);
+      if(current_boost.neqr(0)) result += 'Current boost: ' + current_boost.toPercentString() + '<br>';
+      result += 'Expected boost: ' + expected_boost.toPercentString();
+    }
+    if(expected_boostboost.neqr(0)) {
+      var current_boost = c.getBoostBoost(f, false);
+      if(current_boost.neqr(0)) result += 'Current boost: ' + current_boost.toPercentString() + '<br>';
+      result += 'Expected boost: ' + expected_boostboost.toPercentString();
+    }
     result += '<br/><br/>';
   } else {
     if(c.type == CROPTYPE_SHORT) {
@@ -517,6 +528,7 @@ function makeFieldDialog(x, y) {
     button0.textEl.innerText = 'Upgrade crop';
     registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
+      if(c.type == CROPTYPE_CHALLENGE) return;
       var tier = state.highestoftypeunlocked[c.type];
       var c3 = croptype_tiers[c.type][tier];
       if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
@@ -673,6 +685,7 @@ function initFieldUI() {
           result = getCropInfoHTML(f, c);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+          if(time.ltr(0)) time = Num(0);
           if(state.treelevel <= 0) {
             var result = 'a weathered tree';
             if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
@@ -706,6 +719,7 @@ function initFieldUI() {
               var c = crops[state.lastPlanted];
               var tier = state.highestoftypeunlocked[c.type];
               var c3 = croptype_tiers[c.type][tier];
+              if(c.type == CROPTYPE_CHALLENGE) c3 = c;
               if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
               if(c3.getCost().gt(state.res) && tier > 0) {
                 tier--;
@@ -749,6 +763,7 @@ function initFieldUI() {
             var c2 = f.getCrop();
             var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
             if(!c3 || !state.crops[c3.index].unlocked) c3 = c2;
+            if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
             state.lastPlanted = c3.index;
             if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
             if((state.allowshiftdelete || c2.istemplate) && c3.tier > c2.tier) {

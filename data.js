@@ -373,8 +373,17 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   var result = Res(this.prod);
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-  if(!pretend && f && !f.isFullGrown()) {
-    return Res();
+  if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
+    // wither challenge
+    if(state.challenge == challenge_wither) {
+      var t = Num(f.growth);
+      result.mulInPlace(t);
+      if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
+    } else {
+      var t = Num(f.growth);
+      result.mulInPlace(t);
+      if(breakdown) breakdown.push(['growing', true, t, result.clone()]);
+    }
   }
 
   // upgrades
@@ -467,7 +476,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     var num = 0;
 
     var getboost = function(self, n) {
-      if(n.hasCrop() && n.isFullGrown() && n.getCrop().type != CROPTYPE_NETTLE) {
+      if(n.hasCrop() && n.getCrop().type != CROPTYPE_NETTLE) {
         var boost = n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
           //if(season == 2 || season == 3) {
@@ -507,7 +516,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     var num = 0;
 
     var getboost = function(self, n) {
-      if(n.hasCrop() && n.isFullGrown() && n.getCrop().type == CROPTYPE_NETTLE) {
+      if(n.hasCrop() && n.getCrop().type == CROPTYPE_NETTLE) {
         var boost = n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
           spore_boost.addInPlace(boost);
@@ -582,13 +591,6 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['worker bees (challenge)', true, bonus_bees, result.clone()]);
   }
 
-  // wither challenge
-  if(f && state.challenge == challenge_wither) {
-    var t = Num(f.growth);
-    result.posmulInPlace(t);
-    if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
-  }
-
   // leech, only computed here in case of "pretend", without pretent leech is computed in more correct way in precomputeField()
   if(pretend && this.type == CROPTYPE_SHORT && f) {
     var leech = this.getLeech(f);
@@ -627,11 +629,23 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
 
 // The result is the added value, e.g. a result of 0.5 means a multiplier of 1.5, or a bonus of +50%
-Crop.prototype.getBoost = function(f, breakdown) {
+Crop.prototype.getBoost = function(f, pretend, breakdown) {
   if(this.type != CROPTYPE_FLOWER && this.type != CROPTYPE_NETTLE) return Num(0);
   var result = this.boost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
+  if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
+    // wither challenge
+    if(state.challenge == challenge_wither) {
+      var t = Num(f.growth);
+      result.mulInPlace(t);
+      if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
+    } else {
+      var t = Num(f.growth);
+      result.mulInPlace(t);
+      if(breakdown) breakdown.push(['growing', true, t, result.clone()]);
+    }
+  }
 
   var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && (state.time - state.rainbowtime) < getRainbowDuration();
 
@@ -739,7 +753,7 @@ Crop.prototype.getBoost = function(f, breakdown) {
 
 
 // beehive boosting the boost of flowers
-Crop.prototype.getBoostBoost = function(f, breakdown) {
+Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   var result = Num(0);
 
   var hasboostboost = false;
@@ -756,6 +770,24 @@ Crop.prototype.getBoostBoost = function(f, breakdown) {
 
   result = this.boost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
+    if(this.type == CROPTYPE_CHALLENGE) {
+      // bee challenge bees while growing do nothing
+      return Num(0);
+    } else {
+      // wither challenge
+      if(state.challenge == challenge_wither) {
+        var t = Num(f.growth);
+        result.mulInPlace(t);
+        if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
+      } else {
+        var t = Num(f.growth);
+        result.mulInPlace(t);
+        if(breakdown) breakdown.push(['growing', true, t, result.clone()]);
+      }
+    }
+  }
 
   // upgrades
   if(this.basic_upgrade != null) {
@@ -1197,7 +1229,7 @@ function registerUpgrade(name, cost, fun, pre, maxcount, description, bgcolor, b
 // for other crop types, the following applies: a requirement for this upgrade to unlock, is that either there is a fullgrown instance of that berry on the field, or the next higher berry type is unlocked.
 // So having the next berry tier unlocked counts as if previous tier was planted. Example: you research 10 berry types but never unlock any mushroom. Now you unlock the first mushroom type. If next berry tier unlocked didn't count, then next mushroom would require you to plant some old berries on the field.
 // If undefined, then this system is not used and only opt_pre_fun is used. If defined, then opt_pre_fun is an optional additional requirement (stricter, not less strict).
-function registerCropUnlock(cropid, cost, prev_berry, opt_pre_fun) {
+function registerCropUnlock(cropid, cost, prev_berry, opt_pre_fun_and, opt_pre_fun_or) {
   var crop = crops[cropid];
   var name = 'Unlock ' + crop.name;
 
@@ -1211,7 +1243,8 @@ function registerCropUnlock(cropid, cost, prev_berry, opt_pre_fun) {
   };
 
   var pre = function() {
-    if(opt_pre_fun && !opt_pre_fun()) return false;
+    if(opt_pre_fun_and && !opt_pre_fun_and()) return false;
+    if(opt_pre_fun_or && opt_pre_fun_or()) return true;
     if(prev_berry == undefined) return true;
     var berry_tier = crops[prev_berry].tier;
     if(state.highestoftypeunlocked[CROPTYPE_BERRY] > berry_tier) return true; // next berry tier unlocked: counts as better than having some planted of prev berry tier
@@ -1410,8 +1443,14 @@ upgrade_register_id = 25;
 var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), short_0, function(){
   return (state.c_numplanted + state.c_numplantedshort) >= 5;
 });
-var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0);
-var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), berry_1);
+var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0, undefined, function() {
+  if(state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_0].count) return true;
+  return false;
+});
+var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), berry_1, undefined, function() {
+  if(state.upgrades2[upgrade2_cranberrysecret].count && state.upgrades[berryunlock_1].count) return true;
+  return false;
+});
 var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), berry_2);
 var berryunlock_4 = registerCropUnlock(berry_4, getBerryCost(4), berry_3);
 var berryunlock_5 = registerCropUnlock(berry_5, getBerryCost(5), berry_4);
@@ -1426,7 +1465,10 @@ var berryunlock_13 = registerCropUnlock(berry_13, getBerryCost(13), berry_12);
 var berryunlock_14 = registerCropUnlock(berry_14, getBerryCost(14), berry_13);
 
 upgrade_register_id = 50;
-var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), berry_1);
+var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), berry_1, undefined, function() {
+  if(state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_1].count) return true;
+  return false;
+});
 var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), berry_3, function(){return !!state.upgrades[mushunlock_0].count;});
 var mushunlock_2 = registerCropUnlock(mush_2, getMushroomCost(2), berry_5, function(){return !!state.upgrades[mushunlock_1].count;});
 var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), berry_7, function(){return !!state.upgrades[mushunlock_2].count;});
@@ -1435,7 +1477,10 @@ var mushunlock_5 = registerCropUnlock(mush_5, getMushroomCost(5), berry_11, func
 var mushunlock_6 = registerCropUnlock(mush_6, getMushroomCost(6), berry_13, function(){return !!state.upgrades[mushunlock_5].count;});
 
 upgrade_register_id = 75;
-var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), berry_2);
+var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), berry_2, undefined, function() {
+  if(state.upgrades2[upgrade2_cranberrysecret].count && state.upgrades[berryunlock_2].count) return true;
+  return false;
+});
 var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), berry_4, function(){return !!state.upgrades[flowerunlock_0].count;});
 var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), berry_6, function(){return !!state.upgrades[flowerunlock_1].count;});
 var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), berry_8, function(){return !!state.upgrades[flowerunlock_2].count;});
@@ -1455,6 +1500,8 @@ var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, f
 upgrade_register_id = 110;
 var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), undefined, function() {
   if(!(state.g_numresets > 0 && state.upgrades2[upgrade2_mistletoe].count)) return false;
+
+  if(state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_1].count) return true;
 
   // prev_crop is berry_1, but also unlock once higher level berries available, in case player skips placing this berry
   if(state.fullgrowncropcount[berry_1]) return true;
@@ -2728,9 +2775,10 @@ var upgrade2_resin = registerUpgrade2('resin gain', LEVEL2, Res({resin:50}), 2, 
 
 var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
   upgrades[berryunlock_0].fun();
-  state.upgrades[berryunlock_1].unlocked = true;
-  state.upgrades[shortmul_0].unlocked = true;
-}, function(){return true;}, 1, 'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free', undefined, undefined, blackberry[4]);
+  state.upgrades[shortmul_0].unlocked = true; // also let the watercress behave like others and have its upgrade already visible, since the upgrade tab already exists now from the start anyway
+}, function(){return true;}, 1,
+'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free',
+undefined, undefined, blackberry[4]);
 
 var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({resin:150}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
@@ -2741,6 +2789,15 @@ var upgrade2_automaton = registerUpgrade2('unlock automaton', LEVEL2, Res({resin
   unlockEtherealCrop(automaton2_0);
   showRegisteredHelpDialog(28);
 }, function(){return true;}, 1, 'the automaton can be placed in the ethereal field, and when placed, unlocks the automaton tab, allows to automate things, and allows to place crop templates', undefined, undefined, images_automaton[4]);
+
+
+var upgrade2_twigs_bonus = Num(0.25);
+var upgrade2_twigs = registerUpgrade2('twigs gain', LEVEL2, Res({resin:100}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 0, 'increase twigs gain from tree by ' + (upgrade2_twigs_bonus * 100) + '% (additive).',
+undefined, undefined, mistletoe[1]);
+
+
 
 ///////////////////////////
 LEVEL2 = 2;
@@ -2759,7 +2816,17 @@ var twigs_base = 1.14;
 var twigs_base_twigs_extraction = 1.175;
 
 var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res({resin:10000}), 1, function() {
-}, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction, undefined, undefined, mistletoe[1]);
+}, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction,
+undefined, undefined, mistletoe[1]);
+
+var upgrade2_blueberrysecret = registerUpgrade2('blueberry secret', LEVEL2, Res({resin:1000}), 2, function() {
+}, function(){
+  return state.upgrades2[upgrade2_blackberrysecret].count;
+}, 1,
+'blueberry\'s unlock is available from the start, and champignon\'s and mistletoe\'s unlock is available as soon as blueberry is unlocked, rather than after a blueberry has fullgrown',
+undefined, undefined, blueberry[4]);
+
+
 
 ///////////////////////////
 LEVEL2 = 3;
@@ -2792,6 +2859,14 @@ var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:
   changeFieldSize(state, numw, numh);
   initFieldUI();
 }, function(){return state.numw >= 6 && state.numh >= 6}, 1, 'increase basic field size to 7x6 tiles', undefined, undefined, field_summer[0]);
+
+var upgrade2_cranberrysecret = registerUpgrade2('cranberry secret', LEVEL2, Res({resin:10000}), 2, function() {
+}, function(){
+  return state.upgrades2[upgrade2_blueberrysecret].count;
+}, 1,
+'cranberry\'s unlock is available as soon as blueberry is unlocked, rather than after a blueberry has fullgrown, and clover\'s unlock is available as soon as cranberry is unlocked, rather than after a cranberry has fullgrown',
+undefined, undefined, cranberry[4]);
+
 
 ///////////////////////////
 LEVEL2 = 4;
@@ -3247,6 +3322,15 @@ function getTwigs(level, breakdown) {
     res.twigs.mulInPlace(bonus);
     if(breakdown) breakdown.push(['autumn bonus', true, bonus, res.clone()]);
   }
+
+  var count = state.upgrades2[upgrade2_twigs].count;
+  if(count) {
+    var bonus = upgrade2_twigs_bonus.mulr(count).addr(1);
+    res.twigs.mulInPlace(bonus);
+    if(breakdown) breakdown.push(['ethereal upgrades', true, bonus, res.clone()]);
+  }
+
+
   return res;
 }
 

@@ -638,10 +638,11 @@ function State() {
   // derived stat, not to be saved.
   this.untriedchallenges = 0;
 
-  // highest tier crop of this croptype on the basic field, including growing ones
+  // highest/lowest tier crop of this croptype on the basic field, including growing ones
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
   this.highestoftypeplanted = [];
+  this.lowestoftypeplanted = [];
 
   // higest tier unlocked by research for this croptype
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
@@ -780,6 +781,7 @@ function computeDerived(state) {
   state.fullgrowncroptypecount = [];
   state.croptypecount = [];
   state.highestoftypeplanted = [];
+  state.lowestoftypeplanted = [];
   state.highestoftypeunlocked = [];
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
@@ -792,6 +794,7 @@ function computeDerived(state) {
     state.fullgrowncroptypecount[i] = 0;
     state.croptypecount[i] = 0;
     state.highestoftypeplanted[i] = -Infinity;
+    state.lowestoftypeplanted[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
   }
   for(var y = 0; y < state.numh; y++) {
@@ -813,6 +816,7 @@ function computeDerived(state) {
           }
         }
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
+        state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.numemptyfields++;
       } else {
@@ -1119,6 +1123,7 @@ function getUpcomingResinNoTMUL() {
   var result = Num(state.resin);
   if(state.treelevel >= min_transcension_level && !suppress) {
     var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+    if(progress.gtr(1)) progress = Num(1);
     var next = nextTreeLevelResin();
     result.addInPlace(progress.mul(next));
   }
@@ -1134,6 +1139,7 @@ function getUpcomingTwigsNoTMUL() {
   var result = Num(state.twigs);
   if(state.treelevel >= min_transcension_level && !suppress) {
     var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+    if(progress.gtr(1)) progress = Num(1);
     var next = nextTwigs().twigs;
     result.addInPlace(progress.mul(next));
   }

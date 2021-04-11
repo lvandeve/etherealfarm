@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.61 (2021-04-11):';
+  text += '<br/>• Added new ethereal upgrades for ethereal tree levels 1-3: twigs gain, blueberry secret, cranberry secret.';
+  text += '<br/>• Berries, flowers, mushrooms, etc... now already give partial production or boost while growing.';
+  text += '<br/>• The wither challenge got more challenging: withering now also reduces boost of flowers, nettles and beehives.';
+  // fix watercress refresh not working below 1000 seeds, more clear target level shown in challenge info dialog, fix -1s time remaining for tree level up issue, ...
+  text += '<br/>• Small UI fixes and tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.60 (2021-04-10):';
   text += '<br/>• Added the ability to fuse fruits, this allows adding an ability of choice to a fruit if you can collect 3 fruits with that ability. Full explanation is in fruit help.';
   text += '<br/>• Added ability to name blueprints';
@@ -31,7 +39,6 @@ function getChangeLog() {
   text += '<br/>• Fruits can now be drag and dropped between slots';
   text += '<br/>• When no crops fullgrown yet, automaton will now upgrade blueprint to berry if can afford it even if cost limit % option is enabled (except if at 0%), to allow fast startup, as those cost limiting settings are normally used for later in a run only';
   text += '<br/><br/>';
-
 
   text += '0.1.58 (2021-04-04):';
   text += '<br/>• Added blueprint library, available as soon as automaton and templates are available.';

@@ -43,13 +43,11 @@ function prodBreakdown(index) {
       var f = state.field[y][x];
       var p = prefield[y][x];
       if(f.hasCrop()) {
-        var c = f.getCrop();;
-        if(f.isFullGrown()) {
-          var index2 = c.index;
-          if(!o[index2]) o[index2] = Num(0);
-          //o[index2].addInPlace(c.getProd(f).toArray()[index]);
-          o[index2].addInPlace(p.prod0b.toArray()[index]);
-        }
+        var c = f.getCrop();
+        var index2 = c.index;
+        if(!o[index2]) o[index2] = Num(0);
+        //o[index2].addInPlace(c.getProd(f).toArray()[index]);
+        o[index2].addInPlace(p.prod0b.toArray()[index]);
       }
     }
   }
@@ -336,8 +334,6 @@ function updateResourceUI() {
     }
     div.tooltiptext = text;
 
-
-
     if(!div.tooltipadded) {
       div.tooltipadded = true;
       registerTooltip(div, function() {
@@ -357,6 +353,27 @@ function updateResourceUI() {
             if(!special) {
               html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
             }
+
+            var breakdowntext = undefined;
+
+
+            if(index == 2) {
+              // resin
+              var resin_breakdown = [];
+              nextTreeLevelResin(resin_breakdown);
+              breakdowntext = formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
+            }
+            if(index == 3) {
+              // twigs
+              var twigs_breakdown = [];
+              nextTwigs(twigs_breakdown)
+              breakdowntext = formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
+            }
+
+            if(breakdowntext) {
+              html += breakdowntext;
+            }
+
             flex.div.innerHTML = html;
             last = div.tooltiptext;
           }

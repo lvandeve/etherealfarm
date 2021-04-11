@@ -209,23 +209,31 @@ function refreshWatercress(opt_clear) {
   var replanted = false;
   var refreshed = false;
   var remcleared = false;
+  var cresscost = crops[short_0].cost.seeds;
+  var seeds_available = Num(state.res.seeds);
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
+      var can_afford = seeds_available.ge(cresscost);
       var f = state.field[y][x];
       if(f.index == FIELD_REMAINDER) {
         if(opt_clear) {
           actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
           remcleared = true;
-        } else {
+        } else if(can_afford) {
+          seeds_available.subInPlace(cresscost);
           actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
           replanted = true;
         }
-      } else if(f.index == CROPINDEX + short_0 && state.res.seeds.gtr(1000)) {
+      } else if(f.index == CROPINDEX + short_0 && (can_afford || opt_clear)) {
         actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
-        if(!opt_clear) actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
-        refreshed = true;
-      } else if(f.index == CROPINDEX + watercress_template && state.res.seeds.gtr(1000)) {
         if(!opt_clear) {
+          seeds_available.subInPlace(cresscost);
+          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+        }
+        refreshed = true;
+      } else if(f.index == CROPINDEX + watercress_template && can_afford) {
+        if(!opt_clear) {
+          seeds_available.subInPlace(cresscost);
           actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
           refreshed = true;
         }
@@ -235,6 +243,7 @@ function refreshWatercress(opt_clear) {
   if(replanted) showMessage('replanting watercress');
   else if(refreshed) showMessage(opt_clear ? 'deleting watercress' : 'refreshing watercress');
   else if(remcleared) showMessage('cleared watercress remainders');
+  else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing watercress or remainders of watercress, and requires enough resources available to plant the watercress');
   else showMessage('nothing done: only refreshes existing watercress or remainders of watercress');
   update();
 }
