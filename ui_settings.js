@@ -351,9 +351,9 @@ function createAdvancedSettingsDialog() {
   button.id = 'preferences_saveonclose';
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'shift or ctrl click may delete crop: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
+  updatebuttontext = function(button) { button.textEl.innerText = 'shortcuts may delete crop: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Allow deleting crop without any dialog or confirmation by ctrl+clicking it on the field, or replacing by shift+clicking it. Note that you can always shift+click empty fields to repeat last planted type (opposite of deleting), regardless of this setting.');
+  registerTooltip(button, 'Allow deleting crop without any dialog or confirmation by ctrl+clicking it on the field or pressing "d", or replacing by shift+clicking it. Note that you can always shift+click empty fields to repeat last planted type (opposite of deleting), regardless of this setting.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.allowshiftdelete = !state.allowshiftdelete;
     updatebuttontext(button);
@@ -411,6 +411,18 @@ function createAdvancedSettingsDialog() {
     updatebuttontext(button);
   }, button, updatebuttontext));
   button.id = 'preferences_growsound';
+
+  addSettingsSpacer();
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'auto save message log: ' + (state.messagelogenabled[0] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Show auto save message in the message log. This setting does not stop auto-save from working, it just does so silently.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.messagelogenabled[0] = !state.messagelogenabled[0] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_savemessages';
 }
 
 

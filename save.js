@@ -94,6 +94,7 @@ function encState(state, opt_raw_only) {
   processFloat(state.last_negative_time);
   id = 22;
   processNum(state.twigs);
+  processInt(state.num_negative_time);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -247,6 +248,7 @@ function encState(state, opt_raw_only) {
   processUint16(state.uistyle);
   processUint16(state.sidepanel);
   processUint16Array(state.notificationsounds);
+  processUint16Array(state.messagelogenabled);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -300,6 +302,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numautoplant);
   processUint(state.g_numautodelete);
   processUint(state.g_numfused);
+  processRes(state.g_res_hr_best);
+  processRes(state.g_res_hr_at);
 
 
   section = 12; id = 0; // current run stats
@@ -323,6 +327,8 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numautoplant);
   processUint(state.c_numautodelete);
   processUint(state.c_numfused);
+  processRes(state.c_res_hr_best);
+  processRes(state.c_res_hr_at);
 
 
   section = 13; id = 0; // previous run stats
@@ -347,6 +353,8 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numautoplant);
     processUint(state.p_numautodelete);
     processUint(state.p_numfused);
+    processRes(state.p_res_hr_best);
+    processRes(state.p_res_hr_at);
   }
 
 
@@ -699,6 +707,7 @@ function decState(s) {
   }
   id = 22;
   if(save_version >= 4096*1+36) state.twigs = processNum();
+  if(save_version >= 4096*1+62) state.num_negative_time = processInt();
 
 
   section = 1; id = 0; // field
@@ -870,6 +879,7 @@ function decState(s) {
   if(save_version >= 4096*1+22) state.uistyle = processUint16();
   if(save_version >= 4096*1+32) state.sidepanel = processUint16();
   if(save_version >= 4096*1+57) state.notificationsounds = processUint16Array();
+  if(save_version >= 4096*1+62) state.messagelogenabled = processUint16Array();
   if(error) return err(4);
 
 
@@ -942,6 +952,8 @@ function decState(s) {
   if(save_version >= 4096*1+49) state.g_numautoplant = processUint();
   if(save_version >= 4096*1+49) state.g_numautodelete = processUint();
   if(save_version >= 4096*1+60) state.g_numfused = processUint();
+  if(save_version >= 4096*1+62) state.g_res_hr_best = processRes();
+  if(save_version >= 4096*1+62) state.g_res_hr_at = processRes();
   if(error) return err(4);
 
 
@@ -966,6 +978,8 @@ function decState(s) {
   if(save_version >= 4096*1+49) state.c_numautoplant = processUint();
   if(save_version >= 4096*1+49) state.c_numautodelete = processUint();
   if(save_version >= 4096*1+60) state.c_numfused = processUint();
+  if(save_version >= 4096*1+62) state.c_res_hr_best = processRes();
+  if(save_version >= 4096*1+62) state.c_res_hr_at = processRes();
   if(error) return err(4);
 
 
@@ -991,6 +1005,8 @@ function decState(s) {
     if(save_version >= 4096*1+49) state.p_numautoplant = processUint();
     if(save_version >= 4096*1+49) state.p_numautodelete = processUint();
     if(save_version >= 4096*1+60) state.p_numfused = processUint();
+    if(save_version >= 4096*1+62) state.p_res_hr_best = processRes();
+    if(save_version >= 4096*1+62) state.p_res_hr_at = processRes();
     if(error) return err(4);
   }
 

@@ -252,6 +252,8 @@ function State() {
   this.total_negative_time = 0;
   this.max_negative_time = 0;
   this.last_negative_time = 0;
+  // amount of times a negative time issue happened
+  this.num_negative_time = 0;
 
   // current time, this is usually the same as util.getTime(), but if an update() is broken into multiple pieces, then it is
   // the end of the current piece.
@@ -352,6 +354,7 @@ function State() {
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark
   this.sidepanel = 1; // 0=disabled, 1=automatic
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
+  this.messagelogenabled = [1]; // index0: "game saved" message log messages
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog
@@ -475,6 +478,8 @@ function State() {
   this.g_numautoplant = 0;
   this.g_numautodelete = 0;
   this.g_numfused = 0;
+  this.g_res_hr_best = Res();
+  this.g_res_hr_at = Res();
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -500,6 +505,8 @@ function State() {
   this.p_numautoplant = 0;
   this.p_numautodelete = 0;
   this.p_numfused = 0;
+  this.p_res_hr_best = Res();
+  this.p_res_hr_at = Res();
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -523,6 +530,8 @@ function State() {
   this.c_numautoplant = 0;
   this.c_numautodelete = 0;
   this.c_numfused = 0;
+  this.c_res_hr_best = Res();
+  this.c_res_hr_at = Res();
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
@@ -1144,6 +1153,24 @@ function getUpcomingTwigsNoTMUL() {
     result.addInPlace(progress.mul(next));
   }
   return result;
+}
+
+// returns resin per hour so far this run
+function getResinHour() {
+  var tlevel = Math.floor(state.treelevel / min_transcension_level);
+  if(state.c_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
+  var hours = state.c_runtime / 3600;
+  if(!hours) return Num(0);
+  return getUpcomingResinNoTMUL().mulr(tlevel).divr(hours);
+}
+
+// returns twigs per hour so far this run
+function getTwigsHour() {
+  var tlevel = Math.floor(state.treelevel / min_transcension_level);
+  if(state.c_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
+  var hours = state.c_runtime / 3600;
+  if(!hours) return Num(0);
+  return getUpcomingTwigsNoTMUL().mulr(tlevel).divr(hours);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

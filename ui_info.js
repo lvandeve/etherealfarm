@@ -241,7 +241,8 @@ function updateResourceUI() {
         var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
         var tlevel_mul = Num(tlevel);
         var upcoming2 = upcoming.mul(tlevel_mul);
-        text = name + '<br>' + res.toString() + '<br>(→ +' + upcoming2.toString() + ')';
+        var hr = (index == 2) ? getResinHour() : getTwigsHour();
+        text = name + '<br>' + res.toString() + '<br>(+' + upcoming2.toString() + ', ' + hr.toString() + '/hr)';
       } else {
         text = name + '<br>' + res.toString();
         if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
@@ -278,7 +279,12 @@ function updateResourceUI() {
           text += '→ ' + upcoming.toString() + ' x ' + tlevel_mul.toString() + ' for Transcension ' + roman + '<br>';
         }
         if(upcoming2.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).toPercentString();
+
         text += '<br><br>';
+        text += 'Resin/hour: ' + getResinHour().toString() + '<br>';
+        text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + '<br>';
+
+        text += '<br>';
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
         text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
       }
@@ -292,6 +298,11 @@ function updateResourceUI() {
           text += '→ ' + upcoming.toString() + ' x ' + tlevel_mul.toString() + ' for Transcension ' + roman + '<br>';
         }
         text += '<br>';
+
+        text += 'Twigs/hour: ' + getTwigsHour().toString() + '<br>';
+        text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + '<br>';
+        text += '<br>';
+
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
         text += 'Twigs added next tree level: ' + nextTwigs().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
       }

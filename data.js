@@ -376,7 +376,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     // wither challenge
     if(state.challenge == challenge_wither) {
-      var t = Num(f.growth);
+      var t = Num(witherCurve(f.growth));
       result.mulInPlace(t);
       if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
     } else {
@@ -637,7 +637,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     // wither challenge
     if(state.challenge == challenge_wither) {
-      var t = Num(f.growth);
+      var t = Num(witherCurve(f.growth));
       result.mulInPlace(t);
       if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
     } else {
@@ -778,7 +778,7 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
     } else {
       // wither challenge
       if(state.challenge == challenge_wither) {
-        var t = Num(f.growth);
+        var t = Num(witherCurve(f.growth));
         result.mulInPlace(t);
         if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
       } else {
@@ -2333,6 +2333,14 @@ function witherDuration() {
   //return crops[short_0].getPlantTime();
 }
 
+// t must be in range 0-1 (1 representing full grown)
+function witherCurve(t) {
+  if(t < 0) return 0;
+  if(t > 1) return 1;
+  // make it not linear, but such that the wither gives a bit higher production in the beginning than linear dropoff would give
+  // sqrt feels a bit to easy, so using a slightly higher power than 0.5
+  return Math.pow(t, 0.66);
+}
 
 var challenge_blackberry = registerChallenge('blackberry challenge', [18], Num(0.1),
 `

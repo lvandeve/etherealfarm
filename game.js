@@ -462,6 +462,8 @@ function softReset(opt_challenge) {
     state.p_numautoplant = state.c_numautoplant;
     state.p_numautodelete = state.c_numautodelete;
     state.p_numfused = state.c_numfused;
+    state.p_res_hr_best = state.c_res_hr_best;
+    state.p_res_hr_at = state.c_res_hr_at;
 
     state.p_treelevel = state.treelevel;
   }
@@ -503,6 +505,8 @@ function softReset(opt_challenge) {
   state.c_numautoplant = 0;
   state.c_numautodelete = 0;
   state.c_numfused = 0;
+  state.c_res_hr_best = Res();
+  state.c_res_hr_at = Res();
 
   // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
   if(!state.challenge) {
@@ -586,6 +590,9 @@ function softReset(opt_challenge) {
   } else if(state.crops[short_0].unlocked) {
     state.lastPlanted = short_0;
   }
+
+  // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
+  if(state.negative_time > 3600) state.negative_time = 3600;
 
   setTab(0);
 
@@ -960,7 +967,8 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
               p.treeneighbor = true;
-              if(f.isFullGrown()) state.mistletoes++;
+              // even those that are not fullgrown count, reason: otherwise too annoying to prevent tree from leveling by not yet planting mushrooms, while mistletoes are growing, and you want their twigs when tree levels up
+              state.mistletoes++;
               break;
             }
           }
@@ -1494,6 +1502,7 @@ function computeNextAutoPlant() {
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
+
     var crop = getCheapestNextOfCropType(type);
     if(!crop) continue;
 
@@ -1740,7 +1749,7 @@ var update = function(opt_fromTick) {
   var numloops = 0;
   for(;;) { ////////////////////////////////////////////////////////////////////
     if(done) break;
-    if(numloops++ > 365) break;
+    if(numloops++ > 1000) break;
 
     /*
     During an update, there's a time interval in which we operate.
@@ -1788,6 +1797,7 @@ var update = function(opt_fromTick) {
       state.total_negative_time += future;
       state.max_negative_time = Math.max(state.max_negative_time, future);
       state.last_negative_time = future;
+      state.num_negative_time++;
       d = 0;
     } else {
       d = nexttime - state.prevtime;
@@ -2857,6 +2867,25 @@ var update = function(opt_fromTick) {
     state.g_max_prod = Res.max(state.g_max_prod, gain);
     state.c_max_prod = Res.max(state.c_max_prod, gain);
 
+    var resinhr = getResinHour();
+    var twigshr = getTwigsHour();
+    if(resinhr.gt(state.c_res_hr_best.resin)) {
+      state.c_res_hr_best.resin = resinhr;
+      state.c_res_hr_at.resin = Num(state.treelevel);
+      if(resinhr.gt(state.g_res_hr_best.resin)) {
+        state.g_res_hr_best.resin = resinhr;
+        state.g_res_hr_at.resin = Num(state.treelevel);
+      }
+    }
+    if(twigshr.gt(state.c_res_hr_best.twigs)) {
+      state.c_res_hr_best.twigs = twigshr;
+      state.c_res_hr_at.twigs = Num(state.treelevel);
+      if(twigshr.gt(state.g_res_hr_best.twigs)) {
+        state.g_res_hr_best.twigs = twigshr;
+        state.g_res_hr_at.twigs = Num(state.treelevel);
+      }
+    }
+
     computeDerived(state);
   } // end of loop for long ticks //////////////////////////////////////////////
 
@@ -2881,7 +2910,7 @@ var update = function(opt_fromTick) {
           showMessage(autoSavedStateMessageWithReminder, C_META, 0, 0);
           state.lastBackupWarningTime = util.getTime();
         } else {
-          showMessage(autoSavedStateMessage, C_UNIMPORTANT, 0, 0);
+          if(state.messagelogenabled[0]) showMessage(autoSavedStateMessage, C_UNIMPORTANT, 0, 0);
         }
       });
       lastSaveTime = time;
@@ -3182,6 +3211,7 @@ document.addEventListener('keydown', function(e) {
     if(e.key == 'Shift') cropChipShiftDown = true;
     if(e.key == 'Control' || e.key == 'Meta') cropChipCtrlDown = true;
     showCropChips();
+    removeAllTooltips();
   }
 });
 

@@ -114,22 +114,22 @@ function makeField2Dialog(x, y) {
     var last0 = undefined;
 
     styleButton(button0);
-    button0.textEl.innerText = 'delete';
-    button0.textEl.style.color = '#800';
-    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1)) button0.textEl.style.color = '#888';
-    if(!state.delete2tokens) button0.textEl.style.color = '#888';
-    registerTooltip(button0, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
+    button0.textEl.innerText = 'Replace crop';
+    registerTooltip(button0, 'Replace the crop with a new one, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
     addButtonAction(button0, function() {
-      actions.push({type:ACTION_DELETE2, x:x, y:y});
-      dialog.cancelFun();
-      update(); // do update immediately rather than wait for tick, for faster feeling response time
+      makePlantDialog2(x, y, true, c.getRecoup());
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Replace crop';
-    registerTooltip(button1, 'Replace the crop with a new one, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
+    button1.textEl.innerText = 'Delete';
+    button1.textEl.style.color = '#c00';
+    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1)) button1.textEl.style.color = '#888';
+    if(!state.delete2tokens) button1.textEl.style.color = '#888';
+    registerTooltip(button1, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
     addButtonAction(button1, function() {
-      makePlantDialog2(x, y, true, c.getRecoup());
+      actions.push({type:ACTION_DELETE2, x:x, y:y});
+      dialog.cancelFun();
+      update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
     updatedialogfun = bind(function(f, c, flex) {

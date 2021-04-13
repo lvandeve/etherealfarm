@@ -184,14 +184,14 @@ function updateAbilitiesUI() {
   if(state.g_res.seeds.gtr(1000)) {
     if(!watercressbutton) {
       watercressbutton = new Flex(topFlex, [1,-2.1], [0,0.1], [1,-1.3], [0,0.9]);
-      watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w. With shift, deletes all watercress.';
+      watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w. With ctrl, deletes all watercress. With shift, plants watercress everywhere it can';
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(watercress[4], canvas);
 
       addButtonAction(watercressbutton.div, function(e) {
-        refreshWatercress(e.shiftKey);
+        refreshWatercress(util.eventHasCtrlKey(e), e.shiftKey);
       }, 'refresh watercress. with shift: deletes all watercress');
       watercressbutton.div.id = 'watercress_button';
     }
@@ -205,17 +205,28 @@ function updateAbilitiesUI() {
 }
 
 
-function refreshWatercress(opt_clear) {
+function refreshWatercress(opt_clear, opt_all) {
+  if(opt_clear && opt_all) return;
   var replanted = false;
   var refreshed = false;
   var remcleared = false;
+  var fullyplanted = false;
   var cresscost = crops[short_0].cost.seeds;
   var seeds_available = Num(state.res.seeds);
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var can_afford = seeds_available.ge(cresscost);
       var f = state.field[y][x];
-      if(f.index == FIELD_REMAINDER) {
+      if(opt_all) {
+        if(can_afford) {
+          if(f.index == CROPINDEX + short_0) {
+            actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+          }
+          seeds_available.subInPlace(cresscost);
+          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          fullyplanted = true;
+        }
+      } else if(f.index == FIELD_REMAINDER) {
         if(opt_clear) {
           actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
           remcleared = true;
@@ -240,7 +251,8 @@ function refreshWatercress(opt_clear) {
       }
     }
   }
-  if(replanted) showMessage('replanting watercress');
+  if(fullyplanted) showMessage('planting watercress');
+  else if(replanted) showMessage('replanting watercress');
   else if(refreshed) showMessage(opt_clear ? 'deleting watercress' : 'refreshing watercress');
   else if(remcleared) showMessage('cleared watercress remainders');
   else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing watercress or remainders of watercress, and requires enough resources available to plant the watercress');
@@ -278,11 +290,87 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(e.key == 'w' && !shift && !ctrl) {
+    // NOTE: ctrl for this shortcut doesn't work, since ctrl+w closes browser window. For consistency, shift is also not supported.
     refreshWatercress();
   }
 
   if(e.key == 'b' && !shift && !ctrl) {
     createBlueprintsDialog();
+  }
+
+  if(e.key == 'u' && state.currentTab == tabindex_field) {
+    // upgrade crop
+    makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
+  }
+
+  if(e.key == 'p' && state.currentTab == tabindex_field) {
+    if(state.field[shiftCropFlexY]) {
+      var f = state.field[shiftCropFlexY][shiftCropFlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          // pick
+          state.lastPlanted = f.getCrop().index;
+        } else {
+          // plant
+          if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
+            actions.push({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[state.lastPlanted], shiftPlanted:true});
+            update();
+          }
+        }
+      }
+    }
+  }
+
+  if(e.key == 'p' && state.currentTab == tabindex_field2) {
+    if(state.field2[shiftCrop2FlexY]) {
+      var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          // pick
+          state.lastPlanted2 = f.getCrop().index;
+        } else {
+          // plant
+          if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
+            actions.push({type:ACTION_PLANT2, x:shiftCrop2FlexX, y:shiftCrop2FlexY, crop:crops2[state.lastPlanted2], shiftPlanted:true});
+            update();
+          }
+        }
+      }
+    }
+  }
+
+  if(e.key == 'd' && state.currentTab == tabindex_field) {
+    if(state.allowshiftdelete) {
+      if(state.field[shiftCropFlexY]) {
+        var f = state.field[shiftCropFlexY][shiftCropFlexX];
+        if(f) {
+          if(f.hasCrop()) {
+            // delete crop
+            actions.push({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
+            update();
+          }
+        }
+      }
+    } else {
+      showMessage('"shortcuts may delete crop" must be enabled in the settings before deleting crops with "d" is allowed', C_INVALID, 0, 0);
+    }
+  }
+
+  if(e.key == 'd' && state.currentTab == tabindex_field2) {
+    if(state.allowshiftdelete) {
+      if(state.field2[shiftCrop2FlexY]) {
+        var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
+        if(f) {
+          if(f.hasCrop()) {
+            // delete crop
+            actions.push({type:ACTION_DELETE2, x:shiftCrop2FlexX, y:shiftCrop2FlexY});
+            update();
+          }
+        }
+      }
+    } else {
+      showMessage('"shortcuts may delete crop" must be enabled in the settings before deleting crops with "d" is allowed', C_INVALID, 0, 0);
+    }
   }
 
   // these keys for prev and next fruit are chosen such that hopefully at least one set of them is reachable on any keyboard layout, even if in combination with shift if necessary

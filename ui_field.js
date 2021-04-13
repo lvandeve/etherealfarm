@@ -495,6 +495,40 @@ function makeTreeDialog() {
   }
 }
 
+function makeUpgradeCropAction(x, y) {
+  if(!state.field[y]) return;
+  var f = state.field[y][x];
+  if(!f) return;
+  var c = f.getCrop();
+  if(!c) return;
+
+  if(c.type == CROPTYPE_CHALLENGE) return;
+  var tier = state.highestoftypeunlocked[c.type];
+  var c3 = croptype_tiers[c.type][tier];
+  if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
+  if(c3.getCost().gt(state.res) && tier > 0) {
+    tier--;
+    var c4 = croptype_tiers[c.type][tier];
+    if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+  }
+  if(c3.getCost().gt(state.res) && tier > 0) {
+    tier--;
+    var c4 = croptype_tiers[c.type][tier];
+    if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+  }
+  if(c3.getCost().gt(state.res)) {
+    tier = -1; // template
+    var c4 = croptype_tiers[c.type][tier];
+    if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+  }
+  if(c.index != c3.index) {
+    actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
+  } else {
+    showMessage('Crop not upgraded, no higher tier that you can afford available');
+  }
+  update(); // do update immediately rather than wait for tick, for faster feeling response time
+}
+
 function makeFieldDialog(x, y) {
   var f = state.field[y][x];
   var fd = fieldDivs[y][x];
@@ -528,32 +562,8 @@ function makeFieldDialog(x, y) {
     button0.textEl.innerText = 'Upgrade crop';
     registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      if(c.type == CROPTYPE_CHALLENGE) return;
-      var tier = state.highestoftypeunlocked[c.type];
-      var c3 = croptype_tiers[c.type][tier];
-      if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
-      if(c3.getCost().gt(state.res) && tier > 0) {
-        tier--;
-        var c4 = croptype_tiers[c.type][tier];
-        if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-      }
-      if(c3.getCost().gt(state.res) && tier > 0) {
-        tier--;
-        var c4 = croptype_tiers[c.type][tier];
-        if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-      }
-      if(c3.getCost().gt(state.res)) {
-        tier = -1; // template
-        var c4 = croptype_tiers[c.type][tier];
-        if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-      }
-      if(c.index != c3.index) {
-        actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
-      } else {
-        showMessage('Crop not upgraded, no higher tier that you can afford available');
-      }
+      makeUpgradeCropAction();
       dialog.cancelFun();
-      update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
     styleButton(button1);
@@ -789,7 +799,7 @@ function initFieldUI() {
                 }
                 update();
               } else {
-                showMessage('"shift or ctrl may delete crop" must be enabled in the settings before replacing crops with shift is allowed', C_INVALID, 0, 0);
+                showMessage('"shortcuts may delete crop" must be enabled in the settings before replacing crops with shift is allowed', C_INVALID, 0, 0);
               }
             }
           } else if(ctrl && !shift) {
@@ -800,7 +810,7 @@ function initFieldUI() {
               actions.push({type:ACTION_DELETE, x:x, y:y});
               update();
             } else {
-              showMessage('"shift or ctrl may delete crop" must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
+              showMessage('"shortcuts may delete crop" must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
             }
           } else if(!fern) {
             makeFieldDialog(x, y);

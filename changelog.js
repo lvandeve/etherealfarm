@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.62 (2021-04-13):';
+  text += '<br/>• Mistletoe now already works while it\'s growing. This prevents issues where tree levels up before mistletoes ready when automaton plants mushrooms';
+  text += '<br/>• The wither challenge was made of comparable difficulty as before 0.1.61 again: the production curve of withering crops tweaked to lose a bit less production initially';
+  text += '<br/>• Resin and twigs per hour, and best per hour, stats in the top info panel.';
+  text += '<br/>• Pressing ctrl or shift now hides tooltips.';
+  text += '<br/>• New shortcuts: "p" picks (selects) crop under mouse cursor, or plants it on empty tile, "u" upgrades crop or blueprint template under mouse cursor, "d" deletes crop under mouse cursor. None of these requires clicking mouse button itself, and key can be held down to keep repeating the action while mouse is moved.';
+  text += '<br/>• Added setting to disable "auto-saved" message in the log.';
+  text += '<br/>• Now, shift+click on top-bar watercress button plants entire field full of watercress, and ctrl+click on it deletes all watercress.';
+  text += '<br/><br/>';
+
   text += '0.1.61 (2021-04-11):';
   text += '<br/>• Added new ethereal upgrades for ethereal tree levels 1-3: twigs gain, blueberry secret, cranberry secret.';
   text += '<br/>• Berries, flowers, mushrooms, etc... now already give partial production or boost while growing.';

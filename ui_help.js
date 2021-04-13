@@ -366,6 +366,12 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"t"</b>: show transcend dialog (if available)';
   text += '<br/>';
+  text += ' • <b>"p"</b>: pick or plant crop under mouse cursor (no mouse click required)';
+  text += '<br/>';
+  text += ' • <b>"d"</b>: delete crop under mouse cursor (no mouse click required, only if this is enabled in preferences)';
+  text += '<br/>';
+  text += ' • <b>"u"</b>: upgrade crop or template under mouse cursor (no mouse click required)';
+  text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted or unlocked crop type.';
   text += '<br/>';
   text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key).';
