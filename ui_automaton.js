@@ -364,7 +364,7 @@ function updateAutomatonUI() {
           var f;
           f = state.field[y][x];
           if(f.hasCrop()) {
-            actions.push({type:ACTION_DELETE, x:x, y:y});
+            actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
           }
         }
       }

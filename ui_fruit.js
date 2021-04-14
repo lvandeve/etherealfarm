@@ -262,6 +262,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         registerTooltip(flex.div, 'Swap the fuse order of the two fruits');
       } else {
         flex.div.style.backgroundColor = '#ccc';
+        flex.div.style.border = '1px solid black';
         registerTooltip(flex.div, 'Empty fuse fruit slot, select a fruit above to fuse');
       }
     }
@@ -270,11 +271,12 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
     addTitle('fused fruit result:');
 
+    var message = [undefined];
+    var fuse = swapped ? fuseFruit(selected, f, message) : fuseFruit(f, selected, message);
+
     x = 0;
     var flex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
     x += s;
-
-    var fuse = swapped ? fuseFruit(selected, f) : fuseFruit(f, selected);
     if(fuse) {
       makeFruitChip(flex, fuse, 0, true, 'fused fruit result');
       styleButton0(flex.div);
@@ -283,6 +285,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       }, fuse));
     } else {
       flex.div.style.backgroundColor = '#ccc';
+      flex.div.style.border = '1px solid black';
       registerTooltip(flex.div, 'Fused fruit appears here when successful');
     }
     y += s;
@@ -298,6 +301,12 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         }
         y += s * 0.5;
       }
+    } else if(message[0]) {
+      y += s * 0.25;
+      x = 0;
+      var flex = new Flex(scrollFlex, [0.01, 0], [0, y], [0.99, 0], [0, y + s]);
+      x += s;
+      flex.div.innerText = message[0];
     }
   };
 
@@ -541,6 +550,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     y += h * 1.1;
     styleButton(fuseButton);
     fuseButton.textEl.innerText = 'fuse';
+    if(fruitReachedFuseMax(f)) fuseButton.textEl.style.color = '#666';
     addButtonAction(fuseButton, function() {
       createFruitFuseDialog(f, recreate);
     });

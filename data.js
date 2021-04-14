@@ -3093,11 +3093,27 @@ function getNumFruitAbilities(tier) {
   return num_abilities;
 }
 
+// whether a fruit reached max charge of all skills, and is seasonal, and cannot be used anymore for fusing
+// the reason is: otherwise you could keep using the fruit to fuse forever, transfering its abilities to seasonal fruit of choice permanently
+function fruitReachedFuseMax(f) {
+  if(f.type == 0) return false; // only seasonal fruits can have reached max
+  // last charge is the seasonal ability, that one is not checked as it never increases
+  for(var i = 0; i + 1 < f.charge.length; i++) {
+    if(f.charge[i] < 2) return false;
+  }
+  return true;
+}
 
-function fuseFruit(a, b) {
+// opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
+function fuseFruit(a, b, opt_message) {
   if(!a || !b) return null;
   if(a == b) return null;
   if(a.tier != b.tier) return null;
+
+  if(fruitReachedFuseMax(a) || fruitReachedFuseMax(b)) {
+    if(opt_message) opt_message[0] = 'One of the fruits reached the final form, seasonal fruit with all abilities at max, and cannot be fused any further.';
+    return null;
+  }
 
   var n = getNumFruitAbilities(a.tier);
   var na = a.abilities.length;
@@ -3175,24 +3191,17 @@ function fuseFruit(a, b) {
     f.charge[i] = arr[i][1];
   }
 
-  // if all resulting abilities are fusible, then they have only 1 use: if this
-  // is an apple, you can transfer all its abilities to a seasonal fruit of
-  // choice. However, we want to avoid having the ability to keep transfering
-  // this around to seasonal fruits indefinitely. For that reason, if all
-  // abilities are fusible, and it's already in a seasonal fruit, set them
-  // al to regular again.
-  if(f.type > 0) {
-    var fusible = 0;
-    for(var i = 0; i < n; i++) {
-      if(f.charge[i] == 2) fusible++;
+  var same = true;
+  for(var i = 0; i < n; i++) {
+    if(f.abilities[i] != a.abilities[i] || f.charge[i] != a.charge[i]) {
+      same = false;
+      break;
     }
-    if(fusible == n) {
-      for(var i = 0; i < n; i++) {
-        f.charge[i] = 0;
-        // excpet if it already had some charge in the first fruit, then it can be kept
-        if(ma[f.abilities[i]]) f.charge[i] = ma[f.abilities[i]];
-      }
-    }
+  }
+
+  if(same) {
+    if(opt_message) opt_message[0] = 'No fuse done: this fuse results in the same fruit as the original. Try fusing with a different fruit, or swapping the fuse order.';
+    return null;
   }
 
   return f;

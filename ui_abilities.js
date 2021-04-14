@@ -300,7 +300,22 @@ document.addEventListener('keydown', function(e) {
 
   if(e.key == 'u' && state.currentTab == tabindex_field) {
     // upgrade crop
-    makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
+    var did_something = false;
+    did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY, true);
+    if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+      actions.push({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
+      did_something = true;
+    }
+    if(state.field[shiftCropFlexY]) {
+      var f = state.field[shiftCropFlexY][shiftCropFlexX];
+      if(f && f.index == FIELD_REMAINDER) {
+        actions.push({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[short_0], ctrlPlanted:true});
+      }
+      did_something = true;
+    }
+    if(did_something) {
+      update();
+    }
   }
 
   if(e.key == 'p' && state.currentTab == tabindex_field) {

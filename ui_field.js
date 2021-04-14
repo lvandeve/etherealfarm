@@ -495,7 +495,7 @@ function makeTreeDialog() {
   }
 }
 
-function makeUpgradeCropAction(x, y) {
+function makeUpgradeCropAction(x, y, opt_silent) {
   if(!state.field[y]) return;
   var f = state.field[y][x];
   if(!f) return;
@@ -504,29 +504,32 @@ function makeUpgradeCropAction(x, y) {
 
   if(c.type == CROPTYPE_CHALLENGE) return;
   var tier = state.highestoftypeunlocked[c.type];
-  var c3 = croptype_tiers[c.type][tier];
-  if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
-  if(c3.getCost().gt(state.res) && tier > 0) {
+
+  var c2 = null;
+
+  for(;;) {
+    if(tier <= c.tier) break; // not an upgrade
+    if(tier < 0) break;
+
+    var c3 = croptype_tiers[c.type][tier];
+    if(!c3 || !state.crops[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
+
+    if(c3.getCost().le(state.res)) {
+      // found a successful upgrade
+      c2 = c3;
+      break;
+    }
+
     tier--;
-    var c4 = croptype_tiers[c.type][tier];
-    if(c4 && state.crops[c4.index].unlocked) c3 = c4;
   }
-  if(c3.getCost().gt(state.res) && tier > 0) {
-    tier--;
-    var c4 = croptype_tiers[c.type][tier];
-    if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-  }
-  if(c3.getCost().gt(state.res)) {
-    tier = -1; // template
-    var c4 = croptype_tiers[c.type][tier];
-    if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-  }
-  if(c.index != c3.index) {
-    actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
+
+  if(c2) {
+    actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
+    return true;
   } else {
-    showMessage('Crop not upgraded, no higher tier that you can afford available');
+    if(!opt_silent) showMessage('Crop not upgraded, no higher tier that you can afford available');
   }
-  update(); // do update immediately rather than wait for tick, for faster feeling response time
+  return false;
 }
 
 function makeFieldDialog(x, y) {
@@ -562,7 +565,9 @@ function makeFieldDialog(x, y) {
     button0.textEl.innerText = 'Upgrade crop';
     registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      makeUpgradeCropAction();
+      if(makeUpgradeCropAction(x, y)) {
+        update();
+      }
       dialog.cancelFun();
     });
 

@@ -39,8 +39,9 @@ function updateRightPane() {
   topRightFlex.clear();
 
   var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (state.automaton_unlocked[1] ? 8 : 0) | (state.automaton_unlocked[2] ? 16 : 0);
+  var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
 
-  if(upgradeUIUpdated || automatonState != rightPanelPrevAutomationState) {
+  if(upgradeUIUpdated || automatonStateChanged) {
     upgradeUIUpdated = false;
 
     if(bottomrightSidePanelFlexCacheParent != bottomRightFlex) {
@@ -67,60 +68,62 @@ function updateRightPane() {
       bottomrightSidePanelFlexCache[i] = chip;
 
       if(i == 0) {
-        chip.clear();
-        var text = 'Upgrades';
-        if(automatonEnabled() && state.automaton_unlocked[1] && state.automaton_unlocked[2]) {
-          var chip0 = new Flex(chip, 0, 0, 1, 0.5);
-          var chip1 = new Flex(chip, 0, 0.5, 1, 1);
-          addButtonAction(chip0.div, function() {
-            if(!automatonEnabled()) return;
-            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(1 - state.automaton_autoplant), fun:function() {
-              updateAutomatonUI();
-              updateRightPane();
-            }});
-            update();
-          });
-          addButtonAction(chip1.div, function() {
-            if(!automatonEnabled()) return;
-            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
-              updateAutomatonUI();
-              updateRightPane();
-            }});
-            update();
-          });
-          var text0 = 'Plant: ' + (autoPlantEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
-          var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
-          styleButton0(chip0.div);
-          styleButton0(chip1.div);
-          centerText2(chip0.div);
-          centerText2(chip1.div);
-          chip0.div.title = 'quick toggle auto-plant';
-          chip1.div.title = 'quick toggle auto-upgrades';
-          chip0.div.textEl.innerHTML = text0;
-          chip1.div.textEl.innerHTML = text1;
-          setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
-        } else if(automatonEnabled() && state.automaton_unlocked[1]) {
-          var chip0 = new Flex(chip, 0, 0, 1, 1);
-          addButtonAction(chip0.div, function() {
-            if(!automatonEnabled()) return;
-            actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
-              updateAutomatonUI();
-              updateRightPane();
-            }});
-            update();
-          });
-          text = 'Upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
-          styleButton0(chip0.div);
-          centerText2(chip0.div);
-          chip0.div.title = 'quick toggle auto-upgrades';
-          chip0.div.textEl.innerHTML = text;
-          setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
-        } else if(unlocked.length) {
-          centerText2(chip.div);
-          chip.div.textEl.innerHTML = text;
-          setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
-        } else {
-          // do nothing
+        if(automatonStateChanged) {
+          chip.clear();
+          var text = 'Upgrades';
+          if(automatonEnabled() && state.automaton_unlocked[1] && state.automaton_unlocked[2]) {
+            var chip0 = new Flex(chip, 0, 0, 1, 0.5);
+            var chip1 = new Flex(chip, 0, 0.5, 1, 1);
+            addButtonAction(chip0.div, function() {
+              if(!automatonEnabled()) return;
+              actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(1 - state.automaton_autoplant), fun:function() {
+                updateAutomatonUI();
+                updateRightPane();
+              }});
+              update();
+            });
+            addButtonAction(chip1.div, function() {
+              if(!automatonEnabled()) return;
+              actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
+                updateAutomatonUI();
+                updateRightPane();
+              }});
+              update();
+            });
+            var text0 = 'Plant: ' + (autoPlantEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
+            var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
+            styleButton0(chip0.div);
+            styleButton0(chip1.div);
+            centerText2(chip0.div);
+            centerText2(chip1.div);
+            chip0.div.title = 'quick toggle auto-plant';
+            chip1.div.title = 'quick toggle auto-upgrades';
+            chip0.div.textEl.innerHTML = text0;
+            chip1.div.textEl.innerHTML = text1;
+            setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
+          } else if(automatonEnabled() && state.automaton_unlocked[1]) {
+            var chip0 = new Flex(chip, 0, 0, 1, 1);
+            addButtonAction(chip0.div, function() {
+              if(!automatonEnabled()) return;
+              actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
+                updateAutomatonUI();
+                updateRightPane();
+              }});
+              update();
+            });
+            text = 'Upgrades ' + (autoUpgradesEnabled() ? '<font color="#0b0">(auto)</font>' : '<font color="#b00">(manual)</font>');
+            styleButton0(chip0.div);
+            centerText2(chip0.div);
+            chip0.div.title = 'quick toggle auto-upgrades';
+            chip0.div.textEl.innerHTML = text;
+            setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
+          } else if(unlocked.length) {
+            centerText2(chip.div);
+            chip.div.textEl.innerHTML = text;
+            setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
+          } else {
+            // do nothing
+          }
         }
       } else if(i + 1 == maxnum && unlocked.length + 1 >= maxnum) {
         chip.clearFully();

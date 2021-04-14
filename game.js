@@ -1667,7 +1667,7 @@ function nextEventTime() {
           return time;
         } else if(f.growth < 1) {
           //addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
-          addtime(3); // sicne v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
+          addtime(5); // sicne v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
         }
       }
     }
