@@ -1960,11 +1960,12 @@ registerMedal('20 ethereal crops', 'Have 20 ethereal crops', undefined, function
 medal_register_id = 500;
 var fruit_achievement_values =   [   5,   10,   20,   50,  100,  200,  500, 1000, 2000, 5000, 10000];
 var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     1];
+var fruit_achievement_images =   [   0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10];
 for(var i = 0; i < fruit_achievement_values.length; i++) {
   var num = fruit_achievement_values[i];
   var bonus = Num(fruit_achievement_bonuses[i]);
   var name = 'fruits ' + num;
-  var id = registerMedal(name, 'Found ' + num + ' fruits', images_apple[1],
+  var id = registerMedal(name, 'Found ' + num + ' fruits', images_apple[fruit_achievement_images[i]],
       bind(function(num) { return state.g_numfruits >= num; }, num),
       bonus);
   if(i > 0) medals[id].hint = prevmedal;
@@ -3198,6 +3199,7 @@ function fuseFruit(a, b, opt_message) {
       break;
     }
   }
+  // this check is not done for b: for example, if b has 3 ** abilities and is not seasonal, and a is seasonal, then this is a legit change.
 
   if(same) {
     if(opt_message) opt_message[0] = 'No fuse done: this fuse results in the same fruit as the original. Try fusing with a different fruit, or swapping the fuse order.';

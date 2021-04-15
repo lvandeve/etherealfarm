@@ -301,7 +301,7 @@ document.addEventListener('keydown', function(e) {
   if(e.key == 'u' && state.currentTab == tabindex_field) {
     // upgrade crop
     var did_something = false;
-    did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY, true);
+    did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
     if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
       actions.push({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
       did_something = true;

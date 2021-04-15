@@ -125,6 +125,8 @@ function createFruitHelp() {
   text += ' • The order of abilities of first and second fruit matters, and you can freely reorder abilities in the regular fruit dialog (where you level up abilities), so you can control which abilities of the first fruit stay and which get pushed out.';
   text += '<br/>';
   text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participiate in fusing. The first fruit determines the type of the resulting fruit, if the second fruit has a seasonal ability, it will be lost.';
+  text += '<br/>';
+  text += ' • If a fruit has all abilities at [**] and is seasonal, it can no longer be used for fusing. That is, you cannot transfer a full set of chosen abilities to other seasonal fruits indefinitely.';
   text += '<br/><br/>';
   text += 'Summary of the rules: get 3 fruits with ability you want, fuse them together, and fuse the result into a fruit to get that ability in there and push out an unwanted ability. Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:';
   text += '<br/>';
