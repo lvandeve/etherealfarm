@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.63 (2021-04-17):';
+  text += '<br/>• Templates now also supported in ethereal field, but not blueprints';
+  text += '<br/>• Upgrade-crop actions and shortcuts now also work in the ethereal field';
+  text += '<br/>• Fixed autumn increasing mushroom seed consumption while its description says it shouldn\'t';
+  text += '<br/>• You can now ctrl+shift+click a blueprint to transcend and plant that blueprint in one go';
+  text += '<br/>• Other small tweaks and fixes';
+  text += '<br/><br/>';
+
   text += '0.1.62 (2021-04-13):';
   text += '<br/>• Mistletoe now already works while it\'s growing. This prevents issues where tree levels up before mistletoes ready when automaton plants mushrooms';
   text += '<br/>• The wither challenge was made of comparable difficulty as before 0.1.61 again: the production curve of withering crops tweaked to lose a bit less production initially';

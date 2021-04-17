@@ -85,6 +85,7 @@ function plantBluePrint(b) {
     h = state.numh;
     single = true; // special case: 1x1 blueprint fills entire field
   }
+  var did_something = false;
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f, t, fx, fy;
@@ -107,10 +108,12 @@ function plantBluePrint(b) {
       var c = crops[BluePrint.toCrop(t)];
       if(c) {
         if(!state.crops[c.index].unlocked) continue;
-        actions.push({type:ACTION_PLANT, x:fx, y:fy, crop:c, shiftPlanted:false});
+        actions.push({type:ACTION_PLANT, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true});
+        did_something = true;
       }
     }
   }
+  if(did_something) showMessage('Planted blueprint');
 }
 
 // set a blueprint to empty if it has only 0-cells
@@ -160,7 +163,7 @@ function importBluePrintDialog(fun) {
     dialog.cancelFun();
   }, 'import', 'cancel');
   var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
-  textFlex.div.innerHTML = 'Import blueprint. Case insensitive. B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, .=empty/tree.';
+  textFlex.div.innerHTML = 'Import blueprint. Case insensitive. B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, .=empty/tree.';
   var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.content.div);
   area.select();
   area.focus();
@@ -291,7 +294,7 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • From field: the current field layout is copied to the blueprint, e.g. wherever there\'s any berry on the field, produces a berry template in the blueprint.';
   text += '<br/>';
-  text += ' • From text (TXT): Write a field layout on multiple lines of text using the following letters: B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, .=empty/tree. Export TXT does the opposite.';
+  text += ' • From text (TXT): Write a field layout on multiple lines of text using the following letters: B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, .=empty/tree. Export TXT does the opposite.';
   text += '<br/><br/>';
   text += 'Keyboard shotcuts for blueprints:';
   text += '<br/>';
@@ -299,9 +302,13 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • "b": open the blueprint dialog';
   text += '<br/>';
+  text += ' • "u": when mouse hovering over blueprint template: upgrade template to highest crop tier you can afford of that type';
+  text += '<br/>';
   text += ' • shift + click blueprint in main blueprint dialog: plant it immediately rather than opening its editing dialog (if not empty)';
   text += '<br/>';
-  text += ' • ctrl + shift + click blueprint template in the field: grow highest crop type you can afford of that type here (just shift replaces it, and ctrl deletes it, as usual)';
+  text += ' • shift + ctrl + click blueprint in main blueprint dialog: transcend, and then plant it immediately (only if "shortcuts may delete crop" is enabled in the preferences)';
+  text += '<br/>';
+  text += ' • ctrl + shift + click blueprint template in the field: grow highest crop tier you can afford of that type here (just shift replaces it, and ctrl deletes it, as usual)';
   text += '<br/><br/>';
   text += 'Once automaton is advanced enough, it can also use blueprints.';
 
@@ -327,10 +334,24 @@ function createBlueprintsDialog() {
       for(var i = 0; i <= index; i++) {
         if(!state.blueprints[i]) state.blueprints[i] = new BluePrint();
       }
-      if(e.shiftKey && state.blueprints[index] && state.blueprints[index].numw && state.blueprints[index].numh) {
+      var shift = util.eventHasShiftKey(e);
+      var ctrl = util.eventHasCtrlKey(e);
+      var filled = state.blueprints[index] && state.blueprints[index].numw && state.blueprints[index].numh;
+      if(shift && !ctrl && filled) {
         plantBluePrint(state.blueprints[index]);
         closeAllDialogs();
         update();
+      } else if(shift && ctrl && filled) {
+        if(!state.allowshiftdelete) {
+          showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
+        } else if(state.treelevel < min_transcension_level) {
+          showMessage('not high enough tree level to transcend', C_INVALID);
+        } else {
+          actions.push({type:ACTION_TRANSCEND, challenge:0});
+          actions.push({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
+          closeAllDialogs();
+          update();
+        }
       } else {
         var subdialog = createBlueprintDialog(state.blueprints[index], index);
         subdialog.onclose = bind(function(i, flex) {

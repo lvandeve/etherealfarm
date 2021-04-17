@@ -107,7 +107,8 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
     flex.div.textEl.innerHTML = 'Choose an ethereal crop to plant.<br>They cost resin, so choose wisely.<br>Ethereal crops give various bonuses to the basic field';
   }
 
-  flex = new Flex(contentFlex, 0, 0.1, 1, 0.85);
+  flex = new Flex(contentFlex, 0, 0.1, 1, 1);
+  makeScrollable(flex);
 
   for(var i = 0; i < registered_crops2.length; i++) {
     if(!state.crops2[registered_crops2[i]].unlocked) continue;
@@ -169,4 +170,6 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
       ty++;
     }
   }
+
+  flex.update(); // something about the makeScrollable above misplaces some of the flex-managed sub positions, this update fixes it
 }

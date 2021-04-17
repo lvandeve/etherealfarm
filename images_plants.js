@@ -3414,3 +3414,12 @@ var images_beetemplate = [image_beetemplate, image_beetemplate, image_beetemplat
 var image_mistletoetemplate = createCanvasImageFor(blueprintifyImage(mistletoe[4][4]));
 var images_mistletoetemplate = [image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate];
 
+var image_lotustemplate = createCanvasImageFor(blueprintifyImage(whitelotus[4][4]));
+var images_lotustemplate = [image_lotustemplate, image_lotustemplate, image_lotustemplate, image_lotustemplate, image_lotustemplate];
+
+var image_ferntemplate = createCanvasImageFor(blueprintifyImage(image_fern_as_crop[4][4]));
+var images_ferntemplate = [image_ferntemplate, image_ferntemplate, image_ferntemplate, image_ferntemplate, image_ferntemplate];
+
+var image_automatontemplate = createCanvasImageFor(blueprintifyImage(images_automaton[4][4]));
+var images_automatontemplate = [image_automatontemplate, image_automatontemplate, image_automatontemplate, image_automatontemplate, image_automatontemplate];
+

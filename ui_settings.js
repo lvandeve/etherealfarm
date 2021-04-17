@@ -521,9 +521,15 @@ function createStatsDialog() {
       }
       for(var i = 0; i < n; i++) {
         var j = n - 1 - i;
+        var minutes = state.reset_stats_time[state.reset_stats_time.length - 1 - i] * 5;
+        var timetext = '';
+        if(minutes < 60) timetext = Num(minutes).toString(1) + 'm';
+        else if(minutes < 60 * 5) timetext = Num(minutes / 60).toString(2) + 'h';
+        else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(1) + 'h';
+        else timetext = Num(minutes / (24 * 60)).toString(1) + 'd';
         text += (i == 0 ? ' ' : ', ') +
             state.reset_stats_level[state.reset_stats_level.length - 1 - i] +
-            ' (' + (state.reset_stats_time[state.reset_stats_time.length - 1 - i] / 4) + 'h' +
+            ' (' + timetext +
             (state.reset_stats_challenge[state.reset_stats_challenge.length - 1 - i] ? ', C' : '') +
             ')';
       }

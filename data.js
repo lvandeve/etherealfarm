@@ -26,11 +26,12 @@ var CROPTYPE_MUSH = croptype_index++;
 var CROPTYPE_FLOWER = croptype_index++;
 var CROPTYPE_NETTLE = croptype_index++;
 var CROPTYPE_SHORT = croptype_index++;
-var CROPTYPE_SPECIAL = croptype_index++; // used for some ethereal crops
+var CROPTYPE_AUTOMATON = croptype_index++;
 var CROPTYPE_LOTUS = croptype_index++; // ethereal field only, this is an ethereal crop that boost their ethereal neighbors, so a flower type, but regular flowers in ethereal field boost the basic field flowers instead
 var CROPTYPE_MISTLETOE = croptype_index++;
 var CROPTYPE_BEE = croptype_index++; // boosts flowers
 var CROPTYPE_CHALLENGE = croptype_index++; // only exists for challenges
+var CROPTYPE_FERN2 = croptype_index++; // ethereal fern, giving starter money
 var NUM_CROPTYPES = croptype_index;
 
 function getCropTypeName(type) {
@@ -39,11 +40,12 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_FLOWER) return 'flower';
   if(type == CROPTYPE_NETTLE) return 'nettle';
   if(type == CROPTYPE_SHORT) return 'short-lived';
-  if(type == CROPTYPE_SPECIAL) return 'special';
+  if(type == CROPTYPE_AUTOMATON) return 'automaton';
   if(type == CROPTYPE_LOTUS) return 'lotus';
   if(type == CROPTYPE_MISTLETOE) return 'mistletoe';
   if(type == CROPTYPE_BEE) return 'beehive';
   if(type == CROPTYPE_CHALLENGE) return 'challenge';
+  if(type == CROPTYPE_FERN2) return 'fern';
   return 'unknown';
 }
 
@@ -58,6 +60,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Increases level up spores requirement and slightly decreases resin gain.';
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
+    case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
   }
   return undefined;
 }
@@ -180,7 +183,7 @@ var cropRecoup = 0.33;  // recoup for deleting a plant. It is only partial, the 
 // ethereal version
 var sameTypeCostMultiplier2 = 1.5;
 var sameTypeCostMultiplier_Lotus2 = 2;
-var sameTypeCostMultiplier_Special2 = 1.5;
+var sameTypeCostMultiplier_Fern2 = 1.5;
 var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 //for state.delete2tokes
@@ -316,7 +319,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
 
   if(season == 2 && this.type == CROPTYPE_MUSH) {
     var bonus = getAutumnMushroomBonus();
-    result.mulInPlace(bonus);
+    result.posmulInPlace(bonus);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
@@ -2390,13 +2393,15 @@ function Crop2() {
   this.tagline = '';
   this.image = undefined;
   this.treelevel2 = 0; // minimum treelevel2 to unlock this crop, this is for display purposes
+
+  this.istemplate = false; // if true, is a placeholder template
 };
 
 
 Crop2.prototype.getCost = function(opt_adjust_count) {
   var mul = sameTypeCostMultiplier2;
   if(this.type == CROPTYPE_LOTUS) mul = sameTypeCostMultiplier_Lotus2;
-  if(this.type == CROPTYPE_SPECIAL) mul = sameTypeCostMultiplier_Special2;
+  if(this.type == CROPTYPE_FERN2) mul = sameTypeCostMultiplier_Fern2;
   var countfactor = Math.pow(mul, state.crop2count[this.index] + (opt_adjust_count || 0));
   return this.cost.mulr(countfactor);
 };
@@ -2465,10 +2470,12 @@ var registered_crops2 = []; // indexed consecutively, gives the index to crops2
 var crops2 = []; // indexed by crop index
 var crops2ByName = {};
 
+var croptype2_tiers = [];
+
 // 16-bit ID, auto incremented with registerCrop2, but you can also set it to a value yourself, to ensure consistent IDs for various crops2 (between savegames) in case of future upgrades
 var crop2_register_id = -1;
 
-function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline, opt_croptype, opt_tier) {
   if(!image) image = missingplant;
   if(crops2[crop2_register_id] || crop2_register_id < 0 || crop2_register_id > 65535) throw 'crop2 id already exists or is invalid!';
   var crop = new Crop2();
@@ -2491,94 +2498,116 @@ function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_de
 
   crop.treelevel2 = treelevel2;
 
+
+  crop.tier = opt_tier;
+  crop.type = opt_croptype;
+
+  if(opt_croptype != undefined && opt_tier != undefined) {
+    if(!croptype2_tiers[opt_croptype]) croptype2_tiers[opt_croptype] = [];
+    croptype2_tiers[opt_croptype][opt_tier] = crop;
+  }
+
   return crop.index;
 }
 
-function registerBerry2(name, treelevel2, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerBerry2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_BERRY, tier);
   var crop = crops2[index];
-  crop.type = CROPTYPE_BERRY;
   crop.effect = effect;
   return index;
 }
 
-function registerMushroom2(name, treelevel2, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerMushroom2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_MUSH, tier);
   var crop = crops2[index];
-  crop.type = CROPTYPE_MUSH;
   crop.effect = effect;
   return index;
 }
 
-function registerFlower2(name, treelevel2, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerFlower2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_FLOWER, tier);
   var crop = crops2[index];
-  crop.type = CROPTYPE_FLOWER;
   crop.effect = effect;
   return index;
 }
 
-function registerNettle2(name, treelevel2, cost, boost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerNettle2(name, treelevel2, tier, cost, boost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_NETTLE, tier);
   var crop = crops2[index];
-  crop.type = CROPTYPE_NETTLE;
   crop.effect = effect;
   return index;
 }
 
-function registerLotus2(name, treelevel2, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(boost), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerLotus2(name, treelevel2, tier, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(boost), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_LOTUS, tier);
   var crop = crops2[index];
-  crop.type = CROPTYPE_LOTUS;
   return index;
 }
 
-function registerShortLived2(name, treelevel2, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerAutomaton2(name, treelevel2,  tier, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_AUTOMATON, tier);
   var crop = crops2[index];
-  crop.type = CROPTYPE_SHORT;
   return index;
 }
 
-function registerSpecial2(name,treelevel2,  cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline);
+function registerFern2(name, treelevel2, tier, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_FERN2, tier);
   var crop = crops2[index];
-  crop.type = CROPTYPE_SPECIAL;
   return index;
 }
 
 
 crop2_register_id = 0;
-var special2_0 = registerSpecial2('fern', 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
-var special2_1 = registerSpecial2('fern II', 2, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
+var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
+var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
 
 crop2_register_id = 10;
-var automaton2_0 = registerSpecial2('automaton', 1, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
+var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
+var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
 // for treelevel2=1
-var berry2_1 = registerBerry2('blueberry', 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
-var berry2_2 = registerBerry2('cranberry', 4, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
+var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
+var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
 
 // mushrooms2
 crop2_register_id = 50;
-var mush2_0 = registerMushroom2('champignon', 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
-var mush2_1 = registerMushroom2('matsutake', 3, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
+var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
+var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
 
 // flowers2
 crop2_register_id = 75;
-var flower2_0 = registerFlower2('clover', 0, Res({resin:50}), 120, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
-var flower2_1 = registerFlower2('cornflower', 3, Res({resin:25000}), 180, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
+var flower2_0 = registerFlower2('clover', 0, 0, Res({resin:50}), 120, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
+var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 180, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
 
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', nettle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', nettle);
 
 crop2_register_id = 150;
-var lotus2_0 = registerLotus2('white lotus', 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
-var lotus2_1 = registerLotus2('pink lotus', 4, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', pinklotus);
+var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
+var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', pinklotus);
+
+
+
+
+// templates
+
+function makeTemplate2(crop_id) {
+  crops2[crop_id].istemplate = true;
+  crops2[crop_id].cost = Res(0);
+  return crop_id;
+}
+
+crop2_register_id = 300;
+var berry2_template = makeTemplate2(registerBerry2('berry template', 0, -1, Res(), 0, Num(0), undefined, '', images_berrytemplate));
+var mush2_template = makeTemplate2(registerMushroom2('mushroom template', 0, -1, Res(), 0, Num(0), undefined, '', images_mushtemplate));
+var flower2_template = makeTemplate2(registerFlower2('flower template', 0, -1, Res(), 0, Num(0), undefined, '', images_flowertemplate));
+var nettle2_template = makeTemplate2(registerNettle2('nettle template', 0, -1, Res(), 0, 0, Num(0), undefined, '', images_nettletemplate));
+var lotus2_template = makeTemplate2(registerLotus2('lotus template', 0, -1, Res(), 0, 0, undefined, '', images_lotustemplate));
+var fern2_template = makeTemplate2(registerFern2('fern template', 0, -1, Res(), 0, undefined, '', images_ferntemplate));
+var automaton2_template = makeTemplate2(registerAutomaton2('automaton template', 0, -1, Res(), 0, undefined, '', images_automatontemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3380,14 +3409,14 @@ function getStarterResources(opt_add_type, opt_sub_type) {
   var count;
   var ethereal_seeds = 0;
 
-  count = state.fullgrowncrop2count[special2_0];
-  if(opt_add_type == special2_0) count++;
-  if(opt_sub_type == special2_0) count--;
+  count = state.fullgrowncrop2count[fern2_0];
+  if(opt_add_type == fern2_0) count++;
+  if(opt_sub_type == fern2_0) count--;
   ethereal_seeds += count * count * count * 100;
 
-  count = state.fullgrowncrop2count[special2_1];
-  if(opt_add_type == special2_1) count++;
-  if(opt_sub_type == special2_1) count--;
+  count = state.fullgrowncrop2count[fern2_1];
+  if(opt_add_type == fern2_1) count++;
+  if(opt_sub_type == fern2_1) count--;
   ethereal_seeds += count * count * count * 1000;
 
   return Res({seeds:ethereal_seeds});

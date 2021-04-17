@@ -318,6 +318,15 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
+  if(e.key == 'u' && state.currentTab == tabindex_field2) {
+    // upgrade crop
+    var did_something = false;
+    did_something |= makeUpgradeCrop2Action(shiftCrop2FlexX, shiftCrop2FlexY);
+    if(did_something) {
+      update();
+    }
+  }
+
   if(e.key == 'p' && state.currentTab == tabindex_field) {
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];

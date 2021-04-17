@@ -751,7 +751,6 @@ function decResArray(reader) {
   return arr;
 }
 
-
 // encode a fraction from a dropdown for storing choices such as "how much fraction of resource may auto upgrade max consume per upgrade"
 // fraction to uint6 (uint6 value 0 means fraction=1 or 100%, higher uint6 values mean lower fraction, towards 0)
 // e is integer encoding in range 0..63. examples of e:f pairs:
@@ -775,6 +774,28 @@ function decFractionChoice(e) {
   var p = Math.floor(e / 3);
   var l = Math.pow(10, -p);
   return l * [1, 0.5, 0.2][q];
+}
+
+
+var approx_num_base = 1.15;
+var approx_num_exact = 11;
+var approx_num_skipped = 6;
+
+
+// Encodes a positive Num in approximate form.
+// The precision whichever is highest of absolute 1, or relative around 15%
+function encApproxNum(f) {
+  if(f.ltr(0.5)) return 0;
+  if(f.lter(approx_num_exact)) return Math.round(f.valueOf());
+  var l = f.logr(approx_num_base) - approx_num_skipped;
+  if(l > 9007199254740992) return 9007199254740992;
+  return Math.round(l);
+}
+
+function decApproxNum(e) {
+  if(e <= approx_num_exact) return Num(e);
+  var f = Num.pow(Num(approx_num_base), Num(e + approx_num_skipped));
+  return f;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

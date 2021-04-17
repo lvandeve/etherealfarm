@@ -30,11 +30,11 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_WEATHER: return 'WB';
       case FRUIT_LEECH: return 'WC';
       case FRUIT_NETTLEBOOST: return 'NB';
-      // SB from "season boost", the actual season is known due to the fruit's name which includes the season in it
-      case FRUIT_SPRING: return 'SB';
-      case FRUIT_SUMMER: return 'SB';
-      case FRUIT_AUTUMN: return 'SB';
-      case FRUIT_WINTER: return 'SB';
+      // S from "season", the actual season is known due to the fruit's name which includes the season in it
+      case FRUIT_SPRING: return 'S';
+      case FRUIT_SUMMER: return 'S';
+      case FRUIT_AUTUMN: return 'S';
+      case FRUIT_WINTER: return 'S';
     }
     return '?';
   }

@@ -151,6 +151,9 @@ function updateResourceUI() {
 
         result += '<br><br>';
 
+        var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+        result += '<b>Next tree level requires:</b> ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')' + '<br><br>';
+
         result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br><br>';
       }
       result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
@@ -269,7 +272,7 @@ function updateResourceUI() {
       if(index == 2) {
         // resin
         var text = '<b>' + upper(name) + '</b><br/><br/>';
-        text += 'Total resin earned entire game: ' + state.g_res.resin.toString();
+        text += 'Total resin earned ever: ' + state.g_res.resin.toString();
         text += '<br/><br/>';
         text += 'Unspent resin: ' + res.toString() + '<br/>';
         text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).toPercentString();

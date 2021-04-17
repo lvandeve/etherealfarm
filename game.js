@@ -232,6 +232,25 @@ function unlockTemplates() {
     state.crops[nettle_template].unlocked = false;
     state.crops[bee_template].unlocked = false;
     state.crops[mistletoe_template].unlocked = false;
+
+  }
+
+  if(state.crops2[automaton2_0].unlocked) {
+    state.crops2[berry2_template].unlocked = true;
+    state.crops2[mush2_template].unlocked = true;
+    state.crops2[flower2_template].unlocked = true;
+    state.crops2[lotus2_template].unlocked = true;
+    state.crops2[fern2_template].unlocked = true;
+    state.crops2[nettle2_template].unlocked = (state.crops2[nettle2_0].unlocked);
+    state.crops2[automaton2_template].unlocked = (state.crops2[automaton2_0].unlocked);
+  } else {
+    state.crops2[berry2_template].unlocked = false;
+    state.crops2[mush2_template].unlocked = false;
+    state.crops2[flower2_template].unlocked = false;
+    state.crops2[lotus2_template].unlocked = false;
+    state.crops2[fern2_template].unlocked = false;
+    state.crops2[nettle2_template].unlocked = false;
+    state.crops2[automaton2_template].unlocked = false;
   }
 }
 
@@ -392,7 +411,7 @@ function softReset(opt_challenge) {
   state.crops2[berry2_0].unlocked = true;
   state.crops2[mush2_0].unlocked = true;
   state.crops2[flower2_0].unlocked = true;
-  state.crops2[special2_0].unlocked = true;
+  state.crops2[fern2_0].unlocked = true;
   state.crops2[lotus2_0].unlocked = true;
 
   // todo: remove this? softReset is called during the update() function, that one already manages the time
@@ -431,11 +450,11 @@ function softReset(opt_challenge) {
 
     addStat(state.reset_stats_level, state.treelevel);
     addStat(state.reset_stats_level2, state.treelevel2);
-    // 900 seconds: use 15-minute granularity, to not use up too much space in the savegame for this
-    addStat(state.reset_stats_time, Math.floor((state.time - state.c_starttime) / 900));
-    // same here: only store log2 of resin to have it up to a factor of 2, to not use too much space
-    addStat(state.reset_stats_total_resin, Math.floor(Num.log2(state.g_res.resin.addr(1)).valueOf()));
-    addStat(state.reset_stats_resin, Math.floor(Num.log2(resin.addr(1)).valueOf()));
+    // divided through 300: best precision 5 minutes, and even lower when saved for larger times
+    addStat(state.reset_stats_time, (state.time - state.c_starttime) / 300);
+    addStat(state.reset_stats_total_resin, state.g_res.resin);
+    addStat(state.reset_stats_resin, resin);
+    addStat(state.reset_stats_twigs, twigs);
     addStat(state.reset_stats_challenge, state.challenge);
   }
 
@@ -634,6 +653,7 @@ var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot
 var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
 var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
+var ACTION_PLANT_BLUEPRINT = action_index++;
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 
 var lastSaveTime = util.getTime();
@@ -1667,7 +1687,7 @@ function nextEventTime() {
           return time;
         } else if(f.growth < 1) {
           //addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
-          addtime(5); // sicne v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
+          addtime(2); // since v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
         }
       }
     }
@@ -1712,6 +1732,8 @@ var last_fullgrown_sound_time1 = 0;
 var last_fullgrown_sound_time2 = 0;
 
 var update = function(opt_fromTick) {
+  var autoplanted = false;
+
   var undostate = undefined;
   if(actions.length > 0 && (util.getTime() - lastUndoSaveTime > minUndoTime)) {
     undostate = util.clone(state);
@@ -1732,6 +1754,7 @@ var update = function(opt_fromTick) {
     if(state.misttime > state.prevtime) state.misttime = 0;
     if(state.suntime > state.prevtime) state.suntime = 0;
     if(state.rainbowtime > state.prevtime) state.rainbowtime = 0;
+    if(state.lasttreeleveluptime > state.prevtime) state.lasttreeleveluptime = 0;
   }
 
   var prevseasongain = undefined;
@@ -1749,7 +1772,7 @@ var update = function(opt_fromTick) {
   var numloops = 0;
   for(;;) { ////////////////////////////////////////////////////////////////////
     if(done) break;
-    if(numloops++ > 1000) break;
+    if(numloops++ > 400) break;
 
     /*
     During an update, there's a time interval in which we operate.
@@ -1825,6 +1848,8 @@ var update = function(opt_fromTick) {
     if(is_long) {
       next = nextEventTime() + 1; // for numerical reasons, ensure it's not exactly at the border of the event
       if(next < 2) next = 2; // ensure there is at least some progress.
+      if(numloops > 10 && next < 5) next = 5; // speed up computation if a lot is happening, at the cost of some precision
+      if(numloops > 50 && next < 10) next = 10; // speed up computation if a lot is happening, at the cost of some precision
     }
 
     if(d > next && is_long) {
@@ -1872,8 +1897,9 @@ var update = function(opt_fromTick) {
     var upgrades2_done = false;
 
     // action
-    for(var i = 0; i < actions.length; i++) {
-      var action = actions[i];
+    while(actions.length) {
+      var action = actions[0];
+      actions.shift();
       var type = action.type;
       if(type == ACTION_UPGRADE) {
         if(state.upgrades_new) {
@@ -1980,6 +2006,8 @@ var update = function(opt_fromTick) {
           state.g_numupgrades2++;
         }
         upgrades2_done = true;
+      } else if(type == ACTION_PLANT_BLUEPRINT) {
+        plantBluePrint(action.blueprint);
       } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
@@ -1989,6 +2017,7 @@ var update = function(opt_fromTick) {
           state.automatonx = action.x;
           state.automatony = action.y;
           state.automatontime = state.time;
+          autoplanted = true;
         }
 
         var recoup = undefined;
@@ -2120,6 +2149,7 @@ var update = function(opt_fromTick) {
 
         var freedelete = (f.index == CROPINDEX + automaton2_0);
         var freetoken = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type);
+        if(f.hasCrop() && f.getCrop().istemplate) freedelete = true;
 
         if(type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
           if(f.hasCrop()) {
@@ -2142,8 +2172,8 @@ var update = function(opt_fromTick) {
 
         if(ok && (type == ACTION_DELETE2 || type == ACTION_REPLACE2)) {
           var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
-          if(f.cropIndex() == special2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_0));
-          if(f.cropIndex() == special2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, special2_1));
+          if(f.cropIndex() == fern2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_0));
+          if(f.cropIndex() == fern2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_1));
           if(!freedelete && !freetoken && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
             showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
             ok = false;
@@ -2151,7 +2181,7 @@ var update = function(opt_fromTick) {
             // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
             showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
             ok = false;
-          } else if(f.cropIndex() == special2_0 && state.res.lt(remstarter)) {
+          } else if(f.cropIndex() == fern2_0 && state.res.lt(remstarter)) {
             showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', C_INVALID, 0, 0);
             ok = false;
           }
@@ -2185,7 +2215,7 @@ var update = function(opt_fromTick) {
 
         if(ok && (type == ACTION_DELETE2 || type == ACTION_REPLACE2)) {
           var c = crops2[f.cropIndex()];
-          if(f.cropIndex() == special2_0) {
+          if(f.cropIndex() == fern2_0) {
             state.res.subInPlace(remstarter);
             state.g_res.subInPlace(remstarter);
             state.c_res.subInPlace(remstarter);
@@ -2220,14 +2250,14 @@ var update = function(opt_fromTick) {
           f.index = c.index + CROPINDEX;
           f.growth = 0;
           f.justplanted = true;
-          if(f.cropIndex() == special2_0) {
-            var extrastarter = getStarterResources(special2_0).sub(getStarterResources());
+          if(f.cropIndex() == fern2_0) {
+            var extrastarter = getStarterResources(fern2_0).sub(getStarterResources());
             state.res.addInPlace(extrastarter);
             state.g_res.addInPlace(extrastarter);
             state.c_res.addInPlace(extrastarter);
           }
-          if(f.cropIndex() == special2_1) {
-            var extrastarter = getStarterResources(special2_1).sub(getStarterResources());
+          if(f.cropIndex() == fern2_1) {
+            var extrastarter = getStarterResources(fern2_1).sub(getStarterResources());
             state.res.addInPlace(extrastarter);
             state.g_res.addInPlace(extrastarter);
             state.c_res.addInPlace(extrastarter);
@@ -2483,24 +2513,12 @@ var update = function(opt_fromTick) {
           // do nothing, invalid reset attempt
         } else if(state.treelevel >= min_transcension_level || state.challenge) {
           do_transcend = action;
-
-          // the below is disabled, because not doing this will give more twigs (the fractional amount from going towards next tree level)
-          // perhaps this can be enabled as an option, or automaton feature: since this makes the tree level up, it may give more than not doing this...
-          /* // virtual remove all mistletoes: this may make the tree level up once more and extract some more resin from it
-          state.mistletoes = 0;
-          for(var y = 0; y < state.numh; y++) {
-            for(var x = 0; x < state.numw; x++) {
-              var f = state.field[y][x];
-              if(f.hasCrop() && f.getCrop().type == CROPTYPE_MISTLETOE) {
-                f.index = 0;
-              }
-            }
-          }*/
           store_undo = true;
+          // when transcending, break and execute the code below to actually transcend: if there are more actions queued, these should occur after the transcension happened.
+          break;
         }
       }
     }
-    actions = [];
 
     if(store_undo && undostate) {
       storeUndo(undostate);
@@ -2650,7 +2668,7 @@ var update = function(opt_fromTick) {
     }
 
     var req = treeLevelReq(state.treelevel + 1);
-    if(state.res.ge(req)) {
+    if(state.time > state.lasttreeleveluptime + 0.5 && state.res.ge(req)) {
       var resin = Num(0);
       var twigs = Num(0);
 
@@ -2763,7 +2781,7 @@ var update = function(opt_fromTick) {
       }
       if(state.treelevel2 >= 2) {
         unlockEtherealCrop(nettle2_0);
-        unlockEtherealCrop(special2_1);
+        unlockEtherealCrop(fern2_1);
       }
       if(state.treelevel2 >= 3) {
         unlockEtherealCrop(mush2_1);
@@ -2983,6 +3001,11 @@ var update = function(opt_fromTick) {
   }
 
   postupdate();
+
+  // go faster when the automaton is autoplanting one-by-one
+  if(autoplanted) {
+    window.setTimeout(update, update_ms * 0.4);
+  }
 }
 
 

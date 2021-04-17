@@ -86,7 +86,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += '<br/><br/>This template represents all crops of type ' + getCropTypeName(c.type);
     result += '<br/><br/>It is a placeholder for planning the field layout and does nothing.';
     result += '<br><br>Templates are a feature provided by the automaton.';
-    result += '<br><br>Tip: ctrl+shift+click a template to turn it into a crop of highest available tier of this type';
+    result += '<br><br>Tip: ctrl+shift+click, or press "u", on a template to turn it into a crop of highest available tier of this type';
 
     // TODO: p.treeneighbor isn't computed for templates, so this message doesn't work, implement a way to make it work.
     /*if(c.type == CROPTYPE_MISTLETOE) {
@@ -579,7 +579,7 @@ function makeFieldDialog(x, y) {
     });
 
     styleButton(button2);
-    button2.textEl.innerText = 'Delete';
+    button2.textEl.innerText = 'Delete crop';
     button2.textEl.style.color = '#c00';
     registerTooltip(button2, 'Delete crop and get some of its cost back.');
     addButtonAction(button2, function() {
@@ -728,7 +728,7 @@ function initFieldUI() {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
           if(shift && ctrl) {
-            // experimental hidden feature for now, most convenient behavior needs to be found
+            // experimental feature for now, most convenient behavior needs to be found
             // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still to expensive and you wait for automaton to upgrade the plant
             if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
@@ -772,7 +772,7 @@ function initFieldUI() {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
           if(shift && ctrl) {
-            // experimental hidden feature for now, most convenient behavior needs to be found
+            // experimental feature for now, most convenient behavior needs to be found
             // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
             // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
             var c2 = f.getCrop();

@@ -367,13 +367,19 @@ function encState(state, opt_raw_only) {
       prev = array[i];
     }
     processIntArray(result);
-  }
+  };
+  var deltaEncApprox = function(array) {
+    var array2 = [];
+    for(var i = 0; i < array.length; i++)  array2[i] = encApproxNum(Num(array[i]));
+    deltaEnc(array2);
+  };
   deltaEnc(state.reset_stats_level);
   deltaEnc(state.reset_stats_level2);
-  deltaEnc(state.reset_stats_time);
-  deltaEnc(state.reset_stats_total_resin);
+  deltaEncApprox(state.reset_stats_time);
+  deltaEncApprox(state.reset_stats_total_resin);
   deltaEnc(state.reset_stats_challenge);
-  deltaEnc(state.reset_stats_resin);
+  deltaEncApprox(state.reset_stats_resin);
+  deltaEncApprox(state.reset_stats_twigs);
 
 
   section = 15; id = 0; // first run stats
@@ -1021,13 +1027,38 @@ function decState(s) {
     }
     return result;
   };
+  var deltaDecApproxNum = function(array) {
+    var array2 = deltaDec(array);
+    var result = [];
+    for(var i = 0; i < array2.length; i++) result[i] = decApproxNum(array2[i]);
+    return result;
+  };
+  var deltaDecApproxFloat = function(array) {
+    var array2 = deltaDec(array);
+    var result = [];
+    for(var i = 0; i < array2.length; i++) result[i] = decApproxNum(array2[i]).valueOf();
+    return result;
+  };
   state.reset_stats_level = deltaDec(processIntArray());
   if(save_version >= 4096+1*26) {
     state.reset_stats_level2 = deltaDec(processIntArray());
-    state.reset_stats_time = deltaDec(processIntArray());
-    state.reset_stats_total_resin = deltaDec(processIntArray());
-    state.reset_stats_challenge = deltaDec(processIntArray());
-    if(save_version >= 4096+1*44) state.reset_stats_resin = deltaDec(processIntArray());
+    if(save_version >= 4096+1*63) {
+      state.reset_stats_time = deltaDecApproxFloat(processIntArray());
+      state.reset_stats_total_resin = deltaDecApproxNum(processIntArray());
+      state.reset_stats_challenge = deltaDec(processIntArray());
+      state.reset_stats_resin = deltaDecApproxNum(processIntArray());
+      state.reset_stats_twigs = deltaDecApproxNum(processIntArray());
+    } else {
+      state.reset_stats_time = deltaDec(processIntArray());
+      for(var i = 0; i < state.reset_stats_time.length; i++) state.reset_stats_time[i] *= 3;
+      state.reset_stats_total_resin = deltaDec(processIntArray());
+      for(var i = 0; i < state.reset_stats_total_resin.length; i++) state.reset_stats_total_resin[i] = Num.pow(Num(2), Num(state.reset_stats_total_resin[i])).subr(1);
+      state.reset_stats_challenge = deltaDec(processIntArray());
+      if(save_version >= 4096+1*44) {
+        state.reset_stats_resin = deltaDec(processIntArray());
+        for(var i = 0; i < state.reset_stats_resin.length; i++) state.reset_stats_resin[i] = Num.pow(Num(2), Num(state.reset_stats_resin[i])).subr(1);
+      }
+    }
   }
   if(error) return err(4);
 
@@ -1370,7 +1401,7 @@ function decState(s) {
     state.crops2[berry2_0].unlocked = true;
     state.crops2[mush2_0].unlocked = true;
     state.crops2[flower2_0].unlocked = true;
-    state.crops2[special2_0].unlocked = true;
+    state.crops2[fern2_0].unlocked = true;
 
     state.g_numplanted2 = 0;
     state.g_numunplanted2 = 0;

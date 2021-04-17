@@ -537,9 +537,10 @@ function State() {
   // progress stats, most recent stat at the end
   this.reset_stats_level = []; // reset at what tree level for each reset
   this.reset_stats_level2 = []; // tree level 2 at end of this run
-  this.reset_stats_time = []; // time of this run, as integer of 15-minute intervals to keep the stat compact
-  this.reset_stats_total_resin = []; // log2 of 1 + total resin earned in total at start of this run, as integer
-  this.reset_stats_resin = []; // log2 of 1 + resin earned during this run
+  this.reset_stats_time = []; // approximate time of this run
+  this.reset_stats_total_resin = []; // approximate total resin earned in total before start of this run
+  this.reset_stats_resin = []; // approximate resin earned during this run
+  this.reset_stats_twigs = []; // approximate twigs earned during this run
   this.reset_stats_challenge = []; // what type of challenge, if any, for this run
 
 
@@ -657,6 +658,7 @@ function State() {
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
   this.highestoftypeunlocked = [];
+  this.highestoftype2unlocked = [];
 }
 
 function clearField(state) {
@@ -792,6 +794,7 @@ function computeDerived(state) {
   state.highestoftypeplanted = [];
   state.lowestoftypeplanted = [];
   state.highestoftypeunlocked = [];
+  state.highestoftype2unlocked = [];
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
@@ -805,6 +808,7 @@ function computeDerived(state) {
     state.highestoftypeplanted[i] = -Infinity;
     state.lowestoftypeplanted[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
+    state.highestoftype2unlocked[i] = -Infinity;
   }
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
@@ -893,6 +897,14 @@ function computeDerived(state) {
     var c2 = state.crops[registered_crops[i]];
     if(c2.unlocked) {
       state.highestoftypeunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypeunlocked[c.type]);
+    }
+  }
+
+  for(var i = 0; i < registered_crops2.length; i++) {
+    var c = crops2[registered_crops2[i]];
+    var c2 = state.crops2[registered_crops2[i]];
+    if(c2.unlocked) {
+      state.highestoftype2unlocked[c.type] = Math.max(c.tier || 0, state.highestoftype2unlocked[c.type]);
     }
   }
 

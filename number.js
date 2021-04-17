@@ -1236,7 +1236,7 @@ Num.prototype.toString = function(opt_precision, opt_notation) {
   // TODO: for some (or all) notations, 0.29999999 outputs 0.299 (for e.g. 3-digit precision) instead of 0.3 or 0.300, it should correctly round removed digits
   var precision = opt_precision || Num.precision;
   var notation = (opt_notation == undefined) ? Num.notation : opt_notation;
-  if(precision < 3) precision = 3;
+  //if(precision < 3) precision = 3;
 
   if(notation == Num.N_LATIN) return Num.notationAbr(this, precision, 1);
   if(notation == Num.N_HYBRID_U) return Num.notationAbr(this, precision, 0);
