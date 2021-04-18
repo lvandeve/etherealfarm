@@ -351,7 +351,7 @@ function State() {
   this.allowshiftdelete = false; // allow deleting a crop without dialog or confirmation by shift+clicking it
   this.tooltipstyle = 1;
   this.disableHelp = false; // disable all popup help dialogs
-  this.uistyle = 1; // 0=default (1), 1=light, 2=dark
+  this.uistyle = 1; // 0=default (1), 1=light, 2=dark, 3=darkest
   this.sidepanel = 1; // 0=disabled, 1=automatic
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
   this.messagelogenabled = [1]; // index0: "game saved" message log messages
@@ -1136,7 +1136,7 @@ function getUpcomingFruitEssence() {
 ////////////////////////////////////////////////////////////////////////////////
 
 // get upcoming resin, excluding the higher transcenscion bonus multiplier
-function getUpcomingResinNoTMUL() {
+function getUpcomingResin() {
   var suppress = false; // more resin suppressed by challenge
   if(state.challenge && !challenges[state.challenge].allowsresin) suppress = true;
   if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) suppress = true;
@@ -1145,6 +1145,8 @@ function getUpcomingResinNoTMUL() {
   if(state.treelevel >= min_transcension_level && !suppress) {
     var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
     if(progress.gtr(1)) progress = Num(1);
+    if(progress.ltr(0)) progress = Num(0);
+    progress = progress.mulr(0.97); // make leveling cause a slight jump anyway, mostly such that the resin/hr stat will be higher after rather than before the leveling
     var next = nextTreeLevelResin();
     result.addInPlace(progress.mul(next));
   }
@@ -1152,7 +1154,7 @@ function getUpcomingResinNoTMUL() {
 }
 
 // get upcoming twigs, excluding the higher transcenscion bonus multiplier
-function getUpcomingTwigsNoTMUL() {
+function getUpcomingTwigs() {
   var suppress = false; // more twigs suppressed by challenge
   if(state.challenge && !challenges[state.challenge].allowstwigs) suppress = true;
   if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) suppress = true;
@@ -1161,6 +1163,8 @@ function getUpcomingTwigsNoTMUL() {
   if(state.treelevel >= min_transcension_level && !suppress) {
     var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
     if(progress.gtr(1)) progress = Num(1);
+    if(progress.ltr(0)) progress = Num(0);
+    progress = progress.mulr(0.97); // make leveling cause a slight jump anyway, mostly such that the resin/hr stat will be higher after rather than before the leveling
     var next = nextTwigs().twigs;
     result.addInPlace(progress.mul(next));
   }
@@ -1169,20 +1173,18 @@ function getUpcomingTwigsNoTMUL() {
 
 // returns resin per hour so far this run
 function getResinHour() {
-  var tlevel = Math.floor(state.treelevel / min_transcension_level);
   if(state.c_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
   var hours = state.c_runtime / 3600;
   if(!hours) return Num(0);
-  return getUpcomingResinNoTMUL().mulr(tlevel).divr(hours);
+  return getUpcomingResin().divr(hours);
 }
 
 // returns twigs per hour so far this run
 function getTwigsHour() {
-  var tlevel = Math.floor(state.treelevel / min_transcension_level);
   if(state.c_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
   var hours = state.c_runtime / 3600;
   if(!hours) return Num(0);
-  return getUpcomingTwigsNoTMUL().mulr(tlevel).divr(hours);
+  return getUpcomingTwigs().divr(hours);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -218,8 +218,8 @@ function refreshWatercress(opt_clear, opt_all) {
       var can_afford = seeds_available.ge(cresscost);
       var f = state.field[y][x];
       if(opt_all) {
-        if(can_afford) {
-          if(f.index == CROPINDEX + short_0) {
+        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template)) {
+          if(f.index == CROPINDEX + watercress_template) {
             actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
           }
           seeds_available.subInPlace(cresscost);

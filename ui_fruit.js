@@ -28,7 +28,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_FLOWERBOOST: return 'FB';
       case FRUIT_GROWSPEED: return 'G';
       case FRUIT_WEATHER: return 'WB';
-      case FRUIT_LEECH: return 'WC';
+      case FRUIT_WATERCRESS: return 'WC';
       case FRUIT_NETTLEBOOST: return 'NB';
       // S from "season", the actual season is known due to the fruit's name which includes the season in it
       case FRUIT_SPRING: return 'S';
@@ -46,7 +46,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_FLOWERBOOST: return 'flower boost';
     case FRUIT_GROWSPEED: return 'growing speed';
     case FRUIT_WEATHER: return 'weather boost';
-    case FRUIT_LEECH: return 'watercress copying';
+    case FRUIT_WATERCRESS: return 'watercress copying';
     case FRUIT_NETTLEBOOST: return 'nettle boost';
     case FRUIT_SPRING: return 'spring boost';
     case FRUIT_SUMMER: return 'summer boost';
@@ -65,7 +65,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_FLOWERBOOST: return 'boosts flowers effect';
     case FRUIT_GROWSPEED: return 'reduces plants growth time';
     case FRUIT_WEATHER: return 'increases the weather effect abilities';
-    case FRUIT_LEECH: return 'increases the copy effect of watercress';
+    case FRUIT_WATERCRESS: return 'increases the copy effect of watercress';
     case FRUIT_NETTLEBOOST: return 'boosts the nettle effect';
     case FRUIT_SPRING: return 'boosts the spring flower boost, only during the spring season';
     case FRUIT_SUMMER: return 'boosts the summer berry boost, only during the summer season';
@@ -730,19 +730,26 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
   }
 }
 
+var dragslot = -1; // used instead of e.dataTransfer.setData since v0.1.64 because e.dataTransfer.setData still caused firefox to sometimes open things as URL despite e.preventDefault()
+
 function setupFruitDrag(flex, slot, f) {
   if(f) {
     flex.div.draggable = true;
     util.addEvent(flex.div, 'ondragstart', function(e) {
-      e.dataTransfer.setData('text/plain', '' + f.slot);
+      //e.dataTransfer.setData('text/plain', '' + f.slot);
+      dragslot = f.slot;
+      removeAllTooltips(); // they can get in the way over the drop target
     });
   }
   util.addEvent(flex.div, 'ondrop', function(e) {
     e.preventDefault(); // prevent firefox from actually trying to do a network request to http://0.0.0.<fruitindex> when trying to access e.dataTransfer
-    if(!e.dataTransfer) return;
+    // TODO: sometimes firefox ends up in a buggy state where dragging breaks (freezes after half a second), and when that happens it STILL does that network request thing. NOTE: possibly using the dragslot variable, and no longer usint dataTransfer, fixes this
+    /*if(!e.dataTransfer) return;
     var data = e.dataTransfer.getData('text/plain');
     if(!data) return;
-    var origslot = parseInt(data);
+    var origslot = parseInt(data);*/
+    var origslot = dragslot;
+    dragslot = -1;
     if(!(origslot >= 0 && origslot <= 100 + state.fruit_sacr.length)) return;
     var f = getFruit(origslot);
     if(!f) return;
@@ -755,6 +762,12 @@ function setupFruitDrag(flex, slot, f) {
   });
   util.addEvent(flex.div, 'ondragover', function(e) {
     e.preventDefault();
+    return false;
+  });
+  util.addEvent(flex.div, 'ondragend', function(e) {
+    e.preventDefault();
+    // this assumes ondragend happens before ondrop, which it should. This is also not really necessary to do, but in case there would be other drag and droppable things, this prevents keeping the state from the fruit one around
+    dragslot = -1;
     return false;
   });
 }

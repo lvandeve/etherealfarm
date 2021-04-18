@@ -310,19 +310,6 @@ function makeTreeDialog() {
         text += 'This requirement was increased ' + (getMistletoeLeech().subr(1)).toPercentString() + ' by ' + state.mistletoes + ' mistletoes' + '<br/>';
       }
 
-      var tlevel = Math.floor(state.treelevel / min_transcension_level);
-      var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
-      var tlevel_mul = Num(tlevel);
-      if(tlevel > 1) {
-        text += '<br/>';
-        if(show_resin && show_twigs) {
-          text += 'Resin + twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        } else if(show_resin) {
-          text += 'Resin bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        } else if(show_twigs) {
-          text += 'Twigs bonus for Transcension ' + roman + ': ' + tlevel_mul.toString() + 'x<br/>';
-        }
-      }
       text += '<br>';
 
       if(show_resin) {
@@ -334,11 +321,7 @@ function makeTreeDialog() {
         }
 
         text += '<br/>';
-        if(tlevel > 1) {
-          text += 'Total resin ready: ' + getUpcomingResinNoTMUL().toString() + ' x ' + tlevel + ' = ' + getUpcomingResinNoTMUL().mulr(tlevel_mul).toString();
-        } else {
-          text += 'Total resin ready: ' + getUpcomingResinNoTMUL().toString();
-        }
+        text += 'Total resin ready: ' + getUpcomingResin().toString();
         text += '<br/>';
       } else {
         text += 'The tree doesn\'t produce resin during this challenge.<br/>';
@@ -356,11 +339,7 @@ function makeTreeDialog() {
           }
 
           text += '<br>';
-          if(tlevel > 1) {
-            text += 'Total twigs ready: ' + getUpcomingTwigsNoTMUL().toString() + ' x ' + tlevel + ' = ' + getUpcomingTwigsNoTMUL().mulr(tlevel_mul).toString();
-          } else {
-            text += 'Total twigs ready: ' + getUpcomingTwigsNoTMUL().toString();
-          }
+          text += 'Total twigs ready: ' + getUpcomingTwigs().toString();
           text += '<br/>';
         } else {
           text += 'The tree doesn\'t produce twigs during this challenge.<br/>';
@@ -460,10 +439,8 @@ function makeTreeDialog() {
     if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
   } else {
     var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
-    var tlevel = Math.floor(state.treelevel / min_transcension_level);
-    var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
     styleButton(button);
-    button.textEl.innerText = 'Transcension ' + roman;
+    button.textEl.innerText = 'Transcension';
     button.textEl.style.boxShadow = '0px 0px 5px #ff0';
     button.textEl.style.textShadow = '0px 0px 5px #ff0';
     registerTooltip(button, 'Show the transcension dialog');

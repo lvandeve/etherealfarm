@@ -824,11 +824,11 @@ Crop.prototype.getLeech = function(f, breakdown) {
   var result = Num(1);
   if(breakdown) breakdown.push(['base', true, Num(1), result.clone()]);
 
-  var level = getFruitAbility(FRUIT_LEECH);
+  var level = getFruitAbility(FRUIT_WATERCRESS);
   if(level > 0) {
-    var mul = getFruitBoost(FRUIT_LEECH, level, getFruitTier()).addr(1);
+    var mul = getFruitBoost(FRUIT_WATERCRESS, level, getFruitTier()).addr(1);
     result.mulInPlace(mul);
-    if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_LEECH), true, mul, result.clone()]);
+    if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_WATERCRESS), true, mul, result.clone()]);
   }
 
   // add a penalty for the neighbor production copy-ing if there are multiple watercress in the field. The reason for this is:
@@ -2044,7 +2044,7 @@ for(var i = 0; i < gametime_achievement_values.length; i++) {
 
 medal_register_id = 820;
 
-registerMedal('higher transcension', 'performed transcension II or higher', undefined, function() {
+registerMedal('higher transcension', 'performed transcension at exactly twice the initial transcenscion level', undefined, function() {
   // This is a bit of a hacky way to check this, but the goal is that you get the medal when
   // you transcended (so tree level is definitely smaller than 20) and have had at least the
   // tree level 20 to do so. Since this medal was only added to the game at a later point in time,
@@ -2767,6 +2767,20 @@ upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2,
 }, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (scales by n^1.25).', undefined, undefined, tree_images[3][1][3]);
 
 
+// bases of exponentiation for treeLevelResin, depending on ethereal upgrade
+var resin_base = 1.2;
+var resin_base_resin_extraction = 1.25;
+var resin_global_mul = 0.25;
+var resin_global_add = 0.5; // this exists to tweak the resin income such that when reaching level 10 the first time, you get 10 resin, to be able to buy the first ethereal crop at first transcend
+var resin_global_quad = 2; // this is tuned to make new resin_base a not too big nerve for levels around 20, 30, ... in the v0.1.64 change
+
+// bases of exponentiation for treeLevelTwigs, depending on ethereal upgrade
+var twigs_base = 1.25;
+var twigs_base_twigs_extraction = 1.3;
+var twigs_global_mul = 0.02;
+var twigs_global_add = 0.55;
+var twigs_global_quad = 1; // this is tuned to make new twigs_base a not too big nerve for levels around 20, 30, ... in the v0.1.64 change
+
 var LEVEL2 = 0; // variable used for the required treelevel2 for groups of upgrades below
 
 var upgrade2_time_reduce_0_amount = 90;
@@ -2849,10 +2863,6 @@ var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', LEVEL2, Res({re
   initField2UI();
 }, function(){return state.numw2 >= 5 && state.numh2 >= 5}, 1, 'increase ethereal field size to 6x6 tiles', undefined, undefined, field_ethereal[0]);
 
-// bases of exponentiation for getTwigs, depending on ethereal upgrade
-var twigs_base = 1.14;
-var twigs_base_twigs_extraction = 1.175;
-
 var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res({resin:10000}), 1, function() {
 }, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction,
 undefined, undefined, mistletoe[1]);
@@ -2878,10 +2888,6 @@ var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Re
 
 
 
-
-// bases of exponentiation for treeLevelResin, depending on ethereal upgrade
-var resin_base = 1.141; // 1.141 is such that at tree level 10, you have 11 resin total, at tree level 15 you get slightly more than 25 (so you can buy 1 10-resin and 1 15-resin thing after first reset then)
-var resin_base_resin_extraction = 1.175;
 
 var upgrade2_resin_extraction = registerUpgrade2('resin extraction', LEVEL2, Res({resin:50e3}), 1, function() {
 }, function(){return true;}, 1, 'increase the multiplier per level for resin, giving exponentially more resin at higher tree levels: base of exponentiation before: ' + resin_base + ', after: ' + resin_base_resin_extraction, undefined, undefined, image_resin);
@@ -2949,7 +2955,7 @@ var FRUIT_BERRYBOOST = fruit_index++; // boosts seed production of berries
 var FRUIT_MUSHBOOST = fruit_index++; // boosts muchrooms spore production but also seed consumption
 var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (but same spore production output) (mushroom ecomony)
 var FRUIT_FLOWERBOOST = fruit_index++;
-var FRUIT_LEECH = fruit_index++; // watercress copying
+var FRUIT_WATERCRESS = fruit_index++; // watercress copying
 var FRUIT_GROWSPEED = fruit_index++; // this one can be swapped when planting something. It's ok to have a few fruit types that require situational swapping
 var FRUIT_WEATHER = fruit_index++; // idem
 var FRUIT_NETTLEBOOST = fruit_index++;
@@ -2986,7 +2992,7 @@ function getFruitBoost(ability, level, tier) {
   if(ability == FRUIT_FLOWERBOOST) {
     return Num(base * level);
   }
-  if(ability == FRUIT_LEECH) {
+  if(ability == FRUIT_WATERCRESS) {
     /*var amount = towards1(level, 10);
     var max = 1 + tier * 0.2;
     return Num(max * amount);*/
@@ -3305,11 +3311,15 @@ var treelevel2_resin_bonus = Num(0.05);
 
 // amount with bonuses etc...
 function treeLevelResin(level, breakdown) {
+  if(level <= 0) return Num(0);
+  level--;
+
   var base = resin_base;
   if(state.upgrades2[upgrade2_resin_extraction].count) base = resin_base_resin_extraction;
-  var resin = Num.rpow(base, Num(level)).mulr(0.5);
+  var resin = Num.rpow(base, Num(level)).mulr(resin_global_mul).addr(resin_global_add);
+  if(level > 15) resin.addrInPlace(resin_global_quad * (level - 15));
 
-  if(breakdown) breakdown.push(['base (per tree level x' + base + ')', true, Num(0), resin.clone()]);
+  if(breakdown) breakdown.push(['base (per tree level roughly x' + base + ')', true, Num(0), resin.clone()]);
 
   if(getSeason() == 3) {
     var bonus = getWinterTreeResinBonus();
@@ -3351,15 +3361,19 @@ function nextTreeLevelResin(breakdown) {
 
 
 // get twig drop at tree going to this level from mistletoes
-// this excludes the transcension II+ bonus
-function getTwigs(level, breakdown) {
+function treeLevelTwigs(level, breakdown) {
+  if(level <= 0) return Res({twigs:0});
+  level--;
+
   var res = new Res();
-  res.twigs = Num(0.25);
+  res.twigs = Num(twigs_global_mul);
   var base = twigs_base;
   if(state.upgrades2[upgrade2_twigs_extraction].count) base = twigs_base_twigs_extraction;
   res.twigs.mulInPlace(Num(base).powr(level));
+  res.twigs.addrInPlace(twigs_global_add);
+  if(level > 10) res.twigs.addrInPlace(twigs_global_quad * (level - 10));
 
-  if(breakdown) breakdown.push(['base (per tree level x' + base + ')', true, Num(0), res.clone()]);
+  if(breakdown) breakdown.push(['base (per tree level roughly x' + base + ')', true, Num(0), res.clone()]);
 
   var multi = Num(Math.log2(state.mistletoes + 1));
   res.twigs.mulInPlace(multi);
@@ -3383,7 +3397,7 @@ function getTwigs(level, breakdown) {
 }
 
 function nextTwigs(breakdown) {
-  return getTwigs(state.treelevel + 1, breakdown);
+  return treeLevelTwigs(state.treelevel + 1, breakdown);
 }
 
 function treeLevel2ReqBase(level) {

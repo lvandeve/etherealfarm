@@ -1,0 +1,141 @@
+a {
+  color: #88f;
+}
+
+a:visited {
+  color: #800;
+}
+
+.efBackground {
+  background-color: #000;
+  color: #bbb;
+}
+
+.efDialog {
+  background-color: #333;
+  border: 1px solid #999;
+  color: #999;
+}
+
+.efDialogTranslucent {
+  background-color: #444d;
+  border: 1px solid #bbb;
+  color: #bbb;
+}
+
+.efDialogEthereal {
+  background-color: #208e;
+  border: 1px solid #bbb;
+  color: #bbb;
+}
+
+.efButton {
+  background-color: #666;
+  border: 1px solid #000;
+  color: #000;
+  box-sizing: border-box;
+}
+
+.efButtonCantAfford {
+  background-color: #666;
+  border: 1px solid #333;
+  color: #333;
+  box-sizing: border-box;
+}
+
+.efButtonHighlighted {
+  background-color: #777;
+  border: 1px solid #000;
+  color: #000;
+  box-sizing: border-box;
+}
+
+.efInfo {
+  border: 1px solid #888;
+}
+
+.efSeasonBgSpring {
+  background-color: #263713;
+}
+
+.efSeasonBgSummer {
+  background-color: #22431b;
+}
+
+.efSeasonBgAutumn {
+  background-color: #634e2c;
+}
+
+.efSeasonBgWinter {
+  background-color: #445;
+}
+
+.efUpgradeChip {
+  background-color: #640;
+  border: 1px solid #990;
+}
+
+.efEtherealUpgradeChip {
+  background-color: #226;
+  border: 1px solid #880;
+}
+
+.efPlantChip {
+  background-color: #010;
+  border: 1px solid #090;
+}
+
+.efEtherealPlantChip {
+  background-color: #58a;
+  border: 1px solid black;
+  color: #000;
+}
+
+.efWeatherOn {
+  text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
+  color: #f00;
+}
+
+.efWeatherOff {
+  text-shadow: 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff, 0 0 0.3em #fff;
+  color: #000;
+}
+
+.efWatercressHighlight {
+  text-shadow: 0 0 0.3em #0f0;
+}
+
+.efWarningOnDialogText {
+  color: #f88;
+}
+
+/* Indicates the element is scrollable, especially in case the device decides not to show scrollbars.
+There exists a scrollbox concept in CSS that can automatically make the shadows appear/disappear,
+but it doesn't work on translucent background, so cannot use it here. So this must be combined with some JS*/
+.efScrollGradient {
+  background:
+  radial-gradient(farthest-side at 50% 0, #fff3, #fff0), radial-gradient(farthest-side at 50% 100%, #fff3, #fff0) 0 100%;
+  background-repeat: no-repeat;
+	background-size: 100% 5%, 100% 5%, 100% 5%, 100% 5%;
+}
+
+.efAutomatonManual {
+  color: #fff;
+  background-color: #800;
+}
+
+.efAutomatonAuto {
+  color: #fff;
+  background-color: #080;
+}
+
+.efAutomatonGlobalOff {
+  color: #fff;
+  background-color: #888;
+}
+
+.efDropDown {
+  color: #bbb;
+  background-color: #444;
+  border: 1px solid #bbb;
+}

@@ -359,11 +359,7 @@ function softReset(opt_challenge) {
   }
 
 
-  var tlevel = Math.floor(state.treelevel / min_transcension_level);
-  if(tlevel < 1) tlevel = 1;
-
-  var resin = getUpcomingResinNoTMUL();
-  resin = resin.mulr(tlevel);
+  var resin = getUpcomingResin();
 
   var do_fruit = true; // sacrifice the fruits even if not above transcension level (e.g. when resetting a challenge)
 
@@ -373,8 +369,7 @@ function softReset(opt_challenge) {
   if(state.challenge && !challenges[state.challenge].allowsresin) do_resin = false;
 
 
-  var twigs = getUpcomingTwigsNoTMUL();
-  twigs = twigs.mulr(tlevel);
+  var twigs = getUpcomingTwigs();
   var do_twigs = state.treelevel >= min_transcension_level;
   if(twigs.eqr(0)) do_twigs = false;
   if(state.challenge && !challenges[state.challenge].allowstwigs) do_twigs = false;
@@ -815,6 +810,8 @@ function PreCell(f) {
 
   this.leech = Num(0); // how much leech there is on this plant. e.g. if 4 watercress neighbors leech 100% each, this value is 4 (in reality that high is not possible due to the penalty for multiple watercress)
 
+  // TODO: make these breakdowns lazy, with a ensureBreakdown function, so that they're only computed when desired to be displayed, not in the update loop every time if update gets repeatedly called
+
   // breakdown of the production for UI. Is like prod0, but with leech result added, and also given if still growing.
   // Does not take consumption into account, and shows the negative consumption value of mushroom.
   this.breakdown = [];
@@ -931,7 +928,7 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_NETTLE) {
-              var boost = c2.getBoost(f2);
+              var boost = c2.getBoost(f2); // TODO: prevent this being called twice or more, this number is also computed below in pass 1 already, move nettle computation to earlier pass
               p.nettlemalus_received.divInPlace(boost.addr(1));
               p.num_nettle++;
             }
@@ -954,7 +951,7 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_BEE) {
-              var boostboost = c2.getBoostBoost(f2);
+              var boostboost = c2.getBoostBoost(f2); // TODO: prevent this being called twice or more, this number is also computed below in pass 1 already, move beehive computation to earlier pass
               p.beeboostboost_received.addInPlace(boostboost);
               p.num_bee++;
             }
@@ -1288,7 +1285,7 @@ function addRandomFruit() {
 
   var num_abilities = getNumFruitAbilities(tier);
 
-  var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_LEECH, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
+  var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_WATERCRESS, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
 
   for(var i = 0; i < num_abilities; i++) {
     var roll = Math.floor(getRandomFruitRoll() * abilities.length);
@@ -2598,7 +2595,6 @@ var update = function(opt_fromTick) {
         } else if(f.isTemplate()) {
           f.growth = 1;
         }
-        updateFieldCellUI(x, y);
       }
     }
 
@@ -2625,7 +2621,6 @@ var update = function(opt_fromTick) {
             // nothing to do, ethereal plants currently don't produce resources
           }
         }
-        updateField2CellUI(x, y);
       }
     }
 
@@ -2703,7 +2698,7 @@ var update = function(opt_fromTick) {
       var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
           '. Consumed: ' + req.toString() +
           '. Tree boost: ' + getTreeBoost().toPercentString();
-      if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResinNoTMUL().toString();
+      if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResin().toString();
       if(twigs.neqr(0)) message += '. Twigs from mistletoe added: ' + twigs.toString();
       if(state.treelevel == 9) {
         message += '. The tree is almost an adult tree now.';
@@ -2720,8 +2715,6 @@ var update = function(opt_fromTick) {
         showRegisteredHelpDialog(15);
       } else if(state.treelevel == 8) {
         showHelpDialog(-16, undefined, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
-      } else if(state.treelevel == 20) {
-        if(!state.challenge) showRegisteredHelpDialog(23);
       }
 
       // fruits at tree level 5, 15, 25, 35, ...
@@ -2906,6 +2899,19 @@ var update = function(opt_fromTick) {
 
     computeDerived(state);
   } // end of loop for long ticks //////////////////////////////////////////////
+
+
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      updateFieldCellUI(x, y);
+    }
+  }
+  for(var y = 0; y < state.numh2; y++) {
+    for(var x = 0; x < state.numw2; x++) {
+      updateField2CellUI(x, y);
+    }
+  }
+
 
   if(state.g_numticks == 0) {
     showMessage('You need to gather some resources. Click a fern to get some.', C_HELP, 5646478);

@@ -19,20 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // UI related to transcension and challenges
 
 function getTranscendValueInfo(opt_from_challenge) {
-  var tlevel = Math.floor(state.treelevel / min_transcension_level);
-  var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
-  var tlevel_mul = Num(tlevel);
-
   var have_item = false;
 
   var text = '';
-  var actual_resin = getUpcomingResinNoTMUL().mul(tlevel_mul);
+  var actual_resin = getUpcomingResin();
   if(!opt_from_challenge || actual_resin.neqr(0)) {
     have_item = true;
     text += '• ' + actual_resin.toString() + ' resin from tree level ' + state.treelevel;
-    if(tlevel > 1) {
-      text += ' (' + getUpcomingResinNoTMUL().toString() + ' collected, ' + tlevel_mul.toString() + 'x for Transcension ' + roman + ')';
-    }
     text += '<br>';
     if(state.res.resin.eqr(0)) {
       text += '• ' + ' Unused resin boost: ' + getUnusedResinBonusFor(actual_resin).subr(1).toPercentString() + '<br/>';
@@ -41,13 +34,10 @@ function getTranscendValueInfo(opt_from_challenge) {
     }
   }
 
-  var actual_twigs = getUpcomingTwigsNoTMUL().mul(tlevel_mul);
+  var actual_twigs = getUpcomingTwigs();
   if(!opt_from_challenge || actual_twigs.neqr(0)) {
     have_item = true;
     text += '• ' + actual_twigs.toString() + ' twigs from mistletoes';
-    if(tlevel > 1) {
-      text += ' (' + getUpcomingTwigsNoTMUL().toString() + ' collected, ' + tlevel_mul.toString() + 'x for Transcension ' + roman + ')';
-    }
     text += '<br>';
   }
 
@@ -84,22 +74,14 @@ function createTranscendDialog(opt_from_challenge) {
 
   dialog.div.className = 'efDialogEthereal';
 
-  var tlevel = Math.floor(state.treelevel / min_transcension_level);
-  var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
-  var tlevel_mul = Num(tlevel);
-
   var flex = dialog.content;
   var text = '';
   if(opt_from_challenge) {
     text += '<b>New regular run' + '</b><br/>';
   } else {
-    text += '<b>Transcension' + roman + '</b><br/>';
+    text += '<b>Transcension</b><br/>';
     text += '<br/>';
-    if(tlevel > 1) {
-      text += 'Higher transcensions work like transcension but give extra resin multiplier.<br/>';
-    } else {
-      text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These crops give bonuses to the basic field in various ways. Resin can also be used for other ethereal upgrades. Unused resin also gives a slight boost. <br/>';
-    }
+    text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These crops give bonuses to the basic field in various ways. Resin can also be used for other ethereal upgrades. Unused resin also gives a slight boost. <br/>';
   }
   text += '<br/>';
 

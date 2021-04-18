@@ -127,8 +127,6 @@ function updateResourceUI() {
   if(state.treelevel > 0) {
     title += ' (' + Math.floor(nextlevelprogress * 100) + '%)';
   }
-  /*if(state.treelevel >= min_transcension_level * 2) title += ' [T ' + util.toRoman(Math.floor(state.treelevel / min_transcension_level)) + ']';
-  else if(state.treelevel >= min_transcension_level) title += ' [T]';*/
   if(state.treelevel >= min_transcension_level) {
     //resourceDivs[0].textEl.style.textShadow = '0px 0px 5px #ff0';
     title = '<span style="text-shadow:0px 0px 5px #ff0">' + title + '</span>';
@@ -144,9 +142,7 @@ function updateResourceUI() {
         result += '<b>Level:</b> ' + state.treelevel;
 
         if(state.treelevel >= min_transcension_level) {
-          var roman = '';
-          if(state.treelevel >= min_transcension_level * 2) roman = ' ' + util.toRoman(Math.floor(state.treelevel / min_transcension_level));
-          result += '. Transcension' + roman + ' available, click the tree.';
+          result += '. Transcension available, click the tree.';
         }
 
         result += '<br><br>';
@@ -211,11 +207,11 @@ function updateResourceUI() {
     if(special) {
       if(index == 2) {
         // resin
-        upcoming = getUpcomingResinNoTMUL();
+        upcoming = getUpcomingResin();
       }
       if(index == 3) {
         // twigs
-        upcoming = getUpcomingTwigsNoTMUL();
+        upcoming = getUpcomingTwigs();
       }
       if(index == 7) {
         // essence
@@ -239,13 +235,8 @@ function updateResourceUI() {
     if(special) {
       if(index == 2 || index == 3) {
         // 2=resin, 3=twigs
-        var tlevel = Math.floor(state.treelevel / min_transcension_level);
-        if(tlevel < 1) tlevel = 1;
-        var roman = tlevel > 1 ? (' ' + util.toRoman(tlevel)) : '';
-        var tlevel_mul = Num(tlevel);
-        var upcoming2 = upcoming.mul(tlevel_mul);
         var hr = (index == 2) ? getResinHour() : getTwigsHour();
-        text = name + '<br>' + res.toString() + '<br>(+' + upcoming2.toString() + ', ' + hr.toString() + '/hr)';
+        text = name + '<br>' + res.toString() + '<br>(+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
       } else {
         text = name + '<br>' + res.toString();
         if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
@@ -277,13 +268,10 @@ function updateResourceUI() {
         text += 'Unspent resin: ' + res.toString() + '<br/>';
         text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).toPercentString();
         text += '<br><br>';
-        text += 'Collected upcoming resin: ' + upcoming2.toString() + '<br>';
-        if(tlevel > 1 && upcoming.gtr(0)) {
-          text += '→ ' + upcoming.toString() + ' x ' + tlevel_mul.toString() + ' for Transcension ' + roman + '<br>';
-        }
-        if(upcoming2.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming2.add(state.res.resin)).subr(1).toPercentString();
+        text += 'Collected upcoming resin: ' + upcoming.toString() + '<br>';
+        if(upcoming.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
 
-        text += '<br><br>';
+        text += '<br>';
         text += 'Resin/hour: ' + getResinHour().toString() + '<br>';
         text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + '<br>';
 
@@ -296,10 +284,7 @@ function updateResourceUI() {
         var text = '<b>' + upper(name) + '</b><br/><br/>';
         text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
         text += '<br><br>';
-        text += 'Collected upcoming twigs: ' + upcoming2.toString() + '<br>';
-        if(tlevel > 1) {
-          text += '→ ' + upcoming.toString() + ' x ' + tlevel_mul.toString() + ' for Transcension ' + roman + '<br>';
-        }
+        text += 'Collected upcoming twigs: ' + upcoming.toString() + '<br>';
         text += '<br>';
 
         text += 'Twigs/hour: ' + getTwigsHour().toString() + '<br>';

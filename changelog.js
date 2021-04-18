@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.64 (2021-04-18):';
+  // Goal of this removal and increased base: to make longer runs worth it, and not have optimal resin/hr hang at multiple of 10 tree levels. The lower level twigs nerf is not too bad, because the twigs gain ethereal upgrade from a recent update made it overpowered there.
+  text += '<br/>• Removed the Transcension II, Transcension III, etc... system (which multiplied resin and twigs by floor(tree level / 10)).';
+  text += '<br/>• Instead, increased the base of exponentiation of resin and twigs per tree level to compensate the above. The curves have been kept as similar as possible, for levels above 45 this starts being an exponentially increasing buff';
+  text += '<br/>• Added an alternative dark theme';
+  text += '<br/><br/>';
+
   text += '0.1.63 (2021-04-17):';
   text += '<br/>• Templates now also supported in ethereal field, but not blueprints';
   text += '<br/>• Upgrade-crop actions and shortcuts now also work in the ethereal field';

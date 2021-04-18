@@ -191,6 +191,8 @@ function setStyle() {
   var version_code = '?v=' + formatVersion().replace(/\./g, '_');
   if(state.uistyle == 2) {
     setCSSFile('style_dark.css' + version_code);
+  } else if(state.uistyle == 3) {
+    setCSSFile('style_dark2.css' + version_code);
   } else {
     setCSSFile('style_light.css' + version_code);
   }

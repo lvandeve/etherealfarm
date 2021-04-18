@@ -247,6 +247,7 @@ function createNumberFormatDialog() {
   fill();
 }
 
+
 function createAdvancedSettingsDialog() {
   var dialog = createDialog();
 
@@ -280,6 +281,7 @@ function createAdvancedSettingsDialog() {
   var updatebuttontext = function(button) {
     var style = '?';
     if(state.uistyle == 2) style = 'dark';
+    else if(state.uistyle == 3) style = 'dark (alternative)';
     else style = 'light';
     button.textEl.innerText = 'interface theme: ' + style;
   };
@@ -287,7 +289,7 @@ function createAdvancedSettingsDialog() {
   registerTooltip(button, 'Change the interface style');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.uistyle++;
-    if(state.uistyle > 2) state.uistyle = 1;
+    if(state.uistyle > 3) state.uistyle = 1;
     updatebuttontext(button);
     setStyle();
   }, button, updatebuttontext));
@@ -455,9 +457,6 @@ function createStatsDialog() {
   text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
   text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
   var c_res = Res(state.c_res);
-  var tlevel = Math.floor(state.treelevel / min_transcension_level);
-  c_res.resin.addInPlace(state.resin.mulr(tlevel));
-  c_res.twigs.addInPlace(state.twigs.mulr(tlevel));
   c_res.essence.addInPlace(getUpcomingFruitEssence().essence);
   text += '• total earned: ' + open + c_res.toString(true) + close + '<br>';
   text += '• highest resources: ' + open + state.c_max_res.toString(true) + close + '<br>';

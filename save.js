@@ -671,6 +671,7 @@ function decState(s) {
   id = 4;
   state.treelevel2 = processUint();
   state.resin = processNum();
+  if(save_version < 4096*1+64) { state.resin.mulrInPlace(Math.floor(state.treelevel / min_transcension_level)); } // compensate for removal of tlevel feature
   state.fern = processUint();
   if(state.fern) {
     state.fernx = processUint();
@@ -712,7 +713,10 @@ function decState(s) {
     state.last_negative_time = processFloat();
   }
   id = 22;
-  if(save_version >= 4096*1+36) state.twigs = processNum();
+  if(save_version >= 4096*1+36) {
+    state.twigs = processNum();
+    if(save_version < 4096*1+64) { state.twigs.mulrInPlace(Math.floor(state.treelevel / min_transcension_level)); } // compensate for removal of tlevel feature
+  }
   if(save_version >= 4096*1+62) state.num_negative_time = processInt();
 
 
