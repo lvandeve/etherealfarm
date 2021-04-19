@@ -857,10 +857,12 @@ function computeDerived(state) {
       if(f.hasCrop()) {
         var c = crops2[f.cropIndex()];
         state.crop2count[c.index]++;
-        state.numcropfields2++;
-        if(f.growth >= 1) {
-          state.fullgrowncrop2count[c.index]++;
-          state.numfullgrowncropfields2++;
+        if(!f.isTemplate()) {
+          state.numcropfields2++;
+          if(f.growth >= 1) {
+            state.fullgrowncrop2count[c.index]++;
+            state.numfullgrowncropfields2++;
+          }
         }
       } else if(f.index == 0) {
         state.numemptyfields2++;
