@@ -57,20 +57,20 @@ function getCropInfoHTMLBreakdown(f, c) {
   var p = prefield[f.y][f.x];
   var prod = c.getProd(f);
   if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
-    var breakdown = p.breakdown;
+    var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, false, bdname + ' (production/s)');
   }
   if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
-    var breakdown = p.breakdown;
+    var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, true, bdname + ' (neighboor boost +%)');
   }
   if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
-    var breakdown = p.breakdown;
+    var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, true, bdname + ' (flower boost +%)');
   }
-  if(p.breakdown_leech && p.breakdown_leech.length > 0) {
-    var breakdown = p.breakdown_leech;
-    result += formatBreakdown(breakdown, true, bdname + ' (copy)');
+  var breakdown_watercress = p.getBreakdownWatercress();
+  if(breakdown_watercress && breakdown_watercress.length > 0) {
+    result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
   }
 
   return result;

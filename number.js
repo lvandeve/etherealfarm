@@ -29,20 +29,20 @@ function Num(b, e) {
   if(!(this instanceof Num)) {
     return new Num(b, e);
   }
-  // value = b * 2**e
-  this.b = 0; // can be any float value, but typically scaled to 1..2 or -1..-2. Special values: 0: value is 0 no matter what exponent. Infinity/-Infinity/NaN: entire number is infinity/-infinity/nan, no matter what exponent
-  this.e = 0; // always integer, max 2**53, min -2**53. Should never be set to non-integer, NaN, Infinity, ..., only base (b) may do that
-  if(b != undefined) {
-    if(b.b != undefined) {
-      this.b = b.b;
-      this.e = b.e;
-    } else {
-      this.b = b;
-      this.e = e || 0;
-    }
-  }
 
-  Num.scaleInPlace(this);
+  if(b instanceof(Num)) {
+    this.b = b.b;
+    this.e = b.e;
+    // no scaleInPlace: assume the input Num already was correct, as it should
+  } else if(b == undefined || (b == 0 && e == undefined)) {
+    // value = b * 2**e
+    this.b = 0; // can be any float value, but typically scaled to 1..2 or -1..-2. Special values: 0: value is 0 no matter what exponent. Infinity/-Infinity/NaN: entire number is infinity/-infinity/nan, no matter what exponent
+    this.e = 0; // always integer, max 2**53, min -2**53. Should never be set to non-integer, NaN, Infinity, ..., only base (b) may do that
+  } else {
+    this.b = b;
+    this.e = e || 0;
+    Num.scaleInPlace(this);
+  }
 }
 
 // constructor that takes decimal exponent, rather than binary like function Num does
@@ -64,7 +64,8 @@ Num.prototype.clone = function() {
 
 // Ensures that the exponent e is an integer, since that's the assumptions some functionalty makes
 Num.prototype.ensureIntegerExponent_ = function() {
-  if(this.e != Math.floor(this.e) && !isNaN(this.e)) {
+  //if(this.e != Math.floor(this.e) && !isNaN(this.e)) {
+  if(!Number.isInteger(this.e)) {
     // e should be integer. E.g. the rpow function can cause this situation
     var e2 = Math.floor(this.e);
     this.b *= Math.pow(2, this.e - e2);
@@ -86,6 +87,11 @@ Num.prototype.ensureIntegerExponent_ = function() {
 // NOTE: for best precision, e should be larger than this.e, that is, scale to the larger exponent. The opposite direction may cause infinity.
 // NOTE: even more care needed, e.g. Num(5, -2000).add(Num(0, 0)) will fail if scaleToInPlace is used naively. So too eqr(0).
 Num.prototype.scaleToInPlace = function(e) {
+  if(this.b == 0) {
+    this.e = e;
+    return;
+  }
+
   this.ensureIntegerExponent_();
 
   var d = this.e - e;
@@ -141,7 +147,7 @@ Num.prototype.scaleToInPlace = function(e) {
 };
 // scales exponent of this to become e
 Num.prototype.scaleTo = function(e) {
-  var res = Num(this);
+  var res = new Num(this);
   res.scaleToInPlace(e);
   return res;
 };
@@ -149,6 +155,12 @@ Num.scaleTo = function(a, e) { return a.scaleTo(e); };
 
 // sales the exponent in a good range for this number's value
 Num.scaleInPlace = function(v) {
+  // optimization, do this before v.ensureIntegerExponent_, for the common case of value 0
+  if(v.b == 0) {
+    v.e = 0;
+    return;
+  }
+
   v.ensureIntegerExponent_();
   if(isNaN(v.b) || isNaN(v.e)) {
     v.b = NaN;
@@ -205,7 +217,7 @@ Num.prototype.scaleInPlace = function() {
   return Num.scaleInPlace(this);
 };
 Num.prototype.scale = function() {
-  var res = Num(this);
+  var res = new Num(this);
   res.scaleInPlace();
   return res;
 };
@@ -219,7 +231,7 @@ Num.prototype.addInPlace = function(b) {
   return this;
 };
 Num.prototype.add = function(b) {
-  var res = Num(this);
+  var res = new Num(this);
   res.addInPlace(b);
   return res;
 };
@@ -229,7 +241,7 @@ Num.prototype.addrInPlace = function(r) {
   return this.addInPlace(Num(r));
 };
 Num.prototype.addr = function(r) {
-  var res = Num(this);
+  var res = new Num(this);
   res.addrInPlace(r);
   return res;
 };
@@ -252,7 +264,7 @@ Num.prototype.subInPlace = function(b) {
   return this;
 };
 Num.prototype.sub = function(b) {
-  var res = Num(this);
+  var res = new Num(this);
   res.subInPlace(b);
   return res;
 };
@@ -262,7 +274,7 @@ Num.prototype.subrInPlace = function(r) {
   return this.subInPlace(Num(r));
 };
 Num.prototype.subr = function(r) {
-  var res = Num(this);
+  var res = new Num(this);
   res.subrInPlace(r);
   return res;
 };
@@ -272,7 +284,7 @@ Num.prototype.negInPlace = function() {
   this.b = -this.b;
 };
 Num.prototype.neg = function() {
-  var res = Num(this);
+  var res = new Num(this);
   res.negInPlace();
   return res;
 };
@@ -284,7 +296,7 @@ Num.prototype.mulInPlace = function(b) {
   this.scaleInPlace();
 };
 Num.prototype.mul = function(b) {
-  var res = Num(this);
+  var res = new Num(this);
   res.mulInPlace(b);
   return res;
 };
@@ -296,7 +308,7 @@ Num.prototype.mulrInPlace = function(r) {
   return this;
 };
 Num.prototype.mulr = function(r) {
-  var res = Num(this);
+  var res = new Num(this);
   res.mulrInPlace(r);
   return res;
 };
@@ -315,7 +327,7 @@ Num.prototype.posmulInPlace = function(b) {
   return this;
 };
 Num.prototype.posmul = function(b) {
-  var res = Num(this);
+  var res = new Num(this);
   res.posmulInPlace(b);
   return res;
 };
@@ -328,7 +340,7 @@ Num.prototype.posmulrInPlace = function(r) {
   return this;
 };
 Num.prototype.posmulr = function(r) {
-  var res = Num(this);
+  var res = new Num(this);
   res.posmulrInPlace(r);
   return res;
 };
@@ -344,7 +356,7 @@ Num.prototype.divInPlace = function(b) {
   return this;
 };
 Num.prototype.div = function(b) {
-  var res = Num(this);
+  var res = new Num(this);
   res.divInPlace(b);
   return res;
 };
@@ -356,7 +368,7 @@ Num.prototype.divrInPlace = function(r) {
   return this;
 };
 Num.prototype.divr = function(r) {
-  var res = Num(this);
+  var res = new Num(this);
   res.divrInPlace(r);
   return res;
 };
@@ -368,7 +380,7 @@ Num.prototype.absInPlace = function() {
   return this;
 };
 Num.prototype.abs = function() {
-  var res = Num(this);
+  var res = new Num(this);
   res.absInPlace();
   return res;
 };
@@ -391,7 +403,7 @@ Num.prototype.sqrtInPlace = function() {
   return this;
 };
 Num.prototype.sqrt = function() {
-  var res = Num(this);
+  var res = new Num(this);
   res.sqrtInPlace();
   return res;
 };
@@ -407,7 +419,7 @@ Num.prototype.powrInPlace = function(r) {
   return this.powInPlace(Num(r));
 };
 Num.prototype.powr = function(r) {
-  var res = Num(this);
+  var res = new Num(this);
   res.powrInPlace(r);
   return res;
 };
@@ -437,7 +449,7 @@ Num.prototype.rpowInPlace = function(r) {
   return this;
 };
 Num.prototype.rpow = function(r) {
-  var res = Num(this);
+  var res = new Num(this);
   res.rpowInPlace(r);
   return res;
 };
@@ -458,7 +470,7 @@ Num.prototype.powInPlace = function(b) {
   return this;
 };
 Num.prototype.pow = function(b) {
-  var result = Num(this);
+  var result = new Num(this);
   result.powInPlace(b);
   return result;
 };
@@ -471,7 +483,7 @@ Num.prototype.expInPlace = function() {
   return this;
 };
 Num.prototype.exp = function() {
-  var res = Num(this);
+  var res = new Num(this);
   res.expInPlace();
   return res;
 };
@@ -628,9 +640,10 @@ Num.roundNicely(Num.rpow(10, Num(1)))
 and it'll work perfectly.
 */
 Num.roundNicely = function(num) {
-  var res = Num(num);
+  var res = new Num(num);
   // This should at least support values like 1000, 1.25, 1000000000, ..., but to remove the .0000...00002 of 1.2500000000000002 can't support very large integer either
   res.b = Math.round(num.b * 2147483648) / 2147483648;
+  res.scaleInPlace();
   return res;
 }
 

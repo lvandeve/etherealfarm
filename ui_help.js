@@ -30,7 +30,7 @@ var helpChipFlex = undefined;
 function removeHelpChip() {
   if(!helpChipFlex) return;
 
-  helpChipFlex.removeSelf();
+  helpChipFlex.removeSelf(gameFlex);
   helpChipFlex = undefined;
 }
 

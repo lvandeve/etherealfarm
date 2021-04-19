@@ -255,7 +255,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     dialog.removeSelfFun();
   };
   dialog.removeSelfFun = function() {
-    dialogFlex.removeSelf();
+    dialogFlex.removeSelf(gameFlex);
     if(dialogFlex.onclose) dialogFlex.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
   };
   dialogFlex.cancelFun = dialog.cancelFun;
@@ -536,9 +536,13 @@ example: same as previous example but not square but rectangle that must keep co
 example: button in bottom right corner with always a width/height ratio (of butotn itself) of 2/1 (here 0.3/0.15): [1.0, -0.3], [1.0, -0.15], [1.0, -0.01], [1.0, -0.01]
 The fontSize lets the Flex also manage font size. This value does not support the 3-element array, just single number, and will be based on min(w*10, h) of the current element's computed size.
 */
-function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_overrideParent) {
-  this.parent = parent || null;
+function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_centered) {
   this.fontSize = opt_fontSize;
+
+  this.center = !!opt_centered;
+
+  this.isroot = !parent || (parent.div == document.body);
+
   if(x0.length) {
     this.x0 = x0[0];
     this.x0b = x0[1] || 0;
@@ -579,12 +583,13 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_overrideParent) {
     parent.elements.push(this);
   }
 
-  this.parentdiv = opt_overrideParent ? opt_overrideParent : (parent ? parent.div : document.body);
-  this.div = makeDiv(0, 0, 0, 0, this.parentdiv);
+
+  var parentdiv = parent ? parent.div : document.body;
+  this.div = makeDiv(0, 0, 0, 0, parentdiv);
   this.div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
   this.elements = [];
 
-  this.updateSelf();
+  this.updateSelf(parentdiv);
 }
 
 // The clientWidth/clientHeight call in updateFlex is very slow, especially for e.g. the medal UI with many items, avoid or reduce it, cache the parent, or so...
@@ -592,25 +597,33 @@ var Flex_prevParent = undefined;
 var Flex_prevParent_clientWidth = undefined;
 var Flex_prevParent_clientHeight = undefined;
 
-Flex.prototype.updateSelf = function() {
+Flex.prototype.getDim_ = function(parentdiv) {
   if(this.div == Flex_prevParent) Flex_prevParent = undefined;
   var w, h;
-  if(this.parentdiv == document.body || !this.parentdiv) {
+  if(this.isroot || !parentdiv) {
     w = window.innerWidth;
     h = window.innerHeight;
     Flex_prevParent = undefined;
   } else {
-    if(this.parentdiv == Flex_prevParent) {
+    if(parentdiv == Flex_prevParent) {
       w = Flex_prevParent_clientWidth;
       h = Flex_prevParent_clientHeight;
     } else {
-      w = this.parentdiv.clientWidth;
-      h = this.parentdiv.clientHeight;
-      Flex_prevParent = this.parentdiv;
+      w = parentdiv.clientWidth;
+      h = parentdiv.clientHeight;
+      Flex_prevParent = parentdiv;
       Flex_prevParent_clientWidth = w;
       Flex_prevParent_clientHeight = h;
     }
   }
+  return [w, h];
+}
+
+Flex.prototype.updateSelf = function(parentdiv) {
+  var dim = this.getDim_(parentdiv);
+  var w = dim[0];
+  var h = dim[1];
+
   var x0 = w * this.x0 + Math.min(w, this.x0f * h) * this.x0b;
   var y0 = h * this.y0 + Math.min(this.y0f * w, h) * this.y0b;
   var x1 = w * this.x1 + Math.min(w, this.x1f * h) * this.x1b;
@@ -634,25 +647,26 @@ Flex.prototype.updateSelf = function() {
   }
 };
 
-Flex.prototype.setCentered = function() {
-  this.center = true;
-  this.updateSelf();
-};
-
 // updates self and all chilren recursively
-Flex.prototype.update = function() {
-  this.updateSelf();
+Flex.prototype.update = function(opt_parentdiv) {
+  if(opt_parentdiv) {
+    this.updateSelf(opt_parentdiv);
+  } else if(this.isroot) {
+    this.updateSelf(undefined);
+  }
+
   for(var i = 0; i < this.elements.length; i++) {
-    this.elements[i].update();
+    this.elements[i].update(this.div);
   }
 }
 
 // remove self from parent, from both Flex and DOM
-Flex.prototype.removeSelf = function() {
+// parent must be given, Flex does not keep a reference to its own parent, only children
+Flex.prototype.removeSelf = function(parent) {
   if(this.div == Flex_prevParent) Flex_prevParent = undefined;
   util.removeElement(this.div);
-  if(this.parent) {
-    var e = this.parent.elements;
+  if(parent) {
+    var e = parent.elements;
     for(var i = 0; i < e.length; i++) {
       if(e[i] == this) {
         e.splice(i, 1);
@@ -662,7 +676,7 @@ Flex.prototype.removeSelf = function() {
   }
 }
 
-// removes all children and inner HTML (but not style)  of own div as well, but keeps self existing
+// removes all children and inner HTML (but not style) of own div as well, but keeps self existing
 Flex.prototype.clear = function() {
   if(this.div == Flex_prevParent) Flex_prevParent = undefined;
   for(var i = 0; i < this.elements.length; i++) {
@@ -671,15 +685,6 @@ Flex.prototype.clear = function() {
   }
   this.elements = [];
   this.div.innerHTML = '';
-}
-
-// Like clear, but also clears style of own div, recreated it in fact
-Flex.prototype.clearFully = function() {
-  this.clear();
-  util.removeElement(this.div);
-  this.div = makeDiv(0, 0, 0, 0, this.parentdiv);
-  this.div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
-  this.updateSelf();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

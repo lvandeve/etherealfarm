@@ -29,17 +29,26 @@ function Res(o) {
   if(!(this instanceof Res)) {
     return new Res(o);
   }
-
-  if(!o) o = {};
-  // create a new Num for each, so that addrInPlace can't accently affect source number objects
-  this.seeds = Num(o.seeds || 0);
-  this.spores = Num(o.spores || 0);
-  this.resin = Num(o.resin || 0);
-  this.twigs = Num(o.twigs || 0);
-  this.seeds2 = Num(o.seeds2 || 0);
-  this.spores2 = Num(o.spores2 || 0);
-  this.amber = Num(o.amber || 0);
-  this.essence = Num(o.essence || 0); // fruit essence
+  if(o) {
+    // create a new Num for each, so that addrInPlace can't accently affect source number objects
+    this.seeds = new Num(o.seeds || 0);
+    this.spores = new Num(o.spores || 0);
+    this.resin = new Num(o.resin || 0);
+    this.twigs = new Num(o.twigs || 0);
+    this.seeds2 = new Num(o.seeds2 || 0);
+    this.spores2 = new Num(o.spores2 || 0);
+    this.amber = new Num(o.amber || 0);
+    this.essence = new Num(o.essence || 0); // fruit essence
+  } else {
+    this.seeds = new Num();
+    this.spores = new Num();
+    this.resin = new Num();
+    this.twigs = new Num();
+    this.seeds2 = new Num();
+    this.spores2 = new Num();
+    this.amber = new Num();
+    this.essence = new Num(); // fruit essence
+  }
 };
 
 // returns a new resource object with all values set to 1, e.g. for a bonus multiplier

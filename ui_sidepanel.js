@@ -126,7 +126,8 @@ function updateRightPane() {
           }
         }
       } else if(i + 1 == maxnum && unlocked.length + 1 >= maxnum) {
-        chip.clearFully();
+        chip.clear();
+        chip.div.style.border = '';
         centerText2(chip.div);
         chip.div.textEl.innerText = 'more in upgrades tab...';
       } else {
@@ -136,7 +137,7 @@ function updateRightPane() {
     }
     for(; i < bottomrightSidePanelFlexCache.length; i++) {
       if(!bottomrightSidePanelFlexCache[i]) continue;
-      bottomrightSidePanelFlexCache[i].removeSelf();
+      bottomrightSidePanelFlexCache[i].removeSelf(bottomRightFlex);
       bottomrightSidePanelFlexCache[i] = undefined;
     }
   }

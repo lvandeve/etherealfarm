@@ -765,7 +765,6 @@ function timeTilNextSeason() {
 
 // field cell with precomputed info
 function PreCell(f) {
-  this.f = f; // the associated field cell from the state
   this.x = f.x;
   this.y = f.y;
 
@@ -775,7 +774,7 @@ function PreCell(f) {
   // and must be used as follows to apply the malus: with a malus value starting at 1 for no neighbors, per bad neighbor, divide malus through (boost + 1). That is multiplicative (division), while the possitive bonus is additive.
   // --> this is already calculated in for flowers. For berries it must be done as above.
   // for other crops, like beehives and challenge crops, this value may have other crop specific meanings.
-  this.boost = Num(0);
+  this.boost = new Num();
 
   // boostboost from beehives to flowers. This is precomputed (unlike boost from flowers and nettles to plants, which is not implemented like this yet) to avoid too many recursive computations
   this.beeboostboost_received = Num(0);
@@ -792,32 +791,76 @@ function PreCell(f) {
 
   // before consumption/production computation. not taking any leech into account (multiply prod or cons with 1+leech if that's needed, or see prod0b below)
   // useful for UI that shows the potential production of a mushroom if it hypothetically got as many seeds as needed from neighbors
-  this.prod0 = Res();
+  this.prod0 = new Res();
   // for UI only, like prod0, but with final leech added. Not to be used in any computation. Represents the potential rather than actual production/consumption.
-  this.prod0b = Res();
+  this.prod0b = new Res();
   // during consumption/production computation, not useful for any UI, intermediate stage only
-  this.prod1 = Res();
-  this.wanted = Res();
-  this.gotten = Res();
+  this.prod1 = new Res();
+  this.wanted = new Res();
+  this.gotten = new Res();
   // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
-  this.prod2 = Res();
+  this.prod2 = new Res();
   // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. The sum of all prod3 on a field should be equal to the sum of all prod2. Also contains leech like prod2 does. However, the sum of all prod2 will be more numerically precise than that of prod3.
-  this.prod3 = Res();
+  this.prod3 = new Res();
 
   this.consumers = []; // if this is a berry: list of mushroom neighbors that consume from this
   this.producers = []; // if this is a mushroom: list of berry neighbors that produce for this
 
-  this.leech = Num(0); // how much leech there is on this plant. e.g. if 4 watercress neighbors leech 100% each, this value is 4 (in reality that high is not possible due to the penalty for multiple watercress)
-
-  // TODO: make these breakdowns lazy, with a ensureBreakdown function, so that they're only computed when desired to be displayed, not in the update loop every time if update gets repeatedly called
+  this.leech = new Num(); // how much leech there is on this plant. e.g. if 4 watercress neighbors leech 100% each, this value is 4 (in reality that high is not possible due to the penalty for multiple watercress)
 
   // breakdown of the production for UI. Is like prod0, but with leech result added, and also given if still growing.
   // Does not take consumption into account, and shows the negative consumption value of mushroom.
-  this.breakdown = [];
+  this.breakdown = undefined;
 
   // breakdown of the leech %
-  this.breakdown_leech = [];
+  this.breakdown_leech = undefined;
+
+  this.getBreakdown = function() {
+    if(this.breakdown == undefined) {
+      this.breakdown = [];
+      var f = state.field[this.y][this.x];
+      var c = f.getRealCrop();
+      if(c) {
+        if(this.hasbreakdown_prod) {
+          c.getProd(f, false, this.breakdown)
+        } else if(this.hasbreakdown_boost) {
+          c.getBoost(f, false, this.breakdown)
+        } else if(this.hasbreakdown_boostboost) {
+          c.getBoostBoost(f, false, this.breakdown)
+        }
+        if(this.breakdown_watercress_info) {
+          var num = this.breakdown_watercress_info[1];
+          var total = this.breakdown_watercress_info[2];
+          var prod3 = this.breakdown_watercress_info[3];
+          if(this.breakdown_watercress_info[0]) {
+            this.breakdown.push(['<span class="efWatercressHighlight">copying neighbors (' + num + ')</span>', false, total, prod3.clone()]);
+          } else {
+            if(state.upgrades[berryunlock_0].count) this.breakdown.push(['no neighbors, not copying', false, total, prod3.clone()]);
+          }
+        }
+      }
+    }
+
+    return this.breakdown;
+  };
+  this.getBreakdownWatercress = function() {
+    if(this.breakdown_leech == undefined) {
+      this.breakdown_leech = [];
+      var f = state.field[this.y][this.x];
+      var c = f.getRealCrop();
+      if(this.hasbreakdown_watercress) {
+        c.getLeech(f, this.breakdown_leech);
+      }
+    }
+    return this.breakdown_leech;
+  };
+
+  this.hasbreakdown_prod = false;
+  this.hasbreakdown_boost = false;
+  this.hasbreakdown_booostboost = false;
+  this.hasbreakdown_watercress = false;
+  this.breakdown_watercress_info = undefined;
 
   this.last_it = -1;
 
@@ -861,7 +904,8 @@ function precomputeField() {
   state.mistletoes = 0;
   state.workerbeeboost = Num(0);
 
-  // pass 0: precompute several types of boost to avoid too many recursive calls when computing regular boosts
+  // pass 0: precompute several types of boost to avoid too many recursive calls when computing regular boosts: bee challenge, nettle and beehive
+
   if(state.challenge == challenge_bees) {
     for(var y = 0; y < h; y++) {
       for(var x = 0; x < w; x++) {
@@ -920,6 +964,23 @@ function precomputeField() {
       var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
+        if(c.type == CROPTYPE_NETTLE) {
+          p.boost = c.getBoost(f);
+          p.hasbreakdown_boost = true;
+        }
+        if(c.type == CROPTYPE_BEE) {
+          p.boost = c.getBoostBoost(f);
+          p.hasbreakdown_boostboost = true;
+        }
+      }
+    }
+  }
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getRealCrop();
+      if(c) {
+        var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BERRY) {
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -928,7 +989,8 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_NETTLE) {
-              var boost = c2.getBoost(f2); // TODO: prevent this being called twice or more, this number is also computed below in pass 1 already, move nettle computation to earlier pass
+              var p2 = prefield[y2][x2];
+              var boost = p2.boost;
               p.nettlemalus_received.divInPlace(boost.addr(1));
               p.num_nettle++;
             }
@@ -951,7 +1013,8 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_BEE) {
-              var boostboost = c2.getBoostBoost(f2); // TODO: prevent this being called twice or more, this number is also computed below in pass 1 already, move beehive computation to earlier pass
+              var p2 = prefield[y2][x2];
+              var boostboost = p2.boost;
               p.beeboostboost_received.addInPlace(boostboost);
               p.num_bee++;
             }
@@ -961,18 +1024,20 @@ function precomputeField() {
     }
   }
 
-  // pass 1: compute boosts of flowers and nettles, and other misc position related features
+  // pass 1: compute boosts of flowers now that nettle and beehive effect is known, and other misc position related features
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
       var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
-        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
-          p.boost = c.getBoost(f, false, p.breakdown); // includes preliminary non-fullgrown case
+        if(c.type == CROPTYPE_FLOWER) {
+          p.boost = c.getBoost(f);
+          p.hasbreakdown_boost = true;
         }
         if(c.type == CROPTYPE_BEE) {
-          p.boost = c.getBoostBoost(f, false, p.breakdown); // includes preliminary non-fullgrown case
+          p.boost = c.getBoostBoost(f);
+          p.hasbreakdown_boostboost = true;
         }
         if(c.type == CROPTYPE_MISTLETOE) {
           var num_neighbors = 4;
@@ -1022,8 +1087,8 @@ function precomputeField() {
       if(c) {
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) continue; // don't overwrite their boost breakdown with production breakdown
         var p = prefield[y][x];
-        var prod = c.getProd(f, false, p.breakdown);
-        //if(!f.isFullGrown()) c.getProd(f, true, p.breakdown); // preliminary breakdown if still growing
+        var prod = c.getProd(f);
+        p.hasbreakdown_prod = true;
         p.prod0 = prod;
         p.prod0b = Res(prod); // a separate copy
         // used by pass 4, production that berry has avaialble for mushrooms, which is then subtarcted from
@@ -1207,13 +1272,24 @@ function precomputeField() {
           }
           // also add this to the breakdown
           if(!total.empty()) {
-            p.breakdown.push(['<span class="efWatercressHighlight">copying neighbors (' + num + ')</span>', false, total, p.prod3.clone()]);
-            c.getLeech(f, p.breakdown_leech);
+            c.getLeech(f);
+            p.hasbreakdown_watercress = true;
+            p.breakdown_watercress_info = [true, num, total, p.prod3];
           } else {
-            if(state.upgrades[berryunlock_0].count) p.breakdown.push(['no neighbors, not copying', false, total, p.prod3.clone()]);
+            p.breakdown_watercress_info = [false, num, total, p.prod3];
           }
         }
       }
+    }
+  }
+
+
+  // memory cleanup pass, and avoidance of lasting circular dependencies
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var p = prefield[y][x];
+      p.producers = [];
+      p.consumers = [];
     }
   }
 };
@@ -3031,7 +3107,7 @@ function removeShiftCropChip() {
 
   if(!shiftCropFlex) return;
 
-  shiftCropFlex.removeSelf();
+  shiftCropFlex.removeSelf(gameFlex);
   shiftCropFlex = undefined;
 }
 
@@ -3138,7 +3214,7 @@ function removeShiftCrop2Chip() {
 
   if(!shiftCrop2Flex) return;
 
-  shiftCrop2Flex.removeSelf();
+  shiftCrop2Flex.removeSelf(gameFlex);
   shiftCrop2Flex = undefined;
 }
 

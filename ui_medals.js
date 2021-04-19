@@ -160,7 +160,7 @@ function updateMedalUI() {
 
   if(changed) {
     if(medalTierKeys) {
-      for(var i = 0; i < medalTierKeys.length; i++) medalTierKeys[i].removeSelf();
+      for(var i = 0; i < medalTierKeys.length; i++) medalTierKeys[i].removeSelf(medalGrid);
     }
     medalTierKeys = [];
     var xpos = 0;
@@ -190,7 +190,7 @@ var medalChipFlex = undefined;
 function removeMedalChip() {
   if(!medalChipFlex) return;
 
-  medalChipFlex.removeSelf();
+  medalChipFlex.removeSelf(gameFlex);
   medalChipFlex = undefined;
 }
 

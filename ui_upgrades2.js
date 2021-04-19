@@ -74,7 +74,6 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     }, i));
   } else {
     buyFlex.div.innerText = 'Cost: ' + cost.toString();
-    //buyFlex.setCentered();
   }
 
 
@@ -199,10 +198,9 @@ function updateUpgrade2UI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
     var w = 0.45;
 
-    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.25, y * w + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.25, (y + 1) * w - 0.01, 0.27], 0.6);
+    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.25, y * w + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.25, (y + 1) * w - 0.01, 0.27], 0.6, true);
     styleButton(flex.div);
     flex.div.innerText = 'See Completed Upgrades';
-    flex.setCentered();
 
     addButtonAction(flex.div, function() {
       var dialog = createDialog();

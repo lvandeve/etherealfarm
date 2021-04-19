@@ -53,7 +53,7 @@ function makeMainDivs() {
 
   var has_top_notice = !!document.getElementById('topnotice');
 
-  if(mainFlex) mainFlex.removeSelf();
+  if(mainFlex) mainFlex.removeSelf(null);
   mainFlex = new Flex(null, 0, 0, 1, 1);
 
   gameFlex = new Flex(mainFlex, [0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0.99, 0.75], 0.99);

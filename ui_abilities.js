@@ -38,14 +38,12 @@ function formatAbilityDurationTooltipText(name, description, duration, wait) {
 
 
 function updateAbilitiesUI() {
-
-
   //////////////////////////////////////////////////////////////////////////////
 
 
   if(sunbutton && !state.upgrades[upgrade_sununlock].count) {
-    sunbutton.removeSelf();
-    suntimerflex.removeSelf();
+    sunbutton.removeSelf(topFlex);
+    suntimerflex.removeSelf(topFlex);
     sunbutton = undefined;
   }
 
@@ -91,8 +89,8 @@ function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
 
   if(mistbutton && !state.upgrades[upgrade_mistunlock].count) {
-    mistbutton.removeSelf();
-    misttimerflex.removeSelf();
+    mistbutton.removeSelf(topFlex);
+    misttimerflex.removeSelf(topFlex);
     mistbutton = undefined;
   }
 
@@ -137,8 +135,8 @@ function updateAbilitiesUI() {
 
 
   if(rainbowbutton && !state.upgrades[upgrade_rainbowunlock].count) {
-    rainbowbutton.removeSelf();
-    rainbowtimerflex.removeSelf();
+    rainbowbutton.removeSelf(topFlex);
+    rainbowtimerflex.removeSelf(topFlex);
     rainbowbutton = undefined;
   }
 
@@ -197,7 +195,7 @@ function updateAbilitiesUI() {
     }
   } else if(watercressbutton) {
     watercressbutton.clear();
-    watercressbutton.removeSelf();
+    watercressbutton.removeSelf(topFlex);
     watercressbutton = undefined;
   }
 

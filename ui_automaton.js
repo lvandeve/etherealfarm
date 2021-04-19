@@ -254,6 +254,56 @@ function showConfigureAutoChoiceDialog(subject) {
   }
 }
 
+
+
+function showAutomatonFeatureSourceDialog() {
+  var dialog = createDialog();
+
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  centerText2(titleDiv);
+  titleDiv.textEl.innerText = 'Automation features unlock sources';
+
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
+
+  var text = '';
+
+  text += 'This is what unlocked the automaton features you got so far:';
+  text += '<br/><br/>';
+  text += ' • Automaton itself: unlock automaton upgrade (ethereal tree level 1)';
+  text += '<br/>';
+  text += ' • Blueprints and templates: initial';
+  text += '<br/>';
+  text += ' • Automation of choice upgrades: initial';
+  text += '<br/>';
+  text += ' • Delete entire field button: initial';
+  text += '<br/>';
+  if(state.automaton_unlocked[1]) {
+    text += ' • Auto-upgrades: no-upgrades challenge (ethereal tree level 2)';
+    text += '<br/>';
+  }
+  if(state.automaton_unlocked[1] >= 2) {
+    text += ' • Auto-upgrades finetuning options: no-upgrades challenge stage 2';
+    text += '<br/>';
+  }
+  if(state.automaton_unlocked[2]) {
+    text += ' • Auto-plant: wither challenge (ethereal tree level 3)';
+    text += '<br/>';
+  }
+  if(state.automaton_unlocked[2] >= 2) {
+    text += ' • Auto-plant finetuning options: wither challenge stage 2';
+    text += '<br/>';
+  }
+  if(state.automaton_unlocked[3]) {
+    text += ' • Auto-unlock: blackberry challenge (ethereal tree level 4)';
+    text += '<br/>';
+  }
+
+
+  div.innerHTML = text;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 function updateAutomatonUI() {
@@ -327,6 +377,10 @@ function updateAutomatonUI() {
   var canvasFlex = new Flex(automatonFlex, [1, -0.25], [0, 0.01], [1, -0.06], [0, 0.2], 0.3);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(images_automaton[4], canvas);
+  styleButton0(canvasFlex.div, true);
+  addButtonAction(canvasFlex.div, function() {
+    showAutomatonFeatureSourceDialog();
+  });
 
   texth = 0.1;
   flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);

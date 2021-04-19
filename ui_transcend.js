@@ -460,7 +460,7 @@ var challengeChipFlex = undefined;
 function removeChallengeChip() {
   if(!challengeChipFlex) return;
 
-  challengeChipFlex.removeSelf();
+  challengeChipFlex.removeSelf(gameFlex);
   challengeChipFlex = undefined;
 }
 
