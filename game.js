@@ -192,6 +192,12 @@ function hardReset() {
   removeMedalChip();
   removeHelpChip();
 
+  prev_season = -1;
+  large_time_delta = false;
+  large_time_delta_time = 0;
+  large_time_delta_res = Res();
+  num_season_changes = 0;
+  num_tree_levelups = 0;
 
   initUI();
   update();
@@ -1091,7 +1097,7 @@ function precomputeField() {
         p.hasbreakdown_prod = true;
         p.prod0 = prod;
         p.prod0b = Res(prod); // a separate copy
-        // used by pass 4, production that berry has avaialble for mushrooms, which is then subtarcted from
+        // used by pass 4, production that berry has available for mushrooms, which is then subtracted from
         p.prod1 = Res(prod);
         if(prod.seeds.ltr(0)) {
           // how much input mushrooms want
@@ -1804,7 +1810,15 @@ var last_fullgrown_sound_time0 = 0;
 var last_fullgrown_sound_time1 = 0;
 var last_fullgrown_sound_time2 = 0;
 
+var large_time_delta = false;
+var large_time_delta_time = 0;
+var large_time_delta_res = Res();
+// for messages in case of long delta
+var num_season_changes = 0;
+var num_tree_levelups = 0;
+
 var update = function(opt_fromTick) {
+  var prev_large_time_delta = large_time_delta;
   var autoplanted = false;
 
   var undostate = undefined;
@@ -1812,10 +1826,6 @@ var update = function(opt_fromTick) {
     undostate = util.clone(state);
   }
   var store_undo = false;
-
-  // for messages in case of long delta
-  var num_season_changes = 0;
-  var num_tree_levelups = 0;
 
   if(!preupdate(opt_fromTick)) return;
 
@@ -1845,7 +1855,7 @@ var update = function(opt_fromTick) {
   var numloops = 0;
   for(;;) { ////////////////////////////////////////////////////////////////////
     if(done) break;
-    if(numloops++ > 400) break;
+    if(numloops++ > 500) break;
 
     /*
     During an update, there's a time interval in which we operate.
@@ -2660,7 +2670,7 @@ var update = function(opt_fromTick) {
                 }
                 // it's ok to ignore the production: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the time delta represents the time when it was not yet fullgrown, so no production added)
               }
-              prod = p.prod2.mulr(f.growth);
+              prod = p.prod2;
             } else {
               // fullgrown
               prod = p.prod2;
@@ -2748,9 +2758,6 @@ var update = function(opt_fromTick) {
       if(state.challenge && !challenges[state.challenge].allowbeyondhighestlevel && state.treelevel > state.g_treelevel) do_twigs = false;
 
       if(do_twigs) {
-        if(getSeason() == 2) {
-          showMessage('Autumn twigs bonus: ' + (getAutumnMistletoeBonus().subr(1)).toPercentString());
-        }
         twigs = nextTwigs().twigs;
         state.twigs.addInPlace(twigs);
       }
@@ -2764,9 +2771,6 @@ var update = function(opt_fromTick) {
 
       if(do_resin) {
         resin = currentTreeLevelResin(); // treelevel already ++'d above
-        if(getSeason() == 3) {
-          showMessage('Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1)).toPercentString());
-        }
         state.resin.addInPlace(resin);
       }
       state.res.subInPlace(req);
@@ -2775,7 +2779,9 @@ var update = function(opt_fromTick) {
           '. Consumed: ' + req.toString() +
           '. Tree boost: ' + getTreeBoost().toPercentString();
       if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResin().toString();
+      if(getSeason() == 3) message += '. Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1)).toPercentString();
       if(twigs.neqr(0)) message += '. Twigs from mistletoe added: ' + twigs.toString();
+      if(getSeason() == 2) message += '. Autumn twigs bonus: ' + (getAutumnMistletoeBonus().subr(1)).toPercentString();
       if(state.treelevel == 9) {
         message += '. The tree is almost an adult tree now.';
       }
@@ -3019,6 +3025,13 @@ var update = function(opt_fromTick) {
 
   var d_total = state.prevtime - oldtime;
   if(d_total > 300) {
+    large_time_delta = true;
+  } else {
+    large_time_delta = false;
+  }
+  large_time_delta_time += d_total;
+
+  if(prev_large_time_delta && !large_time_delta) {
     var totalgain = state.res.sub(oldres);
     var season_message = '';
     if(num_season_changes > 1) {
@@ -3028,8 +3041,12 @@ var update = function(opt_fromTick) {
     if(num_tree_levelups > 0) {
       tree_message = '. The tree leveled up ' + num_tree_levelups + ' times';
     }
+
+    var t_total = large_time_delta_time;
+    var totalgain = state.res.sub(large_time_delta_res);
+
     // if negative time was used, this message won't make sense, it may say 'none', which is indeed what you got when compensating for negative time. But the message might then be misleading.
-    if(!negative_time_used) showMessage('Large time delta: ' + util.formatDuration(d_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, C_UNIMPORTANT, 0, 0);
+    if(!negative_time_used) showMessage('Large time delta: ' + util.formatDuration(t_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, C_UNIMPORTANT, 0, 0);
   }
 
   // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.
@@ -3058,6 +3075,14 @@ var update = function(opt_fromTick) {
     var action = do_transcend;
     softReset(action.challenge);
   }
+
+  if(!large_time_delta) {
+    num_season_changes = 0;
+    num_tree_levelups = 0;
+    large_time_delta_res = Res(state.res);
+    large_time_delta_time = 0;
+  }
+
 
   updateResourceUI();
   updateUpgradeUIIfNeeded();

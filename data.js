@@ -371,6 +371,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
 }
 
 // f = Cell from field, or undefined to not take location-based production bonuses into account
+// prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called
 // pretend: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
 Crop.prototype.getProd = function(f, pretend, breakdown) {
   var result = Res(this.prod);
@@ -379,11 +380,11 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     // wither challenge
     if(state.challenge == challenge_wither) {
-      var t = Num(witherCurve(f.growth));
+      var t = Num(witherCurve(f.growth) * f.growth);
       result.mulInPlace(t);
       if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
     } else {
-      var t = Num(f.growth);
+      var t = Num(f.growth * f.growth); // unlike flowers etc..., the actual producers ramp up quadratically (= a slower start, but not applied to flowers/beehives/... to count this effect in only once)
       result.mulInPlace(t);
       if(breakdown) breakdown.push(['growing', true, t, result.clone()]);
     }
@@ -477,26 +478,22 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
     var mul_boost = Num(1);
     var num = 0;
+    var x = f.x, y = f.y, w = state.numw, h = state.numh;
 
-    var getboost = function(self, n) {
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+      var n = state.field[y2][x2];
       if(n.hasCrop() && n.getCrop().type != CROPTYPE_NETTLE) {
-        var boost = n.getCrop().getBoost(n);
+        var boost = prefield[n.y][n.x].boost; //n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
-          //if(season == 2 || season == 3) {
-          //  mul_boost = Num.max(mul_boost, boost.addr(1));
-          //} else {
-            mul_boost.addInPlace(boost);
-          //}
-          return true;
+          mul_boost.addInPlace(boost);
+          num++;
         }
       }
-      return false;
-    };
+    }
 
-    if(f.x > 0 && getboost(this, state.field[f.y][f.x - 1])) num++;
-    if(f.y > 0 && getboost(this, state.field[f.y - 1][f.x])) num++;
-    if(f.x + 1 < state.numw && getboost(this, state.field[f.y][f.x + 1])) num++;
-    if(f.y + 1 < state.numh && getboost(this, state.field[f.y + 1][f.x])) num++;
     result.mulInPlace(mul_boost);
     if(breakdown && num > 0) breakdown.push(['flowers (' + num + ')', true, mul_boost, result.clone()]);
   }
@@ -517,22 +514,22 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(f && (this.type == CROPTYPE_MUSH)) {
     var spore_boost = Num(1);
     var num = 0;
+    var x = f.x, y = f.y, w = state.numw, h = state.numh;
 
-    var getboost = function(self, n) {
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+      var n = state.field[y2][x2];
       if(n.hasCrop() && n.getCrop().type == CROPTYPE_NETTLE) {
-        var boost = n.getCrop().getBoost(n);
+        var boost = prefield[n.y][n.x].boost; //n.getCrop().getBoost(n);
         if(boost.neqr(0)) {
           spore_boost.addInPlace(boost);
-          return true;
+          num++;
         }
       }
-      return false;
-    };
+    }
 
-    if(f.x > 0 && getboost(this, state.field[f.y][f.x - 1])) num++;
-    if(f.y > 0 && getboost(this, state.field[f.y - 1][f.x])) num++;
-    if(f.x + 1 < state.numw && getboost(this, state.field[f.y][f.x + 1])) num++;
-    if(f.y + 1 < state.numh && getboost(this, state.field[f.y + 1][f.x])) num++;
     result.spores.mulInPlace(spore_boost);
     if(breakdown && num > 0) breakdown.push(['nettles (' + num + ')', true, spore_boost, result.clone()]);
   }

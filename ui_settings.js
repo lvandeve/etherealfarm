@@ -474,6 +474,15 @@ function createStatsDialog() {
   if(state.upgrades[upgrade_sununlock].count > 0) text += '• sun ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait() - getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait(), true) + close + '<br>';
   if(state.upgrades[upgrade_mistunlock].count > 0) text += '• mist ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait() - getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait(), true) + close + '<br>';
   if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
+  if(state.g_res.resin.neqr(0)) {
+    text += '• resin/hour: ' + open + getResinHour().toString() + close + '<br>';
+    text += '• best resin/hour: ' + open + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + close + '<br>';
+  }
+  if(state.g_res.twigs.neqr(0)) {
+    text += '• twigs/hour: ' + open + getTwigsHour().toString() + close + '<br>';
+    text += '• best twigs/hour: ' + open + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + close + '<br>';
+  }
+
 
   if(state.g_numresets > 0) {
     text += '<br>';
@@ -581,6 +590,14 @@ function createStatsDialog() {
       text += '• fruit upgrades: ' + open + state.p_numfruitupgrades + close + '<br>';
     }
     text += '• weather abilities activated: ' + open + state.p_numabilities + close + '<br>';
+    if(state.g_res.resin.neqr(0)) {
+      text += '• resin/hour: ' + open + (state.p_res.resin.divr(state.p_runtime / 3600)).toString() + close + '<br>';
+      text += '• best resin/hour: ' + open + state.p_res_hr_best.resin.toString() + ' at level ' + state.p_res_hr_at.resin.valueOf() + close + '<br>';
+    }
+    if(state.g_res.twigs.neqr(0)) {
+      text += '• twigs/hour: ' + open + (state.p_res.twigs.divr(state.p_runtime / 3600)).toString() + close + '<br>';
+      text += '• best twigs/hour: ' + open + state.p_res_hr_best.twigs.toString() + ' at level ' + state.p_res_hr_at.twigs.valueOf() + close + '<br>';
+    }
     text += '<br>';
   }
 

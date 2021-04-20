@@ -90,7 +90,7 @@ function createFruitHelp() {
 
   var text = '';
 
-  text += 'Fruits have one or more abilities from a random set.';
+  text += 'Fruits drop when the tree reaches certain levels. Fruits have one or more abilities from a random set. At higher tree levels, higher tier fruits with more and stronger abilities can drop.';
   text += '<br/><br/>';
   text += 'You can move fruits between the stored and sacrificial slots with the buttons in the fruit dialog. You can choose the active fruit with the arrows. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time.';
   text += '<br/><br/>';
@@ -202,6 +202,9 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       flex.div.innerText = text;
       y += s * 0.5;
     };
+
+    addTitle('Fusing exists to gradually choose a set of abilities, circumventing the random drops. It doesn\'t make fruits stronger. Abilities marked [**] can be transfered to other fruits.');
+    y += s * 0.5;
 
     addTitle('choose other fruit to fuse:');
 

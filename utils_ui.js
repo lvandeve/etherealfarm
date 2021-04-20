@@ -790,7 +790,7 @@ function makeDropdown(flex, title, current, choices, fun) {
     } else {
       dropdownEl = undefined;
     }
-    if(showing) choiceFlex.update();
+    if(showing) choiceFlex.update(gameFlex);
   };
   choiceFlex.showFun(false);
 
