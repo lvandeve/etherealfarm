@@ -50,7 +50,7 @@ function updateMedalUI() {
 
   var w = 64;
   var h = 64;
-  var num = registered_medals.length;
+  var num = medals_order.length;
   var numx = tierColors.length;
   //medalFlex.div.removeChild(medalGrid.div);
 
@@ -58,8 +58,8 @@ function updateMedalUI() {
 
   var i = -1;
   for(var j = 0; j < num; j++) {
-    var m = medals[registered_medals[j]];
-    var m2 = state.medals[registered_medals[j]];
+    var m = medals[medals_order[j]];
+    var m2 = state.medals[medals_order[j]];
 
     var show = false;
     if(m2.earned) show = true;

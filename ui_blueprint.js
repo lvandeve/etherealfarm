@@ -345,7 +345,7 @@ function createBlueprintsDialog() {
         if(!state.allowshiftdelete) {
           showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
         } else if(state.treelevel < min_transcension_level && (state.treelevel != 0 || state.challenge)) {
-          showMessage('not high enough tree level to transcend', C_INVALID);
+          showMessage('not high enough tree level to transcend (ctrl+shift+blueprint tries to transcend first, use shift+blueprint to just plant it)', C_INVALID);
         } else {
           if(state.treelevel >= min_transcension_level) actions.push({type:ACTION_TRANSCEND, challenge:0});
           actions.push({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});

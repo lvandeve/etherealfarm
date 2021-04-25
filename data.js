@@ -189,6 +189,8 @@ var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through m
 //for state.delete2tokes
 var delete2initial = 4; // how many deletions received at game start
 
+var delete2all_cost = 4;
+
 // how many deletions on the ethereal field may be done per season
 var getDelete2PerSeason = function() {
   return state.challenges[challenge_nodelete].completed ? 3 : 2;
@@ -1710,6 +1712,9 @@ function Medal() {
   this.hint = undefined; // if the medal with id hint is unlocked, then reveals the existance of this medal in the UI (but does not unlock it)
 
   this.icon = undefined;
+
+  this.index = 0; // its index in registered_medals
+  this.order = 0; // its index in medals_order
 };
 
 // Tier for achievement images if no specific one given, maps to zinc, copper, silver, electrum, gold, etc..., see images_medals.js
@@ -1729,9 +1734,25 @@ Medal.prototype.getTier = function() {
 };
 
 var registered_medals = []; // indexed consecutively, gives the index to medal
-var medals = []; // indexed by medal index (not necessarily consectuive
+var medals = []; // indexed by medal index (not necessarily consectuive)
+var medals_order = []; // display order of the medals, contains the indexes in medals array
 
 var medal_register_id = -1;
+
+// where = index of medal to put this one behind in display order
+function changeMedalDisplayOrder(index, where) {
+  if(where > index) throw 'can only move order backward for now';
+  var a = medals[where];
+  var b = medals[index];
+
+  var from = a.order + 1;
+  var to = b.order;
+  for(var i = to; i > from; i--) {
+    medals_order[i] = medals_order[i - 1];
+  }
+  medals_order[from] = index;
+  b.order = from;
+}
 
 function registerMedal(name, description, icon, conditionfun, prodmul) {
   if(medals[medal_register_id] || medal_register_id < 0 || medal_register_id > 65535) throw 'medal id already exists or is invalid!';
@@ -1746,6 +1767,9 @@ function registerMedal(name, description, icon, conditionfun, prodmul) {
   medal.icon = icon;
   medal.conditionfun = conditionfun;
   medal.prodmul = prodmul;
+
+  medal.order = medals_order.length;
+  medals_order[medal.order] = medal.index;
 
   if(!icon) medal.icon = medalgeneric[medal.getTier()];
 
@@ -2049,7 +2073,7 @@ registerMedal('the bees knees', 'completed the bees challenge', images_queenbee[
   return !!state.challenges[challenge_bees].completed;
 }, Num(0.1));
 
-registerMedal('on the rocks', 'completed the rocks challenge', images_rock[1], function() {
+var medal_rock0 = registerMedal('on the rocks', 'completed the rocks challenge', images_rock[1], function() {
   return !!state.challenges[challenge_rocks].completed;
 }, Num(0.05));
 
@@ -2069,7 +2093,7 @@ registerMedal('withering', 'completed the wither challenge', undefined, function
   return state.challenges[challenge_wither].completed >= 1;
 }, Num(0.35));
 
-registerMedal('withered', 'completed the wither challenge state 2', undefined, function() {
+registerMedal('withered', 'completed the wither challenge stage 2', undefined, function() {
   return state.challenges[challenge_wither].completed >= 2;
 }, Num(0.7));
 
@@ -2080,6 +2104,17 @@ registerMedal('berry basic', 'completed the blackberry challenge', blackberry[4]
 registerMedal('B', 'place a beehive during the blackberry challenge', images_beehive[4], function() {
   return state.challenge == challenge_blackberry && state.fullgrowncropcount[bee_0] > 0;
 }, Num(1.5));
+
+var medal_rock1 = registerMedal('rock lobster', 'completed the rocks challenge stage 2', images_rock[2], function() {
+  return state.challenges[challenge_rocks].completed >= 2;
+}, Num(0.15));
+changeMedalDisplayOrder(medal_rock1, medal_rock0);
+
+var medal_rock2 = registerMedal('this rocks!', 'completed the rocks challenge stage 3', images_rock[3], function() {
+  return state.challenges[challenge_rocks].completed >= 3;
+}, Num(0.45));
+changeMedalDisplayOrder(medal_rock2, medal_rock1);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2412,36 +2447,6 @@ Crop2.prototype.getPlantTime = function() {
   return this.planttime;
 };
 
-// for lotuses
-// get the boost of boosting neighbors given to this crop, not as resource boost but as the boost percentage, to apply to relevant ethereal properties
-Crop2.getNeighborBoost = function(f) {
-
-  // flower boost
-  if(f) {
-    var result = Num(0);
-    var num = 0;
-
-    var getboost = function(n) {
-      if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type != CROPTYPE_NETTLE) {
-        var boost = crops2[n.cropIndex()].getEtherealBoost(n);
-        if(boost.neqr(0)) {
-          result.addInPlace(boost);
-          return true;
-        }
-      }
-      return false;
-    };
-
-    if(f.x > 0 && getboost(state.field2[f.y][f.x - 1])) num++;
-    if(f.y > 0 && getboost(state.field2[f.y - 1][f.x])) num++;
-    if(f.x + 1 < state.numw2 && getboost(state.field2[f.y][f.x + 1])) num++;
-    if(f.y + 1 < state.numh2 && getboost(state.field2[f.y + 1][f.x])) num++;
-
-    return result;
-  }
-
-  return Num(0);
-};
 
 // for lotuses
 Crop2.prototype.getEtherealBoost = function(f, breakdown) {
@@ -2452,15 +2457,53 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
 };
 
 
+var automatonboost = Num(0.25);
+
 // boost to basic field
 Crop2.prototype.getBasicBoost = function(f, breakdown) {
   var result = this.effect.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
 
-  var lotusmul = Crop2.getNeighborBoost(f).addr(1);
-  result.mulInPlace(lotusmul);
-  if(breakdown) breakdown.push(['lotuses', true, lotusmul, result.clone()]);
+
+  // lotuses
+  if(f) {
+    var lotusmul = Num(1);
+    var num = 0;
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
+      var n = state.field2[y2][x2];
+      if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type == CROPTYPE_LOTUS) {
+        var boost = crops2[n.cropIndex()].getEtherealBoost(n);
+        if(boost.neqr(0)) {
+          lotusmul.addInPlace(boost);
+          num++;
+        }
+      }
+    }
+    result.mulInPlace(lotusmul);
+    if(breakdown) breakdown.push(['lotuses (' + num + ')', true, lotusmul, result.clone()]);
+  }
+
+  // automaton
+  if(f) {
+    var automatonmul = Num(1);
+
+    for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+      var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+      var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
+      if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
+      var n = state.field2[y2][x2];
+      if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type == CROPTYPE_AUTOMATON) {
+        automatonmul.addInPlace(automatonboost);
+      }
+    }
+    result.mulInPlace(automatonmul);
+    if(breakdown) breakdown.push(['automaton', true, automatonmul, result.clone()]);
+  }
 
   if(this.type == CROPTYPE_BERRY) {
     var u = state.upgrades2[upgrade2_berry];

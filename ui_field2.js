@@ -56,9 +56,14 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
   }
 
+  var automaton = c.type == CROPTYPE_AUTOMATON;
+
   if(f.growth >= 1) {
     if(c.boost.neqr(0)) {
       result += '<br/>Boosting neighbors: ' + (c.getEtherealBoost(f).toPercentString()) + '<br/>';
+    }
+    if(automaton) {
+      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (automatonboost.toPercentString()) + '<br/>';
     }
   }
 
@@ -68,11 +73,17 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += '<br/>';
   }
 
-  result += '<br/>Cost: ';
-  if(opt_detailed) result += '<br/>• Base planting cost: ' + c.cost.toString();
-  result += '<br/>• Next planting cost: ' + c.getCost().toString();
-  result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
-  result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+
+  if(automaton) {
+    result += '<br/>• Cost: ' + c.cost.toString();
+    result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+  } else {
+    result += '<br/>Cost: ';
+    if(opt_detailed) result += '<br/>• Base planting cost: ' + c.cost.toString();
+    result += '<br/>• Next planting cost: ' + c.getCost().toString();
+    result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
+    result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+  }
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
 
@@ -154,6 +165,7 @@ function makeField2Dialog(x, y) {
     var button0 = new Flex(dialog.content, [0.01, 0.2], [0.7 + buttonshift, 0.01], 0.5, 0.76 + buttonshift, 0.8).div;
     var button1 = new Flex(dialog.content, [0.01, 0.2], [0.77 + buttonshift, 0.01], 0.5, 0.83 + buttonshift, 0.8).div;
     var button2 = new Flex(dialog.content, [0.01, 0.2], [0.84 + buttonshift, 0.01], 0.5, 0.90 + buttonshift, 0.8).div;
+    var button3 = new Flex(dialog.content, [0.01, 0.2], [0.91 + buttonshift, 0.01], 0.5, 0.97 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -183,6 +195,32 @@ function makeField2Dialog(x, y) {
       actions.push({type:ACTION_DELETE2, x:x, y:y});
       dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
+    });
+
+    styleButton(button3);
+    button3.textEl.innerText = 'Delete all (4 tokens)';
+    button3.textEl.style.color = '#c00';
+    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1)) button3.textEl.style.color = '#888';
+    if(!state.delete2tokens) button3.textEl.style.color = '#888';
+    var tooltiptext = 'Delete entire ethereal field for ' + delete2all_cost + ' tokens, this allows restructuring all. Cannot delete crops planted during this transcend.';
+    if(haveAutomaton())  tooltiptext += ' Keeps around the automaton, but that one is free to delete anyway.'
+    registerTooltip(button3, tooltiptext);
+    addButtonAction(button3, function() {
+      if(state.delete2tokens < delete2all_cost) showMessage('need at least ' + delete2all_cost + ' tokens for this', C_INVALID, 0, 0);
+      setTab(tabindex_field2);
+      window.setTimeout(function() {
+        for(var y = 0; y < state.numh2; y++) {
+          for(var x = 0; x < state.numw2; x++) {
+            var f;
+            f = state.field2[y][x];
+            if(f.hasCrop() && f.getCrop().type != CROPTYPE_AUTOMATON) {
+              actions.push({type:ACTION_DELETE2, x:x, y:y, silent:true});
+            }
+          }
+        }
+        closeAllDialogs();
+        update();
+      }, 333);
     });
 
     updatedialogfun = bind(function(f, c, flex) {

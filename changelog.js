@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.66 (2021-04-26):';
+  text += '<br/>• Automaton in ethereal field now gives a boost to 8 neighbors, similar to the lotus 4-neighbor boost but as its own separate multiplier.';
+  text += '<br/>• You can now delete the entire ethereal field for 4 ethereal delete tokens.';
+  text += '<br/>• Added some missing challenge achievements.';
+  text += '<br/><br/>';
+
   text += '0.1.65 (2021-04-25):';
   text += '<br/>• New ethereal upgrades at levels 4 and 5 (ethereal berry and mushroom upgrade, ethereal field 7x6, fruit slot)';
   text += '<br/>• New ethereal crop (morel)';

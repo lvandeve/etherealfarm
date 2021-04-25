@@ -1995,6 +1995,8 @@ var update = function(opt_fromTick) {
     var upgrades_done = false;
     var upgrades2_done = false;
 
+    var delete2tokens_used = 0; // if all are used in the same set of actions, only up to `delete2all_cost` are used. This is for the delete all ethereal fields action
+
     // action
     while(actions.length) {
       var action = actions[0];
@@ -2248,6 +2250,7 @@ var update = function(opt_fromTick) {
 
         var freedelete = (f.index == CROPINDEX + automaton2_0);
         var freetoken = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type);
+        var freetokenall = delete2tokens_used >= delete2all_cost;
         var sametypeupgrade = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type && action.crop.tier > f.getCrop().tier);
         if(f.hasCrop() && f.getCrop().istemplate) freedelete = true;
 
@@ -2274,12 +2277,12 @@ var update = function(opt_fromTick) {
           var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
           if(f.cropIndex() == fern2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_0));
           if(f.cropIndex() == fern2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_1));
-          if(!freedelete && !freetoken && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
-            showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
+          if(!freedelete && !freetoken && !freetokenall && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
+            showMessage('cannot delete ' + f.getCrop().name + ': must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
             ok = false;
           } else if(!freedelete && f.justplanted && !sametypeupgrade && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
             // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
-            showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
+            showMessage('cannot delete ' + f.getCrop().name + ': this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
             ok = false;
           } else if(f.cropIndex() == fern2_0 && state.res.lt(remstarter)) {
             showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', C_INVALID, 0, 0);
@@ -2321,7 +2324,7 @@ var update = function(opt_fromTick) {
             state.c_res.subInPlace(remstarter);
           }
           if(freedelete) {
-            showMessage('this crop is free to delete, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
+            if(!action.silent) showMessage('this crop is free to delete, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
             state.g_numplanted2--;
           } else if(freetoken) {
             showMessage('replaced crop with same type, so no ethereal delete token used');
@@ -2330,8 +2333,11 @@ var update = function(opt_fromTick) {
             state.g_numplanted2--;
           } else {
             state.g_numunplanted2++;
-            if(state.delete2tokens > 0) state.delete2tokens--;
-            showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
+            if(state.delete2tokens > 0 && !freetokenall) {
+              state.delete2tokens--;
+              delete2tokens_used++;
+            }
+            if(!action.silent) showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
           }
           f.index = 0;
           f.growth = 0;

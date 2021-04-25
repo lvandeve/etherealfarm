@@ -279,6 +279,8 @@ function showAutomatonFeatureSourceDialog() {
   text += '<br/>';
   text += ' • Delete entire field button: initial';
   text += '<br/>';
+  text += ' • Neighbor bonus in ethereal field: initial';
+  text += '<br/>';
   if(state.automaton_unlocked[1]) {
     text += ' • Auto-upgrades: no-upgrades challenge (ethereal tree level 2)';
     text += '<br/>';
@@ -411,7 +413,7 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   flex.div.textEl.innerText = 'Delete entire field';
   addButtonAction(flex.div, bind(function() {
-    setTab(0);
+    setTab(tabindex_field);
     window.setTimeout(function() {
       for(var y = 0; y < state.numh; y++) {
         for(var x = 0; x < state.numw; x++) {
