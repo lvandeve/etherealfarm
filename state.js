@@ -104,6 +104,7 @@ function Crop2State() {
 
 function UpgradeState() {
   this.seen = false; // seen the upgrade in the upgrades tab
+  this.seen2 = false; // seen the upgrade ever
   this.unlocked = false;
   // how many times this upgrade was done
   // if is_choice, then this is the choice instead of a count. 0 means no choice made yet, 1 means first choice, 2 means second choice.
@@ -354,7 +355,7 @@ function State() {
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark, 3=darkest
   this.sidepanel = 1; // 0=disabled, 1=automatic
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
-  this.messagelogenabled = [1]; // index0: "game saved" message log messages
+  this.messagelogenabled = [1, 1, 1, 1]; // index0: "game saved" message log messages, index1: tree leveling, index2: upgrades available, index3: abbreviated help
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog
@@ -952,20 +953,16 @@ function computeDerived(state) {
       if(!!c && f.growth >= 1) {
         var type = c.type;
         if(type == CROPTYPE_BERRY) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_berry_bonus.addInPlace(boost.addr(1).mul(c.effect));
+          state.ethereal_berry_bonus.addInPlace(c.getBasicBoost(f));
         }
         if(type == CROPTYPE_MUSH) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_mush_bonus.addInPlace(boost.addr(1).mul(c.effect));
+          state.ethereal_mush_bonus.addInPlace(c.getBasicBoost(f));
         }
         if(type == CROPTYPE_FLOWER) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_flower_bonus.addInPlace(boost.addr(1).mul(c.effect));
+          state.ethereal_flower_bonus.addInPlace(c.getBasicBoost(f));
         }
         if(type == CROPTYPE_NETTLE) {
-          var boost = Crop2.getNeighborBoost(f);
-          state.ethereal_nettle_bonus.addInPlace(boost.addr(1).mul(c.effect));
+          state.ethereal_nettle_bonus.addInPlace(c.getBasicBoost(f));
         }
       }
     }

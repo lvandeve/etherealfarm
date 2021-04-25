@@ -74,7 +74,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     }
 
     // opt_force is set if dialog openend from the main help dialog, don't show in message log in that case.
-    if(!opt_force) {
+    if(!opt_force && (!text_seen || state.messagelogenabled[3])) {
       if(use_short) {
         if(text_short != '') showMessage(text_short || text, C_HELP, 175786661);
       } else {

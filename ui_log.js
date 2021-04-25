@@ -155,19 +155,32 @@ function showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, 
 
 
   var time = (state && state.prevtime) ? state.prevtime : util.getTime();
-  var title = util.formatDate(time);// + '. gain/s before: ' + gain;
+  var time2 = (state && state.time) ? (state.time - state.c_starttime) : 0;
+  var title = 'date: ' + util.formatDate(time);
+  if(state && state.time) {
+    title += ', game time: ' + util.formatDuration(time2);
+    title += ', tree level: ' + state.treelevel;
+  }
+  var prefix = '';
+
+  // disabled, it looks a bit too distracting. Maybe a setting for this could be added.
+  /*if(state && state.time) {
+    prefix = util.formatDuration(time2, true) + ' lvl ' + state.treelevel + ': ';
+  }*/
+
   var logDiv = logFlex.div;
   // automatically capitalize the message. Reason: consistency.
   text = upper(text);
   if(!opt_forcenew && text == lastMessage && lastMessageElement) {
     sameMessageCount++;
-    text = lastMessage + ' (' + sameMessageCount + 'x)';
+    text = prefix + lastMessage + ' (' + sameMessageCount + 'x)';
     lastMessageElement.innerHTML = text;
     lastMessageElement.title = title;
     return;
   }
 
   lastMessage = text;
+  text = prefix + text;
   sameMessageCount = 1;
 
   var span = util.makeElement('span', logDiv);

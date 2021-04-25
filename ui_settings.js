@@ -248,6 +248,102 @@ function createNumberFormatDialog() {
 }
 
 
+
+function createNotificationSettingsDialog() {
+  var dialog = createDialog();
+
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
+  centerText2(title.div);
+  title.div.textEl.innerText = 'Messages & Sounds';
+  title.div.textEl.style.fontWeight = 'bold';
+
+  var pos = 0.05;
+  var buttondiv;
+  var h = 0.06;
+
+  var makeSettingsButton = function() {
+    //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
+    var button = buttonFlex.div;
+    styleButton(button, 1);
+    pos += h * 1.1;
+    return button;
+  };
+
+  var addSettingsSpacer = function() {
+    pos += h * 0.5;
+  };
+
+  var button;
+  var updatebuttontext;
+
+  var notificationSoundWarning = 'Whether sound works at all depends on your browser and whether playing media is allowed by the settings. Browsers will only play the sound if the game is in a foreground tab. Browsers also require interaction with the page before they allow playing sounds at all, so sounds may not work after refreshing the page and not clicking anything.';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'fern notification sound: ' + (state.notificationsounds[0] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Notification "ding" sound when a fern pops up. ' + notificationSoundWarning);
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.notificationsounds[0] = !state.notificationsounds[0] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_fernsound';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'fullgrown notification sound: ' + (state.notificationsounds[1] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Notification "ding" sound when crops get fullgrown. ' + notificationSoundWarning);
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.notificationsounds[1] = !state.notificationsounds[1] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_growsound';
+
+  addSettingsSpacer();
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'auto save in message log: ' + (state.messagelogenabled[0] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Show auto save message in the message log. This setting does not stop auto-save from working, it just does so silently.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.messagelogenabled[0] = !state.messagelogenabled[0] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_savemessages';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'tree levels in message log: ' + (state.messagelogenabled[1] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Show message log message when tree levels up. If disabled, the message will only appear if tree reached highest level ever.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.messagelogenabled[1] = !state.messagelogenabled[1] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_treelevelmessages';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'upgrades available in message log: ' + (state.messagelogenabled[2] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Show message log message when regular upgrade available. If disabled, the message will still appear for never before seen upgrades.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.messagelogenabled[2] = !state.messagelogenabled[2] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_upgrademessages';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'abbreviated help in message log: ' + (state.messagelogenabled[3] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Show abbreviated versions of help dialog in the message log. If disabled, they still appear if seen the first time ever');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.messagelogenabled[3] = !state.messagelogenabled[3] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_helpmessages';
+}
+
+
+
 function createAdvancedSettingsDialog() {
   var dialog = createDialog();
 
@@ -392,39 +488,14 @@ function createAdvancedSettingsDialog() {
 
   addSettingsSpacer();
 
-  var notificationSoundWarning = 'Whether sound works at all depends on your browser and whether playing media is allowed by the settings. Browsers will only play the sound if the game is in a foreground tab. Browsers also require interaction with the page before they allow playing sounds at all, so sounds may not work after refreshing the page and not clicking anything.';
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'fern notification sound: ' + (state.notificationsounds[0] ? 'yes' : 'no'); };
-  updatebuttontext(button);
-  registerTooltip(button, 'Notification "ding" sound when a fern pops up. ' + notificationSoundWarning);
+  button.textEl.innerText = 'messages & sounds';
+  registerTooltip(button, 'Message log and sound notifications');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
-    state.notificationsounds[0] = !state.notificationsounds[0] * 1;
-    updatebuttontext(button);
+    createNotificationSettingsDialog();
   }, button, updatebuttontext));
-  button.id = 'preferences_fernsound';
-
-  button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'fullgrown notification sound: ' + (state.notificationsounds[1] ? 'yes' : 'no'); };
-  updatebuttontext(button);
-  registerTooltip(button, 'Notification "ding" sound when crops get fullgrown. ' + notificationSoundWarning);
-  addButtonAction(button, bind(function(button, updatebuttontext, e) {
-    state.notificationsounds[1] = !state.notificationsounds[1] * 1;
-    updatebuttontext(button);
-  }, button, updatebuttontext));
-  button.id = 'preferences_growsound';
-
-  addSettingsSpacer();
-
-  button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'auto save message log: ' + (state.messagelogenabled[0] ? 'yes' : 'no'); };
-  updatebuttontext(button);
-  registerTooltip(button, 'Show auto save message in the message log. This setting does not stop auto-save from working, it just does so silently.');
-  addButtonAction(button, bind(function(button, updatebuttontext, e) {
-    state.messagelogenabled[0] = !state.messagelogenabled[0] * 1;
-    updatebuttontext(button);
-  }, button, updatebuttontext));
-  button.id = 'preferences_savemessages';
+  button.id = 'preferences_notifications';
 }
 
 
@@ -471,9 +542,9 @@ function createStatsDialog() {
     text += '• fruit upgrades: ' + open + state.c_numfruitupgrades + close + '<br>';
   }
   if(state.g_numresets > 0 || state.treelevel > 0) text += '• weather abilities activated: ' + open + state.c_numabilities + close + '<br>';
-  if(state.upgrades[upgrade_sununlock].count > 0) text += '• sun ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait() - getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait(), true) + close + '<br>';
-  if(state.upgrades[upgrade_mistunlock].count > 0) text += '• mist ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait() - getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait(), true) + close + '<br>';
-  if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability run time, cooldown time, total cycle: ' + open + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
+  if(state.upgrades[upgrade_sununlock].count > 0) text += '• sun ability berry boost, run time, cooldown time, total cycle: ' + open + '+' + getSunSeedsBoost().toPercentString()  + ', ' + util.formatDuration(getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait() - getSunDuration(), true) + close + ', ' + open + util.formatDuration(getSunWait(), true) + close + '<br>';
+  if(state.upgrades[upgrade_mistunlock].count > 0) text += '• mist ability mushroom boost, run time, cooldown time, total cycle: ' + open + '+' + getMistSporesBoost().toPercentString() + ' (-' + getMistSeedsBoost().rsub(1).toPercentString() + ' consumption), ' + util.formatDuration(getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait() - getMistDuration(), true) + close + ', ' + open + util.formatDuration(getMistWait(), true) + close + '<br>';
+  if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability flower boost, run time, cooldown time, total cycle: ' + open + '+' + getRainbowFlowerBoost().toPercentString() + ', ' + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
   if(state.g_res.resin.neqr(0)) {
     text += '• resin/hour: ' + open + getResinHour().toString() + close + '<br>';
     text += '• best resin/hour: ' + open + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + close + '<br>';

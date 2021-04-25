@@ -96,7 +96,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
     infoText = upper(u.name);
     infoText += '<br><br>Cost: ' + cost.toString();
     if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
-    if(u.cropid != undefined) {
+    if(u.cropid != undefined && !u.iscropunlock) {
       infoText += '<br><br>' + 'have of this crop: ' + state.cropcount[u.cropid];
     }
     if(u.description) {

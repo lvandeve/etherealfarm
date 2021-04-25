@@ -397,7 +397,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(u.count > 0) {
       var mul_upgrade = u2.bonus.powr(u.count);
       result.mulInPlace(mul_upgrade);
-      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
   }
   if(this.basic_upgrade != null && this.type == CROPTYPE_SHORT) {
@@ -406,7 +406,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(u.count > 0) {
       var mul_upgrade = Num(1).add(Num(0.5).mulr(u.count)); // watercress upgrade is additive instead of multiplicative
       result.mulInPlace(mul_upgrade);
-      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
   }
 
@@ -554,14 +554,10 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // mist
   if(mist_active && this.type == CROPTYPE_MUSH) {
-    var bonus_mist0 = Num(0.75);
-    // weather boost not applied to the less seeds effect, it's a multiplier intended for things that increase something plus would make it doubly-powerful
-    if(state.upgrades[active_choice0].count == 2) bonus_mist0.divrInPlace(1 + active_choice0_b_bonus);
-    result.seeds.mulInPlace(bonus_mist0);
+    var bonus_mist0 = getMistSeedsBoost();
     if(breakdown) breakdown.push(['mist (less seeds)', true, bonus_mist0, result.clone()]);
-    var bonus_mist1 = Num(1);
-    bonus_mist1.mulInPlace(getWeatherBoost());
-    if(state.upgrades[active_choice0].count == 2) bonus_mist1.mulrInPlace(1 + active_choice0_b_bonus);
+
+    var bonus_mist1 = getMistSporesBoost();
     bonus_mist1.addrInPlace(1);
     result.spores.mulInPlace(bonus_mist1);
     if(breakdown) breakdown.push(['mist (more spores)', true, bonus_mist1, result.clone()]);
@@ -569,9 +565,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // sun
   if(sun_active && this.type == CROPTYPE_BERRY) {
-    var bonus_sun = Num(0.5);
-    bonus_sun.mulInPlace(getWeatherBoost());
-    if(state.upgrades[active_choice0].count == 2) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
+    var bonus_sun = getSunSeedsBoost();
     bonus_sun.addrInPlace(1);
     result.seeds.mulrInPlace(bonus_sun);
     if(breakdown) breakdown.push(['sun', true, bonus_sun, result.clone()]);
@@ -707,9 +701,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
   // rainbow
   if(this.type == CROPTYPE_FLOWER) {
     if(rainbow_active) {
-      var bonus_rainbow = Num(0.5);
-      bonus_rainbow.mulInPlace(getWeatherBoost());
-      if(state.upgrades[active_choice0].count == 2) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
+      var bonus_rainbow = getRainbowFlowerBoost();
       bonus_rainbow.addrInPlace(1);
       result.mulrInPlace(bonus_rainbow);
       if(breakdown) breakdown.push(['rainbow', true, bonus_rainbow, result.clone()]);
@@ -1237,8 +1229,8 @@ function registerCropUnlock(cropid, cost, prev_berry, opt_pre_fun_and, opt_pre_f
   var index = upgrade_register_id;
 
   var fun = function() {
-    if(cropid == flower_0) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', C_HELP, 456645);
-    if(cropid == mushunlock_0) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', C_HELP, 8932);
+    if(cropid == flower_0 && (state.messagelogenabled[3] || state.g_numresets == 0)) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', C_HELP, 456645);
+    if(cropid == mushunlock_0 && (state.messagelogenabled[3] || state.g_numresets == 0)) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', C_HELP, 8932);
     state.crops[crop.index].unlocked = true;
   };
 
@@ -1887,6 +1879,7 @@ function registerPlantTypeMedal(cropid, num) {
   if(c.type == CROPTYPE_FLOWER) tier = tier * 2 + 2;
   if(c.type == CROPTYPE_NETTLE) tier = 3;
   if(c.type == CROPTYPE_MISTLETOE) tier = 4;
+  if(c.type == CROPTYPE_BEE) tier = 6;
   var num2 = (Math.floor(num / 10) + 1);
   var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
   var mul = t * num2 / 100 * 0.25;
@@ -2221,24 +2214,25 @@ function() {
 }, 0);
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', 15, Num(0.03),
+var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75], Num(0.03),
 `The field has rocks on which you can't plant. The rock pattern is determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours.
 `,
 `
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
 `,
-'one extra storage slot for fruits',
+['one extra storage slot for fruits','one extra storage slot for fruits','one extra storage slot for fruits'],
 'reaching tree level 15',
-function() {
-  return state.treelevel >= 15;
-}, function() {
-  state.fruit_slots++;
-}, 15);
-// idea: there could be "rockier" challenges with more rocks at higher levels later
+function() { return state.treelevel >= 15; },
+[
+function() { state.fruit_slots++; },
+function() { state.fruit_slots++; },
+function() { state.fruit_slots++; }
+]
+, 15);
 
 
-
+// 3
 var challenge_nodelete = registerChallenge('undeletable challenge', 25, Num(0.07),
 `
 During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops!
@@ -2257,6 +2251,7 @@ function() {
 // idea: a harder version of this challenge that takes place on a fixed size field (5x5)
 
 
+// 4
 // reason why watercress upgrade is still present: otherwise it disappears after a minute, requiring too much manual work when one wants to upkeep the watercress
 var challenge_noupgrades = registerChallenge('no upgrades challenge', [21, 25], Num(0.1),
 `
@@ -2294,6 +2289,7 @@ function isNoUpgrade(u) {
 }
 
 
+// 5
 // This challenge does not give resin, twigs or fruits. This challenge plants crops immediately, so it's easier to reach higher level faster while manually present
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
@@ -2343,6 +2339,7 @@ function witherCurve(t) {
   return Math.pow(t, 0.66);
 }
 
+// 6
 var challenge_blackberry = registerChallenge('blackberry challenge', [18], Num(0.1),
 `
 During this challenge, only the first tier of each crop type is available.
@@ -2363,6 +2360,8 @@ function() {
   showRegisteredHelpDialog(33);
 },
 ], 15);
+
+
 
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
@@ -2413,19 +2412,7 @@ Crop2.prototype.getPlantTime = function() {
   return this.planttime;
 };
 
-// Ethereal production
-Crop2.prototype.getProd = function(f, assume_fullgrown, breakdown) {
-  if(!assume_fullgrown && f && !f.isFullGrown()) {
-    return Res();
-  }
-
-  var result = Res(this.prod);
-
-  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
-
-  return result;
-}
-
+// for lotuses
 // get the boost of boosting neighbors given to this crop, not as resource boost but as the boost percentage, to apply to relevant ethereal properties
 Crop2.getNeighborBoost = function(f) {
 
@@ -2436,7 +2423,7 @@ Crop2.getNeighborBoost = function(f) {
 
     var getboost = function(n) {
       if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type != CROPTYPE_NETTLE) {
-        var boost = crops2[n.cropIndex()].getBoost(n);
+        var boost = crops2[n.cropIndex()].getEtherealBoost(n);
         if(boost.neqr(0)) {
           result.addInPlace(boost);
           return true;
@@ -2456,9 +2443,44 @@ Crop2.getNeighborBoost = function(f) {
   return Num(0);
 };
 
-Crop2.prototype.getBoost = function(f, breakdown) {
+// for lotuses
+Crop2.prototype.getEtherealBoost = function(f, breakdown) {
   var result = this.boost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  return result;
+};
+
+
+// boost to basic field
+Crop2.prototype.getBasicBoost = function(f, breakdown) {
+  var result = this.effect.clone();
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+
+  var lotusmul = Crop2.getNeighborBoost(f).addr(1);
+  result.mulInPlace(lotusmul);
+  if(breakdown) breakdown.push(['lotuses', true, lotusmul, result.clone()]);
+
+  if(this.type == CROPTYPE_BERRY) {
+    var u = state.upgrades2[upgrade2_berry];
+    var u2 = upgrades2[upgrade2_berry];
+    if(u.count > 0) {
+      var mul_upgrade = Num(1).add(upgrade2_berry_bonus.mulr(u.count));
+      result.mulInPlace(mul_upgrade);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+    }
+  }
+
+  if(this.type == CROPTYPE_MUSH) {
+    var u = state.upgrades2[upgrade2_mush];
+    var u2 = upgrades2[upgrade2_mush];
+    if(u.count > 0) {
+      var mul_upgrade = Num(1).add(upgrade2_mush_bonus.mulr(u.count));
+      result.mulInPlace(mul_upgrade);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+    }
+  }
 
   return result;
 };
@@ -2564,7 +2586,6 @@ var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, '
 // berries2
 crop2_register_id = 25;
 var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
-// for treelevel2=1
 var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
 var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
 
@@ -2572,6 +2593,7 @@ var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 180, Num(4
 crop2_register_id = 50;
 var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
 var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
+var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), 240, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
 
 // flowers2
 crop2_register_id = 75;
@@ -2803,7 +2825,6 @@ var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', LEVEL2, Res({resin:
   var numw = Math.max(6, state.numw);
   var numh = Math.max(6, state.numh);
   changeFieldSize(state, numw, numh);
-  initFieldUI();
 }, function(){return state.numw >= 5 && state.numh >= 5}, 1, 'increase basic field size to 6x6 tiles', undefined, undefined, field_summer[0]);
 
 
@@ -2853,7 +2874,7 @@ LEVEL2 = 2;
 
 upgrade2_register_id = 120;
 
-var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', LEVEL2, Res({resin:2000}), 1, function() {
+var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', LEVEL2, Res({resin:2000, twigs:2000}), 1, function() {
   var numw2 = Math.max(6, state.numw2);
   var numh2 = Math.max(6, state.numh2);
   changeField2Size(state, numw2, numh2);
@@ -2878,8 +2899,8 @@ LEVEL2 = 3;
 
 upgrade2_register_id = 140;
 
-// NOTE: this upgrade is way too cheap for being at ethereal tree level 2. But too late to fix it since it's already been bought. It could be seen as a nice bonus for reaching ethereal tree level 3.
-var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:1000,essence:250}), 2, function() {
+// NOTE: this upgrade is way too cheap for being at ethereal tree level 2 (and already upped it from 1000 to 5000 in v0.1.65). But too late to fix it since it's already been bought. It could be seen as a nice bonus for reaching ethereal tree level 3.
+var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:5000,essence:250}), 2, function() {
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[2]);
 
@@ -2898,9 +2919,9 @@ var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:
   var numw = Math.max(7, state.numw);
   var numh = Math.max(6, state.numh);
   changeFieldSize(state, numw, numh);
-  initFieldUI();
 }, function(){return state.numw >= 6 && state.numh >= 6}, 1, 'increase basic field size to 7x6 tiles', undefined, undefined, field_summer[0]);
 
+// NOTE: further "secret" upgrades beyond this one are not needed, because at ethereal tree level 4, auto-unlock from the automaton becomes available, removing the need to manually wait for crops to unluck. The "secret" upgrades are a feature to slightly improve quality of the time before auto-unlock exists, but are not intended to speed up runs once auto-unlock exists, runs must have a certain long enough useful duration to avoid too manual gameplay
 var upgrade2_cranberrysecret = registerUpgrade2('cranberry secret', LEVEL2, Res({resin:10000}), 2, function() {
 }, function(){
   return state.upgrades2[upgrade2_blueberrysecret].count;
@@ -2911,17 +2932,37 @@ undefined, undefined, cranberry[4]);
 
 ///////////////////////////
 LEVEL2 = 4;
-
 upgrade2_register_id = 160;
 
+var upgrade2_berry_bonus = Num(0.25);
+var upgrade2_berry = registerUpgrade2('ethereal berries', LEVEL2, Res({resin:500e3}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 0, 'increase bonus of all ethereal berries by ' + upgrade2_berry_bonus.toPercentString() + ' (additive).', undefined, undefined, cranberry[4]);
 
-// TODO: figure out what is a good resin price for upgrades at ethereal tree level 4
-/*var upgrade2_field2_7x6 = registerUpgrade2('ethereal field 7x6', LEVEL2, Res({resin:1e6}), 1, function() {
+var upgrade2_mush_bonus = Num(0.25);
+var upgrade2_mush = registerUpgrade2('ethereal mushrooms', LEVEL2, Res({resin:500e3}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 0, 'increase bonus of all ethereal mushrooms by ' + upgrade2_berry_bonus.toPercentString() + ' (additive).', undefined, undefined, matsutake[4]);
+
+
+
+///////////////////////////
+LEVEL2 = 5;
+upgrade2_register_id = 180;
+
+var upgrade2_field2_7x6 = registerUpgrade2('ethereal field 7x6', LEVEL2, Res({resin:5e6, twigs:5e6}), 1, function() {
   var numw2 = Math.max(7, state.numw2);
   var numh2 = Math.max(6, state.numh2);
   changeField2Size(state, numw2, numh2);
   initField2UI();
-}, function(){return state.numw2 >= 6 && state.numh2 >= 6}, 1, 'increase ethereal field size to 7x6 tiles', undefined, undefined, field_ethereal[0]);*/
+}, function(){return state.numw2 >= 6 && state.numh2 >= 6}, 1, 'increase ethereal field size to 7x6 tiles', undefined, undefined, field_ethereal[0]);
+
+
+
+var upgrade2_extra_fruit_slot3 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:2e6,essence:10000}), 2, function() {
+  state.fruit_slots++;
+}, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[3]);
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3142,6 +3183,10 @@ function fuseFruit(a, b, opt_message) {
   if(!a || !b) return null;
   if(a == b) return null;
   if(a.tier != b.tier) return null;
+  if(a.type != b.type) {
+    if(opt_message) opt_message[0] = 'Both fruits must be of the same type to fuse.';
+    return null;
+  }
 
   if(fruitReachedFuseMax(a) || fruitReachedFuseMax(b)) {
     if(opt_message) opt_message[0] = 'One of the fruits reached the final form, seasonal fruit with all abilities at max, and cannot be fused any further.';
@@ -3302,7 +3347,7 @@ function treeLevelIndex(level) {
 }
 
 
-var mistletoe_resin_malus = Num(0.05);
+var mistletoe_resin_malus = Num(0.15);
 
 var treelevel2_resin_bonus = Num(0.05);
 
@@ -3591,6 +3636,41 @@ function getWinterTreeResinBonus() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+function getSunSeedsBoost() {
+  var bonus_sun = Num(0.5);
+  bonus_sun.mulInPlace(getWeatherBoost());
+  if(state.upgrades[active_choice0].count == 2) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
+  bonus_sun.addrInPlace(1);
+  return bonus_sun;
+}
+
+// a seed consumption reduction, so a boost
+function getMistSeedsBoost() {
+  var bonus_mist0 = Num(0.75);
+  // weather boost not applied to the less seeds effect, it's a multiplier intended for things that increase something plus would make it doubly-powerful
+  if(state.upgrades[active_choice0].count == 2) bonus_mist0.divrInPlace(1 + active_choice0_b_bonus);
+  return bonus_mist0;
+}
+
+function getMistSporesBoost() {
+  var bonus_mist1 = Num(1);
+  bonus_mist1.mulInPlace(getWeatherBoost());
+  if(state.upgrades[active_choice0].count == 2) bonus_mist1.mulrInPlace(1 + active_choice0_b_bonus);
+  return bonus_mist1;
+}
+
+function getRainbowFlowerBoost() {
+  var bonus_rainbow = Num(0.5);
+  bonus_rainbow.mulInPlace(getWeatherBoost());
+  if(state.upgrades[active_choice0].count == 2) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
+  return bonus_rainbow;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 // level = highest tree level reached with this challenge, or hypothetical other level
 function getChallengeBonus(challenge_id, level) {
   var c = challenges[challenge_id];
@@ -3600,4 +3680,21 @@ function getChallengeBonus(challenge_id, level) {
 // only during bee challenge
 function getWorkerBeeBonus() {
   return state.workerbeeboost;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+function getFernWaitTime() {
+  var progress = state.res.seeds;
+  var mintime = 0;
+  if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
+  else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 1);
+  else if(progress.ltr(150)) mintime = 10;
+  else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
+  else mintime = fern_wait_minutes * 60;
+  if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
+  return mintime;
 }

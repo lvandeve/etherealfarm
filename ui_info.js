@@ -182,6 +182,16 @@ function updateResourceUI() {
       }
       result += '<br>';
       result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
+      result += '<br>';
+      var have_sun = !!state.upgrades[upgrade_sununlock].count;
+      var have_mist = !!state.upgrades[upgrade_mistunlock].count;
+      var have_rainbow = !!state.upgrades[upgrade_rainbowunlock].count;
+      if(have_sun || have_mist || have_rainbow) {
+        result += '<b>Weather abilities:</b><br>';
+        if(have_sun) result += '<b>Sun:</b> berry production boost: +' + getSunSeedsBoost().toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getSunDuration()) + '. Cooldown time: ' + util.formatDuration(getSunWait() - getSunDuration()) + '<br>';
+        if(have_mist) result += '<b>Mist:</b> mushroom production boost: +' + getMistSporesBoost().toPercentString() + ', consumption reduced by ' + getMistSeedsBoost().rsub(1).toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getMistDuration()) + '. Cooldown time: ' + util.formatDuration(getMistWait() - getMistDuration()) + '<br>';
+        if(have_rainbow) result += '<b>Rainbow:</b> flower boost: +' + getRainbowFlowerBoost().toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getRainbowDuration()) + '. Cooldown time: ' + util.formatDuration(getRainbowWait() - getRainbowDuration()) + '<br>';
+      }
       return result;
     };
     flex.div.innerHTML = getText();

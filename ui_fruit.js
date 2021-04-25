@@ -189,6 +189,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       var f2 = (i < state.fruit_stored.length) ? state.fruit_stored[i] : (state.fruit_sacr[i - state.fruit_stored.length]);
       if(f2 == f) continue;
       if(f2.tier != f.tier) continue;
+      if(f2.type != f.type) continue;
       fruits.push(f2);
     }
 
@@ -203,10 +204,10 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       y += s * 0.5;
     };
 
-    addTitle('Fusing exists to gradually choose a set of abilities, circumventing the random drops. It doesn\'t make fruits stronger. Abilities marked [**] can be transfered to other fruits.');
-    y += s * 0.5;
+    addTitle('Fusing doesn\'t make fruits stronger. Fusing exists to gradually choose a set of abilities, circumventing the random drops. Abilities marked [**] can be transfered to other fruits. You must level up abilities again after fusing, but no fruit essence is lost.');
+    y += s * 0.75;
 
-    addTitle('choose other fruit to fuse:');
+    addTitle('Choose other fruit to fuse:');
 
     for(var i = 0; i < fruits.length; i++) {
       if(x > s * 8.5) {
@@ -225,14 +226,14 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         make();
       }, f2));
     }
-    y += s;
-
     if(fruits.length == 0) {
       var flex = new Flex(scrollFlex, 0.01, [0, y], 0.9, [0, y + s]);
-      flex.div.innerText = 'No fruit to fuse, must have at least 1 other fruit of the same tier';
+      flex.div.innerText = '[ No fruit to fuse, must have at least 1 other fruit of the same tier and same type ]';
     }
+    y += s;
 
-    addTitle('fruits to fuse:');
+
+    addTitle('Fruits to fuse:');
 
     var fruits2 = [f, selected];
 
@@ -274,7 +275,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     y += s;
 
 
-    addTitle('fused fruit result:');
+    addTitle('Fused fruit result:');
 
     var message = [undefined];
     var fuse = swapped ? fuseFruit(selected, f, message) : fuseFruit(f, selected, message);
@@ -644,13 +645,14 @@ function showStorageFruitSourceDialog() {
   var num_ethereal_upgrades = 0;
   if(state.upgrades2[upgrade2_extra_fruit_slot].count) num_ethereal_upgrades++;
   if(state.upgrades2[upgrade2_extra_fruit_slot2].count) num_ethereal_upgrades++;
+  if(state.upgrades2[upgrade2_extra_fruit_slot3].count) num_ethereal_upgrades++;
   if(num_ethereal_upgrades > 0) {
     text += ' • ' + num_ethereal_upgrades + ': ethereal upgrades';
     text += '<br/>';
   }
 
   if(state.challenges[challenge_rocks].completed) {
-    text += ' • 1: for completing the rocks challenge';
+    text += ' • ' + (state.challenges[challenge_rocks].completed) + ': for completing the rocks challenge';
     text += '<br/>';
   }
 

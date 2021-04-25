@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ui for planting a new ethereal plant
 
-function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup) {
+function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_field) {
   var flex = new Flex(parent, x * w + 0.01, [0, y * w + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.5], 0.8);
   var div = flex.div;
   div.className = 'efEtherealPlantChip';
@@ -32,6 +32,7 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   text += '<b>' + crop.name + '</b><br>';
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
+  if(opt_replace && opt_field && opt_field.cropIndex() == crop.index) cost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, amount used in cost computation is one less
   text += 'type: ' + getCropTypeName(crop.type);
 
   var buyFlex = undefined;
@@ -131,14 +132,17 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
 
       result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
 
+      var f = state.field2[y][x];
+
       // effect to base field
       if(c.effect.neqr(0)) {
         // base here means: not taking lotuses into account (TODO: add function that computes it with that for here)
         result += '.<br><br>Boost (base): ' + c.effect.toPercentString();
+        result += '.<br>Boost (here): ' + c.getBasicBoost(f).toPercentString();
       }
       // effect of lotus here
       if(c.boost.neqr(0)) {
-        result += '.<br><br>Boost here: ' + c.getBoost(state.field2[y][x]).toPercentString();
+        result += '.<br><br>Boost here: ' + c.getEtherealBoost(f).toPercentString();
       }
 
       return result;
@@ -163,7 +167,7 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
     }, tooltipfun);
 
 
-    var chip = makePlantChip2(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup);
+    var chip = makePlantChip2(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.field2[y][x]);
     tx++;
     if(tx >= 3) {
       tx = 0;

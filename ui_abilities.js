@@ -69,7 +69,7 @@ function updateAbilitiesUI() {
     }, 'sun ability');
     sunbutton.div.id = 'sun_button';
 
-    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
+    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a +' + getSunSeedsBoost().toPercentString() + ' production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
   }
 
   if(state.upgrades[upgrade_sununlock].count) {
@@ -114,7 +114,7 @@ function updateAbilitiesUI() {
     addButtonAction(mistbutton.div, fun, 'mist ability');
     mistbutton.div.id = 'mist_button';
 
-    registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText('mist ability', 'mushrooms produce more spores, consume less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
+    registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText('mist ability', 'mushrooms produce ' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
   }
 
   if(state.upgrades[upgrade_mistunlock].count) {
@@ -159,7 +159,7 @@ function updateAbilitiesUI() {
     }, 'rainbow ability');
     rainbowbutton.div.id = 'rainbow_button';
 
-    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
+    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
   }
 
   if(state.upgrades[upgrade_rainbowunlock].count) {

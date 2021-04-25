@@ -484,6 +484,8 @@ function makeUpgradeCropAction(x, y, opt_silent) {
 
   var c2 = null;
 
+  var too_expensive = undefined;
+
   for(;;) {
     if(tier <= c.tier) break; // not an upgrade
     if(tier < 0) break;
@@ -497,6 +499,7 @@ function makeUpgradeCropAction(x, y, opt_silent) {
       break;
     }
 
+    too_expensive = c3.getCost();
     tier--;
   }
 
@@ -504,7 +507,14 @@ function makeUpgradeCropAction(x, y, opt_silent) {
     actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {
-    if(!opt_silent) showMessage('Crop not upgraded, no higher tier that you can afford available');
+    if(!opt_silent) {
+      if(too_expensive) {
+        showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive, state.res).toString() +
+            ', need ' + too_expensive.toString() + ' (' + getCostAffordTimer(too_expensive) + ')', C_INVALID, 0, 0);
+      } else {
+        showMessage('Crop not upgraded, no higher tier unlocked or available', C_INVALID);
+      }
+    }
   }
   return false;
 }
@@ -862,6 +872,8 @@ function renderLevel(canvas, level, x, y, progresspixel) {
 }
 
 function updateFieldCellUI(x, y) {
+  if(state.numh != fieldDivs.length || state.numw != fieldDivs[0].length) initFieldUI();
+
   var f = state.field[y][x];
   var fd = fieldDivs[y][x];
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);

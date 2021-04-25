@@ -20,6 +20,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.65 (2021-04-25):';
+  text += '<br/>• New ethereal upgrades at levels 4 and 5 (ethereal berry and mushroom upgrade, ethereal field 7x6, fruit slot)';
+  text += '<br/>• New ethereal crop (morel)';
+  // This makes fern worth something if the game was left in the background for a long time: it'll have a relevant resource amount
+  text += '<br/>• If fern left for a long time, will update its internal resources if higher. This does not benefit active play, time interval is at least as long as waiting for a new fern.';
+  text += '<br/>• Added more stages to the rocks challenge handing out more fruit slots.';
+  // Reason for this change: the fusing is there to circumvent the RNG when it takes too long to get the combination you want
+  // However, the rare fruit types now became too trivial to create, they should still be significantly harder to perfectionize, so now you need all fruits of that type as ingredients
+  text += '<br/>• Fruits can now only be fused with others of the same type (pineapple with pineapple, ...). It\'s still easier than before fusing was introduced, when it was 100% RNG based.';
+  text += '<br/>• Having more mistletoes affects reduces resin income more, making the choice between resin and twigs focus sharper.';
+  text += '<br/>• Show the % bonuses given by weather abilities in various messages and windows.';
+  text += '<br/>• Log message tooltips now also show in-game time and tree level.';
+  text += '<br/>• More settings to disable certain log messages are added (nested under "preferences").';
+  text += '<br/><br/>';
+
   text += '0.1.64 (2021-04-18):';
   // Goal of this removal and increased base: to make longer runs worth it, and not have optimal resin/hr hang at multiple of 10 tree levels. The lower level twigs nerf is not too bad, because the twigs gain ethereal upgrade from a recent update made it overpowered there.
   text += '<br/>• Removed the Transcension II, Transcension III, etc... system (which multiplied resin and twigs by floor(tree level / 10)).';

@@ -89,7 +89,7 @@ Num.prototype.ensureIntegerExponent_ = function() {
 Num.prototype.scaleToInPlace = function(e) {
   if(this.b == 0) {
     this.e = e;
-    return;
+    return this;
   }
 
   this.ensureIntegerExponent_();
@@ -158,29 +158,29 @@ Num.scaleInPlace = function(v) {
   // optimization, do this before v.ensureIntegerExponent_, for the common case of value 0
   if(v.b == 0) {
     v.e = 0;
-    return;
+    return v;
   }
 
   v.ensureIntegerExponent_();
   if(isNaN(v.b) || isNaN(v.e)) {
     v.b = NaN;
     v.e = 0;
-    return;
+    return v;
   }
   if(v.e == Infinity) {
     if(v.b == 0) {
       v.b = NaN;
       v.e = 0;
-      return;
+      return v;
     } else {
       v.b = v.b < 0 ? -Infinity : Infinity;
       v.e = 0;
-      return;
+      return v;
     }
   }
   if(v.b == 0 || v.b == Infinity || v.b == -Infinity) {
     v.e = 0;
-    return;
+    return v;
   }
   var neg = v.b < 0;
   if(neg) v.b = -v.b;
@@ -224,7 +224,7 @@ Num.prototype.scale = function() {
 Num.scale = function(a) { return a.scale(); };
 
 Num.prototype.addInPlace = function(b) {
-  if(b.eqr(0)) return; // avoid scaling in place to 0
+  if(b.eqr(0)) return this; // avoid scaling in place to 0
   if(this.e > b.e) b = b.scaleTo(this.e); else this.scaleToInPlace(b.e);
   this.b += b.b;
   this.scaleInPlace();
@@ -257,7 +257,7 @@ Num.prototype.dec = function() {
 };
 
 Num.prototype.subInPlace = function(b) {
-  if(b.eqr(0)) return; // avoid scaling in place to 0
+  if(b.eqr(0)) return this; // avoid scaling in place to 0
   if(this.e > b.e) b = b.scaleTo(this.e); else this.scaleToInPlace(b.e);
   this.b -= b.b;
   this.scaleInPlace();
@@ -275,10 +275,21 @@ Num.prototype.subrInPlace = function(r) {
 };
 Num.prototype.subr = function(r) {
   var res = new Num(this);
-  res.subrInPlace(r);
-  return res;
+  return res.subrInPlace(r);
 };
-Num.sub = function(a, r) { return a.sub(r); };
+Num.subr = function(a, r) { return a.subr(r); };
+
+// rsub = inverted order (the first argument, Num, subtracted from the regular Number r)
+// sets this to r - this
+Num.prototype.rsubInPlace = function(r) {
+  this.b = -this.b;
+  return this.addrInPlace(r);
+};
+Num.prototype.rsub = function(r) {
+  var res = new Num(this);
+  return res.rsubInPlace(r);
+};
+Num.rsub = function(a, r) { return a.rsub(r); };
 
 Num.prototype.negInPlace = function() {
   this.b = -this.b;
@@ -390,7 +401,7 @@ Num.abs = function(a) { return a.abs(); };
 Num.prototype.sqrtInPlace = function() {
   if(this.b < 0) {
     this.b = this.e = NaN;
-    return;
+    return this;
   }
   var e2 = this.e / 2;
   var e = Math.trunc(e2);

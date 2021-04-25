@@ -589,9 +589,12 @@ function softReset(opt_challenge) {
   }
   state.crops[short_0].unlocked = true;
 
-  state.upgrades = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
-    state.upgrades[registered_upgrades[i]] = new UpgradeState();
+    if(!state.upgrades[registered_upgrades[i]]) state.upgrades[registered_upgrades[i]] = new UpgradeState();
+    var u2 = state.upgrades[registered_upgrades[i]];
+    u2.seen = false;
+    u2.unlocked = false;
+    u2.count = 0;
   }
 
   if(state.upgrades2[upgrade2_blackberrysecret].count) {
@@ -1772,6 +1775,19 @@ function nextEventTime() {
     }
   }
 
+  // ethereal plants growing
+  for(var y = 0; y < state.numh2; y++) {
+    for(var x = 0; x < state.numw2; x++) {
+      var f = state.field2[y][x];
+      var c = f.getCrop();
+      if(c) {
+        if(f.growth < 1) {
+          addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
+        }
+      }
+    }
+  }
+
   // tree level up
   var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores);
   var treetime = treereq.div(gain.spores).valueOf();
@@ -2232,6 +2248,7 @@ var update = function(opt_fromTick) {
 
         var freedelete = (f.index == CROPINDEX + automaton2_0);
         var freetoken = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type);
+        var sametypeupgrade = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type && action.crop.tier > f.getCrop().tier);
         if(f.hasCrop() && f.getCrop().istemplate) freedelete = true;
 
         if(type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
@@ -2260,7 +2277,7 @@ var update = function(opt_fromTick) {
           if(!freedelete && !freetoken && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
             showMessage('cannot delete: must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
             ok = false;
-          } else if(!freedelete && f.justplanted && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
+          } else if(!freedelete && f.justplanted && !sametypeupgrade && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
             // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
             showMessage('cannot delete: this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
             ok = false;
@@ -2391,7 +2408,7 @@ var update = function(opt_fromTick) {
             showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.misttime = state.time;
-            showMessage('mist activated, mushrooms produce more spores, consume less seeds, and aren\'t affected by winter');
+            showMessage('mist activated, mushrooms produce +' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter');
             store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
@@ -2405,7 +2422,7 @@ var update = function(opt_fromTick) {
             showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.suntime = state.time;
-            showMessage('sun activated, berries get a boost and aren\'t affected by winter');
+            showMessage('sun activated, berries get a +' + getSunSeedsBoost().toPercentString()  + ' boost and aren\'t negatively affected by winter');
             store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
@@ -2419,7 +2436,7 @@ var update = function(opt_fromTick) {
             showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.rainbowtime = state.time;
-            showMessage('rainbow activated, flowers get a boost and aren\'t affected by winter');
+            showMessage('rainbow activated, flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter');
             store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
@@ -2715,14 +2732,7 @@ var update = function(opt_fromTick) {
     var fern = false;
     var fernTimeWorth = 0;
     if(!state.fern && !clickedfern) {
-      var progress = state.res.seeds;
-      var mintime = 0;
-      if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
-      else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 1);
-      else if(progress.ltr(150)) mintime = 10;
-      else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
-      else mintime = fern_wait_minutes * 60;
-      if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
+      var mintime = getFernWaitTime();
       if(state.time > state.lastFernTime + mintime) {
         fern = true;
       }
@@ -2730,22 +2740,44 @@ var update = function(opt_fromTick) {
       // e.g. 0.25 means clicking all ferns makes you get 25% more income (on average, since there is a uniforn random 0.5..1.5 factor, plus due to the "extra bushy" ferns the real active production is actually a bit higher than this value)
       fernTimeWorth = mintime * 0.25;
     }
-    if(fern) {
-      var s = getRandomPreferablyEmptyFieldSpot();
-      if(s) {
-        var r = fernTimeWorth * (getRandomFernRoll() + 0.5);
-        if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
-        var g = gain.mulr(r);
-        if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
-        var fernres = new Res({seeds:g.seeds, spores:g.spores});
-
-        state.fernres = fernres;
-        state.fern = 1;
-        state.fernx = s[0];
-        state.ferny = s[1];
-        if(state.g_numferns == 3 || (state.g_numferns > 7 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
-        if(state.notificationsounds[0]) playNotificationSound(1000);
+    if(state.fern && !clickedfern) {
+      var mintime = getFernWaitTime();
+      if(state.time > state.lastFernTime + mintime) {
+        fern = true;
       }
+      fernTimeWorth = mintime * 0.25;
+    }
+    if(fern) {
+      var r = fernTimeWorth * (getRandomFernRoll() + 0.5);
+      if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
+      var g = gain.mulr(r);
+      if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
+      var fernres = new Res({seeds:g.seeds, spores:g.spores});
+
+      if(state.fern) {
+        // already have fern, but possibly refresh it with better value
+        if(fernres.seeds.gt(state.fernres.seeds)) {
+          //showMessage('Fern refreshed: ' + fernres.seeds.toString() + ' > ' + state.fernres.seeds.toString(), C_INVALID, 3352600596, 0.5);
+          state.fernres = fernres;
+        } else {
+          //showMessage('Fern not refreshed: ' + fernres.seeds.toString() + ' <= ' + state.fernres.seeds.toString(), C_INVALID, 3352600596, 0.5);
+        }
+      } else {
+        var is_refresh = state.fern;
+        var s = getRandomPreferablyEmptyFieldSpot();
+        if(s) {
+          state.fernres = fernres;
+          state.fern = 1;
+          state.fernx = s[0];
+          state.ferny = s[1];
+          if(state.g_numferns == 3 || (state.g_numferns > 7 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
+          if(state.notificationsounds[0]) playNotificationSound(1000);
+          // the coordinates are invisible but are for screenreaders
+          showMessage('A fern spawned<span style="color:#0000"> at ' + state.fernx + ', ' + state.ferny + '</span>', C_NATURE, 2352600596, 0.5);
+        }
+      }
+
+      state.lastFernTime = state.time; // in seconds
     }
 
     var req = treeLevelReq(state.treelevel + 1);
@@ -2775,18 +2807,23 @@ var update = function(opt_fromTick) {
       }
       state.res.subInPlace(req);
       state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
-      var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
-          '. Consumed: ' + req.toString() +
-          '. Tree boost: ' + getTreeBoost().toPercentString();
-      if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResin().toString();
-      if(getSeason() == 3) message += '. Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1)).toPercentString();
-      if(twigs.neqr(0)) message += '. Twigs from mistletoe added: ' + twigs.toString();
-      if(getSeason() == 2) message += '. Autumn twigs bonus: ' + (getAutumnMistletoeBonus().subr(1)).toPercentString();
-      if(state.treelevel == 9) {
-        message += '. The tree is almost an adult tree now.';
+
+      var showtreemessages = state.messagelogenabled[1] || state.treelevel >= state.g_treelevel;
+
+      if(showtreemessages) {
+        var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
+            '. Consumed: ' + req.toString() +
+            '. Tree boost: ' + getTreeBoost().toPercentString();
+        if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResin().toString();
+        if(getSeason() == 3) message += '. Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1)).toPercentString();
+        if(twigs.neqr(0)) message += '. Twigs from mistletoe added: ' + twigs.toString();
+        if(getSeason() == 2) message += '. Autumn twigs bonus: ' + (getAutumnMistletoeBonus().subr(1)).toPercentString();
+        if(state.treelevel == 9) {
+          message += '. The tree is almost an adult tree now.';
+        }
+        showMessage(message, C_NATURE, 109168563);
       }
-      showMessage(message, C_NATURE, 109168563);
-      var fruit = undefined;
+
       if(state.treelevel == 2) {
         showRegisteredHelpDialog(12);
       } else if(state.treelevel == 3) {
@@ -2800,10 +2837,11 @@ var update = function(opt_fromTick) {
       }
 
       // fruits at tree level 5, 15, 25, 35, ...
+      var fruit = undefined;
       if(state.treelevel % 10 == 5) {
         if(!state.challenge || (challenges[state.challenge].allowsfruits && state.treelevel >= 10 && (challenges[state.challenge].allowbeyondhighestlevel || state.treelevel <= state.g_treelevel))) {
-          if(state.treelevel == 5) showRegisteredHelpDialog(2);
-          if(state.treelevel == 15) showRegisteredHelpDialog(18);
+          if(showtreemessages && state.treelevel == 5) showRegisteredHelpDialog(2);
+          if(showtreemessages && state.treelevel == 15) showRegisteredHelpDialog(18);
           fruit = addRandomFruit();
         }
       }
@@ -2866,6 +2904,9 @@ var update = function(opt_fromTick) {
         unlockEtherealCrop(berry2_2);
         unlockEtherealCrop(lotus2_1);
       }
+      if(state.treelevel2 >= 5) {
+        unlockEtherealCrop(mush2_2);
+      }
     }
 
     state.res.addInPlace(actualgain);
@@ -2884,7 +2925,7 @@ var update = function(opt_fromTick) {
       if(u.pre()) {
         if(u2.unlocked) {
           // the pre function itself already unlocked it, so perhaps it auto applied the upgrade. Nothing to do anymore here other than show a different message.
-          showMessage('Received: "' + u.getName() + '"', C_UNLOCK, 2043573365);
+          if(state.messagelogenabled[2] || !u2.seen2) showMessage('Received: "' + u.getName() + '"', C_UNLOCK, 2043573365);
         } else {
           u2.unlocked = true;
           state.c_numupgrades_unlocked++;
@@ -2892,8 +2933,9 @@ var update = function(opt_fromTick) {
           if(state.c_numupgrades_unlocked == 1) {
             showRegisteredHelpDialog(8);
           }
-          showMessage('Upgrade available: "' + u.getName() + '"', C_UNLOCK, 193917138);
+          if(state.messagelogenabled[2] || !u2.seen2) showMessage('Upgrade available: "' + u.getName() + '"', C_UNLOCK, 193917138);
         }
+        u2.seen2 = true;
       }
     }
 
@@ -3111,7 +3153,7 @@ var update = function(opt_fromTick) {
 
   // go faster when the automaton is autoplanting one-by-one
   if(autoplanted) {
-    window.setTimeout(update, update_ms * 0.4);
+    window.setTimeout(bind(update, opt_fromTick), update_ms * 0.4);
   }
 }
 

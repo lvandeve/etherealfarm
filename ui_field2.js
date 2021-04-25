@@ -51,28 +51,14 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
 
   if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
-    var effect = c.effect;
-    var boost = Crop2.getNeighborBoost(f);
-    var total = effect.mul(boost.addr(1));
-    result += '<br/>';
-    result += 'Boost: ' + total.toPercentString() + '<br/>';
-    if(boost.neqr(0)) {
-      result += '<br/>';
-      result += 'Breakdown:';
-      result += '<br/>';
-      result += ' • Base: ' + effect.toPercentString() + '<br/>';
-      result += ' • Lotuses: +' + (boost).toPercentString() + ': ' + total.toPercentString() + '<br/>';
-    }
+    var breakdown = [];
+    var total = c.getBasicBoost(f, breakdown);
+    result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
   }
 
   if(f.growth >= 1) {
-    var prod = c.getProd(f);
-    if(!prod.empty()) {
-      result += 'Production per second: ' + prod.toString() + '<br/>';
-      if(prod.hasNeg()) result += 'Consumes a resource produced by other crops<br/>';
-    }
     if(c.boost.neqr(0)) {
-      result += '<br/>Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
+      result += '<br/>Boosting neighbors: ' + (c.getEtherealBoost(f).toPercentString()) + '<br/>';
     }
   }
 
@@ -113,6 +99,8 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
 
   var c2 = null;
 
+  var too_expensive = undefined;
+
   for(;;) {
     if(tier <= c.tier) break; // not an upgrade
     if(tier < 0) break;
@@ -126,6 +114,7 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
       break;
     }
 
+    too_expensive = c3.getCost();
     tier--;
   }
 
@@ -133,7 +122,14 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
     actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {
-    if(!opt_silent) showMessage('Crop not upgraded, no higher tier that you can afford available');
+    if(!opt_silent) {
+      if(too_expensive) {
+        showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive, state.res).toString() +
+            ', need ' + too_expensive.toString(), C_INVALID, 0, 0);
+      } else {
+        showMessage('Crop not upgraded, no higher tier unlocked or available', C_INVALID);
+      }
+    }
   }
   return false;
 }

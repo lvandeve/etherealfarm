@@ -150,6 +150,7 @@ function encState(state, opt_raw_only) {
   array0 = [];
   array1 = [];
   array2 = [];
+  array3 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'upgrades must be registered in increasing order';
@@ -157,10 +158,12 @@ function encState(state, opt_raw_only) {
     prev = unlocked[i];
     array1.push(state.upgrades[unlocked[i]].seen);
     array2.push(state.upgrades[unlocked[i]].count);
+    array3.push(state.upgrades[unlocked[i]].seen2);
   }
   processUintArray(array0);
   processBoolArray(array1);
   processUintArray(array2);
+  processBoolArray(array3);
 
 
   section = 4; id = 0; // crops
@@ -789,6 +792,8 @@ function decState(s) {
   array0 = processUintArray();
   array1 = processBoolArray();
   array2 = processUintArray();
+  if(save_version >= 4096+1+65) array3 = processBoolArray();
+  else array3 = array1;
   if(error) return err(4);
   if(array0.length != array1.length || array0.length != array2.length) return err(4);
   prev = 0;
@@ -799,6 +804,7 @@ function decState(s) {
     state.upgrades[index].unlocked = true;
     state.upgrades[index].seen = array1[i];
     state.upgrades[index].count = array2[i];
+    state.upgrades[index].seen2 = array3[i];
     if(upgrades[index].deprecated) {
       state.upgrades[index].unlocked = false;
       state.upgrades[index].count = 0;
@@ -889,7 +895,11 @@ function decState(s) {
   if(save_version >= 4096*1+22) state.uistyle = processUint16();
   if(save_version >= 4096*1+32) state.sidepanel = processUint16();
   if(save_version >= 4096*1+57) state.notificationsounds = processUint16Array();
-  if(save_version >= 4096*1+62) state.messagelogenabled = processUint16Array();
+  if(save_version >= 4096*1+62) {
+    var current = state.messagelogenabled; // default value for newly introduced ones
+    state.messagelogenabled = processUint16Array();
+    for(var i = state.messagelogenabled.length; i < current.length; i++) state.messagelogenabled[i] = current[i];
+  }
   if(error) return err(4);
 
 
