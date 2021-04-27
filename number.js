@@ -20,8 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * NOTE: while this supports very large numbers, there's a limit: max exponent is 9007199254740992, min exponent is -9007199254740992. But there is already visible precision loss here, so to be safe only use a factor 100 of that less as exponent.
- * @param {number=} b base
- * @param {number=} e exponent in binary, not decimal!
+ * performance notes:
+ * -putting "new" in front is slightly faster than without
+ * -giving a separate b and e is slower (because it then normalizes), than initializing to 0 or initializing with an existing Num.
+ * @param {Num=|number=} b Num object to clone, or real number base. can be any float value, but typically scaled to 1..2 or -1..-2. Special values: 0: value is 0 no matter what exponent. Infinity/-Infinity/NaN: entire number is infinity/-infinity/nan, no matter what exponent
+ * @param {number=} e exponent in binary, not decimal! always integer, max 2**53, min -2**53. Should never be set to non-integer, NaN, Infinity, ..., only base (b) may do that
  * @constructor
  */
 function Num(b, e) {
@@ -36,8 +39,8 @@ function Num(b, e) {
     // no scaleInPlace: assume the input Num already was correct, as it should
   } else if(b == undefined || (b == 0 && e == undefined)) {
     // value = b * 2**e
-    this.b = 0; // can be any float value, but typically scaled to 1..2 or -1..-2. Special values: 0: value is 0 no matter what exponent. Infinity/-Infinity/NaN: entire number is infinity/-infinity/nan, no matter what exponent
-    this.e = 0; // always integer, max 2**53, min -2**53. Should never be set to non-integer, NaN, Infinity, ..., only base (b) may do that
+    this.b = 0;
+    this.e = 0;
   } else {
     this.b = b;
     this.e = e || 0;
@@ -48,18 +51,18 @@ function Num(b, e) {
 // constructor that takes decimal exponent, rather than binary like function Num does
 // this function loses precision for very large exponents, do not give exponetns like 9007199254740992 to this one since double precision float loses too much precision for high values
 // e is optional, if not given it's assumed to be 0
-// e.g. makeNum(3, 5) will return a number representing 3*10^5 = 300000
-function makeNum(b, e) {
+// e.g. Num.makeDecimal(3, 5) will return a number representing 3*10^5 = 300000
+Num.makeDecimal = function(b, e) {
   if(e == undefined) e = 0;
   var e2 = e * log10_log2;
   var ef = Math.floor(e2);
   var f = Math.pow(2, e2 - ef);
   b *= f;
   return new Num(b, ef);
-}
+};
 
 Num.prototype.clone = function() {
-  return new Num(this.b, this.e);
+  return new Num(this);
 };
 
 // Ensures that the exponent e is an integer, since that's the assumptions some functionalty makes
@@ -216,12 +219,15 @@ Num.scaleInPlace = function(v) {
 Num.prototype.scaleInPlace = function() {
   return Num.scaleInPlace(this);
 };
+/*
+// commented out: not necessary: normally numbers keep themselves scaled, and only scaleInPlace is needed when manipulating b and e directly
 Num.prototype.scale = function() {
   var res = new Num(this);
   res.scaleInPlace();
   return res;
 };
 Num.scale = function(a) { return a.scale(); };
+*/
 
 Num.prototype.addInPlace = function(b) {
   if(b.eqr(0)) return this; // avoid scaling in place to 0
@@ -442,9 +448,9 @@ Num.powr = function(a, r) { return a.powr(r); };
 // NOTE: the exponent itself of a Num still only has JS float precision, and using powers like this can easily bring you beyond that, so this function easily reaches the limits of Num.
 Num.prototype.rpowInPlace = function(r) {
   if(r == 0) {
-    if(this.gtr(0)) return Num(0);
-    if(this.ltr(0)) return Num(Infinity);
-    return Num(1); // 0**0
+    if(this.gtr(0)) return new Num(0);
+    if(this.ltr(0)) return new Num(Infinity);
+    return new Num(1); // 0**0
   }
   this.scaleToInPlace(0);
   this.e = this.b;
@@ -470,9 +476,9 @@ Num.rpow = function(r, a) { return a.rpow(r); };
 // NOTE: Number can have big values but not unlimited, pow can very easily reach the limit. Use this function carefully.
 Num.prototype.powInPlace = function(b) {
   if(this.eqr(0)) {
-    if(b.gtr(0)) return Num(0);
-    if(b.ltr(0)) return Num(Infinity);
-    return Num(1); // 0**0
+    if(b.gtr(0)) return new Num(0);
+    if(b.ltr(0)) return new Num(Infinity);
+    return new Num(1); // 0**0
   }
   var r = Num.log(this); // regular JS number
   var e = Num.exp(b.mulr(r));
@@ -570,22 +576,36 @@ Num.prototype.neq = function(b) { return !this.eq(b); };
 Num.neq = function(a, b) { return a.neq(b); };
 
 // equals regular JS number
-// TODO: remove the isNaN check (also above) if guaranteed that exponent never becomes NaN or anything beyond integers in range -2**53..2**53. But I know that currently that's not always the case so first fix that. Ensure NaNs only set base to NaN.
 Num.prototype.eqr = function(r) {
-  if(r == 0) { return this.b == 0 && !isNaN(this.e); } // avoid scaling in place to 0
-  return r == this.scaleTo(0);
+  if(r == 0) return this.b == 0; // avoid expensive scaling in place to 0 in this case
+  return r == this.scaleTo(0).b;
 };
 Num.eqr = function(a, r) { return a.eqr(r); };
-Num.prototype.neqr = function(b) { return !this.eqr(b); };
-Num.neqr = function(a, b) { return !a.eqr(b); };
-Num.prototype.gtr = function(b) { return this.gt(Num(b)); };
-Num.gtr = function(a, b) { return a.gt(Num(b)); };
-Num.prototype.ger = function(b) { return this.ge(Num(b)); };
-Num.ger = function(a, b) { return a.ge(Num(b)); };
-Num.prototype.ltr = function(b) { return this.lt(Num(b)); };
-Num.ltr = function(a, b) { return a.lt(Num(b)); };
-Num.prototype.ler = function(b) { return this.le(Num(b)); };
-Num.ler = function(a, b) { return a.le(Num(b)); };
+Num.prototype.neqr = function(r) {
+  if(r == 0) return this.b != 0; // avoid expensive scaling in place to 0 in this case
+  return r != this.scaleTo(0).b;
+};
+Num.neqr = function(a, r) { return a.neqr(r); };
+Num.prototype.gtr = function(r) {
+  if(r == 0) return this.b > 0; // avoid expensive scaling in place to 0 in this case
+  return this.gt(new Num(r));
+};
+Num.gtr = function(a, r) { return a.gtr(r); };
+Num.prototype.ger = function(r) {
+  if(r == 0) return this.b >= 0; // avoid expensive scaling in place to 0 in this case
+  return this.ge(new Num(r));
+};
+Num.ger = function(a, r) { return a.ger(r); };
+Num.prototype.ltr = function(r) {
+  if(r == 0) return this.b < 0; // avoid expensive scaling in place to 0 in this case
+  return this.lt(new Num(r));
+};
+Num.ltr = function(a, r) { return a.ltr(r); };
+Num.prototype.ler = function(r) {
+  if(r == 0) return this.b <= 0; // avoid expensive scaling in place to 0 in this case
+  return this.le(new Num(r));
+};
+Num.ler = function(a, r) { return a.ler(r); };
 
 // synonyms
 Num.prototype.lte = Num.prototype.le;
@@ -598,8 +618,8 @@ Num.prototype.gter = Num.prototype.ger;
 Num.gter = Num.ger;
 
 // Returns a copy of the min/max value, not the original object, so can use "in place" operations on original without affecting min/max result
-Num.max = function(a, b) { return Num(a.gt(b) ? a : b); }
-Num.min = function(a, b) { return Num(a.lt(b) ? a : b); }
+Num.max = function(a, b) { return new Num(a.gt(b) ? a : b); }
+Num.min = function(a, b) { return new Num(a.lt(b) ? a : b); }
 
 // f is a regular JS number and represents how much a and b may differ, e.g. if f is 0.1 they may differ up to 10%
 Num.prototype.near = function(b, f) {
@@ -634,7 +654,7 @@ Num.get125 = function(i) {
   var m = i % 3;
   var d = Math.floor(i / 3);
   var b = m == 0 ? 1 : (m == 1 ? 2 : 5);
-  var mul = Num.rpow(10, Num(d));
+  var mul = Num.rpow(10, new Num(d));
   return mul.mulr(b);
 };
 
@@ -922,29 +942,29 @@ Num.parse = function(text) {
     return c == '.' || isDigitOrSign(c);
   };
   var l = text.toLowerCase();
-  if(l == 'inf' || l == 'infinity') return Num(Infinity, 0);
-  if(l == '-inf' || l == '-infinity') return Num(-Infinity, 0);
-  if(l == 'nan') return Num(NaN, 0);
+  if(l == 'inf' || l == 'infinity') return new Num(Infinity, 0);
+  if(l == '-inf' || l == '-infinity') return new Num(-Infinity, 0);
+  if(l == 'nan') return new Num(NaN, 0);
   var e = text.indexOf('e');
   if(e < 0) e = text.indexOf('E');
   if(e > 0 && e + 1 < text.length && isDigitOrSign(text[e + 1])) {
     var base = parseFloat(text.substr(0, e));
     var exp = parseFloat(text.substr(e + 1));
     if(exp != exp || exp == -Infinity) exp = 0;
-    return makeNum(base, exp);
+    return Num.makeDecimal(base, exp);
   } else {
     var end = 0;
     while(end < text.length && isDigitOrSymbol(text[end])) end++;
     if(end == text.length) {
       var f = parseFloat(text);
-      return Num(f);
+      return new Num(f);
     } else {
       var base = parseFloat(text.substr(0, end));
       var suffix = text.substr(end);
       var p = parseLatinSuffixV(suffix);
-      if(p < 0) return Num(NaN);
+      if(p < 0) return new Num(NaN);
       var exp = (p + 1) * 3;
-      return makeNum(base, exp);
+      return Num.makeDecimal(base, exp);
     }
   }
 }
@@ -982,7 +1002,7 @@ Num.notationSci = function(v, precision, eng, opt_base) {
   var base = opt_base || 10;
   var l = (base == 10) ? log2_log10 : (0.6931471805599453 / Math.log(base));
 
-  if(v.b < 0) return '-' + Num.notationSci(Num(-v.b, v.e), precision);
+  if(v.b < 0) return '-' + Num.notationSci(v.neg(), precision, eng, opt_base);
   if(isNaN(v.b)) return 'NaN';
   if(v.b == Infinity) return 'Inf';
   if(v.b == 0) return '0';
@@ -1059,7 +1079,7 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 // opt_sci: in case of hybrid, use scientific rather than engineering notation for the non-abbreviation
 // NOTE: uses short scale, not long scale.
 Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
-  if(v.b < 0) return '-' + Num.notationAbr(Num(-v.b, v.e), precision, suffixtype);
+  if(v.b < 0) return '-' + Num.notationAbr(v.neg(), precision, suffixtype, opt_sci);
   if(isNaN(v.b)) return 'NaN';
   if(v.b == Infinity) return 'Inf';
   if(v.b == 0) return '0';
@@ -1169,7 +1189,7 @@ Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
 
 // binary
 Num.notationBin = function(v, precision) {
-  if(v.b < 0) return '-' + Num.notationBin(Num(-v.b, v.e), precision);
+  if(v.b < 0) return '-' + Num.notationBin(v.neg(), precision);
   if(isNaN(v.b)) return 'NaN';
   if(v.b == Infinity) return 'Inf';
   if(v.b == 0) return '0';
@@ -1184,7 +1204,7 @@ Num.notationBin = function(v, precision) {
 
 // base-10 logarithm based
 Num.notationLog10 = function(v, precision) {
-  if(v.b < 0) return '-' + Num.notationLog10(Num(-v.b, v.e), precision);
+  if(v.b < 0) return '-' + Num.notationLog10(v.neg(), precision);
   if(isNaN(v.b)) return '10^NaN';
   if(v.b == Infinity) return '10^Inf';
   if(v.b == 0) return '0'; //in theory this is '10^-Inf' but 0 is good enough and more readable
@@ -1202,7 +1222,7 @@ Num.notationLog10 = function(v, precision) {
 
 // exponential (as in, using e^, not to be confused with scientific or engineering notation)
 Num.notationLn = function(v, precision) {
-  if(v.b < 0) return '-' + Num.notationLn(Num(-v.b, v.e), precision);
+  if(v.b < 0) return '-' + Num.notationLn(v.neg(), precision);
   if(isNaN(v.b)) return 'e^NaN';
   if(v.b == Infinity) return 'e^Inf';
   if(v.b == 0) return '0'; //in theory this is 'e^-Inf' but 0 is good enough and more readable

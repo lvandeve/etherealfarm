@@ -556,7 +556,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     y += h * 1.1;
     styleButton(fuseButton);
     fuseButton.textEl.innerText = 'fuse';
-    if(fruitReachedFuseMax(f)) fuseButton.textEl.style.color = '#666';
+    if(fruitReachedFuseMax(f)) fuseButton.className = 'efButtonCantAfford';
     addButtonAction(fuseButton, function() {
       createFruitFuseDialog(f, recreate);
     });
