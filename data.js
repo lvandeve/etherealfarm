@@ -557,6 +557,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   // mist
   if(mist_active && this.type == CROPTYPE_MUSH) {
     var bonus_mist0 = getMistSeedsBoost();
+    result.seeds.mulInPlace(bonus_mist0);
     if(breakdown) breakdown.push(['mist (less seeds)', true, bonus_mist0, result.clone()]);
 
     var bonus_mist1 = getMistSporesBoost();
@@ -2484,13 +2485,16 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
         }
       }
     }
-    result.mulInPlace(lotusmul);
-    if(breakdown) breakdown.push(['lotuses (' + num + ')', true, lotusmul, result.clone()]);
+    if(num) {
+      result.mulInPlace(lotusmul);
+      if(breakdown) breakdown.push(['lotuses (' + num + ')', true, lotusmul, result.clone()]);
+    }
   }
 
   // automaton
   if(f) {
     var automatonmul = Num(1);
+    var num = 0;
 
     for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
       var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
@@ -2499,10 +2503,13 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       var n = state.field2[y2][x2];
       if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type == CROPTYPE_AUTOMATON) {
         automatonmul.addInPlace(automatonboost);
+        num++;
       }
     }
-    result.mulInPlace(automatonmul);
-    if(breakdown) breakdown.push(['automaton', true, automatonmul, result.clone()]);
+    if(num) {
+      result.mulInPlace(automatonmul);
+      if(breakdown) breakdown.push(['automaton', true, automatonmul, result.clone()]);
+    }
   }
 
   if(this.type == CROPTYPE_BERRY) {
