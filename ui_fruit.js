@@ -112,7 +112,7 @@ function createFruitHelp() {
   text += '<br/><br/>';
   text += 'Fruits of the same tier (tier bronze and up) can be fused together to allow transfering abilities to create the fruit with the combination you want, when the random drops aren\'t giving it. Fusing does not increase strength of stats, it\'s only about allowing control of the combination.';
   text += '<br/><br/>';
-  text += 'Fusing fruits destroys the two original fruits and creates a new one of same type as first fused fruit and a new set of abilities that depends on the two original ones, but mostly like the first. The rules are as follows:';
+  text += 'Fusing fruits destroys the two original fruits and creates a new one with a new set of abilities. The rules are as follows:';
   text += '<br/>';
   text += ' • The new fruit will initially have the same abilities as the first original fruit (but all reset to level 1), but some may be pushed out in a next step';
   text += '<br/>';
@@ -124,11 +124,11 @@ function createFruitHelp() {
   text += '<br/>';
   text += ' • The order of abilities of first and second fruit matters, and you can freely reorder abilities in the regular fruit dialog (where you level up abilities), so you can control which abilities of the first fruit stay and which get pushed out.';
   text += '<br/>';
-  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participiate in fusing. The first fruit determines the type of the resulting fruit, if the second fruit has a seasonal ability, it will be lost.';
+  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participiate in fusing. The resulting fruit will be an apple if the two original fruits are of a different type, or will be seasonal if both original fruits are the same seasonal type (e.g. both pineapple).';
   text += '<br/>';
-  text += ' • If a fruit has all abilities at [**] and is seasonal, it can no longer be used for fusing. That is, you cannot transfer a full set of chosen abilities to other seasonal fruits indefinitely.';
+  text += ' • All abilities are level 1 after the fusing, but you can level them up again and no essense is lost';
   text += '<br/><br/>';
-  text += 'Summary of the rules: get 3 fruits with ability you want, fuse them together, and fuse the result into a fruit to get that ability in there and push out an unwanted ability. Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:';
+  text += 'Summary of the rules: getting 3 fruits with the same ability allows to create a fusible ability that you can transfer to any fruit of choice, replacing an unwanted ability of choice. Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:';
   text += '<br/>';
   text += ' • collect 3 silver fruits that have flower boost in any slot, fruits A, B and C';
   text += '<br/>';
@@ -189,7 +189,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       var f2 = (i < state.fruit_stored.length) ? state.fruit_stored[i] : (state.fruit_sacr[i - state.fruit_stored.length]);
       if(f2 == f) continue;
       if(f2.tier != f.tier) continue;
-      if(f2.type != f.type) continue;
+      //if(f2.type != f.type) continue;
       fruits.push(f2);
     }
 
@@ -516,7 +516,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     y += h * 1.1;
     styleButton(moveButton1);
     moveButton1.textEl.innerText = 'to storage slot';
-    if(state.fruit_stored.length >= state.fruit_slots) moveButton1.textEl.style.color = '#666';
+    if(state.fruit_stored.length >= state.fruit_slots) moveButton1.className = 'efButtonCantAfford';
     addButtonAction(moveButton1, function() {
       actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
       update();
@@ -556,7 +556,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     y += h * 1.1;
     styleButton(fuseButton);
     fuseButton.textEl.innerText = 'fuse';
-    if(fruitReachedFuseMax(f)) fuseButton.className = 'efButtonCantAfford';
+    //if(fruitReachedFuseMax(f)) fuseButton.className = 'efButtonCantAfford';
     addButtonAction(fuseButton, function() {
       createFruitFuseDialog(f, recreate);
     });

@@ -634,7 +634,7 @@ Num.near = function(a, b, f) {
   return a.near(b, f);
 };
 
-// Only b indicates NaN or Infinity, but for savety, e is also checked
+// Only b indicates NaN or Infinity, but for safety, e is also checked
 Num.prototype.isNaN = function() { return isNaN(this.b) || isNaN(this.e); };
 Num.isNaN = function(a) { return isNaN(a.b) || isNaN(a.e); };
 

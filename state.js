@@ -1015,6 +1015,9 @@ function Fruit() {
   // must be at least 1 for any ability, 0 is equivalent to not having the ability at all.
   this.levels = [];
 
+  // free starting level of each ability
+  this.starting_levels = [];
+
   // for fused fruits: charge of each ability. 0: normal, 1: charged, 2: fusible
   this.charge = [];
 

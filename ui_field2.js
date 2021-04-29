@@ -98,19 +98,17 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   return result;
 }
 
-function makeUpgradeCrop2Action(x, y, opt_silent) {
-  if(!state.field2[y]) return;
+function getUpgradeCrop2(x, y, opt_too_expensive) {
+  if(!state.field2[y]) return null;
   var f = state.field2[y][x];
   if(!f) return;
   var c = f.getCrop();
   if(!c) return;
 
-  if(c.type == CROPTYPE_CHALLENGE) return;
+  if(c.type == CROPTYPE_CHALLENGE) return null;
   var tier = state.highestoftype2unlocked[c.type];
 
   var c2 = null;
-
-  var too_expensive = undefined;
 
   for(;;) {
     if(tier <= c.tier) break; // not an upgrade
@@ -125,18 +123,25 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
       break;
     }
 
-    too_expensive = c3.getCost();
+    if(opt_too_expensive != undefined) opt_too_expensive[0] = c3.getCost();
     tier--;
   }
+
+  return c2;
+}
+
+function makeUpgradeCrop2Action(x, y, opt_silent) {
+  var too_expensive = [undefined];
+  var c2 = getUpgradeCrop2(x, y, too_expensive);
 
   if(c2) {
     actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {
     if(!opt_silent) {
-      if(too_expensive) {
-        showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive, state.res).toString() +
-            ', need ' + too_expensive.toString(), C_INVALID, 0, 0);
+      if(too_expensive[0]) {
+        showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
+            ', need ' + too_expensive[0].toString(), C_INVALID, 0, 0);
       } else {
         showMessage('Crop not upgraded, no higher tier unlocked or available', C_INVALID);
       }
@@ -309,7 +314,7 @@ function initField2UI() {
     field2Rows[y] = row;
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
-      var celldiv = makeDiv((x / state.numw2 * 100) + '%', '0', (101 / state.numw2) + '%', '101%', row);
+      var celldiv = makeDiv((x / state.numw2 * 100) + '%', '0', (101 / state.numw2) + '%', '100%', row);
       var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
       var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
       var div = makeDiv('0', '0', '100%', '100%', celldiv);

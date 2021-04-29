@@ -60,7 +60,7 @@ function encState(state, opt_raw_only) {
     process(arr, TYPE_ARRAY_UINT6);
   };
 
-  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10;
 
   section = 0; id = 0; // main/misc
   processFloat(state.prevtime);
@@ -414,6 +414,7 @@ function encState(state, opt_raw_only) {
   array7 = [];
   array8 = [];
   array9 = [];
+  array10 = [];
   var appendfruit = function(f) {
     array0.push(f.type);
     array1.push(f.tier);
@@ -422,6 +423,7 @@ function encState(state, opt_raw_only) {
       array3.push(f.abilities[i]);
       array4.push(f.levels[i]);
       array8.push(f.charge[i]);
+      array10.push(f.starting_levels[i]);
     }
     array5.push(f.essence);
     array6.push(f.mark);
@@ -444,6 +446,7 @@ function encState(state, opt_raw_only) {
   processStringArray(array7);
   processUintArray(array8);
   processUintArray(array9);
+  processUintArray(array10);
 
   id = 20; // a few spares for the above
   processUint(state.seen_seasonal_fruit);
@@ -662,8 +665,8 @@ function decState(s) {
     return arr;
   };
 
-  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9;
-  var index, index0, index1, index2, index3, index4, index5, index6, index7, index8, index9;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10;
+  var index, index0, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10;
 
 
   section = 0; id = 0; // main/misc
@@ -848,6 +851,7 @@ function decState(s) {
     state.upgrades2[index].seen = array1[i];
     state.upgrades2[index].count = array2[i];
     if(upgrades2[index].deprecated) state.upgrades2[index].unlocked = false;
+    if(save_version < 4096*1+67 && index == upgrade2_blackberrysecret && state.upgrades2[index].count > 1) state.upgrades2[index].count = 1; // fix bug where it incremented at every transcend
   }
 
 
@@ -1125,6 +1129,11 @@ function decState(s) {
       array9 = [];
       for(var i = 0; i < array6.length; i++) array9[i] = 0;
     }
+    if(save_version >= 4096*1+67) {
+      array10 = processUintArray();
+    } else {
+      array10 = [];
+    }
     if(error) return err(4);
     index0 = 0;
     index1 = 0;
@@ -1136,21 +1145,26 @@ function decState(s) {
     index7 = 0;
     index8 = 0;
     index9 = 0;
+    index10 = 0;
     var decfruit = function() {
       var f = new Fruit();
       f.type = array0[index0++];
       f.tier = array1[index1++];
       if(index2 >= array2.length) return undefined;
       f.abilities.length = array2[index2++];
-      for(var i = 0; i < f.abilities.length; i++) {
-        f.abilities[i] = array3[index3++];
-        f.levels[i] = array4[index4++];
-        f.charge[i] = array8[index8++];
-      }
       f.essence = array5[index5++];
       f.mark = array6[index6++];
       f.name = array7[index7++];
       f.fuses = array9[index9++];
+      for(var i = 0; i < f.abilities.length; i++) {
+        f.abilities[i] = array3[index3++];
+        f.levels[i] = array4[index4++];
+        f.charge[i] = array8[index8++];
+        if(save_version < 4096*1+67) {
+          array10[index10] = (f.essence.eqr(0) && f.fuses == 0) ? f.levels[i] : 2; // 2 = typical average starter level of dropped fruits
+        }
+        f.starting_levels[i] = array10[index10++];
+      }
       return f;
     };
     if(save_version < 4096*1+57) {
@@ -1184,6 +1198,7 @@ function decState(s) {
     if(index7 != array7.length) return err(4);
     if(index8 != array8.length) return err(4);
     if(index9 != array9.length) return err(4);
+    if(index10 != array10.length) return err(4);
   }
 
   if(save_version >= 4096*1+39) {

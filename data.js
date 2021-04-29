@@ -57,7 +57,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
     case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
     case CROPTYPE_SHORT: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those';
-    case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Increases level up spores requirement and slightly decreases resin gain.';
+    case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Having more than one increases level up spores requirement and slightly decreases resin gain.';
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
@@ -2893,9 +2893,13 @@ var upgrade2_resin = registerUpgrade2('resin gain', LEVEL2, Res({resin:50}), 2, 
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'increase resin gain from tree by ' + (upgrade2_resin_bonus * 100) + '% (additive).', undefined, undefined, image_resin);
 
-var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
-  upgrades[berryunlock_0].fun();
+function applyBlackberrySecret() {
+  if(!state.upgrades[berryunlock_0].count) upgrades[berryunlock_0].fun();
   state.upgrades[shortmul_0].unlocked = true; // also let the watercress behave like others and have its upgrade already visible, since the upgrade tab already exists now from the start anyway
+}
+
+var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
+  applyBlackberrySecret();
 }, function(){return true;}, 1,
 'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free',
 undefined, undefined, blackberry[4]);
@@ -2936,6 +2940,7 @@ var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res
 undefined, undefined, mistletoe[1]);
 
 var upgrade2_blueberrysecret = registerUpgrade2('blueberry secret', LEVEL2, Res({resin:1000}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
 }, function(){
   return state.upgrades2[upgrade2_blackberrysecret].count;
 }, 1,
@@ -2973,6 +2978,7 @@ var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:
 
 // NOTE: further "secret" upgrades beyond this one are not needed, because at ethereal tree level 4, auto-unlock from the automaton becomes available, removing the need to manually wait for crops to unluck. The "secret" upgrades are a feature to slightly improve quality of the time before auto-unlock exists, but are not intended to speed up runs once auto-unlock exists, runs must have a certain long enough useful duration to avoid too manual gameplay
 var upgrade2_cranberrysecret = registerUpgrade2('cranberry secret', LEVEL2, Res({resin:10000}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
 }, function(){
   return state.upgrades2[upgrade2_blueberrysecret].count;
 }, 1,
@@ -3228,20 +3234,26 @@ function fruitReachedFuseMax(f) {
   return true;
 }
 
+/*
+Chooses the start_level of a fruit ability, based on the two start_levels of two matching abilities of the two input fruits
+*/
+function fuseFruitStartLevel(a, b) {
+  var min = Math.min(a, b);
+  var max = Math.max(a, b);
+  return Math.ceil(min * 0.75 + max * 0.25);
+}
+
 // opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
 function fuseFruit(a, b, opt_message) {
   if(!a || !b) return null;
   if(a == b) return null;
   if(a.tier != b.tier) return null;
-  if(a.type != b.type) {
-    if(opt_message) opt_message[0] = 'Both fruits must be of the same type to fuse.';
-    return null;
-  }
 
-  if(fruitReachedFuseMax(a) || fruitReachedFuseMax(b)) {
+  // disabled, now that mixing seasonal types produces an apple there's no benefit from doing this
+  /*if(fruitReachedFuseMax(a) || fruitReachedFuseMax(b)) {
     if(opt_message) opt_message[0] = 'One of the fruits reached the final form, seasonal fruit with all abilities at max, and cannot be fused any further.';
     return null;
-  }
+  }*/
 
   var n = getNumFruitAbilities(a.tier);
   var na = a.abilities.length;
@@ -3250,12 +3262,14 @@ function fuseFruit(a, b, opt_message) {
   var f = new Fruit();
   f.tier = a.tier;
 
-  f.type = a.type;
+  // the result becomes an apple if input types are mixed, or the exact type if they're the same
+  f.type = (a.type == b.type) ? a.type : 0;
 
   // the seasonal ability
   if(f.type != 0) {
     f.abilities[n] = a.abilities[n];
     f.levels[n] = a.levels[n];
+    f.starting_levels[n] = a.starting_levels[n];
     f.charge[n] = a.charge[n];
   }
 
@@ -3266,7 +3280,6 @@ function fuseFruit(a, b, opt_message) {
 
   for(var i = 0; i < n; i++) {
     f.abilities[i] = a.abilities[i];
-    f.levels[i] = 1;
     f.charge[i] = a.charge[i];
   }
 
@@ -3274,16 +3287,20 @@ function fuseFruit(a, b, opt_message) {
 
   var arr;
 
+  var m = {};
+
   var ma = {};
   for(var i = 0; i < na; i++) {
     if(skip[a.abilities[i]]) continue;
     ma[a.abilities[i]] = a.charge[i];
+    m[a.abilities[i]] = a.starting_levels[i];
   }
 
   var mb = {};
   for(var i = 0; i < nb; i++) {
     if(skip[b.abilities[i]]) continue;
     mb[b.abilities[i]] = b.charge[i];
+    m[b.abilities[i]] = (m[b.abilities[i]] == undefined) ? b.starting_levels[i] : (fuseFruitStartLevel(m[b.abilities[i]], b.starting_levels[i]));
   }
 
 
@@ -3315,21 +3332,29 @@ function fuseFruit(a, b, opt_message) {
   for(var i = 0; i < arr.length; i++) {
     if(i >= n) break;
     f.abilities[i] = arr[i][0];
-    f.levels[i] = 1;
     f.charge[i] = arr[i][1];
   }
 
-  var same = true;
+  // set up starting levels
   for(var i = 0; i < n; i++) {
-    if(f.abilities[i] != a.abilities[i] || f.charge[i] != a.charge[i]) {
-      same = false;
+    var level = m[f.abilities[i]];
+    f.levels[i] = level;
+    f.starting_levels[i] = level;
+  }
+
+  var worse = true;
+  for(var i = 0; i < n; i++) {
+    if(f.abilities[i] != a.abilities[i] || f.charge[i] > a.charge[i] || f.levels[i] > a.levels[i]) {
+      worse = false;
       break;
     }
   }
-  // this check is not done for b: for example, if b has 3 ** abilities and is not seasonal, and a is seasonal, then this is a legit change.
+  // this check is not done for b: for example, if b has 3 [**] abilities and is not seasonal, and a is seasonal, then this is a legit change.
 
-  if(same) {
-    if(opt_message) opt_message[0] = 'No fuse done: this fuse results in the same fruit as the original. Try fusing with a different fruit, or swapping the fuse order.';
+  if(worse) {
+    if(opt_message) {
+      opt_message[0] = 'No fuse done: this fuse results in the same fruit as the original or worse. Try fusing with a different fruit, or swapping the fuse order.';
+    }
     return null;
   }
 
@@ -3368,8 +3393,10 @@ function treeLevelReqBase(level) {
   return res;
 }
 
+// for tree spores requirement
 function getMistletoeLeech() {
-  return Num(state.mistletoes * 0.5 + 1);
+  if(state.mistletoes <= 1) return Num(1); // the first mistletoe doesn't affect leveling spores requirement
+  return Num((state.mistletoes - 1) * 0.5 + 1);
 }
 
 // including effects like mistletoe
@@ -3434,8 +3461,8 @@ function treeLevelResin(level, breakdown) {
 
 
   count = state.mistletoes;
-  if(count) {
-    var malus = Num(1).sub(mistletoe_resin_malus).powr(count);
+  if(count > 1) {
+    var malus = Num(1).sub(mistletoe_resin_malus).powr(count - 1); // the first mistletoe doesn't affect resin income
     resin.mulInPlace(malus);
     if(breakdown) breakdown.push(['mistletoe malus (' + count + ')', true, malus, resin.clone()]);
   }

@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.67 (2021-04-29):';
+  text += '<br/>• Fruits of different types can be fused again (e.g. pineapple with pear), but the result will always be an apple. So fusing a perfect seasonal fruit is still rare, but you can use them for fusing regular fruits if desired.';
+  text += '<br/>• Fruits now remember the random free starting levels of abilities. Fusing can now also preserve these, if two abilities are fused the result is between the two values.';
+  text += '<br/>• The first mistletoe no longer reduces resin income or tree leveling speed. Second and higher mistletoes still do.';
+  text += '<br/>• Bugfixes and tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.66 (2021-04-26):';
   text += '<br/>• Automaton in ethereal field now gives a boost to 8 neighbors, similar to the lotus 4-neighbor boost but as its own separate multiplier.';
   text += '<br/>• You can now delete the entire ethereal field for 4 ethereal delete tokens.';

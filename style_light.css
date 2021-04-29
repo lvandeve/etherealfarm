@@ -33,21 +33,18 @@ a:visited {
   background-color: #ddd;
   border: 1px solid black;
   color: #000;
-  box-sizing: border-box;
 }
 
 .efButtonCantAfford {
   background-color: #ccc;
   border: 1px solid black;
   color: #777;
-  box-sizing: border-box;
 }
 
 .efButtonHighlighted {
   background-color: #888;
   border: 1px solid black;
   color: #000;
-  box-sizing: border-box;
 }
 
 .efInfo {

@@ -598,7 +598,7 @@ function softReset(opt_challenge) {
   }
 
   if(state.upgrades2[upgrade2_blackberrysecret].count) {
-    upgrades2[upgrade2_blackberrysecret].fun();
+    applyBlackberrySecret();
   }
 
   state.challenge = opt_challenge || 0;
@@ -1402,6 +1402,10 @@ function addRandomFruit() {
   if(fruit.type == 4) {
     fruit.abilities.push(FRUIT_WINTER);
     fruit.levels.push(1);
+  }
+
+  for(var i = 0; i < fruit.levels.length; i++) {
+    fruit.starting_levels[i] = fruit.levels[i];
   }
 
 
@@ -3189,7 +3193,6 @@ function showShiftCropChip(crop_id) {
   var shift = cropChipShiftDown;
   var ctrl = cropChipCtrlDown;
   if(!shift && !ctrl) return;
-  //if(shift && ctrl) return; // both combined currently does nothing
 
   var c = crop_id >= 0 ? crops[crop_id] : undefined;
 
@@ -3238,10 +3241,12 @@ function showShiftCropChip(crop_id) {
       renderImage(c.image[4], canvas);
       var updatefun = function() {
         var recoup = Res(0);
-        if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup2);
+        if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup);
         var cost = c.getCost().sub(recoup);
         var afford = cost.le(state.res);
-        textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br>' + upper(c.name) + '<br>' + (afford ? '' : '<font color="#888">') + 'Cost: ' + cost + ' (' + getCostAffordTimer(cost) + ')' + (afford ? '' : '</font>');
+        var text = keyname + '+' + verb + '<br>' + upper(c.name);
+        if(!selecting) text += '<br>' + (afford ? '' : '<font color="#888">') + 'Cost: ' + cost + ' (' + getCostAffordTimer(cost) + ')' + (afford ? '' : '</font>');
+        textFlex.div.textEl.innerHTML = text;
       };
       updatefun();
       registerUpdateListener(function() {
@@ -3292,11 +3297,11 @@ function removeShiftCrop2Chip() {
 }
 
 function showShiftCrop2Chip(crop_id) {
+  removeShiftCrop2Chip();
   var shift = cropChipShiftDown;
   var ctrl = cropChipCtrlDown;
   if(!shift && !ctrl) return;
-  if(shift && ctrl) return;
-  removeShiftCrop2Chip();
+
   var c = crop_id >= 0 ? crops2[crop_id] : undefined;
 
   shiftCrop2FlexShowing = true; // even when invisible due to not mouse over relevant field tile
@@ -3313,21 +3318,23 @@ function showShiftCrop2Chip(crop_id) {
   var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
   var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
   var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
-  if(replacing && f.getCrop().index == state.lastPlanted2) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
+  //if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
+  var upgrading = f.hasCrop() && shift && ctrl && state.allowshiftdelete && f.getCrop().tier < state.highestoftype2unlocked[f.getCrop().type];
+  if(upgrading) c = croptype2_tiers[f.getCrop().type][state.highestoftype2unlocked[f.getCrop().type]];
+  var selecting = f.hasCrop() && shift && ctrl && (!state.allowshiftdelete || f.getCrop().tier >= state.highestoftype2unlocked[f.getCrop().type]);
+  if(selecting) c = f.getCrop();
 
-  if(!planting && !deleting && !replacing) return;
+  if(!planting && !deleting && !replacing && !upgrading && !selecting) return;
+
+  var keyname = (shift ? (ctrl ? 'Shift+ctrl' : 'Shift') : 'Ctrl');
+  var verb = planting ? 'planting' : (deleting ? 'deleting' : (replacing ? 'replacing' : (selecting ? 'selecting' : 'upgrading')));
 
 
-
-  var keyname = (shift ? 'Shift' : 'Ctrl');
-  var verb = planting ? 'planting' : (deleting ? 'deleting' : 'replacing');
-
-
-  shiftCrop2Flex = new Flex(gameFlex, 0.25, 0.85, 0.75, 0.95, 0.5);
+  shiftCrop2Flex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.5);
   shiftCrop2Flex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCrop2Flex.div.style.zIndex = 100; // above medal chip
 
-  var textFlex = new Flex(shiftCrop2Flex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35], 0.5);
+  var textFlex = new Flex(shiftCrop2Flex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35], 0.4);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
@@ -3337,14 +3344,24 @@ function showShiftCrop2Chip(crop_id) {
     textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
-      var recoup = Res(0);
-      if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup2);
-      var cost = c.getCost().sub(recoup);
-      var afford = cost.le(state.res);
       var canvasFlex = new Flex(shiftCrop2Flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(c.image[4], canvas);
-      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br>' + upper(c.name) + '<br>' + (afford ? '' : '<font color="#888">') + 'Cost: ' + cost + (afford ? '' : '</font>');
+      var updatefun = function() {
+        var recoup = Res(0);
+        if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup2);
+        var cost = c.getCost().sub(recoup);
+        var afford = cost.le(state.res);
+        var text = keyname + '+' + verb + '<br>' + upper(c.name);
+        if(!selecting) text += '<br>' + (afford ? '' : '<font color="#888">') + 'Cost: ' + cost + ' (' + getCostAffordTimer(cost) + ')' + (afford ? '' : '</font>');
+        textFlex.div.textEl.innerHTML = text;
+      };
+      updatefun();
+      registerUpdateListener(function() {
+        if((!cropChipShiftDown && !cropChipCtrlDown) || !shiftCrop2FlexShowing) return false;
+        updatefun();
+        return true;
+      });
     } else {
       textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + 'none set';
     }
