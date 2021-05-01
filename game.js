@@ -1366,6 +1366,15 @@ function precomputeField() {
           if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
           if(c2.type == CROPTYPE_BERRY) score_num++;
         }
+        if(c.type == CROPTYPE_NETTLE) {
+          if(c2.type == CROPTYPE_MUSH) score_num++;
+          if(c2.type == CROPTYPE_BERRY) score_num--;
+          if(c2.type == CROPTYPE_FLOWER) score_num--;
+        }
+        if(c.type == CROPTYPE_BEE) {
+          if(c2.type == CROPTYPE_FLOWER) score_num++;
+          if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
+        }
       }
 
       if(c.type == CROPTYPE_BERRY) {
@@ -1379,6 +1388,14 @@ function precomputeField() {
       if(c.type == CROPTYPE_FLOWER) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
         p.score = score_mul * score_malus * score_num;
+      }
+      if(c.type == CROPTYPE_NETTLE) {
+        if(winter && !p.treeneighbor) score_malus *= 0.5;
+        p.score = score_num;
+      }
+      if(c.type == CROPTYPE_BEE) {
+        if(winter && !p.treeneighbor) score_malus *= 0.5;
+        p.score = score_malus * score_num;
       }
     }
   }

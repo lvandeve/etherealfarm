@@ -475,8 +475,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
-      if(n.hasCrop() && n.getCrop().type != CROPTYPE_NETTLE) {
-        var boost = prefield[n.y][n.x].boost; //n.getCrop().getBoost(n);
+      if(n.hasCrop() && n.getCrop().type == CROPTYPE_FLOWER) {
+        var boost = prefield[n.y][n.x].boost;
         if(boost.neqr(0)) {
           mul_boost.addInPlace(boost);
           num++;
