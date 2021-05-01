@@ -53,7 +53,7 @@ function showHelpChip(text) {
 
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 33
+// highest used id: 34
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
@@ -342,6 +342,14 @@ registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more 
 registerHelpDialog(33, 'Auto unlock', 'You unlocked auto-unlock!',
     'You unlocked auto-unlock. This will unlock the next tiers of crops automatically. Combined with auto-plant and blueprint templates, this can almost fully automate a run.<br><br>Once you planted the general shape of your field with cheap crops or blueprint templates, everything will happen automatically from then on. Just place berries, mushrooms, flowers, nettles and beehives once to indicate the layout.<br><br>Tip: ensure there are some berries that don\'t touch a mushroom, because if a mushroom consumes all seeds of a berry, income will stop and the automaton won\'t get resources for further upgrades and planting, resulting in a deadlock.',
     images_automaton[4]);
+
+registerHelpDialog(34, 'Multiplicity', 'You unlocked multiplicity! Mushrooms and berries boost each other no matter at what location.',
+    'You unlocked multiplicity! Berries now boost other berries just by having multiple anywhere field, and similarly, mushrooms boost mushrooms. For example, if there are 4 berry plants of any tier anywhere in the field, each berry receives a boost from the three others. Growing berries count partially for this.',
+    blackberry[4],
+    undefined,
+  [[blackberry[4],undefined,blueberry[4]],
+   [undefined,undefined,undefined],
+   [cranberry[4],undefined,currant[4]]]);
 
 
 function createKeyboardHelpDialog() {

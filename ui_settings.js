@@ -578,12 +578,28 @@ function createStatsDialog() {
     text += '• season changes seen: ' + open + state.g_seasons + close + '<br>';
     text += '• fastest run: ' + open + util.formatDuration(state.g_fastestrun) + close + '<br>';
     text += '• longest run: ' + open + util.formatDuration(state.g_slowestrun) + close + '<br>';
-
   }
 
-  // these stats either are at the end of current run, or total, depending on whether "total" is visuble due to having done transcensions
+  // these stats either are at the end of current run, or total, depending on whether "total" is visible due to having done transcensions
   text += '• achievements: ' + open + state.medals_earned + close + '<br>';
   text += '• achievements production bonus: ' + open + '+' + state.medal_prodmul.subr(1).toPercentString() + close + '<br>';
+
+
+  var s = getSeason();
+  text += '• current season: ' + open + seasonNames[s] + close + '<br>';
+  text += '• spring flower bonus: ' + open + '+' + getSpringFlowerBonus().subr(1).toPercentString() + close + '<br>';
+  text += '• summer berry bonus: ' + open + '+' + getSummerBerryBonus().subr(1).toPercentString() + close + '<br>';
+  text += '• summer mushroom bonus: ' + open + '+' + getSummerMushroomBonus().subr(1).toPercentString() + close + '<br>';
+  text += '• autumn mushroom bonus: ' + open + '+' + getAutumnMushroomBonus().subr(1).toPercentString() + close + '<br>';
+  text += '• autumn berry bonus: ' + open + '+' + getAutumnBerryBonus().subr(1).toPercentString() + close + '<br>';
+  text += '• autumn twigs bonus: ' + open + '+' + getAutumnMistletoeBonus().subr(1).toPercentString() + close + '<br>';
+  text += '• winter harsh conditions malus: ' + open + '-' + Num(1).sub(getWinterMalus()).toPercentString() + close + '<br>';
+  text += '• winter tree warmth bonus: ' + open + '+' + getWinterTreeWarmth().subr(1).toPercentString() + close + '<br>';
+  text += '• winter resin bonus: ' + open + '+' + getWinterTreeResinBonus().subr(1).toPercentString() + close + '<br>';
+
+  if(haveMultiplicity()) {
+    text += '• multiplicity (berry and mushroom): ' + open + '+' + (getMultiplicityBonusBase()).toPercentString() + ' per other of same type' + close + '<br>';
+  }
   text += '<br>';
 
   if(state.g_numresets > 0) {

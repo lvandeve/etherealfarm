@@ -309,6 +309,36 @@ function startChallenge(challenge_id) {
     }
   }
 
+
+
+  if(challenge_id == challenge_rockier) {
+    // similar to challenge_rocks, but more rocks
+    // here the layouts rotate around each time you complete the challenge
+    var layout_index = state.challenges[challenge_rockier].num_completed % rockier_layouts.length;
+    var layout = rockier_layouts[layout_index];
+    var array = [];
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f = state.field[y][x];
+        if(f.index != 0) continue;
+        f.index = FIELD_ROCK;
+      }
+    }
+    var treex0 = Math.floor((state.numw - 1) / 2);
+    var treey0 = Math.floor(state.numh / 2);
+    var x0 = treex0 - 2;
+    var y0 = treey0 - 2;
+    for(var y = 0; y < 5; y++) {
+      for(var x = 0; x < 5; x++) {
+        var c = layout[y * 5 + x];
+        if(c != '1') continue;
+        var f = state.field[y0 + y][x0 + x];
+        if(f.index != FIELD_ROCK) continue;
+        f.index = 0;
+      }
+    }
+  }
+
   if(challenge_id == challenge_blackberry) {
     lockAllUpgrades();
 
@@ -818,6 +848,9 @@ function PreCell(f) {
 
   this.leech = new Num(); // how much leech there is on this plant. e.g. if 4 watercress neighbors leech 100% each, this value is 4 (in reality that high is not possible due to the penalty for multiple watercress)
 
+  // a score heuristic for automaton for choosing best upgrades pot, based on neighbors
+  this.score = 0;
+
   // breakdown of the production for UI. Is like prod0, but with leech result added, and also given if still growing.
   // Does not take consumption into account, and shows the negative consumption value of mushroom.
   this.breakdown = undefined;
@@ -876,8 +909,7 @@ function PreCell(f) {
   // how many neighbors this was touching (for watercress. For deciding if there'll be a remainder.)
   this.touchnum = 0;
 
-  // for mistletoe
-  // could also be used for winter warmth but isn't yet currently, it's only computed for mistletoe now
+  // for mistletoe, and winter warmth (for non-mistletoe, not computed in non-winter season)
   this.treeneighbor = false;
 
   // whether worker bee has flower neighbor, for bee challenge only
@@ -967,6 +999,8 @@ function precomputeField() {
     }
   } // end of bee challenge
 
+  var winter = (getSeason() == 3);
+
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -980,6 +1014,20 @@ function precomputeField() {
         if(c.type == CROPTYPE_BEE) {
           p.boost = c.getBoostBoost(f);
           p.hasbreakdown_boostboost = true;
+        }
+      }
+      if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
+        for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+          var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+          var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
+          if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+          var f2 = state.field[y2][x2];
+          var c = f2.getCrop();
+          if(!c) continue;
+          var diagonal = (c.type == CROPTYPE_MISTLETOE) ? !!state.upgrades2[upgrade2_diagonal_mistletoes].count : !!state.upgrades2[upgrade2_diagonal].count;
+          if(!diagonal && dir >= 4) continue;
+          var p2 = prefield[y2][x2];
+          p2.treeneighbor = true;
         }
       }
     }
@@ -1048,21 +1096,8 @@ function precomputeField() {
           p.boost = c.getBoostBoost(f);
           p.hasbreakdown_boostboost = true;
         }
-        if(c.type == CROPTYPE_MISTLETOE) {
-          var num_neighbors = 4;
-          if(state.upgrades2[upgrade2_diagonal_mistletoes].count) num_neighbors = 8;
-          for(var dir = 0; dir < num_neighbors; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
-            var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
-            var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
-            if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
-            var f2 = state.field[y2][x2];
-            if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
-              p.treeneighbor = true;
-              // even those that are not fullgrown count, reason: otherwise too annoying to prevent tree from leveling by not yet planting mushrooms, while mistletoes are growing, and you want their twigs when tree levels up
-              state.mistletoes++;
-              break;
-            }
-          }
+        if(c.type == CROPTYPE_MISTLETOE && p.treeneighbor) {
+          state.mistletoes++;
         }
       }
     }
@@ -1080,7 +1115,8 @@ function precomputeField() {
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
-            prefield[y2][x2].leech.addInPlace(leech);
+            var p2 = prefield[y2][x2];
+            p2.leech.addInPlace(leech);
           }
         }
       }
@@ -1292,6 +1328,60 @@ function precomputeField() {
     }
   }
 
+  // pass 6: score heuristics for automaton auto-plant. The score of flower-beehive and nettle-malus pairs is assumed to already have been computed at this point
+  var winter = getSeason() == 3;
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(!c) continue;
+      var p = prefield[y][x];
+
+      var score_flower = 0;
+      var score_num = 0;
+      var score_mul = 1;
+      var score_malus = 1;
+
+      for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+        var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+        var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+        if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+        var f2 = state.field[y2][x2];
+        var c2 = f2.getCrop();
+        if(!c2) continue;
+        var p2 = prefield[y2][x2];
+
+        if(c.type == CROPTYPE_BERRY) {
+          if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
+          if(c2.type == CROPTYPE_SHORT) score_mul *= ((state.cropcount[short_0] > 2) ? 1 : 2);
+          if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
+        }
+        if(c.type == CROPTYPE_MUSH) {
+          if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
+          if(c2.type == CROPTYPE_NETTLE) score_mul++;
+          if(c2.type == CROPTYPE_BERRY) score_num++;
+        }
+        if(c.type == CROPTYPE_FLOWER) {
+          if(c2.type == CROPTYPE_BEE) score_mul++;
+          if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
+          if(c2.type == CROPTYPE_BERRY) score_num++;
+        }
+      }
+
+      if(c.type == CROPTYPE_BERRY) {
+        if(winter && !p.treeneighbor) score_malus *= 0.5;
+        p.score = (1 + score_flower) * score_mul * score_malus;
+      }
+      if(c.type == CROPTYPE_MUSH) {
+        if(winter && !p.treeneighbor) score_malus *= 0.5;
+        p.score = (1 + score_flower) * score_mul * (score_num ? 1 : 0) * score_malus;
+      }
+      if(c.type == CROPTYPE_FLOWER) {
+        if(winter && !p.treeneighbor) score_malus *= 0.5;
+        p.score = score_mul * score_malus * score_num;
+      }
+    }
+  }
 
   // memory cleanup pass, and avoidance of lasting circular dependencies
   for(var y = 0; y < h; y++) {
@@ -1671,6 +1761,25 @@ function autoPlant(res) {
 
 
   res.subInPlace(cost);
+
+  // find potentially better x,y location
+  var old = state.field[y][x].cropIndex();
+  if(!old < 0) return; // somethng must have changed since computeNextAutoPlant()
+  var best = prefield[y][x].score;
+  // simple method of determining best spot: find the one where the original crop has the most income
+  for(var y2 = 0; y2 < state.numh; y2++) {
+    for(var x2 = 0; x2 < state.numw; x2++) {
+      var f = state.field[y2][x2];
+      if(f.cropIndex() != old) continue;
+      var p2 = prefield[y2][x2];
+      if(p2.score > best) {
+        best = p2.score;
+        x = x2;
+        y = y2;
+      }
+    }
+  }
+
 
   actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
   return ;
@@ -3163,7 +3272,7 @@ var update = function(opt_fromTick) {
 
   // go faster when the automaton is autoplanting one-by-one
   if(autoplanted) {
-    window.setTimeout(bind(update, opt_fromTick), update_ms * 0.4);
+    window.setTimeout(bind(update, true), update_ms * 0.4);
   }
 }
 

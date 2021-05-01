@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.68 (2021-05-01):';
+  text += '<br/>• Added rockier challenge (unlocks at high enough tree level)';
+  text += '<br/>• Added the multiplicity mechanism, a bonus based on amount of crops, as reward of rockier challenge';
+  text += '<br/>• Automaton now chooses good spots first for next auto-plant, rather than go from top to bottom';
+  text += '<br/>• Added season effect stats to player stats dialog, and other UI tweaks';
+  text += '<br/><br/>';
+
   text += '0.1.67 (2021-04-29):';
   text += '<br/>• Fruits of different types can be fused again (e.g. pineapple with pear), but the result will always be an apple. So fusing a perfect seasonal fruit is still rare, but you can use them for fusing regular fruits if desired.';
   text += '<br/>• Fruits now remember the random free starting levels of abilities. Fusing can now also preserve these, if two abilities are fused the result is between the two values.';

@@ -16,14 +16,28 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-
 function rerenderUpgradeChip(u, chip, completed) {
   var div = chip.div;
   div.className = 'efUpgradeChip';
 
-  chip.u = u; // the upgrade this chip now represents
-
   var cost = u.getCost(completed ? -1 : 0);
+  var cant_afford = state.res.lt(cost);
+
+  var u2 = state.upgrades[u.index];
+  if(chip.u != undefined) {
+    var same = true;
+    if(chip.u != u.index) same = false;
+    if(chip.u_count != u2.count) same = false;
+    if(chip.u_completed != completed) same = false;
+    if(chip.u_cant_afford != cant_afford) same = false;
+    if(same) return;
+  }
+
+  chip.u = u.index; // the upgrade this chip now represents
+  chip.u_count = u2.count;
+  chip.u_completed = completed;
+  chip.u_cant_afford = cant_afford;
+
   var titleFlex = chip.titleFlex
   var name = completed ? u.getName() : u.getNextName();
   titleFlex.div.innerHTML = upper(name);
@@ -55,7 +69,7 @@ function rerenderUpgradeChip(u, chip, completed) {
 
     buyFlex.div.textEl.innerText = buyText;
 
-    if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
+    if(cant_afford) buyFlex.div.className = 'efButtonCantAfford';
     else buyFlex.div.className = 'efButton';
 
     util.setEvent(chip.div, 'onmouseover', 'upgradeseen', function() {
@@ -91,7 +105,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
 
   var infoText = '';
   var updateInfoText = function() {
-    var u = chip.u;
+    var u = upgrades[chip.u];
     var cost = u.getCost(completed ? -1 : 0);
     infoText = upper(u.name);
     infoText += '<br><br>Cost: ' + cost.toString();
@@ -142,7 +156,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
     styleButton(buyFlex.div);
 
     addButtonAction(buyFlex.div, bind(function(i, e) {
-      var u = chip.u;
+      var u = upgrades[chip.u];
       if(u.is_choice) {
         var dialog;
         var funa = function() {
@@ -168,7 +182,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
     }, i));
 
     util.setEvent(chip.div, 'onmouseover', 'upgradeseen', function() {
-      var u = chip.u;
+      var u = upgrades[chip.u];
       state.upgrades[u.index].seen = true;
     });
 
@@ -183,7 +197,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
   styleButton0(canvasFlex.div);
 
   addButtonAction(canvasFlex.div, function() {
-    var u = chip.u;
+    var u = upgrades[chip.u];
     var okfun = undefined;
     var okname = undefined;
     if(!u.is_choice) {

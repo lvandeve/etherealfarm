@@ -66,11 +66,21 @@ function getTranscendValueInfo(opt_from_challenge) {
 }
 
 function createTranscendDialog(opt_from_challenge) {
+  var extraname = undefined;
+  var extrafun = undefined;
+  if(state.challenges_unlocked) {
+    extraname = 'challenges';
+    if(state.untriedchallenges) extraname = 'challenges\n(new one!)';
+    extrafun = function() {
+      createChallengeDialog();
+    };
+  }
+
   var dialog = createDialog(DIALOG_MEDIUM, function(e) {
       actions.push({type:ACTION_TRANSCEND, challenge:0});
       closeAllDialogs();
       update();
-  }, 'transcend', 'cancel');
+  }, 'transcend', 'cancel', extrafun, extraname);
 
   dialog.div.className = 'efDialogEthereal';
 
@@ -231,6 +241,11 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   text += '• Completed: ' + completedtext + '<br>';
 
+  for(var j = 0; j < c2.completed; j++) {
+    text += '• Reward gotten: ' + c.rewarddescription[j];
+    text += '<br>';
+  }
+
   scrollFlex.div.innerHTML = text;
 }
 
@@ -354,7 +369,7 @@ function createFinishChallengeDialog() {
   var button = new Flex(buttonflex, 0, 0, 1, 0.3, 0.7).div;
   styleButton(button);
   button.textEl.innerText = 'Start regular run';
-  button.textEl.style.boxShadow = '0px 0px 5px #ff0';
+  //button.textEl.style.boxShadow = '0px 0px 5px #ff0';
   button.textEl.style.textShadow = '0px 0px 5px #ff0';
   registerTooltip(button, 'Show the transcension dialog');
   addButtonAction(button, function() {
@@ -364,7 +379,7 @@ function createFinishChallengeDialog() {
   button = new Flex(buttonflex, 0, 0.32, 1, 0.6, 0.7).div;
   styleButton(button);
   button.textEl.innerText = 'Start a new challenge';
-  button.textEl.style.boxShadow = '0px 0px 5px #f60';
+  //button.textEl.style.boxShadow = '0px 0px 5px #f60';
   button.textEl.style.textShadow = '0px 0px 5px #f60';
   registerTooltip(button, 'Transcend and start a challenge');
   addButtonAction(button, function() {
@@ -478,7 +493,7 @@ function showChallengeChip(challenge) {
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
   var text = 'Challenge Completed!';
-  if(c.targetlevel.length > 0) {
+  if(c.targetlevel.length > 1) {
     if(c2.completed > 0 && c2.completed + 1 < c.targetlevel.length) text = 'Next challenge stage completed!';
     else if(c2.completed + 1 >= c.targetlevel.length) text = 'Final challenge stage completed!';
   }

@@ -349,6 +349,11 @@ function makeTreeDialog() {
 
       text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString() + '<br>';
 
+      if(haveMultiplicity()) {
+        text += '<br/>';
+        text += 'Multiplicity (berry and mushroom): +' + (getMultiplicityBonusBase()).toPercentString() + ' per other of same type<br>';
+      }
+
       if(getSeason() == 3) {
         text += '<br/>';
         text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats and no negative winter effect for any crop next to the tree<br>';
@@ -393,6 +398,9 @@ function makeTreeDialog() {
     return true;
   });
 
+  var y = 0;
+  var h = 0.3;
+
   if(state.challenge) {
     var c = challenges[state.challenge];
     var c2 = state.challenges[state.challenge];
@@ -401,7 +409,8 @@ function makeTreeDialog() {
     var targetlevel = c.nextTargetLevel();
     var success = state.treelevel >= targetlevel;
 
-    var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
+    var button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
+    y += h * 1.1;
     styleButton(button);
     if(already_completed && success) {
       button.textEl.innerText = 'Finish challenge';
@@ -421,14 +430,15 @@ function makeTreeDialog() {
       }
     }
 
-    button.textEl.style.boxShadow = '0px 0px 5px #f40';
+    //button.textEl.style.boxShadow = '0px 0px 5px #f40';
     button.textEl.style.textShadow = '0px 0px 5px #f40';
     addButtonAction(button, function() {
       createFinishChallengeDialog();
     });
 
 
-    button = new Flex(f1, 0, 0.32, 0.5, 0.6, 0.8).div;
+    button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
+    y += h * 1.1;
     styleButton(button);
     button.textEl.innerText = 'Current challenge info';
     registerTooltip(button, 'Description and statistics for the current challenge');
@@ -438,10 +448,11 @@ function makeTreeDialog() {
   } else if(state.treelevel < min_transcension_level) {
     if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
   } else {
-    var button = new Flex(f1, 0, 0, 0.5, 0.3, 0.8).div;
+    var button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
+    y += h * 1.1;
     styleButton(button);
     button.textEl.innerText = 'Transcension';
-    button.textEl.style.boxShadow = '0px 0px 5px #ff0';
+    //button.textEl.style.boxShadow = '0px 0px 5px #ff0';
     button.textEl.style.textShadow = '0px 0px 5px #ff0';
     registerTooltip(button, 'Show the transcension dialog');
     addButtonAction(button, function() {
@@ -449,10 +460,11 @@ function makeTreeDialog() {
     });
 
     if(state.challenges_unlocked) {
-      button = new Flex(f1, 0, 0.32, 0.5, 0.6, 0.8).div;
+      button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
+    y += h * 1.1;
       styleButton(button);
       button.textEl.innerText = 'Challenges';
-      button.textEl.style.boxShadow = '0px 0px 5px #f60';
+      //button.textEl.style.boxShadow = '0px 0px 5px #f60';
       button.textEl.style.textShadow = '0px 0px 5px #f60';
       registerTooltip(button, 'Transcend and start a challenge');
       addButtonAction(button, function() {
@@ -461,10 +473,11 @@ function makeTreeDialog() {
     }
   }
   if(haveAutomaton()) {
-    button = new Flex(f1, 0, 0.62, 0.5, 0.9, 0.8).div;
+    button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
+    y += h * 1.1;
     styleButton(button);
     button.textEl.innerText = 'Blueprints';
-    button.textEl.style.boxShadow = '0px 0px 5px #44f';
+    //button.textEl.style.boxShadow = '0px 0px 5px #44f';
     button.textEl.style.textShadow = '0px 0px 5px #008';
     addButtonAction(button, function() {
       createBlueprintsDialog();

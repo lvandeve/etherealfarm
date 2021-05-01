@@ -585,6 +585,7 @@ function State() {
   this.fullgrowncropcount = [];
   this.fullgrowncrop2count = [];
   this.fullgrowncroptypecount = [];
+  this.growingcroptypecount = [];
 
   // count of non-crop fields, such as fern
   this.specialfieldcount = [];
@@ -791,6 +792,7 @@ function computeDerived(state) {
   state.fullgrowncropcount = [];
   state.cropcount = [];
   state.fullgrowncroptypecount = [];
+  state.growingcroptypecount = [];
   state.croptypecount = [];
   state.highestoftypeplanted = [];
   state.lowestoftypeplanted = [];
@@ -805,6 +807,7 @@ function computeDerived(state) {
   }
   for(var i = 0; i < NUM_CROPTYPES; i++) {
     state.fullgrowncroptypecount[i] = 0;
+    state.growingcroptypecount[i] = 0;
     state.croptypecount[i] = 0;
     state.highestoftypeplanted[i] = -Infinity;
     state.lowestoftypeplanted[i] = Infinity;
@@ -828,6 +831,7 @@ function computeDerived(state) {
             state.numfullgrowncropfields++;
             if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++;
           }
+          state.growingcroptypecount[c.type] += Math.min(Math.max(0, f.growth), 1);
         }
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
         state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);

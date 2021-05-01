@@ -337,25 +337,13 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     var sun_active = state.upgrades[upgrade_sununlock].count && this.type == CROPTYPE_BERRY && (state.time - state.suntime) < getSunDuration();
     var rainbow_active = state.upgrades[upgrade_rainbowunlock].count && (state.time - state.rainbowtime) < getRainbowDuration();
 
-    var next_to_tree = false;
-    var num_neighbors = 4;
-    if(state.upgrades2[upgrade2_diagonal].count) num_neighbors = 8;
-    for(var dir = 0; dir < num_neighbors; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
-      var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
-      var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
-      if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
-      var f2 = state.field[y2][x2];
-      if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
-        next_to_tree = true;
-        break;
-      }
-    }
     var weather_ignore = false;
     if(this.type == CROPTYPE_BERRY && sun_active) weather_ignore = true;
     if(this.type == CROPTYPE_MUSH && mist_active) weather_ignore = true;
     if(this.type == CROPTYPE_FLOWER && rainbow_active) weather_ignore = true;
 
-    if(!next_to_tree && !weather_ignore) {
+    var p = prefield[f.y][f.x];
+    if(!p.treeneighbor && !weather_ignore) {
       var malus = getWinterMalus();
       if(malus.neqr(1)) {
         result.posmulInPlace(malus);
@@ -364,7 +352,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     }
 
     // winter tree warmth
-    if(next_to_tree && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+    if(p.treeneighbor && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
       var bonus = getWinterTreeWarmth();
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
@@ -536,7 +524,18 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown && num > 0) breakdown.push(['nettles (' + num + ')', true, spore_boost, result.clone()]);
   }
 
-  // teelevel boost
+  // multiplicity
+  if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && haveMultiplicity(this.type)) {
+    // multiplicity only works by fully grown crops, not for intermediate growing ones
+    var num = state.growingcroptypecount[this.type] - 1; // num others, excluding self (while growing this statement does not hold true but that's ok)
+    if(num > 0) {
+      var boost = Num(1).add(getMultiplicityBonusBase(this.type).mulr(num));
+      result.mulInPlace(boost);
+      if(breakdown) breakdown.push(['multiplicity (' + ((num == Math.floor(num)) ? num.toString() : num.toPrecision(3)) + ')', true, boost, result.clone()]);
+    }
+  }
+
+  // treelevel boost
   // CROPTYPE_SHORT is excluded simply to remove noise in the breakdown display: it's only a bonus on its 1 seed production. At the point where the tree is leveled, its real income comes from the neighbor copying.
   if(state.treelevel > 0 && this.type != CROPTYPE_SHORT) {
     var tree_boost = Num(1).add(getTreeBoost());
@@ -2116,6 +2115,33 @@ var medal_rock2 = registerMedal('this rocks!', 'completed the rocks challenge st
 }, Num(0.45));
 changeMedalDisplayOrder(medal_rock2, medal_rock1);
 
+medal_register_id = 920;
+
+registerMedal('rock solid', 'completed the rockier challenge', images_rock[0], function() {
+  return state.challenges[challenge_rockier].completed;
+}, Num(2));
+
+registerMedal('rock solid II', 'completed the rockier challenge map 2', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 2;
+}, Num(2.5));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+registerMedal('rock solid III', 'completed the rockier challenge map 3', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 3;
+}, Num(3));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+registerMedal('rock solid IV', 'completed the rockier challenge map 4', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 4;
+}, Num(3.5));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+registerMedal('rock solid V', 'completed the rockier challenge map 5 (final)', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 5;
+}, Num(4));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+medal_register_id = 930;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2398,10 +2424,33 @@ function() {
 ], 15);
 
 
+// 7
+var challenge_rockier = registerChallenge('rockier challenge', [40], Num(0.15),
+`A harder version of the rocks challenge. The field has a difficult predetermined rock pattern. Beating the challenge the first time gives a new type of passive bonus. The patterns are very restrictive and don\'t benefit from field size above 5x5. This challenge is not a cakewalk, especially later patterns.
+`,
+`
+• All regular crops, upgrades, ... are available and work as usual<br>
+• There are unremovable rocks on the field, blocking the planting of crops<br>
+• The rock pattern is predetermined, every time you beat the challenge it cycles to a next, harder, pattern<br>
+• There are 5 patterns in total, each gives an achievement<br>
+`,
+'multiplicity for berries and mushrooms',
+'reaching tree level 45',
+function() {
+  return state.treelevel >= 45;
+}, function() {
+  showRegisteredHelpDialog(34);
+}, 15);
+
+var rockier_layouts = [
+  '0001000010100001001100011', '1001010000010011110101000', '0000010001000110100101000', '0100100001000011000011000', '0000000001000011100100000'
+  // the following one is too difficult and omitted: 1101000000100001001000010
+];
 
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry];
+var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry];
+
 
 if(challenges_order.length != registered_challenges.length) {
   throw 'challenges order not same length as challenges!';
@@ -3774,4 +3823,16 @@ function getFernWaitTime() {
   else mintime = fern_wait_minutes * 60;
   if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
   return mintime;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function haveMultiplicity(opt_croptype) {
+  if(opt_croptype == undefined || opt_croptype == CROPTYPE_BERRY || opt_croptype == CROPTYPE_MUSH) return state.challenges[challenge_rockier].completed;
+  return false;
+}
+
+// the result must be multiplied by (state.growingcroptypecount[croptype] - 1), only if that value is > 1, to get the actual intended resulting bonus
+function getMultiplicityBonusBase(croptype) {
+  return Num(0.25);
 }
