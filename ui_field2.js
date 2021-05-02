@@ -354,7 +354,8 @@ function initField2UI() {
             result = 'Ethereal tree';
           }
           var twigs_req = treeLevel2Req(state.treelevel2 + 1);
-          result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' (total: ' + twigs_req.toString() + ')';
+          var nextlevelprogress = state.res.twigs.div(twigs_req.twigs);
+          result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' of ' + twigs_req.toString() + ' (' + nextlevelprogress.toPercentString() + ')';
         }
         return result;
       }, x, y, div), true);

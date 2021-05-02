@@ -527,9 +527,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   // multiplicity
   if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && haveMultiplicity(this.type)) {
     // multiplicity only works by fully grown crops, not for intermediate growing ones
-    var num = state.growingcroptypecount[this.type] - 1; // num others, excluding self (while growing this statement does not hold true but that's ok)
+    var num = getMultiplicityNum(this);
     if(num > 0) {
-      var boost = Num(1).add(getMultiplicityBonusBase(this.type).mulr(num));
+      var boost = getMultiplicityBonusBase(this.type).mulr(num).addr(1);
       result.mulInPlace(boost);
       if(breakdown) breakdown.push(['multiplicity (' + ((num == Math.floor(num)) ? num.toString() : num.toPrecision(3)) + ')', true, boost, result.clone()]);
     }
@@ -3832,7 +3832,38 @@ function haveMultiplicity(opt_croptype) {
   return false;
 }
 
-// the result must be multiplied by (state.growingcroptypecount[croptype] - 1), only if that value is > 1, to get the actual intended resulting bonus
+// the result must be multiplied by getMultiplicityNum, to get the actual intended resulting bonus
 function getMultiplicityBonusBase(croptype) {
   return Num(0.25);
 }
+
+function getMultiplicityNum(crop) {
+  // the multiplicity bonus is given by crops of same tier, or 1 tier lower, or 1 tier higher, but not any farther away than that
+  // reason: multiplicity is intended to give a benefit from more crops in the field, since due to linear scaling more crops otherwise diminishes. But it's not intended to be a mechanic to allow quick manual hotswapping of bonus types.
+  // if crops from all tiers give the bonus, then you can leave a tier 0 crop around to give the bonus, without needing to ever spend growtime on it after that, and also allows quick swapping between mushrooms and berries. But maintaining that requires manual work, which is annoying, so we don't want that mechanic
+  // if only crops from exact same tier (so exact same crop) affect it, then growing a higher tier crop will be bad instead of good, and growing higher tier crops should be encouraged
+  // benefitting from +1/-1 tier is just right: normally you have one tier active, and are growing 1 new next tier, so they can benefit each other.
+
+  var croptype = crop.type;
+  var tier = crop.tier;
+
+  var below = undefined;
+  if(tier > 0 && croptype_tiers[croptype]) below = croptype_tiers[croptype][tier - 1];
+  if(below && below.istemplate) below = undefined;
+
+  var above = undefined;
+  if(tier != undefined && croptype_tiers[croptype]) above = croptype_tiers[croptype][tier + 1];
+  if(above && above.istemplate) above = undefined;
+
+  var num = state.growingcropcount[crop.index];
+  if(below) num += state.growingcropcount[below.index];
+  if(above) num += state.growingcropcount[above.index];
+
+  num -= 1; // the current plant self is not counted (even if partial, growing, still counts as full 1)
+  if(num < 0) num = 0;
+
+  return num;
+}
+
+
+

@@ -344,12 +344,12 @@ registerHelpDialog(33, 'Auto unlock', 'You unlocked auto-unlock!',
     images_automaton[4]);
 
 registerHelpDialog(34, 'Multiplicity', 'You unlocked multiplicity! Mushrooms and berries boost each other no matter at what location.',
-    'You unlocked multiplicity! Berries now boost other berries just by having multiple anywhere field, and similarly, mushrooms boost mushrooms. For example, if there are 4 berry plants of any tier anywhere in the field, each berry receives a boost from the three others. Growing berries count partially for this.',
+    'You unlocked multiplicity! Berries now boost other berries just by having multiple anywhere field, and similarly, mushrooms boost mushrooms. This works across tiers, but max 1 tier higher or lower (e.g. blackberry affects blueberry, but it won\'t affect the 2-higher tier cranberry). For example, if there are 4 berry plants anywhere in the field, each berry receives a boost from the three others. Growing berries count partially for this.',
     blackberry[4],
     undefined,
   [[blackberry[4],undefined,blueberry[4]],
    [undefined,undefined,undefined],
-   [cranberry[4],undefined,currant[4]]]);
+   [blueberry[4],undefined,blackberry[4]]]);
 
 
 function createKeyboardHelpDialog() {

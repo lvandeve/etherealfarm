@@ -160,7 +160,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += 'Short-lived plant. Total lifetime: ' + c.getPlantTime() + 's<br/><br/>';
         result += leechInfo + '<br/>';
       } else {
-        result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + '<br/>';
+        result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
         if(state.upgrades[berryunlock_0].count) result += '<br/><span class="efWatercressHighlight">Copies neighbors: to duplicate full production of long-lived berry and mushroom neighbors for free (mushroom copy also consumes more seeds)</span><br/>';
       }
 
@@ -712,7 +712,8 @@ function initFieldUI() {
             if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
             return result;
           } else {
-            return upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+            var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+            return upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
           }
         }
         return result;

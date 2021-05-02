@@ -583,6 +583,7 @@ function State() {
   // does not include partially growing ones, nor templates
   // derived stat, not to be saved
   this.fullgrowncropcount = [];
+  this.growingcropcount = [];
   this.fullgrowncrop2count = [];
   this.fullgrowncroptypecount = [];
   this.growingcroptypecount = [];
@@ -790,6 +791,7 @@ function computeDerived(state) {
   state.numfullgrowncropfields = 0;
   state.numfullpermanentcropfields = 0;
   state.fullgrowncropcount = [];
+  state.growingcropcount = [];
   state.cropcount = [];
   state.fullgrowncroptypecount = [];
   state.growingcroptypecount = [];
@@ -801,6 +803,7 @@ function computeDerived(state) {
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
+    state.growingcropcount[registered_crops[i]] = 0;
   }
   for(var i = 1; i < CROPINDEX; i++) {
     state.specialfieldcount[i] = 0;
@@ -823,6 +826,7 @@ function computeDerived(state) {
         if(f.isFullGrown()) {
           state.fullgrowncropcount[c.index]++;
         }
+        state.growingcropcount[c.index] += Math.min(Math.max(0, f.growth), 1);
         if(!f.isTemplate()) {
           state.numcropfields++;
           state.croptypecount[c.type]++;
