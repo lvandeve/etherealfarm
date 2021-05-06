@@ -16,9 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-function renderBlueprint(b, flex, opt_index) {
+// opt_transcend: if true, use alternate background color to indicate it'll transcend with it
+function renderBlueprint(b, flex, opt_index, opt_transcend) {
   flex.clear();
-  flex.div.style.backgroundColor = '#edc';
+  flex.div.style.backgroundColor = opt_transcend ? '#ff7' : '#edc';
 
   if(!b) b = new BluePrint();
   var w = b.numw;
@@ -308,19 +309,24 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • shift + ctrl + click blueprint in main blueprint dialog: transcend, and then plant it immediately (only if "shortcuts may delete crop" is enabled in the preferences)';
   text += '<br/>';
-  text += ' • ctrl + shift + click blueprint template in the field: grow highest crop tier you can afford of that type here (just shift replaces it, and ctrl deletes it, as usual)';
+  text += ' • "t", "b": open transcend dialog, and then open transcend-with-blueprint dialog';
   text += '<br/><br/>';
   text += 'Once automaton is advanced enough, it can also use blueprints.';
 
   div.innerHTML = text;
 }
 
-function createBlueprintsDialog() {
+// opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
+function createBlueprintsDialog(opt_transcend) {
   var dialog = createDialog();
 
   var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
   centerText2(titleFlex.div);
-  titleFlex.div.textEl.innerText = 'Blueprint library';
+  if(opt_transcend) {
+    titleFlex.div.textEl.innerText = 'Transcend with blueprint';
+  } else {
+    titleFlex.div.textEl.innerText = 'Blueprint library';
+  }
 
   var bflex = new Flex(dialog.content, [0.01, 0], [0.1, 0], [0.01, 0.98], [0.1, 0.98]);
 
@@ -328,7 +334,7 @@ function createBlueprintsDialog() {
     var x = i % 3;
     var y = Math.floor(i / 3);
     var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
-    renderBlueprint(state.blueprints[i], flex, i);
+    renderBlueprint(state.blueprints[i], flex, i, opt_transcend);
     styleButton0(flex.div, true);
     addButtonAction(flex.div, bind(function(index, flex, e) {
       for(var i = 0; i <= index; i++) {
@@ -337,11 +343,7 @@ function createBlueprintsDialog() {
       var shift = util.eventHasShiftKey(e);
       var ctrl = util.eventHasCtrlKey(e);
       var filled = state.blueprints[index] && state.blueprints[index].numw && state.blueprints[index].numh;
-      if(shift && !ctrl && filled) {
-        plantBluePrint(state.blueprints[index]);
-        closeAllDialogs();
-        update();
-      } else if(shift && ctrl && filled) {
+      if(opt_transcend) {
         if(!state.allowshiftdelete) {
           showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
         } else if(state.treelevel < min_transcension_level && (state.treelevel != 0 || state.challenge)) {
@@ -353,10 +355,18 @@ function createBlueprintsDialog() {
           update();
         }
       } else {
-        var subdialog = createBlueprintDialog(state.blueprints[index], index);
-        subdialog.onclose = bind(function(i, flex) {
-          renderBlueprint(state.blueprints[i], flex, index);
-        }, index, flex);
+        if(shift && !ctrl && filled) {
+          plantBluePrint(state.blueprints[index]);
+          closeAllDialogs();
+          update();
+        } else if(ctrl) {
+          showMessage('Shift+ctrl+blueprint click to transcend has been replaced by transcend-with-blueprint dialog. Use the following shortcuts for that, starting from main field: "t" to open transcend dialog, "b" to open transcend-with-blueprint dialog, click to transcend and plant. You can also use shift+click now to just plant this blueprint without transcend.', C_INVALID);
+        } else {
+          var subdialog = createBlueprintDialog(state.blueprints[index], index);
+          subdialog.onclose = bind(function(i, flex) {
+            renderBlueprint(state.blueprints[i], flex, index);
+          }, index, flex);
+        }
       }
     }, i, flex));
   }

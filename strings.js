@@ -43,6 +43,7 @@ var autoSavedStateMessage = 'Auto-saved state locally';
 var autoSavedStateMessageWithReminder = 'Auto-saved state locally. Reminder: make a manual savegame backup or risk losing everything. Use "export save" under settings.';
 var manualSavedStateMessage = 'Manually saved state locally';
 var loadedFromLocalStorageMessage = 'Loaded local save';
+var loadedFromLocalImportMessage = 'Imported save';
 var hardresetwarning = 'Perform a hard reset. This removes all savegame data, deletes your entire game and starts a new game from the beginning.\n\nWARNING: This is not a soft reset: nothing is kept, everything will be deleted, including achievements, settings and recovery saves. This starts over with a new, blank, savegame, and cannot be reverted. Are you sure you want to do this?';
 var shiftClickPlantUnset = 'shift+click repeats last planted plant, but no last plant is set, plant the regular way first';
 var leechInfo = 'Copy ability: if this plant has resource-producing long-lived neighbors (orthogonal, not diagonal) of type berry or mushroom, the watercress will duplicate all their production (but also consumption), no matter how high their tier! This has diminishing returns if there are multiple watercress plants in the entire field, max 1 or 2 watercress makes sense. A badly placed watercress can even negatively affect the copying of all others. If you have no other crop types this is not yet relevant, plant as many watercress as you want then!';

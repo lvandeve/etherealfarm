@@ -881,6 +881,8 @@ function initSettingsUI_in(dialog) {
           state.prevtime = state.time = util.getTime();
           postload(state);
           showMessage('Held shift key while importing this save, so no resources added for the time between exporting and importing now (loaded as if the time was back then). To get those resources, don\'t hold shift while loading.');
+        } else {
+          showMessage(loadedFromLocalImportMessage, C_UNIMPORTANT, 0, 0);
         }
         dialog.cancelFun();
         state.g_numimports++;

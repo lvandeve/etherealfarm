@@ -1033,7 +1033,7 @@ var flower_1 = registerFlower('cornflower', 1, fower_base.mul(flower_increase.po
 var flower_2 = registerFlower('daisy', 2, fower_base.mul(flower_increase.powr(2)), flowerplanttime0 * 6, daisy);
 var flower_3 = registerFlower('dandelion', 3, fower_base.mul(flower_increase.powr(3)), flowerplanttime0 * 9, dandelion);
 var flower_4 = registerFlower('iris', 4, fower_base.mul(flower_increase.powr(4)), flowerplanttime0 * 12, iris);
-var flower_5 = registerFlower('lavendar', 5, fower_base.mul(flower_increase.powr(5)), flowerplanttime0 * 15, lavendar);
+var flower_5 = registerFlower('lavender', 5, fower_base.mul(flower_increase.powr(5)), flowerplanttime0 * 15, lavender);
 var flower_6 = registerFlower('orchid', 6, fower_base.mul(flower_increase.powr(6)), flowerplanttime0 * 18, orchid);
 
 
@@ -2185,12 +2185,17 @@ function Challenge() {
   // this is additive for all challenges together.
   this.bonus = Num(0);
 
+  this.cycling = 0; // if 2 or higher, this challenge cycles between different states, with each their own max level. The current cycle is (state.challenges[id].num_completed % challenges[id].cycling).
+
+  this.cycling_bonus = undefined; // is array if this challenge is cycling, and then replaces this.bonus.
+
   this.prefun = function() {
     return false;
   };
   this.rewardfun = [function() {
   }];
 
+  // this is different than state state.challenges[this.index].num_completed: that one is about amount of times target level reached, while here it's about amount of different target levels reached, if there are multiple stages
   this.numCompleted = function(opt_include_current_run) {
     var completed = state.challenges[this.index].completed;
     if(opt_include_current_run && state.challenge == this.index && completed < this.targetlevel.length && state.treelevel >= this.targetlevel[completed]) completed++;
@@ -2198,8 +2203,22 @@ function Challenge() {
   };
 
   // use numCompleted to check if any stage at all was completed, or fullyCompleted to check all stages are completed
+  // does not take cycles into account (from this.cycling), use allCyclesCompleted for that
   this.fullyCompleted = function(opt_include_current_run) {
     return this.numCompleted(opt_include_current_run) >= this.targetlevel.length;
+  };
+
+  this.allCyclesCompleted = function(opt_include_current_run) {
+    var num_completed = state.challenges[this.index].num_completed;
+    if(opt_include_current_run && state.challenge == this.index && state.treelevel >= this.targetlevel[0]) num_completed++;
+    return num_completed > 0 && num_completed >= this.cycling;
+  };
+
+  this.getCurrentCycle = function(opt_include_current_run) {
+    if(this.cycling < 2) return 0;
+    var num_completed = state.challenges[this.index].num_completed;
+    if(opt_include_current_run && state.challenge == this.index && state.treelevel >= this.targetlevel[0]) num_completed++;
+    return num_completed % this.cycling;
   };
 
   // returns either the reward level of the next stage, or if fully completed, that of the last stage
@@ -2257,7 +2276,7 @@ function registerChallenge(name, targetlevel, bonus, description, rulesdescripti
 
 
 // 1
-var challenge_bees = registerChallenge('bee challenge', 10, Num(0.05),
+var challenge_bees = registerChallenge('bee challenge', 10, Num(0.1),
 'Grow bees during this challenge! This has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the one in this challenge.',
 `
 • The only types of crop available are 1 berry type, 1 mushroom type, 1 flower type and 3 types of bee/beehive. They\'re all available from the beginning, and no others unlock.<br>
@@ -2276,7 +2295,7 @@ function() {
 }, 0);
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75], Num(0.03),
+var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75], Num(0.05),
 `The field has rocks on which you can't plant. The rock pattern is determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours.
 `,
 `
@@ -2295,7 +2314,7 @@ function() { state.fruit_slots++; }
 
 
 // 3
-var challenge_nodelete = registerChallenge('undeletable challenge', 25, Num(0.07),
+var challenge_nodelete = registerChallenge('undeletable challenge', 25, Num(0.05),
 `
 During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops!
 `,
@@ -2356,7 +2375,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [30, 35], Num(0.1),
+var challenge_wither = registerChallenge('wither challenge', [30, 35], Num(0.075),
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -2423,29 +2442,30 @@ function() {
 },
 ], 15);
 
-
-// 7
-var challenge_rockier = registerChallenge('rockier challenge', [40], Num(0.15),
-`A harder version of the rocks challenge. The field has a difficult predetermined rock pattern. Beating the challenge the first time gives a new type of passive bonus. The patterns are very restrictive and don\'t benefit from field size above 5x5. This challenge is not a cakewalk, especially later patterns.
-`,
-`
+var rockier_text = 'A harder version of the rocks challenge. The field has a difficult predetermined rock pattern. Beating the challenge the first time gives a new type of passive bonus. The patterns are very restrictive and don\'t benefit from field size above 5x5. This challenge is not a cakewalk, especially later patterns.';
+var rockier_text_long = `
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are unremovable rocks on the field, blocking the planting of crops<br>
 • The rock pattern is predetermined, every time you beat the challenge it cycles to a next, harder, pattern<br>
 • There are 5 patterns in total, each gives an achievement<br>
-`,
-'multiplicity for berries and mushrooms',
-'reaching tree level 45',
-function() {
-  return state.treelevel >= 45;
-}, function() {
-  showRegisteredHelpDialog(34);
-}, 15);
+`;
+var rockier_text_unlock_reason = 'reaching tree level 45';
 
 var rockier_layouts = [
   '0001000010100001001100011', '1001010000010011110101000', '0000010001000110100101000', '0100100001000011000011000', '0000000001000011100100000'
   // the following one is too difficult and omitted: 1101000000100001001000010
 ];
+
+// 7
+var challenge_rockier = registerChallenge('rockier challenge', [40], Num(0),
+rockier_text, rockier_text_long, 'multiplicity for berries and mushrooms', rockier_text_unlock_reason,
+function() {
+  return state.treelevel >= 45;
+}, function() {
+  showRegisteredHelpDialog(34);
+}, 15);
+challenges[challenge_rockier].cycling = 5;
+challenges[challenge_rockier].cycling_bonus = [Num(0.06), Num(0.07), Num(0.08), Num(0.09), Num(0.1)];
 
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
@@ -3222,19 +3242,19 @@ function getNewFruitTier(roll, treelevel) {
     return 0;
   }
 
-  // level 5: zinc and bronze introduced
+  // level 5: zinc introduced
   if(treelevel >= 5 && treelevel <= 14) {
-    return (roll > 0.25) ? 0 : 1;
+    return 0;
   }
 
-  // level 15: silver introduced
+  // level 15: bronze introduced
   if(treelevel >= 15 && treelevel <= 24) {
-    return (roll < 0.25) ? 0 : ((roll < 0.75) ? 1 : 2);
+    return (roll < 0.5) ? 0 : 1;
   }
 
-  // level 25
+  // level 25: silver introduced
   if(treelevel >= 25 && treelevel <= 34) {
-    return (roll > 0.75) ? 1 : 2;
+    return (roll > 0.5) ? 1 : 2;
   }
 
   // level 35: electrum introduced
@@ -3797,10 +3817,17 @@ function getRainbowFlowerBoost() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+var challenge_bonus_exponent = 1.1;
+
 // level = highest tree level reached with this challenge, or hypothetical other level
-function getChallengeBonus(challenge_id, level) {
+function getChallengeBonus(challenge_id, level, opt_cycle) {
   var c = challenges[challenge_id];
-  return c.bonus.mulr(level);
+  var bonus = c.bonus;
+  if(c.cycling && opt_cycle != undefined) bonus = c.cycling_bonus[opt_cycle];
+
+  var score = Math.pow(level, challenge_bonus_exponent);
+
+  return bonus.mulr(score);
 }
 
 // only during bee challenge

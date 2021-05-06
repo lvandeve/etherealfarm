@@ -1789,7 +1789,7 @@ subtleplantimageheader + `
 .......h........
 `);
 
-var lavendar = createPlantImages2(seeds_flower1,
+var lavender = createPlantImages2(seeds_flower1,
 // sprout
 subtleplantimageheader + `
 ................

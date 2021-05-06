@@ -169,6 +169,10 @@ var DIALOG_SMALL = 1;
 var DIALOG_MEDIUM = 2;
 var DIALOG_LARGE = 3;
 
+// if not undefined, can handle shortcuts for dialog (as opposed to global shortcut)
+// NOTE: only supported in one dialog level in the chain
+var dialogshortcutfun = undefined;
+
 // create a dialog for the settings menu
 // opt_size: see DIALOG_SMALL etc... values above
 // opt_okfun must call dialog.cancelFun when the dialog is to be closed
@@ -176,13 +180,16 @@ var DIALOG_LARGE = 3;
 // opt_nobgclose: don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 // opt_onclose, if given, is called no matter what way the dialog closes.  You can also not give this argument but instead set dialog.onclose
 // any content should be put in the resulting dialog.content flex, not in the dialog flex itself
-function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose) {
+function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose, opt_extrafun2, opt_extraname2, opt_shortcutfun) {
   if(dialog_level < 0) {
     // some bug involving having many help dialogs pop up at once and rapidly closing them using multiple methods at the same time (esc key, click next to dialog, ...) can cause this, and negative dialog_level makes dialogs appear in wrong z-order
     closeAllDialogs();
     dialog_level = 0;
   }
   dialog_level++;
+  if(opt_shortcutfun) {
+    dialogshortcutfun = opt_shortcutfun;
+  }
 
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
   removeAllDropdownElements();
@@ -211,6 +218,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
 
   var buttonsize = 0.3;
   if(opt_size == DIALOG_TINY) buttonsize = 0.5;
+  if(opt_extrafun2) buttonsize *= 0.82;
 
   var button;
   var buttonshift = 0;
@@ -234,6 +242,16 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
       opt_extrafun(e);
     });
   }
+  if(opt_extrafun2) {
+    button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
+    button.style.fontWeight = 'bold';
+    buttonshift++;
+    styleButton(button);
+    button.textEl.innerText = opt_extraname2 || 'extra2';
+    addButtonAction(button, function(e) {
+      opt_extrafun2(e);
+    });
+  }
   dialog.cancelFun = function() {
     updatedialogfun = undefined;
     util.removeElement(overlay);
@@ -253,6 +271,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     // a tooltip created by an element from a dialog could remain, make sure those are removed too
     removeAllTooltips();
     dialog.removeSelfFun();
+    if(opt_shortcutfun) {
+      dialogshortcutfun = undefined;
+    }
   };
   dialog.removeSelfFun = function() {
     dialogFlex.removeSelf(gameFlex);
@@ -325,6 +346,16 @@ document.addEventListener('keyup', function(e) {
     } else {
       closeTopDialog();
     }
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if(dialogshortcutfun) {
+    if(dialog_level <= 0) {
+      dialogshortcutfun = undefined;
+      return;
+    }
+    dialogshortcutfun(e);
   }
 });
 

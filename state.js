@@ -131,6 +131,9 @@ function ChallengeState() {
   this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any)
   this.besttime = 0; // best time for reaching first targetlevel, even when not resetting. If continuing the challenge for higher maxlevel, still only the time to reach targetlevel is counted, so it's the best time for completing the first main reward part of the challenge.
   this.besttime2 = 0; // best time for reaching last targetlevel, or 0 if this challenge only has 1 stage. NOTE: so best time of first and last stage are tracked, if there are more intermediate stages, those are not tracked
+  this.maxlevels = undefined; // max level if this is a cycling challenge: the max level per cycle. If enabled, this this is an array.
+  this.besttimes = undefined; // for cycling challenges
+  this.besttimes2 = undefined; // for cycling challenges
 }
 
 function BluePrint() {
@@ -307,6 +310,18 @@ function State() {
   this.challenges = [];
   for(var i = 0; i < registered_challenges.length; i++) {
     this.challenges[registered_challenges[i]] = new ChallengeState();
+    var c = challenges[registered_challenges[i]];
+    var c2 = this.challenges[registered_challenges[i]];
+    if(c.cycling > 1) {
+      c2.maxlevels = [];
+      c2.besttimes = [];
+      c2.besttimes2 = [];
+      for(var j = 0; j < c.cycling; j++) {
+        c2.maxlevels[j] = 0;
+        c2.besttimes[j] = 0;
+        c2.besttimes2[j] = 0;
+      }
+    }
   }
 
   // ethereal field and crops
@@ -662,6 +677,9 @@ function State() {
   // derived stat, not to be saved.
   this.highestoftypeunlocked = [];
   this.highestoftype2unlocked = [];
+
+  // derived stat, not to be saved.
+  this.numnonemptyblueprints = 0;
 }
 
 function clearField(state) {
@@ -1002,9 +1020,23 @@ function computeDerived(state) {
       state.untriedchallenges++;
     }
     if(c2.maxlevel > 0) {
-      state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevel));
+      if(c.cycling) {
+        for(var j = 0; j < c.cycling; j++) {
+          state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevels[j], j));
+        }
+      } else {
+        state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevel));
+      }
     }
   }
+
+  // blueprints
+  state.numnonemptyblueprints = 0;
+  for(var i = 0; i < state.blueprints.length; i++) {
+    var b = state.blueprints[i];
+    if(b.numw && b.numh) state.numnonemptyblueprints++;
+  }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

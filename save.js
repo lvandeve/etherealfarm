@@ -503,18 +503,28 @@ function encState(state, opt_raw_only) {
   array5 = [];
   array6 = [];
   array7 = [];
+  array8 = [];
+  array9 = [];
+  array10 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'challenges must be registered in increasing order';
+    var c = challenges[unlocked[i]];
+    var c2 = state.challenges[unlocked[i]];
     array0.push(unlocked[i] - prev);
     prev = unlocked[i];
-    array1.push(state.challenges[unlocked[i]].completed);
-    array2.push(state.challenges[unlocked[i]].num);
-    array3.push(state.challenges[unlocked[i]].maxlevel);
-    array4.push(state.challenges[unlocked[i]].besttime);
-    array5.push(state.challenges[unlocked[i]].besttime2);
-    array6.push(state.challenges[unlocked[i]].num_completed);
-    array7.push(state.challenges[unlocked[i]].num_completed2);
+    array1.push(c2.completed);
+    array2.push(c2.num);
+    array3.push(c2.maxlevel);
+    array4.push(c2.besttime);
+    array5.push(c2.besttime2);
+    array6.push(c2.num_completed);
+    array7.push(c2.num_completed2);
+    if(c.cycling > 1) {
+      for(var j = 0; j < c.cycling; j++) array8.push(c2.maxlevels[j]);
+      for(var j = 0; j < c.cycling; j++) array9.push(c2.besttimes[j]);
+      for(var j = 0; j < c.cycling; j++) array10.push(c2.besttimes2[j]);
+    }
   }
   processUintArray(array0);
   processUintArray(array1);
@@ -525,6 +535,9 @@ function encState(state, opt_raw_only) {
   processFloatArray(array5);
   processUintArray(array6);
   processUintArray(array7);
+  processUintArray(array8);
+  processFloatArray(array9);
+  processFloatArray(array10);
 
 
 
@@ -541,8 +554,6 @@ function encState(state, opt_raw_only) {
   processFractionChoiceArray(state.automaton_autounlock_fraction);
   processUint(state.automaton_autochoice);
   processNum(state.automaton_autounlock_max_cost);
-
-
 
   section = 21; id = 0; // blueprints
   array0 = [];
@@ -1263,24 +1274,58 @@ function decState(s) {
         array7[i] = 0;
       }
     }
+    if(save_version >= 4096*1+69) {
+      array8 = processUintArray();
+      array9 = processFloatArray();
+      array10 = processFloatArray();
+    } else {
+      array8 = [];
+      array9 = [];
+      array10 = [];
+    }
     if(error) return err(4);
     if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length) {
       return err(4);
     }
+    index8 = 0;
+    index9 = 0;
+    index10 = 0;
     prev = 0;
     for(var i = 0; i < array0.length; i++) {
       var index = array0[i] + prev;
       prev = index;
       if(!challenges[index]) return err(4);
-      state.challenges[index].unlocked = true;
-      state.challenges[index].completed = array1[i];
-      state.challenges[index].num = array2[i];
-      state.challenges[index].maxlevel = array3[i];
-      state.challenges[index].besttime = array4[i];
-      state.challenges[index].besttime2 = array5[i];
-      state.challenges[index].num_completed = array6[i];
-      state.challenges[index].num_completed2 = array7[i];
+      var c = challenges[index];
+      var c2 = state.challenges[index];
+      c2.unlocked = true;
+      c2.completed = array1[i];
+      c2.num = array2[i];
+      c2.maxlevel = array3[i];
+      c2.besttime = array4[i];
+      c2.besttime2 = array5[i];
+      c2.num_completed = array6[i];
+      c2.num_completed2 = array7[i];
+      if(c.cycling > 1) {
+        c2.maxlevels = [];
+        c2.besttimes = [];
+        c2.besttimes2 = [];
+        if(save_version >= 4096*1+69) {
+          for(var j = 0; j < c.cycling; j++) c2.maxlevels[j] = array8[index8++];
+          for(var j = 0; j < c.cycling; j++) c2.besttimes[j] = array9[index9++];
+          for(var j = 0; j < c.cycling; j++) c2.besttimes2[j] = array10[index10++];
+        } else {
+          for(var j = 0; j < c.cycling; j++) {
+            c2.maxlevels[j] = ((j < c2.num_completed) ? Math.max(c.targetlevel[0], c2.maxlevel - j * 2) : 0); // aproximate situation
+            c2.besttimes[j] = 0;
+            c2.besttimes2[j] = 0;
+          }
+          c2.besttimes[0] = c2.besttime;
+          c2.besttimes2[0] = c2.besttime2;
+        }
+
+      }
     }
+    if(save_version >= 4096*1+69 && (index8 != array8.length || index9 != array9.length || index10 != array10.length)) return err(4);
 
   }
   // fix up the fact that the more fair g_numresets_challenge_10 stat didn't exist yet before v 0.1.43, and a few other stat changes
@@ -1551,6 +1596,8 @@ var postload = function(new_state) {
   // a few variables that are external to state
   Num.notation = state.notation;
   Num.precision = state.precision;
+
+  resetGlobalStateVars(new_state);
 };
 
 // normally you must almost always call presave before save

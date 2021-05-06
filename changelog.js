@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.69 (2021-05-06):';
+  text += '<br/>• Rockier challenge now keeps max level of each of the 5 maps separately, and gives separate bonus for each';
+  text += '<br/>• Challenge highest level bonus now scales better for higher levels: instead of fixed bonus per level, it gives bonus per level^1.1';
+  // reason for changing the transcend with blueprint shortcut: ctrl+shift click in blueprint dialog doesn't show the challenges. Showing the real transcension dialog with t first, shows the challenge button and its indication if there's a new challenge. Also, the new shortcut is in fact shorter (sum of #keys and #mouseclicks is 3 instead of 4)
+  text += '<br/>• Replaced blueprint ctrl+shift shortcut by a new transcend-with-blueprint dialog. The fastest shortcut to transcend with blueprint is now: "t", then "b", then click chosen blueprint.';
+  text += '<br/>• Bronze fruits are now only introduced at tree level 15, and silver at 25. Later level fruit drop rates are not affected by this change.';
+  text += '<br/><br/>';
+
   text += '0.1.68 (2021-05-01):';
   text += '<br/>• Added rockier challenge (unlocks at high enough tree level)';
   text += '<br/>• Added the multiplicity mechanism, a bonus based on amount of crops, as reward of rockier challenge';

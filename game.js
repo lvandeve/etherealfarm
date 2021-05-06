@@ -165,6 +165,20 @@ function getRecoverySaves() {
   return result;
 }
 
+// the ones that should be reset when loading a save
+function resetGlobalStateVars(opt_state) {
+  undoSave = '';
+  lastUndoSaveTime = 0;
+  savegame_recovery_situation = false;
+  prefield = [];
+  prev_season = undefined;
+  large_time_delta = false;
+  large_time_delta_time = 0;
+  large_time_delta_res = opt_state ? Res(opt_state.res) : Res();
+  num_season_changes = 0;
+  num_tree_levelups = 0;
+}
+
 function hardReset() {
   showMessage('Hard reset performed, everything reset', C_META, 0, 0);
   util.clearLocalStorage(localstorageName);
@@ -180,24 +194,12 @@ function hardReset() {
   util.clearLocalStorage(localstorageName_daily3);
   postload(createInitialState());
 
-  undoSave = '';
-  lastUndoSaveTime = 0;
-
-  savegame_recovery_situation = false;
-
-  prefield = [];
-
-
   removeChallengeChip();
   removeMedalChip();
   removeHelpChip();
 
-  prev_season = -1;
-  large_time_delta = false;
-  large_time_delta_time = 0;
-  large_time_delta_res = Res();
-  num_season_changes = 0;
-  num_tree_levelups = 0;
+
+  resetGlobalStateVars();
 
   initUI();
   update();
@@ -373,6 +375,10 @@ function softReset(opt_challenge) {
     var c = challenges[state.challenge];
     var c2 = state.challenges[state.challenge];
     c2.maxlevel = Math.max(state.treelevel, c2.maxlevel);
+    if(c.cycling) {
+      var cycle = c.getCurrentCycle();
+      c2.maxlevels[cycle] = Math.max(state.treelevel, c2.maxlevels[cycle]);
+    }
     if(state.treelevel >= c.targetlevel[0]) {
       var i = c2.completed;
       // whether a next stage of the challenge completed. Note, you can only complete one stage at the time, even if you immediately reach the target level of the highest stage, you only get 1 stage for now
@@ -2995,17 +3001,36 @@ var update = function(opt_fromTick) {
       if(state.challenge && state.treelevel == challenges[state.challenge].targetlevel[0]) {
         var c = challenges[state.challenge];
         var c2 = state.challenges[state.challenge];
-        if(c2.besttime == 0 || state.c_runtime < c2.besttime) c2.besttime = state.c_runtime;
+        if(c2.besttime == 0 || state.c_runtime < c2.besttime) {
+          c2.besttime = Math.max(0.01, state.c_runtime);
+        }
+        if(c.cycling > 1) {
+          var cycle = c.getCurrentCycle();
+          if(c2.besttimes[cycle] == 0 || state.c_runtime < c2.besttimes[cycle]) {
+            c2.besttimes[cycle] = Math.max(0.01, state.c_runtime);
+          }
+        }
       }
       if(state.challenge && state.treelevel == challenges[state.challenge].nextTargetLevel()) {
         var c = challenges[state.challenge];
         var c2 = state.challenges[state.challenge];
-        if(!c.fullyCompleted()) showChallengeChip(state.challenge);
-        showRegisteredHelpDialog(26);
+        if(!c.fullyCompleted()) {
+          showChallengeChip(state.challenge);
+          showRegisteredHelpDialog(26);
+        } else {
+          showMessage('challenge target level reached');
+        }
         if(c.targetlevel.length > 1 && state.treelevel >= c.finalTargetLevel()) {
-          if(c2.besttime2 == 0 || state.c_runtime < c2.besttime2) c2.besttime2 = state.c_runtime;
+          if(c2.besttime2 == 0 || state.c_runtime < c2.besttime2) c2.besttime2 = Math.max(0.01, state.c_runtime);
+        }
+        if(c.cycling > 1) {
+          var cycle = c.getCurrentCycle();
+          if(c2.besttimes2[cycle] == 0 || state.c_runtime < c2.besttimes2[cycle]) {
+            c2.besttimes2[cycle] = Math.max(0.01, state.c_runtime);
+          }
         }
       }
+
       if(fruit) {
         showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString(), C_NATURE, 1284767498);
       }
@@ -3202,7 +3227,8 @@ var update = function(opt_fromTick) {
   }
 
   var d_total = state.prevtime - oldtime;
-  if(d_total > 300) {
+  // if negative time was used, this message won't make sense, it may say 'none', which is indeed what you got when compensating for negative time. But the message might then be misleading.
+  if(d_total > 300 && !negative_time_used) {
     large_time_delta = true;
   } else {
     large_time_delta = false;
@@ -3212,7 +3238,7 @@ var update = function(opt_fromTick) {
   if(prev_large_time_delta && !large_time_delta) {
     var totalgain = state.res.sub(oldres);
     var season_message = '';
-    if(num_season_changes > 1) {
+    if(num_season_changes > 0) {
       season_message = '. The season changed ' + num_season_changes + ' times';
     }
     var tree_message = '';
@@ -3223,8 +3249,8 @@ var update = function(opt_fromTick) {
     var t_total = large_time_delta_time;
     var totalgain = state.res.sub(large_time_delta_res);
 
-    // if negative time was used, this message won't make sense, it may say 'none', which is indeed what you got when compensating for negative time. But the message might then be misleading.
-    if(!negative_time_used) showMessage('Large time delta: ' + util.formatDuration(t_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, C_UNIMPORTANT, 0, 0);
+
+    showMessage('Large time delta: ' + util.formatDuration(t_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, C_UNIMPORTANT, 0, 0);
   }
 
   // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.
