@@ -359,7 +359,7 @@ function State() {
   this.fruit_sacr = []; // fruits outside of storage that will be sacrificed on transcension
   this.seen_seasonal_fruit = 0; // 4 flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit. For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
 
-  // settings
+  // settings / preferences
   this.notation = Num.N_LATIN; // number notation
   this.precision = 3; // precision of the numeric notation
   this.mobilemode = false;
@@ -371,6 +371,7 @@ function State() {
   this.sidepanel = 1; // 0=disabled, 1=automatic
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
   this.messagelogenabled = [1, 1, 1, 1]; // index0: "game saved" message log messages, index1: tree leveling, index2: upgrades available, index3: abbreviated help
+  this.cancelbuttonright = true; // whether cancel buttons in dialogs appear on the leftmost or the rightmost side of a group of buttons (the group of button always starts from the right either way). If on the right side, all cancel or back buttons are in the same right corner of the screen. If false, then the right corner of the screen gets the "do the action" button, and cancel/back buttons are to the left.
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog

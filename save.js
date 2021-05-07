@@ -252,6 +252,7 @@ function encState(state, opt_raw_only) {
   processUint16(state.sidepanel);
   processUint16Array(state.notificationsounds);
   processUint16Array(state.messagelogenabled);
+  processBool(state.cancelbuttonright);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -915,6 +916,8 @@ function decState(s) {
     state.messagelogenabled = processUint16Array();
     for(var i = state.messagelogenabled.length; i < current.length; i++) state.messagelogenabled[i] = current[i];
   }
+  if(error) return err(4);
+  if(save_version >= 4096*1+70) state.cancelbuttonright = processBool();
   if(error) return err(4);
 
 

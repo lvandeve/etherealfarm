@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.70 (2021-05-07):';
+  text += '<br/>• The default location of back/cancel buttons in dialogs is now rightmost instead of leftmost if there are multiple bottom buttons. You can get back the original behavior in the preferences. Reason: with rightmost enabled, back buttons align, preventing accidental transcend or other action clicks when closing multiple dialogs in a row.';
+  text += '<br/>• Various fixes';
+  text += '<br/><br/>';
+
   text += '0.1.69 (2021-05-06):';
   text += '<br/>• Rockier challenge now keeps max level of each of the 5 maps separately, and gives separate bonus for each';
   text += '<br/>• Challenge highest level bonus now scales better for higher levels: instead of fixed bonus per level, it gives bonus per level^1.1';

@@ -496,6 +496,20 @@ function createAdvancedSettingsDialog() {
     createNotificationSettingsDialog();
   }, button, updatebuttontext));
   button.id = 'preferences_notifications';
+
+
+  addSettingsSpacer();
+
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'dialog back buttons: ' + (state.cancelbuttonright ? 'rightmost' : 'leftmost'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'For dialogs with multiple buttons at the bottom, whether "back"/"cancel" buttons are the rightmost or leftmost of the group');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.cancelbuttonright = !state.cancelbuttonright;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_cancelright';
 }
 
 

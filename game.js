@@ -1570,6 +1570,7 @@ function unlockEtherealCrop(id) {
 
 
 function doNextAutoChoice() {
+  var did_something = false;
   for(var i = 0; i < registered_upgrades.length; i++) {
     var j = registered_upgrades[i];
     var u = upgrades[j];
@@ -1585,8 +1586,10 @@ function doNextAutoChoice() {
     if(choice > 0) {
       showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 1 ? u.choicename_a : u.choicename_b), C_AUTOMATON, 101550953);
       actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, choice:choice});
+      did_something = true;
     }
   }
+  return did_something;
 }
 
 
@@ -1659,7 +1662,9 @@ function computeNextAutoUpgrade() {
 
 // res must be a copy of the available resources for all auto-actions, and will be modified in place
 function autoUpgrade(res) {
-  if(!next_auto_upgrade) return;
+  if(!next_auto_upgrade) return false;
+
+  var did_something = false;
 
   var u = upgrades[next_auto_upgrade.index];
 
@@ -1682,7 +1687,9 @@ function autoUpgrade(res) {
   }
   if(count > 0) {
     actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, num:count});
+    did_something = true;
   }
+  return did_something;
 }
 
 
@@ -1755,7 +1762,7 @@ function computeNextAutoPlant() {
 }
 
 function autoPlant(res) {
-  if(!next_auto_plant) return;
+  if(!next_auto_plant) return false;
 
   var crop = crops[next_auto_plant.index];
   var x = next_auto_plant.x;
@@ -1773,7 +1780,7 @@ function autoPlant(res) {
 
   var maxcost = Res.min(res, state.res.mulr(fraction));
   var cost = crop.getCost();
-  if(cost.gt(maxcost)) return;
+  if(cost.gt(maxcost)) return false;
 
   // check if we can't do a better crop
   var crop2 = getHighestAffordableCropOfType(type, maxcost);
@@ -1805,7 +1812,7 @@ function autoPlant(res) {
 
 
   actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
-  return ;
+  return true;
 }
 
 // next chosen auto unlock, if applicable.
@@ -1848,7 +1855,7 @@ function computeNextAutoUnlock() {
 
 // res must be a copy of the available resources for all auto-actions, and will be modified in place
 function autoUnlock(res) {
-  if(!next_auto_unlock) return;
+  if(!next_auto_unlock) return false;
 
   var u = upgrades[next_auto_unlock.index];
 
@@ -1859,9 +1866,11 @@ function autoUnlock(res) {
 
   var maxcost = Res.min(res, state.res.mulr(fraction));
   var cost = u.getCost();
-  if(cost.gt(maxcost)) return;
+  if(cost.gt(maxcost)) return false;
   res.subInPlace(cost);
   actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true});
+
+  return true;
 }
 
 // when is the next time that something happens that requires a separate update()
@@ -2024,24 +2033,28 @@ var update = function(opt_fromTick) {
 
     var autores = Res(state.res);
 
-    if(autoChoiceEnabled()) {
-      doNextAutoChoice();
-    }
+    var did_autoplant = false;
+    var did_autounlock = false;
 
     if(autoUnlockEnabled()) {
       computeNextAutoUnlock();
-      autoUnlock(autores);
+      did_autounlock = autoUnlock(autores);
+    }
+
+    if(autoPlantEnabled()) {
+      computeNextAutoPlant();
+      did_autoplant = autoPlant(autores);
+    }
+
+    if(autoChoiceEnabled()) {
+      doNextAutoChoice();
     }
 
     if(autoUpgradesEnabled()) {
       // computeNextAutoUpgrade is used both for autoUpgrade, and for nextEventTime. The autoUpgrade function may do nothing now, but nextEventTime can compute when autoUpgrade will happen given the current income
       computeNextAutoUpgrade();
-      autoUpgrade(autores);
-    }
-
-    if(autoPlantEnabled()) {
-      computeNextAutoPlant();
-      autoPlant(autores);
+      // don't do this if an autoplant or unlock was done: when just autoplanting, it's more useful if it finishes planting all those crops, before spending seeds trying to upgrade it
+      if(!did_autoplant && !did_autounlock) autoUpgrade(autores);
     }
 
     // this function is simple and light enough that it can just be called every time. It can depend on changes mid-game hence needs to be updated regularly.

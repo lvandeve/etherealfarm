@@ -220,12 +220,35 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   if(opt_size == DIALOG_TINY) buttonsize = 0.5;
   if(opt_extrafun2) buttonsize *= 0.82;
 
+  var num_buttons = 1;
+  if(opt_okfun) num_buttons++;
+  if(opt_extrafun) num_buttons++;
+  if(opt_extrafun2) num_buttons++;
+
+  // the is_cancel is for positioning cancel as if it was first, when state.cancelbuttonright, given that this function is called last for the cancel button
+  var makeButton = function(is_cancel) {
+    var result;
+    if(state.cancelbuttonright) {
+      var s = buttonshift;
+      if(is_cancel) {
+        s = 0;
+      } else {
+        s++;
+      }
+      result = (new Flex(dialogFlex, [1.0, -buttonsize * (s + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * s], [1.0, -0.01], 1)).div;
+      //return (new Flex(dialogFlex, [1.0, -buttonsize * (num_buttons - buttonshift)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * (num_buttons - buttonshift - 1)], [1.0, -0.01], 1)).div;
+    } else {
+      result = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
+    }
+    buttonshift++;
+    return result;
+  };
+
   var button;
   var buttonshift = 0;
   if(opt_okfun) {
-    button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
+    button = makeButton(false);
     button.style.fontWeight = 'bold';
-    buttonshift++;
     styleButton(button);
     button.textEl.innerText = opt_okname || 'ok';
     addButtonAction(button, function(e) {
@@ -233,9 +256,8 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     });
   }
   if(opt_extrafun) {
-    button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
+    button = makeButton(false);
     button.style.fontWeight = 'bold';
-    buttonshift++;
     styleButton(button);
     button.textEl.innerText = opt_extraname || 'extra';
     addButtonAction(button, function(e) {
@@ -243,9 +265,8 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     });
   }
   if(opt_extrafun2) {
-    button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
+    button = makeButton(false);
     button.style.fontWeight = 'bold';
-    buttonshift++;
     styleButton(button);
     button.textEl.innerText = opt_extraname2 || 'extra2';
     addButtonAction(button, function(e) {
@@ -280,8 +301,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     if(dialogFlex.onclose) dialogFlex.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
   };
   dialogFlex.cancelFun = dialog.cancelFun;
-  button = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
-  buttonshift++;
+  button = makeButton(true);
   styleButton(button);
   button.textEl.innerText = opt_cancelname || (opt_okfun ? 'cancel' : 'back');
   addButtonAction(button, dialog.cancelFun);
