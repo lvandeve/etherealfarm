@@ -411,6 +411,8 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"b"</b>: open the blueprint library, when available.';
   text += '<br/>';
+  text += ' • <b>"t" followed by "b"</b>: open the transcend-with-blueprint dialog.';
+  text += '<br/>';
   text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
   text += '<br/>';
   text += '<br/><br/>';

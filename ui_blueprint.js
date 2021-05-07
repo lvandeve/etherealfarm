@@ -307,8 +307,6 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • shift + click blueprint in main blueprint dialog: plant it immediately rather than opening its editing dialog (if not empty)';
   text += '<br/>';
-  text += ' • shift + ctrl + click blueprint in main blueprint dialog: transcend, and then plant it immediately (only if "shortcuts may delete crop" is enabled in the preferences)';
-  text += '<br/>';
   text += ' • "t", "b": open transcend dialog, and then open transcend-with-blueprint dialog';
   text += '<br/><br/>';
   text += 'Once automaton is advanced enough, it can also use blueprints.';
@@ -316,9 +314,15 @@ function showBluePrintHelp() {
   div.innerHTML = text;
 }
 
+var blueprintdialogopen = false;
+
 // opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
 function createBlueprintsDialog(opt_transcend) {
   var dialog = createDialog();
+  blueprintdialogopen = true;
+  dialog.onclose = function() {
+    blueprintdialogopen = false;
+  };
 
   var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
   centerText2(titleFlex.div);
@@ -347,7 +351,7 @@ function createBlueprintsDialog(opt_transcend) {
         if(!state.allowshiftdelete) {
           showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
         } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
-          showMessage('not high enough tree level to transcend (ctrl+shift+blueprint tries to transcend first, use shift+blueprint to just plant it)', C_INVALID);
+          showMessage('not high enough tree level to transcend (transcend with blueprint tries to transcend first, then plant the blueprint)', C_INVALID);
         } else {
           if(state.challenge) {
             actions.push({type:ACTION_TRANSCEND, challenge:0});
@@ -363,8 +367,23 @@ function createBlueprintsDialog(opt_transcend) {
           plantBluePrint(state.blueprints[index]);
           closeAllDialogs();
           update();
-        } else if(ctrl) {
-          showMessage('Shift+ctrl+blueprint click to transcend has been replaced by transcend-with-blueprint dialog. Use the following shortcuts for that, starting from main field: "t" to open transcend dialog, "b" to open transcend-with-blueprint dialog, click to transcend and plant. You can also use shift+click now to just plant this blueprint without transcend.', C_INVALID);
+        } else if(shift && ctrl && filled) {
+          if(!state.allowshiftdelete) {
+            // do nothing: this is a deprecated shortcut, only visible with exact correct usage
+            //showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
+          } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
+            // do nothing: this is a deprecated shortcut, only visible with exact correct usage
+            //showMessage('not high enough tree level to transcend (use shift+blueprint to just plant this blueprint)', C_INVALID);
+          } else {
+            // deprecated feature, but still supported for those who like its convenience of "b" + "ctrl+shift+click" (the alternative is: "t", "b", "click")
+            if(state.treelevel >= min_transcension_level) {
+              showMessage('Transcended and planted blueprint');
+              actions.push({type:ACTION_TRANSCEND, challenge:0});
+            }
+            actions.push({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
+            closeAllDialogs();
+            update();
+          }
         } else {
           var subdialog = createBlueprintDialog(state.blueprints[index], index);
           subdialog.onclose = bind(function(i, flex) {

@@ -66,6 +66,7 @@ function getTranscendValueInfo(opt_from_challenge) {
 }
 
 function createTranscendDialog(opt_from_challenge) {
+  blueprintdialogopen = false;
   var extraname = undefined;
   var extrafun = undefined;
   if(state.challenges_unlocked) {
@@ -87,7 +88,7 @@ function createTranscendDialog(opt_from_challenge) {
       var shift = util.eventHasShiftKey(e);
       var ctrl = util.eventHasCtrlKey(e);
       if(e.key == 'b' && !shift && !ctrl) {
-        createBlueprintsDialog(true);
+        if(!blueprintdialogopen) createBlueprintsDialog(true);
       }
     };
   }
@@ -341,6 +342,7 @@ function createChallengeDialog(opt_from_challenge) {
 }
 
 function createFinishChallengeDialog() {
+  blueprintdialogopen = false;
   var extraname = undefined;
   var extrafun = undefined;
   var shortcutfun = undefined;
@@ -353,7 +355,7 @@ function createFinishChallengeDialog() {
       var shift = util.eventHasShiftKey(e);
       var ctrl = util.eventHasCtrlKey(e);
       if(e.key == 'b' && !shift && !ctrl) {
-        createBlueprintsDialog(true);
+        if(!blueprintdialogopen) createBlueprintsDialog(true);
       }
     };
   }

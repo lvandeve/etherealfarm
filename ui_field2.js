@@ -99,6 +99,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 }
 
 function getUpgradeCrop2(x, y, opt_too_expensive) {
+
   if(!state.field2[y]) return null;
   var f = state.field2[y][x];
   if(!f) return;
@@ -107,6 +108,8 @@ function getUpgradeCrop2(x, y, opt_too_expensive) {
 
   if(c.type == CROPTYPE_CHALLENGE) return null;
   var tier = state.highestoftype2unlocked[c.type];
+
+  var recoup = c.getRecoup();
 
   var c2 = null;
 
@@ -117,13 +120,15 @@ function getUpgradeCrop2(x, y, opt_too_expensive) {
     var c3 = croptype2_tiers[c.type][tier];
     if(!c3 || !state.crops2[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
 
-    if(c3.getCost().le(state.res)) {
+    var cost = c3.getCost().sub(recoup);
+
+    if(cost.le(state.res)) {
       // found a successful upgrade
       c2 = c3;
       break;
     }
 
-    if(opt_too_expensive != undefined) opt_too_expensive[0] = c3.getCost();
+    if(opt_too_expensive != undefined) opt_too_expensive[0] = cost;
     tier--;
   }
 

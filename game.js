@@ -2490,7 +2490,9 @@ var update = function(opt_fromTick) {
         if(ok && (type == ACTION_PLANT2 || type == ACTION_REPLACE2)) {
           var c = action.crop;
           var cost = c.getCost();
-          showMessage('planted ethereal ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + c.getCost(1));
+          var finalcost = cost;
+          if(type == ACTION_REPLACE2 && !!recoup) finalcost = cost.sub(recoup);
+          showMessage('planted ethereal ' + c.name + '. Consumed: ' + finalcost + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
