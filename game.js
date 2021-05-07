@@ -167,8 +167,6 @@ function getRecoverySaves() {
 
 // the ones that should be reset when loading a save
 function resetGlobalStateVars(opt_state) {
-  undoSave = '';
-  lastUndoSaveTime = 0;
   savegame_recovery_situation = false;
   prefield = [];
   prev_season = undefined;
@@ -198,6 +196,8 @@ function hardReset() {
   removeMedalChip();
   removeHelpChip();
 
+  undoSave = '';
+  lastUndoSaveTime = 0;
 
   resetGlobalStateVars();
 
@@ -2002,6 +2002,10 @@ var update = function(opt_fromTick) {
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
 
   var do_transcend = undefined;
+
+  if(!prefield || !prefield.length) {
+    precomputeField();
+  }
 
   var done = false;
   var numloops = 0;

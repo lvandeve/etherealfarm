@@ -341,7 +341,24 @@ function createChallengeDialog(opt_from_challenge) {
 }
 
 function createFinishChallengeDialog() {
-  var dialog = createDialog();
+  var extraname = undefined;
+  var extrafun = undefined;
+  var shortcutfun = undefined;
+  if(haveAutomaton() && state.numnonemptyblueprints) {
+    extraname = 'blueprint';
+    extrafun = function() {
+      createBlueprintsDialog(true);
+    };
+    shortcutfun = function(e) {
+      var shift = util.eventHasShiftKey(e);
+      var ctrl = util.eventHasCtrlKey(e);
+      if(e.key == 'b' && !shift && !ctrl) {
+        createBlueprintsDialog(true);
+      }
+    };
+  }
+
+  var dialog = createDialog(undefined, undefined, undefined, undefined, extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, undefined, undefined, shortcutfun);
   dialog.div.className = 'efDialogEthereal';
 
   var contentFlex = dialog.content;
