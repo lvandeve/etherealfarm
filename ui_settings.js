@@ -892,10 +892,11 @@ function initSettingsUI_in(dialog) {
 
   button = makeSettingsButton();
   button.textEl.innerText = 'import save';
-  registerTooltip(button, 'Import a save, which you created with "export save"');
+  registerTooltip(button, 'Import a save, which you created with "export save". Hold shift while pressing the import button to load the savegame paused (frozen in time like it was back then, season and all, without gaining extra resources)');
   addButtonAction(button, function(e) {
     var w = 500, h = 500;
     var dialog = createDialog(false, function(e) {
+      var shift = util.eventHasShiftKey(e);
       var enc = area.value;
       enc = enc.trim();
       if(enc == '') return;
@@ -910,6 +911,8 @@ function initSettingsUI_in(dialog) {
         removeHelpChip();
         clearUndo();
         initUI();
+        paused = shift;
+        updatePausedUI();
         update();
         util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
         savegame_recovery_situation = false;
@@ -1011,6 +1014,8 @@ function addTopBarFlex(x0, x1, opt_fontsize) {
   return new Flex(topFlex, [0.05 + f * x0,-0.04,n], [0.5,-0.4,f], [0.05 + f * (x1 - 1),0.04,n], [0.5,0.4,f], opt_fontsize);
 }
 
+var pauseButtonCanvas = undefined;
+
 function initSettingsUI() {
   var gearbutton = addTopBarFlex(0, 1).div;
   var canvas = createCanvas('0%', '0%', '100%', '100%', gearbutton);
@@ -1038,8 +1043,9 @@ function initSettingsUI() {
 
   // pause button
   var pausebutton = addTopBarFlex(1, 2).div;;
-  registerTooltip(pausebutton, 'Pause the game. Pauses seasons, timers, growth, all progress, and everything else.<br>Allows to interact and open dialogs, but actions cannot be performed.<br>Loading an old savegame while paused will bring up the season and state it has back then without adding resources.');
+  registerTooltip(pausebutton, 'Pause the game. Pauses seasons, timers, growth, all progress, and everything else.<br>Allows to interact and open dialogs, but actions cannot be performed.');
   canvas = createCanvas('0%', '0%', '100%', '100%', pausebutton);
+  pauseButtonCanvas = canvas;
   renderImage(image_pause, canvas);
   styleButton0(pausebutton, true);
 
@@ -1049,7 +1055,6 @@ function initSettingsUI() {
       if(paused) showMessage('game paused');
       else showMessage('game resumed from pause');
     }
-    renderImage(paused ? image_paused : image_pause, canvas);
     updatePausedUI();
   }, canvas), 'pause');
   aboutbutton.id = 'pause_button';

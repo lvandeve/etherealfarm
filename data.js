@@ -2222,6 +2222,7 @@ function Challenge() {
   };
 
   this.allCyclesCompleted = function(opt_include_current_run) {
+    if(this.cycling <= 1) return this.fullyCompleted(opt_include_current_run);
     var num_completed = state.challenges[this.index].num_completed;
     if(opt_include_current_run && state.challenge == this.index && state.treelevel >= this.targetlevel[0]) num_completed++;
     return num_completed > 0 && num_completed >= this.cycling;

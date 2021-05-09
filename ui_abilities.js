@@ -74,7 +74,7 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_sununlock].count) {
     var d = util.getTime() - state.suntime;
     if(d > getSunWait()) {
-      suntimerflex.div.innerHTML = '';
+      suntimerflex.div.textEl.innerHTML = '';
     } else if(d > getSunDuration()) {
       suntimerflex.div.className = 'efWeatherOff';
       suntimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getSunWait() - d, true);
@@ -120,7 +120,7 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_mistunlock].count) {
     var d = util.getTime() - state.misttime;
     if(d > getMistWait()) {
-      misttimerflex.div.innerHTML = '';
+      misttimerflex.div.textEl.innerHTML = '';
     } else if(d > getMistDuration()) {
       misttimerflex.div.className = 'efWeatherOff';
       misttimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getMistWait() - d, true);
@@ -166,7 +166,7 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_rainbowunlock].count) {
     var d = util.getTime() - state.rainbowtime;
     if(d > getRainbowWait()) {
-      rainbowtimerflex.div.innerHTML = '';
+      rainbowtimerflex.div.textEl.innerHTML = '';
     } else if(d > getRainbowDuration()) {
       rainbowtimerflex.div.className = 'efWeatherOff';
       rainbowtimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getRainbowWait() - d, true);

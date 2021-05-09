@@ -166,9 +166,11 @@ function updatePausedUI() {
     pausedflex.div.style.pointerEvents = 'none';
     pausedflex.div.style.color = '#f008';
     //pausedflex.div.style.fontSize = '100%';
+    renderImage(image_paused, pauseButtonCanvas);
   } else if(!paused && pausedflex) {
     pausedflex.removeSelf(contentFlex);
     pausedflex = undefined;
+    renderImage(image_pause, pauseButtonCanvas);
   }
 }
 

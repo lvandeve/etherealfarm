@@ -395,6 +395,8 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you do actions a minute later.';
   text += '<br/>';
+  text += ' • <b>shift + click save import dialog</b>: import and old savegame, but in paused state, do not run the time, so you get the resources and season at the time of saving rather than with all production during that time added.';
+  text += '<br/>';
   text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
   text += '<br/>';
   text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';

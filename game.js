@@ -3124,7 +3124,7 @@ var update = function(opt_ignorePause) {
       if(state.challenge && state.treelevel == challenges[state.challenge].nextTargetLevel()) {
         var c = challenges[state.challenge];
         var c2 = state.challenges[state.challenge];
-        if(!c.fullyCompleted()) {
+        if(!c.allCyclesCompleted()) {
           showChallengeChip(state.challenge);
           showRegisteredHelpDialog(26);
         } else {
