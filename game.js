@@ -799,7 +799,7 @@ function getSeason() {
 
 function timeTilNextSeason() {
   var daylen = 24 * 3600;
-  var t = state.time - state.g_starttime;
+  var t = state.time - state.g_starttime - state.g_pausetime;
   t /= daylen;
   t -= Math.floor(t);
   return daylen - t * daylen;

@@ -1005,10 +1005,10 @@ function initSettingsUI_in(dialog) {
 }
 
 // x0 and x1 are start and end coordinates from 0 to 11
-function addTopBarFlex(x0, x1) {
+function addTopBarFlex(x0, x1, opt_fontsize) {
   var n = 11;
   var f = 1 / n;
-  return new Flex(topFlex, [0.05 + f * x0,-0.04,n], [0.5,-0.4,f], [0.05 + f * (x1 - 1),0.04,n], [0.5,0.4,f], 2);
+  return new Flex(topFlex, [0.05 + f * x0,-0.04,n], [0.5,-0.4,f], [0.05 + f * (x1 - 1),0.04,n], [0.5,0.4,f], opt_fontsize);
 }
 
 function initSettingsUI() {
@@ -1037,12 +1037,11 @@ function initSettingsUI() {
   aboutbutton.id = 'about_button';
 
   // pause button
-  var pausebutton = addTopBarFlex(9, 10).div;;
+  var pausebutton = addTopBarFlex(1, 2).div;;
   registerTooltip(pausebutton, 'Pause the game. Pauses seasons, timers, growth, all progress, and everything else.<br>Allows to interact and open dialogs, but actions cannot be performed.<br>Loading an old savegame while paused will bring up the season and state it has back then without adding resources.');
   canvas = createCanvas('0%', '0%', '100%', '100%', pausebutton);
   renderImage(image_pause, canvas);
   styleButton0(pausebutton, true);
-  aboutbutton.title = 'Pause';
 
   addButtonAction(pausebutton, bind(function(canvas) {
     paused = !paused;
@@ -1055,7 +1054,7 @@ function initSettingsUI() {
   }, canvas), 'pause');
   aboutbutton.id = 'pause_button';
 
-  var undobutton = addTopBarFlex(1, 3);
+  var undobutton = addTopBarFlex(2, 4, 1.8);
   styleButton(undobutton.div);
   undobutton.div.textEl.innerText = 'Undo';
   addButtonAction(undobutton.div, function(e) {

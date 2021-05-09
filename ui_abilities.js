@@ -48,12 +48,11 @@ function updateAbilitiesUI() {
   }
 
   if(!sunbutton && state.upgrades[upgrade_sununlock].count) {
-    //sunbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
-    //sunbutton = new Flex(topFlex, [0,4], [0,0.1], [0,4.8], [0,0.9], 2);
-    sunbutton = addTopBarFlex(3, 4);
+    sunbutton = addTopBarFlex(4, 5);
     styleButton0(sunbutton.div, true);
 
-    suntimerflex = new Flex(topFlex, [0,4], [0,0.1], [0,5.5], [0,0.9], 2);
+    suntimerflex = addTopBarFlex(3.8, 5.2, 2);
+    centerText2(suntimerflex.div);
     suntimerflex.div.className = 'efWeatherOff';
     suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     suntimerflex.div.style.pointerEvents = 'none';
@@ -78,10 +77,10 @@ function updateAbilitiesUI() {
       suntimerflex.div.innerHTML = '';
     } else if(d > getSunDuration()) {
       suntimerflex.div.className = 'efWeatherOff';
-      suntimerflex.div.innerHTML = 'ready in:<br>' + util.formatDuration(getSunWait() - d, true);
+      suntimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getSunWait() - d, true);
     } else {
       suntimerflex.div.className = 'efWeatherOn';
-      suntimerflex.div.innerHTML = 'active:<br>' + util.formatDuration(getSunDuration() - d, true);
+      suntimerflex.div.textEl.innerHTML = 'active:<br>' + util.formatDuration(getSunDuration() - d, true);
     }
   }
 
@@ -95,10 +94,11 @@ function updateAbilitiesUI() {
   }
 
   if(!mistbutton && state.upgrades[upgrade_mistunlock].count) {
-    mistbutton = addTopBarFlex(4, 5);
+    mistbutton = addTopBarFlex(5, 6);
     styleButton0(mistbutton.div, true);
 
-    misttimerflex = new Flex(topFlex, [0,5.5], [0,0.1], [0,7], [0,0.9], 2);
+    misttimerflex = addTopBarFlex(4.8, 6.2, 2);
+    centerText2(misttimerflex.div);
     misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     misttimerflex.div.style.pointerEvents = 'none';
 
@@ -123,10 +123,10 @@ function updateAbilitiesUI() {
       misttimerflex.div.innerHTML = '';
     } else if(d > getMistDuration()) {
       misttimerflex.div.className = 'efWeatherOff';
-      misttimerflex.div.innerHTML = 'ready in:<br>' + util.formatDuration(getMistWait() - d, true);
+      misttimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getMistWait() - d, true);
     } else {
       misttimerflex.div.className = 'efWeatherOn';
-      misttimerflex.div.innerHTML = 'active:<br>' + util.formatDuration(getMistDuration() - d, true);
+      misttimerflex.div.textEl.innerHTML = 'active:<br>' + util.formatDuration(getMistDuration() - d, true);
     }
   }
 
@@ -141,10 +141,11 @@ function updateAbilitiesUI() {
   }
 
   if(!rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
-    rainbowbutton = addTopBarFlex(5, 6);
+    rainbowbutton = addTopBarFlex(6, 7);
     styleButton0(rainbowbutton.div, true);
 
-    rainbowtimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
+    rainbowtimerflex = addTopBarFlex(5.8, 7.2, 2);
+    centerText2(rainbowtimerflex.div);
     rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     rainbowtimerflex.div.style.pointerEvents = 'none';
 
@@ -168,10 +169,10 @@ function updateAbilitiesUI() {
       rainbowtimerflex.div.innerHTML = '';
     } else if(d > getRainbowDuration()) {
       rainbowtimerflex.div.className = 'efWeatherOff';
-      rainbowtimerflex.div.innerHTML = 'ready in:<br>' + util.formatDuration(getRainbowWait() - d, true);
+      rainbowtimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getRainbowWait() - d, true);
     } else {
       rainbowtimerflex.div.className = 'efWeatherOn';
-      rainbowtimerflex.div.innerHTML = 'active:<br>' + util.formatDuration(getRainbowDuration() - d, true);
+      rainbowtimerflex.div.textEl.innerHTML = 'active:<br>' + util.formatDuration(getRainbowDuration() - d, true);
     }
   }
 
@@ -181,7 +182,7 @@ function updateAbilitiesUI() {
   // this button becomes available once more enough resources to fully replant all watercress
   if(state.g_res.seeds.gtr(1000)) {
     if(!watercressbutton) {
-      watercressbutton = addTopBarFlex(8, 9);
+      watercressbutton = addTopBarFlex(9, 10);
       watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w. With ctrl, deletes all watercress. With shift, plants watercress everywhere it can';
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
