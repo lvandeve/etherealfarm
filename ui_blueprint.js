@@ -109,7 +109,7 @@ function plantBluePrint(b) {
       var c = crops[BluePrint.toCrop(t)];
       if(c) {
         if(!state.crops[c.index].unlocked) continue;
-        actions.push({type:ACTION_PLANT, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true});
+        addAction({type:ACTION_PLANT, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true});
         did_something = true;
       }
     }
@@ -155,6 +155,12 @@ function exportBluePrint(b) {
   showExportTextDialog('export blueprint', text, 'blueprint-' + util.formatDate(util.getTime(), true) + '.txt', false);
 }
 
+function getBluePrintTypeHelpText() {
+  var squirreltext = '';
+  if(state.crops2[squirrel2_0].unlocked) squirreltext = 'S=squirrel, ';
+  return 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, ' + squirreltext + '.=empty/tree';
+}
+
 function importBluePrintDialog(fun) {
   var w = 500, h = 500;
   var dialog = createDialog(false, function(e) {
@@ -164,7 +170,9 @@ function importBluePrintDialog(fun) {
     dialog.cancelFun();
   }, 'import', 'cancel');
   var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
-  textFlex.div.innerHTML = 'Import blueprint. Case insensitive. B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, .=empty/tree.';
+  var squirreltext = '';
+  if(state.crops2[squirrel2_0].unlocked) squirreltext = 'S=squirrel, ';
+  textFlex.div.innerHTML = 'Import blueprint. Case insensitive. ' + getBluePrintTypeHelpText() + '.';
   var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.content.div);
   area.select();
   area.focus();
@@ -295,7 +303,7 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • From field: the current field layout is copied to the blueprint, e.g. wherever there\'s any berry on the field, produces a berry template in the blueprint.';
   text += '<br/>';
-  text += ' • From text (TXT): Write a field layout on multiple lines of text using the following letters: B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, .=empty/tree. Export TXT does the opposite.';
+  text += ' • From text (TXT): Write a field layout on multiple lines of text using the following letters: ' + getBluePrintTypeHelpText() + '. Export TXT does the opposite.';
   text += '<br/><br/>';
   text += 'Keyboard shotcuts for blueprints:';
   text += '<br/>';
@@ -354,11 +362,11 @@ function createBlueprintsDialog(opt_transcend) {
           showMessage('not high enough tree level to transcend (transcend with blueprint tries to transcend first, then plant the blueprint)', C_INVALID);
         } else {
           if(state.challenge) {
-            actions.push({type:ACTION_TRANSCEND, challenge:0});
+            addAction({type:ACTION_TRANSCEND, challenge:0});
           } else {
-            if(state.treelevel >= min_transcension_level) actions.push({type:ACTION_TRANSCEND, challenge:0});
+            if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:0});
           }
-          actions.push({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
+          addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
           closeAllDialogs();
           update();
         }
@@ -378,9 +386,9 @@ function createBlueprintsDialog(opt_transcend) {
             // deprecated feature, but still supported for those who like its convenience of "b" + "ctrl+shift+click" (the alternative is: "t", "b", "click")
             if(state.treelevel >= min_transcension_level) {
               showMessage('Transcended and planted blueprint');
-              actions.push({type:ACTION_TRANSCEND, challenge:0});
+              addAction({type:ACTION_TRANSCEND, challenge:0});
             }
-            actions.push({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
+            addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
             closeAllDialogs();
             update();
           }

@@ -83,6 +83,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
       util.setLocalStorage(e, localstorageName_success);
     }
   }, function(state) {
+    onfail(state);
     if(e.length > 22 && isBase64(e) && e[0] == 'E' && e[1] == 'F') {
       // save a recovery save in case something went wrong, but only if there isn't already one. Only some specific later actions like importing a save and hard reset will clear this
       var has_recovery = !!util.getLocalStorage(localstorageName_recover);
@@ -107,7 +108,6 @@ function loadFromLocalStorage(onsuccess, onfail) {
 
       savegame_recovery_situation = true;
     }
-    onfail(state);
   });
 }
 
@@ -251,6 +251,7 @@ function unlockTemplates() {
     state.crops2[fern2_template].unlocked = true;
     state.crops2[nettle2_template].unlocked = (state.crops2[nettle2_0].unlocked);
     state.crops2[automaton2_template].unlocked = (state.crops2[automaton2_0].unlocked);
+    state.crops2[squirrel2_template].unlocked = (state.crops2[squirrel2_0].unlocked);
   } else {
     state.crops2[berry2_template].unlocked = false;
     state.crops2[mush2_template].unlocked = false;
@@ -259,6 +260,7 @@ function unlockTemplates() {
     state.crops2[fern2_template].unlocked = false;
     state.crops2[nettle2_template].unlocked = false;
     state.crops2[automaton2_template].unlocked = false;
+    state.crops2[squirrel2_template].unlocked = false;
   }
 }
 
@@ -520,6 +522,7 @@ function softReset(opt_challenge) {
     state.p_numfused = state.c_numfused;
     state.p_res_hr_best = state.c_res_hr_best;
     state.p_res_hr_at = state.c_res_hr_at;
+    state.p_pausetime = state.c_pausetime;
 
     state.p_treelevel = state.treelevel;
   }
@@ -563,6 +566,7 @@ function softReset(opt_challenge) {
   state.c_numfused = 0;
   state.c_res_hr_best = Res();
   state.c_res_hr_at = Res();
+  state.c_pausetime = 0;
 
   // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
   if(!state.challenge) {
@@ -618,6 +622,7 @@ function softReset(opt_challenge) {
   state.misttime = 0;
   state.suntime = 0;
   state.rainbowtime = 0;
+  state.lasttreeleveluptime = state.time;
 
   state.crops = [];
   for(var i = 0; i < registered_crops.length; i++) {
@@ -659,8 +664,6 @@ function softReset(opt_challenge) {
 
   removeAllDropdownElements();
 
-  postupdate();
-
   initInfoUI();
 }
 
@@ -698,13 +701,7 @@ var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, 
 
 var lastSaveTime = util.getTime();
 
-var preupdate = function(opt_fromTick) {
-  return !opt_fromTick || !paused;
-};
-
-var postupdate = function() {
-  // nothing to do currently
-};
+var lastnonpausetime = 0;
 
 
 var undoSave = '';
@@ -787,7 +784,7 @@ function getRandomPreferablyEmptyFieldSpot() {
 
 
 function getSeasonAt(time) {
-  var t = time - state.g_starttime;
+  var t = time - state.g_starttime - state.g_pausetime;
   if(isNaN(t)) return 0;
   t /= (24 * 3600);
   var result = Math.floor(t) % 4;
@@ -1010,18 +1007,6 @@ function precomputeField() {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var c = f.getRealCrop();
-      if(c) {
-        var p = prefield[y][x];
-        if(c.type == CROPTYPE_NETTLE) {
-          p.boost = c.getBoost(f);
-          p.hasbreakdown_boost = true;
-        }
-        if(c.type == CROPTYPE_BEE) {
-          p.boost = c.getBoostBoost(f);
-          p.hasbreakdown_boostboost = true;
-        }
-      }
       if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
         for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
           var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
@@ -1034,6 +1019,24 @@ function precomputeField() {
           if(!diagonal && dir >= 4) continue;
           var p2 = prefield[y2][x2];
           p2.treeneighbor = true;
+        }
+      }
+    }
+  }
+
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getRealCrop();
+      if(c) {
+        var p = prefield[y][x];
+        if(c.type == CROPTYPE_NETTLE) {
+          p.boost = c.getBoost(f);
+          p.hasbreakdown_boost = true;
+        }
+        if(c.type == CROPTYPE_BEE) {
+          p.boost = c.getBoostBoost(f);
+          p.hasbreakdown_boostboost = true;
         }
       }
     }
@@ -1585,7 +1588,7 @@ function doNextAutoChoice() {
     if(j == active_choice0 && state.automaton_choices[1] == 3) choice = 2;
     if(choice > 0) {
       showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 1 ? u.choicename_a : u.choicename_b), C_AUTOMATON, 101550953);
-      actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, choice:choice});
+      addAction({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, choice:choice});
       did_something = true;
     }
   }
@@ -1603,13 +1606,13 @@ function getAutoFraction(advanced, fractions, croptype) {
   var fraction = fractions[0];
   if(advanced && croptype != undefined) {
     if(croptype == CROPTYPE_BERRY) fraction = fractions[3];
-    if(croptype == CROPTYPE_MUSH) fraction = fractions[4];
-    if(croptype == CROPTYPE_FLOWER) fraction = fractions[5];
-    if(croptype == CROPTYPE_NETTLE) fraction = fractions[6];
-    if(croptype == CROPTYPE_BEE) fraction = fractions[7];
-    if(croptype == CROPTYPE_SHORT) fraction = fractions[2];
-    if(croptype == CROPTYPE_CHALLENGE) fraction = fractions[1];
-    if(croptype == CROPTYPE_MISTLETOE) fraction = fractions[8];
+    else if(croptype == CROPTYPE_MUSH) fraction = fractions[4];
+    else if(croptype == CROPTYPE_FLOWER) fraction = fractions[5];
+    else if(croptype == CROPTYPE_NETTLE) fraction = fractions[6];
+    else if(croptype == CROPTYPE_BEE) fraction = fractions[7];
+    else if(croptype == CROPTYPE_SHORT) fraction = fractions[2];
+    else if(croptype == CROPTYPE_MISTLETOE) fraction = fractions[8];
+    else fraction = fractions[1]; // challenge crops, squirrel, ...
   }
   return fraction;
 }
@@ -1686,7 +1689,7 @@ function autoUpgrade(res) {
     res.subInPlace(cost);
   }
   if(count > 0) {
-    actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, num:count});
+    addAction({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, num:count});
     did_something = true;
   }
   return did_something;
@@ -1724,10 +1727,12 @@ function computeNextAutoPlant() {
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
   // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
-  var types = [CROPTYPE_SHORT, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE];
+  var types = [CROPTYPE_SQUIRREL, CROPTYPE_SHORT, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
+
+    if(type == CROPTYPE_SQUIRREL && state.cropcount[squirrel_0]) continue; // can have max 1 squirrel (even though multiple blueprints are possible), so do not attempt to plant it all the time once there's one
 
     var crop = getCheapestNextOfCropType(type);
     if(!crop) continue;
@@ -1735,6 +1740,7 @@ function computeNextAutoPlant() {
     // how much resources willing to spend
     var advanced = state.automaton_unlocked[2] >= 2;
     var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.type);
+    if(fraction == 0) continue; // even if the crop itself costs 0 (e.g. squirrel), fraction 0 means that this type is configured to be skipped entirely
     var cost = crop.getCost();
 
     // NOTE: must match simimar checks in autoPlant()
@@ -1811,7 +1817,7 @@ function autoPlant(res) {
   }
 
 
-  actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
+  addAction({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
   return true;
 }
 
@@ -1868,7 +1874,7 @@ function autoUnlock(res) {
   var cost = u.getCost();
   if(cost.gt(maxcost)) return false;
   res.subInPlace(cost);
-  actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true});
+  addAction({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true});
 
   return true;
 }
@@ -1956,6 +1962,47 @@ function nextEventTime() {
   return time;
 }
 
+function addAction(action) {
+  if(paused) return;
+
+  actions.push(action);
+}
+
+function maybeDropAmber() {
+  return Num(0); // not yet implemented!
+  /*
+  var amber = Num(0);
+  var do_amber = state.g_numresets > 0 && state.treelevel >= 9;
+  if(do_amber) {
+    var leveltime = state.time - state.lasttreeleveluptime;
+    // always give amber if an hour ago, but when having slow leveling tree (indicating being at a high level, relative for current game), this can go up to twice as fast
+    var reqtime = 3600;
+    // TODO: make this gradual (but capped) rather than in bumps
+    if(leveltime >= 300) reqtime = 1800;
+    else if(leveltime >= 240) reqtime = 2000;
+    else if(leveltime >= 180) reqtime = 2200;
+    else if(leveltime >= 120) reqtime = 2400;
+    else if(leveltime >= 60) reqtime = 2600;
+    else if(leveltime >= 30) reqtime = 3000;
+    var ambertime = state.time - state.lastambertime;
+    if(ambertime >= reqtime) {
+      console.log('leveltime: ' + leveltime);
+      // for really long tree levels, more can drop
+      var amount = 1;
+      // TODO: make this gradual (but capped) rather than in bumps
+      if(leveltime >= 7200) amount = 3;
+      else if(leveltime >= 5400) amount = 2.5;
+      else if(leveltime >= 3600) amount = 2;
+      else if(leveltime >= 1800) amount = 1.5;
+      state.lastambertime = state.time;
+      amber = Num(amount);
+    }
+    if(amber.neqr(0)) showMessage('the tree dropped ' + amber.toString() + ' amber', C_AMBER, 1046741287);
+  }
+  return amber;
+  */
+}
+
 // for misc things in UI that update themselves
 // updatefun must return true if the listener must stay, false if the listener must be removed
 var update_listeners = [];
@@ -1978,7 +2025,45 @@ var large_time_delta_res = Res();
 var num_season_changes = 0;
 var num_tree_levelups = 0;
 
-var update = function(opt_fromTick) {
+var prev_paused = false;
+
+// opt_ignorePause should be used for debugging only, as it can make time intervals nonsensical
+var update = function(opt_ignorePause) {
+  if(!prefield || !prefield.length) {
+    precomputeField(); // do this even before the paused check, because some UI elements use prefield
+  }
+
+  var paused_ = paused && !opt_ignorePause;
+  if(paused_) {
+    var d = util.getTime() - state.prevtime;
+    state.c_pausetime += d;
+    state.g_pausetime += d;
+    state.prevtime = state.time = util.getTime();
+
+    // more things must get adjusted during pause
+    // NOTE: due to pause, there are two distinct flows of time going on: the real-time clock, and the in-game clock
+    // however, we only save one of them. For things that have in-game effect, that's the in-game clock
+    // for some events that
+    // what is being adjusted here are things that are stored as game-time rather than real-time
+    // there are also in fact two different types of game-time: time from this run, and time since start of game
+    // something ethereal like ethereal tree level up uses the since-start gametime, things like misttime use the this-run gametime instead.
+    // some other things are stored as real time, e.g. state.c_starttime. To get the in-game time of that one, subtract state.c_pausetime from it.
+    state.misttime += d;
+    state.suntime += d;
+    state.rainbowtime += d;
+    state.lastFernTime += d;
+    state.automatontime += d;
+    state.lasttreeleveluptime += d;
+    state.lasttree2leveluptime += d;
+    state.lastambertime += d;
+
+    // this is for e.g. after importing a save while paused
+    // TODO: try to do this only when needed rather than every tick while paused
+    updateUI2();
+
+    return;
+  }
+
   var prev_large_time_delta = large_time_delta;
   var autoplanted = false;
 
@@ -1988,8 +2073,6 @@ var update = function(opt_fromTick) {
   }
   var store_undo = false;
 
-  if(!preupdate(opt_fromTick)) return;
-
   if(state.prevtime == 0) {
     state.prevtime = util.getTime();
   } else {
@@ -1998,7 +2081,8 @@ var update = function(opt_fromTick) {
     if(state.misttime > state.prevtime) state.misttime = 0;
     if(state.suntime > state.prevtime) state.suntime = 0;
     if(state.rainbowtime > state.prevtime) state.rainbowtime = 0;
-    if(state.lasttreeleveluptime > state.prevtime) state.lasttreeleveluptime = 0;
+    if(state.lasttreeleveluptime > state.prevtime) state.lasttreeleveluptime = state.prevtime;
+    if(state.lastambertime > state.prevtime) state.lastambertime = state.prevtime;
   }
 
   var prevseasongain = undefined;
@@ -2011,10 +2095,6 @@ var update = function(opt_fromTick) {
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
 
   var do_transcend = undefined;
-
-  if(!prefield || !prefield.length) {
-    precomputeField();
-  }
 
   var done = false;
   var numloops = 0;
@@ -2331,6 +2411,9 @@ var update = function(opt_fromTick) {
                         ' (' + getCostAffordTimer(cost) + ')',
                         C_INVALID, 0, 0);
             ok = false;
+          } else if(c.index == squirrel_0 && state.cropcount[squirrel_0]) {
+            showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
+            ok = false;
           }
         }
 
@@ -2401,7 +2484,7 @@ var update = function(opt_fromTick) {
 
         var recoup = undefined;
 
-        var freedelete = (f.index == CROPINDEX + automaton2_0);
+        var freedelete = (f.index == CROPINDEX + automaton2_0) || (f.index == CROPINDEX + squirrel2_0);
         var freetoken = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type);
         var freetokenall = delete2tokens_used >= delete2all_cost;
         var sametypeupgrade = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type && action.crop.tier > f.getCrop().tier);
@@ -2465,6 +2548,9 @@ var update = function(opt_fromTick) {
             ok = false;
           } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
             showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
+            ok = false;
+          } else if(c.index == squirrel2_0 && state.crop2count[squirrel2_0]) {
+            showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
             ok = false;
           }
         }
@@ -2774,6 +2860,8 @@ var update = function(opt_fromTick) {
           // do nothing, invalid reset attempt
         } else if(state.treelevel >= min_transcension_level || state.challenge) {
           do_transcend = action;
+          // the amber drop is done here, because we want to count it under actualgain so that it gets added to g_res etc...
+          actualgain.amber.addInPlace(maybeDropAmber());
           store_undo = true;
           // when transcending, break and execute the code below to actually transcend: if there are more actions queued, these should occur after the transcension happened.
           break;
@@ -2954,6 +3042,9 @@ var update = function(opt_fromTick) {
         twigs = nextTwigs().twigs;
         state.twigs.addInPlace(twigs);
       }
+
+      actualgain.amber.addInPlace(maybeDropAmber());
+
       state.treelevel++;
       state.lasttreeleveluptime = state.time;
       num_tree_levelups++;
@@ -3059,6 +3150,7 @@ var update = function(opt_fromTick) {
       var req2 = treeLevel2Req(state.treelevel2 + 1);
       if(state.res.ge(req2)) {
         state.treelevel2++;
+        state.lasttree2leveluptime = state.time;
         var message = 'Ethereal tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel2)][0] + ', level ' + state.treelevel2 +
             '. Consumed: ' + req2.toString();
         message += '. Higher ethereal tree levels can unlock more ethereal upgrades and ethereal crops';
@@ -3205,18 +3297,6 @@ var update = function(opt_fromTick) {
   } // end of loop for long ticks //////////////////////////////////////////////
 
 
-  for(var y = 0; y < state.numh; y++) {
-    for(var x = 0; x < state.numw; x++) {
-      updateFieldCellUI(x, y);
-    }
-  }
-  for(var y = 0; y < state.numh2; y++) {
-    for(var x = 0; x < state.numw2; x++) {
-      updateField2CellUI(x, y);
-    }
-  }
-
-
   if(state.g_numticks == 0) {
     showMessage('You need to gather some resources. Click a fern to get some.', C_HELP, 5646478);
   }
@@ -3306,20 +3386,7 @@ var update = function(opt_fromTick) {
     large_time_delta_time = 0;
   }
 
-
-  updateResourceUI();
-  updateUpgradeUIIfNeeded();
-  updateUpgrade2UIIfNeeded();
-  updateTabButtons();
-  updateAbilitiesUI();
-  updateRightPane();
-  if(updatetooltipfun) {
-    updatetooltipfun();
-  }
-  if(updatedialogfun) {
-    updatedialogfun();
-    if(dialog_level == 0) updatedialogfun = undefined;
-  }
+  updateUI2();
 
   showLateMessages();
 
@@ -3330,11 +3397,9 @@ var update = function(opt_fromTick) {
     }
   }
 
-  postupdate();
-
   // go faster when the automaton is autoplanting one-by-one
   if(autoplanted) {
-    window.setTimeout(bind(update, true), update_ms * 0.4);
+    window.setTimeout(update, update_ms * 0.4);
   }
 }
 

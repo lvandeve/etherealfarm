@@ -41,6 +41,7 @@ var C_ETHEREAL = 8;
 var C_UNLOCK = 9; // achievements, unlocked upgrades, ...
 var C_UNDO = 10;
 var C_AUTOMATON = 11;
+var C_AMBER = 12;
 
 
 // this system exists to make it possible to have messages to be distinguishable from each other but also have color according to some theme,
@@ -106,6 +107,8 @@ function makeLogColor(type, seed, rarity) {
       huevar = 0;
     } else if(type == C_AUTOMATON) {
       s0 = s1 = 0;
+    } else if(type == C_AMBER) {
+      h0 = h1 = 0.1;
     }
 
     if(rarity > 0 || type == C_RANDOM) {

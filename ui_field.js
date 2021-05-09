@@ -523,7 +523,7 @@ function makeUpgradeCropAction(x, y, opt_silent) {
 
 
   if(c2) {
-    actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
+    addAction({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {
     if(!opt_silent) {
@@ -589,7 +589,7 @@ function makeFieldDialog(x, y) {
     button2.textEl.style.color = '#c00';
     registerTooltip(button2, 'Delete crop and get some of its cost back.');
     addButtonAction(button2, function() {
-      actions.push({type:ACTION_DELETE, x:x, y:y});
+      addAction({type:ACTION_DELETE, x:x, y:y});
       dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
@@ -725,7 +725,7 @@ function initFieldUI() {
         var fern = state.fern && x == state.fernx && y == state.ferny;
 
         if(state.fern && x == state.fernx && y == state.ferny) {
-          actions.push({type:ACTION_FERN, x:x, y:y});
+          addAction({type:ACTION_FERN, x:x, y:y});
           update();
         }
 
@@ -758,19 +758,19 @@ function initFieldUI() {
                 var c4 = croptype_tiers[c.type][tier];
                 if(c4 && state.crops[c4.index].unlocked) c3 = c4;
               }
-              actions.push({type:ACTION_PLANT, x:x, y:y, crop:c3, shiftPlanted:true});
+              addAction({type:ACTION_PLANT, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }
           } else if(shift && !ctrl) {
             if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
-              actions.push({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
+              addAction({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
               update();
             } else {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
           } else if(ctrl && !shift) {
-            actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
+            addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
             update();
           } else if(!fern) {
             makeFieldDialog(x, y);
@@ -789,7 +789,7 @@ function initFieldUI() {
             state.lastPlanted = c3.index;
             if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
             if((state.allowshiftdelete || c2.istemplate) && c3.tier > c2.tier) {
-              actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
+              addAction({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }
           } else if(shift && !ctrl) {
@@ -805,9 +805,9 @@ function initFieldUI() {
                   // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
                   // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
                   // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-                  actions.push({type:ACTION_DELETE, x:x, y:y});
+                  addAction({type:ACTION_DELETE, x:x, y:y});
                 } else {
-                  actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
+                  addAction({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
                 }
                 update();
               } else {
@@ -819,7 +819,7 @@ function initFieldUI() {
             if(state.allowshiftdelete) safe = true;
             if(f.growth < 0.25) safe = true; // growing crop gives full refund, so if not too much time was spent yet growing this is safe to do even if the state.allowshiftdelete setting is false.
             if(safe) {
-              actions.push({type:ACTION_DELETE, x:x, y:y});
+              addAction({type:ACTION_DELETE, x:x, y:y});
               update();
             } else {
               showMessage('"shortcuts may delete crop" must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
@@ -970,5 +970,14 @@ function updateFieldCellUI(x, y) {
   if(f.hasCrop() && f.growth < 1) {
     var c = f.getCrop();
     setProgressBar(fd.progress, f.growth, c.type == CROPTYPE_SHORT ? '#0c0' : '#f00');
+  }
+}
+
+
+function renderField() {
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      updateFieldCellUI(x, y);
+    }
   }
 }

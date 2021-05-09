@@ -32,7 +32,7 @@ function showConfigureAutoResourcesDialog(subject) {
   var statefraction;
 
   if(subject == 0) {
-    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'challenge'];
+    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'other'];
     order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     statefraction = state.automaton_autoupgrade_fraction;
   } else if(subject == 1 || subject == 2) {
@@ -45,6 +45,8 @@ function showConfigureAutoResourcesDialog(subject) {
     } else {
       statefraction = state.automaton_autounlock_fraction;
     }
+    typenames.push('other');
+    order.push(1);
   }
 
 
@@ -394,7 +396,7 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   updateEnableButton(flex);
   addButtonAction(flex.div, bind(function(flex) {
-    actions.push({type:ACTION_TOGGLE_AUTOMATON, what:0, on:(!state.automaton_enabled), fun:function() {
+    addAction({type:ACTION_TOGGLE_AUTOMATON, what:0, on:(!state.automaton_enabled), fun:function() {
       updateEnableButton(flex);
     }});
     update();
@@ -420,7 +422,7 @@ function updateAutomatonUI() {
           var f;
           f = state.field[y][x];
           if(f.hasCrop()) {
-            actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+            addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
           }
         }
       }
@@ -457,7 +459,7 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   updateChoiceButton(flex);
   addButtonAction(flex.div, bind(function(flex) {
-    actions.push({type:ACTION_TOGGLE_AUTOMATON, what:4, on:(state.automaton_autochoice ? 0 : 1), fun:function() {
+    addAction({type:ACTION_TOGGLE_AUTOMATON, what:4, on:(state.automaton_autochoice ? 0 : 1), fun:function() {
       updateChoiceButton(flex);
       }});
     update();
@@ -500,7 +502,7 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updateUpgradeButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), fun:function() {
+      addAction({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), fun:function() {
         updateUpgradeButton(flex);
       }});
       update();
@@ -597,7 +599,7 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updatePlantButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      actions.push({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), fun:function() {
+      addAction({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), fun:function() {
         updatePlantButton(flex);
         setButtonIndicationStyles();
       }});
@@ -673,7 +675,7 @@ function updateAutomatonUI() {
       centerText2(flex.div);
       updateAutoUnlockButton(flex);
       addButtonAction(flex.div, bind(function(flex) {
-        actions.push({type:ACTION_TOGGLE_AUTOMATON, what:3, on:(state.automaton_autounlock ? 0 : 1), fun:function() {
+        addAction({type:ACTION_TOGGLE_AUTOMATON, what:3, on:(state.automaton_autounlock ? 0 : 1), fun:function() {
           updateAutoUnlockButton(flex);
         }});
         update();

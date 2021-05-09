@@ -56,16 +56,18 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
   }
 
-  var automaton = c.type == CROPTYPE_AUTOMATON;
+  var automaton = c.index == automaton2_0;
+  var squirrel = c.index == squirrel2_0;
 
   if(f.growth >= 1) {
     if(c.boost.neqr(0)) {
       result += '<br/>Boosting neighbors: ' + (c.getEtherealBoost(f).toPercentString()) + '<br/>';
     }
-    if(automaton) {
+    if(automaton || squirrel) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (automatonboost.toPercentString()) + '<br/>';
     }
   }
+
 
   if(opt_detailed) {
     result += '<br/>';
@@ -140,7 +142,7 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
   var c2 = getUpgradeCrop2(x, y, too_expensive);
 
   if(c2) {
-    actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
+    addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {
     if(!opt_silent) {
@@ -202,7 +204,7 @@ function makeField2Dialog(x, y) {
     if(!state.delete2tokens) button2.textEl.style.color = '#888';
     registerTooltip(button2, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
     addButtonAction(button2, function() {
-      actions.push({type:ACTION_DELETE2, x:x, y:y});
+      addAction({type:ACTION_DELETE2, x:x, y:y});
       dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
@@ -223,8 +225,8 @@ function makeField2Dialog(x, y) {
           for(var x = 0; x < state.numw2; x++) {
             var f;
             f = state.field2[y][x];
-            if(f.hasCrop() && f.getCrop().type != CROPTYPE_AUTOMATON) {
-              actions.push({type:ACTION_DELETE2, x:x, y:y, silent:true});
+            if(f.hasCrop() && f.getCrop().type != CROPTYPE_AUTOMATON && f.getCrop().type != CROPTYPE_SQUIRREL) {
+              addAction({type:ACTION_DELETE2, x:x, y:y, silent:true});
             }
           }
         }
@@ -396,13 +398,13 @@ function initField2UI() {
                 var c4 = croptype2_tiers[c.type][tier];
                 if(c4 && state.crops2[c4.index].unlocked) c3 = c4;
               }
-              actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c3, shiftPlanted:true});
+              addAction({type:ACTION_PLANT2, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }
           } else if(shift && !ctrl) {
             if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
               var c = crops2[state.lastPlanted2];
-              actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c, shiftPlanted:true});
+              addAction({type:ACTION_PLANT2, x:x, y:y, crop:c, shiftPlanted:true});
               update();
             } else {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
@@ -424,7 +426,7 @@ function initField2UI() {
             state.lastPlanted2 = c3.index;
             if(c3.getCost().gt(state.res)) state.lastPlanted2 = c2.index;
             if((state.allowshiftdelete || c2.istemplate) && c3.tier > c2.tier) {
-              actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c3, shiftPlanted:true});
+              addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }
           } else if(shift && !ctrl) {
@@ -435,9 +437,9 @@ function initField2UI() {
                 // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
                 // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
                 // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-                actions.push({type:ACTION_DELETE2, x:x, y:y});
+                addAction({type:ACTION_DELETE2, x:x, y:y});
               } else {
-                actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c, shiftPlanted:true});
+                addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c, shiftPlanted:true});
               }
               update();
             } else {
@@ -446,7 +448,7 @@ function initField2UI() {
           } else if(ctrl && !shift) {
             if(state.allowshiftdelete) {
               var c = crops[state.lastPlanted];
-              actions.push({type:ACTION_DELETE2, x:x, y:y});
+              addAction({type:ACTION_DELETE2, x:x, y:y});
               update();
             } else {
               showMessage('ctrl+click to delete must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
@@ -527,5 +529,13 @@ function updateField2CellUI(x, y) {
   if(f.hasCrop() && f.growth < 1) {
     var c = crops2[f.cropIndex()];
     setProgressBar(fd.progress, f.growth, '#f00');
+  }
+}
+
+function renderField2() {
+  for(var y = 0; y < state.numh2; y++) {
+    for(var x = 0; x < state.numw2; x++) {
+      updateField2CellUI(x, y);
+    }
   }
 }

@@ -69,7 +69,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
 
     addButtonAction(buyFlex.div, bind(function(i, e) {
-      actions.push({type:ACTION_UPGRADE2, u:u.index});
+      addAction({type:ACTION_UPGRADE2, u:u.index});
       update();
     }, i));
   } else {

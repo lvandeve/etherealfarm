@@ -152,8 +152,8 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
     var plantfun = bind(function(index) {
         var c = crops2[index];
 
-        if(opt_replace) actions.push({type:ACTION_REPLACE2, x:x, y:y, crop:c});
-        else actions.push({type:ACTION_PLANT2, x:x, y:y, crop:c});
+        if(opt_replace) addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c});
+        else addAction({type:ACTION_PLANT2, x:x, y:y, crop:c});
         state.lastPlanted2 = index; // for shift key
         dialog.cancelFun();
         closeAllDialogs();

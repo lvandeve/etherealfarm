@@ -340,6 +340,16 @@ function createNotificationSettingsDialog() {
     updatebuttontext(button);
   }, button, updatebuttontext));
   button.id = 'preferences_helpmessages';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'pause/resume in message log: ' + (state.messagelogenabled[4] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Show game paused / resume in message log when pausing/unpausing');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.messagelogenabled[4] = !state.messagelogenabled[4] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_pausemessages';
 }
 
 
@@ -540,7 +550,7 @@ function createStatsDialog() {
   }
   if(state.g_numresets > 0 || state.treelevel > 0) text += '• tree level: ' + open + state.treelevel + close + '<br>';
   text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
-  text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime) + close + '<br>';
+  text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime - state.c_pausetime) + close + '<br>';
   var c_res = Res(state.c_res);
   c_res.essence.addInPlace(getUpcomingFruitEssence().essence);
   text += '• total earned: ' + open + c_res.toString(true) + close + '<br>';
@@ -575,7 +585,7 @@ function createStatsDialog() {
     text += '• highest tree level: ' + open + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')' + close + '<br>';
     text += '• achievements: ' + open + state.g_nummedals + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.g_starttime) + close + '<br>';
-    text += '• duration: ' + open + util.formatDuration(util.getTime() - state.g_starttime) + close + '<br>';
+    text += '• duration: ' + open + util.formatDuration(util.getTime() - state.g_starttime - state.g_pausetime) + close + '<br>';
     text += '• total earned: ' + open + state.g_res.toString(true) + close + '<br>';
     text += '• highest resources: ' + open + state.g_max_res.toString(true) + close + '<br>';
     text += '• highest production/s: ' + open + state.g_max_prod.toString(true) + close + '<br>';
@@ -886,18 +896,11 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function(e) {
     var w = 500, h = 500;
     var dialog = createDialog(false, function(e) {
-      var shift = e.shiftKey;
       var enc = area.value;
       enc = enc.trim();
       if(enc == '') return;
       load(enc, function(state) {
-        if(shift) {
-          state.prevtime = state.time = util.getTime();
-          postload(state);
-          showMessage('Held shift key while importing this save, so no resources added for the time between exporting and importing now (loaded as if the time was back then). To get those resources, don\'t hold shift while loading.');
-        } else {
-          showMessage(loadedFromLocalImportMessage, C_UNIMPORTANT, 0, 0);
-        }
+        showMessage(loadedFromLocalImportMessage, C_UNIMPORTANT, 0, 0);
         dialog.cancelFun();
         state.g_numimports++;
         state.g_lastimporttime = util.getTime();
@@ -1001,8 +1004,15 @@ function initSettingsUI_in(dialog) {
   button.id = 'settings_about';
 }
 
+// x0 and x1 are start and end coordinates from 0 to 11
+function addTopBarFlex(x0, x1) {
+  var n = 11;
+  var f = 1 / n;
+  return new Flex(topFlex, [0.05 + f * x0,-0.04,n], [0.5,-0.4,f], [0.05 + f * (x1 - 1),0.04,n], [0.5,0.4,f], 2);
+}
+
 function initSettingsUI() {
-  var gearbutton = new Flex(topFlex, [0,0.1], [0,0.1], [0,0.9], [0,0.9]).div;
+  var gearbutton = addTopBarFlex(0, 1).div;
   var canvas = createCanvas('0%', '0%', '100%', '100%', gearbutton);
   renderImage(image_gear, canvas);
   styleButton0(gearbutton, true);
@@ -1015,7 +1025,7 @@ function initSettingsUI() {
   gearbutton.id = 'settings_button';
 
   // changelog / about button
-  var aboutbutton = new Flex(topFlex, [1,-0.9], [0,0.1], [1,-0.1], [0,0.9]).div;
+  var aboutbutton = addTopBarFlex(10, 11).div;
   canvas = createCanvas('0%', '0%', '100%', '100%', aboutbutton);
   renderImage(images_fern[1], canvas);
   styleButton0(aboutbutton, true);
@@ -1026,10 +1036,30 @@ function initSettingsUI() {
   }, 'about');
   aboutbutton.id = 'about_button';
 
-  var undobutton = new Flex(topFlex, [0,1.6], [0,0.15], [0,3.3], [0,0.85], 2);
+  // pause button
+  var pausebutton = addTopBarFlex(9, 10).div;;
+  registerTooltip(pausebutton, 'Pause the game. Pauses seasons, timers, growth, all progress, and everything else.<br>Allows to interact and open dialogs, but actions cannot be performed.<br>Loading an old savegame while paused will bring up the season and state it has back then without adding resources.');
+  canvas = createCanvas('0%', '0%', '100%', '100%', pausebutton);
+  renderImage(image_pause, canvas);
+  styleButton0(pausebutton, true);
+  aboutbutton.title = 'Pause';
+
+  addButtonAction(pausebutton, bind(function(canvas) {
+    paused = !paused;
+    if(state.messagelogenabled[4]) {
+      if(paused) showMessage('game paused');
+      else showMessage('game resumed from pause');
+    }
+    renderImage(paused ? image_paused : image_pause, canvas);
+    updatePausedUI();
+  }, canvas), 'pause');
+  aboutbutton.id = 'pause_button';
+
+  var undobutton = addTopBarFlex(1, 3);
   styleButton(undobutton.div);
   undobutton.div.textEl.innerText = 'Undo';
   addButtonAction(undobutton.div, function(e) {
+    if(paused) return; // undo is broken with current pause implementation, gives black screen and risk of wrong times
     if(e.shiftKey) {
       showMessage('held shift key while pressing undo button, so saving undo instead.');
       storeUndo(state);

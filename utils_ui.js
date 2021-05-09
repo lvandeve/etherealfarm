@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// This text centering method is simply because it involves only one HTML
+// This text centering method is simple because it involves only one HTML
 // element and allows changing the text at any time without updating this,
 // but it only supports single-line text. The div must already have its final
 // height and shouldn't change.
@@ -228,7 +228,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   // the is_cancel is for positioning cancel as if it was first, when state.cancelbuttonright, given that this function is called last for the cancel button
   var makeButton = function(is_cancel) {
     var result;
-    if(state.cancelbuttonright) {
+    if(!state || state.cancelbuttonright) {
       var s = buttonshift;
       if(is_cancel) {
         s = 0;

@@ -169,9 +169,9 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
   var dialog = createDialog(undefined, function() {
     if(selected) {
       if(swapped) {
-        actions.push({type:ACTION_FRUIT_FUSE, a:selected, b:f});
+        addAction({type:ACTION_FRUIT_FUSE, a:selected, b:f});
       } else {
-        actions.push({type:ACTION_FRUIT_FUSE, a:f, b:selected});
+        addAction({type:ACTION_FRUIT_FUSE, a:f, b:selected});
       }
     }
     dialog.cancelFun();
@@ -467,7 +467,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
       }
       registerTooltip(levelButton, 'Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits. Hold shift to level up multiple times but with only up to 25% of available essence');
       addButtonAction(levelButton, function(e) {
-        actions.push({type:ACTION_FRUIT_LEVEL, f:f, index:selected, shift:e.shiftKey});
+        addAction({type:ACTION_FRUIT_LEVEL, f:f, index:selected, shift:e.shiftKey});
         update();
         recreate();
       });
@@ -482,7 +482,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
       registerTooltip(upButton, 'Moves up this ability in the order. This has no effect on ability strength, but can affect fusing of fruits');
       addButtonAction(upButton, function(e) {
         if(selected <= 0) return;
-        actions.push({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:true});
+        addAction({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:true});
         selected--;
         update();
         recreate();
@@ -498,7 +498,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
       registerTooltip(downButton, 'Moves down this ability in the order. This has no effect on ability strength, but can affect fusing of fruits');
       addButtonAction(downButton, function(e) {
         if(selected + 1 >= getNumFruitAbilities(f.tier)) return;
-        actions.push({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:false});
+        addAction({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:false});
         selected++;
         update();
         recreate();
@@ -518,7 +518,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     moveButton1.textEl.innerText = 'to storage slot';
     if(state.fruit_stored.length >= state.fruit_slots) moveButton1.className = 'efButtonCantAfford';
     addButtonAction(moveButton1, function() {
-      actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+      addAction({type:ACTION_FRUIT_SLOT, f:f, slot:0});
       update();
       //recreate();
       closeAllDialogs();
@@ -531,7 +531,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     styleButton(moveButton2);
     moveButton2.textEl.innerText = 'to sacrificial pool';
     addButtonAction(moveButton2, function() {
-      actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:1});
+      addAction({type:ACTION_FRUIT_SLOT, f:f, slot:1});
       update();
       //recreate();
       closeAllDialogs();
@@ -721,11 +721,11 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
           // move the fruit upwards
           var full = state.fruit_stored.length >= state.fruit_slots;
           if(!full) {
-            actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+            addAction({type:ACTION_FRUIT_SLOT, f:f, slot:0});
             update();
           }
         } else { // move the fruit downwards
-          actions.push({type:ACTION_FRUIT_SLOT, f:f, slot:1});
+          addAction({type:ACTION_FRUIT_SLOT, f:f, slot:1});
           update();
         }
       } else {
@@ -758,7 +758,7 @@ function setupFruitDrag(flex, slot, f) {
     if(!(origslot >= 0 && origslot <= 100 + state.fruit_sacr.length)) return;
     var f = getFruit(origslot);
     if(!f) return;
-    actions.push({type:ACTION_FRUIT_SLOT, f:f, precise_slot:slot});
+    addAction({type:ACTION_FRUIT_SLOT, f:f, precise_slot:slot});
     update();
   });
   util.addEvent(flex.div, 'ondragenter', function(e) {

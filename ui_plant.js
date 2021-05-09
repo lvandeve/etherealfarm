@@ -309,8 +309,8 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
     var plantfun = bind(function(index) {
       state.lastPlanted = index; // for shift key
       var c = crops[index];
-      if(opt_replace) actions.push({type:ACTION_REPLACE, x:x, y:y, crop:c});
-      else actions.push({type:ACTION_PLANT, x:x, y:y, crop:c});
+      if(opt_replace) addAction({type:ACTION_REPLACE, x:x, y:y, crop:c});
+      else addAction({type:ACTION_PLANT, x:x, y:y, crop:c});
       dialog.cancelFun();
       closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time

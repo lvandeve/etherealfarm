@@ -160,19 +160,19 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
       if(u.is_choice) {
         var dialog;
         var funa = function() {
-          actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
+          addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
           dialog.cancelFun();
           update();
         };
         var funb = function() {
-          actions.push({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
+          addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
           dialog.cancelFun();
           update();
         };
         dialog = createDialog(undefined, funa, u.choicename_a, undefined, funb, u.choicename_b);
         dialog.content.div.innerHTML = u.description;
       } else {
-        actions.push({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
         update();
       }
 
@@ -202,7 +202,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
     var okname = undefined;
     if(!u.is_choice) {
       okfun = function() {
-        actions.push({type:ACTION_UPGRADE, u:u.index, shift:false});
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:false});
         closeAllDialogs();
         update();
       };
@@ -212,7 +212,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
     var extraname = undefined;
     if(!u.is_choice && u.maxcount != 1) {
       extrafun = function() {
-        actions.push({type:ACTION_UPGRADE, u:u.index, shift:true});
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:true});
         closeAllDialogs();
         update();
       };

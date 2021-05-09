@@ -308,6 +308,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numfused);
   processRes(state.g_res_hr_best);
   processRes(state.g_res_hr_at);
+  processFloat(state.g_pausetime);
 
 
   section = 12; id = 0; // current run stats
@@ -333,6 +334,7 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numfused);
   processRes(state.c_res_hr_best);
   processRes(state.c_res_hr_at);
+  processFloat(state.c_pausetime);
 
 
   section = 13; id = 0; // previous run stats
@@ -359,6 +361,7 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numfused);
     processRes(state.p_res_hr_best);
     processRes(state.p_res_hr_at);
+    processFloat(state.p_pausetime);
   }
 
 
@@ -394,6 +397,8 @@ function encState(state, opt_raw_only) {
   section = 16; id = 0; // misc
   processUint(state.delete2tokens);
   processFloat(state.lasttreeleveluptime);
+  processFloat(state.lasttree2leveluptime);
+  processFloat(state.lastambertime);
 
 
   section = 17; id = 0; // fruits
@@ -992,6 +997,7 @@ function decState(s) {
   if(save_version >= 4096*1+60) state.g_numfused = processUint();
   if(save_version >= 4096*1+62) state.g_res_hr_best = processRes();
   if(save_version >= 4096*1+62) state.g_res_hr_at = processRes();
+  if(save_version >= 4096*1+71) state.g_pausetime = processFloat();
   if(error) return err(4);
 
 
@@ -1018,6 +1024,7 @@ function decState(s) {
   if(save_version >= 4096*1+60) state.c_numfused = processUint();
   if(save_version >= 4096*1+62) state.c_res_hr_best = processRes();
   if(save_version >= 4096*1+62) state.c_res_hr_at = processRes();
+  if(save_version >= 4096*1+71) state.c_pausetime = processFloat();
   if(error) return err(4);
 
 
@@ -1045,6 +1052,7 @@ function decState(s) {
     if(save_version >= 4096*1+60) state.p_numfused = processUint();
     if(save_version >= 4096*1+62) state.p_res_hr_best = processRes();
     if(save_version >= 4096*1+62) state.p_res_hr_at = processRes();
+    if(save_version >= 4096*1+71) state.p_pausetime = processFloat();
     if(error) return err(4);
   }
 
@@ -1102,6 +1110,8 @@ function decState(s) {
   section = 16; id = 0; // misc
   if(save_version >= 4096*1+14) state.delete2tokens = processUint();
   if(save_version >= 4096*1+19) state.lasttreeleveluptime = processFloat();
+  if(save_version >= 4096*1+71) state.lasttree2leveluptime = processFloat();
+  if(save_version >= 4096*1+71) state.lastambertime = processFloat();
 
   section = 17; id = 0; // fruits
   if(save_version >= 4096*1+17) {
@@ -1464,16 +1474,16 @@ function decState(s) {
           ' The ethereal upgrades are currently removed, but new ones, probably costing resin, may be added back in a future game update.',
           C_META, 0, 0, false, true);
     }
-    state.res.seeds2 = Num(0);
-    state.g_res.seeds2 = Num(0);
-    state.g_max_res.seeds2 = Num(0);
-    state.g_max_prod.seeds2 = Num(0);
-    state.c_res.seeds2 = Num(0);
-    state.c_max_res.seeds2 = Num(0);
-    state.c_max_prod.seeds2 = Num(0);
-    state.p_res.seeds2 = Num(0);
-    state.p_max_res.seeds2 = Num(0);
-    state.p_max_prod.seeds2 = Num(0);
+    state.res.acorns = Num(0);
+    state.g_res.acorns = Num(0);
+    state.g_max_res.acorns = Num(0);
+    state.g_max_prod.acorns = Num(0);
+    state.c_res.acorns = Num(0);
+    state.c_max_res.acorns = Num(0);
+    state.c_max_prod.acorns = Num(0);
+    state.p_res.acorns = Num(0);
+    state.p_max_res.acorns = Num(0);
+    state.p_max_prod.acorns = Num(0);
 
     state.crops2[berry2_0].unlocked = true;
     state.crops2[mush2_0].unlocked = true;

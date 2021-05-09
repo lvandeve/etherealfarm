@@ -100,7 +100,7 @@ function createTranscendDialog(opt_from_challenge) {
   }
 
   var dialog = createDialog(DIALOG_MEDIUM, function(e) {
-      actions.push({type:ACTION_TRANSCEND, challenge:0});
+      addAction({type:ACTION_TRANSCEND, challenge:0});
       closeAllDialogs();
       update();
   }, 'transcend', 'cancel', extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, extrafun2, extraname2, shortcutfun);
@@ -152,7 +152,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     dialog = createDialog();
   } else {
     var okfun = function() {
-      actions.push({type:ACTION_TRANSCEND, challenge:c.index});
+      addAction({type:ACTION_TRANSCEND, challenge:c.index});
       closeAllDialogs();
       update();
     };
@@ -414,10 +414,11 @@ function createFinishChallengeDialog() {
   var newmax = Math.max(state.treelevel, maxlevel);
   var new_total = state.challenge_bonus.sub(getChallengeBonus(state.challenge, maxlevel, cycle)).add(getChallengeBonus(state.challenge, newmax, cycle));
   text += '<br><br>';
-  text += 'Production bonus from max reached level<br>';
-  text += '• Before (level ' + c2.maxlevel + '): ' + getChallengeBonus(state.challenge, maxlevel, cycle).toPercentString() + ' (' + state.challenge_bonus.toPercentString() + ' total for all challenges)<br>';
-  if(state.treelevel > c2.maxlevel ) {
+  text += 'Production bonus from max reached level' + ((c.cycling > 1) ? ' for this cycle' : '') + ':<br>';
+  text += '• Before (level ' + maxlevel + '): ' + getChallengeBonus(state.challenge, maxlevel, cycle).toPercentString() + ' (' + state.challenge_bonus.toPercentString() + ' total for all challenges)<br>';
+  if(state.treelevel > maxlevel) {
     text += '• After (level ' + newmax + '): ' + getChallengeBonus(state.challenge, newmax, cycle).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
+    // TODO: if challenge not completed but max level beaten, add text here "you didn't complete the challenge, but at least you gained production bonus", but this taking cycling challenges and multi-level-target challenges into account
   } else {
     text += '• After stays the same, max level not beaten';
   }

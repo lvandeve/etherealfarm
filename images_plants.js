@@ -3368,6 +3368,33 @@ var images_automaton = createPlantImages2(
   image_automaton
 );
 
+var image_squirrel = `
+................
+................
+................
+................
+................
+............XO..
+......o....XOoo.
+...ooo....XOoooo
+..oo0o...XOooooo
+..oooo...XOooooo
+....Xoo..XOo.oo.
+...ooooo.XOo....
+....XXooOOoo....
+.....XXoooo.....
+....oooo........
+................
+`;
+
+var images_squirrel = createPlantImages2(
+  image_squirrel,
+  image_squirrel,
+  image_squirrel,
+  image_squirrel,
+  image_squirrel
+);
+
 
 
 function blueprintifyImage(im) {
@@ -3423,4 +3450,8 @@ var images_ferntemplate = [image_ferntemplate, image_ferntemplate, image_ferntem
 
 var image_automatontemplate = createCanvasImageFor(blueprintifyImage(images_automaton[4][4]));
 var images_automatontemplate = [image_automatontemplate, image_automatontemplate, image_automatontemplate, image_automatontemplate, image_automatontemplate];
+
+var image_squirreltemplate = createCanvasImageFor(blueprintifyImage(images_squirrel[4][4]));
+var images_squirreltemplate = [image_squirreltemplate, image_squirreltemplate, image_squirreltemplate, image_squirreltemplate, image_squirreltemplate];
+
 

@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-var resource_names = ['seeds', 'spores', 'resin', 'twigs', 'pericarps', 'mycelia', 'amber', 'essence'];
+var resource_names = ['seeds', 'spores', 'resin', 'twigs', 'acorns', 'mycelia', 'amber', 'essence'];
 
 // Resources.
 // o is object with optional fields with the same names as the resource fields of Res (and may have regular JS numbers or Num), or can be a Res itself
@@ -35,7 +35,7 @@ function Res(o) {
     this.spores = new Num(o.spores || 0);
     this.resin = new Num(o.resin || 0);
     this.twigs = new Num(o.twigs || 0);
-    this.seeds2 = new Num(o.seeds2 || 0);
+    this.acorns = new Num(o.acorns || 0);
     this.spores2 = new Num(o.spores2 || 0);
     this.amber = new Num(o.amber || 0);
     this.essence = new Num(o.essence || 0); // fruit essence
@@ -44,7 +44,7 @@ function Res(o) {
     this.spores = new Num();
     this.resin = new Num();
     this.twigs = new Num();
-    this.seeds2 = new Num();
+    this.acorns = new Num();
     this.spores2 = new Num();
     this.amber = new Num();
     this.essence = new Num(); // fruit essence
@@ -61,7 +61,7 @@ Res.resOne = function() {
 // returns the resources as an array. The order is consistent, but do not rely on which index is which named resource. Only converting back to Resource with fromArray brings back the names.
 // does not make copies of the Num values, so do not change them in place if the original resources should not be modified
 Res.prototype.toArray = function() {
-  return [this.seeds, this.spores, this.resin, this.twigs, this.seeds2, this.spores2, this.amber, this.essence];
+  return [this.seeds, this.spores, this.resin, this.twigs, this.acorns, this.spores2, this.amber, this.essence];
 };
 Res.toArray = function(v) { return v.toArray(); }
 
@@ -76,7 +76,7 @@ Res.prototype.fromArray = function(a) {
   this.spores = a[1] || Num(0);
   this.resin = a[2] || Num(0);
   this.twigs = a[3] || Num(0);
-  this.seeds2 = a[4] || Num(0);
+  this.acorns = a[4] || Num(0);
   this.spores2 = a[5] || Num(0);
   this.amber = a[6] || Num(0);
   this.essence = a[7] || Num(0);
@@ -98,7 +98,7 @@ Res.prototype.addInPlace = function(b) {
   this.spores.addInPlace(b.spores);
   this.resin.addInPlace(b.resin);
   this.twigs.addInPlace(b.twigs);
-  this.seeds2.addInPlace(b.seeds2);
+  this.acorns.addInPlace(b.acorns);
   this.spores2.addInPlace(b.spores2);
   this.amber.addInPlace(b.amber);
   this.essence.addInPlace(b.essence);
@@ -119,7 +119,7 @@ Res.prototype.addrInPlace = function(v) {
   this.spores.addInPlace(v);
   this.resin.addInPlace(v);
   this.twigs.addInPlace(v);
-  this.seeds2.addInPlace(v);
+  this.acorns.addInPlace(v);
   this.spores2.addInPlace(v);
   this.amber.addInPlace(v);
   this.essence.addInPlace(v);
@@ -137,7 +137,7 @@ Res.prototype.subInPlace = function(b) {
   this.spores.subInPlace(b.spores);
   this.resin.subInPlace(b.resin);
   this.twigs.subInPlace(b.twigs);
-  this.seeds2.subInPlace(b.seeds2);
+  this.acorns.subInPlace(b.acorns);
   this.spores2.subInPlace(b.spores2);
   this.amber.subInPlace(b.amber);
   this.essence.subInPlace(b.essence);
@@ -157,7 +157,7 @@ Res.prototype.mulInPlace = function(v) {
   this.spores.mulInPlace(v);
   this.resin.mulInPlace(v);
   this.twigs.mulInPlace(v);
-  this.seeds2.mulInPlace(v);
+  this.acorns.mulInPlace(v);
   this.spores2.mulInPlace(v);
   this.amber.mulInPlace(v);
   this.essence.mulInPlace(v);
@@ -184,7 +184,7 @@ Res.prototype.divInPlace = function(v) {
   this.spores.divInPlace(v);
   this.resin.divInPlace(v);
   this.twigs.divInPlace(v);
-  this.seeds2.divInPlace(v);
+  this.acorns.divInPlace(v);
   this.spores2.divInPlace(v);
   this.amber.divInPlace(v);
   this.essence.divInPlace(v);
@@ -212,7 +212,7 @@ Res.prototype.elmulInPlace = function(r) {
   this.spores.mulInPlace(r.spores);
   this.resin.mulInPlace(r.resin);
   this.twigs.mulInPlace(r.twigs);
-  this.seeds2.mulInPlace(r.seeds2);
+  this.acorns.mulInPlace(r.acorns);
   this.spores2.mulInPlace(r.spores2);
   this.amber.mulInPlace(r.amber);
   this.essence.mulInPlace(r.essence);
@@ -275,7 +275,7 @@ Res.prototype.eq = function(b) {
   if(!this.spores.eq(b.spores)) return false;
   if(!this.resin.eq(b.resin)) return false;
   if(!this.twigs.eq(b.twigs)) return false;
-  if(!this.seeds2.eq(b.seeds2)) return false;
+  if(!this.acorns.eq(b.acorns)) return false;
   if(!this.spores2.eq(b.spores2)) return false;
   if(!this.amber.eq(b.amber)) return false;
   if(!this.essence.eq(b.essence)) return false;
@@ -301,7 +301,7 @@ Res.prototype.ge = function(b) {
   if(!this.spores.ge(b.spores)) return false;
   if(!this.resin.ge(b.resin)) return false;
   if(!this.twigs.ge(b.twigs)) return false;
-  if(!this.seeds2.ge(b.seeds2)) return false;
+  if(!this.acorns.ge(b.acorns)) return false;
   if(!this.spores2.ge(b.spores2)) return false;
   if(!this.amber.ge(b.amber)) return false;
   if(!this.essence.ge(b.essence)) return false;
@@ -315,7 +315,7 @@ Res.prototype.le = function(b) {
   if(!this.spores.le(b.spores)) return false;
   if(!this.resin.le(b.resin)) return false;
   if(!this.twigs.le(b.twigs)) return false;
-  if(!this.seeds2.le(b.seeds2)) return false;
+  if(!this.acorns.le(b.acorns)) return false;
   if(!this.spores2.le(b.spores2)) return false;
   if(!this.amber.le(b.amber)) return false;
   if(!this.essence.le(b.essence)) return false;

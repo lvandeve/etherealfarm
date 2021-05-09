@@ -156,6 +156,22 @@ function initUI() {
   else setTab(0, true);
 }
 
+var pausedflex = undefined;
+
+function updatePausedUI() {
+  if(paused && !pausedflex) {
+    pausedflex = new Flex(contentFlex, 0, 0, 1, 1, 2);
+    centerText2(pausedflex.div);
+    pausedflex.div.textEl.innerText = 'Paused';
+    pausedflex.div.style.pointerEvents = 'none';
+    pausedflex.div.style.color = '#f008';
+    //pausedflex.div.style.fontSize = '100%';
+  } else if(!paused && pausedflex) {
+    pausedflex.removeSelf(contentFlex);
+    pausedflex = undefined;
+  }
+}
+
 // some parts of the UI are updated more often than just in initUI, their functions, even for initial creation, are called 'update' instead of 'init'
 function updateUI() {
   updateUpgradeUI();
@@ -164,6 +180,26 @@ function updateUI() {
   updateTabButtons();
   updateUpgrade2UI();
   updateAutomatonUI();
+}
+
+// the one for during a game update
+function updateUI2() {
+  renderField();
+  renderField2();
+  updateResourceUI();
+  updateUpgradeUIIfNeeded();
+  updateUpgrade2UIIfNeeded();
+  updateTabButtons();
+  updateAbilitiesUI();
+  updateRightPane();
+  updatePausedUI();
+  if(updatetooltipfun) {
+    updatetooltipfun();
+  }
+  if(updatedialogfun) {
+    updatedialogfun();
+    if(dialog_level == 0) updatedialogfun = undefined;
+  }
 }
 
 //document.body.style.fontFamily = 'Verdana, Arial, Helvetica, sans-serif';

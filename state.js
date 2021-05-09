@@ -141,7 +141,7 @@ function BluePrint() {
   this.numh = 0;
 
   /*
-  2D array. meaning of codes roughly matches that of fraction arrays of automaton:
+  2D array. meaning of codes roughly matches that of fraction arrays of automaton, though it stops matching at squirrel.
   0: empty
   1: N/A, unused
   2: w: watercress
@@ -151,6 +151,7 @@ function BluePrint() {
   6: n: nettle
   7: h: beehive
   8: i: mistletoe
+  9: s: squirrel
   */
   this.data = [];
 
@@ -167,6 +168,7 @@ BluePrint.toCrop = function(i) {
   if(i == 6) return nettle_template;
   if(i == 7) return bee_template;
   if(i == 8) return mistletoe_template;
+  if(i == 9) return squirrel_template;
   return -1;
 }
 
@@ -179,6 +181,7 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_NETTLE) return 6;
   if(c.type == CROPTYPE_BEE) return 7;
   if(c.type == CROPTYPE_MISTLETOE) return 8;
+  if(c.type == CROPTYPE_SQUIRREL) return 9;
   return 0;
 }
 
@@ -191,6 +194,7 @@ BluePrint.toChar = function(i) {
   if(i == 6) return 'N';
   if(i == 7) return 'H';
   if(i == 8) return 'I';
+  if(i == 9) return 'S';
   return -1;
 }
 
@@ -204,6 +208,7 @@ BluePrint.fromChar = function(c) {
   if(c == 'N') return 6;
   if(c == 'H') return 7;
   if(c == 'I') return 8;
+  if(c == 'S') return 9;
   return 0;
 }
 
@@ -279,6 +284,8 @@ function State() {
 
   this.treelevel = 0;
   this.lasttreeleveluptime = 0;
+  this.lasttree2leveluptime = 0;
+  this.lastambertime = 0;
 
   this.fern = 0; // 0 = no fern, 1 = standard fern, 2 = lucky fern
   this.fernx = 0;
@@ -370,7 +377,7 @@ function State() {
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark, 3=darkest
   this.sidepanel = 1; // 0=disabled, 1=automatic
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
-  this.messagelogenabled = [1, 1, 1, 1]; // index0: "game saved" message log messages, index1: tree leveling, index2: upgrades available, index3: abbreviated help
+  this.messagelogenabled = [1, 1, 1, 1, 1]; // index0: "game saved" message log messages, index1: tree leveling, index2: upgrades available, index3: abbreviated help, index4: pause/resumed messages
   this.cancelbuttonright = true; // whether cancel buttons in dialogs appear on the leftmost or the rightmost side of a group of buttons (the group of button always starts from the right either way). If on the right side, all cancel or back buttons are in the same right corner of the screen. If false, then the right corner of the screen gets the "do the action" button, and cancel/back buttons are to the left.
 
   // help dialog related
@@ -497,6 +504,7 @@ function State() {
   this.g_numfused = 0;
   this.g_res_hr_best = Res();
   this.g_res_hr_at = Res();
+  this.g_pausetime = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -524,6 +532,7 @@ function State() {
   this.p_numfused = 0;
   this.p_res_hr_best = Res();
   this.p_res_hr_at = Res();
+  this.p_pausetime = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -549,6 +558,7 @@ function State() {
   this.c_numfused = 0;
   this.c_res_hr_best = Res();
   this.c_res_hr_at = Res();
+  this.c_pausetime = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
@@ -1265,3 +1275,18 @@ function autoUnlockEnabled() {
   if(!autoPlantEnabled()) return false; // auto unlock also gets disabled when auto plant is disabled
   return !!state.automaton_autounlock;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// have ethereal squirrel
+function haveSquirrel() {
+  return !!state.crop2count[squirrel2_0];
+}
+
+
+// have both ethereal and basic field squirrel
+function squirrelActive() {
+  return state.crop2count[squirrel2_0] && state.cropcount[squirrel_0];
+}
+

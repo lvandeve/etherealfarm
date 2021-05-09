@@ -50,7 +50,7 @@ function updateAbilitiesUI() {
   if(!sunbutton && state.upgrades[upgrade_sununlock].count) {
     //sunbutton = new Flex(topFlex, [0,5], [0,0.1], [0,5.8], [0,0.9]);
     //sunbutton = new Flex(topFlex, [0,4], [0,0.1], [0,4.8], [0,0.9], 2);
-    sunbutton = new Flex(topFlex, [0,4], [0,0.1], [0,4.8], [0,0.9]);
+    sunbutton = addTopBarFlex(3, 4);
     styleButton0(sunbutton.div, true);
 
     suntimerflex = new Flex(topFlex, [0,4], [0,0.1], [0,5.5], [0,0.9], 2);
@@ -64,7 +64,7 @@ function updateAbilitiesUI() {
     renderImage(image_sun, canvas);
 
     addButtonAction(sunbutton.div, function() {
-      actions.push({type:ACTION_ABILITY, ability:1});
+      addAction({type:ACTION_ABILITY, ability:1});
       update();
     }, 'sun ability');
     sunbutton.div.id = 'sun_button';
@@ -95,7 +95,7 @@ function updateAbilitiesUI() {
   }
 
   if(!mistbutton && state.upgrades[upgrade_mistunlock].count) {
-    mistbutton = new Flex(topFlex, [0,5.5], [0,0.1], [0,6.3], [0,0.9]);
+    mistbutton = addTopBarFlex(4, 5);
     styleButton0(mistbutton.div, true);
 
     misttimerflex = new Flex(topFlex, [0,5.5], [0,0.1], [0,7], [0,0.9], 2);
@@ -108,7 +108,7 @@ function updateAbilitiesUI() {
     renderImage(image_mist, canvas);
 
     var fun = function() {
-      actions.push({type:ACTION_ABILITY, ability:0});
+      addAction({type:ACTION_ABILITY, ability:0});
       update();
     };
     addButtonAction(mistbutton.div, fun, 'mist ability');
@@ -141,7 +141,7 @@ function updateAbilitiesUI() {
   }
 
   if(!rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
-    rainbowbutton = new Flex(topFlex, [0,7], [0,0.1], [0,7.8], [0,0.9]);
+    rainbowbutton = addTopBarFlex(5, 6);
     styleButton0(rainbowbutton.div, true);
 
     rainbowtimerflex = new Flex(topFlex, [0,7], [0,0.1], [0,8.5], [0,0.9], 2);
@@ -154,7 +154,7 @@ function updateAbilitiesUI() {
     renderImage(image_rainbow, canvas);
 
     addButtonAction(rainbowbutton.div, function() {
-      actions.push({type:ACTION_ABILITY, ability:2});
+      addAction({type:ACTION_ABILITY, ability:2});
       update();
     }, 'rainbow ability');
     rainbowbutton.div.id = 'rainbow_button';
@@ -181,7 +181,7 @@ function updateAbilitiesUI() {
   // this button becomes available once more enough resources to fully replant all watercress
   if(state.g_res.seeds.gtr(1000)) {
     if(!watercressbutton) {
-      watercressbutton = new Flex(topFlex, [1,-2.1], [0,0.1], [1,-1.3], [0,0.9]);
+      watercressbutton = addTopBarFlex(8, 9);
       watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w. With ctrl, deletes all watercress. With shift, plants watercress everywhere it can';
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
@@ -218,32 +218,32 @@ function refreshWatercress(opt_clear, opt_all) {
       if(opt_all) {
         if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template)) {
           if(f.index == CROPINDEX + watercress_template) {
-            actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+            addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
           }
           seeds_available.subInPlace(cresscost);
-          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
           fullyplanted = true;
         }
       } else if(f.index == FIELD_REMAINDER) {
         if(opt_clear) {
-          actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+          addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
           remcleared = true;
         } else if(can_afford) {
           seeds_available.subInPlace(cresscost);
-          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
           replanted = true;
         }
       } else if(f.index == CROPINDEX + short_0 && (can_afford || opt_clear)) {
-        actions.push({type:ACTION_DELETE, x:x, y:y, silent:true});
+        addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          actions.push({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
         }
         refreshed = true;
       } else if(f.index == CROPINDEX + watercress_template && can_afford) {
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          actions.push({type:ACTION_REPLACE, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
           refreshed = true;
         }
       }
@@ -267,15 +267,15 @@ document.addEventListener('keydown', function(e) {
   if(dialog_level > 0) return; // in a dialog, don't do global game shortcuts then
 
   if(e.key == '1' && !shift && !ctrl) {
-    actions.push({type:ACTION_ABILITY, ability:1});
+    addAction({type:ACTION_ABILITY, ability:1});
     update();
   }
   if(e.key == '2' && !shift && !ctrl) {
-    actions.push({type:ACTION_ABILITY, ability:0});
+    addAction({type:ACTION_ABILITY, ability:0});
     update();
   }
   if(e.key == '3' && !shift && !ctrl) {
-    actions.push({type:ACTION_ABILITY, ability:2});
+    addAction({type:ACTION_ABILITY, ability:2});
     update();
   }
 
@@ -301,13 +301,13 @@ document.addEventListener('keydown', function(e) {
     var did_something = false;
     did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
     if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
-      actions.push({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
+      addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
       did_something = true;
     }
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f && f.index == FIELD_REMAINDER) {
-        actions.push({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[short_0], ctrlPlanted:true});
+        addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[short_0], ctrlPlanted:true});
       }
       did_something = true;
     }
@@ -335,7 +335,7 @@ document.addEventListener('keydown', function(e) {
         } else {
           // plant
           if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
-            actions.push({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[state.lastPlanted], shiftPlanted:true});
+            addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[state.lastPlanted], shiftPlanted:true});
             update();
           }
         }
@@ -353,7 +353,7 @@ document.addEventListener('keydown', function(e) {
         } else {
           // plant
           if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
-            actions.push({type:ACTION_PLANT2, x:shiftCrop2FlexX, y:shiftCrop2FlexY, crop:crops2[state.lastPlanted2], shiftPlanted:true});
+            addAction({type:ACTION_PLANT2, x:shiftCrop2FlexX, y:shiftCrop2FlexY, crop:crops2[state.lastPlanted2], shiftPlanted:true});
             update();
           }
         }
@@ -368,7 +368,7 @@ document.addEventListener('keydown', function(e) {
         if(f) {
           if(f.hasCrop()) {
             // delete crop
-            actions.push({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
+            addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
             update();
           }
         }
@@ -385,7 +385,7 @@ document.addEventListener('keydown', function(e) {
         if(f) {
           if(f.hasCrop()) {
             // delete crop
-            actions.push({type:ACTION_DELETE2, x:shiftCrop2FlexX, y:shiftCrop2FlexY});
+            addAction({type:ACTION_DELETE2, x:shiftCrop2FlexX, y:shiftCrop2FlexY});
             update();
           }
         }

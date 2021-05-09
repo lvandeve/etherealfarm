@@ -32,6 +32,7 @@ var CROPTYPE_MISTLETOE = croptype_index++;
 var CROPTYPE_BEE = croptype_index++; // boosts flowers
 var CROPTYPE_CHALLENGE = croptype_index++; // only exists for challenges
 var CROPTYPE_FERN2 = croptype_index++; // ethereal fern, giving starter money
+var CROPTYPE_SQUIRREL = croptype_index++;
 var NUM_CROPTYPES = croptype_index;
 
 function getCropTypeName(type) {
@@ -46,6 +47,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_BEE) return 'beehive';
   if(type == CROPTYPE_CHALLENGE) return 'challenge';
   if(type == CROPTYPE_FERN2) return 'fern';
+  if(type == CROPTYPE_SQUIRREL) return 'squirrel';
   return 'unknown';
 }
 
@@ -234,6 +236,7 @@ function reduceGrowTime(time, reduce) {
   //var min = Math.log(time * f + 1) / f;
   //var min = 30;
   var min = 30 + Math.log(time);
+  if(time < min) return time;
   time -= min;
 
   time = towardsdiag(time, 1, reduce);
@@ -927,6 +930,12 @@ function registerBeehive(name, tier, boost, planttime, image, opt_tagline) {
   return index;
 }
 
+function registerSquirrel(name, tier, cost, planttime, image, opt_tagline) {
+  var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline, CROPTYPE_SQUIRREL, tier);
+  //var crop = crops[index];
+  return index;
+}
+
 function registerChallengeCrop(name, tier, cost, planttime, image, opt_tagline) {
   var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline, CROPTYPE_CHALLENGE, tier);
   //var crop = crops[index];
@@ -1054,6 +1063,9 @@ crop_register_id = 120;
 // the bonus should be much more generous: set to 300% (3.0) now, and upgrades kan make it much higher, just like flowers reach the 10-thousands
 var bee_0 = registerBeehive('beehive', 0, Num(3.0), /*growtime=*/300, images_beehive);
 
+crop_register_id = 130;
+var squirrel_0 = registerSquirrel('squirrel', 0, Res(), /*growtime=*/0.5, images_squirrel);
+
 crop_register_id = 200;
 
 var challengecrop_0 = registerChallengeCrop('worker bee', 0, Res({seeds:20000}), 60, images_workerbee,
@@ -1088,6 +1100,7 @@ var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0),
 var nettle_template = makeTemplate(registerNettle('nettle template', -1, Num(0), 0, images_nettletemplate));
 var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
 var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
+var squirrel_template = makeTemplate(registerSquirrel('squirrel', -1, Res(), 0, images_squirreltemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2570,7 +2583,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
       if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
       var n = state.field2[y2][x2];
-      if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type == CROPTYPE_AUTOMATON) {
+      if(n.hasCrop() && n.isFullGrown() && n.cropIndex() == automaton2_0) {
         automatonmul.addInPlace(automatonboost);
         num++;
       }
@@ -2688,6 +2701,12 @@ function registerAutomaton2(name, treelevel2,  tier, cost, planttime, effect_des
   return index;
 }
 
+function registerSquirrel2(name, treelevel2,  tier, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_SQUIRREL, tier);
+  var crop = crops2[index];
+  return index;
+}
+
 function registerFern2(name, treelevel2, tier, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_FERN2, tier);
   var crop = crops2[index];
@@ -2700,7 +2719,8 @@ var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3
 var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
 
 crop2_register_id = 10;
-var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
+var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
+var squirrel2_0 = registerSquirrel2('squirrel', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Unlocks acorns and squirrel upgrades. Boosts 8 ethereal neighbors. Can have max 1.', images_squirrel);
 
 // berries2
 crop2_register_id = 25;
@@ -2746,6 +2766,7 @@ var nettle2_template = makeTemplate2(registerNettle2('nettle template', 0, -1, R
 var lotus2_template = makeTemplate2(registerLotus2('lotus template', 0, -1, Res(), 0, 0, undefined, '', images_lotustemplate));
 var fern2_template = makeTemplate2(registerFern2('fern template', 0, -1, Res(), 0, undefined, '', images_ferntemplate));
 var automaton2_template = makeTemplate2(registerAutomaton2('automaton template', 0, -1, Res(), 0, undefined, '', images_automatontemplate));
+var squirrel2_template = makeTemplate2(registerSquirrel2('squirrel template', 0, -1, Res(), 0, undefined, '', images_squirreltemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2981,7 +3002,7 @@ var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({
 var upgrade2_automaton = registerUpgrade2('unlock automaton', LEVEL2, Res({resin:100}), 2, function() {
   unlockEtherealCrop(automaton2_0);
   showRegisteredHelpDialog(28);
-}, function(){return true;}, 1, 'the automaton can be placed in the ethereal field, and when placed, unlocks the automaton tab, allows to automate things, and allows to place crop templates', undefined, undefined, images_automaton[4]);
+}, function(){return true;}, 1, 'the automaton can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks the automaton tab, allows to automate things, and allows to place crop templates', undefined, undefined, images_automaton[4]);
 
 
 var upgrade2_twigs_bonus = Num(0.25);
@@ -3087,6 +3108,12 @@ var upgrade2_field2_7x6 = registerUpgrade2('ethereal field 7x6', LEVEL2, Res({re
 var upgrade2_extra_fruit_slot3 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:2e6,essence:10000}), 2, function() {
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[3]);
+
+/*
+var upgrade2_squirrel = registerUpgrade2('unlock squirrel', LEVEL2, Res({resin:3e6}), 2, function() {
+  unlockEtherealCrop(squirrel2_0);
+}, function(){return true;}, 1, 'the squirrel can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks the acorns resource, squirrel upgrades and the squirrel in the basic field', undefined, undefined, images_squirrel[4]);
+*/
 
 
 

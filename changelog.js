@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.71 (2021-05-09):';
+  text += '<br/>• Added a pause button. Pause halts all progress, including seasons.';
+  text += '<br/>• Various fixes, including beehive in winter accidently too low.';
+  text += '<br/>• Development on next major feature is under way.';
+  text += '<br/><br/>';
+
   text += '0.1.70 (2021-05-07):';
   text += '<br/>• The default location of back/cancel buttons in dialogs is now rightmost instead of leftmost if there are multiple bottom buttons. You can get back the original behavior in the preferences. Reason: with rightmost enabled, back buttons align, preventing accidental transcend or other action clicks when closing multiple dialogs in a row.';
   text += '<br/>• Various fixes';
