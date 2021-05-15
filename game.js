@@ -26,8 +26,6 @@ var state = undefined;
 
 initUIGlobal();
 
-var paused = false;
-
 var savegame_recovery_situation = false; // if true, makes it less likely to autosave, to ensure local storage preserves a valid older save
 
 function saveDailyCycle(e) {
@@ -697,6 +695,7 @@ var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
 var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
 var ACTION_PLANT_BLUEPRINT = action_index++;
+var ACTION_UPGRADE3 = action_index++; // squirrel upgrade
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 
 var lastSaveTime = util.getTime();
@@ -1963,7 +1962,7 @@ function nextEventTime() {
 }
 
 function addAction(action) {
-  if(paused) return;
+  if(state.paused) return;
 
   actions.push(action);
 }
@@ -2025,15 +2024,21 @@ var large_time_delta_res = Res();
 var num_season_changes = 0;
 var num_tree_levelups = 0;
 
-var prev_paused = false;
+var update_prev_paused = false;
+var update_prev_state_ctor_count = -1;
 
 // opt_ignorePause should be used for debugging only, as it can make time intervals nonsensical
 var update = function(opt_ignorePause) {
+  var paused_ = state.paused && !opt_ignorePause;
+  var update_ui_paused = state_ctor_count != update_prev_state_ctor_count || paused_ != update_prev_paused;
+  update_prev_paused = paused_;
+  update_prev_state_ctor_count = state_ctor_count;
+
+
   if(!prefield || !prefield.length) {
-    precomputeField(); // do this even before the paused check, because some UI elements use prefield
+    if(!paused_ || update_ui_paused) precomputeField(); // do this even before the paused check, because some UI elements use prefield
   }
 
-  var paused_ = paused && !opt_ignorePause;
   if(paused_) {
     var d = util.getTime() - state.prevtime;
     state.c_pausetime += d;
@@ -2059,10 +2064,13 @@ var update = function(opt_ignorePause) {
 
     // this is for e.g. after importing a save while paused
     // TODO: try to do this only when needed rather than every tick while paused
-    updateUI2();
-
+    if(update_ui_paused) {
+      updateUI2();
+    }
     return;
   }
+
+  update_prev_paused = paused_;
 
   var prev_large_time_delta = large_time_delta;
   var autoplanted = false;
@@ -2340,6 +2348,28 @@ var update = function(opt_ignorePause) {
           state.g_numupgrades2++;
         }
         upgrades2_done = true;
+      } else if(type == ACTION_UPGRADE3) {
+        var s = stages3[action.s];
+        var s2 = state.stages3[action.s];
+        var b = action.b; // which branch (left: 0, middle: 1, right: 2)
+        var d = action.d; // depth in the branch
+        var ok = true;
+        var us = (b == 0) ? s.upgrades0  : ((b == 1) ? s.upgrades1 : s.upgrades2);
+        if(b < 0 || b > 2) {
+          ok = false;
+        } else if(d != s2.num[b]) {
+          // the depth must be exactly equal to the amount of upgrades done so far in this branch
+          ok = false;
+        } else if(d >= us.length) {
+          // nonexisting upgrade for this stage
+          ok = false;
+        }
+
+        if(ok) {
+          var u = upgrades3[us[d]];
+          var u2 = state.upgrades3[us[d]];
+          // TODO
+        }
       } else if(type == ACTION_PLANT_BLUEPRINT) {
         plantBluePrint(action.blueprint);
       } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
@@ -3462,7 +3492,7 @@ function showShiftCropChip(crop_id) {
   shiftCropFlex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCropFlex.div.style.zIndex = 100; // above medal chip
 
-  var textFlex = new Flex(shiftCropFlex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35], 0.4);
+  var textFlex = new Flex(shiftCropFlex, [0, 0, 0.0], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35], 0.4);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
@@ -3472,7 +3502,7 @@ function showShiftCropChip(crop_id) {
     textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
-      var canvasFlex = new Flex(shiftCropFlex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+      var canvasFlex = new Flex(shiftCropFlex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(c.image[4], canvas);
       var updatefun = function() {
@@ -3570,7 +3600,7 @@ function showShiftCrop2Chip(crop_id) {
   shiftCrop2Flex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCrop2Flex.div.style.zIndex = 100; // above medal chip
 
-  var textFlex = new Flex(shiftCrop2Flex, [0, 0.0], [0.5, -0.35], 0.99, [0.5, 0.35], 0.4);
+  var textFlex = new Flex(shiftCrop2Flex, [0, 0, 0.0], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35], 0.4);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
@@ -3580,7 +3610,7 @@ function showShiftCrop2Chip(crop_id) {
     textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
-      var canvasFlex = new Flex(shiftCrop2Flex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+      var canvasFlex = new Flex(shiftCrop2Flex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(c.image[4], canvas);
       var updatefun = function() {

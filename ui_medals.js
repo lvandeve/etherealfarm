@@ -86,7 +86,7 @@ function updateMedalUI() {
 
     var flex;
     if(!medal_flexes[i]) {
-      flex = new Flex(medalGrid, [0, xpos / 10], [0, ypos / 10], [(xpos + 1) / 10 - 0.005], [0, (ypos + 1) / 10 - 0.005]);
+      flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005]);
       medal_flexes[i] = flex;
     } else {
       flex = medal_flexes[i];
@@ -166,14 +166,14 @@ function updateMedalUI() {
     var xpos = 0;
     var ypos = Math.floor(numshown / numx) + 2;
 
-    var flex = new Flex(medalGrid, [0, xpos / 10], [0, ypos / 10], [(xpos + numx - 1) / 10 - 0.005], [0, (ypos + 1) / 10 - 0.005], 0.3);
+    var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + numx - 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005], 0.3);
     medalTierKeys.push(flex);
     flex.div.innerText = 'Key: tiers from lowest to highest:';
 
     for(var j = 0; j < tierColors.length; j++) {
       var xpos = j % numx;
       var ypos = Math.floor(numshown / numx) + 3;
-      var flex = new Flex(medalGrid, [0, xpos / 10], [0, ypos / 10], [(xpos + 1) / 10 - 0.005], [0, (ypos + 1) / 10 - 0.005], 2);
+      var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005], 2);
       medalTierKeys.push(flex);
       flex.div.style.backgroundColor = tierColors_BG[j];
       flex.div.style.color = util.farthestColorHue(tierColors_BG[j]);
@@ -201,11 +201,11 @@ function showMedalChip(medal_id) {
   medalChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
   medalChipFlex.div.style.backgroundColor = '#ddde';
 
-  var canvasFlex = new Flex(medalChipFlex, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  var canvasFlex = new Flex(medalChipFlex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(m.icon, canvas);
 
-  var textFlex = new Flex(medalChipFlex, [0, 0.7], [0.5, -0.35], 0.99, [0.5, 0.35]);
+  var textFlex = new Flex(medalChipFlex, [0, 0, 0.7], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   textFlex.div.innerHTML = 'Achievement Unlocked' + '<br><br>' + upper(m.name) + ' (+' + m.prodmul.toPercentString() + ')';

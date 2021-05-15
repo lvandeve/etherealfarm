@@ -56,7 +56,7 @@ function makeMainDivs() {
   if(mainFlex) mainFlex.removeSelf(null);
   mainFlex = new Flex(null, 0, 0, 1, 1);
 
-  gameFlex = new Flex(mainFlex, [0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0.99, 0.75], 0.99);
+  gameFlex = new Flex(mainFlex, [0, 0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 0.75], 0.99);
   if(showdebugborders) gameFlex.div.style.border = '2px solid green';
 
   topFlex = new Flex(gameFlex, 0, 0, 1, 0.05);
@@ -75,7 +75,7 @@ function makeMainDivs() {
   logFlex = new Flex(gameFlex, 0, 0.8, 1, 1, 0.25);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
-  rightFlex = new Flex(mainFlex, [0, 0.99, 0.75], 0, [0, 0.99, 1.1], 1);
+  rightFlex = new Flex(mainFlex, [0, 0, 0.99, 0.75], 0, [0, 0, 0.99, 1.1], 1);
   rightFlex.div.style.overflow = 'hidden'; // avoid creating unwanted global scrollbars
   //rightFlex.div.style.border = '4px solid red';
   topRightFlex = new Flex(rightFlex, 0.02, 0.02, 0.98, 0.25, 0.6);
@@ -105,6 +105,7 @@ var tabindex_medals;
 
 // init the UI after a reset, save load, .... Keeps log messages
 // assume state is already correctly initialized
+// NOTE: nothing in here may depend on prefield
 function initUI() {
   //topDiv.innerHTML = '';
   //tabDiv.innerHTML = '';
@@ -116,6 +117,7 @@ function initUI() {
   document.body.className = 'efBackground';
 
   contentFlex.clear();
+  pausedflex = undefined;
   tabFlex.clear();
 
   //setMainDivSizes();
@@ -151,7 +153,8 @@ function initUI() {
   initInfoUI();
   initField2UI();
 
-  updateUI();
+  update_prev_state_ctor_count = -1;
+
   if(state) setTab(state.currentTab);
   else setTab(0, true);
 }
@@ -159,7 +162,7 @@ function initUI() {
 var pausedflex = undefined;
 
 function updatePausedUI() {
-  if(paused && !pausedflex) {
+  if(state.paused && !pausedflex) {
     pausedflex = new Flex(contentFlex, 0, 0, 1, 1, 2);
     centerText2(pausedflex.div);
     pausedflex.div.textEl.innerText = 'Paused';
@@ -167,7 +170,7 @@ function updatePausedUI() {
     pausedflex.div.style.color = '#f008';
     //pausedflex.div.style.fontSize = '100%';
     renderImage(image_paused, pauseButtonCanvas);
-  } else if(!paused && pausedflex) {
+  } else if(!state.paused && pausedflex) {
     pausedflex.removeSelf(contentFlex);
     pausedflex = undefined;
     renderImage(image_pause, pauseButtonCanvas);

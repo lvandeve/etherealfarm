@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.72 (2021-05-15):';
+  text += '<br/>• Paused state is now saved in savegames.';
+  text += '<br/>• Many internal changes for the next update, not visible or usable at this time.';
+  text += '<br/><br/>';
+
   text += '0.1.71 (2021-05-09):';
   text += '<br/>• Added a pause button. Pause halts all progress, including seasons.';
   text += '<br/>• Various fixes, including beehive in winter accidently too low.';

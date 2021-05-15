@@ -199,7 +199,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
     var addTitle = function(text) {
       y += s * 0.5;
-      var flex = new Flex(scrollFlex, [0.01, 0], [0, y], 1, [0, y + s]);
+      var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
       flex.div.innerText = text;
       y += s * 0.5;
     };
@@ -214,7 +214,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         x = 0;
         y += s;
       }
-      var flex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+      var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
       x += s;
       var f2 = fruits[i]
       makeFruitChip(flex, f2, 0, true);
@@ -227,7 +227,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       }, f2));
     }
     if(fruits.length == 0) {
-      var flex = new Flex(scrollFlex, 0.01, [0, y], 0.9, [0, y + s]);
+      var flex = new Flex(scrollFlex, 0.01, [0, 0, y], 0.9, [0, 0, y + s]);
       flex.div.innerText = '[ No fruit to fuse, must have at least 1 other fruit of the same tier and same type ]';
     }
     y += s;
@@ -240,7 +240,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     x = 0;
     for(var i = 0; i <= fruits2.length; i++) {
       if(i == fruits2.length) x += s * 0.5;
-      var flex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+      var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
       x += s;
       var f2 = fruits2[(swapped && i < fruits2.length) ? (fruits2.length - 1 - i) : i]
       if(f2) {
@@ -281,7 +281,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     var fuse = swapped ? fuseFruit(selected, f, message) : fuseFruit(f, selected, message);
 
     x = 0;
-    var flex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+    var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
     x += s;
     if(fuse) {
       makeFruitChip(flex, fuse, 0, true, 'fused fruit result');
@@ -298,7 +298,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
     if(fuse) {
       for(var i = -1; i < fuse.abilities.length; i++) {
-        var flex = new Flex(scrollFlex, [0.01, 0], [0, y], 1, [0, y + s]);
+        var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
         if(i == -1) {
           flex.div.innerText = fuse.toString() + ', fused ' + fuse.fuses + ' times';
         } else {
@@ -310,7 +310,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     } else if(message[0]) {
       y += s * 0.25;
       x = 0;
-      var flex = new Flex(scrollFlex, [0.01, 0], [0, y], [0.99, 0], [0, y + s]);
+      var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], [0.99, 0, 0], [0, 0, y + s]);
       x += s;
       flex.div.innerText = message[0];
     }
@@ -329,12 +329,12 @@ function fillFruitDialog(dialog, f, opt_selected) {
   };
   dialog.div.className = 'efDialogTranslucent';
 
-  var canvasFlex = new Flex(dialog.content, [0, 0.01], [0, 0.01], [0, 0.15], [0, 0.15], 0.3);
+  var canvasFlex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.15], [0, 0, 0.15], 0.3);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(images_fruittypes[f.type][f.tier], canvas);
   styleFruitChip(canvasFlex, f);
 
-  var topFlex = new Flex(dialog.content, [0.01, 0.15], 0.01, 0.99, 0.15, 0.3);
+  var topFlex = new Flex(dialog.content, [0.01, 0, 0.15], 0.01, 0.99, 0.15, 0.3);
   var text = upper(f.toString());
   text += '<br>';
   text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier];
@@ -356,7 +356,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var y = 0.22;
   var h = 0.04;
   for(var i = 0; i < f.abilities.length; i++) {
-    var flex = new Flex(dialog.content, [0.01, 0.15], y, 0.7, y + h, 0.5);
+    var flex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.7, y + h, 0.5);
     y += h * 1.1;
     var a = f.abilities[i];
     var level = f.levels[i];
@@ -382,7 +382,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
   y += 0.02;
   h = 0.2;
-  var bottomflex = new Flex(dialog.content, [0.01, 0.15], y, 0.7, y + h);
+  var bottomflex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.7, y + h);
   bottomflex.div.style.backgroundColor = '#0f02';
   bottomflex.div.style.border = '1px solid black';
   y += h;
@@ -512,7 +512,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var h = 0.05;
 
   if(f.slot >= 100) {
-    var moveButton1 = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+    var moveButton1 = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h, 0.8).div;
     y += h * 1.1;
     styleButton(moveButton1);
     moveButton1.textEl.innerText = 'to storage slot';
@@ -526,7 +526,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   }
 
   if(f.slot < 100) {
-    var moveButton2 = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+    var moveButton2 = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h, 0.8).div;
     y += h * 1.1;
     styleButton(moveButton2);
     moveButton2.textEl.innerText = 'to sacrificial pool';
@@ -537,7 +537,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
       closeAllDialogs();
     });
 
-    var moveButton3 = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+    var moveButton3 = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h, 0.8).div;
     y += h * 1.1;
     styleButton(moveButton3);
     moveButton3.textEl.innerText = 'make active';
@@ -552,7 +552,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
   // can't do fusing on fruits that only have 1 ability
   if(f.tier > 0) {
-    var fuseButton = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+    var fuseButton = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h, 0.8).div;
     y += h * 1.1;
     styleButton(fuseButton);
     fuseButton.textEl.innerText = 'fuse';
@@ -562,7 +562,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     });
   }
 
-  var renameButton = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+  var renameButton = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h, 0.8).div;
   y += h * 1.1;
   styleButton(renameButton);
   renameButton.textEl.innerText = 'rename';
@@ -574,7 +574,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     });
   });
 
-  var helpButton = new Flex(dialog.content, [0.01, 0.15], y, 0.45, y + h, 0.8).div;
+  var helpButton = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h, 0.8).div;
   y += h * 1.1;
   styleButton(helpButton);
   helpButton.textEl.innerText = 'help';
@@ -609,7 +609,7 @@ function createFruitInfoDialog(f) {
   var s = 0.1;
 
   for(var i = -1; i < f.abilities.length; i++) {
-    var flex = new Flex(scrollFlex, [0.01, 0], [0, y], 1, [0, y + s]);
+    var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
     flex.div.innerText = (i == -1) ? (f.toString() + ', fused ' + f.fuses + ' times') : ('ability: ' + f.abilityToString(i));
     y += s * 0.5;
   }
@@ -800,7 +800,7 @@ function updateFruitUI() {
 
   ////////
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.85, [0, y + s], 0.5);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + s/3], 0.85, [0, 0, y + s], 0.5);
   y += s;
   var active_fruit_name = '<font color="red">none</font>';
   var f_active = getActiveFruit();
@@ -810,7 +810,7 @@ function updateFruitUI() {
   registerTooltip(titleFlex.div, help);
 
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.33, [0, y + s], 0.66);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + s/3], 0.33, [0, 0, y + s], 0.66);
   y += s;
   titleFlex.div.innerText = 'stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
   help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage.';
@@ -819,7 +819,7 @@ function updateFruitUI() {
 
   x = 0;
   for(var i = 0; i < num; i++) {
-    var canvasFlex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
     x += s;
     //canvasFlex.div.style.border = '1px solid black';
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -843,7 +843,7 @@ function updateFruitUI() {
 
   x = 0;
   for(var i = 0; i < num; i++) {
-    var canvasFlex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
     x += s;
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
@@ -865,7 +865,7 @@ function updateFruitUI() {
 
   ////////
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, y + s/3], 0.33, [0, y + s], 0.66);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + s/3], 0.33, [0, 0, y + s], 0.66);
   y += s;
   titleFlex.div.innerText = 'sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
   help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
@@ -874,7 +874,7 @@ function updateFruitUI() {
   var num = Math.max(6, state.fruit_sacr.length + 2);
   var x = 0;
   for(var i = 0; i < num; i++) {
-    var canvasFlex = new Flex(scrollFlex, [0.01, x], [0, y], [0.01, x + s], [0, y + s]);
+    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
     x += s;
     if(x > s * 10) {
       x = 0;

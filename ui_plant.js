@@ -25,16 +25,16 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   if(fieldx != undefined && fieldy != undefined) {
     f = state.field[fieldy][fieldx];
   }
-  var flex = new Flex(parent, x * w + 0.01, [0, y * w * 0.9 + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w * 0.9 - 0.01, 0.5], 0.75);
+  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w * 0.9 + 0.01, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w * 0.9 - 0.01, 0.5], 0.75);
   var div = flex.div;
   div.className = 'efPlantChip';
 
-  var canvasFlex = new Flex(flex, 0, [0.5, -0.33], [0, 0.66], [0.5, 0.33]);
+  var canvasFlex = new Flex(flex, 0, [0.5, 0, -0.33], [0, 0, 0.66], [0.5, 0, 0.33]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
   //canvasFlex.div.style.border = '1px solid white';
 
-  var infoFlex = new Flex(flex, [0, 0.7], 0, 1, [0, 0.5]);
+  var infoFlex = new Flex(flex, [0, 0, 0.7], 0, 1, [0, 0, 0.5]);
   var text = '';
   //text +=  '<b>' + (opt_plantfun ? 'plant ' : '') + crop.name + '</b><br>';
   text +=  '<b>' + crop.name + '</b><br>';
@@ -53,7 +53,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
     addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');
   }
   if(opt_plantfun) {
-    buyFlex = new Flex(flex, [0, 0.7], [0, 0.4], [1, -0.02], [0, 0.98]);
+    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.4], [1, 0, -0.02], [0, 0, 0.98]);
     //styleButton0(buyFlex.div);
     //buyFlex.div.className = 'efButton';
     styleButton(buyFlex.div);

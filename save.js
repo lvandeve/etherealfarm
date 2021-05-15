@@ -399,6 +399,7 @@ function encState(state, opt_raw_only) {
   processFloat(state.lasttreeleveluptime);
   processFloat(state.lasttree2leveluptime);
   processFloat(state.lastambertime);
+  processBool(state.paused);
 
 
   section = 17; id = 0; // fruits
@@ -1112,6 +1113,7 @@ function decState(s) {
   if(save_version >= 4096*1+19) state.lasttreeleveluptime = processFloat();
   if(save_version >= 4096*1+71) state.lasttree2leveluptime = processFloat();
   if(save_version >= 4096*1+71) state.lastambertime = processFloat();
+  if(save_version >= 4096*1+72) state.paused = processBool();
 
   section = 17; id = 0; // fruits
   if(save_version >= 4096*1+17) {
@@ -1474,16 +1476,16 @@ function decState(s) {
           ' The ethereal upgrades are currently removed, but new ones, probably costing resin, may be added back in a future game update.',
           C_META, 0, 0, false, true);
     }
-    state.res.acorns = Num(0);
-    state.g_res.acorns = Num(0);
-    state.g_max_res.acorns = Num(0);
-    state.g_max_prod.acorns = Num(0);
-    state.c_res.acorns = Num(0);
-    state.c_max_res.acorns = Num(0);
-    state.c_max_prod.acorns = Num(0);
-    state.p_res.acorns = Num(0);
-    state.p_max_res.acorns = Num(0);
-    state.p_max_prod.acorns = Num(0);
+    state.res.nuts = Num(0);
+    state.g_res.nuts = Num(0);
+    state.g_max_res.nuts = Num(0);
+    state.g_max_prod.nuts = Num(0);
+    state.c_res.nuts = Num(0);
+    state.c_max_res.nuts = Num(0);
+    state.c_max_prod.nuts = Num(0);
+    state.p_res.nuts = Num(0);
+    state.p_max_res.nuts = Num(0);
+    state.p_max_prod.nuts = Num(0);
 
     state.crops2[berry2_0].unlocked = true;
     state.crops2[mush2_0].unlocked = true;

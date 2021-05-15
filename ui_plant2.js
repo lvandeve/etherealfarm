@@ -19,15 +19,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ui for planting a new ethereal plant
 
 function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_field) {
-  var flex = new Flex(parent, x * w + 0.01, [0, y * w + 0.01, 0.5], [(x + 1) * w - 0.01], [0, (y + 1) * w - 0.01, 0.5], 0.8);
+  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w + 0.010, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.5], 0.8);
   var div = flex.div;
   div.className = 'efEtherealPlantChip';
 
-  var canvasFlex = new Flex(flex, 0, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  var canvasFlex = new Flex(flex, 0, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
 
-  var infoFlex = new Flex(flex, [0, 0.7], 0, 1, [0, 1]);
+  var infoFlex = new Flex(flex, [0, 0, 0.7], 0, 1, [0, 0, 1]);
   var text = '';
   text += '<b>' + crop.name + '</b><br>';
   var cost = crop.getCost();
@@ -42,7 +42,7 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
     addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');
   }
   if(opt_plantfun) {
-    buyFlex = new Flex(flex, [0, 0.7], [0, 0.4], [1, -0.02], [0, 0.98]);
+    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.4], [1, 0, -0.02], [0, 0, 0.98]);
     //styleButton0(buyFlex.div);
     //buyFlex.div.className = 'efButton';
     styleButton(buyFlex.div);

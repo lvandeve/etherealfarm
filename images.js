@@ -84,6 +84,8 @@ var images_fern2 = [
 var fieldimageheader = 'l0:#622 l1:#966 l2:#a88 l3:#fcc';
 // a header with much higher saturation, for fruits and flowers
 var fruitimageheader = 'l0:#800 l1:#c22 l2:#f44 l3:#f88';
+// also higher saturation, but not as much as the fruits one
+var nutsimageheader = 'l0:#744 l1:#b44 l2:#e66 l3:#f77';
 // a header for green plants, the difference with standard palette is that it has less shadow, so you can make subtler shades
 var subtleplantimageheader = 'l0:#600 l1:#822 l2:#a55 l3:#faa';
 

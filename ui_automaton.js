@@ -378,7 +378,7 @@ function updateAutomatonUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  var canvasFlex = new Flex(automatonFlex, [1, -0.25], [0, 0.01], [1, -0.06], [0, 0.2], 0.3);
+  var canvasFlex = new Flex(automatonFlex, [1, 0, -0.25], [0, 0, 0.01], [1, 0, -0.06], [0, 0, 0.2], 0.3);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(images_automaton[4], canvas);
   styleButton0(canvasFlex.div, true);

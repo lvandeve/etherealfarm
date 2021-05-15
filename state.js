@@ -117,6 +117,14 @@ function Upgrade2State() {
   this.count = 0;
 }
 
+// squirrel upgrades
+function Upgrade3State() {
+  this.count = 0;
+}
+function Stage3State() {
+  this.num = [0, 0, 0]; // how far in each branch
+}
+
 function MedalState() {
   this.seen = false; // seen the achievement in the achievements tab
   this.earned = false;
@@ -151,7 +159,8 @@ function BluePrint() {
   6: n: nettle
   7: h: beehive
   8: i: mistletoe
-  9: s: squirrel
+  9: u: nuts
+  10: s: squirrel
   */
   this.data = [];
 
@@ -168,7 +177,8 @@ BluePrint.toCrop = function(i) {
   if(i == 6) return nettle_template;
   if(i == 7) return bee_template;
   if(i == 8) return mistletoe_template;
-  if(i == 9) return squirrel_template;
+  if(i == 9) return nut_template;
+  if(i == 10) return squirrel_template;
   return -1;
 }
 
@@ -181,7 +191,8 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_NETTLE) return 6;
   if(c.type == CROPTYPE_BEE) return 7;
   if(c.type == CROPTYPE_MISTLETOE) return 8;
-  if(c.type == CROPTYPE_SQUIRREL) return 9;
+  if(c.type == CROPTYPE_NUT) return 9;
+  if(c.type == CROPTYPE_SQUIRREL) return 10;
   return 0;
 }
 
@@ -194,7 +205,8 @@ BluePrint.toChar = function(i) {
   if(i == 6) return 'N';
   if(i == 7) return 'H';
   if(i == 8) return 'I';
-  if(i == 9) return 'S';
+  if(i == 9) return 'U'; // nuts
+  if(i == 10) return 'S'; // squirrel
   return -1;
 }
 
@@ -208,7 +220,8 @@ BluePrint.fromChar = function(c) {
   if(c == 'N') return 6;
   if(c == 'H') return 7;
   if(c == 'I') return 8;
-  if(c == 'S') return 9;
+  if(c == 'U') return 9;
+  if(c == 'S') return 10;
   return 0;
 }
 
@@ -232,9 +245,12 @@ BluePrint.copy = function(b) {
 }
 
 
+var state_ctor_count = 0;
 
 // all the state that should be able to get saved
 function State() {
+  state_ctor_count++;
+
   // prevtime is used to know how much time elapsed at next tick, including after loading a savegame
   // everything in the game such work such that no matter if there was 1 tick of 100 seconds, or 100 ticks of 1 second, the result is the same (other than numerical precision possibly), and this too even if many days of duration in between
   // so that saving, and browsers pausing tabs, both have no effect on game
@@ -346,6 +362,12 @@ function State() {
     this.upgrades2[registered_upgrades2[i]] = new Upgrade2State();
   }
 
+  // squirrel upgrades
+  // NOT saved, stages3 is saved instead. But does give the info of upgrades from stages, including "count" if an upgrade appears multiple times in various stages
+  this.upgrades3 = [];
+  // this is saved
+  this.stages3 = [];
+
 
   this.misttime = 0; // mist is unlocked if state.upgrades[upgrade_mistunlock].count
   this.suntime = 0; // similar
@@ -356,6 +378,7 @@ function State() {
 
   // misc
   this.delete2tokens = delete2initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
+  this.paused = false;
 
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits

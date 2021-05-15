@@ -256,21 +256,21 @@ function makeTreeDialog() {
   dialog.div.className = 'efDialogTranslucent';
 
   var contentFlex = dialog.content;
-  var flex = new Flex(contentFlex, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
 
 
-  flex = new Flex(contentFlex, [0, 0.01], [0, 0.199], [0, 0.2], [0, 0.4], 0.3);
+  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4], 0.3);
   canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
 
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.01, 0.2], [0, 0.01], 0.98, 0.65, 0.3);
+  var f0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 0.98, 0.65, 0.3);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.01, 0.2], 0.7, 1, 0.9, 0.3);
+  var f1 = new Flex(contentFlex, [0.01, 0, 0.2], 0.7, 1, 0.9, 0.3);
 
   var createText = function() {
     var text;
@@ -551,18 +551,18 @@ function makeFieldDialog(x, y) {
     dialog.div.className = 'efDialogTranslucent';
 
     var contentFlex = dialog.content;
-    var flex = new Flex(contentFlex, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
+    var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
     if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(contentFlex, [0.01, 0.2], [0, 0.01], 1, 0.5, 0.29);
-    var button0 = new Flex(contentFlex, [0.01, 0.2], [0.5 + buttonshift, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
-    var button1 = new Flex(contentFlex, [0.01, 0.2], [0.55 + buttonshift, 0.01], 0.5, 0.6 + buttonshift, 0.8).div;
-    var button2 = new Flex(contentFlex, [0.01, 0.2], [0.6 + buttonshift, 0.01], 0.5, 0.65 + buttonshift, 0.8).div;
-    var button3 = new Flex(contentFlex, [0.01, 0.2], [0.65 + buttonshift, 0.01], 0.5, 0.7 + buttonshift, 0.8).div;
+    var flex0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5, 0.29);
+    var button0 = new Flex(contentFlex, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
+    var button1 = new Flex(contentFlex, [0.01, 0, 0.2], [0.55 + buttonshift, 0, 0.01], 0.5, 0.6 + buttonshift, 0.8).div;
+    var button2 = new Flex(contentFlex, [0.01, 0, 0.2], [0.6 + buttonshift, 0, 0.01], 0.5, 0.65 + buttonshift, 0.8).div;
+    var button3 = new Flex(contentFlex, [0.01, 0, 0.2], [0.65 + buttonshift, 0, 0.01], 0.5, 0.7 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     makeScrollable(flex0);
@@ -643,7 +643,7 @@ function initFieldUI() {
 
   //This is set up such that the field tiles are square on screen, field is rectangle (or square if numw == numh), and always takes max size in the rectangular div in which the field is placed
   var ratio = state.numw / state.numh;
-  var fieldGrid = new Flex(fieldFlex, [0.5,-0.5,ratio], [0.5,-0.5,1/ratio], [0.5,0.5,ratio], [0.5,0.5,1/ratio]);
+  var fieldGrid = new Flex(fieldFlex, [0.5,0,-0.5,ratio], [0.5,0,-0.5,1/ratio], [0.5,0,0.5,ratio], [0.5,0,0.5,1/ratio]);
 
   var fieldDiv = fieldFlex.div;
   var w = fieldDiv.clientWidth;

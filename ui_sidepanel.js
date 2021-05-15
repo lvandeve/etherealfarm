@@ -58,7 +58,7 @@ function updateRightPane() {
       if(upgrades[j].canUpgrade()) unlocked.push(j);
     }
 
-    var maxnum = 11;
+    var maxnum = 12;
 
     var i = 0;
     for(i = 0; i <= unlocked.length; i++) {

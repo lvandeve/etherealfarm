@@ -41,7 +41,7 @@ function showHelpChip(text) {
   helpChipFlex.div.style.backgroundColor = '#cffd';
   helpChipFlex.div.style.zIndex = 15;
 
-  var textFlex = new Flex(helpChipFlex, 0.01, [0.5, -0.35], 0.99, [0.5, 0.35]);
+  var textFlex = new Flex(helpChipFlex, 0.01, [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
@@ -161,7 +161,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
         var y0 = -0.2 + 0.4 * y / h;
         var x1 = -0.2 + 0.4 * (x + 1) / w;
         var y1 = -0.2 + 0.4 * (y + 1) / h;
-        var canvasflex = new Flex(dialog.content, [0.25, x0], [0.7, y0], [0.25, x1], [0.7, y1]);
+        var canvasflex = new Flex(dialog.content, [0.25, 0, x0], [0.7, 0, y0], [0.25, 0, x1], [0.7, 0, y1]);
         var canvas = createCanvas('0%', '0%', '100%', '100%', canvasflex.div);
         renderImage(images[y][x], canvas);
       }
@@ -395,7 +395,9 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you do actions a minute later.';
   text += '<br/>';
-  text += ' • <b>shift + click save import dialog</b>: import and old savegame, but in paused state, do not run the time, so you get the resources and season at the time of saving rather than with all production during that time added.';
+  text += ' • <b>shift + click save import dialog</b>: import and old savegame, but force paused state, do not run the time, so you get the resources and season at the time of saving rather than with all production during that time added.';
+  text += '<br/>';
+  text += ' • <b>ctrl + click save import dialog</b>: import and old savegame, but force non-paused state, even if the savegame was saved while paused, this will cause all time between saving and now to be ran.';
   text += '<br/>';
   text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
   text += '<br/>';

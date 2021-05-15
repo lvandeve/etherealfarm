@@ -95,11 +95,11 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
     return;
   }
   var div = chip.div;
-  var titleFlex = new Flex(chip, [0, 0.8], 0.05, 1, 0.3, 0.95);
+  var titleFlex = new Flex(chip, [0, 0, 0.8], 0.05, 1, 0.3, 0.95);
   chip.titleFlex = titleFlex;
-  var canvasFlex = new Flex(chip, 0.01, [0.5, -0.35], [0, 0.7], [0.5, 0.35]);
+  var canvasFlex = new Flex(chip, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
   chip.canvasFlex = canvasFlex;
-  var buyFlex = new Flex(chip, [0, 0.8], 0.4, 0.9, [0.5, 0.35], 0.9);
+  var buyFlex = new Flex(chip, [0, 0, 0.8], 0.32, 0.9, [0.5, 0, 0.35], 0.9);
   chip.buyFlex = buyFlex;
 
 
@@ -317,6 +317,7 @@ function computeUpgradeUIOrder() {
   array = [];
   findtop(CROPTYPE_BERRY, array);
   findtop(CROPTYPE_MUSH, array);
+  findtop(CROPTYPE_NUT, array);
   findtop(CROPTYPE_FLOWER, array);
   findtop(CROPTYPE_BEE, array);
   findtop(CROPTYPE_NETTLE, array);
@@ -459,7 +460,7 @@ function updateUpgradeUI() {
     var x = (i & 1);
     var y = (i >> 1);
 
-    var chip = upgradeFlexCache[i] || new Flex(scrollFlex, x * w + 0.01, [0.15, y * h + 0.01, 0.27], [(x + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.75);
+    var chip = upgradeFlexCache[i] || new Flex(scrollFlex, x * w + 0.01, [0.15, 0, y * h + 0.01, 0.27], (x + 1) * w - 0.01, [0.15, 0, (y + 1) * h - 0.01, 0.27], 0.75);
     upgradeFlexCache[i] = chip;
 
     renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
@@ -482,7 +483,7 @@ function updateUpgradeUI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
 
 
-    var chip = new Flex(scrollFlex, 0 * w + 0.01, [0.15, y * h + 0.01, 0.27], [(0 + 1) * w - 0.01], [0.15, (y + 1) * h - 0.01, 0.27], 0.6, true);
+    var chip = new Flex(scrollFlex, 0 * w + 0.01, [0.15, 0, y * h + 0.01, 0.27], (0 + 1) * w - 0.01, [0.15, 0, (y + 1) * h - 0.01, 0.27], 0.6, true);
     upgradeFlexCache[i] = chip;
 
     styleButton(chip.div);
@@ -500,7 +501,7 @@ function updateUpgradeUI() {
 
         var x = (i & 1);
         var y = i >> 1;
-        var chip = new Flex(scrollFlex, x * w + 0.01, [0, y * h + 0.01, 0.27], [(x + 1) * w - 0.01], [0, (y + 1) * h - 0.01, 0.27], 0.75);
+        var chip = new Flex(scrollFlex, x * w + 0.01, [0, 0, y * h + 0.01, 0.27], (x + 1) * w - 0.01, [0, 0, (y + 1) * h - 0.01, 0.27], 0.75);
         renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, true);
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';

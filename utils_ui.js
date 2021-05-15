@@ -235,10 +235,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
       } else {
         s++;
       }
-      result = (new Flex(dialogFlex, [1.0, -buttonsize * (s + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * s], [1.0, -0.01], 1)).div;
-      //return (new Flex(dialogFlex, [1.0, -buttonsize * (num_buttons - buttonshift)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * (num_buttons - buttonshift - 1)], [1.0, -0.01], 1)).div;
+      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (s + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * s], [1.0, 0, -0.01], 1)).div;
     } else {
-      result = (new Flex(dialogFlex, [1.0, -buttonsize * (buttonshift + 1)], [1.0, -0.4 * buttonsize], [1.0, -0.01 - buttonsize * buttonshift], [1.0, -0.01], 1)).div;
+      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (buttonshift + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * buttonshift], [1.0, 0, -0.01], 1)).div;
     }
     buttonshift++;
     return result;
@@ -315,7 +314,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   if(!opt_nobgclose) overlay.onclick = dialog.cancelFun;
 
 
-  var xbutton = new Flex(dialogFlex, [1, -0.05], [0, 0.01], [1, -0.01], [0, 0.05], 8);
+  var xbutton = new Flex(dialogFlex, [1, 0, -0.05], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.05], 8);
   styleButton(xbutton.div);
   xbutton.div.textEl.innerText = 'x';
   addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
@@ -323,7 +322,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   var h = 0.88;
   if(opt_size == DIALOG_TINY) h = 0.8; // ensure content doesn't go over the buttons
   if(opt_size == DIALOG_SMALL) h = 0.8; // ensure content doesn't go over the buttons
-  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, -0.05], h, 0.3);
+  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, 0, -0.05], h, 0.3);
 
   return dialogFlex;
 }
@@ -576,15 +575,16 @@ setting a Flexible fontsize on the parent Flex is sufficient.
 set parent to null or undefined to create root flex (will then use document.body as parent div)
 
 coordinates are all in range 0..1, representing relative size factor of parent
-the x/y coordinates may also be an array of 1, 2 or 3 items, then:
+the x/y coordinates may also be an array of 1, 2, 3 or 4 items, then:
 -the first is relative size compared to corresponding size (w or h)
--the second is relative size compared to minimum dimension (w or h)
--the third is a factor used for the opposing dimension in the min formula above
-e.g. the formula for "left" is (with w and h the width and height of parent): x0[0] * w + x0[1] * min(w, x0[2] * h)
-example: to have an element take full width if smaller than twice the height, stay at twice height otherwise, use x1 = [0, 1, 0.5]
-example: to have something always be square inside of rectangular parent (which can dynamically be either horizontally or vertically longer), and always centered in there, use: [0.5,-0.5], [0.5,-0.5], [0.5,0.5], [0.5,0.5]
-example: same as previous example but not square but rectangle that must keep constant ratio w/h = r: [0.5,-0.5,r], [0.5,-0.5,1/r], [0.5,0.5,r], [0.5,0.5,1/r]
-example: button in bottom right corner with always a width/height ratio (of butotn itself) of 2/1 (here 0.3/0.15): [1.0, -0.3], [1.0, -0.15], [1.0, -0.01], [1.0, -0.01]
+-the second is relative size compared to the opposing dimension
+-the third is relative size compared to minimum dimension (w or h)
+-the fourth is a factor used for the opposing dimension in the min(current, opposing) formula above. Default value is 1. Other values allow to use the "minimum dimension" feature from the third value for non-square parent flexes.
+e.g. the formula for "left" is (with w and h the width and height of parent): x0[0] * w + x0[1] * h + x0[2] * min(w, x0[3] * h)
+example: to have an element take full width if smaller than twice the height, stay at twice height otherwise, use x1 = [0, 0, 1, 0.5]
+example: to have something always be square inside of rectangular parent (which can dynamically be either horizontally or vertically longer), and always centered in there, use: [0.5,0,-0.5], [0.5,0,-0.5], [0.5,0,0.5], [0.5,0,0.5]
+example: same as previous example but not square but rectangle that must keep constant ratio w/h = r: [0.5,0,-0.5,r], [0.5,0,-0.5,1/r], [0.5,0,0.5,r], [0.5,0,0.5,1/r]
+example: button in bottom right corner with always a width/height ratio (of butotn itself) of 2/1 (here 0.3/0.15): [1.0, 0, -0.3], [1.0, 0, -0.15], [1.0, 0, -0.01], [1.0, 0, -0.01]
 The fontSize lets the Flex also manage font size. This value does not support the 3-element array, just single number, and will be based on min(w*10, h) of the current element's computed size.
 */
 function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_centered) {
@@ -596,37 +596,45 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_centered) {
 
   if(x0.length) {
     this.x0 = x0[0];
-    this.x0b = x0[1] || 0;
-    this.x0f = x0[2] || 1;
+    this.x0o = x0[1] || 0;
+    this.x0b = x0[2] || 0;
+    this.x0f = (x0[3] == undefined) ? 1 : x0[3];
   } else {
     this.x0 = x0;
+    this.x0o = 0;
     this.x0b = 0;
     this.x0f = 1;
   }
   if(y0.length) {
     this.y0 = y0[0];
-    this.y0b = y0[1] || 0;
-    this.y0f = y0[2] || 1;
+    this.y0o = y0[1] || 0;
+    this.y0b = y0[2] || 0;
+    this.y0f = (y0[3] == undefined) ? 1 : y0[3];
   } else {
     this.y0 = y0;
+    this.y0o = 0;
     this.y0b = 0;
     this.y0f = 1;
   }
   if(x1.length) {
     this.x1 = x1[0];
-    this.x1b = x1[1] || 0;
-    this.x1f = x1[2] || 1;
+    this.x1o = x1[1] || 0;
+    this.x1b = x1[2] || 0;
+    this.x1f = (x1[3] == undefined) ? 1 : x1[3];
   } else {
     this.x1 = x1;
+    this.x1o = 0;
     this.x1b = 0;
     this.x1f = 1;
   }
   if(y1.length) {
     this.y1 = y1[0];
-    this.y1b = y1[1] || 0;
-    this.y1f = y1[2] || 1;
+    this.y1o = y1[1] || 0;
+    this.y1b = y1[2] || 0;
+    this.y1f = (y1[3] == undefined) ? 1 : y1[3];
   } else {
     this.y1 = y1;
+    this.y1o = 0;
     this.y1b = 0;
     this.y1f = 1;
   }
@@ -675,10 +683,10 @@ Flex.prototype.updateSelf = function(parentdiv) {
   var w = dim[0];
   var h = dim[1];
 
-  var x0 = w * this.x0 + Math.min(w, this.x0f * h) * this.x0b;
-  var y0 = h * this.y0 + Math.min(this.y0f * w, h) * this.y0b;
-  var x1 = w * this.x1 + Math.min(w, this.x1f * h) * this.x1b;
-  var y1 = h * this.y1 + Math.min(this.y1f * w, h) * this.y1b;
+  var x0 = w * this.x0 + h * this.x0o + Math.min(w, this.x0f * h) * this.x0b;
+  var y0 = h * this.y0 + w * this.y0o + Math.min(this.y0f * w, h) * this.y0b;
+  var x1 = w * this.x1 + h * this.x1o + Math.min(w, this.x1f * h) * this.x1b;
+  var y1 = h * this.y1 + w * this.y1o + Math.min(this.y1f * w, h) * this.y1b;
   this.div.style.left = Math.floor(x0) + 'px';
   this.div.style.top = Math.floor(y0) + 'px';
   this.div.style.width = Math.floor(x1 - x0) + 'px';

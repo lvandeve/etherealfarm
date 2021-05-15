@@ -293,7 +293,7 @@ function createChallengeDialog(opt_from_challenge) {
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0.01], [0, 0.01], [1, -0.01], 0.3, 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3, 0.3);
 
   var text = '';
 
@@ -329,7 +329,8 @@ function createChallengeDialog(opt_from_challenge) {
     styleButton(button.div);
     var text = upper(c.name);
     if(isnew) text += ' (New!)';
-    else if(isnotfull) text += ' (New stage!)';
+    // The '/' means: "new stage available with target level: " but that's too long for the button
+    else if(isnotfull) text += ' (' + Math.max(c2.maxlevel, state.challenge == c.index ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
     else if(c.cycling > 1) {
       if(!c.allCyclesCompleted(true)) text += ' (New cycle!)';
     }
@@ -365,7 +366,7 @@ function createFinishChallengeDialog() {
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0.01], [0, 0.01], [1, -0.01], 0.3, 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3, 0.3);
 
   var c = challenges[state.challenge];
   var c2 = state.challenges[state.challenge];
@@ -567,7 +568,7 @@ function showChallengeChip(challenge) {
   challengeChipFlex.div.style.backgroundColor = '#fcce';
   challengeChipFlex.div.style.zIndex = 15;
 
-  var textFlex = new Flex(challengeChipFlex, 0.01, [0.5, -0.35], 0.99, [0.5, 0.35]);
+  var textFlex = new Flex(challengeChipFlex, 0.01, [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);

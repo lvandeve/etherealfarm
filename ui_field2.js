@@ -167,17 +167,17 @@ function makeField2Dialog(x, y) {
 
     var dialog = createDialog();
     dialog.div.className = 'efDialogTranslucent';
-    var flex = new Flex(dialog.content, [0, 0.01], [0, 0.01], [0, 0.2], [0, 0.2], 0.3);
+    var flex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
 
-    var flex0 = new Flex(dialog.content, [0.01, 0.2], [0, 0.01], 1, 0.17, 0.29);
-    var button0 = new Flex(dialog.content, [0.01, 0.2], [0.7 + buttonshift, 0.01], 0.5, 0.76 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog.content, [0.01, 0.2], [0.77 + buttonshift, 0.01], 0.5, 0.83 + buttonshift, 0.8).div;
-    var button2 = new Flex(dialog.content, [0.01, 0.2], [0.84 + buttonshift, 0.01], 0.5, 0.90 + buttonshift, 0.8).div;
-    var button3 = new Flex(dialog.content, [0.01, 0.2], [0.91 + buttonshift, 0.01], 0.5, 0.97 + buttonshift, 0.8).div;
+    var flex0 = new Flex(dialog.content, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.17, 0.29);
+    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.76 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.83 + buttonshift, 0.8).div;
+    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.90 + buttonshift, 0.8).div;
+    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.97 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -300,7 +300,7 @@ function initField2UI() {
 
   //This is set up such that the field tiles are square on screen, field is rectangle (or square if numw2 == numh2), and always takes max size in the rectangular div in which the field is placed
   var ratio = state.numw2 / state.numh2;
-  var field2Grid = new Flex(field2Flex, [0.5,-0.5,ratio], [0.5,-0.5,1/ratio], [0.5,0.5,ratio], [0.5,0.5,1/ratio]);
+  var field2Grid = new Flex(field2Flex, [0.5,0,-0.5,ratio], [0.5,0,-0.5,1/ratio], [0.5,0,0.5,ratio], [0.5,0,0.5,1/ratio]);
 
   var field2Div = field2Flex.div;
   var w = field2Div.clientWidth;

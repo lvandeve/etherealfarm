@@ -136,5 +136,9 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   border: 1px solid #000;
 }
 
+.efConnector {
+  background-color: #000;
+}
+
 
 

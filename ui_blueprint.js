@@ -26,7 +26,7 @@ function renderBlueprint(b, flex, opt_index, opt_transcend) {
   var h = b.numh;
 
   var ratio = h ? (w / h) : 1;
-  var grid = new Flex(flex, [0.5,-0.5,ratio], [0.5,-0.5,1/ratio], [0.5,0.5,ratio], [0.5,0.5,1/ratio]);
+  var grid = new Flex(flex, [0.5, 0, -0.5, ratio], [0.5, 0, -0.5, 1/ratio], [0.5, 0, 0.5,ratio], [0.5,0, 0.5, 1/ratio]);
 
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
@@ -157,8 +157,12 @@ function exportBluePrint(b) {
 
 function getBluePrintTypeHelpText() {
   var squirreltext = '';
-  if(state.crops2[squirrel2_0].unlocked) squirreltext = 'S=squirrel, ';
-  return 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, ' + squirreltext + '.=empty/tree';
+  //if(state.crops2[squirrel2_0].unlocked) squirreltext = 'S=squirrel, ';
+
+  var nutstext = '';
+  if(state.crops[nut_0].unlocked) nutstext = 'U=nuts, ';
+
+  return 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, ' + squirreltext + nutstext + '.=empty/tree';
 }
 
 function importBluePrintDialog(fun) {
@@ -187,14 +191,14 @@ function createBlueprintDialog(b, opt_index) {
     dialog.cancelFun();
   }, 'ok', 'cancel');
 
-  var renderFlex = new Flex(dialog.content, [0, 0.05], [0, 0.05], [0, 0.5], [0, 0.5]);
+  var renderFlex = new Flex(dialog.content, [0, 0, 0.05], [0, 0, 0.05], [0, 0, 0.5], [0, 0, 0.5]);
   renderBlueprint(b, renderFlex, opt_index);
 
 
   var y = 0.5;
   var addButton = function(text, fun) {
     var h = 0.06;
-    var button = new Flex(dialog.content, [0, 0.05], y, [0.5, 0.05], y + h, 0.8).div;
+    var button = new Flex(dialog.content, [0, 0, 0.05], y, [0.5, 0, 0.05], y + h, 0.8).div;
     y += h * 1.1;
     styleButton(button);
     button.textEl.innerText = text;
@@ -340,7 +344,7 @@ function createBlueprintsDialog(opt_transcend) {
     titleFlex.div.textEl.innerText = 'Blueprint library';
   }
 
-  var bflex = new Flex(dialog.content, [0.01, 0], [0.1, 0], [0.01, 0.98], [0.1, 0.98]);
+  var bflex = new Flex(dialog.content, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
 
   for(var i = 0; i < 9; i++) {
     var x = i % 3;

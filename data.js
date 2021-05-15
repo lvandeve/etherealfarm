@@ -33,6 +33,7 @@ var CROPTYPE_BEE = croptype_index++; // boosts flowers
 var CROPTYPE_CHALLENGE = croptype_index++; // only exists for challenges
 var CROPTYPE_FERN2 = croptype_index++; // ethereal fern, giving starter money
 var CROPTYPE_SQUIRREL = croptype_index++;
+var CROPTYPE_NUT = croptype_index++;
 var NUM_CROPTYPES = croptype_index;
 
 function getCropTypeName(type) {
@@ -48,6 +49,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_CHALLENGE) return 'challenge';
   if(type == CROPTYPE_FERN2) return 'fern';
   if(type == CROPTYPE_SQUIRREL) return 'squirrel';
+  if(type == CROPTYPE_NUT) return 'nuts';
   return 'unknown';
 }
 
@@ -63,6 +65,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
+    case CROPTYPE_NUT: return 'Produces nuts. Neighboring watercress can copy its production. Receives a limited fixed boost from flowers of high enough tier. Not boosted by other standard berry and mushroom production boosts.';
   }
   return undefined;
 }
@@ -363,6 +366,8 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
   }
 }
 
+var flower_nut_boost = Num(0.25);
+
 // f = Cell from field, or undefined to not take location-based production bonuses into account
 // prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called
 // pretend: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
@@ -404,8 +409,10 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // medal
-  result.mulInPlace(state.medal_prodmul);
-  if(breakdown) breakdown.push(['achievements', true, state.medal_prodmul, result.clone()]);
+  if(this.type != CROPTYPE_NUT) {
+    result.mulInPlace(state.medal_prodmul);
+    if(breakdown) breakdown.push(['achievements', true, state.medal_prodmul, result.clone()]);
+  }
 
 
   if(this.type == CROPTYPE_BERRY) {
@@ -458,7 +465,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     result = e;
   }
 
-  if(state.res.resin.gter(1)) {
+  if(state.res.resin.gter(1) && this.type != CROPTYPE_NUT) {
     var resin_bonus = getUnusedResinBonus();
     result.mulInPlace(resin_bonus);
     if(breakdown) breakdown.push(['unused resin', true, resin_bonus, result.clone()]);
@@ -478,7 +485,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
-      if(n.hasCrop() && n.getCrop().type == CROPTYPE_FLOWER) {
+      if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_FLOWER) {
         var boost = prefield[n.y][n.x].boost;
         if(boost.neqr(0)) {
           mul_boost.addInPlace(boost);
@@ -491,8 +498,29 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown && num > 0) breakdown.push(['flowers (' + num + ')', true, mul_boost, result.clone()]);
   }
 
+  // flower boost for nuts
+  if(f && (this.type == CROPTYPE_NUT)) {
+    var mul_boost = Num(1);
+    var num = 0;
+    var x = f.x, y = f.y, w = state.numw, h = state.numh;
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+      var n = state.field[y2][x2];
+      if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_FLOWER && this.tier <= (n.getCrop().tier - 4) * 2) {
+        mul_boost.addInPlace(flower_nut_boost);
+        num++;
+      }
+    }
+
+    result.mulInPlace(mul_boost);
+    if(breakdown && num > 0) breakdown.push(['flowers (' + num + ', ' + flower_nut_boost.toPercentString() +  ' each)', true, mul_boost, result.clone()]);
+  }
+
   // nettle malus
-  if(f && (this.type == CROPTYPE_BERRY)) {
+  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT)) {
     var p = prefield[f.y][f.x];
     var malus = p.nettlemalus_received;
     var num = p.num_nettle;
@@ -540,7 +568,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // treelevel boost
   // CROPTYPE_SHORT is excluded simply to remove noise in the breakdown display: it's only a bonus on its 1 seed production. At the point where the tree is leveled, its real income comes from the neighbor copying.
-  if(state.treelevel > 0 && this.type != CROPTYPE_SHORT) {
+  if(state.treelevel > 0 && this.type != CROPTYPE_SHORT && this.type != CROPTYPE_NUT) {
     var tree_boost = Num(1).add(getTreeBoost());
     result.mulInPlace(tree_boost);
     if(breakdown && tree_boost.neqr(1)) breakdown.push(['tree level (' + state.treelevel + ')', true, tree_boost, result.clone()]);
@@ -841,7 +869,6 @@ Crop.prototype.getLeech = function(f, breakdown) {
 
 var registered_crops = []; // indexed consecutively, gives the index to crops
 var crops = []; // indexed by crop index
-var cropsByName = {};
 
 // array of arrays, first index is croptype, second index is tier, value is crop of that tier for that cropindex
 var croptype_tiers = [];
@@ -855,7 +882,6 @@ function registerCrop(name, cost, prod, boost, planttime, image, opt_tagline, op
   var crop = new Crop();
   crop.index = crop_register_id++;
   crops[crop.index] = crop;
-  cropsByName[name] = crop;
   registered_crops.push(crop.index);
 
   crop.name = name;
@@ -889,6 +915,14 @@ function registerMushroom(name, tier, planttime, image, opt_tagline) {
   var cost = getMushroomCost(tier);
   var prod = getMushroomProd(tier);
   var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_MUSH, tier);
+  //var crop = crops[index];
+  return index;
+}
+
+function registerNut(name, tier, planttime, image, opt_tagline) {
+  var cost = getNutCost(tier);
+  var prod = getNutProd(tier);
+  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_NUT, tier);
   //var crop = crops[index];
   return index;
 }
@@ -985,6 +1019,16 @@ function getMushroomProd(i) {
   return Res({seeds:seeds, spores:spores});
 }
 
+function getNutCost(i) {
+  // first unlocks at lingonberry, level 9, and then per every 1 berry
+  return getBerryCost(9.5 + i);
+}
+
+function getNutProd(i) {
+  var nuts = Num.pow(Num(i + 1), Num(10));
+  return Res({nuts:nuts});
+}
+
 function getFlowerCost(i) {
   // Flowers start after berry 2, and then appear after every 2 berries.
   return getBerryCost(2.5 + i * 2);
@@ -1001,6 +1045,7 @@ function getBeehiveCost(i) {
 
 var berryplanttime0 = 60;
 var mushplanttime0 = 120;
+var nutplanttime0 = 120;
 var flowerplanttime0 = 180;
 
 // berries: give seeds
@@ -1064,7 +1109,13 @@ crop_register_id = 120;
 var bee_0 = registerBeehive('beehive', 0, Num(3.0), /*growtime=*/300, images_beehive);
 
 crop_register_id = 130;
+// NOTE: this is squirrel in basic field instead of ethereal field. This exists for now but is unused. Code kept for in case it finds a use.
 var squirrel_0 = registerSquirrel('squirrel', 0, Res(), /*growtime=*/0.5, images_squirrel);
+
+// nuts
+crop_register_id = 150;
+var nut_0 = registerNut('almond', 0, nutplanttime0 * 1, images_almond);
+var nut_1 = registerNut('brazil nut', 1, nutplanttime0 * 2, images_brazilnut);
 
 crop_register_id = 200;
 
@@ -1083,6 +1134,7 @@ crops[challengecrop_2].boost = Num(1);
 
 var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0.1), 60, images_aster, 'This flower is only available during the bee challenge');
 crops[challengeflower_0].type = CROPTYPE_FLOWER;
+crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+selecting" display work. Since the aster and clover (both tier 0, even though aster is cheaper) are never available at the same time, no confusion is possible.
 
 // templates
 
@@ -1100,7 +1152,8 @@ var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0),
 var nettle_template = makeTemplate(registerNettle('nettle template', -1, Num(0), 0, images_nettletemplate));
 var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
 var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
-var squirrel_template = makeTemplate(registerSquirrel('squirrel', -1, Res(), 0, images_squirreltemplate));
+var nut_template = makeTemplate(registerNut('nuts template', -1, 0, images_nutstemplate));
+var squirrel_template = makeTemplate(registerSquirrel('squirrel template', -1, Res(), 0, images_squirreltemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1109,7 +1162,6 @@ var squirrel_template = makeTemplate(registerSquirrel('squirrel', -1, Res(), 0, 
 
 var registered_upgrades = []; // indexed consecutively, gives the index to upgrades
 var upgrades = []; // indexed by upgrade index
-var upgradesByName = {};
 
 
 // same comment as crop_register_id
@@ -1123,8 +1175,7 @@ function Upgrade() {
   this.choicename_a = 'A';
   this.choicename_b = 'B';
 
-  // function that applies the upgrade. takes argument n, integer, if > 1,
-  // must have same effect as calling n times with 1.
+  // function that applies the upgrade
   this.fun = undefined;
 
   // function that returns true if prerequisites to unlock this research are met
@@ -1196,7 +1247,6 @@ function registerUpgrade(name, cost, fun, pre, maxcount, description, bgcolor, b
   var upgrade = new Upgrade();
   upgrade.index = upgrade_register_id++;
   upgrades[upgrade.index] = upgrade;
-  upgradesByName[name] = upgrade;
   registered_upgrades.push(upgrade.index);
 
 
@@ -1529,11 +1579,22 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
 
 //shortunlock_0 does not exist, you start with that berry type already unlocked
 
+
+upgrade_register_id = 300;
+var nutunlock_0 = registerCropUnlock(nut_0, getNutCost(0), undefined, function() {
+  // TODO: return false if squirrel not unlocked&placed in ethereal field
+
+  if(state.fullgrowncropcount[berry_9]) return true;
+  return false;
+});
+var nutunlock_1 = registerCropUnlock(nut_1, getNutCost(1), berry_10, function(){return !!state.upgrades[nutunlock_0].count;});
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // power increase for crop production (not flower boost) by basic upgrades
 var berry_upgrade_power_increase = 1.25; // multiplicative
 var mushroom_upgrade_power_increase = 1.25; // multiplicative
+var nut_upgrade_power_increase = 1.5; // multiplicative
 // cost increase for crop production (not flower boost) by basic upgrades
 var basic_upgrade_cost_increase = 1.65;
 
@@ -1595,6 +1656,10 @@ var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 1
 
 upgrade_register_id = 215;
 var beemul_0 = registerBoostMultiplier(bee_0, crops[bee_0].cost.mulr(10), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
+
+upgrade_register_id = 225;
+var nutmul_0 = registerCropMultiplier(nut_0, getNutCost(0).mulr(basic_upgrade_initial_cost), nut_upgrade_power_increase, 1, nutunlock_0);
+var nutmul_1 = registerCropMultiplier(nut_1, getNutCost(1).mulr(basic_upgrade_initial_cost), nut_upgrade_power_increase, 1, nutunlock_1);
 
 
 
@@ -1693,7 +1758,6 @@ upgrades[active_choice0].istreebasedupgrade = true;
 var active_choice0_b = registerDeprecatedUpgrade();
 
 
-
 upgrade_register_id = 400;
 
 var challengeflowermul_0 = registerBoostMultiplier(challengeflower_0, Res({seeds:1000}).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, undefined, flower_upgrade_cost_increase); // aster flower for bee challenge
@@ -1706,6 +1770,13 @@ upgrades[challengecropmul_1].description = 'boosts the queen bee boost ' + upgra
 
 var challengecropmul_2 = registerBoostMultiplier(challengecrop_2, crops[challengecrop_2].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
 upgrades[challengecropmul_2].description = 'boosts the beehive boost ' + upgrades[challengecropmul_2].bonus.toPercentString() +  ' (additive)';
+
+
+// they must be in increasing order for the savegame handling
+registered_upgrades = registered_upgrades.sort(function(a, b) {
+  return a - b;
+});
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2620,7 +2691,6 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
 
 var registered_crops2 = []; // indexed consecutively, gives the index to crops2
 var crops2 = []; // indexed by crop index
-var crops2ByName = {};
 
 var croptype2_tiers = [];
 
@@ -2633,7 +2703,6 @@ function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_de
   var crop = new Crop2();
   crop.index = crop2_register_id++;
   crops2[crop.index] = crop;
-  crops2ByName[name] = crop;
   registered_crops2.push(crop.index);
 
   crop.name = name;
@@ -2721,7 +2790,7 @@ var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
-var squirrel2_0 = registerSquirrel2('squirrel', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Unlocks acorns and squirrel upgrades. Boosts 8 ethereal neighbors. Can have max 1.', images_squirrel);
+var squirrel2_0 = registerSquirrel2('squirrel', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Unlocks nuts and squirrel upgrades. Boosts 8 ethereal neighbors. Can have max 1.', images_squirrel);
 
 // berries2
 crop2_register_id = 25;
@@ -2776,7 +2845,6 @@ var squirrel2_template = makeTemplate2(registerSquirrel2('squirrel template', 0,
 
 var registered_upgrades2 = []; // indexed consecutively, gives the index to upgrades
 var upgrades2 = []; // indexed by upgrade index
-var upgrades2ByName = {};
 
 
 // same comment as crop_register_id
@@ -2787,8 +2855,7 @@ function Upgrade2() {
   this.name = 'a';
   this.description = undefined; // longer description than the name, with details, shown if not undefined
 
-  // function that applies the upgrade. takes argument n, integer, if > 1,
-  // must have same effect as calling n times with 1.
+  // function that applies the upgrade
   this.fun = undefined;
 
   this.index = 0; // index in the upgrades array
@@ -2847,7 +2914,6 @@ function registerUpgrade2(name, treelevel2, cost, cost_increase, fun, pre, maxco
   var upgrade = new Upgrade2();
   upgrade.index = upgrade2_register_id++;
   upgrades2[upgrade.index] = upgrade;
-  upgrades2ByName[name] = upgrade;
   registered_upgrades2.push(upgrade.index);
 
 
@@ -3113,7 +3179,7 @@ var upgrade2_extra_fruit_slot3 = registerUpgrade2('extra fruit slot', LEVEL2, Re
 /*
 var upgrade2_squirrel = registerUpgrade2('unlock squirrel', LEVEL2, Res({resin:3e6}), 2, function() {
   unlockEtherealCrop(squirrel2_0);
-}, function(){return true;}, 1, 'the squirrel can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks the acorns resource, squirrel upgrades and the squirrel in the basic field', undefined, undefined, images_squirrel[4]);
+}, function(){return true;}, 1, 'the squirrel can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks nuts, squirrel upgrades and the squirrel in the basic field', undefined, undefined, images_squirrel[4]);
 */
 
 
@@ -3920,5 +3986,101 @@ function getMultiplicityNum(crop) {
   return num;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// @constructor
+function Upgrade3() {
+  this.name = 'a';
+  this.description = undefined; // longer description than the name, with details, shown if not undefined
+
+  // function that applies the upgrade
+  this.fun = undefined;
+
+  // optional extra precondition for this upgrade to unlock
+  this.prefun = undefined;
+
+  this.index = 0; // index in the upgrades3 array
+
+  this.image = undefined; // bg image, e.g. a plant
+}
+
+// @constructor
+// Stage for the tree structure of squirrel upgrades
+// A node can have max 3 leaves, and there is one main path, so max 2 branches possible from 1 node, to keep the UI simple to render
+function Stage3() {
+  var upgrades0 = []; // left branch
+  var upgrades1 = []; // center branch (main branch that connects to previous and next stage)
+  var upgrades2 = []; // right branch
+
+  // amount of upgrades you must have done before you can unlock this one
+  this.prereq = 0;
+
+  // for rendering in UI
+  this.height = function() {
+    return Math.max(upgrades.length, Math.max(upgrades0.length, upgrades1.length));
+  }
+}
+
+var registered_upgrades3 = []; // indexed consecutively, gives the index to upgrades
+var upgrades3 = []; // indexed by upgrade index
 
 
+// same comment as crop_register_id
+var upgrade3_register_id = -1;
+
+// maxcount should be 1 for an upgrade that can only be done once (e.g. an unlock), or 0 for infinity
+function registerUpgrade3(name, fun, pre, description, image) {
+  if(upgrades3[upgrade3_register_id] || upgrade3_register_id < 0 || upgrade3_register_id > 65535) throw 'upgrades3 id already exists or is invalid!';
+  var upgrade = new Upgrade3();
+  upgrade.index = upgrade3_register_id++;
+  upgrades3[upgrade.index] = upgrade;
+  registered_upgrades3.push(upgrade.index);
+
+  upgrade.name = name;
+
+  if(image) upgrade.image = image;
+
+  upgrade.fun = function() {
+    state.upgrades3[this.index].count++;
+    fun();
+  };
+
+  upgrade.pre = function() {
+    if(pre && !pre()) return false;
+    return true;
+  };
+
+  upgrade.description = description;
+
+  return upgrade.index;
+}
+
+var stages3 = [];
+
+// These are only ever registered in the exact order they appear, and are not intended to ever change order in future game updates, only append at the end.
+function registerStage3(upgrades0, upgrades1, upgrades2, opt_prereq) {
+  var stage = new Stage3();
+  stage.upgrades0 = upgrades0 || [];
+  stage.upgrades1 = upgrades1 || [];
+  stage.upgrades2 = upgrades2 || [];
+  stage.prereq = opt_prereq || 0;
+
+  stages3.push(stage);
+}
+
+upgrade3_register_id = 10;
+
+var upgrade3_berry = registerUpgrade3('berry boost', undefined, undefined, 'boosts berries +25% (additive)');
+var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, undefined, 'boosts mushroom production but also consumption by 25% (additive)');
+var upgrade3_test = registerUpgrade3('[NOT YET IMPLEMENTED]', undefined, undefined, 'this is only for testing in the initial squirrel release');
+
+registerStage3([upgrade3_berry, upgrade3_test], [upgrade3_test, upgrade3_test], [upgrade3_mushroom, upgrade3_test]);
+
+registerStage3(undefined, [upgrade3_test]);
+registerStage3(undefined, [upgrade3_test], [upgrade3_berry]);
+registerStage3(undefined, [upgrade3_test]);
+
+registerStage3([upgrade3_berry, upgrade3_test], [upgrade3_test, upgrade3_test], undefined);

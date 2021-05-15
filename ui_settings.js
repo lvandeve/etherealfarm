@@ -897,6 +897,7 @@ function initSettingsUI_in(dialog) {
     var w = 500, h = 500;
     var dialog = createDialog(false, function(e) {
       var shift = util.eventHasShiftKey(e);
+      var ctrl = util.eventHasCtrlKey(e);
       var enc = area.value;
       enc = enc.trim();
       if(enc == '') return;
@@ -911,7 +912,8 @@ function initSettingsUI_in(dialog) {
         removeHelpChip();
         clearUndo();
         initUI();
-        paused = shift;
+        if(shift) state.paused = true;
+        if(ctrl) state.paused = false;
         updatePausedUI();
         update();
         util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
@@ -1011,7 +1013,7 @@ function initSettingsUI_in(dialog) {
 function addTopBarFlex(x0, x1, opt_fontsize) {
   var n = 11;
   var f = 1 / n;
-  return new Flex(topFlex, [0.05 + f * x0,-0.04,n], [0.5,-0.4,f], [0.05 + f * (x1 - 1),0.04,n], [0.5,0.4,f], opt_fontsize);
+  return new Flex(topFlex, [0.05 + f * x0,0,-0.4*f,n], [0.5,0,-0.4,f], [0.05 + f * (x1 - 1),0,0.4*f,n], [0.5,0,0.4,f], opt_fontsize);
 }
 
 var pauseButtonCanvas = undefined;
@@ -1050,9 +1052,9 @@ function initSettingsUI() {
   styleButton0(pausebutton, true);
 
   addButtonAction(pausebutton, bind(function(canvas) {
-    paused = !paused;
+    state.paused = !state.paused;
     if(state.messagelogenabled[4]) {
-      if(paused) showMessage('game paused');
+      if(state.paused) showMessage('game paused');
       else showMessage('game resumed from pause');
     }
     updatePausedUI();
@@ -1063,7 +1065,7 @@ function initSettingsUI() {
   styleButton(undobutton.div);
   undobutton.div.textEl.innerText = 'Undo';
   addButtonAction(undobutton.div, function(e) {
-    if(paused) return; // undo is broken with current pause implementation, gives black screen and risk of wrong times
+    //if(state.paused) return; // undo is broken with current pause implementation, gives black screen and risk of wrong times
     if(e.shiftKey) {
       showMessage('held shift key while pressing undo button, so saving undo instead.');
       storeUndo(state);
