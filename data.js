@@ -1021,11 +1021,17 @@ function getMushroomProd(i) {
 
 function getNutCost(i) {
   // first unlocks at lingonberry, level 9, and then per every 1 berry
-  return getBerryCost(9.5 + i);
+  //return getBerryCost(9.5 + i);
+
+  // TODO
+  return getBerryCost(9.5 + i).mulr(1e300); // for now due to accidental unlocked nuts in game in v0.1.72
 }
 
 function getNutProd(i) {
-  var nuts = Num.pow(Num(i + 1), Num(10));
+  // TODO
+  //var nuts = Num.pow(Num(i + 1), Num(10));
+
+  var nuts = Num(0);
   return Res({nuts:nuts});
 }
 
@@ -1583,11 +1589,16 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
 upgrade_register_id = 300;
 var nutunlock_0 = registerCropUnlock(nut_0, getNutCost(0), undefined, function() {
   // TODO: return false if squirrel not unlocked&placed in ethereal field
+  return false; // not available yet
 
   if(state.fullgrowncropcount[berry_9]) return true;
   return false;
 });
-var nutunlock_1 = registerCropUnlock(nut_1, getNutCost(1), berry_10, function(){return !!state.upgrades[nutunlock_0].count;});
+var nutunlock_1 = registerCropUnlock(nut_1, getNutCost(1), berry_10, function(){
+  return false;
+
+  return !!state.upgrades[nutunlock_0].count;
+});
 
 ////////////////////////////////////////////////////////////////////////////////
 

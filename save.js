@@ -1459,6 +1459,21 @@ function decState(s) {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  if(save_version <= 4096*1+72) {
+    state.res.nuts = Num(0);
+    state.g_res.nuts = Num(0);
+    state.g_max_res.nuts = Num(0);
+    state.g_max_prod.nuts = Num(0);
+    state.c_res.nuts = Num(0);
+    state.c_max_res.nuts = Num(0);
+    state.c_max_prod.nuts = Num(0);
+    state.p_res.nuts = Num(0);
+    state.p_max_res.nuts = Num(0);
+    state.p_max_prod.nuts = Num(0);
+    state.crops[nut_0].unlocked = false;
+    state.crops[nut_1].unlocked = false;
+  }
+
   if(save_version <= 4096*1+8) {
     // ethereal upgrades have been refactored, refund all old stuff
     for(var y = 0; y < state.numh2; y++) {
@@ -1476,16 +1491,6 @@ function decState(s) {
           ' The ethereal upgrades are currently removed, but new ones, probably costing resin, may be added back in a future game update.',
           C_META, 0, 0, false, true);
     }
-    state.res.nuts = Num(0);
-    state.g_res.nuts = Num(0);
-    state.g_max_res.nuts = Num(0);
-    state.g_max_prod.nuts = Num(0);
-    state.c_res.nuts = Num(0);
-    state.c_max_res.nuts = Num(0);
-    state.c_max_prod.nuts = Num(0);
-    state.p_res.nuts = Num(0);
-    state.p_max_res.nuts = Num(0);
-    state.p_max_prod.nuts = Num(0);
 
     state.crops2[berry2_0].unlocked = true;
     state.crops2[mush2_0].unlocked = true;
