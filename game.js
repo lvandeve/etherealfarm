@@ -696,6 +696,7 @@ var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
 var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
 var ACTION_PLANT_BLUEPRINT = action_index++;
 var ACTION_UPGRADE3 = action_index++; // squirrel upgrade
+var ACTION_RESPEC3 = action_index++; // respec squirrel upgrades
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 
 var lastSaveTime = util.getTime();
@@ -2355,7 +2356,9 @@ var update = function(opt_ignorePause) {
         var d = action.d; // depth in the branch
         var ok = true;
         var us = (b == 0) ? s.upgrades0  : ((b == 1) ? s.upgrades1 : s.upgrades2);
-        if(b < 0 || b > 2) {
+        if(!haveSquirrel()) {
+          ok = false;
+        } else if(b < 0 || b > 2) {
           ok = false;
         } else if(d != s2.num[b]) {
           // the depth must be exactly equal to the amount of upgrades done so far in this branch
@@ -2366,9 +2369,33 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok) {
+          // TODO: subtract resources
+          // TODO: update upgrades3_spent
           var u = upgrades3[us[d]];
           var u2 = state.upgrades3[us[d]];
-          // TODO
+          u2.count++;
+          s2.num[b]++;
+          state.g_numupgrades3++;
+          showMessage('Purchased squirrel upgrade: ' + u.name);
+        }
+      } else if(type == ACTION_RESPEC3) {
+        var ok = true;
+        if(!haveSquirrel()) {
+          ok = false;
+        }
+
+        if(ok) {
+          state.upgrades3 = [];
+          for(var i = 0; i < registered_upgrades3.length; i++) {
+            state.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
+          }
+          state.stages3 = [];
+          for(var i = 0; i < stages3.length; i++) {
+            state.stages3[i] = new Stage3State();
+          }
+          state.g_numrespec3++;
+          // TODO: give back and take resources
+          // TODO: reset upgrades3_spent
         }
       } else if(type == ACTION_PLANT_BLUEPRINT) {
         plantBluePrint(action.blueprint);
@@ -3407,6 +3434,7 @@ var update = function(opt_ignorePause) {
   if(do_transcend) {
     var action = do_transcend;
     softReset(action.challenge);
+    computeDerived(state);
   }
 
   if(!large_time_delta) {

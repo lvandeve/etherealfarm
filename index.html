@@ -22,6 +22,11 @@ practice it does.*/
 * {
   box-sizing: border-box;
 }
+body {
+  /* the main page is supposed to scale 100%. sometimes accidently scrollbars appear and then those themselves affect the width, causing the other scrollbar to appear. this prevents all that */
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
 </style>
 <link id="csslink" rel="stylesheet" href="style_light.css">
 </head>

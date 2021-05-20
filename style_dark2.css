@@ -140,3 +140,26 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 .efConnector {
   background-color: #fff;
 }
+
+.efSquirrelBought {
+  background-color: #4a4;
+  color: #0f0;
+  border: 1px solid #990;
+}
+
+
+.efSquirrelBuy {
+  background-color: #aa4;
+  color: #000;
+  border: 1px solid #990;
+}
+
+.efSquirrelNext {
+  background-color: #400;
+  border: 1px solid #100;
+}
+
+.efSquirrelUnknown {
+  background-color: #444;
+  border: 1px solid #100;
+}

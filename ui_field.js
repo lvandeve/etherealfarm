@@ -483,6 +483,18 @@ function makeTreeDialog() {
       createBlueprintsDialog();
     });
   }
+
+  if(haveSquirrel()) {
+    button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
+    y += h * 1.1;
+    styleButton(button);
+    button.textEl.innerText = 'Squirrel Upgrades';
+    //button.textEl.style.boxShadow = '0px 0px 5px #44f';
+    button.textEl.style.textShadow = '0px 0px 5px #840';
+    addButtonAction(button, function() {
+      makeSquirrelDialog();
+    });
+  }
 }
 
 function getUpgradeCrop(x, y, opt_too_expensive) {
@@ -559,10 +571,10 @@ function makeFieldDialog(x, y) {
     if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
     var flex0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5, 0.29);
-    var button0 = new Flex(contentFlex, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.55 + buttonshift, 0.8).div;
-    var button1 = new Flex(contentFlex, [0.01, 0, 0.2], [0.55 + buttonshift, 0, 0.01], 0.5, 0.6 + buttonshift, 0.8).div;
-    var button2 = new Flex(contentFlex, [0.01, 0, 0.2], [0.6 + buttonshift, 0, 0.01], 0.5, 0.65 + buttonshift, 0.8).div;
-    var button3 = new Flex(contentFlex, [0.01, 0, 0.2], [0.65 + buttonshift, 0, 0.01], 0.5, 0.7 + buttonshift, 0.8).div;
+    var button0 = new Flex(contentFlex, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.565 + buttonshift, 0.8).div;
+    var button1 = new Flex(contentFlex, [0.01, 0, 0.2], [0.57 + buttonshift, 0, 0.01], 0.5, 0.635 + buttonshift, 0.8).div;
+    var button2 = new Flex(contentFlex, [0.01, 0, 0.2], [0.64 + buttonshift, 0, 0.01], 0.5, 0.705 + buttonshift, 0.8).div;
+    var button3 = new Flex(contentFlex, [0.01, 0, 0.2], [0.71 + buttonshift, 0, 0.01], 0.5, 0.775 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     makeScrollable(flex0);

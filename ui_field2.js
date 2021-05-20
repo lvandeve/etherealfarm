@@ -23,7 +23,7 @@ var field2Rows;
 
 
 // get crop info in HTML
-function getCropInfoHTML2(f, c, opt_detailed) {
+function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
   var result = 'Ethereal ' + upper(c.name);
   result += '<br/>Crop type: ' + getCropTypeName(c.type);
   result += '<br/>';
@@ -46,14 +46,6 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += 'Effect: ' + c.effect_description_long + '<br/>';
   } else if(c.effect_description_short) {
     result += 'Effect: ' + c.effect_description_short + '<br/>';
-  }
-
-
-
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
-    var breakdown = [];
-    var total = c.getBasicBoost(f, breakdown);
-    result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
   }
 
   var automaton = c.index == automaton2_0;
@@ -89,12 +81,25 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
 
-  if(opt_detailed) {
+  if(opt_deletetokensinfo) {
     result += '<br><br>';
     result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)';
     result += '<br><br>';
     result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + getDelete2maxBuildup() + ')';
     result += '<br><br>';
+  }
+
+  return result;
+}
+
+
+function getCropInfoHTML2Breakdown(f, c) {
+  var result = '';
+
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
+    var breakdown = [];
+    var total = c.getBasicBoost(f, breakdown);
+    result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
   }
 
   return result;
@@ -165,7 +170,16 @@ function makeField2Dialog(x, y) {
     var c = crops2[f.cropIndex()];
     var div;
 
-    var dialog = createDialog();
+    var okfun = undefined;
+    var okname = undefined;
+    if(c.type == CROPTYPE_SQUIRREL) {
+      okfun = function(){
+        makeSquirrelDialog();
+      };
+      okname = 'squirrel upgrades';
+    }
+
+    var dialog = createDialog(undefined, okfun, okname);
     dialog.div.className = 'efDialogTranslucent';
     var flex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
@@ -174,10 +188,11 @@ function makeField2Dialog(x, y) {
     var buttonshift = 0;
 
     var flex0 = new Flex(dialog.content, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.17, 0.29);
-    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.76 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.83 + buttonshift, 0.8).div;
-    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.90 + buttonshift, 0.8).div;
-    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.97 + buttonshift, 0.8).div;
+    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.63 + buttonshift, 0, 0.01], 0.5, 0.695 + buttonshift, 0.8).div;
+    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.765 + buttonshift, 0.8).div;
+    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.835 + buttonshift, 0.8).div;
+    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.905 + buttonshift, 0.8).div;
+    var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -200,7 +215,7 @@ function makeField2Dialog(x, y) {
     styleButton(button2);
     button2.textEl.innerText = 'Delete crop';
     button2.textEl.style.color = '#c00';
-    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1)) button2.textEl.style.color = '#888';
+    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1) && (c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL)) button2.textEl.style.color = '#888';
     if(!state.delete2tokens) button2.textEl.style.color = '#888';
     registerTooltip(button2, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
     addButtonAction(button2, function() {
@@ -212,10 +227,11 @@ function makeField2Dialog(x, y) {
     styleButton(button3);
     button3.textEl.innerText = 'Delete all (4 tokens)';
     button3.textEl.style.color = '#c00';
-    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1)) button3.textEl.style.color = '#888';
-    if(!state.delete2tokens) button3.textEl.style.color = '#888';
+    if(state.delete2tokens < 4) button3.textEl.style.color = '#888';
     var tooltiptext = 'Delete entire ethereal field for ' + delete2all_cost + ' tokens, this allows restructuring all. Cannot delete crops planted during this transcend.';
-    if(haveAutomaton())  tooltiptext += ' Keeps around the automaton, but that one is free to delete anyway.'
+    if(haveAutomaton() && haveSquirrel)  tooltiptext += ' Keeps around the automaton and squirrel, but those are free to delete anyway.'
+    else if(haveAutomaton())  tooltiptext += ' Keeps around the automaton, but that one is free to delete anyway.'
+    else if(haveSquirrel())  tooltiptext += ' Keeps around the squirrel, but that one is free to delete anyway.'
     registerTooltip(button3, tooltiptext);
     addButtonAction(button3, function() {
       if(state.delete2tokens < delete2all_cost) showMessage('need at least ' + delete2all_cost + ' tokens for this', C_INVALID, 0, 0);
@@ -235,8 +251,26 @@ function makeField2Dialog(x, y) {
       }, 333);
     });
 
+    styleButton(button4);
+    button4.textEl.innerText = 'Detailed stats / bonuses';
+    registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    addButtonAction(button4, function() {
+      var dialog = createDialog(DIALOG_LARGE);
+      dialog.div.className = 'efDialogTranslucent';
+      var flex = dialog.content;
+      var text = '';
+
+      makeScrollable(flex);
+
+
+      text += getCropInfoHTML2(f, c, true, false);
+      text += '<br/>';
+      text += getCropInfoHTML2Breakdown(f, c);
+      flex.div.innerHTML = text;
+    });
+
     updatedialogfun = bind(function(f, c, flex) {
-      var html0 = getCropInfoHTML2(f, c, true);
+      var html0 = getCropInfoHTML2(f, c, false, true);
       if(html0 != last0) {
         flex0.div.innerHTML = html0;
         last0 = html0;
@@ -353,7 +387,7 @@ function initField2UI() {
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
-          result = getCropInfoHTML2(f, c, false);
+          result = getCropInfoHTML2(f, c, false, false);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           if(state.treelevel2 > 0) {
             result = 'Ethereal tree level ' + state.treelevel2;

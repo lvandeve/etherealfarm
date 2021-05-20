@@ -283,6 +283,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_p_treelevel);
   processUint(state.g_numresets_challenge_0);
   processUint(state.g_numresets_challenge_10);
+  processUint(state.g_numupgrades3);
+  processUint(state.g_numrespec3);
 
 
   section = 11; id = 0; // global run stats
@@ -587,6 +589,19 @@ function encState(state, opt_raw_only) {
   processUintArray(array1);
   processUintArray(array2);
   processStringArray(array3);
+
+  section = 22; id = 0; // squirrel upgrades
+  array0 = [];
+
+  processNum(state.upgrades3_spent);
+
+  for(var i = 0; i < state.stages3.length; i++) {
+    var s = state.stages3[i];
+    array0.push(s.num[0]);
+    array0.push(s.num[1]);
+    array0.push(s.num[2]);
+  }
+  processUintArray(array0);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -970,6 +985,10 @@ function decState(s) {
   if(save_version >= 4096*1+43) {
     state.g_numresets_challenge_0 = processUint();
     state.g_numresets_challenge_10 = processUint();
+  }
+  if(save_version >= 4096*1+74) {
+    state.g_numupgrades3 = processUint();
+    state.g_numrespec3 = processUint();
   }
 
   if(error) return err(4);
@@ -1416,6 +1435,7 @@ function decState(s) {
   if(save_version >= 4096*1+57) {
     state.automaton_autounlock_max_cost = processNum();
   }
+  if(error) return err(4);
 
 
   section = 21; id = 0; // blueprints
@@ -1423,6 +1443,7 @@ function decState(s) {
     array0 = processUintArray();
     array1 = processUintArray();
     array2 = processUintArray();
+    if(error) return err(4);
     if(save_version >= 4096*1+60) {
       array3 = processStringArray();
     } else {
@@ -1455,11 +1476,36 @@ function decState(s) {
     }
     if(index2 != array2.length) return err(4);
   }
+  if(error) return err(4);
 
+
+
+
+  section = 22; id = 0; // squirrel upgrades
+
+  if(save_version >= 4096*1+74) {
+    state.upgrades3_spent = processNum();
+    array0 = processUintArray();
+    index0 = 0;
+    if(array0.length % 3 != 0) return err(4);
+    if(array0.length > stages3.length * 3) return err(4);
+
+    var num = Math.floor(array0.length / 3);
+    for(var i = 0; i < num; i++) {
+      var s3 = state.stages3[i];
+      s3.num[0] = array0[index0++];
+      s3.num[1] = array0[index0++];
+      s3.num[2] = array0[index0++];
+      for(var j = 0; j < s.num[0]; j++) state.upgrades3[stages3[i].upgrades0[j]].count++;
+      for(var j = 0; j < s.num[1]; j++) state.upgrades3[stages3[i].upgrades1[j]].count++;
+      for(var j = 0; j < s.num[2]; j++) state.upgrades3[stages3[i].upgrades2[j]].count++;
+    }
+  }
+  if(error) return err(4);
 
   //////////////////////////////////////////////////////////////////////////////
 
-  if(save_version <= 4096*1+72) {
+  if(save_version <= 4096*1+73) {
     state.res.nuts = Num(0);
     state.g_res.nuts = Num(0);
     state.g_max_res.nuts = Num(0);
@@ -1573,6 +1619,7 @@ function decState(s) {
     state.c_res.essence = Num(0);
   }
 
+  if(error) return err(4);
   state.g_numloads++;
   return state;
 }

@@ -465,6 +465,24 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     result = e;
   }
 
+  if(haveSquirrel()) {
+    if(this.type == CROPTYPE_BERRY) {
+      if(state.upgrades3[upgrade3_berry].count) {
+        var bonus = upgrade3_berry_bonus.mulr(state.upgrades3[upgrade3_berry].count).addr(1);
+        result.seeds.mulInPlace(bonus);
+        if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
+      }
+    }
+    if(this.type == CROPTYPE_MUSH) {
+      if(state.upgrades3[upgrade3_mushroom].count) {
+        var bonus = upgrade3_mushroom_bonus.mulr(state.upgrades3[upgrade3_mushroom].count).addr(1);
+        result.seeds.mulInPlace(bonus);
+        if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
+      }
+    }
+  }
+
+
   if(state.res.resin.gter(1) && this.type != CROPTYPE_NUT) {
     var resin_bonus = getUnusedResinBonus();
     result.mulInPlace(resin_bonus);
@@ -1024,15 +1042,14 @@ function getNutCost(i) {
   //return getBerryCost(9.5 + i);
 
   // TODO
-  return getBerryCost(9.5 + i).mulr(1e300); // for now due to accidental unlocked nuts in game in v0.1.72
+  return getBerryCost(9.5 + i);
 }
 
 function getNutProd(i) {
-  // TODO
-  //var nuts = Num.pow(Num(i + 1), Num(10));
+  return Res({nuts:Num(0)});
 
-  var nuts = Num(0);
-  return Res({nuts:nuts});
+  //var nuts = Num.pow(Num(10), Num(i));
+  //return Res({nuts:nuts});
 }
 
 function getFlowerCost(i) {
@@ -1380,13 +1397,19 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
 
   u.getCost = function(opt_adjust_count) {
     var i = state.upgrades[this.index].count + (opt_adjust_count || 0);
-    var countfactor = Num.powr(Num(basic_upgrade_cost_increase), i);
-    var result = this.cost.mul(countfactor);
-    // soft cap by a slight more than exponential increase of the cost: without soft cap, there'll be some tier of crops that is the best tier, and higher tiers will give less production compared to lower berry with as-expensive upgrades
-    var base = 1.002;
-    //if(crop.type == CROPTYPE_MUSH) base = 1.002; // same for now.
-    if(i > 1) result = result.mul(Num.powr(Num(base), (i - 1) * (i - 1)));
-    return result;
+
+    if(crop.type == CROPTYPE_NUT) {
+      var seeds = Num.pow(Num(10), Num(i));
+      return Res({seeds:seeds});
+    } else {
+      var countfactor = Num.powr(Num(basic_upgrade_cost_increase), i);
+      var result = this.cost.mul(countfactor);
+      // soft cap by a slight more than exponential increase of the cost: without soft cap, there'll be some tier of crops that is the best tier, and higher tiers will give less production compared to lower berry with as-expensive upgrades
+      var base = 1.002;
+      //if(crop.type == CROPTYPE_MUSH) base = 1.002; // same for now.
+      if(i > 1) result = result.mul(Num.powr(Num(base), (i - 1) * (i - 1)));
+      return result;
+    }
   };
 
   return result;
@@ -1588,14 +1611,13 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
 
 upgrade_register_id = 300;
 var nutunlock_0 = registerCropUnlock(nut_0, getNutCost(0), undefined, function() {
-  // TODO: return false if squirrel not unlocked&placed in ethereal field
-  return false; // not available yet
+  if(!haveSquirrel()) return false;
 
   if(state.fullgrowncropcount[berry_9]) return true;
   return false;
 });
 var nutunlock_1 = registerCropUnlock(nut_1, getNutCost(1), berry_10, function(){
-  return false;
+  if(!haveSquirrel()) return false;
 
   return !!state.upgrades[nutunlock_0].count;
 });
@@ -2624,6 +2646,7 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
 
 
 var automatonboost = Num(0.25);
+var squirrelboost = Num(0.25);
 
 // boost to basic field
 Crop2.prototype.getBasicBoost = function(f, breakdown) {
@@ -2656,24 +2679,37 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     }
   }
 
-  // automaton
+  // automaton and squirrel
   if(f) {
     var automatonmul = Num(1);
-    var num = 0;
+    var squirrelmul = Num(1);
+    var num_automaton = 0;
+    var num_squirrel = 0;
 
     for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
       var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
       var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
       if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
       var n = state.field2[y2][x2];
-      if(n.hasCrop() && n.isFullGrown() && n.cropIndex() == automaton2_0) {
-        automatonmul.addInPlace(automatonboost);
-        num++;
+      if(n.hasCrop() && n.isFullGrown()) {
+        if(n.cropIndex() == automaton2_0) {
+          automatonmul.addInPlace(automatonboost);
+          num_automaton++;
+        }
+        if(n.cropIndex() == squirrel2_0) {
+          squirrelmul.addInPlace(squirrelboost);
+          num_squirrel++;
+        }
+
       }
     }
-    if(num) {
+    if(num_automaton) {
       result.mulInPlace(automatonmul);
       if(breakdown) breakdown.push(['automaton', true, automatonmul, result.clone()]);
+    }
+    if(num_squirrel) {
+      result.mulInPlace(squirrelmul);
+      if(breakdown) breakdown.push(['squirrel', true, squirrelmul, result.clone()]);
     }
   }
 
@@ -3187,9 +3223,11 @@ var upgrade2_extra_fruit_slot3 = registerUpgrade2('extra fruit slot', LEVEL2, Re
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[3]);
 
+
 /*
 var upgrade2_squirrel = registerUpgrade2('unlock squirrel', LEVEL2, Res({resin:3e6}), 2, function() {
   unlockEtherealCrop(squirrel2_0);
+  state.res.nuts = Num(0); // reset nuts to 0 when squirrel unlocks first time, to avoid accidental nuts available from one of the older version of the game (in one old version, these were an actual resource, in another nut plants were accidently released with too high nuts production)
 }, function(){return true;}, 1, 'the squirrel can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks nuts, squirrel upgrades and the squirrel in the basic field', undefined, undefined, images_squirrel[4]);
 */
 
@@ -4002,6 +4040,12 @@ function getMultiplicityNum(crop) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+
+// cost of the first upgrade3
+var upgrade3_base = Num(1000);
+// how much more expensive every next upgrade3 is
+var upgrade3_mul = Num(5);
+
 // @constructor
 function Upgrade3() {
   this.name = 'a';
@@ -4029,6 +4073,8 @@ function Stage3() {
   // amount of upgrades you must have done before you can unlock this one
   this.prereq = 0;
 
+  this.index = 0;
+
   // for rendering in UI
   this.height = function() {
     return Math.max(upgrades.length, Math.max(upgrades0.length, upgrades1.length));
@@ -4052,7 +4098,7 @@ function registerUpgrade3(name, fun, pre, description, image) {
 
   upgrade.name = name;
 
-  if(image) upgrade.image = image;
+  upgrade.image = image || medalhidden[0];
 
   upgrade.fun = function() {
     state.upgrades3[this.index].count++;
@@ -4069,6 +4115,7 @@ function registerUpgrade3(name, fun, pre, description, image) {
   return upgrade.index;
 }
 
+
 var stages3 = [];
 
 // These are only ever registered in the exact order they appear, and are not intended to ever change order in future game updates, only append at the end.
@@ -4079,16 +4126,21 @@ function registerStage3(upgrades0, upgrades1, upgrades2, opt_prereq) {
   stage.upgrades2 = upgrades2 || [];
   stage.prereq = opt_prereq || 0;
 
+  stage.index = stages3.length;
+
   stages3.push(stage);
 }
 
 upgrade3_register_id = 10;
 
-var upgrade3_berry = registerUpgrade3('berry boost', undefined, undefined, 'boosts berries +25% (additive)');
-var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, undefined, 'boosts mushroom production but also consumption by 25% (additive)');
-var upgrade3_test = registerUpgrade3('[NOT YET IMPLEMENTED]', undefined, undefined, 'this is only for testing in the initial squirrel release');
+var upgrade3_berry_bonus = Num(0.25);
+var upgrade3_mushroom_bonus = Num(0.25);
 
-registerStage3([upgrade3_berry, upgrade3_test], [upgrade3_test, upgrade3_test], [upgrade3_mushroom, upgrade3_test]);
+var upgrade3_berry = registerUpgrade3('berry boost', undefined, undefined, 'boosts berries +' + upgrade3_berry_bonus.toPercentString() + ' (additive)', blackberry[4]);
+var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString() + ' (additive)', champignon[4]);
+var upgrade3_test = registerUpgrade3('[not yet released]', undefined, undefined, 'this upgrade is not yet released and does nothing, it is a placeholder for now. Many more upgrades to come in the squirrel tech-tree in next releases!');
+
+registerStage3([upgrade3_berry, upgrade3_test], [upgrade3_test, upgrade3_test, upgrade3_test], [upgrade3_mushroom, upgrade3_test]);
 
 registerStage3(undefined, [upgrade3_test]);
 registerStage3(undefined, [upgrade3_test], [upgrade3_berry]);

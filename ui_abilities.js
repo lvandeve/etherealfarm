@@ -288,6 +288,12 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
+  if(e.key == 's' && !shift && !ctrl) {
+    if(haveSquirrel()) {
+      makeSquirrelDialog();
+    }
+  }
+
   if(e.key == 'w' && !shift && !ctrl) {
     // NOTE: ctrl for this shortcut doesn't work, since ctrl+w closes browser window. For consistency, shift is also not supported.
     refreshWatercress();

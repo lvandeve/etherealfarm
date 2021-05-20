@@ -350,7 +350,17 @@ function updateResourceUI() {
       }, /*opt_poll=*/true, /*allow_mobile=*/true);
       div.style.cursor = 'pointer';
       addButtonAction(div, function() {
-        var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM);
+        var okfun = undefined;
+        var okname = undefined;
+        // nuts
+        if(index == 4) {
+          okfun = function(){
+            makeSquirrelDialog();
+          };
+          okname = 'squirrel upgrades';
+        }
+
+        var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM, okfun, okname);
         dialog.div.className = 'efDialogTranslucent';
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);

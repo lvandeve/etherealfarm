@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 var rightPanelPrevAutomationState = -1;
+var rightPanelPrevNumberFormatState = -1;
 
 // cache the existing upgrade-chips to reuse them. This avoids following problem:
 // if chips are rerendered whenever anything related to upgrades updates, then if you click on the buy button with mouse and before you release mouse it updated, the onclick does not work. This causes clicking upgrades to ignore your click when automaton did updates in between
@@ -40,8 +41,12 @@ function updateRightPane() {
 
   var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (state.automaton_unlocked[1] ? 8 : 0) | (state.automaton_unlocked[2] ? 16 : 0);
   var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
+  rightPanelPrevAutomationState = automatonState;
 
-  if(upgradeUIUpdated || automatonStateChanged) {
+  var numberformatStateChanged = rightPanelPrevNumberFormatState != getNumberFormatCode();
+  rightPanelPrevNumberFormatState = getNumberFormatCode();
+
+  if(upgradeUIUpdated || automatonStateChanged || numberformatStateChanged) {
     upgradeUIUpdated = false;
 
     if(bottomrightSidePanelFlexCacheParent != bottomRightFlex) {
@@ -50,7 +55,6 @@ function updateRightPane() {
       bottomrightSidePanelFlexCacheParent = bottomRightFlex;
     }
 
-    rightPanelPrevAutomationState = automatonState;
 
     var unlocked = [];
     for(var i = 0; i < upgrades_order.length; i++) {

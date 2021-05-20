@@ -257,7 +257,8 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   } else {
     text += '• Production bonus per max level reached (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ' + c.bonus.toPercentString() + '<br>';
     text += '• Max level reached: ' + maxlevel + '<br>';
-    text += '• Production bonus: ' + c.bonus.mulr(maxlevel).toPercentString() + '<br>';
+    //text += '• Production bonus: ' + c.bonus.mulr(maxlevel).toPercentString() + '<br>';
+    text += '• Production bonus: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + '<br>';
   }
   text += '• Times ran: ' + c2.num + '<br>';
   if(c.targetlevel.length > 1 && c.fullyCompleted(include_current_run)) {

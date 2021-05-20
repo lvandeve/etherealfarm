@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.73 (2021-05-20):';
+  // pause related bug, number format setting not updating right pane, wrong challenge bonus display in tree challenge dialog
+  text += '<br/>• Bugfixes.';
+  text += '<br/>• More internal changes for next update.';
+  text += '<br/><br/>';
+
   text += '0.1.72 (2021-05-15):';
   text += '<br/>• Paused state is now saved in savegames.';
   text += '<br/>• Many internal changes for the next update, not visible or usable at this time.';

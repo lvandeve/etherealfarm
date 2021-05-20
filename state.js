@@ -363,10 +363,17 @@ function State() {
   }
 
   // squirrel upgrades
-  // NOT saved, stages3 is saved instead. But does give the info of upgrades from stages, including "count" if an upgrade appears multiple times in various stages
+  // NOT saved, stages3 is saved instead. But does give the info of upgrades from stages, including "count" if an upgrade appears multiple times in various stages. This one is kept in sync, not computed by computeDerived.
   this.upgrades3 = [];
+  for(var i = 0; i < registered_upgrades3.length; i++) {
+    this.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
+  }
   // this is saved
   this.stages3 = [];
+  for(var i = 0; i < stages3.length; i++) {
+    this.stages3[i] = new Stage3State();
+  }
+  this.upgrades3_spent = Num(0); // nuts spent on upgrades3, can be given back on respec
 
 
   this.misttime = 0; // mist is unlocked if state.upgrades[upgrade_mistunlock].count
@@ -504,6 +511,8 @@ function State() {
   this.g_numresets_challenge_0 = 0; // amount of challenges quit immediately, before tree leveled even to level 1, so these do not count for stats, not even num runs of a challenge
   this.g_numresets_challenge_10 = 0; // amount of soft resets done after a challenge where at least level 10 was reached, so that it can be counted as at least as good as a regular g_numresets value
   this.g_p_treelevel = 0; // max tree level of any run, but not including the current run
+  this.g_numupgrades3 = 0;
+  this.g_numrespec3 = 0;
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -658,6 +667,9 @@ function State() {
   // derived stat, not to be saved
   this.upgrades_new = 0;
   this.upgrades2_new = 0;
+
+  // derived stat, not to be saved
+  this.upgrades3_count = 0;
 
   // derived stat, not to be saved
   this.medals_earned = 0;
@@ -999,6 +1011,13 @@ function computeDerived(state) {
     }
   }
 
+  state.upgrades3_count = 0;
+  for(var i = 0; i < registered_upgrades3.length; i++) {
+    // var u = upgrades3[registered_upgrades3[i]];
+    var u2 = state.upgrades3[registered_upgrades3[i]];
+    state.upgrades3_count += u2.count;
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   state.ethereal_berry_bonus = Num(0);
@@ -1266,6 +1285,14 @@ function getTwigsHour() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// for UI invalidation, ...
+function getNumberFormatCode() {
+  return Num.precision * 100 + Num.notation;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 function haveAutomaton() {
   return !!state.crop2count[automaton2_0];
 }
@@ -1313,3 +1340,6 @@ function squirrelActive() {
   return state.crop2count[squirrel2_0] && state.cropcount[squirrel_0];
 }
 
+function getNextUpgrade3Cost() {
+  return upgrade3_base.mul(upgrade3_mul.powr(state.upgrades3_count));
+}

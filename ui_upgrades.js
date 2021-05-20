@@ -22,6 +22,7 @@ function rerenderUpgradeChip(u, chip, completed) {
 
   var cost = u.getCost(completed ? -1 : 0);
   var cant_afford = state.res.lt(cost);
+  var format = getNumberFormatCode();
 
   var u2 = state.upgrades[u.index];
   if(chip.u != undefined) {
@@ -30,6 +31,7 @@ function rerenderUpgradeChip(u, chip, completed) {
     if(chip.u_count != u2.count) same = false;
     if(chip.u_completed != completed) same = false;
     if(chip.u_cant_afford != cant_afford) same = false;
+    if(chip.u_format != format) same = false;
     if(same) return;
   }
 
@@ -37,6 +39,7 @@ function rerenderUpgradeChip(u, chip, completed) {
   chip.u_count = u2.count;
   chip.u_completed = completed;
   chip.u_cant_afford = cant_afford;
+  chip.u_format = format;
 
   var titleFlex = chip.titleFlex
   var name = completed ? u.getName() : u.getNextName();

@@ -234,6 +234,7 @@ function createNumberFormatDialog() {
     div.innerHTML = tableText;
 
     updateUI();
+    updateMedalUI();
   };
 
 
