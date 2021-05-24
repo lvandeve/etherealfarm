@@ -48,6 +48,13 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     result += 'Effect: ' + c.effect_description_short + '<br/>';
   }
 
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
+    var total = c.getBasicBoost(f);
+    result += '<br/>';
+    result += 'Boost amount: ' + total.toPercentString();
+    result += '<br/>';
+  }
+
   var automaton = c.index == automaton2_0;
   var squirrel = c.index == squirrel2_0;
 
@@ -71,8 +78,11 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
   }
 
 
-  if(automaton) {
+  if(automaton || squirrel) {
     result += '<br/>• Cost: ' + c.cost.toString();
+    result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+  } else if(!opt_detailed) {
+    result += '<br/>• Next planting cost: ' + c.getCost().toString();
     result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
   } else {
     result += '<br/>Cost: ';

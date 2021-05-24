@@ -1619,6 +1619,7 @@ function getAutoFraction(advanced, fractions, croptype) {
     else if(croptype == CROPTYPE_BEE) fraction = fractions[7];
     else if(croptype == CROPTYPE_SHORT) fraction = fractions[2];
     else if(croptype == CROPTYPE_MISTLETOE) fraction = fractions[8];
+    else if(croptype == CROPTYPE_NUT) fraction = fractions[9];
     else fraction = fractions[1]; // challenge crops, squirrel, ...
   }
   return fraction;

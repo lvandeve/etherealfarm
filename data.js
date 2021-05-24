@@ -56,7 +56,7 @@ function getCropTypeName(type) {
 // opt_crop is cropid for specific crop in case it has a slightly different description
 function getCropTypeHelp(type, opt_no_nettles) {
   switch(type) {
-    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (opt_no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
+    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (opt_no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production but less effectively than it copies berries.';
     case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers' + (opt_no_nettles ? '' : ' and nettles') + '. Neighboring watercress can copy its production (but also consumption).';
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
     case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
@@ -481,14 +481,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(this.type == CROPTYPE_BERRY) {
       if(state.upgrades3[upgrade3_berry].count) {
         var bonus = upgrade3_berry_bonus.mulr(state.upgrades3[upgrade3_berry].count).addr(1);
-        result.seeds.mulInPlace(bonus);
+        result.mulInPlace(bonus);
         if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
       }
     }
     if(this.type == CROPTYPE_MUSH) {
       if(state.upgrades3[upgrade3_mushroom].count) {
         var bonus = upgrade3_mushroom_bonus.mulr(state.upgrades3[upgrade3_mushroom].count).addr(1);
-        result.seeds.mulInPlace(bonus);
+        result.mulInPlace(bonus);
         if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
       }
     }
@@ -4193,10 +4193,10 @@ var upgrade3_berry = registerUpgrade3('berry boost', undefined, undefined, 'boos
 var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString(), champignon[4]);
 
 var upgrade3_squirrel_boost = Num(0.1);
-var upgrade3_squirrel = registerUpgrade3('ethereal squirrel boost', undefined, undefined, 'adds an additional ' + upgrade3_squirrel_boost.toPercentString() + ' to the neighbor boost of the ethereal squirrel', images_squirrel[4]);
+var upgrade3_squirrel = registerUpgrade3('ethereal squirrel boost', undefined, undefined, 'adds an additional ' + upgrade3_squirrel_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal squirrel', images_squirrel[4]);
 
 var upgrade3_automaton_boost = Num(0.1);
-var upgrade3_automaton = registerUpgrade3('ethereal automaton boost', undefined, undefined, 'adds an additional ' + upgrade3_automaton_boost.toPercentString() + ' to the neighbor boost of the ethereal squirrel', images_automaton[4]);
+var upgrade3_automaton = registerUpgrade3('ethereal automaton boost', undefined, undefined, 'adds an additional ' + upgrade3_automaton_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal automaton', images_automaton[4]);
 
 var upgrade3_test = registerUpgrade3('[not yet released]', undefined, undefined, 'this upgrade is not yet released and does nothing, it is a placeholder for now. Many more upgrades to come in the squirrel tech-tree in next releases!');
 

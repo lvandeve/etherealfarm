@@ -67,6 +67,7 @@ function updateAmberUI() {
     registerTooltip(button, 'Get an additional respec token for resetting squirrel upgrades. Note that you already got some for free, no need to buy this if you still have some left.');
     button.id = 'amber_respec';
   }
+  if(state.res.amber.lt(ambercost_respec3)) button.className = 'efButtonCantAfford';
 
   pos += h * 0.5;
 

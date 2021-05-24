@@ -128,6 +128,7 @@ function createTranscendDialog(opt_from_challenge) {
   text += '• Basic resources: seeds, spores<br/>';
   text += '• Tree level<br/>';
   text += '• Fruits in the sacrificial pool<br/>';
+  if(amberUnlocked()) text += '• Some types of activated amber effects<br/>';
   text += '<br/>';
   text += 'What will be kept:<br/>';
   text += '• Achievements<br/>';
@@ -136,6 +137,8 @@ function createTranscendDialog(opt_from_challenge) {
   text += '• Ethereal upgrades<br/>';
   text += '• Fruits in the storage slots<br/>';
   text += '• Current season<br/>';
+  if(amberUnlocked()) text += '• Amber resource<br/>';
+  if(squirrelUnlocked()) text += '• Nuts and squirrel upgrades<br/>';
   text += '<br/><br/>';
 
   flex.div.innerHTML = text;
