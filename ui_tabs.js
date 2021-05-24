@@ -29,6 +29,8 @@ var medalsButtonLastText = '';
 var fieldButtonLastText = '';
 var field2ButtonLastText = '';
 var automatonButtonLastText = '';
+var squirrelButtonLastText = '';
+var amberButtonLastText = '';
 
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
@@ -67,6 +69,12 @@ function setTab(i, opt_temp) {
   }
   if(i == tabindex_upgrades2) {
     updateUpgrade2UI();
+  }
+  if(i == tabindex_amber) {
+    updateAmberUI();
+  }
+  if(i == tabindex_squirrel) {
+    updateSquirrelUI();
   }
 
   removeAllDropdownElements();
@@ -194,6 +202,22 @@ function updateTabButtons2() {
     }
   }
 
+  tabnum = tabindex_squirrel;
+  if(tabbuttons[tabnum]) {
+    var text = 'squirrel';
+    if(!haveSquirrel()) {
+      text += '<br>(absent)';
+    } else if(!state.allupgrade3bought && getNextUpgrade3Cost().lte(state.res.nuts)) {
+      text = '<b><font color="red">' + text + '</font></b>';
+    }
+
+    if(text != squirrelButtonLastText) {
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
+      squirrelButtonLastText = text;
+    }
+  }
+
   tabnum = tabindex_medals;
   if(tabbuttons[tabnum]) {
     var text = 'achievements<br/>(' + state.medals_earned + ')';
@@ -223,6 +247,8 @@ function updateTabButtons() {
   wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
   wanted[tabindex_automaton] = haveAutomaton() || state.treelevel2 >= 2;
   wanted[tabindex_medals] = state.medals_earned > 0;
+  wanted[tabindex_squirrel] = squirrelUnlocked();
+  wanted[tabindex_amber] = amberUnlocked();
 
   var num = 0;
   for(var i = 0; i < wanted.length; i++) {
@@ -260,11 +286,21 @@ function updateTabButtons() {
 
   var tabnum;
 
+  var split = false;
+  if(num >= 6) split = true;
+  var half0 = Math.floor(num / 2);
+  if(num >= 7 && num <= 9) half0 = 4; // try to always get 4 buttons (field, upgrades, eth field, eth upgrades) at the top half, for muscle memory reasons
+  var half1 = num - half0;
+
   // the order below determines the display order of the tabs
 
   tabnum = tabindex_field;
   if(wanted[tabnum]) {
-    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: field tab');
     tabbuttons[tabnum].textEl.innerText = 'field';
@@ -275,7 +311,11 @@ function updateTabButtons() {
 
   tabnum = tabindex_upgrades;
   if(wanted[tabnum]) {
-    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: upgrades tab');
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
@@ -284,20 +324,13 @@ function updateTabButtons() {
     index++;
   }
 
-  tabnum = tabindex_fruit;
-  if(wanted[tabnum]) {
-    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab');
-    tabbuttons[tabnum].textEl.innerText = 'fruit';
-    tabbuttons[tabnum].id = 'fruit_tab';
-    fruitButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
-    index++;
-  }
-
   tabnum = tabindex_field2;
   if(wanted[tabnum]) {
-    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
@@ -309,7 +342,11 @@ function updateTabButtons() {
 
   tabnum = tabindex_upgrades2;
   if(wanted[tabnum]) {
-    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal upgrades tab');
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
@@ -319,9 +356,28 @@ function updateTabButtons() {
     index++;
   }
 
+  tabnum = tabindex_fruit;
+  if(wanted[tabnum]) {
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab');
+    tabbuttons[tabnum].textEl.innerText = 'fruit';
+    tabbuttons[tabnum].id = 'fruit_tab';
+    fruitButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    index++;
+  }
+
   tabnum = tabindex_automaton;
   if(wanted[tabnum]) {
-    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
     tabbuttons[tabnum].textEl.innerText = 'automaton';
@@ -331,9 +387,45 @@ function updateTabButtons() {
     index++;
   }
 
+  tabnum = tabindex_squirrel;
+  if(wanted[tabnum]) {
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
+    tabbuttons[tabnum].textEl.innerText = 'squirrel';
+    tabbuttons[tabnum].id = 'achievements_tab';
+    //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
+    squirrelButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    index++;
+  }
+
+  tabnum = tabindex_amber;
+  if(wanted[tabnum]) {
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
+    tabbuttons[tabnum].textEl.innerText = 'amber';
+    tabbuttons[tabnum].id = 'achievements_tab';
+    //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
+    amberButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    index++;
+  }
+
   tabnum = tabindex_medals;
   if(wanted[tabnum]) {
-    tabbuttons[tabnum] = makeDiv((100 / num * index) + '%', '0%', (100 / num) + '%', '100%', tabFlex.div);
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: achievements tab');
     tabbuttons[tabnum].id = 'achievements_tab';

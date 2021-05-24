@@ -262,7 +262,16 @@ function updateResourceUI() {
       // if this problem persists even with larger tolerance, a different measure  must be taken, such as only displaying hyp if at least one of the resources (like spores) has a significant difference
       var hyp_neq = !gain.near(gain_hyp, 0.01);
 
-      text = name + '<br>' + res.toString() + '<br>' + gain.toString() + '/s';
+      var fontopen = '';
+      var fontclose = '';
+      if(state.amberprod && (index == 0 || index == 1)) {
+        //fontopen = '<font color="#ff0">';
+        //fontclose = '</font>';
+        fontopen = '<span class="efAmberInfo">';
+        fontclose = '</span>';
+      }
+
+      text = name + '<br>' + res.toString() + '<br>' + fontopen + gain.toString() + '/s' + fontclose;
       if(hyp_neq) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
     }
     div.textEl.innerHTML = text;
@@ -311,6 +320,12 @@ function updateResourceUI() {
         text += 'Amount from next sacrificed fruits: ' + upcoming.toString() + '<br/><br/>';
         text += 'Using this to level up fruit abilities does not consume the global essence. Every fruit can use all the essence.<br/><br/>';
       }
+      if(index == 6) {
+        // amber
+        var text = '<b>Amber</b><br/><br/>';
+        text += 'Current amount: ' + res.toString() + '<br/><br/>';
+        text += 'Amber drops every now and then when the tree levels<br/><br/>';
+      }
     } else {
       var text = '<b>' + upper(name) + '</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
@@ -350,17 +365,8 @@ function updateResourceUI() {
       }, /*opt_poll=*/true, /*allow_mobile=*/true);
       div.style.cursor = 'pointer';
       addButtonAction(div, function() {
-        var okfun = undefined;
-        var okname = undefined;
-        // nuts
-        if(index == 4) {
-          okfun = function(){
-            makeSquirrelDialog();
-          };
-          okname = 'squirrel upgrades';
-        }
 
-        var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM, okfun, okname);
+        var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM);
         dialog.div.className = 'efDialogTranslucent';
         // computed here rather than inside of updatedialogfun to avoid it being too slow
         var breakdown = prodBreakdown(index);
@@ -415,9 +421,9 @@ function updateResourceUI() {
   if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.twigs.eqr(0)) showResource(true, 3, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.nuts.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
   if(!state.g_max_res.essence.eqr(0)) showResource(true, 7, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.amber.eqr(0)) showResource(false, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.nuts.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.amber.eqr(0)) showResource(true, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
 
 }
 

@@ -285,6 +285,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numresets_challenge_10);
   processUint(state.g_numupgrades3);
   processUint(state.g_numrespec3);
+  processUint(state.g_amberdrops);
+  processUintArray(state.g_amberbuy);
 
 
   section = 11; id = 0; // global run stats
@@ -402,6 +404,7 @@ function encState(state, opt_raw_only) {
   processFloat(state.lasttree2leveluptime);
   processFloat(state.lastambertime);
   processBool(state.paused);
+  processUint(state.respec3tokens);
 
 
   section = 17; id = 0; // fruits
@@ -603,6 +606,9 @@ function encState(state, opt_raw_only) {
   }
   processUintArray(array0);
 
+  section = 23; id = 0; // amber effects
+  processBool(state.amberprod);
+
   //////////////////////////////////////////////////////////////////////////////
 
   var e = encTokens(tokens);
@@ -783,6 +789,7 @@ function decState(s) {
       if(f.hasCrop()) {
         f.growth = array1[index1++];
       }
+      if((f.index == 150 || f.index == 151) && save_version < 4096*1+74) f.index = f.growth = 0; //accidental nuts plants in older version
     }
   }
   if(index0 > array0.length) return err(4);
@@ -909,6 +916,7 @@ function decState(s) {
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
     prev = index;
+    if(save_version < 4096*1+74 && index >= 400) index += 200; // index was shifted to make room for more crop-type medals
     if(!medals[index]) return err(4);
     state.medals[index].earned = true;
     state.medals[index].seen = array1[i];
@@ -989,6 +997,8 @@ function decState(s) {
   if(save_version >= 4096*1+74) {
     state.g_numupgrades3 = processUint();
     state.g_numrespec3 = processUint();
+    state.g_amberdrops = processUint();
+    state.g_amberbuy = processUintArray();
   }
 
   if(error) return err(4);
@@ -1133,6 +1143,7 @@ function decState(s) {
   if(save_version >= 4096*1+71) state.lasttree2leveluptime = processFloat();
   if(save_version >= 4096*1+71) state.lastambertime = processFloat();
   if(save_version >= 4096*1+72) state.paused = processBool();
+  if(save_version >= 4096*1+74) state.respec3tokens = processUint();
 
   section = 17; id = 0; // fruits
   if(save_version >= 4096*1+17) {
@@ -1496,12 +1507,16 @@ function decState(s) {
       s3.num[0] = array0[index0++];
       s3.num[1] = array0[index0++];
       s3.num[2] = array0[index0++];
-      for(var j = 0; j < s.num[0]; j++) state.upgrades3[stages3[i].upgrades0[j]].count++;
-      for(var j = 0; j < s.num[1]; j++) state.upgrades3[stages3[i].upgrades1[j]].count++;
-      for(var j = 0; j < s.num[2]; j++) state.upgrades3[stages3[i].upgrades2[j]].count++;
+      for(var j = 0; j < s3.num[0]; j++) state.upgrades3[stages3[i].upgrades0[j]].count++;
+      for(var j = 0; j < s3.num[1]; j++) state.upgrades3[stages3[i].upgrades1[j]].count++;
+      for(var j = 0; j < s3.num[2]; j++) state.upgrades3[stages3[i].upgrades2[j]].count++;
     }
   }
   if(error) return err(4);
+
+  section = 23; id = 0; // amber effects
+  if(save_version >= 4096*1+74) state.amberprod = processBool();
+
 
   //////////////////////////////////////////////////////////////////////////////
 

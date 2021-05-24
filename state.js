@@ -178,7 +178,7 @@ BluePrint.toCrop = function(i) {
   if(i == 7) return bee_template;
   if(i == 8) return mistletoe_template;
   if(i == 9) return nut_template;
-  if(i == 10) return squirrel_template;
+  //if(i == 10) return squirrel_template;
   return -1;
 }
 
@@ -192,7 +192,7 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_BEE) return 7;
   if(c.type == CROPTYPE_MISTLETOE) return 8;
   if(c.type == CROPTYPE_NUT) return 9;
-  if(c.type == CROPTYPE_SQUIRREL) return 10;
+  //if(c.type == CROPTYPE_SQUIRREL) return 10;
   return 0;
 }
 
@@ -206,7 +206,7 @@ BluePrint.toChar = function(i) {
   if(i == 7) return 'H';
   if(i == 8) return 'I';
   if(i == 9) return 'U'; // nuts
-  if(i == 10) return 'S'; // squirrel
+  //if(i == 10) return 'S'; // squirrel
   return -1;
 }
 
@@ -221,7 +221,7 @@ BluePrint.fromChar = function(c) {
   if(c == 'H') return 7;
   if(c == 'I') return 8;
   if(c == 'U') return 9;
-  if(c == 'S') return 10;
+  //if(c == 'S') return 10;
   return 0;
 }
 
@@ -299,7 +299,7 @@ function State() {
   this.twigs = Num(0);
 
   this.treelevel = 0;
-  this.lasttreeleveluptime = 0;
+  this.lasttreeleveluptime = 0; // time of previous time tree leveled, after transcend this is time tree leveled before that transcend! if that's undesired, then use (treelevel > 0 ? lasttreeleveluptime : c_starttime)
   this.lasttree2leveluptime = 0;
   this.lastambertime = 0;
 
@@ -385,6 +385,7 @@ function State() {
 
   // misc
   this.delete2tokens = delete2initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
+  this.respec3tokens = respec3initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
   this.paused = false;
 
   // fruit
@@ -457,8 +458,9 @@ function State() {
   6: nettle
   7: beehive
   8: mistletoe (not used for upgrade, but used for auto unlock for example in other fraction arrays below)
+  9: nuts
   */
-  this.automaton_autoupgrade_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autoupgrade_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
   /*
   0: auto plant disabled
@@ -470,7 +472,7 @@ function State() {
   fraction of resources automation is allowed to use for auto-plant
   the indices are the same as for automaton_autoupgrade_fraction, even though some are unused (e.g. watercress)
   */
-  this.automaton_autoplant_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autoplant_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
   /*
   0: autounlock disabled
@@ -478,7 +480,7 @@ function State() {
   */
   this.automaton_autounlock = 0;
   this.automaton_autounlock_copy_plant_fraction = false;
-  this.automaton_autounlock_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autounlock_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
   this.automaton_autounlock_max_cost = Num(0);
 
   // challenges
@@ -513,6 +515,8 @@ function State() {
   this.g_p_treelevel = 0; // max tree level of any run, but not including the current run
   this.g_numupgrades3 = 0;
   this.g_numrespec3 = 0;
+  this.g_amberdrops = 0;
+  this.g_amberbuy = [0, 0]; // amount bought of amber upgrades
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -606,6 +610,9 @@ function State() {
   // array of BluePrint objects
   this.blueprints = [];
 
+  // effects for this run
+  this.amberprod = false;
+
   // temp variables for visual effect, not to be saved
   this.automatonx = 0; // for the visual planting effect
   this.automatony = 0;
@@ -670,6 +677,10 @@ function State() {
 
   // derived stat, not to be saved
   this.upgrades3_count = 0;
+
+  // whether all squirrel upgrades (all stages) bought
+  // derived stat, not to be saved
+  this.allupgrade3bought = false;
 
   // derived stat, not to be saved
   this.medals_earned = 0;
@@ -1018,6 +1029,18 @@ function computeDerived(state) {
     state.upgrades3_count += u2.count;
   }
 
+  state.allupgrade3bought = true;
+  for(var i = 0; i < stages3.length; i++) {
+    if(i >= state.stages3.length) {
+      state.allupgrade3bought = false;
+      break;
+    }
+    if(state.stages3[i].num[0] < stages3[i].upgrades0.length) state.allupgrade3bought = false;
+    if(state.stages3[i].num[1] < stages3[i].upgrades1.length) state.allupgrade3bought = false;
+    if(state.stages3[i].num[2] < stages3[i].upgrades2.length) state.allupgrade3bought = false;
+    if(!state.allupgrade3bought) break;
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   state.ethereal_berry_bonus = Num(0);
@@ -1326,6 +1349,10 @@ function autoUnlockEnabled() {
   return !!state.automaton_autounlock;
 }
 
+function getEtherealAutomatonNeighborBoost() {
+  return automatonboost.addr(upgrade3_automaton_boost * state.upgrades3[upgrade3_automaton].count);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1335,11 +1362,29 @@ function haveSquirrel() {
 }
 
 
-// have both ethereal and basic field squirrel
-function squirrelActive() {
-  return state.crop2count[squirrel2_0] && state.cropcount[squirrel_0];
+// have the ability to place squirrel, the upgrade unlocked
+function squirrelUnlocked() {
+  return !!state.upgrades2[upgrade2_squirrel].count;
 }
 
 function getNextUpgrade3Cost() {
   return upgrade3_base.mul(upgrade3_mul.powr(state.upgrades3_count));
+}
+
+// opt_replacing: set to true if this crop replaces an existing non-template (aka real) nuts crop
+function tooManyNutsPlants(opt_replacing) {
+  // Reason for this limitation: the intention of nut plants is to have an extra resource alongside an otherwise normal resin and twigs generating field, and make it more fun to do a deeper push with such a field by having the highly exponentially growing nuts resource
+  // however it's not the intention to encourage planting the entire field full of nuts and nothing else
+  return (state.croptypecount[CROPTYPE_NUT] - (opt_replacing ? 1 : 0)) > 0;
+}
+
+function getEtherealSquirrelNeighborBoost() {
+  return squirrelboost.addr(upgrade3_squirrel_boost * state.upgrades3[upgrade3_squirrel].count);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+function amberUnlocked() {
+  return state.g_res.amber.neqr(0);
 }

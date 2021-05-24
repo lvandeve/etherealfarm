@@ -53,7 +53,7 @@ function showHelpChip(text) {
 
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 34
+// highest used id: 36
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
@@ -145,7 +145,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
   var fy1 = 0.8;
 
   if(image) {
-    var canvasflex = new Flex(dialog.content, 0.01, 0.01, 0.1, 0.1);
+    var canvasflex = new Flex(dialog.content, [0.01, 0, 0], [0.01, 0, 0], [0.01, 0, 0.1], [0.01, 0, 0.1]);
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasflex.div);
     renderImage(image, canvas);
     fx0 = 0.11;
@@ -157,19 +157,20 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     for(var y = 0; y < h; y++) {
       for(var x = 0; x < w; x++) {
         if(!images[y][x]) continue; // ok to have gaps
-        var x0 = -0.2 + 0.4 * x / w;
-        var y0 = -0.2 + 0.4 * y / h;
-        var x1 = -0.2 + 0.4 * (x + 1) / w;
-        var y1 = -0.2 + 0.4 * (y + 1) / h;
-        var canvasflex = new Flex(dialog.content, [0.25, 0, x0], [0.7, 0, y0], [0.25, 0, x1], [0.7, 0, y1]);
+        var x0 = 0.3 * (x / w - 0.5);
+        var y0 = 0.3 * (y / h - 0.5);
+        var x1 = 0.3 * ((x + 1) / w - 0.5);
+        var y1 = 0.3 * ((y + 1) / h - 0.5);
+        var canvasflex = new Flex(dialog.content, [0.25, 0, x0], [0.85, 0, y0], [0.25, 0, x1], [0.85, 0, y1]);
         var canvas = createCanvas('0%', '0%', '100%', '100%', canvasflex.div);
         renderImage(images[y][x], canvas);
       }
     }
-    fy1 = 0.65;
+    fy1 = 0.7;
   }
 
   var flex = new Flex(dialog.content, fx0, fy0, fx1, fy1, 0.32);
+  makeScrollable(flex);
 
   flex.div.innerHTML = text;
 }
@@ -350,6 +351,38 @@ registerHelpDialog(34, 'Multiplicity', 'You unlocked multiplicity! Mushrooms and
   [[blackberry[4],undefined,blueberry[4]],
    [undefined,undefined,undefined],
    [blueberry[4],undefined,blackberry[4]]]);
+
+registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nuts crops!',
+    `You unlocked the squirrel and the nuts crops! The squirrel gives an entirely new tech tree of ugrades. Place a squirrel in the ethereal field (it\'ll also boost neighbors!). Grow nuts in the main field using the new nuts crops. Use nuts to buy squirrel upgrades, in the new squirrel tab.
+    <br><br>
+    Nuts crops unlock at tree level 45, the first one is Almond. You can have max 1 nut crop in the main field, but it can be upgraded and replaced with better types. Nuts crops benefit from flowers, but only in a limited form independent of flower upgrades or bees, nuts crops are not affected by the same boosts as berries or mushrooms, they have their own more limited boosts. Watercress can copy from nuts, but only at half effectiveness and without fruit bonus.
+    <br><br>
+    Buy squirrel upgrades in the squirrel tab. Squirrel upgrades are laid out in a tech tree. Each next squirrel upgrade costs ` + upgrade3_mul.toString() + `x more than the previous one, no matter what order you do them in. Get higher tree levels and nut crops to get enough nuts for the next one.
+    <br><br>
+    You can respec the squirrel upgrades if you regret a decision, using a respec token. You get a few for free, more can be gotten for amber in the amber tab.
+    <br><br>
+    Planting and upgrading nuts crops cost spores instead of seeds. They work with automaton just like most other crops. If the automaton is spending too much spores on nuts upgrades and you want the tree to level up instead, decrease the allowed % setting for nuts upgrades in the automaton settings.
+    `,
+    images_squirrel[4],
+    undefined,
+  [[mulberry[4],iris[4],mulberry[4]],
+   [iris[4],images_almond[4],watercress[4]],
+   [mulberry[4],iris[4],mulberry[4]]]);
+
+registerHelpDialog(36, 'Amber', 'The tree dropped amber!',
+    `The tree dropped a piece of amber! From now on, every now and then, the tree can drop amber when it levels up.
+    <br><br>
+    Amber can be used in the new amber tab for various effects.
+    <br><br>
+    Effects:
+    <br>
+    • Production boost: gives a boost to berries and mushrooms for the entire run, this lasts until next transcension.
+    <br>
+    • Other effects may unlock later.
+    `,
+    undefined,
+    undefined,
+    undefined);
 
 
 function createKeyboardHelpDialog() {

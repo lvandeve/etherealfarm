@@ -684,4 +684,4 @@ var bind = util.bind;
 var makeDiv = util.makeDiv;
 var upper = util.upperCaseFirstWord;
 var eventHasCtrlKey = util.eventHasCtrlKey;
-
+var eventHasShiftKey = util.eventHasShiftKey

@@ -227,6 +227,8 @@ function unlockTemplates() {
       state.crops[bee_template].unlocked = false;
       state.crops[nettle_template].unlocked = false;
     }
+
+    state.crops[nut_template].unlocked = haveSquirrel();
   } else {
     // templates disabled in bee challenge because: no templates available for some challenge-specific crops, could be confusing. note also that the beehive template is not for the bee challenge's special beehive.
     // templates disabled in nodelete challenge because: not a strong reason actually and the code to allow deleting templates in nodelete challenge is even implemented, but by default templates cause automaton to upgrade them, and that would cause nodelete challenge to fail early since the cropss ey cannot be upgraded to a better type
@@ -238,7 +240,7 @@ function unlockTemplates() {
     state.crops[nettle_template].unlocked = false;
     state.crops[bee_template].unlocked = false;
     state.crops[mistletoe_template].unlocked = false;
-
+    state.crops[nut_template].unlocked = false;
   }
 
   if(state.crops2[automaton2_0].unlocked) {
@@ -399,6 +401,8 @@ function softReset(opt_challenge) {
     // even for the "attempt" counter, do not count attempts that don't even level up the tree, those are counted as state.g_numresets_challenge_0 instead
     if(state.treelevel) c2.num++;
   }
+
+  state.amberprod = false;
 
 
   var resin = getUpcomingResin();
@@ -620,7 +624,7 @@ function softReset(opt_challenge) {
   state.misttime = 0;
   state.suntime = 0;
   state.rainbowtime = 0;
-  state.lasttreeleveluptime = state.time;
+  //state.lasttreeleveluptime = state.time; // commented out: this is preserved across runs now for amber computation
 
   state.crops = [];
   for(var i = 0; i < registered_crops.length; i++) {
@@ -697,6 +701,7 @@ var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
 var ACTION_PLANT_BLUEPRINT = action_index++;
 var ACTION_UPGRADE3 = action_index++; // squirrel upgrade
 var ACTION_RESPEC3 = action_index++; // respec squirrel upgrades
+var ACTION_AMBER = action_index++; // amber effects
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 
 var lastSaveTime = util.getTime();
@@ -1289,7 +1294,7 @@ function precomputeField() {
     }
   }
 
-  // pass 5: leeching
+  // pass 5: watercress copying
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1298,6 +1303,7 @@ function precomputeField() {
       if(c) {
         if(c.type == CROPTYPE_SHORT) {
           var leech = c.getLeech(f);
+          var leech_nuts = c.getLeech(f, undefined, true);
           var p = prefield[y][x];
           var total = Res();
           var num = 0;
@@ -1310,9 +1316,10 @@ function precomputeField() {
             if(c2) {
               if(c2.type != CROPTYPE_SHORT) p.touchnum++;
               var p2 = prefield[y2][x2];
-              if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
-                var leech2 = p2.prod2.mul(leech);
-                var leech3 = p2.prod3.mul(leech);
+              if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
+                var leech1 = (c2.type == CROPTYPE_NUT) ? leech_nuts : leech;
+                var leech2 = p2.prod2.mul(leech1);
+                var leech3 = p2.prod3.mul(leech1);
                 p.prod2.addInPlace(leech2);
                 p.prod3.addInPlace(leech3);
                 // we could in theory add "leech0=p2.prod0.mul(leech)" instead of leech2 to the hypothetical production given by prod0b for UI reasons.
@@ -1727,12 +1734,15 @@ function computeNextAutoPlant() {
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
   // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
-  var types = [CROPTYPE_SQUIRREL, CROPTYPE_SHORT, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE];
+  var types = [CROPTYPE_SQUIRREL, CROPTYPE_SHORT, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE, CROPTYPE_NUT];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
 
-    if(type == CROPTYPE_SQUIRREL && state.cropcount[squirrel_0]) continue; // can have max 1 squirrel (even though multiple blueprints are possible), so do not attempt to plant it all the time once there's one
+    //if(type == CROPTYPE_SQUIRREL && state.cropcount[squirrel_0]) continue; // can have max 1 squirrel (even though multiple blueprints are possible), so do not attempt to plant it all the time once there's one
+    //if(type == CROPTYPE_NUT && tooManyNutsPlants()) continue; // can have max 1 squirrel (even though multiple blueprints are possible), so do not attempt to plant it all the time once there's one
+
+
 
     var crop = getCheapestNextOfCropType(type);
     if(!crop) continue;
@@ -1758,6 +1768,7 @@ function computeNextAutoPlant() {
         var c = f.getCrop();
         if(c.type != type) continue;
         if(c.tier >= crop.tier) continue;
+        if(type == CROPTYPE_NUT && tooManyNutsPlants(!c.istemplate)) continue; // can only have 1 at the same time
         if(next_auto_plant == undefined || time < next_auto_plant.time) next_auto_plant = {index:crop.index, x:x, y:y, time:time};
         x = state.numw;
         y = state.numh;
@@ -1964,15 +1975,14 @@ function nextEventTime() {
 
 function addAction(action) {
   if(state.paused) return;
-
   actions.push(action);
+  // BEWARE: this should not call update(), but user must call update() after this. Reason for not doing it here is that some things add many actions in a row.
 }
 
+// This drops roughly 1 to 2 amber an hour, dropping more if tree leveling takes longer, but dropping less if tree isn't leveling for over 3 hours (not active anymore)
 function maybeDropAmber() {
-  return Num(0); // not yet implemented!
-  /*
   var amber = Num(0);
-  var do_amber = state.g_numresets > 0 && state.treelevel >= 9;
+  var do_amber = state.g_numresets > 1 && (state.treelevel >= 9 || state.treelevel == 0);
   if(do_amber) {
     var leveltime = state.time - state.lasttreeleveluptime;
     // always give amber if an hour ago, but when having slow leveling tree (indicating being at a high level, relative for current game), this can go up to twice as fast
@@ -1986,7 +1996,6 @@ function maybeDropAmber() {
     else if(leveltime >= 30) reqtime = 3000;
     var ambertime = state.time - state.lastambertime;
     if(ambertime >= reqtime) {
-      console.log('leveltime: ' + leveltime);
       // for really long tree levels, more can drop
       var amount = 1;
       // TODO: make this gradual (but capped) rather than in bumps
@@ -1995,12 +2004,17 @@ function maybeDropAmber() {
       else if(leveltime >= 3600) amount = 2;
       else if(leveltime >= 1800) amount = 1.5;
       state.lastambertime = state.time;
+      state.g_amberdrops++;
       amber = Num(amount);
     }
     if(amber.neqr(0)) showMessage('the tree dropped ' + amber.toString() + ' amber', C_AMBER, 1046741287);
   }
+
+  if(amber.neqr(0) && state.g_res.amber.eqr(0)) {
+    showRegisteredHelpDialog(36);
+  }
+
   return amber;
-  */
 }
 
 // for misc things in UI that update themselves
@@ -2049,8 +2063,7 @@ var update = function(opt_ignorePause) {
     // more things must get adjusted during pause
     // NOTE: due to pause, there are two distinct flows of time going on: the real-time clock, and the in-game clock
     // however, we only save one of them. For things that have in-game effect, that's the in-game clock
-    // for some events that
-    // what is being adjusted here are things that are stored as game-time rather than real-time
+    // for some events that what is being adjusted here are things that are stored as game-time rather than real-time
     // there are also in fact two different types of game-time: time from this run, and time since start of game
     // something ethereal like ethereal tree level up uses the since-start gametime, things like misttime use the this-run gametime instead.
     // some other things are stored as real time, e.g. state.c_starttime. To get the in-game time of that one, subtract state.c_pausetime from it.
@@ -2368,6 +2381,16 @@ var update = function(opt_ignorePause) {
           ok = false;
         }
 
+        var nuts = getNextUpgrade3Cost();
+        if(state.res.nuts.lt(nuts)) {
+          ok = false;
+          showMessage('not enough resources for the next squirrel upgrade ' +
+                      ': have: ' + state.res.nuts.toString(Math.max(5, Num.precision)) +
+                      ', need: ' + nuts.toString(Math.max(5, Num.precision)) +
+                      ' (' + getCostAffordTimer(Res({nuts:nuts})) + ')',
+                      C_INVALID, 0, 0);
+        }
+
         if(ok) {
           // TODO: subtract resources
           // TODO: update upgrades3_spent
@@ -2375,12 +2398,20 @@ var update = function(opt_ignorePause) {
           var u2 = state.upgrades3[us[d]];
           u2.count++;
           s2.num[b]++;
+          state.res.nuts.subInPlace(nuts);
+          state.upgrades3_spent.addInPlace(nuts);
           state.g_numupgrades3++;
           showMessage('Purchased squirrel upgrade: ' + u.name);
+
+          store_undo = true;
         }
       } else if(type == ACTION_RESPEC3) {
         var ok = true;
         if(!haveSquirrel()) {
+          ok = false;
+        } else if(state.respec3tokens < 1) {
+          showMessage('Cannot respec, no respec token available. It\'s possible to get one in the amber tab.',
+                      C_INVALID, 0, 0);
           ok = false;
         }
 
@@ -2394,8 +2425,57 @@ var update = function(opt_ignorePause) {
             state.stages3[i] = new Stage3State();
           }
           state.g_numrespec3++;
-          // TODO: give back and take resources
-          // TODO: reset upgrades3_spent
+          state.res.nuts.addInPlace(state.upgrades3_spent);
+          state.upgrades3_spent = Num(0);
+          state.respec3tokens--;
+
+          for(var i = 0; i < state.upgrades3.length; i++) {
+            state.upgrades3[i] = new Upgrade3State();
+          }
+          for(var i = 0; i < state.stages3.length; i++) {
+            state.stages3[i] = new Stage3State();
+          }
+
+          showMessage('Reset all squirrel upgrades and gave all nuts back. Consumed 1 squirrel respec token.');
+
+          store_undo = true;
+        }
+      } else if(type == ACTION_AMBER) {
+        var ok = true;
+
+        var cost = Num(0);
+        if(action.effect == AMBER_RESPEC3) {
+          cost = ambercost_respec3;
+        }
+        if(action.effect == AMBER_PROD) {
+          if(state.amberprod) {
+            showMessage('Already active.', C_INVALID, 0, 0);
+            ok = false;
+          }
+          cost = ambercost_prod;
+        }
+        cost = new Res({amber:cost});
+
+        if(ok && state.res.lt(cost)) {
+          ok = false;
+          showMessage('not enough resources: have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                      ', need: ' + cost.toString(Math.max(5, Num.precision)), C_INVALID, 0, 0);
+        }
+
+        if (ok) {
+          if(action.effect == AMBER_RESPEC3) {
+            state.respec3tokens++;
+            showMessage('One squirrel respec token added, now have: ' + state.respec3tokens, C_AMBER, 2215651, 1);
+          }
+          if(action.effect == AMBER_PROD) {
+            state.amberprod = true;
+            showMessage('Amber production bonus activated for the remainder of this run', C_AMBER, 2215651, 1);
+          }
+          state.res.subInPlace(cost);
+
+          if(!state.g_amberbuy[action.effect]) state.g_amberbuy[action.effect] = 0;
+          state.g_amberbuy[action.effect]++;
+          store_undo = true;
         }
       } else if(type == ACTION_PLANT_BLUEPRINT) {
         plantBluePrint(action.blueprint);
@@ -2470,6 +2550,9 @@ var update = function(opt_ignorePause) {
             ok = false;
           } else if(c.index == squirrel_0 && state.cropcount[squirrel_0]) {
             showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
+            ok = false;
+          } else if(c.type == CROPTYPE_NUT && !c.istemplate && tooManyNutsPlants(type == ACTION_REPLACE && f.hasRealCrop() && f.getCrop().type == CROPTYPE_NUT)) {
+            showMessage('you can only plant max 1 nut plant in the field', C_INVALID, 0, 0);
             ok = false;
           }
         }
@@ -2917,8 +3000,6 @@ var update = function(opt_ignorePause) {
           // do nothing, invalid reset attempt
         } else if(state.treelevel >= min_transcension_level || state.challenge) {
           do_transcend = action;
-          // the amber drop is done here, because we want to count it under actualgain so that it gets added to g_res etc...
-          actualgain.amber.addInPlace(maybeDropAmber());
           store_undo = true;
           // when transcending, break and execute the code below to actually transcend: if there are more actions queued, these should occur after the transcension happened.
           break;

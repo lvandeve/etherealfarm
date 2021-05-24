@@ -146,6 +146,18 @@ function getCropOrder() {
     added[highest.index] = true;
   }
 
+  // most expensive nut
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_NUT && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
   // most expensive flower
   highest = undefined;
   for(var i = 0; i < unlocked.length; i++) {
@@ -213,7 +225,14 @@ function getCropOrder() {
     array.push(unlocked[i]);
   }
   array.sort(function(a, b) {
-    return crops[a].cost.seeds.lt(crops[b].cost.seeds) ? 1 : -1;
+    var ac = crops[a].cost.seeds;
+    var bc = crops[b].cost.seeds;
+    if(ac.eqr(0) || bc.eqr(0)) {
+      // for nuts taht cost spores instead of seeds
+      ac = Num(crops[a].tier);
+      bc = Num(crops[b].tier);
+    }
+    return ac.lt(bc) ? 1 : -1;
   });
   for(var i = 0; i < array.length; i++) {
     result.push(array[i]);

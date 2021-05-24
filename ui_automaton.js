@@ -32,8 +32,14 @@ function showConfigureAutoResourcesDialog(subject) {
   var statefraction;
 
   if(subject == 0) {
-    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress', 'other'];
-    order = [3, 4, 5, 6, 7, 2, 1]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress'];
+    order = [3, 4, 5, 6, 7, 2]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+    if(squirrelUnlocked()) {
+      typenames.push('nuts');
+      order.push(9);
+    }
+    typenames.push('other');
+    order.push(1);
     statefraction = state.automaton_autoupgrade_fraction;
   } else if(subject == 1 || subject == 2) {
     typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
@@ -44,6 +50,10 @@ function showConfigureAutoResourcesDialog(subject) {
       statefraction = state.automaton_autoplant_fraction;
     } else {
       statefraction = state.automaton_autounlock_fraction;
+    }
+    if(squirrelUnlocked()) {
+      typenames.push('nuts');
+      order.push(9);
     }
     typenames.push('other');
     order.push(1);

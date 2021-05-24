@@ -773,6 +773,13 @@ function getCostAffordTimer(cost) {
     percent = Num.min(percent, p);
   }
 
+  if(cost.nuts.gtr(0)) {
+    var p = cost.nuts.div(state.res.nuts).mulr(100);
+    var t = cost.nuts.sub(state.res.nuts).div(gain.nuts);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
   if(cost.resin.gtr(0)) {
     var p = cost.resin.div(state.res.resin).mulr(100);
     var t = cost.resin.sub(state.res.resin).div(gain.resin);

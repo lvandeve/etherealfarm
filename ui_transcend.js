@@ -80,7 +80,7 @@ function createTranscendDialog(opt_from_challenge) {
   var extrafun2 = undefined;
   var shortcutfun = undefined;
   if(haveAutomaton() && state.numnonemptyblueprints) {
-    extraname2 = 'blueprint';
+    extraname2 = 'with blueprint';
     extrafun2 = function() {
       createBlueprintsDialog(true);
     };
@@ -187,36 +187,67 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   text += '<br>';
   text += '• Max level reached with this challenge gives ' + c.bonus.toPercentString() + ' production bonus per level to the game, whether successfully completed or not (formula: bonus * level ^ ' + challenge_bonus_exponent + ').';
   text += '<br>';
-  if(c.allowsresin) {
-    if(c.allowbeyondhighestlevel) {
-      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10';
+  if(c.allowsresin && c.allowsfruits && c.allowstwigs && c.allowsnuts && c.allowbeyondhighestlevel) {
+    if(squirrelUnlocked()) {
+      text += '• You can gain resin, twigs, nuts and fruits as usual (but they only become available at at least tree level 10)';
     } else {
-      text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10 and not when reaching higher level than highest regular run';
+      text += '• You can gain resin, twigs and fruits as usual (but they only become available at tree level 10)';
     }
-  } else {
-    text += '• Tree does not gain any resin';
-  }
-  text += '<br>';
-  if(c.allowsfruits) {
-    if(c.allowbeyondhighestlevel) {
-      text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead';
+    text += '<br>';
+  } else if(c.allowsresin && c.allowsfruits && c.allowstwigs && !c.allowsnuts && c.allowbeyondhighestlevel) {
+    text += '• You can gain resin, twigs and fruits as usual (but they only become available at tree level 10)';
+    if(squirrelUnlocked()) {
+      text += '<br>';
+      text += '• No nuts can be grown during this challenge';
+    }
+    text += '<br>';
+  } else if(!c.allowsresin && !c.allowsfruits && !c.allowstwigs && !c.allowsnuts) {
+    if(squirrelUnlocked()) {
+      text += '• You cannot gain any resin, twigs, nuts or fruits during this challenge';
     } else {
-      text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead, and no fruits are dropped above highest level ever reached with a regular run';
+      text += '• You cannot gain any resin, twigs or fruits during this challenge';
     }
+    text += '<br>';
   } else {
-    text += '• Tree does not drop any fruits';
-  }
-  text += '<br>';
-  if(c.allowstwigs) {
-    if(c.allowbeyondhighestlevel) {
-      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10';
+    if(c.allowsresin) {
+      if(c.allowbeyondhighestlevel) {
+        text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10';
+      } else {
+        text += '• Tree gains resin as usual, but it\'s only available when reaching at least level 10 and not when reaching higher level than highest regular run';
+      }
     } else {
-      text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10 and not when reaching higher level than highest regular run';
+      text += '• Tree does not gain any resin';
     }
-  } else {
-    text += '• No twigs can be gained from mistletoes';
+    text += '<br>';
+    if(c.allowsfruits) {
+      if(c.allowbeyondhighestlevel) {
+        text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead';
+      } else {
+        text += '• Tree drops fruits as usual, but the level 5 fruit is dropped at level 10 instead, and no fruits are dropped above highest level ever reached with a regular run';
+      }
+    } else {
+      text += '• Tree does not drop any fruits';
+    }
+    text += '<br>';
+    if(c.allowstwigs) {
+      if(c.allowbeyondhighestlevel) {
+        text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10';
+      } else {
+        text += '• Twigs can be gained from mistletoes as usual, but they\'re only available when reaching at least level 10 and not when reaching higher level than highest regular run';
+      }
+    } else {
+      text += '• No twigs can be gained from mistletoes';
+    }
+    text += '<br>';
+    if(squirrelUnlocked()) {
+      if(c.allowsnuts) {
+        text += '• Nuts crops can be grown as usual (once high enough tree level reached to unlock them)';
+      } else {
+        text += '• No nuts can be grown during this challenge';
+      }
+      text += '<br>';
+    }
   }
-  text += '<br>';
   text += '<br><br>';
 
   if(c.fullyCompleted(include_current_run)) {
@@ -349,7 +380,7 @@ function createFinishChallengeDialog() {
   var extrafun = undefined;
   var shortcutfun = undefined;
   if(haveAutomaton() && state.numnonemptyblueprints) {
-    extraname = 'blueprint';
+    extraname = 'with blueprint';
     extrafun = function() {
       createBlueprintsDialog(true);
     };

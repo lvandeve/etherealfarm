@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.74 "Squirrel update" (2021-05-24):';
+  text += '<br/>• Added squirrel, nuts resource and nuts crops (unlocks at ethereal tree level 5).';
+  text += '<br/>• Added amber resource and amber processor.';
+  text += '<br/>• Added a prelimenary small set of squirrel upgrades and amber effects to test-run the feature for now, next releases will add more content: more nut crops tiers, squirrel tech tree with interesting choices reaching beyond the nuts production limits.';
+  text += '<br/>• Made the colors of spring and summer more easily distinguishable from each other.';
+  text += '<br/><br/>';
+
   text += '0.1.73 (2021-05-20):';
   // pause related bug, number format setting not updating right pane, wrong challenge bonus display in tree challenge dialog
   text += '<br/>• Bugfixes.';

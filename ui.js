@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-
+// tab contents
 var fieldFlex;
 var upgradeFlex;
 var fruitFlex;
@@ -24,6 +24,8 @@ var medalDiv;
 var field2Flex;
 var upgrade2Flex;
 var automatonFlex;
+var squirrelFlex;
+var amberFlex;
 
 
 var mainw;
@@ -62,17 +64,17 @@ function makeMainDivs() {
   topFlex = new Flex(gameFlex, 0, 0, 1, 0.05);
   if(showdebugborders) topFlex.div.style.border = '2px solid red';
 
-  infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.18, 0.25);
+  infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.175, 0.25);
   if(showdebugborders) infoFlex.div.style.border = '2px solid blue';
 
-  tabFlex = new Flex(gameFlex, 0, 0.18, 1, 0.28, 0.22);
+  tabFlex = new Flex(gameFlex, 0, 0.176, 1, 0.29, 0.22);
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
-  contentFlex = new Flex(gameFlex, 0, 0.285, 1, 0.79);
+  contentFlex = new Flex(gameFlex, 0, 0.295, 1, 0.8);
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
 
-  logFlex = new Flex(gameFlex, 0, 0.8, 1, 1, 0.25);
+  logFlex = new Flex(gameFlex, 0, 0.805, 1, 1, 0.25);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
   rightFlex = new Flex(mainFlex, [0, 0, 0.99, 0.75], 0, [0, 0, 0.99, 1.1], 1);
@@ -101,6 +103,8 @@ var tabindex_fruit;
 var tabindex_field2;
 var tabindex_upgrades2;
 var tabindex_automaton;
+var tabindex_squirrel;
+var tabindex_amber;
 var tabindex_medals;
 
 // init the UI after a reset, save load, .... Keeps log messages
@@ -134,6 +138,8 @@ function initUI() {
   tabindex_upgrades2 = tabnum++;
   tabindex_medals = tabnum++;
   tabindex_automaton = tabnum++;
+  tabindex_squirrel = tabnum++;
+  tabindex_amber = tabnum++;
 
   for(var i = 0; i < tabnum; i++) tabs[i] = new Flex(contentFlex, 0, 0, 1, 1);
 
@@ -146,6 +152,8 @@ function initUI() {
   field2Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   upgrade2Flex = tabs[tabindex_upgrades2];
   automatonFlex = tabs[tabindex_automaton];
+  squirrelFlex = tabs[tabindex_squirrel];
+  amberFlex = tabs[tabindex_amber];
 
   updateTabButtons();
 
@@ -160,6 +168,7 @@ function initUI() {
 }
 
 var pausedflex = undefined;
+var pausedcanvaspaused = false;
 
 function updatePausedUI() {
   if(state.paused && !pausedflex) {
@@ -168,16 +177,21 @@ function updatePausedUI() {
     pausedflex.div.textEl.innerText = 'Paused';
     pausedflex.div.style.pointerEvents = 'none';
     pausedflex.div.style.color = '#f008';
-    //pausedflex.div.style.fontSize = '100%';
-    renderImage(image_paused, pauseButtonCanvas);
   } else if(!state.paused && pausedflex) {
     pausedflex.removeSelf(contentFlex);
     pausedflex = undefined;
+  }
+  if(state.paused && !pausedcanvaspaused) {
+    pausedcanvaspaused = true;
+    renderImage(image_paused, pauseButtonCanvas);
+  } else if(!state.paused && pausedcanvaspaused) {
+    pausedcanvaspaused = false;
     renderImage(image_pause, pauseButtonCanvas);
   }
 }
 
 // some parts of the UI are updated more often than just in initUI, their functions, even for initial creation, are called 'update' instead of 'init'
+// this one is not called per frame, only for some more rare actions that have high likelyhood of invalidating the UI (e.g. loading a save, or undo)
 function updateUI() {
   updateUpgradeUI();
   //updateMedalUI();
@@ -185,6 +199,9 @@ function updateUI() {
   updateTabButtons();
   updateUpgrade2UI();
   updateAutomatonUI();
+  updateAmberUI();
+  updateSquirrelUI();
+  updatePausedUI();
 }
 
 // the one for during a game update

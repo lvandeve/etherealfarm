@@ -55,8 +55,11 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     if(c.boost.neqr(0)) {
       result += '<br/>Boosting neighbors: ' + (c.getEtherealBoost(f).toPercentString()) + '<br/>';
     }
-    if(automaton || squirrel) {
-      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (automatonboost.toPercentString()) + '<br/>';
+    if(automaton) {
+      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonNeighborBoost().toPercentString()) + '<br/>';
+    }
+    if(squirrel) {
+      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealSquirrelNeighborBoost().toPercentString()) + '<br/>';
     }
   }
 
@@ -170,16 +173,7 @@ function makeField2Dialog(x, y) {
     var c = crops2[f.cropIndex()];
     var div;
 
-    var okfun = undefined;
-    var okname = undefined;
-    if(c.type == CROPTYPE_SQUIRREL) {
-      okfun = function(){
-        makeSquirrelDialog();
-      };
-      okname = 'squirrel upgrades';
-    }
-
-    var dialog = createDialog(undefined, okfun, okname);
+    var dialog = createDialog();
     dialog.div.className = 'efDialogTranslucent';
     var flex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);

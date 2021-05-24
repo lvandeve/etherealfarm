@@ -268,9 +268,9 @@ function makeTreeDialog() {
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 0.98, 0.65, 0.3);
+  var f0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 0.98, 0.6, 0.3);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.01, 0, 0.2], 0.7, 1, 0.9, 0.3);
+  var f1 = new Flex(contentFlex, [0.01, 0, 0.2], 0.65, 1, 0.9, 0.3);
 
   var createText = function() {
     var text;
@@ -399,7 +399,7 @@ function makeTreeDialog() {
   });
 
   var y = 0;
-  var h = 0.3;
+  var h = 0.22;
 
   if(state.challenge) {
     var c = challenges[state.challenge];
@@ -472,6 +472,7 @@ function makeTreeDialog() {
       });
     }
   }
+
   if(haveAutomaton()) {
     button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
     y += h * 1.1;
@@ -481,18 +482,6 @@ function makeTreeDialog() {
     button.textEl.style.textShadow = '0px 0px 5px #008';
     addButtonAction(button, function() {
       createBlueprintsDialog();
-    });
-  }
-
-  if(haveSquirrel()) {
-    button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
-    y += h * 1.1;
-    styleButton(button);
-    button.textEl.innerText = 'Squirrel Upgrades';
-    //button.textEl.style.boxShadow = '0px 0px 5px #44f';
-    button.textEl.style.textShadow = '0px 0px 5px #840';
-    addButtonAction(button, function() {
-      makeSquirrelDialog();
     });
   }
 }

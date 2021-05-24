@@ -41,6 +41,12 @@ a:visited {
   color: #444;
 }
 
+.efButtonAlreadyActive {
+  background-color: #666;
+  border: 1px solid #333;
+  color: #cc4;
+}
+
 .efButtonHighlighted {
   background-color: #777;
   border: 1px solid #000;
@@ -52,7 +58,7 @@ a:visited {
 }
 
 .efSeasonBgSpring {
-  background-color: #263713;
+  background-color: #744864;
 }
 
 .efSeasonBgSummer {
@@ -64,7 +70,7 @@ a:visited {
 }
 
 .efSeasonBgWinter {
-  background-color: #445;
+  background-color: #556;
 }
 
 .efUpgradeChip {
@@ -147,7 +153,6 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   border: 1px solid #990;
 }
 
-
 .efSquirrelBuy {
   background-color: #aa4;
   color: #000;
@@ -162,4 +167,9 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 .efSquirrelUnknown {
   background-color: #444;
   border: 1px solid #100;
+}
+
+.efAmberInfo {
+  color: #fd0;
+  text-shadow: 1px 0 #000, -1px 0 #000, 0 1px #000, 0 -1px #000, 1px 1px #000, -1px -1px #000, -1px 1px #000, 1px -1px #000;
 }
