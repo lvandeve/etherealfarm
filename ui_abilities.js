@@ -187,7 +187,7 @@ function updateAbilitiesUI() {
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-      renderImage(watercress[4], canvas);
+      renderImage(images_watercress[4], canvas);
 
       addButtonAction(watercressbutton.div, function(e) {
         refreshWatercress(util.eventHasCtrlKey(e), e.shiftKey);

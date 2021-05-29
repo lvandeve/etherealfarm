@@ -159,12 +159,17 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 }
 
 .efSquirrelNext {
-  background-color: #400;
+  background-color: #b44;
   border: 1px solid #100;
 }
 
 .efSquirrelUnknown {
   background-color: #444;
+  border: 1px solid #100;
+}
+
+.efSquirrelGated {
+  background-color: #4ff;
   border: 1px solid #100;
 }
 

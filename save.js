@@ -790,6 +790,7 @@ function decState(s) {
         f.growth = array1[index1++];
       }
       if((f.index == 150 || f.index == 151) && save_version < 4096*1+74) f.index = f.growth = 0; //accidental nuts plants in older version
+      else if(f.index == 151 + CROPINDEX && save_version < 4096*1+75) f.index = 150 + CROPINDEX; //second nut tier got a lot more powerful and expensive, replace with first tier
     }
   }
   if(index0 > array0.length) return err(4);
@@ -857,6 +858,11 @@ function decState(s) {
         if(index == active_choice0_b && array2[i]) {state.upgrades[active_choice0].unlocked = true; state.upgrades[active_choice0].count = 2;}
       }
     }
+  }
+  if(save_version < 4096*1+75) {
+    //second nut tier got a lot more powerful and expensive, undo its upgrades
+    state.upgrades[301].count = 0; // nutunlock_1
+    state.upgrades[226].count = 0; // nutmul_1
   }
 
 
@@ -1144,6 +1150,7 @@ function decState(s) {
   if(save_version >= 4096*1+71) state.lastambertime = processFloat();
   if(save_version >= 4096*1+72) state.paused = processBool();
   if(save_version >= 4096*1+74) state.respec3tokens = processUint();
+  if(save_version < 4096*1+75) state.respec3tokens++; // free respec token due to upgrade change
 
   section = 17; id = 0; // fruits
   if(save_version >= 4096*1+17) {
@@ -1507,6 +1514,9 @@ function decState(s) {
       s3.num[0] = array0[index0++];
       s3.num[1] = array0[index0++];
       s3.num[2] = array0[index0++];
+      if(s3.num[0] > stages3[i].upgrades0.length) return err(4);
+      if(s3.num[1] > stages3[i].upgrades1.length) return err(4);
+      if(s3.num[2] > stages3[i].upgrades2.length) return err(4);
       for(var j = 0; j < s3.num[0]; j++) state.upgrades3[stages3[i].upgrades0[j]].count++;
       for(var j = 0; j < s3.num[1]; j++) state.upgrades3[stages3[i].upgrades1[j]].count++;
       for(var j = 0; j < s3.num[2]; j++) state.upgrades3[stages3[i].upgrades2[j]].count++;

@@ -35,6 +35,11 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_SUMMER: return getSeason() == 1 ? 'S' : 's';
       case FRUIT_AUTUMN: return getSeason() == 2 ? 'S' : 's';
       case FRUIT_WINTER: return getSeason() == 3 ? 'S' : 's';
+      case FRUIT_SPRING_SUMMER: return ((getSeason() == 0 || getSeason() == 1) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
+      case FRUIT_SUMMER_AUTUMN: return ((getSeason() == 1 || getSeason() == 2) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
+      case FRUIT_AUTUMN_WINTER: return ((getSeason() == 2 || getSeason() == 3) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
+      case FRUIT_WINTER_SPRING: return ((getSeason() == 3 || getSeason() == 0) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
+      case FRUIT_ALL_SEASON: return !!state.upgrades3[upgrade3_fruitmix2].count ? 'S' : 's';
     }
     return '?';
   }
@@ -52,6 +57,11 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_SUMMER: return 'summer boost';
     case FRUIT_AUTUMN: return 'autumn boost';
     case FRUIT_WINTER: return 'winter boost';
+    case FRUIT_SPRING_SUMMER: return 'spring and summer boost';
+    case FRUIT_SUMMER_AUTUMN: return 'summer and autumn boost';
+    case FRUIT_AUTUMN_WINTER: return 'autumn and winter boost';
+    case FRUIT_WINTER_SPRING: return 'winter and spring boost';
+    case FRUIT_ALL_SEASON: return '4-seasons boost';
   }
   return 'unknown';
 }
@@ -71,6 +81,11 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_SUMMER: return 'boosts the summer berry boost, only during the summer season';
     case FRUIT_AUTUMN: return 'boosts the autumn mushroom boost, only during the autumn season';
     case FRUIT_WINTER: return 'boosts the winter tree warmth effect, only during the winter season';
+    case FRUIT_SPRING_SUMMER: return 'boosts the spring flower boost and the summer berry boost, only during the respective seasons';
+    case FRUIT_SUMMER_AUTUMN: return 'boosts the summer berry boost and the autumn mushroom boost, only during the respective seasons';
+    case FRUIT_AUTUMN_WINTER: return 'boosts the autumn mushroom boost and the winter tree warmth effect, only during the respective seasons';
+    case FRUIT_WINTER_SPRING: return 'boosts the winter tree warmth effect and the spring flower boost, only during the respective seasons';
+    case FRUIT_ALL_SEASON: return 'boosts the special effect of each of the 4 seasons, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
   }
   return 'unknown';
 }
@@ -124,9 +139,9 @@ function createFruitHelp() {
   text += '<br/>';
   text += ' • The order of abilities of first and second fruit matters, and you can freely reorder abilities in the regular fruit dialog (where you level up abilities), so you can control which abilities of the first fruit stay and which get pushed out.';
   text += '<br/>';
-  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participiate in fusing. The resulting fruit will be an apple if the two original fruits are of a different type, or will be seasonal if both original fruits are the same seasonal type (e.g. both pineapple).';
+  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participiate in fusing. The resulting fruit will be an apple if the two original fruits are of a different type, or will be seasonal if both original fruits are the same seasonal type (e.g. both pineapple). NOTE: some later upgrades in the game change this.';
   text += '<br/>';
-  text += ' • All abilities are level 1 after the fusing, but you can level them up again and no essense is lost';
+  text += ' • After fusing, abilities will be auto-leveled up (using the usual amount of fruit essence), based on what levels they had before, and leaving some essence unused if a new unupgraded ability is added.';
   text += '<br/><br/>';
   text += 'Summary of the rules: getting 3 fruits with the same ability allows to create a fusible ability that you can transfer to any fruit of choice, replacing an unwanted ability of choice. Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:';
   text += '<br/>';
@@ -155,6 +170,31 @@ function createFruitHelp() {
   text += ' • <b>], } or )</b>: select next active fruit';
   text += '<br/>';
   text += ' • <b>[, { or (</b>: select previous active fruit';
+  if(state.upgrades3[upgrade3_fruitmix].count) {
+    text += '<br/><br/>';
+    text += '<b>Seasonal fruit mixing</b>';
+    text += '<br/><br/>';
+    text += 'You unlocked the squirrel upgrade for seasonal fruit mixing! This works when fuxing certain combinations of two different seasonal fruits together.';
+    text += '<br/><br/>';
+    text += 'The combinations are:';
+    text += '<br>';
+    text += '• Apricot + Pineapple = Mango (spring + summer)';
+    text += '<br>';
+    text += '• Pineapple + Pear = Plum (summer + autumn)';
+    text += '<br>';
+    text += '• Pear + Medlar = Quince (autumn + winter)';
+    text += '<br>';
+    text += '• Medlar + Apricot = Kumquat (winter + spring)';
+    text += '<br/><br/>';
+    text += 'If (and only if) you also have the second fruit mixing upgrade purchaced, then in addition:';
+    text += '<br><br>';
+    text += '• Mango + Quince = Dragon Fruit (4 seasons)';
+    text += '<br>';
+    text += '• Plum + Kumquat = Dragon Fruit (4 seasons)';
+    text += '<br><br>';
+    text += '<br><br>';
+    text += '<br/>';
+  }
 
   div.innerHTML = text;
 }
@@ -228,7 +268,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     }
     if(fruits.length == 0) {
       var flex = new Flex(scrollFlex, 0.01, [0, 0, y], 0.9, [0, 0, y + s]);
-      flex.div.innerText = '[ No fruit to fuse, must have at least 1 other fruit of the same tier and same type ]';
+      flex.div.innerText = '[ No fruit to fuse, must have at least 1 other fruit of the same tier ]';
     }
     y += s;
 
@@ -277,8 +317,12 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
     addTitle('Fused fruit result:');
 
+    var fruitmix = 0;
+    if(state.upgrades3[upgrade3_fruitmix].count) fruitmix += 2;
+    if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix += 2;
+
     var message = [undefined];
-    var fuse = swapped ? fuseFruit(selected, f, message) : fuseFruit(f, selected, message);
+    var fuse = swapped ? fuseFruit(selected, f, fruitmix, message) : fuseFruit(f, selected, fruitmix, message);
 
     x = 0;
     var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
@@ -661,7 +705,7 @@ function showStorageFruitSourceDialog() {
 
 function styleFruitChip(flex, f) {
   var ratio = state.res.essence
-  flex.div.style.backgroundColor = tierColors_BG[f.tier] + '8';
+  flex.div.style.backgroundColor = tierColors_BG[f.tier] + '4';
   if(f.mark) {
     var color = f.mark == 1 ? '#f008' : (f.mark == 2 ? '#fe08' : (f.mark == 3 ? '#4c48' : '#06c8'));
     flex.div.style.border = '3px solid ' + color;

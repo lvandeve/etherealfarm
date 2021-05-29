@@ -62,7 +62,7 @@ function getCropInfoHTMLBreakdown(f, c) {
   }
   if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
     var breakdown = p.getBreakdown();
-    result += formatBreakdown(breakdown, true, bdname + ' (neighboor boost +%)');
+    result += formatBreakdown(breakdown, true, bdname + ' (neighbor boost +%)');
   }
   if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
     var breakdown = p.getBreakdown();

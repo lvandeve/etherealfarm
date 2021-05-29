@@ -158,11 +158,18 @@ function updateResourceUI() {
       var s = getSeason();
       if(s == 0) {
         result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
+        if(state.upgrades3[upgrade3_season[s]].count) {
+          result += '• Crops grow ' + Num(upgrade3_spring_growspeed_bonus).toPercentString() + ' faster (squirrel upgrade)<br>';
+          //result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
+        }
       }
       if(s == 1) {
         result += '• +' + getSummerBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
         if(getSummerMushroomBonus().neqr(1)) {
           result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production (but also consumption)<br>';
+        }
+        if(state.upgrades3[upgrade3_season[s]].count) {
+          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
         }
       }
       if(s == 2) {
@@ -172,6 +179,9 @@ function updateResourceUI() {
         }
         if(state.upgrades2[upgrade2_mistletoe].count) {
           result += '• Twigs bonus: ' + getAutumnMistletoeBonus().subr(1).toPercentString() + ' more twigs added when tree levels with mistletoes<br>';
+        }
+        if(state.upgrades3[upgrade3_season[s]].count) {
+          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
         }
       }
       if(s == 3) {
@@ -211,6 +221,7 @@ function updateResourceUI() {
 
   var i = 1;
   var showResource = function(special, index, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos) {
+    var upcoming_breakdown = [];
     var name = resource_names[index];
     var res = arr_res[index];
     var upcoming;
@@ -225,7 +236,7 @@ function updateResourceUI() {
       }
       if(index == 7) {
         // essence
-        upcoming = getUpcomingFruitEssence().essence;
+        upcoming = getUpcomingFruitEssence(upcoming_breakdown).essence;
       }
     }
 
@@ -319,18 +330,23 @@ function updateResourceUI() {
         text += 'Current amount: ' + res.toString() + '<br/><br/>';
         text += 'Amount from next sacrificed fruits: ' + upcoming.toString() + '<br/><br/>';
         text += 'Using this to level up fruit abilities does not consume the global essence. Every fruit can use all the essence.<br/><br/>';
+        if(upcoming_breakdown.length > 1) {
+          text += formatBreakdown(upcoming_breakdown, false, 'Upcoming essence breakdown');
+        }
       }
       if(index == 6) {
         // amber
         var text = '<b>Amber</b><br/><br/>';
         text += 'Current amount: ' + res.toString() + '<br/><br/>';
-        text += 'Amber drops every now and then when the tree levels<br/><br/>';
+        text += 'Amber drops every now and then when the tree levels. You can use it in the \'amber\' tab.<br/><br/>';
       }
     } else {
       var text = '<b>' + upper(name) + '</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
 
       if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
+
+      if(index == 4) text += 'Nuts are used for squirrel upgrades, which you can access in the \'squirrel\' tab<br><br>';
 
       if(gain.neq(gain_pos)) {
         // Total production is production - consumption.

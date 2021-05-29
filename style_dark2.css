@@ -58,11 +58,11 @@ a:visited {
 }
 
 .efSeasonBgSpring {
-  background-color: #744864;
+  background-color: #857;
 }
 
 .efSeasonBgSummer {
-  background-color: #22431b;
+  background-color: #251;
 }
 
 .efSeasonBgAutumn {
@@ -70,7 +70,7 @@ a:visited {
 }
 
 .efSeasonBgWinter {
-  background-color: #556;
+  background-color: #557;
 }
 
 .efUpgradeChip {
@@ -166,6 +166,12 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 
 .efSquirrelUnknown {
   background-color: #444;
+  border: 1px solid #100;
+}
+
+.efSquirrelGated {
+  background-color: #4aa;
+  color: #044;
   border: 1px solid #100;
 }
 

@@ -53,7 +53,7 @@ function showHelpChip(text) {
 
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 36
+// highest used id: 37
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
@@ -211,7 +211,7 @@ registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your 
     undefined,
     '<br><br>'+
     'The image below shows an optimal configuration to use for watercress copying: the single watercress duplicates the production of 4 blackberries:',
-    [[undefined,blackberry[4],undefined],[blackberry[4],watercress[4],blackberry[4]],[undefined,blackberry[4],undefined]]);
+    [[undefined,blackberry[4],undefined],[blackberry[4],images_watercress[4],blackberry[4]],[undefined,blackberry[4],undefined]]);
 
 
 
@@ -366,7 +366,7 @@ registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nut
     images_squirrel[4],
     undefined,
   [[mulberry[4],iris[4],mulberry[4]],
-   [iris[4],images_almond[4],watercress[4]],
+   [iris[4],images_almond[4],images_watercress[4]],
    [mulberry[4],iris[4],mulberry[4]]]);
 
 registerHelpDialog(36, 'Amber', 'The tree dropped amber!',
@@ -383,6 +383,37 @@ registerHelpDialog(36, 'Amber', 'The tree dropped amber!',
     undefined,
     undefined,
     undefined);
+
+registerHelpDialog(37, 'Combined Seasonal Fruits', 'You unlocked combined seasonal fruits fusing!',
+    `You unlocked fusing of multi-season fruits! Now when you fuse fruits of different seasons, they may form a new fruit that gives the bonus for both seasons. The following combinations work:
+    <br><br>
+    • Apricot + Pineapple = Mango (spring + summer)
+    <br>
+    • Pineapple + Pear = Plum (summer + autumn)
+    <br>
+    • Pear + Medlar = Quince (autumn + winter)
+    <br>
+    • Medlar + Apricot = Kumquat (winter + spring)
+    <br><br>
+    Other combinations (e.g. Apricot + Pear, or Quince + Plum) don\'t work and just give a regular apple, or a lowest common denominator seasonal fruit.
+    <br><br>
+    To get these multi-season fruits, fuse fruits as you usually do. All other fusing rules, such as the combining of abilities (and inability to fuse in case of full ability mismatches), work as usual, the change is now some mixed combinations give a new improved multi-season fruit rather than an apple.
+    <br><br>
+    Later, if (and only if) you get the second fruit-mixing squirrel upgrade, you additionally get the following combinations to make the 4-seasons dragon fruit:
+    <br><br>
+    • Mango + Quince = Dragon Fruit (4 seasons)
+    <br>
+    • Plum + Kumquat = Dragon Fruit (4 seasons)
+    <br><br>
+    Combinations that don\'t cover all 4 seasons, such as mango+plum, won\'t work, it must be one of the combionations listed above.
+    <br><br>
+    Remember, dragon fruit fusing is not yet available if you just unlocked the first fruit mixing upgrade now, the dragon fruit requires the second such squirrel upgrade. Now you already know how to prepare for it though.
+    `,
+    images_apple[8],
+    undefined,
+  [[images_apricot[1],images_pineapple[1],images_pear[8]],
+   [images_medlar[1],images_mango[4],images_plum[7]],
+   [images_quince[4],images_kumquat[1],images_dragonfruit[9]]]);
 
 
 function createKeyboardHelpDialog() {
@@ -449,6 +480,8 @@ function createKeyboardHelpDialog() {
   text += ' • <b>"t" followed by "b"</b>: open the transcend-with-blueprint dialog.';
   text += '<br/>';
   text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
+  text += '<br/>';
+  text += ' • <b>shift + click blueprint "To Field"</b>: plant this blueprint, but let it override non-matching crops. Without shift, it only plants on empty field spots.';
   text += '<br/>';
   text += '<br/><br/>';
 

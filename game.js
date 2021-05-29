@@ -856,7 +856,7 @@ function PreCell(f) {
 
   this.leech = new Num(); // how much leech there is on this plant. e.g. if 4 watercress neighbors leech 100% each, this value is 4 (in reality that high is not possible due to the penalty for multiple watercress)
 
-  // a score heuristic for automaton for choosing best upgrades pot, based on neighbors
+  // a score heuristic for automaton for choosing best crop upgrade spot, based on neighbors
   this.score = 0;
 
   // breakdown of the production for UI. Is like prod0, but with leech result added, and also given if still growing.
@@ -1155,8 +1155,10 @@ function precomputeField() {
         if(prod.seeds.ltr(0)) {
           // how much input mushrooms want
           p.wanted.seeds = prod.seeds.neg();
-          // if there is leech on the mushroom, it wants more seeds
-          p.wanted.seeds.mulInPlace(p.leech.addr(1));
+          if(!state.upgrades3[upgrade3_watercress_mush].count) {
+            // if there is leech on the mushroom, it wants more seeds (except if this squirrel upgrade is enabled)
+            p.wanted.seeds.mulInPlace(p.leech.addr(1));
+          }
         }
       }
     }
@@ -1381,10 +1383,12 @@ function precomputeField() {
           if(c2.type == CROPTYPE_BEE) score_mul++;
           if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
           if(c2.type == CROPTYPE_BERRY) score_num++;
+          if(c2.type == CROPTYPE_NUT) score_num++;
         }
         if(c.type == CROPTYPE_NETTLE) {
           if(c2.type == CROPTYPE_MUSH) score_num++;
           if(c2.type == CROPTYPE_BERRY) score_num--;
+          if(c2.type == CROPTYPE_NUT) score_num--;
           if(c2.type == CROPTYPE_FLOWER) score_num--;
         }
         if(c.type == CROPTYPE_BEE) {
@@ -1486,84 +1490,109 @@ function getRandomFruitRoll() {
 function addRandomFruit() {
   var level = state.treelevel;
 
-  var tier = getNewFruitTier(getRandomFruitRoll(), state.treelevel);
+  var fruits = [];
+  for(;;) {
+    // do same amount of rolls per fruit, even if some are unneeded, so that it's harder to affect the fruit seed by choosing when to do squirrel upgrades, transcends, ...
+    var roll_double = getRandomFruitRoll();
+    var roll_tier = getRandomFruitRoll();
+    var roll_season = getRandomFruitRoll();
+    var roll_abilities = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
+    var roll_abilities_level = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
 
-  var fruit = new Fruit();
-  fruit.tier = tier;
+    var tier = getNewFruitTier(roll_tier, state.treelevel, !!state.upgrades3[upgrade3_fruittierprob].count);
 
-  var num_abilities = getNumFruitAbilities(tier);
+    var fruit = new Fruit();
+    fruit.tier = tier;
 
-  var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_WATERCRESS, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
+    var num_abilities = getNumFruitAbilities(tier);
 
-  for(var i = 0; i < num_abilities; i++) {
-    var roll = Math.floor(getRandomFruitRoll() * abilities.length);
-    var ability = abilities[roll];
-    abilities.splice(roll, 1);
-    var level = 1 + Math.floor(getRandomFruitRoll() * 4);
+    var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_WATERCRESS, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
 
-    fruit.abilities.push(ability);
-    fruit.levels.push(level);
-    fruit.charge.push(0);
-  }
+    for(var i = 0; i < num_abilities; i++) {
+      var roll = Math.floor(roll_abilities[i] * abilities.length);
+      var ability = abilities[roll];
+      abilities.splice(roll, 1);
+      var level = 1 + Math.floor(roll_abilities_level[i] * 4);
 
-  if(state.g_numfruits >= 4 && getRandomFruitRoll() > 0.75) {
-    fruit.type = 1 + getSeason();
-  }
+      fruit.abilities.push(ability);
+      fruit.levels.push(level);
+      fruit.charge.push(0);
+    }
 
-  if(fruit.type == 1) {
-    fruit.abilities.push(FRUIT_SPRING);
-    fruit.levels.push(1);
-  }
-  if(fruit.type == 2) {
-    fruit.abilities.push(FRUIT_SUMMER);
-    fruit.levels.push(1);
-  }
-  if(fruit.type == 3) {
-    fruit.abilities.push(FRUIT_AUTUMN);
-    fruit.levels.push(1);
-  }
-  if(fruit.type == 4) {
-    fruit.abilities.push(FRUIT_WINTER);
-    fruit.levels.push(1);
-  }
+    if(state.g_numfruits >= 4) {
+      var prob = 0.75;
+      if(state.upgrades3[upgrade3_seasonfruitprob].count) prob = 0.666; // from 1/4th to 1/3th probability
+      if(roll_season > prob) {
+        var season = getSeason();
+        if(season >= 0 && season <= 3) {
+          fruit.type = 1 + getSeason();
+        }
+      }
+    }
 
-  for(var i = 0; i < fruit.levels.length; i++) {
-    fruit.starting_levels[i] = fruit.levels[i];
-  }
+    if(fruit.type == 1) {
+      fruit.abilities.push(FRUIT_SPRING);
+      fruit.levels.push(1);
+    }
+    if(fruit.type == 2) {
+      fruit.abilities.push(FRUIT_SUMMER);
+      fruit.levels.push(1);
+    }
+    if(fruit.type == 3) {
+      fruit.abilities.push(FRUIT_AUTUMN);
+      fruit.levels.push(1);
+    }
+    if(fruit.type == 4) {
+      fruit.abilities.push(FRUIT_WINTER);
+      fruit.levels.push(1);
+    }
 
-
-  var season_before = state.seen_seasonal_fruit;
-  if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
-  var season_after = state.seen_seasonal_fruit;
-  if(!season_before && season_after) {
-    showMessage('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
-    state.fruit_slots++;
-  }
-  if(season_before != 15 && season_after == 15) {
-    showMessage('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
-    state.fruit_slots++;
-  }
+    for(var i = 0; i < fruit.levels.length; i++) {
+      fruit.starting_levels[i] = fruit.levels[i];
+    }
 
 
-  if(state.g_numfruits == 0) {
-    // add fruit to highest possible slot type. Now only if this is the first ever fruit
-    if(state.fruit_stored.length < state.fruit_slots) {
-      setFruit(state.fruit_stored.length, fruit);
+    var season_before = state.seen_seasonal_fruit;
+    if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
+    var season_after = state.seen_seasonal_fruit;
+    if(!season_before && season_after) {
+      showMessage('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+      state.fruit_slots++;
+    }
+    if(season_before != 15 && season_after == 15) {
+      showMessage('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+      state.fruit_slots++;
+    }
+
+
+    if(state.g_numfruits == 0) {
+      // add fruit to highest possible slot type. Now only if this is the first ever fruit
+      if(state.fruit_stored.length < state.fruit_slots) {
+        setFruit(state.fruit_stored.length, fruit);
+      } else {
+        setFruit(100 + state.fruit_sacr.length, fruit);
+      }
     } else {
+      // add fruit to sacrificial pool, player is responsible for choosing to move fruits to storage or active lots
       setFruit(100 + state.fruit_sacr.length, fruit);
     }
-  } else {
-    // add fruit to sacrificial pool, player is responsible for choosing to move fruits to storage or active lots
-    setFruit(100 + state.fruit_sacr.length, fruit);
+
+    state.c_numfruits++;
+    state.g_numfruits++;
+
+    state.fruit_seen = false;
+
+    fruits.push(fruit);
+
+    if(fruits.length == 1 && state.upgrades3[upgrade3_doublefruitprob].count && roll_double < upgrade3_doublefruitprob_prob) {
+      // probability of a second fruit
+      continue;
+    }
+    break;
   }
 
-  state.c_numfruits++;
-  state.g_numfruits++;
-
-  state.fruit_seen = false;
-
   updateFruitUI();
-  return fruit;
+  return fruits;
 }
 
 // unlocks and shows message, if not already unlocked
@@ -1716,8 +1745,8 @@ function getHighestAffordableCropOfType(type, res) {
 }
 
 // get cheapest unlocked crop you can plant
-function getCheapestNextOfCropType(type) {
-  var tier = state.lowestoftypeplanted[type] + 1;
+function getCheapestNextOfCropType(type, opt_tier) {
+  var tier = (opt_tier == undefined) ? (state.lowestoftypeplanted[type] + 1) : (opt_tier + 1);
   if(tier < 0 || tier == Infinity) return null;
   var crop = croptype_tiers[type][tier];
   if(!crop) return null;
@@ -1743,10 +1772,15 @@ function computeNextAutoPlant() {
     //if(type == CROPTYPE_SQUIRREL && state.cropcount[squirrel_0]) continue; // can have max 1 squirrel (even though multiple blueprints are possible), so do not attempt to plant it all the time once there's one
     //if(type == CROPTYPE_NUT && tooManyNutsPlants()) continue; // can have max 1 squirrel (even though multiple blueprints are possible), so do not attempt to plant it all the time once there's one
 
-
-
     var crop = getCheapestNextOfCropType(type);
     if(!crop) continue;
+
+    // special case: if have multiple nuts templates and 1 non-template nut crop, then getCheapestNextOfCropType should be returning what's above the 1 non-template crop.
+    if(type == CROPTYPE_NUT && crop.tier == 0 && tooManyNutsPlants()) {
+      var crop = getCheapestNextOfCropType(type, state.highestoftypeplanted[type]);
+      if(!crop) continue;
+    }
+
 
     // how much resources willing to spend
     var advanced = state.automaton_unlocked[2] >= 2;
@@ -2370,26 +2404,44 @@ var update = function(opt_ignorePause) {
         var d = action.d; // depth in the branch
         var ok = true;
         var us = (b == 0) ? s.upgrades0  : ((b == 1) ? s.upgrades1 : s.upgrades2);
+        var buyable = squirrelUpgradeBuyable(s, s2, b, d);
+
+        var bought = buyable == 0;
+        var gated = buyable == 2;
+        var canbuy = buyable == 1;
+        var next = buyable == 3;
+        var unknown = buyable >= 4;
+
         if(!haveSquirrel()) {
+          showMessage('Don\'t have squirrel', C_INVALID);
           ok = false;
         } else if(b < 0 || b > 2) {
+          showMessage('Invalid branch', C_ERROR);
           ok = false;
-        } else if(d != s2.num[b]) {
+        } else if(!canbuy) {
+          if(gated) {
+            showMessage('Cannot buy this upgrade yet, it is gated: you must buy all squirrel upgrades that come before this, including side branches above, before this one unlocks.', C_INVALID);
+          } else {
+            showMessage('Not available for buy', C_INVALID);
+          }
           // the depth must be exactly equal to the amount of upgrades done so far in this branch
           ok = false;
         } else if(d >= us.length) {
+          showMessage('Index out of range', C_ERROR);
           // nonexisting upgrade for this stage
           ok = false;
         }
 
         var nuts = getNextUpgrade3Cost();
-        if(state.res.nuts.lt(nuts)) {
-          ok = false;
-          showMessage('not enough resources for the next squirrel upgrade ' +
-                      ': have: ' + state.res.nuts.toString(Math.max(5, Num.precision)) +
-                      ', need: ' + nuts.toString(Math.max(5, Num.precision)) +
-                      ' (' + getCostAffordTimer(Res({nuts:nuts})) + ')',
-                      C_INVALID, 0, 0);
+        if(ok) {
+          if(state.res.nuts.lt(nuts)) {
+            ok = false;
+            showMessage('not enough resources for the next squirrel upgrade' +
+                        ': have: ' + state.res.nuts.toString(Math.max(5, Num.precision)) +
+                        ', need: ' + nuts.toString(Math.max(5, Num.precision)) +
+                        ' (' + getCostAffordTimer(Res({nuts:nuts})) + ')',
+                        C_INVALID, 0, 0);
+          }
         }
 
         if(ok) {
@@ -2403,6 +2455,8 @@ var update = function(opt_ignorePause) {
           state.upgrades3_spent.addInPlace(nuts);
           state.g_numupgrades3++;
           showMessage('Purchased squirrel upgrade: ' + u.name);
+
+          if(u.index == upgrade3_fruitmix || u.index == upgrade3_fruitmix2) showRegisteredHelpDialog(37);
 
           store_undo = true;
         }
@@ -2479,7 +2533,7 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PLANT_BLUEPRINT) {
-        plantBluePrint(action.blueprint);
+        plantBluePrint(action.blueprint, false);
       } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
@@ -2962,7 +3016,12 @@ var update = function(opt_ignorePause) {
       } else if(type == ACTION_FRUIT_FUSE) {
         var a = action.a;
         var b = action.b;
-        var f = fuseFruit(a, b);
+
+        var fruitmix = 0;
+        if(state.upgrades3[upgrade3_fruitmix].count) fruitmix += 2;
+        if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix += 2;
+
+        var f = fuseFruit(a, b, fruitmix);
         if(f) {
           f.slot = a.slot;
           if(f.slot < 100) {
@@ -3228,17 +3287,17 @@ var update = function(opt_ignorePause) {
       }
 
       // fruits at tree level 5, 15, 25, 35, ...
-      var fruit = undefined;
+      var fruits = undefined;
       if(state.treelevel % 10 == 5) {
         if(!state.challenge || (challenges[state.challenge].allowsfruits && state.treelevel >= 10 && (challenges[state.challenge].allowbeyondhighestlevel || state.treelevel <= state.g_treelevel))) {
           if(showtreemessages && state.treelevel == 5) showRegisteredHelpDialog(2);
           if(showtreemessages && state.treelevel == 15) showRegisteredHelpDialog(18);
-          fruit = addRandomFruit();
+          fruits = addRandomFruit();
         }
       }
       // drop the level 5 fruit during challenges at level 10
       if(state.treelevel == 10 && state.challenge && challenges[state.challenge].allowsfruits) {
-        fruit = addRandomFruit();
+        fruits = addRandomFruit();
         showMessage('The tree dropped the level 5 fruit at level 10 during this challenge', C_NATURE, 1340887270);
       }
 
@@ -3280,8 +3339,10 @@ var update = function(opt_ignorePause) {
         }
       }
 
-      if(fruit) {
-        showMessage('fruit dropped: ' + fruit.toString() + '. ' + fruit.abilitiesToString(), C_NATURE, 1284767498);
+      if(fruits) {
+        for(var i = 0; i < fruits.length; i++) {
+          showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_NATURE, 1284767498);
+        }
       }
     }
 

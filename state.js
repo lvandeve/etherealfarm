@@ -1123,6 +1123,11 @@ function Fruit() {
   // type 2: pineapple, summer
   // type 3: pear, autumn
   // type 4: medlar, winter
+  // type 5: mango, spring+summer
+  // type 6: plum, summer+autumn
+  // type 7: quince, autumn+winter
+  // type 8: kumquat, winter+spring
+  // type 9: dragonfruit, all-season
   this.type = 0;
   this.tier = 0;
   this.abilities = []; // array of the FRUIT_... abilities
@@ -1152,7 +1157,9 @@ function Fruit() {
   this.name = '';
 
   this.typeName = function() {
-    return ['apple', 'apricot (spring)', 'pineapple (summer)', 'pear (autumn)', 'medlar (winter)'][this.type];
+    return ['apple', 'apricot (spring)', 'pineapple (summer)', 'pear (autumn)', 'medlar (winter)',
+            'mango (spring+summer)', 'plum (summer+autumn)', 'quince (autumn+winter)', 'kumquat (winter+spring)',
+            'dragon fruit (4 seasons)'][this.type];
   };
 
   this.toString = function() {
@@ -1192,6 +1199,33 @@ function getFruitAbility(ability) {
   if(!f) return 0;
   for(var i = 0; i < f.abilities.length; i++) {
     if(f.abilities[i] == ability) return f.levels[i];
+  }
+
+  return 0;
+}
+
+// similar to getFruitAbility but conveniently takes multi-season fruits into account
+// will check FRUIT_SUMMER_AUTUMN etc... if given just FRUIT_SUMMER or FRUIT_AUTUMN etc..., if the necessary squirrel upgrades are purchased
+function getFruitAbility_MultiSeasonal(ability) {
+  var result = getFruitAbility(ability);
+  if(result > 0) return result;
+
+  var f = getActiveFruit();
+  if(!f) return 0;
+
+  // this assumes the seasonal ability is listed last, as it indeed is
+  var last = f.abilities[f.abilities.length - 1];
+
+  if(last < FRUIT_SPRING_SUMMER || last > FRUIT_ALL_SEASON) return 0; // fruit is not a multi-season fruit.
+  if(!state.upgrades3[upgrade3_fruitmix]) return 0; // squirrel upgrade not active
+  if(last == FRUIT_ALL_SEASON && !state.upgrades3[upgrade3_fruitmix2]) return 0; // squirrel upgrade not active
+
+  if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
+    if(last == FRUIT_ALL_SEASON) return 1;
+    if(last == FRUIT_SPRING_SUMMER) return (ability == FRUIT_SPRING || ability == FRUIT_SUMMER) ? 1 : 0;
+    if(last == FRUIT_SUMMER_AUTUMN) return (ability == FRUIT_SUMMER || ability == FRUIT_AUTUMN) ? 1 : 0;
+    if(last == FRUIT_AUTUMN_WINTER) return (ability == FRUIT_AUTUMN || ability == FRUIT_WINTER) ? 1 : 0;
+    if(last == FRUIT_WINTER_SPRING) return (ability == FRUIT_WINTER || ability == FRUIT_SPRING) ? 1 : 0;
   }
 
   return 0;
@@ -1244,9 +1278,17 @@ function setFruit(slot, f) {
   }
 }
 
-function getUpcomingFruitEssence() {
+function getUpcomingFruitEssence(breakdown) {
   var res = Res();
   for(var j = 0; j < state.fruit_sacr.length; j++) res.addInPlace(getFruitSacrifice(state.fruit_sacr[j]));
+  if(breakdown) breakdown.push(['sacrificial fruits', true, Num(0), res.clone()]);
+
+  if(state.upgrades3[upgrade3_essence].count) {
+    var bonus = upgrade3_essence_bonus.addr(1);
+    res.mulInPlace(bonus);
+    if(breakdown) breakdown.push(['squirrel upgrade', true, bonus, res.clone()]);
+  }
+
   return res;
 }
 
@@ -1380,6 +1422,63 @@ function tooManyNutsPlants(opt_replacing) {
 
 function getEtherealSquirrelNeighborBoost() {
   return squirrelboost.addr(upgrade3_squirrel_boost * state.upgrades3[upgrade3_squirrel].count);
+}
+
+/*
+return value:
+0=bought
+1=buyable now (if got the resources)
+2=gated (would be buyable if not for that)
+3=not buyable but next up
+4=not buyable but next-next up (the last type of which the name is revealed)
+5=not buyable and after next-next-up
+
+s = Stage3 object
+s2 = Stage3State object
+b = branch
+d = depth in branch
+*/
+function squirrelUpgradeBuyable(s, s2, b, d) {
+  // how many non-bought ones in the center branch of the previous stages, when going up one by one until we reach the bought one or the root (capped at 3)
+  var above = 0;
+  var u = s.index - 1;
+  for(;;) {
+    if(u < 0) break;
+    var p = stages3[u];
+    var p2 = state.stages3[u];
+    var numfree = p.upgrades1.length - p2.num[1];
+    above += numfree;
+    if(above >= 3) {
+      above = 3; // more than 3 not needed to be known, and above loop can break early once reached to avoid being too slow
+      break;
+    }
+    u--;
+  }
+
+
+  // whether this stage is one in which you can buy upgrades, that is when all upgrades from the center track of the previous stage are bought
+  var avail = (above == 0);
+
+  if(avail && d < s2.num[b]) return 0; // bought
+  if(avail && d == s2.num[b]) {
+    // buyable, unless gated
+    if(s.gated) {
+      if(state.upgrades3_count < s.num_above) return 2; // gated
+    }
+    return 1; // buyable
+  }
+
+  if(avail && d == s2.num[b] && s.gated) return 2; // gated
+  if(avail && d == s2.num[b]) return 1; // buyable
+
+
+  var prev_canbuy = (above == 1); // last one of previous stage is in state "can buy" or "gated"
+  if((avail && d == s2.num[b] + 1) || (prev_canbuy && d == 0)) return 3; // one that's 1 spot after canbuy
+
+
+  var prev_next = (above == 2); // last one of previous stage is in state "next" (i.e. after "canbuy")
+  if((avail && d == s2.num[b] + 2) || (prev_canbuy && d == 1) || (prev_next && d == 0)) return 4; // one that's 2 spots after canbuy
+  return 5; // one or more further than next, can't buy, and can't see the name either
 }
 
 ////////////////////////////////////////////////////////////////////////////////

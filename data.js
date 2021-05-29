@@ -251,7 +251,7 @@ function reduceGrowTime(time, reduce) {
   return time;
 }
 
-
+// aka growspeed
 Crop.prototype.getPlantTime = function() {
   var result = this.planttime;
   if(result == 0) return result;
@@ -266,6 +266,10 @@ Crop.prototype.getPlantTime = function() {
       }
     }
 
+    if(state.upgrades3[upgrade3_watercresstime].count) {
+      result *= 1.5;
+    }
+
     return result;
   }
 
@@ -278,6 +282,14 @@ Crop.prototype.getPlantTime = function() {
   if(level > 0) {
     var mul = Num(1).sub(getFruitBoost(FRUIT_GROWSPEED, level, getFruitTier())).valueOf();
     result *= mul;
+  }
+
+  if(state.upgrades3[upgrade3_growspeed].count) {
+    result *= (1 - upgrade3_growspeed_bonus);
+  }
+
+  if(state.upgrades3[upgrade3_season[0]].count && getSeason() == 0) {
+    result *= (1 - upgrade3_spring_growspeed_bonus);
   }
 
   return result;
@@ -364,6 +376,11 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
       var bonus = getWinterTreeWarmth();
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
+    }
+    if(p.treeneighbor && state.upgrades3[upgrade3_season[3]] && this.type == CROPTYPE_FLOWER) {
+      var bonus = upgrade3_winter_flower_bonus;
+      result.mulInPlace(bonus);
+      if(breakdown) breakdown.push(['winter tree warmth (squirrel)', true, bonus, result.clone()]);
     }
   }
 }
@@ -764,6 +781,23 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
     }
   }
 
+  if(haveSquirrel()) {
+    if(this.type == CROPTYPE_NETTLE) {
+      if(state.upgrades3[upgrade3_nettle].count) {
+        var bonus = upgrade3_nettle_bonus.mulr(state.upgrades3[upgrade3_nettle].count).addr(1);
+        result.mulInPlace(bonus);
+        if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
+      }
+    }
+    if(this.type == CROPTYPE_FLOWER) {
+      if(state.upgrades3[upgrade3_flower].count) {
+        var bonus = upgrade3_flower_bonus.mulr(state.upgrades3[upgrade3_flower].count).addr(1);
+        result.mulInPlace(bonus);
+        if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
+      }
+    }
+  }
+
   // rainbow
   if(this.type == CROPTYPE_FLOWER) {
     if(rainbow_active) {
@@ -1065,14 +1099,17 @@ function getMushroomProd(i) {
 var nut_tree_level = 45;
 // how the unlock/plant/upgrade costs of next nut crop tiers scale: how many more tree levels of spore-worth more expensive the next tier is
 // e.g. if this is 3, then if your tree level is 3 levels higher, you can afford the next nut tier
-var nut_tree_step = 3;
+var nut_tree_step = 6;
+
+// how many upgrades of a nut before it reaches the level of the next tier nut
+var nut_upgrade_steps = 20;
 
 function getNutCost(i) {
   return treeLevelReqBase(nut_tree_level + i * nut_tree_step).mulr(1.5);
 }
 
 function getNutProd(i) {
-  var nuts = Num.pow(Num(10), Num(i)).mulr(0.05);
+  var nuts = Num.pow(Num(1000), Num(i)).mulr(0.05);
   return Res({nuts:nuts});
 }
 
@@ -1143,7 +1180,7 @@ var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, nettle);
 // a next one could be "thistle"
 
 crop_register_id = 105;
-var short_0 = registerShortLived('watercress', 0, Res({seeds:1}), 60, watercress);
+var short_0 = registerShortLived('watercress', 0, Res({seeds:1}), 60, images_watercress);
 
 crop_register_id = 110;
 var mistletoe_0 = registerMistletoe('mistletoe', 0, 50, mistletoe);
@@ -1161,9 +1198,19 @@ var squirrel_0 = registerSquirrel('squirrel', 0, Res(), /*growtime=*/0.5, images
 
 // nuts
 crop_register_id = 150;
-var nut_0 = registerNut('almond', 0, nutplanttime0 * 1, images_almond);
-var nut_1 = registerNut('brazil nut', 1, nutplanttime0 * 2, images_brazilnut);
-var nut_2 = registerNut('cashew', 2, nutplanttime0 * 3, images_cashew);
+var nut_0  = registerNut('acorn', 0, nutplanttime0 * 1, images_acorn, 'it\'s a little oak tree');
+var nut_1  = registerNut('almond', 1, nutplanttime0 * 2, images_almond);
+var nut_2  = registerNut('brazil nut', 2, nutplanttime0 * 3, images_brazilnut);
+var nut_3  = registerNut('cashew', 3, nutplanttime0 * 4, images_cashew);
+var nut_4  = registerNut('chestnut', 4, nutplanttime0 * 5, undefined);
+var nut_5  = registerNut('coconut', 5, nutplanttime0 * 6, undefined);
+var nut_6  = registerNut('hazelnut', 6, nutplanttime0 * 7, undefined);
+var nut_7  = registerNut('macadamia', 7, nutplanttime0 * 8, undefined);
+var nut_8  = registerNut('peanut', 8, nutplanttime0 * 9, undefined);
+var nut_9  = registerNut('pili nut', 9, nutplanttime0 * 10, undefined);
+var nut_10  = registerNut('pine nut', 10, nutplanttime0 * 11, undefined);
+var nut_11 = registerNut('pistachio', 11, nutplanttime0 * 12, undefined);
+var nut_12 = registerNut('walnut', 12, nutplanttime0 * 13, undefined);
 
 crop_register_id = 200;
 
@@ -1385,8 +1432,6 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
   return result;
 }
 
-var NUM_NUT_STEPS = 10;
-
 // an upgrade that increases the multiplier of a crop
 function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_unlock_id, opt_pre_fun) {
   var crop = crops[cropid];
@@ -1429,10 +1474,9 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
       var tier = crop.tier;
       var cost0 = getNutCost(tier).spores;
       var cost1 = getNutCost(tier + 1).spores;
-      var N = 10; // amount of upgrades before reaches same cost as next nut tier
-      var mul = cost1.div(cost0).powr(1 / NUM_NUT_STEPS);
+      var mul = cost1.div(cost0).powr(1 / nut_upgrade_steps);
       var base = cost0;
-      var softcap = Num.pow(Num(1.01), Num(i * i));
+      var softcap = Num.pow(Num(1.002), Num(i * i));
       // using index + 1, becausefirst upgrade should be more expensive than the nut plant itself
       var spores = base.mul(mul.powr(i + 1)).mul(softcap);
       return new Res({spores:spores});
@@ -1647,13 +1691,63 @@ upgrade_register_id = 300;
 var nutunlock_0 = registerCropUnlock(nut_0, getNutCost(0), undefined, function() {
   if(!haveSquirrel()) return false;
   if(!!state.challenge && !challenges[state.challenge].allowsnuts) return false;
-  return state.treelevel >= 45;
+  return state.treelevel >= nut_tree_level;
 });
 var nutunlock_1 = registerCropUnlock(nut_1, getNutCost(1), nut_0, function(){
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_2 = registerCropUnlock(nut_2, getNutCost(2), nut_1, function(){
+  //return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_3 = registerCropUnlock(nut_3, getNutCost(3), nut_2, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_4 = registerCropUnlock(nut_4, getNutCost(4), nut_3, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_5 = registerCropUnlock(nut_5, getNutCost(5), nut_4, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_6 = registerCropUnlock(nut_6, getNutCost(6), nut_5, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_7 = registerCropUnlock(nut_7, getNutCost(7), nut_6, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_8 = registerCropUnlock(nut_8, getNutCost(8), nut_7, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_9 = registerCropUnlock(nut_9, getNutCost(9), nut_8, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_10 = registerCropUnlock(nut_10, getNutCost(10), nut_9, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_11 = registerCropUnlock(nut_11, getNutCost(11), nut_10, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_12 = registerCropUnlock(nut_12, getNutCost(12), nut_11, function(){
   return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
@@ -1664,7 +1758,7 @@ var nutunlock_2 = registerCropUnlock(nut_2, getNutCost(2), nut_1, function(){
 // power increase for crop production (not flower boost) by basic upgrades
 var berry_upgrade_power_increase = 1.25; // multiplicative
 var mushroom_upgrade_power_increase = 1.25; // multiplicative
-var nut_upgrade_power_increase = getNutProd(1).nuts.div(getNutProd(0).nuts).powr(1 / NUM_NUT_STEPS); // multiplicative
+var nut_upgrade_power_increase = getNutProd(1).nuts.div(getNutProd(0).nuts).powr(1 / nut_upgrade_steps); // multiplicative
 // cost increase for crop production (not flower boost) by basic upgrades
 var basic_upgrade_cost_increase = 1.65;
 
@@ -1731,6 +1825,16 @@ upgrade_register_id = 225;
 var nutmul_0 = registerCropMultiplier(nut_0, getNutCost(0), nut_upgrade_power_increase, 1, nutunlock_0);
 var nutmul_1 = registerCropMultiplier(nut_1, getNutCost(1), nut_upgrade_power_increase, 1, nutunlock_1);
 var nutmul_2 = registerCropMultiplier(nut_2, getNutCost(2), nut_upgrade_power_increase, 1, nutunlock_2);
+var nutmul_3 = registerCropMultiplier(nut_3, getNutCost(3), nut_upgrade_power_increase, 1, nutunlock_3);
+var nutmul_4 = registerCropMultiplier(nut_4, getNutCost(4), nut_upgrade_power_increase, 1, nutunlock_4);
+var nutmul_5 = registerCropMultiplier(nut_5, getNutCost(5), nut_upgrade_power_increase, 1, nutunlock_5);
+var nutmul_6 = registerCropMultiplier(nut_6, getNutCost(6), nut_upgrade_power_increase, 1, nutunlock_6);
+var nutmul_7 = registerCropMultiplier(nut_7, getNutCost(7), nut_upgrade_power_increase, 1, nutunlock_7);
+var nutmul_8 = registerCropMultiplier(nut_8, getNutCost(8), nut_upgrade_power_increase, 1, nutunlock_8);
+var nutmul_9 = registerCropMultiplier(nut_9, getNutCost(9), nut_upgrade_power_increase, 1, nutunlock_9);
+var nutmul_10 = registerCropMultiplier(nut_10, getNutCost(10), nut_upgrade_power_increase, 1, nutunlock_10);
+var nutmul_11 = registerCropMultiplier(nut_11, getNutCost(11), nut_upgrade_power_increase, 1, nutunlock_11);
+var nutmul_12 = registerCropMultiplier(nut_12, getNutCost(12), nut_upgrade_power_increase, 1, nutunlock_12);
 
 
 
@@ -2001,7 +2105,7 @@ medal_register_id = 104;
 var season_medal = registerMedal('four seasons', 'reached winter and seen all seasons', field_winter[0], function() { return getSeason() == 3; }, Num(0.05));
 
 medal_register_id = 110;
-registerMedal('watercress', 'plant the entire field full of watercress', watercress[4], function() {
+registerMedal('watercress', 'plant the entire field full of watercress', images_watercress[4], function() {
   return state.croptypecount[CROPTYPE_SHORT] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('berries', 'plant the entire field full of berries', blackberry[4], function() {
@@ -2733,8 +2837,10 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
   if(f) {
     var automatonmul = Num(1);
     var squirrelmul = Num(1);
+    var treemul = Num(1);
     var num_automaton = 0;
     var num_squirrel = 0;
+    var num_tree = 0;
 
     for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
       var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
@@ -2750,16 +2856,23 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
           squirrelmul.addInPlace(getEtherealSquirrelNeighborBoost());
           num_squirrel++;
         }
-
+      }
+      if(dir < 4 && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM) && state.upgrades3[upgrade3_ethtree].count) {
+        treemul.addInPlace(upgrade3_ethtree_boost);
+        num_tree++;
       }
     }
     if(num_automaton) {
       result.mulInPlace(automatonmul);
-      if(breakdown) breakdown.push(['automaton', true, automatonmul, result.clone()]);
+      if(breakdown) breakdown.push(['automaton neighbor', true, automatonmul, result.clone()]);
     }
     if(num_squirrel) {
       result.mulInPlace(squirrelmul);
-      if(breakdown) breakdown.push(['squirrel', true, squirrelmul, result.clone()]);
+      if(breakdown) breakdown.push(['squirrel neighbor', true, squirrelmul, result.clone()]);
+    }
+    if(num_tree) {
+      result.mulInPlace(treemul);
+      if(breakdown) breakdown.push(['tree neighbor', true, treemul, result.clone()]);
     }
   }
 
@@ -3321,6 +3434,12 @@ var FRUIT_SPRING = fruit_index++;
 var FRUIT_SUMMER = fruit_index++;
 var FRUIT_AUTUMN = fruit_index++;
 var FRUIT_WINTER = fruit_index++;
+var FRUIT_SPRING_SUMMER = fruit_index++;
+var FRUIT_SUMMER_AUTUMN = fruit_index++;
+var FRUIT_AUTUMN_WINTER = fruit_index++;
+var FRUIT_WINTER_SPRING = fruit_index++;
+var FRUIT_ALL_SEASON = fruit_index++;
+
 // BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
 var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
 // NOT TODO: one that extends lifetime of watercress --> do not do this: too much manual work required with swapping fruits when active playing with watercress then
@@ -3365,18 +3484,9 @@ function getFruitBoost(ability, level, tier) {
   }
   if(ability == FRUIT_NETTLEBOOST) {
     // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
-    return Num(base * 0.33 * level);
+    return Num(base * 0.5 * level);
   }
-  if(ability == FRUIT_SPRING) {
-    return Num(0.25); // not upgradeable
-  }
-  if(ability == FRUIT_SUMMER) {
-    return Num(0.25); // not upgradeable
-  }
-  if(ability == FRUIT_AUTUMN) {
-    return Num(0.25); // not upgradeable
-  }
-  if(ability == FRUIT_WINTER) {
+  if(ability >= FRUIT_SPRING && ability <= FRUIT_ALL_SEASON) {
     return Num(0.25); // not upgradeable
   }
 
@@ -3390,6 +3500,11 @@ function isInherentAbility(ability) {
   if(ability == FRUIT_SUMMER) return true;
   if(ability == FRUIT_AUTUMN) return true;
   if(ability == FRUIT_WINTER) return true;
+  if(ability == FRUIT_SPRING_SUMMER) return true;
+  if(ability == FRUIT_SUMMER_AUTUMN) return true;
+  if(ability == FRUIT_AUTUMN_WINTER) return true;
+  if(ability == FRUIT_WINTER_SPRING) return true;
+  if(ability == FRUIT_ALL_SEASON) return true;
   return false;
 }
 
@@ -3428,8 +3543,21 @@ function getFruitTierCost(tier) {
 }
 
 // get fruit tier given random roll and tree level
-function getNewFruitTier(roll, treelevel) {
+// improved_probability: whether you get improved probability of the higher tier drop
+function getNewFruitTier(roll, treelevel, improved_probability) {
   var tier = 0;
+
+  // roll: higher is better
+  // these prob requirements: lower is better
+  var prob25 = 0.25;
+  var prob5 = 0.5;
+  var prob75 = 0.75;
+
+  if(improved_probability) {
+    prob25 = 0.15;
+    prob5 = 0.35;
+    prob75 = 0.66;
+  }
 
   // normally doesn't happen
   if(treelevel < 5) {
@@ -3443,32 +3571,32 @@ function getNewFruitTier(roll, treelevel) {
 
   // level 15: bronze introduced
   if(treelevel >= 15 && treelevel <= 24) {
-    return (roll < 0.5) ? 0 : 1;
+    return (roll > prob5) ? 1 : 0;
   }
 
   // level 25: silver introduced
   if(treelevel >= 25 && treelevel <= 34) {
-    return (roll > 0.5) ? 1 : 2;
+    return (roll > prob5) ? 2 : 1;
   }
 
   // level 35: electrum introduced
   if(treelevel >= 35 && treelevel <= 44) {
-    return (roll > 0.25) ? 2 : 3;
+    return (roll > prob75) ? 3 : 2;
   }
 
   // level 45
   if(treelevel >= 45 && treelevel <= 54) {
-    return (roll > 0.75) ? 2 : 3;
+    return (roll > prob25) ? 3 : 2;
   }
 
   // level 55: gold introduced
   if(treelevel >= 55 && treelevel <= 64) {
-    return (roll > 0.25) ? 3 : 4;
+    return (roll > prob75) ? 4 : 3;
   }
 
   // level 65
   if(treelevel >= 65 && treelevel <= 74) {
-    return (roll > 0.75) ? 3 : 4;
+    return (roll > prob25) ? 4 : 3;
   }
 
   // Higher tree levels are not yet implemented for the fruits
@@ -3506,17 +3634,109 @@ function fuseFruitStartLevel(a, b) {
   return Math.ceil(min * 0.75 + max * 0.25);
 }
 
+var fuse_skip = {FRUIT_NONE:true,
+                 FRUIT_SPRING:true, FRUIT_SUMMER:true, FRUIT_AUTUMN:true, FRUIT_WINTER:true,
+                 FRUIT_SPRING_SUMMER:true, FRUIT_SUMMER_AUTUMN:true, FRUIT_AUTUMN_WINTER:true, FRUIT_WINTER_SPRING:true,
+                 FRUIT_ALL_SEASON};
+
+// automatically purchases ability levels in fruit c, given what the levels were in fruit a and b
+function fuseFruitAutoLevel(a, b, c) {
+  var map = {};
+  for(var i = 0; i < a.abilities.length; i++) {
+    if(fuse_skip[a.abilities[i]]) continue;
+    map[a.abilities[i]] = a.levels[i];
+  }
+  for(var i = 0; i < b.abilities.length; i++) {
+    if(fuse_skip[b.abilities[i]]) continue;
+    if(map[b.abilities[i]]) map[b.abilities[i]] = Math.max(map[b.abilities[i]], b.levels[i]);
+    else map[b.abilities[i]] = b.levels[i];
+  }
+
+  // how much max to spend
+  var ess = Num.max(a.essence, b.essence);
+
+  var n = getNumFruitAbilities(c.tier);
+
+  // how much max to spend per slot, to allow to use some essence on slots with a new ability
+  var avail = [];
+  for(var i = 0; i < n; i++) avail[i] = ess.divr(n);
+
+  // avail is allowed to overshoot, but avail_total not.
+  var avail_total = Num(ess);
+
+  var maxlevels = [];
+  for(var i = 0; i < n; i++) maxlevels[i] = map[c.abilities[i]];
+
+  for(;;) {
+    var done_something = false;
+    for(var i = 0; i < n; i++) {
+      var level = c.levels[i];
+      if(avail[i].lter(0) || level >= maxlevels[i]) continue;
+      var cost = getFruitAbilityCost(a, level, c.tier).essence;
+      if(cost.gt(avail_total)) continue;
+
+      c.levels[i]++;
+      c.essence.addInPlace(cost);
+      avail_total.subInPlace(cost);
+      avail[i].subInPlace(cost); // this one can become negative, but overshooting for this is allowed, to avoid case where levels very gradually drop
+      done_something = true;
+    }
+    if(!done_something) break;
+  }
+}
+
+// a and b are season types of 2 fruits (0=apple, etc...)
+// fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits
+function fruitSeasonMix(a, b, fruitmix) {
+  if(a == b) return a;
+
+  if(fruitmix == 2 || fruitmix == 4) {
+    if((a == 1 && b == 2) || (a == 2 && b == 1)) return 5; // mango
+    if((a == 2 && b == 3) || (a == 3 && b == 2)) return 6; // plum
+    if((a == 3 && b == 4) || (a == 4 && b == 3)) return 7; // quince
+    if((a == 4 && b == 1) || (a == 1 && b == 4)) return 8; // kumquat
+  }
+  if(fruitmix == 4) {
+    if((a == 5 && b == 7) || (a == 7 && b == 5)) return 9; // dragonfruit
+    if((a == 6 && b == 8) || (a == 8 && b == 6)) return 9; // dragonfruit
+  }
+
+  var a2 = 0; // flags: 1=spring, 2=summer, 4=autumn, 8=winter
+  if(a >= 1 && a <= 4) a2 = (1 << (a - 1));
+  else if(a >= 5 && a <= 7) a2 = (3 << (a - 5));
+  else if(a == 8) a2 = 9;
+  else if(a == 9) a2 = 15;
+
+  var b2 = 0; // flags: 1=spring, 2=summer, 4=autumn, 8=winter
+  if(b >= 1 && b <= 4) b2 = (1 << (b - 1));
+  else if(b >= 5 && b <= 7) b2 = (3 << (b - 5));
+  else if(b == 8) b2 = 9;
+  else if(b == 9) b2 = 15;
+
+  // the type when going down (mixing disabled): still keaps for example winter if both a and b support winter (e.g. dragon fruit + quince, or quince + medlar)
+  var c2 = a2 & b2;
+
+  if(c2 == 15) return 9; // dragon fruit
+  else if((c2 & 3) == 3) return 5; // mango
+  else if((c2 & 6) == 6) return 6; // plum
+  else if((c2 & 12) == 12) return 7; // quince
+  else if((c2 & 9) == 9) return 8; // kumquat
+  else if(c2 == 1) return 1;
+  else if(c2 == 2) return 2;
+  else if(c2 == 4) return 3;
+  else if(c2 == 8) return 4;
+
+  return 0;
+}
+
 // opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
-function fuseFruit(a, b, opt_message) {
+// fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits
+function fuseFruit(a, b, fruitmix, opt_message) {
   if(!a || !b) return null;
   if(a == b) return null;
   if(a.tier != b.tier) return null;
 
-  // disabled, now that mixing seasonal types produces an apple there's no benefit from doing this
-  /*if(fruitReachedFuseMax(a) || fruitReachedFuseMax(b)) {
-    if(opt_message) opt_message[0] = 'One of the fruits reached the final form, seasonal fruit with all abilities at max, and cannot be fused any further.';
-    return null;
-  }*/
+  var seasonmix_result = fruitSeasonMix(a.type, b.type, fruitmix);
 
   var n = getNumFruitAbilities(a.tier);
   var na = a.abilities.length;
@@ -3525,12 +3745,17 @@ function fuseFruit(a, b, opt_message) {
   var f = new Fruit();
   f.tier = a.tier;
 
-  // the result becomes an apple if input types are mixed, or the exact type if they're the same
-  f.type = (a.type == b.type) ? a.type : 0;
+  // the result becomes an apple (or, if having squirrel upgrade, more advanced types) if input types are mixed, or the exact type if they're the same
+  f.type = (a.type == b.type) ? a.type : seasonmix_result;
 
   // the seasonal ability
-  if(f.type != 0) {
+  if(f.type >= 1 && f.type <= 4) {
     f.abilities[n] = a.abilities[n];
+    f.levels[n] = a.levels[n];
+    f.starting_levels[n] = a.starting_levels[n];
+    f.charge[n] = a.charge[n];
+  } else if(f.type > 4) {
+    f.abilities[n] = FRUIT_SPRING + f.type - 1; // we can do this because the fruit ability ordering is the same as the fruit type ordering, and f.type==1 matches FRUIT_SPRING
     f.levels[n] = a.levels[n];
     f.starting_levels[n] = a.starting_levels[n];
     f.charge[n] = a.charge[n];
@@ -3546,22 +3771,20 @@ function fuseFruit(a, b, opt_message) {
     f.charge[i] = a.charge[i];
   }
 
-  var skip = {FRUIT_NONE:true, FRUIT_SPRING:true, FRUIT_SUMMER:true, FRUIT_AUTUMN:true, FRUIT_WINTER:true};
-
   var arr;
 
   var m = {};
 
   var ma = {};
   for(var i = 0; i < na; i++) {
-    if(skip[a.abilities[i]]) continue;
+    if(fuse_skip[a.abilities[i]]) continue;
     ma[a.abilities[i]] = a.charge[i];
     m[a.abilities[i]] = a.starting_levels[i];
   }
 
   var mb = {};
   for(var i = 0; i < nb; i++) {
-    if(skip[b.abilities[i]]) continue;
+    if(fuse_skip[b.abilities[i]]) continue;
     mb[b.abilities[i]] = b.charge[i];
     m[b.abilities[i]] = (m[b.abilities[i]] == undefined) ? b.starting_levels[i] : (fuseFruitStartLevel(m[b.abilities[i]], b.starting_levels[i]));
   }
@@ -3571,7 +3794,7 @@ function fuseFruit(a, b, opt_message) {
 
   for(var i = 0; i < n; i++) {
     var ability = f.abilities[i];
-    if(skip[ability]) continue;
+    if(fuse_skip[ability]) continue;
     if(mb[ability] == undefined) continue; // not duplicate
 
     var charge = ma[ability] + mb[ability] + 1;
@@ -3606,10 +3829,13 @@ function fuseFruit(a, b, opt_message) {
   }
 
   var worse = true;
-  for(var i = 0; i < n; i++) {
-    if(f.abilities[i] != a.abilities[i] || f.charge[i] > a.charge[i] || f.levels[i] > a.levels[i]) {
-      worse = false;
-      break;
+  if(f.type > a.type) worse = false;
+  if(worse) {
+    for(var i = 0; i < n; i++) {
+      if(f.abilities[i] != a.abilities[i] || f.charge[i] > a.charge[i] || f.levels[i] > a.levels[i] || f.starting_levels[i] > a.starting_levels[i]) {
+        worse = false;
+        break;
+      }
     }
   }
   // this check is not done for b: for example, if b has 3 [**] abilities and is not seasonal, and a is seasonal, then this is a legit change.
@@ -3620,6 +3846,8 @@ function fuseFruit(a, b, opt_message) {
     }
     return null;
   }
+
+  fuseFruitAutoLevel(a, b, f);
 
   return f;
 }
@@ -3703,10 +3931,17 @@ function treeLevelResin(level, breakdown) {
 
   if(breakdown) breakdown.push(['base (per tree level roughly x' + base + ')', true, Num(0), resin.clone()]);
 
-  if(getSeason() == 3) {
+  var season = getSeason();
+  if(season == 3) {
     var bonus = getWinterTreeResinBonus();
     resin.mulInPlace(bonus);
     if(breakdown) breakdown.push(['winter bonus', true, bonus, resin.clone()]);
+  } else if(season != 0) {
+    var bonus = getAlternateResinBonus(season);
+    if(bonus.gtr(1)) {
+      resin.mulInPlace(bonus);
+      if(breakdown) breakdown.push([seasonNames[season] + ' bonus (squirrel)', true, bonus, resin.clone()]);
+    }
   }
 
   var count = state.upgrades2[upgrade2_resin].count;
@@ -3865,7 +4100,7 @@ function getSpringFlowerBonus() {
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility(FRUIT_SPRING);
+  var level = getFruitAbility_MultiSeasonal(FRUIT_SPRING);
   if(level > 0) {
     var mul = Num(1).add(getFruitBoost(FRUIT_SPRING, level, getFruitTier()));
     bonus.mulInPlace(mul);
@@ -3885,7 +4120,7 @@ function getSummerBerryBonus() {
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility(FRUIT_SUMMER);
+  var level = getFruitAbility_MultiSeasonal(FRUIT_SUMMER);
   if(level > 0) {
     var mul = Num(1).add(getFruitBoost(FRUIT_SUMMER, level, getFruitTier()));
     bonus.mulInPlace(mul);
@@ -3909,7 +4144,7 @@ function getAutumnMushroomBonus() {
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility(FRUIT_AUTUMN);
+  var level = getFruitAbility_MultiSeasonal(FRUIT_AUTUMN);
   if(level > 0) {
     var mul = Num(1).add(getFruitBoost(FRUIT_AUTUMN, level, getFruitTier()));
     bonus.mulInPlace(mul);
@@ -3949,7 +4184,7 @@ function getWinterTreeWarmth() {
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility(FRUIT_WINTER);
+  var level = getFruitAbility_MultiSeasonal(FRUIT_WINTER);
   if(level > 0) {
     var mul = Num(1).add(getFruitBoost(FRUIT_WINTER, level, getFruitTier()));
     bonus.mulInPlace(mul);
@@ -3964,6 +4199,19 @@ function getWinterTreeResinBonus() {
   var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
   if(ethereal_season) {
     var t = towards1(ethereal_season, 10) * 0.5;
+    result.addrInPlace(t);
+  }
+  return result;
+}
+
+// resin bonus for other seasons, if they have their respective squirrel bonus unlocked
+function getAlternateResinBonus(season) {
+  if(!state.upgrades3[upgrade3_season[season]].count) return Num(1);
+
+  var result = Num(1.25);
+  var ethereal_season = state.upgrades2[upgrade2_season[season]].count;
+  if(ethereal_season) {
+    var t = towards1(ethereal_season, 10) * 0.25;
     result.addrInPlace(t);
   }
   return result;
@@ -4123,10 +4371,12 @@ function Stage3() {
   var upgrades1 = []; // center branch (main branch that connects to previous and next stage)
   var upgrades2 = []; // right branch
 
-  // amount of upgrades you must have done before you can unlock this one
-  this.prereq = 0;
+  // if true, must have done all upgrades before this stage, before this stage can be unlocked
+  this.gated = false;
 
   this.index = 0;
+
+  this.num_above = 0; // how many upgrades are in the stages above. This is for counting whether you had all upgrades when gated
 
   // for rendering in UI
   this.height = function() {
@@ -4142,7 +4392,7 @@ var upgrades3 = []; // indexed by upgrade index
 var upgrade3_register_id = -1;
 
 // maxcount should be 1 for an upgrade that can only be done once (e.g. an unlock), or 0 for infinity
-function registerUpgrade3(name, fun, pre, description, image) {
+function registerUpgrade3(name, fun, description, image) {
   if(upgrades3[upgrade3_register_id] || upgrade3_register_id < 0 || upgrade3_register_id > 65535) throw 'upgrades3 id already exists or is invalid!';
   var upgrade = new Upgrade3();
   upgrade.index = upgrade3_register_id++;
@@ -4158,11 +4408,6 @@ function registerUpgrade3(name, fun, pre, description, image) {
     fun();
   };
 
-  upgrade.pre = function() {
-    if(pre && !pre()) return false;
-    return true;
-  };
-
   upgrade.description = description;
 
   return upgrade.index;
@@ -4172,14 +4417,19 @@ function registerUpgrade3(name, fun, pre, description, image) {
 var stages3 = [];
 
 // These are only ever registered in the exact order they appear, and are not intended to ever change order in future game updates, only append at the end.
-function registerStage3(upgrades0, upgrades1, upgrades2, opt_prereq) {
+function registerStage3(upgrades0, upgrades1, upgrades2, opt_gated) {
   var stage = new Stage3();
   stage.upgrades0 = upgrades0 || [];
   stage.upgrades1 = upgrades1 || [];
   stage.upgrades2 = upgrades2 || [];
-  stage.prereq = opt_prereq || 0;
+  stage.gated = !!opt_gated;
 
   stage.index = stages3.length;
+
+  if(stage.index > 0) {
+    var prev = stages3[stage.index - 1];
+    stage.num_above = prev.num_above + prev.upgrades0.length + prev.upgrades1.length + prev.upgrades2.length;
+  }
 
   stages3.push(stage);
 }
@@ -4188,25 +4438,64 @@ upgrade3_register_id = 10;
 
 var upgrade3_berry_bonus = Num(0.25);
 var upgrade3_mushroom_bonus = Num(0.25);
+var upgrade3_flower_bonus = Num(0.15);
+var upgrade3_nettle_bonus = Num(0.25);
+var upgrade3_growspeed_bonus = 0.2; // how much % faster it grows
 
-var upgrade3_berry = registerUpgrade3('berry boost', undefined, undefined, 'boosts berries +' + upgrade3_berry_bonus.toPercentString(), blackberry[4]);
-var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString(), champignon[4]);
+var upgrade3_berry = registerUpgrade3('berry boost', undefined, 'boosts berries +' + upgrade3_berry_bonus.toPercentString(), blackberry[4]);
+var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString(), champignon[4]);
+var upgrade3_flower = registerUpgrade3('flower boost', undefined, 'boosts the flower boost by +' + upgrade3_flower_bonus.toPercentString(), clover[4]);
+var upgrade3_nettle = registerUpgrade3('nettle boost', undefined, 'boosts the nettle boost by +' + upgrade3_nettle_bonus.toPercentString(), nettle[4]);
+
+var upgrade3_fruittierprob = registerUpgrade3('fruit tier probability', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels', images_apple[4]);
+var upgrade3_seasonfruitprob = registerUpgrade3('seasonal fruit probability', undefined, 'increases probability of getting a better seasonal fruit drop from 1/4th to 1/3th', images_apricot[3]);
+
+var upgrade3_doublefruitprob_prob = 0.25;
+var upgrade3_doublefruitprob = registerUpgrade3('double fruit drop chance', undefined, 'when the tree drops a fruit, it has ' + Num(upgrade3_doublefruitprob_prob).toPercentString() + ' chance to drop 2 fruits at once', images_apple[3]);
+
+var upgrade3_growspeed = registerUpgrade3('grow speed', undefined, 'crops grow ' + Num(upgrade3_growspeed_bonus).toPercentString() + ' faster', blackberry[0]);
+var upgrade3_watercress_mush = registerUpgrade3('watercress and mushroom soup', undefined, 'when watercress copies from mushroom, it no longer increases seed consumption, it copies the spores entirely for free', images_watercress[4]);
+var upgrade3_watercresstime = registerUpgrade3('watercress time', undefined, 'adds 50% to the lifetime of watercress', images_watercress[1]);
 
 var upgrade3_squirrel_boost = Num(0.1);
-var upgrade3_squirrel = registerUpgrade3('ethereal squirrel boost', undefined, undefined, 'adds an additional ' + upgrade3_squirrel_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal squirrel', images_squirrel[4]);
+var upgrade3_squirrel = registerUpgrade3('ethereal squirrel boost', undefined, 'adds an additional ' + upgrade3_squirrel_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal squirrel', images_squirrel[4]);
 
 var upgrade3_automaton_boost = Num(0.1);
-var upgrade3_automaton = registerUpgrade3('ethereal automaton boost', undefined, undefined, 'adds an additional ' + upgrade3_automaton_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal automaton', images_automaton[4]);
+var upgrade3_automaton = registerUpgrade3('ethereal automaton boost', undefined, 'adds an additional ' + upgrade3_automaton_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal automaton', images_automaton[4]);
 
-var upgrade3_test = registerUpgrade3('[not yet released]', undefined, undefined, 'this upgrade is not yet released and does nothing, it is a placeholder for now. Many more upgrades to come in the squirrel tech-tree in next releases!');
+var upgrade3_ethtree_boost = Num(0.2);
+var upgrade3_ethtree = registerUpgrade3('ethereal tree neighbor boost', undefined, 'ethereal tree boosts non-lotus neighbors (non-diagonal) by ' + upgrade3_ethtree_boost.toPercentString(), tree_images[6][1][4]);
+
+var upgrade3_fruitmix = registerUpgrade3('seasonal fruit mixing', undefined, 'Allows fusing mixed seasonal fruits, to get new multi-season fruit types that give the season bonus in 2 seasons:<br> • apricot + pineapple = mango (spring + summer),<br> • pineapple + pear = plum (summer + autumn),<br> • pear + medlar = quince (autumn + winter),<br> • medlar + apricot = kumquat (winter + spring).<br>Other fruit fusing rules work as usual. If this upgrade is removed due to respec, the multi-season fruits temporarily lose their season boost until getting this upgrade again. A later squirrel upgrade will extend the ability of this upgrade.', images_mango[4]);
+var upgrade3_fruitmix2 = registerUpgrade3('seasonal fruit mixing II', undefined, 'The next level of fruit mixing: allows creating the legendary all-season dragon fruit! Fuse mango+quince, or alternatively plum+kumquat, to get the dragon fruit. All other fusing rules apply as usual. If this upgrade or its predecessor is removed due to respec, dragon fruits temporarily lose their season boost until getting this upgrade again.', images_dragonfruit[4]);
+
+var upgrade3_spring_growspeed_bonus = 0.2; // how much % faster it grows
+var upgrade3_winter_flower_bonus = Num(1.5); // multiplier
+
+var upgrade3_season = [];
+upgrade3_season[0] = registerUpgrade3('improve spring', undefined, 'crops grow ' + Num(upgrade3_spring_growspeed_bonus).toPercentString() + ' faster in spring', tree_images[10][1][0]);
+upgrade3_season[1] = registerUpgrade3('improve summer', undefined, 'adds a resin bonus to summer, about half as strong as that of winter', tree_images[10][1][1]);
+upgrade3_season[2] = registerUpgrade3('improve autumn', undefined, 'adds a resin bonus to autumn, about half as strong as that of winter', tree_images[10][1][2]);
+upgrade3_season[3] = registerUpgrade3('improve winter', undefined, 'winter tree warmth now also gives a flat ' + upgrade3_winter_flower_bonus.subr(1).toPercentString() + ' bonus to flowers', tree_images[10][1][3]);
+
+var upgrade3_resin_bonus = Num(0.25);
+var upgrade3_resin = registerUpgrade3('resin bonus', undefined, 'increases resin gain by ' + Num(upgrade3_resin_bonus).toPercentString(), image_resin);
+
+var upgrade3_twigs_bonus = Num(0.25);
+var upgrade3_twigs = registerUpgrade3('twigs bonus', undefined, 'increases twigs gain by ' + Num(upgrade3_twigs_bonus).toPercentString(), mistletoe[2]);
+
+var upgrade3_essence_bonus = Num(0.2);
+var upgrade3_essence = registerUpgrade3('essence bonus', undefined, 'increases essence from sacrificed fruits by ' + Num(upgrade3_essence_bonus).toPercentString(), images_apple[3]);
 
 registerStage3([upgrade3_berry], [upgrade3_squirrel], [upgrade3_mushroom]);
-
-//registerStage3([upgrade3_berry, upgrade3_test], [upgrade3_squirrel, upgrade3_test, upgrade3_test], [upgrade3_mushroom, upgrade3_test]);
-//registerStage3(undefined, [upgrade3_test]);
-//registerStage3(undefined, [upgrade3_test], [upgrade3_berry]);
-//registerStage3(undefined, [upgrade3_test]);
-//registerStage3([upgrade3_berry, upgrade3_test], [upgrade3_test, upgrade3_test], undefined);
+registerStage3([upgrade3_nettle], [upgrade3_automaton], [upgrade3_flower]);
+registerStage3([upgrade3_fruitmix], undefined, [upgrade3_seasonfruitprob]);
+registerStage3(undefined, [upgrade3_ethtree], undefined, true);
+registerStage3([upgrade3_fruittierprob, upgrade3_growspeed], undefined, [upgrade3_essence, upgrade3_watercress_mush]);
+registerStage3([upgrade3_season[0], upgrade3_mushroom], undefined, [upgrade3_season[1], upgrade3_fruitmix2]);
+registerStage3([upgrade3_season[2], upgrade3_doublefruitprob], undefined, [upgrade3_season[3], upgrade3_berry]);
+registerStage3(undefined, [upgrade3_watercresstime], undefined);
+registerStage3(undefined, [upgrade3_resin], undefined, true);
 
 
 ////////////////////////////////////////////////////////////////////////////////

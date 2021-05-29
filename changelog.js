@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.75 "Squirrel update part 2" (2021-05-29):';
+  text += '<br/>• Added 20 new squirrel upgrades. Free respec token given so you can respec if desired';
+  text += '<br/>• Added a third nut tier, and renamed tiers, the tiers are now: acorn, almond, brazil nut.';
+  // The nuts are now such that a single nut tier lasts around 6 tree levels instead of 3, but a tier multiplies production by 1000x (3 squirrel upgrades worth) instead of 10x, hence the big buff: 3 squirrel upgrades per 6 tree levels, instead of 1 per 3 tree levels
+  text += '<br/>• Tweaked the nuts cost and production to allow more squirrel upgrades: higher tiers are more expensive, but produce even more, and upgrades do more, so there is a better nuts/spores ratio. Due to the new higher cost and power of higher tiers, in older saves nuts crops are replaced by acorn.';
+  text += '<br/>• Fruit fusing now auto-levels abilities after fusing and spends essence on this, but it never levels them higher than before fusing and leaves some essence available if a new unupgraded ability was added';
+  text += '<br/>• Added ability to override field with blueprint (rather than not touch existing crops), using shift+click on the "To Field" button. Matching crops will be kept, but non matching ones replaced.';
+  text += '<br/><br/>';
+
   text += '0.1.74 "Squirrel update" (2021-05-24):';
   text += '<br/>• Added squirrel, nuts resource and nuts crops (unlocks at ethereal tree level 5).';
   text += '<br/>• Added amber resource and amber processor.';

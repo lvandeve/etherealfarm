@@ -62,7 +62,9 @@ function renderBlueprint(b, flex, opt_index, opt_transcend) {
   flex.div.setAttribute('aria-description', name2 + ': ' + text);
 }
 
-function plantBluePrint(b) {
+// if allow_override is true, overrides all non-matching crops, but keeps matching ones there
+// if allow_override is false, will not replace any existing crop on the field
+function plantBluePrint(b, allow_override) {
   if(!b || b.numw == 0 || b.numh == 0) return;
 
   if(state.challenge == challenge_wither) {
@@ -102,19 +104,29 @@ function plantBluePrint(b) {
         f = state.field[fy][fx];
         t = b.data[y][x];
       }
-      // don't overwrite anything that already exists on the field
-      // that includes existing blueprint spots: if you want to combine blueprints, start from the smallest one, then bigger one to fill in the remaining gaps, not the opposite
-      // reason: automaton may already start building up blueprint, so combining the opposite way (overwrite blueprint tiles) may not work due to already becoming real plants
-      if(f.index != 0 && f.index != FIELD_REMAINDER) continue;
       var c = crops[BluePrint.toCrop(t)];
-      if(c) {
-        if(!state.crops[c.index].unlocked) continue;
-        addAction({type:ACTION_PLANT, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true});
-        did_something = true;
+      var c2 = undefined;
+      if(!c) continue;
+      if(allow_override) {
+        if(f.index != 0 && f.index != FIELD_REMAINDER) {
+          c2 = f.getCrop();
+          if(!c2) continue;
+          if(c2.type == c.type) continue; // keep same types
+        }
+      } else {
+        // don't overwrite anything that already exists on the field
+        // that includes existing blueprint spots: if you want to combine blueprints, start from the smallest one, then bigger one to fill in the remaining gaps, not the opposite
+        // reason: automaton may already start building up blueprint, so combining the opposite way (overwrite blueprint tiles) may not work due to already becoming real plants
+        if(f.index != 0 && f.index != FIELD_REMAINDER) continue;
       }
+      if(!state.crops[c.index].unlocked) continue;
+      var action_type = !!c2 ? ACTION_REPLACE : ACTION_PLANT;
+      addAction({type:action_type, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true});
+      did_something = true;
     }
   }
   if(did_something) showMessage('Planted blueprint');
+  else showMessage('This blueprint had no effect on the current field');
 }
 
 // set a blueprint to empty if it has only 0-cells
@@ -205,8 +217,8 @@ function createBlueprintDialog(b, opt_index) {
     addButtonAction(button, fun);
   };
 
-  addButton('To field', function() {
-    plantBluePrint(b);
+  addButton('To field', function(e) {
+    plantBluePrint(b, e.shiftKey);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
     closeAllDialogs();
     update();
@@ -360,9 +372,9 @@ function createBlueprintsDialog(opt_transcend) {
       var ctrl = util.eventHasCtrlKey(e);
       var filled = state.blueprints[index] && state.blueprints[index].numw && state.blueprints[index].numh;
       if(opt_transcend) {
-        if(!state.allowshiftdelete) {
+        /*if(!state.allowshiftdelete) {
           showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
-        } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
+        } else*/ if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
           showMessage('not high enough tree level to transcend (transcend with blueprint tries to transcend first, then plant the blueprint)', C_INVALID);
         } else {
           if(state.challenge) {
@@ -376,7 +388,7 @@ function createBlueprintsDialog(opt_transcend) {
         }
       } else {
         if(shift && !ctrl && filled) {
-          plantBluePrint(state.blueprints[index]);
+          plantBluePrint(state.blueprints[index], false);
           closeAllDialogs();
           update();
         } else if(shift && ctrl && filled) {

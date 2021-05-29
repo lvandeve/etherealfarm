@@ -169,6 +169,12 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   border: 1px solid #100;
 }
 
+.efSquirrelGated {
+  background-color: #4aa;
+  color: #044;
+  border: 1px solid #100;
+}
+
 .efAmberInfo {
   color: #fd0;
   text-shadow: 1px 0 #000, -1px 0 #000, 0 1px #000, 0 -1px #000, 1px 1px #000, -1px -1px #000, -1px 1px #000, 1px -1px #000;

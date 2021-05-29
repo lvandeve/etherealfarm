@@ -64,10 +64,10 @@ function makeMainDivs() {
   topFlex = new Flex(gameFlex, 0, 0, 1, 0.05);
   if(showdebugborders) topFlex.div.style.border = '2px solid red';
 
-  infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.175, 0.25);
+  infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.17, 0.25);
   if(showdebugborders) infoFlex.div.style.border = '2px solid blue';
 
-  tabFlex = new Flex(gameFlex, 0, 0.176, 1, 0.29, 0.22);
+  tabFlex = new Flex(gameFlex, 0, 0.171, 1, 0.29, 0.22);
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
