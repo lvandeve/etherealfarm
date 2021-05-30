@@ -381,7 +381,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var topFlex = new Flex(dialog.content, [0.01, 0, 0.15], 0.01, 0.99, 0.15, 0.3);
   var text = upper(f.toString());
   text += '<br>';
-  text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier];
+  text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
   text += '<br><br>';
   text += 'Fruit essence available: ' + state.res.essence.sub(f.essence).toString() + ' of ' + state.res.essence.toString();
   text += '<br>';
@@ -733,7 +733,13 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
   if(opt_label) text += opt_label + '<br>';
 
   text += upper(f.toString());
-  text += ', fruit tier ' + util.toRoman(f.tier);
+
+  text += '<br>';
+  //text += 'type: ' + f.origName();
+  //text += ', tier ' + util.toRoman(f.tier);
+
+  text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
+
   for(var i = 0; i < f.abilities.length; i++) {
     var a = f.abilities[i];
     var level = f.levels[i];

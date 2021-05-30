@@ -229,14 +229,14 @@ function updateSquirrelUI() {
 
   var buttonFlex = new Flex(squirrelFlex, 0, 0.1, 1, 0.2, 0.5);
 
-  var helpButton = new Flex(buttonFlex, 0, 0, 0.25, 1, 0.8);
+  var helpButton = new Flex(buttonFlex, 0, 0, 0.24, 0.9, 0.8);
   addButtonAction(helpButton.div, function() {
     showRegisteredHelpDialog(35, true);
   });
   styleButton(helpButton.div, 1);
   helpButton.div.textEl.innerText = 'Help';
 
-  var respecButton = new Flex(buttonFlex, 0.3, 0, 0.55, 1, 0.8);
+  var respecButton = new Flex(buttonFlex, 0.26, 0, 0.5, 0.9, 0.8);
   addButtonAction(respecButton.div, respecfun);
   styleButton(respecButton.div, 1);
   respecButton.div.textEl.innerText = 'Respec\n(Available: ' + state.respec3tokens + ')';

@@ -1162,9 +1162,13 @@ function Fruit() {
             'dragon fruit (4 seasons)'][this.type];
   };
 
+  this.origName = function() {
+    return tierNames[this.tier] + ' ' + this.typeName();
+  };
+
   this.toString = function() {
     if(this.name) return this.name;
-    return tierNames[this.tier] + ' ' + this.typeName();
+    return this.origName();
   };
 
   this.abilityToString = function(i, opt_abbreviated, opt_nolevels) {
@@ -1392,7 +1396,7 @@ function autoUnlockEnabled() {
 }
 
 function getEtherealAutomatonNeighborBoost() {
-  return automatonboost.addr(upgrade3_automaton_boost * state.upgrades3[upgrade3_automaton].count);
+  return automatonboost.add(upgrade3_automaton_boost.mulr(state.upgrades3[upgrade3_automaton].count));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1421,7 +1425,7 @@ function tooManyNutsPlants(opt_replacing) {
 }
 
 function getEtherealSquirrelNeighborBoost() {
-  return squirrelboost.addr(upgrade3_squirrel_boost * state.upgrades3[upgrade3_squirrel].count);
+  return squirrelboost.add(upgrade3_squirrel_boost.mulr(state.upgrades3[upgrade3_squirrel].count));
 }
 
 /*

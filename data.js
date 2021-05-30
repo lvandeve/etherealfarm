@@ -2849,7 +2849,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       var n = state.field2[y2][x2];
       if(n.hasCrop() && n.isFullGrown()) {
         if(n.cropIndex() == automaton2_0) {
-          automatonmul.addInPlace(automatonboost);
+          automatonmul.addInPlace(getEtherealAutomatonNeighborBoost());
           num_automaton++;
         }
         if(n.cropIndex() == squirrel2_0) {

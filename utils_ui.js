@@ -959,7 +959,7 @@ function playNotificationSound(f) {
 
 function sanitizeName(name) {
   if(!name) return '';
-  name = name.substr(0, 20);
+  name = name.substr(0, 25);
   name = name.replace(/\s/g, ' ');
   name = name.replace(/</g, '');
   name = name.replace(/>/g, '');
