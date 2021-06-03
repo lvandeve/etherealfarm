@@ -242,6 +242,56 @@ function getCropOrder() {
   return result;
 }
 
+function showPlantingHelp() {
+  var dialog = createDialog();
+
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  centerText2(titleDiv);
+  titleDiv.textEl.innerText = 'Planting help';
+
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var div = flex.div;
+  makeScrollable(flex);
+
+  var text = '';
+
+  text += 'The planting dialog allows to plant crops on the field. Use the plant button to perform the action now, or click the icon of the crop to view details.';
+  text += '<br><br>';
+  text += 'The following actions and shortcuts are available:';
+  text += '<br><br>';
+  text += 'To plant a new crop on an empty field tile:';
+  text += '<br>';
+  text += '• Click empty field tile, then click desired crop in the planting dialog';
+  text += '<br>';
+  text += '• OR: Shift+click empty field tile to plant the last-planted or unlocked crop';
+  text += '<br>';
+  text += '• OR: Ctrl+click empty field to plant watercress';
+  text += '<br><br>';
+  text += 'To remove a crop from the field:';
+  text += '<br>';
+  text += '• Click the crop on the field, then the "Delete crop" button';
+  text += '<br>';
+  text += '• OR: Hover mouse over the crop in the field, then press the "d" key';
+  text += '<br>';
+  text += '• OR: Ctrl+click the crop in the field (requires a setting under preferences)';
+  text += '<br><br>';
+  text += 'To replace a crop to the highest unlocked tier of its type that you can afford:';
+  text += '<br>';
+  text += '• Click the crop on the field, then the "Upgrade crop" button';
+  text += '<br>';
+  text += '• OR: Hover mouse over the crop in the field, then press the "u" key';
+  text += '<br>';
+  text += '• OR: Ctrl+shift+click the crop in the field';
+  text += '<br><br>';
+  text += 'To replace a crop in the field with a different one:';
+  text += '<br>';
+  text += '• Click the crop on the field, then the "Replace crop" button and choose the new one in the planting dialog';
+  text += '<br>';
+  text += '• OR: Shift+click the crop in the field to replace it with the last planted or unlocked crop (requires a setting under preferences)';
+
+  div.innerHTML = text;
+}
+
 
 function makePlantDialog(x, y, opt_replace, opt_recoup) {
 
@@ -259,17 +309,17 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
   if(num_unlocked > 9) dialogsize = DIALOG_MEDIUM;
   if(num_unlocked > 12) dialogsize = DIALOG_LARGE;
 
-  var dialog = createDialog(dialogsize);
+  var dialog = createDialog(dialogsize, showPlantingHelp, 'help');
   dialog.div.className = 'efDialogTranslucent';
   var tx = 0;
   var ty = 0;
 
-  var flex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.05, 0.7);
+  var flex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.05, dialogsize == DIALOG_SMALL ? 1.2 : 0.7);
   if(opt_replace) {
     centerText2(flex.div);
     flex.div.textEl.innerHTML = 'Replace crop with...';
   } else {
-    flex.div.innerHTML = 'Choose a crop to plant, or click its icon for info.<br>Tip: use SHIFT key on the field to plant last plant type, or CTRL for watercress.';
+    flex.div.innerHTML = 'Choose a crop to plant, or click its icon for info';
   }
 
   flex = new Flex(dialog.content, 0, 0.12, 1, 1);
@@ -278,8 +328,6 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
   var crops_order = getCropOrder();
 
   for(var i = 0; i < crops_order.length; i++) {
-
-
     var index = crops_order[i];
     var c = crops[index];
 

@@ -110,7 +110,7 @@ function plantBluePrint(b, allow_override) {
       if(allow_override) {
         if(f.index != 0 && f.index != FIELD_REMAINDER) {
           c2 = f.getCrop();
-          if(!c2) continue;
+          if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
           if(c2.type == c.type) continue; // keep same types
         }
       } else {
@@ -195,6 +195,8 @@ function importBluePrintDialog(fun) {
 }
 
 function createBlueprintDialog(b, opt_index) {
+  if(!haveAutomaton()) return;
+
   var orig = b;
   b = BluePrint.copy(b);
 
@@ -331,6 +333,10 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • shift + click blueprint in main blueprint dialog: plant it immediately rather than opening its editing dialog (if not empty)';
   text += '<br/>';
+  text += ' • ctrl + click blueprint in main blueprint dialog: plant it immediately and override differing plants on the field';
+  text += '<br/>';
+  text += ' • shift + click "To Field" button of a blueprint: plant it immediately and override differing crops on the field';
+  text += '<br/>';
   text += ' • "t", "b": open transcend dialog, and then open transcend-with-blueprint dialog';
   text += '<br/><br/>';
   text += 'Once automaton is advanced enough, it can also use blueprints.';
@@ -342,6 +348,8 @@ var blueprintdialogopen = false;
 
 // opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
 function createBlueprintsDialog(opt_transcend) {
+  if(!haveAutomaton()) return;
+
   var dialog = createDialog();
   blueprintdialogopen = true;
   dialog.onclose = function() {
@@ -389,6 +397,10 @@ function createBlueprintsDialog(opt_transcend) {
       } else {
         if(shift && !ctrl && filled) {
           plantBluePrint(state.blueprints[index], false);
+          closeAllDialogs();
+          update();
+        } else if(!shift && ctrl && filled) {
+          plantBluePrint(state.blueprints[index], true);
           closeAllDialogs();
           update();
         } else if(shift && ctrl && filled) {

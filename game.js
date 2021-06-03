@@ -2804,6 +2804,18 @@ var update = function(opt_ignorePause) {
             state.g_res.addInPlace(extrastarter);
             state.c_res.addInPlace(extrastarter);
           }
+          if(f.cropIndex() == fern2_2) {
+            var extrastarter = getStarterResources(fern2_2).sub(getStarterResources());
+            state.res.addInPlace(extrastarter);
+            state.g_res.addInPlace(extrastarter);
+            state.c_res.addInPlace(extrastarter);
+          }
+          if(f.cropIndex() == fern2_3) {
+            var extrastarter = getStarterResources(fern2_3).sub(getStarterResources());
+            state.res.addInPlace(extrastarter);
+            state.g_res.addInPlace(extrastarter);
+            state.c_res.addInPlace(extrastarter);
+          }
           if(c.index == automaton2_0) {
             if(!state.automaton_unlocked[0]) {
               state.automaton_unlocked[0] = 1;
@@ -3375,9 +3387,14 @@ var update = function(opt_ignorePause) {
       if(state.treelevel2 >= 4) {
         unlockEtherealCrop(berry2_2);
         unlockEtherealCrop(lotus2_1);
+        unlockEtherealCrop(fern2_2);
       }
       if(state.treelevel2 >= 5) {
         unlockEtherealCrop(mush2_2);
+      }
+      if(state.treelevel2 >= 6) {
+        unlockEtherealCrop(fern2_3);
+        unlockEtherealCrop(flower2_2);
       }
     }
 

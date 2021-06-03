@@ -84,7 +84,8 @@ a:visited {
 }
 
 .efPlantChip {
-  border: 1px solid #000;
+  background-color: #dbecc8;
+  border: 1px solid #080;
 }
 
 .efEtherealPlantChip {

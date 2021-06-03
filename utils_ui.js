@@ -314,15 +314,22 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   if(!opt_nobgclose) overlay.onclick = dialog.cancelFun;
 
 
-  var xbutton = new Flex(dialogFlex, [1, 0, -0.05], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.05], 8);
-  styleButton(xbutton.div);
-  xbutton.div.textEl.innerText = 'x';
+  var xbutton = new Flex(dialogFlex, [1, 0, -0.07], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.07], 8);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', xbutton.div);
+  renderImage(image_close, canvas);
+  styleButton0(xbutton.div);
+  //xbutton.div.style.border = '2px solid black';
+
+  //var xbutton = new Flex(dialogFlex, [1, 0, -0.05], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.05], 8);
+  //styleButton(xbutton.div);
+  //xbutton.div.textEl.innerText = 'x';
+
   addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
 
   var h = 0.88;
   if(opt_size == DIALOG_TINY) h = 0.8; // ensure content doesn't go over the buttons
   if(opt_size == DIALOG_SMALL) h = 0.8; // ensure content doesn't go over the buttons
-  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, 0, -0.05], h, 0.3);
+  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, 0, -0.07], h, 0.3);
 
   return dialogFlex;
 }
@@ -471,13 +478,17 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
       // no width or hight set on the div: make it automatically match the size of the text. But the maxWidth ensures it won't get too wide in case of long text without newlines.
       ///div.style.maxWidth = mainFlex.div.clientWidth + 'px';
       if(state.tooltipstyle == 1) {
-        div.style.backgroundColor = '#840e';
+        div.style.backgroundColor = '#004';
         div.style.color = '#fff';
         div.style.border = '2px solid #fff';
       } else if(state.tooltipstyle == 2) {
         div.style.backgroundColor = '#ccce';
         div.style.color = '#000';
         div.style.border = '1px solid #000';
+      } else if(state.tooltipstyle == 4) {
+        div.style.backgroundColor = '#840e';
+        div.style.color = '#fff';
+        div.style.border = '2px solid #fff';
       } else {
         div.style.backgroundColor = '#0008';
         div.style.color = '#fff';

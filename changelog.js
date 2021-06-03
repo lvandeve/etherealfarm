@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.76 (2021-06-03):';
+  text += '<br/>• Added new ethereal crops.';
+  text += '<br/>• Multi-season fruits now also give a slightly higher boost than the standard counterparts.';
+  text += '<br/>• Added fourth nut crop tier.';
+  text += '<br/>• UI style tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.75 "Squirrel update part 2" (2021-05-29):';
   text += '<br/>• Added 20 new squirrel upgrades. Free respec token given so you can respec if desired';
   text += '<br/>• Added a third nut tier, and renamed tiers, the tiers are now: acorn, almond, brazil nut.';

@@ -410,13 +410,14 @@ function createAdvancedSettingsDialog() {
     if(state.tooltipstyle == 1) style = 'dark';
     if(state.tooltipstyle == 2) style = 'light';
     if(state.tooltipstyle == 3) style = 'translucent';
+    if(state.tooltipstyle == 4) style = 'brown';
     button.textEl.innerText = 'tooltip style: ' + style;
   };
   updatebuttontext(button);
   registerTooltip(button, 'Change the tooltip style or disable them');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.tooltipstyle++;
-    if(state.tooltipstyle >= 4) state.tooltipstyle = 0;
+    if(state.tooltipstyle > 4) state.tooltipstyle = 0;
     updatebuttontext(button);
     removeAllTooltips();
   }, button, updatebuttontext));

@@ -60,6 +60,8 @@ function makeMainDivs() {
 
   gameFlex = new Flex(mainFlex, [0, 0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 0.75], 0.99);
   if(showdebugborders) gameFlex.div.style.border = '2px solid green';
+  //gameFlex.div.style.border = '2px solid black';
+  //gameFlex.div.style.backgroundColor = '#0001';
 
   topFlex = new Flex(gameFlex, 0, 0, 1, 0.05);
   if(showdebugborders) topFlex.div.style.border = '2px solid red';
@@ -73,6 +75,7 @@ function makeMainDivs() {
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
   contentFlex = new Flex(gameFlex, 0, 0.295, 1, 0.8);
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
+  //contentFlex.div.style.backgroundColor = '#0004';
 
   logFlex = new Flex(gameFlex, 0, 0.805, 1, 1, 0.25);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';

@@ -1703,7 +1703,6 @@ var nutunlock_2 = registerCropUnlock(nut_2, getNutCost(2), nut_1, function(){
   return true;
 });
 var nutunlock_3 = registerCropUnlock(nut_3, getNutCost(3), nut_2, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
@@ -2997,6 +2996,8 @@ function registerFern2(name, treelevel2, tier, cost, planttime, effect_descripti
 crop2_register_id = 0;
 var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
 var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
+var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), 1.5, 'gives 10000 * n^3 starter seeds', 'gives 10000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
+var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1000000}), 1.5, 'gives 100000 * n^3 starter seeds', 'gives 100000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -3018,7 +3019,7 @@ var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), 240, Num(4), 
 crop2_register_id = 75;
 var flower2_0 = registerFlower2('clover', 0, 0, Res({resin:50}), 120, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
 var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 180, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
-
+var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5000000}), 180, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
 
 crop2_register_id = 100;
 var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', nettle);
@@ -3486,8 +3487,14 @@ function getFruitBoost(ability, level, tier) {
     // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
     return Num(base * 0.5 * level);
   }
-  if(ability >= FRUIT_SPRING && ability <= FRUIT_ALL_SEASON) {
+  if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
     return Num(0.25); // not upgradeable
+  }
+  if(ability >= FRUIT_SPRING_SUMMER && ability <= FRUIT_WINTER_SPRING) {
+    return Num(0.3); // not upgradeable
+  }
+  if(ability == FRUIT_ALL_SEASON) {
+    return Num(0.35); // not upgradeable
   }
 
   return Num(0.1);
@@ -4049,6 +4056,16 @@ function getStarterResources(opt_add_type, opt_sub_type) {
   if(opt_add_type == fern2_1) count++;
   if(opt_sub_type == fern2_1) count--;
   ethereal_seeds += count * count * count * 1000;
+
+  count = state.fullgrowncrop2count[fern2_2];
+  if(opt_add_type == fern2_2) count++;
+  if(opt_sub_type == fern2_2) count--;
+  ethereal_seeds += count * count * count * 10000;
+
+  count = state.fullgrowncrop2count[fern2_3];
+  if(opt_add_type == fern2_3) count++;
+  if(opt_sub_type == fern2_3) count--;
+  ethereal_seeds += count * count * count * 100000;
 
   return Res({seeds:ethereal_seeds});
 }

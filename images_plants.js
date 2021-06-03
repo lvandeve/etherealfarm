@@ -3691,6 +3691,18 @@ var image_fern_as_crop2 = createPlantImages2(seeds_nettle,
 'hg:#fffc' + fern_base_image,
 'hg:#ffff' + fern_base_image);
 
+var image_fern_as_crop3 = createPlantImages2(seeds_nettle,
+'hg:#f0f4' + fern_base_image,
+'hg:#f0f8' + fern_base_image,
+'hg:#f0fc' + fern_base_image,
+'hg:#f0ff' + fern_base_image);
+
+var image_fern_as_crop4 = createPlantImages2(seeds_nettle,
+'hg:#ff04' + fern_base_image,
+'hg:#ff08' + fern_base_image,
+'hg:#ff0c' + fern_base_image,
+'hg:#ff0f' + fern_base_image);
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
