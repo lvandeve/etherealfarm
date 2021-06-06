@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.77 (2021-06-06):';
+  text += '<br/>• Added new ethereal crops and upgrade (a new field size).';
+  text += '<br/>• Added season shorten/lengthen amber abilities.';
+  text += '<br/>• Tweaks and fixes.';
+  text += '<br/><br/>';
+
   text += '0.1.76 (2021-06-03):';
   text += '<br/>• Added new ethereal crops.';
   text += '<br/>• Multi-season fruits now also give a slightly higher boost than the standard counterparts.';

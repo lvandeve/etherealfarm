@@ -608,6 +608,8 @@ function encState(state, opt_raw_only) {
 
   section = 23; id = 0; // amber effects
   processBool(state.amberprod);
+  processBool(state.amberseason);
+  processFloat(state.seasonshift);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1004,7 +1006,8 @@ function decState(s) {
     state.g_numupgrades3 = processUint();
     state.g_numrespec3 = processUint();
     state.g_amberdrops = processUint();
-    state.g_amberbuy = processUintArray();
+    var amberbuy = processUintArray();
+    for(var i = 0; i < amberbuy.length; i++) state.g_amberbuy[i] = amberbuy[i];
   }
 
   if(error) return err(4);
@@ -1526,6 +1529,8 @@ function decState(s) {
 
   section = 23; id = 0; // amber effects
   if(save_version >= 4096*1+74) state.amberprod = processBool();
+  if(save_version >= 4096*1+77) state.amberseason = processBool();
+  if(save_version >= 4096*1+77) state.seasonshift = processFloat();
 
 
   //////////////////////////////////////////////////////////////////////////////

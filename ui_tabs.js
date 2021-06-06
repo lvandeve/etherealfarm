@@ -262,6 +262,20 @@ function updateTabButtons() {
     }
   }
 
+  // Make the field use up the entire tab space if no tab buttons visible
+  if(num <= 1) {
+    if(contentFlex.y0 != 0.172) {
+      contentFlex.y0 = 0.172;
+      contentFlex.update(gameFlex.div);
+    }
+  } else {
+    if(contentFlex.y0 != 0.295) {
+      contentFlex.y0 = 0.295;
+      contentFlex.update(gameFlex.div);
+    }
+  }
+
+
   var ok = true;
   for(var i = 0; i < wanted.length; i++) {
     if(wanted[i] != (!!tabbuttons[i])) {

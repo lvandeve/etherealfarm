@@ -788,8 +788,12 @@ function getRandomPreferablyEmptyFieldSpot() {
 }
 
 
+function getSeasonTime(time) {
+  return  time - state.g_starttime - state.g_pausetime - state.seasonshift;
+}
+
 function getSeasonAt(time) {
-  var t = time - state.g_starttime - state.g_pausetime;
+  var t = getSeasonTime(time);
   if(isNaN(t)) return 0;
   t /= (24 * 3600);
   var result = Math.floor(t) % 4;
@@ -804,7 +808,7 @@ function getSeason() {
 
 function timeTilNextSeason() {
   var daylen = 24 * 3600;
-  var t = state.time - state.g_starttime - state.g_pausetime;
+  var t = getSeasonTime(state.time);
   t /= daylen;
   t -= Math.floor(t);
   return daylen - t * daylen;
@@ -2509,6 +2513,20 @@ var update = function(opt_ignorePause) {
           }
           cost = ambercost_prod;
         }
+        if(action.effect == AMBER_LENGTHEN) {
+          if(state.amberseason) {
+            showMessage('Already used this season.', C_INVALID, 0, 0);
+            ok = false;
+          }
+          cost = ambercost_lengthen;
+        }
+        if(action.effect == AMBER_SHORTEN) {
+          if(state.amberseason) {
+            showMessage('Already used this season.', C_INVALID, 0, 0);
+            ok = false;
+          }
+          cost = ambercost_shorten;
+        }
         cost = new Res({amber:cost});
 
         if(ok && state.res.lt(cost)) {
@@ -2525,6 +2543,16 @@ var update = function(opt_ignorePause) {
           if(action.effect == AMBER_PROD) {
             state.amberprod = true;
             showMessage('Amber production bonus activated for the remainder of this run', C_AMBER, 2215651, 1);
+          }
+          if(action.effect == AMBER_LENGTHEN) {
+            state.amberseason = true;
+            state.seasonshift += 3600;
+          }
+          if(action.effect == AMBER_SHORTEN) {
+            // subtract less than an hour if this will already bring us into the next season sooner
+            var sub = Math.min(3600, timeTilNextSeason());
+            state.amberseason = true;
+            state.seasonshift -= sub;
           }
           state.res.subInPlace(cost);
 
@@ -3396,6 +3424,10 @@ var update = function(opt_ignorePause) {
         unlockEtherealCrop(fern2_3);
         unlockEtherealCrop(flower2_2);
       }
+      if(state.treelevel2 >= 7) {
+        unlockEtherealCrop(berry2_3);
+        unlockEtherealCrop(mush2_3);
+      }
     }
 
     state.res.addInPlace(actualgain);
@@ -3589,6 +3621,8 @@ var update = function(opt_ignorePause) {
     state.delete2tokens += num_tokens;
     state.g_delete2tokens += num_tokens;
     if(num_tokens > 0 && state.g_numresets > 0) showMessage('Received ' + num_tokens + ' ethereal deletion tokens', C_ETHEREAL, 510324665);
+
+    state.amberseason = false;
   }
 
   if(do_transcend) {

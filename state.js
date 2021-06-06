@@ -516,7 +516,7 @@ function State() {
   this.g_numupgrades3 = 0;
   this.g_numrespec3 = 0;
   this.g_amberdrops = 0;
-  this.g_amberbuy = [0, 0]; // amount bought of amber upgrades
+  this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -612,6 +612,8 @@ function State() {
 
   // effects for this run
   this.amberprod = false;
+  this.amberseason = false; // a season duration amber effect was activated during this season
+  this.seasonshift = 0; // in seconds, for the amber season move effects
 
   // temp variables for visual effect, not to be saved
   this.automatonx = 0; // for the visual planting effect

@@ -1476,7 +1476,7 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
       var cost1 = getNutCost(tier + 1).spores;
       var mul = cost1.div(cost0).powr(1 / nut_upgrade_steps);
       var base = cost0;
-      var softcap = Num.pow(Num(1.002), Num(i * i));
+      var softcap = Num.pow(Num(1.0025), Num(i * i));
       // using index + 1, becausefirst upgrade should be more expensive than the nut plant itself
       var spores = base.mul(mul.powr(i + 1)).mul(softcap);
       return new Res({spores:spores});
@@ -2227,6 +2227,7 @@ medal_register_id = 400;
 registerPlantTypeMedals(nut_0);
 registerPlantTypeMedals(nut_1);
 registerPlantTypeMedals(nut_2);
+registerPlantTypeMedals(nut_3);
 
 
 medal_register_id = 600;
@@ -3008,12 +3009,14 @@ crop2_register_id = 25;
 var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
 var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
 var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
+var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:150e6}), 240, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
 
 // mushrooms2
 crop2_register_id = 50;
 var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
 var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
 var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), 240, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
+var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:100e6}), 300, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
 
 // flowers2
 crop2_register_id = 75;
@@ -3396,6 +3399,20 @@ var upgrade2_squirrel = registerUpgrade2('unlock squirrel', LEVEL2, Res({resin:1
 }, function(){return true;}, 1, 'the squirrel can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks nuts, squirrel upgrades and the squirrel in the basic field', undefined, undefined, images_squirrel[4]);
 
 
+///////////////////////////
+LEVEL2 = 6;
+upgrade2_register_id = 200;
+
+
+///////////////////////////
+LEVEL2 = 7;
+upgrade2_register_id = 220;
+
+var upgrade2_field7x6 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:1e9}), 1, function() {
+  var numw = Math.max(7, state.numw);
+  var numh = Math.max(7, state.numh);
+  changeFieldSize(state, numw, numh);
+}, function(){return state.numw >= 7 && state.numh >= 6}, 1, 'increase basic field size to 7x7 tiles', undefined, undefined, field_summer[0]);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4465,7 +4482,7 @@ var upgrade3_flower = registerUpgrade3('flower boost', undefined, 'boosts the fl
 var upgrade3_nettle = registerUpgrade3('nettle boost', undefined, 'boosts the nettle boost by +' + upgrade3_nettle_bonus.toPercentString(), nettle[4]);
 
 var upgrade3_fruittierprob = registerUpgrade3('fruit tier probability', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels', images_apple[4]);
-var upgrade3_seasonfruitprob = registerUpgrade3('seasonal fruit probability', undefined, 'increases probability of getting a better seasonal fruit drop from 1/4th to 1/3th', images_apricot[3]);
+var upgrade3_seasonfruitprob = registerUpgrade3('seasonal fruit probability', undefined, 'increases probability of getting a better seasonal fruit drop from 1/4th to 1/3rd', images_apricot[3]);
 
 var upgrade3_doublefruitprob_prob = 0.25;
 var upgrade3_doublefruitprob = registerUpgrade3('double fruit drop chance', undefined, 'when the tree drops a fruit, it has ' + Num(upgrade3_doublefruitprob_prob).toPercentString() + ' chance to drop 2 fruits at once', images_apple[3]);
@@ -4522,4 +4539,6 @@ registerStage3(undefined, [upgrade3_resin], undefined, true);
 
 var ambercost_respec3 = Num(15);
 var ambercost_prod = Num(20);
+var ambercost_lengthen = Num(25);
+var ambercost_shorten = Num(25);
 
