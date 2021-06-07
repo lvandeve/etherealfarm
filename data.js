@@ -377,7 +377,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
     }
-    if(p.treeneighbor && state.upgrades3[upgrade3_season[3]] && this.type == CROPTYPE_FLOWER) {
+    if(p.treeneighbor && state.upgrades3[upgrade3_season[3]].count && this.type == CROPTYPE_FLOWER) {
       var bonus = upgrade3_winter_flower_bonus;
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth (squirrel)', true, bonus, result.clone()]);
@@ -3408,7 +3408,7 @@ upgrade2_register_id = 200;
 LEVEL2 = 7;
 upgrade2_register_id = 220;
 
-var upgrade2_field7x6 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:1e9}), 1, function() {
+var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:1e9}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(7, state.numh);
   changeFieldSize(state, numw, numh);

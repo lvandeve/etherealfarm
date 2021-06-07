@@ -598,10 +598,14 @@ function softReset(opt_challenge) {
 
   // fix the accidental grow time ethereal upgrade that accidentally gave 7x7 field due to debug code in version 0.1.11
   // TODO: update this code to match next such upgrades this code once a 7x7 upgrade exists!
-  if(state.numw == 7 && state.numh == 7) {
+  if(state.numw == 7 && state.numh == 7 && !state.upgrades2[upgrade2_field7x7].count) {
     var size = (state.upgrades2[upgrade2_field6x6].count) ? 6 : 5;
     state.numw = size;
     state.numh = size;
+    initFieldUI();
+  } else if(state.upgrades2[upgrade2_field7x7].count && (state.numw < 7 || state.numh < 7)) {
+    state.numw = 7;
+    state.numh = 7;
     initFieldUI();
   }
 
