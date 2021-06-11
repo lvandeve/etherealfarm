@@ -56,7 +56,7 @@ function getCropTypeName(type) {
 // opt_crop is cropid for specific crop in case it has a slightly different description
 function getCropTypeHelp(type, opt_no_nettles) {
   switch(type) {
-    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (opt_no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production but less effectively than it copies berries.';
+    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (opt_no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
     case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers' + (opt_no_nettles ? '' : ' and nettles') + '. Neighboring watercress can copy its production (but also consumption).';
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
     case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
@@ -65,7 +65,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
-    case CROPTYPE_NUT: return 'Produces nuts. Can have only max 1 nut plant in the field. Neighboring watercress can copy its production. Receives a limited fixed boost from flowers of high enough tier. Not boosted by other standard berry and mushroom production boosts.';
+    case CROPTYPE_NUT: return 'Produces nuts. Can have only max 1 nut plant in the field. Neighboring watercress can copy its production, but less effectively than it copies berries. Receives a limited fixed boost from flowers of high enough tier. Not boosted by other standard berry and mushroom production boosts.';
   }
   return undefined;
 }
@@ -73,16 +73,17 @@ function getCropTypeHelp(type, opt_no_nettles) {
 var fern_wait_minutes = 2; // default fern wait minutes (in very game they go faster)
 
 
-// apply bonuses that apply to all weather ability waits
-function adjustWait(result) {
+// apply bonuses that apply to all weather ability durations
+function adjustWeatherDuration(result) {
   if(state.upgrades[active_choice0].count == 1) result *= 2;
+  if(state.upgrades3[upgrade3_weather_duration].count) result *= (1 + upgrade3_weather_duration_bonus);
 
-  // FRUIT_COOLDOWN effect was removed, but code kept to copypaste some different future upgrade that'd do this from.
-  /*var level = getFruitAbility(FRUIT_COOLDOWN);
-  if(level > 0) {
-    var mul = Num(1).sub(getFruitBoost(FRUIT_COOLDOWN, level, getFruitTier())).valueOf();
-    result *= mul;
-  }*/
+  return result;
+}
+
+// apply bonuses that apply to all weather ability waits
+function adjustWeatherWait(result) {
+  if(state.upgrades[active_choice0].count == 1) result *= 2;
 
   return result;
 }
@@ -103,17 +104,17 @@ function getWeatherBoost() {
 var sun_duration = 2 * 60;
 var sun_wait = 10 * 60 + sun_duration;
 
+// how long the sun effect is active
 function getSunDuration() {
   var result = sun_duration;
-  if(state.upgrades[active_choice0].count == 1) result *= 2;
+  result = adjustWeatherDuration(result);
   return result;
 }
 
+// how long the entire sun cycle (including the time when it is active) is
 function getSunWait() {
   var result = sun_wait;
-
-  result = adjustWait(result);
-
+  result = adjustWeatherWait(result);
   return result;
 }
 
@@ -122,15 +123,17 @@ function getSunWait() {
 var mist_duration = 3 * 60;
 var mist_wait = 15 * 60 + mist_duration;
 
+// how long the mist effect is active
 function getMistDuration() {
   var result = mist_duration;
-  if(state.upgrades[active_choice0].count == 1) result *= 2;
+  result = adjustWeatherDuration(result);
   return result;
 }
 
+// how long the entire mist cycle (including the time when it is active) is
 function getMistWait() {
   var result = mist_wait;
-  result = adjustWait(result);
+  result = adjustWeatherWait(result);
   return result;
 }
 
@@ -139,15 +142,17 @@ function getMistWait() {
 var rainbow_duration = 4 * 60;
 var rainbow_wait = 20 * 60 + rainbow_duration;
 
+// how long the rainbow effect is active
 function getRainbowDuration() {
   var result = rainbow_duration;
-  if(state.upgrades[active_choice0].count == 1) result *= 2;
+  result = adjustWeatherDuration(result);
   return result;
 }
 
+// how long the entire rainbow cycle (including the time when it is active) is
 function getRainbowWait() {
   var result = rainbow_wait;
-  result = adjustWait(result);
+  result = adjustWeatherWait(result);
   return result;
 }
 
@@ -288,8 +293,8 @@ Crop.prototype.getPlantTime = function() {
     result *= (1 - upgrade3_growspeed_bonus);
   }
 
-  if(state.upgrades3[upgrade3_season[0]].count && getSeason() == 0) {
-    result *= (1 - upgrade3_spring_growspeed_bonus);
+  if(state.upgrades2[upgrade2_season2[0]].count && getSeason() == 0) {
+    result *= (1 - upgrade2_spring_growspeed_bonus);
   }
 
   return result;
@@ -377,8 +382,8 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
     }
-    if(p.treeneighbor && state.upgrades3[upgrade3_season[3]].count && this.type == CROPTYPE_FLOWER) {
-      var bonus = upgrade3_winter_flower_bonus;
+    if(p.treeneighbor && state.upgrades2[upgrade2_season2[3]].count && this.type == CROPTYPE_FLOWER) {
+      var bonus = upgrade2_winter_flower_bonus;
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth (squirrel)', true, bonus, result.clone()]);
     }
@@ -808,6 +813,17 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
     }
   }
 
+  // multiplicity
+  if((this.type == CROPTYPE_FLOWER) && haveMultiplicity(this.type)) {
+    // multiplicity only works by fully grown crops, not for intermediate growing ones
+    var num = getMultiplicityNum(this);
+    if(num > 0) {
+      var boost = getMultiplicityBonusBase(this.type).mulr(num).addr(1);
+      result.mulInPlace(boost);
+      if(breakdown) breakdown.push(['multiplicity (' + ((num == Math.floor(num)) ? num.toString() : num.toPrecision(3)) + ')', true, boost, result.clone()]);
+    }
+  }
+
   // bee challenge
   if(state.challenge == challenge_bees) {
     var bonus_bees = getWorkerBeeBonus().addr(1);
@@ -893,6 +909,16 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
+    }
+  }
+
+  if(haveSquirrel()) {
+    if(this.type == CROPTYPE_BEE) {
+      if(state.upgrades3[upgrade3_bee].count) {
+        var bonus = upgrade3_bee_bonus.mulr(state.upgrades3[upgrade3_bee].count).addr(1);
+        result.mulInPlace(bonus);
+        if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
+      }
     }
   }
 
@@ -1202,7 +1228,7 @@ var nut_0  = registerNut('acorn', 0, nutplanttime0 * 1, images_acorn, 'it\'s a l
 var nut_1  = registerNut('almond', 1, nutplanttime0 * 2, images_almond);
 var nut_2  = registerNut('brazil nut', 2, nutplanttime0 * 3, images_brazilnut);
 var nut_3  = registerNut('cashew', 3, nutplanttime0 * 4, images_cashew);
-var nut_4  = registerNut('chestnut', 4, nutplanttime0 * 5, undefined);
+var nut_4  = registerNut('chestnut', 4, nutplanttime0 * 5, images_chestnut);
 var nut_5  = registerNut('coconut', 5, nutplanttime0 * 6, undefined);
 var nut_6  = registerNut('hazelnut', 6, nutplanttime0 * 7, undefined);
 var nut_7  = registerNut('macadamia', 7, nutplanttime0 * 8, undefined);
@@ -1698,7 +1724,6 @@ var nutunlock_1 = registerCropUnlock(nut_1, getNutCost(1), nut_0, function(){
   return true;
 });
 var nutunlock_2 = registerCropUnlock(nut_2, getNutCost(2), nut_1, function(){
-  //return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
@@ -1707,7 +1732,6 @@ var nutunlock_3 = registerCropUnlock(nut_3, getNutCost(3), nut_2, function(){
   return true;
 });
 var nutunlock_4 = registerCropUnlock(nut_4, getNutCost(4), nut_3, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
@@ -2176,13 +2200,15 @@ function registerPlantTypeMedals(cropid) {
   var id1 = registerPlantTypeMedal(cropid, 10); // easy to get for most crops, harder for flowers due to multiplier
   var id2 = registerPlantTypeMedal(cropid, 20);
   var id3 = registerPlantTypeMedal(cropid, 30); // requires bigger field
-  medal_register_id += 1; // for possible future expansion... (probably 50)
+  var id4 = registerPlantTypeMedal(cropid, 40);
+  // TODO: add more if bigger field sizes exist: 50, 60, ... requires reshuffling medal ids to make room.
 
   // can only plant 1 nut, so could never get those next ones currently, so don't hint for them, even though they're registered they effectively do not exist
   if(crops[cropid].type != CROPTYPE_NUT) {
     medals[id1].hint = id0;
     medals[id2].hint = id1;
     medals[id3].hint = id2;
+    medals[id4].hint = id3;
   }
 };
 medal_register_id = 149;
@@ -2228,6 +2254,12 @@ registerPlantTypeMedals(nut_0);
 registerPlantTypeMedals(nut_1);
 registerPlantTypeMedals(nut_2);
 registerPlantTypeMedals(nut_3);
+registerPlantTypeMedals(nut_4);
+medal_register_id = 500;
+// for the watercress, only start this at 30: the ones for 1, 10, 20 are not added because a medal for 1 watercress is too soon, and for 20 there's already the full field full of watercress medal
+registerPlantTypeMedal(short_0, 30);
+registerPlantTypeMedal(short_0, 40);
+medals[medal_register_id - 1].hint = medal_register_id - 2;
 
 
 medal_register_id = 600;
@@ -2243,7 +2275,7 @@ registerMedal('20 ethereal crops', 'Have 20 ethereal crops', undefined, function
 
 medal_register_id = 700;
 var fruit_achievement_values =   [   5,   10,   20,   50,  100,  200,  500, 1000, 2000, 5000, 10000];
-var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     1];
+var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     2];
 var fruit_achievement_images =   [   0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10];
 for(var i = 0; i < fruit_achievement_values.length; i++) {
   var num = fruit_achievement_values[i];
@@ -2770,11 +2802,14 @@ function Crop2() {
 };
 
 
-Crop2.prototype.getCost = function(opt_adjust_count) {
+// opt_force_count, if not undefined, overrides anything, including opt_adjust_count
+Crop2.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   var mul = sameTypeCostMultiplier2;
   if(this.type == CROPTYPE_LOTUS) mul = sameTypeCostMultiplier_Lotus2;
   if(this.type == CROPTYPE_FERN2) mul = sameTypeCostMultiplier_Fern2;
-  var countfactor = Math.pow(mul, state.crop2count[this.index] + (opt_adjust_count || 0));
+  var count = state.crop2count[this.index] + (opt_adjust_count || 0);
+  if(opt_force_count != undefined) count = opt_force_count;
+  var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
 
@@ -2807,11 +2842,9 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
   var result = this.effect.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-
-
   // lotuses
   if(f) {
-    var lotusmul = Num(1);
+    var lotusmul = new Num(1);
     var num = 0;
 
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -2835,9 +2868,9 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
 
   // automaton and squirrel
   if(f) {
-    var automatonmul = Num(1);
-    var squirrelmul = Num(1);
-    var treemul = Num(1);
+    var automatonmul = new Num(1);
+    var squirrelmul = new Num(1);
+    var treemul = new Num(1);
     var num_automaton = 0;
     var num_squirrel = 0;
     var num_tree = 0;
@@ -2880,7 +2913,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     var u = state.upgrades2[upgrade2_berry];
     var u2 = upgrades2[upgrade2_berry];
     if(u.count > 0) {
-      var mul_upgrade = Num(1).add(upgrade2_berry_bonus.mulr(u.count));
+      var mul_upgrade = upgrade2_berry_bonus.mulr(u.count).addr(1);
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
@@ -2890,7 +2923,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     var u = state.upgrades2[upgrade2_mush];
     var u2 = upgrades2[upgrade2_mush];
     if(u.count > 0) {
-      var mul_upgrade = Num(1).add(upgrade2_mush_bonus.mulr(u.count));
+      var mul_upgrade = upgrade2_mush_bonus.mulr(u.count).addr(1);
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
@@ -2998,7 +3031,7 @@ crop2_register_id = 0;
 var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
 var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
 var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), 1.5, 'gives 10000 * n^3 starter seeds', 'gives 10000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
-var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1000000}), 1.5, 'gives 100000 * n^3 starter seeds', 'gives 100000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
+var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), 1.5, 'gives 100000 * n^3 starter seeds', 'gives 100000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -3009,20 +3042,20 @@ crop2_register_id = 25;
 var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
 var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
 var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
-var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:150e6}), 240, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
+var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), 240, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
 
 // mushrooms2
 crop2_register_id = 50;
 var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
 var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
 var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), 240, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
-var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:100e6}), 300, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
+var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), 300, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
 
 // flowers2
 crop2_register_id = 75;
 var flower2_0 = registerFlower2('clover', 0, 0, Res({resin:50}), 120, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
 var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 180, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
-var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5000000}), 180, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
+var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5e6}), 180, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
 
 crop2_register_id = 100;
 var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', nettle);
@@ -3404,11 +3437,36 @@ LEVEL2 = 6;
 upgrade2_register_id = 200;
 
 
+
+var upgrade2_spring_growspeed_bonus = 0.2; // how much % faster it grows
+var upgrade2_winter_flower_bonus = Num(1.5); // multiplier
+
+
+var upgrade2_season2 = [];
+
+upgrade2_season2[0] = registerUpgrade2('spring grow speed', LEVEL2, Res({resin:20e6}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 1, 'crops grow ' + Num(upgrade2_spring_growspeed_bonus).toPercentString() + ' faster in spring', undefined, undefined, tree_images[10][1][0]);
+
+upgrade2_season2[1] = registerUpgrade2('summer resin', LEVEL2, Res({resin:20e6}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 1, 'adds a resin bonus to summer, about half as strong as that of winter', undefined, undefined, tree_images[10][1][1]);
+
+upgrade2_season2[2] = registerUpgrade2('autumn resin', LEVEL2, Res({resin:20e6}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 1, 'adds a resin bonus to autumn, about half as strong as that of winter', undefined, undefined, tree_images[10][1][2]);
+
+upgrade2_season2[3] = registerUpgrade2('winter warmth flowers', LEVEL2, Res({resin:20e6}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 1, 'winter tree warmth now also gives a flat ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' bonus to flowers', undefined, undefined, tree_images[10][1][3]);
+
+
+
 ///////////////////////////
 LEVEL2 = 7;
 upgrade2_register_id = 220;
 
-var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:1e9}), 1, function() {
+var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:500e6}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(7, state.numh);
   changeFieldSize(state, numw, numh);
@@ -3773,16 +3831,17 @@ function fuseFruit(a, b, fruitmix, opt_message) {
   f.type = (a.type == b.type) ? a.type : seasonmix_result;
 
   // the seasonal ability
-  if(f.type >= 1 && f.type <= 4) {
-    f.abilities[n] = a.abilities[n];
-    f.levels[n] = a.levels[n];
-    f.starting_levels[n] = a.starting_levels[n];
-    f.charge[n] = a.charge[n];
-  } else if(f.type > 4) {
+  if(f.type >= 1) {
     f.abilities[n] = FRUIT_SPRING + f.type - 1; // we can do this because the fruit ability ordering is the same as the fruit type ordering, and f.type==1 matches FRUIT_SPRING
-    f.levels[n] = a.levels[n];
-    f.starting_levels[n] = a.starting_levels[n];
-    f.charge[n] = a.charge[n];
+    if(f.type >= 1 && f.type <= 4) {
+      f.levels[n] = a.levels[n];
+      f.starting_levels[n] = a.starting_levels[n];
+      f.charge[n] = a.charge[n];
+    } else if(f.type > 4) {
+      f.levels[n] = a.levels[n];
+      f.starting_levels[n] = a.starting_levels[n];
+      f.charge[n] = a.charge[n];
+    }
   }
 
   f.fuses = a.fuses + b.fuses + 1;
@@ -4134,9 +4193,11 @@ function getSpringFlowerBonus() {
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility_MultiSeasonal(FRUIT_SPRING);
+  var a = getFruitAbility_MultiSeasonal(FRUIT_SPRING);
+  var level = a[0];
+  var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(FRUIT_SPRING, level, getFruitTier()));
+    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier()));
     bonus.mulInPlace(mul);
   }
 
@@ -4149,14 +4210,16 @@ function getSummerBerryBonus() {
   var ethereal_season = state.upgrades2[upgrade2_season[1]].count;
   if(ethereal_season > 0) {
     //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[1]).addr(1);
-    var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
+    var p = (new Num(ethereal_season)).powr(season_ethereal_upgrade_exponent);
     var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[1]).addr(1);
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility_MultiSeasonal(FRUIT_SUMMER);
+  var a = getFruitAbility_MultiSeasonal(FRUIT_SUMMER);
+  var level = a[0];
+  var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(FRUIT_SUMMER, level, getFruitTier()));
+    var mul = getFruitBoost(ability, level, getFruitTier()).addr(1);
     bonus.mulInPlace(mul);
   }
 
@@ -4173,14 +4236,16 @@ function getAutumnMushroomBonus() {
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
   if(ethereal_season > 0) {
     //var ethereal_season_bonus = Num(ethereal_season).mulr(upgrade2_season_bonus[2]).addr(1);
-    var p = Num(ethereal_season).powr(season_ethereal_upgrade_exponent);
+    var p = (new Num(ethereal_season)).powr(season_ethereal_upgrade_exponent);
     var ethereal_season_bonus = p.mulr(upgrade2_season_bonus[2]).addr(1);
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility_MultiSeasonal(FRUIT_AUTUMN);
+  var a = getFruitAbility_MultiSeasonal(FRUIT_AUTUMN);
+  var level = a[0];
+  var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(FRUIT_AUTUMN, level, getFruitTier()));
+    var mul = getFruitBoost(ability, level, getFruitTier()).addr(1);
     bonus.mulInPlace(mul);
   }
 
@@ -4218,9 +4283,11 @@ function getWinterTreeWarmth() {
     bonus = bonus.mul(ethereal_season_bonus);
   }
 
-  var level = getFruitAbility_MultiSeasonal(FRUIT_WINTER);
+  var a = getFruitAbility_MultiSeasonal(FRUIT_WINTER);
+  var level = a[0];
+  var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(FRUIT_WINTER, level, getFruitTier()));
+    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier()));
     bonus.mulInPlace(mul);
   }
 
@@ -4238,9 +4305,10 @@ function getWinterTreeResinBonus() {
   return result;
 }
 
-// resin bonus for other seasons, if they have their respective squirrel bonus unlocked
+// resin bonus for other seasons, if they have their respective ethereal upgrade bonus unlocked
+// this is intended for summer and autumn, spring has the grow speed increase instead
 function getAlternateResinBonus(season) {
-  if(!state.upgrades3[upgrade3_season[season]].count) return Num(1);
+  if(!state.upgrades2[upgrade2_season2[season]].count) return Num(1);
 
   var result = Num(1.25);
   var ethereal_season = state.upgrades2[upgrade2_season[season]].count;
@@ -4330,13 +4398,20 @@ function getFernWaitTime() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// opt_croptype undefined: for checking if multiplicity is ever unlocked in any form at all by the player, for e.g. revealing the help messages about it
 function haveMultiplicity(opt_croptype) {
   if(opt_croptype == undefined || opt_croptype == CROPTYPE_BERRY || opt_croptype == CROPTYPE_MUSH) return state.challenges[challenge_rockier].completed;
+
+  if(opt_croptype == CROPTYPE_FLOWER) return state.challenges[challenge_rockier].completed && state.upgrades3[upgrade3_flower_multiplicity].count;
+
   return false;
 }
 
 // the result must be multiplied by getMultiplicityNum, to get the actual intended resulting bonus
 function getMultiplicityBonusBase(croptype) {
+  if(croptype == CROPTYPE_FLOWER) {
+    return upgrade3_flower_multiplicity_bonus;
+  }
   return Num(0.25);
 }
 
@@ -4474,12 +4549,14 @@ var upgrade3_berry_bonus = Num(0.25);
 var upgrade3_mushroom_bonus = Num(0.25);
 var upgrade3_flower_bonus = Num(0.15);
 var upgrade3_nettle_bonus = Num(0.25);
+var upgrade3_bee_bonus = Num(0.25);
 var upgrade3_growspeed_bonus = 0.2; // how much % faster it grows
 
 var upgrade3_berry = registerUpgrade3('berry boost', undefined, 'boosts berries +' + upgrade3_berry_bonus.toPercentString(), blackberry[4]);
 var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString(), champignon[4]);
 var upgrade3_flower = registerUpgrade3('flower boost', undefined, 'boosts the flower boost by +' + upgrade3_flower_bonus.toPercentString(), clover[4]);
 var upgrade3_nettle = registerUpgrade3('nettle boost', undefined, 'boosts the nettle boost by +' + upgrade3_nettle_bonus.toPercentString(), nettle[4]);
+var upgrade3_bee = registerUpgrade3('beehive boost', undefined, 'boosts the beehive boost by +' + upgrade3_bee_bonus.toPercentString(), images_beehive[4]);
 
 var upgrade3_fruittierprob = registerUpgrade3('fruit tier probability', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels', images_apple[4]);
 var upgrade3_seasonfruitprob = registerUpgrade3('seasonal fruit probability', undefined, 'increases probability of getting a better seasonal fruit drop from 1/4th to 1/3rd', images_apricot[3]);
@@ -4503,15 +4580,6 @@ var upgrade3_ethtree = registerUpgrade3('ethereal tree neighbor boost', undefine
 var upgrade3_fruitmix = registerUpgrade3('seasonal fruit mixing', undefined, 'Allows fusing mixed seasonal fruits, to get new multi-season fruit types that give the season bonus in 2 seasons:<br> • apricot + pineapple = mango (spring + summer),<br> • pineapple + pear = plum (summer + autumn),<br> • pear + medlar = quince (autumn + winter),<br> • medlar + apricot = kumquat (winter + spring).<br>Other fruit fusing rules work as usual. If this upgrade is removed due to respec, the multi-season fruits temporarily lose their season boost until getting this upgrade again. A later squirrel upgrade will extend the ability of this upgrade.', images_mango[4]);
 var upgrade3_fruitmix2 = registerUpgrade3('seasonal fruit mixing II', undefined, 'The next level of fruit mixing: allows creating the legendary all-season dragon fruit! Fuse mango+quince, or alternatively plum+kumquat, to get the dragon fruit. All other fusing rules apply as usual. If this upgrade or its predecessor is removed due to respec, dragon fruits temporarily lose their season boost until getting this upgrade again.', images_dragonfruit[4]);
 
-var upgrade3_spring_growspeed_bonus = 0.2; // how much % faster it grows
-var upgrade3_winter_flower_bonus = Num(1.5); // multiplier
-
-var upgrade3_season = [];
-upgrade3_season[0] = registerUpgrade3('improve spring', undefined, 'crops grow ' + Num(upgrade3_spring_growspeed_bonus).toPercentString() + ' faster in spring', tree_images[10][1][0]);
-upgrade3_season[1] = registerUpgrade3('improve summer', undefined, 'adds a resin bonus to summer, about half as strong as that of winter', tree_images[10][1][1]);
-upgrade3_season[2] = registerUpgrade3('improve autumn', undefined, 'adds a resin bonus to autumn, about half as strong as that of winter', tree_images[10][1][2]);
-upgrade3_season[3] = registerUpgrade3('improve winter', undefined, 'winter tree warmth now also gives a flat ' + upgrade3_winter_flower_bonus.subr(1).toPercentString() + ' bonus to flowers', tree_images[10][1][3]);
-
 var upgrade3_resin_bonus = Num(0.25);
 var upgrade3_resin = registerUpgrade3('resin bonus', undefined, 'increases resin gain by ' + Num(upgrade3_resin_bonus).toPercentString(), image_resin);
 
@@ -4521,14 +4589,26 @@ var upgrade3_twigs = registerUpgrade3('twigs bonus', undefined, 'increases twigs
 var upgrade3_essence_bonus = Num(0.2);
 var upgrade3_essence = registerUpgrade3('essence bonus', undefined, 'increases essence from sacrificed fruits by ' + Num(upgrade3_essence_bonus).toPercentString(), images_apple[3]);
 
+var upgrade3_flower_multiplicity_bonus = Num(0.1);
+var upgrade3_flower_multiplicity = registerUpgrade3('flower multiplicity', undefined,
+    'Unlocks multiplicity of flowers. Requires that regular multiplicity for berries and mushrooms has been unlocked. Given that, then this allows also the presence of multiple flowers anywhere in the field to give a global flower bonus, for all flowers with max 1 tier difference. The bonus per flower is ' + upgrade3_flower_multiplicity_bonus.toPercentString(),
+    daisy[3]);
+
+
+
+
+// by default wait time is 5x the runtime, so runtime can easily be lenghtened
+var upgrade3_weather_duration_bonus = 0.5;
+var upgrade3_weather_duration = registerUpgrade3('weather duration', undefined, 'increases active duration of weather effects by ' + Num(upgrade3_weather_duration_bonus).toPercentString() + ' without increasing total active+cooldown cycle time', image_sun);
+
 registerStage3([upgrade3_berry], [upgrade3_squirrel], [upgrade3_mushroom]);
 registerStage3([upgrade3_nettle], [upgrade3_automaton], [upgrade3_flower]);
 registerStage3([upgrade3_fruitmix], undefined, [upgrade3_seasonfruitprob]);
 registerStage3(undefined, [upgrade3_ethtree], undefined, true);
 registerStage3([upgrade3_fruittierprob, upgrade3_growspeed], undefined, [upgrade3_essence, upgrade3_watercress_mush]);
-registerStage3([upgrade3_season[0], upgrade3_mushroom], undefined, [upgrade3_season[1], upgrade3_fruitmix2]);
-registerStage3([upgrade3_season[2], upgrade3_doublefruitprob], undefined, [upgrade3_season[3], upgrade3_berry]);
-registerStage3(undefined, [upgrade3_watercresstime], undefined);
+registerStage3([upgrade3_weather_duration, upgrade3_mushroom], undefined, [upgrade3_fruitmix2, upgrade3_flower_multiplicity]);
+registerStage3([upgrade3_watercresstime, upgrade3_bee], undefined, [upgrade3_doublefruitprob, upgrade3_berry]);
+registerStage3(undefined, [upgrade3_squirrel], undefined);
 registerStage3(undefined, [upgrade3_resin], undefined, true);
 
 

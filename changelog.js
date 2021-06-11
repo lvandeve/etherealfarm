@@ -20,6 +20,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.78 (2021-06-11):';
+  text += '<br/>• Reworked second part of the squirrel upgrade tree, replaced seasonal upgrades with new, different, ones. This solves unintended need for squirrel respeccing per season.';
+  text += '<br/>• Free squirrel respec token for those who reached that part of the squirrel upgrades, due to those changes';
+  text += '<br/>• It\'s now possible to do many squirrel upgrades in 1 click after respec (shift+click or new button after clicking the icon)';
+  text += '<br/>• Turned the removed seasonal squirrel upgrades into 4 new ethereal upgrades.';
+  text += '<br/>• Made the ethereal crops and upgrades from the previous update cheaper, and refunded the difference.';
+  text += '<br/>• Added fifth nuts crop tier.';
+  text += '<br/>• Added achievements for 40 crops (these do not work retroactively).';
+  text += '<br/>• Added runtime to the best resin/hr and twigs/hr stats.';
+  text += '<br/>• Bugfixes and UI style tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.77 (2021-06-06):';
   text += '<br/>• Added new ethereal crops and upgrade (a new field size).';
   text += '<br/>• Added season shorten/lengthen amber abilities.';

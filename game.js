@@ -366,6 +366,18 @@ function startChallenge(challenge_id) {
   }
 }
 
+// get the field size to have after a reset
+function getNewFieldSize() {
+  if(state.upgrades2[upgrade2_field7x7].count) {
+    return [7, 7];
+  } else if(state.upgrades2[upgrade2_field7x6].count) {
+    return [7, 6];
+  } else if(state.upgrades2[upgrade2_field6x6].count) {
+    return [6, 6];
+  }
+  return [5, 5];
+}
+
 function softReset(opt_challenge) {
   save(util.clone(state), function(s) {
     util.setLocalStorage(s, localstorageName_transcend);
@@ -524,6 +536,7 @@ function softReset(opt_challenge) {
     state.p_numfused = state.c_numfused;
     state.p_res_hr_best = state.c_res_hr_best;
     state.p_res_hr_at = state.c_res_hr_at;
+    state.p_res_hr_at_time = state.c_res_hr_at_time;
     state.p_pausetime = state.c_pausetime;
 
     state.p_treelevel = state.treelevel;
@@ -568,6 +581,7 @@ function softReset(opt_challenge) {
   state.c_numfused = 0;
   state.c_res_hr_best = Res();
   state.c_res_hr_at = Res();
+  state.c_res_hr_at_time = Res();
   state.c_pausetime = 0;
 
   // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
@@ -596,16 +610,10 @@ function softReset(opt_challenge) {
   state.g_res.addInPlace(starterResources);
   state.c_res.addInPlace(starterResources);
 
-  // fix the accidental grow time ethereal upgrade that accidentally gave 7x7 field due to debug code in version 0.1.11
-  // TODO: update this code to match next such upgrades this code once a 7x7 upgrade exists!
-  if(state.numw == 7 && state.numh == 7 && !state.upgrades2[upgrade2_field7x7].count) {
-    var size = (state.upgrades2[upgrade2_field6x6].count) ? 6 : 5;
-    state.numw = size;
-    state.numh = size;
-    initFieldUI();
-  } else if(state.upgrades2[upgrade2_field7x7].count && (state.numw < 7 || state.numh < 7)) {
-    state.numw = 7;
-    state.numh = 7;
+  var fieldsize = getNewFieldSize();
+  if(fieldsize[0] != state.numw && fieldsize[1] != state.numh) {
+    state.numw = fieldsize[0];
+    state.numh = fieldsize[1];
     initFieldUI();
   }
 
@@ -2085,6 +2093,8 @@ var num_tree_levelups = 0;
 var update_prev_paused = false;
 var update_prev_state_ctor_count = -1;
 
+var inner_loop_count = 0;
+
 // opt_ignorePause should be used for debugging only, as it can make time intervals nonsensical
 var update = function(opt_ignorePause) {
   var paused_ = state.paused && !opt_ignorePause;
@@ -2166,6 +2176,7 @@ var update = function(opt_ignorePause) {
   for(;;) { ////////////////////////////////////////////////////////////////////
     if(done) break;
     if(numloops++ > 500) break;
+    inner_loop_count++;
 
     /*
     During an update, there's a time interval in which we operate.
@@ -2295,12 +2306,17 @@ var update = function(opt_ignorePause) {
 
     var delete2tokens_used = 0; // if all are used in the same set of actions, only up to `delete2all_cost` are used. This is for the delete all ethereal fields action
 
+    // whether the game is fast forwarding a long AFK, and thus doesn't do active actions like weather, picking fern or refreshing watercress
+    var fast_forwarding = (nexttime - state.time > 1);
+
     // action
     while(actions.length) {
       var action = actions[0];
       actions.shift();
       var type = action.type;
       if(type == ACTION_UPGRADE) {
+        if(fast_forwarding && !action.by_automaton) continue;
+
         if(state.upgrades_new) {
           // applied upgrade, must have been from side panel, do not show upgrade tab in red anymore
           for(var j = 0; j < registered_upgrades.length; j++) {
@@ -2390,6 +2406,8 @@ var update = function(opt_ignorePause) {
           }
         }
       } else if(type == ACTION_UPGRADE2) {
+        if(fast_forwarding) continue;
+
         var u = upgrades2[action.u];
         var cost = u.getCost();
         if(state.res.lt(cost)) {
@@ -2406,6 +2424,8 @@ var update = function(opt_ignorePause) {
         }
         upgrades2_done = true;
       } else if(type == ACTION_UPGRADE3) {
+        if(fast_forwarding) continue;
+
         var s = stages3[action.s];
         var s2 = state.stages3[action.s];
         var b = action.b; // which branch (left: 0, middle: 1, right: 2)
@@ -2453,22 +2473,25 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok) {
-          // TODO: subtract resources
-          // TODO: update upgrades3_spent
           var u = upgrades3[us[d]];
           var u2 = state.upgrades3[us[d]];
           u2.count++;
           s2.num[b]++;
+          s2.seen[b] = Math.max(s2.seen[b], s2.num[b]);
           state.res.nuts.subInPlace(nuts);
           state.upgrades3_spent.addInPlace(nuts);
           state.g_numupgrades3++;
           showMessage('Purchased squirrel upgrade: ' + u.name);
+
+          state.upgrades3_count++; // this is a derived state computed in computeDerived, but update it now here as well so that if there are multiple upgrade3 action in a row, the gated checks work correctly
 
           if(u.index == upgrade3_fruitmix || u.index == upgrade3_fruitmix2) showRegisteredHelpDialog(37);
 
           store_undo = true;
         }
       } else if(type == ACTION_RESPEC3) {
+        if(fast_forwarding) continue;
+
         var ok = true;
         if(!haveSquirrel()) {
           ok = false;
@@ -2483,10 +2506,15 @@ var update = function(opt_ignorePause) {
           for(var i = 0; i < registered_upgrades3.length; i++) {
             state.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
           }
-          state.stages3 = [];
+          var new_stages3 = [];
           for(var i = 0; i < stages3.length; i++) {
-            state.stages3[i] = new Stage3State();
+            new_stages3[i] = new Stage3State();
+            if(state.stages3[i]) {
+              for(var j = 0; j < new_stages3[i].seen.length; j++) new_stages3[i].seen[j] = state.stages3[i].seen[j];
+            }
           }
+          state.stages3 = new_stages3;
+
           state.g_numrespec3++;
           state.res.nuts.addInPlace(state.upgrades3_spent);
           state.upgrades3_spent = Num(0);
@@ -2495,15 +2523,13 @@ var update = function(opt_ignorePause) {
           for(var i = 0; i < state.upgrades3.length; i++) {
             state.upgrades3[i] = new Upgrade3State();
           }
-          for(var i = 0; i < state.stages3.length; i++) {
-            state.stages3[i] = new Stage3State();
-          }
-
           showMessage('Reset all squirrel upgrades and gave all nuts back. Consumed 1 squirrel respec token.');
 
           store_undo = true;
         }
       } else if(type == ACTION_AMBER) {
+        if(fast_forwarding) continue;
+
         var ok = true;
 
         var cost = Num(0);
@@ -2565,8 +2591,12 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PLANT_BLUEPRINT) {
+        if(fast_forwarding) continue;
+
         plantBluePrint(action.blueprint, false);
       } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
+        if(fast_forwarding && !action.by_automaton) continue;
+
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field[action.y][action.x];
@@ -2705,6 +2735,8 @@ var update = function(opt_ignorePause) {
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
         }
       } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
+        if(fast_forwarding) continue;
+
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field2[action.y][action.x];
@@ -2858,6 +2890,8 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_FERN) {
+        if(fast_forwarding) continue;
+
         if(state.fern && state.fernx == action.x && state.ferny == action.y) {
           state.g_numferns++;
           state.c_numferns++;
@@ -2879,6 +2913,8 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
+        if(fast_forwarding) continue;
+
         var a = action.ability;
         var mistd = state.time - state.misttime;
         var sund = state.time - state.suntime;
@@ -2929,6 +2965,8 @@ var update = function(opt_ignorePause) {
           }
         }
       } else if(type == ACTION_FRUIT_SLOT) {
+        if(fast_forwarding) continue;
+
         var f = action.f;
         if(action.precise_slot != undefined) {
           var to = action.precise_slot;
@@ -3036,6 +3074,8 @@ var update = function(opt_ignorePause) {
         }
         updateFruitUI();
       } else if(type == ACTION_FRUIT_REORDER) {
+        if(fast_forwarding) continue;
+
         var f = action.f;
         var a = action.index;
         var up = action.up;
@@ -3081,6 +3121,8 @@ var update = function(opt_ignorePause) {
           updateFruitUI();
         }
       } else if(type == ACTION_TOGGLE_AUTOMATON) {
+        if(fast_forwarding) continue;
+
         // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
         if(action.what == 0) {
           state.automaton_enabled = action.on;
@@ -3532,17 +3574,21 @@ var update = function(opt_ignorePause) {
     if(resinhr.gt(state.c_res_hr_best.resin)) {
       state.c_res_hr_best.resin = resinhr;
       state.c_res_hr_at.resin = Num(state.treelevel);
+      state.c_res_hr_at_time.resin = Num(state.c_runtime);
       if(resinhr.gt(state.g_res_hr_best.resin)) {
         state.g_res_hr_best.resin = resinhr;
         state.g_res_hr_at.resin = Num(state.treelevel);
+        state.g_res_hr_at_time.resin = Num(state.c_runtime);
       }
     }
     if(twigshr.gt(state.c_res_hr_best.twigs)) {
       state.c_res_hr_best.twigs = twigshr;
       state.c_res_hr_at.twigs = Num(state.treelevel);
+      state.c_res_hr_at_time.twigs = Num(state.c_runtime);
       if(twigshr.gt(state.g_res_hr_best.twigs)) {
         state.g_res_hr_best.twigs = twigshr;
         state.g_res_hr_at.twigs = Num(state.treelevel);
+        state.g_res_hr_at_time.twigs = Num(state.c_runtime);
       }
     }
 

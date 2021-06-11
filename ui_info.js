@@ -127,8 +127,8 @@ function updateResourceUI() {
   if(state.treelevel > 0) {
     title += ' (' + Math.floor(nextlevelprogress * 100) + '%)';
   }
-  if(state.treelevel >= min_transcension_level) {
-    //resourceDivs[0].textEl.style.textShadow = '0px 0px 5px #ff0';
+  if(state.treelevel >= min_transcension_level && state.g_numresets < 5) {
+    // special effect to show ability to transcend, but after about 5 resets this is not special anymore
     title = '<span style="text-shadow:0px 0px 5px #ff0">' + title + '</span>';
   }
   resourceDivs[0].textEl.innerHTML = title + '<br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br>' + seasonName;
@@ -158,8 +158,8 @@ function updateResourceUI() {
       var s = getSeason();
       if(s == 0) {
         result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
-        if(state.upgrades3[upgrade3_season[s]].count) {
-          result += '• Crops grow ' + Num(upgrade3_spring_growspeed_bonus).toPercentString() + ' faster (squirrel upgrade)<br>';
+        if(state.upgrades2[upgrade2_season2[s]].count) {
+          result += '• Crops grow ' + Num(upgrade2_spring_growspeed_bonus).toPercentString() + ' faster (ethereal upgrade)<br>';
           //result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
         }
       }
@@ -168,8 +168,8 @@ function updateResourceUI() {
         if(getSummerMushroomBonus().neqr(1)) {
           result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production (but also consumption)<br>';
         }
-        if(state.upgrades3[upgrade3_season[s]].count) {
-          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
+        if(state.upgrades2[upgrade2_season2[s]].count) {
+          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
         }
       }
       if(s == 2) {
@@ -180,14 +180,17 @@ function updateResourceUI() {
         if(state.upgrades2[upgrade2_mistletoe].count) {
           result += '• Twigs bonus: ' + getAutumnMistletoeBonus().subr(1).toPercentString() + ' more twigs added when tree levels with mistletoes<br>';
         }
-        if(state.upgrades3[upgrade3_season[s]].count) {
-          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
+        if(state.upgrades2[upgrade2_season2[s]].count) {
+          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
         }
       }
       if(s == 3) {
         result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower stats when not next to the tree<br>';
         var winterwarmth_location_text = state.upgrades2[upgrade2_diagonal].count ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
         result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats (also consumption) and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
+        if(state.upgrades2[upgrade2_season2[s]].count) {
+          result += '• Winter tree warmth for flowers: ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' (ethereal upgrade)<br>';
+        }
         result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
       }
       result += '<br>';
@@ -303,7 +306,7 @@ function updateResourceUI() {
 
         text += '<br>';
         text += 'Resin/hour: ' + getResinHour().toString() + '<br>';
-        text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + '<br>';
+        text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true) + '<br>';
 
         text += '<br>';
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
@@ -318,7 +321,7 @@ function updateResourceUI() {
         text += '<br>';
 
         text += 'Twigs/hour: ' + getTwigsHour().toString() + '<br>';
-        text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + '<br>';
+        text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true) + '<br>';
         text += '<br>';
 
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);

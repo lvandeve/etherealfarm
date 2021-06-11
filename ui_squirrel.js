@@ -35,8 +35,60 @@ function getUpgrade3InfoText(u, gated, unknown) {
   return infoText;
 }
 
-// s2 = stage state, i = depth of upgrade in this stage
-function renderUpgrade3Chip(flex, stage, s2, u, b, i) {
+// Buys all squirrel upgrades required to reach this one, and this one itself, if affordable
+// Required upgrades are: all upgrades in the current branch before this one, all upgrades in the center branch of all previous stages, and all upgrades in all branches of all previous stages above the last gated stage
+function buyAllSquirrelUpgradesUpTo(stage, b, d) {
+  var new_actions = [];
+
+  var gate = stage.index;
+  for(var i = stage.index; i > 0; i--) {
+    if(stages3[i].gated) {
+      gate = i;
+      break;
+    }
+  }
+  for(var si = 0; si < stage.index; si++) {
+    var gated = si < gate;
+    for(var i = 0; i < stages3[si].upgrades1.length; i++) {
+      new_actions.push({type:ACTION_UPGRADE3, s:si, b:1, d:i});
+    }
+    if(gated) {
+      for(var i = 0; i < stages3[si].upgrades0.length; i++) {
+        new_actions.push({type:ACTION_UPGRADE3, s:si, b:0, d:i});
+      }
+      for(var i = 0; i < stages3[si].upgrades2.length; i++) {
+        new_actions.push({type:ACTION_UPGRADE3, s:si, b:2, d:i});
+      }
+    }
+  }
+
+  // now the current stage
+  var upgrades = (b == 0) ? stage.upgrades0 : ((b == 1) ? stage.upgrades1 : stage.upgrades2);
+  for(var i = 0; i <= d; i++) {
+    new_actions.push({type:ACTION_UPGRADE3, s:si, b:b, d:i});
+  }
+
+  var num = new_actions.length;
+  var nuts = Num(0);
+  for(var i = 0; i < num; i++) {
+    nuts.addInPlace(getUpgrade3Cost(i));
+  }
+  if(nuts.gt(state.res.nuts)) {
+    showMessage('not enough resources to buy these ' + num + ' squirrel upgrades' +
+                ': have: ' + state.res.nuts.toString(Math.max(5, Num.precision)) +
+                ', need: ' + nuts.toString(Math.max(5, Num.precision)) +
+                ' (' + getCostAffordTimer(Res({nuts:nuts})) + ')',
+                C_INVALID, 0, 0);
+    return;
+  }
+
+  for(var i = 0; i < new_actions.length; i++) {
+    addAction(new_actions[i]);
+  }
+}
+
+// s2 = stage state, u = the upgrade for this branch and depth in this stage, b = branch in this stage, d = depth of upgrade in this stage
+function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   // whether the last chip of the previous stage is in state "can buy"
   var prev_canbuy = false;
   if(stage.index > 0) {
@@ -50,8 +102,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, i) {
     }
   }
 
-
-  var buyable = squirrelUpgradeBuyable(stage, s2, b, i);
+  var buyable = squirrelUpgradeBuyable(stage, s2, b, d);
 
   var bought = buyable == 0;
   var gated = buyable == 2;
@@ -60,7 +111,8 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, i) {
   //var next2 = buyable == 4;
   //var unknown = buyable >= 5;
   var next2 = false; // not used after all: since many stages have no center upgrade, quite a lot is visible in future already anyway
-  var unknown = buyable >= 4;
+  var unknown = buyable >= 4 && s2.seen[b] <= d;
+  var known = buyable >= 4 && s2.seen[b] > d; // seen before, so name is revealed instead of '???', but otherwise still rendered with the color of an unknown chip.
 
   var infoText = getUpgrade3InfoText(u, gated, unknown);
 
@@ -83,7 +135,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, i) {
   canvasFlex.div.style.backgroundColor = '#ccc';
   canvasFlex.div.style.border = '1px solid black';
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-  var image = unknown ? medalhidden[0] : u.image;
+  var image = (unknown || known) ? medalhidden[0] : u.image;
   renderImage(image, canvas);
   styleButton0(canvasFlex.div);
 
@@ -95,9 +147,13 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, i) {
   var showbuy = canbuy || gated;
 
   var buyfun = undefined;
-  if(showbuy) {
-    buyfun = function() {
-      addAction({type:ACTION_UPGRADE3, s:stage.index, b:b, d:i});
+  if(showbuy || (state.g_numrespec3 > 0 && !unknown)) {
+    buyfun = function(e) {
+      if(state.g_numrespec3 > 0 && e.shiftKey) {
+        buyAllSquirrelUpgradesUpTo(stage, b, d);
+      } else {
+        addAction({type:ACTION_UPGRADE3, s:stage.index, b:b, d:d});
+      }
       if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
       update();
       updateSquirrelUI();
@@ -108,15 +164,35 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, i) {
   if(showbuy) {
     styleButton0(textFlex.div);
     addButtonAction(textFlex.div, buyfun);
+  } else if(state.g_numrespec3 && !unknown && !!buyfun) {
+    // add the shift to buy all function, but in a hidden way because normally it's done through the icon
+    textFlex.div.onclick = function(e) {
+      if(e.shiftKey) buyfun(e);
+    };
   }
 
-  addButtonAction(canvasFlex.div, bind(function(i, b) {
-    var dialog = createDialog(DIALOG_SMALL, showbuy ? function() {
-      buyfun();
-      dialog.cancelFun();
-    } : undefined, showbuy ? 'Buy' : undefined);
+  addButtonAction(canvasFlex.div, function() {
+    var buyfun2 = undefined;
+    var buyname = undefined;
+    if(showbuy) {
+      buyfun2 = function() {
+        buyfun();
+        dialog.cancelFun();
+      };
+      buyname = 'Buy';
+    } else if(state.g_numrespec3 > 0 && !unknown) {
+      buyfun2 = function() {
+        buyAllSquirrelUpgradesUpTo(stage, b, d);
+        if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
+        update();
+        updateSquirrelUI();
+        dialog.cancelFun();
+      };
+      buyname = 'Buy all to here';
+    }
+    var dialog = createDialog(DIALOG_SMALL, buyfun2, buyname);
     dialog.content.div.innerHTML = infoText;
-  }, i, b));
+  });
 
   //if(!bought) text += '<br>' + 'Buy';
 

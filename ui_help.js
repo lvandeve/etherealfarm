@@ -361,6 +361,8 @@ registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nut
     <br><br>
     You can respec the squirrel upgrades if you regret a decision, using a respec token. You get a few for free, more can be gotten for amber in the amber tab.
     <br><br>
+    Once you ever respecced squirrel upgrades, the "buy all to here" option unlocks for upgrades you have seen before: click the upgrade icon of any squirrel upgrade further down in the tree, then use this button to automatically buy this upgrade and all squirrel upgrades required to reach this one (including all of gated stages), if you can afford it. This avoid having to click every individual upgrade again after respec.
+    <br><br>
     Planting and upgrading nuts crops cost spores instead of seeds. They work with automaton just like most other crops. If the automaton is spending too much spores on nuts upgrades and you want the tree to level up instead, decrease the allowed % setting for nuts upgrades in the automaton settings.
     `,
     images_squirrel[4],
@@ -482,6 +484,8 @@ function createKeyboardHelpDialog() {
   text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
   text += '<br/>';
   text += ' • <b>shift + click blueprint "To Field"</b>: plant this blueprint, but let it override non-matching crops. Without shift, it only plants on empty field spots.';
+  text += '<br/>';
+  text += ' • <b>shift + click squirrel upgrade</b>: when you unlocked this type of upgrades and have respecced at least once: upgrade all upgrades until this one, only available if you can afford it and this upgrade was seen before.';
   text += '<br/>';
   text += '<br/><br/>';
 

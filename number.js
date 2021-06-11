@@ -244,7 +244,7 @@ Num.prototype.add = function(b) {
 Num.add = function(a, b) { return a.add(b); };
 
 Num.prototype.addrInPlace = function(r) {
-  return this.addInPlace(Num(r));
+  return this.addInPlace(new Num(r));
 };
 Num.prototype.addr = function(r) {
   var res = new Num(this);
@@ -277,7 +277,7 @@ Num.prototype.sub = function(b) {
 Num.sub = function(a, b) { return a.sub(b); };
 
 Num.prototype.subrInPlace = function(r) {
-  return this.subInPlace(Num(r));
+  return this.subInPlace(new Num(r));
 };
 Num.prototype.subr = function(r) {
   var res = new Num(this);
@@ -433,7 +433,7 @@ Num.prototype.powrInPlace = function(r) {
     this.b = this.e = NaN;
     return this;
   }
-  return this.powInPlace(Num(r));
+  return this.powInPlace(new Num(r));
 };
 Num.prototype.powr = function(r) {
   var res = new Num(this);

@@ -41,16 +41,30 @@ a:visited {
   color: #777;
 }
 
-.efButtonAlreadyActive {
-  background-color: #ccc;
-  border: 1px solid black;
-  color: #ff7;
-}
-
 .efButtonHighlighted {
   background-color: #888;
   border: 1px solid black;
   color: #000;
+}
+
+.efButtonTranslucent {
+  background-color: #0000;
+  border: 1px solid black;
+  color: #000;
+}
+
+.efButtonTranslucent:hover {
+  background-color: #0001;
+}
+
+.efButtonTranslucentCantAfford {
+  background-color: #0000;
+  border: 1px solid black;
+  color: #777;
+}
+
+.efButtonTranslucentCantAfford:hover {
+  background-color: #0001;
 }
 
 .efInfo {
@@ -58,11 +72,11 @@ a:visited {
 }
 
 .efSeasonBgSpring {
-  background-color: #ecd;
+  background-color: #dbecc8;
 }
 
 .efSeasonBgSummer {
-  background-color: #c3e4bc;
+  background-color: #ee7;
 }
 
 .efSeasonBgAutumn {
@@ -70,7 +84,7 @@ a:visited {
 }
 
 .efSeasonBgWinter {
-  background-color: #ddf;
+  background-color: #eef;
 }
 
 .efUpgradeChip {
@@ -175,8 +189,13 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 }
 
 .efAmberInfo {
-  color: #fd0;
-  text-shadow: 1px 0 #000, -1px 0 #000, 0 1px #000, 0 -1px #000, 1px 1px #000, -1px -1px #000, -1px 1px #000, 1px -1px #000;
+  color: #c60;
+}
+
+.efButtonAmberActive {
+  background-color: #ccc;
+  border: 1px solid #c60;
+  color: #c60;
 }
 
 

@@ -61,19 +61,19 @@ function updateAmberUI() {
   button = makeAmberButton('Production boost 100% (20 amber)', AMBER_PROD);
   registerTooltip(button, 'Get a 100% production boost (seeds and spores) during this run. Resets on transcend.');
   button.id = 'amber_prod';
-  if(state.amberprod) button.className = 'efButtonAlreadyActive';
+  if(state.amberprod) button.className = 'efButtonAmberActive';
   else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
 
   button = makeAmberButton('Season +1h (25 amber)', AMBER_LENGTHEN);
   registerTooltip(button, 'Make the current season 1 hour longer (1-time). Can be used once per season.');
   button.id = 'amber_lengthen';
-  if(state.amberseason) button.className = 'efButtonAlreadyActive';
+  if(state.amberseason) button.className = 'efButtonAmberActive';
   else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
 
   button = makeAmberButton('Season -1h (25 amber)', AMBER_SHORTEN);
   registerTooltip(button, 'Make the current season 1 hour shorter (1-time). If the season has less than 1 hour remaining, then it is only shortened by this remaining time, immediately activating the next season. Can be used once per season.');
   button.id = 'amber_shorten';
-  if(state.amberseason) button.className = 'efButtonAlreadyActive';
+  if(state.amberseason) button.className = 'efButtonAmberActive';
   else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
 
   if(squirrelUnlocked()) {

@@ -349,9 +349,13 @@ function makeTreeDialog() {
 
       text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString() + '<br>';
 
-      if(haveMultiplicity()) {
+      if(haveMultiplicity(CROPTYPE_BERRY)) {
         text += '<br/>';
-        text += 'Multiplicity (berry and mushroom): +' + (getMultiplicityBonusBase()).toPercentString() + ' per other of same type<br>';
+        text += 'Multiplicity (berry and mushroom): +' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
+      }
+      if(haveMultiplicity(CROPTYPE_FLOWER)) {
+        text += '<br/>';
+        text += 'Multiplicity (flower): +' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
       }
 
       if(getSeason() == 3) {
@@ -413,15 +417,23 @@ function makeTreeDialog() {
     y += h * 1.1;
     styleButton(button);
     if(already_completed && success) {
+      // Successfully finish, but it already was completed beforehand, so it's called just "finish", not "complete"
       button.textEl.innerText = 'Finish challenge';
       registerTooltip(button, 'Finish the challenge. If you broke the max level record, your challenge production bonus will increase.');
     } else if(already_completed && !success) {
+      // End the challenge early, but it already was completed beforehand, so it's called "end", not "abort"
       button.textEl.innerText = 'End challenge';
       registerTooltip(button, 'End the challenge.');
     } else if(success) {
       button.textEl.innerText = 'Complete challenge' + (c2.completed ? (' ' + util.toRoman(c2.completed + 1)) : '');
-      registerTooltip(button, 'Successfully finish the challenge for the first time.');
+      if(c2.completed) {
+        // This is a completion of a higher stage of the challenge
+        registerTooltip(button, 'Successfully finish the next stage of this challenge.');
+      } else {
+        registerTooltip(button, 'Successfully finish the challenge for the first time.');
+      }
     } else {
+      // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
       button.textEl.innerText = 'Abort challenge';
       if(c.targetlevel.length > 1) {
         registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its next reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');

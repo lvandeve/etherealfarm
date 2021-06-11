@@ -91,8 +91,8 @@ var subtleplantimageheader = 'l0:#600 l1:#822 l2:#a55 l3:#faa';
 
 
 
-var fieldheader_spring = '+:#dbecc8 -:#ecd';
-var fieldheader_summer = '+:#c3e4bc -:#c9bb9d';
+var fieldheader_spring = '+:#dbecc8 -:#b5d571';
+var fieldheader_summer = '+:#bda -:#ba5';
 var fieldheader_autumn = '+:#d3be9c -:#cea78b';
 var fieldheader_winter = '+:#fff -:#eef';
 var fieldheader_ethereal = '+:#9df -:#ffd';

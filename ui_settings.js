@@ -573,11 +573,11 @@ function createStatsDialog() {
   if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability flower boost, run time, cooldown time, total cycle: ' + open + '+' + getRainbowFlowerBoost().toPercentString() + ', ' + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
   if(state.g_res.resin.neqr(0)) {
     text += '• resin/hour: ' + open + getResinHour().toString() + close + '<br>';
-    text += '• best resin/hour: ' + open + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + close + '<br>';
+    text += '• best resin/hour: ' + open + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true) + close + '<br>';
   }
   if(state.g_res.twigs.neqr(0)) {
     text += '• twigs/hour: ' + open + getTwigsHour().toString() + close + '<br>';
-    text += '• best twigs/hour: ' + open + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + close + '<br>';
+    text += '• best twigs/hour: ' + open + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true) + close + '<br>';
   }
 
 
@@ -623,8 +623,12 @@ function createStatsDialog() {
   text += '• winter tree warmth bonus: ' + open + '+' + getWinterTreeWarmth().subr(1).toPercentString() + close + '<br>';
   text += '• winter resin bonus: ' + open + '+' + getWinterTreeResinBonus().subr(1).toPercentString() + close + '<br>';
 
-  if(haveMultiplicity()) {
-    text += '• multiplicity (berry and mushroom): ' + open + '+' + (getMultiplicityBonusBase()).toPercentString() + ' per other of same type' + close + '<br>';
+  if(haveMultiplicity(CROPTYPE_BERRY)) {
+    text += '• multiplicity (berry and mushroom): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+  }
+  text += '<br>';
+  if(haveMultiplicity(CROPTYPE_FLOWER)) {
+    text += '• multiplicity (flowewr): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
   text += '<br>';
 

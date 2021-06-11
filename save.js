@@ -313,6 +313,7 @@ function encState(state, opt_raw_only) {
   processRes(state.g_res_hr_best);
   processRes(state.g_res_hr_at);
   processFloat(state.g_pausetime);
+  processRes(state.g_res_hr_at_time);
 
 
   section = 12; id = 0; // current run stats
@@ -339,6 +340,7 @@ function encState(state, opt_raw_only) {
   processRes(state.c_res_hr_best);
   processRes(state.c_res_hr_at);
   processFloat(state.c_pausetime);
+  processRes(state.c_res_hr_at_time);
 
 
   section = 13; id = 0; // previous run stats
@@ -366,6 +368,7 @@ function encState(state, opt_raw_only) {
     processRes(state.p_res_hr_best);
     processRes(state.p_res_hr_at);
     processFloat(state.p_pausetime);
+    processRes(state.p_res_hr_at_time);
   }
 
 
@@ -595,6 +598,7 @@ function encState(state, opt_raw_only) {
 
   section = 22; id = 0; // squirrel upgrades
   array0 = [];
+  array1 = [];
 
   processNum(state.upgrades3_spent);
 
@@ -603,8 +607,12 @@ function encState(state, opt_raw_only) {
     array0.push(s.num[0]);
     array0.push(s.num[1]);
     array0.push(s.num[2]);
+    array1.push(s.seen[0]);
+    array1.push(s.seen[1]);
+    array1.push(s.seen[2]);
   }
   processUintArray(array0);
+  processUintArray(array1);
 
   section = 23; id = 0; // amber effects
   processBool(state.amberprod);
@@ -1037,6 +1045,7 @@ function decState(s) {
   if(save_version >= 4096*1+62) state.g_res_hr_best = processRes();
   if(save_version >= 4096*1+62) state.g_res_hr_at = processRes();
   if(save_version >= 4096*1+71) state.g_pausetime = processFloat();
+  if(save_version >= 4096*1+78) state.g_res_hr_at_time = processRes();
   if(error) return err(4);
 
 
@@ -1064,6 +1073,7 @@ function decState(s) {
   if(save_version >= 4096*1+62) state.c_res_hr_best = processRes();
   if(save_version >= 4096*1+62) state.c_res_hr_at = processRes();
   if(save_version >= 4096*1+71) state.c_pausetime = processFloat();
+  if(save_version >= 4096*1+78) state.c_res_hr_at_time = processRes();
   if(error) return err(4);
 
 
@@ -1092,6 +1102,7 @@ function decState(s) {
     if(save_version >= 4096*1+62) state.p_res_hr_best = processRes();
     if(save_version >= 4096*1+62) state.p_res_hr_at = processRes();
     if(save_version >= 4096*1+71) state.p_pausetime = processFloat();
+    if(save_version >= 4096*1+78) state.p_res_hr_at_time = processRes();
     if(error) return err(4);
   }
 
@@ -1153,7 +1164,6 @@ function decState(s) {
   if(save_version >= 4096*1+71) state.lastambertime = processFloat();
   if(save_version >= 4096*1+72) state.paused = processBool();
   if(save_version >= 4096*1+74) state.respec3tokens = processUint();
-  if(save_version < 4096*1+75) state.respec3tokens++; // free respec token due to upgrade change
 
   section = 17; id = 0; // fruits
   if(save_version >= 4096*1+17) {
@@ -1230,6 +1240,9 @@ function decState(s) {
           array10[index10] = (f.essence.eqr(0) && f.fuses == 0) ? f.levels[i] : 2; // 2 = typical average starter level of dropped fruits
         }
         f.starting_levels[i] = array10[index10++];
+        if(save_version < 4096*1+78 && f.abilities[i] >= FRUIT_SPRING && f.abilities[i] <= FRUIT_ALL_SEASON && f.type >= 1) {
+          f.abilities[i] = FRUIT_SPRING + f.type - 1; // fix fusing multiseason+single-season fruit resulted in single-season fruit with too good seasonal ability
+        }
       }
       return f;
     };
@@ -1507,7 +1520,16 @@ function decState(s) {
   if(save_version >= 4096*1+74) {
     state.upgrades3_spent = processNum();
     array0 = processUintArray();
+    array1 = [];
+    if(save_version >= 4096*1+78) {
+      array1 = processUintArray();
+      if(array1.length != array0.length) return err(4);
+    } else {
+      for(var i = 0; i < array0.length; i++) array1[i] = array0[i];
+    }
+
     index0 = 0;
+    index1 = 0;
     if(array0.length % 3 != 0) return err(4);
     if(array0.length > stages3.length * 3) return err(4);
 
@@ -1523,6 +1545,12 @@ function decState(s) {
       for(var j = 0; j < s3.num[0]; j++) state.upgrades3[stages3[i].upgrades0[j]].count++;
       for(var j = 0; j < s3.num[1]; j++) state.upgrades3[stages3[i].upgrades1[j]].count++;
       for(var j = 0; j < s3.num[2]; j++) state.upgrades3[stages3[i].upgrades2[j]].count++;
+      s3.seen[0] = array1[index1++];
+      s3.seen[1] = array1[index1++];
+      s3.seen[2] = array1[index1++];
+      if(s3.seen[0] > stages3[i].upgrades0.length) return err(4);
+      if(s3.seen[1] > stages3[i].upgrades1.length) return err(4);
+      if(s3.seen[2] > stages3[i].upgrades2.length) return err(4);
     }
   }
   if(error) return err(4);
@@ -1533,6 +1561,7 @@ function decState(s) {
   if(save_version >= 4096*1+77) state.seasonshift = processFloat();
 
 
+  //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
   if(save_version <= 4096*1+73) {
@@ -1647,6 +1676,38 @@ function decState(s) {
     state.c_res.resin = Num(0);
     state.c_res.twigs = Num(0);
     state.c_res.essence = Num(0);
+  }
+
+  if(save_version < 4096*1+78 && state.upgrades2[upgrade2_squirrel].count) {
+    // the changes are only in the fourth stage
+    if(state.stages3[3].num[1] > 0) {
+      showMessage('One free squirrel respec token given due to squirrel upgrade changes');
+      state.respec3tokens++; // free respec token due to upgrade change
+    }
+  }
+
+  if(save_version < 4096*1+78) {
+    // some ethereal field crops got cheaper, refund if bought
+    var num_berry = 0;
+    var num_mush = 0;
+    var multiplier = 1.5;
+    var diff_berry = Num(75e6); // price went from 150e6 to 75e6
+    var diff_mush = Num(50e6); // price went from 100e6 to 50e6
+    var refund = Num(0);
+    for(var y = 0; y < state.numh2; y++) {
+      for(var x = 0; x < state.numw2; x++) {
+        var f = state.field2[y][x];
+        if(f.hasCrop()) {
+          if(f.getCrop().index == berry2_3) refund.addInPlace(diff_berry.mulr(Math.pow(multiplier, num_berry++)));
+          if(f.getCrop().index == mush2_3) refund.addInPlace(diff_mush.mulr(Math.pow(multiplier, num_mush++)));
+        }
+      }
+    }
+    if(state.upgrades2[upgrade2_field7x7].count) refund.addrInPlace(500e6);
+    if(refund.neqr(0)) {
+      showMessage('Some ethereal crops and upgrades were made cheaper, received refund of: ' + refund.toString() + ' resin');
+    }
+    state.res.resin.addInPlace(refund);
   }
 
   if(error) return err(4);

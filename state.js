@@ -123,6 +123,7 @@ function Upgrade3State() {
 }
 function Stage3State() {
   this.num = [0, 0, 0]; // how far in each branch
+  this.seen = [0, 0, 0]; // how far ever bought in this branch. seen here means bought the upgrade ever before, so won't show as '???' after respec. However, seeing it due to having been the next one after a bought one before, does not count.
 }
 
 function MedalState() {
@@ -538,8 +539,9 @@ function State() {
   this.g_numautoplant = 0;
   this.g_numautodelete = 0;
   this.g_numfused = 0;
-  this.g_res_hr_best = Res();
-  this.g_res_hr_at = Res();
+  this.g_res_hr_best = Res(); // best resource/hr ever had
+  this.g_res_hr_at = Res(); // at what tree level that was
+  this.g_res_hr_at_time = Res(); // at how long into the run that was
   this.g_pausetime = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
@@ -568,6 +570,7 @@ function State() {
   this.p_numfused = 0;
   this.p_res_hr_best = Res();
   this.p_res_hr_at = Res();
+  this.p_res_hr_at_time = Res();
   this.p_pausetime = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
@@ -594,6 +597,7 @@ function State() {
   this.c_numfused = 0;
   this.c_res_hr_best = Res();
   this.c_res_hr_at = Res();
+  this.c_res_hr_at_time = Res();
   this.c_pausetime = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
@@ -1212,29 +1216,30 @@ function getFruitAbility(ability) {
 
 // similar to getFruitAbility but conveniently takes multi-season fruits into account
 // will check FRUIT_SUMMER_AUTUMN etc... if given just FRUIT_SUMMER or FRUIT_AUTUMN etc..., if the necessary squirrel upgrades are purchased
+// returns array of level and actual ability. Actual ability is usually same as the input ability, but can be e.g. FRUIT_SPRING_SUMMER if input was FRUIT_SPRING but fruit has FRUIT_SPRING_SUMMER
 function getFruitAbility_MultiSeasonal(ability) {
   var result = getFruitAbility(ability);
-  if(result > 0) return result;
+  if(result > 0) return [result, ability];
 
   var f = getActiveFruit();
-  if(!f) return 0;
+  if(!f) return [0, ability];
 
   // this assumes the seasonal ability is listed last, as it indeed is
   var last = f.abilities[f.abilities.length - 1];
 
-  if(last < FRUIT_SPRING_SUMMER || last > FRUIT_ALL_SEASON) return 0; // fruit is not a multi-season fruit.
-  if(!state.upgrades3[upgrade3_fruitmix]) return 0; // squirrel upgrade not active
-  if(last == FRUIT_ALL_SEASON && !state.upgrades3[upgrade3_fruitmix2]) return 0; // squirrel upgrade not active
+  if(last < FRUIT_SPRING_SUMMER || last > FRUIT_ALL_SEASON) return [0, ability]; // fruit is not a multi-season fruit.
+  if(!state.upgrades3[upgrade3_fruitmix]) return [0, ability]; // squirrel upgrade not active
+  if(last == FRUIT_ALL_SEASON && !state.upgrades3[upgrade3_fruitmix2]) return [0, ability]; // squirrel upgrade not active
 
   if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
-    if(last == FRUIT_ALL_SEASON) return 1;
-    if(last == FRUIT_SPRING_SUMMER) return (ability == FRUIT_SPRING || ability == FRUIT_SUMMER) ? 1 : 0;
-    if(last == FRUIT_SUMMER_AUTUMN) return (ability == FRUIT_SUMMER || ability == FRUIT_AUTUMN) ? 1 : 0;
-    if(last == FRUIT_AUTUMN_WINTER) return (ability == FRUIT_AUTUMN || ability == FRUIT_WINTER) ? 1 : 0;
-    if(last == FRUIT_WINTER_SPRING) return (ability == FRUIT_WINTER || ability == FRUIT_SPRING) ? 1 : 0;
+    if(last == FRUIT_ALL_SEASON) return [1, last];
+    if(last == FRUIT_SPRING_SUMMER) return [(ability == FRUIT_SPRING || ability == FRUIT_SUMMER) ? 1 : 0, last];
+    if(last == FRUIT_SUMMER_AUTUMN) return [(ability == FRUIT_SUMMER || ability == FRUIT_AUTUMN) ? 1 : 0, last];
+    if(last == FRUIT_AUTUMN_WINTER) return [(ability == FRUIT_AUTUMN || ability == FRUIT_WINTER) ? 1 : 0, last];
+    if(last == FRUIT_WINTER_SPRING) return [(ability == FRUIT_WINTER || ability == FRUIT_SPRING) ? 1 : 0, last];
   }
 
-  return 0;
+  return [0, ability];
 }
 
 function getFruitTier() {
@@ -1415,8 +1420,13 @@ function squirrelUnlocked() {
   return !!state.upgrades2[upgrade2_squirrel].count;
 }
 
+// as Num, in nuts.
+function getUpgrade3Cost(i) {
+  return upgrade3_base.mul(upgrade3_mul.powr(i));
+}
+
 function getNextUpgrade3Cost() {
-  return upgrade3_base.mul(upgrade3_mul.powr(state.upgrades3_count));
+  return getUpgrade3Cost(state.upgrades3_count);
 }
 
 // opt_replacing: set to true if this crop replaces an existing non-template (aka real) nuts crop
