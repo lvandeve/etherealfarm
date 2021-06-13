@@ -202,3 +202,9 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   border: 1px solid #d80;
   color: #d80;
 }
+
+.efStatsValue {
+  color: #fff;
+}
+
+

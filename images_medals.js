@@ -36,10 +36,10 @@ The materials in increasing level are:
 -10: diamond: white
 */
 
-// These tiers are also used for other things than medals, e.g. fruits and some of the tree images
+// These tiers are also used for other things than medals, e.g. fruits and some of the tree images. There are in addition also the metalheader0, 1, ... definitions for images in images.js.
 var tierNames =     ['zinc', 'bronze', 'silver', 'electrum', 'gold', 'platinum', 'rhodium', 'sapphire', 'emerald', 'ruby', 'diamond'];
-var tierColors =    ['#444',   '#840',   '#888',     '#bf6', '#ff0',     '#ddd',    '#fdd',     '#00f',    '#0c4', '#f00',    '#fff'];
-var tierColors_BG = ['#000',   '#420',   '#666',     '#8a4', '#bb0',     '#aaa',    '#a88',     '#00a',    '#092', '#a00',    '#eee'];
+var tierColors =    ['#444',   '#840',   '#888',     '#af5', '#ff0',     '#ddd',    '#fdd',     '#00f',    '#0c4', '#f00',    '#fff'];
+var tierColors_BG = ['#000',   '#420',   '#666',     '#7a3', '#bb0',     '#aaa',    '#a88',     '#00a',    '#092', '#a00',    '#eee'];
 
 
 // medals, too, get more saturation

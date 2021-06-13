@@ -705,7 +705,7 @@ function showStorageFruitSourceDialog() {
 
 function styleFruitChip(flex, f) {
   var ratio = state.res.essence
-  flex.div.style.backgroundColor = tierColors_BG[f.tier] + '4';
+  flex.div.style.backgroundColor = tierColors_BG[f.tier] + '6';
   if(f.mark) {
     var color = f.mark == 1 ? '#f008' : (f.mark == 2 ? '#fe08' : (f.mark == 3 ? '#4c48' : '#06c8'));
     flex.div.style.border = '3px solid ' + color;

@@ -544,8 +544,8 @@ function createStatsDialog() {
 
   var text = '';
 
-  var open = '<font color="#fff">';
-  var close = '</font>';
+  var open = '<span class="efStatsValue">';
+  var close = '</span>';
 
   if(state.g_numresets > 0) {
     text += '<b>Current Run</b><br>';

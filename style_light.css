@@ -198,5 +198,9 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   color: #c60;
 }
 
+.efStatsValue {
+  color: #830;
+}
+
 
 
