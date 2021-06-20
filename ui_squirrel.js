@@ -175,13 +175,13 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
     var buyfun2 = undefined;
     var buyname = undefined;
     if(showbuy) {
-      buyfun2 = function() {
-        buyfun();
+      buyfun2 = function(e) {
+        buyfun(e);
         dialog.cancelFun();
       };
       buyname = 'Buy';
     } else if(state.g_numrespec3 > 0 && !unknown) {
-      buyfun2 = function() {
+      buyfun2 = function(e) {
         buyAllSquirrelUpgradesUpTo(stage, b, d);
         if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
         update();

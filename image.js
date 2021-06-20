@@ -484,7 +484,7 @@ Generates an image from ASCII text as follows:
   -- l3: change lightness, saturation, transparency 3 (fourth column of hue letters) to that of given CSS color (its hue is ignored)
   -- hs0: set a hue shift in range -1.0..1.0 to the start (first column). The total hue shift of a column is then interpolated from hs0 at the start to hs1 at the end. 1 is a 360 degree rotation. Should be subtle (such as 0.05 or -0.05) for most useful effect.
   -- hs1: end for hs0
-  -- ts0: similar to hs0, but for temperature shift (ts). E.g. use ts0=-0.25, ts1s=0.25 for subtle cold shadow to warm glow effect.
+  -- ts0: similar to hs0, but for temperature shift (ts). E.g. use ts0:-0.25, ts1:0.25 for subtle cold shadow to warm glow effect.
   -- ts1: end for ts0
   -- hX: affect hue series X, where X is the second letter of one of the hue series, e.g. r for red: change the hue of that entire series to the hue/saturation/lightness/alpha of the given color (lightness computed using the HSV method), e.g. hf:#802 to change the fuchsia to be more red-ish and also darker
   -- g0, g1, ..., g9: set gradient value 0 to 9 to the given CSS color. Initially, g0 is #000 and g9 is #fff and all values in between are undefined, causing a grayscale gradient. Changing any entry sets that entry to that exact value, and will fill in undefined entries with a gradient between the two nearest defined neighbors.

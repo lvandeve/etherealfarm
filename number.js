@@ -43,7 +43,7 @@ function Num(b, e) {
     this.e = 0;
   } else {
     this.b = b;
-    this.e = e || 0;
+    this.e = (e == undefined) ? 0 : e;
     Num.scaleInPlace(this);
   }
 }
@@ -65,24 +65,47 @@ Num.prototype.clone = function() {
   return new Num(this);
 };
 
-// Ensures that the exponent e is an integer, since that's the assumptions some functionalty makes
+// Ensures that the exponent e is an integer within range -9007199254740992..9007199254740992,
+// since that's the assumptions some functionalty makes
 Num.prototype.ensureIntegerExponent_ = function() {
+  if(this.e == 0) return; // optimization for this common case
+
+  if(isNaN(this.e)) {
+    this.b = NaN;
+    this.e = 0;
+    return;
+  }
+
+  if(this.e == Infinity) {
+    if(this.b == 0) {
+      this.b = NaN;
+      this.e = 0;
+      return;
+    } else {
+      this.b = this.b < 0 ? -Infinity : Infinity;
+      this.e = 0;
+      return;
+    }
+  }
+
+  // at this point, the exponent can no longer distinguish successive integers, so no longer supported.
+  if(this.e > 9007199254740992) {
+    if(!isNaN(this.b)) this.b = (this.b == 0) ? 0 : (this.b < 0 ? -Infinity : Infinity);
+    this.e = 0;
+    return;
+  }
+  if(this.e < -9007199254740992) {
+    if(!isNaN(this.b)) this.b = 0;
+    this.e = 0;
+    return;
+  }
+
   //if(this.e != Math.floor(this.e) && !isNaN(this.e)) {
   if(!Number.isInteger(this.e)) {
     // e should be integer. E.g. the rpow function can cause this situation
     var e2 = Math.floor(this.e);
     this.b *= Math.pow(2, this.e - e2);
     this.e = e2;
-  }
-
-  // at this point, the exponent can no longer distinguish successive integers, so no longer supported.
-  if(this.e > 9007199254740992) {
-    this.b = Infinity;
-    this.e = 0;
-  }
-  if(this.e < -9007199254740992) {
-    this.b = 0;
-    this.e = 0;
   }
 }
 
@@ -158,30 +181,17 @@ Num.scaleTo = function(a, e) { return a.scaleTo(e); };
 
 // sales the exponent in a good range for this number's value
 Num.scaleInPlace = function(v) {
-  // optimization, do this before v.ensureIntegerExponent_, for the common case of value 0
-  if(v.b == 0) {
+  // optimization, do this before v.ensureIntegerExponent_, for the common cases of value 0 or 1
+  if(v.b == 0 && v.e <= 9007199254740992 && v.e >= -9007199254740992) {
     v.e = 0;
+    return v;
+  }
+  if(v.b == 1 && v.e == 0) {
     return v;
   }
 
   v.ensureIntegerExponent_();
-  if(isNaN(v.b) || isNaN(v.e)) {
-    v.b = NaN;
-    v.e = 0;
-    return v;
-  }
-  if(v.e == Infinity) {
-    if(v.b == 0) {
-      v.b = NaN;
-      v.e = 0;
-      return v;
-    } else {
-      v.b = v.b < 0 ? -Infinity : Infinity;
-      v.e = 0;
-      return v;
-    }
-  }
-  if(v.b == 0 || v.b == Infinity || v.b == -Infinity) {
+  if(v.b == 0 || v.b == Infinity || v.b == -Infinity || isNaN(v.b)) {
     v.e = 0;
     return v;
   }

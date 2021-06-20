@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.79 (2021-06-20):';
+  text += '<br/>• Added new ethereal upgrades, at levels 5 and 6.';
+  text += '<br/>• Tweaked upgrade prices of berries and mushrooms so that they can\'t be cheaper than the next tier crop for the same production. This formula change makes them cheaper for lower tier crops but more expensive for higher. The new ethereal upgrades more than make up for this.';
+  text += '<br/>• UI tweaks and fixes';
+  text += '<br/><br/>';
+
   text += '0.1.78 (2021-06-11):';
   text += '<br/>• Reworked second part of the squirrel upgrade tree, replaced seasonal upgrades with new, different, ones. This solves unintended need for squirrel respeccing per season.';
   text += '<br/>• Free squirrel respec token for those who reached that part of the squirrel upgrades, due to those changes';

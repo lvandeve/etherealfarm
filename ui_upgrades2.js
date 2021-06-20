@@ -112,7 +112,8 @@ function computeUpgrade2UIOrder() {
     a = upgrades2[a];
     b = upgrades2[b];
     if(a.treelevel2 != b.treelevel2) return a.treelevel2 < b.treelevel2 ? 1 : -1;
-    return a.cost.resin.lt(b.cost.resin) ? 1 : -1;
+    if(a.cost.resin.neq(b.cost.resin)) return a.cost.resin.lt(b.cost.resin) ? 1 : -1;
+    return a.index < b.index ? -1 : 1;
   });
   for(var i = 0; i < array.length; i++) {
     upgrades2_order.push(array[i]);

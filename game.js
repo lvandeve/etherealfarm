@@ -2395,9 +2395,7 @@ var update = function(opt_ignorePause) {
             showRegisteredHelpDialog(27);
           }
           if(action.u == nettle_0) {
-            if(state.g_numresets > 0) {
-              showRegisteredHelpDialog(21);
-            }
+            showRegisteredHelpDialog(21);
           }
           if(action.u == mistletoeunlock_0) {
             if(state.g_numresets > 0) {
@@ -3446,6 +3444,23 @@ var update = function(opt_ignorePause) {
         if(state.treelevel2 >= 1) {
           showRegisteredHelpDialog(22);
         }
+
+        for(var i = 0; i < state.treelevel2 - 1; i++) {
+          if(state.eth_stats_time[i] == undefined) state.eth_stats_time[i] = 0;
+          if(state.eth_stats_res[i] == undefined) state.eth_stats_res[i] = Res();
+          if(state.eth_stats_level[i] == undefined) state.eth_stats_level[i] = 0;
+          if(state.eth_stats_numresets[i] == undefined) state.eth_stats_numresets[i] = 0;
+          if(state.eth_stats_challenge[i] == undefined) state.eth_stats_challenge[i] = Num(0);
+          if(state.eth_stats_medal_bonus[i] == undefined) state.eth_stats_medal_bonus[i] = Num(0);
+        }
+        state.eth_stats_time[state.treelevel2 - 1] = state.g_runtime;
+        state.eth_stats_res[state.treelevel2 - 1] = Res(state.g_res);
+        state.eth_stats_res[state.treelevel2 - 1].seeds = Num(state.g_max_res.seeds);
+        state.eth_stats_res[state.treelevel2 - 1].spores = Num(state.g_max_res.spores);
+        state.eth_stats_level[state.treelevel2 - 1] = state.g_treelevel;
+        state.eth_stats_numresets[state.treelevel2 - 1] = state.g_numresets;
+        state.eth_stats_challenge[state.treelevel2 - 1] = Num(state.challenge_bonus);
+        state.eth_stats_medal_bonus[state.treelevel2 - 1] = Num(state.medal_prodmul);
       }
       if(state.treelevel2 >= 1) {
         unlockEtherealCrop(berry2_1);

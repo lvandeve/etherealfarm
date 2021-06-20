@@ -499,6 +499,16 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     result = e;
   }
 
+  // tree's gesture ethereal upgrade
+  if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+    var gesture = treeGestureBonus();
+    if(gesture.neqr(1)) {
+      result.seeds.mulInPlace(gesture);
+      result.spores.mulInPlace(gesture);
+      if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, result.clone()]);
+    }
+  }
+
   if(haveSquirrel()) {
     if(this.type == CROPTYPE_BERRY) {
       if(state.upgrades3[upgrade3_berry].count) {
@@ -1459,7 +1469,7 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
 }
 
 // an upgrade that increases the multiplier of a crop
-function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_unlock_id, opt_pre_fun) {
+function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_id, opt_pre_fun) {
   var crop = crops[cropid];
   var name = crop.name;
 
@@ -1487,33 +1497,63 @@ function registerCropMultiplier(cropid, cost, multiplier, prev_crop_num, crop_un
 
   if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption. Get your seeds production up first!';
 
-  var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+
+  var tier = crop.tier;
+  var cost0, cost1;
+  var upgrade_steps = 1;
+  var softcap_base = Num(1);
+  if(crop.type == CROPTYPE_BERRY) {
+    cost0 = getBerryCost(tier).mulr(basic_upgrade_initial_cost);
+    cost1 = getBerryCost(tier + 1).mulr(basic_upgrade_initial_cost);
+    // berry production goes x700 per tier (to verify: crops[berry_5].prod.seeds.div(crops[berry_4].prod.seeds).toString() etc...)
+    // each upgrade adds 25% (multiplicative), and 1.25^29 is the last value below 700
+    upgrade_steps = 29;
+    softcap_base = Num(1.001);
+  } else if(crop.type == CROPTYPE_MUSH) {
+    cost0 = getMushroomCost(tier).mulr(basic_upgrade_initial_cost);
+    cost1 = getMushroomCost(tier + 1).mulr(basic_upgrade_initial_cost);
+    // mushroom production goes x123K per tier (to verify: crops[mush_5].prod.spores.div(crops[mush_4].prod.spores).toString() etc...)
+    // each upgrade adds 25% (multiplicative), and 1.25^52 is the last value below 123K
+    upgrade_steps = 52;
+    softcap_base = Num(1.0005);
+  } else if(crop.type == CROPTYPE_NUT) {
+    cost0 = getNutCost(tier);
+    cost1 = getNutCost(tier + 1);
+    upgrade_steps = nut_upgrade_steps;
+    softcap_base = Num(1.0025);
+  }
+  var cost0b = crop.type == CROPTYPE_NUT ? cost0.spores : cost0.seeds;
+  var cost1b = crop.type == CROPTYPE_NUT ? cost1.spores : cost1.seeds;
+  var costmul = cost1b.div(cost0b).powr(1 / upgrade_steps);
+
+  var result = registerUpgrade('Upgrade ' + name, cost0, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(multiplier);
   u.cropid = cropid;
   u.iscropupgrade = true;
 
+
+
   u.getCost = function(opt_adjust_count) {
     var i = state.upgrades[this.index].count + (opt_adjust_count || 0);
 
     if(crop.type == CROPTYPE_NUT) {
-      var tier = crop.tier;
-      var cost0 = getNutCost(tier).spores;
-      var cost1 = getNutCost(tier + 1).spores;
-      var mul = cost1.div(cost0).powr(1 / nut_upgrade_steps);
-      var base = cost0;
-      var softcap = Num.pow(Num(1.0025), Num(i * i));
+      var softcap = Num.pow(softcap_base, Num(i * i));
       // using index + 1, becausefirst upgrade should be more expensive than the nut plant itself
-      var spores = base.mul(mul.powr(i + 1)).mul(softcap);
+      var spores = cost0.spores.mul(costmul.powr(i + 1)).mul(softcap);
       return new Res({spores:spores});
     } else {
-      var countfactor = Num.powr(Num(basic_upgrade_cost_increase), i);
+      /*var countfactor = Num.powr(Num(basic_upgrade_cost_increase), i);
       var result = this.cost.mul(countfactor);
       // soft cap by a slight more than exponential increase of the cost: without soft cap, there'll be some tier of crops that is the best tier, and higher tiers will give less production compared to lower berry with as-expensive upgrades
       var base = 1.002;
       //if(crop.type == CROPTYPE_MUSH) base = 1.002; // same for now.
       if(i > 1) result = result.mul(Num.powr(Num(base), (i - 1) * (i - 1)));
-      return result;
+      return result;*/
+      var softcap = Num.pow(softcap_base, Num(i * i));
+      // using index + 1, becausefirst upgrade should be more expensive than the nut plant itself
+      var seeds = cost0.seeds.mul(costmul.powr(i)).mul(softcap);
+      return new Res({seeds:seeds});
     }
   };
 
@@ -1799,30 +1839,30 @@ var beehive_upgrade_cost_increase = 5;
 var beehive_upgrade_power_exponent = 1.05;
 
 upgrade_register_id = 125;
-var berrymul_0 = registerCropMultiplier(berry_0, getBerryCost(0).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_0);
-var berrymul_1 = registerCropMultiplier(berry_1, getBerryCost(1).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_1);
-var berrymul_2 = registerCropMultiplier(berry_2, getBerryCost(2).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_2);
-var berrymul_3 = registerCropMultiplier(berry_3, getBerryCost(3).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_3);
-var berrymul_4 = registerCropMultiplier(berry_4, getBerryCost(4).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_4);
-var berrymul_5 = registerCropMultiplier(berry_5, getBerryCost(5).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_5);
-var berrymul_6 = registerCropMultiplier(berry_6, getBerryCost(6).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_6);
-var berrymul_7 = registerCropMultiplier(berry_7, getBerryCost(7).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_7);
-var berrymul_8 = registerCropMultiplier(berry_8, getBerryCost(8).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_8);
-var berrymul_9 = registerCropMultiplier(berry_9, getBerryCost(9).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_9);
-var berrymul_10 = registerCropMultiplier(berry_10, getBerryCost(10).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_10);
-var berrymul_11 = registerCropMultiplier(berry_11, getBerryCost(11).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_11);
-var berrymul_12 = registerCropMultiplier(berry_12, getBerryCost(12).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_12);
-var berrymul_13 = registerCropMultiplier(berry_13, getBerryCost(13).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_13);
-var berrymul_14 = registerCropMultiplier(berry_14, getBerryCost(14).mulr(basic_upgrade_initial_cost), berry_upgrade_power_increase, 1, berryunlock_14);
+var berrymul_0 = registerCropMultiplier(berry_0, berry_upgrade_power_increase, 1, berryunlock_0);
+var berrymul_1 = registerCropMultiplier(berry_1, berry_upgrade_power_increase, 1, berryunlock_1);
+var berrymul_2 = registerCropMultiplier(berry_2, berry_upgrade_power_increase, 1, berryunlock_2);
+var berrymul_3 = registerCropMultiplier(berry_3, berry_upgrade_power_increase, 1, berryunlock_3);
+var berrymul_4 = registerCropMultiplier(berry_4, berry_upgrade_power_increase, 1, berryunlock_4);
+var berrymul_5 = registerCropMultiplier(berry_5, berry_upgrade_power_increase, 1, berryunlock_5);
+var berrymul_6 = registerCropMultiplier(berry_6, berry_upgrade_power_increase, 1, berryunlock_6);
+var berrymul_7 = registerCropMultiplier(berry_7, berry_upgrade_power_increase, 1, berryunlock_7);
+var berrymul_8 = registerCropMultiplier(berry_8, berry_upgrade_power_increase, 1, berryunlock_8);
+var berrymul_9 = registerCropMultiplier(berry_9, berry_upgrade_power_increase, 1, berryunlock_9);
+var berrymul_10 = registerCropMultiplier(berry_10, berry_upgrade_power_increase, 1, berryunlock_10);
+var berrymul_11 = registerCropMultiplier(berry_11, berry_upgrade_power_increase, 1, berryunlock_11);
+var berrymul_12 = registerCropMultiplier(berry_12, berry_upgrade_power_increase, 1, berryunlock_12);
+var berrymul_13 = registerCropMultiplier(berry_13, berry_upgrade_power_increase, 1, berryunlock_13);
+var berrymul_14 = registerCropMultiplier(berry_14, berry_upgrade_power_increase, 1, berryunlock_14);
 
 upgrade_register_id = 150;
-var mushmul_0 = registerCropMultiplier(mush_0, getMushroomCost(0).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_0);
-var mushmul_1 = registerCropMultiplier(mush_1, getMushroomCost(1).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_1);
-var mushmul_2 = registerCropMultiplier(mush_2, getMushroomCost(2).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_2);
-var mushmul_3 = registerCropMultiplier(mush_3, getMushroomCost(3).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_3);
-var mushmul_4 = registerCropMultiplier(mush_4, getMushroomCost(4).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_4);
-var mushmul_5 = registerCropMultiplier(mush_5, getMushroomCost(5).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_5);
-var mushmul_6 = registerCropMultiplier(mush_6, getMushroomCost(6).mulr(basic_upgrade_initial_cost), mushroom_upgrade_power_increase, 1, mushunlock_6);
+var mushmul_0 = registerCropMultiplier(mush_0, mushroom_upgrade_power_increase, 1, mushunlock_0);
+var mushmul_1 = registerCropMultiplier(mush_1, mushroom_upgrade_power_increase, 1, mushunlock_1);
+var mushmul_2 = registerCropMultiplier(mush_2, mushroom_upgrade_power_increase, 1, mushunlock_2);
+var mushmul_3 = registerCropMultiplier(mush_3, mushroom_upgrade_power_increase, 1, mushunlock_3);
+var mushmul_4 = registerCropMultiplier(mush_4, mushroom_upgrade_power_increase, 1, mushunlock_4);
+var mushmul_5 = registerCropMultiplier(mush_5, mushroom_upgrade_power_increase, 1, mushunlock_5);
+var mushmul_6 = registerCropMultiplier(mush_6, mushroom_upgrade_power_increase, 1, mushunlock_6);
 
 upgrade_register_id = 175;
 var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0, flower_upgrade_cost_increase);
@@ -1845,19 +1885,19 @@ upgrade_register_id = 215;
 var beemul_0 = registerBoostMultiplier(bee_0, crops[bee_0].cost.mulr(10), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
 
 upgrade_register_id = 225;
-var nutmul_0 = registerCropMultiplier(nut_0, getNutCost(0), nut_upgrade_power_increase, 1, nutunlock_0);
-var nutmul_1 = registerCropMultiplier(nut_1, getNutCost(1), nut_upgrade_power_increase, 1, nutunlock_1);
-var nutmul_2 = registerCropMultiplier(nut_2, getNutCost(2), nut_upgrade_power_increase, 1, nutunlock_2);
-var nutmul_3 = registerCropMultiplier(nut_3, getNutCost(3), nut_upgrade_power_increase, 1, nutunlock_3);
-var nutmul_4 = registerCropMultiplier(nut_4, getNutCost(4), nut_upgrade_power_increase, 1, nutunlock_4);
-var nutmul_5 = registerCropMultiplier(nut_5, getNutCost(5), nut_upgrade_power_increase, 1, nutunlock_5);
-var nutmul_6 = registerCropMultiplier(nut_6, getNutCost(6), nut_upgrade_power_increase, 1, nutunlock_6);
-var nutmul_7 = registerCropMultiplier(nut_7, getNutCost(7), nut_upgrade_power_increase, 1, nutunlock_7);
-var nutmul_8 = registerCropMultiplier(nut_8, getNutCost(8), nut_upgrade_power_increase, 1, nutunlock_8);
-var nutmul_9 = registerCropMultiplier(nut_9, getNutCost(9), nut_upgrade_power_increase, 1, nutunlock_9);
-var nutmul_10 = registerCropMultiplier(nut_10, getNutCost(10), nut_upgrade_power_increase, 1, nutunlock_10);
-var nutmul_11 = registerCropMultiplier(nut_11, getNutCost(11), nut_upgrade_power_increase, 1, nutunlock_11);
-var nutmul_12 = registerCropMultiplier(nut_12, getNutCost(12), nut_upgrade_power_increase, 1, nutunlock_12);
+var nutmul_0 = registerCropMultiplier(nut_0, nut_upgrade_power_increase, 1, nutunlock_0);
+var nutmul_1 = registerCropMultiplier(nut_1, nut_upgrade_power_increase, 1, nutunlock_1);
+var nutmul_2 = registerCropMultiplier(nut_2, nut_upgrade_power_increase, 1, nutunlock_2);
+var nutmul_3 = registerCropMultiplier(nut_3, nut_upgrade_power_increase, 1, nutunlock_3);
+var nutmul_4 = registerCropMultiplier(nut_4, nut_upgrade_power_increase, 1, nutunlock_4);
+var nutmul_5 = registerCropMultiplier(nut_5, nut_upgrade_power_increase, 1, nutunlock_5);
+var nutmul_6 = registerCropMultiplier(nut_6, nut_upgrade_power_increase, 1, nutunlock_6);
+var nutmul_7 = registerCropMultiplier(nut_7, nut_upgrade_power_increase, 1, nutunlock_7);
+var nutmul_8 = registerCropMultiplier(nut_8, nut_upgrade_power_increase, 1, nutunlock_8);
+var nutmul_9 = registerCropMultiplier(nut_9, nut_upgrade_power_increase, 1, nutunlock_9);
+var nutmul_10 = registerCropMultiplier(nut_10, nut_upgrade_power_increase, 1, nutunlock_10);
+var nutmul_11 = registerCropMultiplier(nut_11, nut_upgrade_power_increase, 1, nutunlock_11);
+var nutmul_12 = registerCropMultiplier(nut_12, nut_upgrade_power_increase, 1, nutunlock_12);
 
 
 
@@ -2929,6 +2969,16 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     }
   }
 
+  if(this.type == CROPTYPE_FLOWER) {
+    var u = state.upgrades2[upgrade2_flower];
+    var u2 = upgrades2[upgrade2_flower];
+    if(u.count > 0) {
+      var mul_upgrade = upgrade2_flower_bonus.mulr(u.count).addr(1);
+      result.mulInPlace(mul_upgrade);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+    }
+  }
+
   return result;
 };
 
@@ -3028,10 +3078,10 @@ function registerFern2(name, treelevel2, tier, cost, planttime, effect_descripti
 
 
 crop2_register_id = 0;
-var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'gives 100 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
-var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'gives 1000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
-var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), 1.5, 'gives 10000 * n^3 starter seeds', 'gives 10000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
-var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), 1.5, 'gives 100000 * n^3 starter seeds', 'gives 100000 * n^3 starter seeds after every transcension and also immediately now, with n the amount of ethereal ferns. First one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
+var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
+var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
+var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), 1.5, 'gives 10000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
+var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), 1.5, 'gives 100000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -3223,22 +3273,26 @@ var upgrade2_season = [];
 
 // TODO: now limited to 2 times, allow more when the balancing shows it works out
 
-upgrade2_season[0] = registerUpgrade2('improve spring', 0, Res({resin:10}), 2, function() {
+
+
+///////////////////////////
+var LEVEL2 = 0; // variable used for the required treelevel2 for groups of upgrades below
+
+upgrade2_season[0] = registerUpgrade2('improve spring', LEVEL2, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'improve spring effect ' + (upgrade2_season_bonus[0] * 100) + '% (scales by n^1.25). Spring boosts flowers.', undefined, undefined, tree_images[3][1][0]);
 
-upgrade2_season[1] = registerUpgrade2('improve summer', 0, Res({resin:10}), 2, function() {
+upgrade2_season[1] = registerUpgrade2('improve summer', LEVEL2, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'improve summer effect ' + (upgrade2_season_bonus[1] * 100) + '% (scales by n^1.25). Summer boosts berry production, this ethereal upgrade additionally slightly boosts mushrooms.', undefined, undefined, tree_images[3][1][1]);
 
-upgrade2_season[2] = registerUpgrade2('improve autumn', 0, Res({resin:10}), 2, function() {
+upgrade2_season[2] = registerUpgrade2('improve autumn', LEVEL2, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'improve autumn effect ' + (upgrade2_season_bonus[2] * 100) + '% (scales by n^1.25). Autumn boosts mushroom production, this ethereal upgrade additionally slightly boosts berries.', undefined, undefined, tree_images[3][1][2]);
 
-upgrade2_season[3] = registerUpgrade2('winter hardening', 0, Res({resin:10}), 2, function() {
+upgrade2_season[3] = registerUpgrade2('winter hardening', LEVEL2, Res({resin:10}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'increase winter tree warmth effect ' + (upgrade2_season_bonus[3] * 100) + '% (scales by n^1.25).', undefined, undefined, tree_images[3][1][3]);
-
 
 // bases of exponentiation for treeLevelResin, depending on ethereal upgrade
 var resin_base = 1.2;
@@ -3254,7 +3308,6 @@ var twigs_global_mul = 0.02;
 var twigs_global_add = 0.55;
 var twigs_global_quad = 1; // this is tuned to make new twigs_base a not too big nerve for levels around 20, 30, ... in the v0.1.64 change
 
-var LEVEL2 = 0; // variable used for the required treelevel2 for groups of upgrades below
 
 var upgrade2_time_reduce_0_amount = 90;
 
@@ -3397,12 +3450,12 @@ upgrade2_register_id = 160;
 var upgrade2_berry_bonus = Num(0.25);
 var upgrade2_berry = registerUpgrade2('ethereal berries', LEVEL2, Res({resin:500e3}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal berries by ' + upgrade2_berry_bonus.toPercentString() + ' (additive).', undefined, undefined, cranberry[4]);
+}, function(){return true;}, 0, 'increase bonus of all ethereal berries by ' + upgrade2_berry_bonus.toPercentString() + ' (additive).', undefined, undefined, image_berrytemplate);
 
 var upgrade2_mush_bonus = Num(0.25);
 var upgrade2_mush = registerUpgrade2('ethereal mushrooms', LEVEL2, Res({resin:500e3}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal mushrooms by ' + upgrade2_berry_bonus.toPercentString() + ' (additive).', undefined, undefined, matsutake[4]);
+}, function(){return true;}, 0, 'increase bonus of all ethereal mushrooms by ' + upgrade2_mush_bonus.toPercentString() + ' (additive).', undefined, undefined, image_mushtemplate);
 
 
 
@@ -3430,6 +3483,18 @@ var upgrade2_squirrel = registerUpgrade2('unlock squirrel', LEVEL2, Res({resin:1
   state.res.nuts = Num(0); // reset nuts to 0 when squirrel unlocks first time, to avoid accidental nuts available from one of the older version of the game (in one old version, these were an actual resource, in another nut plants were accidently released with too high nuts production)
   showRegisteredHelpDialog(35);
 }, function(){return true;}, 1, 'the squirrel can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks nuts, squirrel upgrades and the squirrel in the basic field', undefined, undefined, images_squirrel[4]);
+
+
+var upgrade2_highest_level_bonus = Num(0.005);
+var upgrade2_highest_level_bonus2 = Num(0.001);
+var upgrade2_highest_level = registerUpgrade2('tree\'s gesture', LEVEL2, Res({resin:2e6}), 5, function() {
+      // nothing to do, upgrade count causes the effect elsewhere
+    }, function(){return true;}, 95,
+    'gain ' + upgrade2_highest_level_bonus.toPercentString() +
+    ' bonus to seeds, spores, resin and twigs income per highest tree level ever reached (multiplicative). For each next upgrade, gain an additional ' +
+    upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = ' +
+    upgrade2_highest_level_bonus.addr(1).toString(5) + ' + (' + upgrade2_highest_level_bonus2.addr(1).toString(5) + ' * upgrade_levels) ^ max_tree_level_ever', undefined, undefined, tree_images[20][1][1]);
+
 
 
 ///////////////////////////
@@ -3460,6 +3525,10 @@ upgrade2_season2[3] = registerUpgrade2('winter warmth flowers', LEVEL2, Res({res
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 1, 'winter tree warmth now also gives a flat ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' bonus to flowers', undefined, undefined, tree_images[10][1][3]);
 
+var upgrade2_flower_bonus = Num(0.25);
+var upgrade2_flower = registerUpgrade2('ethereal flowers', LEVEL2, Res({resin:10e6}), 2, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 0, 'increase bonus of all ethereal flowers by ' + upgrade2_flower_bonus.toPercentString() + ' (additive).', undefined, undefined, image_flowertemplate);
 
 
 ///////////////////////////
@@ -3472,6 +3541,12 @@ var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:
   changeFieldSize(state, numw, numh);
 }, function(){return state.numw >= 7 && state.numh >= 6}, 1, 'increase basic field size to 7x7 tiles', undefined, undefined, field_summer[0]);
 
+
+///////////////////////////
+LEVEL2 = 8;
+upgrade2_register_id = 300;
+
+// TODO
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4040,6 +4115,12 @@ function treeLevelResin(level, breakdown) {
     if(breakdown) breakdown.push(['ethereal tree level', true, bonus, resin.clone()]);
   }
 
+  // tree's gesture ethereal upgrade
+  var gesture = treeGestureBonus();
+  if(gesture.neqr(1)) {
+    resin.mulInPlace(gesture);
+    if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, resin.clone()]);
+  }
 
   count = state.mistletoes;
   if(count > 1) {
@@ -4090,6 +4171,13 @@ function treeLevelTwigs(level, breakdown) {
     var bonus = upgrade2_twigs_bonus.mulr(count).addr(1);
     res.twigs.mulInPlace(bonus);
     if(breakdown) breakdown.push(['ethereal upgrades', true, bonus, res.clone()]);
+  }
+
+  // tree's gesture ethereal upgrade
+  var gesture = treeGestureBonus();
+  if(gesture.neqr(1)) {
+    res.twigs.mulInPlace(gesture);
+    if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, res.clone()]);
   }
 
 

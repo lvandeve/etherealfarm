@@ -619,6 +619,15 @@ function encState(state, opt_raw_only) {
   processBool(state.amberseason);
   processFloat(state.seasonshift);
 
+
+  section = 24; id = 0; // ethereal tree level stats
+  processFloatArray(state.eth_stats_time);
+  processResArray(state.eth_stats_res);
+  processUintArray(state.eth_stats_level);
+  processUintArray(state.eth_stats_numresets);
+  processNumArray(state.eth_stats_challenge);
+  processNumArray(state.eth_stats_medal_bonus);
+
   //////////////////////////////////////////////////////////////////////////////
 
   var e = encTokens(tokens);
@@ -1560,6 +1569,16 @@ function decState(s) {
   if(save_version >= 4096*1+77) state.amberseason = processBool();
   if(save_version >= 4096*1+77) state.seasonshift = processFloat();
 
+
+  section = 24; id = 0; // ethereal tree level stats
+  if(save_version >= 4096*1+79) {
+    state.eth_stats_time = processFloatArray();
+    state.eth_stats_res = processResArray();
+    state.eth_stats_level = processUintArray();
+    state.eth_stats_numresets = processUintArray();
+    state.eth_stats_challenge = processNumArray();
+    state.eth_stats_medal_bonus = processNumArray();
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////

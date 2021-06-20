@@ -610,6 +610,14 @@ function State() {
   this.reset_stats_twigs = []; // approximate twigs earned during this run
   this.reset_stats_challenge = []; // what type of challenge, if any, for this run
 
+  // stats at ethereal tree levelup. The index is the ethereal tree level before, not after, e.g. index 0 corresponds to leveling up to level 1.
+  this.eth_stats_time = []; // since game start
+  this.eth_stats_res = []; // total resources, except for resources that reset (seeds and spores) for which it is max had instead
+  this.eth_stats_level = []; // highest tree level
+  this.eth_stats_numresets = [];
+  this.eth_stats_challenge = []; // challenge bonus
+  this.eth_stats_medal_bonus = [];
+
 
   // array of BluePrint objects
   this.blueprints = [];
@@ -1502,4 +1510,16 @@ function squirrelUpgradeBuyable(s, s2, b, d) {
 
 function amberUnlocked() {
   return state.g_res.amber.neqr(0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+function treeGestureBonus() {
+  var num = state.upgrades2[upgrade2_highest_level].count;
+
+  if(!num) return new Num(1);
+
+
+  return upgrade2_highest_level_bonus.add(upgrade2_highest_level_bonus2.mulr(num - 1)).addr(1).powr(state.g_treelevel);
 }
