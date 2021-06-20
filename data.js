@@ -1504,18 +1504,19 @@ function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_i
   var softcap_base = Num(1);
   if(crop.type == CROPTYPE_BERRY) {
     cost0 = getBerryCost(tier).mulr(basic_upgrade_initial_cost);
-    cost1 = getBerryCost(tier + 1).mulr(basic_upgrade_initial_cost);
+    cost1 = getBerryCost(tier + 1).mulr(basic_upgrade_initial_cost / 40);
     // berry production goes x700 per tier (to verify: crops[berry_5].prod.seeds.div(crops[berry_4].prod.seeds).toString() etc...)
     // each upgrade adds 25% (multiplicative), and 1.25^29 is the last value below 700
     upgrade_steps = 29;
-    softcap_base = Num(1.001);
+    softcap_base = Num(1.005);
   } else if(crop.type == CROPTYPE_MUSH) {
     cost0 = getMushroomCost(tier).mulr(basic_upgrade_initial_cost);
-    cost1 = getMushroomCost(tier + 1).mulr(basic_upgrade_initial_cost);
+    cost1 = getMushroomCost(tier + 1).mulr(basic_upgrade_initial_cost / 400);
     // mushroom production goes x123K per tier (to verify: crops[mush_5].prod.spores.div(crops[mush_4].prod.spores).toString() etc...)
     // each upgrade adds 25% (multiplicative), and 1.25^52 is the last value below 123K
     upgrade_steps = 52;
-    softcap_base = Num(1.0005);
+    softcap_base = Num(1.0025);
+    //softcap_base = Num(1);
   } else if(crop.type == CROPTYPE_NUT) {
     cost0 = getNutCost(tier);
     cost1 = getNutCost(tier + 1);
@@ -3492,8 +3493,8 @@ var upgrade2_highest_level = registerUpgrade2('tree\'s gesture', LEVEL2, Res({re
     }, function(){return true;}, 95,
     'gain ' + upgrade2_highest_level_bonus.toPercentString() +
     ' bonus to seeds, spores, resin and twigs income per highest tree level ever reached (multiplicative). For each next upgrade, gain an additional ' +
-    upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = ' +
-    upgrade2_highest_level_bonus.addr(1).toString(5) + ' + (' + upgrade2_highest_level_bonus2.addr(1).toString(5) + ' * upgrade_levels) ^ max_tree_level_ever', undefined, undefined, tree_images[20][1][1]);
+    upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = (' +
+    upgrade2_highest_level_bonus.addr(1).toString(5) + ' + ' + upgrade2_highest_level_bonus2.addr(1).toString(5) + ' * (upgrade_levels - 1)) ^ max_tree_level_ever', undefined, undefined, tree_images[20][1][1]);
 
 
 
