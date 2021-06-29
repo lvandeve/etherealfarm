@@ -555,9 +555,9 @@ function createStatsDialog() {
   text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime - state.c_pausetime) + close + '<br>';
   var c_res = Res(state.c_res);
   c_res.essence.addInPlace(getUpcomingFruitEssence().essence);
-  text += '• total earned: ' + open + c_res.toString(true) + close + '<br>';
-  text += '• highest resources: ' + open + state.c_max_res.toString(true) + close + '<br>';
-  text += '• highest production/s: ' + open + state.c_max_prod.toString(true) + close + '<br>';
+  text += '• total earned: ' + open + c_res.toString() + close + '<br>';
+  text += '• highest resources: ' + open + state.c_max_res.toString() + close + '<br>';
+  text += '• highest production/s: ' + open + state.c_max_prod.toString() + close + '<br>';
   text += '• ferns: ' + open + state.c_numferns + close + '<br>';
   text += '• planted (permanent): ' + open + state.c_numfullgrown + close + '<br>';
   text += '• planted (watercress): ' + open + state.c_numplantedshort + close + '<br>';
@@ -588,9 +588,9 @@ function createStatsDialog() {
     text += '• achievements: ' + open + state.g_nummedals + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.g_starttime) + close + '<br>';
     text += '• duration: ' + open + util.formatDuration(util.getTime() - state.g_starttime - state.g_pausetime) + close + '<br>';
-    text += '• total earned: ' + open + state.g_res.toString(true) + close + '<br>';
-    text += '• highest resources: ' + open + state.g_max_res.toString(true) + close + '<br>';
-    text += '• highest production/s: ' + open + state.g_max_prod.toString(true) + close + '<br>';
+    text += '• total earned: ' + open + state.g_res.toString() + close + '<br>';
+    text += '• highest resources: ' + open + state.g_max_res.toString() + close + '<br>';
+    text += '• highest production/s: ' + open + state.g_max_prod.toString() + close + '<br>';
     text += '• ferns: ' + open + state.g_numferns + close + '<br>';
     text += '• planted (permanent): ' + open + state.g_numfullgrown + close + '<br>';
     text += '• planted (watercress): ' + open + state.g_numplantedshort + close + '<br>';
@@ -628,7 +628,7 @@ function createStatsDialog() {
   }
   text += '<br>';
   if(haveMultiplicity(CROPTYPE_FLOWER)) {
-    text += '• multiplicity (flowewr): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+    text += '• multiplicity (flower): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
   text += '<br>';
 
@@ -694,9 +694,9 @@ function createStatsDialog() {
     text += '• tree level: ' + open + state.p_treelevel + close + '<br>';
     text += '• start time: ' + open + util.formatDate(state.p_starttime) + close + '<br>';
     text += '• duration: ' + open + util.formatDuration(state.p_runtime) + close + '<br>';
-    text += '• total earned: ' + open + state.p_res.toString(true) + close + '<br>';
-    text += '• highest resources: ' + open + state.p_max_res.toString(true) + close + '<br>';
-    text += '• highest production/s: ' + open + state.p_max_prod.toString(true) + close + '<br>';
+    text += '• total earned: ' + open + state.p_res.toString() + close + '<br>';
+    text += '• highest resources: ' + open + state.p_max_res.toString() + close + '<br>';
+    text += '• highest production/s: ' + open + state.p_max_prod.toString() + close + '<br>';
     text += '• ferns: ' + open + state.p_numferns + close + '<br>';
     text += '• planted (permanent): ' + open + state.p_numfullgrown + close + '<br>';
     text += '• planted (watercress): ' + open + state.p_numplantedshort + close + '<br>';

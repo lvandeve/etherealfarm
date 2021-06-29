@@ -3312,7 +3312,7 @@ var update = function(opt_ignorePause) {
     }
 
     var req = treeLevelReq(state.treelevel + 1);
-    if(state.time > state.lasttreeleveluptime + 0.5 && state.res.ge(req)) {
+    if(state.time > state.lasttreeleveluptime + 1 && state.res.ge(req)) {
       var resin = Num(0);
       var twigs = Num(0);
 
