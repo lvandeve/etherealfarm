@@ -3642,9 +3642,11 @@ function getFruitBoost(ability, level, tier) {
     return Num(0.25); // not upgradeable
   }
   if(ability >= FRUIT_SPRING_SUMMER && ability <= FRUIT_WINTER_SPRING) {
+    if(!state.upgrades3[upgrade3_fruitmix].count) return Num(0)
     return Num(0.3); // not upgradeable
   }
   if(ability == FRUIT_ALL_SEASON) {
+    if(!state.upgrades3[upgrade3_fruitmix2].count) return Num(0)
     return Num(0.35); // not upgradeable
   }
 

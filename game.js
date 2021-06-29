@@ -2546,6 +2546,11 @@ var update = function(opt_ignorePause) {
             showMessage('Already used this season.', C_INVALID, 0, 0);
             ok = false;
           }
+          if(timeTilNextSeason() / 3600 + 1 >= 24) {
+            // TODO: support this. This requires remembering more state in the savegame, to distinguish that the season should already be the next one despite being before this 24h interval
+            showMessage('Extending season did not work, please wait around an hour and try again, when the next season is less than 23 hours away: the game currently doesn\'t support the next season being more than 24 hours away, and this action adds 1 hour to the current season duration.', C_INVALID, 0, 0);
+            ok = false;
+          }
           cost = ambercost_lengthen;
         }
         if(action.effect == AMBER_SHORTEN) {
