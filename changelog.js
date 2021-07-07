@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.80 (2021-07-07):';
+  text += '<br/>• Balancing to ensure getting best resin/hr after not too short runtimes:';
+  text += '<br/> - tweaked growtime of early vs late tier crops';
+  text += '<br/> - higher tier mushrooms now give more spores per seed rather than less spores per seed, this is a buff';
+  // automaton can be toggles on/off while paused, adding 1hr to season duration with amber now also works when it makes season longer than 24h, "time of full time" info for crop grow times, and other UI and spelling fixes
+  text += '<br/>• Various other tweaks and fixes';
+  text += '<br/><br/>';
+
   text += '0.1.79 (2021-06-20):';
   text += '<br/>• Added new ethereal upgrades, at levels 5 and 6.';
   text += '<br/>• Tweaked upgrade prices of berries and mushrooms so that they can\'t be cheaper than the next tier crop for the same production. This formula change makes them cheaper for lower tier crops but more expensive for higher. The new ethereal upgrades more than make up for this.';

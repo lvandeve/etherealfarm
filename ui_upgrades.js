@@ -143,7 +143,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
       if(c.type == CROPTYPE_SHORT) {
         infoText += 'Living time: ' + util.formatDuration(c.getPlantTime());
       } else {
-        infoText += 'Growth time: ' + util.formatDuration(c.getPlantTime());
+        infoText += 'Grow time: ' + util.formatDuration(c.getPlantTime());
         if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
       }
       infoText += '<br>';

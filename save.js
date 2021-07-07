@@ -618,6 +618,7 @@ function encState(state, opt_raw_only) {
   processBool(state.amberprod);
   processBool(state.amberseason);
   processFloat(state.seasonshift);
+  processUint6(state.seasonshifted);
 
 
   section = 24; id = 0; // ethereal tree level stats
@@ -1568,6 +1569,7 @@ function decState(s) {
   if(save_version >= 4096*1+74) state.amberprod = processBool();
   if(save_version >= 4096*1+77) state.amberseason = processBool();
   if(save_version >= 4096*1+77) state.seasonshift = processFloat();
+  if(save_version >= 4096*1+80) state.seasonshifted = processUint6();
 
 
   section = 24; id = 0; // ethereal tree level stats

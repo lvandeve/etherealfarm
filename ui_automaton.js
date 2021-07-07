@@ -406,10 +406,16 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   updateEnableButton(flex);
   addButtonAction(flex.div, bind(function(flex) {
-    addAction({type:ACTION_TOGGLE_AUTOMATON, what:0, on:(!state.automaton_enabled), fun:function() {
+    if(state.paused) {
+      state.automaton_enabled = !state.automaton_enabled;
       updateEnableButton(flex);
-    }});
-    update();
+      updateRightPane();
+    } else {
+      addAction({type:ACTION_TOGGLE_AUTOMATON, what:0, on:(!state.automaton_enabled), fun:function() {
+        updateEnableButton(flex);
+      }});
+      update();
+    }
   }, flex));
   flex.isGlobalButtonItself = true;
   flex.enabledStyle = true;
@@ -469,10 +475,16 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   updateChoiceButton(flex);
   addButtonAction(flex.div, bind(function(flex) {
-    addAction({type:ACTION_TOGGLE_AUTOMATON, what:4, on:(state.automaton_autochoice ? 0 : 1), fun:function() {
+    if(state.paused) {
+      state.automaton_autochoice = state.automaton_autochoice ? 0 : 1;
       updateChoiceButton(flex);
+      updateRightPane();
+    } else {
+      addAction({type:ACTION_TOGGLE_AUTOMATON, what:4, on:(state.automaton_autochoice ? 0 : 1), fun:function() {
+        updateChoiceButton(flex);
       }});
-    update();
+      update();
+    }
   }, flex));
 
 
@@ -512,10 +524,16 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updateUpgradeButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      addAction({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), fun:function() {
+      if(state.paused) {
+        state.automaton_autoupgrade = state.automaton_autoupgrade ? 0 : 1;
         updateUpgradeButton(flex);
-      }});
-      update();
+        updateRightPane();
+      } else {
+        addAction({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(state.automaton_autoupgrade ? 0 : 1), fun:function() {
+          updateUpgradeButton(flex);
+        }});
+        update();
+      }
     }, flex));
 
     var advanced = state.automaton_unlocked[1] >= 2;
@@ -609,11 +627,18 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     updatePlantButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
-      addAction({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), fun:function() {
+      if(state.paused) {
+        state.automaton_autoplant = state.automaton_autoplant ? 0 : 1;
         updatePlantButton(flex);
         setButtonIndicationStyles();
-      }});
-      update();
+        updateRightPane();
+      } else {
+        addAction({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(state.automaton_autoplant ? 0 : 1), fun:function() {
+          updatePlantButton(flex);
+          setButtonIndicationStyles();
+        }});
+        update();
+      }
     }, flex));
 
     var advanced = state.automaton_unlocked[2] >= 2;
@@ -685,10 +710,16 @@ function updateAutomatonUI() {
       centerText2(flex.div);
       updateAutoUnlockButton(flex);
       addButtonAction(flex.div, bind(function(flex) {
-        addAction({type:ACTION_TOGGLE_AUTOMATON, what:3, on:(state.automaton_autounlock ? 0 : 1), fun:function() {
+        if(state.paused) {
+          state.automaton_autounlock = state.automaton_autounlock ? 0 : 1;
           updateAutoUnlockButton(flex);
-        }});
-        update();
+          updateRightPane();
+        } else {
+          addAction({type:ACTION_TOGGLE_AUTOMATON, what:3, on:(state.automaton_autounlock ? 0 : 1), fun:function() {
+            updateAutoUnlockButton(flex);
+          }});
+          update();
+        }
       }, flex));
 
 

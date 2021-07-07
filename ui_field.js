@@ -79,6 +79,9 @@ function getCropInfoHTMLBreakdown(f, c) {
 // get crop info in HTML
 function getCropInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
+  if(c.basic_upgrade != null) {
+    result += ' level ' + state.upgrades[c.basic_upgrade].count;
+  }
 
   var p = prefield[f.y][f.x];
 
@@ -131,7 +134,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += 'Growing. Total growing time: ' + util.formatDuration(c.getPlantTime());
         if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       } else {
-        result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true);
+        result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true) + ' (of: ' + util.formatDuration(c.getPlantTime(), true, 4, true)  + ')';
       }
     }
     result += '<br/>';
@@ -168,7 +171,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     } else if(state.challenge == challenge_wither) {
       result += 'Withering. Time left: ' + util.formatDuration(f.growth * witherDuration(), true, 4, true) + '<br/><br/>';
     } else {
-      result += 'Growth time: ' + util.formatDuration(c.getPlantTime());
+      result += 'Grow time: ' + util.formatDuration(c.getPlantTime());
       if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       result += '<br/><br/>';
     }

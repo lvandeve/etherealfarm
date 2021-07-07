@@ -256,6 +256,16 @@ function reduceGrowTime(time, reduce) {
   return time;
 }
 
+// Returns a value based on x but smoothly capped to be no lower than lowest.
+// The softness determines how strongly the value gets capped: at 0, x goes down linearly, until reaching lowest, then stays at lowest
+// For higher values of softness, the cap is softer, such that when x = lowest, the output will be lowest + softness, for lower and higher x the deviation from the sharply capped curve gets less and less
+function towardsFloorValue(x, lowest, softness) {
+  softness = 4 * softness * softness;
+  x -= lowest;
+  var v = 0.5 * (x + Math.sqrt(x * x + softness));
+  return lowest + v;
+}
+
 // aka growspeed
 Crop.prototype.getPlantTime = function() {
   var result = this.planttime;
@@ -278,9 +288,13 @@ Crop.prototype.getPlantTime = function() {
     return result;
   }
 
+  var planttime = this.planttime;
+
+  var min = 60 + Math.log(planttime) + 10 * this.tier;
+
   var count = state.upgrades2[upgrade2_time_reduce_0].count;
   if(count) {
-    result = reduceGrowTime(result, upgrade2_time_reduce_0_amount * count);
+    result -= upgrade2_time_reduce_0_amount * count;
   }
 
   var level = getFruitAbility(FRUIT_GROWSPEED);
@@ -288,6 +302,10 @@ Crop.prototype.getPlantTime = function() {
     var mul = Num(1).sub(getFruitBoost(FRUIT_GROWSPEED, level, getFruitTier())).valueOf();
     result *= mul;
   }
+
+  result = towardsFloorValue(result, min, planttime * 0.33);
+
+  if(result > planttime) result = planttime;
 
   if(state.upgrades3[upgrade3_growspeed].count) {
     result *= (1 - upgrade3_growspeed_bonus);
@@ -400,14 +418,19 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
-    // wither challenge
     if(state.challenge == challenge_wither) {
+      // wither challenge
       var t = Num(witherCurve(f.growth) * f.growth);
       result.mulInPlace(t);
       if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
     } else {
-      var t = Num(f.growth * f.growth); // unlike flowers etc..., the actual producers ramp up quadratically (= a slower start, but not applied to flowers/beehives/... to count this effect in only once)
-      result.mulInPlace(t);
+      // still growing
+      var t = f.growth * f.growth; // unlike flowers etc..., the actual producers ramp up quadratically (= a slower start, but not applied to flowers/beehives/... to count this effect in only once)
+
+      // mushrooms ramp up much later: when progressing through low tier mushrooms, grow speed should be a limiting factor, to avoid the game having the highest resin/hr after too short time (should be at 1-2 hours, not at 20 minutes), to avoid the game being too active
+      if(this.type == CROPTYPE_MUSH) t = Math.pow(t, 4);
+
+      result.mulrInPlace(t);
       if(breakdown) breakdown.push(['growing', true, t, result.clone()]);
     }
   }
@@ -1121,12 +1144,9 @@ function getMushroomProd(i) {
   var seeds0 = getBerryProd(2 + 0 * 2).seeds.neg();
 
   var spores = seeds.div(seeds0).mulr(1);
-  spores.mulrInPlace(Math.pow(0.25, i)); // make higher mushrooms less efficient in seeds->spores conversion ratio: they are better because they can manage much more seeds, but must also have a disadvantage
 
-
-  // commented out as of v0.1.20: one would normally also plant a flower next to a mushroom, so that same boost applies to the mushroom, and so you get the overconsumption anyway. The 100x efficiency drop was way over the mark.
-  //if(i >= 2) seeds = seeds.mulr(100); // at this point berries have such high flower boosts that a higher seeds consumption is needed to have it such that when you unlock this mushroom, you begin with overconsumption
-  //if(i >= 3) seeds = seeds.mulr(100); // this one is not yet tested, so this is a guess for now
+  // higher tier mushrooms get a slightly more efficient spores/seed ratio, this also helps make longer runtimes (1-2 hours instead of 20 minutes) more worth it
+  spores.mulrInPlace(Math.pow(1.25, i));
 
   return Res({seeds:seeds, spores:spores});
 }
@@ -1183,18 +1203,18 @@ var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry)
 var berry_10 = registerBerry('mulberry', 10, berryplanttime0 * 40, mulberry);
 var berry_11 = registerBerry('physalis', 11, berryplanttime0 * 45, physalis);
 var berry_12 = registerBerry('raspberry', 12, berryplanttime0 * 50, raspberry);
-var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'actually not a berry... (but in this game it acts as one)');
+var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'Actually not a berry, but in this game it acts as one');
 var berry_14 = registerBerry('whitecurrant', 14, berryplanttime0 * 60, whitecurrant);
 
 // mushrooms: give spores
 crop_register_id = 50;
 var mush_0 = registerMushroom('champignon', 0, mushplanttime0 * 1, champignon);
-var mush_1 = registerMushroom('matsutake', 1, mushplanttime0 * 3, matsutake);
-var mush_2 = registerMushroom('morel', 2, mushplanttime0 * 6, morel);
-var mush_3 = registerMushroom('muscaria', 3, mushplanttime0 * 9, amanita, 'amanita muscaria'); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
-var mush_4 = registerMushroom('portobello', 4, mushplanttime0 * 12, portobello);
-var mush_5 = registerMushroom('shiitake', 5, mushplanttime0 * 15, shiitake);
-var mush_6 = registerMushroom('truffle', 6, mushplanttime0 * 18, truffle);
+var mush_1 = registerMushroom('matsutake', 1, mushplanttime0 * 4, matsutake);
+var mush_2 = registerMushroom('morel', 2, mushplanttime0 * 12, morel);
+var mush_3 = registerMushroom('muscaria', 3, mushplanttime0 * 20, amanita, 'amanita muscaria'); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
+var mush_4 = registerMushroom('portobello', 4, mushplanttime0 * 30, portobello);
+var mush_5 = registerMushroom('shiitake', 5, mushplanttime0 * 40, shiitake);
+var mush_6 = registerMushroom('truffle', 6, mushplanttime0 * 50, truffle);
 
 
 var fower_base = Num(0.5);
@@ -3314,7 +3334,7 @@ var upgrade2_time_reduce_0_amount = 90;
 
 upgrade2_register_id = 25;
 var upgrade2_time_reduce_0 = registerUpgrade2('growth speed', LEVEL2, Res({resin:25}), 2, function() {
-}, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes ' + upgrade2_time_reduce_0_amount + ' seconds, will not get much faster. This improves the higher level slower plants more.', undefined, undefined, blackberry[0]);
+}, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes ' + upgrade2_time_reduce_0_amount + ' seconds, will not get much faster. So this upgrade mainly improves the higher tier, slower, crops to become faster and thus within reach.', undefined, undefined, blackberry[0]);
 
 var upgrade2_basic_tree_bonus = Num(0.02);
 var treeboost_exponent_1 = 1.05; // basic
@@ -3494,7 +3514,7 @@ var upgrade2_highest_level = registerUpgrade2('tree\'s gesture', LEVEL2, Res({re
     'gain ' + upgrade2_highest_level_bonus.toPercentString() +
     ' bonus to seeds, spores, resin and twigs income per highest tree level ever reached (multiplicative). For each next upgrade, gain an additional ' +
     upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = (' +
-    upgrade2_highest_level_bonus.addr(1).toString(5) + ' + ' + upgrade2_highest_level_bonus2.addr(1).toString(5) + ' * (upgrade_levels - 1)) ^ max_tree_level_ever', undefined, undefined, tree_images[20][1][1]);
+    upgrade2_highest_level_bonus.addr(1).toString(5) + ' + ' + upgrade2_highest_level_bonus2.toString(5) + ' * (upgrade_levels - 1)) ^ max_tree_level_ever', undefined, undefined, tree_images[20][1][1]);
 
 
 

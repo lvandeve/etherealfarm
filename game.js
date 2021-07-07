@@ -804,13 +804,22 @@ function getSeasonTime(time) {
   return  time - state.g_starttime - state.g_pausetime - state.seasonshift;
 }
 
-function getSeasonAt(time) {
+// for state.seasonshifted, not state.seasonshift
+function getSeasonShifted() {
+  return state.seasonshifted ? (24 * 3600) : 0;
+}
+
+function getSeasonAtUnshifted(time) {
   var t = getSeasonTime(time);
-  if(isNaN(t)) return 0;
+  if(isNaN(t) || t == Infinity || t == -Infinity) return 0;
   t /= (24 * 3600);
   var result = Math.floor(t) % 4;
   if(result < 0) result = 4 + result;
   return result;
+}
+
+function getSeasonAt(time) {
+  return getSeasonAtUnshifted(time + getSeasonShifted());
 }
 
 // result: 0=spring, 1=summer, 2=autumn, 3=winter
@@ -818,12 +827,17 @@ function getSeason() {
   return getSeasonAt(state.time);
 }
 
-function timeTilNextSeason() {
+// Returns time to next season or to next point where state.seasonshifted must be decremented
+function timeTilNextSeasonUnShifted() {
   var daylen = 24 * 3600;
   var t = getSeasonTime(state.time);
   t /= daylen;
   t -= Math.floor(t);
   return daylen - t * daylen;
+}
+
+function timeTilNextSeason() {
+  return timeTilNextSeasonUnShifted() + getSeasonShifted();
 }
 
 // field cell with precomputed info
@@ -1953,7 +1967,7 @@ function autoUnlock(res) {
 // TODO: ethereal crops and their plant time must be added here
 function nextEventTime() {
   // next season
-  var time = timeTilNextSeason();
+  var time = timeTilNextSeasonUnShifted();
   var name = 'season';
 
   var addtime = function(time2, opt_name) {
@@ -2287,6 +2301,9 @@ var update = function(opt_ignorePause) {
       num_season_changes++;
     }
 
+    if(state.seasonshifted && (getSeasonAtUnshifted(state.time) != getSeasonAtUnshifted(state.prevtime) || season_will_change)) state.seasonshifted = 0;
+
+
     state.g_runtime += d;
     state.c_runtime += d;
 
@@ -2578,6 +2595,9 @@ var update = function(opt_ignorePause) {
             showMessage('Amber production bonus activated for the remainder of this run', C_AMBER, 2215651, 1);
           }
           if(action.effect == AMBER_LENGTHEN) {
+            if(timeTilNextSeason() / 3600 + 1 >= 24) {
+              state.seasonshifted = 1;
+            }
             state.amberseason = true;
             state.seasonshift += 3600;
           }

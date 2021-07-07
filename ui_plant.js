@@ -356,7 +356,7 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
         if(c.type == CROPTYPE_SHORT) {
           result += '.<br><br>Living time: ' + util.formatDuration(c.getPlantTime());
         } else {
-          result += '.<br><br>Growth time: ' + util.formatDuration(c.getPlantTime());
+          result += '.<br><br>Grow time: ' + util.formatDuration(c.getPlantTime());
           if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
         }
         if(c.type == CROPTYPE_FLOWER) {

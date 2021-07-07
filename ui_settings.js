@@ -573,11 +573,17 @@ function createStatsDialog() {
   if(state.upgrades[upgrade_rainbowunlock].count > 0) text += '• rainbow ability flower boost, run time, cooldown time, total cycle: ' + open + '+' + getRainbowFlowerBoost().toPercentString() + ', ' + util.formatDuration(getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait() - getRainbowDuration(), true) + close + ', ' + open + util.formatDuration(getRainbowWait(), true) + close + '<br>';
   if(state.g_res.resin.neqr(0)) {
     text += '• resin/hour: ' + open + getResinHour().toString() + close + '<br>';
-    text += '• best resin/hour: ' + open + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true) + close + '<br>';
+    text += '• best resin/hour: ' + open + state.c_res_hr_best.resin.toString() +
+            ', at level ' + state.c_res_hr_at.resin.valueOf() +
+            ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true) +
+            close + '<br>';
   }
   if(state.g_res.twigs.neqr(0)) {
     text += '• twigs/hour: ' + open + getTwigsHour().toString() + close + '<br>';
-    text += '• best twigs/hour: ' + open + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true) + close + '<br>';
+    text += '• best twigs/hour: ' + open + state.c_res_hr_best.twigs.toString() +
+            ', at level ' + state.c_res_hr_at.twigs.valueOf() +
+            ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true) +
+            close + '<br>';
   }
 
 
@@ -709,11 +715,17 @@ function createStatsDialog() {
     text += '• weather abilities activated: ' + open + state.p_numabilities + close + '<br>';
     if(state.g_res.resin.neqr(0)) {
       text += '• resin/hour: ' + open + (state.p_res.resin.divr(state.p_runtime / 3600)).toString() + close + '<br>';
-      text += '• best resin/hour: ' + open + state.p_res_hr_best.resin.toString() + ' at level ' + state.p_res_hr_at.resin.valueOf() + close + '<br>';
+      text += '• best resin/hour: ' + open + state.p_res_hr_best.resin.toString() +
+              ', at level ' + state.p_res_hr_at.resin.valueOf() +
+              ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf()) +
+              close + '<br>';
     }
     if(state.g_res.twigs.neqr(0)) {
       text += '• twigs/hour: ' + open + (state.p_res.twigs.divr(state.p_runtime / 3600)).toString() + close + '<br>';
-      text += '• best twigs/hour: ' + open + state.p_res_hr_best.twigs.toString() + ' at level ' + state.p_res_hr_at.twigs.valueOf() + close + '<br>';
+      text += '• best twigs/hour: ' + open + state.p_res_hr_best.twigs.toString() +
+              ', at level ' + state.p_res_hr_at.twigs.valueOf() +
+              ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf()) +
+              close + '<br>';
     }
     text += '<br>';
   }

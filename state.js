@@ -626,6 +626,11 @@ function State() {
   this.amberprod = false;
   this.amberseason = false; // a season duration amber effect was activated during this season
   this.seasonshift = 0; // in seconds, for the amber season move effects
+  // if 1, then getSeasonAt should return 1 season higher than the current one, and timeTilNextSeason should return 24 hours more.
+  // This should be decremented to 0 when a regular season-change boundary is crossed.
+  // The purpose of this is for when you extend the duration of the current season by 1 hour, but we're only in the first few minutes of this season:
+  // then it is more than 24h til the next season, but without this variable, that's not supported, as the season is computed to cycle every 24h.
+  this.seasonshifted = 0;
 
   // temp variables for visual effect, not to be saved
   this.automatonx = 0; // for the visual planting effect

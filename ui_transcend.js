@@ -276,7 +276,9 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   text += '<br><br>';
 
-  var maxlevel = Math.max(c2.maxlevel, state.challenge == c.index ? state.treelevel : 0);
+  var currentlyrunning = (state.challenge == c.index);
+
+  var maxlevel = Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0);
   text += '<b>Current stats:</b><br>';
   if(c.cycling > 1) {
     text += '• Production bonuses per max level reached (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ';
@@ -288,13 +290,25 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     text += '• Production bonuses: ';
     for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], j).toPercentString();
     text += '<br>';
+    if(currentlyrunning) {
+      text += '• Current cycle: ' + ((c2.num % c.cycling) + 1) + ' of ' + c.cycling;
+      text += '<br>';
+      text += '• Next cycle: ' + (((c2.num + 1) % c.cycling) + 1) + ' of ' + c.cycling;
+    } else {
+      text += '• Next cycle: ' + ((c2.num % c.cycling) + 1) + ' of ' + c.cycling;
+    }
+    text += '<br>';
   } else {
     text += '• Production bonus per max level reached (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ' + c.bonus.toPercentString() + '<br>';
     text += '• Max level reached: ' + maxlevel + '<br>';
     //text += '• Production bonus: ' + c.bonus.mulr(maxlevel).toPercentString() + '<br>';
     text += '• Production bonus: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + '<br>';
   }
-  text += '• Times ran: ' + c2.num + '<br>';
+  if(currentlyrunning) {
+    text += '• Times ran (excluding the current run): ' + c2.num + '<br>';
+  } else {
+    text += '• Times ran: ' + c2.num + '<br>';
+  }
   if(c.targetlevel.length > 1 && c.fullyCompleted(include_current_run)) {
     text += '• Fastest first stage target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';
     text += '• Fastest final stage target level time: ' + (c2.besttime2 ? util.formatDuration(c2.besttime2) : '--') + '<br>';
@@ -362,14 +376,15 @@ function createChallengeDialog(opt_from_challenge) {
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;
     styleButton(button.div);
+    var currentlyrunning = (state.challenge == c.index);
     var text = upper(c.name);
     if(isnew) text += ' (New!)';
     // The '/' means: "new stage available with target level: " but that's too long for the button
-    else if(isnotfull) text += ' (' + Math.max(c2.maxlevel, state.challenge == c.index ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
+    else if(isnotfull) text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
     else if(c.cycling > 1) {
       if(!c.allCyclesCompleted(true)) text += ' (New cycle!)';
     }
-    else text += ' (' + Math.max(c2.maxlevel, state.challenge == c.index ? state.treelevel : 0) + ')';
+    else text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ')';
     button.div.textEl.innerText = text;
     button.div.onclick = bind(function(c) {
       createChallengeDescriptionDialog(c.index, false, true);

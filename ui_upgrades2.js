@@ -52,6 +52,9 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
   var infoText = upper(name);
   infoText += '<br><br>Cost: ' + cost.toString();
+  
+  infoText += '<br><br>' + 'have of this upgrade: ' + state.upgrades2[u.index].count;
+  
   if(u.description) {
     infoText += '<br><br>' + u.description;
   }
