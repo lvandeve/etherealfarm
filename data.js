@@ -292,15 +292,15 @@ Crop.prototype.getPlantTime = function() {
 
   var min = 60 + Math.log(planttime) + 10 * this.tier;
 
-  var count = state.upgrades2[upgrade2_time_reduce_0].count;
-  if(count) {
-    result -= upgrade2_time_reduce_0_amount * count;
-  }
-
   var level = getFruitAbility(FRUIT_GROWSPEED);
   if(level > 0) {
     var mul = Num(1).sub(getFruitBoost(FRUIT_GROWSPEED, level, getFruitTier())).valueOf();
     result *= mul;
+  }
+
+  var count = state.upgrades2[upgrade2_time_reduce_0].count;
+  if(count) {
+    result -= upgrade2_time_reduce_0_amount * count;
   }
 
   result = towardsFloorValue(result, min, planttime * 0.33);
@@ -3648,7 +3648,7 @@ function getFruitBoost(ability, level, tier) {
   }
   if(ability == FRUIT_GROWSPEED) {
     var amount = towards1(level, 5);
-    var max = 0.4 * (1 + 0.6 * tier / 11);
+    var max = 0.3 * (1 + 0.6 * tier / 11);
     return Num(max * amount);
   }
   if(ability == FRUIT_WEATHER) {
