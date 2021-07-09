@@ -1518,8 +1518,6 @@ function getRandomFruitRoll() {
 
 
 function addRandomFruit() {
-  var level = state.treelevel;
-
   var fruits = [];
   for(;;) {
     // do same amount of rolls per fruit, even if some are unneeded, so that it's harder to affect the fruit seed by choosing when to do squirrel upgrades, transcends, ...
@@ -3395,9 +3393,9 @@ var update = function(opt_ignorePause) {
         showHelpDialog(-16, undefined, 'The tree reached level ' + state.treelevel + ' and is providing another choice, see the new upgrade that provides two choices under "upgrades".');
       }
 
-      // fruits at tree level 5, 15, 25, 35, ...
+      // fruits at any multiple of 5 tree level
       var fruits = undefined;
-      if(state.treelevel % 10 == 5) {
+      if(state.treelevel > 0 && state.treelevel % 5 == 0) {
         if(!state.challenge || (challenges[state.challenge].allowsfruits && state.treelevel >= 10 && (challenges[state.challenge].allowbeyondhighestlevel || state.treelevel <= state.g_treelevel))) {
           if(showtreemessages && state.treelevel == 5) showRegisteredHelpDialog(2);
           if(showtreemessages && state.treelevel == 15) showRegisteredHelpDialog(18);

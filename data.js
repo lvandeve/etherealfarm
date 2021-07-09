@@ -645,7 +645,6 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // multiplicity
   if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && haveMultiplicity(this.type)) {
-    // multiplicity only works by fully grown crops, not for intermediate growing ones
     var num = getMultiplicityNum(this);
     if(num > 0) {
       var boost = getMultiplicityBonusBase(this.type).mulr(num).addr(1);
@@ -3728,13 +3727,15 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
 
   // roll: higher is better
   // these prob requirements: lower is better
+  var prob20 = 0.2;
   var prob25 = 0.25;
-  var prob5 = 0.5;
+  var prob50 = 0.5;
   var prob75 = 0.75;
 
   if(improved_probability) {
+    prob20 = 0.1;
     prob25 = 0.15;
-    prob5 = 0.35;
+    prob50 = 0.35;
     prob75 = 0.66;
   }
 
@@ -3744,38 +3745,73 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
   }
 
   // level 5: zinc introduced
-  if(treelevel >= 5 && treelevel <= 14) {
+  if(treelevel >= 5 && treelevel <= 9) {
     return 0;
   }
 
-  // level 15: bronze introduced
-  if(treelevel >= 15 && treelevel <= 24) {
-    return (roll > prob5) ? 1 : 0;
+  // level 10: bronze introduced
+  if(treelevel >= 10 && treelevel <= 14) {
+    return (roll > prob75) ? 1 : 0;
+  }
+
+  // level 15
+  if(treelevel >= 15 && treelevel <= 19) {
+    return (roll > prob50) ? 1 : 0;
+  }
+
+  // level 20
+  if(treelevel >= 20 && treelevel <= 24) {
+    return (roll > prob25) ? 1 : 0;
   }
 
   // level 25: silver introduced
-  if(treelevel >= 25 && treelevel <= 34) {
-    return (roll > prob5) ? 2 : 1;
+  if(treelevel >= 25 && treelevel <= 29) {
+    return (roll > prob50) ? 2 : 1;
+  }
+
+  // level 30
+  if(treelevel >= 30 && treelevel <= 34) {
+    return (roll > prob25) ? 2 : 1;
   }
 
   // level 35: electrum introduced
-  if(treelevel >= 35 && treelevel <= 44) {
+  if(treelevel >= 35 && treelevel <= 39) {
     return (roll > prob75) ? 3 : 2;
   }
 
+  // level 40
+  if(treelevel >= 40 && treelevel <= 44) {
+    return (roll > prob50) ? 3 : 2;
+  }
+
   // level 45
-  if(treelevel >= 45 && treelevel <= 54) {
+  if(treelevel >= 45 && treelevel <= 49) {
     return (roll > prob25) ? 3 : 2;
   }
 
+  // level 50
+  if(treelevel >= 50 && treelevel <= 54) {
+    return (roll > prob20) ? 3 : 2;
+  }
+
   // level 55: gold introduced
-  if(treelevel >= 55 && treelevel <= 64) {
+  if(treelevel >= 55 && treelevel <= 59) {
     return (roll > prob75) ? 4 : 3;
   }
 
+  // level 60
+  if(treelevel >= 60 && treelevel <= 64) {
+    return (roll > prob50) ? 4 : 3;
+  }
+
   // level 65
-  if(treelevel >= 65 && treelevel <= 74) {
+  if(treelevel >= 65 && treelevel <= 69) {
     return (roll > prob25) ? 4 : 3;
+  }
+
+  // level 70
+  if(treelevel >= 70 && treelevel <= 74) {
+    return (roll > prob20) ? 4 : 3;
   }
 
   // Higher tree levels are not yet implemented for the fruits
@@ -4543,9 +4579,12 @@ function getMultiplicityNum(crop) {
   if(tier != undefined && croptype_tiers[croptype]) above = croptype_tiers[croptype][tier + 1];
   if(above && above.istemplate) above = undefined;
 
-  var num = state.growingcropcount[crop.index];
-  if(below) num += state.growingcropcount[below.index];
-  if(above) num += state.growingcropcount[above.index];
+  // This used to use state.growingcropcount instead of state.cropcount, however it's better for gameplay to let multiplicity work immediately,
+  // for strategies that involve switching layouts. However, if this turns out to be too much, another option is to make it work with a very fast ramp-up time
+  var num = state.cropcount[crop.index];
+  if(below) num += state.cropcount[below.index];
+  if(above) num += state.cropcount[above.index];
+
 
   num -= 1; // the current plant self is not counted (even if partial, growing, still counts as full 1)
   if(num < 0) num = 0;

@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.81 (2021-07-09):';
+  text += '<br/>• Crops in the process of growing now count as 100% for multiplicity. This allows to change multiplicity layout without waiting for grow times.';
+  text += '<br/>• The tree now drops a fruit every 5 levels rather than every 10 levels.';
+  text += '<br/>• The description of the fruit grow speed ability now shows that it applies before any other reductions: the percentage value was lowered compared to 0.1.79, but back then it applied only after other reductions (to a smaller value) so this didn\'t actually decrease its power.';
+  text += '<br/><br/>';
+
   text += '0.1.80 (2021-07-07):';
   text += '<br/>• Balancing to ensure getting best resin/hr after not too short runtimes:';
   text += '<br/> - tweaked growtime of early vs late tier crops';
