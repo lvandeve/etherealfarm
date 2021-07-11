@@ -4180,6 +4180,13 @@ function treeLevelResin(level, breakdown) {
     if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, resin.clone()]);
   }
 
+  // challenges
+  if(state.challenge_bonus.neqr(0)) {
+    var challenge_bonus = state.challenge_bonus.divr(100).addr(1);
+    resin.mulInPlace(challenge_bonus);
+    if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, resin.clone()]);
+  }
+
   count = state.mistletoes;
   if(count > 1) {
     var malus = Num(1).sub(mistletoe_resin_malus).powr(count - 1); // the first mistletoe doesn't affect resin income
@@ -4236,6 +4243,13 @@ function treeLevelTwigs(level, breakdown) {
   if(gesture.neqr(1)) {
     res.twigs.mulInPlace(gesture);
     if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, res.clone()]);
+  }
+
+  // challenges
+  if(state.challenge_bonus.neqr(0)) {
+    var challenge_bonus = state.challenge_bonus.divr(100).addr(1);
+    res.twigs.mulInPlace(challenge_bonus);
+    if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, res.clone()]);
   }
 
 

@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.82 (2021-07-11):';
+  text += '<br/>• 1% of the challenges production bonus now also applies to resin and twigs income.';
+  text += '<br/><br/>';
+
   text += '0.1.81 (2021-07-09):';
   text += '<br/>• Crops in the process of growing now count as 100% for multiplicity. This allows to change multiplicity layout without waiting for grow times.';
   text += '<br/>• The tree now drops a fruit every 5 levels rather than every 10 levels.';

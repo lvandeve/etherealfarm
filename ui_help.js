@@ -284,7 +284,7 @@ registerHelpDialog(22, 'Ethereal tree leveled up', 'The ethereal tree leveled up
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(1)][1][4]], [undefined, tree_images[treeLevelIndex(1)][2][4]]]);
 
 registerHelpDialog(24, 'Challenges', 'You unlocked a challenge!',
-    'You unlocked a challenge! Challenges can be accessed from the tree, as an alternative to regular transcension. All challenges give a production bonus for highest tree level reached. Challenges may also give one-time rewards for successfully reaching a certain level. Challenges can be ran as many times as desired, redoing them can increase the max level reached.',
+    'You unlocked a challenge! Challenges can be accessed from the tree, as an alternative to regular transcension. All challenges give a production bonus (to seeds and spores, and a smaller amount to resin and twigs) for highest tree level reached. Challenges may also give one-time rewards for successfully reaching a certain level. Challenges can be ran as many times as desired, redoing them can increase the max level reached.',
     undefined);
 
 

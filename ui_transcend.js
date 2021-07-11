@@ -181,14 +181,14 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   text += c.rulesdescription;
   if(c.targetlevel.length > 1) {
     var targetlevel = c.nextTargetLevel(include_current_run);
-    text += '• Reach tree level ' + targetlevel + ' to successfully complete the next stage of the challenge, or reach any other max level to increase challenge production bonus.';
+    text += '• Reach <b>tree level ' + targetlevel + '</b> to successfully complete the next stage of the challenge, or reach any other max level to increase challenge production bonus.';
     text += '<br>';
     text += '• This challenge has ' + c.targetlevel.length + ' stages in total, each gives 1 reward, you can complete only 1 stage at the time';
   } else {
-    text += '• Reach tree level ' + c.targetlevel[0] + ' to successfully complete the challenge, or reach any other max level to increase challenge production bonus.';
+    text += '• Reach <b>tree level ' + c.targetlevel[0] + '</b> to successfully complete the challenge, or reach any other max level to increase challenge production bonus.';
   }
   text += '<br>';
-  text += '• Max level reached with this challenge gives ' + c.bonus.toPercentString() + ' production bonus per level to the game, whether successfully completed or not (formula: bonus * level ^ ' + challenge_bonus_exponent + ').';
+  text += '• Max level reached with this challenge gives ' + c.bonus.toPercentString() + ' production bonus per level to the game, whether successfully completed or not (formula: bonus * level ^ ' + challenge_bonus_exponent + '). The production bonus applies to seeds and spores, and 1/100th of it applies to resin and twigs.';
   text += '<br>';
   if(c.allowsresin && c.allowsfruits && c.allowstwigs && c.allowsnuts && c.allowbeyondhighestlevel) {
     if(squirrelUnlocked()) {
