@@ -51,7 +51,7 @@ function updateAbilitiesUI() {
     sunbutton = addTopBarFlex(4, 5);
     styleButton0(sunbutton.div, true);
 
-    suntimerflex = addTopBarFlex(3.8, 5.2, 2);
+    suntimerflex = addTopBarFlex(3.8, 5.2, 2.5);
     centerText2(suntimerflex.div);
     suntimerflex.div.className = 'efWeatherOff';
     suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
@@ -77,10 +77,10 @@ function updateAbilitiesUI() {
       suntimerflex.div.textEl.innerHTML = '';
     } else if(d > getSunDuration()) {
       suntimerflex.div.className = 'efWeatherOff';
-      suntimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getSunWait() - d, true);
+      suntimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getSunWait() - d, true);
     } else {
       suntimerflex.div.className = 'efWeatherOn';
-      suntimerflex.div.textEl.innerHTML = 'active:<br>' + util.formatDuration(getSunDuration() - d, true);
+      suntimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getSunDuration() - d, true);
     }
   }
 
@@ -97,7 +97,7 @@ function updateAbilitiesUI() {
     mistbutton = addTopBarFlex(5, 6);
     styleButton0(mistbutton.div, true);
 
-    misttimerflex = addTopBarFlex(4.8, 6.2, 2);
+    misttimerflex = addTopBarFlex(4.8, 6.2, 2.5);
     centerText2(misttimerflex.div);
     misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     misttimerflex.div.style.pointerEvents = 'none';
@@ -123,10 +123,10 @@ function updateAbilitiesUI() {
       misttimerflex.div.textEl.innerHTML = '';
     } else if(d > getMistDuration()) {
       misttimerflex.div.className = 'efWeatherOff';
-      misttimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getMistWait() - d, true);
+      misttimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getMistWait() - d, true);
     } else {
       misttimerflex.div.className = 'efWeatherOn';
-      misttimerflex.div.textEl.innerHTML = 'active:<br>' + util.formatDuration(getMistDuration() - d, true);
+      misttimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getMistDuration() - d, true);
     }
   }
 
@@ -144,7 +144,7 @@ function updateAbilitiesUI() {
     rainbowbutton = addTopBarFlex(6, 7);
     styleButton0(rainbowbutton.div, true);
 
-    rainbowtimerflex = addTopBarFlex(5.8, 7.2, 2);
+    rainbowtimerflex = addTopBarFlex(5.8, 7.2, 2.5);
     centerText2(rainbowtimerflex.div);
     rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     rainbowtimerflex.div.style.pointerEvents = 'none';
@@ -169,10 +169,10 @@ function updateAbilitiesUI() {
       rainbowtimerflex.div.textEl.innerHTML = '';
     } else if(d > getRainbowDuration()) {
       rainbowtimerflex.div.className = 'efWeatherOff';
-      rainbowtimerflex.div.textEl.innerHTML = 'ready in:<br>' + util.formatDuration(getRainbowWait() - d, true);
+      rainbowtimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getRainbowWait() - d, true);
     } else {
       rainbowtimerflex.div.className = 'efWeatherOn';
-      rainbowtimerflex.div.textEl.innerHTML = 'active:<br>' + util.formatDuration(getRainbowDuration() - d, true);
+      rainbowtimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getRainbowDuration() - d, true);
     }
   }
 
