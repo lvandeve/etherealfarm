@@ -494,6 +494,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MUSHEFF), true, mul, result.clone()]);
     }
   }
+  if(this.type == CROPTYPE_NUT) {
+    var level = getFruitAbility(FRUIT_NUTBOOST);
+    if(level > 0) {
+      var mul = getFruitBoost(FRUIT_NUTBOOST, level, getFruitTier()).addr(1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_NUTBOOST), true, mul, result.clone()]);
+    }
+  }
 
   // ethereal crops bonus to basic crops
   var ethereal_prodmul = Res.resOne();
@@ -941,6 +949,15 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
+    }
+  }
+
+  if(this.type == CROPTYPE_BEE) {
+    var level = getFruitAbility(FRUIT_BEEBOOST);
+    if(level > 0) {
+      var mul = getFruitBoost(FRUIT_BEEBOOST, level, getFruitTier()).addr(1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BEEBOOST), true, mul, result.clone()]);
     }
   }
 
@@ -2247,7 +2264,8 @@ function registerPlantTypeMedal(cropid, num) {
   if(c.type == CROPTYPE_BEE) tier = 6;
   if(c.type == CROPTYPE_NUT) tier = tier + 9;
   var num2 = (Math.floor(num / 10) + 1);
-  var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
+  //var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
+  var t = Math.pow(1.7, tier);
   var mul = t * num2 / 100 * 0.25;
   return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
     return state.fullgrowncropcount[cropid] >= num;
@@ -3609,6 +3627,11 @@ var FRUIT_SUMMER_AUTUMN = fruit_index++;
 var FRUIT_AUTUMN_WINTER = fruit_index++;
 var FRUIT_WINTER_SPRING = fruit_index++;
 var FRUIT_ALL_SEASON = fruit_index++;
+// platinum and higher abilities
+var FRUIT_RESINBOOST = fruit_index++;
+var FRUIT_TWIGSBOOST = fruit_index++;
+var FRUIT_NUTBOOST = fruit_index++;
+var FRUIT_BEEBOOST = fruit_index++;
 
 // BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
 var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
@@ -3646,7 +3669,8 @@ function getFruitBoost(ability, level, tier) {
   }
   if(ability == FRUIT_GROWSPEED) {
     var amount = towards1(level, 5);
-    var max = 0.3 * (1 + 0.6 * tier / 11);
+    //var max = 0.3 * (1 + 0.6 * tier / 11);
+    var max = 0.25 * (1 + 1.75 * tier / 12);
     return Num(max * amount);
   }
   if(ability == FRUIT_WEATHER) {
@@ -3666,6 +3690,31 @@ function getFruitBoost(ability, level, tier) {
   if(ability == FRUIT_ALL_SEASON) {
     if(!state.upgrades3[upgrade3_fruitmix2].count) return Num(0)
     return Num(0.35); // not upgradeable
+  }
+  if(ability == FRUIT_RESINBOOST) {
+    var amount = towards1(level, 5);
+    var t = tier - 4; // only starts at tier 5
+    if(t < 0) t = 0;
+    var max = 0.2 + 0.5 * t / 6;
+    return Num(max * amount);
+  }
+  if(ability == FRUIT_TWIGSBOOST) {
+    var amount = towards1(level, 5);
+    var t = tier - 4; // only starts at tier 5
+    if(t < 0) t = 0;
+    var max = 0.2 + 0.5 * t / 6;
+    return Num(max * amount);
+  }
+  if(ability == FRUIT_NUTBOOST) {
+    var amount = towards1(level, 5);
+    var t = tier - 4; // only starts at tier 5
+    if(t < 0) t = 0;
+    var max = 0.2 + 0.5 * t / 6;
+    return Num(max * amount);
+  }
+  if(ability == FRUIT_BEEBOOST) {
+    // bee boost is very similar to flower boost, but smaller, to have some variation: flowerboost is better, but you can still combine both to get way more boost
+    return Num(base * level * 0.5);
   }
 
   return Num(0.1);
@@ -3702,22 +3751,23 @@ function getFruitSacrifice(f) {
   return Res({essence:result});
 }
 
+// This function determines not only the cost, but also the effect strength of abilities
 function getFruitTierCost(tier) {
-  // half-exponential progression
+  // a manually chosen exponential-ish progression
   switch(tier) {
     case 0: return 1;
     case 1: return 4;
     case 2: return 12;
     case 3: return 30;
-    case 4: return 45;
-    case 5: return 65;
-    case 6: return 100;
-    case 7: return 120;
-    case 8: return 160;
-    case 9: return 240;
-    case 10: return 300;
+    case 4: return 45; // this is a bit of a dip in the progression, for backwards compatibility when only up to gold was available and the formula progressed too slowly
+    case 5: return 100;
+    case 6: return 250;
+    case 7: return 600;
+    case 8: return 1500;
+    case 9: return 2500;
+    case 10: return 6000;
   }
-  return Infinity;
+  return 10000;
 }
 
 // get fruit tier given random roll and tree level
@@ -3814,8 +3864,28 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return (roll > prob20) ? 4 : 3;
   }
 
+  // level 75: platinum introduced
+  if(treelevel >= 75 && treelevel <= 79) {
+    return (roll > prob25) ? 5 : 4;
+  }
+
+  // level 80
+  if(treelevel >= 80 && treelevel <= 84) {
+    return (roll > prob50) ? 5 : 4;
+  }
+
+  // level 85
+  if(treelevel >= 85 && treelevel <= 89) {
+    return (roll > prob25) ? 5 : 4;
+  }
+
+  // level 90
+  if(treelevel >= 90 && treelevel <= 94) {
+    return (roll > prob20) ? 5 : 4;
+  }
+
   // Higher tree levels are not yet implemented for the fruits
-  return 4;
+  return 5;
 }
 
 // how many abilities should a fruit of this tier have (excluding any seasonal ability)
@@ -3823,8 +3893,8 @@ function getNumFruitAbilities(tier) {
   var num_abilities = 1;
   if(tier >= 1) num_abilities = 2;
   if(tier >= 3) num_abilities = 3;
-  // These are not yet supported, this is preliminary
   if(tier >= 5) num_abilities = 4;
+  // These are not yet supported, this is preliminary
   if(tier >= 7) num_abilities = 5;
   return num_abilities;
 }
@@ -3928,8 +3998,26 @@ function fruitSeasonMix(a, b, fruitmix) {
   else if(b == 8) b2 = 9;
   else if(b == 9) b2 = 15;
 
-  // the type when going down (mixing disabled): still keaps for example winter if both a and b support winter (e.g. dragon fruit + quince, or quince + medlar)
+  // the type when going down (mixing disabled): still keeps for example winter if both a and b support winter (e.g. dragon fruit + quince, or quince + medlar)
   var c2 = a2 & b2;
+
+  // This code makes it allow keeping a multi-season fruit if mixed with a matching single-season fruit
+  // This makes the combining slightly easier, however not actually that much easier:
+  // Without this feature, it's still easy to create any multi-season fruit you want given a single-season fruit with the desired abilities, by mixing it with a dummy (don't care abilities) other-seasonal fruit, which is easy enough to get since there the abilities don't matter. Same for creating a dragon fruit with a dummy second 2-seasonal fruit.
+  var allow_keep_multi = true;
+  if(allow_keep_multi) {
+    if(fruitmix >= 4) {
+      // also allow to keep 4-season fruits, so long as at least not mixed with an apple
+      if((a2 == 15 || b2 == 15) && c2 != 0) return 9; // dragonfruit
+    }
+    if(fruitmix >= 2) {
+      // also allow to keep 2-season fruits when fused with a contained 1-season fruit
+      if((a2 == 3 || b2 == 3) && ((a2 | b2) == 3) && ((a2 & b2) != 0)) return 5; // mango
+      if((a2 == 6 || b2 == 6) && ((a2 | b2) == 6) && ((a2 & b2) != 0)) return 6; // plum
+      if((a2 == 12 || b2 == 12) && ((a2 | b2) == 12) && ((a2 & b2) != 0)) return 7; // quince
+      if((a2 == 9 || b2 == 9) && ((a2 | b2) == 9) && ((a2 & b2) != 0)) return 8; // kumquat
+    }
+  }
 
   if(c2 == 15) return 9; // dragon fruit
   else if((c2 & 3) == 3) return 5; // mango
@@ -4194,6 +4282,19 @@ function treeLevelResin(level, breakdown) {
     if(breakdown) breakdown.push(['mistletoe malus (' + count + ')', true, malus, resin.clone()]);
   }
 
+  var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST);
+  if(resin_fruit_level > 0) {
+    var resin_fruit_bonus = Num(0);
+    var treeleveltime = state.time - state.lasttreeleveluptime;
+    if(state.resinfruittime > 0) {
+      var ratio = state.resinfruittime / treeleveltime;
+      if(ratio > 1) ratio = 1; // normally doesn't happen, but ...
+      resin_fruit_bonus = getFruitBoost(FRUIT_RESINBOOST, resin_fruit_level, getFruitTier()).mulr(ratio).addr(1);
+      resin.mulInPlace(resin_fruit_bonus);
+      if(breakdown) breakdown.push(['fruit resin boost', true, resin_fruit_bonus, resin.clone()]);
+    }
+  }
+
   return resin;
 }
 
@@ -4250,6 +4351,19 @@ function treeLevelTwigs(level, breakdown) {
     var challenge_bonus = state.challenge_bonus.divr(100).addr(1);
     res.twigs.mulInPlace(challenge_bonus);
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, res.clone()]);
+  }
+
+  var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST);
+  if(twigs_fruit_level > 0) {
+    var twigs_fruit_bonus = Num(0);
+    var treeleveltime = state.time - state.lasttreeleveluptime;
+    if(state.twigsfruittime > 0) {
+      var ratio = state.twigsfruittime / treeleveltime;
+      if(ratio > 1) ratio = 1; // normally doesn't happen, but ...
+      twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier()).mulr(ratio).addr(1);
+      res.twigs.mulInPlace(twigs_fruit_bonus);
+      if(breakdown) breakdown.push(['fruit twigs boost', true, twigs_fruit_bonus, res.twigs.clone()]);
+    }
   }
 
 

@@ -149,7 +149,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   var buyfun = undefined;
   if(showbuy || (state.g_numrespec3 > 0 && !unknown)) {
     buyfun = function(e) {
-      if(state.g_numrespec3 > 0 && e.shiftKey) {
+      if(state.g_numrespec3 > 0 && !showbuy) {
         buyAllSquirrelUpgradesUpTo(stage, b, d);
       } else {
         addAction({type:ACTION_UPGRADE3, s:stage.index, b:b, d:d});
@@ -165,9 +165,9 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
     styleButton0(textFlex.div);
     addButtonAction(textFlex.div, buyfun);
   } else if(state.g_numrespec3 && !unknown && !!buyfun) {
-    // add the shift to buy all function, but in a hidden way because normally it's done through the icon
+    // buy all function, but a bit hidden because normally it's done through the icon
     textFlex.div.onclick = function(e) {
-      if(e.shiftKey) buyfun(e);
+      /*if(e.shiftKey)*/ buyfun(e);
     };
   }
 
@@ -293,7 +293,7 @@ function updateSquirrelUI() {
         respecfun2();
         dialog.cancelFun();
       }, 'Respec now');
-      dialog.content.div.innerHTML = 'Really respec? This resets and refunds all squirrel upgrades, and consumes 1 respec token';
+      dialog.content.div.innerHTML = 'Really respec? This resets and refunds all squirrel upgrades, and consumes 1 respec token<br><br>Tip: after respec, you can click on upgrades further below the tree (as long as their name is revealed) to buy all upgrades up to that one at once, so you don\'t have to click all the individual ones.';
     }
   };
 

@@ -441,7 +441,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"t"</b>: show transcend dialog (if available)';
   text += '<br/>';
-  text += ' • <b>"p"</b>: pick or plant crop under mouse cursor (no mouse click required)';
+  text += ' • <b>"p"</b>: pick (select) or plant (if empty field) crop under mouse cursor (no mouse click required)';
   text += '<br/>';
   text += ' • <b>"d"</b>: delete crop under mouse cursor (no mouse click required, only if this is enabled in preferences)';
   text += '<br/>';

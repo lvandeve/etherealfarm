@@ -40,6 +40,10 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_AUTUMN_WINTER: return ((getSeason() == 2 || getSeason() == 3) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
       case FRUIT_WINTER_SPRING: return ((getSeason() == 3 || getSeason() == 0) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
       case FRUIT_ALL_SEASON: return !!state.upgrades3[upgrade3_fruitmix2].count ? 'S' : 's';
+      case FRUIT_RESINBOOST: return 'RS';
+      case FRUIT_TWIGSBOOST: return 'TW';
+      case FRUIT_NUTBOOST: return 'NU';
+      case FRUIT_BEEBOOST: return 'BE';
     }
     return '?';
   }
@@ -62,6 +66,10 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_AUTUMN_WINTER: return 'autumn and winter boost';
     case FRUIT_WINTER_SPRING: return 'winter and spring boost';
     case FRUIT_ALL_SEASON: return '4-seasons boost';
+    case FRUIT_RESINBOOST: return 'resin boost';
+    case FRUIT_TWIGSBOOST: return 'twigs boost';
+    case FRUIT_NUTBOOST: return 'nuts boost';
+    case FRUIT_BEEBOOST: return 'bee boost';
   }
   return 'unknown';
 }
@@ -71,7 +79,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_NONE: return 'none, fuse fruits to fill this slot';
     case FRUIT_BERRYBOOST: return 'boosts berry production';
     case FRUIT_MUSHBOOST: return 'boosts mushroom production but also consumption';
-    case FRUIT_MUSHEFF: return 'reduces mushroom consumption, with diminishing returns';
+    case FRUIT_MUSHEFF: return 'reduces mushroom consumption (with a soft cap)';
     case FRUIT_FLOWERBOOST: return 'boosts flowers effect';
     case FRUIT_GROWSPEED: return 'reduces crop grow time (before any other reductions)';
     case FRUIT_WEATHER: return 'increases the weather effect abilities';
@@ -86,6 +94,10 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_AUTUMN_WINTER: return 'boosts the autumn mushroom boost and the winter tree warmth effect, only during the respective seasons';
     case FRUIT_WINTER_SPRING: return 'boosts the winter tree warmth effect and the spring flower boost, only during the respective seasons';
     case FRUIT_ALL_SEASON: return 'boosts the special effect of each of the 4 seasons, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
+    case FRUIT_RESINBOOST: return 'boost resin income (with a soft cap), taking into account the time this fruit was active';
+    case FRUIT_TWIGSBOOST: return 'boost twigs income (with a soft cap), taking into account the time this fruit was active';
+    case FRUIT_NUTBOOST: return 'boosts nuts production (with a soft cap)';
+    case FRUIT_BEEBOOST: return 'boosts the beehive bonus';
   }
   return 'unknown';
 }

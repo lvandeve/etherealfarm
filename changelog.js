@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.83 (2021-07-23):';
+  text += '<br/>• Next fruit tier, platinum fruit, added, it has a chance to drop starting from tree level 75.';
+  text += '<br/>• Fusing multi-season fruits with a matching single-seasonal fruit now keeps the result multi-seasonal.';
+  text += '<br/>• Increased the achievement bonus for planting X amount of higher tier crops.';
+  text += '<br/>• Grow speed fruit effect difference per tier made larger.';
+  text += '<br/>• Improved "Current challenge info" dialog, with clearer old and new challenge production bonus display.';
+  text += '<br/>• Fruit drop messages can now be disabled in the preferences.';
+  text += '<br/>• Various other tweaks and fixes.'; // e.g. buying multiple squirrel upgrades after respec can now be done without shift
+  text += '<br/><br/>';
+
   text += '0.1.82 (2021-07-11):';
   text += '<br/>• 1% of the challenges production bonus now also applies to resin and twigs income.';
   text += '<br/><br/>';

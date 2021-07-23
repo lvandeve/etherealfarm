@@ -278,36 +278,61 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   var currentlyrunning = (state.challenge == c.index);
 
-  var maxlevel = Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0);
   text += '<b>Current stats:</b><br>';
   if(c.cycling > 1) {
+    var maxlevel = Math.max(c2.maxlevels[c2.num % c.cycling], currentlyrunning ? state.treelevel : 0);
+    var cycle = c2.num_completed % c.cycling;
+    if(currentlyrunning) {
+      text += '• Current cycle: ' + ((cycle) + 1) + ' of ' + c.cycling;
+      text += '<br>';
+      text += '• Next cycle: ' + (((c2.num_completed + 1) % c.cycling) + 1) + ' of ' + c.cycling;
+    } else {
+      text += '• Next cycle: ' + ((cycle) + 1) + ' of ' + c.cycling;
+    }
+    text += '<br>';
     text += '• Production bonuses per max level reached (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ';
     for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
     text += '<br>';
-    text += '• Max levels reached: ';
-    for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c2.maxlevels[j];
-    text += '<br>';
-    text += '• Production bonuses: ';
-    for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], j).toPercentString();
-    text += '<br>';
     if(currentlyrunning) {
-      text += '• Current cycle: ' + ((c2.num % c.cycling) + 1) + ' of ' + c.cycling;
+      text += '• Max levels reached: ';
+      for(var j = 0; j < c.cycling; j++) {
+        text += (j ? ', ' : '') + c2.maxlevels[j];
+        if(j == cycle) text += ' <b>(after: ' + maxlevel + ')</b>';
+      }
       text += '<br>';
-      text += '• Next cycle: ' + (((c2.num + 1) % c.cycling) + 1) + ' of ' + c.cycling;
+      text += '• Production bonuses: ';
+      for(var j = 0; j < c.cycling; j++) {
+        text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], j).toPercentString();
+        if(j == cycle) text += ' <b>(after: ' + getChallengeBonus(c.index, maxlevel, cycle).toPercentString() + ')</b>';
+      }
+      text += '<br>';
+      text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
     } else {
-      text += '• Next cycle: ' + ((c2.num % c.cycling) + 1) + ' of ' + c.cycling;
+      text += '• Max levels reached: ';
+      for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c2.maxlevels[j];
+      text += '<br>';
+      text += '• Production bonuses: ';
+      for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], j).toPercentString();
+      text += '<br>';
+      text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
     }
-    text += '<br>';
   } else {
+    var maxlevel = Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0);
     text += '• Production bonus per max level reached (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ' + c.bonus.toPercentString() + '<br>';
-    text += '• Max level reached: ' + maxlevel + '<br>';
-    //text += '• Production bonus: ' + c.bonus.mulr(maxlevel).toPercentString() + '<br>';
-    text += '• Production bonus: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + '<br>';
+    if(currentlyrunning) {
+      text += '• Max level reached before: ' + c2.maxlevel + ', <b>after: ' + maxlevel + '</b><br>';
+      text += '• Production bonus before: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + ', <b>after: ' + getChallengeBonus(c.index, maxlevel).toPercentString() + '</b><br>';
+      text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
+    } else {
+      text += '• Max level reached: ' + c2.maxlevel + '<br>';
+      text += '• Production bonus: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + '<br>';
+      text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
+    }
   }
   if(currentlyrunning) {
-    text += '• Times ran (excluding the current run): ' + c2.num + '<br>';
+    text += '• Times ran (excluding the current run): ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
   } else {
-    text += '• Times ran: ' + c2.num + '<br>';
+    text += '• Times ran: ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
   }
   if(c.targetlevel.length > 1 && c.fullyCompleted(include_current_run)) {
     text += '• Fastest first stage target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';

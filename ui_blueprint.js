@@ -210,21 +210,29 @@ function createBlueprintDialog(b, opt_index) {
 
 
   var y = 0.5;
-  var addButton = function(text, fun) {
-    var h = 0.06;
+  var addButton = function(text, fun, tooltip) {
+    var h = 0.055;
     var button = new Flex(dialog.content, [0, 0, 0.05], y, [0.5, 0, 0.05], y + h, 0.8).div;
     y += h * 1.1;
     styleButton(button);
     button.textEl.innerText = text;
     addButtonAction(button, fun);
+    if(tooltip) registerTooltip(button, tooltip);
   };
 
   addButton('To field', function(e) {
-    plantBluePrint(b, e.shiftKey);
+    plantBluePrint(b, false);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
     closeAllDialogs();
     update();
-  });
+  }, 'Plant this blueprint on the field. Only empty spots of the field are overridden, existing crops will stay, even if their type differs.');
+
+  addButton('To field (overriding)', function(e) {
+    plantBluePrint(b, true);
+    BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
+    closeAllDialogs();
+    update();
+  }, 'Plant this blueprint on the field. Existing crops from the field are also deleted and overridden, if their type differs and the blueprint is non-empty at that spot.');
 
   addButton('From field', function() {
     var w = state.numw;
@@ -241,11 +249,11 @@ function createBlueprintDialog(b, opt_index) {
     }
     sanitizeBluePrint(b);
     renderBlueprint(b, renderFlex, opt_index);
-  });
+  }, 'Save the current field state into this blueprint. You can use the cancel button below to undo this.');
 
   addButton('To TXT', function() {
     exportBluePrint(b);
-  });
+  }, 'Export the blueprint to text format, for external storage and sharing');
 
   addButton('From TXT', function() {
     importBluePrintDialog(function(text) {
@@ -270,14 +278,14 @@ function createBlueprintDialog(b, opt_index) {
       sanitizeBluePrint(b);
       renderBlueprint(b, renderFlex, opt_index);
     });
-  });
+  }, 'Import the blueprint from text format, as generated with To TXT. You can use the cancel button below to undo this.');
 
   addButton('Rename', function() {
     makeTextInput('Enter new blueprint name, or empty for default', function(name) {
       b.name = sanitizeName(name);
       renderBlueprint(b, renderFlex, opt_index);
     });
-  });
+  }, 'Rename this blueprint. This name shows up in the main blueprint overview. You can use the cancel button below to undo this.');
 
   addButton('Delete blueprint', function() {
     b.numw = 0;
@@ -285,7 +293,7 @@ function createBlueprintDialog(b, opt_index) {
     b.data = [];
     b.name = '';
     renderBlueprint(b, renderFlex, opt_index);
-  });
+  }, 'Delete this blueprint. You can use the cancel button below to undo this.');
 
   addButton('Help', function() {
     showBluePrintHelp();

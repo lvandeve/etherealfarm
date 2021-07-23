@@ -303,6 +303,9 @@ function State() {
   this.lasttreeleveluptime = 0; // time of previous time tree leveled, after transcend this is time tree leveled before that transcend! if that's undesired, then use (treelevel > 0 ? lasttreeleveluptime : c_starttime)
   this.lasttree2leveluptime = 0;
   this.lastambertime = 0;
+  // for the fruit abilities that increase twigs and resin
+  this.resinfruittime = 0;
+  this.twigsfruittime = 0;
 
   this.fern = 0; // 0 = no fern, 1 = standard fern, 2 = lucky fern
   this.fernx = 0;
@@ -409,7 +412,7 @@ function State() {
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark, 3=darkest
   this.sidepanel = 1; // 0=disabled, 1=automatic
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
-  this.messagelogenabled = [1, 1, 1, 1, 1]; // index0: "game saved" message log messages, index1: tree leveling, index2: upgrades available, index3: abbreviated help, index4: pause/resumed messages
+  this.messagelogenabled = [1, 1, 1, 1, 1, 1]; // 0: "game saved" message log messages, 1: tree leveling, 2: upgrades available, 3: abbreviated help, 4: pause/resumed messages, 5: fruit drops
   this.cancelbuttonright = true; // whether cancel buttons in dialogs appear on the leftmost or the rightmost side of a group of buttons (the group of button always starts from the right either way). If on the right side, all cancel or back buttons are in the same right corner of the screen. If false, then the right corner of the screen gets the "do the action" button, and cancel/back buttons are to the left.
 
   // help dialog related

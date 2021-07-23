@@ -669,6 +669,9 @@ function softReset(opt_challenge) {
     state.lastPlanted = short_0;
   }
 
+  state.resinfruittime = 0;
+  state.twigsfruittime = 0;
+
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
   if(state.negative_time > 3600) state.negative_time = 3600;
 
@@ -1535,6 +1538,12 @@ function addRandomFruit() {
     var num_abilities = getNumFruitAbilities(tier);
 
     var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_WATERCRESS, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
+    if(tier >= 5) {
+      abilities.push(FRUIT_RESINBOOST);
+      abilities.push(FRUIT_TWIGSBOOST);
+      abilities.push(FRUIT_NUTBOOST);
+      abilities.push(FRUIT_BEEBOOST);
+    }
 
     for(var i = 0; i < num_abilities; i++) {
       var roll = Math.floor(roll_abilities[i] * abilities.length);
@@ -3183,6 +3192,13 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
+    var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST);
+    var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST);
+    if(resin_fruit_level) state.resinfruittime += d;
+    if(twigs_fruit_level) state.twigsfruittime += d;
+
+    ////////////////////////////////////////////////////////////////////////////
+
     precomputeField();
 
     gain = Res();
@@ -3405,7 +3421,7 @@ var update = function(opt_ignorePause) {
       // drop the level 5 fruit during challenges at level 10
       if(state.treelevel == 10 && state.challenge && challenges[state.challenge].allowsfruits) {
         fruits = addRandomFruit();
-        showMessage('The tree dropped the level 5 fruit at level 10 during this challenge', C_NATURE, 1340887270);
+        if(state.messagelogenabled[5]) showMessage('The tree dropped the level 5 fruit at level 10 during this challenge', C_NATURE, 1340887270);
       }
 
       if(state.treelevel == 1) {
@@ -3448,9 +3464,13 @@ var update = function(opt_ignorePause) {
 
       if(fruits) {
         for(var i = 0; i < fruits.length; i++) {
-          showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_NATURE, 1284767498);
+          if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_NATURE, 1284767498);
         }
       }
+
+      var treeleveltime = state.time - state.lasttreeleveluptime;
+      state.resinfruittime = Math.max(0, state.resinfruittime - treeleveltime);
+      state.twigsfruittime = Math.max(0, state.twigsfruittime - treeleveltime);
     }
 
     if(state.g_numresets > 0) {

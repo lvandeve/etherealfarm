@@ -351,6 +351,16 @@ function createNotificationSettingsDialog() {
     updatebuttontext(button);
   }, button, updatebuttontext));
   button.id = 'preferences_pausemessages';
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'fruit drops in message log: ' + (state.messagelogenabled[5] ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Show message log message when a fruit drops');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.messagelogenabled[5] = !state.messagelogenabled[5] * 1;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_fruitdropmessages';
 }
 
 
