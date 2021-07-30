@@ -24,7 +24,7 @@ var croptype_index = 0;
 var CROPTYPE_BERRY = croptype_index++;
 var CROPTYPE_MUSH = croptype_index++;
 var CROPTYPE_FLOWER = croptype_index++;
-var CROPTYPE_NETTLE = croptype_index++;
+var CROPTYPE_NETTLE = croptype_index++; // actually means "prickly plant" since thistle also belongs to this group
 var CROPTYPE_SHORT = croptype_index++;
 var CROPTYPE_AUTOMATON = croptype_index++;
 var CROPTYPE_LOTUS = croptype_index++; // ethereal field only, this is an ethereal crop that boost their ethereal neighbors, so a flower type, but regular flowers in ethereal field boost the basic field flowers instead
@@ -756,6 +756,19 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
   var result = this.boost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
+  // this adjustment is for the thistle, when you unlock it and due to having so many regular nettle upgrades, thistle would be worse
+  // since nettle tiers are so rare, it's worth applying such fix for this case
+  // normally thistle's base boost is high enough that this should rarely happen, only if nettle was already upgraded very highly, and thistle upgrade is not yet available while it's already growing
+  if(this.index == nettle_1 && !pretend && state.challenge != challenge_thistle) {
+    var nettle_upgraded = crops[nettle_0].getBoost(null, true);
+    var thistle_upgraded = crops[nettle_1].getBoost(null, true);
+    if(nettle_upgraded.gt(thistle_upgraded)) {
+      var adjust = nettle_upgraded.div(thistle_upgraded);
+      result.mulInPlace(adjust);
+      if(breakdown) breakdown.push(['adjust', true, adjust, result.clone()]);
+    }
+  }
+
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     // wither challenge
     if(state.challenge == challenge_wither) {
@@ -1191,7 +1204,7 @@ function getFlowerCost(i) {
 }
 
 function getNettleCost(i) {
-  return getMushroomCost(1.1 + i * 2);
+  return getMushroomCost(1.1 + i * 4);
 }
 
 function getBeehiveCost(i) {
@@ -1247,8 +1260,9 @@ var flower_6 = registerFlower('orchid', 6, fower_base.mul(flower_increase.powr(6
 
 
 crop_register_id = 100;
-var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, nettle);
-// a next one could be "thistle"
+var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, images_nettle);
+// This has so much more boost, because it has to compete against the 1.05^n scaling of the nettle upgrades that you have by the time you get this crop
+var nettle_1 = registerNettle('thistle', 1, Num(300), berryplanttime0 * 2, images_thistle);
 
 crop_register_id = 105;
 var short_0 = registerShortLived('watercress', 0, Res({seeds:1}), 60, images_watercress);
@@ -1609,6 +1623,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
   var fun = function() {};
 
   var pre = function() {
+    if(state.challenge == challenge_thistle && cropid == nettle_1) return true;
     if(crop_unlock_id == undefined) {
       return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
     } else {
@@ -1763,6 +1778,14 @@ var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, f
   //if(state.upgrades[berryunlock_4].count) return true; // the berry after mush_1
   return false;
 });
+var nettleunlock_1 = registerCropUnlock(nettle_1, getNettleCost(1), undefined, function() {
+  if(!state.challenges[challenge_thistle].completed) return false;
+  if(state.challenge == challenge_thistle) return false; // doesn't unlock during the thistle challenge itself, but there are already tons of them around
+
+  if(state.fullgrowncropcount[mush_5]) return true;
+  if(state.fullgrowncropcount[berry_12]) return true; // the berry after mush_5
+  return false;
+});
 
 upgrade_register_id = 110;
 var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), undefined, function() {
@@ -1911,6 +1934,7 @@ var flowermul_6 = registerBoostMultiplier(flower_6, getFlowerCost(6).mulr(flower
 
 upgrade_register_id = 200;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0, flower_upgrade_cost_increase);
+var nettlemul_1 = registerBoostMultiplier(nettle_1, getNettleCost(1).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_1, flower_upgrade_cost_increase);
 
 upgrade_register_id = 205;
 var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 1, undefined, function(){
@@ -2216,7 +2240,7 @@ registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at lea
 registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one, respect our new fungus overlords.', champignon[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
 }, Num(0.01));
-registerMedal('stingy situation', 'plant the entire field full of nettles', nettle[4], function() {
+registerMedal('stingy situation', 'plant the entire field full of nettles', images_nettle[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_NETTLE] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', mistletoe[4], function() {
@@ -2268,6 +2292,7 @@ function registerPlantTypeMedal(cropid, num) {
   var t = Math.pow(1.7, tier);
   var mul = t * num2 / 100 * 0.25;
   return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
+    if(state.challenge == challenge_thistle && cropid == nettle_1) return false;
     return state.fullgrowncropcount[cropid] >= num;
   }, Num(mul));
 };
@@ -2322,6 +2347,7 @@ registerPlantTypeMedals(flower_5);
 registerPlantTypeMedals(flower_6);
 medal_register_id = 349;
 registerPlantTypeMedals(nettle_0);
+registerPlantTypeMedals(nettle_1);
 medal_register_id = 359;
 registerPlantTypeMedals(mistletoe_0);
 medal_register_id = 369;
@@ -2518,6 +2544,10 @@ registerMedal('rock solid V', 'completed the rockier challenge map 5 (final)', i
 medals[medal_register_id - 1].hint = medal_register_id - 2;
 
 medal_register_id = 1130;
+
+var medal_challenge_thistle = registerMedal('prickly predicament', 'completed the thistle challenge', images_thistle[4], function() {
+  return state.challenges[challenge_thistle].completed;
+}, Num(3));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2847,9 +2877,36 @@ function() {
 challenges[challenge_rockier].cycling = 5;
 challenges[challenge_rockier].cycling_bonus = [Num(0.06), Num(0.07), Num(0.08), Num(0.09), Num(0.1)];
 
+
+
+// 8
+var challenge_thistle = registerChallenge('thistle challenge', [66], Num(0.1),
+`The field is full of thistles which you cannot remove. The thistle pattern is randomly determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours. The thistles hurt most crops, but benefit mushrooms, they are next-tier nettles.
+`,
+`
+• All regular crops, upgrades, ... are available and work as usual<br>
+• There are randomized unremovable thistles on the field, which hurt crops that touch them, but benefit mushrooms, more than nettles<br>
+`,
+['Unlocks the thistle crop, which is the next tier of nettles. Once unlocked, it\'s available in the base game once you have grown a shiitake.'],
+//'reaching tree level 70',
+'having grown a shiitake',
+
+function() {
+  //return state.treelevel >= 70;
+  return state.fullgrowncropcount[mush_5] >= 1;
+}, function() {
+  showMessage('Thistle unlocked! Thistle is the next tier of the nettle crop.');
+}, 31);
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry];
+var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_thistle];
 
 
 if(challenges_order.length != registered_challenges.length) {
@@ -3145,7 +3202,7 @@ var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 180, Num
 var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5e6}), 180, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', nettle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', images_nettle);
 
 crop2_register_id = 150;
 var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
@@ -4601,10 +4658,9 @@ function getAlternateResinBonus(season) {
 ////////////////////////////////////////////////////////////////////////////////
 
 function getSunSeedsBoost() {
-  var bonus_sun = Num(0.5);
+  var bonus_sun = Num(1.5);
   bonus_sun.mulInPlace(getWeatherBoost());
   if(state.upgrades[active_choice0].count == 2) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
-  bonus_sun.addrInPlace(1);
   return bonus_sun;
 }
 
@@ -4738,7 +4794,7 @@ function Upgrade3() {
   this.name = 'a';
   this.description = undefined; // longer description than the name, with details, shown if not undefined
 
-  // function that applies the upgrade
+  // function that applies the upgrade. If non-empty, gets called after the count of this upgrade was incremented in the state.
   this.fun = undefined;
 
   // optional extra precondition for this upgrade to unlock
@@ -4789,10 +4845,7 @@ function registerUpgrade3(name, fun, description, image) {
 
   upgrade.image = image || medalhidden[0];
 
-  upgrade.fun = function() {
-    state.upgrades3[this.index].count++;
-    fun();
-  };
+  upgrade.fun = null;
 
   upgrade.description = description;
 
@@ -4822,17 +4875,17 @@ function registerStage3(upgrades0, upgrades1, upgrades2, opt_gated) {
 
 upgrade3_register_id = 10;
 
-var upgrade3_berry_bonus = Num(0.25);
-var upgrade3_mushroom_bonus = Num(0.25);
-var upgrade3_flower_bonus = Num(0.15);
-var upgrade3_nettle_bonus = Num(0.25);
-var upgrade3_bee_bonus = Num(0.25);
+var upgrade3_berry_bonus = Num(0.5);
+var upgrade3_mushroom_bonus = Num(0.5);
+var upgrade3_flower_bonus = Num(0.25);
+var upgrade3_nettle_bonus = Num(0.5);
+var upgrade3_bee_bonus = Num(0.5);
 var upgrade3_growspeed_bonus = 0.2; // how much % faster it grows
 
 var upgrade3_berry = registerUpgrade3('berry boost', undefined, 'boosts berries +' + upgrade3_berry_bonus.toPercentString(), blackberry[4]);
 var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString(), champignon[4]);
 var upgrade3_flower = registerUpgrade3('flower boost', undefined, 'boosts the flower boost by +' + upgrade3_flower_bonus.toPercentString(), clover[4]);
-var upgrade3_nettle = registerUpgrade3('nettle boost', undefined, 'boosts the nettle boost by +' + upgrade3_nettle_bonus.toPercentString(), nettle[4]);
+var upgrade3_nettle = registerUpgrade3('nettle boost', undefined, 'boosts the nettle boost by +' + upgrade3_nettle_bonus.toPercentString(), images_nettle[4]);
 var upgrade3_bee = registerUpgrade3('beehive boost', undefined, 'boosts the beehive boost by +' + upgrade3_bee_bonus.toPercentString(), images_beehive[4]);
 
 var upgrade3_fruittierprob = registerUpgrade3('fruit tier probability', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels', images_apple[4]);
@@ -4863,7 +4916,7 @@ var upgrade3_resin = registerUpgrade3('resin bonus', undefined, 'increases resin
 var upgrade3_twigs_bonus = Num(0.25);
 var upgrade3_twigs = registerUpgrade3('twigs bonus', undefined, 'increases twigs gain by ' + Num(upgrade3_twigs_bonus).toPercentString(), mistletoe[2]);
 
-var upgrade3_essence_bonus = Num(0.2);
+var upgrade3_essence_bonus = Num(0.5);
 var upgrade3_essence = registerUpgrade3('essence bonus', undefined, 'increases essence from sacrificed fruits by ' + Num(upgrade3_essence_bonus).toPercentString(), images_apple[3]);
 
 var upgrade3_flower_multiplicity_bonus = Num(0.1);
@@ -4877,6 +4930,32 @@ var upgrade3_flower_multiplicity = registerUpgrade3('flower multiplicity', undef
 // by default wait time is 5x the runtime, so runtime can easily be lenghtened
 var upgrade3_weather_duration_bonus = 0.5;
 var upgrade3_weather_duration = registerUpgrade3('weather duration', undefined, 'increases active duration of weather effects by ' + Num(upgrade3_weather_duration_bonus).toPercentString() + ' without increasing total active+cooldown cycle time', image_sun);
+upgrades3[upgrade3_weather_duration].fun = function() {
+//return;
+  // buying this can make 2 weather abilities active at once. Since that is powerful and may cause one to want to do squirrel respecs on purpose just for this, avoid this strategy to save respec tokens for more useful purposes
+  var time = util.getTime();
+  var sund = getSunDuration();
+  var mistd = getMistDuration();
+  var rainbowd = getRainbowDuration();
+  var sunw = getSunWait();
+  var mistw = getMistWait();
+  var rainboww = getRainbowWait();
+  var sunt = time - state.suntime;
+  var mistt = time - state.misttime;
+  var rainbowt = time - state.rainbowtime;
+  var sun = sund - sunt;
+  var mist = mistd - mistt;
+  var rainbow = rainbowd - rainbowt;
+  if(sunt > sunw || sunt > sund) sun = 0;
+  if(mistt > mistw || mistt > mistd) mist = 0;
+  if(rainbowt > rainboww || rainbowt > rainbowd) rainbow = 0;
+  if(mist > 0 && sun > 0) {
+    state.misttime -= mist;
+  }
+  if((sun > 0 || mist > 0) && rainbow > 0) {
+    state.rainbowtime -= rainbow;
+  }
+};
 
 registerStage3([upgrade3_berry], [upgrade3_squirrel], [upgrade3_mushroom]);
 registerStage3([upgrade3_nettle], [upgrade3_automaton], [upgrade3_flower]);

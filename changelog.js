@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.84 (2021-07-30):';
+  text += '<br/>• Added the thistle challenge and thistle crop (next-tier nettle). Requires shiitake and tree level 66';
+  text += '<br/>• Increased squirrel upgrade strength for the berry, mushroom, flower, bee and nettle boosts, as well as the essence boost.';
+  text += '<br/>• Buffed weather fruit effect on the sun ability.';
+  text += '<br/>• Fixed rightmost fruit sometimes clipped off-screen on mobile, and other fixes.';
+  text += '<br/><br/>';
+
   text += '0.1.83 (2021-07-23):';
   text += '<br/>• Next fruit tier, platinum fruit, added, it has a chance to drop starting from tree level 75.';
   text += '<br/>• Fusing multi-season fruits with a matching single-seasonal fruit now keeps the result multi-seasonal.';

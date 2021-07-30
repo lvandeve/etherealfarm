@@ -1734,6 +1734,11 @@ function decState(s) {
     state.res.resin.addInPlace(refund);
   }
 
+  // fix medal accidently given out wehn not completed challenge
+  if(save_version <= 4096*1+84 && !state.challenges[challenge_thistle].completed && state.medals[medal_challenge_thistle].earned) {
+    state.medals[medal_challenge_thistle].seen = state.medals[medal_challenge_thistle].earned = false;
+  }
+
   if(error) return err(4);
   state.g_numloads++;
   return state;

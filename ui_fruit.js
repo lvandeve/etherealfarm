@@ -845,7 +845,7 @@ function updateFruitUI() {
 
   fruitFlex.clear();
 
-  var scrollFlex = new Flex(fruitFlex, 0, 0.01, 1, 1);
+  var scrollFlex = new Flex(fruitFlex, 0, 0.01, 0.98, 1);
   fruitScrollFlex = scrollFlex;
   makeScrollable(scrollFlex);
 
@@ -853,7 +853,9 @@ function updateFruitUI() {
 
   titleFlex.div.innerText = 'Fruit collection';
 
-  var s = 0.1; // relative width and height of a chip
+  var num_fruits_width = Math.max(10, state.fruit_slots); // amount of fruits rendered at the full width. TODO: this makes it not support 12+ active fruit slots unless they render on newlines (or fruits are made smaller, making them less visible/clickable)
+  var s = 1 / num_fruits_width; // relative width and height of a chip
+  var t = 0.1; // similar to s but for text
   var y = 0.1;
   var help;
 
@@ -862,7 +864,7 @@ function updateFruitUI() {
 
   ////////
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + s/3], 0.85, [0, 0, y + s], 0.5);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.85, [0, 0, y + t], 0.5);
   y += s;
   var active_fruit_name = '<font color="red">none</font>';
   var f_active = getActiveFruit();
@@ -872,7 +874,7 @@ function updateFruitUI() {
   registerTooltip(titleFlex.div, help);
 
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + s/3], 0.33, [0, 0, y + s], 0.66);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t], 0.66);
   y += s;
   titleFlex.div.innerText = 'stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
   help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage.';
@@ -927,7 +929,7 @@ function updateFruitUI() {
 
   ////////
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + s/3], 0.33, [0, 0, y + s], 0.66);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t], 0.66);
   y += s;
   titleFlex.div.innerText = 'sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
   help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
@@ -938,7 +940,7 @@ function updateFruitUI() {
   for(var i = 0; i < num; i++) {
     var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
     x += s;
-    if(x > s * 10) {
+    if(x + 0.5 * s > s * num_fruits_width) {
       x = 0;
       y += s;
     }

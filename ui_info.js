@@ -307,6 +307,7 @@ function updateResourceUI() {
         text += '<br>';
         text += 'Resin/hour: ' + getResinHour().toString() + '<br>';
         text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true) + '<br>';
+        if(state.g_numresets > 0) text += 'Best/hour (previous run): ' + state.p_res_hr_best.resin.toString() + ' at level ' + state.p_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + '<br>';
 
         text += '<br>';
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
@@ -322,6 +323,7 @@ function updateResourceUI() {
 
         text += 'Twigs/hour: ' + getTwigsHour().toString() + '<br>';
         text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true) + '<br>';
+        if(state.g_numresets > 0) text += 'Best/hour (previous run): ' + state.p_res_hr_best.twigs.toString() + ' at level ' + state.p_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + '<br>';
         text += '<br>';
 
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);

@@ -286,12 +286,17 @@ function startChallenge(challenge_id) {
     state.upgrades[shortmul_0].unlocked = true;
   }
 
-  if(challenge_id == challenge_rocks) {
+  if(challenge_id == challenge_rocks || challenge_id == challenge_thistle) {
     // use a fixed seed for the random, which changes every 3 hours, and is the same for all players (depends only on the time)
     // changing the seed only every 4 hours ensures you can't quickly restart the challenge to find a good pattern
     // making it the same for everyone makes it fair
     var timeseed = Math.floor(util.getTime() / (3600 * 3));
-    var seed = xor48(timeseed, 0x726f636b73); // ascii for "rocks"
+    var seed;
+    if(challenge_id == challenge_rocks) {
+      seed = xor48(timeseed, 0x726f636b73); // ascii for "rocks"
+    } else {
+      seed = xor48(timeseed, 0x5555555555);
+    }
     var num_rocks = Math.floor(state.numw * state.numh / 3);
     var array = [];
     for(var y = 0; y < state.numh; y++) {
@@ -309,7 +314,12 @@ function startChallenge(challenge_id) {
       var x = array[r][0];
       var y = array[r][1];
       array.splice(r, 1);
-      state.field[y][x].index = FIELD_ROCK;
+      if(challenge_id == challenge_rocks) {
+        state.field[y][x].index = FIELD_ROCK;
+      } else {
+        state.field[y][x].index = (CROPINDEX + nettle_1);
+        state.field[y][x].growth = 1;
+      }
     }
   }
 
@@ -2509,6 +2519,8 @@ var update = function(opt_ignorePause) {
 
           if(u.index == upgrade3_fruitmix || u.index == upgrade3_fruitmix2) showRegisteredHelpDialog(37);
 
+          if(u.fun) u.fun();
+
           store_undo = true;
         }
       } else if(type == ACTION_RESPEC3) {
@@ -2651,6 +2663,15 @@ var update = function(opt_ignorePause) {
         }
 
         var ok = true;
+
+        if(ok && state.challenge == challenge_thistle && f.hasCrop() && f.getCrop().index == nettle_1) {
+          showMessage('Cannot remove thistles during the thistle challenge', C_INVALID, 0, 0);
+          ok = false;
+        }
+        if(ok && state.challenge == challenge_thistle && type == ACTION_PLANT && action.crop.type == nettle_1) {
+          showMessage('Cannot plant thistles during the thistle challenge', C_INVALID, 0, 0);
+          ok = false;
+        }
 
         if(ok && type == ACTION_REPLACE) {
           if(action.crop && f.index == CROPINDEX + action.crop.index) {

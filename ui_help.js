@@ -235,10 +235,10 @@ registerHelpDialog(20, 'Flowers', 'You unlocked your first type of flower',
 
 registerHelpDialog(21, 'Nettles', 'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches.',
   'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower next to a mushroom works even greater.',
-  nettle[4],
+  images_nettle[4],
   '<br><br>'+
   'The image shows a possible configuration where the mushroom receives boost from both nettle (top) and flower (bottom). The top left flower and top right blackberry in this image however are negatively affected by the nettle.',
-  [[clover[4],nettle[4],blackberry[4]],
+  [[clover[4],images_nettle[4],blackberry[4]],
    [blueberry[4],champignon[4],blueberry[4]],
    [undefined,clover[4],undefined]]);
 
