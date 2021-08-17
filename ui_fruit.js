@@ -256,8 +256,8 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       y += s * 0.5;
     };
 
-    addTitle('Fusing doesn\'t make fruits stronger. Fusing exists to gradually choose a set of abilities, circumventing the random drops. Abilities marked [**] can be transfered to other fruits. You must level up abilities again after fusing, but no fruit essence is lost.');
-    y += s * 0.75;
+    addTitle('Fusing doesn\'t make fruits stronger. Fusing exists to gradually choose a set of abilities from the random drops. Only abilities marked [**] can be transfered to other fruits. The [*] then [**] marks can be created by fusing the same abilities. After fusing, some abilities need to be leveled up again, but no fruit essence is lost.');
+    y += s * 1;
 
     addTitle('Choose other fruit to fuse:');
 

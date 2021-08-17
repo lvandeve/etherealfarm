@@ -67,31 +67,44 @@ function getTranscendValueInfo(opt_from_challenge) {
 
 function createTranscendDialog(opt_from_challenge) {
   blueprintdialogopen = false;
+  challengedialogopen = false;
   var extraname = undefined;
   var extrafun = undefined;
+
+  var challenge_unlocked = false;
   if(state.challenges_unlocked) {
     extraname = 'challenges';
     if(state.untriedchallenges) extraname = 'challenges\n(new one!)';
     extrafun = function() {
       createChallengeDialog();
     };
+    challenge_unlocked = true;
   }
   var extraname2 = undefined;
   var extrafun2 = undefined;
   var shortcutfun = undefined;
+
+  var automaton_unlocked = false;
   if(haveAutomaton() && state.numnonemptyblueprints) {
     extraname2 = 'with blueprint';
     extrafun2 = function() {
       createBlueprintsDialog(true);
     };
-    shortcutfun = function(e) {
-      var shift = util.eventHasShiftKey(e);
-      var ctrl = util.eventHasCtrlKey(e);
-      if(e.key == 'b' && !shift && !ctrl) {
-        if(!blueprintdialogopen) createBlueprintsDialog(true);
-      }
-    };
+    automaton_unlocked = true;
   }
+
+  shortcutfun = function(e) {
+    var shift = util.eventHasShiftKey(e);
+    var ctrl = util.eventHasCtrlKey(e);
+    if(challenge_unlocked && e.key == 'b' && !shift && !ctrl) {
+      if(!blueprintdialogopen) createBlueprintsDialog(true);
+    }
+    if(automaton_unlocked && e.key == 'c' && !shift && !ctrl) {
+      if(!challengedialogopen) createChallengeDialog();
+    }
+  };
+
+
   if(extrafun2 && !extrafun) {
     extrafun = extrafun2;
     extraname = extraname2;
@@ -358,10 +371,15 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   scrollFlex.div.innerHTML = text;
 }
 
+var challengedialogopen = false;
 
 // opt_from_challenge = whether you open this dialog after just having completed a challenge as well
 function createChallengeDialog(opt_from_challenge) {
   var dialog = createDialog();
+  challengedialogopen = true;
+  dialog.onclose = function() {
+    challengedialogopen = false;
+  };
 
   dialog.div.className = 'efDialogEthereal';
 
@@ -419,22 +437,31 @@ function createChallengeDialog(opt_from_challenge) {
 
 function createFinishChallengeDialog() {
   blueprintdialogopen = false;
+  challengedialogopen = false;
   var extraname = undefined;
   var extrafun = undefined;
   var shortcutfun = undefined;
+
+  var automaton_unlocked = false;
   if(haveAutomaton() && state.numnonemptyblueprints) {
     extraname = 'with blueprint';
     extrafun = function() {
       createBlueprintsDialog(true);
     };
-    shortcutfun = function(e) {
-      var shift = util.eventHasShiftKey(e);
-      var ctrl = util.eventHasCtrlKey(e);
-      if(e.key == 'b' && !shift && !ctrl) {
-        if(!blueprintdialogopen) createBlueprintsDialog(true);
-      }
-    };
+    automaton_unlocked = true;
   }
+
+  shortcutfun = function(e) {
+    var shift = util.eventHasShiftKey(e);
+    var ctrl = util.eventHasCtrlKey(e);
+    if(automaton_unlocked && e.key == 'b' && !shift && !ctrl) {
+      if(!blueprintdialogopen) createBlueprintsDialog(true);
+    }
+    if(e.key == 'c' && !shift && !ctrl) {
+      if(!challengedialogopen) createChallengeDialog();
+    }
+  };
+
 
   var dialog = createDialog(undefined, undefined, undefined, undefined, extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, undefined, undefined, shortcutfun);
   dialog.div.className = 'efDialogEthereal';

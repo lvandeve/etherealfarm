@@ -373,6 +373,15 @@ Res.prototype.hasNaNOrInfinity = function() {
 };
 Res.hasNaNOrInfinity = function(a) { return a.hasNaNOrInfinity(); };
 
+// safely remove NaN values from the resources
+Res.prototype.removeNaN = function() {
+  var arr = this.toArray();
+  for(var i = 0; i < arr.length; i++) {
+    if(arr[i] == undefined || arr[i].isNaN()) arr[i] = new Num(0);
+  }
+  this.fromArray(arr);
+};
+
 // returns whether any resource is negative (any one, must not be all)
 Res.prototype.hasNeg = function() {
   var arr = this.toArray();

@@ -1213,9 +1213,9 @@ function getBeehiveCost(i) {
 }
 
 var berryplanttime0 = 60;
-var mushplanttime0 = 120;
-var nutplanttime0 = 120;
-var flowerplanttime0 = 180;
+var mushplanttime0 = 60;
+var nutplanttime0 = 60;
+var flowerplanttime0 = 120;
 
 // berries: give seeds
 crop_register_id = 25;
@@ -1288,8 +1288,8 @@ var nut_1  = registerNut('almond', 1, nutplanttime0 * 2, images_almond);
 var nut_2  = registerNut('brazil nut', 2, nutplanttime0 * 3, images_brazilnut);
 var nut_3  = registerNut('cashew', 3, nutplanttime0 * 4, images_cashew);
 var nut_4  = registerNut('chestnut', 4, nutplanttime0 * 5, images_chestnut);
-var nut_5  = registerNut('coconut', 5, nutplanttime0 * 6, undefined);
-var nut_6  = registerNut('hazelnut', 6, nutplanttime0 * 7, undefined);
+var nut_5  = registerNut('coconut', 5, nutplanttime0 * 6, images_coconut);
+var nut_6  = registerNut('hazelnut', 6, nutplanttime0 * 7, images_hazelnut);
 var nut_7  = registerNut('macadamia', 7, nutplanttime0 * 8, undefined);
 var nut_8  = registerNut('peanut', 8, nutplanttime0 * 9, undefined);
 var nut_9  = registerNut('pili nut', 9, nutplanttime0 * 10, undefined);
@@ -1835,12 +1835,10 @@ var nutunlock_4 = registerCropUnlock(nut_4, getNutCost(4), nut_3, function(){
   return true;
 });
 var nutunlock_5 = registerCropUnlock(nut_5, getNutCost(5), nut_4, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_6 = registerCropUnlock(nut_6, getNutCost(6), nut_5, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
@@ -2283,7 +2281,7 @@ function registerPlantTypeMedal(cropid, num) {
   var tier = c.tier;
   if(c.type == CROPTYPE_MUSH) tier = tier * 2 + 1;
   if(c.type == CROPTYPE_FLOWER) tier = tier * 2 + 2;
-  if(c.type == CROPTYPE_NETTLE) tier = 3;
+  if(c.type == CROPTYPE_NETTLE) tier = tier * 8 + 3;
   if(c.type == CROPTYPE_MISTLETOE) tier = 4;
   if(c.type == CROPTYPE_BEE) tier = 6;
   if(c.type == CROPTYPE_NUT) tier = tier + 9;
@@ -2358,6 +2356,8 @@ registerPlantTypeMedals(nut_1);
 registerPlantTypeMedals(nut_2);
 registerPlantTypeMedals(nut_3);
 registerPlantTypeMedals(nut_4);
+registerPlantTypeMedals(nut_5);
+registerPlantTypeMedals(nut_6);
 medal_register_id = 500;
 // for the watercress, only start this at 30: the ones for 1, 10, 20 are not added because a medal for 1 watercress is too soon, and for 20 there's already the full field full of watercress medal
 registerPlantTypeMedal(short_0, 30);
@@ -2785,7 +2785,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [30, 35], Num(0.075),
+var challenge_wither = registerChallenge('wither challenge', [30, 35, 40], Num(0.075),
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -2794,8 +2794,9 @@ During this challenge, crops wither and must be replanted.
 • Planted crops wither and disappear after 2 minutes<br>
 • Crops gradually produce less and less as they wither<br>
 • Cannot delete crops, they'll disappear over time instead, but you can replace crops immediately by more expensive crops of the same type.<br>
+• Cannot use blueprints. However, one of the later target levels of this challenge unlocks the ability to use them in this challenge too.<br>
 `,
-['unlock the auto-plant ability of the automaton' ,'add more options to the auto-plant ability of the automaton'],
+['unlock the auto-plant ability of the automaton' ,'add more options to the auto-plant ability of the automaton' ,'allow using blueprints during future wither challenge runs'],
 'reaching ethereal tree level 3 and having automaton with autoupgrade',
 function() {
   return state.treelevel2 >= 3 && haveAutomaton() && state.automaton_unlocked[1];
@@ -2804,7 +2805,7 @@ function() {
 function() {
   state.automaton_unlocked[2] = Math.max(1, state.automaton_unlocked[2] || 0);
   showRegisteredHelpDialog(31);
-  showMessage('Auto-plant unlocked!', C_AUTOMATON, 1067714398);
+  showMessage('Auto-plant unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
   state.automaton_unlocked[2] = Math.max(2, state.automaton_unlocked[2] || 0);
@@ -2812,7 +2813,10 @@ function() {
     state.automaton_autoplant_fraction[i] = state.automaton_autoplant_fraction[0];
   }
   showRegisteredHelpDialog(32);
-  showMessage('Auto-plant extra options unlocked!', C_AUTOMATON, 1067714398);
+  showMessage('Auto-plant extra options unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+},
+function() {
+  showMessage('From now on, you can use blueprints during the wither challenge!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);
 

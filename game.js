@@ -214,25 +214,28 @@ function lockAllUpgrades() {
 // unlock any templates that are available, or lock them if not
 function unlockTemplates() {
 
-  if(haveAutomaton() && state.challenge != challenge_nodelete && state.challenge != challenge_wither && state.challenge != challenge_bees) {
+  var wither_incomplete = state.challenge == challenge_wither && state.challenges[challenge_wither].completed < 3;
+  if(haveAutomaton() && state.challenge != challenge_nodelete && !wither_incomplete && state.challenge != challenge_bees) {
     state.crops[watercress_template].unlocked = true;
     state.crops[berry_template].unlocked = true;
     state.crops[mush_template].unlocked = true;
     state.crops[flower_template].unlocked = true;
     state.crops[nettle_template].unlocked = true;
     if(state.challenges[challenge_bees].completed) state.crops[bee_template].unlocked = true;
-    if(state.upgrades2[upgrade2_mistletoe].count) state.crops[mistletoe_template].unlocked = true;
+    var no_twigs_challenge = !!state.challenge && !challenges[state.challenge].allowstwigs;
+    var no_nuts_challenge = !!state.challenge && !challenges[state.challenge].allowsnuts;
+    if(state.upgrades2[upgrade2_mistletoe].count && !no_twigs_challenge) state.crops[mistletoe_template].unlocked = true;
 
     if(state.challenge == challenge_bees) {
       state.crops[bee_template].unlocked = false;
       state.crops[nettle_template].unlocked = false;
     }
 
-    state.crops[nut_template].unlocked = haveSquirrel();
+    if(!no_nuts_challenge) state.crops[nut_template].unlocked = haveSquirrel();
   } else {
     // templates disabled in bee challenge because: no templates available for some challenge-specific crops, could be confusing. note also that the beehive template is not for the bee challenge's special beehive.
     // templates disabled in nodelete challenge because: not a strong reason actually and the code to allow deleting templates in nodelete challenge is even implemented, but by default templates cause automaton to upgrade them, and that would cause nodelete challenge to fail early since the cropss ey cannot be upgraded to a better type
-    // templates disabled in wither challenge because: this challenge should be hard like that on purpose, plus all its corps wither and leave behind template-less field cells all the time anyway
+    // templates disabled in wither challenge in the beginning because: this challenge should be hard like that on purpose, plus all its corps wither and leave behind template-less field cells all the time anyway
     state.crops[watercress_template].unlocked = false;
     state.crops[berry_template].unlocked = false;
     state.crops[mush_template].unlocked = false;
@@ -2784,6 +2787,9 @@ var update = function(opt_ignorePause) {
           if(!action.by_automaton) store_undo = true;
           var nextcost = c.getCost(0);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
+          if(state.c_numplanted + state.c_numplantedshort <= 1) {
+            showMessage('Keep planting more crops on other field cells to get more income', C_HELP, 28466751);
+          }
         }
       } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
         if(fast_forwarding) continue;
@@ -3555,6 +3561,10 @@ var update = function(opt_ignorePause) {
       }
     }
 
+    // For safety, in case something goes wrong, because NaNs spread once they appear
+    gain.removeNaN();
+    actualgain.removeNaN();
+
     state.res.addInPlace(actualgain);
 
     // check unlocked upgrades
@@ -3768,8 +3778,6 @@ var update = function(opt_ignorePause) {
   }
 
   updateUI2();
-
-  showLateMessages();
 
   for(var i = 0; i < update_listeners.length; i++) {
     if(!update_listeners[i]()) {

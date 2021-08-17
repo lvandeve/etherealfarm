@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.85 (2021-08-17):';
+  text += '<br/>• Added two more tiers of nut crops';
+  text += '<br/>• Decreased grow times of mushrooms, flowers and nuts';
+  text += '<br/>• Wither challenge now allows using blueprints, after a new third stage of it is completed.';
+  text += '<br/>• In the transcend dialog, shortcut key "c" added to open challenge dialog.';
+  // The performance improvement is makig showResource a non-nested function.
+  text += '<br/>• Other small tweaks, fixes and a performance improvement.';
+  text += '<br/><br/>';
+
   text += '0.1.84 (2021-07-30):';
   text += '<br/>• Added the thistle challenge and thistle crop (next-tier nettle). Requires shiitake and tree level 66';
   text += '<br/>• Increased squirrel upgrade strength for the berry, mushroom, flower, bee and nettle boosts, as well as the essence boost.';

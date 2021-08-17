@@ -96,6 +96,213 @@ function prodBreakdown2() {
 
 var season_styles = [ 'efSeasonBgSpring', 'efSeasonBgSummer', 'efSeasonBgAutumn', 'efSeasonBgWinter' ];
 
+
+function showResource(i, special, index, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos) {
+  var upcoming_breakdown = [];
+  var name = resource_names[index];
+  var res = arr_res[index];
+  var upcoming;
+  if(special) {
+    if(index == 2) {
+      // resin
+      upcoming = getUpcomingResin();
+    }
+    if(index == 3) {
+      // twigs
+      upcoming = getUpcomingTwigs();
+    }
+    if(index == 7) {
+      // essence
+      upcoming = getUpcomingFruitEssence(upcoming_breakdown).essence;
+    }
+  }
+
+  var text;
+
+  var div = resourceDivs[i];
+
+  var gain;
+  var gain_pos;
+  var gain_hyp;
+  var gain_hyp_pos;
+  var hyp_neq = false; // gain_hyp.neq(gain) but allowing some numerical tolerance
+
+
+  text = '';
+  if(special) {
+    if(index == 2 || index == 3) {
+      // 2=resin, 3=twigs
+      var hr = (index == 2) ? getResinHour() : getTwigsHour();
+      text = name + '<br>' + res.toString() + '<br>(+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
+    } else {
+      text = name + '<br>' + res.toString();
+      if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
+    }
+  } else {
+    gain = arr_gain[index]; // actual
+    gain_pos = arr_pos[index]; // actual, without consumption
+    gain_hyp = arr_hyp[index]; // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
+    gain_hyp_pos = arr_hyp_pos[index]; // hypothetical aka potential, without consumption
+
+    // using near: the computations of gain and gain_hyp may numerically differ, even when they are theoretically the same
+    // this could cause the seeds to display a hypothetical number in brackets even though it's the same
+    // if this problem persists even with larger tolerance, a different measure  must be taken, such as only displaying hyp if at least one of the resources (like spores) has a significant difference
+    var hyp_neq = !gain.near(gain_hyp, 0.01);
+
+    var fontopen = '';
+    var fontclose = '';
+    if(state.amberprod && (index == 0 || index == 1)) {
+      //fontopen = '<font color="#ff0">';
+      //fontclose = '</font>';
+      fontopen = '<span class="efAmberInfo">';
+      fontclose = '</span>';
+    }
+
+    text = name + '<br>' + res.toString() + '<br>' + fontopen + gain.toString() + '/s' + fontclose;
+    if(hyp_neq) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
+  }
+  div.textEl.innerHTML = text;
+
+  // tooltip text
+  text = '';
+  if(special) {
+    if(index == 2) {
+      // resin
+      var text = '<b>' + upper(name) + '</b><br/><br/>';
+      text += 'Total resin earned ever: ' + state.g_res.resin.toString();
+      text += '<br/><br/>';
+      text += 'Unspent resin: ' + res.toString() + '<br/>';
+      text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).toPercentString();
+      text += '<br><br>';
+      text += 'Collected upcoming resin: ' + upcoming.toString() + '<br>';
+      if(upcoming.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
+
+      text += '<br>';
+      text += 'Resin/hour: ' + getResinHour().toString() + '<br>';
+      text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true) + '<br>';
+      if(state.g_numresets > 0) text += 'Best/hour (previous run): ' + state.p_res_hr_best.resin.toString() + ' at level ' + state.p_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + '<br>';
+
+      text += '<br>';
+      var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+      text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
+    }
+    if(index == 3) {
+      // twigs
+      var text = '<b>' + upper(name) + '</b><br/><br/>';
+      text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
+      text += '<br><br>';
+      text += 'Collected upcoming twigs: ' + upcoming.toString() + '<br>';
+      text += '<br>';
+
+      text += 'Twigs/hour: ' + getTwigsHour().toString() + '<br>';
+      text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true) + '<br>';
+      if(state.g_numresets > 0) text += 'Best/hour (previous run): ' + state.p_res_hr_best.twigs.toString() + ' at level ' + state.p_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + '<br>';
+      text += '<br>';
+
+      var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+      text += 'Twigs added next tree level: ' + nextTwigs().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
+    }
+    if(index == 7) {
+      // fruit essence
+      var text = '<b>Fruit essence</b><br/><br/>';
+      text += 'Current amount: ' + res.toString() + '<br/><br/>';
+      text += 'Amount from next sacrificed fruits: ' + upcoming.toString() + '<br/><br/>';
+      text += 'Using this to level up fruit abilities does not consume the global essence. Every fruit can use all the essence.<br/><br/>';
+      if(upcoming_breakdown.length > 1) {
+        text += formatBreakdown(upcoming_breakdown, false, 'Upcoming essence breakdown');
+      }
+    }
+    if(index == 6) {
+      // amber
+      var text = '<b>Amber</b><br/><br/>';
+      text += 'Current amount: ' + res.toString() + '<br/><br/>';
+      text += 'Amber drops every now and then when the tree levels. You can use it in the \'amber\' tab.<br/><br/>';
+    }
+  } else {
+    var text = '<b>' + upper(name) + '</b><br/><br/>';
+    text += 'Current amount: ' + res.toString() + '<br/><br/>';
+
+    if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
+
+    if(index == 4) text += 'Nuts are used for squirrel upgrades, which you can access in the \'squirrel\' tab<br><br>';
+
+    if(gain.neq(gain_pos)) {
+      // Total production is production - consumption.
+      text += 'Production (' + name + '/s):<br/>';
+      text += '• Total: ' + gain_pos.toString() + '/s<br/>';
+      text += '• To stacks: ' + gain.toString() + '/s<br/>';
+      text += '• To consumers: ' + (gain_pos.sub(gain)).toString() + '/s<br/>';
+      text += '<br/>';
+    } else {
+      text += '• Production: ' + gain.toString() + '/s<br/>';
+      text += '• Consumption: 0/s<br/>'; // This serves as a teaser that consumption can exist
+      text += '<br/>';
+    }
+
+    if(hyp_neq) {
+      // Total production is production - consumption.
+      text += 'Potential production (' + name + '/s):<br/>';
+      text += '• Total: ' + gain_hyp_pos.toString() + '/s<br/>';
+      text += '• To stacks: ' + gain_hyp.toString() + '/s<br/>';
+      text += '• To consumers: ' + (gain_hyp_pos.sub(gain_hyp)).toString() + '/s<br/>';
+      text += '<br/>';
+      text += 'Potential production means: if mushrooms could consume as many seed as it needs, even if this is more than neighbor berries can produce';
+      text += '<br/><br/>';
+    }
+  }
+  div.tooltiptext = text;
+
+  if(!div.tooltipadded) {
+    div.tooltipadded = true;
+    registerTooltip(div, function() {
+      return div.tooltiptext;
+    }, /*opt_poll=*/true, /*allow_mobile=*/true);
+    div.style.cursor = 'pointer';
+    addButtonAction(div, function() {
+
+      var dialog = createDialog(DIALOG_MEDIUM);
+      dialog.div.className = 'efDialogTranslucent';
+      // computed here rather than inside of updatedialogfun to avoid it being too slow
+      var breakdown = prodBreakdown(index);
+      var flex = dialog.content;
+      var last = undefined;
+      updatedialogfun = bind(function(div, flex) {
+        if(div.tooltiptext != last) {
+          var html = div.tooltiptext;
+          if(!special) {
+            html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
+          }
+
+          var breakdowntext = undefined;
+
+
+          if(index == 2) {
+            // resin
+            var resin_breakdown = [];
+            nextTreeLevelResin(resin_breakdown);
+            breakdowntext = formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
+          }
+          if(index == 3) {
+            // twigs
+            var twigs_breakdown = [];
+            nextTwigs(twigs_breakdown)
+            breakdowntext = formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
+          }
+
+          if(breakdowntext) {
+            html += breakdowntext;
+          }
+
+          flex.div.innerHTML = html;
+          last = div.tooltiptext;
+        }
+      }, div, flex);
+      updatedialogfun();
+    }, 'info box: ' + name + ' resource');
+  }
+};
+
+
 function updateResourceUI() {
   var infoDiv = infoFlex.div;
   if(!resourceDivs.length) {
@@ -222,212 +429,6 @@ function updateResourceUI() {
     return text;
   }, true);
 
-  var i = 1;
-  var showResource = function(special, index, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos) {
-    var upcoming_breakdown = [];
-    var name = resource_names[index];
-    var res = arr_res[index];
-    var upcoming;
-    if(special) {
-      if(index == 2) {
-        // resin
-        upcoming = getUpcomingResin();
-      }
-      if(index == 3) {
-        // twigs
-        upcoming = getUpcomingTwigs();
-      }
-      if(index == 7) {
-        // essence
-        upcoming = getUpcomingFruitEssence(upcoming_breakdown).essence;
-      }
-    }
-
-    var text;
-
-    var div = resourceDivs[i];
-    i++;
-
-    var gain;
-    var gain_pos;
-    var gain_hyp;
-    var gain_hyp_pos;
-    var hyp_neq = false; // gain_hyp.neq(gain) but allowing some numerical tolerance
-
-
-    text = '';
-    if(special) {
-      if(index == 2 || index == 3) {
-        // 2=resin, 3=twigs
-        var hr = (index == 2) ? getResinHour() : getTwigsHour();
-        text = name + '<br>' + res.toString() + '<br>(+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
-      } else {
-        text = name + '<br>' + res.toString();
-        if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
-      }
-    } else {
-      gain = arr_gain[index]; // actual
-      gain_pos = arr_pos[index]; // actual, without consumption
-      gain_hyp = arr_hyp[index]; // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
-      gain_hyp_pos = arr_hyp_pos[index]; // hypothetical aka potential, without consumption
-
-      // using near: the computations of gain and gain_hyp may numerically differ, even when they are theoretically the same
-      // this could cause the seeds to display a hypothetical number in brackets even though it's the same
-      // if this problem persists even with larger tolerance, a different measure  must be taken, such as only displaying hyp if at least one of the resources (like spores) has a significant difference
-      var hyp_neq = !gain.near(gain_hyp, 0.01);
-
-      var fontopen = '';
-      var fontclose = '';
-      if(state.amberprod && (index == 0 || index == 1)) {
-        //fontopen = '<font color="#ff0">';
-        //fontclose = '</font>';
-        fontopen = '<span class="efAmberInfo">';
-        fontclose = '</span>';
-      }
-
-      text = name + '<br>' + res.toString() + '<br>' + fontopen + gain.toString() + '/s' + fontclose;
-      if(hyp_neq) text += ' <font color="#888">(' + gain_hyp.toString() + '/s)</font>';
-    }
-    div.textEl.innerHTML = text;
-
-    // tooltip text
-    text = '';
-    if(special) {
-      if(index == 2) {
-        // resin
-        var text = '<b>' + upper(name) + '</b><br/><br/>';
-        text += 'Total resin earned ever: ' + state.g_res.resin.toString();
-        text += '<br/><br/>';
-        text += 'Unspent resin: ' + res.toString() + '<br/>';
-        text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).toPercentString();
-        text += '<br><br>';
-        text += 'Collected upcoming resin: ' + upcoming.toString() + '<br>';
-        if(upcoming.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
-
-        text += '<br>';
-        text += 'Resin/hour: ' + getResinHour().toString() + '<br>';
-        text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true) + '<br>';
-        if(state.g_numresets > 0) text += 'Best/hour (previous run): ' + state.p_res_hr_best.resin.toString() + ' at level ' + state.p_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + '<br>';
-
-        text += '<br>';
-        var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-        text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
-      }
-      if(index == 3) {
-        // twigs
-        var text = '<b>' + upper(name) + '</b><br/><br/>';
-        text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
-        text += '<br><br>';
-        text += 'Collected upcoming twigs: ' + upcoming.toString() + '<br>';
-        text += '<br>';
-
-        text += 'Twigs/hour: ' + getTwigsHour().toString() + '<br>';
-        text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true) + '<br>';
-        if(state.g_numresets > 0) text += 'Best/hour (previous run): ' + state.p_res_hr_best.twigs.toString() + ' at level ' + state.p_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + '<br>';
-        text += '<br>';
-
-        var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-        text += 'Twigs added next tree level: ' + nextTwigs().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
-      }
-      if(index == 7) {
-        // fruit essence
-        var text = '<b>Fruit essence</b><br/><br/>';
-        text += 'Current amount: ' + res.toString() + '<br/><br/>';
-        text += 'Amount from next sacrificed fruits: ' + upcoming.toString() + '<br/><br/>';
-        text += 'Using this to level up fruit abilities does not consume the global essence. Every fruit can use all the essence.<br/><br/>';
-        if(upcoming_breakdown.length > 1) {
-          text += formatBreakdown(upcoming_breakdown, false, 'Upcoming essence breakdown');
-        }
-      }
-      if(index == 6) {
-        // amber
-        var text = '<b>Amber</b><br/><br/>';
-        text += 'Current amount: ' + res.toString() + '<br/><br/>';
-        text += 'Amber drops every now and then when the tree levels. You can use it in the \'amber\' tab.<br/><br/>';
-      }
-    } else {
-      var text = '<b>' + upper(name) + '</b><br/><br/>';
-      text += 'Current amount: ' + res.toString() + '<br/><br/>';
-
-      if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
-
-      if(index == 4) text += 'Nuts are used for squirrel upgrades, which you can access in the \'squirrel\' tab<br><br>';
-
-      if(gain.neq(gain_pos)) {
-        // Total production is production - consumption.
-        text += 'Production (' + name + '/s):<br/>';
-        text += '• Total: ' + gain_pos.toString() + '/s<br/>';
-        text += '• To stacks: ' + gain.toString() + '/s<br/>';
-        text += '• To consumers: ' + (gain_pos.sub(gain)).toString() + '/s<br/>';
-        text += '<br/>';
-      } else {
-        text += '• Production: ' + gain.toString() + '/s<br/>';
-        text += '• Consumption: 0/s<br/>'; // This serves as a teaser that consumption can exist
-        text += '<br/>';
-      }
-
-      if(hyp_neq) {
-        // Total production is production - consumption.
-        text += 'Potential production (' + name + '/s):<br/>';
-        text += '• Total: ' + gain_hyp_pos.toString() + '/s<br/>';
-        text += '• To stacks: ' + gain_hyp.toString() + '/s<br/>';
-        text += '• To consumers: ' + (gain_hyp_pos.sub(gain_hyp)).toString() + '/s<br/>';
-        text += '<br/>';
-        text += 'Potential production means: if mushrooms could consume as many seed as it needs, even if this is more than neighbor berries can produce';
-        text += '<br/><br/>';
-      }
-    }
-    div.tooltiptext = text;
-
-    if(!div.tooltipadded) {
-      div.tooltipadded = true;
-      registerTooltip(div, function() {
-        return div.tooltiptext;
-      }, /*opt_poll=*/true, /*allow_mobile=*/true);
-      div.style.cursor = 'pointer';
-      addButtonAction(div, function() {
-
-        var dialog = createDialog(special ? DIALOG_SMALL : DIALOG_MEDIUM);
-        dialog.div.className = 'efDialogTranslucent';
-        // computed here rather than inside of updatedialogfun to avoid it being too slow
-        var breakdown = prodBreakdown(index);
-        var flex = dialog.content;
-        var last = undefined;
-        updatedialogfun = bind(function(div, flex) {
-          if(div.tooltiptext != last) {
-            var html = div.tooltiptext;
-            if(!special) {
-              html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
-            }
-
-            var breakdowntext = undefined;
-
-
-            if(index == 2) {
-              // resin
-              var resin_breakdown = [];
-              nextTreeLevelResin(resin_breakdown);
-              breakdowntext = formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
-            }
-            if(index == 3) {
-              // twigs
-              var twigs_breakdown = [];
-              nextTwigs(twigs_breakdown)
-              breakdowntext = formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
-            }
-
-            if(breakdowntext) {
-              html += breakdowntext;
-            }
-
-            flex.div.innerHTML = html;
-            last = div.tooltiptext;
-          }
-        }, div, flex);
-        updatedialogfun();
-      }, 'info box: ' + name + ' resource');
-    }
-  };
 
   prodBreakdown2();
 
@@ -438,13 +439,14 @@ function updateResourceUI() {
   var arr_hyp = gain_hyp.toArray();
   var arr_hyp_pos = gain_hyp_pos.toArray();
 
-  if(!state.g_max_res.seeds.eqr(0)) showResource(false, 0, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.spores.eqr(0))showResource(false, 1, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(true, 2, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.twigs.eqr(0)) showResource(true, 3, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.essence.eqr(0)) showResource(true, 7, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.nuts.eqr(0)) showResource(false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
-  if(!state.g_max_res.amber.eqr(0)) showResource(true, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  var i = 1; // index in resourceDivs
+  if(!state.g_max_res.seeds.eqr(0)) showResource(i++, false, 0, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.spores.eqr(0))showResource(i++, false, 1, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, true, 2, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.twigs.eqr(0)) showResource(i++, true, 3, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.essence.eqr(0)) showResource(i++, true, 7, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.nuts.eqr(0)) showResource(i++, false, 4, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
+  if(!state.g_max_res.amber.eqr(0)) showResource(i++, true, 6, arr_res, arr_gain, arr_pos, arr_hyp, arr_hyp_pos);
 
 }
 

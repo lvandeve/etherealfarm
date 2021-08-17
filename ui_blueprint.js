@@ -67,8 +67,9 @@ function renderBlueprint(b, flex, opt_index, opt_transcend) {
 function plantBluePrint(b, allow_override) {
   if(!b || b.numw == 0 || b.numh == 0) return;
 
-  if(state.challenge == challenge_wither) {
-    showMessage('blueprints are disabled during the wither challenge', C_INVALID);
+  var wither_incomplete = state.challenge == challenge_wither && state.challenges[challenge_wither].completed < 3;
+  if(wither_incomplete) {
+    showMessage('blueprints are disabled during the wither challenge, for now...', C_INVALID);
     return;
   }
 

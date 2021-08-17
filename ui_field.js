@@ -989,11 +989,23 @@ function updateFieldCellUI(x, y) {
   }
 }
 
+var specialborder = false;
+
 
 function renderField() {
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       updateFieldCellUI(x, y);
     }
+  }
+
+  if(state.res.seeds.ger(10) && state.g_numresets < 3 && state.c_numplanted <= 0 && state.c_numplantedshort <= 0) {
+    // indicate that you should plant
+    // TODO: use some nicer kind of indication, a pixel art arrow pointing at it, a tutorial bubble, ...
+    fieldDivs[0][0].div.style.border = '10px solid red';
+    specialborder = true;
+  } else if(specialborder) {
+    fieldDivs[0][0].div.style.border = '';
+    specialborder = false;
   }
 }

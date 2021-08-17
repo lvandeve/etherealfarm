@@ -149,7 +149,10 @@ function makeLogColor(type, seed, rarity) {
 // opt_colorrarity: 0-1
 function showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, opt_showlate) {
   if(opt_showlate) {
-    futuremessages.push([text, colortype, colorseed, opt_colorrarity, opt_forcenew]);
+    window.setTimeout(function() {
+      //futuremessages.push([text, colortype, colorseed, opt_colorrarity, opt_forcenew]);
+      showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, false);
+    }, 700);
     return;
   }
 
@@ -208,16 +211,6 @@ function showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, 
     spans.shift(0);
   }
 }
-
-function showLateMessages() {
-  for(var i = 0; i < futuremessages.length; i++) {
-    var m = futuremessages[i];
-    showMessage(m[0], m[1], m[2], m[3], m[4]);
-  }
-  futuremessages = [];
-}
-
-
 
 function initMessageUI() {
   var logDiv = logFlex.div;
