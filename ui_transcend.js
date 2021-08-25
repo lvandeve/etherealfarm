@@ -22,7 +22,7 @@ function getTranscendValueInfo(opt_from_challenge) {
   var have_item = false;
 
   var text = '';
-  var actual_resin = getUpcomingResin();
+  var actual_resin = getUpcomingResinIncludingFerns();
   if(!opt_from_challenge || actual_resin.neqr(0)) {
     have_item = true;
     text += '• ' + actual_resin.toString() + ' resin from tree level ' + state.treelevel;
@@ -293,8 +293,8 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   text += '<b>Current stats:</b><br>';
   if(c.cycling > 1) {
-    var maxlevel = Math.max(c2.maxlevels[c2.num % c.cycling], currentlyrunning ? state.treelevel : 0);
     var cycle = c2.num_completed % c.cycling;
+    var maxlevel = Math.max(c2.maxlevels[cycle], currentlyrunning ? state.treelevel : 0);
     if(currentlyrunning) {
       text += '• Current cycle: ' + ((cycle) + 1) + ' of ' + c.cycling;
       text += '<br>';

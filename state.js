@@ -310,8 +310,9 @@ function State() {
   this.fern = 0; // 0 = no fern, 1 = standard fern, 2 = lucky fern
   this.fernx = 0;
   this.ferny = 0;
-  this.fernres = Res(0);
+  this.fernwait = 0; // how much time the currently active fern took to appear
   this.fern_seed = -1; // random seed for the fern drops
+  this.fernresin = new Res(); // amount of resin gotten from ferns. counted separately from state.resin, to not count towards the max ever itself
 
   // field size in amount of cells
   this.numw = 5;
@@ -521,6 +522,8 @@ function State() {
   this.g_numrespec3 = 0;
   this.g_amberdrops = 0;
   this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
+  this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
+  this.g_fernres = Res(); // total resources gotten from ferns
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -887,16 +890,6 @@ function computeDerived(state) {
   state.numcropfields = 0;
   state.numfullgrowncropfields = 0;
   state.numfullpermanentcropfields = 0;
-  state.fullgrowncropcount = [];
-  state.growingcropcount = [];
-  state.cropcount = [];
-  state.fullgrowncroptypecount = [];
-  state.growingcroptypecount = [];
-  state.croptypecount = [];
-  state.highestoftypeplanted = [];
-  state.lowestoftypeplanted = [];
-  state.highestoftypeunlocked = [];
-  state.highestoftype2unlocked = [];
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
@@ -948,8 +941,6 @@ function computeDerived(state) {
   state.numemptyfields2 = 0;
   state.numcropfields2 = 0;
   state.numfullgrowncropfields2 = 0;
-  state.fullgrowncrop2count = [];
-  state.crop2count = [];
   for(var i = 0; i < registered_crops2.length; i++) {
     state.crop2count[registered_crops2[i]] = 0;
     state.fullgrowncrop2count[registered_crops2[i]] = 0;
@@ -1322,7 +1313,7 @@ function getUpcomingFruitEssence(breakdown) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// get upcoming resin, excluding the higher transcenscion bonus multiplier
+// get upcoming resin, excluding that from ferns
 function getUpcomingResin() {
   var suppress = false; // more resin suppressed by challenge
   if(state.challenge && !challenges[state.challenge].allowsresin) suppress = true;
@@ -1340,7 +1331,11 @@ function getUpcomingResin() {
   return result;
 }
 
-// get upcoming twigs, excluding the higher transcenscion bonus multiplier
+function getUpcomingResinIncludingFerns() {
+  return getUpcomingResin().add(state.fernresin.resin);
+}
+
+// get upcoming twigs
 function getUpcomingTwigs() {
   var suppress = false; // more twigs suppressed by challenge
   if(state.challenge && !challenges[state.challenge].allowstwigs) suppress = true;
@@ -1359,6 +1354,7 @@ function getUpcomingTwigs() {
 }
 
 // returns resin per hour so far this run
+// excludes resin gotten from ferns
 function getResinHour() {
   if(state.c_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
   var hours = state.c_runtime / 3600;

@@ -607,6 +607,7 @@ function createStatsDialog() {
     text += '• total earned: ' + open + state.g_res.toString() + close + '<br>';
     text += '• highest resources: ' + open + state.g_max_res.toString() + close + '<br>';
     text += '• highest production/s: ' + open + state.g_max_prod.toString() + close + '<br>';
+    text += '• highest earned any run: ' + open + state.g_max_res_earned.toString() + close + '<br>';
     text += '• ferns: ' + open + state.g_numferns + close + '<br>';
     text += '• planted (permanent): ' + open + state.g_numfullgrown + close + '<br>';
     text += '• planted (watercress): ' + open + state.g_numplantedshort + close + '<br>';
@@ -638,11 +639,9 @@ function createStatsDialog() {
   text += '• winter harsh conditions malus: ' + open + '-' + Num(1).sub(getWinterMalus()).toPercentString() + close + '<br>';
   text += '• winter tree warmth bonus: ' + open + '+' + getWinterTreeWarmth().subr(1).toPercentString() + close + '<br>';
   text += '• winter resin bonus: ' + open + '+' + getWinterTreeResinBonus().subr(1).toPercentString() + close + '<br>';
-
   if(haveMultiplicity(CROPTYPE_BERRY)) {
     text += '• multiplicity (berry and mushroom): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
-  text += '<br>';
   if(haveMultiplicity(CROPTYPE_FLOWER)) {
     text += '• multiplicity (flower): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }

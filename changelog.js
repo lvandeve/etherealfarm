@@ -20,6 +20,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.86 (2021-08-25):';
+  text += '<br/>• Balanced flower upgrade costs to keep later tiers relevant.';
+  // the above balancing makes flower upgrades a bit more expensive towards the end, but the squirrel upgrade boost below more than compensates for that
+  text += '<br/>• Increased boost of squirrel upgrades for flower boost, berry boost and mushroom boost.';
+  text += '<br/>• Fixed bug where time that resin fruit was active wasn\'t taken into account. Its bonus is supposed to only work depending on how long it was active during the last tree-level.';
+  text += '<br/>• Ferns now give resources based on the current income when you click, rather than when they spawned or when they internally refreshed.';
+  // reason for this: if ferns give resources of current production, it's very easy to hold on to a bushy fern for a good moment, but this can have such a good effect on the run
+  // that the best strategy involves saving up for a bushy fern every run, which can mean on average 20 minutes of waiting for 2-minute ferns. that is very annoying and to be avoided.
+  // the old bushy fern multiplier was 5x, now it is around 2x (combined with less random variability than regular fern)
+  // the new resin drop of bushy ferns doesn't depend on state in current run but on best resin-run ever, so encourages clicking the bushy fern immediately
+  text += '<br/>• Resource multiplier of extra bushy ferns decreased, except for very early game. To compensate, extra bushy ferns now give a small amount of resin (0.5% of highest run for 2-minute ones). This resin itself is not counted for highest run stat, and not included in the /hr stats, but otherwise given as upcoming resin as usual.';
+  text += '<br/>• Improved automaton heuristic for choosing which flowers to plant/upgrade first in the field, taking the other boosts of berries into account.';
+  text += '<br/>• Bugfixes, performance improvements and other tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.85 (2021-08-17):';
   text += '<br/>• Added two more tiers of nut crops';
   text += '<br/>• Decreased grow times of mushrooms, flowers and nuts';

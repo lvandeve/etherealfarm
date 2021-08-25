@@ -70,7 +70,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
   return undefined;
 }
 
-var fern_wait_minutes = 2; // default fern wait minutes (in very game they go faster)
+var fern_wait_minutes = 2; // default fern wait minutes (in very early game they go faster)
 
 
 // apply bonuses that apply to all weather ability durations
@@ -414,7 +414,7 @@ var flower_nut_boost = Num(0.25);
 // prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called
 // pretend: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
 Crop.prototype.getProd = function(f, pretend, breakdown) {
-  var result = Res(this.prod);
+  var result = new Res(this.prod);
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
@@ -1648,8 +1648,18 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
   u.cropid = cropid;
   u.iscropupgrade = true;
 
+  // for flowers, each next tier boosts 16x more. So 15 of the additive +50% upgrades makes previous tier as strong
+  // so ensure the price of teh 30th upgrade is more expensive than the next flower tier, else the next flower tier is not worth it
+  var costmul = Num(cost_increase);
+  if(crop.type == CROPTYPE_FLOWER) {
+    var upgrade_steps = 30;
+    var cost0 = cost.seeds;
+    var cost1 = getFlowerCost(crop.tier + 1).seeds.mulr(flower_upgrade_initial_cost);
+    costmul = cost1.div(cost0).powr(1 / upgrade_steps);
+  }
+
   u.getCost = function(opt_adjust_count) {
-    var countfactor = Num.powr(Num(cost_increase), state.upgrades[this.index].count + (opt_adjust_count || 0));
+    var countfactor = Num.powr(costmul, state.upgrades[this.index].count + (opt_adjust_count || 0));
     return this.cost.mul(countfactor);
   };
 
@@ -1886,7 +1896,7 @@ var basic_upgrade_cost_increase = 1.65;
 var basic_upgrade_initial_cost = 10;
 
 var flower_upgrade_power_increase = 0.5;
-var flower_upgrade_cost_increase = 2.5;
+var flower_upgrade_cost_increase = 2.5; // NOTE: this is now unused since it is adjusted per tier to get 30th level to cost same as next flower
 var flower_upgrade_initial_cost = 15;
 
 var nettle_upgrade_power_exponent = 1.05;
@@ -2866,7 +2876,11 @@ var rockier_text_long = `
 var rockier_text_unlock_reason = 'reaching tree level 45';
 
 var rockier_layouts = [
-  '0001000010100001001100011', '1001010000010011110101000', '0000010001000110100101000', '0100100001000011000011000', '0000000001000011100100000'
+  '0001000010100001001100011',
+  '1001010000010011110101000',
+  '0000010001000110100101000',
+  '0100100001000011000011000',
+  '0000000001000011100100000'
   // the following one is too difficult and omitted: 1101000000100001001000010
 ];
 
@@ -4345,11 +4359,11 @@ function treeLevelResin(level, breakdown) {
 
   var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST);
   if(resin_fruit_level > 0) {
-    var resin_fruit_bonus = Num(0);
-    var treeleveltime = state.time - state.lasttreeleveluptime;
     if(state.resinfruittime > 0) {
+      var resin_fruit_bonus = Num(0);
+      var treeleveltime = state.time - state.lasttreeleveluptime;
       var ratio = state.resinfruittime / treeleveltime;
-      if(ratio > 1) ratio = 1; // normally doesn't happen, but ...
+      if(!(ratio >= 0 && ratio <= 1)) ratio = 1; // normally doesn't happen, except after just leveling tree and there were some extra time tick parts transferred over (TODO: check if that makes sense)
       resin_fruit_bonus = getFruitBoost(FRUIT_RESINBOOST, resin_fruit_level, getFruitTier()).mulr(ratio).addr(1);
       resin.mulInPlace(resin_fruit_bonus);
       if(breakdown) breakdown.push(['fruit resin boost', true, resin_fruit_bonus, resin.clone()]);
@@ -4879,9 +4893,9 @@ function registerStage3(upgrades0, upgrades1, upgrades2, opt_gated) {
 
 upgrade3_register_id = 10;
 
-var upgrade3_berry_bonus = Num(0.5);
-var upgrade3_mushroom_bonus = Num(0.5);
-var upgrade3_flower_bonus = Num(0.25);
+var upgrade3_berry_bonus = Num(0.65);
+var upgrade3_mushroom_bonus = Num(0.65);
+var upgrade3_flower_bonus = Num(0.5);
 var upgrade3_nettle_bonus = Num(0.5);
 var upgrade3_bee_bonus = Num(0.5);
 var upgrade3_growspeed_bonus = 0.2; // how much % faster it grows

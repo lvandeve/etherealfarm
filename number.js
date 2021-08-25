@@ -65,6 +65,12 @@ Num.prototype.clone = function() {
   return new Num(this);
 };
 
+// reset to 0 without allocating new Num object
+Num.prototype.reset = function() {
+  this.b = 0;
+  this.e = 0;
+};
+
 // Ensures that the exponent e is an integer within range -9007199254740992..9007199254740992,
 // since that's the assumptions some functionalty makes
 Num.prototype.ensureIntegerExponent_ = function() {

@@ -72,9 +72,10 @@ function encState(state, opt_raw_only) {
   processNum(state.resin);
   processUint(state.fern);
   if(state.fern) {
+    id = 7;
     processUint(state.fernx);
     processUint(state.ferny);
-    processRes(state.fernres);
+    processFloat(state.fernwait); // this field used to be fernres
   }
   id = 10; // id for every named value must be fixed (and the process function increments it)
   processFloat(state.lastFernTime);
@@ -95,6 +96,7 @@ function encState(state, opt_raw_only) {
   id = 22;
   processNum(state.twigs);
   processInt(state.num_negative_time);
+  processRes(state.fernresin);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -287,6 +289,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numrespec3);
   processUint(state.g_amberdrops);
   processUintArray(state.g_amberbuy);
+  processRes(state.g_max_res_earned);
+  processRes(state.g_fernres);
 
 
   section = 11; id = 0; // global run stats
@@ -740,9 +744,15 @@ function decState(s) {
   if(save_version < 4096*1+64) { state.resin.mulrInPlace(Math.floor(state.treelevel / min_transcension_level)); } // compensate for removal of tlevel feature
   state.fern = processUint();
   if(state.fern) {
+    id = 7;
     state.fernx = processUint();
     state.ferny = processUint();
-    state.fernres = processRes();
+    if(save_version >= 4096*1+86) {
+      state.fernwait = processFloat(); // this field used to be fernres
+    } else {
+      state.fernwait = 0; // placeholder for old save version, parsed as getFernWaitTime() when used in game.js
+      id++;
+    }
   }
   id = 10;
   if(save_version <= 4096*1+9 && !state.fern) id -= 3; // fix mistake in pre-0.1.10 savegame version, values lastFernTime, lastBackupWarningTime, currentTab, lastPlanted, lastPlanted2 all got an id of 3 too low if state.fern was false. id should not depend on ifs.
@@ -784,6 +794,7 @@ function decState(s) {
     if(save_version < 4096*1+64) { state.twigs.mulrInPlace(Math.floor(state.treelevel / min_transcension_level)); } // compensate for removal of tlevel feature
   }
   if(save_version >= 4096*1+62) state.num_negative_time = processInt();
+  if(save_version >= 4096*1+86) state.fernresin = processRes();
 
 
   section = 1; id = 0; // field
@@ -1028,6 +1039,12 @@ function decState(s) {
     var amberbuy = processUintArray();
     for(var i = 0; i < amberbuy.length; i++) state.g_amberbuy[i] = amberbuy[i];
   }
+  if(save_version >= 4096*1+86) {
+    state.g_max_res_earned = processRes();
+    state.g_fernres = processRes();
+  } else {
+    // g_max_res_earned handled below to set it to p_res then
+  }
 
   if(error) return err(4);
 
@@ -1094,6 +1111,9 @@ function decState(s) {
     state.p_runtime = processFloat();
     state.p_numticks = processUint();
     state.p_res = processRes();
+    if(save_version < 4096*1+86) {
+      state.g_max_res_earned = Res(state.p_res);
+    }
     state.p_max_res = processRes();
     state.p_max_prod = processRes();
     state.p_numferns = processUint();

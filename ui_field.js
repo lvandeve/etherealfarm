@@ -324,7 +324,7 @@ function makeTreeDialog() {
         }
 
         text += '<br/>';
-        text += 'Total resin ready: ' + getUpcomingResin().toString();
+        text += 'Total resin ready: ' + getUpcomingResinIncludingFerns().toString();
         text += '<br/>';
       } else {
         text += 'The tree doesn\'t produce resin during this challenge.<br/>';
@@ -711,7 +711,11 @@ function initFieldUI() {
 
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
-          return 'fern: provides some resource when activated.<br><br> The amount is based on production at time when the fern appears,<br>or starter resources when there is no production yet.<br>Once a fern has appeared, its resources do not change, except if it sits around longer than the time it takes to appear.';
+          if(state.g_numresets > 1 && state.fern == 2) {
+            return 'fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
+          } else {
+            return 'fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+          }
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there

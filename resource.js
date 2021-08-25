@@ -72,14 +72,14 @@ Res.prototype.clone = function() {
 
 // in-place
 Res.prototype.fromArray = function(a) {
-  this.seeds = a[0] || Num(0);
-  this.spores = a[1] || Num(0);
-  this.resin = a[2] || Num(0);
-  this.twigs = a[3] || Num(0);
-  this.nuts = a[4] || Num(0);
-  this.spores2 = a[5] || Num(0);
-  this.amber = a[6] || Num(0);
-  this.essence = a[7] || Num(0);
+  this.seeds = a[0] || new Num(0);
+  this.spores = a[1] || new Num(0);
+  this.resin = a[2] || new Num(0);
+  this.twigs = a[3] || new Num(0);
+  this.nuts = a[4] || new Num(0);
+  this.spores2 = a[5] || new Num(0);
+  this.amber = a[6] || new Num(0);
+  this.essence = a[7] || new Num(0);
 };
 // not in-place
 Res.fromArray = function(a) {
@@ -88,9 +88,28 @@ Res.fromArray = function(a) {
   return res;
 };
 
-//in-place
+//reset in-place without allocating any new objects
 Res.prototype.reset = function() {
-  this.mulrInPlace(0);
+  this.seeds.reset();
+  this.spores.reset();
+  this.resin.reset();
+  this.twigs.reset();
+  this.nuts.reset();
+  this.spores2.reset();
+  this.amber.reset();
+  this.essence.reset();
+};
+
+Res.prototype.atIndex = function(index) {
+  if(index == 0) return this.seeds;
+  if(index == 1) return this.spores;
+  if(index == 2) return this.resin;
+  if(index == 3) return this.twigs;
+  if(index == 4) return this.nuts;
+  if(index == 5) return this.spores2;
+  if(index == 6) return this.amber;
+  if(index == 7) return this.essence;
+  return Num(0);
 };
 
 Res.prototype.addInPlace = function(b) {
@@ -114,7 +133,7 @@ Res.add = function(a, b) { return a.add(b); };
 
 // v is regular JS number or Num instead of Res, hence the r from regular in the name
 Res.prototype.addrInPlace = function(v) {
-  if(!(v instanceof Num)) v = Num(v);
+  if(!(v instanceof Num)) v = new Num(v);
   this.seeds.addInPlace(v);
   this.spores.addInPlace(v);
   this.resin.addInPlace(v);
@@ -169,14 +188,15 @@ Res.prototype.mul = function(v) {
   return res;
 };
 Res.mul = function(r, v) { return r.mul(v); }
+
 // multiply with a regular JS number
 Res.prototype.mulrInPlace = function(v) {
-  return this.mulInPlace(Num(v));
+  return this.mulInPlace(new Num(v));
 };
 Res.prototype.mulr = function(v) {
-  return this.mul(Num(v));
+  return this.mul(new Num(v));
 };
-Res.mulr = function(r, v) { return r.mul(Num(v)); };
+Res.mulr = function(r, v) { return r.mul(new Num(v)); };
 
 // divide through a Num.
 Res.prototype.divInPlace = function(v) {
@@ -198,12 +218,12 @@ Res.prototype.div = function(v) {
 Res.div = function(r, v) { return r.div(v); }
 // divtiply with a regular JS number
 Res.prototype.divrInPlace = function(v) {
-  return this.divInPlace(Num(v));
+  return this.divInPlace(new Num(v));
 };
 Res.prototype.divr = function(v) {
-  return this.div(Num(v));
+  return this.div(new Num(v));
 };
-Res.divr = function(r, v) { return r.div(Num(v)); };
+Res.divr = function(r, v) { return r.div(new Num(v)); };
 
 
 // elementwise multiply with another resource.
@@ -228,11 +248,14 @@ Res.elmul = function(a, b) { return a.elmul(b); }
 
 // posmul: multiply only positive resources, not negative ones. Intended for certain common types of bonus.
 Res.prototype.posmulInPlace = function(v) {
-  var arr = this.toArray();
-  for(var i = 0; i < arr.length; i++) {
-    if(arr[i].ger(0)) arr[i].mulInPlace(v);
-  }
-  this.fromArray(arr);
+  if(this.seeds.ger(0)) this.seeds.mulInPlace(v);
+  if(this.spores.ger(0)) this.spores.mulInPlace(v);
+  if(this.resin.ger(0)) this.resin.mulInPlace(v);
+  if(this.twigs.ger(0)) this.twigs.mulInPlace(v);
+  if(this.nuts.ger(0)) this.nuts.mulInPlace(v);
+  if(this.spores2.ger(0)) this.spores2.mulInPlace(v);
+  if(this.amber.ger(0)) this.amber.mulInPlace(v);
+  if(this.essence.ger(0)) this.essence.mulInPlace(v);
 };
 Res.prototype.posmul = function(v) {
   var res = Res(this);
@@ -241,20 +264,23 @@ Res.prototype.posmul = function(v) {
 };
 Res.posmul = function(r, v) { return r.posmul(v); }
 Res.prototype.posmulrInPlace = function(v) {
-  return this.posmulInPlace(Num(v));
+  return this.posmulInPlace(new Num(v));
 };
 Res.prototype.posmulr = function(v) {
-  return this.posmul(Num(v));
+  return this.posmul(new Num(v));
 };
-Res.posmulr = function(r, v) { return r.posmul(Num(v)); };
+Res.posmulr = function(r, v) { return r.posmul(new Num(v)); };
 
 // negmul: counterpart of posmul.
 Res.prototype.negmulInPlace = function(v) {
-  var arr = this.toArray();
-  for(var i = 0; i < arr.length; i++) {
-    if(arr[i].ler(0)) arr[i].mulInPlace(v);
-  }
-  this.fromArray(arr);
+  if(this.seeds.ler(0)) this.seeds.mulInPlace(v);
+  if(this.spores.ler(0)) this.spores.mulInPlace(v);
+  if(this.resin.ler(0)) this.resin.mulInPlace(v);
+  if(this.twigs.ler(0)) this.twigs.mulInPlace(v);
+  if(this.nuts.ler(0)) this.nuts.mulInPlace(v);
+  if(this.spores2.ler(0)) this.spores2.mulInPlace(v);
+  if(this.amber.ler(0)) this.amber.mulInPlace(v);
+  if(this.essence.ler(0)) this.essence.mulInPlace(v);
 };
 Res.prototype.negmul = function(v) {
   var res = Res(this);
@@ -263,12 +289,12 @@ Res.prototype.negmul = function(v) {
 };
 Res.negmul = function(r, v) { return r.negmul(v); }
 Res.prototype.negmulrInPlace = function(v) {
-  return this.negmulInPlace(Num(v));
+  return this.negmulInPlace(Num(new v));
 };
 Res.prototype.negmulr = function(v) {
-  return this.negmul(Num(v));
+  return this.negmul(new Num(v));
 };
-Res.negmulr = function(r, v) { return r.negmul(Num(v)); };
+Res.negmulr = function(r, v) { return r.negmul(new Num(v)); };
 
 Res.prototype.eq = function(b) {
   if(!this.seeds.eq(b.seeds)) return false;
@@ -347,10 +373,14 @@ Res.gter = Res.ger;
 
 // returns whether the resources are empty
 Res.prototype.empty = function() {
-  var arr = this.toArray();
-  for(var i = 0; i < arr.length; i++) {
-    if(arr[i].neqr(0)) return false;
-  }
+  if(this.seeds.neqr(0)) return false;
+  if(this.spores.neqr(0)) return false;
+  if(this.resin.neqr(0)) return false;
+  if(this.twigs.neqr(0)) return false;
+  if(this.nuts.neqr(0)) return false;
+  if(this.spores2.neqr(0)) return false;
+  if(this.amber.neqr(0)) return false;
+  if(this.essence.neqr(0)) return false;
   return true;
 };
 Res.empty = function(a) { return a.empty(); };
@@ -365,10 +395,14 @@ Res.prototype.hasNaN = function() {
 Res.hasNaN = function(a) { return a.hasNaN(); };
 
 Res.prototype.hasNaNOrInfinity = function() {
-  var arr = this.toArray();
-  for(var i = 0; i < arr.length; i++) {
-    if(arr[i].isNaNOrInfinity()) return true;
-  }
+  if(this.seeds.isNaNOrInfinity()) return true;
+  if(this.spores.isNaNOrInfinity()) return true;
+  if(this.resin.isNaNOrInfinity()) return true;
+  if(this.twigs.isNaNOrInfinity()) return true;
+  if(this.nuts.isNaNOrInfinity()) return true;
+  if(this.spores2.isNaNOrInfinity()) return true;
+  if(this.amber.isNaNOrInfinity()) return true;
+  if(this.essence.isNaNOrInfinity()) return true;
   return false;
 };
 Res.hasNaNOrInfinity = function(a) { return a.hasNaNOrInfinity(); };
@@ -384,10 +418,14 @@ Res.prototype.removeNaN = function() {
 
 // returns whether any resource is negative (any one, must not be all)
 Res.prototype.hasNeg = function() {
-  var arr = this.toArray();
-  for(var i = 0; i < arr.length; i++) {
-    if(arr[i].ltr(0)) return true;
-  }
+  if(this.seeds.ltr(0)) return true;
+  if(this.spores.ltr(0)) return true;
+  if(this.resin.ltr(0)) return true;
+  if(this.twigs.ltr(0)) return true;
+  if(this.nuts.ltr(0)) return true;
+  if(this.spores2.ltr(0)) return true;
+  if(this.amber.ltr(0)) return true;
+  if(this.essence.ltr(0)) return true;
   return false;
 };
 Res.hasNeg = function(a) { return a.hasNeg(); };
@@ -398,7 +436,7 @@ Res.prototype.getNegative = function() {
   var arr2 = [];
   for(var i = 0; i < arr.length; i++) {
     if(arr[i].ltr(0)) arr2[i] = arr[i].neg();
-    else arr2[i] = Num(0);
+    else arr2[i] = new Num(0);
   }
   return Res.fromArray(arr2);
 };
@@ -414,8 +452,8 @@ Res.getMatchingResourcesOnly = function(template, actual) {
   var a = actual.toArray();
   var arr = [];
   for(var i = 0; i < a.length; i++) {
-    if(b[i].neqr(0)) arr[i] = Num(a[i]);
-    else arr[i] = Num(0);
+    if(b[i].neqr(0)) arr[i] = new Num(a[i]);
+    else arr[i] = new Num(0);
   }
   return Res.fromArray(arr);
 };
@@ -447,9 +485,9 @@ Res.min = function(a, b) {
 // Get some measure of progress of the player through value of resources
 // Not very accurate, except during earlier stages of the game.
 Res.prototype.weighedSum = function() {
-  var result = Num(0);
+  var result = new Num(0);
   var arr = this.toArray();
-  var weight = Num(1);
+  var weight = new Num(1);
   for(var i = 0; i < arr.length; i++) {
     result.addInPlace(arr[i].mul(weight));
     weight.mulrInPlace(1000);
@@ -461,7 +499,7 @@ Res.prototype.toString = function(opt_precision, opt_notation) {
   var arr = this.toArray();
   var s = '';
   for(var i = 0; i < arr.length; i++) {
-    if(arr[i].neq(Num(0))) {
+    if(arr[i].neq(new Num(0))) {
       if(s.length > 0) s += ', ';
       s += arr[i].toString(opt_precision, opt_notation) + ' ' + resource_names[i];
     }
@@ -475,7 +513,7 @@ Res.prototype.toProdString = function() {
   var arr = this.toArray();
   var s = '';
   for(var i = 0; i < arr.length; i++) {
-    if(arr[i].neq(Num(0))) {
+    if(arr[i].neq(new Num(0))) {
       if(s.length > 0) s += ', ';
       s += arr[i].toString() + ' ' + resource_names[i] + '/s';
     }

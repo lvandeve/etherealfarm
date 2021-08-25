@@ -429,8 +429,8 @@ function softReset(opt_challenge) {
 
   state.amberprod = false;
 
-
-  var resin = getUpcomingResin();
+  var resin_no_ferns = getUpcomingResin();
+  var resin = getUpcomingResinIncludingFerns();
 
   var do_fruit = true; // sacrifice the fruits even if not above transcension level (e.g. when resetting a challenge)
 
@@ -490,6 +490,7 @@ function softReset(opt_challenge) {
   state.c_res.resin.addInPlace(resin);
   state.g_resin_from_transcends.addInPlace(resin);
   state.resin = Num(0); // future resin from next tree
+  state.fernresin = new Res(); // future resin from next ferns
 
 
   state.res.twigs.addInPlace(twigs);
@@ -505,6 +506,11 @@ function softReset(opt_challenge) {
     state.fruit_sacr = [];
     state.fruit_seen = true; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
   }
+
+  // this one should not include the resin from ferns
+  var res_no_fernresin = new Res(state.c_res);
+  res_no_fernresin.resin = resin_no_ferns;
+  state.g_max_res_earned = Res.max(state.g_max_res_earned, res_no_fernresin);
 
 
   if(state.treelevel > 0) {
@@ -529,7 +535,6 @@ function softReset(opt_challenge) {
     state.p_starttime = state.c_starttime;
     state.p_runtime = state.c_runtime;
     state.p_numticks = state.c_numticks;
-    // NOTE: state.c_res records resin/twigs/essense from *start* of the run so actually that from the previous run, and so state.p_res will have it from 2 runs ago.
     state.p_res = state.c_res;
     state.p_max_res = state.c_max_res;
     state.p_max_prod = state.c_max_prod;
@@ -857,9 +862,9 @@ function timeTilNextSeason() {
 }
 
 // field cell with precomputed info
-function PreCell(f) {
-  this.x = f.x;
-  this.y = f.y;
+function PreCell(x, y) {
+  this.x = x;
+  this.y = y;
 
   // boost of this plant, taking field position into account. Used during precompute of field: amount of bonus from this cell if it's a flower, nettle, ...
   // 0 means no boost, 1 means +100% boost, etc...
@@ -968,6 +973,38 @@ function PreCell(f) {
 
   // whether worker bee has flower neighbor, for bee challenge only
   this.flowerneighbor = false;
+
+  // reset without reallocating any objects. Keeps this.x and this.y as-is.
+  this.reset = function() {
+    this.boost.reset();
+    this.beeboostboost_received.reset();
+    this.num_bee = 0;
+    this.nettlemalus_received = Num(1);
+    this.num_nettle = 0;
+    this.weights = null;
+    this.prod0.reset();
+    this.prod0b.reset();
+    this.prod1.reset();
+    this.wanted.reset();
+    this.gotten.reset();
+    this.prod2.reset();
+    this.prod3.reset();
+    this.consumers = [];
+    this.producers = [];
+    this.leech.reset();
+    this.score = 0;
+    this.breakdown = undefined;
+    this.breakdown_leech = undefined;
+    this.hasbreakdown_prod = false;
+    this.hasbreakdown_boost = false;
+    this.hasbreakdown_booostboost = false;
+    this.hasbreakdown_watercress = false;
+    this.breakdown_watercress_info = undefined;
+    this.last_it = -1;
+    this.touchnum = 0;
+    this.treeneighbor = false;
+    this.flowerneighbor = false;
+  };
 };
 
 // field with precomputed info, 2D array, separate from state.field because not saved but precomputed at each update()
@@ -988,11 +1025,15 @@ function precomputeField() {
   var w = state.numw;
   var h = state.numh;
 
-  prefield = [];
+  if(!prefield || !prefield[0] || prefield.length != h || prefield[0].length != w) prefield = [];
   for(var y = 0; y < h; y++) {
-    prefield[y] = [];
+    if(!prefield[y]) prefield[y] = [];
     for(var x = 0; x < w; x++) {
-      prefield[y][x] = new PreCell(state.field[y][x]);
+      if(prefield[y][x]) {
+        prefield[y][x].reset();
+      } else {
+        prefield[y][x] = new PreCell(x, y);
+      }
     }
   }
 
@@ -1342,6 +1383,8 @@ function precomputeField() {
     }
   }
 
+  var total = new Res(); // temporary object for below
+
   // pass 5: watercress copying
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
@@ -1353,7 +1396,7 @@ function precomputeField() {
           var leech = c.getLeech(f);
           var leech_nuts = c.getLeech(f, undefined, true);
           var p = prefield[y][x];
-          var total = Res();
+          total.reset();
           var num = 0;
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -1425,11 +1468,47 @@ function precomputeField() {
           if(c2.type == CROPTYPE_NETTLE) score_mul++;
           if(c2.type == CROPTYPE_BERRY) score_num++;
         }
+      }
+
+      if(c.type == CROPTYPE_BERRY) {
+        if(winter && !p.treeneighbor) score_malus *= 0.5;
+        p.score = (1 + score_flower) * score_mul * score_malus;
+      }
+      if(c.type == CROPTYPE_MUSH) {
+        if(winter && !p.treeneighbor) score_malus *= 0.5;
+        p.score = (1 + score_flower) * score_mul * (score_num ? 1 : 0) * score_malus;
+      }
+    }
+  }
+  // a next pass to add add berry bonus to flowers
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(!c) continue;
+      var p = prefield[y][x];
+
+      var score_flower = 0;
+      var score_num = 0;
+      var score_mul = 1;
+      var score_malus = 1;
+
+      for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+        var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+        var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+        if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+        var f2 = state.field[y2][x2];
+        var c2 = f2.getCrop();
+        if(!c2) continue;
+        var p2 = prefield[y2][x2];
+
         if(c.type == CROPTYPE_FLOWER) {
           if(c2.type == CROPTYPE_BEE) score_mul++;
           if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
-          if(c2.type == CROPTYPE_BERRY) score_num++;
-          if(c2.type == CROPTYPE_NUT) score_num++;
+          // these 3 values and their multipliers are tweaked to make sensible choices for relative value of berries, mushrooms and nuts and likely intended preference
+          if(c2.type == CROPTYPE_BERRY) score_num += p2.score;
+          if(c2.type == CROPTYPE_MUSH) score_num += p2.score * 0.5;
+          if(c2.type == CROPTYPE_NUT) score_num += 0.65;
         }
         if(c.type == CROPTYPE_NETTLE) {
           if(c2.type == CROPTYPE_MUSH) score_num++;
@@ -1443,14 +1522,6 @@ function precomputeField() {
         }
       }
 
-      if(c.type == CROPTYPE_BERRY) {
-        if(winter && !p.treeneighbor) score_malus *= 0.5;
-        p.score = (1 + score_flower) * score_mul * score_malus;
-      }
-      if(c.type == CROPTYPE_MUSH) {
-        if(winter && !p.treeneighbor) score_malus *= 0.5;
-        p.score = (1 + score_flower) * score_mul * (score_num ? 1 : 0) * score_malus;
-      }
       if(c.type == CROPTYPE_FLOWER) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
         p.score = score_mul * score_malus * score_num;
@@ -1911,7 +1982,6 @@ function autoPlant(res) {
       }
     }
   }
-
 
   addAction({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
   return true;
@@ -2787,7 +2857,7 @@ var update = function(opt_ignorePause) {
           if(!action.by_automaton) store_undo = true;
           var nextcost = c.getCost(0);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
-          if(state.c_numplanted + state.c_numplantedshort <= 1) {
+          if(state.c_numplanted + state.c_numplantedshort <= 1 && !c.istemplate && state.g_numresets < 5) {
             showMessage('Keep planting more crops on other field cells to get more income', C_HELP, 28466751);
           }
         }
@@ -2950,22 +3020,10 @@ var update = function(opt_ignorePause) {
         if(fast_forwarding) continue;
 
         if(state.fern && state.fernx == action.x && state.ferny == action.y) {
+          clickedfern = true;
+          // actual giving of resources done further below when clickedfern == true
           state.g_numferns++;
           state.c_numferns++;
-          var fernres = state.fernres;
-          if(state.fern == 1) {
-            showMessage('That fern gave: ' + fernres.toString(), C_NATURE, 989456955, 0.5, true);
-          } else {
-            fernres = fernres.mulr(5);
-            showMessage('This fern is extra bushy! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
-          }
-          actualgain.addInPlace(fernres);
-          state.lastFernTime = state.time; // in seconds
-          state.fern = 0;
-          clickedfern = true;
-          if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
-            showMessage('You have enough resources to plant. Click an empty field to plant', C_HELP, 64721);
-          }
           // store undo for fern too, because resources from fern can trigger auto-upgrades
           store_undo = true;
         }
@@ -3325,45 +3383,56 @@ var update = function(opt_ignorePause) {
     }
 
 
-
-    var fern = false;
-    var fernTimeWorth = 0;
-    if(!state.fern && !clickedfern) {
-      var mintime = getFernWaitTime();
-      if(state.time > state.lastFernTime + mintime) {
-        fern = true;
-      }
+    if(clickedfern) {
+      var waittime = state.fernwait;
+      if(waittime == 0) waittime = getFernWaitTime(); // in case of old save where fernwait wasn't stored
       // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
       // e.g. 0.25 means clicking all ferns makes you get 25% more income (on average, since there is a uniforn random 0.5..1.5 factor, plus due to the "extra bushy" ferns the real active production is actually a bit higher than this value)
-      fernTimeWorth = mintime * 0.25;
-    }
-    if(state.fern && !clickedfern) {
-      var mintime = getFernWaitTime();
-      if(state.time > state.lastFernTime + mintime) {
-        fern = true;
-      }
-      fernTimeWorth = mintime * 0.25;
-    }
-    if(fern) {
-      var r = fernTimeWorth * (getRandomFernRoll() + 0.5);
+      var fernTimeWorth = waittime * 0.25;
+      var roll = getRandomFernRoll();
+      roll = (state.fern == 2) ? (roll * 0.5 + 1) : (roll + 0.5);
+      var r = fernTimeWorth * roll;
       if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
       var g = gain.mulr(r);
       if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
       var fernres = new Res({seeds:g.seeds, spores:g.spores});
 
-      if(state.fern) {
-        // already have fern, but possibly refresh it with better value
-        if(fernres.seeds.gt(state.fernres.seeds)) {
-          //showMessage('Fern refreshed: ' + fernres.seeds.toString() + ' > ' + state.fernres.seeds.toString(), C_INVALID, 3352600596, 0.5);
-          state.fernres = fernres;
-        } else {
-          //showMessage('Fern not refreshed: ' + fernres.seeds.toString() + ' <= ' + state.fernres.seeds.toString(), C_INVALID, 3352600596, 0.5);
-        }
+      if(state.fern == 1) {
+        showMessage('That fern gave: ' + fernres.toString(), C_NATURE, 989456955, 0.5, true);
       } else {
-        var is_refresh = state.fern;
+        fernres = fernres.mulr(1.75);
+        fernres.seeds.addrInPlace(5); // bushy ferns are better for early game
+        //fernres.nuts.addrInPlace(g.nuts);
+        var fernTimeRatio = waittime / 120; //this type of resource should also depend on the duration of the fern
+        //if(state.g_res.amber.gtr(1)) fernres.amber.addrInPlace(0.5);
+        if(waittime + 1 >= fern_wait_minutes * 60 && state.g_numresets > 1 && (!state.challenge || challenges[state.challenge].allowsresin)) fernres.resin.addInPlace(state.g_max_res_earned.resin.divr(200).mulr(fernTimeRatio));
+        //fernres.resin.addInPlace(state.p_res.resin.divr(100).mulr(fernTimeRatio));
+        showMessage('This fern is extra bushy! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
+      }
+      state.g_fernres.addInPlace(fernres);
+      if(fernres.resin.neqr(0)) {
+        state.fernresin.resin.addInPlace(fernres.resin)
+        fernres.resin = Num(0);
+      }
+      actualgain.addInPlace(fernres);
+      state.lastFernTime = state.time; // in seconds
+      state.fern = 0;
+      if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
+        showMessage('You have enough resources to plant. Click an empty field to plant', C_HELP, 64721);
+      }
+    }
+
+
+    var grow_fern = false;
+    var fernTimeWorth = 0;
+    if(!state.fern && !clickedfern) {
+      var mintime = getFernWaitTime();
+      if(state.time > state.lastFernTime + mintime) {
+        grow_fern = true;
+        state.fernwait = mintime;
+
         var s = getRandomPreferablyEmptyFieldSpot();
         if(s) {
-          state.fernres = fernres;
           state.fern = 1;
           state.fernx = s[0];
           state.ferny = s[1];
@@ -3372,9 +3441,9 @@ var update = function(opt_ignorePause) {
           // the coordinates are invisible but are for screenreaders
           showMessage('A fern spawned<span style="color:#0000"> at ' + state.fernx + ', ' + state.ferny + '</span>', C_NATURE, 2352600596, 0.5);
         }
-      }
 
-      state.lastFernTime = state.time; // in seconds
+        state.lastFernTime = state.time; // in seconds
+      }
     }
 
     var req = treeLevelReq(state.treelevel + 1);
@@ -3394,7 +3463,6 @@ var update = function(opt_ignorePause) {
       actualgain.amber.addInPlace(maybeDropAmber());
 
       state.treelevel++;
-      state.lasttreeleveluptime = state.time;
       num_tree_levelups++;
 
       var do_resin = true;
@@ -3408,13 +3476,18 @@ var update = function(opt_ignorePause) {
       state.res.subInPlace(req);
       state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
 
+      // this must happen after do_resin above, so that the state.lasttreeleveluptime is still used in the currentTreeLevelResin computation
+      state.lasttreeleveluptime = state.time;
+      state.resinfruittime = 0;
+      state.twigsfruittime = 0;
+
       var showtreemessages = state.messagelogenabled[1] || state.treelevel >= state.g_treelevel;
 
       if(showtreemessages) {
         var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
             '. Consumed: ' + req.toString() +
             '. Tree boost: ' + getTreeBoost().toPercentString();
-        if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResin().toString();
+        if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResinIncludingFerns().toString();
         if(getSeason() == 3) message += '. Winter resin bonus: ' + (getWinterTreeResinBonus().subr(1)).toPercentString();
         if(twigs.neqr(0)) message += '. Twigs from mistletoe added: ' + twigs.toString();
         if(getSeason() == 2) message += '. Autumn twigs bonus: ' + (getAutumnMistletoeBonus().subr(1)).toPercentString();
@@ -3494,10 +3567,6 @@ var update = function(opt_ignorePause) {
           if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_NATURE, 1284767498);
         }
       }
-
-      var treeleveltime = state.time - state.lasttreeleveluptime;
-      state.resinfruittime = Math.max(0, state.resinfruittime - treeleveltime);
-      state.twigsfruittime = Math.max(0, state.twigsfruittime - treeleveltime);
     }
 
     if(state.g_numresets > 0) {
