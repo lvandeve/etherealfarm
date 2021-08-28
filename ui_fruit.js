@@ -894,8 +894,8 @@ function updateFruitUI() {
     var fruit_name = 'none';
     if(state.fruit_stored[i]) fruit_name = state.fruit_stored[i].toString();
     addButtonAction(canvasFlex.div, bind(function(i) {
-      state.fruit_active = i;
-      updateFruitUI();
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:i, silent:true});
+      update();
     }, i), 'activate stored fruit ' + i + ': ' + fruit_name);
   }
   y += s * 1.1;

@@ -399,22 +399,14 @@ document.addEventListener('keydown', function(e) {
   // these keys for prev and next fruit are chosen such that hopefully at least one set of them is reachable on any keyboard layout, even if in combination with shift if necessary
   if((e.key == ']' || e.key == '}' || e.key == ')') && !ctrl) {
     if(state.fruit_active + 1 < state.fruit_stored.length) {
-      state.fruit_active++;
-      updateFruitUI();
-      updateRightPane();
-      var f_active = getActiveFruit();
-      var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(true, true)) : 'none';
-      showMessage('Set active fruit: ' + name);
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:state.fruit_active + 1});
+      update();
     }
   }
   if((e.key == '[' || e.key == '{' || e.key == '(') && !ctrl) {
     if(state.fruit_active > 0) {
-      state.fruit_active--;
-      updateFruitUI();
-      updateRightPane();
-      var f_active = getActiveFruit();
-      var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(true, true)) : 'none';
-      showMessage('Set active fruit: ' + name);
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:state.fruit_active - 1});
+      update();
     }
   }
 });

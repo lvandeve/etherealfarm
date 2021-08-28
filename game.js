@@ -728,6 +728,7 @@ var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++;
 var ACTION_TRANSCEND = action_index++; // also includes starting a challenge
 var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot
+var ACTION_FRUIT_ACTIVE = action_index++; // select active fruit
 var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
 var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
@@ -3090,7 +3091,7 @@ var update = function(opt_ignorePause) {
           var ok = true;
           if(to < 100 && from >= 100 && state.fruit_stored.length >= state.fruit_slots) {
             ok = false;
-            showMessage('stored fruits already full, move one out of there to sacrificial pool first to make room');
+            showMessage('stored fruits already full, move one out of there to sacrificial pool first to make room', C_INVALID, 0, 0);
           } else if(to < 100 && to >= state.fruit_slots) {
             ok = false;
           }
@@ -3127,6 +3128,7 @@ var update = function(opt_ignorePause) {
               state.fruit_sacr[to2] = f;
               f.slot = to;
             }
+            store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
           }
         } else {
           var slottype = action.slot; // 0:stored, 1:sacrificial
@@ -3146,8 +3148,25 @@ var update = function(opt_ignorePause) {
             setFruit(f.slot, undefined);
             setFruit(slot, f);
           }
+          store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
         }
         updateFruitUI();
+      } else if(type == ACTION_FRUIT_ACTIVE) {
+        var slot = action.slot;
+        var ok = true;
+        if(slot < 0) ok = false;
+        if(slot >= state.fruit_stored.length) ok = false;
+        if(ok) {
+          state.fruit_active = slot;
+          updateFruitUI();
+          updateRightPane();
+          if(!action.silent) {
+            var f_active = getActiveFruit();
+            var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(true, true)) : 'none';
+            showMessage('Set active fruit: ' + name);
+          }
+          store_undo = true; // non-destructive action, but store undo anyway for consistency and to avoid confusion when pressing undo after e.g. first swapping fruit for sun, then activating sun
+        }
       } else if(type == ACTION_FRUIT_LEVEL) {
         var f = action.f;
         var index = action.index;
@@ -3211,6 +3230,7 @@ var update = function(opt_ignorePause) {
           f.charge[a] = f.charge[b];
           f.charge[b] = temp;
           updateFruitUI();
+          store_undo = true;
         }
       } else if(type == ACTION_FRUIT_FUSE) {
         var a = action.a;
