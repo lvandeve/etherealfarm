@@ -81,7 +81,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_MUSHBOOST: return 'boosts mushroom production but also consumption';
     case FRUIT_MUSHEFF: return 'reduces mushroom consumption (with a soft cap)';
     case FRUIT_FLOWERBOOST: return 'boosts flowers effect';
-    case FRUIT_GROWSPEED: return 'reduces crop grow time (before any other reductions)';
+    case FRUIT_GROWSPEED: return 'reduces crop grow time (Before any other reductions. A soft cap applies.)';
     case FRUIT_WEATHER: return 'increases the weather effect abilities';
     case FRUIT_WATERCRESS: return 'increases the copy effect of watercress';
     case FRUIT_NETTLEBOOST: return 'boosts the nettle effect';

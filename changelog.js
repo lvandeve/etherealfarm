@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.86b (2021-08-28):';
+  text += '<br/>• Fixed issue with the soft cap of grow times, so that early grow speed upgrades affect all plants at least some visible amount.';
+  text += '<br/><br/>';
+
   text += '0.1.86 (2021-08-25):';
   text += '<br/>• Balanced flower upgrade costs to keep later tiers relevant.';
   // the above balancing makes flower upgrades a bit more expensive towards the end, but the squirrel upgrade boost below more than compensates for that

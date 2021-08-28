@@ -213,56 +213,24 @@ var getDelete2maxBuildup = function() {
   return getDelete2PerSeason() * 4;
 }
 
-
-/*
-s shaped function that goes towards diagonal asymptote on the right (and left but negative doesn't matter for the purpose)
-s = a measure of how fast to reach the asymptote, must be in range (0, 1], above 1 the function becomes non-monotonic
-d = distance of the diagonal asymptote from the origin. Its slope is always 1.
-*/
-function towardsdiag(x, s, d) {
-  if(d == 0) return x;
-  if(s == 0) return x; // can never reach the asymptote
-
-  var ax = x * s / d;
-  var p = 4; // the higher the faster it goes towards the asymptote; TODO: this could replace the s parameter since the s parameter has limitations
-  var a = ax / Math.pow((Math.pow(ax, p) + 1),  1 / p);
-  a *= d;
-
-  return -a + x;
-}
-
-
-/*
-The goal of this function is to reduce the grow time by the amount of time given in time. E.g. a 20 minute grow time, with a reduction of 1 minute, becomes a 19 minute grow time
-however, the goal of this is also to not reduce plants that already grow fast by that amount. E.g. if a plant has a 1-minute growtime, and we reduce by 2 minutes, the plant should not have a negative growtime of course.
-there should be some lower bound to which the reduction can occur.
-the lower bound could be linear: reduce max 50%. However, I believe that for plants that have very slow grow times, like 20 minutes, more than 50% should be possible, while for very fast plants like 1 minute, max 30 seconds is good.
-So the lower bound should be something non-linear. An example: it could be ln(t * f + 1) / f, with t in seconds and f some hard-coded factor tuned to have appropriate lower bounds for 1 minute, 10 minutes, etc...
-*/
-function reduceGrowTime(time, reduce) {
-  if(reduce == 0) return time;
-
-  //var f = 0.02;
-  //var min = Math.log(time * f + 1) / f;
-  //var min = 30;
-  var min = 30 + Math.log(time);
-  if(time < min) return time;
-  time -= min;
-
-  time = towardsdiag(time, 1, reduce);
-
-  time += min;
-
-  return time;
-}
-
-// Returns a value based on x but smoothly capped to be no lower than lowest.
-// The softness determines how strongly the value gets capped: at 0, x goes down linearly, until reaching lowest, then stays at lowest
-// For higher values of softness, the cap is softer, such that when x = lowest, the output will be lowest + softness, for lower and higher x the deviation from the sharply capped curve gets less and less
-function towardsFloorValue(x, lowest, softness) {
-  softness = 4 * softness * softness;
+// Returns a value based on x but smoothly capped to be no lower than lowest. The input x is also assumed to never be higher than highest, and no value higher than highest will be returned.
+// The softness determines how strongly the value gets capped: at 0, x goes down linearly, until reaching lowest, then stays at lowest.
+// For higher values of softness, the cap is softer, such that when x = lowest, the output will be lowest + softness,
+// for lower and higher x the deviation from the sharply capped curve gets less and less.
+// highest should be larger than lowest + softness (else the direction inverts)
+// To summarize:
+// For x == lowest, the output is lowest + softness = x + softness
+// For x == highest, the output is highest
+// For x < lowest, the output goes towards lowest (reaching it at -infinity)
+// For x between lowest and highest, x smoothly curves from lowest + softness towards highest
+// For x above highest, the result still gets larger, but normally it's assumed that input x < highest
+function towardsFloorValue(x, lowest, highest, softness) {
+  var s = 4 * softness * softness;
   x -= lowest;
-  var v = 0.5 * (x + Math.sqrt(x * x + softness));
+  // scale x such that x=highest results in output highest
+  var h = 4 * (highest - lowest) * (highest - lowest);
+  x *= (h - s) / (h);
+  var v = 0.5 * (x + Math.sqrt(x * x + s));
   return lowest + v;
 }
 
@@ -291,6 +259,8 @@ Crop.prototype.getPlantTime = function() {
   var planttime = this.planttime;
 
   var min = 60 + Math.log(planttime) + 10 * this.tier;
+  if(min > planttime * 0.5) min = planttime * 0.5;
+
 
   var level = getFruitAbility(FRUIT_GROWSPEED);
   if(level > 0) {
@@ -303,7 +273,10 @@ Crop.prototype.getPlantTime = function() {
     result -= upgrade2_time_reduce_0_amount * count;
   }
 
-  result = towardsFloorValue(result, min, planttime * 0.33);
+  var softness = planttime * 0.33;
+  var highest = planttime;
+  if(min + softness > highest) highest = min + softness;
+  result = towardsFloorValue(result, min, highest, softness);
 
   if(result > planttime) result = planttime;
 
@@ -3424,7 +3397,7 @@ var twigs_global_quad = 1; // this is tuned to make new twigs_base a not too big
 var upgrade2_time_reduce_0_amount = 90;
 
 upgrade2_register_id = 25;
-var upgrade2_time_reduce_0 = registerUpgrade2('growth speed', LEVEL2, Res({resin:25}), 2, function() {
+var upgrade2_time_reduce_0 = registerUpgrade2('grow speed', LEVEL2, Res({resin:25}), 2, function() {
 }, function(){return true}, 0, 'basic plants grow up to ' + upgrade2_time_reduce_0_amount + ' seconds per upgrade level faster. This is soft-capped for already fast plants, a plant that already only takes ' + upgrade2_time_reduce_0_amount + ' seconds, will not get much faster. So this upgrade mainly improves the higher tier, slower, crops to become faster and thus within reach.', undefined, undefined, blackberry[0]);
 
 var upgrade2_basic_tree_bonus = Num(0.02);
