@@ -75,7 +75,7 @@ function rerenderUpgradeChip(u, chip, completed) {
     if(cant_afford) buyFlex.div.className = 'efButtonCantAfford';
     else buyFlex.div.className = 'efButton';
 
-    util.setEvent(chip.div, 'onmouseover', 'upgradeseen', function() {
+    util.setEvent(chip.div, 'mouseover', 'upgradeseen', function() {
       state.upgrades[u.index].seen = true;
     });
 
@@ -185,7 +185,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
       else if(document.selection) document.selection.empty();
     }, i));
 
-    util.setEvent(chip.div, 'onmouseover', 'upgradeseen', function() {
+    util.setEvent(chip.div, 'mouseover', 'upgradeseen', function() {
       var u = upgrades[chip.u];
       state.upgrades[u.index].seen = true;
     });
@@ -231,9 +231,17 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
   rerenderUpgradeChip(u, chip, completed);
   chip.updateInfoText();
 
+  util.setEvent(chip.div, 'mouseover', 'fieldover', bind(function(x, y) {
+    mouseOverUpgradeCrop = u.cropid;
+  }, x, y));
+  util.setEvent(chip.div, 'mouseout', 'fieldout', bind(function(x, y) {
+    mouseOverUpgradeCrop = null;
+  }, x, y));
+
   return chip;
 }
 
+var mouseOverUpgradeCrop = null;
 
 var upgradeScrollFlex = null;
 

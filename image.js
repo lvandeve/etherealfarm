@@ -585,9 +585,13 @@ function renderImage(image, canvas) {
   if(canvas.height != ih) canvas.height = ih;
   var ctx = canvas.getContext("2d");
 
-  // TODO: Which one of these two options is the fastest?
-  ctx.putImageData(image[0], 0, 0);
-  //ctx.drawImage(image[3], 0, 0); // does not work correctly, requires clearing canvas first, or fern may stay after clicking fern
+  // There are two options to draw it: using putImageData, or using drawImageData (which requires clearRect first, since it overdraws when there is alpha channel)
+  // It looks like the drawImage solution is faster, the other solution is available commented out in case JS performance changes
+
+  //ctx.putImageData(image[0], 0, 0);
+
+  ctx.clearRect(0, 0, iw, ih);
+  ctx.drawImage(image[3], 0, 0);
 }
 
 var blendImageTempCanvas = document.createElement('canvas');

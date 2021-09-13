@@ -694,14 +694,14 @@ function initFieldUI() {
       fieldDivs[y][x].canvas = canvas;
       fieldDivs[y][x].bgcanvas = bgcanvas;
 
-      util.setEvent(div, 'onmouseover', 'fieldover', bind(function(x, y) {
+      util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
         updateFieldMouseOver(x, y);
       }, x, y));
-      util.setEvent(div, 'onmouseout', 'fieldout', bind(function(x, y) {
+      util.setEvent(div, 'mouseout', 'fieldout', bind(function(x, y) {
         updateFieldMouseOut(x, y);
       }, x, y));
       // on mouse up and with timeout so that the state is fully updated after the action that the click caused
-      util.setEvent(div, 'onmouseup', 'fieldclick', bind(function(x, y) {
+      util.setEvent(div, 'mouseup', 'fieldclick', bind(function(x, y) {
         window.setTimeout(function(){updateFieldMouseClick(x, y)});
       }, x, y));
 
@@ -994,7 +994,51 @@ function updateFieldCellUI(x, y) {
 }
 
 var specialborder = false;
+var specialborderx = 0;
+var specialbordery = 0;
 
+function renderFieldInitialPlantHint() {
+  if(specialborder) {
+    if(fieldDivs[specialbordery] && fieldDivs[specialbordery][specialborderx]) {
+      fieldDivs[specialbordery][specialborderx].div.style.border = '';
+    }
+    specialborder = false;
+  }
+
+  var numplanted = state.c_numplanted + state.c_numplantedshort;
+  if((state.res.seeds.ger(10) /*|| numplanted > 0*/) && state.g_numresets < 3 && numplanted <= 11) {
+    var do_border = false;
+    var x = 0;
+    var y = 0;
+    var do_border = false;
+    for(;;) {
+      if(state.field[y][x].index == 0) {
+        do_border = true;
+        break;
+      }
+      x++;
+      if(x >= state.numw) {
+        x = 0;
+        y++;
+      }
+      if(y >= state.numh) break;
+    }
+    if(do_border) {
+      var fade = numplanted;
+      // fade them out, to indicate that the player is on their own now to find spots to plant
+      var alpha = ['ff', 'cc', '99', '66', '33', '22', '11', '08', '04', '02', '01'][fade];
+      var color = '#ff0000' + alpha;
+      // indicate that you should plant
+      // TODO: use some nicer kind of indication, a pixel art arrow pointing at it, a tutorial bubble, ...
+      fieldDivs[y][x].div.style.border = '10px solid ' + color;
+      specialborder = true;
+      specialborderx = x;
+      specialbordery = y;
+      //fieldDivs[y][x].div.innerText = 'etc';
+    }
+  }
+
+}
 
 function renderField() {
   for(var y = 0; y < state.numh; y++) {
@@ -1003,13 +1047,5 @@ function renderField() {
     }
   }
 
-  if(state.res.seeds.ger(10) && state.g_numresets < 3 && state.c_numplanted <= 0 && state.c_numplantedshort <= 0) {
-    // indicate that you should plant
-    // TODO: use some nicer kind of indication, a pixel art arrow pointing at it, a tutorial bubble, ...
-    fieldDivs[0][0].div.style.border = '10px solid red';
-    specialborder = true;
-  } else if(specialborder) {
-    fieldDivs[0][0].div.style.border = '';
-    specialborder = false;
-  }
+  renderFieldInitialPlantHint();
 }

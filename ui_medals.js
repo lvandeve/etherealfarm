@@ -148,7 +148,7 @@ function updateMedalUI() {
     }, m, m2, div, canvas2, i);
 
     registerTooltip(div, getMedalText);
-    util.setEvent(div, 'onmouseover', 'medalseen', seenfun);
+    util.setEvent(div, 'mouseover', 'medalseen', seenfun);
 
     addButtonAction(div, bind(function(getMedalText, seenfun) {
       var dialog = createDialog(DIALOG_SMALL);

@@ -702,9 +702,9 @@ Num.N_Names = []; // names of the notations
 Num.N_Help = []; // help of the notations
 
 var n_i = 0;
-Num.N_LATIN = n_i; Num.N_Names[n_i] = 'suffixes latin'; Num.N_Help[n_i] = 'Latin suffixes for large numbers, such as T for trillion, Qa for quadrillion, V for vigintillion, ...'; n_i++; // abbreviation if available, else engineering, also full if fits in #digits precision: most human-like notation
-Num.N_HYBRID_T = n_i; Num.N_Names[n_i] = 'hybrid eng / latin T'; Num.N_Help[n_i] = 'Latin suffixes, but only up to T (trillion, 1e12), then switches to engineering notation'; n_i++;
-Num.N_HYBRID_U = n_i; Num.N_Names[n_i] = 'hybrid eng / latin U'; Num.N_Help[n_i] = 'Latin suffixes, but only up to U (undecillion, 1e36), then switches to engineering notation'; n_i++; // a later version of hybrid
+Num.N_LATIN = n_i; Num.N_Names[n_i] = 'latin suffixes'; Num.N_Help[n_i] = 'Latin suffixes for large numbers, such as T for trillion, Qa for quadrillion, V for vigintillion, ...'; n_i++; // abbreviation if available, else engineering, also full if fits in #digits precision: most human-like notation
+Num.N_HYBRID_T = n_i; Num.N_Names[n_i] = 'suffixes up to T, then eng'; Num.N_Help[n_i] = 'Latin suffixes, but only up to T (trillion, 1e12), then switches to engineering notation'; n_i++;
+Num.N_HYBRID_U = n_i; Num.N_Names[n_i] = 'suffixes up to U, then eng'; Num.N_Help[n_i] = 'Latin suffixes, but only up to U (undecillion, 1e36), then switches to engineering notation'; n_i++; // a later version of hybrid
 Num.N_SI = n_i; Num.N_Names[n_i] = 'suffixes SI'; Num.N_Help[n_i] = 'SI suffixes, such as K for kilo (1000), G for giga (1e9), up to Y for yotta (1e24). For larger numbers switches to engineering notation'; n_i++; // using the SI prefixes K,M,G,T,P,E,Z,Y, then engineering
 Num.N_ABC = n_i; Num.N_Names[n_i] = 'suffixes abc'; Num.N_Help[n_i] = 'abc suffixes, 1a for 1000, 1b for 1000000, 1aa for 1e81, etc...'; n_i++; // using the SI prefixes K,M,G,T,P,E,Z,Y, then engineering
 Num.N_ENG = n_i; Num.N_Names[n_i] = 'engineering'; Num.N_Help[n_i] = 'Use exponent notation, and the exponents are always multiples of 3. E.g. 10e6 for 10 million'; n_i++; // strict engineering notation
@@ -713,8 +713,8 @@ Num.N_LOG = n_i; Num.N_Names[n_i] = 'logarithm'; Num.N_Help[n_i] = 'Uses the bas
 Num.N_EXP = n_i; Num.N_Names[n_i] = 'natural'; Num.N_Help[n_i] = 'Uses the natural logarithm with e = 2.71828...'; n_i++; // exponential notation (not to be confused with scientific): e^ln(number)
 Num.N_HEX = n_i; Num.N_Names[n_i] = 'hexadecimal'; Num.N_Help[n_i] = 'Uses base 16'; n_i++; // hex notation with hex exponent (but otherwise behaves like scientific or engineering)
 Num.N_FULL = n_i; Num.N_Names[n_i] = 'full'; Num.N_Help[n_i] = 'Prints value with all digits, switches to scientific once unreasonably big'; n_i++;
-Num.N_HYBRID_T_SCI = n_i; Num.N_Names[n_i] = 'hybrid sci / latin T'; Num.N_Help[n_i] = 'Latin suffixes, but only up to T (trillion, 1e12), then switches to scientific notation'; n_i++;
-Num.N_HYBRID_U_SCI = n_i; Num.N_Names[n_i] = 'hybrid sci / latin U'; Num.N_Help[n_i] = 'Latin suffixes, but only up to U (undecillion, 1e36), then switches to scientific notation'; n_i++; // a later version of hybrid
+Num.N_HYBRID_T_SCI = n_i; Num.N_Names[n_i] = 'suffixes up to T, then sci'; Num.N_Help[n_i] = 'Latin suffixes, but only up to T (trillion, 1e12), then switches to scientific notation'; n_i++;
+Num.N_HYBRID_U_SCI = n_i; Num.N_Names[n_i] = 'suffixes up to U, then sci'; Num.N_Help[n_i] = 'Latin suffixes, but only up to U (undecillion, 1e36), then switches to scientific notation'; n_i++; // a later version of hybrid
 Num.N_SI_SCI = n_i; Num.N_Names[n_i] = 'suffixes SI'; Num.N_Help[n_i] = 'SI suffixes, such as K for kilo (1000), G for giga (1e9), up to Y for yotta (1e24). For larger numbers switches to scientific notation'; n_i++; // using the SI prefixes K,M,G,T,P,E,Z,Y, then engineering
 Num.N_Amount = n_i; // amount of notations
 

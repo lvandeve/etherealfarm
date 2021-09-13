@@ -629,7 +629,7 @@ function softReset(opt_challenge) {
   state.c_res.addInPlace(starterResources);
 
   var fieldsize = getNewFieldSize();
-  if(fieldsize[0] != state.numw && fieldsize[1] != state.numh) {
+  if(fieldsize[0] != state.numw || fieldsize[1] != state.numh) {
     state.numw = fieldsize[0];
     state.numh = fieldsize[1];
     initFieldUI();

@@ -376,7 +376,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     if(p.treeneighbor && state.upgrades2[upgrade2_season2[3]].count && this.type == CROPTYPE_FLOWER) {
       var bonus = upgrade2_winter_flower_bonus;
       result.mulInPlace(bonus);
-      if(breakdown) breakdown.push(['winter tree warmth (squirrel)', true, bonus, result.clone()]);
+      if(breakdown) breakdown.push(['winter tree warmth (flowers)', true, bonus, result.clone()]);
     }
   }
 }
@@ -4301,6 +4301,13 @@ function treeLevelResin(level, breakdown) {
     var bonus = upgrade2_resin_bonus.mulr(count).addr(1);
     resin.mulInPlace(bonus);
     if(breakdown) breakdown.push(['ethereal upgrades', true, bonus, resin.clone()]);
+  }
+
+  var count = state.upgrades3[upgrade3_resin].count;
+  if(count) {
+    var bonus = upgrade3_resin_bonus.mulr(count).addr(1);
+    resin.mulInPlace(bonus);
+    if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, resin.clone()]);
   }
 
   if(state.treelevel2) {

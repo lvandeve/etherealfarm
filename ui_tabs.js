@@ -316,7 +316,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: field tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'field';
     tabbuttons[tabnum].id = 'field_tab';
     fieldButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
@@ -331,7 +331,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: upgrades tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
     tabbuttons[tabnum].id = 'upgrades_tab';
     upgradesButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
@@ -346,7 +346,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
     tabbuttons[tabnum].id = 'ethereal_field_tab';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
@@ -362,7 +362,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal upgrades tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
     tabbuttons[tabnum].id = 'ethereal_upgrades_tab';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
@@ -378,7 +378,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab', true);
     tabbuttons[tabnum].textEl.innerText = 'fruit';
     tabbuttons[tabnum].id = 'fruit_tab';
     fruitButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
@@ -393,7 +393,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'automaton';
     tabbuttons[tabnum].id = 'achievements_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
@@ -409,7 +409,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'squirrel';
     tabbuttons[tabnum].id = 'achievements_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
@@ -425,7 +425,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'amber';
     tabbuttons[tabnum].id = 'achievements_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
@@ -441,7 +441,7 @@ function updateTabButtons() {
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: achievements tab');
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: achievements tab', true);
     tabbuttons[tabnum].id = 'achievements_tab';
     tabbuttons[tabnum].textEl.innerText = 'achievements';
     medalsButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set

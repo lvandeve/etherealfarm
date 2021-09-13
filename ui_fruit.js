@@ -802,13 +802,13 @@ var dragslot = -1; // used instead of e.dataTransfer.setData since v0.1.64 becau
 function setupFruitDrag(flex, slot, f) {
   if(f) {
     flex.div.draggable = true;
-    util.addEvent(flex.div, 'ondragstart', function(e) {
+    util.addEvent(flex.div, 'dragstart', function(e) {
       //e.dataTransfer.setData('text/plain', '' + f.slot);
       dragslot = f.slot;
       removeAllTooltips(); // they can get in the way over the drop target
     });
   }
-  util.addEvent(flex.div, 'ondrop', function(e) {
+  util.addEvent(flex.div, 'drop', function(e) {
     e.preventDefault(); // prevent firefox from actually trying to do a network request to http://0.0.0.<fruitindex> when trying to access e.dataTransfer
     // TODO: sometimes firefox ends up in a buggy state where dragging breaks (freezes after half a second), and when that happens it STILL does that network request thing. NOTE: possibly using the dragslot variable, and no longer usint dataTransfer, fixes this
     /*if(!e.dataTransfer) return;
@@ -823,15 +823,15 @@ function setupFruitDrag(flex, slot, f) {
     addAction({type:ACTION_FRUIT_SLOT, f:f, precise_slot:slot});
     update();
   });
-  util.addEvent(flex.div, 'ondragenter', function(e) {
+  util.addEvent(flex.div, 'dragenter', function(e) {
     e.preventDefault();
     return false;
   });
-  util.addEvent(flex.div, 'ondragover', function(e) {
+  util.addEvent(flex.div, 'dragover', function(e) {
     e.preventDefault();
     return false;
   });
-  util.addEvent(flex.div, 'ondragend', function(e) {
+  util.addEvent(flex.div, 'dragend', function(e) {
     e.preventDefault();
     // this assumes ondragend happens before ondrop, which it should. This is also not really necessary to do, but in case there would be other drag and droppable things, this prevents keeping the state from the fruit one around
     dragslot = -1;

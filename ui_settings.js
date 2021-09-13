@@ -398,7 +398,7 @@ function createAdvancedSettingsDialog() {
   var updatebuttontext = function(button) {
     var style = '?';
     if(state.uistyle == 2) style = 'dark';
-    else if(state.uistyle == 3) style = 'dark (alternative)';
+    else if(state.uistyle == 3) style = 'more dark';
     else style = 'light';
     button.textEl.innerText = 'interface theme: ' + style;
   };

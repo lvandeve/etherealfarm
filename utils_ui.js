@@ -74,8 +74,13 @@ function setAriaRole(div, role) {
 
 // use this instead of ".onclick = ..." for more accessible buttons
 // opt_label is an optional textual name for image-icon-buttons
-function addButtonAction(div, fun, opt_label) {
-  div.onclick = fun;
+function addButtonAction(div, fun, opt_label, opt_immediate) {
+  if(opt_immediate && !isTouchDevice()) {
+    // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
+    div.onmousedown = fun;
+  } else {
+    div.onclick = fun;
+  }
   div.tabIndex = 0;
   setAriaRole(div, 'button');
   //div.setAttribute('aria-pressed', 'false'); // TODO: is this needed? maybe it's only for toggle buttons? which addButtonAction is not.
@@ -92,12 +97,12 @@ function styleButton0(div, opt_disallow_hover_filter) {
   if(div.textEl) div.textEl.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
   if(!opt_disallow_hover_filter) {
-    util.setEvent(div, 'onmouseover', 'buttonstyle', function() { div.style.filter = 'brightness(0.93)';});
-    util.setEvent(div, 'onmouseout', 'buttonstyle', function() { div.style.filter = ''; });
+    util.setEvent(div, 'mouseover', 'buttonstyle', function() { div.style.filter = 'brightness(0.93)';});
+    util.setEvent(div, 'mouseout', 'buttonstyle', function() { div.style.filter = ''; });
   } else {
     // as an alternative to the filter, add an invisible border around the canvas, this slightly changes its size, indicating the hover that way
-    util.setEvent(div, 'onmouseover', 'buttonstyle', function() { div.style.border = '1px solid #0000';});
-    util.setEvent(div, 'onmouseout', 'buttonstyle', function() { div.style.border = ''; });
+    util.setEvent(div, 'mouseover', 'buttonstyle', function() { div.style.border = '1px solid #0000';});
+    util.setEvent(div, 'mouseout', 'buttonstyle', function() { div.style.border = ''; });
   }
 }
 
@@ -425,14 +430,14 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
     el.tooltipfun = fun;
     if(el.tooltipregistered) return; // prevent keeping adding event listeners, and make sure re-calling registerTooltip is fast (can be done every frame), just update the minimum needed to change the text
     el.tooltipregistered = true;
-    util.setEvent(el, 'onmouseover', 'tooltip', function(e) {
+    util.setEvent(el, 'mouseover', 'tooltip', function(e) {
       if(e.shiftKey || eventHasCtrlKey(e)) return;
       if(MOBILEMODE && !opt_allowmobile) return;
       maketip(el.tooltipfun(), e, false);
     });
 
     // NOTE: mouseout unwantedly also triggers when over child elements of el (solved inside) or when over the tooltip itself (solved by making tooltip never overlap el)
-    util.setEvent(el, 'onmouseout', 'tooltip', function(e) {
+    util.setEvent(el, 'mouseout', 'tooltip', function(e) {
       if(MOBILEMODE && !opt_allowmobile) return;
       // avoid the tooltip triggering many times while hovering over child nodes, which does cause mouseout events
       var e_el = e.toElement || e.relatedTarget;
@@ -913,6 +918,7 @@ function makeTextInput(title, fun) {
 
   var inputFlex = new Flex(dialog.content, 0.1, 0.4, 0.9, 0.6);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
+  area.style.fontSize = '100%';
   area.focus();
 }
 

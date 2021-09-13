@@ -635,31 +635,39 @@ var Utils = (function() {
   result.upperCaseFirstWord = upperCaseFirstWord;
 
   // adds event listener
-  // event is string of existing JS event function: 'onclick', 'onmouseover', 'onmouseout', ...
+  // event is string of existing JS event function excluding 'on': 'click', 'mouseover', 'mouseout', ...
   var addEvent = function(el, event, fun) {
-    if(!el.util_added_events_) el.util_added_events_ = {};
+    /*if(!el.util_added_events_) el.util_added_events_ = {};
     if(!el.util_added_events_[event]) el.util_added_events_[event] = [];
     if(el.util_added_events_[event].length > 8) {
       throw 'excessive amount of events added, there may be a bug where something keeps adding the same one';
     }
     el.util_added_events_[event].push(fun);
-    el[event] = bind(function(a, e) {
+    el['on' + event] = bind(function(a, e) {
       for(var i = 0; i < a.length; i++) {
         a[i](e);
       };
-    }, el.util_added_events_[event]);
+    }, el.util_added_events_[event]);*/
+    el.addEventListener(event, fun, false);
   };
   result.addEvent = addEvent;
 
   var setEvent = function(el, event, idname, fun) {
-    if(!el.util_set_events_) el.util_set_events_ = {};
+    /*if(!el.util_set_events_) el.util_set_events_ = {};
     if(!el.util_set_events_[event]) el.util_set_events_[event] = {};
     el.util_set_events_[event][idname] = fun;
     el[event] = bind(function(o, e) {
       for(var id in o) {
         if(o.hasOwnProperty(id)) o[id](e);
       }
-    }, el.util_set_events_[event]);
+    }, el.util_set_events_[event]);*/
+    if(!el.util_set_events_) el.util_set_events_ = {};
+    if(!el.util_set_events_[event]) el.util_set_events_[event] = {};
+    if(el.util_set_events_[event][idname]) {
+      el.removeEventListener(event, el.util_set_events_[event][idname]);
+    }
+    el.util_set_events_[event][idname] = fun;
+    el.addEventListener(event, fun, false);
   };
   result.setEvent = setEvent;
 

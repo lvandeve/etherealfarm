@@ -793,6 +793,13 @@ function clearField2(state) {
 }
 
 function changeFieldSize(state, w, h) {
+  var content = 0; // what to fill the new field cells with, depending on challenge
+  if(state.challenge == challenge_rocks) content = FIELD_ROCK;
+  if(state.challenge == challenge_rockier) content = FIELD_ROCK;
+  if(state.challenge == challenge_thistle) content = CROPINDEX + nettle_1;
+
+
+
   // this shift is designed such that the center tile of the old field will stay in the center, and in case of
   // even sizes will be at floor((w-1) / 2) horizontally, floor(h/2) vertically.
   // w and h should be larger than state.numw and state.numh respectively
@@ -805,9 +812,14 @@ function changeFieldSize(state, w, h) {
     for(var x = 0; x < w; x++) {
       var x2 = x + xs;
       var y2 = y + ys;
-      field[y][x] = (x2 >= 0 && x2 < state.numw && y2 >= 0 && y2 < state.numh) ? state.field[y2][x2] : new Cell(x, y, false);
-      field[y][x].x = x;
-      field[y][x].y = y;
+      if(x2 >= 0 && x2 < state.numw && y2 >= 0 && y2 < state.numh) {
+        field[y][x] = state.field[y2][x2];
+        field[y][x].x = x;
+        field[y][x].y = y;
+      } else {
+        field[y][x] = new Cell(x, y, false);
+        field[y][x].index = content;
+      }
     }
   }
   state.field = field;

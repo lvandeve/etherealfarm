@@ -341,6 +341,8 @@ document.addEventListener('keydown', function(e) {
           }
         }
       }
+    } else if(mouseOverUpgradeCrop != null) {
+      if(state.crops[mouseOverUpgradeCrop] && state.crops[mouseOverUpgradeCrop].unlocked) state.lastPlanted = mouseOverUpgradeCrop;
     }
   }
 
