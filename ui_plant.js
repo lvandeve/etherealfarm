@@ -32,17 +32,16 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   var canvasFlex = new Flex(flex, 0, [0.5, 0, -0.33], [0, 0, 0.66], [0.5, 0, 0.33]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
-  //canvasFlex.div.style.border = '1px solid white';
 
-  var infoFlex = new Flex(flex, [0, 0, 0.7], 0, 1, [0, 0, 0.5]);
+  var infoFlex = new Flex(flex, [0, 0, 0.7], 0.05, 1, [0, 0, 0.5]);
   var text = '';
-  //text +=  '<b>' + (opt_plantfun ? 'plant ' : '') + crop.name + '</b><br>';
-  text +=  '<b>' + crop.name + '</b><br>';
+  text +=  '<b>Plant ' + crop.name + '</b><br>';
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
   if(!opt_plantfun) text += '<b>cost:</b>' + cost.toString() + '<br>';
 
-  text += 'type: ' + getCropTypeName(crop.type);
+  text += 'type: ' + getCropTypeName(crop.type) + '<br>';
+  text += 'cost: ' + cost.toString();
 
   infoFlex.div.innerHTML = text;
 
@@ -53,11 +52,9 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
     addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');
   }
   if(opt_plantfun) {
-    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.4], [1, 0, -0.02], [0, 0, 0.98]);
-    styleButton(buyFlex.div);
-    buyFlex.div.className = 'efButtonTranslucent';
-    buyFlex.div.textEl.innerHTML = '<b>plant: </b>' + cost.toString();
+    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.0], [1, 0, -0.02], [0, 0, 0.98]);
     addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
+    styleButton0(buyFlex.div);
   }
 
   if(opt_tooltipfun) {
@@ -80,7 +77,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   }
 
   if(opt_plantfun && state.res.lt(cost)) {
-    buyFlex.div.className = 'efButtonTranslucentCantAfford';
+    flex.div.className = 'efButtonTranslucentCantAfford';
     registerUpdateListener(function() {
       if(!flex || !document.body.contains(buyFlex.div)) return false;
       var cost = crop.getCost();

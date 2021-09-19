@@ -744,6 +744,17 @@ function createStatsDialog() {
 
 var showing_changelog = false;
 
+var getAboutHeader = function() {
+  var text = '';
+  text += 'Reddit: <a target="_blank" href="https://www.reddit.com/r/etherealfarm/">https://www.reddit.com/r/etherealfarm/</a>';
+  text += '<br/>';
+  text += 'Discord: <a target="_blank" href="https://discord.gg/9eaTxXvMT2">https://discord.gg/9eaTxXvMT2</a>';
+  text += '<br/>';
+  text += 'Github: <a target="_blank" href="https://github.com/lvandeve/etherealfarm">https://github.com/lvandeve/etherealfarm</a>';
+  text += '<br/><br/>';
+  return text;
+};
+
 function createChangelogDialog() {
   showing_changelog = true;
   var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
@@ -763,12 +774,7 @@ function createChangelogDialog() {
   text += 'Ethereal Farm';
   text += '<br/><br/>';
 
-  text += 'Reddit: <a target="_blank" href="https://www.reddit.com/r/etherealfarm/">https://www.reddit.com/r/etherealfarm/</a>';
-  text += '<br/>';
-  text += 'Discord: <a target="_blank" href="https://discord.gg/9eaTxXvMT2">https://discord.gg/9eaTxXvMT2</a>';
-  text += '<br/>';
-  text += 'Github: <a target="_blank" href="https://github.com/lvandeve/etherealfarm">https://github.com/lvandeve/etherealfarm</a>';
-  text += '<br/><br/>';
+  text += getAboutHeader();
 
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';

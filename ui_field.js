@@ -271,9 +271,9 @@ function makeTreeDialog() {
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 0.98, 0.6, 0.3);
+  var f0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 0.98, 0.75, 0.3);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.01, 0, 0.2], 0.65, 1, 0.9, 0.3);
+  var f1 = new Flex(contentFlex, [0.01, 0, 0.2], 0.77, 1, 0.95, 0.3);
 
   var createText = function() {
     var text;
@@ -292,8 +292,18 @@ function makeTreeDialog() {
     if(state.challenge) {
       var c = challenges[state.challenge];
       var c2 = state.challenges[state.challenge];
+      var maxlevel = c2.maxlevel;
+      if(c.cycling > 1) maxlevel = c2.maxlevels[c2.num_completed % c.cycling];
       text += '<br>';
-      text += '<b>Challenge active</b>: ' + upper(c.name);
+      if(maxlevel > 0) {
+        if(state.treelevel > maxlevel) {
+          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel + '.';
+        } else {
+          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet reach your previous best of lvl ' + maxlevel + '.';
+        }
+      } else {
+        text += '<b>Challenge active</b>: ' + upper(c.name);
+      }
       if(c.targetlevel.length > 1) {
         if(!c.fullyCompleted()) {
           text += '<br>Current challenge target level: ' + c.targetlevel[c2.completed];
@@ -406,7 +416,7 @@ function makeTreeDialog() {
   });
 
   var y = 0;
-  var h = 0.22;
+  var h = 0.3;
 
   if(state.challenge) {
     var c = challenges[state.challenge];
@@ -1026,7 +1036,7 @@ function renderFieldInitialPlantHint() {
     if(do_border) {
       var fade = numplanted;
       // fade them out, to indicate that the player is on their own now to find spots to plant
-      var alpha = ['ff', 'cc', '99', '66', '33', '22', '11', '08', '04', '02', '01'][fade];
+      var alpha = ['ff', 'dd', 'bb', '99', '66', '33', '22', '11', '08', '04', '02', '01'][fade];
       var color = '#ff0000' + alpha;
       // indicate that you should plant
       // TODO: use some nicer kind of indication, a pixel art arrow pointing at it, a tutorial bubble, ...

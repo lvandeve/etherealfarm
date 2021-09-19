@@ -893,8 +893,9 @@ function updateFruitUI() {
     styleButton0(canvasFlex.div, true);
     var fruit_name = 'none';
     if(state.fruit_stored[i]) fruit_name = state.fruit_stored[i].toString();
+    registerTooltip(canvasFlex.div, 'make this fruit active');
     addButtonAction(canvasFlex.div, bind(function(i) {
-      addAction({type:ACTION_FRUIT_ACTIVE, slot:i, silent:true});
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:i, silent:true, allow_empty:true});
       update();
     }, i), 'activate stored fruit ' + i + ': ' + fruit_name);
   }
@@ -988,3 +989,30 @@ function updateFruitUI() {
 
 }
 
+
+/*
+goal of this function: indicate non-production fruits in a way that makes you remember you've got a special one selected
+
+return value is in order of increasingly less production focused and more specialized
+lower value means it's likely a fruit you want to use throughout entire runs
+higher value means it's likely a more specialized fruit that you want to use only under certain circumstances
+the higher value ability overrides the lower ones, e.g. a fruit with weather and grow is considered a weather one
+0 = production focused: only has boosts such as flower, berry, mushroom, bee, ...
+1 = watercress focused
+2 = nuts focused
+3 = twigs or resin focused
+4 = mushroom efficiency (nettle or musheff)
+5 = grow
+6 = weather
+7 = no fruit equipped at all
+*/
+function getFruitCategory(f) {
+  if(!f) return 7;
+  if(getFruitAbilityFor(f, FRUIT_WEATHER) > 0) return 6;
+  if(getFruitAbilityFor(f, FRUIT_GROWSPEED) > 0) return 5;
+  if(getFruitAbilityFor(f, FRUIT_MUSHEFF) > 0 || getFruitAbilityFor(f, FRUIT_NETTLEBOOST) > 0) return 4;
+  if(getFruitAbilityFor(f, FRUIT_TWIGSBOOST) > 0 || getFruitAbilityFor(f, FRUIT_RESINBOOST) > 0) return 3;
+  if(getFruitAbilityFor(f, FRUIT_NUTBOOST) > 0) return 2;
+  if(getFruitAbilityFor(f, FRUIT_WATERCRESS) > 0) return 1;
+  return 0; // only production skills
+}

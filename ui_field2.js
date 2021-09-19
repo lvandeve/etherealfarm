@@ -24,7 +24,7 @@ var field2Rows;
 
 // get crop info in HTML
 function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
-  var result = 'Ethereal ' + upper(c.name);
+  var result = 'Ethereal ' + c.name;
   result += '<br/>Crop type: ' + getCropTypeName(c.type);
   result += '<br/>';
 
@@ -48,7 +48,7 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     result += 'Effect: ' + c.effect_description_short + '<br/>';
   }
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) {
     var total = c.getBasicBoost(f);
     result += '<br/>';
     result += 'Boost amount: ' + total.toPercentString();
@@ -109,7 +109,7 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
 function getCropInfoHTML2Breakdown(f, c) {
   var result = '';
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) {
     var breakdown = [];
     var total = c.getBasicBoost(f, breakdown);
     result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
@@ -317,6 +317,7 @@ function makeField2Dialog(x, y) {
     text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
     text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
     if(state.ethereal_nettle_bonus.neqr(0)) text += '• nettle boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
+    if(state.ethereal_bee_bonus.neqr(0)) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
     text += '<br><br>';
 
     flex.div.innerHTML = text;
@@ -327,6 +328,7 @@ function makeField2Dialog(x, y) {
 }
 
 function initField2UI() {
+  field2Flex.clear();
   field2Rows = [];
   field2Divs = [];
   for(var y = 0; y < state.numh2; y++) {

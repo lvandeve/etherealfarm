@@ -68,7 +68,7 @@ function updateRightPane() {
     for(i = 0; i <= unlocked.length; i++) {
       if(i >= maxnum) break;
 
-      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0, 0 + i / maxnum, 1, (i + 1) / maxnum, 0.65);
+      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.03, (0.03 + i) / maxnum, 1, (i + 1) / maxnum, 0.65);
       bottomrightSidePanelFlexCache[i] = chip;
 
       if(i == 0) {
@@ -173,7 +173,11 @@ function updateRightPane() {
     }
     if(state.g_numresets > 0) {
       if(state.challenge) {
-        text += '• Max challenge level: ' + state.challenges[state.challenge].maxlevel;
+        if(state.treelevel >= state.challenges[state.challenge].maxlevel) {
+          text += '• Max challenge lvl before: ' + state.challenges[state.challenge].maxlevel;
+        } else {
+          text += '• Max challenge level: ' + state.challenges[state.challenge].maxlevel;
+        }
       } else {
         //text += '• #Transcensions: ' + state.g_numresets;
         //text += '<br>';

@@ -43,8 +43,11 @@ function rerenderUpgradeChip(u, chip, completed) {
 
   var titleFlex = chip.titleFlex
   var name = completed ? u.getName() : u.getNextName();
-  titleFlex.div.innerHTML = upper(name);
-  titleFlex.div.style.whiteSpace = 'nowrap';
+  //var verb = u.is_choice ? 'Choice' : 'Buy'
+  //titleFlex.div.style.whiteSpace = 'nowrap';
+
+  //var text = verb + ': ' + name;
+  var text = name;
 
   var canvasFlex = chip.canvasFlex;
   canvasFlex.clear();
@@ -68,24 +71,31 @@ function rerenderUpgradeChip(u, chip, completed) {
   var buyFlex = chip.buyFlex;
 
   if(!completed) {
-    var buyText = (u.is_choice ? 'Choose' : ('Buy: ' + cost.toString()));
+    text += '<br>';
+    text += (u.is_choice ? 'Choose' : ('Cost: ' + cost.toString()));
 
-    buyFlex.div.textEl.innerText = buyText;
+    //buyFlex.div.textEl.innerText = buyText;
 
-    if(cant_afford) buyFlex.div.className = 'efButtonCantAfford';
-    else buyFlex.div.className = 'efButton';
+    //if(cant_afford) buyFlex.div.className = 'efButtonCantAfford';
+    //else buyFlex.div.className = 'efButton';
+    if(cant_afford) titleFlex.div.className = 'efTextCantAfford';
+    else titleFlex.div.className = '';
 
     util.setEvent(chip.div, 'mouseover', 'upgradeseen', function() {
       state.upgrades[u.index].seen = true;
     });
 
   } else {
+    text += '<br>';
     if(u.is_choice && completed) {
-      buyFlex.div.innerText = 'Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+      text += 'Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
     } else {
-      buyFlex.div.innerText = 'Cost: ' + cost.toString();
+      text += 'Cost: ' + cost.toString();
     }
   }
+
+
+  titleFlex.div.innerHTML = text;
 
   return chip;
 }
@@ -98,11 +108,11 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
     return;
   }
   var div = chip.div;
-  var titleFlex = new Flex(chip, [0, 0, 0.8], 0.05, 1, 0.3, 0.95);
+  var titleFlex = new Flex(chip, [0, 0, 0.8], 0.05, 1, 0.3, 1.1);
   chip.titleFlex = titleFlex;
   var canvasFlex = new Flex(chip, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
   chip.canvasFlex = canvasFlex;
-  var buyFlex = new Flex(chip, [0, 0, 0.8], 0.32, 0.9, [0.5, 0, 0.35], 0.9);
+  var buyFlex = new Flex(chip, [0, 0, 0.8], 0.01, 0.9, [0.5, 0, 0.35], 0.99);
   chip.buyFlex = buyFlex;
 
 
@@ -157,7 +167,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
   };
 
   if(!completed) {
-    styleButton(buyFlex.div);
+    styleButton0(buyFlex.div);
 
     addButtonAction(buyFlex.div, bind(function(i, e) {
       var u = upgrades[chip.u];

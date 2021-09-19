@@ -148,8 +148,47 @@ function updateTabButtons2() {
   if(tabbuttons[tabnum]) {
     var num = state.fruit_stored.length + state.fruit_sacr.length;
     var text = 'fruit<br/>(' + num + ')';
-    if(!state.fruit_seen) {
-      text = '<b><font color="red">' + text + '</font></b>';
+    var a = getActiveFruit();
+    var special = getFruitCategory(a);
+    if(special) {
+      var lowest = 7; // lowest category of other fruit you have
+      var tier = a ? a.tier : 0;
+      for(var i = 0; i < state.fruit_stored.length; i++) {
+        var f = state.fruit_stored[i];
+        if(!f) continue;
+        if(f == a) continue;
+        if(f.tier < tier) continue;
+        var special2 = getFruitCategory(f);
+        if(special2 < lowest) lowest = special2;
+      }
+      if(special < 7 && special < lowest) special = 0; // don't indicate you don't have a production fruit active, when you don't have a production fruit in the first place
+      if(special == 7 && (state.fruit_stored.length + state.fruit_sacr.length == 0)) special = 0;
+    }
+
+    var color = undefined;
+    var bold = false;
+    var darkstyle = state.uistyle == 2 || state.uistyle == 3;
+    if(!state.fruit_seen || special == 7) {
+      color = 'red';
+      bold = true;
+    } else if(special >= 5) {
+      // grow or weather: very green
+      color = darkstyle ? '#0c0' : '#0c0';
+    } else if(special >= 4) {
+      // mushroom eff: blue
+      color = darkstyle ? '#44f' : '#44f';
+    } else if(special >= 2) {
+      // resin/twigs/nuts: slight brown
+      color = darkstyle ? '#fa0' : '#f80';
+    } else if(special >= 1) {
+      // watercress: slight green
+      color = darkstyle ? '#bdb' : '#040';
+    }
+    if(color) {
+      text = '<font color="' + color + '">' + text + '</font>';
+    }
+    if(bold) {
+      text = '<b>' + text + '</b>';
     }
 
     if(text != fruitButtonLastText) {
@@ -308,6 +347,8 @@ function updateTabButtons() {
 
   // the order below determines the display order of the tabs
 
+  var tabFontSize = '120%';
+
   tabnum = tabindex_field;
   if(wanted[tabnum]) {
     var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
@@ -315,6 +356,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'field';
@@ -330,6 +372,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
@@ -345,6 +388,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
@@ -361,6 +405,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
@@ -377,6 +422,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab', true);
     tabbuttons[tabnum].textEl.innerText = 'fruit';
@@ -392,6 +438,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'automaton';
@@ -408,6 +455,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'squirrel';
@@ -424,6 +472,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'amber';
@@ -440,6 +489,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: achievements tab', true);
     tabbuttons[tabnum].id = 'achievements_tab';

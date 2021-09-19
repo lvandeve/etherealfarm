@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.87 (2021-09-19):';
+  text += '<br/>• New ethereal upgrade.';
+  text += '<br/>• New ethereal crops. Includes bees.';
+  // there are a few different colors, but the goal of the color is not to distinguish exact categories like "grow", "mushroom", ...,
+  // instead the color is intended to be a visible warning that you may have a fruit active that's only for specialized purposes like watercress, weaether, grow speed, ...
+  // if you have a special fruit active but don't have a regular pure production fruit of high enough tier in the first place, it won't show the color
+  text += '<br/>• Fruit tab color now hints when a non-production fruit is active.';
+  text += '<br/>• Cosmetic tweaks.';
+  text += '<br/><br/>';
+
   text += '0.1.86b (2021-08-28):';
   text += '<br/>• Fixed issue with the soft cap of grow times, so that early grow speed upgrades affect all plants at least some visible amount.';
   text += '<br/><br/>';

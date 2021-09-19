@@ -29,11 +29,12 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
 
   var infoFlex = new Flex(flex, [0, 0, 0.7], 0, 1, [0, 0, 1]);
   var text = '';
-  text += '<b>' + crop.name + '</b><br>';
+  text += '<b>Plant ' + crop.name + '</b><br>';
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
   if(opt_replace && opt_field && opt_field.cropIndex() == crop.index) cost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, amount used in cost computation is one less
-  text += 'type: ' + getCropTypeName(crop.type);
+  text += 'type: ' + getCropTypeName(crop.type) + '<br>';
+  text += 'cost: ' + cost.toString();
 
   var buyFlex = undefined;
 
@@ -42,12 +43,9 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
     addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');
   }
   if(opt_plantfun) {
-    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.4], [1, 0, -0.02], [0, 0, 0.98]);
-    //styleButton0(buyFlex.div);
-    //buyFlex.div.className = 'efButton';
-    styleButton(buyFlex.div);
-    buyFlex.div.textEl.innerHTML = '<b>plant: </b>' + cost.toString();
+    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.0], [1, 0, -0.02], [0, 0, 0.98]);
     addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
+    styleButton0(buyFlex.div);
   } else {
     if(state.res.lt(cost)) {
       text += '<br><font color="#666">cost: ' + cost.toString() + '</font>';
@@ -76,7 +74,7 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   }
 
   if(opt_plantfun && state.res.lt(cost)) {
-    buyFlex.div.className = 'efButtonCantAfford';
+    flex.div.className = 'efButtonCantAfford';
   }
 
   infoFlex.div.innerHTML = text;

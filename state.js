@@ -724,6 +724,7 @@ function State() {
   this.ethereal_mush_bonus = Num(0);
   this.ethereal_flower_bonus = Num(0);
   this.ethereal_nettle_bonus = Num(0);
+  this.ethereal_bee_bonus = Num(0);
 
   // derived stat, not to be saved.
   this.challenges_unlocked = 0;
@@ -1072,6 +1073,7 @@ function computeDerived(state) {
   state.ethereal_mush_bonus = Num(0);
   state.ethereal_flower_bonus = Num(0);
   state.ethereal_nettle_bonus = Num(0);
+  state.ethereal_bee_bonus = Num(0);
 
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
@@ -1090,6 +1092,9 @@ function computeDerived(state) {
         }
         if(type == CROPTYPE_NETTLE) {
           state.ethereal_nettle_bonus.addInPlace(c.getBasicBoost(f));
+        }
+        if(type == CROPTYPE_BEE) {
+          state.ethereal_bee_bonus.addInPlace(c.getBasicBoost(f));
         }
       }
     }
@@ -1223,14 +1228,18 @@ function getActiveFruit() {
 }
 
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
-function getFruitAbility(ability) {
-  var f = getActiveFruit();
+function getFruitAbilityFor(f, ability) {
   if(!f) return 0;
   for(var i = 0; i < f.abilities.length; i++) {
     if(f.abilities[i] == ability) return f.levels[i];
   }
 
   return 0;
+}
+
+// returns the level of a specific fruit ability, or 0 if you don't have that ability
+function getFruitAbility(ability) {
+  return getFruitAbilityFor(getActiveFruit(), ability);
 }
 
 // similar to getFruitAbility but conveniently takes multi-season fruits into account

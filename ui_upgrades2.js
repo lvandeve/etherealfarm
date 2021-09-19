@@ -29,8 +29,9 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   var cost = u.getCost(completed ? -1 : 0);
   var titleFlex = new Flex(flex, [0, 0, 0.8], 0.05, 1, 0.3, 1);
   var name = upper(completed ? u.getName() : u.getNextName());
-  titleFlex.div.innerHTML = name;
-  titleFlex.div.style.whiteSpace = 'nowrap';
+  //titleFlex.div.innerHTML = name;
+  //titleFlex.div.style.whiteSpace = 'nowrap';
+  var text = name;
 
   var canvasFlex = new Flex(flex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
   if(u.bgcolor) {
@@ -48,13 +49,13 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     renderImage(u.image1, canvas);
   }
 
-  var buyFlex = new Flex(flex, [0, 0, 0.8], 0.4, 0.9, [0.5, 0, 0.35], 0.8);
+  var buyFlex = new Flex(flex, [0, 0, 0.8], 0.01, 0.9, [0.5, 0, 0.35], 0.99);
 
   var infoText = upper(name);
   infoText += '<br><br>Cost: ' + cost.toString();
-  
+
   infoText += '<br><br>' + 'have of this upgrade: ' + state.upgrades2[u.index].count;
-  
+
   if(u.description) {
     infoText += '<br><br>' + u.description;
   }
@@ -63,20 +64,20 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     infoText += '<br><br>' + 'Ethereal tree level: ' + u.treelevel2;
   }
 
+  text += '<br>';
+  text += 'Cost: ' + cost.toString();
+
   if(!completed) {
-    styleButton(buyFlex.div);
-    var buyText = 'Cost: ' + cost.toString();
+    styleButton0(buyFlex.div);
 
-    buyFlex.div.textEl.innerText = buyText;
+    //buyFlex.div.textEl.innerText = buyText;
 
-    if(state.res.lt(cost)) buyFlex.div.className = 'efButtonCantAfford';
+    if(state.res.lt(cost)) titleFlex.div.className = 'efTextCantAfford';
 
     addButtonAction(buyFlex.div, bind(function(i, e) {
       addAction({type:ACTION_UPGRADE2, u:u.index});
       update();
     }, i));
-  } else {
-    buyFlex.div.innerText = 'Cost: ' + cost.toString();
   }
 
 
@@ -89,6 +90,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     dialog.content.div.innerHTML = infoText;
   }, 'ethereal upgrade icon for ' + name);
 
+  titleFlex.div.innerHTML = text;
 
   return flex;
 }

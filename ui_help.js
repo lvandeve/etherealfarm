@@ -262,7 +262,7 @@ registerHelpDialog(1, 'Transcension', 'You performed your first transcension! Yo
   undefined,
   '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all type of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
   [[undefined,clover[4],undefined],
-   [blackberry[4],whitelotus[4],champignon[4]],
+   [blackberry[4],images_whitelotus[4],champignon[4]],
    [undefined,blackberry[4],undefined]]);
 
 // obsolete: the transcension II system is gone

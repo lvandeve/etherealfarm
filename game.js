@@ -1702,7 +1702,27 @@ function addRandomFruit() {
     state.c_numfruits++;
     state.g_numfruits++;
 
-    state.fruit_seen = false;
+    // indicate if higher level fruit than you are using
+    // includes some heuristics for when dropped fruit is better and thus worth indicating
+    // these heuristics are not flawless and a player should take a look at the fruit tab even if it's not indicated red anyway, when looking for a particular fruit to fuse, ...
+    var better_fruit = false;
+    if(!getActiveFruit()) {
+      better_fruit = true;
+    } else {
+      var a = getActiveFruit();
+      if(fruit.tier > a.tier) better_fruit = true;
+      if(fruit.tier == a.tier) {
+        if((fruit.type != 0 && a.type == 0) || (a.type <= 4 && fruit.type > 0 && fruit.type != a.type)) {
+          better_fruit = true;
+        }
+        if(a.type == 0 || (a.type != 0 && fruit.type != 0)) {
+          if(getFruitCategory(fruit) < getFruitCategory(a)) {
+            better_fruit = true;
+          }
+        }
+      }
+    }
+    if(better_fruit) state.fruit_seen = false;
 
     fruits.push(fruit);
 
@@ -3155,7 +3175,8 @@ var update = function(opt_ignorePause) {
         var slot = action.slot;
         var ok = true;
         if(slot < 0) ok = false;
-        if(slot >= state.fruit_stored.length) ok = false;
+        if(!action.allow_empty && slot >= state.fruit_stored.length) ok = false;
+        if(slot >= state.fruit_slots) ok = false;
         if(ok) {
           state.fruit_active = slot;
           updateFruitUI();
@@ -3647,6 +3668,16 @@ var update = function(opt_ignorePause) {
       if(state.treelevel2 >= 7) {
         unlockEtherealCrop(berry2_3);
         unlockEtherealCrop(mush2_3);
+      }
+      if(state.treelevel2 >= 8) {
+        unlockEtherealCrop(lotus2_2);
+        unlockEtherealCrop(bee2_0);
+      }
+      if(state.treelevel2 >= 9) {
+        unlockEtherealCrop(flower2_3);
+      }
+      if(state.treelevel2 >= 10) {
+        unlockEtherealCrop(nettle2_1);
       }
     }
 

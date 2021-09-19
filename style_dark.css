@@ -41,6 +41,10 @@ a:visited {
   color: #777;
 }
 
+.efTextCantAfford {
+  color: #777;
+}
+
 .efButtonHighlighted {
   background-color: #888;
   border: 1px solid #ddd;
@@ -92,7 +96,7 @@ a:visited {
 }
 
 .efUpgradeChip {
-  background-color: #640;
+  background-color: #333;
   border: 1px solid #990;
 }
 

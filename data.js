@@ -40,7 +40,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_BERRY) return 'berry';
   if(type == CROPTYPE_MUSH) return 'mushroom';
   if(type == CROPTYPE_FLOWER) return 'flower';
-  if(type == CROPTYPE_NETTLE) return 'nettle';
+  if(type == CROPTYPE_NETTLE) return 'prickly';
   if(type == CROPTYPE_SHORT) return 'short-lived';
   if(type == CROPTYPE_AUTOMATON) return 'automaton';
   if(type == CROPTYPE_LOTUS) return 'lotus';
@@ -954,6 +954,15 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
         result.mulInPlace(bonus);
         if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
       }
+    }
+  }
+
+  // ethereal crops bonus to basic crops
+  if(this.type == CROPTYPE_BEE) {
+    var ethereal_boost = state.ethereal_bee_bonus.addr(1);
+    if(ethereal_boost.neqr(1)) {
+      result.mulInPlace(ethereal_boost);
+      if(breakdown) breakdown.push(['ethereal crops', true, ethereal_boost, result.clone()]);
     }
   }
 
@@ -2824,7 +2833,6 @@ During this challenge, only the first tier of each crop type is available.
 `,
 `
 • Only blackberries, champignons, clovers, nettle, beehives, watercress and mistletoe are available, from the beginning<br>
-• Everything else works as normal<br>
 `,
 ['unlock the auto-unlock ability of the automaton'],
 'reaching ethereal tree level 4 and having automaton with auto-plant',
@@ -3161,6 +3169,13 @@ function registerFern2(name, treelevel2, tier, cost, planttime, effect_descripti
   return index;
 }
 
+function registerBeehive2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_BEE, tier);
+  var crop = crops2[index];
+  crop.effect = effect;
+  return index;
+}
+
 
 crop2_register_id = 0;
 var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
@@ -3191,15 +3206,21 @@ crop2_register_id = 75;
 var flower2_0 = registerFlower2('clover', 0, 0, Res({resin:50}), 120, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
 var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 180, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
 var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5e6}), 180, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
+var flower2_3 = registerFlower2('dandelion', 9, 4, Res({resin:10e9}), 180, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', dandelion);
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts nettles in the basic field (additive).', images_nettle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts prickly plants in the basic field (additive).', images_nettle);
+var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, 60, Num(1.4), undefined, 'boosts prickly plants in the basic field (additive).', images_thistle);
 
 crop2_register_id = 150;
-var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', whitelotus);
-var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', pinklotus);
+var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
+var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
+var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, 300, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
 
-
+crop2_register_id = 200;
+// the first beehive has only 1% boost, however by the time you unlock this beehive you can get a massive boost from blue lotuses next to a beehive, one blue lotus next to a beehive turns this boost into 33%, and you can have more than 1 blue lotus next to it. For that reason it starts so low, because if this has a base boost of e.g. 25% this would be a way too huge jump in gameplay boost by just unlocking this new ethereal crop type at a time when you already have many lotuses
+// also this makes the ethereal beest require some care, you can't just plant it in a corner with no lotuses.
+var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), 60, Num(0.01), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
 
 
 // templates
@@ -3631,7 +3652,24 @@ var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:
 LEVEL2 = 8;
 upgrade2_register_id = 300;
 
-// TODO
+var upgrade2_field2_7x7 = registerUpgrade2('ethereal field 7x7', LEVEL2, Res({resin:10e9}), 1, function() {
+  var numw2 = Math.max(7, state.numw2);
+  var numh2 = Math.max(7, state.numh2);
+  changeField2Size(state, numw2, numh2);
+  initField2UI();
+}, function(){return state.numw2 >= 7 && state.numh2 >= 6}, 1, 'increase ethereal field size to 7x7 tiles', undefined, undefined, field_ethereal[0]);
+
+
+///////////////////////////
+LEVEL2 = 9;
+upgrade2_register_id = 400;
+
+
+///////////////////////////
+LEVEL2 = 10;
+upgrade2_register_id = 500;
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3686,9 +3724,6 @@ var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't
 // NOT TODO: one that extends lifetime of watercress --> do not do this: too much manual work required with swapping fruits when active playing with watercress then
 // NOT TODO: one affecting ferns: same issue: causes too much manual work during active playing and counting on fern spawn times
 // NOT TODO: one decreasing cost: would cause an annoying technique where you have to swap fruits all the time before planting anything
-// NOT TODO, unless method of tracking resin multiplier over time is added: one increasing resin gain (or tree spore consumption), since then one can swap it right before tree levels
-// TODO: one that boosts nettles; can be for later tier fruits with 3+ slots only, since it's similar to mushboost and musheff, but would be its own separate multiplier so in combination can be really powerful
-// TODO: one that improves beehives, but only higher level fruits when it's very likely one already finished bee challenge
 
 // returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
 function getFruitBoost(ability, level, tier) {
@@ -4716,7 +4751,7 @@ function getFernWaitTime() {
   var progress = state.res.seeds;
   var mintime = 0;
   if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
-  else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 1);
+  else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 2.5);
   else if(progress.ltr(150)) mintime = 10;
   else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
   else mintime = fern_wait_minutes * 60;
