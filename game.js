@@ -173,6 +173,7 @@ function resetGlobalStateVars(opt_state) {
   large_time_delta_res = opt_state ? Res(opt_state.res) : Res();
   num_season_changes = 0;
   num_tree_levelups = 0;
+  helpNeverAgainLocal = {};
 }
 
 function hardReset() {

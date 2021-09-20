@@ -4749,13 +4749,15 @@ function getWorkerBeeBonus() {
 
 function getFernWaitTime() {
   var progress = state.res.seeds;
-  var mintime = 0;
-  if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
-  else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 2.5);
-  else if(progress.ltr(150)) mintime = 10;
-  else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
-  else mintime = fern_wait_minutes * 60;
+  var mintime = fern_wait_minutes * 60;
   if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
+
+  if(gain.seeds.ltr(0.5)) {
+    if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
+    else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 2.5);
+    else if(progress.ltr(150)) mintime = 10;
+    else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
+  }
   return mintime;
 }
 

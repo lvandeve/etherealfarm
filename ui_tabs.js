@@ -157,7 +157,7 @@ function updateTabButtons2() {
         var f = state.fruit_stored[i];
         if(!f) continue;
         if(f == a) continue;
-        if(f.tier < tier) continue;
+        if(f.tier < tier - 1) continue;
         var special2 = getFruitCategory(f);
         if(special2 < lowest) lowest = special2;
       }
@@ -172,17 +172,18 @@ function updateTabButtons2() {
       color = 'red';
       bold = true;
     } else if(special >= 5) {
-      // grow or weather: very green
-      color = darkstyle ? '#0c0' : '#0c0';
+      // grow or weather: green
+      color = darkstyle ? '#cec' : '#050';
     } else if(special >= 4) {
       // mushroom eff: blue
-      color = darkstyle ? '#44f' : '#44f';
+      color = darkstyle ? '#ccf' : '#00b';
     } else if(special >= 2) {
-      // resin/twigs/nuts: slight brown
-      color = darkstyle ? '#fa0' : '#f80';
+      // resin/twigs/nuts: brown/orange
+      color = darkstyle ? '#ecb' : '#630';
     } else if(special >= 1) {
       // watercress: slight green
-      color = darkstyle ? '#bdb' : '#040';
+      // commented out: it's production-like enough and there are already confusingly many tab colors, which are now more subtle and indistinguishable
+      //color = darkstyle ? '#bdb' : '#040';
     }
     if(color) {
       text = '<font color="' + color + '">' + text + '</font>';

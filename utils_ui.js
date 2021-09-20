@@ -593,7 +593,7 @@ set parent to null or undefined to create root flex (will then use document.body
 coordinates are all in range 0..1, representing relative size factor of parent
 the x/y coordinates may also be an array of 1, 2, 3 or 4 items, then:
 -the first is relative size compared to corresponding size (w or h)
--the second is relative size compared to the opposing dimension
+-the second is relative size compared to the opposing dimension (h or w)
 -the third is relative size compared to minimum dimension (w or h)
 -the fourth is a factor used for the opposing dimension in the min(current, opposing) formula above. Default value is 1. Other values allow to use the "minimum dimension" feature from the third value for non-square parent flexes.
 e.g. the formula for "left" is (with w and h the width and height of parent): x0[0] * w + x0[1] * h + x0[2] * min(w, x0[3] * h)
