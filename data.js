@@ -3949,7 +3949,7 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
 
   // level 75: platinum introduced
   if(treelevel >= 75 && treelevel <= 79) {
-    return (roll > prob25) ? 5 : 4;
+    return (roll > prob75) ? 5 : 4;
   }
 
   // level 80
