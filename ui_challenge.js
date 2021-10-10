@@ -155,6 +155,28 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   var currentlyrunning = (state.challenge == c.index);
 
   text += '<b>Current stats:</b><br>';
+  text += getChallengeStatsString(challenge_id, include_current_run);
+
+  for(var j = 0; j < c2.completed; j++) {
+    text += '• Reward gotten: ' + c.rewarddescription[j];
+    text += '<br>';
+  }
+
+  text += '<br>';
+  text += '<b>This challenge was unlocked by:</b> ' + c.unlockdescription;
+
+  scrollFlex.div.innerHTML = text;
+}
+
+
+function getChallengeStatsString(challenge_id, include_current_run) {
+  var c = challenges[challenge_id];
+  var c2 = state.challenges[challenge_id];
+
+  var currentlyrunning = (state.challenge == c.index);
+
+  var text = '';
+
   if(c.cycling > 1) {
     var cycle = c2.num_completed % c.cycling;
     var maxlevel = Math.max(c2.maxlevels[cycle], currentlyrunning ? state.treelevel : 0);
@@ -167,8 +189,8 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     }
     text += '<br>';
     //text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs. Formula: <b>' + c.bonus.toPercentString() + '</b> * (level ^ ' + challenge_bonus_exponent + ').'  + '<br>';
-    for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
-    text += '<br>';
+    //for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
+    //text += '<br>';
     if(currentlyrunning) {
       text += '• Max levels reached: ';
       for(var j = 0; j < c.cycling; j++) {
@@ -182,7 +204,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
         if(j == cycle) text += ' <b>(after: ' + getChallengeBonus(c.index, maxlevel, cycle).toPercentString() + ')</b>';
       }
       text += '<br>';
-      text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
+      //text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
     } else {
       text += '• Max levels reached: ';
       for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c2.maxlevels[j];
@@ -190,7 +212,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       text += '• Production bonuses: ';
       for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], j).toPercentString();
       text += '<br>';
-      text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
+      //text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
     }
   } else {
     var maxlevel = Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0);
@@ -227,20 +249,11 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   text += '• Completed: ' + completedtext + '<br>';
 
-  for(var j = 0; j < c2.completed; j++) {
-    text += '• Reward gotten: ' + c.rewarddescription[j];
-    text += '<br>';
-  }
-
-  text += '<br>';
-  text += '<b>This challenge was unlocked by:</b> ' + c.unlockdescription;
-
-  scrollFlex.div.innerHTML = text;
+  return text;
 }
 
+
 var challengedialogopen = false;
-
-
 // opt_from_challenge = whether you open this dialog after just having completed a challenge as well
 function createChallengeDialog(opt_from_challenge) {
   var dialog = createDialog();
@@ -277,7 +290,6 @@ function createChallengeDialog(opt_from_challenge) {
   var pos = 0;
   var h = 0.1;
 
-  // TODO: the display order should be different than the registered order, by difficulty level
   for(var i = 0; i < challenges_order.length; i++) {
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
@@ -300,6 +312,9 @@ function createChallengeDialog(opt_from_challenge) {
     button.div.onclick = bind(function(c) {
       createChallengeDescriptionDialog(c.index, false, true);
     }, c);
+
+    var tooltiptext = getChallengeStatsString(challenges_order[i], true);
+    registerTooltip(button.div, tooltiptext);
   }
 }
 

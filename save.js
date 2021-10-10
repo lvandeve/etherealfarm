@@ -1759,6 +1759,16 @@ function decState(s) {
     state.medals[medal_challenge_thistle].seen = state.medals[medal_challenge_thistle].earned = false;
   }
 
+  if(state.g_numresets >= 1 && save_version <= 4096*1+87) {
+    var tokens = Math.ceil(state.numw2 * state.numh2 * 0.5);
+    if(state.delete2tokens > tokens) {
+      state.delete2tokens = (state.delete2tokens % tokens) + tokens;
+    } else {
+      showMessage('Seasons now drop more ethereal delete tokens, since this save was loaded from an older version one extra drop is given for free: ' + tokens + ' tokens added');
+      state.delete2tokens += tokens;
+    }
+  }
+
   if(error) return err(4);
   state.g_numloads++;
   return state;

@@ -359,11 +359,22 @@ var blueprintdialogopen = false;
 function createBlueprintsDialog(opt_transcend) {
   if(!haveAutomaton()) return;
 
-  var dialog = createDialog();
+  var challenge_button_name = undefined;
+  var challenge_button_fun = undefined;
+  if(opt_transcend) {
+    challenge_button_name = 'challenges';
+    if(state.untriedchallenges) challenge_button_name = 'challenges\n(new!)';
+    challenge_button_fun = function(){
+      createChallengeDialog();
+    };
+  }
+
+  var dialog = createDialog(undefined, challenge_button_fun, challenge_button_name);
   blueprintdialogopen = true;
   dialog.onclose = function() {
     blueprintdialogopen = false;
   };
+
 
   var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
   centerText2(titleFlex.div);

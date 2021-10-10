@@ -154,6 +154,11 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   background-color: #080;
 }
 
+.efAutomatonAuto2 {
+  color: #fff;
+  background-color: #088;
+}
+
 .efAutomatonGlobalOff {
   color: #fff;
   background-color: #888;

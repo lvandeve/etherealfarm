@@ -943,6 +943,7 @@ function computeDerived(state) {
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
         state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
+        state.specialfieldcount[f.index]++;
         state.numemptyfields++;
       } else {
         state.specialfieldcount[f.index]++;
@@ -1383,12 +1384,26 @@ function getResinHour() {
   return getUpcomingResin().divr(hours);
 }
 
+function getPrevResinHour() {
+  if(state.p_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
+  var hours = state.p_runtime / 3600;
+  if(!hours) return Num(0);
+  return state.p_res.resin.divr(hours);
+}
+
 // returns twigs per hour so far this run
 function getTwigsHour() {
   if(state.c_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
   var hours = state.c_runtime / 3600;
   if(!hours) return Num(0);
   return getUpcomingTwigs().divr(hours);
+}
+
+function getPrevTwigsHour() {
+  if(state.p_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
+  var hours = state.p_runtime / 3600;
+  if(!hours) return Num(0);
+  return state.p_res.twigs.divr(hours);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

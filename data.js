@@ -188,7 +188,12 @@ function Crop() {
 var sameTypeCostMultiplier = 1.5;
 var sameTypeCostMultiplier_Flower = 2;
 var sameTypeCostMultiplier_Short = 1;
-var cropRecoup = 0.33;  // recoup for deleting a plant. It is only partial, the goal of the game is not to replace plants often
+// returns recoup for deleting a plant. It is only partial, the goal of the game is not to replace plants often
+function getCropRecoup() {
+  if(state.challenges[challenge_nodelete].completed) return 0.66;
+  return 0.33;
+}
+
 
 // ethereal version
 var sameTypeCostMultiplier2 = 1.5;
@@ -196,22 +201,30 @@ var sameTypeCostMultiplier_Lotus2 = 2;
 var sameTypeCostMultiplier_Fern2 = 1.5;
 var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
-//for state.delete2tokes
-var delete2initial = 4; // how many deletions received at game start
-
-var delete2all_cost = 4;
-
-var respec3initial = 2; // how many squirrel upgrade respecs received at game start
+//for state.delete2tokens
+var delete2initial = 4; // how many ethereal field delete tokens received at game start
 
 // how many deletions on the ethereal field may be done per season
 var getDelete2PerSeason = function() {
-  return state.challenges[challenge_nodelete].completed ? 3 : 2;
+  return Math.ceil(state.numw2 * state.numh2 * 0.5);
 }
 
 // how many deletions can be saved up for future use when seasons change
 var getDelete2maxBuildup = function() {
   return getDelete2PerSeason() * 4;
 }
+
+// returns true if deleting the ethereal crop at this position does not cost an ethereal delete token
+// this assumes the field cell has a crop. for an empty field the return value has no meaning
+var freeDelete2 = function(x, y) {
+  var f = state.field2[y][x];
+  if(f.index == CROPINDEX + automaton2_0) return true;
+  if(f.index == CROPINDEX + squirrel2_0) return true;
+  if(f.growth < 1) return true;
+  return false;
+};
+
+var respec3initial = 2; // how many squirrel upgrade respecs received at game start
 
 // Returns a value based on x but smoothly capped to be no lower than lowest. The input x is also assumed to never be higher than highest, and no value higher than highest will be returned.
 // The softness determines how strongly the value gets capped: at 0, x goes down linearly, until reaching lowest, then stays at lowest.
@@ -234,7 +247,7 @@ function towardsFloorValue(x, lowest, highest, softness) {
   return lowest + v;
 }
 
-// aka growspeed
+// aka getgrowspeed
 Crop.prototype.getPlantTime = function() {
   var result = this.planttime;
   if(result == 0) return result;
@@ -251,6 +264,10 @@ Crop.prototype.getPlantTime = function() {
 
     if(state.upgrades3[upgrade3_watercresstime].count) {
       result *= 1.5;
+    }
+
+    if(state.upgrades[watercress_choice0].count == 1) {
+      result *= 2;
     }
 
     return result;
@@ -306,7 +323,7 @@ Crop.prototype.getCost = function(opt_adjust_count) {
 Crop.prototype.getRecoup = function() {
   if(this.type == CROPTYPE_SHORT) return Res(0);
   if(state.challenge == challenge_wither) return Res(0);
-  return this.getCost(-1).mulr(cropRecoup);
+  return this.getCost(-1).mulr(getCropRecoup());
 };
 
 // used for multiple possible aspects, such as production, boost if this is a flower, etc...
@@ -689,6 +706,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   // leech, only computed here in case of "pretend", without pretent leech is computed in more correct way in precomputeField()
   if(pretend && this.type == CROPTYPE_SHORT && f) {
     var leech = this.getLeech(f);
+    var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var p = prefield[f.y][f.x];
     var total = Res();
     var num = 0;
@@ -706,6 +724,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
         }
       }
     }
+    if(soup && total.seeds.ltr(0)) total.seeds = new Num(0);
     result.addInPlace(total);
     if(breakdown) {
       if(!total.empty()) {
@@ -993,6 +1012,12 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
     }
   }
 
+  if(state.upgrades[watercress_choice0].count == 2) {
+    var mul = Num(1.33);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['watercress choice upgrade', true, mul, result.clone()]);
+  }
+
   if(opt_nuts) {
     var mul = Num(0.5);
     result.mulInPlace(mul);
@@ -1004,7 +1029,8 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
   // encouraging to plant one or maybe two (but diminishing returns that make more almost useless) strikes a good balance between doing something useful during active play, but still getting reasonable income from passive play
   var numsame = state.cropcount[this.index];
   if(numsame > 1) {
-    var penalty = 1 / (1 + (numsame - 1) * 0.75);
+    // before v0.1.88, this formula was: 1 / (1 + (numsame - 1) * 0.75). But not it got tweaked to make 2 watercress less punishing, but more than 3 watercress more punishing.
+    var penalty = Math.pow(0.6, numsame - 1.5);
     result.mulrInPlace(penalty);
 
     if(breakdown) breakdown.push(['reduction for multiple', true, Num(penalty), result.clone()]);
@@ -1334,8 +1360,11 @@ function Upgrade() {
   this.name = 'a';
   this.description = undefined; // longer description than the name, with details, shown if not undefined
 
+  // for choice upgrades only
   this.choicename_a = 'A';
   this.choicename_b = 'B';
+  this.description_a = '';
+  this.description_b = '';
 
   // function that applies the upgrade
   this.fun = undefined;
@@ -1648,7 +1677,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
   return result;
 }
 
-// an upgrade that increases the multiplier of a crop
+// increases lifetime but also the initial production of watercress
 function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_num, crop_unlock_id, opt_pre_fun) {
   var crop = crops[cropid];
   var name = crop.name;
@@ -1700,6 +1729,8 @@ function registerChoiceUpgrade(name, pre, fun, name_a, name_b, description_a, de
   u.is_choice = true;
   u.choicename_a = name_a;
   u.choicename_b = name_b;
+  u.description_a = description_a;
+  u.description_b = description_b;
 
   return result;
 }
@@ -2046,6 +2077,32 @@ upgrades[active_choice0].istreebasedupgrade = true;
 var active_choice0_b = registerDeprecatedUpgrade();
 
 
+
+var watercress_choice0 = registerChoiceUpgrade('watercress choice',
+  function() {
+    return state.treelevel >= 14;
+  }, function() {
+    if(state.upgrades[watercress_choice0].count == 1) {
+      // compensate for the watercresses already having lost seconds. In fact, set them to 100%
+      for(var y = 0; y < state.numh; y++) {
+        for(var x = 0; x < state.numw; x++) {
+          var f = state.field[y][x];
+          if(f.index == CROPINDEX + short_0) f.growth = 1;
+        }
+      }
+    }
+  },
+ 'Sturdy Watercress', 'High-yield watercress',
+ 'Makes watercress lifetime twice as long. This benefits idle play, but no benefit for active play.',
+ 'Increases watercress copying effect by 33%',
+ '#000', '#fff', images_watercress[4], undefined);
+upgrades[watercress_choice0].istreebasedupgrade = true;
+
+
+
+
+
+
 upgrade_register_id = 400;
 
 var challengeflowermul_0 = registerBoostMultiplier(challengeflower_0, Res({seeds:1000}).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, undefined, flower_upgrade_cost_increase); // aster flower for bee challenge
@@ -2239,18 +2296,18 @@ registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know
 registerMedal('not the bees', 'build the entire field full of beehives.', images_beehive[0], function() {
   return state.fullgrowncroptypecount[CROPTYPE_BEE] == state.numw * state.numh - 2;
 }, Num(0.1));
-registerMedal('unbeelievable', 'fill the entire field with bees and/or beehives during the bees challenge.', images_workerbee[4], function() {
+registerMedal('unbeelievable', 'fill the entire field (5x5) with bees and/or beehives during the bee challenge.', images_workerbee[4], function() {
   var num = state.fullgrowncropcount[challengecrop_0] + state.fullgrowncropcount[challengecrop_1] + state.fullgrowncropcount[challengecrop_2];
-  return num == state.numw * state.numh - 2;
+  return num >= 5 * 5 - 2;
 }, Num(0.2));
-registerMedal('buzzy', 'fill the entire field with worker bees during the bees challenge.', images_workerbee[4], function() {
-  return state.fullgrowncropcount[challengecrop_0] == state.numw * state.numh - 2;
+registerMedal('buzzy', 'fill the entire field (5x5) with worker bees during the bees challenge.', images_workerbee[4], function() {
+  return state.fullgrowncropcount[challengecrop_0] >= 5 * 5 - 2;
 }, Num(0.3));
-registerMedal('royal buzz', 'fill the entire field with queen bees during the bees challenge.', images_queenbee[4], function() {
-  return state.fullgrowncropcount[challengecrop_1] == state.numw * state.numh - 2;
+registerMedal('royal buzz', 'fill the entire field (5x5) with queen bees during the bees challenge.', images_queenbee[4], function() {
+  return state.fullgrowncropcount[challengecrop_1] >= 5 * 5 - 2;
 }, Num(0.4));
-registerMedal('unbeetable', 'fill the entire field with beehives during the bees challenge.', images_beehive[4], function() {
-  return state.fullgrowncropcount[challengecrop_2] == state.numw * state.numh - 2;
+registerMedal('unbeetable', 'fill the entire field (5x5) with beehives during the bees challenge.', images_beehive[4], function() {
+  return state.fullgrowncropcount[challengecrop_2] >= 5 * 5 - 2;
 }, Num(0.5));
 
 medal_register_id = 125;
@@ -2724,7 +2781,7 @@ During this challenge, no crops can be removed, only added. Ensure to leave spot
 • All regular crops, upgrades, ... are available and work as usual<br>
 • No crops can be deleted, except watercress<br>
 `,
-'get and store 50% more ethereal deletion tokens',
+'deleting a crop gives 66% instead of 33% recoup of resources',
 'reaching tree level 27',
 function() {
   return state.treelevel >= 27;
@@ -2967,8 +3024,8 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
 
 
 // boost to neighbors in ethereal field
-var automatonboost = Num(0.25);
-var squirrelboost = Num(0.25);
+var automatonboost = Num(0.5);
+var squirrelboost = Num(0.5);
 
 // boost to basic field
 Crop2.prototype.getBasicBoost = function(f, breakdown) {
@@ -4933,11 +4990,11 @@ var upgrade3_growspeed = registerUpgrade3('grow speed', undefined, 'crops grow '
 var upgrade3_watercress_mush = registerUpgrade3('watercress and mushroom soup', undefined, 'when watercress copies from mushroom, it no longer increases seed consumption, it copies the spores entirely for free', images_watercress[4]);
 var upgrade3_watercresstime = registerUpgrade3('watercress time', undefined, 'adds 50% to the lifetime of watercress', images_watercress[1]);
 
-var upgrade3_squirrel_boost = Num(0.1);
-var upgrade3_squirrel = registerUpgrade3('ethereal squirrel boost', undefined, 'adds an additional ' + upgrade3_squirrel_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal squirrel', images_squirrel[4]);
+var upgrade3_squirrel_boost = Num(0.25);
+var upgrade3_squirrel = registerUpgrade3('ethereal squirrel boost', undefined, 'adds an additional ' + upgrade3_squirrel_boost.toPercentString() + ' to the neighbor boost (which is originally 50%) of the ethereal squirrel', images_squirrel[4]);
 
-var upgrade3_automaton_boost = Num(0.1);
-var upgrade3_automaton = registerUpgrade3('ethereal automaton boost', undefined, 'adds an additional ' + upgrade3_automaton_boost.toPercentString() + ' to the neighbor boost (which is originally 25%) of the ethereal automaton', images_automaton[4]);
+var upgrade3_automaton_boost = Num(0.25);
+var upgrade3_automaton = registerUpgrade3('ethereal automaton boost', undefined, 'adds an additional ' + upgrade3_automaton_boost.toPercentString() + ' to the neighbor boost (which is originally 50%) of the ethereal automaton', images_automaton[4]);
 
 var upgrade3_ethtree_boost = Num(0.2);
 var upgrade3_ethtree = registerUpgrade3('ethereal tree neighbor boost', undefined, 'ethereal tree boosts non-lotus neighbors (non-diagonal) by ' + upgrade3_ethtree_boost.toPercentString(), tree_images[6][1][4]);
@@ -4966,7 +5023,6 @@ var upgrade3_flower_multiplicity = registerUpgrade3('flower multiplicity', undef
 var upgrade3_weather_duration_bonus = 0.5;
 var upgrade3_weather_duration = registerUpgrade3('weather duration', undefined, 'increases active duration of weather effects by ' + Num(upgrade3_weather_duration_bonus).toPercentString() + ' without increasing total active+cooldown cycle time', image_sun);
 upgrades3[upgrade3_weather_duration].fun = function() {
-//return;
   // buying this can make 2 weather abilities active at once. Since that is powerful and may cause one to want to do squirrel respecs on purpose just for this, avoid this strategy to save respec tokens for more useful purposes
   var time = util.getTime();
   var sund = getSunDuration();

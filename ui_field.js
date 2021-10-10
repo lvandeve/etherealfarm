@@ -164,7 +164,11 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += leechInfo + '<br/>';
       } else {
         result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
-        if(state.upgrades[berryunlock_0].count) result += '<br/><span class="efWatercressHighlight">Copies neighbors: Duplicates full production of long-lived berry and mushroom neighbors for free (mushroom copy also consumes more seeds)</span><br/>';
+        if(state.upgrades[berryunlock_0].count) {
+          result += '<br/><span class="efWatercressHighlight">Copies neighbors: Duplicates full production of long-lived berry and mushroom neighbors for free';
+          if(!state.upgrades3[upgrade3_watercress_mush].count) result += ' (mushroom copy also consumes more seeds)';
+          result += '</span><br/>';
+        }
       }
 
       result += '<br/>';
@@ -233,7 +237,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
   }
 
-  var recoup = (c.type == CROPTYPE_SHORT) ? Res() : c.getCost(-1).mulr(cropRecoup);
+  var recoup = c.getRecoup();
 
   if(opt_detailed) {
     result += 'Num planted of this type: ' + state.cropcount[c.index] + '<br>';
@@ -245,8 +249,14 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
     result += ' • Recoup on delete: ' + recoup.toString();
   } else {
-    result += 'Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
-    result += 'Recoup on delete: ' + recoup.toString();
+    result += ' • Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
+    result += ' • Recoup on delete: ' + recoup.toString();
+  }
+
+  var upgrade_cost = [undefined];
+  var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost);
+  if(upgrade_crop && upgrade_cost[0]) {
+    result += '<br/> • Upgrade cost: ' + upgrade_cost.toString();
   }
 
   return result;
@@ -511,7 +521,8 @@ function makeTreeDialog() {
   }
 }
 
-function getUpgradeCrop(x, y, opt_too_expensive) {
+// opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
+function getUpgradeCrop(x, y, opt_cost) {
   if(!state.field[y]) return null;
   var f = state.field[y][x];
   if(!f) return;
@@ -530,13 +541,15 @@ function getUpgradeCrop(x, y, opt_too_expensive) {
     var c3 = croptype_tiers[c.type][tier];
     if(!c3 || !state.crops[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
 
+    if(opt_cost != undefined) opt_cost[0] = c3.getCost();
+
     if(c3.getCost().le(state.res)) {
       // found a successful upgrade
       c2 = c3;
       break;
     }
 
-    if(opt_too_expensive != undefined) opt_too_expensive[0] = c3.getCost();
+    if(opt_cost != undefined) opt_cost[1] = true;
     tier--;
   }
 
@@ -547,16 +560,17 @@ function makeUpgradeCropAction(x, y, opt_silent) {
   var too_expensive = [undefined];
   var c2 = getUpgradeCrop(x, y, too_expensive);
 
-
   if(c2) {
     addAction({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {
     if(!opt_silent) {
-      if(too_expensive[0]) {
+      if(too_expensive[1]) {
         showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
-      } else {
+      } else if(!(x >= 0 && x < state.numw && y >= 0 && y < state.numh) || state.field[y][x].index < CROPINDEX) {
+        showMessage('No crop to upgrade here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+      } else if(state.field[y][x].index != 0) {
         showMessage('Crop not upgraded, no higher tier unlocked or available', C_INVALID);
       }
     }
@@ -730,7 +744,7 @@ function initFieldUI() {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
         } else if(f.index == FIELD_REMAINDER) {
-          result = 'Remains of a watercress that was copying from multiple plants. Visual reminder of good copying-spot only, this is an empty field spot and does nothing. Allows replanting this watercress with "w" key.';
+          result = 'Remains of a watercress that was copying from multiple plants. Visual reminder of good copying-spot only, this is an empty field spot and does nothing. Allows replanting this watercress with "w" key or the watercress button in the top bar.';
         } else if(f.hasCrop()) {
           var c = f.getCrop();
           result = getCropInfoHTML(f, c);

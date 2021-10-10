@@ -181,9 +181,10 @@ function updateTabButtons2() {
       // resin/twigs/nuts: brown/orange
       color = darkstyle ? '#ecb' : '#630';
     } else if(special >= 1) {
-      // watercress: slight green
-      // commented out: it's production-like enough and there are already confusingly many tab colors, which are now more subtle and indistinguishable
-      //color = darkstyle ? '#bdb' : '#040';
+      if(special == 1 && state.croptypecount[CROPTYPE_SHORT] == 0) {
+        // watercress fruit but no watercress planted: red-ish
+        color = darkstyle ? '#fbb' : '#700';
+      }
     }
     if(color) {
       text = '<font color="' + color + '">' + text + '</font>';

@@ -171,8 +171,8 @@ function resetGlobalStateVars(opt_state) {
   large_time_delta = false;
   large_time_delta_time = 0;
   large_time_delta_res = opt_state ? Res(opt_state.res) : Res();
-  num_season_changes = 0;
-  num_tree_levelups = 0;
+  global_season_changes = 0;
+  global_tree_levelups = 0;
   helpNeverAgainLocal = {};
 }
 
@@ -1226,6 +1226,8 @@ function precomputeField() {
     }
   }
 
+  var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
+
   // pass 3: compute basic production/consumption of each cell, without taking input/output connections (berries to mushrooms) into account, just the full value
   // production without leech, consumption with leech (if watercress leeches from mushroom, adds that to its consumption, but not the leeched spores production, that's added in a later step)
   for(var y = 0; y < h; y++) {
@@ -1236,19 +1238,19 @@ function precomputeField() {
         if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) continue; // don't overwrite their boost breakdown with production breakdown
         var p = prefield[y][x];
         var prod = c.getProd(f);
+        if(prod.seeds.ltr(0)) {
+          if(!soup) {
+            // if there is leech on the mushroom, it wants more seeds (except if this squirrel upgrade is enabled)
+            prod.seeds.mulInPlace(p.leech.addr(1));
+          }
+          // how much input mushrooms want
+          p.wanted.seeds = prod.seeds.neg();
+        }
         p.hasbreakdown_prod = true;
         p.prod0 = prod;
         p.prod0b = Res(prod); // a separate copy
         // used by pass 4, production that berry has available for mushrooms, which is then subtracted from
         p.prod1 = Res(prod);
-        if(prod.seeds.ltr(0)) {
-          // how much input mushrooms want
-          p.wanted.seeds = prod.seeds.neg();
-          if(!state.upgrades3[upgrade3_watercress_mush].count) {
-            // if there is leech on the mushroom, it wants more seeds (except if this squirrel upgrade is enabled)
-            p.wanted.seeds.mulInPlace(p.leech.addr(1));
-          }
-        }
       }
     }
   }
@@ -1413,6 +1415,8 @@ function precomputeField() {
                 var leech1 = (c2.type == CROPTYPE_NUT) ? leech_nuts : leech;
                 var leech2 = p2.prod2.mul(leech1);
                 var leech3 = p2.prod3.mul(leech1);
+                if(soup && leech2.seeds.ltr(0)) leech2.seeds = new Num(0);
+                if(soup && leech3.seeds.ltr(0)) leech3.seeds = new Num(0);
                 p.prod2.addInPlace(leech2);
                 p.prod3.addInPlace(leech3);
                 // we could in theory add "leech0=p2.prod0.mul(leech)" instead of leech2 to the hypothetical production given by prod0b for UI reasons.
@@ -1734,7 +1738,7 @@ function addRandomFruit() {
     break;
   }
 
-  updateFruitUI();
+  //updateFruitUI();
   return fruits;
 }
 
@@ -1765,6 +1769,8 @@ function doNextAutoChoice() {
     if(j == fern_choice0 && state.automaton_choices[0] == 3) choice = 2;
     if(j == active_choice0 && state.automaton_choices[1] == 2) choice = 1;
     if(j == active_choice0 && state.automaton_choices[1] == 3) choice = 2;
+    if(j == watercress_choice0 && state.automaton_choices[2] == 2) choice = 1;
+    if(j == watercress_choice0 && state.automaton_choices[2] == 3) choice = 2;
     if(choice > 0) {
       showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 1 ? u.choicename_a : u.choicename_b), C_AUTOMATON, 101550953);
       addAction({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, choice:choice});
@@ -2212,9 +2218,9 @@ var last_fullgrown_sound_time2 = 0;
 var large_time_delta = false;
 var large_time_delta_time = 0;
 var large_time_delta_res = Res();
-// for messages in case of long delta
-var num_season_changes = 0;
-var num_tree_levelups = 0;
+// for messages in case of long delta, this is remembered through multiple long-tick update calls
+var global_season_changes = 0;
+var global_tree_levelups = 0;
 
 var update_prev_paused = false;
 var update_prev_state_ctor_count = -1;
@@ -2227,6 +2233,8 @@ var update = function(opt_ignorePause) {
   var update_ui_paused = state_ctor_count != update_prev_state_ctor_count || paused_ != update_prev_paused;
   update_prev_paused = paused_;
   update_prev_state_ctor_count = state_ctor_count;
+
+  var update_fruit_ui = false;
 
 
   if(!prefield || !prefield.length) {
@@ -2290,7 +2298,7 @@ var update = function(opt_ignorePause) {
 
   var negative_time_used = false;
 
-  var season_changed = 0;
+  var num_season_changes = 0; // num season changes during this loop of update(), as oppoosed to global_season_changes which can span multiple long-tick updates
 
   var oldres = Res(state.res);
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
@@ -2402,15 +2410,15 @@ var update = function(opt_ignorePause) {
 
     /*
     season_will_change computes that season will change next tick. This is one tick too early, but reliable, even across multiple sessions where game was closed and reopened in between. this is the one to use for deletion token get and num season stat computations
-    season_changed (integer) computes that the season changed during this tick. This may miss some events if game was closed/reopened at some very particular time. But this one will have the correct prev_season_gain and current gain, so is the one to use for the message that shows resources before and after season change
+    num_season_changes (integer) computes that the season changed during this tick. This may miss some events if game was closed/reopened at some very particular time. But this one will have the correct prev_season_gain and current gain, so is the one to use for the message that shows resources before and after season change
     */
     var current_season = getSeasonAt(state.time);
     var season_will_change = current_season != getSeasonAt(nexttime);
-    if(current_season != prev_season && prev_season != undefined) season_changed++;
+    if(current_season != prev_season && prev_season != undefined) num_season_changes++; // TODO: check if this can't be combined with the "global_season_changes++" case below and if this really needs a different condition than that one
     prev_season = current_season;
 
     if(season_will_change) {
-      num_season_changes++;
+      global_season_changes++;
     }
 
     if(state.seasonshifted && (getSeasonAtUnshifted(state.time) != getSeasonAtUnshifted(state.prevtime) || season_will_change)) state.seasonshifted = 0;
@@ -2432,8 +2440,6 @@ var update = function(opt_ignorePause) {
 
     var upgrades_done = false;
     var upgrades2_done = false;
-
-    var delete2tokens_used = 0; // if all are used in the same set of actions, only up to `delete2all_cost` are used. This is for the delete all ethereal fields action
 
     // whether the game is fast forwarding a long AFK, and thus doesn't do active actions like weather, picking fern or refreshing watercress
     var fast_forwarding = (nexttime - state.time > 1);
@@ -2892,9 +2898,8 @@ var update = function(opt_ignorePause) {
 
         var recoup = undefined;
 
-        var freedelete = (f.index == CROPINDEX + automaton2_0) || (f.index == CROPINDEX + squirrel2_0);
+        var freedelete = freeDelete2(action.x, action.y);
         var freetoken = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type);
-        var freetokenall = delete2tokens_used >= delete2all_cost;
         var sametypeupgrade = (type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type && action.crop.tier > f.getCrop().tier);
         if(f.hasCrop() && f.getCrop().istemplate) freedelete = true;
 
@@ -2921,10 +2926,10 @@ var update = function(opt_ignorePause) {
           var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
           if(f.cropIndex() == fern2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_0));
           if(f.cropIndex() == fern2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_1));
-          if(!freedelete && !freetoken && !freetokenall && state.delete2tokens <= 0 && f.hasCrop() && f.growth >= 1) {
+          if(!freedelete && !freetoken && state.delete2tokens <= 0 && f.hasCrop()) {
             showMessage('cannot delete ' + f.getCrop().name + ': must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
             ok = false;
-          } else if(!freedelete && f.justplanted && !sametypeupgrade && (f.growth >= 1 || crops2[f.cropIndex()].planttime <= 2)) {
+          } else if(!freedelete && f.justplanted && !sametypeupgrade) {
             // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
             showMessage('cannot delete ' + f.getCrop().name + ': this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
             ok = false;
@@ -2970,19 +2975,21 @@ var update = function(opt_ignorePause) {
             state.g_res.subInPlace(remstarter);
             state.c_res.subInPlace(remstarter);
           }
+          if(f.growth < 1) {
+            state.g_numplanted2--;
+          }
           if(freedelete) {
-            if(!action.silent) showMessage('this crop is free to delete, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
-            state.g_numplanted2--;
+            if(f.growth < 1) {
+              if(!action.silent) showMessage('plant was still growing, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
+            } else {
+              if(!action.silent) showMessage('this crop is free to delete, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
+            }
           } else if(freetoken) {
-            showMessage('replaced crop with same type, so no ethereal delete token used');
-          } else if(f.growth < 1) {
-            showMessage('plant was still growing, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
-            state.g_numplanted2--;
+            if(!action.silent) showMessage('replaced crop with same type, so no ethereal delete token used');
           } else {
             state.g_numunplanted2++;
-            if(state.delete2tokens > 0 && !freetokenall) {
+            if(state.delete2tokens > 0) {
               state.delete2tokens--;
-              delete2tokens_used++;
             }
             if(!action.silent) showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
           }
@@ -3346,8 +3353,13 @@ var update = function(opt_ignorePause) {
             if(f.growth <= 0) {
               f.growth = 0;
               // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses
-              if(short && p.touchnum >= 2) f.index = FIELD_REMAINDER;
-              else f.index = 0;
+              var create_remainder = false;
+              if(short) {
+                if(p.touchnum >= 2) create_remainder = true;
+                if(p.touchnum == 1 && state.cropcount[short_0] <= 1 && state.specialfieldcount[FIELD_REMAINDER] == 0) create_remainder = true;
+                if(create_remainder) f.index = FIELD_REMAINDER;
+              }
+              if(!create_remainder) f.index = 0;
             }
             // it's ok to have the production when growth became 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
             prod = p.prod2;
@@ -3436,7 +3448,9 @@ var update = function(opt_ignorePause) {
       var r = fernTimeWorth * roll;
       if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
       var g = gain.mulr(r);
-      if(g.seeds.ltr(2)) g.seeds = Math.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
+      if(g.seeds.ltr(2)) g.seeds = Num.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
+      var starter = getStarterResources();
+      if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds.mulr(roll));
       var fernres = new Res({seeds:g.seeds, spores:g.spores});
 
       if(state.fern == 1) {
@@ -3505,7 +3519,7 @@ var update = function(opt_ignorePause) {
       actualgain.amber.addInPlace(maybeDropAmber());
 
       state.treelevel++;
-      num_tree_levelups++;
+      global_tree_levelups++;
 
       var do_resin = true;
       if(state.challenge && !challenges[state.challenge].allowsresin) do_resin = false;
@@ -3558,11 +3572,13 @@ var update = function(opt_ignorePause) {
           if(showtreemessages && state.treelevel == 5) showRegisteredHelpDialog(2);
           if(showtreemessages && state.treelevel == 15) showRegisteredHelpDialog(18);
           fruits = addRandomFruit();
+          update_fruit_ui = true;
         }
       }
       // drop the level 5 fruit during challenges at level 10
       if(state.treelevel == 10 && state.challenge && challenges[state.challenge].allowsfruits) {
         fruits = addRandomFruit();
+        update_fruit_ui = true;
         if(state.messagelogenabled[5]) showMessage('The tree dropped the level 5 fruit at level 10 during this challenge', C_NATURE, 1340887270);
       }
 
@@ -3768,7 +3784,7 @@ var update = function(opt_ignorePause) {
       }
     }
 
-    if(season_will_change && num_season_changes == 1) {
+    if(season_will_change && global_season_changes == 1) {
       prev_season_gain = Res(gain);
     }
 
@@ -3843,15 +3859,16 @@ var update = function(opt_ignorePause) {
   }
   large_time_delta_time += d_total;
 
+  // for the case after one or more large-delta ticks are finished
   if(prev_large_time_delta && !large_time_delta) {
     var totalgain = state.res.sub(oldres);
     var season_message = '';
-    if(num_season_changes > 0) {
-      season_message = '. The season changed ' + num_season_changes + ' times';
+    if(global_season_changes > 0) {
+      season_message = '. The season changed ' + global_season_changes + ' times';
     }
     var tree_message = '';
-    if(num_tree_levelups > 0) {
-      tree_message = '. The tree leveled up ' + num_tree_levelups + ' times';
+    if(global_tree_levelups > 0) {
+      tree_message = '. The tree leveled up ' + global_tree_levelups + ' times';
     }
 
     var t_total = large_time_delta_time;
@@ -3862,10 +3879,13 @@ var update = function(opt_ignorePause) {
   }
 
   // Print the season change outside of the above loop, otherwise if you load a savegame from multiple days ago it'll show too many season change messages.
-  // if num_season_changes > 1, it's already printed in the large time delta message above instead.
-  if(season_changed == 1) {
+  // if global_season_changes > 1, it's already printed in the large time delta message above instead.
+  if(num_season_changes == 1 && global_season_changes <= 1) {
     var gainchangemessage = '';
-    if(prev_season_gain) gainchangemessage = '. Income before: ' + prev_season_gain.toString() + '. Income now: ' + gain.toString();
+    if(prev_season_gain) {
+      gainchangemessage = '. Income before: ' + prev_season_gain.toString() + '. Income now: ' + gain.toString();
+      prev_season_gain = undefined;
+    }
     showMessage('The season changed to ' + seasonNames[getSeason()] + gainchangemessage, C_NATURE, 17843969, 0.75);
   }
 
@@ -3874,8 +3894,6 @@ var update = function(opt_ignorePause) {
     var num_get = getDelete2PerSeason();
     var max_num = getDelete2maxBuildup();
 
-
-    state.g_seasons++;
     var num_tokens = num_season_changes * num_get;
     if(state.delete2tokens + num_tokens > max_num) num_tokens = max_num - state.delete2tokens;
     state.delete2tokens += num_tokens;
@@ -3892,13 +3910,15 @@ var update = function(opt_ignorePause) {
   }
 
   if(!large_time_delta) {
-    num_season_changes = 0;
-    num_tree_levelups = 0;
+    if(global_season_changes) state.g_seasons++; // g_seasons only counts season changes actively seen
+    global_season_changes = 0;
+    global_tree_levelups = 0;
     large_time_delta_res = Res(state.res);
     large_time_delta_time = 0;
   }
 
   updateUI2();
+  if(update_fruit_ui) updateFruitUI();
 
   for(var i = 0; i < update_listeners.length; i++) {
     if(!update_listeners[i]()) {
@@ -3978,7 +3998,7 @@ function showShiftCropChip(crop_id) {
   centerText2(textFlex.div);
 
   if(deleting) {
-    var recoup = f.getCrop().getCost(-1).mulr(cropRecoup);
+    var recoup = f.getCrop().getRecoup();
     textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
@@ -3987,7 +4007,7 @@ function showShiftCropChip(crop_id) {
       renderImage(c.image[4], canvas);
       var updatefun = function() {
         var recoup = Res(0);
-        if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup);
+        if(f.hasCrop()) recoup = f.getCrop().getRecoup();
         var cost = c.getCost().sub(recoup);
         var afford = cost.le(state.res);
         var text = keyname + '+' + verb + '<br>' + upper(c.name);

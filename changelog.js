@@ -20,6 +20,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.88 (2021-10-10):';
+  text += '<br/>• Ferns at game start now give at minimum the starter resources from ethereal ferns.';
+  text += '<br/>• Added new choice upgrade for watercress.';
+  text += '<br/>• Increased ethereal neighbor bonus from automaton and squirrel in the ethereal field.';
+  text += '<br/>• Ethereal delete tokens revamp to allow more individual crop deletions and more full field replacements per season cycle:';
+  text += '<br/> - Gives more ethereal delete tokens per season: 50% of your ethereal field cells, rather than just 2 or 3, and can carry 4x that amount.';
+  text += '<br/> - Deleting the entire field now costs as much tokens as all individual deletions, rather than just 4 tokens, and this option is now in the automaton UI.';
+  text += '<br/> - The reward for the "undeletable" challenge changed from ethereal token related reward to: more recoup for deleting regular crops';
+  text += '<br/>• Certain bee related achievements now have a more fair requirement.'; // the 'unbeelievable', 'buzzy', 'royal buzz' and 'unbeetable' achievements now only need enough bees for a 5x5 field, rather than become exponentially harder to get with larger field size
+  text += '<br/>• Watercress copying penalty when having 2 watercress reduced, but increased for more than 3 watercress.';
+  text += '<br/>• Various UI tweaks: start-challenge button tooltips, upgrade cost in tooltips, overconsumption display fix if watercress next to mushrooms, ...'; // also choice upgrade info in automaton UI, fix involving amount of season changes display, watercress remainder remains in more cases, display of previous run's final twigs/h and resin/h in info panel tooltips, separate color for the passive play choice upgrade in automaton UI, < > shortcuts for changing fruits to support more international keyboards, ...
+  text += '<br/><br/>';
+
   text += '0.1.87 (2021-09-19):';
   text += '<br/>• New ethereal upgrade.';
   text += '<br/>• New ethereal crops. Includes bees.';

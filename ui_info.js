@@ -134,9 +134,8 @@ function getResourceDetails(i, special, index) {
     res_gain_pos = gain_pos.atIndex(index); // actual, without consumption
     res_gain_hyp = gain_hyp.atIndex(index); // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
     res_gain_hyp_pos = gain_hyp_pos.atIndex(index); // hypothetical aka potential, without consumption
-
     // see comment in showResource
-    var hyp_neq = !res_gain.near(res_gain_hyp, 0.01);
+    var hyp_neq = !res_gain.near(res_gain_hyp, 0.002);
   }
 
   var text = '';
@@ -155,9 +154,11 @@ function getResourceDetails(i, special, index) {
       if(upcoming.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
 
       text += '<br>';
-      text += 'Resin/hour: ' + getResinHour().toString() + '<br>';
-      text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true);
-      if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.resin.toString() + ', lvl ' + state.p_res_hr_at.resin.valueOf() + ' at ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + ')';
+      text += 'Resin/hour: ' + getResinHour().toString();
+      if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ')';
+      text += '<br>';
+      text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true);
+      if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.resin.toString() + ', lvl ' + state.p_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + ')';
       text += '<br>';
 
       text += '<br>';
@@ -173,9 +174,11 @@ function getResourceDetails(i, special, index) {
       if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.twigs.toString() + ')';
       text += '<br>';
 
-      text += 'Twigs/hour: ' + getTwigsHour().toString() + '<br>';
-      text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', at runtime ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true);
-      if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.twigs.toString() + ', lvl ' + state.p_res_hr_at.twigs.valueOf() + ' at ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + ')';
+      text += 'Twigs/hour: ' + getTwigsHour().toString();
+      if(state.g_numresets > 0) text += ' (previous run: ' + getPrevTwigsHour().toString() + ')';
+      text += '<br>';
+      text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true);
+      if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.twigs.toString() + ', lvl ' + state.p_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + ')';
       text += '<br>';
 
       text += '<br>';
@@ -281,7 +284,7 @@ function showResource(i, special, index) {
     // using near: the computations of res_gain and res_gain_hyp may numerically differ, even when they are theoretically the same
     // this could cause the seeds to display a hypothetical number in brackets even though it's the same
     // if this problem persists even with larger tolerance, a different measure  must be taken, such as only displaying hyp if at least one of the resources (like spores) has a significant difference
-    var hyp_neq = !res_gain.near(res_gain_hyp, 0.01);
+    var hyp_neq = !res_gain.near(res_gain_hyp, 0.002);
 
     var fontopen = '';
     var fontclose = '';
@@ -485,14 +488,13 @@ function updateResourceUI() {
 
 
   var i = 1; // index in resourceDivs
-  if(!state.g_max_res.seeds.eqr(0)) showResource(i++, false, 0);
-  if(!state.g_max_res.spores.eqr(0))showResource(i++, false, 1);
+  if(state.g_max_res.seeds.neqr(0)) showResource(i++, false, 0);
+  if(state.g_max_res.spores.neqr(0))showResource(i++, false, 1);
   if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, true, 2);
-  if(!state.g_max_res.twigs.eqr(0)) showResource(i++, true, 3);
-  if(!state.g_max_res.essence.eqr(0)) showResource(i++, true, 7);
-  if(!state.g_max_res.nuts.eqr(0)) showResource(i++, false, 4);
-  if(!state.g_max_res.amber.eqr(0)) showResource(i++, true, 6);
-
+  if(state.g_max_res.twigs.neqr(0)) showResource(i++, true, 3);
+  if(state.g_max_res.essence.neqr(0)) showResource(i++, true, 7);
+  if(state.g_max_res.nuts.neqr(0)) showResource(i++, false, 4);
+  if(state.g_max_res.amber.neqr(0)) showResource(i++, true, 6);
 }
 
 function initInfoUI() {

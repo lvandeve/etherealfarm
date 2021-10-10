@@ -92,6 +92,12 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
   }
 
+  var upgrade_cost = [undefined];
+  var upgrade_crop = getUpgradeCrop2(f.x, f.y, upgrade_cost);
+  if(upgrade_crop && upgrade_cost[0]) {
+    result += '<br/>• Upgrade cost: ' + upgrade_cost.toString();
+  }
+
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
 
   if(opt_deletetokensinfo) {
@@ -118,13 +124,13 @@ function getCropInfoHTML2Breakdown(f, c) {
   return result;
 }
 
-function getUpgradeCrop2(x, y, opt_too_expensive) {
-
+// opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
+function getUpgradeCrop2(x, y, opt_cost) {
   if(!state.field2[y]) return null;
   var f = state.field2[y][x];
-  if(!f) return;
+  if(!f) return null;
   var c = f.getCrop();
-  if(!c) return;
+  if(!c) return null;
 
   if(c.type == CROPTYPE_CHALLENGE) return null;
   var tier = state.highestoftype2unlocked[c.type];
@@ -141,6 +147,7 @@ function getUpgradeCrop2(x, y, opt_too_expensive) {
     if(!c3 || !state.crops2[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
 
     var cost = c3.getCost().sub(recoup);
+    if(opt_cost != undefined) opt_cost[0] = cost;
 
     if(cost.le(state.res)) {
       // found a successful upgrade
@@ -148,7 +155,8 @@ function getUpgradeCrop2(x, y, opt_too_expensive) {
       break;
     }
 
-    if(opt_too_expensive != undefined) opt_too_expensive[0] = cost;
+    if(opt_cost != undefined) opt_cost[1] = true;
+
     tier--;
   }
 
@@ -164,9 +172,11 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
     return true;
   } else {
     if(!opt_silent) {
-      if(too_expensive[0]) {
+      if(too_expensive[1]) {
         showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString(), C_INVALID, 0, 0);
+      } else if(!(x >= 0 && x < state.numw2 && y >= 0 && y < state.numh2) || state.field2[y][x].index < CROPINDEX) {
+        showMessage('No crop to upgrade here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
       } else {
         showMessage('Crop not upgraded, no higher tier unlocked or available', C_INVALID);
       }
@@ -196,7 +206,7 @@ function makeField2Dialog(x, y) {
     var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.765 + buttonshift, 0.8).div;
     var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.835 + buttonshift, 0.8).div;
     var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.905 + buttonshift, 0.8).div;
-    var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift, 0.8).div;
+    //var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -229,36 +239,9 @@ function makeField2Dialog(x, y) {
     });
 
     styleButton(button3);
-    button3.textEl.innerText = 'Delete all (4 tokens)';
-    button3.textEl.style.color = '#c00';
-    if(state.delete2tokens < 4) button3.textEl.style.color = '#888';
-    var tooltiptext = 'Delete entire ethereal field for ' + delete2all_cost + ' tokens, this allows restructuring all. Cannot delete crops planted during this transcend.';
-    if(haveAutomaton() && haveSquirrel)  tooltiptext += ' Keeps around the automaton and squirrel, but those are free to delete anyway.'
-    else if(haveAutomaton())  tooltiptext += ' Keeps around the automaton, but that one is free to delete anyway.'
-    else if(haveSquirrel())  tooltiptext += ' Keeps around the squirrel, but that one is free to delete anyway.'
-    registerTooltip(button3, tooltiptext);
+    button3.textEl.innerText = 'Detailed stats / bonuses';
+    registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button3, function() {
-      if(state.delete2tokens < delete2all_cost) showMessage('need at least ' + delete2all_cost + ' tokens for this', C_INVALID, 0, 0);
-      setTab(tabindex_field2);
-      window.setTimeout(function() {
-        for(var y = 0; y < state.numh2; y++) {
-          for(var x = 0; x < state.numw2; x++) {
-            var f;
-            f = state.field2[y][x];
-            if(f.hasCrop() && f.getCrop().type != CROPTYPE_AUTOMATON && f.getCrop().type != CROPTYPE_SQUIRREL) {
-              addAction({type:ACTION_DELETE2, x:x, y:y, silent:true});
-            }
-          }
-        }
-        closeAllDialogs();
-        update();
-      }, 333);
-    });
-
-    styleButton(button4);
-    button4.textEl.innerText = 'Detailed stats / bonuses';
-    registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
-    addButtonAction(button4, function() {
       var dialog = createDialog(DIALOG_LARGE);
       dialog.div.className = 'efDialogTranslucent';
       var flex = dialog.content;

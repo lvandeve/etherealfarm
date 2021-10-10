@@ -223,17 +223,18 @@ function showConfigureAutoChoiceDialog(subject) {
     y += h * 1.2;
     return flex;
   };
-  var choiceupgrades = [fern_choice0, active_choice0];
+  var choiceupgrades = [fern_choice0, active_choice0, watercress_choice0];
 
   var updateChoicesButton = function(flex, i) {
     var div = flex.div.textEl;
     var u = upgrades[choiceupgrades[i]];
     var s = state.automaton_choices[i];
     var text = upper(u.name) + ': ';
-    flex.enabledStyle = 1;
     if(s == 2) {
+      flex.enabledStyle = 1;
       text += upper(u.choicename_a);
     } else if(s == 3) {
+      flex.enabledStyle = 2;
       text += upper(u.choicename_b);
     } else {
       text += 'Manual';
@@ -245,7 +246,7 @@ function showConfigureAutoChoiceDialog(subject) {
 
   var setButtonIndicationStyle = function(flex) {
     if(flex.enabledStyle != undefined) {
-      flex.div.className = flex.enabledStyle ? 'efAutomatonAuto' : 'efAutomatonManual';
+      flex.div.className = flex.enabledStyle == 0 ? 'efAutomatonManual' : (flex.enabledStyle == 1 ? 'efAutomatonAuto2' : 'efAutomatonAuto');
     }
   };
 
@@ -263,6 +264,7 @@ function showConfigureAutoChoiceDialog(subject) {
       if(state.automaton_choices[i] > 3) state.automaton_choices[i] = 1;
       updateChoicesButton(flex, i);
     }, flex, i));
+    registerTooltip(flex.div, 'Configure automaton for this specific choice upgrade:<br><br><b>' + u.choicename_a + ':</b><br>' + u.description_a + '<br><br><b>' + u.choicename_b + ':</b><br>' + u.description_b + '<br><br><b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.');
   }
 }
 
@@ -291,6 +293,8 @@ function showAutomatonFeatureSourceDialog() {
   text += '<br/>';
   text += ' • Delete entire field button: initial';
   text += '<br/>';
+  text += ' • Delete ethereal field button: initial';
+  text += '<br/>';
   text += ' • Neighbor bonus in ethereal field: initial';
   text += '<br/>';
   if(state.automaton_unlocked[1]) {
@@ -316,6 +320,21 @@ function showAutomatonFeatureSourceDialog() {
 
 
   div.innerHTML = text;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function etherealDeleteTokensNeededForAll() {
+  var tokens_needed = 0;
+  for(var y = 0; y < state.numh2; y++) {
+    for(var x = 0; x < state.numw2; x++) {
+      var f = state.field2[y][x];
+      if(f.hasCrop() && !freeDelete2(x, y) && !f.justplanted) {
+        tokens_needed++;
+      }
+    }
+  }
+  return tokens_needed;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -429,7 +448,7 @@ function updateAutomatonUI() {
   flex = addButton();
   styleButton(flex.div);
   centerText2(flex.div);
-  flex.div.textEl.innerText = 'Delete entire field';
+  flex.div.textEl.innerText = 'Clear entire field';
   addButtonAction(flex.div, bind(function() {
     setTab(tabindex_field);
     window.setTimeout(function() {
@@ -446,6 +465,43 @@ function updateAutomatonUI() {
     }, 333);
   }));
   registerTooltip(flex.div, 'Immediately delete all crops from the entire field');
+
+  flex = addButton();
+  styleButton(flex.div);
+  centerText2(flex.div);
+  var tokens_needed = etherealDeleteTokensNeededForAll();
+  flex.div.textEl.innerText = 'Clear ethereal field (' + tokens_needed + ' tokens)';
+  flex.div.style.textShadow = '0px 0px 5px #ff8';
+  addButtonAction(flex.div, bind(function() {
+    if(tokens_needed > state.delete2tokens) {
+      showMessage('Cannot execute delete ethereal field: need ' + tokens_needed + ' ethereal delete tokens total, but have only ' + state.delete2tokens, C_INVALID, 0, 0);
+      return;
+    }
+    if(tokens_needed == 0) {
+      showMessage('There is nothing left to delete on the ethereal field', C_INVALID, 0, 0);
+      return;
+    }
+
+    setTab(tabindex_field2);
+    window.setTimeout(function() {
+      for(var y = 0; y < state.numh2; y++) {
+        for(var x = 0; x < state.numw2; x++) {
+          var f = state.field2[y][x];
+          if(f.hasCrop()) {
+            if(f.getCrop().type == CROPTYPE_AUTOMATON) continue;
+            if(f.getCrop().type == CROPTYPE_SQUIRREL) continue;
+            if(f.justplanted) continue;
+            addAction({type:ACTION_DELETE2, x:x, y:y, silent:true});
+          }
+        }
+      }
+      var resin_before = Num(state.res.resin);
+      update();
+      var resin_after = state.res.resin;
+      showMessage('Deleted entire ethereal field.' + ' All resin refunded: ' + (resin_after.sub(resin_before).toString()) + '. Ethereal delete tokens spent: ' + tokens_needed + '. Ethereal delete tokens left: ' + state.delete2tokens);
+    }, 333);
+  }));
+  registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds when enough ethereal deletion tokens are available. Does not delete the automaton itself and other similar one-off crops (but these can easily be deleted manually), and cannot delete ethereal crops that were planted during this transcension. As usual, all resin is refunded, but ethereal delete tokens will be used');
 
   addHR();
 

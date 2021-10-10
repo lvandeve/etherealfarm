@@ -74,7 +74,7 @@ function createTranscendDialog(opt_from_challenge) {
   var challenge_unlocked = false;
   if(state.challenges_unlocked) {
     extraname = 'challenges';
-    if(state.untriedchallenges) extraname = 'challenges\n(new one!)';
+    if(state.untriedchallenges) extraname = 'challenges\n(new!)';
     extrafun = function() {
       createChallengeDialog();
     };
