@@ -37,7 +37,7 @@ function getTranscendValueInfo(opt_from_challenge) {
   var actual_twigs = getUpcomingTwigs();
   if(!opt_from_challenge || actual_twigs.neqr(0)) {
     have_item = true;
-    text += '• ' + actual_twigs.toString() + ' twigs from mistletoes';
+    text += '• ' + actual_twigs.toString() + ' twigs from mistletoes'; // this is shown even if mistletoes are not yet unlocked: as a teaser and hint because getting mistletoes soon is important to progress
     text += '<br>';
   }
 
@@ -45,7 +45,7 @@ function getTranscendValueInfo(opt_from_challenge) {
 
   if(do_fruit) {
     have_item = true;
-    text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool<br/>';
+    text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool (see fruit tab)<br/>';
     if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) {
       text += '→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before transcending<br/>';
     }

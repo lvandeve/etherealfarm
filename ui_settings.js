@@ -248,7 +248,101 @@ function createNumberFormatDialog() {
   fill();
 }
 
+function createShortcutsDialog() {
+  var dialog = createDialog();
 
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
+  centerText2(title.div);
+  title.div.textEl.innerText = 'Controls';
+  title.div.textEl.style.fontWeight = 'bold';
+
+  var pos = 0.05;
+  var buttondiv;
+  var h = 0.06;
+
+  var makeSettingsButton = function() {
+    //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
+    var button = buttonFlex.div;
+    styleButton(button, 1);
+    pos += h * 1.1;
+    return button;
+  };
+
+  var addSettingsSpacer = function() {
+    pos += h * 0.5;
+  };
+
+  var button;
+  var updatebuttontext;
+
+  button = makeSettingsButton();
+  var updatebuttontext = function(button) {
+    var action = 'none';
+    if(state.keys_numbers == 1) action = 'weather';
+    else if(state.keys_numbers == 2) action = 'tabs';
+    else if(state.keys_numbers == 3) action = 'fruit';
+    button.textEl.innerText = 'number keys: ' + action;
+  };
+  updatebuttontext(button);
+  registerTooltip(button, 'Choose what the keyboard number keys do: nothing, activate weather (1-3), switch game tabs, or switch active fruit slot');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.keys_numbers++;
+    if(state.keys_numbers > 3) state.keys_numbers = 0;
+    updatebuttontext(button);
+    setStyle();
+  }, button, updatebuttontext));
+  button.id = 'controls_numbers';
+
+  button = makeSettingsButton();
+  var updatebuttontext = function(button) {
+    var action = 'none';
+    if(state.keys_numbers_shift == 1) action = 'weather';
+    else if(state.keys_numbers_shift == 2) action = 'tabs';
+    else if(state.keys_numbers_shift == 3) action = 'fruit';
+    button.textEl.innerText = 'shift+number keys: ' + action;
+  };
+  updatebuttontext(button);
+  registerTooltip(button, 'Choose what shift + keyboard number keys does: nothing, activate weather (1-3), switch game tabs, or switch active fruit slot');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.keys_numbers_shift++;
+    if(state.keys_numbers_shift > 3) state.keys_numbers_shift = 0;
+    updatebuttontext(button);
+    setStyle();
+  }, button, updatebuttontext));
+  button.id = 'controls_numbers_shift';
+
+  button = makeSettingsButton();
+  var updatebuttontext = function(button) {
+    var action = 'none';
+    if(state.keys_brackets == 1) action = 'weather';
+    else if(state.keys_brackets == 2) action = 'tabs';
+    else if(state.keys_brackets == 3) action = 'fruit';
+    button.textEl.innerText = 'bracket keys: ' + action;
+  };
+  updatebuttontext(button);
+  registerTooltip(button, 'Choose what the [], (), {} or <> keys for previous/next do: nothing, switch game tabs, or switch active fruit slot. There is no difference between the four key pair variations, the different bracket/parenthesis types are supported to have at least one convenient available set of brackets on most international keyboard layouts.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.keys_brackets++;
+    if(state.keys_brackets > 3) state.keys_brackets = 0;
+    if(state.keys_brackets == 1) state.keys_brackets = 2; // weather not supported for this
+    updatebuttontext(button);
+    setStyle();
+  }, button, updatebuttontext));
+  button.id = 'controls_brackets';
+
+  addSettingsSpacer();
+
+  button = makeSettingsButton();
+  updatebuttontext = function(button) { button.textEl.innerText = 'shortcuts may delete crop: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Allow deleting crop without any dialog or confirmation by ctrl+clicking it on the field or pressing "d", or replacing by shift+clicking it. Note that you can always shift+click empty fields to repeat last planted type (opposite of deleting), regardless of this setting.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.allowshiftdelete = !state.allowshiftdelete;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'controls_shiftdelete';
+}
 
 function createNotificationSettingsDialog() {
   var dialog = createDialog();
@@ -447,7 +541,6 @@ function createAdvancedSettingsDialog() {
   }, button, updatebuttontext));
   button.id = 'preferences_sidepanel';
 
-
   button = makeSettingsButton();
   button.textEl.innerText = 'number format';
   registerTooltip(button, 'Change the precision and display type for large numbers.');
@@ -470,15 +563,14 @@ function createAdvancedSettingsDialog() {
   }, button, updatebuttontext));
   button.id = 'preferences_saveonclose';
 
+
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'shortcuts may delete crop: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
-  updatebuttontext(button);
-  registerTooltip(button, 'Allow deleting crop without any dialog or confirmation by ctrl+clicking it on the field or pressing "d", or replacing by shift+clicking it. Note that you can always shift+click empty fields to repeat last planted type (opposite of deleting), regardless of this setting.');
-  addButtonAction(button, bind(function(button, updatebuttontext, e) {
-    state.allowshiftdelete = !state.allowshiftdelete;
-    updatebuttontext(button);
-  }, button, updatebuttontext));
-  button.id = 'preferences_shiftdelete';
+  button.textEl.innerText = 'controls';
+  registerTooltip(button, 'Change various keyboard controls.');
+  addButtonAction(button, function(e) {
+    createShortcutsDialog();
+  });
+  button.id = 'preferences_controls';
 
   addSettingsSpacer();
 
@@ -893,7 +985,7 @@ function initSettingsUI_in(dialog) {
 
   var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
   centerText2(title.div);
-  title.div.textEl.innerText = 'Settings';
+  title.div.textEl.innerText = 'Main Menu';
   title.div.textEl.style.fontWeight = 'bold';
   var button;
   button = makeSettingsButton();

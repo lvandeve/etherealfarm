@@ -95,7 +95,7 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop2(f.x, f.y, upgrade_cost);
   if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/>• Upgrade cost: ' + upgrade_cost.toString();
+    result += '<br/>• Upgrade cost: ' + upgrade_cost[0].toString();
   }
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
@@ -147,15 +147,18 @@ function getUpgradeCrop2(x, y, opt_cost) {
     if(!c3 || !state.crops2[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
 
     var cost = c3.getCost().sub(recoup);
-    if(opt_cost != undefined) opt_cost[0] = cost;
+    if(opt_cost != undefined) {
+      opt_cost[0] = cost;
+      c2 = c3;
+    }
 
     if(cost.le(state.res)) {
       // found a successful upgrade
-      c2 = c3;
+      if(opt_cost != undefined) opt_cost[1] = false;
       break;
+    } else {
+      if(opt_cost != undefined) opt_cost[1] = true;
     }
-
-    if(opt_cost != undefined) opt_cost[1] = true;
 
     tier--;
   }
@@ -167,7 +170,7 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
   var too_expensive = [undefined];
   var c2 = getUpgradeCrop2(x, y, too_expensive);
 
-  if(c2) {
+  if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {

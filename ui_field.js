@@ -29,7 +29,9 @@ function formatBreakdown(breakdown, percent, title) {
     result += '• ' + breakdown[i][0];
     if(breakdown[i][1]) {
       // multiplicative
-      if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2].subr(1)).toPercentString(); // first is base production
+      var p = (breakdown[i][2].subr(1)).toPercentString();
+      if(p && p[0] != '-' && p[0] != '+') p = '+' + p;
+      if(breakdown[i][2] != undefined && i > 0) result += ': ' + p; // first is base production
     } else {
       // additive
       if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2]).toString();
@@ -55,6 +57,10 @@ function getCropInfoHTMLBreakdown(f, c) {
   var bdname = f.isFullGrown() ? 'Breakdown' : 'Preliminary breakdown';
 
   var p = prefield[f.y][f.x];
+  var breakdown_watercress = p.getBreakdownWatercress();
+  if(breakdown_watercress && breakdown_watercress.length > 0) {
+    result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
+  }
   var prod = c.getProd(f);
   if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
     var breakdown = p.getBreakdown();
@@ -67,10 +73,6 @@ function getCropInfoHTMLBreakdown(f, c) {
   if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
     var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, true, bdname + ' (flower boost +%)');
-  }
-  var breakdown_watercress = p.getBreakdownWatercress();
-  if(breakdown_watercress && breakdown_watercress.length > 0) {
-    result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
   }
 
   return result;
@@ -256,7 +258,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost);
   if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/> • Upgrade cost: ' + upgrade_cost.toString();
+    result += '<br/> • Upgrade cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
   }
 
   return result;
@@ -541,15 +543,19 @@ function getUpgradeCrop(x, y, opt_cost) {
     var c3 = croptype_tiers[c.type][tier];
     if(!c3 || !state.crops[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
 
-    if(opt_cost != undefined) opt_cost[0] = c3.getCost();
+    if(opt_cost != undefined) {
+      opt_cost[0] = c3.getCost();
+      c2 = c3;
+    }
 
     if(c3.getCost().le(state.res)) {
       // found a successful upgrade
-      c2 = c3;
+      if(opt_cost != undefined) opt_cost[1] = false;
       break;
+    } else {
+      if(opt_cost != undefined) opt_cost[1] = true;
     }
 
-    if(opt_cost != undefined) opt_cost[1] = true;
     tier--;
   }
 
@@ -560,7 +566,7 @@ function makeUpgradeCropAction(x, y, opt_silent) {
   var too_expensive = [undefined];
   var c2 = getUpgradeCrop(x, y, too_expensive);
 
-  if(c2) {
+  if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
   } else {
@@ -855,7 +861,7 @@ function initFieldUI() {
                 }
                 update();
               } else {
-                showMessage('"shortcuts may delete crop" must be enabled in the settings before replacing crops with shift is allowed', C_INVALID, 0, 0);
+                showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before replacing crops with shift is allowed', C_INVALID, 0, 0);
               }
             }
           } else if(ctrl && !shift) {
@@ -866,7 +872,7 @@ function initFieldUI() {
               addAction({type:ACTION_DELETE, x:x, y:y});
               update();
             } else {
-              showMessage('"shortcuts may delete crop" must be enabled in the settings before it is allowed', C_INVALID, 0, 0);
+              showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting with this shortcut it is allowed', C_INVALID, 0, 0);
             }
           } else if(!fern) {
             makeFieldDialog(x, y);

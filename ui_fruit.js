@@ -133,7 +133,7 @@ function createFruitHelp() {
   text += '<br/><br/>';
   text += 'Higher tier fruits may have more abilities, and abilities provide more boost.';
   text += '<br/><br/>';
-  text += 'Click the fruit logo in the fruit dialog to mark as favorite and alter color effects (visual effect only).';
+  text += 'You can rename fruits with the rename button. Named fruits will also have their name show up in the fruit tab when active. You can also mark fruits as favorite: click the fruit logo in the fruit dialog to alter border color (visual effect only).';
   text += '<br/><br/>';
   text += '<b>Fusing Fruits</b>';
   text += '<br/><br/>';
@@ -627,7 +627,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
       f.name = sanitizeName(name);
       updateFruitUI();
       if(dialog_level) recreate();
-    });
+    }, f.name);
   });
 
   var helpButton = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h, 0.8).div;
@@ -1015,4 +1015,41 @@ function getFruitCategory(f) {
   if(getFruitAbilityFor(f, FRUIT_NUTBOOST) > 0) return 2;
   if(getFruitAbilityFor(f, FRUIT_WATERCRESS) > 0) return 1;
   return 0; // only production skills
+}
+
+// returns whether the fruit is probably interesting enough for the player to be dropped into the stored fruits rather than the cacrificial pool
+// return value meanings:
+// 0: not interesting
+// 1: somewhat interesting
+// 2: very interesting
+// these heuristics are not flawless and a player should take a look at the fruit tab before transcending anyway, when looking for a particular fruit to fuse, ...
+// NOTE: this function comes with some risk of player expecting high tier fruits to always be dropped in main stored slot or always highlight tab for new high tier fruits, so should not overdo it, only make tab red if the high tier fruits clearly are novel
+function isFruitInteresting(fruit) {
+  var best = -1;
+  for(var i = 0; i < state.fruit_stored.length; i++) {
+    var f = state.fruit_stored[i];
+    if(!f) continue;
+    best = Math.max(best, f.tier);
+  }
+
+  if(fruit.tier > best) return 2; // if the new fruit has a higher tier than any fruit you have, it's definitely interesting
+  if(fruit.tier < best) return 0; // if lower than best tier you have, it's definitely not interesting
+
+
+  var numbest = 0;
+  var numbest2 = 0;
+  var newseason = (fruit.type > 0);
+  for(var i = 0; i < state.fruit_stored.length; i++) {
+    var f = state.fruit_stored[i];
+    if(!f) continue;
+    if(f.tier == best) numbest++;
+    else if(f.tier + 1 == best) numbest2++;
+    if(newseason && f.tier == best && fruitContainsSeasonalType(f, fruit.type)) newseason = false;
+  }
+  if(newseason) return 2; // a new season is very interesting
+
+  if(numbest < numbest2) return 1;
+  //if(getActiveFruit() && getActiveFruit().tier + 1 == fruit.tier) return 1; // if the player is using a fruit with tier - 1, then likely that one still has better abilities and the player is trying to collect next tier fruits, so consider it interesting. This is interesting, but not interesting enough to warrant returning 2, because this heuristic depends on carried fruit
+
+  return 0;
 }

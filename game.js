@@ -1691,14 +1691,14 @@ function addRandomFruit() {
       state.fruit_slots++;
     }
 
+    var interesting = isFruitInteresting(fruit);
 
-    if(state.g_numfruits == 0) {
-      // add fruit to highest possible slot type. Now only if this is the first ever fruit
-      if(state.fruit_stored.length < state.fruit_slots) {
-        setFruit(state.fruit_stored.length, fruit);
-      } else {
-        setFruit(100 + state.fruit_sacr.length, fruit);
-      }
+
+    var no_fruit_intended = !getActiveFruit() && state.fruit_stored.length > 0; // if there is no active fruit selected in purpose, assume that is intended and keep it that way, don't let a random fruit drop that due to heuristics ends up in stored slots rather than sacrificial pool override that choice
+    if(interesting && state.fruit_stored.length < state.fruit_slots && !(no_fruit_intended && state.fruit_stored.length + 1 == state.fruit_slots)) {
+      // if it's an interesting fruit, such as highest tier ever, add it to the stored fruits if possible
+      setFruit(state.fruit_stored.length, fruit);
+      if(no_fruit_intended) state.fruit_active++;
     } else {
       // add fruit to sacrificial pool, player is responsible for choosing to move fruits to storage or active lots
       setFruit(100 + state.fruit_sacr.length, fruit);
@@ -1708,26 +1708,7 @@ function addRandomFruit() {
     state.g_numfruits++;
 
     // indicate if higher level fruit than you are using
-    // includes some heuristics for when dropped fruit is better and thus worth indicating
-    // these heuristics are not flawless and a player should take a look at the fruit tab even if it's not indicated red anyway, when looking for a particular fruit to fuse, ...
-    var better_fruit = false;
-    if(!getActiveFruit()) {
-      better_fruit = true;
-    } else {
-      var a = getActiveFruit();
-      if(fruit.tier > a.tier) better_fruit = true;
-      if(fruit.tier == a.tier) {
-        if((fruit.type != 0 && a.type == 0) || (a.type <= 4 && fruit.type > 0 && fruit.type != a.type)) {
-          better_fruit = true;
-        }
-        if(a.type == 0 || (a.type != 0 && fruit.type != 0)) {
-          if(getFruitCategory(fruit) < getFruitCategory(a)) {
-            better_fruit = true;
-          }
-        }
-      }
-    }
-    if(better_fruit) state.fruit_seen = false;
+    if(isFruitInteresting(fruit)) state.fruit_seen = false;
 
     fruits.push(fruit);
 

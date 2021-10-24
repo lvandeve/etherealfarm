@@ -151,7 +151,7 @@ function getResourceDetails(i, special, index) {
       text += 'Collected upcoming resin: ' + upcoming.toString()
       if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.resin.toString() + ')';
       text += '<br>';
-      if(upcoming.neqr(0)) text += '→ Upcoming boost for unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
+      if(upcoming.neqr(0)) text += '→ Upcoming boost with unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
 
       text += '<br>';
       text += 'Resin/hour: ' + getResinHour().toString();

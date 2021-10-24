@@ -96,7 +96,10 @@ function styleButton0(div, opt_disallow_hover_filter) {
   div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   if(div.textEl) div.textEl.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
-  if(!opt_disallow_hover_filter) {
+  if(opt_disallow_hover_filter == 2) {
+    util.setEvent(div, 'mouseover', 'buttonstyle', function() { div.style.border = '4px solid red';});
+    util.setEvent(div, 'mouseout', 'buttonstyle', function() { div.style.filter = ''; });
+  } else if(!opt_disallow_hover_filter) {
     util.setEvent(div, 'mouseover', 'buttonstyle', function() { div.style.filter = 'brightness(0.93)';});
     util.setEvent(div, 'mouseout', 'buttonstyle', function() { div.style.filter = ''; });
   } else {
@@ -369,16 +372,6 @@ function closeTopDialog() {
     created_overlays.pop();
   }
 }
-
-document.addEventListener('keyup', function(e) {
-  if(e.keyCode == 27) { // escape key
-    if(dropdownEl) {
-    removeAllDropdownElements();
-    } else {
-      closeTopDialog();
-    }
-  }
-});
 
 document.addEventListener('keydown', function(e) {
   if(dialogshortcutfun) {
@@ -906,7 +899,7 @@ function makeDropdown(flex, title, current, choices, fun) {
 ////////////////////////////////////////////////////////////////////////////////
 
 
-function makeTextInput(title, fun) {
+function makeTextInput(title, fun, opt_value) {
   var dialog = createDialog(DIALOG_TINY, function() {
     fun(area.value);
     dialog.cancelFun();
@@ -918,6 +911,7 @@ function makeTextInput(title, fun) {
 
   var inputFlex = new Flex(dialog.content, 0.1, 0.4, 0.9, 0.6);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
+  if(opt_value) area.value = opt_value;
   area.style.fontSize = '100%';
   area.focus();
 }

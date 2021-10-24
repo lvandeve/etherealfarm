@@ -267,7 +267,7 @@ Crop.prototype.getPlantTime = function() {
     }
 
     if(state.upgrades[watercress_choice0].count == 1) {
-      result *= 2;
+      result *= 1.5;
     }
 
     return result;
@@ -1013,9 +1013,24 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
   }
 
   if(state.upgrades[watercress_choice0].count == 2) {
-    var mul = Num(1.33);
+    var v = Math.min(Math.max(0, f.growth), 1);
+    if(v > 0.01) {
+      if(v < 0.75) {
+        var w = v / 0.75;
+        v = w * w * w * (w * (w * 6 - 15) + 10); // smootherstep: s curve shaped downwards production trend from the +50% bonus down to regular production
+      } else {
+        v = 1;
+      }
+      var mul = Num(1 + v * 0.5);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['high-yield watercress choice upgrade', true, mul, result.clone()]);
+    }
+  }
+
+  if(state.upgrades[watercress_choice0].count == 1) {
+    var mul = Num(1.25);
     result.mulInPlace(mul);
-    if(breakdown) breakdown.push(['watercress choice upgrade', true, mul, result.clone()]);
+    if(breakdown) breakdown.push(['sturdy watercress choide upgrade', true, mul, result.clone()]);
   }
 
   if(opt_nuts) {
@@ -1993,7 +2008,7 @@ var upgrade_mistunlock = registerUpgrade('mist ability', treeLevelReqBase(4).mul
     return true;
   }
   return false;
-}, 1, 'While enabled, mist temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or the "2" key.', '#fff', '#88f', image_mist, undefined);
+}, 1, 'While enabled, mist temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+2".', '#fff', '#88f', image_mist, undefined);
 upgrades[upgrade_mistunlock].istreebasedupgrade = true;
 
 var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReqBase(2).mulr(0.05 * 0), function() {
@@ -2006,7 +2021,7 @@ var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReqBase(2).mulr(
     return true;
   }
   return false;
-}, 1, 'While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter. This active ability is enabled using its icon button at the top or the "1" key.', '#ccf', '#88f', image_sun, undefined);
+}, 1, 'While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+1".', '#ccf', '#88f', image_sun, undefined);
 upgrades[upgrade_sununlock].istreebasedupgrade = true;
 
 var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(6).mulr(0.05 * 0), function() {
@@ -2019,7 +2034,7 @@ var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(
     return true;
   }
   return false;
-}, 1, 'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or the "3" key.', '#ccf', '#00f', image_rainbow, undefined);
+}, 1, 'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+3".', '#ccf', '#00f', image_rainbow, undefined);
 upgrades[upgrade_rainbowunlock].istreebasedupgrade = true;
 
 
@@ -2082,19 +2097,18 @@ var watercress_choice0 = registerChoiceUpgrade('watercress choice',
   function() {
     return state.treelevel >= 14;
   }, function() {
-    if(state.upgrades[watercress_choice0].count == 1) {
-      // compensate for the watercresses already having lost seconds. In fact, set them to 100%
-      for(var y = 0; y < state.numh; y++) {
-        for(var x = 0; x < state.numw; x++) {
-          var f = state.field[y][x];
-          if(f.index == CROPINDEX + short_0) f.growth = 1;
-        }
+    // in early game, the watercress has short lifetime, and so loses a lot of growth percentage
+    // for this one (likely automatic) choice upgrade, automatically refresh watercress to 100%, by now watercress upgrades made its lifetime already longer so the time loss matters less
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f = state.field[y][x];
+        if(f.index == CROPINDEX + short_0) f.growth = 1;
       }
     }
   },
  'Sturdy Watercress', 'High-yield watercress',
- 'Makes watercress lifetime twice as long. This benefits idle play, but no benefit for active play.',
- 'Increases watercress copying effect by 33%',
+ 'Increases watercress copying effect constantly by 25% and its lifetime by 50%. This benefits idle play more than active play, compared to the other choice.',
+ 'Increases watercress copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the watercress. Refreshing or replanting the watercress immediately gives back the full bonus. This benefits active play more than idle play, compared to the other choice.',
  '#000', '#fff', images_watercress[4], undefined);
 upgrades[watercress_choice0].istreebasedupgrade = true;
 
@@ -4110,6 +4124,17 @@ function fuseFruitAutoLevel(a, b, c) {
   }
 }
 
+// whether this fruit's seasonal type fully contains the given type
+function fruitContainsSeasonalType(fruit, type) {
+  if(fruit.type == type) return true;
+  if(fruit.type == 9) return true;
+  if(fruit.type == 5) return (type == 1 || type == 2);
+  if(fruit.type == 6) return (type == 2 || type == 3);
+  if(fruit.type == 7) return (type == 3 || type == 4);
+  if(fruit.type == 8) return (type == 4 || type == 1);
+  return false;
+}
+
 // a and b are season types of 2 fruits (0=apple, etc...)
 // fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits
 function fruitSeasonMix(a, b, fruitmix) {
@@ -4748,7 +4773,7 @@ function getAlternateResinBonus(season) {
 ////////////////////////////////////////////////////////////////////////////////
 
 function getSunSeedsBoost() {
-  var bonus_sun = Num(1.5);
+  var bonus_sun = Num(1.5); // +150%
   bonus_sun.mulInPlace(getWeatherBoost());
   if(state.upgrades[active_choice0].count == 2) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
   return bonus_sun;
@@ -4756,21 +4781,21 @@ function getSunSeedsBoost() {
 
 // a seed consumption reduction, so a boost
 function getMistSeedsBoost() {
-  var bonus_mist0 = Num(0.75);
+  var bonus_mist0 = Num(0.75); // -25%
   // weather boost not applied to the less seeds effect, it's a multiplier intended for things that increase something plus would make it doubly-powerful
   if(state.upgrades[active_choice0].count == 2) bonus_mist0.divrInPlace(1 + active_choice0_b_bonus);
   return bonus_mist0;
 }
 
 function getMistSporesBoost() {
-  var bonus_mist1 = Num(1);
+  var bonus_mist1 = Num(1); // +100%
   bonus_mist1.mulInPlace(getWeatherBoost());
   if(state.upgrades[active_choice0].count == 2) bonus_mist1.mulrInPlace(1 + active_choice0_b_bonus);
   return bonus_mist1;
 }
 
 function getRainbowFlowerBoost() {
-  var bonus_rainbow = Num(0.5);
+  var bonus_rainbow = Num(0.75); // +75%
   bonus_rainbow.mulInPlace(getWeatherBoost());
   if(state.upgrades[active_choice0].count == 2) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
   return bonus_rainbow;

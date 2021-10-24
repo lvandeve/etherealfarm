@@ -261,26 +261,79 @@ function refreshWatercress(opt_clear, opt_all) {
 
 
 document.addEventListener('keydown', function(e) {
+  //if(e.target.matches('textarea')) return; // typing in a textarea, don't do global game shortcuts then
+  if(dialog_level > 0) {
+    if(e.keyCode == 27 || e.code == 'Escape') {
+      if(dropdownEl) {
+        removeAllDropdownElements();
+      } else {
+        closeTopDialog();
+      }
+    }
+    return; // in a dialog, don't do global game shortcuts
+  }
+
   var shift = util.eventHasShiftKey(e);
   var ctrl = util.eventHasCtrlKey(e);
 
-  //if(e.target.matches('textarea')) return; // typing in a textarea, don't do global game shortcuts then
-  if(dialog_level > 0) return; // in a dialog, don't do global game shortcuts then
+  var numberfun = state.keys_numbers;
+  if(shift) numberfun = state.keys_numbers_shift;
 
-  if(e.key == '1' && !shift && !ctrl) {
-    addAction({type:ACTION_ABILITY, ability:1});
-    update();
+  var key = e.key;
+  var code = e.code;
+  // for letters and numbers, avoid shift having an effect
+  if(code.length == 4 && code.substr(0, 3) == 'Key') {
+    if(code[3] >= 'A' && code[3] <= 'Z') key = code[3].toLowerCase();
   }
-  if(e.key == '2' && !shift && !ctrl) {
-    addAction({type:ACTION_ABILITY, ability:0});
-    update();
-  }
-  if(e.key == '3' && !shift && !ctrl) {
-    addAction({type:ACTION_ABILITY, ability:2});
-    update();
+  if(code.length == 6 && code.substr(0, 5) == 'Digit') {
+    // for numbers, only do this if there's a setting using numbers enabled. The reason: ( and ) could be under numbers, and in that case you may genuinely want to use them
+    // and for weather, which only goes from 1-3, still allow other keys behind other numbers
+    if(numberfun != 0 && numberfun != 1) {
+      if(code[5] >= '0' && code[5] <= '9') key = code[5];
+    }
+    if(numberfun == 1) {
+      if(code[5] >= '1' && code[5] <= '3') key = code[5];
+    }
   }
 
-  if(e.key == 't' && !shift && !ctrl) {
+  if(key >= '0' && key <= '9') {
+    if(numberfun == 0) return;
+
+    var number = key - '0';
+    if(number == '0') number = 10; // keyboard has the 0 after the 9 instead of before the 1
+
+    if(numberfun == 1) {
+      if(key == '1') {
+        addAction({type:ACTION_ABILITY, ability:1});
+        update();
+      }
+      if(key == '2') {
+        addAction({type:ACTION_ABILITY, ability:0});
+        update();
+      }
+      if(key == '3') {
+        addAction({type:ACTION_ABILITY, ability:2});
+        update();
+      }
+    } else if(numberfun == 2) {
+      setTabNumber(number - 1);
+    } else if(numberfun == 3) {
+      var index = number - 1;
+      // even though it's possible and allowed to select a slot with no fruit in it, allow keyboard shortcuts only to select actual fruits, to avoid accidental keypresses setting the fruit to nothing and silently making a run harder
+      if(index < state.fruit_stored.length) {
+        addAction({type:ACTION_FRUIT_ACTIVE, slot:(number - 1), silent:true, allow_empty:true});
+        update();
+      }
+    }
+    if(shift) {
+      // these chips appear due to the shift+plant feature, but could be in the way of console messages when using shift+keys for other reasons, so remove them
+      removeShiftCropChip();
+      removeShiftCrop2Chip();
+    }
+  }
+
+
+  if(key == 't' && !shift && !ctrl) {
     if(state.challenge) {
       createFinishChallengeDialog();
     } else {
@@ -288,16 +341,16 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(e.key == 'w' && !shift && !ctrl) {
+  if(key == 'w' && !shift && !ctrl) {
     // NOTE: ctrl for this shortcut doesn't work, since ctrl+w closes browser window. For consistency, shift is also not supported.
     refreshWatercress();
   }
 
-  if(e.key == 'b' && !shift && !ctrl) {
+  if(key == 'b' && !shift && !ctrl) {
     createBlueprintsDialog();
   }
 
-  if(e.key == 'u' && state.currentTab == tabindex_field) {
+  if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field) {
     // upgrade crop
     var did_something = false;
     did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
@@ -317,7 +370,7 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(e.key == 'u' && state.currentTab == tabindex_field2) {
+  if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field2) {
     // upgrade crop
     var did_something = false;
     did_something |= makeUpgradeCrop2Action(shiftCrop2FlexX, shiftCrop2FlexY);
@@ -326,7 +379,7 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(e.key == 'p' && state.currentTab == tabindex_field) {
+  if(key == 'p' && !shift && !ctrl && state.currentTab == tabindex_field) {
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f) {
@@ -346,7 +399,7 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(e.key == 'p' && state.currentTab == tabindex_field2) {
+  if(key == 'p' && !shift && !ctrl && state.currentTab == tabindex_field2) {
     if(state.field2[shiftCrop2FlexY]) {
       var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
       if(f) {
@@ -364,7 +417,7 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(e.key == 'd' && state.currentTab == tabindex_field) {
+  if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field) {
     if(state.allowshiftdelete) {
       if(state.field[shiftCropFlexY]) {
         var f = state.field[shiftCropFlexY][shiftCropFlexX];
@@ -377,11 +430,11 @@ document.addEventListener('keydown', function(e) {
         }
       }
     } else {
-      showMessage('"shortcuts may delete crop" must be enabled in the settings before deleting crops with "d" is allowed', C_INVALID, 0, 0);
+      showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting crops with "d" is allowed', C_INVALID, 0, 0);
     }
   }
 
-  if(e.key == 'd' && state.currentTab == tabindex_field2) {
+  if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field2) {
     if(state.allowshiftdelete) {
       if(state.field2[shiftCrop2FlexY]) {
         var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
@@ -394,21 +447,36 @@ document.addEventListener('keydown', function(e) {
         }
       }
     } else {
-      showMessage('"shortcuts may delete crop" must be enabled in the settings before deleting crops with "d" is allowed', C_INVALID, 0, 0);
+      showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting crops with "d" is allowed', C_INVALID, 0, 0);
     }
   }
 
+  if(code == 'Escape' && !shift && !ctrl) {
+    var dialog = createDialog();
+    initSettingsUI_in(dialog);
+  }
+
   // these keys for prev and next fruit are chosen such that hopefully at least one set of them is reachable on any keyboard layout, even if in combination with shift if necessary
-  if((e.key == ']' || e.key == '}' || e.key == ')' || e.key == '>') && !ctrl) {
-    if(state.fruit_active + 1 < state.fruit_stored.length) {
-      addAction({type:ACTION_FRUIT_ACTIVE, slot:state.fruit_active + 1});
-      update();
+  if((key == ']' || key == '}' || key == ')' || key == '>') && !ctrl) {
+    if(state.keys_brackets == 2) {
+      setTabNumber(getTabNumber() + 1);
+    }
+    if(state.keys_brackets == 3) {
+      if(state.fruit_active + 1 < state.fruit_stored.length) {
+        addAction({type:ACTION_FRUIT_ACTIVE, slot:state.fruit_active + 1});
+        update();
+      }
     }
   }
-  if((e.key == '[' || e.key == '{' || e.key == '(' || e.key == '<') && !ctrl) {
-    if(state.fruit_active > 0) {
-      addAction({type:ACTION_FRUIT_ACTIVE, slot:state.fruit_active - 1});
-      update();
+  if((key == '[' || key == '{' || key == '(' || key == '<') && !ctrl) {
+    if(state.keys_brackets == 2) {
+      setTabNumber(getTabNumber() - 1);
+    }
+    if(state.keys_brackets == 3) {
+      if(state.fruit_active > 0) {
+        addAction({type:ACTION_FRUIT_ACTIVE, slot:state.fruit_active - 1});
+        update();
+      }
     }
   }
 });

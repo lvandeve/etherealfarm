@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.89 (2021-10-24):';
+  text += '<br/>• High-yield watercress choice upgrade now begins at +50% copying bonus but after a while this goes down towards no bonus, prevously this was a constant +33%. This can get more out of weather+fern combo, but is more active.';
+  text += '<br/>• Sturdy watercress choice upgrade now only gives +50% lifetime duration, but now gives a constant +25% copying bonus. About the nerfed lifetime duration: a later update will add another form of longer duration instead.';
+  text += '<br/>• Buffed the rainbow weather base bonus from 50% to 75%.';
+  text += '<br/>• Added a setting for number key shortcuts: choice of activate weather, change tabs, or change active fruit slot. See main menu -> preferences -> controls.';
+  text += '<br/>• A fruit that\'s of higher tier or season type than ever seen before can now drop in the stored fruits rather than sacrificial pool. And custom-named fruits show their name in the fruit tab when active.';
+  text += '<br/>• Other minor QoL improvements.'; // esc key opens main menu, fix upgrade cost display in tooltips, named fruits name in tab, less roomy configure buttons in automaton UI, some improved help dialogs, when editing fruit name the original name appears in the edit box rather than have it empty
+  text += '<br/><br/>';
+
   text += '0.1.88 (2021-10-10):';
   text += '<br/>• Ferns at game start now give at minimum the starter resources from ethereal ferns.';
   text += '<br/>• Added new choice upgrade for watercress.';

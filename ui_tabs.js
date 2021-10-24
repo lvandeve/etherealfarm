@@ -32,6 +32,21 @@ var automatonButtonLastText = '';
 var squirrelButtonLastText = '';
 var amberButtonLastText = '';
 
+var tabNumbers = [];
+var tabNumbersInv = [];
+
+// set tab according to its visible numeric order, rather than the internal code
+function setTabNumber(i) {
+  if(tabNumbers[i] == undefined) return;
+  setTab(tabNumbers[i]);
+}
+
+// opposite of setTabNumber
+function getTabNumber() {
+  if(tabNumbersInv[state.currentTab] == undefined) return 0;
+  return tabNumbersInv[state.currentTab];
+}
+
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
 
@@ -146,10 +161,23 @@ function updateTabButtons2() {
 
   tabnum = tabindex_fruit;
   if(tabbuttons[tabnum]) {
-    var num = state.fruit_stored.length + state.fruit_sacr.length;
-    var text = 'fruit<br/>(' + num + ')';
     var a = getActiveFruit();
+    var num = '' + (state.fruit_stored.length + state.fruit_sacr.length);
     var special = getFruitCategory(a);
+    if(a) {
+      if(a.name) {
+        num = a.name;
+        // more than 12 characters is too big to render
+        if(num.length > 12) {
+          // to increase probability of splitting in a good way, try to find a space within the last few characters
+          var space = num.lastIndexOf(' ', 12);
+          if(!(space >= 9 && space <= 12)) space = 12;
+          num = num.substr(0, space);
+        }
+      }
+    }
+    var text = 'fruit<br/>(' + num + ')';
+
     if(special) {
       var lowest = 7; // lowest category of other fruit you have
       var tier = a ? a.tier : 0;
@@ -349,6 +377,8 @@ function updateTabButtons() {
 
   // the order below determines the display order of the tabs
 
+  tabNumbers = [];
+
   var tabFontSize = '120%';
 
   tabnum = tabindex_field;
@@ -364,6 +394,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].textEl.innerText = 'field';
     tabbuttons[tabnum].id = 'field_tab';
     fieldButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -380,6 +412,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
     tabbuttons[tabnum].id = 'upgrades_tab';
     upgradesButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -397,6 +431,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].id = 'ethereal_field_tab';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     field2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -414,6 +450,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].id = 'ethereal_upgrades_tab';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     upgrades2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -430,6 +468,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].textEl.innerText = 'fruit';
     tabbuttons[tabnum].id = 'fruit_tab';
     fruitButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -447,6 +487,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].id = 'achievements_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
     automatonButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -464,6 +506,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].id = 'achievements_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
     squirrelButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -481,6 +525,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].id = 'achievements_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
     amberButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 
@@ -497,6 +543,8 @@ function updateTabButtons() {
     tabbuttons[tabnum].id = 'achievements_tab';
     tabbuttons[tabnum].textEl.innerText = 'achievements';
     medalsButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
     index++;
   }
 

@@ -46,12 +46,6 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
     buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.0], [1, 0, -0.02], [0, 0, 0.98]);
     addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
     styleButton0(buyFlex.div);
-  } else {
-    if(state.res.lt(cost)) {
-      text += '<br><font color="#666">cost: ' + cost.toString() + '</font>';
-    } else {
-      text += '<br>cost: ' + cost.toString();
-    }
   }
 
   if(opt_tooltipfun) {

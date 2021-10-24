@@ -268,10 +268,8 @@ function showConfigureAutoChoiceDialog(subject) {
   }
 }
 
-
-
 function showAutomatonFeatureSourceDialog() {
-  var dialog = createDialog();
+  var dialog = createDialog(undefined, createAutomatonHelpDialog, 'help');
 
   var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
   centerText2(titleDiv);
@@ -354,6 +352,19 @@ function updateAutomatonUI() {
     var flex  = new Flex(automatonFlex, 0.01, y, 0.4, y + h, 0.66);
     y += h * 1.2;
     if(!opt_dont_manage) buttons.push(flex);
+    return flex;
+  };
+
+  var addConfigButton = function(opt_dont_manage) {
+    var h = 0.08;
+    y -= h * 1.2;
+    var flex  = new Flex(automatonFlex, [0.4, 0, 0.2, h], y, [0.4, 0, 1.2, h], y + h, 8);
+    y += h * 1.2;
+    if(!opt_dont_manage) buttons.push(flex);
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = '⚙';
+    flex.div.textEl.title = 'Configure';
     return flex;
   };
 
@@ -544,10 +555,7 @@ function updateAutomatonUI() {
   }, flex));
 
 
-  flex = addButton();
-  styleButton(flex.div);
-  centerText2(flex.div);
-  flex.div.textEl.innerText = 'Configure...';
+  flex = addConfigButton();
   addButtonAction(flex.div, function() {
     showConfigureAutoChoiceDialog();
   });
@@ -594,10 +602,7 @@ function updateAutomatonUI() {
 
     var advanced = state.automaton_unlocked[1] >= 2;
     if(advanced) {
-      flex = addButton();
-      styleButton(flex.div);
-      centerText2(flex.div);
-      flex.div.textEl.innerText = 'Configure...';
+      flex = addConfigButton();
       addButtonAction(flex.div, function() {
         showConfigureAutoResourcesDialog(0);
       });
@@ -699,10 +704,7 @@ function updateAutomatonUI() {
 
     var advanced = state.automaton_unlocked[2] >= 2;
     if(advanced) {
-      flex = addButton();
-      styleButton(flex.div);
-      centerText2(flex.div);
-      flex.div.textEl.innerText = 'Configure...';
+      flex = addConfigButton();
       addButtonAction(flex.div, function() {
         showConfigureAutoResourcesDialog(1);
       });
@@ -782,10 +784,7 @@ function updateAutomatonUI() {
       // advanced for auto-unlock is shared with that of auto-plant (for now, maybe could become a stage 2 of the blackberry challenge in the future)
       var advanced = state.automaton_unlocked[2] >= 2;
       if(advanced) {
-        flex = addButton();
-        styleButton(flex.div);
-        centerText2(flex.div);
-        flex.div.textEl.innerText = 'Configure...';
+        flex = addConfigButton();
         addButtonAction(flex.div, function() {
           showConfigureAutoResourcesDialog(2);
         });

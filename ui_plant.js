@@ -33,28 +33,24 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
 
-  var infoFlex = new Flex(flex, [0, 0, 0.7], 0.05, 1, [0, 0, 0.5]);
+  var infoFlex = new Flex(flex, [0, 0, 0.7], 0.05, 1, 0.95);
   var text = '';
   text +=  '<b>Plant ' + crop.name + '</b><br>';
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
-  if(!opt_plantfun) text += '<b>cost:</b>' + cost.toString() + '<br>';
 
   text += 'type: ' + getCropTypeName(crop.type) + '<br>';
   text += 'cost: ' + cost.toString();
 
   infoFlex.div.innerHTML = text;
 
-  var buyFlex = undefined;
-
   if(opt_showfun) {
     styleButton0(canvasFlex.div, true);
     addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');
   }
   if(opt_plantfun) {
-    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.0], [1, 0, -0.02], [0, 0, 0.98]);
-    addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
-    styleButton0(buyFlex.div);
+    addButtonAction(infoFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
+    styleButton0(infoFlex.div, true);
   }
 
   if(opt_tooltipfun) {
@@ -64,7 +60,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
       }, true);
     }
     if(opt_plantfun) {
-      registerTooltip(buyFlex.div, function() {
+      registerTooltip(infoFlex.div, function() {
         return (opt_replace ? 'Replace with ' : 'Plant ') + crop.name + '<br><br>' + opt_tooltipfun();
       }, true);
     }
@@ -79,11 +75,11 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   if(opt_plantfun && state.res.lt(cost)) {
     flex.div.className = 'efButtonTranslucentCantAfford';
     registerUpdateListener(function() {
-      if(!flex || !document.body.contains(buyFlex.div)) return false;
+      if(!flex || !document.body.contains(infoFlex.div)) return false;
       var cost = crop.getCost();
       if(opt_recoup) cost = cost.sub(opt_recoup);
       if(state.res.gte(cost)) {
-        buyFlex.div.className = 'efButtonTranslucent';
+        flex.div.className = 'efPlantChip';
         return false;
       }
       return true;

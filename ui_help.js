@@ -50,7 +50,11 @@ function showHelpChip(text) {
   addButtonAction(helpChipFlex.div, removeHelpChip);
 }
 
-
+// if due to a bug in the game, or help dialog added to the game after the fact (and it can never be unlocked again due to e.g. already having done upgrade that had this as one-time effect),
+// a help dialog was never seen and thus doesn't end up in the main help list of dialogs, this can fix it
+function ensureMissedHelpDialogAvailable(id, opt_state) {
+  (opt_state || state).help_seen_text[id] = true;
+}
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
 // highest used id: 37
@@ -254,7 +258,7 @@ registerHelpDialog(2, 'Tree dropped fruit', 'Tree reached level 5 and dropped a 
 registerHelpDialog(18, 'Tree dropped better fruit', 'Tree reached level 15 and dropped another fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! It drops one every 5 levels. Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
 
 
-registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now possible to transcend', 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog.',
+registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now possible to transcend', 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog. The tree also dropped another fruit.',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(10)][1][0]], [undefined, tree_images[treeLevelIndex(10)][2][0]]]);
 
 
@@ -317,7 +321,15 @@ registerHelpDialog(27, 'Beehives', 'You unlocked beehives!',
 
 
 registerHelpDialog(28, 'Automaton & Blueprints', 'You unlocked the automaton!',
-    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, it gives a boost to neighbors, and the automaton tab and blueprints unlock, allowing to automate various parts of the game.<br><br>You must place the automaton in the ethereal field before this works, go to its tab, and configure its settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>Templates can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint button in the tree.',
+    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, it gives a boost to neighbors, and the automaton tab and blueprints unlock, allowing to automate various parts of the game.<br><br>' +
+    'You must place the automaton in the ethereal field before this works, go to its tab, and configure its settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>' +
+    'When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>' +
+    'The automaton initially has the following features unlocked:<br><br>' +
+    ' • Blueprints and templates: Templates are translucent blue looking versions of crops that can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint button in the tree.<br>' +
+    ' • Buttons to delete all crops in the main field or in the ethereal field: these are in the automaton tab and are for convenience. Deleting the ethereal field still uses tokens as usual.<br>' +
+    ' • Automation of choice upgrades: Use the button in the automaton tab to enable/disable this. Use the "gear" button to set up which choice to make for which upgrade. You have to use the gear for the initial setup of this.<br>' +
+    ' • Neighbor boost in the ethereal field: the automaton in the ethereal field gives an independent boost to neighbors, similar to lotuses.<br>' +
+    '',
     images_automaton[4],
     undefined,
   [[undefined,images_flowertemplate[4],undefined],
@@ -329,7 +341,7 @@ registerHelpDialog(29, 'Auto upgrades', 'You unlocked auto upgrades!',
     images_automaton[4]);
 
 registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upgrade options!',
-    'You unlocked more finetuning options for the auto upgrades. See the automaton tab. The controls have changed: you can now configure the max cost per crop type (berry, mushroom, flower, ...).',
+    'You unlocked more finetuning options for the auto upgrades. See the automaton tab. There is now a "gear" button next to the auto upgrade button: you can now configure the max cost per crop type (berry, mushroom, flower, ...).',
     images_automaton[4]);
 
 registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
@@ -337,7 +349,7 @@ registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
     images_automaton[4]);
 
 registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more options!',
-    'You unlocked more finetuning options for auto planting, you can now choose how many resources the automaton can spend on crops of each type.',
+    'You unlocked more finetuning options for auto planting, you can now choose how many resources the automaton can spend on crops of each type. Use the "gear" button next to the auto-plant button to finetune these options',
     images_automaton[4]);
 
 registerHelpDialog(33, 'Auto unlock', 'You unlocked auto-unlock!',
@@ -435,7 +447,9 @@ function createKeyboardHelpDialog() {
   text += '<br/><br/>';
   text += 'Note: on mac, ctrl means command instead.';
   text += '<br/><br/>';
-  text += ' • <b>"1" , "2" , "3"</b>: activate one of the weather abilities.';
+  text += ' • <b>number keys "1-9"</b>: by default, select fruit slot (when available). Can be changed in the preferences under "controls" to instead activate weather or change game tabs.';
+  text += '<br/>';
+  text += ' • <b>"shift" + number keys "1-9"</b>: by default, activate weather (1-3). Can be changed in the preferences under "controls" to instead select fruit slots or change game tabs.';
   text += '<br/>';
   text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
   text += '<br/>';
@@ -471,13 +485,15 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence.';
   text += '<br/>';
-  text += ' • <b>], }, ) or ></b>: select next active fruit';
+  text += ' • <b>], }, ) or ></b>: select next active fruit. Can be changed in the preferences under "controls" to instead select next game tab.';
   text += '<br/>';
-  text += ' • <b>[, {, ( or <</b>: select previous active fruit';
+  text += ' • <b>[, {, ( or <</b>: select previous active fruit. Can be changed in the preferences under "controls" to instead select previous game tab.';
   text += '<br/>';
-  text += ' • <b>esc</b>: close dialog.';
+  text += ' • <b>esc</b>: close current dialog. If no dialogs are open, shows main menu.';
   text += '<br/>';
   text += ' • <b>"b"</b>: open the blueprint library, when available.';
+  text += '<br/>';
+  text += ' • <b>"t"</b>: open the transcension dialog, when available.';
   text += '<br/>';
   text += ' • <b>"t" followed by "b"</b>: transcend and open the transcend-with-blueprint dialog.';
   text += '<br/>';
@@ -620,5 +636,51 @@ function createHelpDialog() {
   addSpacer();
 
   var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
-  moreFlex.div.innerText = 'More help topics will appear here as the game progresses. Any in-game help dialog that pops up will become permanently available here once it\'s unlocked';
+  moreFlex.div.innerText = 'More help topics may appear here as the game progresses. Any in-game help dialog that pops up will become permanently available here once it\'s unlocked';
+}
+
+
+// shows a subset of the dynamic registered help buttons, for automaton related topics only
+function createAutomatonHelpDialog() {
+  showing_help = true;
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+    showing_help = false;
+  });
+
+  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11, 0.5);
+  centerText2(titleFlex.div);
+  titleFlex.div.textEl.innerText = 'Automaton Help';
+
+  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  makeScrollable(scrollFlex);
+
+  var pos = 0.05;
+  var buttondiv;
+  var h = 0.06;
+
+  var makeButton = function(text) {
+    //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
+    var buttonFlex = new Flex(scrollFlex, 0.08, pos, 0.92, pos + h, 0.55);
+    var button = buttonFlex.div;
+    styleButton(button, 1);
+    pos += h * 1.1;
+    button.textEl.innerText = text;
+    return button;
+  };
+
+  var ids = [28, 29, 30, 31, 32, 33];
+
+  for(var i = 0; i < ids.length; i++) {
+    var id = ids[i];
+    if(!state.help_seen_text[id] && !state.help_seen[id]) continue;
+    var d = registered_help_dialogs[id];
+
+    var button = makeButton(d.name + ' ' + id);
+    addButtonAction(button, bind(function(id) {
+      showRegisteredHelpDialog(id, true);},
+    id));
+  }
+
+  var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
+  moreFlex.div.innerText = 'More help topics may appear here as the game progresses. Any in-game automaton-related help dialog that pops up will become permanently available here (as well as the main help dialog) once it\'s unlocked';
 }

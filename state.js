@@ -415,6 +415,10 @@ function State() {
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
   this.messagelogenabled = [1, 1, 1, 1, 1, 1]; // 0: "game saved" message log messages, 1: tree leveling, 2: upgrades available, 3: abbreviated help, 4: pause/resumed messages, 5: fruit drops
   this.cancelbuttonright = true; // whether cancel buttons in dialogs appear on the leftmost or the rightmost side of a group of buttons (the group of button always starts from the right either way). If on the right side, all cancel or back buttons are in the same right corner of the screen. If false, then the right corner of the screen gets the "do the action" button, and cancel/back buttons are to the left.
+  // each of the following keys has the following meanings: 0=nothing, 1=weather (1-3, does not work for brackets), 2=tabs, 3=active fruit
+  this.keys_numbers = 3;
+  this.keys_numbers_shift = 1; // there is none for ctrl, ctrl+numbers makes browsers change their tab, can't use this as a shortcut key in the game
+  this.keys_brackets = 2;
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog

@@ -255,6 +255,9 @@ function encState(state, opt_raw_only) {
   processUint16Array(state.notificationsounds);
   processUint16Array(state.messagelogenabled);
   processBool(state.cancelbuttonright);
+  processUint6(state.keys_numbers);
+  processUint6(state.keys_numbers_shift);
+  processUint6(state.keys_brackets);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -985,6 +988,15 @@ function decState(s) {
   }
   if(error) return err(4);
   if(save_version >= 4096*1+70) state.cancelbuttonright = processBool();
+  if(save_version >= 4096*1+89) {
+    state.keys_numbers = processUint6();
+    state.keys_numbers_shift = processUint6();
+    state.keys_brackets = processUint6();
+  } else {
+    // before version v.0.1.89, number keys activated weather, so set it to the default it was. For new players after this version, the default is fruit slots instead
+    state.keys_numbers = 1;
+    state.keys_brackets = 3;
+  }
   if(error) return err(4);
 
 
@@ -1344,6 +1356,8 @@ function decState(s) {
     for(var i = 0; i < array0.length; i++) state.help_seen[array0[i]] = array0[i];
     for(var i = 0; i < array1.length; i++) state.help_seen_text[array1[i]] = array1[i];
     for(var i = 0; i < array2.length; i++) state.help_disable[array2[i]] = array2[i];
+
+    if(state.help_seen_text[30]) ensureMissedHelpDialogAvailable(29, state);
   }
 
   section = 19; id = 0; // challenges
