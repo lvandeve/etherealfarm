@@ -21,7 +21,7 @@ function getChangeLog() {
   var text = '';
 
   text += '0.1.89 (2021-10-24):';
-  text += '<br/>• High-yield watercress choice upgrade now begins at +50% copying bonus but after a while this goes down towards no bonus, prevously this was a constant +33%. This can get more out of weather+fern combo, but is more active.';
+  text += '<br/>• High-yield watercress choice upgrade now begins at +50% copying bonus but after a while this goes down towards no bonus (it can be refreshed back to 50%), prevously this was a constant +33%. This can get more out of weather+fern combo, but is more active.';
   text += '<br/>• Sturdy watercress choice upgrade now only gives +50% lifetime duration, but now gives a constant +25% copying bonus. About the nerfed lifetime duration: a later update will add another form of longer duration instead.';
   text += '<br/>• Buffed the rainbow weather base bonus from 50% to 75%.';
   text += '<br/>• Added a setting for number key shortcuts: choice of activate weather, change tabs, or change active fruit slot. See main menu -> preferences -> controls.';

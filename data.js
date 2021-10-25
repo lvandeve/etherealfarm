@@ -2108,7 +2108,7 @@ var watercress_choice0 = registerChoiceUpgrade('watercress choice',
   },
  'Sturdy Watercress', 'High-yield watercress',
  'Increases watercress copying effect constantly by 25% and its lifetime by 50%. This benefits idle play more than active play, compared to the other choice.',
- 'Increases watercress copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the watercress. Refreshing or replanting the watercress immediately gives back the full bonus. This benefits active play more than idle play, compared to the other choice.',
+ 'Increases watercress copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the watercress. Refreshing or replanting the watercress gives back the full bonus. This benefits active play more than idle play, compared to the other choice.',
  '#000', '#fff', images_watercress[4], undefined);
 upgrades[watercress_choice0].istreebasedupgrade = true;
 

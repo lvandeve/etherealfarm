@@ -856,9 +856,6 @@ function changeField2Size(state, w, h) {
   state.field2 = field;
   state.numw2 = w;
   state.numh2 = h;
-
-  state.fernx -= xs;
-  state.ferny -= ys;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

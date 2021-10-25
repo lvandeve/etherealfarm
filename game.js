@@ -3483,6 +3483,14 @@ var update = function(opt_ignorePause) {
       }
     }
 
+    // fix a potential bug where fern went out of bounds of the map. The bug is fixed, but savegames with the issue could still exist.
+    if(state.fern) {
+      if(state.fernx < 0) state.fernx = 0;
+      if(state.ferny < 0) state.ferny = 0;
+      if(state.fernx >= state.numw) state.fernx = state.numw - 1;
+      if(state.ferny >= state.numh) state.ferny = state.numh - 1;
+    }
+
     var req = treeLevelReq(state.treelevel + 1);
     if(state.time > state.lasttreeleveluptime + 1 && state.res.ge(req)) {
       var resin = Num(0);
