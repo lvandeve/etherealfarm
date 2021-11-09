@@ -33,6 +33,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       addAction({type:ACTION_TRANSCEND, challenge:c.index});
       closeAllDialogs();
       update();
+      return true;
     };
     dialog = createDialog(undefined, okfun, 'start');
   }
@@ -50,6 +51,22 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   text += c.description;
   text += '<br><br>';
+
+  if(c.fullyCompleted(include_current_run)) {
+    text += '<br>';
+    text += 'You already got all rewards for this challenge, but can still keep beating max level to increase challenge production bonus.';
+    text += '<br><br>';
+  } else {
+    text += '<br>';
+    if(c.targetlevel.length > 1) {
+      text += '<b>Next target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
+      text += '<b>Next completion reward:</b> ' + c.rewarddescription[c.numCompleted(include_current_run)];
+    } else {
+      text += '<b>Target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
+      text += '<b>Reward:</b> ' + c.rewarddescription[0];
+    }
+    text += '<br><br>';
+  }
 
   text += '<b>Challenge rules:</b>';
   text += '<br>';
@@ -125,22 +142,6 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       }
       text += '<br>';
     }
-  }
-
-  if(c.fullyCompleted(include_current_run)) {
-    text += '<br>';
-    text += 'You already got all rewards for this challenge, but can still keep beating max level to increase challenge production bonus.';
-    text += '<br>';
-  } else {
-    text += '<br>';
-    if(c.targetlevel.length > 1) {
-      text += '<b>Next target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
-      text += '<b>Next completion reward:</b> ' + c.rewarddescription[c.numCompleted(include_current_run)];
-    } else {
-      text += '<b>Target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
-      text += '<b>Reward:</b> ' + c.rewarddescription[0];
-    }
-    text += '<br>';
   }
 
   if(c.targetlevel.length > 1) {
@@ -256,11 +257,10 @@ function getChallengeStatsString(challenge_id, include_current_run) {
 var challengedialogopen = false;
 // opt_from_challenge = whether you open this dialog after just having completed a challenge as well
 function createChallengeDialog(opt_from_challenge) {
-  var dialog = createDialog();
   challengedialogopen = true;
-  dialog.onclose = function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     challengedialogopen = false;
-  };
+  });
 
   dialog.div.className = 'efDialogEthereal';
 
@@ -330,6 +330,7 @@ function createFinishChallengeDialog() {
     extraname = 'with blueprint';
     extrafun = function() {
       createBlueprintsDialog(true);
+      return true;
     };
     automaton_unlocked = true;
   }
@@ -346,7 +347,7 @@ function createFinishChallengeDialog() {
   };
 
 
-  var dialog = createDialog(undefined, undefined, undefined, undefined, extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, undefined, undefined, shortcutfun);
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, undefined, undefined, shortcutfun);
   dialog.div.className = 'efDialogEthereal';
 
   var contentFlex = dialog.content;

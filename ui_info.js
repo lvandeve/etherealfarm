@@ -452,6 +452,7 @@ function updateResourceUI() {
         if(state.upgrades2[upgrade2_season2[s]].count) {
           result += '• Winter tree warmth for flowers: ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' (ethereal upgrade)<br>';
         }
+        result += '• Brassica frost: -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying and -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying fruit ability<br>';
         result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
       }
       result += '<br>';

@@ -77,6 +77,7 @@ function createTranscendDialog(opt_from_challenge) {
     if(state.untriedchallenges) extraname = 'challenges\n(new!)';
     extrafun = function() {
       createChallengeDialog();
+      return true;
     };
     challenge_unlocked = true;
   }
@@ -89,6 +90,7 @@ function createTranscendDialog(opt_from_challenge) {
     extraname2 = 'with blueprint';
     extrafun2 = function() {
       createBlueprintsDialog(true);
+      return true;
     };
     automaton_unlocked = true;
   }
@@ -116,7 +118,8 @@ function createTranscendDialog(opt_from_challenge) {
       addAction({type:ACTION_TRANSCEND, challenge:0});
       closeAllDialogs();
       update();
-  }, 'transcend', 'cancel', extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, extrafun2, extraname2, shortcutfun);
+      return true;
+  }, 'transcend', undefined, 'cancel', extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, extrafun2, extraname2, shortcutfun);
 
   dialog.div.className = 'efDialogEthereal';
 

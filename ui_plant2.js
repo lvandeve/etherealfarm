@@ -147,9 +147,9 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
         if(opt_replace) addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c});
         else addAction({type:ACTION_PLANT2, x:x, y:y, crop:c});
         state.lastPlanted2 = index; // for shift key
-        dialog.cancelFun();
         closeAllDialogs();
         update(); // do update immediately rather than wait for tick, for faster feeling response time
+        return true;
     }, index);
 
     var showfun = bind(function(tooltipfun) {

@@ -183,21 +183,23 @@ var dialogshortcutfun = undefined;
 
 // create a dialog for the settings menu
 // opt_size: see DIALOG_SMALL etc... values above
-// opt_okfun must call dialog.cancelFun when the dialog is to be closed
-// opt_extrafun and opt_extraname allow a third button in addition to cancel and ok. The order will be: cancel, extra, ok.
+// opt_okfun: if not undefined, there'll be an ok button that runs this function. Normally this will close the dialog. Make this function return true to keep the dialog open. This function may also use other means to close dialogs, e.g. call "closeAllDialogs", and then return true.
+// opt_okname: name of the ok button. Default is 'ok'
+// opt_cancelfun: this function is called when the dialog is closed by the cancel button, close button at the top, escape key, or clicking next to the dialog. Is not called when the dialog closes due to other buttons (such as ok or extra) or from the global closeAllDialogs. So it's called on specifically intended cancel.
+// opt_cancelname: override name of the cancel button
+// opt_extrafun and opt_extraname allow a third button in addition to cancel and ok. Like okfun, can return true to keep the dialog open.
 // opt_nobgclose: don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
-// opt_onclose, if given, is called no matter what way the dialog closes.  You can also not give this argument but instead set dialog.onclose
+// opt_onclose, if given, is called no matter what way the dialog closes. This is in slightly more cases than opt_cancelfun, since it's also when the ok or extra buttons close it, or from global closeAllDialogs
 // any content should be put in the resulting dialog.content flex, not in the dialog flex itself
-function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose, opt_extrafun2, opt_extraname2, opt_shortcutfun) {
+// opt_swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
+function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose, opt_extrafun2, opt_extraname2, opt_shortcutfun, opt_swapbuttons) {
   if(dialog_level < 0) {
     // some bug involving having many help dialogs pop up at once and rapidly closing them using multiple methods at the same time (esc key, click next to dialog, ...) can cause this, and negative dialog_level makes dialogs appear in wrong z-order
     closeAllDialogs();
     dialog_level = 0;
   }
   dialog_level++;
-  if(opt_shortcutfun) {
-    dialogshortcutfun = opt_shortcutfun;
-  }
+  dialogshortcutfun = opt_shortcutfun; // may be undefined
 
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
   removeAllDropdownElements();
@@ -236,7 +238,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
   // the is_cancel is for positioning cancel as if it was first, when state.cancelbuttonright, given that this function is called last for the cancel button
   var makeButton = function(is_cancel) {
     var result;
-    if(!state || state.cancelbuttonright) {
+    if((!state || state.cancelbuttonright) != !!opt_swapbuttons) {
       var s = buttonshift;
       if(is_cancel) {
         s = 0;
@@ -259,7 +261,8 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     styleButton(button);
     button.textEl.innerText = opt_okname || 'ok';
     addButtonAction(button, function(e) {
-      opt_okfun(e);
+      var keep = opt_okfun(e);
+      if(!keep) dialog.closeFun();
     });
   }
   if(opt_extrafun) {
@@ -268,7 +271,8 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     styleButton(button);
     button.textEl.innerText = opt_extraname || 'extra';
     addButtonAction(button, function(e) {
-      opt_extrafun(e);
+      var keep = opt_extrafun(e);
+      if(!keep) dialog.closeFun();
     });
   }
   if(opt_extrafun2) {
@@ -277,10 +281,17 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     styleButton(button);
     button.textEl.innerText = opt_extraname2 || 'extra2';
     addButtonAction(button, function(e) {
-      opt_extrafun2(e);
+      var keep = opt_extrafun2(e);
+      if(!keep) dialog.closeFun();
     });
   }
+  // function that will be called when the dialog is closed by cancel (including e.g. the esc key), but not ok and extra funs
   dialog.cancelFun = function() {
+    if(opt_cancelfun) opt_cancelfun();
+    dialog.closeFun();
+  };
+  // function that will be called when the dialog is closed by cancel, ok and extra funs
+  dialog.closeFun = function() {
     updatedialogfun = undefined;
     util.removeElement(overlay);
     for(var i = 0; i < created_dialogs.length; i++) {
@@ -299,14 +310,14 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelname, opt_extra
     // a tooltip created by an element from a dialog could remain, make sure those are removed too
     removeAllTooltips();
     dialog.removeSelfFun();
-    if(opt_shortcutfun) {
-      dialogshortcutfun = undefined;
-    }
+    dialogshortcutfun = undefined;
   };
+  // more primitive close, only intended for external use by closeAllDialogs, since that does all the things that closeFun above does in a global way for all dialogs
   dialog.removeSelfFun = function() {
     dialogFlex.removeSelf(gameFlex);
     if(dialogFlex.onclose) dialogFlex.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
   };
+  dialogFlex.closeFun = dialog.closeFun;
   dialogFlex.cancelFun = dialog.cancelFun;
   button = makeButton(true);
   styleButton(button);
@@ -359,8 +370,15 @@ function closeAllDialogs() {
   removeAllTooltips();
 }
 
-function closeTopDialog() {
+// opt_cancel: boolean, whether this is an intential cancel (from the Escape key), so that the dialog's cancel function will be called as well, or a close for another programmatic reason where only closeFun of the dialog should be called.
+function closeTopDialog(opt_cancel) {
   if(created_dialogs && created_dialogs.length > 0) {
+    var dialog = created_dialogs[created_dialogs.length - 1];
+    if(opt_cancel) dialog.cancelFun();
+    else dialog.closeFun();
+  }
+
+  /*if(created_dialogs && created_dialogs.length > 0) {
     created_dialogs[created_dialogs.length - 1].div.removeSelfFun();
     dialog_level--;
     created_dialogs.pop();
@@ -370,7 +388,7 @@ function closeTopDialog() {
   if(created_overlays && created_overlays.length > 0) {
     util.removeElement(created_overlays[created_overlays.length - 1]);
     created_overlays.pop();
-  }
+  }*/
 }
 
 document.addEventListener('keydown', function(e) {
@@ -902,7 +920,6 @@ function makeDropdown(flex, title, current, choices, fun) {
 function makeTextInput(title, fun, opt_value) {
   var dialog = createDialog(DIALOG_TINY, function() {
     fun(area.value);
-    dialog.cancelFun();
   });
 
   var titleFlex = new Flex(dialog.content, 0, 0.05, 1, 0.1);

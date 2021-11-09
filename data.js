@@ -25,7 +25,7 @@ var CROPTYPE_BERRY = croptype_index++;
 var CROPTYPE_MUSH = croptype_index++;
 var CROPTYPE_FLOWER = croptype_index++;
 var CROPTYPE_NETTLE = croptype_index++; // actually means "prickly plant" since thistle also belongs to this group
-var CROPTYPE_SHORT = croptype_index++;
+var CROPTYPE_BRASSICA = croptype_index++; // watercress, wasabi, etc...
 var CROPTYPE_AUTOMATON = croptype_index++;
 var CROPTYPE_LOTUS = croptype_index++; // ethereal field only, this is an ethereal crop that boost their ethereal neighbors, so a flower type, but regular flowers in ethereal field boost the basic field flowers instead
 var CROPTYPE_MISTLETOE = croptype_index++;
@@ -41,7 +41,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_MUSH) return 'mushroom';
   if(type == CROPTYPE_FLOWER) return 'flower';
   if(type == CROPTYPE_NETTLE) return 'prickly';
-  if(type == CROPTYPE_SHORT) return 'short-lived';
+  if(type == CROPTYPE_BRASSICA) return 'brassica';
   if(type == CROPTYPE_AUTOMATON) return 'automaton';
   if(type == CROPTYPE_LOTUS) return 'lotus';
   if(type == CROPTYPE_MISTLETOE) return 'mistletoe';
@@ -60,7 +60,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers' + (opt_no_nettles ? '' : ' and nettles') + '. Neighboring watercress can copy its production (but also consumption).';
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
     case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
-    case CROPTYPE_SHORT: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those';
+    case CROPTYPE_BRASSICA: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those. Unlike other crops, has limited lifetime.';
     case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Having more than one increases level up spores requirement and slightly decreases resin gain.';
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
@@ -168,6 +168,7 @@ function Crop() {
   this.name = 'a';
   this.cost = Res(); // one-time cost (do not use directly, use getCost() to get all multipliers taken into account)
   this.prod = Res(); // production per second (do not use directly, use getProd() to get all multipliers taken into account)
+  this.leech = undefined; // e.g. set to Num(1) for 100% base copying for watercress
   this.index = 0; // index in the crops array
   this.planttime = 0; // in seconds
   // how much this boosts neighboring crops, 0 means no boost, 1 means +100%, etc... (do not use directly, use getBoost() to get all multipliers taken into account)
@@ -178,6 +179,8 @@ function Crop() {
   this.basic_upgrade = null; // id of registered upgrade that does basic upgrades of this plant
 
   this.image = undefined;
+  this.image_remainder = undefined; // used for brassica
+  this.image_post = undefined; // used for brassica
 
   this.type = undefined;
   this.tier = 0;
@@ -252,8 +255,8 @@ Crop.prototype.getPlantTime = function() {
   var result = this.planttime;
   if(result == 0) return result;
 
-  // This is the opposite for croptype_short, it's not planttime but live time. TODO: make two separate functions for this
-  if(this.type == CROPTYPE_SHORT) {
+  // This is the opposite for CROPTYPE_BRASSICA, it's not planttime but live time. TODO: make two separate functions for this
+  if(this.type == CROPTYPE_BRASSICA) {
     if(this.basic_upgrade != null) {
       var u = state.upgrades[this.basic_upgrade];
       var u2 = upgrades[this.basic_upgrade];
@@ -311,7 +314,7 @@ Crop.prototype.getPlantTime = function() {
 Crop.prototype.getCost = function(opt_adjust_count) {
   var mul = sameTypeCostMultiplier;
   if(this.type == CROPTYPE_FLOWER) mul = sameTypeCostMultiplier_Flower;
-  if(this.type == CROPTYPE_SHORT) mul = sameTypeCostMultiplier_Short;
+  if(this.type == CROPTYPE_BRASSICA) mul = sameTypeCostMultiplier_Short;
   if(this.type == CROPTYPE_CHALLENGE) {
     if(this.challengecroppricemul) mul = this.challengecroppricemul;
   }
@@ -321,7 +324,7 @@ Crop.prototype.getCost = function(opt_adjust_count) {
 
 
 Crop.prototype.getRecoup = function() {
-  if(this.type == CROPTYPE_SHORT) return Res(0);
+  if(this.type == CROPTYPE_BRASSICA) return Res(0);
   if(state.challenge == challenge_wither) return Res(0);
   return this.getCost(-1).mulr(getCropRecoup());
 };
@@ -404,6 +407,8 @@ var flower_nut_boost = Num(0.25);
 // prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called
 // pretend: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
 Crop.prototype.getProd = function(f, pretend, breakdown) {
+  //if(state.challenge == challenge_wasabi) return new Res(); // commented out: this is not handled here since this computation is still needed for brassica itself
+
   var result = new Res(this.prod);
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
@@ -421,12 +426,12 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(this.type == CROPTYPE_MUSH) t = Math.pow(t, 4);
 
       result.mulrInPlace(t);
-      if(breakdown) breakdown.push(['growing', true, t, result.clone()]);
+      if(breakdown) breakdown.push(['growing', true, Num(t), result.clone()]);
     }
   }
 
   // upgrades
-  if(this.basic_upgrade != null && this.type != CROPTYPE_SHORT) {
+  if(this.basic_upgrade != null && this.type != CROPTYPE_BRASSICA) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
@@ -435,7 +440,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
   }
-  if(this.basic_upgrade != null && this.type == CROPTYPE_SHORT) {
+  if(this.basic_upgrade != null && this.type == CROPTYPE_BRASSICA) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
@@ -652,8 +657,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // treelevel boost
-  // CROPTYPE_SHORT is excluded simply to remove noise in the breakdown display: it's only a bonus on its 1 seed production. At the point where the tree is leveled, its real income comes from the neighbor copying.
-  if(state.treelevel > 0 && this.type != CROPTYPE_SHORT && this.type != CROPTYPE_NUT) {
+  // CROPTYPE_BRASSICA is excluded simply to remove noise in the breakdown display: it's only a bonus on its 1 seed production. At the point where the tree is leveled, its real income comes from the neighbor copying.
+  if(state.treelevel > 0 && this.type != CROPTYPE_BRASSICA && this.type != CROPTYPE_NUT) {
     var tree_boost = Num(1).add(getTreeBoost());
     result.mulInPlace(tree_boost);
     if(breakdown && tree_boost.neqr(1)) breakdown.push(['tree level (' + state.treelevel + ')', true, tree_boost, result.clone()]);
@@ -704,7 +709,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // leech, only computed here in case of "pretend", without pretent leech is computed in more correct way in precomputeField()
-  if(pretend && this.type == CROPTYPE_SHORT && f) {
+  if(pretend && this.type == CROPTYPE_BRASSICA && f) {
     var leech = this.getLeech(f);
     var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var p = prefield[f.y][f.x];
@@ -990,27 +995,33 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   return result;
 };
 
+// whether it's a brassica that is post the stage where it normally withers, such as the wasabi
+Crop.prototype.isPostLife = function(f) {
+  if(!f) return false; // can't determine
+  if(f.growth > 0.001) return false; // still full life
+  if(this.type != CROPTYPE_BRASSICA) return false;
+  if(this.tier == 0) return false;
+  if(state.upgrades[watercress_choice0].count == 0) return false;
+  return true;
+};
+
 // This returns the leech ratio of this plant, not the actual resource amount leeched
 // Only correct for already planted leeching plants (for the penalty of multiple planted ones computation)
 // opt_nuts: return the leech from nuts, which is less
+// aka getCopy
 Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
-  if(this.type != CROPTYPE_SHORT) {
+  if(this.type != CROPTYPE_BRASSICA) {
     var result = Num(0);
     if(breakdown) breakdown.push(['none', true, Num(0), result.clone()]);
     return Res();
   }
 
-  var result = Num(1);
+  var result = Num(this.leech || 1);
   if(breakdown) breakdown.push(['base', true, Num(1), result.clone()]);
 
-  if(!opt_nuts) {
-    var level = getFruitAbility(FRUIT_WATERCRESS);
-    if(level > 0) {
-      var mul = getFruitBoost(FRUIT_WATERCRESS, level, getFruitTier()).addr(1);
-      result.mulInPlace(mul);
-      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_WATERCRESS), true, mul, result.clone()]);
-    }
-  }
+  var sturdy = state.upgrades[watercress_choice0].count == 1;
+  var highyield = state.upgrades[watercress_choice0].count == 2;
+  var end_of_life = this.isPostLife(f);
 
   if(state.upgrades[watercress_choice0].count == 2) {
     var v = Math.min(Math.max(0, f.growth), 1);
@@ -1023,15 +1034,65 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
       }
       var mul = Num(1 + v * 0.5);
       result.mulInPlace(mul);
-      if(breakdown) breakdown.push(['high-yield watercress choice upgrade', true, mul, result.clone()]);
+      if(breakdown) breakdown.push(['high-yield brassica choice upgrade', true, mul, result.clone()]);
     }
   }
 
   if(state.upgrades[watercress_choice0].count == 1) {
     var mul = Num(1.25);
     result.mulInPlace(mul);
-    if(breakdown) breakdown.push(['sturdy watercress choide upgrade', true, mul, result.clone()]);
+    if(breakdown) breakdown.push(['sturdy brassica choice upgrade', true, mul, result.clone()]);
   }
+
+  if(end_of_life) {
+    mul = new Num(sturdy ? 0.666666 : 0.333333);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['end-of-life', true, mul, result.clone()]);
+  }
+
+  var season = getSeason();
+
+  var winter_weakness = season == 3 && state.challenge != challenge_wasabi;
+
+  if(winter_weakness) {
+    var mul = winter_malus_brassica;
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['winter malus', true, mul, result.clone()]);
+  }
+
+  if(!opt_nuts) {
+    var level = getFruitAbility(FRUIT_BRASSICA);
+    if(level > 0 && state.challenge != challenge_wasabi) {
+      var fruitbonus = getFruitBoost(FRUIT_BRASSICA, level, getFruitTier());
+      var mul = fruitbonus.addr(1);
+      var eol_malus = Num(1);
+      var winter_malus = Num(1);
+
+      if(end_of_life) {
+        // the malus affects the fruit multipleir, but not the base 100% that it's added to, so it's slightly differnt (very different if fruit is less than +100% bonus)
+        var mul2 = fruitbonus.mulr(sturdy ? 0.666666 : 0.333333).addr(1);
+        eol_malus = mul2.div(mul);
+      }
+      if(winter_weakness) {
+        // the winter malus affects the fruit multipleir, but not the base 100% that it's added to, so it's slightly differnt (very different if fruit is less than +100% bonus)
+        var mul2 = fruitbonus.mul(winter_malus_brassica).addr(1);
+        winter_malus = mul2.div(mul);
+      }
+
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BRASSICA), true, mul, result.clone()]);
+
+      if(end_of_life) {
+        result.mulInPlace(eol_malus);
+        if(breakdown) breakdown.push(['end-of-life fruit effect weakness', true, eol_malus, result.clone()]);
+      }
+      if(winter_weakness) {
+        result.mulInPlace(winter_malus);
+        if(breakdown) breakdown.push(['winterfruit effect weakness', true, winter_malus, result.clone()]);
+      }
+    }
+  }
+
 
   if(opt_nuts) {
     var mul = Num(0.5);
@@ -1045,7 +1106,7 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
   var numsame = state.cropcount[this.index];
   if(numsame > 1) {
     // before v0.1.88, this formula was: 1 / (1 + (numsame - 1) * 0.75). But not it got tweaked to make 2 watercress less punishing, but more than 3 watercress more punishing.
-    var penalty = Math.pow(0.6, numsame - 1.5);
+    var penalty = Math.pow(0.66, numsame - 1.5);
     result.mulrInPlace(penalty);
 
     if(breakdown) breakdown.push(['reduction for multiple', true, Num(penalty), result.clone()]);
@@ -1128,10 +1189,11 @@ function registerNettle(name, tier, boost, planttime, image, opt_tagline) {
   return index;
 }
 
-function registerShortLived(name, tier, prod, planttime, image, opt_tagline) {
-  var cost = Res({seeds:10});
-  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_SHORT, tier);
-  //var crop = crops[index];
+function registerBrassica(name, tier, prod, leech, planttime, image, opt_tagline) {
+  var cost = Res({seeds:Math.pow(10, (tier + 1))});
+  var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_BRASSICA, tier);
+  var crop = crops[index];
+  crop.leech = leech;
   return index;
 }
 
@@ -1288,7 +1350,12 @@ var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, images_nettl
 var nettle_1 = registerNettle('thistle', 1, Num(300), berryplanttime0 * 2, images_thistle);
 
 crop_register_id = 105;
-var short_0 = registerShortLived('watercress', 0, Res({seeds:1}), 60, images_watercress);
+var brassica_0 = registerBrassica('watercress', 0, Res({seeds:1}), Num(1), 60, images_watercress);
+crops[brassica_0].image_remainder = image_watercress_remainder;
+crops[brassica_0].image_post = image_watercress_post;
+var brassica_1 = registerBrassica('wasabi', 1, Res({seeds:10}), Num(1.25), 75, images_wasabi, 'New effect over watercress: with sturdy brassica, at end of life doesn\'t wither but remains active at only 44% efficiency (-33% efficiency, -33% fruit bonus). With high-yield brassica, similar but 1/9th efficiency.');
+crops[brassica_1].image_remainder = image_wasabi_remainder;
+crops[brassica_1].image_post = image_wasabi_post;
 
 crop_register_id = 110;
 var mistletoe_0 = registerMistletoe('mistletoe', 0, 50, mistletoe);
@@ -1348,7 +1415,7 @@ function makeTemplate(crop_id) {
 }
 
 crop_register_id = 300;
-var watercress_template = makeTemplate(registerShortLived('watercress template', -1, Res(0), 0, images_watercresstemplate));
+var watercress_template = makeTemplate(registerBrassica('watercress template', -1, Res(0), Num(1), 0, images_watercresstemplate));
 var berry_template = makeTemplate(registerBerry('berry template', -1, 0, images_berrytemplate));
 var mush_template = makeTemplate(registerMushroom('mushroom template', -1, 0, images_mushtemplate));
 var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0), 0, images_flowertemplate));
@@ -1693,7 +1760,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
 }
 
 // increases lifetime but also the initial production of watercress
-function registerShortCropTimeIncrease(cropid, cost, time_increase, prev_crop_num, crop_unlock_id, opt_pre_fun) {
+function registerBrassicaTimeIncrease(cropid, cost, time_increase, prev_crop_num, crop_unlock_id, opt_pre_fun) {
   var crop = crops[cropid];
   var name = crop.name;
 
@@ -1760,8 +1827,8 @@ function registerDeprecatedUpgrade() {
 
 
 upgrade_register_id = 25;
-var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), short_0, function(){
-  return (state.c_numplanted + state.c_numplantedshort) >= 5;
+var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), brassica_0, function(){
+  return (state.c_numplanted + state.c_numplantedbrassica) >= 5;
 });
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0, undefined, function() {
   if(state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_0].count) return true;
@@ -1847,10 +1914,8 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
   return false;
 });
 
-//shortunlock_0 does not exist, you start with that berry type already unlocked
 
-
-upgrade_register_id = 300;
+upgrade_register_id = 200;
 var nutunlock_0 = registerCropUnlock(nut_0, getNutCost(0), undefined, function() {
   if(!haveSquirrel()) return false;
   if(!!state.challenge && !challenges[state.challenge].allowsnuts) return false;
@@ -1911,6 +1976,18 @@ var nutunlock_12 = registerCropUnlock(nut_12, getNutCost(12), nut_11, function()
   return true;
 });
 
+
+
+//brassicaunlock_0 does not exist, you start with that crop type already unlocked
+upgrade_register_id = 250;
+var brassicaunlock_1 = registerCropUnlock(brassica_1, Res({seeds:100}), undefined, function() {
+  if(!state.challenges[challenge_wasabi].completed) return false;
+  if(state.fullgrowncropcount[berry_8]) return true;
+  return false;
+});
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // power increase for crop production (not flower boost) by basic upgrades
@@ -1933,7 +2010,21 @@ var beehive_upgrade_power_increase = 0.5; // additive
 var beehive_upgrade_cost_increase = 5;
 var beehive_upgrade_power_exponent = 1.05;
 
-upgrade_register_id = 125;
+
+upgrade_register_id = 400;
+
+var challengeflowermul_0 = registerBoostMultiplier(challengeflower_0, Res({seeds:1000}).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, undefined, flower_upgrade_cost_increase); // aster flower for bee challenge
+
+var challengecropmul_0 = registerBoostMultiplier(challengecrop_0, crops[challengecrop_0].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
+upgrades[challengecropmul_0].description = 'boosts the worker bee boost ' + upgrades[challengecropmul_0].bonus.toPercentString() +  ' (additive)';
+
+var challengecropmul_1 = registerBoostMultiplier(challengecrop_1, crops[challengecrop_1].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
+upgrades[challengecropmul_1].description = 'boosts the queen bee boost ' + upgrades[challengecropmul_1].bonus.toPercentString() +  ' (additive)';
+
+var challengecropmul_2 = registerBoostMultiplier(challengecrop_2, crops[challengecrop_2].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
+upgrades[challengecropmul_2].description = 'boosts the beehive boost ' + upgrades[challengecropmul_2].bonus.toPercentString() +  ' (additive)';
+
+upgrade_register_id = 500;
 var berrymul_0 = registerCropMultiplier(berry_0, berry_upgrade_power_increase, 1, berryunlock_0);
 var berrymul_1 = registerCropMultiplier(berry_1, berry_upgrade_power_increase, 1, berryunlock_1);
 var berrymul_2 = registerCropMultiplier(berry_2, berry_upgrade_power_increase, 1, berryunlock_2);
@@ -1950,7 +2041,7 @@ var berrymul_12 = registerCropMultiplier(berry_12, berry_upgrade_power_increase,
 var berrymul_13 = registerCropMultiplier(berry_13, berry_upgrade_power_increase, 1, berryunlock_13);
 var berrymul_14 = registerCropMultiplier(berry_14, berry_upgrade_power_increase, 1, berryunlock_14);
 
-upgrade_register_id = 150;
+upgrade_register_id = 525;
 var mushmul_0 = registerCropMultiplier(mush_0, mushroom_upgrade_power_increase, 1, mushunlock_0);
 var mushmul_1 = registerCropMultiplier(mush_1, mushroom_upgrade_power_increase, 1, mushunlock_1);
 var mushmul_2 = registerCropMultiplier(mush_2, mushroom_upgrade_power_increase, 1, mushunlock_2);
@@ -1959,7 +2050,7 @@ var mushmul_4 = registerCropMultiplier(mush_4, mushroom_upgrade_power_increase, 
 var mushmul_5 = registerCropMultiplier(mush_5, mushroom_upgrade_power_increase, 1, mushunlock_5);
 var mushmul_6 = registerCropMultiplier(mush_6, mushroom_upgrade_power_increase, 1, mushunlock_6);
 
-upgrade_register_id = 175;
+upgrade_register_id = 550;
 var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0, flower_upgrade_cost_increase);
 var flowermul_1 = registerBoostMultiplier(flower_1, getFlowerCost(1).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_1, flower_upgrade_cost_increase);
 var flowermul_2 = registerBoostMultiplier(flower_2, getFlowerCost(2).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_2, flower_upgrade_cost_increase);
@@ -1968,19 +2059,21 @@ var flowermul_4 = registerBoostMultiplier(flower_4, getFlowerCost(4).mulr(flower
 var flowermul_5 = registerBoostMultiplier(flower_5, getFlowerCost(5).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_5, flower_upgrade_cost_increase);
 var flowermul_6 = registerBoostMultiplier(flower_6, getFlowerCost(6).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_6, flower_upgrade_cost_increase);
 
-upgrade_register_id = 200;
+upgrade_register_id = 575;
 var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_0, flower_upgrade_cost_increase);
 var nettlemul_1 = registerBoostMultiplier(nettle_1, getNettleCost(1).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_1, flower_upgrade_cost_increase);
 
-upgrade_register_id = 205;
-var shortmul_0 = registerShortCropTimeIncrease(short_0, Res({seeds:100}), 0.2, 1, undefined, function(){
-  return (state.c_numplanted >= 1 || state.c_numplantedshort >= 5) && (state.c_numplantedshort >= 1);
+upgrade_register_id = 580;
+var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0.2, 1, undefined, function(){
+  return (state.c_numplanted >= 1 || state.c_numplantedbrassica >= 5) && (state.c_numplantedbrassica >= 1);
 });
 
-upgrade_register_id = 215;
+var brassicamul_1 = registerBrassicaTimeIncrease(brassica_1, Res({seeds:1000}), 0.2, 1, brassicaunlock_1);
+
+upgrade_register_id = 590;
 var beemul_0 = registerBoostMultiplier(bee_0, crops[bee_0].cost.mulr(10), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
 
-upgrade_register_id = 225;
+upgrade_register_id = 600;
 var nutmul_0 = registerCropMultiplier(nut_0, nut_upgrade_power_increase, 1, nutunlock_0);
 var nutmul_1 = registerCropMultiplier(nut_1, nut_upgrade_power_increase, 1, nutunlock_1);
 var nutmul_2 = registerCropMultiplier(nut_2, nut_upgrade_power_increase, 1, nutunlock_2);
@@ -1997,7 +2090,7 @@ var nutmul_12 = registerCropMultiplier(nut_12, nut_upgrade_power_increase, 1, nu
 
 
 
-upgrade_register_id = 250;
+upgrade_register_id = 1000;
 var upgrade_mistunlock = registerUpgrade('mist ability', treeLevelReqBase(4).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
@@ -2040,7 +2133,7 @@ upgrades[upgrade_rainbowunlock].istreebasedupgrade = true;
 
 var choice_text = 'CHOICE upgrade. Disables the other matching choice, choose wisely. ';
 
-upgrade_register_id = 275;
+upgrade_register_id = 1025;
 
 var fern_choice0_a_minutes = 7;
 var fern_choice0_b_bonus = 0.25;
@@ -2102,33 +2195,17 @@ var watercress_choice0 = registerChoiceUpgrade('watercress choice',
     for(var y = 0; y < state.numh; y++) {
       for(var x = 0; x < state.numw; x++) {
         var f = state.field[y][x];
-        if(f.index == CROPINDEX + short_0) f.growth = 1;
+        if(f.index == CROPINDEX + brassica_0) f.growth = 1;
       }
     }
   },
- 'Sturdy Watercress', 'High-yield watercress',
- 'Increases watercress copying effect constantly by 25% and its lifetime by 50%. This benefits idle play more than active play, compared to the other choice.',
- 'Increases watercress copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the watercress. Refreshing or replanting the watercress gives back the full bonus. This benefits active play more than idle play, compared to the other choice.',
+ 'Sturdy brassica', 'High-yield brassica',
+ 'Increases brassica (such as watercress) copying effect constantly by 25% and its lifetime by 50%. This benefits idle play more than active play, compared to the other choice. Other effects may apply to higher tier brassica.',
+ 'Increases brassica (such as watercress) copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the watercress. Refreshing or replanting the watercress gives back the full bonus. This benefits active play more than idle play, compared to the other choice. Other effects may apply to higher tier brassica.',
  '#000', '#fff', images_watercress[4], undefined);
 upgrades[watercress_choice0].istreebasedupgrade = true;
 
 
-
-
-
-
-upgrade_register_id = 400;
-
-var challengeflowermul_0 = registerBoostMultiplier(challengeflower_0, Res({seeds:1000}).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, undefined, flower_upgrade_cost_increase); // aster flower for bee challenge
-
-var challengecropmul_0 = registerBoostMultiplier(challengecrop_0, crops[challengecrop_0].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
-upgrades[challengecropmul_0].description = 'boosts the worker bee boost ' + upgrades[challengecropmul_0].bonus.toPercentString() +  ' (additive)';
-
-var challengecropmul_1 = registerBoostMultiplier(challengecrop_1, crops[challengecrop_1].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
-upgrades[challengecropmul_1].description = 'boosts the queen bee boost ' + upgrades[challengecropmul_1].bonus.toPercentString() +  ' (additive)';
-
-var challengecropmul_2 = registerBoostMultiplier(challengecrop_2, crops[challengecrop_2].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
-upgrades[challengecropmul_2].description = 'boosts the beehive boost ' + upgrades[challengecropmul_2].bonus.toPercentString() +  ' (additive)';
 
 
 // they must be in increasing order for the savegame handling
@@ -2290,7 +2367,7 @@ var season_medal = registerMedal('four seasons', 'reached winter and seen all se
 
 medal_register_id = 110;
 registerMedal('watercress', 'plant the entire field full of watercress', images_watercress[4], function() {
-  return state.croptypecount[CROPTYPE_SHORT] == state.numw * state.numh - 2;
+  return state.croptypecount[CROPTYPE_BRASSICA] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('berries', 'plant the entire field full of berries', blackberry[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_BERRY] == state.numw * state.numh - 2;
@@ -2323,6 +2400,7 @@ registerMedal('royal buzz', 'fill the entire field (5x5) with queen bees during 
 registerMedal('unbeetable', 'fill the entire field (5x5) with beehives during the bees challenge.', images_beehive[4], function() {
   return state.fullgrowncropcount[challengecrop_2] >= 5 * 5 - 2;
 }, Num(0.5));
+
 
 medal_register_id = 125;
 var numreset_achievement_values =   [   1,    5,   10,   20,   50,  100,  200,  500, 1000];
@@ -2358,23 +2436,26 @@ function registerPlantTypeMedal(cropid, num) {
   }, Num(mul));
 };
 
-function registerPlantTypeMedals(cropid) {
-  var id0 = registerPlantTypeMedal(cropid, 1);
-  var id1 = registerPlantTypeMedal(cropid, 10); // easy to get for most crops, harder for flowers due to multiplier
-  var id2 = registerPlantTypeMedal(cropid, 20);
+function registerPlantTypeMedals(cropid, opt_start_at_30) {
+  var id0 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 1);
+  var id1 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 10); // easy to get for most crops, harder for flowers due to multiplier
+  var id2 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 20);
   var id3 = registerPlantTypeMedal(cropid, 30); // requires bigger field
   var id4 = registerPlantTypeMedal(cropid, 40);
-  // TODO: add more if bigger field sizes exist: 50, 60, ... requires reshuffling medal ids to make room.
+  // room for 50, 60 and 70 or 75. An 80 is most likely never needed, it's unlikely field size above 9x9 is supported (cells would get too small), which with 81 cells of which 2 taken by tree is not enough for an 80 medal.
+  medal_register_id++;
+  medal_register_id++;
+  medal_register_id++;
 
   // can only plant 1 nut, so could never get those next ones currently, so don't hint for them, even though they're registered they effectively do not exist
   if(crops[cropid].type != CROPTYPE_NUT) {
-    medals[id1].hint = id0;
-    medals[id2].hint = id1;
-    medals[id3].hint = id2;
-    medals[id4].hint = id3;
+    if(medals[id0] && medals[id1]) medals[id1].hint = id0;
+    if(medals[id1] && medals[id2]) medals[id2].hint = id1;
+    if(medals[id2] && medals[id3]) medals[id3].hint = id2;
+    if(medals[id3] && medals[id4]) medals[id4].hint = id3;
   }
 };
-medal_register_id = 149;
+medal_register_id = 160;
 registerPlantTypeMedals(berry_0);
 registerPlantTypeMedals(berry_1);
 registerPlantTypeMedals(berry_2);
@@ -2390,7 +2471,7 @@ registerPlantTypeMedals(berry_11);
 registerPlantTypeMedals(berry_12);
 registerPlantTypeMedals(berry_13);
 registerPlantTypeMedals(berry_14);
-medal_register_id = 249;
+medal_register_id = 320;
 registerPlantTypeMedals(mush_0);
 registerPlantTypeMedals(mush_1);
 registerPlantTypeMedals(mush_2);
@@ -2398,7 +2479,7 @@ registerPlantTypeMedals(mush_3);
 registerPlantTypeMedals(mush_4);
 registerPlantTypeMedals(mush_5);
 registerPlantTypeMedals(mush_6);
-medal_register_id = 299;
+medal_register_id = 400;
 registerPlantTypeMedals(flower_0);
 registerPlantTypeMedals(flower_1);
 registerPlantTypeMedals(flower_2);
@@ -2406,29 +2487,29 @@ registerPlantTypeMedals(flower_3);
 registerPlantTypeMedals(flower_4);
 registerPlantTypeMedals(flower_5);
 registerPlantTypeMedals(flower_6);
-medal_register_id = 349;
+medal_register_id = 480;
 registerPlantTypeMedals(nettle_0);
 registerPlantTypeMedals(nettle_1);
-medal_register_id = 359;
-registerPlantTypeMedals(mistletoe_0);
-medal_register_id = 369;
+medal_register_id = 560;
 registerPlantTypeMedals(bee_0);
-medal_register_id = 400;
-registerPlantTypeMedals(nut_0);
-registerPlantTypeMedals(nut_1);
-registerPlantTypeMedals(nut_2);
-registerPlantTypeMedals(nut_3);
-registerPlantTypeMedals(nut_4);
-registerPlantTypeMedals(nut_5);
-registerPlantTypeMedals(nut_6);
-medal_register_id = 500;
+medal_register_id = 640;
 // for the watercress, only start this at 30: the ones for 1, 10, 20 are not added because a medal for 1 watercress is too soon, and for 20 there's already the full field full of watercress medal
-registerPlantTypeMedal(short_0, 30);
-registerPlantTypeMedal(short_0, 40);
-medals[medal_register_id - 1].hint = medal_register_id - 2;
+// idem for the wasabi since planting a few is trivial
+registerPlantTypeMedals(brassica_0, true);
+registerPlantTypeMedals(brassica_1, true);
+medal_register_id = 720;
+registerPlantTypeMedals(mistletoe_0);
+medal_register_id = 960;
+registerPlantTypeMedal(nut_0, 1);
+registerPlantTypeMedal(nut_1, 1);
+registerPlantTypeMedal(nut_2, 1);
+registerPlantTypeMedal(nut_3, 1);
+registerPlantTypeMedal(nut_4, 1);
+registerPlantTypeMedal(nut_5, 1);
+registerPlantTypeMedal(nut_6, 1);
 
-
-medal_register_id = 600;
+// was: 600
+medal_register_id = 1000;
 registerMedal('5 ethereal crops', 'Have 5 ethereal crops', undefined, function() {
   return state.numfullgrowncropfields2 >= 5;
 }, Num(0.02));
@@ -2439,7 +2520,7 @@ registerMedal('20 ethereal crops', 'Have 20 ethereal crops', undefined, function
   return state.numfullgrowncropfields2 >= 20;
 }, Num(0.1));
 
-medal_register_id = 700;
+medal_register_id = 1100;
 var fruit_achievement_values =   [   5,   10,   20,   50,  100,  200,  500, 1000, 2000, 5000, 10000];
 var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     2];
 var fruit_achievement_images =   [   0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10];
@@ -2454,25 +2535,23 @@ for(var i = 0; i < fruit_achievement_values.length; i++) {
   prevmedal = id;
 }
 
-medal_register_id = 800;
+medal_register_id = 1200;
 
 // those higher values like 500 are probably never reachable unless something fundamental is changed to the game design in the future, but that's ok,
 // not all medals that are in the code must be reachable.
-var level2_achievement_values =  [1, 2, 3, 4, 5, 7, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+var level2_achievement_values =  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 for(var i = 0; i < level_achievement_values.length; i++) {
-  var level = Num(level2_achievement_values[i]);
-  var bonus = level.divr(20);
-  var s = level.toString(5, Num.N_FULL);
+  var level = level2_achievement_values[i];
+  var bonus = Num((level * level) / 20);
+  var s = level;
   var name = 'ethereal tree level ' + s;
-  //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + s + '.';
   var id = registerMedal(name, 'Reached ethereal tree level ' + s, tree_images[treeLevelIndex(level)][1][4],
-      bind(function(level) { return level.lter(state.treelevel2); }, level),
-      bonus);
+      bind(function(level) { return level <= state.treelevel2; }, level), bonus);
   if(i > 0) medals[id].hint = prevmedal;
   prevmedal = id;
 }
 
-medal_register_id = 900;
+medal_register_id = 1300;
 
 var resin_achievement_values =           [10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e12,1e15,1e18,1e21,1e24,1e27];
 var resin_achievement_bonuses_percent =  [ 1,  2,  5, 10, 15, 20, 25, 30, 40,  50,  60,  70,  80,  90, 100];
@@ -2491,7 +2570,8 @@ for(var i = 0; i < resin_achievement_values.length; i++) {
   prevmedal = id;
 }
 
-medal_register_id = 1000;
+// was: 1000
+medal_register_id = 2000;
 
 registerMedal('help', 'viewed the main help dialog', undefined, function() {
   return showing_help == true;
@@ -2505,7 +2585,7 @@ registerMedal('stats', 'viewed the player stats', undefined, function() {
   return showing_stats == true;
 }, Num(0.01));
 
-medal_register_id = 1010;
+medal_register_id = 2010;
 
 var gametime_achievement_values =           [1,  7, 30];
 var gametime_achievement_bonuses_percent =  [1, 5, 10];
@@ -2521,7 +2601,7 @@ for(var i = 0; i < gametime_achievement_values.length; i++) {
       Num(gametime_achievement_bonuses_percent[i]).mulr(0.01));
 }
 
-medal_register_id = 1020;
+medal_register_id = 2020;
 
 registerMedal('higher transcension', 'performed transcension at exactly twice the initial transcenscion level', undefined, function() {
   // This is a bit of a hacky way to check this, but the goal is that you get the medal when
@@ -2532,7 +2612,7 @@ registerMedal('higher transcension', 'performed transcension at exactly twice th
   return state.g_treelevel >= 20 && state.treelevel < 20;
 }, Num(0.1));
 
-medal_register_id = 1100;
+medal_register_id = 2100;
 
 registerMedal('the bees knees', 'completed the bees challenge', images_queenbee[4], function() {
   return !!state.challenges[challenge_bees].completed;
@@ -2580,7 +2660,7 @@ var medal_rock2 = registerMedal('this rocks!', 'completed the rocks challenge st
 }, Num(0.45));
 changeMedalDisplayOrder(medal_rock2, medal_rock1);
 
-medal_register_id = 1120;
+medal_register_id = 2120;
 
 registerMedal('rock solid', 'completed the rockier challenge', images_rock[0], function() {
   return state.challenges[challenge_rockier].completed;
@@ -2606,11 +2686,15 @@ registerMedal('rock solid V', 'completed the rockier challenge map 5 (final)', i
 }, Num(4));
 medals[medal_register_id - 1].hint = medal_register_id - 2;
 
-medal_register_id = 1130;
+medal_register_id = 2130;
 
 var medal_challenge_thistle = registerMedal('prickly predicament', 'completed the thistle challenge', images_thistle[4], function() {
   return state.challenges[challenge_thistle].completed;
 }, Num(3));
+
+var medal_challenge_thistle = registerMedal('wasaaaa, B', 'completed the wasabi challenge', images_wasabi[4], function() {
+  return state.challenges[challenge_wasabi].completed;
+}, Num(4));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2839,7 +2923,7 @@ function() {
 // is an upgrade not available during challenge_noupgrades
 // that is all crop upgrades, except watercress
 function isNoUpgrade(u) {
-  return u.iscropupgrade && u.index != shortmul_0;
+  return u.iscropupgrade && u.index != brassicamul_0;
 }
 
 
@@ -2885,7 +2969,7 @@ function() {
 
 function witherDuration() {
   return 120;
-  //return crops[short_0].getPlantTime();
+  //return crops[brassica_0].getPlantTime();
 }
 
 // t must be in range 0-1 (1 representing full grown)
@@ -2969,6 +3053,26 @@ function() {
 }, 31);
 
 
+// 9
+var challenge_wasabi = registerChallenge('wasabi challenge', [65], Num(0.2),
+`You only get income from brassica, such as watercress.`,
+`
+• You can only get income from brassica, such as watercress, and their copying effect.<br>
+• Mushrooms, berries, flowers and so on all still work as normal, but you need to ensure there's a brassica next to some berry, and a brassica next to some mushroom, to get income.<br>
+• The brassica copying fruit ability does not work during this challenge.<br>
+• Brassica aren't negatively affected by winter, they endure it during this challenge.<br>
+• As usual, having multiple brassica reduces the global brassica copying effect, max 2 or so works well.<br>
+`,
+['Unlocks the wasabi crop, which is the next tier of brassica after watercress. Once unlocked, it\'s available in the base game once you have grown a juniper (berry tier 8), and can be used in re-runs of this challenge as well.'],
+'reaching ethereal tree level 7',
+
+function() {
+  return state.treelevel2 >= 7; // NOTE: Keep in sync with showEtherealTreeLevelDialog
+}, function() {
+  showMessage('Wasabi unlocked! Wasabi is the next tier of brassica, after watercress crop.');
+}, 31);
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2976,7 +3080,7 @@ function() {
 
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_thistle];
+var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_thistle, challenge_wasabi];
 
 
 if(challenges_order.length != registered_challenges.length) {
@@ -3529,7 +3633,7 @@ var upgrade2_resin = registerUpgrade2('resin gain', LEVEL2, Res({resin:50}), 2, 
 
 function applyBlackberrySecret() {
   if(!state.upgrades[berryunlock_0].count) upgrades[berryunlock_0].fun();
-  state.upgrades[shortmul_0].unlocked = true; // also let the watercress behave like others and have its upgrade already visible, since the upgrade tab already exists now from the start anyway
+  state.upgrades[brassicamul_0].unlocked = true; // also let the watercress behave like others and have its upgrade already visible, since the upgrade tab already exists now from the start anyway
 }
 
 var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
@@ -3770,7 +3874,7 @@ var FRUIT_BERRYBOOST = fruit_index++; // boosts seed production of berries
 var FRUIT_MUSHBOOST = fruit_index++; // boosts muchrooms spore production but also seed consumption
 var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (but same spore production output) (mushroom ecomony)
 var FRUIT_FLOWERBOOST = fruit_index++;
-var FRUIT_WATERCRESS = fruit_index++; // watercress copying
+var FRUIT_BRASSICA = fruit_index++; // watercress copying
 var FRUIT_GROWSPEED = fruit_index++; // this one can be swapped when planting something. It's ok to have a few fruit types that require situational swapping
 var FRUIT_WEATHER = fruit_index++; // idem
 var FRUIT_NETTLEBOOST = fruit_index++;
@@ -3815,7 +3919,7 @@ function getFruitBoost(ability, level, tier) {
   if(ability == FRUIT_FLOWERBOOST) {
     return Num(base * level);
   }
-  if(ability == FRUIT_WATERCRESS) {
+  if(ability == FRUIT_BRASSICA) {
     /*var amount = towards1(level, 10);
     var max = 1 + tier * 0.2;
     return Num(max * amount);*/
@@ -4713,6 +4817,8 @@ function getAutumnMistletoeBonus() {
   return bonus;
 }
 
+var winter_malus_brassica = Num(0.33);
+
 function getWinterMalus() {
   var malus = Num(malus_season_winter);
   return malus;
@@ -5012,8 +5118,8 @@ var upgrade3_doublefruitprob_prob = 0.25;
 var upgrade3_doublefruitprob = registerUpgrade3('double fruit drop chance', undefined, 'when the tree drops a fruit, it has ' + Num(upgrade3_doublefruitprob_prob).toPercentString() + ' chance to drop 2 fruits at once', images_apple[3]);
 
 var upgrade3_growspeed = registerUpgrade3('grow speed', undefined, 'crops grow ' + Num(upgrade3_growspeed_bonus).toPercentString() + ' faster', blackberry[0]);
-var upgrade3_watercress_mush = registerUpgrade3('watercress and mushroom soup', undefined, 'when watercress copies from mushroom, it no longer increases seed consumption, it copies the spores entirely for free', images_watercress[4]);
-var upgrade3_watercresstime = registerUpgrade3('watercress time', undefined, 'adds 50% to the lifetime of watercress', images_watercress[1]);
+var upgrade3_watercress_mush = registerUpgrade3('watercress and mushroom soup', undefined, 'when watercress copies from mushroom, it no longer increases seed consumption, it copies the spores entirely for free. Also works for other brassica.', images_watercress[4]);
+var upgrade3_watercresstime = registerUpgrade3('brassica time', undefined, 'adds 50% to the lifetime of brassica, such as watercress', images_watercress[1]);
 
 var upgrade3_squirrel_boost = Num(0.25);
 var upgrade3_squirrel = registerUpgrade3('ethereal squirrel boost', undefined, 'adds an additional ' + upgrade3_squirrel_boost.toPercentString() + ' to the neighbor boost (which is originally 50%) of the ethereal squirrel', images_squirrel[4]);

@@ -219,7 +219,6 @@ function makeField2Dialog(x, y) {
       if(makeUpgradeCrop2Action(x, y)) {
         update();
       }
-      dialog.cancelFun();
     });
 
     styleButton(button1);
@@ -237,7 +236,6 @@ function makeField2Dialog(x, y) {
     registerTooltip(button2, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
     addButtonAction(button2, function() {
       addAction({type:ACTION_DELETE2, x:x, y:y});
-      dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
@@ -565,3 +563,64 @@ function renderField2() {
     }
   }
 }
+
+function showEtherealTreeLevelDialog(level) {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, 'ok');
+
+  var flex = dialog.content;
+  makeScrollable(flex);
+
+  var text = 'The ethereal tree leveled up to level ' + level + '!<br><br>';
+
+  var twigs_now = treeLevel2Req(level);
+  var twigs_next = treeLevel2Req(level + 1);
+
+  text += 'The ethereal tree consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
+
+  text += 'The following new eathereal things got unlocked:<br><br>';
+
+  var anything = false;
+
+  for(var i = 0; i < registered_upgrades2.length; i++) {
+    var u = upgrades2[registered_upgrades2[i]];
+    if(u.treelevel2 == level) {
+      text += '<b>Upgrade</b>: ' + upper(u.name) + '<br>';
+      anything = true;
+    }
+  }
+
+  for(var i = 0; i < registered_crops2.length; i++) {
+    var u = crops2[registered_crops2[i]];
+    if(u.treelevel2 == level) {
+      text += '<b>Crop</b>: ' + upper(u.name) + '<br>';
+      anything = true;
+    }
+  }
+
+  if(level == 2) {
+    text += '<b>Challenge</b>: no upgrades challenge (requires automaton to unlock)<br>';
+    anything = true;
+  }
+  if(level == 3) {
+    text += '<b>Challenge</b>: wither challenge (requires automaton upgrade to unlock)<br>';
+    anything = true;
+  }
+  if(level == 4) {
+    text += '<b>Challenge</b>: blackberry challenge (requires automaton upgrade to unlock)<br>';
+    anything = true;
+  }
+  if(level == 7) {
+    text += '<b>Challenge</b>: wasabi challenge<br>';
+    anything = true;
+  }
+
+  if(!anything) {
+    text += 'Nothing new unlocked. New content for this ethereal tree level may be added in future game updates.';
+  } else {
+    text += '<br>';
+    text += 'These are available in the ethereal field and/or the ethereal upgrades tab.';
+  }
+
+  flex.div.innerHTML = text;
+}
+

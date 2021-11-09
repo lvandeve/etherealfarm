@@ -61,6 +61,7 @@ function ensureMissedHelpDialogAvailable(id, opt_state) {
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
+// returns whether an actual dialog was shown (and not just log messages or nothing)
 function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_force, opt_recursive) {
   var text_only = id < 0;
   id = Math.abs(id);
@@ -87,7 +88,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     }
   }
 
-  if(text_only) return; // showMessage-only
+  if(text_only) return false; // showMessage-only
 
   var show_full_dialog = true;
 
@@ -104,7 +105,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     if(!text_seen && text_short) {
       showHelpChip(text_short);
     }
-    return;
+    return false;
   }
 
   if(numhelpdialogs < 0) {
@@ -114,7 +115,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
 
   if(numhelpdialogs) {
     helpDialogQueue.push(arguments);
-    return;
+    return true;
   }
 
   if(opt_text2) text += opt_text2;
@@ -127,13 +128,12 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     var okfun = function() {
       state.help_disable[id] = id;
       helpNeverAgainLocal[id] = id;
-      dialog.cancelFun();
     };
     var oktext = 'never show again';
   }
 
   numhelpdialogs++;
-  var dialog = createDialog(images ? DIALOG_LARGE : DIALOG_MEDIUM, okfun, oktext, 'ok', undefined, undefined, false, function() {
+  var dialog = createDialog(images ? DIALOG_LARGE : DIALOG_MEDIUM, okfun, oktext, undefined, 'ok', undefined, undefined, false, function() {
     numhelpdialogs--;
     if(helpDialogQueue.length) {
       var args = Array.prototype.slice.call(helpDialogQueue[0], 0);
@@ -177,6 +177,8 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
   makeScrollable(flex);
 
   flex.div.innerHTML = text;
+
+  return true;
 }
 
 
@@ -197,10 +199,11 @@ function registerHelpDialog(id, name, text_short, text, image, opt_text2, images
   d.images = images;
 }
 
+// returns whether an actual dialog was shown (and not just log messages or nothing)
 function showRegisteredHelpDialog(id, opt_force)  {
   var d = registered_help_dialogs[id];
   if(!d) return;
-  showHelpDialog(d.id, d.text_short, d.text, d.image, d.opt_text2, d.images, opt_force);
+  return showHelpDialog(d.id, d.text_short, d.text, d.image, d.opt_text2, d.images, opt_force);
 }
 
 
@@ -553,7 +556,7 @@ var showing_help = false; // for medal
 
 function createHelpDialog() {
   showing_help = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     showing_help = false;
   });
 
@@ -643,7 +646,7 @@ function createHelpDialog() {
 // shows a subset of the dynamic registered help buttons, for automaton related topics only
 function createAutomatonHelpDialog() {
   showing_help = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     showing_help = false;
   });
 

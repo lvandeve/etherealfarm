@@ -36,6 +36,7 @@ function formatAbilityDurationTooltipText(name, description, duration, wait) {
   return name + ': ' + description + '<br>' + 'Run time: ' + util.formatDuration(duration) + '. Cooldown time: ' + util.formatDuration(cooldown);
 }
 
+var prev_brassica_index = -1; // for updating the button if the image for brassica changes
 
 function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
@@ -179,19 +180,32 @@ function updateAbilitiesUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  // this button becomes available once more enough resources to fully replant all watercress
+  // refresh watercress button. this button becomes available once more enough resources to fully replant all watercress
   if(state.g_res.seeds.gtr(1000)) {
-    if(!watercressbutton) {
+    var brassica_index = getHighestBrassica();
+    if(!watercressbutton || prev_brassica_index != brassica_index) {
+      if(watercressbutton) {
+        watercressbutton.clear();
+        watercressbutton.removeSelf(topFlex);
+      }
+      prev_brassica_index = brassica_index;
+      var image = images_watercress[4];
+      var name = 'watercress';
+      if(brassica_index >= 0) {
+        image = crops[brassica_index].image[4];
+        name = crops[brassica_index].name;
+      }
+
       watercressbutton = addTopBarFlex(9, 10);
-      watercressbutton.div.title = 'Refresh watercress: active watercress and remainders only. Hotkey: w. With ctrl, deletes all watercress. With shift, plants watercress everywhere it can';
+      watercressbutton.div.title = 'Refresh ' + name + ': active ' + name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + name + '. With shift, plants ' + name + ' everywhere it can';
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-      renderImage(images_watercress[4], canvas);
+      renderImage(image, canvas);
 
       addButtonAction(watercressbutton.div, function(e) {
         refreshWatercress(util.eventHasCtrlKey(e), e.shiftKey);
-      }, 'refresh watercress. with shift: deletes all watercress');
+      }, 'refresh ' + name + '. with shift: deletes all ' + name);
       watercressbutton.div.id = 'watercress_button';
     }
   } else if(watercressbutton) {
@@ -210,19 +224,22 @@ function refreshWatercress(opt_clear, opt_all) {
   var refreshed = false;
   var remcleared = false;
   var fullyplanted = false;
-  var cresscost = crops[short_0].cost.seeds;
+  var cresscost = crops[brassica_0].cost.seeds; // taking only cheapest one for this computation is ok, when unlocking next tiers its cost is extremely low compared to seeds you have
+  var cropindex = getHighestBrassica();
+  if(cropindex < 0) return;
   var seeds_available = Num(state.res.seeds);
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var can_afford = seeds_available.ge(cresscost);
       var f = state.field[y][x];
+      var c = f.getCrop();
       if(opt_all) {
         if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template)) {
           if(f.index == CROPINDEX + watercress_template) {
             addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
           }
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
           fullyplanted = true;
         }
       } else if(f.index == FIELD_REMAINDER) {
@@ -231,20 +248,20 @@ function refreshWatercress(opt_clear, opt_all) {
           remcleared = true;
         } else if(can_afford) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
           replanted = true;
         }
-      } else if(f.index == CROPINDEX + short_0 && (can_afford || opt_clear)) {
+      } else if(c && c.type == CROPTYPE_BRASSICA && (can_afford || opt_clear)) {
         addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
         }
         refreshed = true;
       } else if(f.index == CROPINDEX + watercress_template && can_afford) {
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[short_0], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
           refreshed = true;
         }
       }
@@ -267,7 +284,7 @@ document.addEventListener('keydown', function(e) {
       if(dropdownEl) {
         removeAllDropdownElements();
       } else {
-        closeTopDialog();
+        closeTopDialog(true);
       }
     }
     return; // in a dialog, don't do global game shortcuts
@@ -361,7 +378,7 @@ document.addEventListener('keydown', function(e) {
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f && f.index == FIELD_REMAINDER) {
-        addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[short_0], ctrlPlanted:true});
+        addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[brassica_0], ctrlPlanted:true});
       }
       did_something = true;
     }

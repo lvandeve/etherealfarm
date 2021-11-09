@@ -199,7 +199,7 @@ function showConfigureAutoChoiceDialog(subject) {
   // temporary disable automaton_autochoice so it doesn't trigger while cycling through the button values
   var temp = state.automaton_autochoice;
   state.automaton_autochoice = 0;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     state.automaton_autochoice = temp;
   });
   var scrollFlex = dialog.content;

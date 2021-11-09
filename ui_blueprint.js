@@ -175,7 +175,7 @@ function getBluePrintTypeHelpText() {
   var nutstext = '';
   if(state.crops[nut_0].unlocked) nutstext = 'U=nuts, ';
 
-  return 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress, ' + squirreltext + nutstext + '.=empty/tree';
+  return 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress/brassica, ' + squirreltext + nutstext + '.=empty/tree';
 }
 
 function importBluePrintDialog(fun) {
@@ -184,8 +184,7 @@ function importBluePrintDialog(fun) {
     var shift = e.shiftKey;
     var text = area.value;
     fun(text);
-    dialog.cancelFun();
-  }, 'import', 'cancel');
+  }, 'import', undefined, 'cancel');
   var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
   var squirreltext = '';
   if(state.crops2[squirrel2_0].unlocked) squirreltext = 'S=squirrel, ';
@@ -195,16 +194,39 @@ function importBluePrintDialog(fun) {
   area.focus();
 }
 
-function createBlueprintDialog(b, opt_index) {
+// this is an extra layer of undo for the undo button on the blueprint editing dialog. Normally that button only does what you are currently doing while that dialog is open
+// but this extra function here allows to also use it when re-opening the dialog, at least if no other edits were done yet
+var lastpreundoblueprint = undefined;
+var lastpreundoblueprintindex = -1;
+
+
+function createBlueprintDialog(b, opt_index, opt_onclose) {
   if(!haveAutomaton()) return;
+
+  var did_edit = false;
 
   var orig = b;
   b = BluePrint.copy(b);
 
   var dialog = createDialog(undefined, function() {
-    BluePrint.copyTo(b, orig);
-    dialog.cancelFun();
-  }, 'ok', 'cancel');
+    if(did_edit) {
+      b = BluePrint.copy(orig);
+      renderBlueprint(b, renderFlex, opt_index);
+      did_edit = false;
+    } else if(!!lastpreundoblueprint && lastpreundoblueprintindex == opt_index) {
+      b = BluePrint.copy(lastpreundoblueprint);
+      renderBlueprint(b, renderFlex, opt_index);
+      did_edit = true;
+    }
+    return true;
+  }, 'undo', function() {
+    // this actually commits the change of the blueprint. This is the cancel function of the dialog: the only thing that does not commit it, is using undo.
+    if(did_edit) {
+      lastpreundoblueprint = BluePrint.copy(orig);
+      lastpreundoblueprintindex = opt_index;
+      BluePrint.copyTo(b, orig);
+    }
+  }, 'ok', undefined, undefined, undefined, opt_onclose, undefined, undefined, undefined, /*swap_buttons=*/true);
 
   var renderFlex = new Flex(dialog.content, [0, 0, 0.05], [0, 0, 0.05], [0, 0, 0.5], [0, 0, 0.5]);
   renderBlueprint(b, renderFlex, opt_index);
@@ -228,7 +250,7 @@ function createBlueprintDialog(b, opt_index) {
     update();
   }, 'Plant this blueprint on the field. Only empty spots of the field are overridden, existing crops will stay, even if their type differs.');
 
-  addButton('To field (overriding)', function(e) {
+  addButton('To field, overriding', function(e) {
     plantBluePrint(b, true);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
     closeAllDialogs();
@@ -250,6 +272,7 @@ function createBlueprintDialog(b, opt_index) {
     }
     sanitizeBluePrint(b);
     renderBlueprint(b, renderFlex, opt_index);
+    did_edit = true;
   }, 'Save the current field state into this blueprint. You can use the cancel button below to undo this.');
 
   addButton('To TXT', function() {
@@ -278,6 +301,7 @@ function createBlueprintDialog(b, opt_index) {
       }
       sanitizeBluePrint(b);
       renderBlueprint(b, renderFlex, opt_index);
+      did_edit = true;
     });
   }, 'Import the blueprint from text format, as generated with To TXT. You can use the cancel button below to undo this.');
 
@@ -285,6 +309,7 @@ function createBlueprintDialog(b, opt_index) {
     makeTextInput('Enter new blueprint name, or empty for default', function(name) {
       b.name = sanitizeName(name);
       renderBlueprint(b, renderFlex, opt_index);
+      did_edit = true;
     });
   }, 'Rename this blueprint. This name shows up in the main blueprint overview. You can use the cancel button below to undo this.');
 
@@ -294,6 +319,7 @@ function createBlueprintDialog(b, opt_index) {
     b.data = [];
     b.name = '';
     renderBlueprint(b, renderFlex, opt_index);
+    did_edit = true;
   }, 'Delete this blueprint. You can use the cancel button below to undo this.');
 
   addButton('Help', function() {
@@ -369,11 +395,10 @@ function createBlueprintsDialog(opt_transcend) {
     };
   }
 
-  var dialog = createDialog(undefined, challenge_button_fun, challenge_button_name);
   blueprintdialogopen = true;
-  dialog.onclose = function() {
+  var dialog = createDialog(undefined, challenge_button_fun, challenge_button_name, undefined, undefined, undefined, undefined, undefined, function() {
     blueprintdialogopen = false;
-  };
+  });
 
 
   var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
@@ -441,10 +466,10 @@ function createBlueprintsDialog(opt_transcend) {
             update();
           }
         } else {
-          var subdialog = createBlueprintDialog(state.blueprints[index], index);
-          subdialog.onclose = bind(function(i, flex) {
+          var closefun = bind(function(i, flex) {
             renderBlueprint(state.blueprints[i], flex, index);
           }, index, flex);
+          var subdialog = createBlueprintDialog(state.blueprints[index], index, closefun);
         }
       }
     }, i, flex));

@@ -43,7 +43,7 @@ function Cell(x, y, is_ethereal) {
 Cell.prototype.isFullGrown = function() {
   if(this.index < CROPINDEX) return false; // not relevant for non-crops
   var c = this.getCrop();
-  if(c.type == CROPTYPE_SHORT) return this.growth > 0;
+  if(c.type == CROPTYPE_BRASSICA) return this.growth > 0;
   if(state.challenge == challenge_wither) return this.growth > 0;
   return this.growth >= 1;
 };
@@ -185,7 +185,7 @@ BluePrint.toCrop = function(i) {
 
 BluePrint.fromCrop = function(c) {
   if(!c) return 0;
-  if(c.type == CROPTYPE_SHORT) return 2;
+  if(c.type == CROPTYPE_BRASSICA) return 2;
   if(c.type == CROPTYPE_BERRY) return 3;
   if(c.type == CROPTYPE_MUSH) return 4;
   if(c.type == CROPTYPE_FLOWER) return 5;
@@ -419,6 +419,7 @@ function State() {
   this.keys_numbers = 3;
   this.keys_numbers_shift = 1; // there is none for ctrl, ctrl+numbers makes browsers change their tab, can't use this as a shortcut key in the game
   this.keys_brackets = 2;
+  this.keepinterestingfruit = false;
 
   // help dialog related
   this.help_seen = {}; // ever seen this help message at all as dialog
@@ -536,7 +537,7 @@ function State() {
   this.g_max_res = Res(); // max resources ever had
   this.g_max_prod = Res(); // max displayed resource/second gain ever had (production, this excludes immediate resources such as from ferns)
   this.g_numferns = 0;
-  this.g_numplantedshort = 0; // amount of short-lived plants planted
+  this.g_numplantedbrassica = 0; // amount of short-lived plants planted
   this.g_numplanted = 0; // amount of plants planted on a field
   this.g_numfullgrown = 0; // very similar to numplanted, but for full grown plants
   this.g_numunplanted = 0; // amount of plants deleted from a field
@@ -565,7 +566,7 @@ function State() {
   this.p_max_res = Res();
   this.p_max_prod = Res();
   this.p_numferns = 0;
-  this.p_numplantedshort = 0;
+  this.p_numplantedbrassica = 0;
   this.p_numplanted = 0;
   this.p_numfullgrown = 0;
   this.p_numunplanted = 0;
@@ -592,7 +593,7 @@ function State() {
   this.c_max_res = Res();
   this.c_max_prod = Res();
   this.c_numferns = 0;
-  this.c_numplantedshort = 0;
+  this.c_numplantedbrassica = 0;
   this.c_numplanted = 0;
   this.c_numfullgrown = 0;
   this.c_numunplanted = 0;
@@ -803,8 +804,6 @@ function changeFieldSize(state, w, h) {
   if(state.challenge == challenge_rockier) content = FIELD_ROCK;
   if(state.challenge == challenge_thistle) content = CROPINDEX + nettle_1;
 
-
-
   // this shift is designed such that the center tile of the old field will stay in the center, and in case of
   // even sizes will be at floor((w-1) / 2) horizontally, floor(h/2) vertically.
   // w and h should be larger than state.numw and state.numh respectively
@@ -873,7 +872,7 @@ function createInitialState() {
   clearField2(state);
 
 
-  state.crops[short_0].unlocked = true;
+  state.crops[brassica_0].unlocked = true;
 
 
   state.g_starttime = util.getTime();
@@ -937,7 +936,7 @@ function computeDerived(state) {
           if(f.isFullGrown()) {
             state.fullgrowncroptypecount[c.type]++;
             state.numfullgrowncropfields++;
-            if(c.type != CROPTYPE_SHORT) state.numfullpermanentcropfields++;
+            if(c.type != CROPTYPE_BRASSICA) state.numfullpermanentcropfields++;
           }
           state.growingcroptypecount[c.type] += Math.min(Math.max(0, f.growth), 1);
         }
@@ -1563,4 +1562,14 @@ function treeGestureBonus() {
 
 
   return upgrade2_highest_level_bonus.add(upgrade2_highest_level_bonus2.mulr(num - 1)).addr(1).powr(state.g_treelevel);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+// returns index of the highest unlocked brassica crop, or -1 if none (which normally doesn't happen, normally at least watercress is unlocked, except possibly during some challenges)
+function getHighestBrassica() {
+  var cropindex = brassica_0 + state.highestoftypeunlocked[CROPTYPE_BRASSICA];
+  if(!crops[cropindex]) return -1;
+  return cropindex;
 }

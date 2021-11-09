@@ -186,12 +186,12 @@ function getCropOrder() {
     added[highest.index] = true;
   }
 
-  // most expensive watercress
+  // most expensive brassica
   highest = undefined;
   for(var i = 0; i < unlocked.length; i++) {
     if(added[unlocked[i]]) continue;
     var c = crops[unlocked[i]];
-    if(c.type == CROPTYPE_SHORT && (!highest || c.cost.gt(highest.cost))) highest = c;
+    if(c.type == CROPTYPE_BRASSICA && (!highest || c.cost.gt(highest.cost))) highest = c;
   }
   if(highest) {
     result.push(highest.index);
@@ -341,12 +341,12 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
         }
         if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
 
-        if(c.type == CROPTYPE_SHORT) result += '.<br><br>' + leechInfo;
+        if(c.type == CROPTYPE_BRASSICA) result += '.<br><br>' + leechInfo;
         var cost = c.getCost();
         result += '<br><br>Planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
 
 
-        if(c.type == CROPTYPE_SHORT) {
+        if(c.type == CROPTYPE_BRASSICA) {
           result += '.<br><br>Living time: ' + util.formatDuration(c.getPlantTime());
         } else {
           result += '.<br><br>Grow time: ' + util.formatDuration(c.getPlantTime());
@@ -370,9 +370,9 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
       var c = crops[index];
       if(opt_replace) addAction({type:ACTION_REPLACE, x:x, y:y, crop:c});
       else addAction({type:ACTION_PLANT, x:x, y:y, crop:c});
-      dialog.cancelFun();
       closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
+      return true;
     }, index);
 
     var showfun = bind(function(tooltipfun) {

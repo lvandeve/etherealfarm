@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.90 "Wasabi update" (2021-11-08):';
+  text += '<br/>• Added wasabi, the next tier of watercress, with 25% more copying and lifetime, and a challenge to unlock it.';
+  text += '<br/>• Watercress and wasabi are of type \'brassica\', and now this name is used where \'watercress\' was used before.';
+  text += '<br/>• Brassica are now negatively affected by winter (except during the wasabi challenge), for more seasonal variety.';
+  text += '<br/>• Fruits of high tier dropping in main fruit storage is now a setting (off by default).';
+  text += '<br/>• More ethereal tree achievements added and they give more bonus.';
+  text += '<br/>• A dialog now pops up when the ethereal tree levels up with the list of things it unlocked. This because it was easy to miss its levelup before.';
+  text += '<br/>• UI tweaks and fixes.'; // undo button in editing blueprints dialog, fix a crash when viewing certain crop stats, ...
+  text += '<br/><br/>';
+
   text += '0.1.89 (2021-10-24):';
   text += '<br/>• High-yield watercress choice upgrade now begins at +50% copying bonus but after a while this goes down towards no bonus (it can be refreshed back to 50%), prevously this was a constant +33%. This can get more out of weather+fern combo, but is more active.';
   text += '<br/>• Sturdy watercress choice upgrade now only gives +50% lifetime duration, but now gives a constant +25% copying bonus. About the nerfed lifetime duration: a later update will add another form of longer duration instead.';

@@ -209,7 +209,7 @@ function updateTabButtons2() {
       // resin/twigs/nuts: brown/orange
       color = darkstyle ? '#ecb' : '#630';
     } else if(special >= 1) {
-      if(special == 1 && state.croptypecount[CROPTYPE_SHORT] == 0) {
+      if(special == 1 && state.croptypecount[CROPTYPE_BRASSICA] == 0) {
         // watercress fruit but no watercress planted: red-ish
         color = darkstyle ? '#fbb' : '#700';
       }

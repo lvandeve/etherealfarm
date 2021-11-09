@@ -150,7 +150,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
 
       var cropcost = c.getCost();
       infoText += 'Planting cost: ' + cropcost.toString() + ' (' + getCostAffordTimer(cropcost) + ')<br>';
-      if(c.type == CROPTYPE_SHORT) {
+      if(c.type == CROPTYPE_BRASSICA) {
         infoText += 'Living time: ' + util.formatDuration(c.getPlantTime());
       } else {
         infoText += 'Grow time: ' + util.formatDuration(c.getPlantTime());
@@ -175,15 +175,13 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
         var dialog;
         var funa = function() {
           addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
-          dialog.cancelFun();
           update();
         };
         var funb = function() {
           addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
-          dialog.cancelFun();
           update();
         };
-        dialog = createDialog(undefined, funa, u.choicename_a, undefined, funb, u.choicename_b);
+        dialog = createDialog(undefined, funa, u.choicename_a, undefined, undefined, funb, u.choicename_b);
         dialog.content.div.innerHTML = u.description;
       } else {
         addAction({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
@@ -219,6 +217,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
         addAction({type:ACTION_UPGRADE, u:u.index, shift:false});
         closeAllDialogs();
         update();
+        return true;
       };
       okname = u.maxcount == 1 ? 'buy' : 'buy one';
     }
@@ -229,11 +228,12 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
         addAction({type:ACTION_UPGRADE, u:u.index, shift:true});
         closeAllDialogs();
         update();
+        return true;
       };
       extraname = 'buy many';
     }
     updateInfoText();
-    var dialog = createDialog(DIALOG_SMALL, okfun, okname, undefined, extrafun, extraname);
+    var dialog = createDialog(DIALOG_SMALL, okfun, okname, undefined, undefined, extrafun, extraname);
     dialog.content.div.innerHTML = infoText;
   }, 'upgrade icon for ' + name);
 
@@ -343,7 +343,7 @@ function computeUpgradeUIOrder() {
   findtop(CROPTYPE_FLOWER, array);
   findtop(CROPTYPE_BEE, array);
   findtop(CROPTYPE_NETTLE, array);
-  findtop(CROPTYPE_SHORT, array);
+  findtop(CROPTYPE_BRASSICA, array);
   array = array.sort(function(a, b) {
     a = upgrades[a];
     b = upgrades[b];
@@ -360,7 +360,7 @@ function computeUpgradeUIOrder() {
     if(added[registered_upgrades[i]]) continue;
     var u = upgrades[registered_upgrades[i]];
     if(u.maxcount != 0) continue;
-    var relevant = (u.cropid == undefined) || (!!state.cropcount[u.cropid] || crops[u.cropid].type == CROPTYPE_SHORT);
+    var relevant = (u.cropid == undefined) || (!!state.cropcount[u.cropid] /*|| crops[u.cropid].type == CROPTYPE_BRASSICA*/);
     if(!relevant) continue;
     array.push(registered_upgrades[i]);
   }

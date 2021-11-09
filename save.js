@@ -258,6 +258,7 @@ function encState(state, opt_raw_only) {
   processUint6(state.keys_numbers);
   processUint6(state.keys_numbers_shift);
   processUint6(state.keys_brackets);
+  processBool(state.keepinterestingfruit);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -304,7 +305,7 @@ function encState(state, opt_raw_only) {
   processRes(state.g_max_res);
   processRes(state.g_max_prod);
   processUint(state.g_numferns);
-  processUint(state.g_numplantedshort);
+  processUint(state.g_numplantedbrassica);
   processUint(state.g_numplanted);
   processUint(state.g_numfullgrown);
   processUint(state.g_numunplanted);
@@ -331,7 +332,7 @@ function encState(state, opt_raw_only) {
   processRes(state.c_max_res);
   processRes(state.c_max_prod);
   processUint(state.c_numferns);
-  processUint(state.c_numplantedshort);
+  processUint(state.c_numplantedbrassica);
   processUint(state.c_numplanted);
   processUint(state.c_numfullgrown);
   processUint(state.c_numunplanted);
@@ -359,7 +360,7 @@ function encState(state, opt_raw_only) {
     processRes(state.p_max_res);
     processRes(state.p_max_prod);
     processUint(state.p_numferns);
-    processUint(state.p_numplantedshort);
+    processUint(state.p_numplantedbrassica);
     processUint(state.p_numplanted);
     processUint(state.p_numfullgrown);
     processUint(state.p_numunplanted);
@@ -879,6 +880,12 @@ function decState(s) {
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
     prev = index;
+    if(save_version < 4096*1+90) {
+      // more room for crop unlocks was made
+      if(index < 250 && index >= 125) index += (500 - 125);
+      else if(index < 300 && index >= 250) index += (1000 - 250);
+      else if(index < 350 && index >= 300) index -= 100;
+    }
     if(!upgrades[index]) return err(4);
     state.upgrades[index].unlocked = true;
     state.upgrades[index].seen = array1[i];
@@ -957,7 +964,24 @@ function decState(s) {
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
     prev = index;
-    if(save_version < 4096*1+74 && index >= 400) index += 200; // index was shifted to make room for more crop-type medals
+    if(save_version < 4096*1+74 && index >= 400) {
+      index += 200; // index was shifted to make room for more crop-type medals
+    }
+    if(save_version < 4096*1+90) {
+      // id 600+ moved to 1000+, and 1000+ to 2000+, to make room for more crop amount achievements
+      // crop amount achievements now per 8 instead of per 5
+      if(index >= 1000) index += 1000;
+      else if(index >= 600) index += 400;
+      else if(index == 500) index = 643;
+      else if(index == 501) index = 644;
+      else if(index >= 400) index = 960 + (Math.floor((index - 400) / 5));
+      else if(index >= 369) index = 560 + (Math.floor((index - 369) / 5)) * 8 + ((index - 9) % 5);
+      else if(index >= 359) index = 720 + (Math.floor((index - 359) / 5)) * 8 + ((index - 9) % 5);
+      else if(index >= 349) index = 480 + (Math.floor((index - 349) / 5)) * 8 + ((index - 9) % 5);
+      else if(index >= 299) index = 400 + (Math.floor((index - 299) / 5)) * 8 + ((index - 9) % 5);
+      else if(index >= 249) index = 320 + (Math.floor((index - 249) / 5)) * 8 + ((index - 9) % 5);
+      else if(index >= 149) index = 160 + (Math.floor((index - 149) / 5)) * 8 + ((index - 9) % 5);
+    }
     if(!medals[index]) return err(4);
     state.medals[index].earned = true;
     state.medals[index].seen = array1[i];
@@ -997,6 +1021,7 @@ function decState(s) {
     state.keys_numbers = 1;
     state.keys_brackets = 3;
   }
+  if(save_version >= 4096*1+90) state.keepinterestingfruit = processBool();
   if(error) return err(4);
 
 
@@ -1069,7 +1094,7 @@ function decState(s) {
   state.g_max_res = processRes();
   state.g_max_prod = processRes();
   state.g_numferns = processUint();
-  state.g_numplantedshort = processUint();
+  state.g_numplantedbrassica = processUint();
   state.g_numplanted = processUint();
   state.g_numfullgrown = processUint();
   state.g_numunplanted = processUint();
@@ -1097,7 +1122,7 @@ function decState(s) {
   state.c_max_res = processRes();
   state.c_max_prod = processRes();
   state.c_numferns = processUint();
-  state.c_numplantedshort = processUint();
+  state.c_numplantedbrassica = processUint();
   state.c_numplanted = processUint();
   state.c_numfullgrown = processUint();
   state.c_numunplanted = processUint();
@@ -1129,7 +1154,7 @@ function decState(s) {
     state.p_max_res = processRes();
     state.p_max_prod = processRes();
     state.p_numferns = processUint();
-    state.p_numplantedshort = processUint();
+    state.p_numplantedbrassica = processUint();
     state.p_numplanted = processUint();
     state.p_numfullgrown = processUint();
     state.p_numunplanted = processUint();
@@ -1723,8 +1748,8 @@ function decState(s) {
 
   if(save_version < 4096*1+30) {
     // add this extra research that wasn't unlocked during this challenge to it now, just like game.js does since version 0.1.30
-    if(state.challenge == challenge_bees && !state.upgrades[shortmul_0].unlocked) {
-      state.upgrades[shortmul_0].unlocked = true;
+    if(state.challenge == challenge_bees && !state.upgrades[brassicamul_0].unlocked) {
+      state.upgrades[brassicamul_0].unlocked = true;
     }
   }
 

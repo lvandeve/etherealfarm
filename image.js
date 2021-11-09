@@ -489,7 +489,7 @@ Generates an image from ASCII text as follows:
   -- hX: affect hue series X, where X is the second letter of one of the hue series, e.g. r for red: change the hue of that entire series to the hue/saturation/lightness/alpha of the given color (lightness computed using the HSV method), e.g. hf:#802 to change the fuchsia to be more red-ish and also darker
   -- g0, g1, ..., g9: set gradient value 0 to 9 to the given CSS color. Initially, g0 is #000 and g9 is #fff and all values in between are undefined, causing a grayscale gradient. Changing any entry sets that entry to that exact value, and will fill in undefined entries with a gradient between the two nearest defined neighbors.
   -- 0-9,a-z,A-Z,... (any known single character): set value directly to the given CSS color (can also have alpha channel), overriding and after any of the above rules
-  -- aa: affect all: reduce lightness, saturation and alpha of all based on the lightness, saturation and alpha of the given color value here, this is done after all the above rules, including single characters
+  -- aa: affect all: reduce lightness, saturation and alpha of all based on the lightness, saturation and alpha of the given color value here, this is done after all the above rules, including single characters. NOTE: to keep saturation, don't set it to white. The color #f00f (or variants such as #0fff) keeps everything: max saturation, lightness and alpha.
   -- example of a header: #l0:#c22 l1:#d44 l2:#e66 l3:#f88
 */
 function generateImage(text) {

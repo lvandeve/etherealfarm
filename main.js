@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // meaning:
 // -major: 0..63 represents decimal 0.0..6.3, e.g. 1 to set to version 0.1, 10 to set to version 1.0.
 // -minor: 0..4095: increment for any minor features and fixes, e.g. if major has value 1 and this has value 1234, then the version is shown as 0.1.1234
-var version = 4096*1+89;
+var version = 4096*1+90;
 var version_sub = 0;
 // ^ sub-version: if non-0, adds 'b', 'c'. ... to the version name.
 // Should not affect savegame format. No changelog entry needed.
@@ -70,7 +70,7 @@ function autoSaveOk() {
     return state.g_numupgrades > 0;
   }
 
-  if(state.g_numresets > 0 || state.g_numferns > 0 || state.g_nummedals > 0 || state.g_numplanted > 0 || state.g_numplantedshort > 0) {
+  if(state.g_numresets > 0 || state.g_numferns > 0 || state.g_nummedals > 0 || state.g_numplanted > 0 || state.g_numplantedbrassica > 0) {
     return true;
   }
 

@@ -542,12 +542,14 @@ function createAdvancedSettingsDialog() {
   button.id = 'preferences_sidepanel';
 
   button = makeSettingsButton();
-  button.textEl.innerText = 'number format';
-  registerTooltip(button, 'Change the precision and display type for large numbers.');
-  addButtonAction(button, function(e) {
-    createNumberFormatDialog();
-  });
-  button.id = 'preferences_number';
+  updatebuttontext = function(button) { button.textEl.innerText = 'dialog back buttons: ' + (state.cancelbuttonright ? 'rightmost' : 'leftmost'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'For dialogs with multiple buttons at the bottom, whether "back"/"cancel" buttons are the rightmost or leftmost of the group');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.cancelbuttonright = !state.cancelbuttonright;
+    updatebuttontext(button);
+  }, button, updatebuttontext));
+  button.id = 'preferences_cancelright';
 
 
   addSettingsSpacer();
@@ -563,14 +565,16 @@ function createAdvancedSettingsDialog() {
   }, button, updatebuttontext));
   button.id = 'preferences_saveonclose';
 
-
   button = makeSettingsButton();
-  button.textEl.innerText = 'controls';
-  registerTooltip(button, 'Change various keyboard controls.');
-  addButtonAction(button, function(e) {
-    createShortcutsDialog();
-  });
-  button.id = 'preferences_controls';
+  updatebuttontext = function(button) { button.textEl.innerText = 'auto store interesting fruit: ' + (state.keepinterestingfruit ? 'yes' : 'no'); };
+  updatebuttontext(button);
+  registerTooltip(button, 'Whether to automatically store a fruit of a higher tier or higher season than ever seen. Normally fruits drop to the sacrificial pool automatically and must be manually moved to storage if you want to keep them. Automatically storing only works if there is space, and only if the fruit is of a newewr tier than seen before, you must still manually check fruits anyway when trying to find or fuse ones with particular abilities.');
+  addButtonAction(button, bind(function(button, updatebuttontext, e) {
+    state.keepinterestingfruit = !state.keepinterestingfruit;
+    updatebuttontext(button);
+    saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
+  }, button, updatebuttontext));
+  button.id = 'preferences_interestingfruits';
 
   addSettingsSpacer();
 
@@ -580,9 +584,9 @@ function createAdvancedSettingsDialog() {
   addButtonAction(button, function(e) {
     var dialog = createDialog(DIALOG_MEDIUM, function() {
       state.help_disable = {};
-      dialog.cancelFun();
       closeAllDialogs();
-    }, 'reset', 'cancel');
+      return true;
+    }, 'reset', undefined, 'cancel');
     dialog.content.div.innerHTML = 'This resets the "never show again" setting of all individual help dialogs. You\'ll get the help dialogs again in the situations that make them appear. You can individually disable them again.';
   });
   button.id = 'preferences_resethelp';
@@ -604,7 +608,7 @@ function createAdvancedSettingsDialog() {
 
 
   button = makeSettingsButton();
-  button.textEl.innerText = 'messages & sounds';
+  button.textEl.innerText = 'messages & sounds...';
   registerTooltip(button, 'Message log and sound notifications');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     createNotificationSettingsDialog();
@@ -612,18 +616,24 @@ function createAdvancedSettingsDialog() {
   button.id = 'preferences_notifications';
 
 
-  addSettingsSpacer();
-
+  button = makeSettingsButton();
+  button.textEl.innerText = 'controls...';
+  registerTooltip(button, 'Change various keyboard controls.');
+  addButtonAction(button, function(e) {
+    createShortcutsDialog();
+  });
+  button.id = 'preferences_controls';
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'dialog back buttons: ' + (state.cancelbuttonright ? 'rightmost' : 'leftmost'); };
-  updatebuttontext(button);
-  registerTooltip(button, 'For dialogs with multiple buttons at the bottom, whether "back"/"cancel" buttons are the rightmost or leftmost of the group');
-  addButtonAction(button, bind(function(button, updatebuttontext, e) {
-    state.cancelbuttonright = !state.cancelbuttonright;
-    updatebuttontext(button);
-  }, button, updatebuttontext));
-  button.id = 'preferences_cancelright';
+  button.textEl.innerText = 'number format...';
+  registerTooltip(button, 'Change the precision and display type for large numbers.');
+  addButtonAction(button, function(e) {
+    createNumberFormatDialog();
+  });
+  button.id = 'preferences_number';
+
+
+  addSettingsSpacer();
 }
 
 
@@ -632,7 +642,7 @@ var showing_stats = false;
 
 function createStatsDialog() {
   showing_stats = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     showing_stats = false;
   });
 
@@ -662,7 +672,7 @@ function createStatsDialog() {
   text += '• highest production/s: ' + open + state.c_max_prod.toString() + close + '<br>';
   text += '• ferns: ' + open + state.c_numferns + close + '<br>';
   text += '• planted (permanent): ' + open + state.c_numfullgrown + close + '<br>';
-  text += '• planted (watercress): ' + open + state.c_numplantedshort + close + '<br>';
+  text += '• planted (watercress): ' + open + state.c_numplantedbrassica + close + '<br>';
   text += '• deleted: ' + open + state.c_numunplanted + close + '<br>';
   text += '• upgrades: ' + open + state.c_numupgrades + close + '<br>';
   if(state.g_numfruits > 0) {
@@ -702,7 +712,7 @@ function createStatsDialog() {
     text += '• highest earned any run: ' + open + state.g_max_res_earned.toString() + close + '<br>';
     text += '• ferns: ' + open + state.g_numferns + close + '<br>';
     text += '• planted (permanent): ' + open + state.g_numfullgrown + close + '<br>';
-    text += '• planted (watercress): ' + open + state.g_numplantedshort + close + '<br>';
+    text += '• planted (watercress): ' + open + state.g_numplantedbrassica + close + '<br>';
     text += '• deleted: ' + open + state.g_numunplanted + close + '<br>';
     text += '• upgrades: ' + open + state.g_numupgrades + close + '<br>';
     if(state.g_numfruits > 0) {
@@ -806,7 +816,7 @@ function createStatsDialog() {
     text += '• highest production/s: ' + open + state.p_max_prod.toString() + close + '<br>';
     text += '• ferns: ' + open + state.p_numferns + close + '<br>';
     text += '• planted (permanent): ' + open + state.p_numfullgrown + close + '<br>';
-    text += '• planted (watercress): ' + open + state.p_numplantedshort + close + '<br>';
+    text += '• planted (watercress): ' + open + state.p_numplantedbrassica + close + '<br>';
     text += '• deleted: ' + open + state.p_numunplanted + close + '<br>';
     text += '• upgrades: ' + open + state.p_numupgrades + close + '<br>';
     if(state.g_numfruits > 0) {
@@ -849,7 +859,7 @@ var getAboutHeader = function() {
 
 function createChangelogDialog() {
   showing_changelog = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
     showing_changelog = false;
   });
 
@@ -935,10 +945,11 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
         showMessage('failed to copy to clipboard', C_ERROR, 0, 0);
         textFlex.div.innerText = 'failed to copy to clipboard, copy it manually with ctrl+c instead';
         textFlex.div.style.color = 'red';
-        return;
+        return true;
       }
       if(opt_close_on_clipboard) closeAllDialogs();
       showMessage('save copied to clipboard');
+      return true;
     };
     extraname = 'to clipboard';
   }
@@ -953,7 +964,8 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
     document.body.removeChild(a);
     if(opt_close_on_clipboard) closeAllDialogs();
     showMessage('save exported to file');
-  }, 'download', 'back', extrafun, extraname);
+    return true;
+  }, 'download', undefined, 'back', extrafun, extraname);
 
 
   var textFlex = new Flex(dialog.content, 0.02, 0.01, 0.98, 0.15, 0.3);
@@ -1025,10 +1037,9 @@ function initSettingsUI_in(dialog) {
       var ctrl = util.eventHasCtrlKey(e);
       var enc = area.value;
       enc = enc.trim();
-      if(enc == '') return;
+      if(enc == '') return true;
       load(enc, function(state) {
         showMessage(loadedFromLocalImportMessage, C_UNIMPORTANT, 0, 0);
-        dialog.cancelFun();
         state.g_numimports++;
         state.g_lastimporttime = util.getTime();
         closeAllDialogs();
@@ -1056,7 +1067,8 @@ function initSettingsUI_in(dialog) {
         textFlex.div.innerText = message;
         textFlex.div.style.color = 'black';
       });
-    }, 'import', 'cancel');
+      return true;
+    }, 'import', undefined, 'cancel');
     var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
     textFlex.div.innerHTML = 'Import a savegame backup. You can create a backup with "export save". Paste in here and press "import".<br/><font color="red">Warning: this overwrites your current game!</font>';
     var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.content.div);
@@ -1071,9 +1083,9 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function(e) {
     var w = 500, h = 500;
     var dialog = createDialog(false, function(e) {
-      dialog.cancelFun();
       hardReset();
       closeAllDialogs();
+      return true;
     }, 'reset');
     var warningFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
     warningFlex.div.innerText = hardresetwarning;

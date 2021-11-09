@@ -127,7 +127,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
   }
 
-  if(f.growth < 1 && c.type != CROPTYPE_SHORT && state.challenge != challenge_wither) {
+  if(f.growth < 1 && c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) {
     if(state.challenge == challenge_wither) {
       result += 'Withering. Time left: ' + util.formatDuration(witherDuration() * f.growth);
     } else {
@@ -146,6 +146,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     if(!expected_prod.empty()) {
       result += 'Current production/sec: ' + c.getProd(f, false).toString() + '<br>';
       result += 'Expected production/sec: ' + expected_prod.toString();
+      if(state.challenge == challenge_wasabi) result += '<br>NOTE: this production is only accissible through copying with watercress etc... during the wasabi challenge!';
     }
     if(expected_boost.neqr(0)) {
       var current_boost = c.getBoost(f, false);
@@ -159,13 +160,20 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
     result += '<br/><br/>';
   } else {
-    if(c.type == CROPTYPE_SHORT) {
+    if(c.type == CROPTYPE_BRASSICA) {
       if(opt_detailed) {
         // the detailed dialog is not dynamically updated, so show the life growth time statically instead.
         result += 'Short-lived plant. Total lifetime: ' + c.getPlantTime() + 's<br/><br/>';
         result += leechInfo + '<br/>';
       } else {
-        result += 'Short-lived plant. Time left: ' + util.formatDuration(f.growth * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
+        var end_of_life = c.isPostLife(f);;
+        var text0 = 'Short-lived plant';
+        var growthremaining = f.growth;
+        if(end_of_life) {
+          text0 = 'Short-lived, end of life but weakly active';
+          growthremaining = 0;
+        }
+        result += text0 + '. Time left: ' + util.formatDuration(growthremaining * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
         if(state.upgrades[berryunlock_0].count) {
           result += '<br/><span class="efWatercressHighlight">Copies neighbors: Duplicates full production of long-lived berry and mushroom neighbors for free';
           if(!state.upgrades3[upgrade3_watercress_mush].count) result += ' (mushroom copy also consumes more seeds)';
@@ -181,18 +189,27 @@ function getCropInfoHTML(f, c, opt_detailed) {
       if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       result += '<br/><br/>';
     }
-    var prod = p.prod3;
-    if(!prod.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY) {
-      result += 'Production per second: ' + prod.toString() + '<br/>';
-      if(prod.hasNeg() || c.type == CROPTYPE_MUSH) {
-        if(p.prod0.neq(p.prod3)) {
+    var prod3 = p.prod3;
+    var prod0 = p.prod0;
+    if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA && p.prod3_wasabi_challenge) {
+      prod3 = p.prod3_wasabi_challenge;
+      prod0 = p.prod0_wasabi_challenge;
+    }
+    if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY) {
+      if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
+        result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
+      } else {
+        result += 'Production per second: ' + prod3.toString() + '<br/>';
+      }
+      if(prod3.hasNeg() || c.type == CROPTYPE_MUSH) {
+        if(prod0.neq(prod3)) {
           if(c.type == CROPTYPE_MUSH) {
-            result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + p.prod0.toString() + '<br/>';
-            result += 'Satisfied: ' + prod.seeds.div(p.prod0.seeds).toPercentString() + '<br/>';
-          } else if(c.type == CROPTYPE_SHORT) {
+            result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + prod0.toString() + '<br/>';
+            result += 'Satisfied: ' + prod3.seeds.div(prod0.seeds).toPercentString() + '<br/>';
+          } else if(c.type == CROPTYPE_BRASSICA) {
             // nothing to print.
           } else {
-            result += 'Needs more input resources, potential max production: ' + p.prod0.toString() + '<br/>';
+            result += 'Needs more input resources, potential max production: ' + prod0.toString() + '<br/>';
           }
         } else {
           // commented out, the crop type description already says this
@@ -208,8 +225,8 @@ function getCropInfoHTML(f, c, opt_detailed) {
       result += '<br/>';
     }
     if(c.type == CROPTYPE_MUSH) {
-      result += 'Efficiency: ' + p.prod0.spores.div(p.prod0.seeds.neg()).toString() + ' spores/seed, ' +
-          p.prod0.seeds.div(p.prod0.spores.neg()).toString() + ' seeds/spore<br/>';
+      result += 'Efficiency: ' + prod0.spores.div(prod0.seeds.neg()).toString() + ' spores/seed, ' +
+          prod0.seeds.div(prod0.spores.neg()).toString() + ' seeds/spore<br/>';
     }
     if(c.index == challengecrop_0) {
       result += 'Global field-wide boost to berries, flowers and mushrooms: ' + p.boost.toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
@@ -602,7 +619,7 @@ function makeFieldDialog(x, y) {
     renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
-    if(c.type == CROPTYPE_SHORT) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
+    if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
     var flex0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5, 0.29);
     var button0 = new Flex(contentFlex, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.565 + buttonshift, 0.8).div;
@@ -620,7 +637,6 @@ function makeFieldDialog(x, y) {
       if(makeUpgradeCropAction(x, y)) {
         update();
       }
-      dialog.cancelFun();
     });
 
     styleButton(button1);
@@ -636,7 +652,6 @@ function makeFieldDialog(x, y) {
     registerTooltip(button2, 'Delete crop and get some of its cost back.');
     addButtonAction(button2, function() {
       addAction({type:ACTION_DELETE, x:x, y:y});
-      dialog.cancelFun();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
@@ -820,8 +835,11 @@ function initFieldUI() {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
           } else if(ctrl && !shift) {
-            addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[short_0], ctrlPlanted:true});
-            update();
+            var brassica = getHighestBrassica();
+            if(brassica >= 0) {
+              addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[brassica], ctrlPlanted:true});
+              update();
+            }
           } else if(!fern) {
             makeFieldDialog(x, y);
           }
@@ -851,7 +869,7 @@ function initFieldUI() {
               if(c.cost.gt(c2.cost) && c.type == c2.type) safe = true; // allow to use shift+click to upgrade even if the "allowshiftdelete" setting is false, since replacing to higher type is safe and not a problem if not intended (while deleting or replacing with lower type may be unsafe)
               // the shift+delete just growing crop of same type behavior is not considered safe if state.allowshiftdelete is not enabled, since it may be surprising that shift that normally plants or replaces something can delete something too
               if(safe) {
-                if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_SHORT && !f.isFullGrown()) || f.isTemplate())) {
+                if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate())) {
                   // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
                   // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
                   // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
@@ -948,7 +966,12 @@ function updateFieldCellUI(x, y) {
   var fd = fieldDivs[y][x];
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   if(!(growstage >= 0 && growstage <= 4)) growstage = 0;
-  if(state.challenge == challenge_wither && f.hasCrop() && f.getCrop().type != CROPTYPE_SHORT) growstage = 4;
+  if(f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA) {
+    growstage = (f.growth >= 1) ? 5 : Math.min(Math.floor(f.growth * 5), 4);
+    if(!(growstage >= 0 && growstage <= 4)) growstage = 0;
+    if(f.getCrop().isPostLife(f)) growstage = -1;
+  }
+  if(state.challenge == challenge_wither && f.hasCrop() && f.getCrop().type != CROPTYPE_BRASSICA) growstage = 4;
   var season = getSeason();
 
   var progresspixel = -1;
@@ -981,8 +1004,13 @@ function updateFieldCellUI(x, y) {
       renderImage(images_automaton[4], fd.canvas);
     } else if(f.hasCrop()) {
       var c = f.getCrop();
-      //fd.div.innerText = c.name;
-      renderImage(c.image[growstage], fd.canvas);
+      var cropimg;
+      if(growstage == -1) {
+        cropimg = c.image_post;
+      } else {
+        cropimg = c.image[growstage];
+      }
+      renderImage(cropimg, fd.canvas);
       if(f.growth >= 1) {
         // fullgrown, so hide progress bar
         setProgressBar(fd.progress, -1, undefined);
@@ -996,7 +1024,10 @@ function updateFieldCellUI(x, y) {
       label = 'tree level ' + state.treelevel + '. ' + label;
       if(state.treelevel > 0 || state.res.spores.gtr(0)) renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
     } else if(f.index == FIELD_REMAINDER) {
-      renderImage(image_watercress_remainder, fd.canvas);
+      var highest_brassica = getHighestBrassica();
+      if(highest_brassica < 0) highest_brassica = 0;
+      var remainder_image = crops[highest_brassica].image_remainder || image_watercress_remainder;
+      renderImage(remainder_image, fd.canvas);
       setProgressBar(fd.progress, -1, undefined);
     } else if(f.index == FIELD_ROCK) {
       var image_index = Math.floor(util.pseudoRandom2D(x, y, 245643) * 4);
@@ -1019,7 +1050,7 @@ function updateFieldCellUI(x, y) {
   }
   if(f.hasCrop() && f.growth < 1) {
     var c = f.getCrop();
-    setProgressBar(fd.progress, f.growth, c.type == CROPTYPE_SHORT ? '#0c0' : '#f00');
+    setProgressBar(fd.progress, f.growth, c.type == CROPTYPE_BRASSICA ? '#0c0' : '#f00');
   }
 }
 
@@ -1035,7 +1066,7 @@ function renderFieldInitialPlantHint() {
     specialborder = false;
   }
 
-  var numplanted = state.c_numplanted + state.c_numplantedshort;
+  var numplanted = state.c_numplanted + state.c_numplantedbrassica;
   if((state.res.seeds.ger(10) /*|| numplanted > 0*/) && state.g_numresets < 3 && numplanted <= 11) {
     var do_border = false;
     var x = 0;

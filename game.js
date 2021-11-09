@@ -287,7 +287,7 @@ function startChallenge(challenge_id) {
     state.upgrades[challengecropmul_2].unlocked = true;
 
     // add the watercress upgrade as well so one isn't forced to refresh it every minute during this challenge
-    state.upgrades[shortmul_0].unlocked = true;
+    state.upgrades[brassicamul_0].unlocked = true;
   }
 
   if(challenge_id == challenge_rocks || challenge_id == challenge_thistle) {
@@ -360,14 +360,14 @@ function startChallenge(challenge_id) {
   if(challenge_id == challenge_blackberry) {
     lockAllUpgrades();
 
-    state.crops[short_0].unlocked = true;
+    state.crops[brassica_0].unlocked = true;
     state.crops[mush_0].unlocked = true;
     state.crops[berry_0].unlocked = true;
     state.crops[flower_0].unlocked = true;
     state.crops[mistletoe_0].unlocked = true;
     state.crops[nettle_0].unlocked = true;
 
-    state.upgrades[shortmul_0].unlocked = true;
+    state.upgrades[brassicamul_0].unlocked = true;
     state.upgrades[mushmul_0].unlocked = true;
     state.upgrades[berrymul_0].unlocked = true;
     state.upgrades[flowermul_0].unlocked = true;
@@ -540,7 +540,7 @@ function softReset(opt_challenge) {
     state.p_max_res = state.c_max_res;
     state.p_max_prod = state.c_max_prod;
     state.p_numferns = state.c_numferns;
-    state.p_numplantedshort = state.c_numplantedshort;
+    state.p_numplantedbrassica = state.c_numplantedbrassica;
     state.p_numplanted = state.c_numplanted;
     state.p_numfullgrown = state.c_numfullgrown;
     state.p_numunplanted = state.c_numunplanted;
@@ -585,7 +585,7 @@ function softReset(opt_challenge) {
   state.c_max_res = Res();
   state.c_max_prod = Res();
   state.c_numferns = 0;
-  state.c_numplantedshort = 0;
+  state.c_numplantedbrassica = 0;
   state.c_numplanted = 0;
   state.c_numfullgrown = 0;
   state.c_numunplanted = 0;
@@ -661,7 +661,7 @@ function softReset(opt_challenge) {
   for(var i = 0; i < registered_crops.length; i++) {
     state.crops[registered_crops[i]] = new CropState();
   }
-  state.crops[short_0].unlocked = true;
+  state.crops[brassica_0].unlocked = true;
 
   for(var i = 0; i < registered_upgrades.length; i++) {
     if(!state.upgrades[registered_upgrades[i]]) state.upgrades[registered_upgrades[i]] = new UpgradeState();
@@ -684,8 +684,8 @@ function softReset(opt_challenge) {
   //state.lastPlanted2 = -1;
   if(state.crops[berry_0].unlocked) {
     state.lastPlanted = berry_0;
-  } else if(state.crops[short_0].unlocked) {
-    state.lastPlanted = short_0;
+  } else if(state.crops[brassica_0].unlocked) {
+    state.lastPlanted = brassica_0;
   }
 
   state.resinfruittime = 0;
@@ -903,6 +903,10 @@ function PreCell(x, y) {
   this.prod2 = new Res();
   // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. The sum of all prod3 on a field should be equal to the sum of all prod2. Also contains leech like prod2 does. However, the sum of all prod2 will be more numerically precise than that of prod3.
   this.prod3 = new Res();
+  // used during wasabi challenge only as replacement for the zeroed out prod3, for UI display only
+  this.prod3_wasabi_challenge = undefined;
+  // idem for prod0
+  this.prod0_wasabi_challenge = undefined;
 
   this.consumers = []; // if this is a berry: list of mushroom neighbors that consume from this
   this.producers = []; // if this is a mushroom: list of berry neighbors that produce for this
@@ -1212,7 +1216,7 @@ function precomputeField() {
       var f = state.field[y][x];
       var c = f.getRealCrop();
       if(c) {
-        if(c.type == CROPTYPE_SHORT) {
+        if(c.type == CROPTYPE_BRASSICA) {
           var leech = c.getLeech(f);
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -1396,7 +1400,7 @@ function precomputeField() {
       var p = prefield[y][x];
       var c = f.getRealCrop();
       if(c) {
-        if(c.type == CROPTYPE_SHORT) {
+        if(c.type == CROPTYPE_BRASSICA) {
           var leech = c.getLeech(f);
           var leech_nuts = c.getLeech(f, undefined, true);
           var p = prefield[y][x];
@@ -1409,7 +1413,7 @@ function precomputeField() {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2) {
-              if(c2.type != CROPTYPE_SHORT) p.touchnum++;
+              if(c2.type != CROPTYPE_BRASSICA) p.touchnum++;
               var p2 = prefield[y2][x2];
               if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
                 var leech1 = (c2.type == CROPTYPE_NUT) ? leech_nuts : leech;
@@ -1466,7 +1470,7 @@ function precomputeField() {
 
         if(c.type == CROPTYPE_BERRY) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
-          if(c2.type == CROPTYPE_SHORT) score_mul *= ((state.cropcount[short_0] > 2) ? 1 : 2);
+          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 2) ? 1 : 2);
           if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
         }
         if(c.type == CROPTYPE_MUSH) {
@@ -1539,6 +1543,27 @@ function precomputeField() {
       if(c.type == CROPTYPE_BEE) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
         p.score = score_malus * score_num;
+      }
+    }
+  }
+
+  // for the wasabi challenge, remove regular production now
+  if(state.challenge == challenge_wasabi) {
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var p = prefield[y][x];
+        var f = state.field[y][x];
+        var c = f.getCrop();
+        if(!c) continue;
+        if(c.type == CROPTYPE_BRASSICA) continue;
+        p.prod3_wasabi_challenge = p.prod3;
+        p.prod0_wasabi_challenge = p.prod0;
+        var empty = new Res();
+        p.prod0 = empty;
+        p.prod0b = empty;
+        p.prod1 = empty;
+        p.prod2 = empty;
+        p.prod3 = empty;
       }
     }
   }
@@ -1627,7 +1652,7 @@ function addRandomFruit() {
 
     var num_abilities = getNumFruitAbilities(tier);
 
-    var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_WATERCRESS, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
+    var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_BRASSICA, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
     if(tier >= 5) {
       abilities.push(FRUIT_RESINBOOST);
       abilities.push(FRUIT_TWIGSBOOST);
@@ -1693,9 +1718,14 @@ function addRandomFruit() {
 
     var interesting = isFruitInteresting(fruit);
 
+    // indicate if higher level fruit than you are using
+    if(interesting) state.fruit_seen = false;
 
-    var no_fruit_intended = !getActiveFruit() && state.fruit_stored.length > 0; // if there is no active fruit selected in purpose, assume that is intended and keep it that way, don't let a random fruit drop that due to heuristics ends up in stored slots rather than sacrificial pool override that choice
-    if(interesting && state.fruit_stored.length < state.fruit_slots && !(no_fruit_intended && state.fruit_stored.length + 1 == state.fruit_slots)) {
+    var no_fruit_intended = !getActiveFruit(); // if there is no active fruit selected in purpose, assume that is intended and keep it that way, don't let a random fruit drop that due to heuristics ends up in stored slots rather than sacrificial pool override that choice
+
+    if(state.fruit_stored.length == 0) {
+      setFruit(state.fruit_stored.length, fruit);
+    } else if(state.keepinterestingfruit && interesting && state.fruit_stored.length < state.fruit_slots && !(no_fruit_intended && state.fruit_stored.length + 1 == state.fruit_slots)) {
       // if it's an interesting fruit, such as highest tier ever, add it to the stored fruits if possible
       setFruit(state.fruit_stored.length, fruit);
       if(no_fruit_intended) state.fruit_active++;
@@ -1706,9 +1736,6 @@ function addRandomFruit() {
 
     state.c_numfruits++;
     state.g_numfruits++;
-
-    // indicate if higher level fruit than you are using
-    if(isFruitInteresting(fruit)) state.fruit_seen = false;
 
     fruits.push(fruit);
 
@@ -1776,7 +1803,7 @@ function getAutoFraction(advanced, fractions, croptype) {
     else if(croptype == CROPTYPE_FLOWER) fraction = fractions[5];
     else if(croptype == CROPTYPE_NETTLE) fraction = fractions[6];
     else if(croptype == CROPTYPE_BEE) fraction = fractions[7];
-    else if(croptype == CROPTYPE_SHORT) fraction = fractions[2];
+    else if(croptype == CROPTYPE_BRASSICA) fraction = fractions[2];
     else if(croptype == CROPTYPE_MISTLETOE) fraction = fractions[8];
     else if(croptype == CROPTYPE_NUT) fraction = fractions[9];
     else fraction = fractions[1]; // challenge crops, squirrel, ...
@@ -1894,7 +1921,7 @@ function computeNextAutoPlant() {
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
   // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
-  var types = [CROPTYPE_SQUIRREL, CROPTYPE_SHORT, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE, CROPTYPE_NUT];
+  var types = [CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE, CROPTYPE_NUT];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
@@ -1919,7 +1946,7 @@ function computeNextAutoPlant() {
     var cost = crop.getCost();
 
     // NOTE: must match simimar checks in autoPlant()
-    if(state.c_numfullgrown == 0 && fraction > 0 && (type == CROPTYPE_SHORT || type == CROPTYPE_BERRY)) {
+    if(state.c_numfullgrown == 0 && fraction > 0 && (type == CROPTYPE_BRASSICA || type == CROPTYPE_BERRY)) {
       fraction = 1; // first watercress/berries allowed to be 100% (unless fully disabled) to get the game kickstarted when having 1000 seeds, using blueprints and having automaton berry% to something less than 100%
     }
 
@@ -1956,7 +1983,7 @@ function autoPlant(res) {
 
   var type = crop.type;
   // NOTE: must match simimar checks in computeNextAutoPlant()
-  if(state.c_numfullgrown == 0 && fraction > 0 && (type == CROPTYPE_SHORT || type == CROPTYPE_BERRY)) {
+  if(state.c_numfullgrown == 0 && fraction > 0 && (type == CROPTYPE_BRASSICA || type == CROPTYPE_BERRY)) {
     fraction = 1; // first watercress/berries allowed to be 100% (unless fully disabled) to get the game kickstarted when having 1000 seeds, using blueprints and having automaton berry% to something less than 100%
   }
 
@@ -2085,7 +2112,7 @@ function nextEventTime() {
       var f = state.field[y][x];
       var c = f.getCrop();
       if(c) {
-        if(c.type == CROPTYPE_SHORT) {
+        if(c.type == CROPTYPE_BRASSICA) {
           addtime(c.getPlantTime() * (f.growth));
         } else if(state.challenge == challenge_wither) {
           //addtime(witherDuration() * (f.growth));
@@ -2725,6 +2752,9 @@ var update = function(opt_ignorePause) {
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field[action.y][action.x];
 
+        var orig_growth = f.growth;
+        var orig_brassica = f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA;
+
         if(action.by_automaton) {
           state.automatonx = action.x;
           state.automatony = action.y;
@@ -2738,7 +2768,7 @@ var update = function(opt_ignorePause) {
           if(f.hasCrop()) {
             var c = f.getCrop();
             recoup = c.getRecoup();
-            if(f.growth < 1 && c.type != CROPTYPE_SHORT && state.challenge != challenge_wither) recoup = c.getCost(-1);
+            if(f.growth < 1 && c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) recoup = c.getCost(-1);
           } else {
             recoup = Res();
           }
@@ -2763,10 +2793,10 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
-          if(state.challenge == challenge_nodelete && f.index != CROPINDEX + short_0 && f.growth >= 1 && !f.isTemplate()) {
+          if(state.challenge == challenge_nodelete && f.index != CROPINDEX + brassica_0 && f.growth >= 1 && !f.isTemplate()) {
             showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
             ok = false;
-          } else if(state.challenge == challenge_wither && f.index != CROPINDEX + short_0 && !f.isTemplate()) {
+          } else if(state.challenge == challenge_wither && f.index != CROPINDEX + brassica_0 && !f.isTemplate()) {
             var more_expensive_same_type = type == ACTION_REPLACE && f.hasCrop() && action.crop.cost.gt(f.getCrop().cost) && action.crop.type == f.getCrop().type;
             if(!more_expensive_same_type) {
               showMessage('Cannot delete or downgrade crops during the wither challenge, but they\'ll naturally disappear over time. However, you can replace crops with more expensive crops (see the replace dialog).', C_INVALID, 0, 0);
@@ -2811,7 +2841,7 @@ var update = function(opt_ignorePause) {
           if(f.hasCrop()) {
             var c = f.getCrop();
             if(state.challenge != challenge_wither && !c.istemplate) {
-              if(f.growth < 1 && c.type != CROPTYPE_SHORT) {
+              if(f.growth < 1 && c.type != CROPTYPE_BRASSICA) {
                 if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
                 state.g_numplanted--;
                 state.c_numplanted--;
@@ -2827,7 +2857,7 @@ var update = function(opt_ignorePause) {
             f.index = 0;
             f.growth = 0;
             computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
-            if(c.type == CROPTYPE_SHORT) {
+            if(c.type == CROPTYPE_BRASSICA) {
               if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
             } else {
               state.res.addInPlace(recoup);
@@ -2845,9 +2875,9 @@ var update = function(opt_ignorePause) {
           var c = action.crop;
           var cost = c.getCost();
           if(state.challenge != challenge_wither && !c.istemplate) {
-            if(c.type == CROPTYPE_SHORT) {
-              state.g_numplantedshort++;
-              state.c_numplantedshort++;
+            if(c.type == CROPTYPE_BRASSICA) {
+              state.g_numplantedbrassica++;
+              state.c_numplantedbrassica++;
             } else {
               state.g_numplanted++;
               state.c_numplanted++;
@@ -2860,13 +2890,17 @@ var update = function(opt_ignorePause) {
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
-          if(c.type == CROPTYPE_SHORT) f.growth = 1;
+          if(c.type == CROPTYPE_BRASSICA) {
+            var automated = (type == ACTION_REPLACE && action.by_automaton && orig_brassica);
+            if(automated) f.growth = orig_growth;
+            else f.growth = 1;
+          }
           if(state.challenge == challenge_wither) f.growth = 1;
           computeDerived(state); // correctly update derived stats based on changed field state
           if(!action.by_automaton) store_undo = true;
           var nextcost = c.getCost(0);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
-          if(state.c_numplanted + state.c_numplantedshort <= 1 && !c.istemplate && state.g_numresets < 5) {
+          if(state.c_numplanted + state.c_numplantedbrassica <= 1 && !c.istemplate && state.g_numresets < 5) {
             showMessage('Keep planting more crops on other field cells to get more income', C_HELP, 28466751);
           }
         }
@@ -3325,22 +3359,28 @@ var update = function(opt_ignorePause) {
           var p = prefield[y][x];
           var c = f.getCrop();
           var prod = Res();
-          if(c.type == CROPTYPE_SHORT || state.challenge == challenge_wither) {
-            var short = c.type == CROPTYPE_SHORT;
+          if(c.type == CROPTYPE_BRASSICA || state.challenge == challenge_wither) {
+            var short = c.type == CROPTYPE_BRASSICA;
             var croptime = short ? c.getPlantTime() : witherDuration();
             var g = d / croptime;
             var growth0 = f.growth;
             f.growth -= g;
-            if(f.growth <= 0) {
-              f.growth = 0;
-              // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses
-              var create_remainder = false;
-              if(short) {
-                if(p.touchnum >= 2) create_remainder = true;
-                if(p.touchnum == 1 && state.cropcount[short_0] <= 1 && state.specialfieldcount[FIELD_REMAINDER] == 0) create_remainder = true;
-                if(create_remainder) f.index = FIELD_REMAINDER;
+            var infinitelifetime = c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0;
+            var mingrowth = infinitelifetime ? 0.001 : 0;
+            if(f.growth <= mingrowth) {
+              if(c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0) {
+                f.growth = 0.00099;
+              } else {
+                f.growth = 0;
+                // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses
+                var create_remainder = false;
+                if(short) {
+                  if(p.touchnum >= 2) create_remainder = true;
+                  if(p.touchnum == 1 && state.cropcount[brassica_0] <= 1 && state.specialfieldcount[FIELD_REMAINDER] == 0) create_remainder = true;
+                  if(create_remainder) f.index = FIELD_REMAINDER;
+                }
+                if(!create_remainder) f.index = 0;
               }
-              if(!create_remainder) f.index = 0;
             }
             // it's ok to have the production when growth became 0: the nextEvent function ensures that we'll be roughly at the exact correct time where the transition happens (and the current time delta represents time where it was alive)
             prod = p.prod2;
@@ -3627,7 +3667,8 @@ var update = function(opt_ignorePause) {
         state.res.subInPlace(req2);
         showMessage(message, C_ETHEREAL, 48352772);
 
-        if(state.treelevel2 >= 1) {
+        showEtherealTreeLevelDialog(state.treelevel2);
+        if(state.treelevel2 == 1) {
           showRegisteredHelpDialog(22);
         }
 
@@ -3767,8 +3808,8 @@ var update = function(opt_ignorePause) {
         if(c2.unlocked) continue;
         if(c.prefun()) {
           c2.unlocked = true;
-          showMessage('Unlocked challenge: ' + upper(c.name), C_UNLOCK, 66240736, 0.75);
           showRegisteredHelpDialog(24);
+          showMessage('Unlocked challenge: ' + upper(c.name), C_UNLOCK, 66240736, 0.75);
         }
       }
     }
@@ -4146,7 +4187,7 @@ function showCropChips() {
   // Show plant that will be planted when holding down shift or ctrl or cmd, but
   // only if in the field tab and no dialogs are visible
   if(state.currentTab == tabindex_field && dialog_level == 0) {
-    var plant = cropChipShiftDown ? state.lastPlanted : short_0;
+    var plant = cropChipShiftDown ? state.lastPlanted : brassica_0;
     showShiftCropChip(plant);
   }
   if(state.currentTab == tabindex_field2 && dialog_level == 0) {

@@ -28,7 +28,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_FLOWERBOOST: return 'FB';
       case FRUIT_GROWSPEED: return 'G';
       case FRUIT_WEATHER: return 'WB';
-      case FRUIT_WATERCRESS: return 'WC';
+      case FRUIT_BRASSICA: return 'BC';
       case FRUIT_NETTLEBOOST: return 'NB';
       // S from "season", the actual season is known due to the fruit's name which includes the season in it
       case FRUIT_SPRING: return getSeason() == 0 ? 'S' : 's';
@@ -55,7 +55,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_FLOWERBOOST: return 'flower boost';
     case FRUIT_GROWSPEED: return 'growing speed';
     case FRUIT_WEATHER: return 'weather boost';
-    case FRUIT_WATERCRESS: return 'watercress copying';
+    case FRUIT_BRASSICA: return 'brassica copying';
     case FRUIT_NETTLEBOOST: return 'nettle boost';
     case FRUIT_SPRING: return 'spring boost';
     case FRUIT_SUMMER: return 'summer boost';
@@ -83,7 +83,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_FLOWERBOOST: return 'boosts flowers effect';
     case FRUIT_GROWSPEED: return 'reduces crop grow time (Before any other reductions. A soft cap applies.)';
     case FRUIT_WEATHER: return 'increases the weather effect abilities';
-    case FRUIT_WATERCRESS: return 'increases the copy effect of watercress';
+    case FRUIT_BRASSICA: return 'increases the copy effect of brassica (such as watercress)';
     case FRUIT_NETTLEBOOST: return 'boosts the nettle effect';
     case FRUIT_SPRING: return 'boosts the spring flower boost, only during the spring season';
     case FRUIT_SUMMER: return 'boosts the summer berry boost, only during the summer season';
@@ -226,7 +226,6 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         addAction({type:ACTION_FRUIT_FUSE, a:f, b:selected});
       }
     }
-    dialog.cancelFun();
     update();
     if(parentdialogrecreatefun) parentdialogrecreatefun(lastTouchedFruit);
   }, 'fuse');
@@ -1013,7 +1012,7 @@ function getFruitCategory(f) {
   if(getFruitAbilityFor(f, FRUIT_MUSHEFF) > 0 || getFruitAbilityFor(f, FRUIT_NETTLEBOOST) > 0) return 4;
   if(getFruitAbilityFor(f, FRUIT_TWIGSBOOST) > 0 || getFruitAbilityFor(f, FRUIT_RESINBOOST) > 0) return 3;
   if(getFruitAbilityFor(f, FRUIT_NUTBOOST) > 0) return 2;
-  if(getFruitAbilityFor(f, FRUIT_WATERCRESS) > 0) return 1;
+  if(getFruitAbilityFor(f, FRUIT_BRASSICA) > 0) return 1;
   return 0; // only production skills
 }
 

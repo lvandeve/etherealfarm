@@ -88,8 +88,8 @@ var fruitimageheader = 'l0:#800 l1:#c22 l2:#f44 l3:#f88';
 var nutsimageheader = 'l0:#744 l1:#b44 l2:#e66 l3:#f77';
 // a header for green plants, the difference with standard palette is that it has less shadow, so you can make subtler shades
 var subtleplantimageheader = 'l0:#600 l1:#822 l2:#a55 l3:#faa';
-
-
+// for watercress etc
+var brassicaimageheader = 'l0:#600 l1:#822 l2:#a55 l3:#faa hl:#af0 hh:#4f0';
 
 var fieldheader_spring = '+:#dbecc8 -:#b5d571';
 var fieldheader_summer = '+:#bda -:#ba5';
