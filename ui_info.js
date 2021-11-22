@@ -85,8 +85,8 @@ function prodBreakdown2() {
       var p = prefield[y][x];
       if(f.hasCrop()) {
         gain.addInPlace(p.prod2);
-        gain_pos.addInPlace(p.prod3.getPositive());
-        gain_neg.addInPlace(p.prod3.getNegative());
+        gain_pos.addInPlace(p.prod3b.getPositive());
+        gain_neg.addInPlace(p.prod3b.getNegative());
         gain_hyp.addInPlace(p.prod0b);
         gain_hyp_pos.addInPlace(p.prod0b.getPositive());
         gain_hyp_neg.addInPlace(p.prod0b.getNegative());

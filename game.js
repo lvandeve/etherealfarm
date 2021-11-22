@@ -902,8 +902,9 @@ function PreCell(x, y) {
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
   this.prod2 = new Res();
   // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. This is like prod0, but with leech added
-  // TODO: this comment may no longer be valid, verify: The sum of all prod3 on a field should be equal to the sum of all prod2. However, the sum of all prod2 will be more numerically precise than that of prod3.
-  this.prod3 = new Res();
+  // The sum of all prod3 on a field should be equal to the sum of all prod2. However, the sum of all prod2 will be more numerically precise than that of prod3.
+  this.prod3 = new Res(); // prod3 is used for the "satisfied%" tooltip of mushrooms
+  this.prod3b = new Res(); // prod3b is used for the gray "hypothetical" resource display in ui_info. TODO: document this difference better
   // used during wasabi challenge only as replacement for the zeroed out prod3, for UI display only
   this.prod3_wasabi_challenge = undefined;
   // idem for prod0
@@ -1378,7 +1379,8 @@ function precomputeField() {
       if(c) {
         var p = prefield[y][x];
         p.prod2 = new Res(p.prod1);
-        p.prod3 = new Res(p.prod0); // this is preparation for pass 5
+        p.prod3 = new Res(p.prod0);
+        p.prod3b = new Res(p.prod0); // this is preparation for pass 5
         if(c.type == CROPTYPE_MUSH) {
           if(p.wanted.seeds.eqr(0)) continue; // zero input required, so nothing to do (no current mushroom has this case though, but avoid NaNs if it'd happen)
           var ratio = p.gotten.seeds.div(p.wanted.seeds);
@@ -1386,9 +1388,8 @@ function precomputeField() {
           // if there was watercress leeching from this mushroom, then the amount may be less if the multiplied-by-leech input was not satisfied, but the output of the watercress makes up for that in a next pass
           p.prod2.spores.mulInPlace(ratio);
           p.prod2.seeds = Num(0); // they have been consumed, and already subtracted from the production of the berry so don't have the negative value here anymore
-          //p.prod3.spores.mulInPlace(ratio);
-          //p.prod3.seeds.mulInPlace(ratio);
-          //p.prod3.seeds = Num(0);
+          p.prod3.spores.mulInPlace(ratio);
+          p.prod3.seeds.mulInPlace(ratio);
         }
       }
     }
@@ -1430,18 +1431,20 @@ function precomputeField() {
                 // -for other resource types: these follow the seeds principle. e.g. for nuts. But consumption is not a factor here.
                 // NOTE: the seeds uses the scenario "mushrooms can consume everything, even negative". A different possible hypothetical display could be to display what happens if mushrooms have 0 consumption, and then leech3 could fully use p2.prod3.mul(leech) even for seeds. However, then there would always be gray display next to seeds income (since there'll always be a difference then), while now there's only gray display at seeds&spores in an overconsumption scenario, so not a good options to change the display into this.
                 var leech3 = p2.prod3.mul(leech);
-                leech3.seeds = p2.prod2.seeds.mul(leech);
+                var leech3b = p2.prod3b.mul(leech);
+                leech3b.seeds = p2.prod2.seeds.mul(leech);
                 // the full multiplied consumption amount caused by leech was already added in previous passes, so that shouldn't be included here anymore. prod2's negative seeds were already set to 0 in pass 4, but that checks croptype mush only, which is theoretically correct but to be sure it's set to 0 here again for good measure
                 if(leech2.seeds.ltr(0)) leech2.seeds = new Num(0);
-                if(leech3.seeds.ltr(0)) leech3.seeds = new Num(0);
+                if(soup && leech3.seeds.ltr(0)) leech3.seeds = new Num(0);
+                if(leech3b.seeds.ltr(0)) leech3b.seeds = new Num(0);
                 p.prod2.addInPlace(leech2);
                 p.prod3.addInPlace(leech3);
+                p.prod3b.addInPlace(leech3b);
                 // we could in theory add "leech0=p2.prod0.mul(leech)" instead of leech2 to the hypothetical production given by prod0b for UI reasons.
                 // however, then the hypothetical seed production may differ from the main seed production even when mushrooms have enough seeds to produce all spores
                 // and that is not the goal of the hypothetical production display. So instad add the actual leech. when adding leech0, then if you have champignon+blueberry+watercress (in that order, and with champignon satisfied), it'd display some hypothetical seds in gray parenthesis which is undesired
-                //p.prod0b.addInPlace(leech2);
-                p.prod0b.addInPlace(leech3);
-                total.addInPlace(leech3); // for the breakdown
+                p.prod0b.addInPlace(leech3b);
+                total.addInPlace(leech3b); // for the breakdown
                 num++;
               }
             }
@@ -1578,6 +1581,7 @@ function precomputeField() {
         p.prod1 = empty;
         p.prod2 = empty;
         p.prod3 = empty;
+        p.prod3b = empty;
       }
     }
   }
