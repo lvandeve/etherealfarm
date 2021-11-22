@@ -264,11 +264,11 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += 'Cost: ' + '<br>';
     result += ' • Base planting cost: ' + c.cost.toString() + '<br>';
     result += ' • Last planting cost: ' + c.getCost(-1).toString() + '<br>';
-    result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
+    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
 
     result += ' • Recoup on delete: ' + recoup.toString();
   } else {
-    result += ' • Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
+    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
     result += ' • Recoup on delete: ' + recoup.toString();
   }
 

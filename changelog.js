@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.91 (2021-11-21):';
+  text += '<br/>• Brassica/watercress winter penalty now removed when next to the tree (but no exception during the wasabi challenge anymore), so useful again during winter';
+  text += '<br/>• Bugfixes and UI tweaks: upgrades in message log setting, wasabi during wither challenge, another \'potential\' income display bugfix, ...';
+  text += '<br/>• Tweaks: new \'gated\' squirrel upgrade connector style, performance tweak related to infinite lifetime wasabi, added overlay text if game is computing multiple seasons after long inactivity...';
+  text += '<br/><br/>';
+
   text += '0.1.90 "Wasabi update" (2021-11-08):';
   text += '<br/>• Added wasabi, the next tier of watercress, with 25% more copying and lifetime, and a challenge to unlock it.';
   text += '<br/>• Watercress and wasabi are of type \'brassica\', and now this name is used where \'watercress\' was used before.';

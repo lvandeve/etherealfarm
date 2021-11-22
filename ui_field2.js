@@ -95,7 +95,7 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop2(f.x, f.y, upgrade_cost);
   if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/>• Upgrade cost: ' + upgrade_cost[0].toString();
+    result += '<br/>• <b>Upgrade cost</b>: ' + upgrade_cost[0].toString();
   }
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;

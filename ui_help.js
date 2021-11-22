@@ -279,7 +279,7 @@ registerHelpDialog(1, 'Transcension', 'You performed your first transcension! Yo
 registerHelpDialog(9, 'Ethereal upgrades', 'You unlocked your first ethereal upgrade!', 'You unlocked your first ethereal upgrade, thanks to planting an ethereal crop! Check the new "ethereal upgrades" tab to view this new type of upgrade. Ethereal upgrades cost resin, just like ethereal plants do, but ethereal upgrades are permanent and non-refundable, unlike ethereal crops which can be deleted give 100% refund');
 
 registerHelpDialog(17, 'Mistletoes', 'Unlocked a new crop: mistletoe',
-  'Unlocked a new crop: mistletoe. Mistletoe can be placed next to the basic field tree to create twigs, orthogonally, not diagonally. Twigs help the ethereal field tree. However having more than one mistletoe increases the spore requirement for leveling the basic tree and slightly decreases resin gain, and more mistletoes give diminishing returns (but still increases it). Mistletoes that are not planted next to the tree do nothing at all.',
+  'Unlocked a new crop: mistletoe. Mistletoe can be placed next to the basic field tree to create twigs, orthogonally, not diagonally. They produce twigs, which, like resin, you only actually get when transcending. Twigs help the ethereal field tree. However having more than one mistletoe increases the spore requirement for leveling the basic tree and slightly decreases resin gain, and more mistletoes give diminishing returns (but still increases it). Mistletoes that are not planted next to the tree do nothing at all.',
   mistletoe[4],
   '<br><br>'+
   'The image shows a possible configuration where mistletoes are next to the tree and thus give twigs on tree level up.',

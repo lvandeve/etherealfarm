@@ -61,7 +61,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
     case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
     case CROPTYPE_BRASSICA: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those. Unlike other crops, has limited lifetime.';
-    case CROPTYPE_MISTLETOE: return 'Produces twigs when tree levels up, when orthogonally next to the tree only. Having more than one increases level up spores requirement and slightly decreases resin gain.';
+    case CROPTYPE_MISTLETOE: return 'Produces twigs (which you receive on transcend) when tree levels up, when orthogonally next to the tree only. Having more than one increases level up spores requirement and slightly decreases resin gain.';
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
@@ -403,6 +403,8 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
 
 var flower_nut_boost = Num(0.25);
 
+//var seed_consumption_mul = 1.0; // for testing only
+
 // f = Cell from field, or undefined to not take location-based production bonuses into account
 // prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called
 // pretend: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
@@ -743,6 +745,10 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
   }
 
+  /*if(this.type == CROPTYPE_MUSH && seed_consumption_mul != 1.0) {
+    result.seeds.mulrInPlace(seed_consumption_mul); // for testing only
+  }*/
+
   return result;
 };
 
@@ -1052,7 +1058,11 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
 
   var season = getSeason();
 
-  var winter_weakness = season == 3 && state.challenge != challenge_wasabi;
+  var winter_weakness = season == 3;
+  if(f) {
+    var p = prefield[f.y][f.x];
+    if(p.treeneighbor) winter_weakness = false;
+  }
 
   if(winter_weakness) {
     var mul = winter_malus_brassica;
@@ -2923,7 +2933,7 @@ function() {
 // is an upgrade not available during challenge_noupgrades
 // that is all crop upgrades, except watercress
 function isNoUpgrade(u) {
-  return u.iscropupgrade && u.index != brassicamul_0;
+  return u.iscropupgrade && u.index != brassicamul_0 && u.index != brassicamul_1;
 }
 
 
@@ -3060,7 +3070,6 @@ var challenge_wasabi = registerChallenge('wasabi challenge', [65], Num(0.2),
 • You can only get income from brassica, such as watercress, and their copying effect.<br>
 • Mushrooms, berries, flowers and so on all still work as normal, but you need to ensure there's a brassica next to some berry, and a brassica next to some mushroom, to get income.<br>
 • The brassica copying fruit ability does not work during this challenge.<br>
-• Brassica aren't negatively affected by winter, they endure it during this challenge.<br>
 • As usual, having multiple brassica reduces the global brassica copying effect, max 2 or so works well.<br>
 `,
 ['Unlocks the wasabi crop, which is the next tier of brassica after watercress. Once unlocked, it\'s available in the base game once you have grown a juniper (berry tier 8), and can be used in re-runs of this challenge as well.'],
@@ -3619,7 +3628,7 @@ var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', LEVEL2, Res({resin:
 upgrade2_register_id = 99;
 var upgrade2_mistletoe = registerUpgrade2('unlock mistletoe', LEVEL2, Res({resin:25}), 1, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true}, 1, 'Unlock mistletoe crop in the basic field. This crop will allow leveling up the ethereal tree through a basic field mechanic giving twigs, and the ethereal tree levels then allow to get next sets of ethereal upgrades and crops. The mistletoe will become available in the basic field when mushrooms become available and then needs to then be unlocked with a regular upgrade first as usual. Then it can be planted next to the basic tree to start getting twigs. This ethereal upgrade is the first step in that process, and this is ultimately required to progress to next stages of the game.', undefined, undefined, mistletoe[3]);
+}, function(){return true}, 1, 'Unlock mistletoe crop in the basic field. This crop will allow leveling up the ethereal tree through a basic field mechanic giving twigs, and the ethereal tree levels then allow to get next sets of ethereal upgrades and crops. The mistletoe will become available in the basic field when mushrooms become available and then needs to then be unlocked with a regular upgrade first as usual. Then it can be planted next to the basic tree to start getting twigs (which you actually get on transcend, like resin). This ethereal upgrade is the first step in that process, and this is ultimately required to progress to next stages of the game.', undefined, undefined, mistletoe[3]);
 
 ///////////////////////////
 LEVEL2 = 1;

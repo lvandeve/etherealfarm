@@ -147,25 +147,34 @@ function encState(state, opt_raw_only) {
   section = 3; id = 0; // upgrades
   unlocked = [];
   for(var i = 0; i < registered_upgrades.length; i++) {
-    if(state.upgrades[registered_upgrades[i]].unlocked) unlocked.push(registered_upgrades[i]);
+    var add = false;
+    if(state.upgrades[registered_upgrades[i]].unlocked) add = true;
+    // also add those with seen2: it's possible an upgrade was seen in a previous run but not upgraded yet now
+    if(state.upgrades[registered_upgrades[i]].seen2) add = true;
+    if(add) unlocked.push(registered_upgrades[i]);
   }
   array0 = [];
   array1 = [];
   array2 = [];
   array3 = [];
+  array4 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'upgrades must be registered in increasing order';
     array0.push(unlocked[i] - prev);
     prev = unlocked[i];
-    array1.push(state.upgrades[unlocked[i]].seen);
-    array2.push(state.upgrades[unlocked[i]].count);
-    array3.push(state.upgrades[unlocked[i]].seen2);
+    array1.push(state.upgrades[unlocked[i]].unlocked);
+    array2.push(state.upgrades[unlocked[i]].seen2);
+    if(state.upgrades[unlocked[i]].unlocked) {
+      array3.push(state.upgrades[unlocked[i]].seen);
+      array4.push(state.upgrades[unlocked[i]].count);
+    }
   }
   processUintArray(array0);
   processBoolArray(array1);
-  processUintArray(array2);
+  processBoolArray(array2);
   processBoolArray(array3);
+  processUintArray(array4);
 
 
   section = 4; id = 0; // crops
@@ -869,43 +878,76 @@ function decState(s) {
 
 
   section = 3; id = 0; // upgrades
-  array0 = processUintArray();
-  array1 = processBoolArray();
-  array2 = processUintArray();
-  if(save_version >= 4096+1+65) array3 = processBoolArray();
-  else array3 = array1;
-  if(error) return err(4);
-  if(array0.length != array1.length || array0.length != array2.length) return err(4);
-  prev = 0;
-  for(var i = 0; i < array0.length; i++) {
-    var index = array0[i] + prev;
-    prev = index;
-    if(save_version < 4096*1+90) {
-      // more room for crop unlocks was made
-      if(index < 250 && index >= 125) index += (500 - 125);
-      else if(index < 300 && index >= 250) index += (1000 - 250);
-      else if(index < 350 && index >= 300) index -= 100;
-    }
-    if(!upgrades[index]) return err(4);
-    state.upgrades[index].unlocked = true;
-    state.upgrades[index].seen = array1[i];
-    state.upgrades[index].count = array2[i];
-    state.upgrades[index].seen2 = array3[i];
-    if(upgrades[index].deprecated) {
-      state.upgrades[index].unlocked = false;
-      state.upgrades[index].count = 0;
-      // this version, the choice upgrades changed from 2 separate ones, to a single one that uses "count" as the choice
-      if(save_version <= 4096*1+14) {
-        if(index == fern_choice0_b && array2[i]) {state.upgrades[fern_choice0].unlocked = true; state.upgrades[fern_choice0].count = 2;}
-        if(index == active_choice0_b && array2[i]) {state.upgrades[active_choice0].unlocked = true; state.upgrades[active_choice0].count = 2;}
+  if(save_version >= 4096*1+91) {
+    array0 = processUintArray();
+    array1 = processBoolArray();
+    array2 = processBoolArray();
+    array3 = processBoolArray();
+    array4 = processUintArray();
+    if(error) return err(4);
+    if(array0.length != array1.length || array0.length != array2.length || array3.length != array4.length || array3.length > array0.length) return err(4);
+    prev = 0;
+    var i2 = 0;
+    for(var i = 0; i < array0.length; i++) {
+      var index = array0[i] + prev;
+      prev = index;
+      if(!upgrades[index]) return err(4);
+      state.upgrades[index].unlocked = array1[i];
+      state.upgrades[index].seen2 = array2[i];
+      if(state.upgrades[index].unlocked) {
+        state.upgrades[index].seen = array3[i2];
+        state.upgrades[index].count = array4[i2];
+        i2++;
+      }
+      if(upgrades[index].deprecated) {
+        state.upgrades[index].unlocked = false;
+        state.upgrades[index].count = 0;
       }
     }
+  } else {
+    // old legacy way of storing upgrades with seen2 field bug
+    array0 = processUintArray();
+    array1 = processBoolArray();
+    array2 = processUintArray();
+    if(save_version >= 4096*1+65) array3 = processBoolArray();
+    else array3 = array1;
+    if(error) return err(4);
+    if(array0.length != array1.length || array0.length != array2.length) return err(4);
+    prev = 0;
+    for(var i = 0; i < array0.length; i++) {
+      var index = array0[i] + prev;
+      prev = index;
+      if(save_version < 4096*1+90) {
+        // more room for crop unlocks was made
+        if(index < 250 && index >= 125) index += (500 - 125);
+        else if(index < 300 && index >= 250) index += (1000 - 250);
+        else if(index < 350 && index >= 300) index -= 100;
+      }
+      if(!upgrades[index]) return err(4);
+      state.upgrades[index].unlocked = true;
+      state.upgrades[index].seen = array1[i];
+      state.upgrades[index].count = array2[i];
+      state.upgrades[index].seen2 = array3[i];
+      if(upgrades[index].deprecated) {
+        state.upgrades[index].unlocked = false;
+        state.upgrades[index].count = 0;
+        // this version, the choice upgrades changed from 2 separate ones, to a single one that uses "count" as the choice
+        if(save_version <= 4096*1+14) {
+          if(index == fern_choice0_b && array2[i]) {state.upgrades[fern_choice0].unlocked = true; state.upgrades[fern_choice0].count = 2;}
+          if(index == active_choice0_b && array2[i]) {state.upgrades[active_choice0].unlocked = true; state.upgrades[active_choice0].count = 2;}
+        }
+      }
+    }
+    if(save_version < 4096*1+75) {
+      //second nut tier got a lot more powerful and expensive, undo its upgrades
+      state.upgrades[nutunlock_1].count = 0; // nutunlock_1
+      state.upgrades[nutmul_1].count = 0; // nutmul_1
+    }
   }
-  if(save_version < 4096*1+75) {
-    //second nut tier got a lot more powerful and expensive, undo its upgrades
-    state.upgrades[301].count = 0; // nutunlock_1
-    state.upgrades[226].count = 0; // nutmul_1
-  }
+
+
+
+
 
 
   section = 4; id = 0; // crops
@@ -1198,9 +1240,9 @@ function decState(s) {
     return result;
   };
   state.reset_stats_level = deltaDec(processIntArray());
-  if(save_version >= 4096+1*26) {
+  if(save_version >= 4096*1+26) {
     state.reset_stats_level2 = deltaDec(processIntArray());
-    if(save_version >= 4096+1*63) {
+    if(save_version >= 4096*1+63) {
       state.reset_stats_time = deltaDecApproxFloat(processIntArray());
       state.reset_stats_total_resin = deltaDecApproxNum(processIntArray());
       state.reset_stats_challenge = deltaDec(processIntArray());
@@ -1212,7 +1254,7 @@ function decState(s) {
       state.reset_stats_total_resin = deltaDec(processIntArray());
       for(var i = 0; i < state.reset_stats_total_resin.length; i++) state.reset_stats_total_resin[i] = Num.pow(Num(2), Num(state.reset_stats_total_resin[i])).subr(1);
       state.reset_stats_challenge = deltaDec(processIntArray());
-      if(save_version >= 4096+1*44) {
+      if(save_version >= 4096*1+44) {
         state.reset_stats_resin = deltaDec(processIntArray());
         for(var i = 0; i < state.reset_stats_resin.length; i++) state.reset_stats_resin[i] = Num.pow(Num(2), Num(state.reset_stats_resin[i])).subr(1);
       }

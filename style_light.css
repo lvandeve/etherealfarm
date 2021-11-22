@@ -170,6 +170,11 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   background-color: #000;
 }
 
+.efConnectorTriangle {
+  background-color: #000;
+  clip-path: polygon(0% 0%, 50% 100%, 100% 0%)
+}
+
 .efSquirrelBought {
   background-color: #4a4;
   color: #000;

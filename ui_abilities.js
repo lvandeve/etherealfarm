@@ -267,12 +267,12 @@ function refreshWatercress(opt_clear, opt_all) {
       }
     }
   }
-  if(fullyplanted) showMessage('planting watercress');
-  else if(replanted) showMessage('replanting watercress');
-  else if(refreshed) showMessage(opt_clear ? 'deleting watercress' : 'refreshing watercress');
-  else if(remcleared) showMessage('cleared watercress remainders');
-  else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing watercress or remainders of watercress, and requires enough resources available to plant the watercress');
-  else showMessage('nothing done: only refreshes existing watercress or remainders of watercress');
+  if(fullyplanted) showMessage('planting brassica');
+  else if(replanted) showMessage('replanting brassica');
+  else if(refreshed) showMessage(opt_clear ? 'deleting brassica' : 'refreshing brassica');
+  else if(remcleared) showMessage('cleared brassica remainders');
+  else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing brassica or remainders of brassica, and requires enough resources available to plant the brassica');
+  else showMessage('nothing done: only refreshes existing brassica or remainders of brassica');
   update();
 }
 

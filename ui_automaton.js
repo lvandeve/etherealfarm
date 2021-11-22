@@ -32,7 +32,7 @@ function showConfigureAutoResourcesDialog(subject) {
   var statefraction;
 
   if(subject == 0) {
-    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'watercress'];
+    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'brassica'];
     order = [3, 4, 5, 6, 7, 2]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     if(squirrelUnlocked()) {
       typenames.push('nuts');
@@ -45,7 +45,7 @@ function showConfigureAutoResourcesDialog(subject) {
     typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
     order = [3, 4, 5, 6, 7, 8]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
     if(subject == 1) {
-      typenames.push('watercress');
+      typenames.push('brassica');
       order.push(2);
       statefraction = state.automaton_autoplant_fraction;
     } else {

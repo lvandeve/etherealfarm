@@ -892,7 +892,7 @@ function PreCell(x, y) {
   // before consumption/production computation. not taking any leech into account (multiply prod or cons with 1+leech if that's needed, or see prod0b below)
   // useful for UI that shows the potential production of a mushroom if it hypothetically got as many seeds as needed from neighbors
   this.prod0 = new Res();
-  // for UI only, like prod0, but with final leech added. Not to be used in any computation. Represents the potential rather than actual production/consumption.
+  // for UI only, like prod0, but with final leech added. Not to be used in any computation. Represents the potential (hypothetical) rather than actual production/consumption.
   this.prod0b = new Res();
   // during consumption/production computation, not useful for any UI, intermediate stage only
   this.prod1 = new Res();
@@ -901,7 +901,8 @@ function PreCell(x, y) {
   // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
   this.prod2 = new Res();
-  // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. The sum of all prod3 on a field should be equal to the sum of all prod2. Also contains leech like prod2 does. However, the sum of all prod2 will be more numerically precise than that of prod3.
+  // for UI only, here the consumption is not zeroed out but negative, and is not subtracted from producers. This is like prod0, but with leech added
+  // TODO: this comment may no longer be valid, verify: The sum of all prod3 on a field should be equal to the sum of all prod2. However, the sum of all prod2 will be more numerically precise than that of prod3.
   this.prod3 = new Res();
   // used during wasabi challenge only as replacement for the zeroed out prod3, for UI display only
   this.prod3_wasabi_challenge = undefined;
@@ -1217,6 +1218,7 @@ function precomputeField() {
       var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
+          // this computation is only used for mushroom seed consumption, so it's ok to not compute the leech value for nuts here.
           var leech = c.getLeech(f);
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -1375,8 +1377,8 @@ function precomputeField() {
       var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
-        p.prod2 = Res(p.prod1);
-        p.prod3 = Res(p.prod0);
+        p.prod2 = new Res(p.prod1);
+        p.prod3 = new Res(p.prod0); // this is preparation for pass 5
         if(c.type == CROPTYPE_MUSH) {
           if(p.wanted.seeds.eqr(0)) continue; // zero input required, so nothing to do (no current mushroom has this case though, but avoid NaNs if it'd happen)
           var ratio = p.gotten.seeds.div(p.wanted.seeds);
@@ -1384,8 +1386,9 @@ function precomputeField() {
           // if there was watercress leeching from this mushroom, then the amount may be less if the multiplied-by-leech input was not satisfied, but the output of the watercress makes up for that in a next pass
           p.prod2.spores.mulInPlace(ratio);
           p.prod2.seeds = Num(0); // they have been consumed, and already subtracted from the production of the berry so don't have the negative value here anymore
-          p.prod3.spores.mulInPlace(ratio);
-          p.prod3.seeds.mulInPlace(ratio);
+          //p.prod3.spores.mulInPlace(ratio);
+          //p.prod3.seeds.mulInPlace(ratio);
+          //p.prod3.seeds = Num(0);
         }
       }
     }
@@ -1401,7 +1404,7 @@ function precomputeField() {
       var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
-          var leech = c.getLeech(f);
+          var leech_main = c.getLeech(f);
           var leech_nuts = c.getLeech(f, undefined, true);
           var p = prefield[y][x];
           total.reset();
@@ -1416,17 +1419,28 @@ function precomputeField() {
               if(c2.type != CROPTYPE_BRASSICA) p.touchnum++;
               var p2 = prefield[y2][x2];
               if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
-                var leech1 = (c2.type == CROPTYPE_NUT) ? leech_nuts : leech;
-                var leech2 = p2.prod2.mul(leech1);
-                var leech3 = p2.prod3.mul(leech1);
-                if(soup && leech2.seeds.ltr(0)) leech2.seeds = new Num(0);
-                if(soup && leech3.seeds.ltr(0)) leech3.seeds = new Num(0);
+                // leech ratio that applies here
+                var leech = (c2.type == CROPTYPE_NUT) ? leech_nuts : leech_main;
+                // leeched resources
+                var leech2 = p2.prod2.mul(leech);
+                // leeched resources for UI only with possibly negative consumption (see description of prod3, is used for the hypothetical display)
+                // why spores and seeds are computed differently: because this is for the gray hypothetical income if mushrooms are overconsuming seeds display in the info UI, and then specifically for watercress
+                // -for spores: this displays the max spores you could get (from this watercress if it's next to a mushroom), if mushrooms were free to consume as much as they wanted, in other words if mushrooms would simply produce spores without even needing consumption. prod3 (similar to prod0 at this point) contains that theoretical max spores production
+                // -for seeds: this displays the amount of seeds this watercress extracts from the berry after the max possible consumption from neighboring mushrooms applied, but never lower than 0. So this should not get the value from prod3, which shows the max theoretical seeds production. Unlike spores, the gray display for seeds is not a theoretical max, but instead it's a theoretical minimum, if mushrooms could consume all seeds making this one negative. prod2 has the correct value here: the berry's seeds after consumption applied, but capped to not be lower than 0 (watercress won't duplicate negative production)
+                // -for other resource types: these follow the seeds principle. e.g. for nuts. But consumption is not a factor here.
+                // NOTE: the seeds uses the scenario "mushrooms can consume everything, even negative". A different possible hypothetical display could be to display what happens if mushrooms have 0 consumption, and then leech3 could fully use p2.prod3.mul(leech) even for seeds. However, then there would always be gray display next to seeds income (since there'll always be a difference then), while now there's only gray display at seeds&spores in an overconsumption scenario, so not a good options to change the display into this.
+                var leech3 = p2.prod3.mul(leech);
+                leech3.seeds = p2.prod2.seeds.mul(leech);
+                // the full multiplied consumption amount caused by leech was already added in previous passes, so that shouldn't be included here anymore. prod2's negative seeds were already set to 0 in pass 4, but that checks croptype mush only, which is theoretically correct but to be sure it's set to 0 here again for good measure
+                if(leech2.seeds.ltr(0)) leech2.seeds = new Num(0);
+                if(leech3.seeds.ltr(0)) leech3.seeds = new Num(0);
                 p.prod2.addInPlace(leech2);
                 p.prod3.addInPlace(leech3);
                 // we could in theory add "leech0=p2.prod0.mul(leech)" instead of leech2 to the hypothetical production given by prod0b for UI reasons.
                 // however, then the hypothetical seed production may differ from the main seed production even when mushrooms have enough seeds to produce all spores
                 // and that is not the goal of the hypothetical production display. So instad add the actual leech. when adding leech0, then if you have champignon+blueberry+watercress (in that order, and with champignon satisfied), it'd display some hypothetical seds in gray parenthesis which is undesired
-                p.prod0b.addInPlace(leech2);
+                //p.prod0b.addInPlace(leech2);
+                p.prod0b.addInPlace(leech3);
                 total.addInPlace(leech3); // for the breakdown
                 num++;
               }
@@ -2113,7 +2127,9 @@ function nextEventTime() {
       var c = f.getCrop();
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
-          addtime(c.getPlantTime() * (f.growth));
+          // watercress needs regular updates, but don't do that when it's a end-of-life wasabi, since once it has that state it doesn't change any further, and stays forever, that'd make long game updates very slow
+          var infinitelifetime = c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0;
+          if(!(infinitelifetime && f.growth == 0)) addtime(c.getPlantTime() * (f.growth));
         } else if(state.challenge == challenge_wither) {
           //addtime(witherDuration() * (f.growth));
           // since the income value of the crop changes over time as it withers, return a short time interval so the computation happens correctly during the few minutes the withering happens.
@@ -2243,7 +2259,6 @@ var update = function(opt_ignorePause) {
   update_prev_state_ctor_count = state_ctor_count;
 
   var update_fruit_ui = false;
-
 
   if(!prefield || !prefield.length) {
     if(!paused_ || update_ui_paused) precomputeField(); // do this even before the paused check, because some UI elements use prefield
@@ -2793,10 +2808,11 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
-          if(state.challenge == challenge_nodelete && f.index != CROPINDEX + brassica_0 && f.growth >= 1 && !f.isTemplate()) {
+          var is_brassica = f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA;
+          if(state.challenge == challenge_nodelete && !is_brassica && f.growth >= 1 && !f.isTemplate()) {
             showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
             ok = false;
-          } else if(state.challenge == challenge_wither && f.index != CROPINDEX + brassica_0 && !f.isTemplate()) {
+          } else if(state.challenge == challenge_wither && !is_brassica && !f.isTemplate()) {
             var more_expensive_same_type = type == ACTION_REPLACE && f.hasCrop() && action.crop.cost.gt(f.getCrop().cost) && action.crop.type == f.getCrop().type;
             if(!more_expensive_same_type) {
               showMessage('Cannot delete or downgrade crops during the wither challenge, but they\'ll naturally disappear over time. However, you can replace crops with more expensive crops (see the replace dialog).', C_INVALID, 0, 0);
@@ -3365,11 +3381,9 @@ var update = function(opt_ignorePause) {
             var g = d / croptime;
             var growth0 = f.growth;
             f.growth -= g;
-            var infinitelifetime = c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0;
-            var mingrowth = infinitelifetime ? 0.001 : 0;
-            if(f.growth <= mingrowth) {
-              if(c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0) {
-                f.growth = 0.00099;
+            if(f.growth <= 0) {
+              if(c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0 && state.challenge != challenge_wither) {
+                f.growth = 0; // its growth is 0, but it'll have infinite "post-wither" lifetime
               } else {
                 f.growth = 0;
                 // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses

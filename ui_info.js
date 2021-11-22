@@ -27,6 +27,7 @@ var gain = Res();
 var gain_pos = Res();
 var gain_neg = Res();
 
+// hypothetical gain: if mushrooms were not limited by seed consumption
 var gain_hyp = Res();
 var gain_hyp_pos = Res();
 var gain_hyp_neg = Res();
@@ -447,12 +448,12 @@ function updateResourceUI() {
       }
       if(s == 3) {
         result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower stats when not next to the tree<br>';
+        result += '• Brassica frost: -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying and -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying fruit ability when not next to the tree<br>';
         var winterwarmth_location_text = state.upgrades2[upgrade2_diagonal].count ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
         result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats (also consumption) and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
         if(state.upgrades2[upgrade2_season2[s]].count) {
           result += '• Winter tree warmth for flowers: ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' (ethereal upgrade)<br>';
         }
-        result += '• Brassica frost: -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying and -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying fruit ability<br>';
         result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
       }
       result += '<br>';

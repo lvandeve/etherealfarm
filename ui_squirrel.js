@@ -17,10 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 
-function getUpgrade3InfoText(u, gated, unknown) {
+function getUpgrade3InfoText(u, gated, is_gate, unknown) {
   var infoText = 'Squirrel upgrade: ' + (unknown ? '???' : u.name);
   infoText += '<br><br>';
-  if(gated) {
+  if(gated || is_gate) {
     infoText += 'Gated: you must buy all squirrel upgrades that come before this, including side branches above, before this one unlocks.';
     infoText += '<br><br>';
   }
@@ -114,7 +114,9 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   var unknown = buyable >= 4 && s2.seen[b] <= d;
   var known = buyable >= 4 && s2.seen[b] > d; // seen before, so name is revealed instead of '???', but otherwise still rendered with the color of an unknown chip.
 
-  var infoText = getUpgrade3InfoText(u, gated, unknown);
+  var is_gate = stage.gated;
+
+  var infoText = getUpgrade3InfoText(u, gated, is_gate, unknown);
 
   //var textFlex = new Flex(flex, [0, 0, 0.9], 0, 1, 0.97, (gated ? 0.7 : 1));
   var textFlex = new Flex(flex, [0, 0, 0.9], 0, 1, 0.97, 0.9);
@@ -130,6 +132,8 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   else if(gated) flex.div.className = 'efSquirrelGated';
   else flex.div.className = 'efSquirrelUnknown';
 
+  //if(is_gate) flex.div.style.borderWidth = '2px';
+
   var canvasFlex = new Flex(flex, [0, 0, 0.05], [0, 0, 0.15], [0, 0, 0.8], [0, 0, 0.9]);
   canvasFlex.clear();
   canvasFlex.div.style.backgroundColor = '#ccc';
@@ -144,10 +148,10 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   else if(canbuy) text += '<br>Buy';
   else if(bought) text += '<br>Bought';
 
-  var showbuy = canbuy || gated;
+  var showbuy = (canbuy || gated) && !bought;
 
   var buyfun = undefined;
-  if(showbuy || (state.g_numrespec3 > 0 && !unknown)) {
+  if(showbuy || (state.g_numrespec3 > 0 && !unknown && !bought)) {
     buyfun = function(e) {
       if(state.g_numrespec3 > 0 && !showbuy) {
         buyAllSquirrelUpgradesUpTo(stage, b, d);
@@ -179,7 +183,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
         buyfun(e);
       };
       buyname = 'Buy';
-    } else if(state.g_numrespec3 > 0 && !unknown) {
+    } else if(state.g_numrespec3 > 0 && !unknown && !bought) {
       buyfun2 = function(e) {
         buyAllSquirrelUpgradesUpTo(stage, b, d);
         if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
@@ -196,7 +200,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
 
   textFlex.div.textEl.innerHTML = text;
   registerTooltip(flex.div, function() {
-    return getUpgrade3InfoText(u, gated, unknown);
+    return getUpgrade3InfoText(u, gated, is_gate, unknown);
   }, true);
 }
 
@@ -233,6 +237,8 @@ function renderStage(scrollflex, stage, y) {
     var us = u3[b];
     var y2 = y0;
 
+    var is_gate = stage.gated;
+
     for(var i = 0; i < us.length; i++) {
       var u = upgrades3[us[i]];
       var y2o = y2;
@@ -243,8 +249,13 @@ function renderStage(scrollflex, stage, y) {
 
       if(i > 0 || b == 1) {
         //var connector = new Flex(scrollflex, [0.1 + (b + 0.5) * 0.25, -0.05], y2 + h, [0.05 + (b + 0.5) * 0.25, 0.05], y2 + h2);
-        var connector = new Flex(scrollflex, (b + 0.5) * 0.33 - connectorwidth, y2o + h - h2, (b + 0.5) * 0.33 + connectorwidth, y2);
+        var connector = new Flex(scrollflex, (b + 0.5) * 0.33 - connectorwidth, y2o + h - h2, (b + 0.5) * 0.33 + connectorwidth, y2 - (is_gate ? 0.014 : 0));
         connector.div.className = 'efConnector';
+        if(is_gate) {
+          // down pointing triangle
+          var connector = new Flex(scrollflex, (b + 0.5) * 0.33 - connectorwidth, y2 - 0.015, (b + 0.5) * 0.33 + connectorwidth, y2);
+          connector.div.className = 'efConnectorTriangle';
+        }
       }
       y2 += h2;
     }

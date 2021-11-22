@@ -172,18 +172,30 @@ function initUI() {
 
 var pausedflex = undefined;
 var pausedcanvaspaused = false;
+var pausedflextext = undefined; // because reading .innerText is slow
 
 function updatePausedUI() {
-  if(state.paused && !pausedflex) {
+  var needflex = state.paused || large_time_delta;
+
+  if(needflex && !pausedflex) {
     pausedflex = new Flex(contentFlex, 0, 0, 1, 1, 2);
     centerText2(pausedflex.div);
-    pausedflex.div.textEl.innerText = 'Paused';
     pausedflex.div.style.pointerEvents = 'none';
     pausedflex.div.style.color = '#f008';
-  } else if(!state.paused && pausedflex) {
+  } else if(!needflex && pausedflex) {
     pausedflex.removeSelf(contentFlex);
     pausedflex = undefined;
+    pausedflextext = undefined;
   }
+
+  if(state.paused && pausedflextext != 'Paused') {
+    pausedflextext = 'Paused';
+    pausedflex.div.textEl.innerText = pausedflextext;
+  } else if(large_time_delta && pausedflextext != 'Computing') {
+    pausedflextext = 'Computing';
+    pausedflex.div.textEl.innerText = pausedflextext;
+  }
+
   if(state.paused && !pausedcanvaspaused) {
     pausedcanvaspaused = true;
     renderImage(image_paused, pauseButtonCanvas);
