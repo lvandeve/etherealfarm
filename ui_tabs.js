@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var tabbuttons;
 var tabs;
+var numtabs = 0;
 
 
 var upgradesButtonLastText = '';
@@ -245,7 +246,8 @@ function updateTabButtons2() {
 
   tabnum = tabindex_upgrades2;
   if(tabbuttons[tabnum]) {
-    var text = 'ethereal upgrades<br/>(' + state.upgrades2_affordable + '/' + state.upgrades2_upgradable + ')';
+    var text = (numtabs > 9) ? 'eth. upgrades' : 'ethereal upgrades';
+    text += '<br/>(' + state.upgrades2_affordable + '/' + state.upgrades2_upgradable + ')';
     if(state.upgrades2_new) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
@@ -307,7 +309,6 @@ function updateTabButtons2() {
 // also creates them if they didn't exist yet, or re-creates if positions change
 // TODO: avoid recreating the HTML elements if the ones that will be created are the exact same set as before
 function updateTabButtons() {
-
   var wanted = [];
   wanted[tabindex_field] = true;
   wanted[tabindex_upgrades] = state.upgrades_unlocked > 0;
@@ -323,6 +324,7 @@ function updateTabButtons() {
   for(var i = 0; i < wanted.length; i++) {
     if(wanted[i]) num++;
   }
+  numtabs = num;
 
   if(num == 1) {
     // if there's only one, then hide the tabs completely

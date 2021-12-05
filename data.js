@@ -703,6 +703,22 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, result.clone()]);
   }
 
+  if(state.upgrades3[upgrade3_highest_level].count && state.g_treelevel > upgrade3_highest_level_min) {
+    //var bonus = Num(upgrade3_highest_level_base).pow(Num(state.g_treelevel - upgrade3_highest_level_min));
+    var diff = state.g_treelevel - upgrade3_highest_level_min;
+    var bonus = Num(diff * upgrade3_highest_level_param1 + 1).powr(upgrade3_highest_level_param2);
+    result.mulInPlace(bonus);
+    if(breakdown) breakdown.push(['highest tree level ever ' + state.g_treelevel + ' (squirrel upgrade)', true, bonus, result.clone()]);
+  }
+
+  if(state.upgrades3[upgrade3_leveltime].count) {
+    var time = timeAtTreeLevel(state);
+    if(time > upgrade3_leveltime_maxtime) time = upgrade3_leveltime_maxtime;
+    var bonus = Num(1 + time * upgrade3_leveltime_maxbonus / upgrade3_leveltime_maxtime);
+    result.mulInPlace(bonus);
+    if(breakdown) breakdown.push(['time at level: ' + util.formatDuration(time), true, bonus, result.clone()]);
+  }
+
   // bee challenge
   if(state.challenge == challenge_bees) {
     var bonus_bees = getWorkerBeeBonus().addr(1);
@@ -984,6 +1000,17 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
         result.mulInPlace(bonus);
         if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
       }
+    }
+  }
+
+  // multiplicity
+  if((this.type == CROPTYPE_BEE) && haveMultiplicity(this.type)) {
+    // multiplicity only works by fully grown crops, not for intermediate growing ones
+    var num = getMultiplicityNum(this);
+    if(num > 0) {
+      var boost = getMultiplicityBonusBase(this.type).mulr(num).addr(1);
+      result.mulInPlace(boost);
+      if(breakdown) breakdown.push(['multiplicity (' + ((num == Math.floor(num)) ? num.toString() : num.toPrecision(3)) + ')', true, boost, result.clone()]);
     }
   }
 
@@ -1328,7 +1355,8 @@ var berry_10 = registerBerry('mulberry', 10, berryplanttime0 * 40, mulberry);
 var berry_11 = registerBerry('physalis', 11, berryplanttime0 * 45, physalis);
 var berry_12 = registerBerry('raspberry', 12, berryplanttime0 * 50, raspberry);
 var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'Actually not a berry, but in this game it acts as one');
-var berry_14 = registerBerry('whitecurrant', 14, berryplanttime0 * 60, whitecurrant);
+var berry_14 = registerBerry('wampee', 14, berryplanttime0 * 60, images_wampee);
+var berry_15 = registerBerry('whitecurrant', 15, berryplanttime0 * 65, whitecurrant);
 
 // mushrooms: give spores
 crop_register_id = 50;
@@ -1336,9 +1364,10 @@ var mush_0 = registerMushroom('champignon', 0, mushplanttime0 * 1, champignon);
 var mush_1 = registerMushroom('matsutake', 1, mushplanttime0 * 3, matsutake);
 var mush_2 = registerMushroom('morel', 2, mushplanttime0 * 6, morel);
 var mush_3 = registerMushroom('muscaria', 3, mushplanttime0 * 10, amanita, 'amanita muscaria'); // names are alphabetical, but amanita counts as "muscaria" because it's not well suited to be the lowest tier mushroom with letter a
-var mush_4 = registerMushroom('portobello', 4, mushplanttime0 * 15, portobello);
-var mush_5 = registerMushroom('shiitake', 5, mushplanttime0 * 20, shiitake);
-var mush_6 = registerMushroom('truffle', 6, mushplanttime0 * 25, truffle);
+var mush_4 = registerMushroom('oyster mushroom', 4, mushplanttime0 * 15, images_oyster);
+var mush_5 = registerMushroom('portobello', 5, mushplanttime0 * 20, portobello);
+var mush_6 = registerMushroom('shiitake', 6, mushplanttime0 * 25, shiitake);
+var mush_7 = registerMushroom('truffle', 7, mushplanttime0 * 30, truffle);
 
 var fower_base = Num(0.5);
 var flower_increase = Num(16);
@@ -1390,9 +1419,9 @@ var nut_3  = registerNut('cashew', 3, nutplanttime0 * 4, images_cashew);
 var nut_4  = registerNut('chestnut', 4, nutplanttime0 * 5, images_chestnut);
 var nut_5  = registerNut('coconut', 5, nutplanttime0 * 6, images_coconut);
 var nut_6  = registerNut('hazelnut', 6, nutplanttime0 * 7, images_hazelnut);
-var nut_7  = registerNut('macadamia', 7, nutplanttime0 * 8, undefined);
-var nut_8  = registerNut('peanut', 8, nutplanttime0 * 9, undefined);
-var nut_9  = registerNut('pili nut', 9, nutplanttime0 * 10, undefined);
+var nut_7  = registerNut('macadamia nut', 7, nutplanttime0 * 8, images_macademia);
+var nut_8  = registerNut('peanut', 8, nutplanttime0 * 9, images_peanut);
+var nut_9  = registerNut('pili nut', 9, nutplanttime0 * 10, images_pili);
 var nut_10  = registerNut('pine nut', 10, nutplanttime0 * 11, undefined);
 var nut_11 = registerNut('pistachio', 11, nutplanttime0 * 12, undefined);
 var nut_12 = registerNut('walnut', 12, nutplanttime0 * 13, undefined);
@@ -1860,6 +1889,7 @@ var berryunlock_11 = registerCropUnlock(berry_11, getBerryCost(11), berry_10);
 var berryunlock_12 = registerCropUnlock(berry_12, getBerryCost(12), berry_11);
 var berryunlock_13 = registerCropUnlock(berry_13, getBerryCost(13), berry_12);
 var berryunlock_14 = registerCropUnlock(berry_14, getBerryCost(14), berry_13);
+var berryunlock_15 = registerCropUnlock(berry_15, getBerryCost(15), berry_14);
 
 upgrade_register_id = 50;
 var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), berry_1, undefined, function() {
@@ -1872,6 +1902,7 @@ var mushunlock_3 = registerCropUnlock(mush_3, getMushroomCost(3), berry_7, funct
 var mushunlock_4 = registerCropUnlock(mush_4, getMushroomCost(4), berry_9, function(){return !!state.upgrades[mushunlock_3].count;});
 var mushunlock_5 = registerCropUnlock(mush_5, getMushroomCost(5), berry_11, function(){return !!state.upgrades[mushunlock_4].count;});
 var mushunlock_6 = registerCropUnlock(mush_6, getMushroomCost(6), berry_13, function(){return !!state.upgrades[mushunlock_5].count;});
+var mushunlock_7 = registerCropUnlock(mush_7, getMushroomCost(7), berry_15, function(){return !!state.upgrades[mushunlock_6].count;});
 
 upgrade_register_id = 75;
 var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), berry_2, undefined, function() {
@@ -1956,17 +1987,14 @@ var nutunlock_6 = registerCropUnlock(nut_6, getNutCost(6), nut_5, function(){
   return true;
 });
 var nutunlock_7 = registerCropUnlock(nut_7, getNutCost(7), nut_6, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_8 = registerCropUnlock(nut_8, getNutCost(8), nut_7, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_9 = registerCropUnlock(nut_9, getNutCost(9), nut_8, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
@@ -2050,6 +2078,7 @@ var berrymul_11 = registerCropMultiplier(berry_11, berry_upgrade_power_increase,
 var berrymul_12 = registerCropMultiplier(berry_12, berry_upgrade_power_increase, 1, berryunlock_12);
 var berrymul_13 = registerCropMultiplier(berry_13, berry_upgrade_power_increase, 1, berryunlock_13);
 var berrymul_14 = registerCropMultiplier(berry_14, berry_upgrade_power_increase, 1, berryunlock_14);
+var berrymul_15 = registerCropMultiplier(berry_15, berry_upgrade_power_increase, 1, berryunlock_15);
 
 upgrade_register_id = 525;
 var mushmul_0 = registerCropMultiplier(mush_0, mushroom_upgrade_power_increase, 1, mushunlock_0);
@@ -2059,6 +2088,7 @@ var mushmul_3 = registerCropMultiplier(mush_3, mushroom_upgrade_power_increase, 
 var mushmul_4 = registerCropMultiplier(mush_4, mushroom_upgrade_power_increase, 1, mushunlock_4);
 var mushmul_5 = registerCropMultiplier(mush_5, mushroom_upgrade_power_increase, 1, mushunlock_5);
 var mushmul_6 = registerCropMultiplier(mush_6, mushroom_upgrade_power_increase, 1, mushunlock_6);
+var mushmul_7 = registerCropMultiplier(mush_7, mushroom_upgrade_power_increase, 1, mushunlock_7);
 
 upgrade_register_id = 550;
 var flowermul_0 = registerBoostMultiplier(flower_0, getFlowerCost(0).mulr(flower_upgrade_initial_cost), flower_upgrade_power_increase, 1, flowerunlock_0, flower_upgrade_cost_increase);
@@ -2481,6 +2511,7 @@ registerPlantTypeMedals(berry_11);
 registerPlantTypeMedals(berry_12);
 registerPlantTypeMedals(berry_13);
 registerPlantTypeMedals(berry_14);
+registerPlantTypeMedals(berry_15);
 medal_register_id = 320;
 registerPlantTypeMedals(mush_0);
 registerPlantTypeMedals(mush_1);
@@ -2489,6 +2520,7 @@ registerPlantTypeMedals(mush_3);
 registerPlantTypeMedals(mush_4);
 registerPlantTypeMedals(mush_5);
 registerPlantTypeMedals(mush_6);
+registerPlantTypeMedals(mush_7);
 medal_register_id = 400;
 registerPlantTypeMedals(flower_0);
 registerPlantTypeMedals(flower_1);
@@ -2517,6 +2549,9 @@ registerPlantTypeMedal(nut_3, 1);
 registerPlantTypeMedal(nut_4, 1);
 registerPlantTypeMedal(nut_5, 1);
 registerPlantTypeMedal(nut_6, 1);
+registerPlantTypeMedal(nut_7, 1);
+registerPlantTypeMedal(nut_8, 1);
+registerPlantTypeMedal(nut_9, 1);
 
 // was: 600
 medal_register_id = 1000;
@@ -3932,7 +3967,7 @@ function getFruitBoost(ability, level, tier) {
     /*var amount = towards1(level, 10);
     var max = 1 + tier * 0.2;
     return Num(max * amount);*/
-    return Num(base * 1.5 * level);
+    return Num(base * 1.25 * level);
   }
   if(ability == FRUIT_GROWSPEED) {
     var amount = towards1(level, 5);
@@ -4004,7 +4039,20 @@ function isInherentAbility(ability) {
 
 // cost for next level if ability is at this level
 function getFruitAbilityCost(ability, level, tier) {
-  var result = Num(1.5).powr(level);
+  var result;
+
+  var nonlinearability = false;
+  if(ability == FRUIT_MUSHEFF) nonlinearability = true;
+  if(ability == FRUIT_GROWSPEED) nonlinearability = true;
+  if(ability == FRUIT_RESINBOOST) nonlinearability = true;
+  if(ability == FRUIT_TWIGSBOOST) nonlinearability = true;
+  if(ability == FRUIT_NUTBOOST) nonlinearability = true;
+
+  if(nonlinearability) {
+   result = Num(1.5).powr(level);
+  } else {
+   result = Num(1.25).powr(level);
+  }
   result = result.mulr(getFruitTierCost(tier));
 
   return Res({essence:result});
@@ -4035,6 +4083,42 @@ function getFruitTierCost(tier) {
     case 10: return 6000;
   }
   return 10000;
+}
+
+// if due to a game update the costs of certain abilities of fruits changes, this recomputes the correct amount of essence spent
+function correctifyFruitCost(f) {
+  //if(f.essence.eqr(0)) return; // a fruit in which no upgrades have been done, no need to spend time checking this one
+
+  var ess = new Num(0);
+  for(var i = 0; i < f.abilities.length; i++) {
+    var ability = f.abilities[i];
+    if(isInherentAbility(ability) || ability == FRUIT_NONE) continue;
+    var level = f.levels[i];
+    for(var j = f.starting_levels[i]; j < level; j++) {
+      var cost = getFruitAbilityCost(ability, j, f.tier);
+      ess.addInPlace(cost.essence);
+    }
+  }
+  //console.log('ess: ' + ess.toString() + ', ' + f.essence.toString());
+  if(ess.gt(f.essence.mulr(1.01))) {
+    var i = -1;
+    var last = -1;
+    while(ess.gt(f.essence)) {
+      // TOOD: get the most expensive ability, instead of just rotating around like this
+      i++;
+      if(i >= f.abilities.length) i = 0;
+      if(i == last) break; // avoid infinite loop
+      var ability = f.abilities[i];
+      if(isInherentAbility(ability) || ability == FRUIT_NONE) continue;
+      if(f.levels[i] <= f.starting_levels[i]) continue;
+      f.levels[i]--;
+      var cost = getFruitAbilityCost(ability, f.levels[i], f.tier);
+      ess.subInPlace(cost.essence);
+      last = i; // last one where an action was taken
+    }
+  }
+  f.essence = ess;
+
 }
 
 // get fruit tier given random roll and tree level
@@ -4186,10 +4270,19 @@ function fuseFruitStartLevel(a, b) {
   return Math.ceil(min * 0.75 + max * 0.25);
 }
 
-var fuse_skip = {FRUIT_NONE:true,
-                 FRUIT_SPRING:true, FRUIT_SUMMER:true, FRUIT_AUTUMN:true, FRUIT_WINTER:true,
-                 FRUIT_SPRING_SUMMER:true, FRUIT_SUMMER_AUTUMN:true, FRUIT_AUTUMN_WINTER:true, FRUIT_WINTER_SPRING:true,
-                 FRUIT_ALL_SEASON};
+// TODO: this is the same as isInherentAbility and FRUIT_NONE, use that instead
+var fuse_skip = {};
+fuse_skip[FRUIT_NONE] = true;
+fuse_skip[FRUIT_SPRING] = true;
+fuse_skip[FRUIT_SUMMER] = true;
+fuse_skip[FRUIT_AUTUMN] = true;
+fuse_skip[FRUIT_WINTER] = true;
+fuse_skip[FRUIT_SPRING_SUMMER] = true;
+fuse_skip[FRUIT_SUMMER_AUTUMN] = true;
+fuse_skip[FRUIT_AUTUMN_WINTER] = true;
+fuse_skip[FRUIT_WINTER_SPRING] = true;
+fuse_skip[FRUIT_ALL_SEASON] = true;
+
 
 // automatically purchases ability levels in fruit c, given what the levels were in fruit a and b
 function fuseFruitAutoLevel(a, b, c) {
@@ -4310,6 +4403,9 @@ function fruitSeasonMix(a, b, fruitmix) {
   return 0;
 }
 
+// when this is false, then once you have a good 2-seasonal fruit, it's trivial to make a dragon fruit out of it. If this is true, you need to get two perfect 2-seasonal fruits to make the dragon fruit, which makes the 2-seasonal fruits a bit more relevant during a certain period of the game (per fruit tier).
+var harder_dragonfruit_fusing = true;
+
 // opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
 // fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits
 function fuseFruit(a, b, fruitmix, opt_message) {
@@ -4317,11 +4413,47 @@ function fuseFruit(a, b, fruitmix, opt_message) {
   if(a == b) return null;
   if(a.tier != b.tier) return null;
 
-  var seasonmix_result = fruitSeasonMix(a.type, b.type, fruitmix);
-
   var n = getNumFruitAbilities(a.tier);
   var na = a.abilities.length;
   var nb = b.abilities.length;
+
+  var seasonmix_result = fruitSeasonMix(a.type, b.type, fruitmix);
+  if(harder_dragonfruit_fusing) {
+    if(a.type == 9 || b.type == 9) {
+      if(opt_message) opt_message[0] = 'Dragon fruits are the final form and cannot be fused, their abilities cannot be changed';
+      return null;
+    }
+    if(seasonmix_result == 9) {
+      var sameabilities = true;
+      var ma = {};
+      var mb = {};
+      for(var i = 0; i < na; i++) {
+        if(fuse_skip[a.abilities[i]]) continue;
+        ma[a.abilities[i]] = true;
+      }
+      for(var i = 0; i < nb; i++) {
+        if(fuse_skip[b.abilities[i]]) continue;
+        if(!ma[b.abilities[i]]) {
+          sameabilities = false;
+          break;
+        }
+        mb[b.abilities[i]] = true;
+      }
+      for(var i = 0; i < na; i++) {
+        if(fuse_skip[a.abilities[i]]) continue;
+        if(!mb[a.abilities[i]]) {
+          sameabilities = false;
+          break;
+        }
+      }
+      if(!sameabilities) {
+        seasonmix_result = 0;
+        if(opt_message) opt_message[0] = 'You could get a legendary dragon fruit out of these fruit types, but only if they have the same abilities. Fuse two complementing two-seasonal fruits with the same abilities to get a dragon fruit instead of a mere apple.';
+      } else {
+        if(opt_message) opt_message[0] = 'You fused a legendary dragon fruit! Beware, this is its final form, you cannot fuse a dragon fruit with anything and so cannot change its abilities. Ensure that this is what you want to spend the two input fruits on.';
+      }
+    }
+  }
 
   var f = new Fruit();
   f.tier = a.tier;
@@ -4622,6 +4754,13 @@ function treeLevelTwigs(level, breakdown) {
     var bonus = upgrade2_twigs_bonus.mulr(count).addr(1);
     res.twigs.mulInPlace(bonus);
     if(breakdown) breakdown.push(['ethereal upgrades', true, bonus, res.clone()]);
+  }
+
+  var count = state.upgrades3[upgrade3_twigs].count;
+  if(count) {
+    var bonus = upgrade3_twigs_bonus.mulr(count).addr(1);
+    res.twigs.mulInPlace(bonus);
+    if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, res.clone()]);
   }
 
   // tree's gesture ethereal upgrade
@@ -4966,6 +5105,8 @@ function haveMultiplicity(opt_croptype) {
 
   if(opt_croptype == CROPTYPE_FLOWER) return state.challenges[challenge_rockier].completed && state.upgrades3[upgrade3_flower_multiplicity].count;
 
+  if(opt_croptype == CROPTYPE_BEE) return state.challenges[challenge_rockier].completed && state.upgrades3[upgrade3_bee_multiplicity].count;
+
   return false;
 }
 
@@ -4973,6 +5114,9 @@ function haveMultiplicity(opt_croptype) {
 function getMultiplicityBonusBase(croptype) {
   if(croptype == CROPTYPE_FLOWER) {
     return upgrade3_flower_multiplicity_bonus;
+  }
+  if(croptype == CROPTYPE_BEE) {
+    return upgrade3_bee_multiplicity_bonus;
   }
   return Num(0.25);
 }
@@ -5140,7 +5284,7 @@ var upgrade3_ethtree_boost = Num(0.2);
 var upgrade3_ethtree = registerUpgrade3('ethereal tree neighbor boost', undefined, 'ethereal tree boosts non-lotus neighbors (non-diagonal) by ' + upgrade3_ethtree_boost.toPercentString(), tree_images[6][1][4]);
 
 var upgrade3_fruitmix = registerUpgrade3('seasonal fruit mixing', undefined, 'Allows fusing mixed seasonal fruits, to get new multi-season fruit types that give the season bonus in 2 seasons:<br> • apricot + pineapple = mango (spring + summer),<br> • pineapple + pear = plum (summer + autumn),<br> • pear + medlar = quince (autumn + winter),<br> • medlar + apricot = kumquat (winter + spring).<br>Other fruit fusing rules work as usual. If this upgrade is removed due to respec, the multi-season fruits temporarily lose their season boost until getting this upgrade again. A later squirrel upgrade will extend the ability of this upgrade.', images_mango[4]);
-var upgrade3_fruitmix2 = registerUpgrade3('seasonal fruit mixing II', undefined, 'The next level of fruit mixing: allows creating the legendary all-season dragon fruit! Fuse mango+quince, or alternatively plum+kumquat, to get the dragon fruit. All other fusing rules apply as usual. If this upgrade or its predecessor is removed due to respec, dragon fruits temporarily lose their season boost until getting this upgrade again.', images_dragonfruit[4]);
+var upgrade3_fruitmix2 = registerUpgrade3('seasonal fruit mixing II', undefined, 'The next level of fruit mixing: allows creating the legendary all-season dragon fruit! Fuse mango+quince, or alternatively plum+kumquat, but only if they have the same abilities, to get the dragon fruit. The dragon fruit itself is the final form, it cannot be fused and its abilities cannot be changed. If this squirrel upgrade or its predecessor is removed due to respec, dragon fruits temporarily lose their season boost until getting this upgrade again.', images_dragonfruit[4]);
 
 var upgrade3_resin_bonus = Num(0.25);
 var upgrade3_resin = registerUpgrade3('resin bonus', undefined, 'increases resin gain by ' + Num(upgrade3_resin_bonus).toPercentString(), image_resin);
@@ -5156,6 +5300,22 @@ var upgrade3_flower_multiplicity = registerUpgrade3('flower multiplicity', undef
     'Unlocks multiplicity of flowers. Requires that regular multiplicity for berries and mushrooms has been unlocked. Given that, then this allows also the presence of multiple flowers anywhere in the field to give a global flower bonus, for all flowers with max 1 tier difference. The bonus per flower is ' + upgrade3_flower_multiplicity_bonus.toPercentString(),
     daisy[3]);
 
+var upgrade3_diagonal_brassica = registerUpgrade3('diagonal brassica', undefined, 'brassica (such as watercress) can also copy diagonally, they can get up to 8 instead of 4 neighbors to copy from', images_watercress[4]);
+
+var upgrade3_highest_level_param1 = 0.1;
+var upgrade3_highest_level_param2 = 1.1;
+var upgrade3_highest_level_min =  75; // min tree level where upgrade3_highest_level begins to work
+var upgrade3_highest_level_formula_text = '((highest level - ' + upgrade3_highest_level_min + ') * ' + upgrade3_highest_level_param1 + ' + 1) ^ ' + upgrade3_highest_level_param2;
+var upgrade3_highest_level = registerUpgrade3('highest tree level ever bonus', undefined, 'unlocks a production bonus that depends on highest tree level ever reached, starting from level ' + upgrade3_highest_level_min + '. Bonus multiplier formula: ' + upgrade3_highest_level_formula_text, tree_images[6][1][1]);
+
+var upgrade3_leveltime_maxbonus = 4;
+var upgrade3_leveltime_maxtime = 7200; // in seconds
+var upgrade3_leveltime = registerUpgrade3('time at level bonus', undefined, 'unlocks a production bonus that depends how much time the tree has spent at the current level. The time resets to 0 when the tree levels up. The maximum bonus is +' + Num(upgrade3_leveltime_maxbonus).toPercentString() + ' after ' + (upgrade3_leveltime_maxtime / 3600) + ' hours.', image_hourglass);
+
+var upgrade3_bee_multiplicity_bonus = Num(0.1);
+var upgrade3_bee_multiplicity = registerUpgrade3('bee multiplicity', undefined,
+    'Unlocks multiplicity of bees. Requires that regular multiplicity for berries and mushrooms has been unlocked. Given that, then this allows also the presence of multiple bees anywhere in the field to give a global bee bonus. The bonus per bee is ' + upgrade3_bee_multiplicity_bonus.toPercentString(),
+    images_beehive[4]);
 
 
 
@@ -5195,8 +5355,12 @@ registerStage3(undefined, [upgrade3_ethtree], undefined, true);
 registerStage3([upgrade3_fruittierprob, upgrade3_growspeed], undefined, [upgrade3_essence, upgrade3_watercress_mush]);
 registerStage3([upgrade3_weather_duration, upgrade3_mushroom], undefined, [upgrade3_fruitmix2, upgrade3_flower_multiplicity]);
 registerStage3([upgrade3_watercresstime, upgrade3_bee], undefined, [upgrade3_doublefruitprob, upgrade3_berry]);
-registerStage3(undefined, [upgrade3_squirrel], undefined);
-registerStage3(undefined, [upgrade3_resin], undefined, true);
+registerStage3(undefined, [upgrade3_squirrel], undefined, true);
+registerStage3([upgrade3_resin], undefined, [upgrade3_twigs]);
+registerStage3([upgrade3_diagonal_brassica], undefined, [upgrade3_highest_level]);
+registerStage3([upgrade3_leveltime], undefined, [upgrade3_bee_multiplicity]);
+registerStage3([upgrade3_berry], undefined, [upgrade3_mushroom]);
+registerStage3(undefined, [upgrade3_automaton], undefined, true);
 
 
 ////////////////////////////////////////////////////////////////////////////////

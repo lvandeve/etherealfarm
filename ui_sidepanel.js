@@ -174,7 +174,7 @@ function updateRightPane() {
     if(state.g_numresets > 0) {
       if(state.challenge) {
         if(state.treelevel >= state.challenges[state.challenge].maxlevel) {
-          text += '• Max challenge lvl before: ' + state.challenges[state.challenge].maxlevel;
+          text += '• Max challenge level: ' + state.challenges[state.challenge].maxlevel + ' (before: ' + state.challenges[state.challenge].maxlevel + ')';
         } else {
           text += '• Max challenge level: ' + state.challenges[state.challenge].maxlevel;
         }
@@ -182,7 +182,7 @@ function updateRightPane() {
         //text += '• #Transcensions: ' + state.g_numresets;
         //text += '<br>';
         if(state.g_p_treelevel && (state.treelevel >= state.g_p_treelevel)) {
-          text += '• Max tree level before: ' + state.g_p_treelevel;
+          text += '• Max tree level ever: ' + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')';
         } else {
           text += '• Max tree level ever: ' + state.g_treelevel;
         }

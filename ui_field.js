@@ -351,6 +351,7 @@ function makeTreeDialog() {
       if(state.mistletoes > 0) {
         text += 'This requirement was increased ' + (getMistletoeLeech().subr(1)).toPercentString() + ' by ' + state.mistletoes + ' mistletoes' + '<br/>';
       }
+      text += 'Time at this level: ' + util.formatDuration(timeAtTreeLevel(state)) + '<br/>';
 
       text += '<br>';
 
@@ -778,7 +779,9 @@ function initFieldUI() {
             return result;
           } else {
             var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-            return upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
+            var result = upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
+            result += '<br>Time at this level: ' + util.formatDuration(timeAtTreeLevel(state)) + '<br/>';
+            return result;
           }
         }
         return result;

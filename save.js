@@ -1277,6 +1277,7 @@ function decState(s) {
   if(save_version >= 4096*1+83) state.resinfruittime = processFloat();
   if(save_version >= 4096*1+83) state.twigsfruittime = processFloat();
 
+
   section = 17; id = 0; // fruits
   if(save_version >= 4096*1+17) {
     state.fruit_seed = processInt();
@@ -1395,6 +1396,11 @@ function decState(s) {
   if(save_version >= 4096*1+39) {
     id = 20; // a few spares for the above
     state.seen_seasonal_fruit = processUint();
+  }
+  if(save_version < 4096*1+92) {
+    //fruits upgrade costs got tweaked
+    for(var i = 0; i < state.fruit_stored.length; i++) correctifyFruitCost(state.fruit_stored[i]);
+    for(var i = 0; i < state.fruit_sacr.length; i++) correctifyFruitCost(state.fruit_sacr[i]);
   }
 
   if(state.fruit_seed < 0) {
@@ -1631,6 +1637,8 @@ function decState(s) {
 
   section = 22; id = 0; // squirrel upgrades
 
+  var squirrel_undo_refunds = 0; // in case some upgrades get refunded due to version changes
+
   if(save_version >= 4096*1+74) {
     state.upgrades3_spent = processNum();
     array0 = processUintArray();
@@ -1653,21 +1661,45 @@ function decState(s) {
       s3.num[0] = array0[index0++];
       s3.num[1] = array0[index0++];
       s3.num[2] = array0[index0++];
+      s3.seen[0] = array1[index1++];
+      s3.seen[1] = array1[index1++];
+      s3.seen[2] = array1[index1++];
+      if(i >= 7 && save_version < 4096*1+92 && s3.num[1]) {
+        squirrel_undo_refunds++;
+        s3.num[1] = 0;
+        s3.seen[1] = false;
+      }
       if(s3.num[0] > stages3[i].upgrades0.length) return err(4);
       if(s3.num[1] > stages3[i].upgrades1.length) return err(4);
       if(s3.num[2] > stages3[i].upgrades2.length) return err(4);
       for(var j = 0; j < s3.num[0]; j++) state.upgrades3[stages3[i].upgrades0[j]].count++;
       for(var j = 0; j < s3.num[1]; j++) state.upgrades3[stages3[i].upgrades1[j]].count++;
       for(var j = 0; j < s3.num[2]; j++) state.upgrades3[stages3[i].upgrades2[j]].count++;
-      s3.seen[0] = array1[index1++];
-      s3.seen[1] = array1[index1++];
-      s3.seen[2] = array1[index1++];
       if(s3.seen[0] > stages3[i].upgrades0.length) return err(4);
       if(s3.seen[1] > stages3[i].upgrades1.length) return err(4);
       if(s3.seen[2] > stages3[i].upgrades2.length) return err(4);
     }
   }
   if(error) return err(4);
+
+  if(squirrel_undo_refunds > 0) {
+    showMessage('Due to an update some squirrel updates changed, and ' + squirrel_undo_refunds + ' of your squirrel upgrades got refunded. Check the squirrel tab to re-buy them.', C_META, 0, 0, false, true);
+    getUpgrade3Cost(i);
+    var count = 0;
+    for(var i = 0; i < registered_upgrades3.length; i++) {
+      var u2 = state.upgrades3[registered_upgrades3[i]];
+      count += u2.count;
+    }
+    count += squirrel_undo_refunds;
+    var refund = new Num(0);
+    while(squirrel_undo_refunds > 0) {
+      squirrel_undo_refunds--;
+      count--;
+      refund.addInPlace(getUpgrade3Cost(count));
+    }
+    state.res.nuts.addInPlace(refund);
+  }
+
 
   section = 23; id = 0; // amber effects
   if(save_version >= 4096*1+74) state.amberprod = processBool();

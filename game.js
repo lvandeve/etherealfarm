@@ -1221,9 +1221,10 @@ function precomputeField() {
         if(c.type == CROPTYPE_BRASSICA) {
           // this computation is only used for mushroom seed consumption, so it's ok to not compute the leech value for nuts here.
           var leech = c.getLeech(f);
-          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+          var numdir = state.upgrades3[upgrade3_diagonal_brassica].count ? 8 : 4;
+          for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+            var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+            var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var p2 = prefield[y2][x2];
             p2.leech.addInPlace(leech);
@@ -1410,9 +1411,10 @@ function precomputeField() {
           var p = prefield[y][x];
           total.reset();
           var num = 0;
-          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+          var numdir = state.upgrades3[upgrade3_diagonal_brassica].count ? 8 : 4;
+          for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+            var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+            var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
@@ -1487,7 +1489,7 @@ function precomputeField() {
 
         if(c.type == CROPTYPE_BERRY) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
-          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 2) ? 1 : 2);
+          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 2) ? 1 : 2); // TODO: take diagonal brassica into account here if unlocked
           if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
         }
         if(c.type == CROPTYPE_MUSH) {
@@ -1695,7 +1697,7 @@ function addRandomFruit() {
       if(roll_season > prob) {
         var season = getSeason();
         if(season >= 0 && season <= 3) {
-          fruit.type = 1 + getSeason();
+          fruit.type = 1 + season;
         }
       }
     }
@@ -2179,6 +2181,12 @@ function nextEventTime() {
   // auto-unlock
   if(autoUnlockEnabled() && !!next_auto_unlock) {
     addtime(next_auto_unlock.time);
+  }
+
+  // take into account the changing bonus over time, until the max time is reached (but not too aften to not let this use too much CPU ticks)
+  if(state.upgrades3[upgrade3_leveltime].count) {
+    var time = timeAtTreeLevel(state);
+    if(time < upgrade3_leveltime_maxtime) addtime(300);
   }
 
   return time;

@@ -198,7 +198,7 @@ function createFruitHelp() {
     text += '<br>';
     text += '• Medlar + Apricot = Kumquat (winter + spring)';
     text += '<br/><br/>';
-    text += 'If (and only if) you also have the second fruit mixing upgrade purchaced, then in addition:';
+    text += 'If (and only if) you also have the second fruit mixing upgrade purchaced, then in addition you can create the legendary dragon fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
     text += '<br><br>';
     text += '• Mango + Quince = Dragon Fruit (4 seasons)';
     text += '<br>';
@@ -351,6 +351,17 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     }
     y += s;
 
+    if(message[0]) {
+      y += s * 0.25;
+      x = 0;
+      var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], [0.99, 0, 0], [0, 0, y + s]);
+      x += s;
+      flex.div.innerText = message[0];
+      flex.div.style.color = '#f00';
+      y += s * 1.5;
+    }
+
+
     if(fuse) {
       for(var i = -1; i < fuse.abilities.length; i++) {
         var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
@@ -362,12 +373,6 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         }
         y += s * 0.5;
       }
-    } else if(message[0]) {
-      y += s * 0.25;
-      x = 0;
-      var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], [0.99, 0, 0], [0, 0, y + s]);
-      x += s;
-      flex.div.innerText = message[0];
     }
   };
 

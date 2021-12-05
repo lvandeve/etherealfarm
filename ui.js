@@ -132,7 +132,7 @@ function initUI() {
   tabbuttons = [];
   tabs = [];
 
-  // this determines the unique id of each tab but not the display order
+  // this determines the unique id of each tab (used in savegame) but not the display order. The display order is determined in ui_tabs.js in updateTabButtons.
   var tabnum = 0;
   tabindex_field = tabnum++;
   tabindex_upgrades = tabnum++;

@@ -144,7 +144,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   styleButton0(canvasFlex.div);
 
   //if(gated) text += '<br>Locked: buy all above first';
-  if(gated) text += '<br>Gated';
+  if(gated) text += '<br>(Gated)';
   else if(canbuy) text += '<br>Buy';
   else if(bought) text += '<br>Bought';
 
@@ -234,7 +234,7 @@ function renderStage(scrollflex, stage, y) {
   }
 
   for(var b = 0; b < u3.length; b++) {
-    var us = u3[b];
+    var us = u3[b]; // one of the three squirrel upgrades of this row
     var y2 = y0;
 
     var is_gate = stage.gated;

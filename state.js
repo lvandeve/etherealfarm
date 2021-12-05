@@ -300,7 +300,7 @@ function State() {
   this.twigs = Num(0);
 
   this.treelevel = 0;
-  this.lasttreeleveluptime = 0; // time of previous time tree leveled, after transcend this is time tree leveled before that transcend! if that's undesired, then use (treelevel > 0 ? lasttreeleveluptime : c_starttime)
+  this.lasttreeleveluptime = 0; // time of previous time tree leveled, after transcend this is time tree leveled before that transcend! if that's undesired, then use the function lastTreeLevelUpTime(state)
   this.lasttree2leveluptime = 0;
   this.lastambertime = 0;
   // for the fruit abilities that increase twigs and resin
@@ -768,6 +768,15 @@ function State() {
 
   // derived stat, not to be saved.
   this.numnonemptyblueprints = 0;
+}
+
+function lastTreeLevelUpTime(state) {
+  // state.lasttreeleveluptime is time of previous time tree leveled, after transcend this is time tree leveled before that transcend! but for this function's return value, the starttime is used for that instead to fix that
+  return state.treelevel > 0 ? state.lasttreeleveluptime : state.c_starttime;
+}
+
+function timeAtTreeLevel(state) {
+  return state.time - lastTreeLevelUpTime(state);
 }
 
 function clearField(state) {

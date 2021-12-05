@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.92 (2021-12-05):';
+  text += '<br/>• Added one more tier of berry and mushroom. To keep the name order of tiers alphabetical, they are inserted in the place of certain existing crops, so some currently planted crops may have changed name and image. Their stats are the same though.';
+  text += '<br/>• Added three more tiers of nuts.';
+  text += '<br/>• Added eight new squirrel upgrades.';
+  text += '<br/>• Fruit nerf: Creating a dragon fruit now requires two two-seasonal fruits that the same abilities, and a dragon fruit can no longer itself be fused with anything. This makes it more challenging to create it, but is done because it was trivial to make a dragon fruit once having one perfect two-seasonal fruit, making it irrelevant.';
+  text += '<br/>• Fruit buff: The upgrade cost scaling of linear boost fruit abilities is now cheaper. Check your your fruit tab, since you can likely upgrade their abilities significantly. As a reminder: shift+clicking the fruit ability upgrade button will upgrade it multiple times';
+  text += '<br/><br/>';
+
   text += '0.1.91 (2021-11-21):';
   text += '<br/>• Brassica/watercress winter penalty now removed when next to the tree (but no exception during the wasabi challenge anymore), so useful again during winter';
   text += '<br/>• Bugfixes and UI tweaks: upgrades in message log setting, wasabi during wither challenge, another \'potential\' income display bugfix, ...';

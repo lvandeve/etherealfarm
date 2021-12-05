@@ -368,7 +368,7 @@ function createFinishChallengeDialog() {
   } else {
     if(c.targetlevel.length > 1) {
       if(success) {
-        text += 'You successfully completed the next stage of challenge for the first time!<br><br>Reward: ';
+        text += 'You successfully completed the next stage of the challenge for the first time!<br><br>Reward: ';
         text += c.rewarddescription[c2.completed];
       } else {
         text += 'You didn\'t successfully complete the next stage of the challenge, but can still get the challenge bonus for highest tree level reached.';
