@@ -256,6 +256,7 @@ function unlockTemplates() {
     state.crops2[nettle2_template].unlocked = (state.crops2[nettle2_0].unlocked);
     state.crops2[automaton2_template].unlocked = (state.crops2[automaton2_0].unlocked);
     state.crops2[squirrel2_template].unlocked = (state.crops2[squirrel2_0].unlocked);
+    state.crops2[bee2_template].unlocked = (state.crops2[bee2_0].unlocked);
   } else {
     state.crops2[berry2_template].unlocked = false;
     state.crops2[mush2_template].unlocked = false;
@@ -265,6 +266,7 @@ function unlockTemplates() {
     state.crops2[nettle2_template].unlocked = false;
     state.crops2[automaton2_template].unlocked = false;
     state.crops2[squirrel2_template].unlocked = false;
+    state.crops2[bee2_template].unlocked = false;
   }
 }
 
@@ -718,6 +720,7 @@ var actions = [];
 
 var action_index = 0;
 var ACTION_FERN = action_index++;
+var ACTION_PRESENT = action_index++; // e.g. holiday event present
 var ACTION_PLANT = action_index++;
 var ACTION_DELETE = action_index++; //un-plant
 var ACTION_REPLACE = action_index++; //same as delete+plant, in one go (prevents hving situation where plant gets deleted but then not having enough resources to plant the other one)
@@ -805,15 +808,32 @@ function getRandomPreferablyEmptyFieldSpot() {
     var x = Math.floor(Math.random() * state.numw);
     var y = Math.floor(Math.random() * state.numh);
     var f = state.field[y][x];
-    if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) x++;
+    var maxruns = 4;
+    for(;;) {
+      if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) x = (x + 1) % state.numw;
+      if(state.fern && x == state.fernx && y == state.ferny) y = (y + 1) % state.numh;
+      if(state.present && x == state.presentx && y == state.presenty) y = (y + 1) % state.numh;
+      if(maxruns-- < 0) break; // just in case there are e.g. tons of tree tops for some reason
+    }
     return [x, y];
+  }
+  if(state.fern) {
+    var f = state.field[state.ferny][state.fernx];
+    if(f.index == 0 || f.index == FIELD_REMAINDER) num--;
+  }
+  if(state.present) {
+    var f = state.field[state.presenty][state.presentx];
+    if(f.index == 0 || f.index == FIELD_REMAINDER) num--;
   }
   var r = Math.floor(Math.random() * num);
   var i = 0;
+  if(state.fern && state.field[state.ferny][state.fernx] && y == state.ferny) y = (y + 1) % state.numh;
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
-      if(f.index == 0 || f.index == FIELD_REMAINDER) {
+      var already_fern = state.fern && x == state.fernx && y == state.ferny;
+      var already_present = state.present && x == state.presentx && y == state.presenty;
+      if((f.index == 0 || f.index == FIELD_REMAINDER) && !already_fern && !already_present) {
         if(i == r) return [x, y];
         i++;
       }
@@ -1640,6 +1660,19 @@ function getRandomFernRoll() {
   return roll[1];
 }
 
+// Use this rather than Math.random() to avoid using refresh to get better random presents
+function getRandomPresentRoll() {
+  if(state.present_seed < 0) {
+    // console.log('present seed not initialized');
+    // this means the seed is uninitialized and must be randominzed now. Normally this shouldn't happen since initing a new state sets it, and loading an old savegame without the seed also sets it
+    state.present_seed = Math.floor(Math.random() * 281474976710656);
+  }
+
+  var roll = getRandomRoll(state.present_seed);
+  state.present_seed = roll[0];
+  return roll[1];
+}
+
 
 // Use this rather than Math.random() to avoid using refresh to get better random fruits
 function getRandomFruitRoll() {
@@ -1655,7 +1688,7 @@ function getRandomFruitRoll() {
 }
 
 
-function addRandomFruit() {
+function addRandomFruitForLevel(treelevel) {
   var fruits = [];
   for(;;) {
     // do same amount of rolls per fruit, even if some are unneeded, so that it's harder to affect the fruit seed by choosing when to do squirrel upgrades, transcends, ...
@@ -1665,7 +1698,7 @@ function addRandomFruit() {
     var roll_abilities = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
     var roll_abilities_level = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
 
-    var tier = getNewFruitTier(roll_tier, state.treelevel, !!state.upgrades3[upgrade3_fruittierprob].count);
+    var tier = getNewFruitTier(roll_tier, treelevel, !!state.upgrades3[upgrade3_fruittierprob].count);
 
     var fruit = new Fruit();
     fruit.tier = tier;
@@ -1768,6 +1801,10 @@ function addRandomFruit() {
 
   //updateFruitUI();
   return fruits;
+}
+
+function addRandomFruit() {
+  return addRandomFruitForLevel(state.treelevel);
 }
 
 // unlocks and shows message, if not already unlocked
@@ -2472,6 +2509,7 @@ var update = function(opt_ignorePause) {
     var actualgain = new Res();
 
     var clickedfern = false; // if fern just clicked, don't do the next fern computation yet, since #resources is not yet taken into account
+    var clickedpresent = false;
 
     var upgrades_done = false;
     var upgrades2_done = false;
@@ -2821,8 +2859,9 @@ var update = function(opt_ignorePause) {
 
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
           var is_brassica = f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA;
-          if(state.challenge == challenge_nodelete && !is_brassica && f.growth >= 1 && !f.isTemplate()) {
-            showMessage('Cannot delete crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
+          // the f.growth >= 1 is because growing crops used to produce nothing. now they do, so don't allow that anymore.
+          if(state.challenge == challenge_nodelete && !is_brassica /*&& f.growth >= 1*/ && !f.isTemplate()) {
+            showMessage('Cannot delete or upgrade crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
             ok = false;
           } else if(state.challenge == challenge_wither && !is_brassica && !f.isTemplate()) {
             var more_expensive_same_type = type == ACTION_REPLACE && f.hasCrop() && action.crop.cost.gt(f.getCrop().cost) && action.crop.type == f.getCrop().type;
@@ -3097,6 +3136,14 @@ var update = function(opt_ignorePause) {
           state.g_numferns++;
           state.c_numferns++;
           // store undo for fern too, because resources from fern can trigger auto-upgrades
+          store_undo = true;
+        }
+      } else if(type == ACTION_PRESENT) {
+        if(fast_forwarding) continue;
+
+        if(state.present && state.presentx == action.x && state.presenty == action.y) {
+          clickedpresent = true;
+          state.g_numpresents++;
           store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
@@ -3484,6 +3531,8 @@ var update = function(opt_ignorePause) {
     }
 
 
+    ////////////////////////////////////////////////////////////////////////////
+
     if(clickedfern) {
       var waittime = state.fernwait;
       if(waittime == 0) waittime = getFernWaitTime(); // in case of old save where fernwait wasn't stored
@@ -3525,7 +3574,6 @@ var update = function(opt_ignorePause) {
       }
     }
 
-
     var grow_fern = false;
     var fernTimeWorth = 0;
     if(!state.fern && !clickedfern) {
@@ -3556,6 +3604,88 @@ var update = function(opt_ignorePause) {
       if(state.fernx >= state.numw) state.fernx = state.numw - 1;
       if(state.ferny >= state.numh) state.ferny = state.numh - 1;
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    if(clickedpresent) {
+      state.presentwait = (15 * 60) * (1 +  getRandomPresentRoll());
+
+      // alternatives for things that aren't unlocked yet
+      var alternative = false;
+      if(state.present == 1 && state.g_res.spores.ler(0)) {
+        alternative = true;
+      }
+      if(state.present == 2 && state.g_res.nuts.ler(0)) {
+        alternative = true;
+      }
+      if(state.present == 4 && state.g_numfruits <= 0) {
+        alternative = true;
+      }
+      if(state.present == 5 && state.g_res.amber.ler(0)) {
+        alternative = true;
+      }
+
+      if(state.present == 1 || alternative) {
+        var g = gain.mulr(60 * 7.5);
+        var starter = getStarterResources();
+        if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds);
+        if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
+        var presentres = new Res({seeds:g.seeds, spores:g.spores});
+        if(alternative && state.g_res.amber.ltr(0)) {
+          g.amber = Num(1);
+        }
+        showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+        actualgain.addInPlace(presentres);
+      } else if(state.present == 2) {
+        var min_nuts = getNextUpgrade3Cost().mulr(0.0005).mulr(1 + getRandomPresentRoll());
+        var g = gain.mulr(60 * 7.5);
+        var starter = getStarterResources();
+        if(g.nuts.lt(min_nuts)) g.nuts = min_nuts;
+        var presentres = new Res({nuts:g.nuts});
+        showMessage('That present contained a nutcracker! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+        actualgain.addInPlace(presentres);
+      } else if(state.present == 3) {
+        state.present_grow_speed_time = state.time;
+        showMessage('This present doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+      } else if(state.present == 4) {
+        showMessage('This present contained fruit!', C_PRESENT, 38753631, 0.8, true);
+        var fruits = addRandomFruitForLevel(state.g_treelevel);
+        if(fruits) {
+          for(var i = 0; i < fruits.length; i++) {
+            if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_PRESENT, 38753631, 0.8);
+          }
+        }
+      } else if(state.present == 5) {
+        var amber = Num(Math.floor(getRandomPresentRoll() * 5) + 3);
+        actualgain.amber.addInPlace(amber);
+        showMessage('That present contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
+      } else {
+      }
+      state.lastPresentTime = state.time; // in seconds
+      state.present = 0;
+    }
+
+    var drop_present = false;
+    var presentTimeWorth = 0;
+    // the state.g_numpresents < 3000 check is a safety guard in case bugs related to present spawning appear. 3000 is the max amount that could spawn in a month (it is at least 15 minutes per present)
+    if(!state.present && !clickedpresent && state.g_numplanted >= 2 && state.g_numpresents < 3000) {
+      if(state.time > state.lastPresentTime + state.presentwait) {
+        drop_present = true;
+        var s = getRandomPreferablyEmptyFieldSpot();
+        if(s) {
+          state.present = 1 + Math.floor(getRandomPresentRoll() * 5) % 5;
+          state.present_image = Math.floor(getRandomPresentRoll() * 4) & 3;
+          state.presentx = s[0];
+          state.presenty = s[1];
+          // the coordinates are invisible but are for screenreaders
+          showMessage('A present appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
+        }
+
+        state.lastPresentTime = 0;
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
 
     var req = treeLevelReq(state.treelevel + 1);
     if(state.time > state.lasttreeleveluptime + 1 && state.res.ge(req)) {

@@ -503,6 +503,10 @@ function createAllChallengeStatsDialog() {
       text += 'production bonuses: ';
       for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], j).toPercentString();
       text += '<br>';
+      var cycle = c2.num_completed % c.cycling;
+      var nextString = state.challenge == c.index ? 'current' : 'next';
+      text += nextString + ' cycle: ' + (cycle + 1) + ' of ' + (c.cycling);
+      text += '<br>';
     } else {
       text += 'bonus per max level (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ' + c.bonus.toPercentString();
       text += '<br>';

@@ -100,6 +100,87 @@ function rerenderUpgradeChip(u, chip, completed) {
   return chip;
 }
 
+
+var getUpgradeInfoText = function(u, completed) {
+  var cost = u.getCost(completed ? -1 : 0);
+  var infoText = upper(u.name);
+  infoText += '<br><br>Cost: ' + cost.toString();
+  if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
+  infoText += '<br><br>' + 'Have of this upgrade: ' + state.upgrades[u.index].count;
+  if(u.cropid != undefined && !u.iscropunlock) {
+    infoText += '<br>' + 'Have of this crop: ' + state.cropcount[u.cropid];
+  }
+  if(u.description) {
+    infoText += '<br><br>' + u.description;
+  }
+  if(u.is_choice && completed) {
+    infoText += '<br><br>Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+  }
+  if(u.cropid != undefined) {
+    var c = crops[u.cropid];
+    infoText += '<hr>';
+    infoText += 'Crop info (' + c.name + '):<br><br>';
+
+    if(!c.prod.empty()) {
+      infoText += 'Base production: ' + c.prod.toString() + '<br>';
+      infoText += 'Upgraded production: ' + c.getProd().toString() + '<br>';
+    }
+    if(c.boost.neqr(0)) {
+      infoText += 'Base boost: ' + c.boost.toPercentString() + '<br>';
+      infoText += 'Upgraded boost: ' + (c.type == CROPTYPE_BEE ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
+    }
+
+
+    var cropcost = c.getCost();
+    infoText += 'Planting cost: ' + cropcost.toString() + ' (' + getCostAffordTimer(cropcost) + ')<br>';
+    if(c.type == CROPTYPE_BRASSICA) {
+      infoText += 'Living time: ' + util.formatDuration(c.getPlantTime());
+    } else {
+      infoText += 'Grow time: ' + util.formatDuration(c.getPlantTime());
+      if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
+    }
+    infoText += '<br>';
+    infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
+    // standard as in: none of the field-location boosts are taken into account
+    //var cropprod = c.getProd(undefined, true);
+    //if(!cropprod.empty()) {
+    //  infoText += 'Standard production/sec: ' + c.getProd(undefined, true).toString() + '<br>';
+    //}
+  }
+  return infoText;
+};
+
+function renderUpgradeDialog(chip, completed) {
+  var u = upgrades[chip.u];
+  var okfun = undefined;
+  var okname = undefined;
+  if(!u.is_choice) {
+    okfun = function() {
+      addAction({type:ACTION_UPGRADE, u:u.index, shift:false});
+      if(u.maxcount == 1) closeAllDialogs();
+      update();
+      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed);
+      return true;
+    };
+    okname = u.maxcount == 1 ? 'buy' : 'buy one';
+  }
+  var extrafun = undefined;
+  var extraname = undefined;
+  if(!u.is_choice && u.maxcount != 1) {
+    extrafun = function() {
+      addAction({type:ACTION_UPGRADE, u:u.index, shift:true});
+      //closeAllDialogs();
+      update();
+      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed);
+      return true;
+    };
+    extraname = 'buy many';
+  }
+  chip.updateInfoText();
+  var dialog = createDialog(DIALOG_SMALL, okfun, okname, undefined, 'close', extrafun, extraname);
+  dialog.content.div.innerHTML = getUpgradeInfoText(u, completed);
+}
+
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
 function renderUpgradeChip(u, x, y, w, chip, completed) {
   if(chip.titleFlex) {
@@ -118,52 +199,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
 
   var infoText = '';
   var updateInfoText = function() {
-    var u = upgrades[chip.u];
-    var cost = u.getCost(completed ? -1 : 0);
-    infoText = upper(u.name);
-    infoText += '<br><br>Cost: ' + cost.toString();
-    if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
-    infoText += '<br><br>' + 'Have of this upgrade: ' + state.upgrades[u.index].count;
-    if(u.cropid != undefined && !u.iscropunlock) {
-      infoText += '<br>' + 'Have of this crop: ' + state.cropcount[u.cropid];
-    }
-    if(u.description) {
-      infoText += '<br><br>' + u.description;
-    }
-    if(u.is_choice && completed) {
-      infoText += '<br><br>Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
-    }
-    if(u.cropid != undefined) {
-      var c = crops[u.cropid];
-      infoText += '<hr>';
-      infoText += 'Crop info (' + c.name + '):<br><br>';
-
-      if(!c.prod.empty()) {
-        infoText += 'Base production: ' + c.prod.toString() + '<br>';
-        infoText += 'Upgraded production: ' + c.getProd().toString() + '<br>';
-      }
-      if(c.boost.neqr(0)) {
-        infoText += 'Base boost: ' + c.boost.toPercentString() + '<br>';
-        infoText += 'Upgraded boost: ' + (c.type == CROPTYPE_BEE ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
-      }
-
-
-      var cropcost = c.getCost();
-      infoText += 'Planting cost: ' + cropcost.toString() + ' (' + getCostAffordTimer(cropcost) + ')<br>';
-      if(c.type == CROPTYPE_BRASSICA) {
-        infoText += 'Living time: ' + util.formatDuration(c.getPlantTime());
-      } else {
-        infoText += 'Grow time: ' + util.formatDuration(c.getPlantTime());
-        if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
-      }
-      infoText += '<br>';
-      infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
-      // standard as in: none of the field-location boosts are taken into account
-      //var cropprod = c.getProd(undefined, true);
-      //if(!cropprod.empty()) {
-      //  infoText += 'Standard production/sec: ' + c.getProd(undefined, true).toString() + '<br>';
-      //}
-    }
+    infoText = getUpgradeInfoText(upgrades[chip.u], completed);
   };
 
   if(!completed) {
@@ -209,32 +245,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
   styleButton0(canvasFlex.div);
 
   addButtonAction(canvasFlex.div, function() {
-    var u = upgrades[chip.u];
-    var okfun = undefined;
-    var okname = undefined;
-    if(!u.is_choice) {
-      okfun = function() {
-        addAction({type:ACTION_UPGRADE, u:u.index, shift:false});
-        closeAllDialogs();
-        update();
-        return true;
-      };
-      okname = u.maxcount == 1 ? 'buy' : 'buy one';
-    }
-    var extrafun = undefined;
-    var extraname = undefined;
-    if(!u.is_choice && u.maxcount != 1) {
-      extrafun = function() {
-        addAction({type:ACTION_UPGRADE, u:u.index, shift:true});
-        closeAllDialogs();
-        update();
-        return true;
-      };
-      extraname = 'buy many';
-    }
-    updateInfoText();
-    var dialog = createDialog(DIALOG_SMALL, okfun, okname, undefined, undefined, extrafun, extraname);
-    dialog.content.div.innerHTML = infoText;
+    renderUpgradeDialog(chip);
   }, 'upgrade icon for ' + name);
 
   chip.updateInfoText = updateInfoText;

@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.93 (2021-12-17):';
+  text += '<br/>• Holiday event started!';
+  text += '<br/>&nbsp;&nbsp;- Presents with random rewards will drop.';
+  text += '<br/>&nbsp;&nbsp;- The squirrel and automaton got a festive hat.';
+  text += '<br/>&nbsp;&nbsp;- This event will be active for 1 month.';
+  text += '<br/>• Ethereal crop grow times made faster.'; // includes upgrade dialog staying open when pressing buy in it
+  text += '<br/>• Other tweaks and fixes.'; // includes upgrade dialog staying open when pressing buy in it, and, the missing bee template in the ethereal field
+  text += '<br/><br/>';
+
   text += '0.1.92 (2021-12-05):';
   text += '<br/>• Added one more tier of berry and mushroom. To keep the name order of tiers alphabetical, they are inserted in the place of certain existing crops, so some currently planted crops may have changed name and image. Their stats are the same though.';
   text += '<br/>• Added three more tiers of nuts.';
@@ -58,9 +67,9 @@ function getChangeLog() {
   text += '<br/>• Added new choice upgrade for watercress.';
   text += '<br/>• Increased ethereal neighbor bonus from automaton and squirrel in the ethereal field.';
   text += '<br/>• Ethereal delete tokens revamp to allow more individual crop deletions and more full field replacements per season cycle:';
-  text += '<br/> - Gives more ethereal delete tokens per season: 50% of your ethereal field cells, rather than just 2 or 3, and can carry 4x that amount.';
-  text += '<br/> - Deleting the entire field now costs as much tokens as all individual deletions, rather than just 4 tokens, and this option is now in the automaton UI.';
-  text += '<br/> - The reward for the "undeletable" challenge changed from ethereal token related reward to: more recoup for deleting regular crops';
+  text += '<br/>&nbsp;&nbsp;- Gives more ethereal delete tokens per season: 50% of your ethereal field cells, rather than just 2 or 3, and can carry 4x that amount.';
+  text += '<br/>&nbsp;&nbsp;- Deleting the entire field now costs as much tokens as all individual deletions, rather than just 4 tokens, and this option is now in the automaton UI.';
+  text += '<br/>&nbsp;&nbsp;- The reward for the "undeletable" challenge changed from ethereal token related reward to: more recoup for deleting regular crops';
   text += '<br/>• Certain bee related achievements now have a more fair requirement.'; // the 'unbeelievable', 'buzzy', 'royal buzz' and 'unbeetable' achievements now only need enough bees for a 5x5 field, rather than become exponentially harder to get with larger field size
   text += '<br/>• Watercress copying penalty when having 2 watercress reduced, but increased for more than 3 watercress.';
   text += '<br/>• Various UI tweaks: start-challenge button tooltips, upgrade cost in tooltips, overconsumption display fix if watercress next to mushrooms, ...'; // also choice upgrade info in automaton UI, fix involving amount of season changes display, watercress remainder remains in more cases, display of previous run's final twigs/h and resin/h in info panel tooltips, separate color for the passive play choice upgrade in automaton UI, < > shortcuts for changing fruits to support more international keyboards, ...
@@ -133,8 +142,8 @@ function getChangeLog() {
 
   text += '0.1.80 (2021-07-07):';
   text += '<br/>• Balancing to ensure getting best resin/hr after not too short runtimes:';
-  text += '<br/> - tweaked growtime of early vs late tier crops';
-  text += '<br/> - higher tier mushrooms now give more spores per seed rather than less spores per seed, this is a buff';
+  text += '<br/>&nbsp;&nbsp;- tweaked growtime of early vs late tier crops';
+  text += '<br/>&nbsp;&nbsp;- higher tier mushrooms now give more spores per seed rather than less spores per seed, this is a buff';
   // automaton can be toggles on/off while paused, adding 1hr to season duration with amber now also works when it makes season longer than 24h, "time of full time" info for crop grow times, and other UI and spelling fixes
   text += '<br/>• Various other tweaks and fixes';
   text += '<br/><br/>';

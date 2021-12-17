@@ -308,6 +308,10 @@ Crop.prototype.getPlantTime = function() {
     result *= (1 - upgrade2_spring_growspeed_bonus);
   }
 
+  if(presentGrowSpeedActive()) {
+    result *= 0.5;
+  }
+
   return result;
 };
 
@@ -703,7 +707,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, result.clone()]);
   }
 
-  if(state.upgrades3[upgrade3_highest_level].count && state.g_treelevel > upgrade3_highest_level_min) {
+  if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.upgrades3[upgrade3_highest_level].count && state.g_treelevel > upgrade3_highest_level_min) {
     //var bonus = Num(upgrade3_highest_level_base).pow(Num(state.g_treelevel - upgrade3_highest_level_min));
     var diff = state.g_treelevel - upgrade3_highest_level_min;
     var bonus = Num(diff * upgrade3_highest_level_param1 + 1).powr(upgrade3_highest_level_param2);
@@ -711,7 +715,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['highest tree level ever ' + state.g_treelevel + ' (squirrel upgrade)', true, bonus, result.clone()]);
   }
 
-  if(state.upgrades3[upgrade3_leveltime].count) {
+  if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.upgrades3[upgrade3_leveltime].count) {
     var time = timeAtTreeLevel(state);
     if(time > upgrade3_leveltime_maxtime) time = upgrade3_leveltime_maxtime;
     var bonus = Num(1 + time * upgrade3_leveltime_maxbonus / upgrade3_leveltime_maxtime);
@@ -720,7 +724,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // bee challenge
-  if(state.challenge == challenge_bees) {
+  if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.challenge == challenge_bees) {
     var bonus_bees = getWorkerBeeBonus().addr(1);
     result.posmulInPlace(bonus_bees);
     if(breakdown) breakdown.push(['worker bees (challenge)', true, bonus_bees, result.clone()]);
@@ -2737,7 +2741,7 @@ var medal_challenge_thistle = registerMedal('prickly predicament', 'completed th
   return state.challenges[challenge_thistle].completed;
 }, Num(3));
 
-var medal_challenge_thistle = registerMedal('wasaaaa, B', 'completed the wasabi challenge', images_wasabi[4], function() {
+var medal_challenge_wasabi = registerMedal('wasaaaa, B', 'completed the wasabi challenge', images_wasabi[4], function() {
   return state.challenges[challenge_wasabi].completed;
 }, Num(4));
 
@@ -2904,7 +2908,7 @@ var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75], Num(0.0
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
 `,
-['one extra storage slot for fruits','one extra storage slot for fruits','one extra storage slot for fruits'],
+['one extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits'],
 'reaching tree level 15',
 function() { return state.treelevel >= 15; },
 [
@@ -2918,7 +2922,7 @@ function() { state.fruit_slots++; }
 // 3
 var challenge_nodelete = registerChallenge('undeletable challenge', 25, Num(0.05),
 `
-During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops!
+During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops, and plan ahead before planting!
 `,
 `
 • All regular crops, upgrades, ... are available and work as usual<br>
@@ -3086,10 +3090,9 @@ var challenge_thistle = registerChallenge('thistle challenge', [66], Num(0.1),
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable thistles on the field, which hurt crops that touch them, but benefit mushrooms, more than nettles<br>
 `,
-['Unlocks the thistle crop, which is the next tier of nettles. Once unlocked, it\'s available in the base game once you have grown a shiitake.'],
+['Unlocks the thistle crop, which is the next tier of nettles. Once unlocked, it\'s available in the base game once you have grown a portobello.'],
 //'reaching tree level 70',
-'having grown a shiitake',
-
+'having grown a portobello',
 function() {
   //return state.treelevel >= 70;
   return state.fullgrowncropcount[mush_5] >= 1;
@@ -3408,33 +3411,33 @@ var squirrel2_0 = registerSquirrel2('squirrel', 1, 0, Res({resin:10}), 1.5, 'Aut
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), 60, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
-var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), 120, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
-var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 180, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
-var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), 240, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
+var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), 15, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
+var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), 15, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
+var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 15, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
+var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), 15, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
 
 // mushrooms2
 crop2_register_id = 50;
-var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), 120, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
-var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), 180, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
-var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), 240, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
-var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), 300, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
+var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), 15, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
+var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), 15, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
+var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), 15, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
+var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), 15, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
 
 // flowers2
 crop2_register_id = 75;
-var flower2_0 = registerFlower2('clover', 0, 0, Res({resin:50}), 120, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
-var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 180, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
-var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5e6}), 180, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
-var flower2_3 = registerFlower2('dandelion', 9, 4, Res({resin:10e9}), 180, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', dandelion);
+var flower2_0 = registerFlower2('clover', 0, 0, Res({resin:50}), 15, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
+var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 15, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
+var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5e6}), 15, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
+var flower2_3 = registerFlower2('dandelion', 9, 4, Res({resin:10e9}), 15, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', dandelion);
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 60, Num(0.35), undefined, 'boosts prickly plants in the basic field (additive).', images_nettle);
-var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, 60, Num(1.4), undefined, 'boosts prickly plants in the basic field (additive).', images_thistle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 15, Num(0.35), undefined, 'boosts prickly plants in the basic field (additive).', images_nettle);
+var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, 15, Num(1.4), undefined, 'boosts prickly plants in the basic field (additive).', images_thistle);
 
 crop2_register_id = 150;
-var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, 180, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
-var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, 240, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
-var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, 300, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
+var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, 15, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
+var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, 15, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
+var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, 15, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
 
 crop2_register_id = 200;
 // the first beehive has only 1% boost, however by the time you unlock this beehive you can get a massive boost from blue lotuses next to a beehive, one blue lotus next to a beehive turns this boost into 33%, and you can have more than 1 blue lotus next to it. For that reason it starts so low, because if this has a base boost of e.g. 25% this would be a way too huge jump in gameplay boost by just unlocking this new ethereal crop type at a time when you already have many lotuses
@@ -3459,6 +3462,7 @@ var lotus2_template = makeTemplate2(registerLotus2('lotus template', 0, -1, Res(
 var fern2_template = makeTemplate2(registerFern2('fern template', 0, -1, Res(), 0, undefined, '', images_ferntemplate));
 var automaton2_template = makeTemplate2(registerAutomaton2('automaton template', 0, -1, Res(), 0, undefined, '', images_automatontemplate));
 var squirrel2_template = makeTemplate2(registerSquirrel2('squirrel template', 0, -1, Res(), 0, undefined, '', images_squirreltemplate));
+var bee2_template = makeTemplate2(registerBeehive2('bee template', 0, -1, Res(), 0, Num(0), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_beetemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

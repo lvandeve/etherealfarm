@@ -304,6 +304,7 @@ function encState(state, opt_raw_only) {
   processUintArray(state.g_amberbuy);
   processRes(state.g_max_res_earned);
   processRes(state.g_fernres);
+  processUint(state.g_numpresents);
 
 
   section = 11; id = 0; // global run stats
@@ -646,6 +647,21 @@ function encState(state, opt_raw_only) {
   processUintArray(state.eth_stats_numresets);
   processNumArray(state.eth_stats_challenge);
   processNumArray(state.eth_stats_medal_bonus);
+
+
+  section = 25; id = 0; // holiday drops
+
+  processUint(state.present);
+  if(state.present) {
+    processUint(state.present_image);
+    processUint(state.presentx);
+    processUint(state.presenty);
+  }
+  id = 5;
+  processFloat(state.presentwait);
+  processInt(state.present_seed);
+  processFloat(state.lastPresentTime);
+  processFloat(state.present_grow_speed_time);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1124,6 +1140,7 @@ function decState(s) {
   } else {
     // g_max_res_earned handled below to set it to p_res then
   }
+  if(save_version >= 4096*1+93) state.g_numpresents = processUint();
 
   if(error) return err(4);
 
@@ -1718,6 +1735,28 @@ function decState(s) {
     state.eth_stats_medal_bonus = processNumArray();
   }
 
+
+  section = 25; id = 0; // holiday drops
+
+  if(save_version >= 4096*1+93) {
+    state.present = processUint();
+    if(state.present) {
+      state.present_image = processUint();
+      state.presentx = processUint();
+      state.presenty = processUint();
+    }
+    id = 5;
+    state.presentwait = processFloat();
+    state.present_seed = processInt();
+    state.lastPresentTime = processFloat();
+    state.present_grow_speed_time = processFloat();
+  } else {
+    state.present_seed = state.seed0 ^ 0x70726573; // ascii for "pres"
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  // End of sections, post-processing
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 

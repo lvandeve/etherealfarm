@@ -173,10 +173,19 @@ function updateRightPane() {
     }
     if(state.g_numresets > 0) {
       if(state.challenge) {
-        if(state.treelevel >= state.challenges[state.challenge].maxlevel) {
-          text += '• Max challenge level: ' + state.challenges[state.challenge].maxlevel + ' (before: ' + state.challenges[state.challenge].maxlevel + ')';
+        var c = challenges[state.challenge];
+        var c2 = state.challenges[state.challenge];
+        var maxlevel = c2.maxlevel;
+        if(c.cycling > 1) {
+          // for challenge with cycles, show the one belonging to the current cycle
+          var cycle = c2.num_completed % c.cycling;
+          maxlevel = c2.maxlevels[cycle];
+        }
+        var newmaxlevel = Math.max(state.treelevel, maxlevel);
+        if(newmaxlevel >= maxlevel) {
+          text += '• Max challenge level: ' + newmaxlevel + ' (before: ' + maxlevel + ')';
         } else {
-          text += '• Max challenge level: ' + state.challenges[state.challenge].maxlevel;
+          text += '• Max challenge level: ' + maxlevel;
         }
       } else {
         //text += '• #Transcensions: ' + state.g_numresets;

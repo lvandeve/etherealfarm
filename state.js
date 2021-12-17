@@ -314,6 +314,15 @@ function State() {
   this.fern_seed = -1; // random seed for the fern drops
   this.fernresin = new Res(); // amount of resin gotten from ferns. counted separately from state.resin, to not count towards the max ever itself
 
+  this.present = 0; // 0 = no present, 1+ = various effects
+  this.present_image = 0;
+  this.presentx = 0;
+  this.presenty = 0;
+  this.presentwait = 0;
+  this.present_seed = -1; // random seed for the present drops
+  this.lastPresentTime = 0;
+  this.present_grow_speed_time = 0;
+
   // field size in amount of cells
   this.numw = 5;
   this.numh = 5;
@@ -529,6 +538,7 @@ function State() {
   this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
   this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
   this.g_fernres = Res(); // total resources gotten from ferns
+  this.g_numpresents = 0;
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -893,6 +903,7 @@ function createInitialState() {
   state.seed0 = Math.floor(Math.random() * 281474976710656);
   state.fruit_seed = Math.floor(Math.random() * 281474976710656);
   state.fern_seed = Math.floor(Math.random() * 281474976710656);
+  state.present_seed = Math.floor(Math.random() * 281474976710656);
 
   return state;
 }
@@ -1559,6 +1570,14 @@ function squirrelUpgradeBuyable(s, s2, b, d) {
 
 function amberUnlocked() {
   return state.g_res.amber.neqr(0);
+}
+
+function presentGrowSpeedTimeRemaining() {
+  return state.present_grow_speed_time + 15 * 60 - state.time;
+}
+
+function presentGrowSpeedActive() {
+  return presentGrowSpeedTimeRemaining() > 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

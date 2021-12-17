@@ -98,10 +98,10 @@ function createTranscendDialog(opt_from_challenge) {
   shortcutfun = function(e) {
     var shift = util.eventHasShiftKey(e);
     var ctrl = util.eventHasCtrlKey(e);
-    if(challenge_unlocked && e.key == 'b' && !shift && !ctrl) {
+    if(challenge_unlocked && (e.key == 'b' || e.key == 'B') && !ctrl) {
       if(!blueprintdialogopen) createBlueprintsDialog(true);
     }
-    if(automaton_unlocked && e.key == 'c' && !shift && !ctrl) {
+    if(automaton_unlocked && (e.key == 'c' || e.key == 'C') && !ctrl) {
       if(!challengedialogopen) createChallengeDialog();
     }
   };

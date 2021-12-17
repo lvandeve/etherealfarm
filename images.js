@@ -78,6 +78,93 @@ var images_fern2 = [
   generateImageCanvas(fern_ethereal_header + fern_base_image2),
 ];
 
+var present_header = '0:#000';
+
+var present_base_image0 = present_header + `
+....00....00....
+...0TT0..0TT0...
+...0T0T00T0T0...
+...00TTPPTT00...
+.00PPUUTTUUPP00.
+.0RPPPPUUPPPPr0.
+.0RRRUUPPUUrrr0.
+.0RRRTRPPrrtrr0.
+.0RRRTRRrrrtrr0.
+.0RRRTRRrrrtrr0.
+.0RRRTRRrrrtrr0.
+.0RRRTRRrrrtrr0.
+.00RRTRRrrrtr00.
+...00TRRrrr00...
+.....00Rr00.....
+.......00.......
+`;
+
+var present_base_image1 = present_header + `
+....00....00....
+...0AA0..0AA0...
+...0A0A00A0A0...
+...00AAXXAA00...
+.00XX@@AA@@XX00.
+.0OXXXX@@XXXXo0.
+.0OOO@@XX@@ooo0.
+.0OOOAOXXooaoo0.
+.0OOOAOOoooaoo0.
+.0OOOAOOoooaoo0.
+.0OOOAOOoooaoo0.
+.0OOOAOOoooaoo0.
+.00OOAOOoooao00.
+...00AOOooo00...
+.....00Oo00.....
+.......00.......
+`;
+
+var present_base_image2 = present_header + `
+....00....00....
+...0FF0..0FF0...
+...0F0F00F0F0...
+...00FFQQFF00...
+.00QQ}}FF}}QQ00.
+.0GQQQQ}}QQQQg0.
+.0GGG}}QQ}}ggg0.
+.0GGGFGQQggfgg0.
+.0GGGFGGgggfgg0.
+.0GGGFGGgggfgg0.
+.0GGGFGGgggfgg0.
+.0GGGFGGgggfgg0.
+.00GGFGGgggfg00.
+...00FGGggg00...
+.....00Gg00.....
+.......00.......
+`;
+
+var present_base_image3 = present_header + `
+....00....00....
+...0OO0..0OO0...
+...0O0O00O0O0...
+...00OO@@OO00...
+.00@@XXOOXX@@00.
+.0A@@@@XX@@@@a0.
+.0AAAXX@@XXaaa0.
+.0AAAOA@@aaoaa0.
+.0AAAOAAaaaoaa0.
+.0AAAOAAaaaoaa0.
+.0AAAOAAaaaoaa0.
+.0AAAOAAaaaoaa0.
+.00AAOAAaaaoa00.
+...00OAAaaa00...
+.....00Aa00.....
+.......00.......
+`;
+
+
+
+var present_images = [
+  generateImageCanvas(present_base_image0),
+  generateImageCanvas(present_base_image1),
+  generateImageCanvas(present_base_image2),
+  generateImageCanvas(present_base_image3),
+]
+
 // default header is: '#l0:#400 l1:#822 l2:#a55 l3:#faa'
 
 // less saturated than the default for fields
@@ -95,7 +182,7 @@ var fieldheader_spring = '+:#dbecc8 -:#b5d571';
 var fieldheader_summer = '+:#bda -:#ba5';
 var fieldheader_autumn = '+:#d3be9c -:#cea78b';
 var fieldheader_winter = '+:#fff -:#eef';
-var fieldheader_ethereal = '+:#9df -:#ffd';
+var fieldheader_ethereal = '+:#9df -:#aaa';
 
 var field0 = `
 ++++++++++++++++

@@ -393,7 +393,13 @@ function updateResourceUI() {
     // special effect to show ability to transcend, but after about 5 resets this is not special anymore
     title = '<span style="text-shadow:0px 0px 5px #ff0">' + title + '</span>';
   }
-  resourceDivs[0].textEl.innerHTML = title + '<br>' + util.formatDuration(state.c_runtime, true, 4, true) + '<br>' + seasonName;
+
+  var timedisplay = util.formatDuration(state.c_runtime, true, 4, true);
+  if(presentGrowSpeedActive()) {
+    timedisplay = '<font color="red">' + timedisplay + '</font>';
+  }
+
+  resourceDivs[0].textEl.innerHTML = title + '<br>' + timedisplay + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
   addButtonAction(resourceDivs[0], function() {
     var dialog = createDialog(DIALOG_MEDIUM);
@@ -459,6 +465,7 @@ function updateResourceUI() {
       result += '<br>';
       result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
       result += '<br>';
+
       var have_sun = !!state.upgrades[upgrade_sununlock].count;
       var have_mist = !!state.upgrades[upgrade_mistunlock].count;
       var have_rainbow = !!state.upgrades[upgrade_rainbowunlock].count;
@@ -482,6 +489,11 @@ function updateResourceUI() {
       var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
       text += '<br>Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
     }
+
+      if(presentGrowSpeedActive()) {
+        text += '<br><br>';
+        text += 'Grow speed effect from present active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
+      }
     return text;
   }, true);
 

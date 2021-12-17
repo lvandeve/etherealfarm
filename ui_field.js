@@ -762,6 +762,8 @@ function initFieldUI() {
           } else {
             return 'fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
           }
+        } else if(state.present && x == state.presentx && y == state.presenty) {
+          return 'present: provides a random bonus when activated. Presents are a temporary festive event!';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
@@ -791,13 +793,19 @@ function initFieldUI() {
       addButtonAction(div, bind(function(x, y, div, e) {
         var f = state.field[y][x];
         var fern = state.fern && x == state.fernx && y == state.ferny;
+        var present = state.present && x == state.presentx && y == state.presenty;
 
         if(state.fern && x == state.fernx && y == state.ferny) {
           addAction({type:ACTION_FERN, x:x, y:y});
           update();
         }
 
-        if(!fern && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
+        if(state.present && x == state.presentx && y == state.presenty) {
+          addAction({type:ACTION_PRESENT, x:x, y:y});
+          update();
+        }
+
+        if(!fern && !present && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
           makeFieldDialog(x, y);
         } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           var shift = e.shiftKey;
@@ -843,7 +851,7 @@ function initFieldUI() {
               addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[brassica], ctrlPlanted:true});
               update();
             }
-          } else if(!fern) {
+          } else if(!fern && !present) {
             makeFieldDialog(x, y);
           }
         } else if(f.hasCrop()) {
@@ -895,7 +903,7 @@ function initFieldUI() {
             } else {
               showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting with this shortcut it is allowed', C_INVALID, 0, 0);
             }
-          } else if(!fern) {
+          } else if(!fern && !present) {
             makeFieldDialog(x, y);
           }
         }
@@ -984,10 +992,11 @@ function updateFieldCellUI(x, y) {
   }
 
   var ferncode = ((state.fernx + state.ferny * state.numw) << 3) | state.fern;
+  var presentcode = ((state.presentx + state.presenty * state.numw) << 3) | state.present;
 
   var automatonplant = (x == state.automatonx && y == state.automatony && (state.time - state.automatontime < 0.5));
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
@@ -996,6 +1005,7 @@ function updateFieldCellUI(x, y) {
     fd.season = season;
     fd.treelevel = state.treelevel;
     fd.ferncode = ferncode;
+    fd.presentcode = presentcode;
     fd.progresspixel = progresspixel;
     fd.automatonplant = automatonplant;
 
@@ -1045,6 +1055,9 @@ function updateFieldCellUI(x, y) {
     if(state.fern && x == state.fernx && y == state.ferny) {
       blendImage((state.fern == 2 ? images_fern2 : images_fern)[season], fd.canvas);
       label = 'fern. ' + label;
+    } else if(state.present && x == state.presentx && y == state.presenty) {
+      blendImage(present_images[state.present_image], fd.canvas);
+      label = 'present. ' + label;
     } else if(f.index == 0) {
       label = 'empty ' + label;
     }

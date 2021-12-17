@@ -1171,7 +1171,8 @@ function initSettingsUI() {
   // changelog / about button
   var aboutbutton = addTopBarFlex(10, 11).div;
   canvas = createCanvas('0%', '0%', '100%', '100%', aboutbutton);
-  renderImage(images_fern[1], canvas);
+  //renderImage(images_fern[1], canvas);
+  renderImage(present_images[Math.floor(Math.random() * 4)], canvas);
   styleButton0(aboutbutton, true);
   aboutbutton.title = 'About';
 
