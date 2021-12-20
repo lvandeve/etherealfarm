@@ -1962,6 +1962,7 @@ function getHighestAffordableCropOfType(type, res) {
 function getCheapestNextOfCropType(type, opt_tier) {
   var tier = (opt_tier == undefined) ? (state.lowestoftypeplanted[type] + 1) : (opt_tier + 1);
   if(tier < 0 || tier == Infinity) return null;
+  if(tier < state.lowestcropoftypeunlocked[type]) tier = state.lowestcropoftypeunlocked[type];
   var crop = croptype_tiers[type][tier];
   if(!crop) return null;
   if(!state.crops[crop.index].unlocked) return null;

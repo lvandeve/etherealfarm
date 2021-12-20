@@ -166,7 +166,7 @@ function getRainbowWait() {
 // @constructor
 function Crop() {
   this.name = 'a';
-  this.cost = Res(); // one-time cost (do not use directly, use getCost() to get all multipliers taken into account)
+  this.cost = Res(); // one-time cost (do not use directly, use .getCost() to get all multipliers taken into account) and .getBaseCost() to get prestige taken into account
   this.prod = Res(); // production per second (do not use directly, use getProd() to get all multipliers taken into account)
   this.leech = undefined; // e.g. set to Num(1) for 100% base copying for watercress
   this.index = 0; // index in the crops array
@@ -186,6 +186,8 @@ function Crop() {
   this.tier = 0;
 
   this.istemplate = false; // if true, is a placeholder template
+
+  this.cached_prestige_ = 0;
 };
 
 var sameTypeCostMultiplier = 1.5;
@@ -1144,7 +1146,7 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
   // add a penalty for the neighbor production copy-ing if there are multiple watercress in the field. The reason for this is:
   // the watercress neighbor production copying is really powerful, and if every single watercress does this at full power, this would require way too active play, replanting watercresses in the whole field all the time.
   // encouraging to plant one or maybe two (but diminishing returns that make more almost useless) strikes a good balance between doing something useful during active play, but still getting reasonable income from passive play
-  var numsame = state.cropcount[this.index];
+  var numsame = state.croptypecount[this.type];
   if(numsame > 1) {
     // before v0.1.88, this formula was: 1 / (1 + (numsame - 1) * 0.75). But not it got tweaked to make 2 watercress less punishing, but more than 3 watercress more punishing.
     var penalty = Math.pow(0.66, numsame - 1.5);
@@ -1159,7 +1161,7 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
 var registered_crops = []; // indexed consecutively, gives the index to crops
 var crops = []; // indexed by crop index
 
-// array of arrays, first index is croptype, second index is tier, value is crop of that tier for that cropindex
+// 2D: array of arrays, first index is croptype, second index is tier, value is crop of that tier for that cropindex
 var croptype_tiers = [];
 
 // 16-bit ID, auto incremented with registerCrop, but you can also set it to a value yourself, to ensure consistent IDs for various crops (between savegames) in case of future upgrades
@@ -1274,8 +1276,17 @@ function getBerryBase(i) {
 function getBerryCost(i) {
   var seeds = getBerryBase(i);
   seeds.mulrInPlace(20);
-  if(i == 0) seeds.mulrInPlace(50);
-  if(i > 1) seeds.mulInPlace(Num.rpow(1.5, Num((i - 1) * (i - 1))));
+  if(i == 0) {
+    // 0 and 1 are manually tuned for the start of the game
+    seeds.mulrInPlace(50);
+  }
+  if(i >= 2) {
+    // for higher tier berries, the cost is increased more than the production.
+    // the reason is the ratio between production and consumption as the player progresses: upgrades, fruits, ... significantly increase the berry production over the base production from getBerryProd
+    // that means that for higher level players, a berry that is planted would produce much more than its own plant cost in fractions of a second
+    // so the difficulty must be upped for higher tier berries.
+    seeds.mulInPlace(Num.rpow(1.5, Num((i - 1) * (i - 1))));
+  }
   seeds = Num.roundNicely(seeds);
   return Res({seeds:seeds});
 }
@@ -1451,9 +1462,12 @@ crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+sel
 
 // templates
 
+var templates_for_type = [];
+
 function makeTemplate(crop_id) {
   crops[crop_id].istemplate = true;
   crops[crop_id].cost = Res(0);
+  templates_for_type[crops[crop_id].type] = crop_id;
   return crop_id;
 }
 
@@ -1653,36 +1667,7 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
   return result;
 }
 
-// an upgrade that increases the multiplier of a crop
-function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_id, opt_pre_fun) {
-  var crop = crops[cropid];
-  var name = crop.name;
-
-  // the index this new upgrade will get
-  var index = upgrade_register_id;
-
-  crop.basic_upgrade = index;
-
-  var fun = function() {};
-
-  var pre = function() {
-    if(opt_pre_fun && !opt_pre_fun()) return false;
-    if(crop_unlock_id == undefined) {
-      return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
-    } else {
-      // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
-      return state.upgrades[crop_unlock_id].count;
-    }
-  };
-
-  var aspect = 'production';
-  if(crop.type == CROPTYPE_MUSH) aspect = 'production but also consumption';
-
-  var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor(((multiplier - 1) * 100)) + '% (multiplicative)';
-
-  if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption. Get your seeds production up first!';
-
-
+function setCropMultiplierCosts(u, crop) {
   var tier = crop.tier;
   var cost0, cost1;
   var upgrade_steps = 1;
@@ -1712,13 +1697,7 @@ function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_i
   var cost1b = crop.type == CROPTYPE_NUT ? cost1.spores : cost1.seeds;
   var costmul = cost1b.div(cost0b).powr(1 / upgrade_steps);
 
-  var result = registerUpgrade('Upgrade ' + name, cost0, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
-  var u = upgrades[result];
-  u.bonus = Num(multiplier);
-  u.cropid = cropid;
-  u.iscropupgrade = true;
-
-
+  u.cost = cost0;
 
   u.getCost = function(opt_adjust_count) {
     var i = state.upgrades[this.index].count + (opt_adjust_count || 0);
@@ -1742,6 +1721,44 @@ function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_i
       return new Res({seeds:seeds});
     }
   };
+}
+
+// an upgrade that increases the multiplier of a crop
+function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_id, opt_pre_fun) {
+  var crop = crops[cropid];
+  var name = crop.name;
+
+  // the index this new upgrade will get
+  var index = upgrade_register_id;
+
+  crop.basic_upgrade = index;
+
+  var fun = function() {};
+
+  var pre = function() {
+    if(opt_pre_fun && !opt_pre_fun()) return false;
+    if(crop_unlock_id == undefined) {
+      return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
+    } else {
+      // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
+      return state.upgrades[crop_unlock_id].count;
+    }
+  };
+
+  var aspect = 'production';
+  if(crop.type == CROPTYPE_MUSH) aspect = 'production but also consumption';
+
+  var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor(((multiplier - 1) * 100)) + '% (multiplicative)';
+
+  if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption. Get your seeds production up first!';
+
+  var result = registerUpgrade('Upgrade ' + name, /*cost0=*/undefined, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var u = upgrades[result];
+  u.bonus = Num(multiplier);
+  u.cropid = cropid;
+  u.iscropupgrade = true;
+
+  setCropMultiplierCosts(u, crop);
 
   return result;
 }
@@ -5377,3 +5394,66 @@ var ambercost_prod = Num(20);
 var ambercost_lengthen = Num(25);
 var ambercost_shorten = Num(25);
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+function applyPrestige(crop_id, prestige) {
+  var c = crops[crop_id];
+  var c2 = state.crops[crop_id];
+
+
+  c2.prestige = prestige;
+  updatePrestigeData(crop_id);
+
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      var f = state.field[y][x];
+      if(!f.hasCrop()) continue;
+      if(f.cropIndex() == crop_id) {
+        f.index = 0;
+        if(templates_for_type[c.type]) f.index = CROPINDEX + templates_for_type[c.type];
+        f.growth = 0;
+      }
+    }
+  }
+
+  if(c.basic_upgrade != null) {
+    var u = upgrades[c.basic_upgrade];
+    var u2 = state.upgrades[c.basic_upgrade];
+    u2.count = 0;
+  }
+}
+
+function updatePrestigeData(crop_id) {
+  var c = crops[crop_id];
+  var c2 = state.crops[crop_id];
+  if(c.cached_prestige_ == c2.prestige) return; // already up to date
+
+  c.cached_prestige_ = c2.prestige;
+
+  var oldtier = c.tier;
+  if(c.type == CROPTYPE_BERRY) {
+    if(c.tier < 0) return; // doesn't work for templates
+    var tier = (c.tier & 15);
+    var tier2 = tier + c2.prestige * 16;
+    c.cost = getBerryCost(tier2);
+    c.prod = getBerryProd(tier2);
+    c.tier = tier2;
+
+    if(c.basic_upgrade != null) {
+      var u = upgrades[c.basic_upgrade];
+      var u2 = state.upgrades[c.basic_upgrade];
+      setCropMultiplierCosts(u, c);
+    }
+  }
+  var newtier = c.tier;
+  croptype_tiers[c.type][oldtier] = undefined;
+  croptype_tiers[c.type][newtier] = crops[crop_id];
+  // TODO: support mushroom and flower too
+}
+
+function updateAllPrestigeData() {
+  for(var i = 0; i < 16; i++) updatePrestigeData(berry_0 + i);
+}

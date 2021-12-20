@@ -46,13 +46,20 @@ var stem_metal_header10 = 'X:#fff O:#eee o:#ddd x:#ccc'; // diamond
 
 
 // the images have season dependent palette, for colors qgGQ. Use them as green, but they'll become season dependent. Only those 4 colors.
-function createTreeImages(name, top, bottom, opt_stem_header) {
+function createTreeImages(name, top, bottom, opt_stem_header, opt_no_lights) {
   var s = (opt_stem_header ? (' ' + opt_stem_header) : '') + '\n';
   var a0 = generateImageCanvas(leaves_spring_header + s + top.trim());
   var a1 = generateImageCanvas(leaves_summer_header + s + top.trim());
   var a2 = generateImageCanvas(leaves_autumn_header + s + top.trim());
   var a3 = generateImageCanvas(leaves_winter_header + s + top.trim());
-  var a4 = generateImageCanvas(leaves_ethereal_header + s + top.trim());
+  var use_lights = false;
+  var a4;
+  if(opt_no_lights) {
+    a4 = generateImageCanvas(leaves_ethereal_header + s + top.trim());
+  } else {
+    a4 = createCanvasImageFor(blendImages(generateImage(leaves_ethereal_header + s + top.trim()), generateImage(image_tree_lights)));
+  }
+  //blendImages, image_tree_lights);
   var b0 = generateImageCanvas(leaves_spring_header + s + bottom.trim());
   var b1 = generateImageCanvas(leaves_summer_header + s + bottom.trim());
   var b2 = generateImageCanvas(leaves_autumn_header + s + bottom.trim());
@@ -60,6 +67,25 @@ function createTreeImages(name, top, bottom, opt_stem_header) {
   var b4 = generateImageCanvas(leaves_ethereal_header + s + bottom.trim());
   return [name, [a0, a1, a2, a3, a4], [b0, b1, b2, b3, b4]];
 }
+
+var image_tree_lights = `
+................
+................
+................
+................
+....P+..........
+....++..........
+...3...-E.......
+.K*..3.EE.......
+.**...3......A/.
+......3...K*.//.
+....A/.3..**.3..
+....//..33..3-E.
+......P+..33.EE.
+......++........
+................
+................
+`;
 
 
 var image_metal_tree_top = `
@@ -139,7 +165,7 @@ createTreeImages('weathered tree', `
 ................
 ................
 ................
-`),
+`, undefined, true),
 // tree level 1
 createTreeImages('young sprout', `
 ................
@@ -175,7 +201,7 @@ createTreeImages('young sprout', `
 ................
 ................
 ................
-`),
+`, undefined, true),
 // tree level 2
 createTreeImages('young sprout', `
 ................
@@ -980,5 +1006,6 @@ Ggqoooooxxx.....
 ................
 `),
 ];
+
 
 

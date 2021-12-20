@@ -183,13 +183,16 @@ function encState(state, opt_raw_only) {
     if(state.crops[registered_crops[i]].unlocked) unlocked.push(registered_crops[i]);
   }
   array0 = [];
+  array1 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'crops must be registered in increasing order';
     array0.push(unlocked[i] - prev);
     prev = unlocked[i];
+    array1.push(state.crops[unlocked[i]].prestige);
   }
   processUintArray(array0);
+  ///processUintArray(array1);
 
 
   section = 5; id = 0; // upgrades2
@@ -730,6 +733,7 @@ function decState(s) {
     found = true;
     return token.value;
   };
+  var haveNextToken = function() { return tokens[section * 64 + id] != undefined; }; // only used for debugging and testing
   var processBool = function(def) { return process(def, TYPE_BOOL); };
   var processUint6 = function(def) { return process(def, TYPE_UINT6); };
   var processInt = function(def) { return process(def, TYPE_INT); };
@@ -962,12 +966,14 @@ function decState(s) {
   }
 
 
-
-
-
-
   section = 4; id = 0; // crops
   array0 = processUintArray();
+  if(save_version >= 4096*1+94/* || haveNextToken()*/) {
+    array1 = processUintArray(); // prestige
+  } else {
+    array1 = [];
+    for(var i = 0; i < array0.length; i++) array1[i] = 0;
+  }
   if(error) return err(4);
   prev = 0;
   for(var i = 0; i < array0.length; i++) {
@@ -979,6 +985,7 @@ function decState(s) {
       return err(4);
     }
     state.crops[index].unlocked = true;
+    state.crops[index].prestige = array1[i];
   }
 
 
@@ -1959,6 +1966,7 @@ var presave = function(state) {
 // (re-)initializes everything (UI, ...) with the new state object
 var postload = function(new_state) {
   state = new_state;
+  updateAllPrestigeData();
   computeDerived(state);
   precomputeField();
 

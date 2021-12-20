@@ -96,6 +96,7 @@ Cell.prototype.isTemplate = function() {
 
 function CropState() {
   this.unlocked = false;
+  this.prestige = 0;
 }
 
 function Crop2State() {
@@ -653,6 +654,10 @@ function State() {
   // then it is more than 24h til the next season, but without this variable, that's not supported, as the season is computed to cycle every 24h.
   this.seasonshifted = 0;
 
+
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+
   // temp variables for visual effect, not to be saved
   this.automatonx = 0; // for the visual planting effect
   this.automatony = 0;
@@ -682,7 +687,7 @@ function State() {
   // derived stat, not to be saved
   this.cropcount = [];
   this.crop2count = [];
-  this.croptypecount = [];
+  this.croptypecount = []; // excludes templates
 
   // amount of fully grown plants of this type planted in fields
   // does not include partially growing ones, nor templates
@@ -769,6 +774,7 @@ function State() {
   // derived stat, not to be saved.
   this.highestoftypeplanted = [];
   this.lowestoftypeplanted = [];
+  this.lowestcropoftypeunlocked = []; // this is for in case plants are prestiged: the lowest tier of this plant that exists, e.g. normally this is 0, but if blackberry and blueberry have been prestiged, this is 2. Does not include the templates (tier -1)
 
   // higest tier unlocked by research for this croptype
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
@@ -923,22 +929,25 @@ function computeDerived(state) {
   state.numcropfields = 0;
   state.numfullgrowncropfields = 0;
   state.numfullpermanentcropfields = 0;
-  for(var i = 0; i < registered_crops.length; i++) {
-    state.cropcount[registered_crops[i]] = 0;
-    state.fullgrowncropcount[registered_crops[i]] = 0;
-    state.growingcropcount[registered_crops[i]] = 0;
-  }
-  for(var i = 1; i < CROPINDEX; i++) {
-    state.specialfieldcount[i] = 0;
-  }
   for(var i = 0; i < NUM_CROPTYPES; i++) {
     state.fullgrowncroptypecount[i] = 0;
     state.growingcroptypecount[i] = 0;
     state.croptypecount[i] = 0;
     state.highestoftypeplanted[i] = -Infinity;
     state.lowestoftypeplanted[i] = Infinity;
+    state.lowestcropoftypeunlocked[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
     state.highestoftype2unlocked[i] = -Infinity;
+  }
+  for(var i = 0; i < registered_crops.length; i++) {
+    state.cropcount[registered_crops[i]] = 0;
+    state.fullgrowncropcount[registered_crops[i]] = 0;
+    state.growingcropcount[registered_crops[i]] = 0;
+    var c = crops[registered_crops[i]];
+    if(c.tier >= 0 && c.tier < state.lowestcropoftypeunlocked[c.type]) state.lowestcropoftypeunlocked[c.type] = c.tier;
+  }
+  for(var i = 1; i < CROPINDEX; i++) {
+    state.specialfieldcount[i] = 0;
   }
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
