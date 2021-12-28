@@ -1498,6 +1498,9 @@ function precomputeField() {
 
   // pass 6: score heuristics for automaton auto-plant. The score of flower-beehive and nettle-malus pairs is assumed to already have been computed at this point
   var winter = getSeason() == 3;
+  // during the beginning of the basic challenge, adjust the heuristics to ignore flower templates (it takes a long while before they become flowers), and upgrade berries next to mushrooms sooner rather than later (because early tree levels are useful here)
+  var score_ignore_templates = !!basicChallenge() && state.highestoftypeunlocked[CROPTYPE_BERRY] < 4;
+  var score_ignore_mushrooms = !score_ignore_templates; // normally these are ignored
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1518,11 +1521,13 @@ function precomputeField() {
         var c2 = f2.getCrop();
         if(!c2) continue;
         var p2 = prefield[y2][x2];
+        if(score_ignore_templates && c2.istemplate) continue;
 
         if(c.type == CROPTYPE_BERRY) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
           if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 2) ? 1 : 2); // TODO: take diagonal brassica into account here if unlocked
           if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
+          if(!score_ignore_mushrooms && c2.type == CROPTYPE_MUSH) score_mul *= 2;
         }
         if(c.type == CROPTYPE_MUSH) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
