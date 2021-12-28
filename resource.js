@@ -216,7 +216,7 @@ Res.prototype.div = function(v) {
   return res;
 };
 Res.div = function(r, v) { return r.div(v); }
-// divtiply with a regular JS number
+// divide through a regular JS number
 Res.prototype.divrInPlace = function(v) {
   return this.divInPlace(new Num(v));
 };
@@ -224,6 +224,27 @@ Res.prototype.divr = function(v) {
   return this.div(new Num(v));
 };
 Res.divr = function(r, v) { return r.div(new Num(v)); };
+
+// finds divisor between a and b, ignoring 0/0 which would give nan
+// returns result as a single Num
+// that is, if b is of the form a*x, this will return x. Given that a and b are vectors of multiple values,
+// the result is not guaranteed to exist.
+// returns nan if all value of a and b are 0. otherwise, ignores any resources that are 0 in both a and b, and returns the max value for a.resource / b.resource (which can be infinite).
+// this is useful for in UI to give some indicatino of how much bigger one resource is than another, and is also useful for any resources of which only one value is used (e.g. seeds, while all the other values are 0)
+Res.findDiv = function(a, b) {
+  var arra = a.toArray();
+  var arrb = b.toArray();
+  var r = Num(NaN);
+  for(var i = 0; i < arra.length; i++) {
+    var va = arra[i];
+    var vb = arrb[i];
+    if(va.eqr(0) && vb.eqr(0)) continue;
+    var d = va.div(vb);
+    if(r.isNaN() || d.gt(r)) r = d;
+  }
+  return r;
+};
+
 
 
 // elementwise multiply with another resource.

@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.94 (2021-12-28):';
+  text += '<br/>• Initial version of "prestige" released, a single berry type can be prestiged in this version.';
+  text += '<br/>• Added one more tier of flower.';
+  text += '<br/>• Added two new challenges (one is a harder variation of the other).';
+  text += '<br/>• Added one more completion target level for the rocks challenge.';
+  text += '<br/>• Various small fixes.'; // gear icon in automaton dialog issue with some fonts, "paused" now showing after page refresh, a bit more precision in computation after long time durations
+  text += '<br/><br/>';
+
   text += '0.1.93 (2021-12-17):';
   text += '<br/>• Holiday event started!';
   text += '<br/>&nbsp;&nbsp;- Presents with random rewards will drop.';

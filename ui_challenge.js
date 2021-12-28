@@ -80,8 +80,12 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     text += '• Reach <b>tree level ' + c.targetlevel[0] + '</b> to successfully complete the challenge, or reach any other max level to increase challenge production bonus.';
   }
   text += '<br>';
-  text += '• Max level reached with this challenge gives <b>' + c.bonus.toPercentString() + '</b> * (level ^ ' + challenge_bonus_exponent + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  text += '• Max level reached with this challenge gives <b>' + getChallengeFormulaString(c, c.bonus.toPercentString()) + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
   text += '<br>';
+  if(c.alt_bonus) {
+    text += '• ' + altChallengeBonusInfo;
+    text += '<br>';
+  }
   if(c.allowsresin && c.allowsfruits && c.allowstwigs && c.allowsnuts && c.allowbeyondhighestlevel) {
     if(squirrelUnlocked()) {
       text += '• You can gain resin, twigs, nuts and fruits as usual (but they only become available at at least tree level 10)';
@@ -189,9 +193,6 @@ function getChallengeStatsString(challenge_id, include_current_run) {
       text += '• Next cycle: ' + (cycle + 1) + ' of ' + c.cycling;
     }
     text += '<br>';
-    //text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs. Formula: <b>' + c.bonus.toPercentString() + '</b> * (level ^ ' + challenge_bonus_exponent + ').'  + '<br>';
-    //for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
-    //text += '<br>';
     if(currentlyrunning) {
       text += '• Max levels reached: ';
       for(var j = 0; j < c.cycling; j++) {
@@ -220,14 +221,23 @@ function getChallengeStatsString(challenge_id, include_current_run) {
     if(currentlyrunning) {
       text += '• Max level reached before: ' + c2.maxlevel + ', <b>after: ' + maxlevel + '</b><br>';
       var diff = getChallengeBonus(c.index, maxlevel).sub(getChallengeBonus(c.index, c2.maxlevel));
+      var challenge0 = state.challenge_bonus0;
+      var challenge1 = state.challenge_bonus1;
+      if(c.alt_bonus) challenge1 = challenge1.add(diff);
+      else challenge0 = challenge0.add(diff);
+      var challenge2 = totalChallengeBonus(challenge0, challenge1);
       text += '• Production bonus before: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + ', <b>after: ' + getChallengeBonus(c.index, maxlevel).toPercentString() +
-              '</b>. Total (all challenges) before: ' + state.challenge_bonus.toPercentString() + ', <b>after: ' + (state.challenge_bonus.add(diff)).toPercentString() + '</b><br>';
+              '</b>' + (c.alt_bonus ? ' (alternate multiplier)' : '') +
+              '. Total (all challenges) before: ' + state.challenge_bonus.toPercentString() + ', <b>after: ' + challenge2.toPercentString() + '</b><br>';
 
     } else {
       text += '• Max level reached: ' + c2.maxlevel + '<br>';
       text += '• Production bonus: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + '<br>';
     }
-    //text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs. Formula: <b>' + c.bonus.toPercentString() + '</b> * (level ^ ' + challenge_bonus_exponent + ').'  + '<br>';
+    /*if(c.alt_bonus) {
+      text += '• ' + altChallengeBonusInfo;
+      text += '<br>';
+    }*/
   }
   if(currentlyrunning) {
     text += '• Times ran (excluding the current run): ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
@@ -439,7 +449,16 @@ function createFinishChallengeDialog() {
   });
 }
 
+function getChallengeFormulaString(c, opt_bonus_string) {
+  var bonus_string = opt_bonus_string || 'bonus';
 
+  if(c.bonus_min_level) {
+    return bonus_string + ' * max(0, level - ' + c.bonus_min_level + ') ^ ' + c.bonus_exponent;
+  } else {
+    return bonus_string + ' * level ^ ' + c.bonus_exponent;
+  }
+
+}
 
 function createAllChallengeStatsDialog() {
   var dialog = createDialog(DIALOG_LARGE);
@@ -457,7 +476,13 @@ function createAllChallengeStatsDialog() {
   var pos = 0;
   var h = 0.1;
 
-  text += 'total challenge production bonus: +' + state.challenge_bonus.toPercentString() + '<br><br>';
+  text += 'Total challenge production bonus: +' + state.challenge_bonus.toPercentString() + '<br>';
+  if(state.challenge_bonus1.neqr(0)) {
+    text += 'regular bonus: +' + state.challenge_bonus0.toPercentString() + '<br>';
+    text += 'alternate bonus: +' + state.challenge_bonus1.toPercentString() + '<br>';
+  }
+  text += '<br>';
+
 
   // TODO: the display order should be different than the registered order, by difficulty level
   for(var i = 0; i < challenges_order.length; i++) {
@@ -481,7 +506,8 @@ function createAllChallengeStatsDialog() {
 
 
     text += '<br>';
-    text += 'runs: ' + (c2.num + 1);
+    text += 'runs: ' + c2.num;
+    if(state.challenge == c.index) text += ' (excluding current run)';
     text += '<br>';
     if(c.cycling > 1) {
       text += 'highest levels: ';
@@ -497,7 +523,7 @@ function createAllChallengeStatsDialog() {
       text += 'fastest target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';
     }
     if(c.cycling > 1) {
-      text += 'bonuses per max level (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ';
+      text += 'bonuses per max level (formula: ' + getChallengeFormulaString(c) + '): ';
       for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
       text += '<br>';
       text += 'production bonuses: ';
@@ -508,9 +534,13 @@ function createAllChallengeStatsDialog() {
       text += nextString + ' cycle: ' + (cycle + 1) + ' of ' + (c.cycling);
       text += '<br>';
     } else {
-      text += 'bonus per max level (formula: bonus * level ^ ' + challenge_bonus_exponent + '): ' + c.bonus.toPercentString();
+      text += 'bonus per max level (formula: ' + getChallengeFormulaString(c) + '): ' + c.bonus.toPercentString();
       text += '<br>';
       text += 'production bonus: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString();
+      text += '<br>';
+    }
+    if(c.alt_bonus) {
+      text += altChallengeBonusInfo;
       text += '<br>';
     }
     if(c.targetlevel.length > 1) {
@@ -570,6 +600,35 @@ function showChallengeChip(challenge) {
   textFlex.div.textEl.innerHTML = text + '<br><br>\"' + upper(c.name) + '\"';
 
   addButtonAction(challengeChipFlex.div, removeChallengeChip);
+}
+
+// the "challenge unlocked" chip at the bottom
+var challengeUnlockedChipFlex = undefined;
+
+function removechallengeUnlockedChip() {
+  if(!challengeUnlockedChipFlex) return;
+
+  challengeUnlockedChipFlex.removeSelf(gameFlex);
+  challengeUnlockedChipFlex = undefined;
+}
+
+function showchallengeUnlockedChip(challenge) {
+  removechallengeUnlockedChip();
+  var c = challenges[challenge];
+  var c2 = state.challenges[challenge];
+
+  challengeUnlockedChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
+  challengeUnlockedChipFlex.div.style.backgroundColor = '#fcce';
+  challengeUnlockedChipFlex.div.style.zIndex = 15;
+
+  var textFlex = new Flex(challengeUnlockedChipFlex, 0.01, [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  centerText2(textFlex.div);
+  var text = 'Challenge Unlocked!';
+  textFlex.div.textEl.innerHTML = text + '<br><br>\"' + upper(c.name) + '\"';
+
+  addButtonAction(challengeUnlockedChipFlex.div, removechallengeUnlockedChip);
 }
 
 

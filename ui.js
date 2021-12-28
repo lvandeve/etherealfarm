@@ -125,6 +125,8 @@ function initUI() {
 
   contentFlex.clear();
   pausedflex = undefined;
+  pausedcanvaspaused = false;
+  pausedflextext = undefined;
   tabFlex.clear();
 
   //setMainDivSizes();

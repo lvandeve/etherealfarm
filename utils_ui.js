@@ -49,6 +49,14 @@ function centerText2(div) {
   div.textEl = cell;
 }
 
+// for some reason the unicode gear character (⚙) does not properly center when using centerText2, only for some fonts
+// the additional rule in this function appears to fix it for now
+// TODO: find more reliable solution and merge centerText2 and centerText2_unicode again
+function centerText2_unicode(div) {
+  centerText2(div);
+  div.textEl.style.lineHeight = '100%';
+}
+
 // This text centering method requires you to have a parent and child element,
 // both already existing in that form, and with the child element already
 // having content filled in. This call will then center the child.

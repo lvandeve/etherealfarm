@@ -57,7 +57,7 @@ function ensureMissedHelpDialogAvailable(id, opt_state) {
 }
 
 // id = unique id for seen/disable setting of this particular help message. must be > 0. Alternatively, id can be made < 0, then it only prints it as showMessage, this feature simply exists to allow easily changing the source code to use a full on dialog, or just showMessage, for particular help text
-// highest used id: 37
+// highest used id: 38
 // opt_text2 is shown only in the dialog and not in the "showMessage" in console
 // opt_recursive is used internally only, when recursively calling showHelpDialog again when there were multiple. It prevents showMessage since showMessage will already have been done.
 // text_short = shown in the message log if help already disabled for this particular dialog, or undefined to simply use the main text, or empty string to show nothing for this case
@@ -431,6 +431,10 @@ registerHelpDialog(37, 'Combined Seasonal Fruits', 'You unlocked combined season
   [[images_apricot[1],images_pineapple[1],images_pear[8]],
    [images_medlar[1],images_mango[4],images_plum[7]],
    [images_quince[4],images_kumquat[1],images_dragonfruit[9]]]);
+
+registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
+    'You unlocked auto-prestige for the automaton! This is integrated with auto-unlock: the same cost settings of auto-unlock are used for auto-prestige, and you can use a toggle to enable/disable auto-prestige.',
+    images_automaton[4]);
 
 
 function createKeyboardHelpDialog() {

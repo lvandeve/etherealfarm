@@ -116,8 +116,9 @@ var getUpgradeInfoText = function(u, completed) {
   if(u.is_choice && completed) {
     infoText += '<br><br>Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
   }
-  if(u.cropid != undefined) {
+  if(u.cropid != undefined && !u.isprestige) {
     var c = crops[u.cropid];
+    var c2 = state.crops[u.cropid];
     infoText += '<hr>';
     infoText += 'Crop info (' + c.name + '):<br><br>';
 
@@ -141,6 +142,7 @@ var getUpgradeInfoText = function(u, completed) {
     }
     infoText += '<br>';
     infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
+    if(c2.prestige) infoText += 'Prestiged: ' + c2.prestige + 'x<br>';
     // standard as in: none of the field-location boosts are taken into account
     //var cropprod = c.getProd(undefined, true);
     //if(!cropprod.empty()) {

@@ -214,9 +214,8 @@ function lockAllUpgrades() {
 
 // unlock any templates that are available, or lock them if not
 function unlockTemplates() {
-
   var wither_incomplete = state.challenge == challenge_wither && state.challenges[challenge_wither].completed < 3;
-  if(haveAutomaton() && state.challenge != challenge_nodelete && !wither_incomplete && state.challenge != challenge_bees) {
+  if(haveAutomaton() && state.challenge != challenge_nodelete && !wither_incomplete && state.challenge != challenge_bees && basicChallenge() != 2) {
     state.crops[watercress_template].unlocked = true;
     state.crops[berry_template].unlocked = true;
     state.crops[mush_template].unlocked = true;
@@ -329,8 +328,6 @@ function startChallenge(challenge_id) {
     }
   }
 
-
-
   if(challenge_id == challenge_rockier) {
     // similar to challenge_rocks, but more rocks
     // here the layouts rotate around each time you complete the challenge
@@ -384,6 +381,7 @@ function startChallenge(challenge_id) {
 
 // get the field size to have after a reset
 function getNewFieldSize() {
+  if(basicChallenge() == 2) return [5, 5];
   if(state.upgrades2[upgrade2_field7x7].count) {
     return [7, 7];
   } else if(state.upgrades2[upgrade2_field7x6].count) {
@@ -394,13 +392,7 @@ function getNewFieldSize() {
   return [5, 5];
 }
 
-function softReset(opt_challenge) {
-  save(util.clone(state), function(s) {
-    util.setLocalStorage(s, localstorageName_transcend);
-  });
-  util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
-  savegame_recovery_situation = false;
-
+function endPreviousRun() {
   if(state.challenge) {
     var c = challenges[state.challenge];
     var c2 = state.challenges[state.challenge];
@@ -429,8 +421,6 @@ function softReset(opt_challenge) {
     // even for the "attempt" counter, do not count attempts that don't even level up the tree, those are counted as state.g_numresets_challenge_0 instead
     if(state.treelevel) c2.num++;
   }
-
-  state.amberprod = false;
 
   var resin_no_ferns = getUpcomingResin();
   var resin = getUpcomingResinIncludingFerns();
@@ -473,21 +463,6 @@ function softReset(opt_challenge) {
   if(state.g_numresets == 0) {
     showRegisteredHelpDialog(1);
   }
-
-  // state.c_runtime = util.getTime() - state.c_starttime; // state.c_runtime was computed by incrementing each delta, but this should be numerically more precise
-
-  // first ethereal crops
-  state.crops2[berry2_0].unlocked = true;
-  state.crops2[mush2_0].unlocked = true;
-  state.crops2[flower2_0].unlocked = true;
-  state.crops2[fern2_0].unlocked = true;
-  state.crops2[lotus2_0].unlocked = true;
-
-  // todo: remove this? softReset is called during the update() function, that one already manages the time
-  state.time = util.getTime();
-  state.prevtime = state.time;
-
-
   state.res.resin.addInPlace(resin);
   state.g_res.resin.addInPlace(resin);
   state.c_res.resin.addInPlace(resin);
@@ -559,6 +534,8 @@ function softReset(opt_challenge) {
     state.p_res_hr_at = state.c_res_hr_at;
     state.p_res_hr_at_time = state.c_res_hr_at_time;
     state.p_pausetime = state.c_pausetime;
+    state.p_numprestiges = state.c_numprestiges;
+    state.p_numautoprestiges = state.c_numautoprestiges;
 
     state.p_treelevel = state.treelevel;
   }
@@ -579,6 +556,42 @@ function softReset(opt_challenge) {
       state.g_slowestrun2 = Math.max(state.g_slowestrun2, runtime2);
     }
   }
+
+  // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
+  if(!state.challenge) {
+    state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
+    state.g_p_treelevel = Math.max(state.treelevel, state.g_p_treelevel);
+  }
+
+  if(state.challenge) {
+    if(state.treelevel) {
+      state.g_numresets_challenge++;
+      if(state.treelevel >= 10) state.g_numresets_challenge_10++;
+    } else {
+      state.g_numresets_challenge_0++;
+    }
+  } else {
+    state.g_numresets++;
+  }
+}
+
+function beginNextRun(opt_challenge) {
+  state.challenge = opt_challenge || 0;
+
+  state.amberprod = false;
+
+  // first ethereal crops
+  state.crops2[berry2_0].unlocked = true;
+  state.crops2[mush2_0].unlocked = true;
+  state.crops2[flower2_0].unlocked = true;
+  state.crops2[fern2_0].unlocked = true;
+  state.crops2[lotus2_0].unlocked = true;
+
+  // todo: remove this? softReset is called during the update() function, that one already manages the time
+  state.time = util.getTime();
+  state.prevtime = state.time;
+
+  // state.c_runtime = util.getTime() - state.c_starttime; // state.c_runtime was computed by incrementing each delta, but this should be numerically more precise
 
   state.c_starttime = state.time;
   state.c_runtime = 0;
@@ -604,27 +617,11 @@ function softReset(opt_challenge) {
   state.c_res_hr_at = Res();
   state.c_res_hr_at_time = Res();
   state.c_pausetime = 0;
-
-  // this too only for non-challenges, highest tree level of challenge is already stored in the challenes themselves
-  if(!state.challenge) {
-    state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
-    state.g_p_treelevel = Math.max(state.treelevel, state.g_p_treelevel);
-  }
-
-  if(state.challenge) {
-    if(state.treelevel) {
-      state.g_numresets_challenge++;
-      if(state.treelevel >= 10) state.g_numresets_challenge_10++;
-    } else {
-      state.g_numresets_challenge_0++;
-    }
-  } else {
-    state.g_numresets++;
-  }
+  state.c_numprestiges = 0;
+  state.c_numautoprestiges = 0;
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
-
 
   var starterResources = getStarterResources();
   state.res.addInPlace(starterResources);
@@ -635,10 +632,11 @@ function softReset(opt_challenge) {
   if(fieldsize[0] != state.numw || fieldsize[1] != state.numh) {
     state.numw = fieldsize[0];
     state.numh = fieldsize[1];
+    clearField(state);
     initFieldUI();
+  } else {
+    clearField(state);
   }
-
-  clearField(state);
 
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
@@ -664,6 +662,7 @@ function softReset(opt_challenge) {
     state.crops[registered_crops[i]] = new CropState();
   }
   state.crops[brassica_0].unlocked = true;
+  updateAllPrestigeData();
 
   for(var i = 0; i < registered_upgrades.length; i++) {
     if(!state.upgrades[registered_upgrades[i]]) state.upgrades[registered_upgrades[i]] = new UpgradeState();
@@ -673,13 +672,12 @@ function softReset(opt_challenge) {
     u2.count = 0;
   }
 
-  if(state.upgrades2[upgrade2_blackberrysecret].count) {
-    applyBlackberrySecret();
-  }
-
-  state.challenge = opt_challenge || 0;
   if(opt_challenge) {
     startChallenge(opt_challenge);
+  }
+
+  if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count) {
+    applyBlackberrySecret();
   }
 
   state.lastPlanted = -1;
@@ -695,13 +693,23 @@ function softReset(opt_challenge) {
 
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
   if(state.negative_time > 3600) state.negative_time = 3600;
+}
+
+function softReset(opt_challenge) {
+  save(util.clone(state), function(s) {
+    util.setLocalStorage(s, localstorageName_transcend);
+  });
+  util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
+  savegame_recovery_situation = false;
+
+  // both of these functions are part of softReset, but endPreviousRun still assumes the old run's state (effects from the old challenge, ...) while
+  // beginNextRun sets up the state for the new run, applies any new challenge effects, ...
+  endPreviousRun();
+  beginNextRun(opt_challenge);
 
   setTab(0);
-
   removeChallengeChip();
-
   removeAllDropdownElements();
-
   initInfoUI();
 }
 
@@ -818,10 +826,14 @@ function getRandomPreferablyEmptyFieldSpot() {
     return [x, y];
   }
   if(state.fern) {
+    if(state.fernx >= state.numw) state.fernx = state.numw - 1;
+    if(state.ferny >= state.numh) state.ferny = state.numh - 1;
     var f = state.field[state.ferny][state.fernx];
     if(f.index == 0 || f.index == FIELD_REMAINDER) num--;
   }
   if(state.present) {
+    if(state.presentx >= state.numw) state.presentx = state.numw - 1;
+    if(state.presenty >= state.numh) state.presenty = state.numh - 1;
     var f = state.field[state.presenty][state.presentx];
     if(f.index == 0 || f.index == FIELD_REMAINDER) num--;
   }
@@ -1135,7 +1147,7 @@ function precomputeField() {
           var f2 = state.field[y2][x2];
           var c = f2.getCrop();
           if(!c) continue;
-          var diagonal = (c.type == CROPTYPE_MISTLETOE) ? !!state.upgrades2[upgrade2_diagonal_mistletoes].count : !!state.upgrades2[upgrade2_diagonal].count;
+          var diagonal = (c.type == CROPTYPE_MISTLETOE) ? !!state.upgrades2[upgrade2_diagonal_mistletoes].count : haveDiagonalTreeWarmth();
           if(!diagonal && dir >= 4) continue;
           var p2 = prefield[y2][x2];
           p2.treeneighbor = true;
@@ -1241,7 +1253,7 @@ function precomputeField() {
         if(c.type == CROPTYPE_BRASSICA) {
           // this computation is only used for mushroom seed consumption, so it's ok to not compute the leech value for nuts here.
           var leech = c.getLeech(f);
-          var numdir = state.upgrades3[upgrade3_diagonal_brassica].count ? 8 : 4;
+          var numdir = haveDiagonalBrassica() ? 8 : 4;
           for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
             var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
@@ -1431,7 +1443,7 @@ function precomputeField() {
           var p = prefield[y][x];
           total.reset();
           var num = 0;
-          var numdir = state.upgrades3[upgrade3_diagonal_brassica].count ? 8 : 4;
+          var numdir = haveDiagonalBrassica() ? 8 : 4;
           for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
             var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
@@ -2139,6 +2151,60 @@ function autoUnlock(res) {
   return true;
 }
 
+// next chosen auto prestige, if applicable.
+// type: either undefined, or object {index:upgrade id, time:time until reached given current resource gain}
+var next_auto_prestige = undefined;
+
+// compute next_auto_prestige
+// this is the next prestige-upgrade that auto prestige will do.
+// this must be chosen to be the first one done given the resource fraction choices, since the nextEventTime computation also uses this
+function computeNextAutoPrestige() {
+  next_auto_prestige = undefined;
+
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    var u2 = state.upgrades[registered_upgrades[i]];
+    if(!u.isprestige) continue;
+    if(!u2.unlocked) continue;
+    if(u2.count) continue;
+    if(u.cropid == undefined) continue
+
+    var cost = u.getCost();
+    // the auto-unlock costs are also used for prestige
+    if(state.automaton_autounlock_max_cost.gtr(0) && cost.seeds.gtr(state.automaton_autounlock_max_cost)) continue;
+
+    // how much resources willing to spend. This uses the same fractions as autoplant does.
+    var advanced = state.automaton_unlocked[2] >= 2;
+    var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
+    var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
+
+    var time = computeFractionTime(cost, fraction);
+    if(time == Infinity) continue;
+
+    if(next_auto_prestige == undefined || time < next_auto_prestige.time) next_auto_prestige = {index:u.index, time:time};
+  }
+}
+
+// res must be a copy of the available resources for all auto-actions, and will be modified in place
+function autoPrestige(res) {
+  if(!next_auto_prestige) return false;
+
+  var u = upgrades[next_auto_prestige.index];
+
+  // how much resources willing to spend, the autounlock settings are used for this
+  var advanced = state.automaton_unlocked[2] >= 2;
+  var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
+  var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
+
+  var maxcost = Res.min(res, state.res.mulr(fraction));
+  var cost = u.getCost();
+  if(cost.gt(maxcost)) return false;
+  res.subInPlace(cost);
+  addAction({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true});
+
+  return true;
+}
+
 // when is the next time that something happens that requires a separate update()
 // run. E.g. if the time difference is 1 hour (due to closing the tab for 1 hour),
 // and 10 minutes of the mist ability were remaining, then update must be broken
@@ -2147,8 +2213,6 @@ function autoUnlock(res) {
 // first one.
 // the returned value is amount of seconds before the first next event
 // the value used to determine current time is state.time
-// TODO: tree level-ups must be added here, both ethereal and basic tree, as these affect production boost and resin income
-// TODO: ethereal crops and their plant time must be added here
 function nextEventTime() {
   // next season
   var time = timeTilNextSeasonUnShifted();
@@ -2219,6 +2283,11 @@ function nextEventTime() {
   // auto-unlock
   if(autoUnlockEnabled() && !!next_auto_unlock) {
     addtime(next_auto_unlock.time);
+  }
+
+  // auto-prestige
+  if(autoPrestigeEnabled() && !!next_auto_prestige) {
+    addtime(next_auto_prestige.time);
   }
 
   // take into account the changing bonus over time, until the max time is reached (but not too aften to not let this use too much CPU ticks)
@@ -2401,7 +2470,12 @@ var update = function(opt_ignorePause) {
 
     if(autoUnlockEnabled()) {
       computeNextAutoUnlock();
-      did_autounlock = autoUnlock(autores);
+      did_autounlock |= autoUnlock(autores);
+    }
+
+    if(autoPrestigeEnabled()) {
+      computeNextAutoPrestige();
+      did_autounlock |= autoPrestige(autores);
     }
 
     if(autoPlantEnabled()) {
@@ -2462,9 +2536,10 @@ var update = function(opt_ignorePause) {
 
     if(is_long) {
       next = nextEventTime() + 1; // for numerical reasons, ensure it's not exactly at the border of the event
-      if(next < 2) next = 2; // ensure there is at least some progress.
-      if(numloops > 10 && next < 5) next = 5; // speed up computation if a lot is happening, at the cost of some precision
-      if(numloops > 50 && next < 10) next = 10; // speed up computation if a lot is happening, at the cost of some precision
+      // ensure there is at least some progress.
+      if(numloops > 20 && next < 2) next = 2; // speed up computation if a lot is happening, at the cost of some precision
+      if(numloops > 50 && next < 5) next = 5; // speed up computation if a lot is happening, at the cost of some precision
+      if(numloops > 200 && next < 10) next = 10; // speed up computation if a lot is happening, at the cost of some precision
     }
 
     if(d > next && is_long) {
@@ -2575,6 +2650,14 @@ var update = function(opt_ignorePause) {
             if(action.by_automaton) {
               state.c_numautoupgrades++;
               state.g_numautoupgrades++;
+            }
+            if(u.isprestige) {
+              state.c_numprestiges++;
+              state.g_numprestiges++;
+              if(action.by_automaton) {
+                state.c_numautoprestiges++;
+                state.g_numautoprestiges++;
+              }
             }
           }
           if(!shift && num >= amount_wanted) break;
@@ -2748,6 +2831,10 @@ var update = function(opt_ignorePause) {
         if(action.effect == AMBER_PROD) {
           if(state.amberprod) {
             showMessage('Already active.', C_INVALID, 0, 0);
+            ok = false;
+          }
+          if(basicChallenge()) {
+            showMessage('This amber effect cannot be used during the basic challenge.', C_INVALID, 0, 0);
             ok = false;
           }
           cost = ambercost_prod;
@@ -3417,8 +3504,8 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST);
-    var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST);
+    var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
+    var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
     if(resin_fruit_level) state.resinfruittime += d;
     if(twigs_fruit_level) state.twigsfruittime += d;
 
@@ -3967,6 +4054,7 @@ var update = function(opt_ignorePause) {
           c2.unlocked = true;
           showRegisteredHelpDialog(24);
           showMessage('Unlocked challenge: ' + upper(c.name), C_UNLOCK, 66240736, 0.75);
+          showchallengeUnlockedChip(c.index);
         }
       }
     }
@@ -4094,6 +4182,7 @@ var update = function(opt_ignorePause) {
     var action = do_transcend;
     softReset(action.challenge);
     computeDerived(state);
+    precomputeField();
   }
 
   if(!large_time_delta) {
@@ -4344,7 +4433,7 @@ function showCropChips() {
   // Show plant that will be planted when holding down shift or ctrl or cmd, but
   // only if in the field tab and no dialogs are visible
   if(state.currentTab == tabindex_field && dialog_level == 0) {
-    var plant = cropChipShiftDown ? state.lastPlanted : brassica_0;
+    var plant = cropChipShiftDown ? state.lastPlanted : getHighestBrassica();
     showShiftCropChip(plant);
   }
   if(state.currentTab == tabindex_field2 && dialog_level == 0) {

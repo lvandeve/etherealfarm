@@ -48,6 +48,15 @@ Cell.prototype.isFullGrown = function() {
   return this.growth >= 1;
 };
 
+// like fullgrown, but includes end-of-life semi-active wasabi
+Cell.prototype.isSemiFullGrown = function() {
+  if(this.isFullGrown()) return true;
+  if(this.cropIndex() == brassica_1) {
+    var sturdy = state.upgrades[watercress_choice0].count == 1;
+    return sturdy;
+  }
+  return false;
+};
 Cell.prototype.hasCrop = function() {
   return this.index >= CROPINDEX;
 };
@@ -446,6 +455,7 @@ function State() {
   1: automation of crop upgrades (1=basic, 2=more options enabled)
   2: automation of planting (1=basic, 2=more options enabled)
   3: automation of crop-unlock upgrades (1=unlocked. The advanced options are shared with automation of planting)
+  4: automation of crop-prestige upgrades (1=unlocked. The advanced options are shared with automation of planting)
   */
   this.automaton_unlocked = [];
 
@@ -502,6 +512,12 @@ function State() {
   this.automaton_autounlock_copy_plant_fraction = false;
   this.automaton_autounlock_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
   this.automaton_autounlock_max_cost = Num(0);
+
+  /*
+  0: autoprestige disabled
+  1: autoprestige enabled, but only if also autoplant is enabled
+  */
+  this.automaton_autoprestige = 0;
 
   // challenges
   this.challenge = 0;
@@ -565,6 +581,8 @@ function State() {
   this.g_res_hr_at = Res(); // at what tree level that was
   this.g_res_hr_at_time = Res(); // at how long into the run that was
   this.g_pausetime = 0;
+  this.g_numprestiges = 0; // prestiges performed
+  this.g_numautoprestiges = 0; // prestiges performed by automaton
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -594,6 +612,8 @@ function State() {
   this.p_res_hr_at = Res();
   this.p_res_hr_at_time = Res();
   this.p_pausetime = 0;
+  this.p_numprestiges = 0;
+  this.p_numautoprestiges = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -621,6 +641,8 @@ function State() {
   this.c_res_hr_at = Res();
   this.c_res_hr_at_time = Res();
   this.c_pausetime = 0;
+  this.c_numprestiges = 0;
+  this.c_numpautorestiges = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
@@ -765,6 +787,14 @@ function State() {
   // derived stat, not to be saved.
   this.challenge_bonus = Num(0);
 
+  // the non-alt challenge bonus part
+  // derived stat, not to be saved.
+  this.challenge_bonus0 = Num(0);
+
+  // the alt challenge bonus, separate multiplier
+  // derived stat, not to be saved.
+  this.challenge_bonus1 = Num(0);
+
   // how many challenges are unlocked but never attempted
   // derived stat, not to be saved.
   this.untriedchallenges = 0;
@@ -773,6 +803,8 @@ function State() {
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
   this.highestoftypeplanted = [];
+  // same but only fullgrown
+  this.highestoftypefullgrown = [];
   this.lowestoftypeplanted = [];
   this.lowestcropoftypeunlocked = []; // this is for in case plants are prestiged: the lowest tier of this plant that exists, e.g. normally this is 0, but if blackberry and blueberry have been prestiged, this is 2. Does not include the templates (tier -1)
 
@@ -934,6 +966,7 @@ function computeDerived(state) {
     state.growingcroptypecount[i] = 0;
     state.croptypecount[i] = 0;
     state.highestoftypeplanted[i] = -Infinity;
+    state.highestoftypefullgrown[i] = -Infinity;
     state.lowestoftypeplanted[i] = Infinity;
     state.lowestcropoftypeunlocked[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
@@ -970,6 +1003,7 @@ function computeDerived(state) {
           state.growingcroptypecount[c.type] += Math.min(Math.max(0, f.growth), 1);
         }
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
+        if(f.growth >= 1) state.highestoftypefullgrown[c.type] = Math.max(c.tier || 0, state.highestoftypefullgrown[c.type]);
         state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.specialfieldcount[f.index]++;
@@ -1140,7 +1174,8 @@ function computeDerived(state) {
   state.challenges_completed = 0;
   state.challenges_completed2 = 0;
   state.challenges_completed3 = 0;
-  state.challenge_bonus = Num(0);
+  state.challenge_bonus0 = Num(0);
+  state.challenge_bonus1 = Num(0);
   state.untriedchallenges = 0;
   for(var i = 0; i < registered_challenges.length; i++) {
     var index = registered_challenges[i];
@@ -1158,13 +1193,22 @@ function computeDerived(state) {
     if(c2.maxlevel > 0) {
       if(c.cycling) {
         for(var j = 0; j < c.cycling; j++) {
-          state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevels[j], j));
+          if(c.alt_bonus) {
+            state.challenge_bonus1.addInPlace(getChallengeBonus(index, c2.maxlevels[j], j));
+          } else {
+            state.challenge_bonus0.addInPlace(getChallengeBonus(index, c2.maxlevels[j], j));
+          }
         }
       } else {
-        state.challenge_bonus.addInPlace(getChallengeBonus(index, c2.maxlevel));
+        if(c.alt_bonus) {
+          state.challenge_bonus1.addInPlace(getChallengeBonus(index, c2.maxlevel));
+        } else {
+          state.challenge_bonus0.addInPlace(getChallengeBonus(index, c2.maxlevel));
+        }
       }
     }
   }
+  state.challenge_bonus = totalChallengeBonus(state.challenge_bonus0, state.challenge_bonus1);
 
   // blueprints
   state.numnonemptyblueprints = 0;
@@ -1258,25 +1302,37 @@ function getActiveFruit() {
 }
 
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
-function getFruitAbilityFor(f, ability) {
+// opt_basic: if true, takes state of basic challenge into account
+function getFruitAbilityFor(f, ability, opt_basic) {
   if(!f) return 0;
+  if(opt_basic && basicChallenge() == 2) return 0;
   for(var i = 0; i < f.abilities.length; i++) {
-    if(f.abilities[i] == ability) return f.levels[i];
+    if(f.abilities[i] == ability) {
+      var result = f.levels[i];
+      if(opt_basic && basicChallenge()) {
+        if(result > 3) result = 3;
+      }
+      return result;
+    }
   }
 
   return 0;
 }
 
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
-function getFruitAbility(ability) {
-  return getFruitAbilityFor(getActiveFruit(), ability);
+// opt_basic: if true, takes state of basic challenge into account
+function getFruitAbility(ability, opt_basic) {
+  return getFruitAbilityFor(getActiveFruit(), ability, opt_basic);
 }
 
 // similar to getFruitAbility but conveniently takes multi-season fruits into account
 // will check FRUIT_SUMMER_AUTUMN etc... if given just FRUIT_SUMMER or FRUIT_AUTUMN etc..., if the necessary squirrel upgrades are purchased
 // returns array of level and actual ability. Actual ability is usually same as the input ability, but can be e.g. FRUIT_SPRING_SUMMER if input was FRUIT_SPRING but fruit has FRUIT_SPRING_SUMMER
-function getFruitAbility_MultiSeasonal(ability) {
-  var result = getFruitAbility(ability);
+// opt_basic: if true, takes state of basic challenge into account
+function getFruitAbility_MultiSeasonal(ability, opt_basic) {
+  if(opt_basic && basicChallenge() == 2) return 0;
+
+  var result = getFruitAbility(ability, opt_basic);
   if(result > 0) return [result, ability];
 
   var f = getActiveFruit();
@@ -1297,12 +1353,25 @@ function getFruitAbility_MultiSeasonal(ability) {
     if(last == FRUIT_WINTER_SPRING) return [(ability == FRUIT_WINTER || ability == FRUIT_SPRING) ? 1 : 0, last];
   }
 
+  if(opt_basic && !!basicChallenge() && ability > 2) ability = 2;
+
   return [0, ability];
 }
 
-function getFruitTier() {
+// opt_basic: if 1 or 2, returns the reduced/disabled value for basic challenge
+function getFruitTier(opt_basic) {
+  if(opt_basic && basicChallenge() == 2) return 0; // return lowest tier, in fact fruits are completely disabled during the truly basic challenge
   var f = getActiveFruit();
   if(!f) return 0;
+  if(opt_basic && basicChallenge()) {
+    // max the fruit that could drop at the current tree level, during the basic challenge
+    var max = getNewFruitTier(1.0, state.treelevel, false);
+    var result = f.tier;
+    if(result > max) result = max;
+    return result;
+  }
+
+
   return f.tier;
 }
 
@@ -1451,7 +1520,7 @@ function haveAutomaton() {
 }
 
 function automatonEnabled() {
-  return haveAutomaton() && state.automaton_enabled;
+  return haveAutomaton() && state.automaton_enabled && basicChallenge() != 2;
 }
 
 function autoChoiceEnabled() {
@@ -1477,6 +1546,14 @@ function autoUnlockEnabled() {
   if(!state.automaton_unlocked[3]) return false;
   if(!autoPlantEnabled()) return false; // auto unlock also gets disabled when auto plant is disabled
   return !!state.automaton_autounlock;
+}
+
+function autoPrestigeEnabled() {
+  if(!automatonEnabled()) return false;
+  if(!state.automaton_unlocked[4]) return false;
+  if(!autoPlantEnabled()) return false; // auto prestige also gets disabled when auto plant is disabled
+  if(!state.automaton_autounlock) return false; // auto prestige also gets disabled when auto-unlock is disabled
+  return !!state.automaton_autoprestige;
 }
 
 function getEtherealAutomatonNeighborBoost() {
@@ -1606,6 +1683,7 @@ function treeGestureBonus() {
 
 // returns index of the highest unlocked brassica crop, or -1 if none (which normally doesn't happen, normally at least watercress is unlocked, except possibly during some challenges)
 function getHighestBrassica() {
+  if(!state) return brassica_0;
   var cropindex = brassica_0 + state.highestoftypeunlocked[CROPTYPE_BRASSICA];
   if(!crops[cropindex]) return -1;
   return cropindex;

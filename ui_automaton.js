@@ -66,7 +66,7 @@ function showConfigureAutoResourcesDialog(subject) {
   var subjecttitle = subject == 0 ? 'upgrades' : (subject == 1 ? 'planting' : 'unlock');
 
 
-  texth = 0.15;
+  texth = 0.12;
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07, 0.45);
   flex.div.innerText = 'Select max resource amount for ' + subjecttitle + ' of each crop type:';
   y += texth;
@@ -80,6 +80,25 @@ function showConfigureAutoResourcesDialog(subject) {
       y += h * 1.2;
       return flex;
     };
+    if(state.automaton_unlocked[4]) {
+      // prestige
+      var button = addButton();
+      y += h * 0.4;
+      button.div.className = 'efButton';
+      var updateButton = function() {
+        button.div.textEl.innerText = state.automaton_autoprestige ? 'auto-prestige enabled' : 'auto-prestige disabled';
+      };
+      styleButton0(button.div);
+      centerText2(button.div);
+      registerTooltip(button.div, 'whether to also apply automation of crop prestige upgrades. This uses the same cost settings as auto-unlock');
+      updateButton();
+      addButtonAction(button.div, function() {
+        state.automaton_autoprestige = (state.automaton_autoprestige ? 0 : 1);
+        updateButton();
+        closeTopDialog();
+        showConfigureAutoResourcesDialog(subject);
+      }, 'enable or disable auto-prestige');
+    }
     var button = addButton();
     y += h * 0.5;
     button.div.className = 'efButton';
@@ -362,7 +381,7 @@ function updateAutomatonUI() {
     y += h * 1.2;
     if(!opt_dont_manage) buttons.push(flex);
     styleButton(flex.div);
-    centerText2(flex.div);
+    centerText2_unicode(flex.div);
     flex.div.textEl.innerText = '⚙';
     flex.div.textEl.title = 'Configure';
     return flex;

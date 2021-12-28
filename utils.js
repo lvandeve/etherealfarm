@@ -79,6 +79,7 @@ var Utils = (function() {
   };
   result.bind = bind;
 
+  // Deep copy
   var clone = function(obj) {
     // Handle the 3 simple types, and null or undefined
     if(null == obj || 'object' != typeof obj) return obj;
@@ -86,8 +87,12 @@ var Utils = (function() {
     // Handle Array
     if(obj instanceof Array) {
       var copy = [];
-      for(var i = 0, len = obj.length; i < len; i++) {
+      /*for(var i = 0, len = obj.length; i < len; i++) {
         copy[i] = clone(obj[i]);
+      }*/
+      // this is faster than the above one for sparse arrays
+      for(var attr in obj) {
+        if(obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
       }
       return copy;
     }

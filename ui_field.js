@@ -53,8 +53,7 @@ function formatBreakdown(breakdown, percent, title) {
 function getCropInfoHTMLBreakdown(f, c) {
   var result = '';
 
-
-  var bdname = f.isFullGrown() ? 'Breakdown' : 'Preliminary breakdown';
+  var bdname = f.isSemiFullGrown() ? 'Breakdown' : 'Preliminary breakdown';
 
   var p = prefield[f.y][f.x];
   var breakdown_watercress = p.getBreakdownWatercress();
@@ -80,6 +79,7 @@ function getCropInfoHTMLBreakdown(f, c) {
 
 // get crop info in HTML
 function getCropInfoHTML(f, c, opt_detailed) {
+  var c2 = state.crops[c.index];
   var result = upper(c.name);
   if(c.basic_upgrade != null) {
     result += ' level ' + state.upgrades[c.basic_upgrade].count;
@@ -105,7 +105,11 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
 
   result += '<br/>';
-  result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
+  if(c2.prestige) {
+    result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ', prestige: ' + c2.prestige + 'x)') : '');
+  } else {
+    result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
+  }
   var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
   if(help) {
     result += '<br/>' + help;
@@ -200,6 +204,15 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
       } else {
         result += 'Production per second: ' + prod3.toString() + '<br/>';
+      }
+      if(c.type == CROPTYPE_BRASSICA) {
+        var breakdown_copy = p.getBreakdownWatercress();
+        if(breakdown_copy && breakdown_copy.length) {
+          var copy = breakdown_copy[breakdown_copy.length - 1][3];
+          if(copy && copy.neqr && copy.neqr(0)) {
+            result += 'Copying: ' + copy.toPercentString() + '<br/>';
+          }
+        }
       }
       if(prod3.hasNeg() || c.type == CROPTYPE_MUSH) {
         if(prod0.neq(prod3)) {

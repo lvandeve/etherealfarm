@@ -24,6 +24,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // an error indicator error, if truthy indicates something went wrong
 // e.g.: {s:'', pos:0, error:false}
 
+
+var debug_allow_missing_fields = false;
+
 // opt_raw_only is for testing only
 function encState(state, opt_raw_only) {
   state.g_numsaves++;
@@ -192,7 +195,7 @@ function encState(state, opt_raw_only) {
     array1.push(state.crops[unlocked[i]].prestige);
   }
   processUintArray(array0);
-  ///processUintArray(array1);
+  processUintArray(array1);
 
 
   section = 5; id = 0; // upgrades2
@@ -335,6 +338,8 @@ function encState(state, opt_raw_only) {
   processRes(state.g_res_hr_at);
   processFloat(state.g_pausetime);
   processRes(state.g_res_hr_at_time);
+  processUint(state.g_numprestiges);
+  processUint(state.g_numautoprestiges);
 
 
   section = 12; id = 0; // current run stats
@@ -362,6 +367,8 @@ function encState(state, opt_raw_only) {
   processRes(state.c_res_hr_at);
   processFloat(state.c_pausetime);
   processRes(state.c_res_hr_at_time);
+  processUint(state.c_numprestiges);
+  processUint(state.c_numautoprestiges);
 
 
   section = 13; id = 0; // previous run stats
@@ -390,6 +397,8 @@ function encState(state, opt_raw_only) {
     processRes(state.p_res_hr_at);
     processFloat(state.p_pausetime);
     processRes(state.p_res_hr_at_time);
+    processUint(state.p_numprestiges);
+    processUint(state.p_numautoprestiges);
   }
 
 
@@ -591,6 +600,7 @@ function encState(state, opt_raw_only) {
   processFractionChoiceArray(state.automaton_autounlock_fraction);
   processUint(state.automaton_autochoice);
   processNum(state.automaton_autounlock_max_cost);
+  processUint(state.automaton_autoprestige);
 
   section = 21; id = 0; // blueprints
   array0 = [];
@@ -686,7 +696,6 @@ function encState(state, opt_raw_only) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-
 function decState(s) {
   if(!isBase64(s)) return err(2);
   if(s.length < 22) return err(1);  // too small for save version, ticks code and checksum
@@ -727,13 +736,12 @@ function decState(s) {
     id++;
     if(token == undefined || token.type != type) {
       found = false;
-      if(def == undefined) error = true;
+      if(def == undefined && !debug_allow_missing_fields) error = true;
       return def;
     }
     found = true;
     return token.value;
   };
-  var haveNextToken = function() { return tokens[section * 64 + id] != undefined; }; // only used for debugging and testing
   var processBool = function(def) { return process(def, TYPE_BOOL); };
   var processUint6 = function(def) { return process(def, TYPE_UINT6); };
   var processInt = function(def) { return process(def, TYPE_INT); };
@@ -968,7 +976,7 @@ function decState(s) {
 
   section = 4; id = 0; // crops
   array0 = processUintArray();
-  if(save_version >= 4096*1+94/* || haveNextToken()*/) {
+  if(save_version >= 4096*1+94) {
     array1 = processUintArray(); // prestige
   } else {
     array1 = [];
@@ -1177,6 +1185,8 @@ function decState(s) {
   if(save_version >= 4096*1+62) state.g_res_hr_at = processRes();
   if(save_version >= 4096*1+71) state.g_pausetime = processFloat();
   if(save_version >= 4096*1+78) state.g_res_hr_at_time = processRes();
+  if(save_version >= 4096*1+94) state.g_numprestiges = processUint();
+  if(save_version >= 4096*1+94) state.g_numautoprestiges = processUint();
   if(error) return err(4);
 
 
@@ -1205,6 +1215,8 @@ function decState(s) {
   if(save_version >= 4096*1+62) state.c_res_hr_at = processRes();
   if(save_version >= 4096*1+71) state.c_pausetime = processFloat();
   if(save_version >= 4096*1+78) state.c_res_hr_at_time = processRes();
+  if(save_version >= 4096*1+94) state.c_numprestiges = processUint();
+  if(save_version >= 4096*1+94) state.c_numautoprestiges = processUint();
   if(error) return err(4);
 
 
@@ -1237,6 +1249,8 @@ function decState(s) {
     if(save_version >= 4096*1+62) state.p_res_hr_at = processRes();
     if(save_version >= 4096*1+71) state.p_pausetime = processFloat();
     if(save_version >= 4096*1+78) state.p_res_hr_at_time = processRes();
+    if(save_version >= 4096*1+94) state.g_numprestiges = processUint();
+    if(save_version >= 4096*1+94) state.g_numautoprestiges = processUint();
     if(error) return err(4);
   }
 
@@ -1612,6 +1626,9 @@ function decState(s) {
   }
   if(save_version >= 4096*1+57) {
     state.automaton_autounlock_max_cost = processNum();
+  }
+  if(save_version >= 4096*1+94) {
+    state.automaton_autoprestige = processUint();
   }
   if(error) return err(4);
 
