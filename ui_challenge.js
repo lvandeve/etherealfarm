@@ -409,13 +409,23 @@ function createFinishChallengeDialog() {
   }
 
   var newmax = Math.max(state.treelevel, maxlevel);
-  var new_total = state.challenge_bonus.sub(getChallengeBonus(state.challenge, maxlevel, cycle)).add(getChallengeBonus(state.challenge, newmax, cycle));
   text += '<br><br>';
   text += 'Production bonus from challenge max reached level' + ((c.cycling > 1) ? ' for this cycle' : '') + ':<br>';
   text += '• Before (level ' + maxlevel + '): ' + getChallengeBonus(state.challenge, maxlevel, cycle).toPercentString() + ' (' + state.challenge_bonus.toPercentString() + ' total for all challenges)<br>';
   if(state.treelevel > maxlevel) {
+    var diff = getChallengeBonus(c.index, newmax, cycle).sub(getChallengeBonus(c.index, maxlevel, cycle));
+    var challenge0 = state.challenge_bonus0;
+    var challenge1 = state.challenge_bonus1;
+    if(c.alt_bonus) challenge1 = challenge1.add(diff);
+    else challenge0 = challenge0.add(diff);
+    var new_total = totalChallengeBonus(challenge0, challenge1);
+    //var new_total = state.challenge_bonus.sub(getChallengeBonus(state.challenge, maxlevel, cycle)).add(getChallengeBonus(state.challenge, newmax, cycle));
     text += '• After (level ' + newmax + '): ' + getChallengeBonus(state.challenge, newmax, cycle).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
     // TODO: if challenge not completed but max level beaten, add text here "you didn't complete the challenge, but at least you gained production bonus", but this taking cycling challenges and multi-level-target challenges into account
+    if(c.alt_bonus) {
+      text += '• ' + altChallengeBonusInfo;
+      text += '<br>';
+    }
   } else {
     text += '• After stays the same, max level not beaten';
   }
