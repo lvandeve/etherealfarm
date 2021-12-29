@@ -2932,21 +2932,21 @@ var medal_challenge_truly_basic = registerMedal('master of basic', 'completed th
 
 medal_register_id = 2155;
 
-registerMedal('basic 15', 'reach level 15 in the basic challenge', genericicon, function() {
+registerMedal('basic 15', 'reach level 15 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 15;
 }, Num(2));
 
-registerMedal('basic 20', 'reach level 20 in the basic challenge', genericicon, function() {
+registerMedal('basic 20', 'reach level 20 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 20;
 }, Num(2));
 
 // this medal is not necessarily actually reachable
-registerMedal('basic 25', 'reach level 25 in the basic challenge', genericicon, function() {
+registerMedal('basic 25', 'reach level 25 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 25;
 }, Num(2));
 
 // this medal is not necessarily actually reachable
-registerMedal('basic 30', 'reach level 30 in the basic challenge', genericicon, function() {
+registerMedal('basic 30', 'reach level 30 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 30;
 }, Num(2));
 
@@ -5390,6 +5390,8 @@ function getFernWaitTime() {
 
 // opt_croptype undefined: for checking if multiplicity is ever unlocked in any form at all by the player, for e.g. revealing the help messages about it
 function haveMultiplicity(opt_croptype) {
+  if(basicChallenge()) return false;
+
   if(opt_croptype == undefined || opt_croptype == CROPTYPE_BERRY || opt_croptype == CROPTYPE_MUSH) return state.challenges[challenge_rockier].completed;
 
   if(opt_croptype == CROPTYPE_FLOWER) return state.challenges[challenge_rockier].completed && state.upgrades3[upgrade3_flower_multiplicity].count;

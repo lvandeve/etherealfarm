@@ -1896,6 +1896,7 @@ function computeFractionTime(cost, fraction) {
     if(rem.seeds.gtr(0)) time = Math.max(time, rem.seeds.div(gain.seeds).valueOf());
     if(rem.spores.gtr(0)) time = Math.max(time, rem.spores.div(gain.spores).valueOf());
     if(time == -Infinity) time = Infinity; // this upgrade may cost some new resource, TODO: implement here too
+    if(isNaN(time)) time = Infinity;
   }
   return time;
 }
@@ -2224,6 +2225,8 @@ function nextEventTime() {
   var name = 'season';
 
   var addtime = function(time2, opt_name) {
+    if(isNaN(time2)) return;
+    if(time2 < 0) time2 = 0;
     if(time2 < time) name = opt_name || 'other';
     time = Math.min(time, time2);
   };
@@ -2271,7 +2274,7 @@ function nextEventTime() {
   }
 
   // tree level up
-  var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores);
+  var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores); // NOTE: this can be negative if you have more spores while the tree is busy leveling up. addtime protects against negative times to avoid issues with this
   var treetime = treereq.div(gain.spores).valueOf();
   addtime(treetime, 'tree');
 
@@ -2300,6 +2303,9 @@ function nextEventTime() {
     var time = timeAtTreeLevel(state);
     if(time < upgrade3_leveltime_maxtime) addtime(300);
   }
+
+  // protect against possible bugs
+  if(time < 0 || isNaN(time)) return 0;
 
   return time;
 }
@@ -2556,6 +2562,14 @@ var update = function(opt_ignorePause) {
       // next event is after the current util.getTime(), so the update loop is done after this one
       done = true;
     }
+
+    if(d < 0 || isNaN(d)) {
+      console.log('invalid delta time');
+      // something went wrong, at least try to protect the times against becoming nan or negative
+      nexttime = util.getTime();
+      d = nexttime - state.prevtime;
+    }
+
     // the current time for computations below is at the beginning of the current interval
     state.time = state.prevtime;
     // set prevtime ready for the next update tick
@@ -2575,7 +2589,6 @@ var update = function(opt_ignorePause) {
     }
 
     if(state.seasonshifted && (getSeasonAtUnshifted(state.time) != getSeasonAtUnshifted(state.prevtime) || season_will_change)) state.seasonshifted = 0;
-
 
     state.g_runtime += d;
     state.c_runtime += d;

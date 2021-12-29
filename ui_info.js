@@ -163,8 +163,12 @@ function getResourceDetails(i, special, index) {
       text += '<br>';
 
       text += '<br>';
-      var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-      text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
+      if(state.challenge && !challenges[state.challenge].allowsresin) {
+        text += 'No resin is gained during the current challenge<br>';
+      } else {
+        var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+        text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
+      }
     }
     if(index == 3) {
       // twigs
@@ -183,8 +187,12 @@ function getResourceDetails(i, special, index) {
       text += '<br>';
 
       text += '<br>';
-      var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-      text += 'Twigs added next tree level: ' + nextTwigs().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
+      if(state.challenge && !challenges[state.challenge].allowstwigs) {
+        text += 'No twigs are gained during the current challenge<br>';
+      } else {
+        var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+        text += 'Twigs added next tree level: ' + nextTwigs().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
+      }
     }
     if(index == 7) {
       // fruit essence

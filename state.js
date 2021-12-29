@@ -979,7 +979,7 @@ function computeDerived(state) {
     var c = crops[registered_crops[i]];
     if(c.tier >= 0 && c.tier < state.lowestcropoftypeunlocked[c.type]) state.lowestcropoftypeunlocked[c.type] = c.tier;
   }
-  for(var i = 1; i < CROPINDEX; i++) {
+  for(var i = 0; i < CROPINDEX; i++) {
     state.specialfieldcount[i] = 0;
   }
   for(var y = 0; y < state.numh; y++) {
@@ -1022,7 +1022,7 @@ function computeDerived(state) {
     state.crop2count[registered_crops2[i]] = 0;
     state.fullgrowncrop2count[registered_crops2[i]] = 0;
   }
-  for(var i = 1; i < CROPINDEX; i++) {
+  for(var i = 0; i < CROPINDEX; i++) {
     state.specialfield2count[i] = 0;
   }
   for(var y = 0; y < state.numh2; y++) {

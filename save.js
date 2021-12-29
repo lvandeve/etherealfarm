@@ -696,6 +696,13 @@ function encState(state, opt_raw_only) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+function isFiniteGE0(v) {
+  if(v < 0) return false;
+  if(isNaN(v)) return false;
+  if(v == Infinity) return false;
+  return true;
+}
+
 function decState(s) {
   if(!isBase64(s)) return err(2);
   if(s.length < 22) return err(1);  // too small for save version, ticks code and checksum
@@ -1943,6 +1950,27 @@ function decState(s) {
       showMessage('Seasons now drop more ethereal delete tokens, since this save was loaded from an older version one extra drop is given for free: ' + tokens + ' tokens added');
       state.delete2tokens += tokens;
     }
+  }
+
+  // a bug in v0.1.94 could cause NaN times, fix this as best as possible. Too bad this does mean some stats become inaccurate
+  if(!isFiniteGE0(state.prevtime) || !isFiniteGE0(state.g_runtime)) {
+    if(!isFiniteGE0(state.prevtime)) state.prevtime = util.getTime();
+    if(!isFiniteGE0(state.g_pausetime)) state.g_pausetime = 0;
+    if(!isFiniteGE0(state.g_runtime)) state.g_runtime = state.prevtime - state.g_starttime - state.g_pausetime;
+    if(!isFiniteGE0(state.c_runtime)) state.c_runtime = state.prevtime - state.c_starttime;
+    if(!isFiniteGE0(state.p_runtime)) state.p_runtime = state.c_starttime - state.p_starttime;
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f = state.field[y][x];
+        if(!isFiniteGE0(f.growth)) f.growth = 0;
+      }
+    }
+    if(!isFiniteGE0(state.g_fastestrun)) state.g_fastestrun = 0;
+    if(!isFiniteGE0(state.g_fastestrun2)) state.g_fastestrun2 = 0;
+    if(!isFiniteGE0(state.g_slowestrun)) state.g_slowestrun = 0;
+    if(!isFiniteGE0(state.g_slowestrun2)) state.g_slowestrun2 = 0;
+    if(state.res.spores.ltr(0)) state.res.spores = Num(0);
+    if(state.res.seeds.ltr(0)) state.res.seeds = Num(0);
   }
 
   if(error) return err(4);
