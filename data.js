@@ -2932,21 +2932,21 @@ var medal_challenge_truly_basic = registerMedal('master of basic', 'completed th
 
 medal_register_id = 2155;
 
-registerMedal('basic 15', 'reach level 15 in the basic challenge', genericicon, function() {
+registerMedal('truly basic 15', 'reach level 15 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 15;
 }, Num(2));
 
-registerMedal('basic 20', 'reach level 20 in the basic challenge', genericicon, function() {
+registerMedal('truly basic 20', 'reach level 20 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 20;
 }, Num(2));
 
 // this medal is not necessarily actually reachable
-registerMedal('basic 25', 'reach level 25 in the basic challenge', genericicon, function() {
+registerMedal('truly basic 25', 'reach level 25 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 25;
 }, Num(2));
 
 // this medal is not necessarily actually reachable
-registerMedal('basic 30', 'reach level 30 in the basic challenge', genericicon, function() {
+registerMedal('truly basic 30', 'reach level 30 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 30;
 }, Num(2));
 
