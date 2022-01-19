@@ -1108,7 +1108,7 @@ function computeDerived(state) {
     if(m2.earned) {
       state.medals_earned++;
       if(!m2.seen) state.medals_new++;
-      state.medal_prodmul.addInPlace(m.prodmul);
+      state.medal_prodmul.addrInPlace(m.prodmul);
     }
   }
 

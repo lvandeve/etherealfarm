@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.95 (2022-01-19):';
+  text += '<br/>• One more prestigeable berry added.';
+  text += '<br/>• New ethereal crops and upgrades for ethereal tree level 9 to 12.';
+  text += '<br/>• Holiday event ended.';
+  text += '<br/>• Fixed issue with offline computation and the time based squirrel upgrade, and other bugfixes.';
+  text += '<br/><br/>';
+
   text += '0.1.94 (2021-12-28):';
   text += '<br/>• Initial version of "prestige" released, a single berry type can be prestiged in this version.';
   text += '<br/>• Added one more tier of flower.';

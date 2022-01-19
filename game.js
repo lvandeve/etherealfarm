@@ -169,6 +169,7 @@ function resetGlobalStateVars(opt_state) {
   prefield = [];
   prev_season = undefined;
   large_time_delta = false;
+  heavy_computing = false;
   large_time_delta_time = 0;
   large_time_delta_res = opt_state ? Res(opt_state.res) : Res();
   global_season_changes = 0;
@@ -2079,13 +2080,17 @@ function autoPlant(res) {
 
   // find potentially better x,y location
   var old = state.field[y][x].cropIndex();
-  if(!old < 0) return; // somethng must have changed since computeNextAutoPlant()
+  if(old < 0) return; // something must have changed since computeNextAutoPlant()
+  var oldtype = crops[old].type;
   var best = prefield[y][x].score;
   // simple method of determining best spot: find the one where the original crop has the most income
   for(var y2 = 0; y2 < state.numh; y2++) {
     for(var x2 = 0; x2 < state.numw; x2++) {
       var f = state.field[y2][x2];
-      if(f.cropIndex() != old) continue;
+      if(!f.hasCrop()) continue;
+      var c = f.getCrop();
+      if(c.type != oldtype) continue;
+      if(c.tier >= crop.tier) continue;
       var p2 = prefield[y2][x2];
       if(p2.score > best) {
         best = p2.score;
@@ -2298,15 +2303,15 @@ function nextEventTime() {
     addtime(next_auto_prestige.time);
   }
 
-  // take into account the changing bonus over time, until the max time is reached (but not too aften to not let this use too much CPU ticks)
   if(state.upgrades3[upgrade3_leveltime].count) {
-    var time = timeAtTreeLevel(state);
-    if(time < upgrade3_leveltime_maxtime) addtime(300);
+    var treetime = timeAtTreeLevel(state);
+    // take into account the changing bonus over time, until the max time is reached (but not too aften to not let this use too much CPU ticks)
+    if(treetime < upgrade3_leveltime_maxtime) addtime(120);
   }
+
 
   // protect against possible bugs
   if(time < 0 || isNaN(time)) return 0;
-
   return time;
 }
 
@@ -2369,6 +2374,7 @@ var last_fullgrown_sound_time0 = 0;
 var last_fullgrown_sound_time1 = 0;
 var last_fullgrown_sound_time2 = 0;
 
+var heavy_computing = false; // for display purposes
 var large_time_delta = false;
 var large_time_delta_time = 0;
 var large_time_delta_res = Res();
@@ -3245,13 +3251,14 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PRESENT) {
-        if(fast_forwarding) continue;
+        // holiday event finished, commented out.
+        /*if(fast_forwarding) continue;
 
         if(state.present && state.presentx == action.x && state.presenty == action.y) {
           clickedpresent = true;
           state.g_numpresents++;
           store_undo = true;
-        }
+        }*/
       } else if(type == ACTION_ABILITY) {
         if(fast_forwarding) continue;
 
@@ -3713,7 +3720,8 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    if(clickedpresent) {
+    // holiday event finished, commented out
+    /*if(clickedpresent) {
       state.presentwait = (15 * 60) * (1 +  getRandomPresentRoll());
 
       // alternatives for things that aren't unlocked yet
@@ -3789,7 +3797,7 @@ var update = function(opt_ignorePause) {
 
         state.lastPresentTime = 0;
       }
-    }
+    }*/
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -3987,6 +3995,14 @@ var update = function(opt_ignorePause) {
       }
       if(state.treelevel2 >= 10) {
         unlockEtherealCrop(nettle2_1);
+        unlockEtherealCrop(mush2_4);
+      }
+      if(state.treelevel2 >= 11) {
+        unlockEtherealCrop(berry2_4);
+      }
+      if(state.treelevel2 >= 12) {
+        unlockEtherealCrop(flower2_4);
+        unlockEtherealCrop(lotus2_3);
       }
     }
 
@@ -4151,6 +4167,8 @@ var update = function(opt_ignorePause) {
     large_time_delta = false;
   }
   large_time_delta_time += d_total;
+
+  heavy_computing = large_time_delta && numloops > 10;
 
   // for the case after one or more large-delta ticks are finished
   if(prev_large_time_delta && !large_time_delta) {

@@ -53,13 +53,13 @@ function createTreeImages(name, top, bottom, opt_stem_header, opt_no_lights) {
   var a2 = generateImageCanvas(leaves_autumn_header + s + top.trim());
   var a3 = generateImageCanvas(leaves_winter_header + s + top.trim());
   var use_lights = false;
-  var a4;
-  if(opt_no_lights) {
+  var a4 = generateImageCanvas(leaves_ethereal_header + s + top.trim());
+  // holiday code commented out
+  /*if(!opt_no_lights) {
     a4 = generateImageCanvas(leaves_ethereal_header + s + top.trim());
   } else {
     a4 = createCanvasImageFor(blendImages(generateImage(leaves_ethereal_header + s + top.trim()), generateImage(image_tree_lights)));
-  }
-  //blendImages, image_tree_lights);
+  }*/
   var b0 = generateImageCanvas(leaves_spring_header + s + bottom.trim());
   var b1 = generateImageCanvas(leaves_summer_header + s + bottom.trim());
   var b2 = generateImageCanvas(leaves_autumn_header + s + bottom.trim());

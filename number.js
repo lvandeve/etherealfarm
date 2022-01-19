@@ -1153,8 +1153,16 @@ Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
     if(fixed < 0) fixed = 0;
     var s = b.toFixed(fixed);
     if(s.indexOf('.') != -1) {
+      // remove superfluous zeroes
       while(s[s.length - 1] == '0') s = s.substr(0, s.length - 1);
       if(s[s.length - 1] == '.') s = s.substr(0, s.length - 1);
+    }
+    if(s == '1000') {
+      // this can happen if the value was e.g. 999.999, and so it rounded up to a value needing the next suffix
+      s = '1';
+      b /= 1000;
+      e += 3;
+      ef += 3;
     }
 
     if(ef != 0) {

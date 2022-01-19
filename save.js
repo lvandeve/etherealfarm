@@ -1785,6 +1785,15 @@ function decState(s) {
     state.present_seed = state.seed0 ^ 0x70726573; // ascii for "pres"
   }
 
+  // holiday event finished, remove presents since clicking them does nothing
+  if(state.present) {
+    state.present = 0;
+    state.presentx = 0;
+    state.presenty = 0;
+    state.presentwait = 0;
+    state.present_image = 0;
+  }
+
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   // End of sections, post-processing

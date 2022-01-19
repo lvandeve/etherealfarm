@@ -125,7 +125,7 @@ function initUI() {
 
   contentFlex.clear();
   pausedflex = undefined;
-  pausedcanvaspaused = false;
+  pausedbuttoncanvasstate = -1;
   pausedflextext = undefined;
   tabFlex.clear();
 
@@ -166,6 +166,8 @@ function initUI() {
   initInfoUI();
   initField2UI();
 
+  updatePausedUI();
+
   update_prev_state_ctor_count = -1;
 
   if(state) setTab(state.currentTab);
@@ -173,7 +175,7 @@ function initUI() {
 }
 
 var pausedflex = undefined;
-var pausedcanvaspaused = false;
+var pausedbuttoncanvasstate = -1;
 var pausedflextext = undefined; // because reading .innerText is slow
 
 function updatePausedUI() {
@@ -193,16 +195,16 @@ function updatePausedUI() {
   if(state.paused && pausedflextext != 'Paused') {
     pausedflextext = 'Paused';
     pausedflex.div.textEl.innerText = pausedflextext;
-  } else if(large_time_delta && pausedflextext != 'Computing') {
+  } else if(heavy_computing && pausedflextext != 'Computing') {
     pausedflextext = 'Computing';
     pausedflex.div.textEl.innerText = pausedflextext;
   }
 
-  if(state.paused && !pausedcanvaspaused) {
-    pausedcanvaspaused = true;
+  if(state.paused && pausedbuttoncanvasstate != 1) {
+    pausedbuttoncanvasstate = 1;
     renderImage(image_paused, pauseButtonCanvas);
-  } else if(!state.paused && pausedcanvaspaused) {
-    pausedcanvaspaused = false;
+  } else if(!state.paused && pausedbuttoncanvasstate != 0) {
+    pausedbuttoncanvasstate = 0;
     renderImage(image_pause, pauseButtonCanvas);
   }
 }

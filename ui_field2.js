@@ -25,7 +25,8 @@ var field2Rows;
 // get crop info in HTML
 function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
   var result = 'Ethereal ' + c.name;
-  result += '<br/>Crop type: ' + getCropTypeName(c.type);
+  result += '<br/>';
+  result += 'Crop type: ' + getCropTypeName(c.type) + ((c.tier && !c.istemplate) ? (' (tier ' + (c.tier + 1) + ')') : '');
   result += '<br/>';
 
   if(c.istemplate) {
@@ -591,26 +592,36 @@ function showEtherealTreeLevelDialog(level) {
 
   for(var i = 0; i < registered_crops2.length; i++) {
     var u = crops2[registered_crops2[i]];
+    if(u.istemplate) continue;
     if(u.treelevel2 == level) {
       text += '<b>Crop</b>: ' + upper(u.name) + '<br>';
       anything = true;
     }
   }
 
+  for(var i = 0; i < registered_crops2.length; i++) {
+    var u = crops2[registered_crops2[i]];
+    if(!u.istemplate) continue;
+    if(u.treelevel2 == level) {
+      text += '<b>Template</b>: ' + upper(u.name) + '<br>';
+      anything = true;
+    }
+  }
+
   if(level == 2) {
-    text += '<b>Challenge</b>: no upgrades challenge (requires automaton to unlock)<br>';
+    text += '<b>Challenge</b>: No upgrades challenge (requires automaton to unlock)<br>';
     anything = true;
   }
   if(level == 3) {
-    text += '<b>Challenge</b>: wither challenge (requires automaton upgrade to unlock)<br>';
+    text += '<b>Challenge</b>: Wither challenge (requires automaton upgrade to unlock)<br>';
     anything = true;
   }
   if(level == 4) {
-    text += '<b>Challenge</b>: blackberry challenge (requires automaton upgrade to unlock)<br>';
+    text += '<b>Challenge</b>: Blackberry challenge (requires automaton upgrade to unlock)<br>';
     anything = true;
   }
   if(level == 7) {
-    text += '<b>Challenge</b>: wasabi challenge<br>';
+    text += '<b>Challenge</b>: Wasabi challenge<br>';
     anything = true;
   }
 
