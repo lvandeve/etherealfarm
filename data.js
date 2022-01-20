@@ -4230,7 +4230,7 @@ undefined, undefined, mistletoe[1]);
 LEVEL2 = 11;
 upgrade2_register_id = 600;
 
-var upgrade2_field7x8 = registerUpgrade2('ethereal field 7x8', LEVEL2, Res({resin:20e12}), 1, function() {
+var upgrade2_field2_7x8 = registerUpgrade2('ethereal field 7x8', LEVEL2, Res({resin:20e12}), 1, function() {
   var numw = Math.max(7, state.numw2);
   var numh = Math.max(8, state.numh2);
   changeField2Size(state, numw, numh);
