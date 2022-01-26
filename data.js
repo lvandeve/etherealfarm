@@ -4240,8 +4240,8 @@ var upgrade2_field2_7x8 = registerUpgrade2('ethereal field 7x8', LEVEL2, Res({re
 var upgrade2_resin_siphoning = registerUpgrade2('resin siphoning', LEVEL2, Res({resin:10e12}), 1, function() {
 }, function(){
   return !!state.upgrades2[upgrade2_resin_extraction].count;
-}, 1, 'gain more resin at tree levels above ' + resin_siphoning_level + ': base of exponentiation switches from ' + resin_base_resin_extraction + ' to ' + twigs_base_twigs_siphoning + ' starting from this level',
-undefined, undefined, mistletoe[1]);
+}, 1, 'gain more resin at tree levels above ' + resin_siphoning_level + ': base of exponentiation switches from ' + resin_base_resin_extraction + ' to ' + resin_base_resin_siphoning + ' starting from this level',
+undefined, undefined, image_resin);
 
 
 ///////////////////////////
