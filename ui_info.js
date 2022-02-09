@@ -461,7 +461,8 @@ function updateResourceUI() {
         }
       }
       if(s == 3) {
-        result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower stats when not next to the tree<br>';
+        var seen_beehives = state.medals[planttypemedals_bee0].earned;
+        result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower' + (seen_beehives ? ' / beehive' : '') + ' stats when not next to the tree<br>';
         result += '• Brassica frost: -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying and -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying fruit ability when not next to the tree<br>';
         var winterwarmth_location_text = haveDiagonalTreeWarmth() ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
         result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats (also consumption) and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';

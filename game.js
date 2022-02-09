@@ -123,14 +123,6 @@ function getRecoverySaves() {
   if(prev2) {
     result.push(['last from second-older game version', prev2]);
   }
-  var manual = util.getLocalStorage(localstorageName_manual);
-  if(manual) {
-    result.push(['last manual save', manual]);
-  }
-  var transcend = util.getLocalStorage(localstorageName_transcend);
-  if(transcend) {
-    result.push(['last transcend', transcend]);
-  }
   var day;
   day = util.getLocalStorage(localstorageName_daily1);
   if(day) {
@@ -178,6 +170,7 @@ function resetGlobalStateVars(opt_state) {
 }
 
 function hardReset() {
+  initMessageUI();
   showMessage('Hard reset performed, everything reset', C_META, 0, 0);
   util.clearLocalStorage(localstorageName);
   util.clearLocalStorage(localstorageName_recover);
@@ -185,8 +178,8 @@ function hardReset() {
   util.clearLocalStorage(localstorageName_prev_version);
   util.clearLocalStorage(localstorageName_prev_version2);
   util.clearLocalStorage(localstorageName_undo);
-  util.clearLocalStorage(localstorageName_manual);
-  util.clearLocalStorage(localstorageName_transcend);
+  util.clearLocalStorage(localstorageName + '_manual'); // no longer supported, but cleared in case old game version created it
+  util.clearLocalStorage(localstorageName + '_transcend'); // no longer supported, but cleared in case old game version created it
   util.clearLocalStorage(localstorageName_daily1);
   util.clearLocalStorage(localstorageName_daily2);
   util.clearLocalStorage(localstorageName_daily3);
@@ -426,6 +419,8 @@ function endPreviousRun() {
   }
 
   var resin_no_ferns = getUpcomingResin();
+  state.p_res_no_ferns = Res();
+  state.p_res_no_ferns.resin = Num(resin_no_ferns);
   var resin = getUpcomingResinIncludingFerns();
 
   var do_fruit = true; // sacrifice the fruits even if not above transcension level (e.g. when resetting a challenge)
@@ -699,9 +694,6 @@ function beginNextRun(opt_challenge) {
 }
 
 function softReset(opt_challenge) {
-  save(util.clone(state), function(s) {
-    util.setLocalStorage(s, localstorageName_transcend);
-  });
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
   savegame_recovery_situation = false;
 
@@ -3440,7 +3432,7 @@ var update = function(opt_ignorePause) {
             state.g_numfruitupgrades++;
           }
         }
-        updateFruitUI();
+        //updateFruitUI();
       } else if(type == ACTION_FRUIT_REORDER) {
         if(fast_forwarding) continue;
 
@@ -4036,7 +4028,11 @@ var update = function(opt_ignorePause) {
           if(state.c_numupgrades_unlocked == 1) {
             showRegisteredHelpDialog(8);
           }
-          if(state.messagelogenabled[2] || !u2.seen2) showMessage('Upgrade available: "' + u.getName() + '"', C_UNLOCK, 193917138);
+          if(state.messagelogenabled[2] || !u2.seen2) {
+            var text = 'Upgrade available: "' + u.getName() + '"';
+            if(u.shortdescription) text += ': ' + u.shortdescription;
+            showMessage(text, C_UNLOCK, 193917138);
+          }
         }
         u2.seen2 = true;
       }
@@ -4233,6 +4229,7 @@ var update = function(opt_ignorePause) {
 
   updateUI2();
   if(update_fruit_ui) updateFruitUI();
+  showHelpArrows();
 
   for(var i = 0; i < update_listeners.length; i++) {
     if(!update_listeners[i]()) {

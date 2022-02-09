@@ -24,17 +24,23 @@ var rightPanelPrevNumberFormatState = -1;
 var bottomrightSidePanelFlexCache = [];
 var bottomrightSidePanelFlexCacheParent = undefined;
 
+var showingSidePanel = false;
+
 function updateRightPane() {
   if(!rightFlex) return;
 
+  var enableSidePanel = state.sidepanel && (state.g_numnresets > 0 || state.upgrades_unlocked > 0);
+
   var w = window.innerWidth;
   var h = window.innerHeight;
-  if(w / h < 0.9 || !state.sidepanel) {
+  if(w / h < 0.9 || !enableSidePanel) {
     //rightFlex.div.style.display = 'none';
     rightFlex.div.style.visibility = 'hidden';
+    showingSidePanel = false;
   } else {
     //rightFlex.div.style.display = 'block';
     rightFlex.div.style.visibility = 'visible';
+    showingSidePanel = true;
   }
 
   topRightFlex.clear();

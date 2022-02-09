@@ -594,6 +594,43 @@ function renderImage(image, canvas) {
   ctx.drawImage(image[3], 0, 0);
 }
 
+// renders grid of images. All images must have the same size, and the grid must be rectangular.
+// some images may be set to null/undefined to not render one there
+// Using this is faster than using renderImage with individual canvases
+function renderImages(images, canvas) {
+  var iw, ih;
+  for(var y = 0; y < images.length; y++) {
+    for(var x = 0; x < images[0].length; x++) {
+      if(images[y][x]) {
+        iw = images[y][x][1];
+        ih = images[y][x][2];
+        break;
+      }
+    }
+  }
+  if(iw == undefined) return; // nothing to do, no images
+
+  var iw2 = iw * images[0].length;
+  var ih2 = ih * images.length;
+
+  if(canvas.width != iw2) canvas.width = iw2;
+  if(canvas.height != ih2) canvas.height = ih2;
+  var ctx = canvas.getContext("2d");
+
+  for(var y = 0; y < images.length; y++) {
+    for(var x = 0; x < images[0].length; x++) {
+      if(images[y][x]) {
+        ctx.putImageData(images[y][x][0], x * iw, y * ih);
+      }
+    }
+  }
+
+  //ctx.putImageData(image[0], 0, 0);
+
+  /*ctx.clearRect(0, 0, iw, ih);
+  ctx.drawImage(image[3], 0, 0);*/
+}
+
 var blendImageTempCanvas = document.createElement('canvas');
 
 

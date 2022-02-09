@@ -27,18 +27,26 @@ function renderBlueprint(b, flex, opt_index, opt_transcend) {
 
   var ratio = h ? (w / h) : 1;
   var grid = new Flex(flex, [0.5, 0, -0.5, ratio], [0.5, 0, -0.5, 1/ratio], [0.5, 0, 0.5,ratio], [0.5,0, 0.5, 1/ratio]);
+  //var grid = new Flex(null, [0.5, 0, -0.5, ratio], [0.5, 0, -0.5, 1/ratio], [0.5, 0, 0.5,ratio], [0.5,0, 0.5, 1/ratio]);
+
+  var images = [];
 
   for(var y = 0; y < h; y++) {
+    images[y] = [];
     for(var x = 0; x < w; x++) {
-      var cell = new Flex(grid, x / w, y / h, (x + 1) / w, (y + 1) / h);
+      //var cell = new Flex(grid, x / w, y / h, (x + 1) / w, (y + 1) / h);
       var t = b.data[y][x];
       var c = crops[BluePrint.toCrop(t)];
       if(c) {
-        var canvas = createCanvas('0%', '0%', '100%', '100%', cell.div);
-        renderImage(c.image[4], canvas);
+        //var canvas = createCanvas('0%', '0%', '100%', '100%', cell.div);
+        //renderImage(c.image[4], canvas);
+        images[y][x] = c.image[4];
       }
     }
   }
+
+  var canvas = createCanvas('0%', '0%', '100%', '100%', grid.div);
+  renderImages(images, canvas);
 
   if(!b.numw || !b.numh) {
     centerText2(grid.div);
@@ -58,7 +66,7 @@ function renderBlueprint(b, flex, opt_index, opt_transcend) {
   if(b.name) name2 += ': ' + b.name;
   var text = createBluePrintText(b);
 
-
+  //grid.attachTo(flex);
   flex.div.setAttribute('aria-description', name2 + ': ' + text);
 }
 
@@ -409,7 +417,8 @@ function createBlueprintsDialog(opt_transcend) {
     titleFlex.div.textEl.innerText = 'Blueprint library';
   }
 
-  var bflex = new Flex(dialog.content, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
+  //var bflex = new Flex(dialog.content, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
+  var bflex = new Flex(null, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
 
   for(var i = 0; i < 9; i++) {
     var x = i % 3;
@@ -474,6 +483,8 @@ function createBlueprintsDialog(opt_transcend) {
       }
     }, i, flex));
   }
+
+  bflex.attachTo(dialog.content);
 
   return dialog;
 }

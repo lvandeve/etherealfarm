@@ -381,8 +381,10 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
 function fillFruitDialog(dialog, f, opt_selected) {
   dialog.content.clear();
-  lastTouchedFruit = f;
-  updateFruitUI(); // to update lastTouchedFruit style
+  if(lastTouchedFruit != f) {
+    lastTouchedFruit = f;
+    updateFruitUI(); // to update lastTouchedFruit style
+  }
   var recreate = function(opt_f) {
     if(opt_f) f = opt_f;
     fillFruitDialog(dialog, f, selected);
@@ -656,7 +658,11 @@ function fillFruitDialog(dialog, f, opt_selected) {
 }
 
 function createFruitDialog(f, opt_selected) {
-  var dialog = createDialog();
+  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+    // onclose function: updates the relevant fruit chip with new upgrade levels. TODO: it's inefficient to redraw all fruit chips for this
+    updateFruitUI();
+  });
+
   fillFruitDialog(dialog, f, opt_selected);
 }
 

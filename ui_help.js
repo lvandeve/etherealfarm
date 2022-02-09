@@ -207,14 +207,15 @@ function showRegisteredHelpDialog(id, opt_force)  {
 }
 
 
-registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!', 'You unlocked your first upgrade! Check the "upgrades" tab to view it, or if the sidebar on the right is visible, you can also see it there. Upgrades can unlock new crops, upgrade existing crops, or various other effects. Upgrades usually cost seeds.<br><br>The upgrades also unlock permanent crops that produce seeds forever, unlike the short-lived watercress.');
+registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!',
+    'You unlocked your first upgrade! Upgrades can unlock new crops, upgrade existing crops, or have various other effects. Upgrades usually cost seeds.<br><br>Upgrades can be performed in the "upgrades" tab. Depending on screen size, it may also be available directly on the right side of the screen.');
 
 registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your first permanent type of plant.',
     'You unlocked your first permanent type of plant. Plants like this stay on the field forever, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
-    'If you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonal, not diagonal) production for free. If there is more than 1 watercress in the entire field this gives diminishing returns, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plant has later in the game.' +
+    'Watercress also remains useful: if you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonally, not diagonally) production. If there is more than 1 watercress in the entire field they copy less, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plants have later in the game.' +
     '<br><br>'+
-    'TIP: hold SHIFT to plant last crop type, CTRL (or command) to plant watercress',
+    'TIP: press "p" to plant last used crop type at mouse cursor, or shift+click for the same effect, or ctrl (or command) + click to plant watercress. More shortcuts are listed in the main game help menu.',
     undefined,
     '<br><br>'+
     'The image below shows an optimal configuration to use for watercress copying: the single watercress duplicates the production of 4 blackberries:',
@@ -690,4 +691,155 @@ function createAutomatonHelpDialog() {
 
   var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
   moreFlex.div.innerText = 'More help topics may appear here as the game progresses. Any in-game automaton-related help dialog that pops up will become permanently available here (as well as the main help dialog) once it\'s unlocked';
+}
+
+
+var prevArrowCode = 0;
+var prevArrowX = 0;
+var prevArrowY = 0;
+var prevArrowNumTabs = 0;
+
+// also updates them
+function showHelpArrows() {
+  if(!fieldDivs) return; // field not rendered yet, some divs for arrows don't yet exist
+  if(prevArrowNumTabs != numtabs) {
+    // a new tab appeared (e.g. achievements after receiving the first one), some of the below arrows may be pointing at the wrong one now so force update this way
+    prevArrowNumTabs = numtabs;
+    prevArrowCode = -1;
+  }
+
+  var arrowCode = 0;
+  var numplanted = state.c_numplanted + state.c_numplantedbrassica;
+
+  if(!arrowCode && state.g_numresets < 1 && state.res.seeds.ger(10) && numplanted == 0) {
+    var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_watercress') : null;
+    if(watercress_chip) {
+      arrowCode = 2;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(fieldDivs[1][1].div, 0.9, 0.9, watercress_chip, 0.8, 0.8);
+        //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
+      }
+    } else {
+      arrowCode = 1;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(fieldDivs[1][1].div, 0.9, 0.9, fieldDivs[0][0].div, 0.8, 0.8);
+        //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
+      }
+    }
+  }
+
+  if(!arrowCode && state.g_numresets < 1 && state.upgrades[brassicamul_0].unlocked && state.upgrades[brassicamul_0].count == 0 && !state.upgrades[berryunlock_0].unlocked) {
+    var text = 'upgrade watercress';
+    var alreadyRelated = (prevArrowCode >= 3 && prevArrowCode <= 5);
+    if(state.currentTab == 1 && upgradeFlexCache[0]) {
+      arrowCode = 3;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(contentFlex.div, 0.6, 0.2, upgradeFlexCache[0].div, 0.85, 0.5);
+        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
+      }
+    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+      arrowCode = 4;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(contentFlex.div, 0.9, 0.2, bottomrightSidePanelFlexCache[1].div, 0.15, 0.5);
+        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
+      }
+    } else if(!showingSidePanel) {
+      arrowCode = 5;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
+      }
+    }
+  }
+
+  if(!arrowCode && state.g_numresets < 1 && state.upgrades[berryunlock_0].unlocked && state.upgrades[berryunlock_0].count == 0 && state.res.seeds.ger(1000)) {
+    var text = 'unlock blackberry';
+    var alreadyRelated = (prevArrowCode >= 6 && prevArrowCode <= 8);
+    if(state.currentTab == 1 && upgradeFlexCache[0]) {
+      arrowCode = 6;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(contentFlex.div, 0.6, 0.2, upgradeFlexCache[0].div, 0.85, 0.5);
+        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
+      }
+    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+      arrowCode = 7;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        if(bottomrightSidePanelFlexCache[1]) {
+          removeAllArrows();
+          makeArrow2(contentFlex.div, 0.9, 0.3, bottomrightSidePanelFlexCache[1].div, 0.25, 0.7);
+          //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
+        }
+      }
+    } else if(!showingSidePanel) {
+      arrowCode = 8;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
+      }
+    }
+  }
+
+  if(!arrowCode && state.g_numresets < 1 && state.res.seeds.ger(1000) && !!state.upgrades[berryunlock_0].count && !(state.upgrades[berryunlock_1].unlocked || state.cropcount[berry_0])) {
+    var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
+    if(watercress_chip) {
+      arrowCode = 9;
+      if(prevArrowCode != arrowCode || arrows.length == 0) {
+        removeAllArrows();
+        makeArrow2(fieldDivs[1][1].div, 0.9, 0.9, watercress_chip, 0.8, 0.8);
+        //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
+      }
+    } else {
+      arrowCode = 10;
+      if(prevArrowCode != arrowCode || arrows.length == 0 || state.field[prevArrowY][prevArrowX].index != 0) {
+        removeAllArrows();
+        var ax = 0;
+        var ay = 0;
+        var found = false;
+        for(var y = 0; y < state.numh; y++) {
+          for(var x = 0; x < state.numw; x++) {
+            var f = state.field[y][x];
+            if(f.index == 0) {
+              found = true;
+              ax = x;
+              ay = y;
+              y = state.numh;
+              break;
+            }
+          }
+        }
+        if(found) {
+          var ax2 = ax + 1;
+          var ay2 = ay + 1;
+          var ox = 0.9;
+          var oy = 0.9;
+          var dx = 0.8;
+          var dy = 0.8;
+          if(ax2 >= state.numw) {
+            ax2 = ax - 1;
+            ox = 0.1;
+            dx = 0.2;
+          }
+          if(ay2 >= state.numh) {
+            ay2 = ay - 1;
+            oy = 0.1;
+            dy = 0.2;
+          }
+          makeArrow2(fieldDivs[ay2][ax2].div, ox, oy, fieldDivs[ay][ax].div, dx, dy);
+          //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
+          prevArrowX = ax;
+          prevArrowY = ay;
+        }
+      }
+    }
+  }
+
+  if(arrowCode == 0) removeAllArrows();
+  prevArrowCode = arrowCode;
 }

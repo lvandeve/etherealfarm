@@ -103,15 +103,21 @@ function rerenderUpgradeChip(u, chip, completed) {
 
 var getUpgradeInfoText = function(u, completed) {
   var cost = u.getCost(completed ? -1 : 0);
-  var infoText = upper(u.name);
+  var infoText = '';
+
+
+  //infoText += upper(u.name);
+
+
+  if(u.description) {
+    infoText += u.description;
+  }
+
   infoText += '<br><br>Cost: ' + cost.toString();
   if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
   infoText += '<br><br>' + 'Have of this upgrade: ' + state.upgrades[u.index].count;
   if(u.cropid != undefined && !u.iscropunlock) {
     infoText += '<br>' + 'Have of this crop: ' + state.cropcount[u.cropid];
-  }
-  if(u.description) {
-    infoText += '<br><br>' + u.description;
   }
   if(u.is_choice && completed) {
     infoText += '<br><br>Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);

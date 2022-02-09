@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.96 (2022-02-09):';
+  text += '<br/>• Added new fruit tier (rhodium)';
+  text += '<br/>• Tweaks in earliest game: watercress upgrade from 50% to 100%, blackberry unlock needs 10 instead of 5 watercress, red tutorial arrows added.'; // the 10 watercress requirement makes the watercress upgrade and blackberry unlock appear at different times rather than same time which is easier for the early game tutorial
+  text += '<br/>• Performance improvements.'; // one big instead of multiple small canvases for blueprint dialog, render field only once instead of twice after refresh, prevent redrawing of all fruits when upgrading abilities
+  text += '<br/>• Bugfixes.';
+  text += '<br/><br/>';
+
   text += '0.1.95 (2022-01-19):';
   text += '<br/>• One more prestigeable berry added.';
   text += '<br/>• New ethereal crops and upgrades for ethereal tree level 9 to 12.';

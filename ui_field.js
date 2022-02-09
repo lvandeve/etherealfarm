@@ -1127,7 +1127,6 @@ function renderFieldInitialPlantHint() {
       //fieldDivs[y][x].div.innerText = 'etc';
     }
   }
-
 }
 
 function renderField() {
@@ -1137,5 +1136,6 @@ function renderField() {
     }
   }
 
-  renderFieldInitialPlantHint();
+  //renderFieldInitialPlantHint();
+  //makeArrow2(fieldFlex.div, 0.5, 0.5, fieldDivs[0][0].div, 0,5, 0.5);
 }

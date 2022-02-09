@@ -96,6 +96,7 @@ function setTab(i, opt_temp) {
   removeAllDropdownElements();
 
   updateTabButtons();
+  showHelpArrows();
 }
 
 

@@ -747,6 +747,9 @@ function createStatsDialog() {
   if(haveMultiplicity(CROPTYPE_FLOWER)) {
     text += '• multiplicity (flower): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
+  if(haveMultiplicity(CROPTYPE_BEE)) {
+    text += '• multiplicity (bee): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BEE)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+  }
   text += '<br>';
 
   if(state.g_numresets > 0) {
@@ -1006,7 +1009,6 @@ function initSettingsUI_in(dialog) {
   addButtonAction(button, function() {
     saveNow(function(s) {
       showMessage(manualSavedStateMessage);
-      util.setLocalStorage(s, localstorageName_manual);
       closeAllDialogs();
     });
   });

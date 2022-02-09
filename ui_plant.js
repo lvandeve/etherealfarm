@@ -44,6 +44,9 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
 
   infoFlex.div.innerHTML = text;
 
+  if(crop.index == brassica_0) infoFlex.div.id = 'help_arrow_plant_watercress';
+  if(crop.index == berry_0) infoFlex.div.id = 'help_arrow_plant_blackberry';
+
   if(opt_showfun) {
     styleButton0(canvasFlex.div, true);
     addButtonAction(canvasFlex.div, opt_showfun, upper(crop.name) + ' info');

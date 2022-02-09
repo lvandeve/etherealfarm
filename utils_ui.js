@@ -177,7 +177,7 @@ function setProgressBar(div, value, color) {
 var updatedialogfun = undefined;
 
 var dialog_level = 0;
-var created_dialogs = [];
+var created_dialogs = []; // each element is array of: flex, opt_shortcutfun
 var created_overlays = [];
 
 var DIALOG_TINY = 0;
@@ -199,6 +199,7 @@ var dialogshortcutfun = undefined;
 // opt_nobgclose: don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 // opt_onclose, if given, is called no matter what way the dialog closes. This is in slightly more cases than opt_cancelfun, since it's also when the ok or extra buttons close it, or from global closeAllDialogs
 // any content should be put in the resulting dialog.content flex, not in the dialog flex itself
+// opt_shortcutfun: optional function that handles keyboard events when this dialog is open
 // opt_swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
 function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose, opt_extrafun2, opt_extraname2, opt_shortcutfun, opt_swapbuttons) {
   if(dialog_level < 0) {
@@ -226,7 +227,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
 
   dialogFlex.onclose = opt_onclose;
 
-  created_dialogs.push(dialogFlex);
+  created_dialogs.push([dialogFlex, opt_shortcutfun]);
   var dialog = dialogFlex.div;
 
   dialog.className = 'efDialog';
@@ -301,10 +302,12 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
   // function that will be called when the dialog is closed by cancel, ok and extra funs
   dialog.closeFun = function() {
     updatedialogfun = undefined;
+    dialogshortcutfun = undefined;
     util.removeElement(overlay);
     for(var i = 0; i < created_dialogs.length; i++) {
-      if(created_dialogs[i] == dialogFlex) {
+      if(created_dialogs[i][0] == dialogFlex) {
         created_dialogs.splice(i, 1);
+        if(i > 0) dialogshortcutfun = created_dialogs[i - 1][1];
         break;
       }
     }
@@ -318,7 +321,6 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
     // a tooltip created by an element from a dialog could remain, make sure those are removed too
     removeAllTooltips();
     dialog.removeSelfFun();
-    dialogshortcutfun = undefined;
   };
   // more primitive close, only intended for external use by closeAllDialogs, since that does all the things that closeFun above does in a global way for all dialogs
   dialog.removeSelfFun = function() {
@@ -365,7 +367,7 @@ function closeAllDialogs() {
   updatedialogfun = undefined;
 
   for(var i = 0; i < created_dialogs.length; i++) {
-    created_dialogs[i].div.removeSelfFun();
+    created_dialogs[i][0].div.removeSelfFun();
   }
   for(var i = 0; i < created_overlays.length; i++) {
     util.removeElement(created_overlays[i]);
@@ -381,22 +383,10 @@ function closeAllDialogs() {
 // opt_cancel: boolean, whether this is an intential cancel (from the Escape key), so that the dialog's cancel function will be called as well, or a close for another programmatic reason where only closeFun of the dialog should be called.
 function closeTopDialog(opt_cancel) {
   if(created_dialogs && created_dialogs.length > 0) {
-    var dialog = created_dialogs[created_dialogs.length - 1];
+    var dialog = created_dialogs[created_dialogs.length - 1][0];
     if(opt_cancel) dialog.cancelFun();
     else dialog.closeFun();
   }
-
-  /*if(created_dialogs && created_dialogs.length > 0) {
-    created_dialogs[created_dialogs.length - 1].div.removeSelfFun();
-    dialog_level--;
-    created_dialogs.pop();
-    // a tooltip created by an element from a dialog could remain, make sure those are removed too
-    removeAllTooltips();
-  }
-  if(created_overlays && created_overlays.length > 0) {
-    util.removeElement(created_overlays[created_overlays.length - 1]);
-    created_overlays.pop();
-  }*/
 }
 
 document.addEventListener('keydown', function(e) {
@@ -678,13 +668,37 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_centered) {
   }
 
 
-  var parentdiv = parent ? parent.div : document.body;
+  //var parentdiv = parent ? parent.div : document.body;
+  var parentdiv = parent ? parent.div : Utils.doNotAddToParent;
   this.div = makeDiv(0, 0, 0, 0, parentdiv);
   this.div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
   this.elements = [];
 
   this.updateSelf(parentdiv);
 }
+
+// parent may be a flex, or a div
+// this function may only be used if this flex was never attached to a parent before, neither a flex nor a root HTML element.
+// this function can be used after a Flex was made with the constructor with null as parent
+// also calls update, so only use this for a root div to prevent performance issues
+Flex.prototype.attachTo = function(parent) {
+  var parentdiv;
+  if(parent instanceof Flex) {
+    this.isroot = false;
+    parentdiv = parent.div;
+    parent.elements.push(this);
+  } else {
+    this.isroot = true;
+    parentdiv = parent;
+  }
+  /*if(this.div.parentElement != parentdiv) {
+    util.removeElement(this.div);
+    parentdiv.appendChild(this.div)
+  }*/
+  parentdiv.appendChild(this.div)
+  //this.updateSelf(parentdiv);
+  this.update(parentdiv);
+};
 
 // The clientWidth/clientHeight call in updateFlex is very slow, especially for e.g. the medal UI with many items, avoid or reduce it, cache the parent, or so...
 var Flex_prevParent = undefined;
@@ -714,6 +728,7 @@ Flex.prototype.getDim_ = function(parentdiv) {
 }
 
 Flex.prototype.updateSelf = function(parentdiv) {
+  //if(!parentdiv) parentdiv = this.div.parentElement;
   var dim = this.getDim_(parentdiv);
   var w = dim[0];
   var h = dim[1];
@@ -943,6 +958,200 @@ function makeTextInput(title, fun, opt_value) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+
+
+// creates an arrow on top of the div of the given flex. The arrow points from x0, y0 to x1, y1 (in relative coordinates in the flex) and is click-throughable
+function makeArrow(div, x0, y0, x1, y1) {
+  var dx = x1 - x0;
+  var dy = y1 - y0;
+  var length = Math.sqrt(dx * dx + dy * dy);
+  var angle = Math.atan2(dy, dx);
+
+  var thickness = length * 0.025;
+  var head = length * 0.3;
+  var headAngle = Math.PI * 0.16;
+
+
+  // arrow shape:
+  //           3\
+  // 0-----------1
+  //           2/
+
+  var x2 = x1 - head * Math.cos(angle - headAngle);
+  var y2 = y1 - head * Math.sin(angle - headAngle);
+  var x3 = x1 - head * Math.cos(angle + headAngle);
+  var y3 = y1 - head * Math.sin(angle + headAngle);
+
+  // size of HTML element to create that will contain the arrow, big enough to fit the entire arrow, but not too much bigger to not require higher than necessary canvas pixel resolution
+  var cx0 = Math.min(x0, x1, x2, x3) - thickness * 2;
+  var cy0 = Math.min(y0, y1, y2, y3) - thickness * 2;
+  var cx1 = Math.max(x0, x1, x2, x3) + thickness * 2;
+  var cy1 = Math.max(y0, y1, y2, y3) + thickness * 2;
+
+  var cw = cx1 - cx0;
+  var ch = cy1 - cy0;
+
+  var res = 256;
+
+
+
+  var canvas = createCanvas((cx0 * 100) + '%', (cy0 * 100) + '%', ((cx1 - cx0) * 100) + '%', ((cy1 - cy0) * 100) + '%', div);
+  var cw2 = canvas.clientWidth;
+  var ch2 = canvas.clientHeight;
+
+  var w, h;
+  if(cw2 > ch2) {
+    w = res;
+    h = Math.floor(w * ch2 / cw2);
+  } else {
+    h = res;
+    w = Math.floor(h * cw2 / ch2);
+  }
+
+  canvas.width = w;
+  canvas.height = h;
+  canvas.style.pointerEvents = 'none'; // make it possible to click through the arrow
+  var ctx = canvas.getContext("2d");
+
+  var px0 = (x0 - cx0) / cw * w;
+  var py0 = (y0 - cy0) / ch * h;
+  var px1 = (x1 - cx0) / cw * w;
+  var py1 = (y1 - cy0) / ch * h;
+  var px2 = (x2 - cx0) / cw * w;
+  var py2 = (y2 - cy0) / ch * h;
+  var px3 = (x3 - cx0) / cw * w;
+  var py3 = (y3 - cy0) / ch * h;
+
+  var thickness2 = thickness * Math.sqrt(w * w / (cw * cw) + h * h / (ch * ch));
+
+  ctx.lineWidth = thickness2;
+  ctx.strokeStyle = '#f00';
+  ctx.beginPath();
+  ctx.moveTo(px0, py0);
+  ctx.lineTo(px1, py1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(px2, py2);
+  ctx.lineTo(px1, py1);
+  ctx.lineTo(px3, py3);
+  ctx.stroke();
+
+  //canvas.style.border = '1px solid red';
+
+  return canvas;
+}
+
+function getElementCommonAncestor(div0, div1) {
+  var parents0 = [];
+  var parent0 = div0;
+  while(parent0) {
+    parents0.push(parent0);
+    parent0 = parent0.parentElement;
+  }
+  var parents1 = [];
+  var parent1 = div1;
+  while(parent1) {
+    parents1.push(parent1);
+    parent1 = parent1.parentElement;
+  }
+  var result = null;
+  for(;;) {
+    if(parents0.length == 0 || parents1.length == 0) return result;
+    var p0 = parents0.pop();
+    var p1 = parents1.pop();
+    if(p0 != p1) return result;
+    result = p0;
+  }
+}
+
+function getTotalZIndex(el, stop_at_parent) {
+  var result = 0;
+  while(el) {
+    var zIndex = 0;
+    if(el.style.zIndex != '') zIndex = parseInt(el.style.zIndex);
+    if(!zIndex) zIndex = 0;
+    result = Math.max(result, zIndex);
+    //if(el == stop_at_parent) break;
+    el = el.parentElement;
+  }
+  return result;
+}
+
+function makeArrow2_(div0, x0, y0, div1, x1, y1) {
+  var common = getElementCommonAncestor(div0, div1);
+  if(!common) return;
+
+  var rect0 = div0.getBoundingClientRect();
+  var rect1 = div1.getBoundingClientRect();
+  var rectp = common.getBoundingClientRect();
+
+  // convert from relative positions in div0 or div1 to absolute position on the screen
+  x0 = rect0.x + x0 * rect0.width;
+  y0 = rect0.y + y0 * rect0.height;
+  x1 = rect1.x + x1 * rect1.width;
+  y1 = rect1.y + y1 * rect1.height;
+
+  // convert to relative position within the common ancestor element
+  x0 = (x0 - rectp.x) / rectp.width;
+  y0 = (y0 - rectp.y) / rectp.height;
+  x1 = (x1 - rectp.x) / rectp.width;
+  y1 = (y1 - rectp.y) / rectp.height;
+
+  var result = makeArrow(common, x0, y0, x1, y1);
+
+  var zIndex0 = getTotalZIndex(div0, common);
+  var zIndex1 = getTotalZIndex(div1, common);
+  var zIndex = Math.max(zIndex0, zIndex1);
+  if(zIndex > 0) result.style.zIndex = zIndex;
+
+  return result;
+}
+
+var arrows = [];
+
+// make arrow between two divs (at the relative coordinates in them), and add event listener that rescales it if the window resizes
+// to remove the arrow, the "remove" function of the returned object must be used, or call removeAllArrows
+function makeArrow2(div0, x0, y0, div1, x1, y1) {
+  var arrow = makeArrow2_(div0, x0, y0, div1, x1, y1);
+
+  var result = {};
+
+  var updateFun = function() {
+    util.removeElement(arrow);
+    arrow = makeArrow2_(div0, x0, y0, div1, x1, y1);
+    result.arrow = arrow;
+  };
+
+  window.addEventListener('resize', updateFun);
+
+  result.arrow = arrow;
+  result.updateFun = updateFun;
+  result.remove = function() {
+    util.removeElement(arrow);
+    window.removeEventListener('resize', updateFun);
+    result.arrow = undefined;
+    result.remove = function(){};
+
+    for(var i = 0; i < arrows.length; i++) {
+      var j = arrows.length - i - 1;
+      if(arrows[j] == result) {
+        arrows.splice(j, 1);
+        break;
+      }
+    }
+  };
+
+  arrows.push(result);
+  return result;
+}
+
+function removeAllArrows() {
+  while(arrows.length > 0) {
+    arrows[arrows.length - 1].remove();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 
 var audioContext;

@@ -311,6 +311,7 @@ function encState(state, opt_raw_only) {
   processRes(state.g_max_res_earned);
   processRes(state.g_fernres);
   processUint(state.g_numpresents);
+  processRes(state.p_res_no_ferns);
 
 
   section = 11; id = 0; // global run stats
@@ -1163,6 +1164,7 @@ function decState(s) {
     // g_max_res_earned handled below to set it to p_res then
   }
   if(save_version >= 4096*1+93) state.g_numpresents = processUint();
+  if(save_version >= 4096*1+96) state.p_res_no_ferns = processRes(); // else, for older versions, will be set below
 
   if(error) return err(4);
 
@@ -1233,9 +1235,8 @@ function decState(s) {
     state.p_runtime = processFloat();
     state.p_numticks = processUint();
     state.p_res = processRes();
-    if(save_version < 4096*1+86) {
-      state.g_max_res_earned = Res(state.p_res);
-    }
+    if(save_version < 4096*1+86) state.g_max_res_earned = Res(state.p_res);
+    if(save_version < 4096*1+96) state.p_res_no_ferns.resin = Num(state.p_res.resin);
     state.p_max_res = processRes();
     state.p_max_prod = processRes();
     state.p_numferns = processUint();

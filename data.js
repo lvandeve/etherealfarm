@@ -482,7 +482,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
-      var mul_upgrade = Num(1).add(Num(0.5).mulr(u.count)); // watercress upgrade is additive instead of multiplicative
+      var brassica_bonus = Num(1.0);
+      var mul_upgrade = Num(1).add(brassica_bonus.mulr(u.count)); // brassica upgrade is additive instead of multiplicative
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
@@ -1572,6 +1573,7 @@ var upgrade_register_id = -1;
 function Upgrade() {
   this.name = 'a';
   this.description = undefined; // longer description than the name, with details, shown if not undefined
+  this.shortdescription = undefined; // similar to description, but shorter text, for e.g. in message log
 
   // for choice upgrades only
   this.choicename_a = 'A';
@@ -1646,7 +1648,7 @@ function Upgrade() {
 }
 
 // maxcount should be 1 for an upgrade that can only be done once (e.g. an unlock), or 0 for infinity
-function registerUpgrade(name, cost, fun, pre, maxcount, description, bgcolor, bordercolor, image0, image1) {
+function registerUpgrade(name, cost, fun, pre, maxcount, description, shortdescription, bgcolor, bordercolor, image0, image1) {
   if(upgrades[upgrade_register_id] || upgrade_register_id < 0 || upgrade_register_id > 65535) throw 'upgrades id already exists or is invalid!';
   var upgrade = new Upgrade();
   upgrade.index = upgrade_register_id++;
@@ -1681,6 +1683,7 @@ function registerUpgrade(name, cost, fun, pre, maxcount, description, bgcolor, b
   upgrade.pre = pre;
 
   upgrade.description = description;
+  upgrade.shortdescription = shortdescription;
 
   return upgrade.index;
 }
@@ -1729,7 +1732,9 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
 
   description += ' Crop type: ' + getCropTypeName(crop.type);
 
-  var result = registerUpgrade(name, cost, fun, pre, 1, description, '#dfc', '#0a0', crop.image[4], undefined);
+  var shortdescription = 'Unlocks new crop of type ' + getCropTypeName(crop.type);
+
+  var result = registerUpgrade(name, cost, fun, pre, 1, description, shortdescription, '#dfc', '#0a0', crop.image[4], undefined);
   var u = upgrades[result];
   u.cropid = cropid;
   u.iscropunlock = true;
@@ -1823,10 +1828,11 @@ function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_i
   if(crop.type == CROPTYPE_MUSH) aspect = 'production but also consumption';
 
   var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor(((multiplier - 1) * 100)) + '% (multiplicative)';
+  var shortdescription = description;
 
   if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption. Get your seeds production up first!';
 
-  var result = registerUpgrade('Upgrade ' + name, /*cost0=*/undefined, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var result = registerUpgrade('Upgrade ' + name, /*cost0=*/undefined, fun, pre, 0, description, shortdescription, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(multiplier);
   u.cropid = cropid;
@@ -1857,7 +1863,9 @@ function registerCropPrestige(cropid, cost, prev_unlock_crop_type, prev_unlock_c
 
   var description = 'Prestiges the crop: ' + crop.name + '. This resets all its upgrades from this run to zero, removes any planted instances, and increases the production rate and cost of this crop, turning it into the next tier.';
 
-  var result = registerUpgrade(name, cost, fun, pre, 1, description, '#ff6', '#a80', crop.image[4], undefined);
+  var shortdescription = 'Prestiges the crop: ' + crop.name;
+
+  var result = registerUpgrade(name, cost, fun, pre, 1, description, shortdescription, '#ff6', '#a80', crop.image[4], undefined);
   var u = upgrades[result];
   u.cropid = cropid;
   u.isprestige = true;
@@ -1918,7 +1926,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
     description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (additive)';
   }
 
-  var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(adder);
   u.cropid = cropid;
@@ -1952,9 +1960,9 @@ function registerBrassicaTimeIncrease(cropid, cost, time_increase, prev_crop_num
     }
   };
 
-  var description = 'Adds ' + (time_increase * 100) + '%  time duration to the lifespan of ' + crop.name + ' (additive), and adds 50% base production excluding the neighbor copying effect. (additive)';
+  var description = '+100% ' + crop.name + ' base production (additive), +' + (time_increase * 100) + '%  lifespan duration';
 
-  var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
+  var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
   u.bonus = Num(time_increase);
   u.cropid = cropid;
@@ -1976,8 +1984,9 @@ function registerChoiceUpgrade(name, pre, fun, name_a, name_b, description_a, de
   var maxcount = 1;
 
   var description = 'Choice upgrade, pick one of the two proposed effects. Choose wisely. <br><br><b>' + name_a + '</b>:<br>' + description_a + '<br><br><b>' + name_b + '</b>:<br>' + description_b;
+  var shortdescription = 'Choice upgrade, pick one of the two proposed effects';
 
-  var result = registerUpgrade(name, Res(), fun, pre, maxcount, description, bgcolor, bordercolor, image0, image1);
+  var result = registerUpgrade(name, Res(), fun, pre, maxcount, description, shortdescription, bgcolor, bordercolor, image0, image1);
   var u = upgrades[result];
   u.is_choice = true;
   u.choicename_a = name_a;
@@ -1990,7 +1999,7 @@ function registerChoiceUpgrade(name, pre, fun, name_a, name_b, description_a, de
 
 // register an upgrade that was removed from the game so it's marked as invalid to not display it and remove from new saves
 function registerDeprecatedUpgrade() {
-  var result = registerUpgrade('<none>', Res(), function(){}, function(){return false;}, 1, '<none>');
+  var result = registerUpgrade('<none>', Res(), function(){}, function(){return false;}, 1, '<none>', '<none>');
   var u = upgrades[result];
   u.deprecated = true;
   return result;
@@ -1999,7 +2008,7 @@ function registerDeprecatedUpgrade() {
 
 upgrade_register_id = 25;
 var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), brassica_0, function(){
-  return (state.c_numplanted + state.c_numplantedbrassica) >= 5;
+  return (state.c_numplanted + state.c_numplantedbrassica) >= 10;
 });
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0, undefined, function() {
   if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_0].count) return true;
@@ -2283,7 +2292,10 @@ var upgrade_mistunlock = registerUpgrade('mist ability', treeLevelReqBase(4).mul
     return true;
   }
   return false;
-}, 1, 'While enabled, mist temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+2".', '#fff', '#88f', image_mist, undefined);
+}, 1,
+   'While enabled, mist temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+2".',
+   'Unlocks active weather ability',
+   '#fff', '#88f', image_mist, undefined);
 upgrades[upgrade_mistunlock].istreebasedupgrade = true;
 
 var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReqBase(2).mulr(0.05 * 0), function() {
@@ -2296,7 +2308,10 @@ var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReqBase(2).mulr(
     return true;
   }
   return false;
-}, 1, 'While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+1".', '#ccf', '#88f', image_sun, undefined);
+}, 1,
+  'While enabled, the sun temporarily increases berry seed production. In addition, berries are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+1".',
+  'Unlocks active weather ability',
+  '#ccf', '#88f', image_sun, undefined);
 upgrades[upgrade_sununlock].istreebasedupgrade = true;
 
 var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(6).mulr(0.05 * 0), function() {
@@ -2309,7 +2324,10 @@ var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(
     return true;
   }
   return false;
-}, 1, 'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+3".', '#ccf', '#00f', image_rainbow, undefined);
+}, 1,
+   'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+3".',
+   'Unlocks active weather ability',
+   '#ccf', '#00f', image_rainbow, undefined);
 upgrades[upgrade_rainbowunlock].istreebasedupgrade = true;
 
 
@@ -2639,6 +2657,8 @@ function registerPlantTypeMedals(cropid, opt_start_at_30) {
     if(medals[id2] && medals[id3]) medals[id3].hint = id2;
     if(medals[id3] && medals[id4]) medals[id4].hint = id3;
   }
+
+  return id0;
 };
 medal_register_id = 160;
 registerPlantTypeMedals(berry_0);
@@ -2679,7 +2699,7 @@ medal_register_id = 480;
 registerPlantTypeMedals(nettle_0);
 registerPlantTypeMedals(nettle_1);
 medal_register_id = 560;
-registerPlantTypeMedals(bee_0);
+var planttypemedals_bee0 = registerPlantTypeMedals(bee_0);
 medal_register_id = 640;
 // for the watercress, only start this at 30: the ones for 1, 10, 20 are not added because a medal for 1 watercress is too soon, and for 20 there's already the full field full of watercress medal
 // idem for the wasabi since planting a few is trivial
@@ -4440,13 +4460,14 @@ function getFruitTierCost(tier) {
     case 3: return 30;
     case 4: return 45; // this is a bit of a dip in the progression, for backwards compatibility when only up to gold was available and the formula progressed too slowly
     case 5: return 100;
-    case 6: return 250;
-    case 7: return 600;
-    case 8: return 1500;
-    case 9: return 2500;
-    case 10: return 6000;
+    case 6: return 500;
+    // TODO: these numbers must be tuned once those fruits are introduced
+    case 7: return 1000;
+    case 8: return 2000;
+    case 9: return 4000;
+    case 10: return 8000;
   }
-  return 10000;
+  return tier < 0 ? 0 : 10000;
 }
 
 // if due to a game update the costs of certain abilities of fruits changes, this recomputes the correct amount of essence spent
@@ -4600,8 +4621,28 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return (roll > prob20) ? 5 : 4;
   }
 
+  // level 95: rhodium introduced
+  if(treelevel >= 95 && treelevel <= 99) {
+    return (roll > prob75) ? 6 : 5;
+  }
+
+  // level 100
+  if(treelevel >= 100 && treelevel <= 104) {
+    return (roll > prob50) ? 6 : 5;
+  }
+
+  // level 105
+  if(treelevel >= 105 && treelevel <= 109) {
+    return (roll > prob25) ? 6 : 5;
+  }
+
+  // level 110
+  if(treelevel >= 110 && treelevel <= 114) {
+    return (roll > prob20) ? 6 : 5;
+  }
+
   // Higher tree levels are not yet implemented for the fruits
-  return 5;
+  return 6;
 }
 
 // how many abilities should a fruit of this tier have (excluding any seasonal ability)

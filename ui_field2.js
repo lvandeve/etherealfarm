@@ -578,7 +578,7 @@ function showEtherealTreeLevelDialog(level) {
 
   text += 'The ethereal tree consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
 
-  text += 'The following new eathereal things got unlocked:<br><br>';
+  text += 'The following new ethereal things got unlocked:<br><br>';
 
   var anything = false;
 

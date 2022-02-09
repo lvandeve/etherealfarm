@@ -587,6 +587,7 @@ function State() {
 
   // saved stats, for previous reset (to compare with current one)
   this.p_treelevel = 0;
+  this.p_res_no_ferns = Res(); // resources excluding those from ferns (currently only resin is filled in). However for seeds/spores this is not counted (those aren't seperately remembered), but it is for resin. If twigs ever get given by fern, those should be included too. This is to give accurate previous resin/hr stat, since the resin/hr stats don't include bushy ferns.
 
   this.p_starttime = 0; // starttime of previous run
   this.p_runtime = 0;
@@ -1486,7 +1487,7 @@ function getPrevResinHour() {
   if(state.p_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
   var hours = state.p_runtime / 3600;
   if(!hours) return Num(0);
-  return state.p_res.resin.divr(hours);
+  return state.p_res_no_ferns.divr(hours);
 }
 
 // returns twigs per hour so far this run

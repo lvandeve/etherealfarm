@@ -11,6 +11,10 @@ a:visited {
   color: #bbb;
 }
 
+.efBordered {
+  border: 1px solid #888;
+}
+
 .efDialog {
   background-color: #444;
   border: 1px solid #bbb;
