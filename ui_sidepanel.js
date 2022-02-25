@@ -188,10 +188,21 @@ function updateRightPane() {
           maxlevel = c2.maxlevels[cycle];
         }
         var newmaxlevel = Math.max(state.treelevel, maxlevel);
-        if(newmaxlevel >= maxlevel) {
-          text += '• Max challenge level: ' + newmaxlevel + ' (before: ' + maxlevel + ')';
+        if(c.fullyCompleted()) {
+          if(newmaxlevel >= maxlevel) {
+            text += '• Max challenge level: ' + newmaxlevel + ' (before: ' + maxlevel + ')';
+          } else {
+            text += '• Max challenge level: ' + maxlevel;
+          }
         } else {
-          text += '• Max challenge level: ' + maxlevel;
+          var goal = c.nextTargetLevel();
+          if(maxlevel == 0) {
+            text += '• Challenge level goal: ' + goal;
+          } else if(newmaxlevel >= maxlevel) {
+            text += '• Previous challenge level: ' + maxlevel + ' (goal: ' + goal + ')';
+          } else {
+            text += '• Max challenge level: ' + maxlevel + ' (goal: ' + goal + ')';
+          }
         }
       } else {
         //text += '• #Transcensions: ' + state.g_numresets;

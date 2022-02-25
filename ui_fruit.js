@@ -776,6 +776,8 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
 
   }
   text += '<br>';
+  text += 'Fruit essence available: ' + state.res.essence.sub(f.essence).toString() + ' of ' + state.res.essence.toString();
+  text += '<br>';
   text += 'Get on sacrifice: ' + getFruitSacrifice(f).toString();
 
   styleFruitChip(flex, f);

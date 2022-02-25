@@ -208,7 +208,7 @@ function lockAllUpgrades() {
 
 // unlock any templates that are available, or lock them if not
 function unlockTemplates() {
-  var wither_incomplete = state.challenge == challenge_wither && state.challenges[challenge_wither].completed < 3;
+  var wither_incomplete = (state.challenge == challenge_wither) && state.challenges[challenge_wither].completed < 3;
   if(haveAutomaton() && state.challenge != challenge_nodelete && !wither_incomplete && state.challenge != challenge_bees && basicChallenge() != 2) {
     state.crops[watercress_template].unlocked = true;
     state.crops[berry_template].unlocked = true;
@@ -2934,12 +2934,16 @@ var update = function(opt_ignorePause) {
         }
 
         var recoup = undefined;
+        var full_refund = false;
 
         if(type == ACTION_DELETE || type == ACTION_REPLACE) {
           if(f.hasCrop()) {
             var c = f.getCrop();
             recoup = c.getRecoup();
-            if(f.growth < 1 && c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) recoup = c.getCost(-1);
+            if(f.growth < 1 && c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) {
+              recoup = c.getCost(-1);
+              full_refund = true;
+            }
           } else {
             recoup = Res();
           }
@@ -3013,9 +3017,10 @@ var update = function(opt_ignorePause) {
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
           if(f.hasCrop()) {
             var c = f.getCrop();
-            if(state.challenge != challenge_wither && !c.istemplate) {
-              if(f.growth < 1 && c.type != CROPTYPE_BRASSICA) {
-                if(!action.silent) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
+            if(!c.istemplate) {
+              // NOTE: during wither you can't delete crops. But even if you could (or if the game gets changed to allow it), during the wither challenge, crops growth is always < 1, though in theory could be 1 at the very start. During wither, numunplanted stat can't be gained, and the numplanted stat will always be decreased when deleting
+              if((state.challenge == challenge_wither || f.growth < 1) && c.type != CROPTYPE_BRASSICA) {
+                if(!action.silent && full_refund) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
                 state.g_numplanted--;
                 state.c_numplanted--;
               } else {
@@ -3047,7 +3052,7 @@ var update = function(opt_ignorePause) {
         if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
           var c = action.crop;
           var cost = c.getCost();
-          if(state.challenge != challenge_wither && !c.istemplate) {
+          if(!c.istemplate) {
             if(c.type == CROPTYPE_BRASSICA) {
               state.g_numplantedbrassica++;
               state.c_numplantedbrassica++;

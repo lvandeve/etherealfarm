@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ function Crop() {
 
   this.istemplate = false; // if true, is a placeholder template
 
-  this.cached_prestige_ = 0;
+  this.cached_prestige_ = 0; // for recomputing crop stats data if prestige changed: the cost, prod, ... fields of this crop are overwritten for prestige
 };
 
 var sameTypeCostMultiplier = 1.5;
@@ -1409,9 +1409,13 @@ function getNutProd(i) {
   return Res({nuts:nuts});
 }
 
-function getFlowerCost(i) {
+function getFlowerCost(tier) {
   // Flowers start after berry 2, and then appear after every 2 berries.
-  return getBerryCost(2.5 + i * 2);
+  return getBerryCost(2.5 + tier * 2);
+}
+
+function getFlowerBoost(tier) {
+  return fower_base.mul(flower_increase.powr(tier));
 }
 
 function getNettleCost(i) {
@@ -1463,14 +1467,14 @@ var flower_increase = Num(16);
 
 // flowers: give boost to neighbors
 crop_register_id = 75;
-var flower_0 = registerFlower('clover', 0, fower_base.mul(flower_increase.powr(0)), flowerplanttime0, clover);
-var flower_1 = registerFlower('cornflower', 1, fower_base.mul(flower_increase.powr(1)), flowerplanttime0 * 3, cornflower);
-var flower_2 = registerFlower('daisy', 2, fower_base.mul(flower_increase.powr(2)), flowerplanttime0 * 6, daisy);
-var flower_3 = registerFlower('dandelion', 3, fower_base.mul(flower_increase.powr(3)), flowerplanttime0 * 9, dandelion);
-var flower_4 = registerFlower('iris', 4, fower_base.mul(flower_increase.powr(4)), flowerplanttime0 * 12, iris);
-var flower_5 = registerFlower('lavender', 5, fower_base.mul(flower_increase.powr(5)), flowerplanttime0 * 15, lavender);
-var flower_6 = registerFlower('orchid', 6, fower_base.mul(flower_increase.powr(6)), flowerplanttime0 * 18, orchid);
-var flower_7 = registerFlower('sunflower', 7, fower_base.mul(flower_increase.powr(7)), flowerplanttime0 * 21, images_sunflower);
+var flower_0 = registerFlower('clover', 0, getFlowerBoost(0), flowerplanttime0, clover);
+var flower_1 = registerFlower('cornflower', 1, getFlowerBoost(1), flowerplanttime0 * 3, cornflower);
+var flower_2 = registerFlower('daisy', 2, getFlowerBoost(2), flowerplanttime0 * 6, daisy);
+var flower_3 = registerFlower('dandelion', 3, getFlowerBoost(3), flowerplanttime0 * 9, dandelion);
+var flower_4 = registerFlower('iris', 4, getFlowerBoost(4), flowerplanttime0 * 12, iris);
+var flower_5 = registerFlower('lavender', 5, getFlowerBoost(5), flowerplanttime0 * 15, lavender);
+var flower_6 = registerFlower('orchid', 6, getFlowerBoost(6), flowerplanttime0 * 18, orchid);
+var flower_7 = registerFlower('sunflower', 7, getFlowerBoost(7), flowerplanttime0 * 21, images_sunflower);
 
 
 crop_register_id = 100;
@@ -1881,8 +1885,11 @@ function setBoostMultiplierCosts(u, crop) {
   // for flowers, each next tier boosts 16x more. So 15 of the additive +50% upgrades makes previous tier as strong
   // so ensure the price of teh 30th upgrade is more expensive than the next flower tier, else the next flower tier is not worth it
   var costmul = u.cost_increase;
+  // TODO: enable the alternate if check and u.cost below for supporting flower prestige
+  //if(crop.type == CROPTYPE_FLOWER && crop.index != challengeflower_0) {
   if(crop.type == CROPTYPE_FLOWER) {
     var upgrade_steps = 30;
+    //u.cost = new Res({seeds:getFlowerCost(crop.tier).seeds.mulr(flower_upgrade_initial_cost)});
     var cost0 = u.cost.seeds;
     var cost1 = getFlowerCost(crop.tier + 1).seeds.mulr(flower_upgrade_initial_cost);
     costmul = cost1.div(cost0).powr(1 / upgrade_steps);
@@ -2060,6 +2067,8 @@ var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), berry_10, fu
 var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), berry_12, function(){return !!state.upgrades[flowerunlock_4].count;});
 var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), berry_14, function(){return !!state.upgrades[flowerunlock_5].count;});
 var flowerunlock_7 = registerCropUnlock(flower_7, getFlowerCost(7), undefined, function(){return !!state.upgrades[flowerunlock_6].count && state.highestoftypeunlocked[CROPTYPE_BERRY] >= 16});
+
+//var flowerprestige_0 = registerCropPrestige(flower_0, getFlowerCost(8), CROPTYPE_FLOWER, 7);
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, function() {
@@ -4723,7 +4732,7 @@ function fuseFruitAutoLevel(a, b, c) {
     for(var i = 0; i < n; i++) {
       var level = c.levels[i];
       if(avail[i].lter(0) || level >= maxlevels[i]) continue;
-      var cost = getFruitAbilityCost(a, level, c.tier).essence;
+      var cost = getFruitAbilityCost(c.abilities[i], level, c.tier).essence;
       if(cost.gt(avail_total)) continue;
 
       c.levels[i]++;
@@ -5846,13 +5855,40 @@ function updatePrestigeData(crop_id) {
   c.cached_prestige_ = c2.prestige;
 
   var oldtier = c.tier;
-  // TODO: support mushroom and flower too
   if(c.type == CROPTYPE_BERRY) {
     if(c.tier < 0) return; // doesn't work for templates
     var tier = (c.tier & 15);
     var tier2 = tier + c2.prestige * 16;
     c.cost = getBerryCost(tier2);
     c.prod = getBerryProd(tier2);
+    c.tier = tier2;
+
+    if(c.basic_upgrade != null) {
+      var u = upgrades[c.basic_upgrade];
+      var u2 = state.upgrades[c.basic_upgrade];
+      setCropMultiplierCosts(u, c);
+    }
+  }
+  if(c.type == CROPTYPE_FLOWER) {
+    if(c.tier < 0) return; // doesn't work for templates
+    var tier = (c.tier & 7);
+    var tier2 = tier + c2.prestige * 8;
+    c.cost = getFlowerCost(tier2);
+    c.boost = getFlowerBoost(tier2);
+    c.tier = tier2;
+
+    if(c.basic_upgrade != null) {
+      var u = upgrades[c.basic_upgrade];
+      var u2 = state.upgrades[c.basic_upgrade];
+      setBoostMultiplierCosts(u, c);
+    }
+  }
+  if(c.type == CROPTYPE_MUSH) {
+    if(c.tier < 0) return; // doesn't work for templates
+    var tier = (c.tier & 7);
+    var tier2 = tier + c2.prestige * 16;
+    c.cost = getMushroomCost(tier2);
+    c.prod = getMushroomProd(tier2);
     c.tier = tier2;
 
     if(c.basic_upgrade != null) {

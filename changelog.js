@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.96b (2022-02-25):';
+  text += '<br/>• Fixed game balance breaking bugs.'; // essense dupe fixed, and fixed wither challenge unplayable without blackberry secret
+  text += '<br/><br/>';
+
   text += '0.1.96 (2022-02-09):';
   text += '<br/>• Added new fruit tier (rhodium)';
   text += '<br/>• Tweaks in earliest game: watercress upgrade from 50% to 100%, blackberry unlock needs 10 instead of 5 watercress, red tutorial arrows added.'; // the 10 watercress requirement makes the watercress upgrade and blackberry unlock appear at different times rather than same time which is easier for the early game tutorial
