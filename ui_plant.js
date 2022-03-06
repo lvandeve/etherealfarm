@@ -288,7 +288,8 @@ function showPlantingHelp() {
 }
 
 
-function makePlantDialog(x, y, opt_replace, opt_recoup) {
+// opt_all is for planting in the entire field with automaton, and makes it ignore various other parameters like x and y
+function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
 
   var numplants = 0;
   for(var i = 0; i < registered_crops.length; i++) {
@@ -367,12 +368,24 @@ function makePlantDialog(x, y, opt_replace, opt_recoup) {
       return result;
     }, index);
 
-
     var plantfun = bind(function(index) {
       state.lastPlanted = index; // for shift key
       var c = crops[index];
-      if(opt_replace) addAction({type:ACTION_REPLACE, x:x, y:y, crop:c});
-      else addAction({type:ACTION_PLANT, x:x, y:y, crop:c});
+      if(opt_all) {
+        for(var y2 = 0; y2 < state.numh; y2++) {
+          for(var x2 = 0; x2 < state.numw; x2++) {
+            var f;
+            f = state.field[y2][x2];
+            if(f.isEmpty()) {
+              addAction({type:ACTION_PLANT, x:x2, y:y2, crop:c, silent:true});
+            }
+          }
+        }
+      } else if(opt_replace) {
+        addAction({type:ACTION_REPLACE, x:x, y:y, crop:c});
+      } else {
+        addAction({type:ACTION_PLANT, x:x, y:y, crop:c});
+      }
       closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
       return true;

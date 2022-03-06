@@ -308,9 +308,7 @@ function showAutomatonFeatureSourceDialog() {
   text += '<br/>';
   text += ' • Automation of choice upgrades: initial';
   text += '<br/>';
-  text += ' • Delete entire field button: initial';
-  text += '<br/>';
-  text += ' • Delete ethereal field button: initial';
+  text += ' • Clear / Plant entire field buttons: initial';
   text += '<br/>';
   text += ' • Neighbor bonus in ethereal field: initial';
   text += '<br/>';
@@ -495,6 +493,16 @@ function updateAutomatonUI() {
     }, 333);
   }));
   registerTooltip(flex.div, 'Immediately delete all crops from the entire field');
+
+  flex = addButton();
+  styleButton(flex.div);
+  centerText2(flex.div);
+  flex.div.textEl.innerText = 'Plant entire field';
+  addButtonAction(flex.div, bind(function() {
+    setTab(tabindex_field);
+    makePlantDialog(0, 0, false, false, true);
+  }));
+  registerTooltip(flex.div, 'Plant a chosen crop in all open spots in the field, as resources allow.');
 
   flex = addButton();
   styleButton(flex.div);

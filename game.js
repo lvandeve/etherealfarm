@@ -2999,11 +2999,13 @@ var update = function(opt_ignorePause) {
             }
             ok = false;
           } else if(state.res.lt(cost)) {
-            showMessage('not enough resources to plant ' + c.name +
-                        ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
-                        ', need: ' + cost.toString(Math.max(5, Num.precision)) +
-                        ' (' + getCostAffordTimer(cost) + ')',
-                        C_INVALID, 0, 0);
+            if(!action.silent) {
+              showMessage('not enough resources to plant ' + c.name +
+                          ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                          ', need: ' + cost.toString(Math.max(5, Num.precision)) +
+                          ' (' + getCostAffordTimer(cost) + ')',
+                          C_INVALID, 0, 0);
+            }
             ok = false;
           } else if(c.index == squirrel_0 && state.cropcount[squirrel_0]) {
             showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);

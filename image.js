@@ -599,8 +599,10 @@ function renderImage(image, canvas) {
 // Using this is faster than using renderImage with individual canvases
 function renderImages(images, canvas) {
   var iw, ih;
+  var numw = 0;
   for(var y = 0; y < images.length; y++) {
-    for(var x = 0; x < images[0].length; x++) {
+    numw = Math.max(numw, images[y].length);
+    for(var x = 0; x < images[y].length; x++) {
       if(images[y][x]) {
         iw = images[y][x][1];
         ih = images[y][x][2];
@@ -610,7 +612,7 @@ function renderImages(images, canvas) {
   }
   if(iw == undefined) return; // nothing to do, no images
 
-  var iw2 = iw * images[0].length;
+  var iw2 = iw * numw;
   var ih2 = ih * images.length;
 
   if(canvas.width != iw2) canvas.width = iw2;
@@ -618,7 +620,7 @@ function renderImages(images, canvas) {
   var ctx = canvas.getContext("2d");
 
   for(var y = 0; y < images.length; y++) {
-    for(var x = 0; x < images[0].length; x++) {
+    for(var x = 0; x < images[y].length; x++) {
       if(images[y][x]) {
         ctx.putImageData(images[y][x][0], x * iw, y * ih);
       }
