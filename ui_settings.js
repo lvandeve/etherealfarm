@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -889,7 +889,7 @@ function createChangelogDialog() {
 
   text += getChangeLog();
 
-  text += 'Copyright (c) 2020-2021 by Lode Vandevenne';
+  text += 'Copyright (c) 2020-2022 by Lode Vandevenne';
 
   div.innerHTML = text;
 }
@@ -1071,9 +1071,9 @@ function initSettingsUI_in(dialog) {
       });
       return true;
     }, 'import', undefined, 'cancel');
-    var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
+    var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.55);
     textFlex.div.innerHTML = 'Import a savegame backup. You can create a backup with "export save". Paste in here and press "import".<br/><font color="red">Warning: this overwrites your current game!</font>';
-    var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.content.div);
+    var area = util.makeAbsElement('textarea', '1%', '30%', '98%', '68%', dialog.content.div);
     area.select();
     area.focus();
   });
@@ -1089,7 +1089,7 @@ function initSettingsUI_in(dialog) {
       closeAllDialogs();
       return true;
     }, 'reset');
-    var warningFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
+    var warningFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.65);
     warningFlex.div.innerText = hardresetwarning;
     warningFlex.div.style.color = 'red';
   });

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -189,16 +189,19 @@ var DIALOG_LARGE = 3;
 // NOTE: only supported in one dialog level in the chain
 var dialogshortcutfun = undefined;
 
+var NOCANCELBUTTON = 'nocancel';
+
 // create a dialog for the settings menu
 // opt_size: see DIALOG_SMALL etc... values above
 // opt_okfun: if not undefined, there'll be an ok button that runs this function. Normally this will close the dialog. Make this function return true to keep the dialog open. This function may also use other means to close dialogs, e.g. call "closeAllDialogs", and then return true.
 // opt_okname: name of the ok button. Default is 'ok'
 // opt_cancelfun: this function is called when the dialog is closed by the cancel button, close button at the top, escape key, or clicking next to the dialog. Is not called when the dialog closes due to other buttons (such as ok or extra) or from the global closeAllDialogs. So it's called on specifically intended cancel.
-// opt_cancelname: override name of the cancel button
+// opt_cancelname: override name of the cancel button. Leave at undefined for default name. Set to NOCANCELBUTTON to have no cancel button at all
 // opt_extrafun and opt_extraname allow a third button in addition to cancel and ok. Like okfun, can return true to keep the dialog open.
 // opt_nobgclose: don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 // opt_onclose, if given, is called no matter what way the dialog closes. This is in slightly more cases than opt_cancelfun, since it's also when the ok or extra buttons close it, or from global closeAllDialogs
 // any content should be put in the resulting dialog.content flex, not in the dialog flex itself
+// --> TODO: revise that, the fact that the content flex is not horizontally centered makes some dialogs ugly
 // opt_shortcutfun: optional function that handles keyboard events when this dialog is open
 // opt_swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
 function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancelname, opt_extrafun, opt_extraname, opt_nobgclose, opt_onclose, opt_extrafun2, opt_extraname2, opt_shortcutfun, opt_swapbuttons) {
@@ -329,10 +332,12 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
   };
   dialogFlex.closeFun = dialog.closeFun;
   dialogFlex.cancelFun = dialog.cancelFun;
-  button = makeButton(true);
-  styleButton(button);
-  button.textEl.innerText = opt_cancelname || (opt_okfun ? 'cancel' : 'back');
-  addButtonAction(button, dialog.cancelFun);
+  if(opt_cancelname != NOCANCELBUTTON) {
+    button = makeButton(true);
+    styleButton(button);
+    button.textEl.innerText = opt_cancelname || (opt_okfun ? 'cancel' : 'back');
+    addButtonAction(button, dialog.cancelFun);
+  }
   var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
   created_overlays.push(overlay);
   overlay.style.width = '100%';

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -927,6 +927,10 @@ function decState(s) {
     for(var i = 0; i < array0.length; i++) {
       var index = array0[i] + prev;
       prev = index;
+      if(save_version < 4096*1+97) {
+        // prestige upgrades didn't have enough room in between the regular crop unlock upgrades
+        if(index == 41 || index == 42) index += (325 - 41);
+      }
       if(!upgrades[index]) return err(4);
       state.upgrades[index].unlocked = array1[i];
       state.upgrades[index].seen2 = array2[i];

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2021  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 function getChangeLog() {
   var text = '';
+
+  text += '0.1.97 (2022-03-06):';
+  text += '<br/>• All tiers of flowers, mushrooms and berries can now be prestiged.';
+  text += '<br/>• Added two new nut tiers (to keep alphabetic naming order, some tier names have shifted).'; // added / inserted beechnut, ginko, pecan nut. pili got shifted out, for now
+  text += '<br/>• Dark scrollbars for dark mode themes (experimental browser dependent feature).';
+  text += '<br/>• Various small tweaks and fixes.'; // typo fixes, and the tooltip of crops now says "next tier cost" instead of "upgrade cost" and will also show it if the next crop's unlock upgrade is visibible, rather than only after it was unlocked
+  text += '<br/><br/>';
 
   text += '0.1.96b (2022-02-25):';
   text += '<br/>• Fixed game balance breaking bugs.'; // essense dupe fixed, and fixed wither challenge unplayable without blackberry secret

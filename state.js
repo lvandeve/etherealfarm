@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -815,6 +815,9 @@ function State() {
   this.highestoftypeunlocked = [];
   this.highestoftype2unlocked = [];
 
+  // like highestoftypeunlocked, but also includes known next types, because their unlock research is visible (but not yet researched)
+  this.highestoftypeknown = [];
+
   // derived stat, not to be saved.
   this.numnonemptyblueprints = 0;
 }
@@ -972,6 +975,7 @@ function computeDerived(state) {
     state.lowestcropoftypeunlocked[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
     state.highestoftype2unlocked[i] = -Infinity;
+    state.highestoftypeknown[i] = -Infinity;
   }
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
@@ -1066,6 +1070,10 @@ function computeDerived(state) {
         state.upgrades_upgradable++; // same as u.canUpgrade()
         if(u.getCost().le(state.res)) state.upgrades_affordable++;
       }
+      if(u.iscropunlock) {
+        var c = crops[u.cropid];
+        state.highestoftypeknown[c.type] = Math.max(c.tier || 0, state.highestoftypeknown[c.type]);
+      }
     }
   }
 
@@ -1074,6 +1082,7 @@ function computeDerived(state) {
     var c2 = state.crops[registered_crops[i]];
     if(c2.unlocked) {
       state.highestoftypeunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypeunlocked[c.type]);
+      state.highestoftypeknown[c.type] = Math.max(c.tier || 0, state.highestoftypeknown[c.type]);
     }
   }
 

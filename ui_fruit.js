@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -198,7 +198,7 @@ function createFruitHelp() {
     text += '<br>';
     text += '• Medlar + Apricot = Kumquat (winter + spring)';
     text += '<br/><br/>';
-    text += 'If (and only if) you also have the second fruit mixing upgrade purchaced, then in addition you can create the legendary dragon fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
+    text += 'If (and only if) you also have the second fruit mixing upgrade purchased, then in addition you can create the legendary dragon fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
     text += '<br><br>';
     text += '• Mango + Quince = Dragon Fruit (4 seasons)';
     text += '<br>';

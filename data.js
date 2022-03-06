@@ -1508,17 +1508,20 @@ var squirrel_0 = registerSquirrel('squirrel', 0, Res(), /*growtime=*/0.5, images
 crop_register_id = 150;
 var nut_0  = registerNut('acorn', 0, nutplanttime0 * 1, images_acorn, 'it\'s a little oak tree');
 var nut_1  = registerNut('almond', 1, nutplanttime0 * 2, images_almond);
-var nut_2  = registerNut('brazil nut', 2, nutplanttime0 * 3, images_brazilnut);
-var nut_3  = registerNut('cashew', 3, nutplanttime0 * 4, images_cashew);
-var nut_4  = registerNut('chestnut', 4, nutplanttime0 * 5, images_chestnut);
-var nut_5  = registerNut('coconut', 5, nutplanttime0 * 6, images_coconut);
-var nut_6  = registerNut('hazelnut', 6, nutplanttime0 * 7, images_hazelnut);
-var nut_7  = registerNut('macadamia nut', 7, nutplanttime0 * 8, images_macademia);
-var nut_8  = registerNut('peanut', 8, nutplanttime0 * 9, images_peanut);
-var nut_9  = registerNut('pili nut', 9, nutplanttime0 * 10, images_pili);
-var nut_10  = registerNut('pine nut', 10, nutplanttime0 * 11, undefined);
-var nut_11 = registerNut('pistachio', 11, nutplanttime0 * 12, undefined);
-var nut_12 = registerNut('walnut', 12, nutplanttime0 * 13, undefined);
+var nut_2  = registerNut('beechnut', 2, nutplanttime0 * 3, images_beech);
+var nut_3  = registerNut('brazil nut', 3, nutplanttime0 * 4, images_brazilnut);
+var nut_4  = registerNut('cashew', 4, nutplanttime0 * 5, images_cashew);
+var nut_5  = registerNut('chestnut', 5, nutplanttime0 * 6, images_chestnut);
+var nut_6  = registerNut('coconut', 6, nutplanttime0 * 7, images_coconut);
+var nut_7  = registerNut('ginko nut', 7, nutplanttime0 * 8, images_ginko);
+var nut_8  = registerNut('hazelnut', 8, nutplanttime0 * 9, images_hazelnut);
+var nut_9  = registerNut('macadamia nut', 9, nutplanttime0 * 10, images_macademia);
+var nut_10  = registerNut('peanut', 10, nutplanttime0 * 11, images_peanut);
+var nut_11  = registerNut('pecan nut', 11, nutplanttime0 * 12, images_pecan);
+var nut_12  = registerNut('pili nut', 12, nutplanttime0 * 13, images_pili);
+var nut_13  = registerNut('pine nut', 13, nutplanttime0 * 14, undefined);
+var nut_14 = registerNut('pistachio', 14, nutplanttime0 * 15, undefined);
+var nut_15 = registerNut('walnut', 15, nutplanttime0 * 16, undefined);
 
 crop_register_id = 200;
 
@@ -1851,6 +1854,7 @@ function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_i
 function registerCropPrestige(cropid, cost, prev_unlock_crop_type, prev_unlock_crop_tier) {
   var crop = crops[cropid];
   var name = 'Prestige ' + crop.name;
+  var newtier = crop.tier + num_tiers_per_crop_type[crop.type];
 
   // the index this new upgrade will get
   var index = upgrade_register_id;
@@ -1860,6 +1864,7 @@ function registerCropPrestige(cropid, cost, prev_unlock_crop_type, prev_unlock_c
   };
 
   var pre = function() {
+    if(state.highestoftypeunlocked[crop.type] < newtier - 1) return false; // for mushroom and flower: also hard requirement to have unlocked the previous tier (such as previous prestiged tier)
     if(state.highestoftypeunlocked[prev_unlock_crop_type] > prev_unlock_crop_tier) return true; // next berry tier unlocked: counts as better than having some planted of prev berry tier
     if(state.highestoftypefullgrown[prev_unlock_crop_type] >= prev_unlock_crop_tier) return true;
     return false;
@@ -1885,11 +1890,10 @@ function setBoostMultiplierCosts(u, crop) {
   // for flowers, each next tier boosts 16x more. So 15 of the additive +50% upgrades makes previous tier as strong
   // so ensure the price of teh 30th upgrade is more expensive than the next flower tier, else the next flower tier is not worth it
   var costmul = u.cost_increase;
-  // TODO: enable the alternate if check and u.cost below for supporting flower prestige
-  //if(crop.type == CROPTYPE_FLOWER && crop.index != challengeflower_0) {
-  if(crop.type == CROPTYPE_FLOWER) {
+  // During the bee challenge, challengeflower_0 is used, but it doesn't actually have upgrades so in practice this check doesn't matter. But the check is here since challengeflower_0 doesn't participate in the regular flower tier system that the other flower upgrades are bsaed on.
+  if(crop.type == CROPTYPE_FLOWER && crop.index != challengeflower_0) {
     var upgrade_steps = 30;
-    //u.cost = new Res({seeds:getFlowerCost(crop.tier).seeds.mulr(flower_upgrade_initial_cost)});
+    u.cost = new Res({seeds:getFlowerCost(crop.tier).seeds.mulr(flower_upgrade_initial_cost)});
     var cost0 = u.cost.seeds;
     var cost1 = getFlowerCost(crop.tier + 1).seeds.mulr(flower_upgrade_initial_cost);
     costmul = cost1.div(cost0).powr(1 / upgrade_steps);
@@ -2039,9 +2043,6 @@ var berryunlock_13 = registerCropUnlock(berry_13, getBerryCost(13), berry_12);
 var berryunlock_14 = registerCropUnlock(berry_14, getBerryCost(14), berry_13);
 var berryunlock_15 = registerCropUnlock(berry_15, getBerryCost(15), berry_14);
 
-var berryprestige_0 = registerCropPrestige(berry_0, getBerryCost(16), CROPTYPE_BERRY, 15);
-var berryprestige_1 = registerCropPrestige(berry_1, getBerryCost(17), CROPTYPE_BERRY, 16);
-
 upgrade_register_id = 50;
 var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), berry_1, undefined, function() {
   if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_1].count) return true;
@@ -2066,9 +2067,12 @@ var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), berry_8, fun
 var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), berry_10, function(){return !!state.upgrades[flowerunlock_3].count;});
 var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), berry_12, function(){return !!state.upgrades[flowerunlock_4].count;});
 var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), berry_14, function(){return !!state.upgrades[flowerunlock_5].count;});
-var flowerunlock_7 = registerCropUnlock(flower_7, getFlowerCost(7), undefined, function(){return !!state.upgrades[flowerunlock_6].count && state.highestoftypeunlocked[CROPTYPE_BERRY] >= 16});
-
-//var flowerprestige_0 = registerCropPrestige(flower_0, getFlowerCost(8), CROPTYPE_FLOWER, 7);
+var flowerunlock_7 = registerCropUnlock(flower_7, getFlowerCost(7), undefined, function(){
+  if(!state.upgrades[flowerunlock_6].count) return false;
+  if(state.highestoftypefullgrown[CROPTYPE_BERRY] >= 16) return true;
+  if(state.highestoftypeunlocked[CROPTYPE_BERRY] > 16) return true;
+  return false;
+});
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, function() {
@@ -2157,16 +2161,29 @@ var nutunlock_9 = registerCropUnlock(nut_9, getNutCost(9), nut_8, function(){
   return true;
 });
 var nutunlock_10 = registerCropUnlock(nut_10, getNutCost(10), nut_9, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_11 = registerCropUnlock(nut_11, getNutCost(11), nut_10, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_12 = registerCropUnlock(nut_12, getNutCost(12), nut_11, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_13 = registerCropUnlock(nut_13, getNutCost(13), nut_12, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_14 = registerCropUnlock(nut_14, getNutCost(14), nut_13, function(){
+  return false; // not yet enabled for now
+  if(!haveSquirrel()) return false;
+  return true;
+});
+var nutunlock_15 = registerCropUnlock(nut_15, getNutCost(15), nut_14, function(){
   return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
@@ -2184,6 +2201,44 @@ var brassicaunlock_1 = registerCropUnlock(brassica_1, Res({seeds:100}), undefine
 });
 
 
+upgrade_register_id = 325;
+var berryprestige_0 = registerCropPrestige(berry_0, getBerryCost(16), CROPTYPE_BERRY, 15);
+var berryprestige_1 = registerCropPrestige(berry_1, getBerryCost(17), CROPTYPE_BERRY, 16);
+var berryprestige_2 = registerCropPrestige(berry_2, getBerryCost(18), CROPTYPE_BERRY, 17);
+var berryprestige_3 = registerCropPrestige(berry_3, getBerryCost(19), CROPTYPE_BERRY, 18);
+var berryprestige_4 = registerCropPrestige(berry_4, getBerryCost(20), CROPTYPE_BERRY, 19);
+var berryprestige_5 = registerCropPrestige(berry_5, getBerryCost(21), CROPTYPE_BERRY, 20);
+var berryprestige_6 = registerCropPrestige(berry_6, getBerryCost(22), CROPTYPE_BERRY, 21);
+var berryprestige_7 = registerCropPrestige(berry_7, getBerryCost(23), CROPTYPE_BERRY, 22);
+var berryprestige_8 = registerCropPrestige(berry_8, getBerryCost(24), CROPTYPE_BERRY, 23);
+var berryprestige_9 = registerCropPrestige(berry_9, getBerryCost(25), CROPTYPE_BERRY, 24);
+var berryprestige_10 = registerCropPrestige(berry_10, getBerryCost(26), CROPTYPE_BERRY, 25);
+var berryprestige_11 = registerCropPrestige(berry_11, getBerryCost(27), CROPTYPE_BERRY, 26);
+var berryprestige_12 = registerCropPrestige(berry_12, getBerryCost(28), CROPTYPE_BERRY, 27);
+var berryprestige_13 = registerCropPrestige(berry_13, getBerryCost(29), CROPTYPE_BERRY, 28);
+var berryprestige_14 = registerCropPrestige(berry_14, getBerryCost(30), CROPTYPE_BERRY, 29);
+var berryprestige_15 = registerCropPrestige(berry_15, getBerryCost(31), CROPTYPE_BERRY, 30);
+
+upgrade_register_id = 350;
+var mushprestige_0 = registerCropPrestige(mush_0, getMushroomCost(8), CROPTYPE_BERRY, 17);
+var mushprestige_1 = registerCropPrestige(mush_1, getMushroomCost(9), CROPTYPE_BERRY, 19);
+var mushprestige_2 = registerCropPrestige(mush_2, getMushroomCost(10), CROPTYPE_BERRY, 21);
+var mushprestige_3 = registerCropPrestige(mush_3, getMushroomCost(11), CROPTYPE_BERRY, 23);
+var mushprestige_4 = registerCropPrestige(mush_4, getMushroomCost(12), CROPTYPE_BERRY, 25);
+var mushprestige_5 = registerCropPrestige(mush_5, getMushroomCost(13), CROPTYPE_BERRY, 27);
+var mushprestige_6 = registerCropPrestige(mush_6, getMushroomCost(14), CROPTYPE_BERRY, 29);
+var mushprestige_7 = registerCropPrestige(mush_7, getMushroomCost(15), CROPTYPE_BERRY, 31);
+
+
+upgrade_register_id = 375;
+var flowerprestige_0 = registerCropPrestige(flower_0, getFlowerCost(8), CROPTYPE_BERRY, 18);
+var flowerprestige_1 = registerCropPrestige(flower_1, getFlowerCost(9), CROPTYPE_BERRY, 20);
+var flowerprestige_2 = registerCropPrestige(flower_2, getFlowerCost(10), CROPTYPE_BERRY, 22);
+var flowerprestige_3 = registerCropPrestige(flower_3, getFlowerCost(11), CROPTYPE_BERRY, 24);
+var flowerprestige_4 = registerCropPrestige(flower_4, getFlowerCost(12), CROPTYPE_BERRY, 26);
+var flowerprestige_5 = registerCropPrestige(flower_5, getFlowerCost(13), CROPTYPE_BERRY, 28);
+var flowerprestige_6 = registerCropPrestige(flower_6, getFlowerCost(14), CROPTYPE_BERRY, 30);
+var flowerprestige_7 = registerCropPrestige(flower_7, getFlowerCost(15), CROPTYPE_BERRY, 32);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2287,6 +2342,9 @@ var nutmul_9 = registerCropMultiplier(nut_9, nut_upgrade_power_increase, 1, nutu
 var nutmul_10 = registerCropMultiplier(nut_10, nut_upgrade_power_increase, 1, nutunlock_10);
 var nutmul_11 = registerCropMultiplier(nut_11, nut_upgrade_power_increase, 1, nutunlock_11);
 var nutmul_12 = registerCropMultiplier(nut_12, nut_upgrade_power_increase, 1, nutunlock_12);
+var nutmul_13 = registerCropMultiplier(nut_13, nut_upgrade_power_increase, 1, nutunlock_13);
+var nutmul_14 = registerCropMultiplier(nut_14, nut_upgrade_power_increase, 1, nutunlock_14);
+var nutmul_15 = registerCropMultiplier(nut_15, nut_upgrade_power_increase, 1, nutunlock_15);
 
 
 
@@ -2727,6 +2785,9 @@ registerPlantTypeMedal(nut_6, 1);
 registerPlantTypeMedal(nut_7, 1);
 registerPlantTypeMedal(nut_8, 1);
 registerPlantTypeMedal(nut_9, 1);
+registerPlantTypeMedal(nut_10, 1);
+registerPlantTypeMedal(nut_11, 1);
+registerPlantTypeMedal(nut_12, 1);
 
 // was: 600
 medal_register_id = 1000;
@@ -2989,12 +3050,27 @@ medal_register_id = 2170;
 
 medal_register_id = 2500;
 
-registerMedal('blackberry prestige', 'prestiged the blackberry', blackberry[4], function() {
-  return state.crops[berry_0].prestige >= 1;
-}, Num(2 * getPlantTypeMedalBonus(CROPTYPE_BERRY, 16, 1)));
-registerMedal('blueberry prestige', 'prestiged the blueberry', blueberry[4], function() {
-  return state.crops[berry_1].prestige >= 1;
-}, Num(2 * getPlantTypeMedalBonus(CROPTYPE_BERRY, 17, 1)));
+function registerPrestigeMedal(cropid) {
+  var crop = crops[cropid];
+  var name = crop.name + ' prestige';
+  var desc = 'prestiged the ' + crop.name;
+  registerMedal(name, desc, crop.image[4], function() {
+    return state.crops[cropid].prestige >= 1;
+  }, Num(2 * getPlantTypeMedalBonus(crop.type, crop.tier + num_tiers_per_crop_type[crop.type], 1)));
+}
+for(var i = 0; i < 16; i++) {
+  registerPrestigeMedal(berry_0 + i);
+}
+
+medal_register_id = 2600;
+for(var i = 0; i < 8; i++) {
+  registerPrestigeMedal(mush_0 + i);
+}
+
+medal_register_id = 2700;
+for(var i = 0; i < 8; i++) {
+  registerPrestigeMedal(flower_0 + i);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -5858,7 +5934,7 @@ function updatePrestigeData(crop_id) {
   if(c.type == CROPTYPE_BERRY) {
     if(c.tier < 0) return; // doesn't work for templates
     var tier = (c.tier & 15);
-    var tier2 = tier + c2.prestige * 16;
+    var tier2 = tier + c2.prestige * num_tiers_per_crop_type[c.type];
     c.cost = getBerryCost(tier2);
     c.prod = getBerryProd(tier2);
     c.tier = tier2;
@@ -5872,7 +5948,7 @@ function updatePrestigeData(crop_id) {
   if(c.type == CROPTYPE_FLOWER) {
     if(c.tier < 0) return; // doesn't work for templates
     var tier = (c.tier & 7);
-    var tier2 = tier + c2.prestige * 8;
+    var tier2 = tier + c2.prestige * num_tiers_per_crop_type[c.type];
     c.cost = getFlowerCost(tier2);
     c.boost = getFlowerBoost(tier2);
     c.tier = tier2;
@@ -5886,7 +5962,7 @@ function updatePrestigeData(crop_id) {
   if(c.type == CROPTYPE_MUSH) {
     if(c.tier < 0) return; // doesn't work for templates
     var tier = (c.tier & 7);
-    var tier2 = tier + c2.prestige * 16;
+    var tier2 = tier + c2.prestige * num_tiers_per_crop_type[c.type];
     c.cost = getMushroomCost(tier2);
     c.prod = getMushroomProd(tier2);
     c.tier = tier2;
@@ -5901,9 +5977,17 @@ function updatePrestigeData(crop_id) {
   croptype_tiers[c.type][oldtier] = undefined;
   croptype_tiers[c.type][newtier] = crops[crop_id];
 
-  c.planttime = c.planttime0 * (1 + c2.prestige);
+  c.planttime = c.planttime0 * (1 + 2 * c2.prestige);
 }
 
 function updateAllPrestigeData() {
-  for(var i = 0; i < 16; i++) updatePrestigeData(berry_0 + i);
+  for(var i = 0; i < num_tiers_per_crop_type[CROPTYPE_BERRY]; i++) {
+    updatePrestigeData(berry_0 + i);
+  }
+  for(var i = 0; i < num_tiers_per_crop_type[CROPTYPE_MUSH]; i++) {
+    updatePrestigeData(mush_0 + i);
+  }
+  for(var i = 0; i < num_tiers_per_crop_type[CROPTYPE_FLOWER]; i++) {
+    updatePrestigeData(flower_0 + i);
+  }
 }

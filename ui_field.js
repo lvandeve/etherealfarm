@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -150,7 +150,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     if(!expected_prod.empty()) {
       result += 'Current production/sec: ' + c.getProd(f, false).toString() + '<br>';
       result += 'Expected production/sec: ' + expected_prod.toString();
-      if(state.challenge == challenge_wasabi) result += '<br>NOTE: this production is only accissible through copying with watercress etc... during the wasabi challenge!';
+      if(state.challenge == challenge_wasabi) result += '<br>NOTE: this production is only accessible through copying with watercress etc... during the wasabi challenge!';
     }
     if(expected_boost.neqr(0)) {
       var current_boost = c.getBoost(f, false);
@@ -286,9 +286,9 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
 
   var upgrade_cost = [undefined];
-  var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost);
+  var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost, true);
   if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/> • Upgrade cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    result += '<br/> • Next tier cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
   }
 
   return result;
@@ -297,7 +297,23 @@ function getCropInfoHTML(f, c, opt_detailed) {
 function makeTreeDialog() {
   var div;
 
-  var dialog = createDialog();
+  var have_buttons = state.challenge || haveAutomaton() || state.challenges_unlocked || state.treelevel >= min_transcension_level;
+
+  var shortcutfun = function(e) {
+    var shift = util.eventHasShiftKey(e);
+    var ctrl = util.eventHasCtrlKey(e);
+    if(haveAutomaton() && (e.key == 'b' || e.key == 'B') && !ctrl) {
+      if(!blueprintdialogopen) createBlueprintsDialog(false);
+    }
+    if(state.challenges_unlocked && (e.key == 'c' || e.key == 'C') && !ctrl) {
+      if(!challengedialogopen) createChallengeDialog();
+    }
+    if(state.treelevel >= min_transcension_level && (e.key == 't' || e.key == 'T') && !ctrl) {
+      createTranscendDialog();
+    }
+  };
+
+  var dialog = createDialog(undefined, undefined, undefined, undefined, have_buttons ? NOCANCELBUTTON : undefined, undefined, undefined, undefined, undefined, undefined, undefined, shortcutfun);
   dialog.div.className = 'efDialogTranslucent';
 
   var contentFlex = dialog.content;
@@ -313,9 +329,9 @@ function makeTreeDialog() {
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 0.98, 0.75, 0.3);
+  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75, 0.32);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.01, 0, 0.2], 0.77, 1, 0.95, 0.3);
+  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95, 0.3);
 
   var createText = function() {
     var text;
@@ -458,8 +474,13 @@ function makeTreeDialog() {
     return true;
   });
 
-  var y = 0;
+  var y = 0.1;
   var h = 0.3;
+  // finetune the width of the buttons in flex f1
+  var button0 = 0;
+  var button1 = 0.8;
+  var buttontextsize = 0.6;
+  var buttonshift = h * 1.15;
 
   if(state.challenge) {
     var c = challenges[state.challenge];
@@ -469,8 +490,8 @@ function makeTreeDialog() {
     var targetlevel = c.nextTargetLevel();
     var success = state.treelevel >= targetlevel;
 
-    var button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
-    y += h * 1.1;
+    var button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    y += buttonshift;
     styleButton(button);
     if(already_completed && success) {
       // Successfully finish, but it already was completed beforehand, so it's called just "finish", not "complete"
@@ -505,8 +526,8 @@ function makeTreeDialog() {
     });
 
 
-    button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
-    y += h * 1.1;
+    button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Current challenge info';
     registerTooltip(button, 'Description and statistics for the current challenge');
@@ -516,8 +537,8 @@ function makeTreeDialog() {
   } else if(state.treelevel < min_transcension_level) {
     if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
   } else {
-    var button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
-    y += h * 1.1;
+    var button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Transcension';
     //button.textEl.style.boxShadow = '0px 0px 5px #ff0';
@@ -528,8 +549,8 @@ function makeTreeDialog() {
     });
 
     if(state.challenges_unlocked) {
-      button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
-    y += h * 1.1;
+      button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+      y += buttonshift;
       styleButton(button);
       button.textEl.innerText = 'Challenges';
       //button.textEl.style.boxShadow = '0px 0px 5px #f60';
@@ -542,8 +563,8 @@ function makeTreeDialog() {
   }
 
   if(haveAutomaton()) {
-    button = new Flex(f1, 0, y, 0.5, y + h, 0.8).div;
-    y += h * 1.1;
+    button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Blueprints';
     //button.textEl.style.boxShadow = '0px 0px 5px #44f';
@@ -552,10 +573,20 @@ function makeTreeDialog() {
       createBlueprintsDialog();
     });
   }
+
+  if(have_buttons) {
+    button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    y += buttonshift;
+    styleButton(button);
+    button.textEl.innerText = 'Back';
+    addButtonAction(button, function() {
+      dialog.cancelFun();
+    });
+  }
 }
 
 // opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
-function getUpgradeCrop(x, y, opt_cost) {
+function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
   if(!state.field[y]) return null;
   var f = state.field[y][x];
   if(!f) return;
@@ -563,7 +594,8 @@ function getUpgradeCrop(x, y, opt_cost) {
   if(!c) return;
 
   if(c.type == CROPTYPE_CHALLENGE) return null;
-  var tier = state.highestoftypeunlocked[c.type];
+  var tier = opt_include_locked ? state.highestoftypeknown[c.type] : state.highestoftypeunlocked[c.type];
+  ;
 
   var c2 = null;
 
@@ -572,7 +604,7 @@ function getUpgradeCrop(x, y, opt_cost) {
     if(tier < 0) break;
 
     var c3 = croptype_tiers[c.type][tier];
-    if(!c3 || !state.crops[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
+    if(!c3 || !state.crops[c3.index].unlocked && !opt_include_locked) break; // normally cannot happen that a lower tier crop is not unlocked
 
     if(opt_cost != undefined) {
       opt_cost[0] = c3.getCost();

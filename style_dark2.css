@@ -6,6 +6,31 @@ a:visited {
   color: #800;
 }
 
+/*scrollbar styles for Chromium based browsers. This especially for the dark
+color schemes since Chrome's default scrollbar is very bright.
+These styles don't work in firefox (which supports CSS's scrollbar-color
+instead, see below)*/
+::-webkit-scrollbar {
+  width: 11px;
+}
+::-webkit-scrollbar-track {
+  background: #666;
+  border-radius: 20px;
+}
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 20px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/*scrollbar styles for Firefox, and possible for future versions of Chrome (as
+of feb 2022)*/
+body {
+  scrollbar-color:#888 #555;
+}
+
 .efBackground {
   background-color: #000;
   color: #bbb;

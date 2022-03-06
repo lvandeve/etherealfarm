@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2021  Lode Vandevenne
+Copyright (C) 2020-2022  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ function updateRightPane() {
 
   topRightFlex.clear();
 
-  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (state.automaton_unlocked[1] ? 8 : 0) | (state.automaton_unlocked[2] ? 16 : 0);
+  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (state.automaton_unlocked[1] ? 8 : 0) | (state.automaton_unlocked[2] ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0);
   var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
   rightPanelPrevAutomationState = automatonState;
 
@@ -112,13 +112,21 @@ function updateRightPane() {
                 update();
               }
             });
-            var text0 = 'Plant: ' + (autoPlantEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
+            var autoUnlockUnlockedButDisabled = state.automaton_unlocked[3] && !autoUnlockEnabled();
+            var autoPrestigeUnlockedButDisabled = state.automaton_unlocked[4] && !autoPrestigeEnabled();
+            var text0 = 'Plant: ' + (autoPlantEnabled() ? ((autoUnlockUnlockedButDisabled || autoPrestigeUnlockedButDisabled) ? '<font color="#bb0">auto</font>' : '<font color="#0b0">auto</font>') : '<font color="#b00">manual</font>');
             var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
             styleButton0(chip0.div);
             styleButton0(chip1.div);
             centerText2(chip0.div);
             centerText2(chip1.div);
-            chip0.div.title = 'quick toggle auto-plant';
+            if(autoUnlockUnlockedButDisabled) {
+              chip0.div.title = 'quick toggle auto-plant (auto unlock is currently disabled and not toggled by this button, use automaton tab to enable)';
+            } else if(autoPrestigeUnlockedButDisabled) {
+              chip0.div.title = 'quick toggle auto-plant (auto prestige is currently disabled and not toggled by this button, use automaton tab under the auto unlock settings to enable)';
+            } else {
+              chip0.div.title = 'quick toggle auto-plant';
+            }
             chip1.div.title = 'quick toggle auto-upgrades';
             chip0.div.textEl.innerHTML = text0;
             chip1.div.textEl.innerHTML = text1;
