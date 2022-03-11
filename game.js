@@ -1508,19 +1508,21 @@ function precomputeField() {
       var score_mul = 1;
       var score_malus = 1;
 
-      for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-        var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-        var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      var numdir = haveDiagonalBrassica() ? 8 : 4;
+      for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+        var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+        var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
         if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
         var f2 = state.field[y2][x2];
         var c2 = f2.getCrop();
         if(!c2) continue;
-        var p2 = prefield[y2][x2];
         if(score_ignore_templates && c2.istemplate) continue;
+        if(dir >= 4 && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
+        var p2 = prefield[y2][x2];
 
         if(c.type == CROPTYPE_BERRY) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
-          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 2) ? 1 : 2); // TODO: take diagonal brassica into account here if unlocked
+          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 2) ? 1 : 2);
           if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
           if(!score_ignore_mushrooms && c2.type == CROPTYPE_MUSH) score_mul *= 2;
         }

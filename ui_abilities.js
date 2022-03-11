@@ -397,6 +397,12 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(key == 'p' && !shift && !ctrl && state.currentTab == tabindex_field) {
+    // pick or plant crop
+    var did_something = false;
+    if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+      addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
+      did_something = true;
+    }
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f) {
@@ -407,12 +413,15 @@ document.addEventListener('keydown', function(e) {
           // plant
           if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
             addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[state.lastPlanted], shiftPlanted:true});
-            update();
+            did_something = true;
           }
         }
       }
     } else if(mouseOverUpgradeCrop != null) {
       if(state.crops[mouseOverUpgradeCrop] && state.crops[mouseOverUpgradeCrop].unlocked) state.lastPlanted = mouseOverUpgradeCrop;
+    }
+    if(did_something) {
+      update();
     }
   }
 
@@ -435,6 +444,12 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field) {
+    // delete crop
+    var did_something = false;
+    if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+      addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
+      did_something = true;
+    }
     if(state.allowshiftdelete) {
       if(state.field[shiftCropFlexY]) {
         var f = state.field[shiftCropFlexY][shiftCropFlexX];
@@ -442,12 +457,15 @@ document.addEventListener('keydown', function(e) {
           if(f.hasCrop()) {
             // delete crop
             addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
-            update();
+            did_something = true;
           }
         }
       }
     } else {
       showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting crops with "d" is allowed', C_INVALID, 0, 0);
+    }
+    if(did_something) {
+      update();
     }
   }
 

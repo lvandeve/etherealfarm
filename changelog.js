@@ -22,7 +22,7 @@ function getChangeLog() {
 
   text += '0.1.97 (2022-03-06):';
   text += '<br/>• All tiers of flowers, mushrooms and berries can now be prestiged.';
-  text += '<br/>• Added two new nut tiers (to keep alphabetic naming order, some tier names have shifted).'; // added / inserted beechnut, ginko, pecan nut. pili got shifted out, for now
+  text += '<br/>• Added two new nut tiers (to keep alphabetic naming order, some tier names have shifted).'; // added / inserted beechnut, ginkgo, pecan nut. pili got shifted out, for now
   text += '<br/>• Added "Plant entire field" option to automaton tab, which plants the same crop on all empty spots.';
   text += '<br/>• Dark scrollbars for dark mode themes (experimental browser dependent feature).';
   text += '<br/>• Various small tweaks and fixes.'; // typo fixes, and the tooltip of crops now says "next tier cost" instead of "upgrade cost" and will also show it if the next crop's unlock upgrade is visibible, rather than only after it was unlocked

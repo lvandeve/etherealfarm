@@ -277,18 +277,18 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += 'Cost: ' + '<br>';
     result += ' • Base planting cost: ' + c.cost.toString() + '<br>';
     result += ' • Last planting cost: ' + c.getCost(-1).toString() + '<br>';
-    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
+    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost (p): ' + c.getCost().toString() + '<br>';
 
-    result += ' • Recoup on delete: ' + recoup.toString();
+    result += ' • Recoup on delete (d): ' + recoup.toString();
   } else {
-    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
-    result += ' • Recoup on delete: ' + recoup.toString();
+    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
+    result += ' • Recoup on delete (d): ' + recoup.toString();
   }
 
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost, true);
   if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/> • Next tier cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    result += '<br/> • Next tier cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
   }
 
   return result;
