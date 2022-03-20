@@ -149,11 +149,6 @@ var getUpgradeInfoText = function(u, completed) {
     infoText += '<br>';
     infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
     if(c2.prestige) infoText += 'Prestiged: ' + c2.prestige + 'x<br>';
-    // standard as in: none of the field-location boosts are taken into account
-    //var cropprod = c.getProd(undefined, true);
-    //if(!cropprod.empty()) {
-    //  infoText += 'Standard production/sec: ' + c.getProd(undefined, true).toString() + '<br>';
-    //}
   }
   return infoText;
 };

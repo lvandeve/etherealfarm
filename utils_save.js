@@ -140,7 +140,9 @@ function decompress(s) {
 
 function encInt(i) {
   //i = Math.floor(i);
-  if(i < -9007199254740992 || i > 9007199254740992 || isNaN(i)) i = 0; // avoid infinite loops
+  if(isNaN(i)) i = 0; // avoid infinite loops
+  if(i < -9007199254740992) i = -9007199254740992; // avoid infinite loops
+  if(i > 9007199254740992) i = 9007199254740992; // avoid infinite loops
   var s = 0;
   if(i < 0) {
     s = 1;
@@ -194,7 +196,8 @@ function decBool(reader) {
 
 function encUint(i) {
   //i = Math.floor(i);
-  if(i < 0 || i > 9007199254740992 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i < 0 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i > 9007199254740992) i = 9007199254740992; // avoid infinite loops
   var b = i & 31;
   i = Math.floor(i / 32); // too bad doing ">> 5" doesn't work for more than 32 bits with JS
   var result = toBase64[b | (i ? 32 : 0)];
@@ -225,7 +228,8 @@ function decUint(reader) {
 // encodes an integer with max value 2**53 (inclusive) into max 9 chars
 // NOTE: while encUint(i) also supports max value 2**53 due JS limitations, its encoding can in rare cases be slightly more efficient for lower values, which is why both encodings exist. encUint53 is good for mantissas of floating point values.
 function encUint53(i) {
-  if(i < 0 || i > 9007199254740992 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i < 0 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i > 9007199254740992) i = 9007199254740992; // avoid infinite loops
 
   if(i > 2199023255552) {
     // starting at 2199023255552, the varint method outputs 9 chars, so then we
@@ -288,7 +292,8 @@ function decUint53(reader) {
 // So this is slightly more efficient than encUint for values expected to be low, and significantly more efficient (towards 25%) than encUint for uniform random uint16 values.
 // Note that this can actually encode values from 0-66591, not just 0-65535.
 function encUint16(i) {
-  if(i < 0 || i > 66591 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i < 0 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i > 66591) i = 66591; // avoid infinite loops
   // 1 char: 5 bits: 0-31
   // 2 chars: 10 bits: 32-1055
   // 3 chars: 16 bits: 1056-66591
@@ -322,7 +327,6 @@ function decUint16(reader) {
   return result;
 }
 
-
 // Encodes any value 0-63 in one symbol (unlike the varint encUint which may take 2 symbols for some)
 function encUint6(i) {
   return toBase64[i & 63];
@@ -338,7 +342,8 @@ function decUint6(reader) {
 
 // For unicode codepoint values
 function encUint21(i) {
-  if(i < 0 || i > 2130975 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i < 0 || isNaN(i)) i = 0; // avoid infinite loops
+  if(i > 2130975) i = 2130975; // avoid infinite loops
   // 1 char: 5 bits: 0-31
   // 2 chars: 10 bits: 32-1055
   // 3 chars: 15 bits: 1056-33823
@@ -695,6 +700,81 @@ function decString(reader) {
 
 
 
+
+
+
+var date_base = 1600000000; // september 2020 instead of 1970 unix epoch, for smaller numbers to encode
+
+function encTime(s) {
+  // a few special values
+  if(s == 0) return encUint6(0);
+  if(s == -Infinity) return encUint6(13);
+  if(s == Infinity) return encUint6(14);
+  if(isNaN(s)) return encUint6(15);
+  var i = Math.floor(s);
+  var m = Math.round((s - i) * 64); // sub-second precision
+  if(m > 63) {
+    i++;
+    m = 0;
+  }
+  var e = 1;
+  if(i >= date_base) {
+    e = 2;
+    i -= date_base;
+  } else if(i < 0) {
+    e = 3;
+    i = -i;
+  }
+
+  var a = encUint6((e << 4) | (i % 16));
+  i = Math.floor(i / 16);  // NOTE: can't use bitshift if i bigger than 31 bits in JS
+  var b = encUint6(m);
+  var c = '';
+  if(e == 2) {
+    // typical timestamps have at least this many bits, so encode part as fixed integer rather than spend more varint bits
+    c += encUint6(i % 64);
+    i = Math.floor(i / 64);
+    c += encUint6(i % 64);
+    i = Math.floor(i / 64);
+    c += encUint6(i % 64);
+    i = Math.floor(i / 64);
+  }
+  c += encUint(i);
+  return a + b + c;
+}
+
+function decTime(reader) {
+  var a = decUint6(reader);
+  var e = (a >> 4) & 3;
+  if(e == 0) {
+    if(a == 0) return 0;
+    if(a == 13) return -Infinity;
+    if(a == 14) return Infinity;
+    if(a == 15) return NaN;
+    reader.error = true;
+    return 0;
+  }
+  var m = decUint6(reader);
+  var i = 0;
+  if(e == 2) {
+    i += decUint6(reader);
+    i += decUint6(reader) * 64;
+    i += decUint6(reader) * 4096;
+    i += decUint(reader) * 262144;
+  } else {
+    i = decUint(reader);
+  }
+  i = (i * 16) + (a % 16);
+  if(e == 2) {
+    i += date_base;
+  } else if(e == 3) {
+    i = -i;
+  }
+  return i + m / 64.0;
+}
+
+
+
 // encode resources
 function encResArray(arr) {
   var result = '';
@@ -776,10 +856,11 @@ function decFractionChoice(e) {
   return l * [1, 0.5, 0.2][q];
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 var approx_num_base = 1.15;
 var approx_num_exact = 11;
-var approx_num_skipped = 6;
+var approx_num_skipped = 6; // chosen such that the encoding of values above approx_num_exact begin at encoding approx_num_exact + 1
 
 
 // Encodes a positive Num in approximate form.
@@ -799,6 +880,29 @@ function decApproxNum(e) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+var approx2_num_base = 1.001;
+var approx2_num_exact = 1000;
+var approx2_num_skipped = 5911; // chosen such that the encoding of values above approx_num_exact begin at encoding approx_num_exact + 1
+
+
+// Encodes a positive Num in approximate form.
+// The precision whichever is highest of absolute 1, or relative around  0.1%
+function encApprox2Num(f) {
+  if(f.ltr(0.5)) return 0;
+  if(f.lter(approx2_num_exact)) return Math.round(f.valueOf());
+  var l = f.logr(approx2_num_base) - approx2_num_skipped;
+  if(l > 9007199254740992) return 9007199254740992;
+  return Math.round(l);
+}
+
+function decApprox2Num(e) {
+  if(e <= approx2_num_exact) return Num(e);
+  var f = Num.pow(Num(approx2_num_base), Num(e + approx2_num_skipped));
+  return f;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -814,6 +918,7 @@ var TYPE_FLOAT2 = type_index++; // floating point value, alternative variable le
 var TYPE_NUM = type_index++; // large number with large exponent
 var TYPE_STRING = type_index++; // unicode text
 var TYPE_RES = type_index++; // resources (array of resources from the game, such as seeds, ...)
+var TYPE_TIME = type_index++; // encodes durations or times since unix epoch in smaller size than using float, with a precision of 1/64th seconds. Only can encode time values that are within reasonable bounds (millenia, but the given sub second precision is only guaranteed up to 1e14 seconds, and being able to encode it at all only from around -1e17 to 1e22 seconds).
 
 // arrays for all the same types
 type_index = 12;
@@ -827,6 +932,7 @@ var TYPE_ARRAY_FLOAT2 = type_index++;
 var TYPE_ARRAY_NUM = type_index++;
 var TYPE_ARRAY_STRING = type_index++;
 var TYPE_ARRAY_RES = type_index++;
+var TYPE_ARRAY_TIME = type_index++;
 
 
 var compactBool = true;
@@ -857,6 +963,7 @@ function encTokenValue(value, type) {
     case TYPE_NUM: return encNum(value);
     case TYPE_STRING: return encString(value);
     case TYPE_RES: return encRes(value);
+    case TYPE_TIME: return encTime(value);
   }
   return undefined;
 }
@@ -930,6 +1037,7 @@ function decToken(reader, prev_id, section) {
         case TYPE_NUM: token.value = Num(0); break;
         case TYPE_STRING: token.value = ''; break;
         case TYPE_RES: token.value = Res(0); break;
+        case TYPE_TIME: token.value = 0; break;
         default: {
           reader.error = true;
           return token;
@@ -947,6 +1055,7 @@ function decToken(reader, prev_id, section) {
         case TYPE_NUM: token.value = decNum(reader); break;
         case TYPE_STRING: token.value = decString(reader); break;
         case TYPE_RES: token.value = decRes(reader); break;
+        case TYPE_TIME: token.value = decTime(reader); break;
         default: {
           reader.error = true;
           return token;
@@ -981,6 +1090,7 @@ function decToken(reader, prev_id, section) {
           case TYPE_ARRAY_NUM: token.value[i] = decNum(reader); break;
           case TYPE_ARRAY_STRING: token.value[i] = decString(reader); break;
           case TYPE_ARRAY_RES: token.value[i] = decRes(reader); break;
+          case TYPE_ARRAY_TIME: token.value[i] = decTime(reader); break;
           default: {
             reader.error = true;
             return token;

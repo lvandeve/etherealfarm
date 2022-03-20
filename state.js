@@ -36,6 +36,7 @@ function Cell(x, y, is_ethereal) {
 
   // only used for ethereal field. TODO: make a Cell2 class for ethereal field instead
   this.justplanted = false; // planted during this run (this transcension), so can't be deleted until next one.
+  this.justreplaced = false; // has been replaced from a crop that costs ethereal token to delete (such as regular berry) for free (without costing to replace due to same type) into something that doesn't cost ethereal token to delete (such as template of same type, or a crop that's now growing) and so it must be non-free and cost a token to delete anyway
 
   this.is_ethereal = is_ethereal;
 }
@@ -153,6 +154,15 @@ function ChallengeState() {
   this.maxlevels = undefined; // max level if this is a cycling challenge: the max level per cycle. If enabled, this this is an array.
   this.besttimes = undefined; // for cycling challenges
   this.besttimes2 = undefined; // for cycling challenges
+
+  // last run stats. There is always only one of these, not multiple for cycling challenges. This is for the last run, whether it completed or not
+  this.last_completion_level = 0; // runtime of last completion
+  this.last_completion_time = 0; // runtime of last completion
+  this.last_completion_resin = Num(0); // resin gained during last run
+  this.last_completion_twigs = Num(0); // twigs gained during last run
+  this.last_completion_date = 0; // when did you complete this challenge the last time, or 0 if unknown
+  this.last_completion_total_resin = Num(0); // approximate amount of resin owned during the last time this challenge was ran
+  this.last_completion_level2 = 0; // level of ethereal tree at time of completing the challenge last time
 }
 
 function BluePrint() {
@@ -171,9 +181,16 @@ function BluePrint() {
   7: h: beehive
   8: i: mistletoe
   9: u: nuts
-  10: s: squirrel
+  ethereal:
+  32: a: automaton
+  33: s: squirrel
+  34: l: lotus
+  35: e: fern
   */
   this.data = [];
+
+  // for ethereal blueprints, whether higher level crop used in this spot
+  this.tier = [];
 
   this.name = '';
 }
@@ -189,8 +206,36 @@ BluePrint.toCrop = function(i) {
   if(i == 7) return bee_template;
   if(i == 8) return mistletoe_template;
   if(i == 9) return nut_template;
-  //if(i == 10) return squirrel_template;
   return -1;
+}
+
+function toCrop2Base(i) {
+  if(i == 0) return -1;
+  //if(i == 2) return watercress2_template;
+  if(i == 3) return berry2_template;
+  if(i == 4) return mush2_template;
+  if(i == 5) return flower2_template;
+  if(i == 6) return nettle2_template;
+  if(i == 7) return bee2_template;
+  //if(i == 8) return mistletoe2_template;
+  //if(i == 9) return nut2_template;
+  if(i == 32) return automaton2_template;
+  if(i == 33) return squirrel2_template;
+  if(i == 34) return lotus2_template;
+  if(i == 35) return fern2_template;
+  return -1;
+}
+
+BluePrint.toCrop2 = function(i, tier) {
+  var index = toCrop2Base(i);
+  if(index == -1) return index;
+  var c = crops2[index];
+  if(!c) return index;
+  if(tier != undefined) {
+    var c2 = croptype2_tiers[c.type][tier];
+    if(c2) return c2.index;
+  }
+  return index;
 }
 
 BluePrint.fromCrop = function(c) {
@@ -203,21 +248,27 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_BEE) return 7;
   if(c.type == CROPTYPE_MISTLETOE) return 8;
   if(c.type == CROPTYPE_NUT) return 9;
-  //if(c.type == CROPTYPE_SQUIRREL) return 10;
+  if(c.type == CROPTYPE_AUTOMATON) return 32;
+  if(c.type == CROPTYPE_SQUIRREL) return 33;
+  if(c.type == CROPTYPE_LOTUS) return 34;
+  if(c.type == CROPTYPE_FERN2) return 35;
   return 0;
 }
 
 BluePrint.toChar = function(i) {
   if(i == 0) return '.';
-  if(i == 2) return 'W';
-  if(i == 3) return 'B';
-  if(i == 4) return 'M';
-  if(i == 5) return 'F';
-  if(i == 6) return 'N';
-  if(i == 7) return 'H';
-  if(i == 8) return 'I';
+  if(i == 2) return 'W'; // watercress (brassica)
+  if(i == 3) return 'B'; // berry
+  if(i == 4) return 'M'; // mushroom
+  if(i == 5) return 'F'; // flower
+  if(i == 6) return 'N'; // nettle (prickly plants)
+  if(i == 7) return 'H'; // hive (bees)
+  if(i == 8) return 'I'; // mistletoe
   if(i == 9) return 'U'; // nuts
-  //if(i == 10) return 'S'; // squirrel
+  if(i == 32) return 'A'; // automaton
+  if(i == 33) return 'S'; // squirrel
+  if(i == 34) return 'L'; // lotus
+  if(i == 35) return 'E'; // fern
   return -1;
 }
 
@@ -232,6 +283,10 @@ BluePrint.fromChar = function(c) {
   if(c == 'H') return 7;
   if(c == 'I') return 8;
   if(c == 'U') return 9;
+  if(c == 'A') return 32;
+  if(c == 'S') return 33;
+  if(c == 'L') return 34;
+  if(c == 'E') return 35;
   //if(c == 'S') return 10;
   return 0;
 }
@@ -242,10 +297,12 @@ BluePrint.copyTo = function(from, to) {
     to.numw = 0;
     to.numh = 0;
     to.data = [];
+    to.tier = [];
   }
   to.numw = from.numw;
   to.numh = from.numh;
   to.data = util.clone(from.data);
+  to.tier = util.clone(from.tier);
   to.name = from.name;
 }
 
@@ -370,6 +427,8 @@ function State() {
       }
     }
   }
+  // also have run stats for no-challenge (index 0)
+  this.challenges[0] = new ChallengeState();
 
   // ethereal field and crops
   this.numw2 = 5;
@@ -403,8 +462,10 @@ function State() {
   this.misttime = 0; // mist is unlocked if state.upgrades[upgrade_mistunlock].count
   this.suntime = 0; // similar
   this.rainbowtime = 0;
+  this.lastWeather = 0; // last clicked weather ability, if multiple are active according to the timer, only the one matching this counts as active
 
   this.lastFernTime = 0;
+  this.lastReFernTime = 0; // last time fern was checked to perhaps become bushy
   this.lastBackupWarningTime = 0;
 
   // misc
@@ -666,6 +727,7 @@ function State() {
 
   // array of BluePrint objects
   this.blueprints = [];
+  this.blueprints2 = [];
 
   // effects for this run
   this.amberprod = false;
@@ -1526,6 +1588,10 @@ function getNumberFormatCode() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+function automatonUnlocked() {
+  return state.crops2[automaton2_0].unlocked;
+}
+
 function haveAutomaton() {
   return !!state.crop2count[automaton2_0];
 }
@@ -1614,12 +1680,13 @@ return value:
 4=not buyable but next-next up (the last type of which the name is revealed)
 5=not buyable and after next-next-up
 
-s = Stage3 object
-s2 = Stage3State object
+si = stage index
 b = branch
 d = depth in branch
 */
-function squirrelUpgradeBuyable(s, s2, b, d) {
+function squirrelUpgradeBuyable(si, b, d) {
+  var s = stages3[si]; // the stage, as Stage3 object
+  var s2 = state.stages3[si]; // Stage3State object
   // how many non-bought ones in the center branch of the previous stages, when going up one by one until we reach the bought one or the root (capped at 3)
   var above = 0;
   var u = s.index - 1;

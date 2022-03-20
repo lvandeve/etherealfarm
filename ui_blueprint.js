@@ -17,9 +17,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // opt_transcend: if true, use alternate background color to indicate it'll transcend with it
-function renderBlueprint(b, flex, opt_index, opt_transcend) {
+function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challenge) {
   flex.clear();
-  flex.div.style.backgroundColor = opt_transcend ? '#ff7' : '#edc';
+  flex.div.style.backgroundColor = ethereal ? '#aaf' : (opt_transcend ? (opt_challenge ? '#fbb' : '#ff7') : '#edc');
 
   if(!b) b = new BluePrint();
   var w = b.numw;
@@ -35,12 +35,20 @@ function renderBlueprint(b, flex, opt_index, opt_transcend) {
     images[y] = [];
     for(var x = 0; x < w; x++) {
       //var cell = new Flex(grid, x / w, y / h, (x + 1) / w, (y + 1) / h);
-      var t = b.data[y][x];
-      var c = crops[BluePrint.toCrop(t)];
+      var d = b.data[y][x];
+      var c;
+      if(ethereal) {
+        var t = b.tier[y][x];
+        c = crops2[BluePrint.toCrop2(d, t)];
+      } else {
+        c = crops[BluePrint.toCrop(d)];
+      }
       if(c) {
         //var canvas = createCanvas('0%', '0%', '100%', '100%', cell.div);
         //renderImage(c.image[4], canvas);
         images[y][x] = c.image[4];
+      } else {
+        images[y][x] = undefined; // still fill in the array, to give it the correct width for renderImages
       }
     }
   }
@@ -75,11 +83,7 @@ function renderBlueprint(b, flex, opt_index, opt_transcend) {
 function plantBluePrint(b, allow_override) {
   if(!b || b.numw == 0 || b.numh == 0) return;
 
-  var wither_incomplete = state.challenge == challenge_wither && state.challenges[challenge_wither].completed < 3;
-  if(wither_incomplete) {
-    showMessage('blueprints are disabled during the wither challenge, for now...', C_INVALID);
-    return;
-  }
+  if(!canUseBluePrintsDuringChallenge(state.challenge, true)) return false;
 
   // match up corners such that standard tree position overlap, in case field sizes are different
   // treex and treey are coordinates of the stem
@@ -100,10 +104,10 @@ function plantBluePrint(b, allow_override) {
   var did_something = false;
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
-      var f, t, fx, fy;
+      var f, d, fx, fy;
       if(single) {
         f = state.field[y][x];
-        t = b.data[0][0];
+        d = b.data[0][0];
         fx = x;
         fy = y;
       } else {
@@ -111,9 +115,9 @@ function plantBluePrint(b, allow_override) {
         fy = y - sy;
         if(fx < 0 || fy < 0 || fx >= state.numw || fy >= state.numh) continue;
         f = state.field[fy][fx];
-        t = b.data[y][x];
+        d = b.data[y][x];
       }
-      var c = crops[BluePrint.toCrop(t)];
+      var c = crops[BluePrint.toCrop(d)];
       var c2 = undefined;
       if(!c) continue;
       if(allow_override) {
@@ -138,6 +142,181 @@ function plantBluePrint(b, allow_override) {
   else showMessage('This blueprint had no effect on the current field');
 }
 
+// if allow_override is true, overrides all non-matching crops, but keeps matching ones there
+// if allow_override is false, will not replace any existing crop on the field
+// opt_get_tokens_cost_only: if true, returns the cost in ethereal delete tokens but doesn't do anything
+function plantBluePrint2(b, allow_override, opt_get_tokens_cost_only) {
+  if(!allow_override && opt_get_tokens_cost_only) return 0;
+  if(!b || b.numw == 0 || b.numh == 0) return 0;
+
+  // match up corners such that standard tree position overlap, in case field sizes are different
+  // treex and treey are coordinates of the stem
+  var treex0 = Math.floor((state.numw2 - 1) / 2);
+  var treey0 = Math.floor(state.numh2 / 2);
+  var treex1 = Math.floor((b.numw - 1) / 2);
+  var treey1 = Math.floor(b.numh / 2);
+  var sx = treex1 - treex0;
+  var sy = treey1 - treey0;
+  var w = b.numw;
+  var h = b.numh;
+  var single = false;
+  if(w == 1 && h == 1) {
+    w = state.numw2;
+    h = state.numh2;
+    single = true; // special case: 1x1 blueprint fills entire field
+  }
+  var did_something = false;
+  var newactions = [];
+  var tokens_cost = 0;
+  var numjustplanted = 0;
+  var squirrel_automaton_blocked = false;
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f, d, t, fx, fy;
+      if(single) {
+        f = state.field2[y][x];
+        d = b.data[0][0];
+        t = b.tier[0][0];
+        fx = x;
+        fy = y;
+      } else {
+        fx = x - sx;
+        fy = y - sy;
+        if(fx < 0 || fy < 0 || fx >= state.numw2 || fy >= state.numh2) continue;
+        f = state.field2[fy][fx];
+        d = b.data[y][x];
+        t = b.tier[y][x];
+      }
+      var c = crops2[BluePrint.toCrop2(d, t)];
+      var c2 = undefined;
+      if(!c) continue;
+      var squirrel_automaton = c.type == CROPTYPE_AUTOMATON || c.type == CROPTYPE_SQUIRREL;
+      if(allow_override) {
+        if(f.index != 0) {
+          c2 = f.getCrop();
+          if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
+          if(c2.index == c.index) continue;
+          // can't override crop that was just planted this run
+          if(c2 && f.justplanted && !c2.istemplate && c2.type != CROPTYPE_AUTOMATON && c2.type != CROPTYPE_SQUIRREL && c2.type != c.type) {
+            numjustplanted++;
+            if(squirrel_automaton) squirrel_automaton_blocked = true;
+            continue;
+          }
+        }
+      } else {
+        // don't overwrite anything that already exists on the field
+        // that includes existing blueprint spots: if you want to combine blueprints, start from the smallest one, then bigger one to fill in the remaining gaps, not the opposite
+        // reason: automaton may already start building up blueprint, so combining the opposite way (overwrite blueprint tiles) may not work due to already becoming real plants
+        if(f.index != 0) continue;
+      }
+      if(!state.crops2[c.index].unlocked) continue;
+      var action_type;
+      if(!!c2) {
+        action_type = ACTION_REPLACE2;
+        if(!freeReplace2(x, y, c.index)) tokens_cost++;
+      } else {
+        action_type = ACTION_PLANT2;
+      }
+      var action_type = !!c2 ? ACTION_REPLACE2 : ACTION_PLANT2;
+      if(!opt_get_tokens_cost_only) newactions.push({type:action_type, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true, lowerifcantafford:true});
+      did_something = true;
+    }
+  }
+  if(opt_get_tokens_cost_only) return tokens_cost;
+  if(tokens_cost > state.delete2tokens) {
+    showMessage('not enough ethereal deletion tokens to use this blueprint, need ' + tokens_cost + ', have: ' + state.delete2tokens, C_INVALID, 0, 0);
+    return tokens_cost;
+  }
+  if(squirrel_automaton_blocked) {
+    // reason for not planting the blueprint if there are justplanted that blocked automaton or squirrel from the blueprint:
+    // if most of the field is justplanted, the blueprint will have almost no effect, but it will have an effect on the existing squirrel and automaton (since those can always be deleted and overwritten), so it will change almost nothing except the squirrel and automaton, which will then be overplanted with a crop that now also can't be deleted
+    // so then you have to continue the run without squirrel and automaton, which is not a good situation (all there bonuses are then disabled)
+    // that's a trap, and most likely not wanted. So therefore, don't do it.
+    showMessage('blueprint not planted, ethereal field has several just-planted crops, a transcension is needed before crops can be over-planted', C_INVALID, 0, 0);
+    return tokens_cost;
+  }
+  if(did_something) {
+    // sort the actions such that those that give back resin are first, to prevent situation where the new ethereal field can't be planted due to replacing crops while not enough resin
+    // TODO: this sorting is very heuristic, do more exact
+    var heuristiccost = function(c) {
+      if(!c) return 0;
+      if(c.istemplate) return 0;
+      if(c.type == CROPTYPE_AUTOMATON || c.type == CROPTYPE_SQUIRREL) return 1;
+      if(c.type == CROPTYPE_LOTUS) return (1 + c.tier) * 1000;
+      if(c.type == CROPTYPE_BEE) return 5 + c.tier;
+      if(c.type == CROPTYPE_FLOWER) return 2 + c.tier;
+      if(c.type == CROPTYPE_NETTLE) return 3 + c.tier * 2;
+      return 1 + c.tier;
+    };
+    newactions.sort(function(a, b) {
+      var fa = state.field2[a.y][a.x];
+      var fb = state.field2[b.y][b.x];
+      var ca0 = fa.getCrop();
+      var cb0 = fb.getCrop();
+      var ca1 = a.crop;
+      var cb1 = b.crop;
+      var costa = heuristiccost(ca1) - heuristiccost(ca0);
+      var costb = heuristiccost(cb1) - heuristiccost(cb0);
+      return costa - costb;
+    });
+    // separate out automaton/squirrel: otherwise there's risk the error "already have squirrel/automaton" appears
+    for(var i = 0; i < newactions.length; i++) {
+      var a = newactions[i];
+      if(a.type != ACTION_REPLACE2) continue;
+      var f = state.field2[a.y][a.x];
+      var c = f.getCrop();
+      if(!c) continue;
+      if(c.type == CROPTYPE_AUTOMATON || c.type == CROPTYPE_SQUIRREL) {
+        var delaction = {type:ACTION_DELETE2, x:a.x, y:a.y, shiftPlanted:false, silent:true};
+        a.type = ACTION_PLANT2;
+        addAction(delaction);
+      }
+    }
+    for(var i = 0; i < newactions.length; i++) {
+      addAction(newactions[i]);
+    }
+    showMessage('Planted ethereal blueprint');
+  }
+  else showMessage('This ethereal blueprint had no effect on the current field');
+  return tokens_cost;
+}
+
+function blueprintFromField(b) {
+  var w = state.numw;
+  var h = state.numh;
+  b.numw = w;
+  b.numh = h;
+  b.data = [];
+  for(var y = 0; y < h; y++) {
+    b.data[y] = [];
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      b.data[y][x] = BluePrint.fromCrop(f.getCrop());
+    }
+  }
+  sanitizeBluePrint(b);
+}
+
+function blueprintFromField2(b) {
+  var w = state.numw2;
+  var h = state.numh2;
+  b.numw = w;
+  b.numh = h;
+  b.data = [];
+  b.tier = [];
+  for(var y = 0; y < h; y++) {
+    b.data[y] = [];
+    b.tier[y] = [];
+    for(var x = 0; x < w; x++) {
+      var f = state.field2[y][x];
+      var c = f.getCrop();
+      b.data[y][x] = BluePrint.fromCrop(f.getCrop());
+      b.tier[y][x] = c ? c.tier : 0;
+    }
+  }
+  sanitizeBluePrint(b);
+}
+
 // set a blueprint to empty if it has only 0-cells
 function sanitizeBluePrint(b) {
   if(!b) return;
@@ -153,6 +332,7 @@ function sanitizeBluePrint(b) {
   b.numw = 0;
   b.numh = 0;
   b.data = [];
+  b.tier = [];
 }
 
 function createBluePrintText(b) {
@@ -208,36 +388,40 @@ var lastpreundoblueprint = undefined;
 var lastpreundoblueprintindex = -1;
 
 
-function createBlueprintDialog(b, opt_index, opt_onclose) {
-  if(!haveAutomaton()) return;
+function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
+  if(!automatonUnlocked()) return;
 
   var did_edit = false;
 
   var orig = b;
   b = BluePrint.copy(b);
 
-  var dialog = createDialog(undefined, function() {
-    if(did_edit) {
-      b = BluePrint.copy(orig);
-      renderBlueprint(b, renderFlex, opt_index);
-      did_edit = false;
-    } else if(!!lastpreundoblueprint && lastpreundoblueprintindex == opt_index) {
-      b = BluePrint.copy(lastpreundoblueprint);
-      renderBlueprint(b, renderFlex, opt_index);
-      did_edit = true;
-    }
-    return true;
-  }, 'undo', function() {
+  var okfun = function() {
     // this actually commits the change of the blueprint. This is the cancel function of the dialog: the only thing that does not commit it, is using undo.
     if(did_edit) {
       lastpreundoblueprint = BluePrint.copy(orig);
       lastpreundoblueprintindex = opt_index;
       BluePrint.copyTo(b, orig);
     }
-  }, 'ok', undefined, undefined, undefined, opt_onclose, undefined, undefined, undefined, /*swap_buttons=*/true);
+  };
+
+  var undofun = function() {
+    if(did_edit) {
+      b = BluePrint.copy(orig);
+      renderBlueprint(b, ethereal, renderFlex, opt_index);
+      did_edit = false;
+    } else if(!!lastpreundoblueprint && lastpreundoblueprintindex == opt_index) {
+      b = BluePrint.copy(lastpreundoblueprint);
+      renderBlueprint(b, ethereal, renderFlex, opt_index);
+      did_edit = true;
+    }
+    return true;
+  };
+
+  var dialog = createDialog(undefined, undofun, 'undo', okfun, 'ok', undefined, undefined, undefined, opt_onclose, undefined, undefined, undefined);
 
   var renderFlex = new Flex(dialog.content, [0, 0, 0.05], [0, 0, 0.05], [0, 0, 0.5], [0, 0, 0.5]);
-  renderBlueprint(b, renderFlex, opt_index);
+  renderBlueprint(b, ethereal, renderFlex, opt_index);
 
 
   var y = 0.5;
@@ -252,34 +436,31 @@ function createBlueprintDialog(b, opt_index, opt_onclose) {
   };
 
   addButton('To field', function(e) {
-    plantBluePrint(b, false);
+    if(ethereal) plantBluePrint2(b, false);
+    else plantBluePrint(b, false);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
     closeAllDialogs();
     update();
   }, 'Plant this blueprint on the field. Only empty spots of the field are overridden, existing crops will stay, even if their type differs.');
 
-  addButton('To field, overriding', function(e) {
-    plantBluePrint(b, true);
+  var override_name = 'Override field';
+  if(ethereal) {
+    var num_tokens = plantBluePrint2(b, true, true);
+    override_name = 'Override (' + num_tokens + ' tokens)';
+  }
+
+  addButton(override_name, function(e) {
+    if(ethereal) plantBluePrint2(b, true);
+    else plantBluePrint(b, true);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
     closeAllDialogs();
     update();
   }, 'Plant this blueprint on the field. Existing crops from the field are also deleted and overridden, if their type differs and the blueprint is non-empty at that spot.');
 
   addButton('From field', function() {
-    var w = state.numw;
-    var h = state.numh;
-    b.numw = w;
-    b.numh = h;
-    b.data = [];
-    for(var y = 0; y < h; y++) {
-      b.data[y] = [];
-      for(var x = 0; x < w; x++) {
-        var f = state.field[y][x];
-        b.data[y][x] = BluePrint.fromCrop(f.getCrop());
-      }
-    }
-    sanitizeBluePrint(b);
-    renderBlueprint(b, renderFlex, opt_index);
+    if(ethereal) blueprintFromField2(b);
+    else blueprintFromField(b);
+    renderBlueprint(b, ethereal, renderFlex, opt_index);
     did_edit = true;
   }, 'Save the current field state into this blueprint. You can use the cancel button below to undo this.');
 
@@ -301,14 +482,17 @@ function createBlueprintDialog(b, opt_index, opt_onclose) {
       b.numw = w;
       b.numh = h;
       b.data = [];
+      if(ethereal) b.tier = [];
       for(var y = 0; y < h; y++) {
         b.data[y] = [];
+        if(ethereal) b.tier[y] = [];
         for(var x = 0; x < w; x++) {
           b.data[y][x] = BluePrint.fromChar(s[y][x]);
+          if(ethereal) b.tier[y][x] = (s[y][x] == 'S' || s[y][x] == 's' || s[y][x] == 'A' || s[y][x] == 'a') ? 0 : -1;
         }
       }
       sanitizeBluePrint(b);
-      renderBlueprint(b, renderFlex, opt_index);
+      renderBlueprint(b, ethereal, renderFlex, opt_index);
       did_edit = true;
     });
   }, 'Import the blueprint from text format, as generated with To TXT. You can use the cancel button below to undo this.');
@@ -316,7 +500,7 @@ function createBlueprintDialog(b, opt_index, opt_onclose) {
   addButton('Rename', function() {
     makeTextInput('Enter new blueprint name, or empty for default', function(name) {
       b.name = sanitizeName(name);
-      renderBlueprint(b, renderFlex, opt_index);
+      renderBlueprint(b, ethereal, renderFlex, opt_index);
       did_edit = true;
     });
   }, 'Rename this blueprint. This name shows up in the main blueprint overview. You can use the cancel button below to undo this.');
@@ -326,7 +510,7 @@ function createBlueprintDialog(b, opt_index, opt_onclose) {
     b.numh = 0;
     b.data = [];
     b.name = '';
-    renderBlueprint(b, renderFlex, opt_index);
+    renderBlueprint(b, ethereal, renderFlex, opt_index);
     did_edit = true;
   }, 'Delete this blueprint. You can use the cancel button below to undo this.');
 
@@ -390,12 +574,14 @@ function showBluePrintHelp() {
 var blueprintdialogopen = false;
 
 // opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
-function createBlueprintsDialog(opt_transcend) {
-  if(!haveAutomaton()) return;
+// opt_challenge: if opt_transcend is true and this has a challenge index, will transcent with blueprint with that challenge
+// opt_ethereal: show blueprints for ethereal field instead
+function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
+  if(!automatonUnlocked()) return;
 
   var challenge_button_name = undefined;
   var challenge_button_fun = undefined;
-  if(opt_transcend) {
+  if(opt_transcend && !opt_challenge) {
     challenge_button_name = 'challenges';
     if(state.untriedchallenges) challenge_button_name = 'challenges\n(new!)';
     challenge_button_fun = function(){
@@ -404,7 +590,7 @@ function createBlueprintsDialog(opt_transcend) {
   }
 
   blueprintdialogopen = true;
-  var dialog = createDialog(undefined, challenge_button_fun, challenge_button_name, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog(undefined, challenge_button_fun, challenge_button_name, undefined, 'back', undefined, undefined, undefined, function() {
     blueprintdialogopen = false;
   });
 
@@ -412,49 +598,58 @@ function createBlueprintsDialog(opt_transcend) {
   var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
   centerText2(titleFlex.div);
   if(opt_transcend) {
-    titleFlex.div.textEl.innerText = 'Transcend with blueprint';
+    if(opt_challenge) {
+      titleFlex.div.textEl.innerText = upper(challenges[opt_challenge].name) + ' with blueprint';
+    } else {
+      titleFlex.div.textEl.innerText = 'Transcend with blueprint';
+    }
   } else {
-    titleFlex.div.textEl.innerText = 'Blueprint library';
+    titleFlex.div.textEl.innerText = opt_ethereal ? 'Ethereal blueprint library' : 'Blueprint library';
   }
 
   //var bflex = new Flex(dialog.content, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
   var bflex = new Flex(null, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
 
+  var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
+
   for(var i = 0; i < 9; i++) {
     var x = i % 3;
     var y = Math.floor(i / 3);
     var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
-    renderBlueprint(state.blueprints[i], flex, i, opt_transcend);
+    renderBlueprint(blueprints[i], opt_ethereal, flex, i, opt_transcend, opt_challenge);
     styleButton0(flex.div, true);
     addButtonAction(flex.div, bind(function(index, flex, e) {
       for(var i = 0; i <= index; i++) {
-        if(!state.blueprints[i]) state.blueprints[i] = new BluePrint();
+        if(!blueprints[i]) blueprints[i] = new BluePrint();
       }
       var shift = util.eventHasShiftKey(e);
       var ctrl = util.eventHasCtrlKey(e);
-      var filled = state.blueprints[index] && state.blueprints[index].numw && state.blueprints[index].numh;
+      var filled = blueprints[index] && blueprints[index].numw && blueprints[index].numh;
       if(opt_transcend) {
         /*if(!state.allowshiftdelete) {
           showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
         } else*/ if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
           showMessage('not high enough tree level to transcend (transcend with blueprint tries to transcend first, then plant the blueprint)', C_INVALID);
         } else {
+          var new_challenge = opt_challenge || 0;
           if(state.challenge) {
-            addAction({type:ACTION_TRANSCEND, challenge:0});
+            addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
           } else {
-            if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:0});
+            if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
           }
-          addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
+          addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
           closeAllDialogs();
           update();
         }
       } else {
         if(shift && !ctrl && filled) {
-          plantBluePrint(state.blueprints[index], false);
+          if(opt_ethereal) plantBluePrint(blueprints[index], false);
+          else plantBluePrint(blueprints[index], false);
           closeAllDialogs();
           update();
         } else if(!shift && ctrl && filled) {
-          plantBluePrint(state.blueprints[index], true);
+          if(opt_ethereal) plantBluePrint(blueprints[index], true);
+          else plantBluePrint(blueprints[index], true);
           closeAllDialogs();
           update();
         } else if(shift && ctrl && filled) {
@@ -470,15 +665,15 @@ function createBlueprintsDialog(opt_transcend) {
               showMessage('Transcended and planted blueprint');
               addAction({type:ACTION_TRANSCEND, challenge:0});
             }
-            addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:state.blueprints[index]});
+            addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
             closeAllDialogs();
             update();
           }
         } else {
           var closefun = bind(function(i, flex) {
-            renderBlueprint(state.blueprints[i], flex, index);
+            renderBlueprint(blueprints[i], opt_ethereal, flex, index);
           }, index, flex);
-          var subdialog = createBlueprintDialog(state.blueprints[index], index, closefun);
+          var subdialog = createBlueprintDialog(blueprints[index], opt_ethereal, index, closefun);
         }
       }
     }, i, flex));

@@ -78,26 +78,36 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     result += '<br/>';
   }
 
+  var refund_text = cropRecoup2 == 1 ? 'full refund' : ((cropRecoup2 * 100) + '%');
+  var upgrade_cost = [undefined];
+  var upgrade_crop = getUpgradeCrop2(f.x, f.y, upgrade_cost);
 
   if(automaton || squirrel) {
     result += '<br/>• Cost: ' + c.cost.toString();
-    result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+    result += '<br/>• Recoup on delete (d): ' + c.getCost(-1).mulr(cropRecoup2).toString() + ' (' + refund_text + ')';
   } else if(!opt_detailed) {
-    result += '<br/>• Next planting cost: ' + c.getCost().toString();
-    result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+    result += '<br/>• Next planting cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
+    result += '<br/>• Recoup on delete (d): ' + c.getCost(-1).mulr(cropRecoup2).toString() + ' (' + refund_text + ')';
+    if(upgrade_crop && upgrade_cost[0]) {
+      var temp = '<br/>• Next tier cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+      if(!upgrade_cost[1]) temp = '<b>' + temp + '</b>';
+      result += temp;
+    } else {
+      result += '<br/>• Next tier cost (u): ?';
+    }
   } else {
     result += '<br/>Cost: ';
     if(opt_detailed) result += '<br/>• Base planting cost: ' + c.cost.toString();
-    result += '<br/>• Next planting cost: ' + c.getCost().toString();
+    result += '<br/>• Next planting cost: ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
     result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
-    result += '<br/>• Recoup on delete (' + (cropRecoup2 * 100) + '%): ' + c.getCost(-1).mulr(cropRecoup2).toString();
+    result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup2).toString() + ' (' + refund_text + ')';
+    if(upgrade_crop && upgrade_cost[0]) {
+      result += '<br/>• Next tier cost:' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    } else {
+      result += '<br/>• Next tier cost: ?';
+    }
   }
 
-  var upgrade_cost = [undefined];
-  var upgrade_crop = getUpgradeCrop2(f.x, f.y, upgrade_cost);
-  if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/>• Next tier cost: ' + upgrade_cost[0].toString();
-  }
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
 
@@ -107,6 +117,11 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     result += '<br><br>';
     result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + getDelete2maxBuildup() + ')';
     result += '<br><br>';
+  }
+
+  if(f.justplanted && !c.istemplate && c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL) {
+    //result += '<br><br>Just planted during this run, can only be deleted or replaced with a different type after transcension';
+    result += '<br><br>Just planted during this run, can only be deleted after next transcension';
   }
 
   return result;
@@ -167,6 +182,41 @@ function getUpgradeCrop2(x, y, opt_cost) {
   return c2;
 }
 
+function getDowngradeCrop2(x, y, opt_cost) {
+  if(!state.field2[y]) return null;
+  var f = state.field2[y][x];
+  if(!f) return null;
+  var c = f.getCrop();
+  if(!c) return null;
+
+  if(c.type == CROPTYPE_CHALLENGE) return null;
+  var tier = c.tier - 1;
+
+  var recoup = c.getRecoup();
+
+  var c2 = null;
+
+  if(tier < -1) return null;
+
+  var c3 = croptype2_tiers[c.type][tier];
+  if(!c3 || !state.crops2[c3.index].unlocked) return null;
+
+  var cost = c3.getCost().sub(recoup);
+  if(opt_cost != undefined) {
+    opt_cost[0] = cost;
+    c2 = c3;
+  }
+
+  // since it's a downgrade it should always be affordable, but this is done for condistency with getUpgradeCrop2
+  if(cost.le(state.res)) {
+    if(opt_cost != undefined) opt_cost[1] = false;
+  } else {
+    if(opt_cost != undefined) opt_cost[1] = true;
+  }
+
+  return c2;
+}
+
 function makeUpgradeCrop2Action(x, y, opt_silent) {
   var too_expensive = [undefined];
   var c2 = getUpgradeCrop2(x, y, too_expensive);
@@ -187,6 +237,92 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
     }
   }
   return false;
+}
+
+function makeDowngradeCrop2Action(x, y, opt_silent) {
+  var too_expensive = [undefined];
+  var c2 = getDowngradeCrop2(x, y, too_expensive);
+
+  if(c2 && !too_expensive[1]) {
+    addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
+    return true;
+  }
+  return false;
+}
+
+function makeTree2Dialog() {
+  var div;
+
+  var dialog = createDialog();
+  dialog.div.className = 'efDialogTranslucent';
+  var contentFlex = dialog.content;
+
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
+  renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][4], canvas);
+  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4], 0.3);
+  canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
+  renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][4], canvas);
+
+  var ypos = 0;
+  var ysize = 0.1;
+
+  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75, 0.32);
+  makeScrollable(f0);
+  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95, 0.3);
+
+  var text = '';
+
+  if(state.treelevel2 > 0) {
+    text += '<b>Ethereal tree level ' + state.treelevel2 + '</b>';
+  } else {
+    text += '<b>Ethereal tree</b>';
+  }
+  text += '<br><br>';
+
+  var twigs_req = treeLevel2Req(state.treelevel2 + 1);
+  text += '<b>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' (total: ' + twigs_req.toString() + ')';
+  text += '<br><br>';
+
+  if(state.treelevel2 > 0) {
+    text += '<b>Resin production bonus to basic tree: </b>' + treelevel2_resin_bonus.mulr(state.treelevel2).toPercentString();
+    text += '<br><br>';
+  }
+
+  text += '<b>Total resin earned entire game: </b>' + state.g_res.resin.toString();
+  text += '<br/><br/>';
+
+  text += '<b>Ethereal boosts from crops on this field to basic field:</b><br>';
+  text += '• starter resources: ' + getStarterResources().toString() + '<br>';
+  text += '• berry boost: ' + state.ethereal_berry_bonus.toPercentString() + '<br>';
+  text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
+  text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
+  if(state.ethereal_nettle_bonus.neqr(0)) text += '• nettle boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
+  if(state.ethereal_bee_bonus.neqr(0)) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
+  text += '<br><br>';
+
+  f0.div.innerHTML = text;
+
+  var y = 0.1;
+  var h = 0.3;
+  // finetune the width of the buttons in flex f1
+  var button0 = 0;
+  var button1 = 0.8;
+  var buttontextsize = 0.6;
+  var buttonshift = h * 1.15;
+
+  if(automatonUnlocked()) {
+    var button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    y += buttonshift;
+    styleButton(button);
+    button.textEl.innerText = 'Ethereal blueprints';
+    //button.textEl.style.boxShadow = '0px 0px 5px #44f';
+    button.textEl.style.textShadow = '0px 0px 5px #008';
+    addButtonAction(button, function() {
+      closeAllDialogs();
+      createBlueprintsDialog(undefined, undefined, true);
+    });
+  }
 }
 
 function makeField2Dialog(x, y) {
@@ -210,7 +346,7 @@ function makeField2Dialog(x, y) {
     var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.765 + buttonshift, 0.8).div;
     var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.835 + buttonshift, 0.8).div;
     var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.905 + buttonshift, 0.8).div;
-    //var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift, 0.8).div;
+    var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift, 0.8).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -218,32 +354,44 @@ function makeField2Dialog(x, y) {
     registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
       if(makeUpgradeCrop2Action(x, y)) {
+        closeAllDialogs();
         update();
       }
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Replace crop';
-    registerTooltip(button1, 'Replace the crop with a new one, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
+    button1.textEl.innerText = 'Downgrade crop';
+    registerTooltip(button1, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button1, function() {
-      makePlantDialog2(x, y, true, c.getRecoup());
+      if(makeDowngradeCrop2Action(x, y)) {
+        closeAllDialogs();
+        update();
+      }
     });
 
     styleButton(button2);
-    button2.textEl.innerText = 'Delete crop';
-    button2.textEl.style.color = '#c00';
-    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1) && (c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL)) button2.textEl.style.color = '#888';
-    if(!state.delete2tokens) button2.textEl.style.color = '#888';
-    registerTooltip(button2, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
+    button2.textEl.innerText = 'Replace crop';
+    registerTooltip(button2, 'Replace the crop with a new one, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
     addButtonAction(button2, function() {
-      addAction({type:ACTION_DELETE2, x:x, y:y});
-      update(); // do update immediately rather than wait for tick, for faster feeling response time
+      makePlantDialog2(x, y, true, c.getRecoup());
     });
 
     styleButton(button3);
-    button3.textEl.innerText = 'Detailed stats / bonuses';
-    registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    button3.textEl.innerText = 'Delete crop';
+    button3.textEl.style.color = '#c00';
+    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1) && (c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL)) button3.textEl.style.color = '#888';
+    if(!state.delete2tokens) button3.textEl.style.color = '#888';
+    registerTooltip(button3, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
     addButtonAction(button3, function() {
+      addAction({type:ACTION_DELETE2, x:x, y:y});
+      closeAllDialogs();
+      update(); // do update immediately rather than wait for tick, for faster feeling response time
+    });
+
+    styleButton(button4);
+    button4.textEl.innerText = 'Detailed stats / bonuses';
+    registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    addButtonAction(button4, function() {
       var dialog = createDialog(DIALOG_LARGE);
       dialog.div.className = 'efDialogTranslucent';
       var flex = dialog.content;
@@ -268,45 +416,7 @@ function makeField2Dialog(x, y) {
 
     updatedialogfun(f, c);
   } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-    var c = crops2[f.cropIndex()];
-    var div;
-
-    var dialog = createDialog();
-    dialog.div.className = 'efDialogTranslucent';
-    var flex = dialog.content;
-
-    var text = '';
-
-    if(state.treelevel2 > 0) {
-      text += '<b>Ethereal tree level ' + state.treelevel2 + '</b>';
-    } else {
-      text += '<b>Ethereal tree</b>';
-    }
-    text += '<br><br>';
-
-    var twigs_req = treeLevel2Req(state.treelevel2 + 1);
-    text += '<b>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' (total: ' + twigs_req.toString() + ')';
-    text += '<br><br>';
-
-    if(state.treelevel2 > 0) {
-      text += '<b>Resin production bonus to basic tree: </b>' + treelevel2_resin_bonus.mulr(state.treelevel2).toPercentString();
-      text += '<br><br>';
-    }
-
-    text += '<b>Total resin earned entire game: </b>' + state.g_res.resin.toString();
-    text += '<br/><br/>';
-
-    text += '<b>Ethereal boosts from crops on this field to basic field:</b><br>';
-    text += '• starter resources: ' + getStarterResources().toString() + '<br>';
-    text += '• berry boost: ' + state.ethereal_berry_bonus.toPercentString() + '<br>';
-    text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
-    text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
-    if(state.ethereal_nettle_bonus.neqr(0)) text += '• nettle boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
-    if(state.ethereal_bee_bonus.neqr(0)) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
-    text += '<br><br>';
-
-    flex.div.innerHTML = text;
-
+    makeTree2Dialog();
   } else {
     makePlantDialog2(x, y);
   }

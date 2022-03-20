@@ -46,6 +46,7 @@ function encState(state, opt_raw_only) {
   var processNum = function(value) { process(value, TYPE_NUM); };
   var processString = function(value) { process(value, TYPE_STRING); };
   var processRes = function(value) { process(value, TYPE_RES); };
+  var processTime = function(value) {process(value, TYPE_TIME); };
   var processFractionChoice = function(value) { process(encFractionChoice(value), TYPE_UINT6); };
   var processBoolArray = function(value) { process(value, TYPE_ARRAY_BOOL); };
   var processUint6Array = function(value) { process(value, TYPE_ARRAY_UINT6); };
@@ -57,6 +58,7 @@ function encState(state, opt_raw_only) {
   var processNumArray = function(value) { process(value, TYPE_ARRAY_NUM); };
   var processStringArray = function(value) { process(value, TYPE_ARRAY_STRING); };
   var processResArray = function(value) { process(value, TYPE_ARRAY_RES); };
+  var processTimeArray = function(value) { process(value, TYPE_ARRAY_TIME); };
   var processFractionChoiceArray = function(value) {
     var arr = [];
     for(var i = 0; i < value.length; i++) arr[i] = encFractionChoice(value[i]);
@@ -66,7 +68,7 @@ function encState(state, opt_raw_only) {
   var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10;
 
   section = 0; id = 0; // main/misc
-  processFloat(state.prevtime);
+  processTime(state.prevtime);
   processRes(state.res);
   processUint(state.treelevel);
   // id=3 now unused, it used to be "ethereal_upgrade_spent" pre 0.1.9
@@ -81,8 +83,8 @@ function encState(state, opt_raw_only) {
     processFloat(state.fernwait); // this field used to be fernres
   }
   id = 10; // id for every named value must be fixed (and the process function increments it)
-  processFloat(state.lastFernTime);
-  processFloat(state.lastBackupWarningTime);
+  processTime(state.lastFernTime);
+  processTime(state.lastBackupWarningTime);
   processInt(state.currentTab);
   processInt(state.lastPlanted);
   processInt(state.lastPlanted2);
@@ -92,14 +94,15 @@ function encState(state, opt_raw_only) {
   id = 17;
   processInt(state.fern_seed);
   id = 18;
-  processFloat(state.negative_time);
-  processFloat(state.total_negative_time);
-  processFloat(state.max_negative_time);
-  processFloat(state.last_negative_time);
+  processTime(state.negative_time);
+  processTime(state.total_negative_time);
+  processTime(state.max_negative_time);
+  processTime(state.last_negative_time);
   id = 22;
   processNum(state.twigs);
   processInt(state.num_negative_time);
   processRes(state.fernresin);
+  processTime(state.lastReFernTime);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -129,6 +132,7 @@ function encState(state, opt_raw_only) {
   array0 = [];
   array1 = [];
   array2 = [];
+  array3 = [];
   for(var y = 0; y < h2; y++) {
     for(var x = 0; x < w2; x++) {
       var f = state.field2[y][x];
@@ -136,12 +140,14 @@ function encState(state, opt_raw_only) {
       if(f.hasCrop()) {
         array1.push(f.growth);
         array2.push(f.justplanted);
+        array3.push(f.justreplaced);
       }
     }
   }
   processIntArray(array0);
   processFloat2Array(array1);
   processBoolArray(array2);
+  processBoolArray(array3);
 
   var unlocked;
   var prev;
@@ -252,10 +258,11 @@ function encState(state, opt_raw_only) {
   processBoolArray(array1);
 
 
-  section = 8; id = 0; // cooldown times
-  processFloat(state.misttime);
-  processFloat(state.suntime);
-  processFloat(state.rainbowtime);
+  section = 8; id = 0; // weather
+  processTime(state.misttime);
+  processTime(state.suntime);
+  processTime(state.rainbowtime);
+  processUint6(state.lastWeather);
 
 
   section = 9; id = 0; // settings
@@ -283,8 +290,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numloads);
   processUint(state.g_numimports);
   processUint(state.g_numexports);
-  processFloat(state.g_lastexporttime);
-  processFloat(state.g_lastimporttime);
+  processTime(state.g_lastexporttime);
+  processTime(state.g_lastimporttime);
   processUint(state.g_nummedals);
   processUint(state.g_treelevel);
   processUint(state.g_numplanted2);
@@ -315,8 +322,8 @@ function encState(state, opt_raw_only) {
 
 
   section = 11; id = 0; // global run stats
-  processFloat(state.g_starttime);
-  processFloat(state.g_runtime);
+  processTime(state.g_starttime);
+  processTime(state.g_runtime);
   processUint(state.g_numticks);
   processRes(state.g_res);
   processRes(state.g_max_res);
@@ -337,15 +344,15 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numfused);
   processRes(state.g_res_hr_best);
   processRes(state.g_res_hr_at);
-  processFloat(state.g_pausetime);
+  processTime(state.g_pausetime);
   processRes(state.g_res_hr_at_time);
   processUint(state.g_numprestiges);
   processUint(state.g_numautoprestiges);
 
 
   section = 12; id = 0; // current run stats
-  processFloat(state.c_starttime);
-  processFloat(state.c_runtime);
+  processTime(state.c_starttime);
+  processTime(state.c_runtime);
   processUint(state.c_numticks);
   processRes(state.c_res);
   processRes(state.c_max_res);
@@ -366,7 +373,7 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numfused);
   processRes(state.c_res_hr_best);
   processRes(state.c_res_hr_at);
-  processFloat(state.c_pausetime);
+  processTime(state.c_pausetime);
   processRes(state.c_res_hr_at_time);
   processUint(state.c_numprestiges);
   processUint(state.c_numautoprestiges);
@@ -374,8 +381,8 @@ function encState(state, opt_raw_only) {
 
   section = 13; id = 0; // previous run stats
   if(state.g_numresets > 0) {
-    processFloat(state.p_starttime);
-    processFloat(state.p_runtime);
+    processTime(state.p_starttime);
+    processTime(state.p_runtime);
     processUint(state.p_numticks);
     processRes(state.p_res);
     processRes(state.p_max_res);
@@ -396,7 +403,7 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numfused);
     processRes(state.p_res_hr_best);
     processRes(state.p_res_hr_at);
-    processFloat(state.p_pausetime);
+    processTime(state.p_pausetime);
     processRes(state.p_res_hr_at_time);
     processUint(state.p_numprestiges);
     processUint(state.p_numautoprestiges);
@@ -434,13 +441,13 @@ function encState(state, opt_raw_only) {
 
   section = 16; id = 0; // misc
   processUint(state.delete2tokens);
-  processFloat(state.lasttreeleveluptime);
-  processFloat(state.lasttree2leveluptime);
-  processFloat(state.lastambertime);
+  processTime(state.lasttreeleveluptime);
+  processTime(state.lasttree2leveluptime);
+  processTime(state.lastambertime);
   processBool(state.paused);
   processUint(state.respec3tokens);
-  processFloat(state.resinfruittime);
-  processFloat(state.twigsfruittime);
+  processTime(state.resinfruittime);
+  processTime(state.twigsfruittime);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -577,14 +584,14 @@ function encState(state, opt_raw_only) {
   processUintArray(array1);
   processUintArray(array2);
   processUintArray(array3);
-  processFloatArray(array4);
+  processTimeArray(array4);
   processUint(state.challenge);
-  processFloatArray(array5);
+  processTimeArray(array5);
   processUintArray(array6);
   processUintArray(array7);
   processUintArray(array8);
-  processFloatArray(array9);
-  processFloatArray(array10);
+  processTimeArray(array9);
+  processTimeArray(array10);
 
 
 
@@ -655,7 +662,7 @@ function encState(state, opt_raw_only) {
 
 
   section = 24; id = 0; // ethereal tree level stats
-  processFloatArray(state.eth_stats_time);
+  processTimeArray(state.eth_stats_time);
   processResArray(state.eth_stats_res);
   processUintArray(state.eth_stats_level);
   processUintArray(state.eth_stats_numresets);
@@ -674,8 +681,69 @@ function encState(state, opt_raw_only) {
   id = 5;
   processFloat(state.presentwait);
   processInt(state.present_seed);
-  processFloat(state.lastPresentTime);
-  processFloat(state.present_grow_speed_time);
+  processTime(state.lastPresentTime);
+  processTime(state.present_grow_speed_time);
+
+
+  section = 26; id = 0; // challenges last run stats
+  array0 = [];
+  array1 = [];
+  array2 = [];
+  array3 = [];
+  array4 = [];
+  array5 = [];
+  array6 = [];
+  for(var i = -1; i < registered_challenges.length; i++) {
+    // ci 0 correpsonds to no challenge, which also gets the run stats
+    var ci = (i == -1) ? 0 : registered_challenges[i];
+    if(i != -1 && !state.challenges[ci].unlocked) continue;
+    var c2 = state.challenges[ci];
+    array0.push(c2.last_completion_level);
+    array1.push(c2.last_completion_time);
+    array2.push(encApprox2Num(c2.last_completion_resin));
+    array3.push(encApprox2Num(c2.last_completion_twigs));
+    array4.push(c2.last_completion_date);
+    array5.push(encApprox2Num(c2.last_completion_resin));
+    array6.push(c2.last_completion_level2);
+  }
+  processUintArray(array0);
+  processTimeArray(array1);
+  processUintArray(array2);
+  processUintArray(array3);
+  processTimeArray(array4);
+  processUintArray(array5);
+  processUintArray(array6);
+
+  section = 27; id = 0; // ethereal blueprints
+  array0 = [];
+  array1 = [];
+  array2 = [];
+  array3 = [];
+  array4 = [];
+
+  for(var i = 0; i < state.blueprints2.length; i++) {
+    var b = state.blueprints2[i];
+    if(!b) b = new BluePrint();
+    var w = b.numw;
+    var h = b.numh;
+    array0[i] = w;
+    array1[i] = h;
+    array4[i] = b.name;
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        array2.push(b.data[y][x]);
+        var tier = b.tier[y][x] + 1; // -1, from blueprint, is stored as 0
+        if(!(tier >= 0)) tier = 0;
+        array3.push(tier);
+      }
+    }
+  }
+
+  processUintArray(array0);
+  processUintArray(array1);
+  processUintArray(array2);
+  processUintArray(array3);
+  processStringArray(array4);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -692,6 +760,10 @@ function encState(state, opt_raw_only) {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -760,6 +832,10 @@ function decState(s) {
   var processNum = function(def) { return process(def, TYPE_NUM); };
   var processString = function(def) { return process(def, TYPE_STRING); };
   var processRes = function(def) { return process(def, TYPE_RES); };
+  var processTime = function(def) {
+    if(save_version < 4096*1+98) return process(def, TYPE_FLOAT);
+    return process(def, TYPE_TIME);
+  };
   var processFractionChoice = function(def) { return decFractionChoice(process(def, TYPE_UINT6)); };
   var processBoolArray = function(def) { return process(def, TYPE_ARRAY_BOOL); };
   var processUint6Array = function(def) { return process(def, TYPE_ARRAY_UINT6); };
@@ -771,6 +847,10 @@ function decState(s) {
   var processNumArray = function(def) { return process(def, TYPE_ARRAY_NUM); };
   var processStringArray = function(def) { return process(def, TYPE_ARRAY_STRING); };
   var processResArray = function(def) { return process(def, TYPE_ARRAY_RES); };
+  var processTimeArray = function(def) {
+    if(save_version < 4096*1+98) return process(def, TYPE_ARRAY_FLOAT);
+    return process(def, TYPE_ARRAY_TIME);
+  };
   var processFractionChoiceArray = function(def) {
     var arr = process(def, TYPE_ARRAY_UINT6);
     if(!arr) return arr;
@@ -783,7 +863,7 @@ function decState(s) {
 
 
   section = 0; id = 0; // main/misc
-  state.prevtime = processFloat();
+  state.prevtime = processTime();
   state.res = processRes();
   state.treelevel = processUint();
   // id=3 now unused, it used to be "ethereal_upgrade_spent" pre 0.1.9
@@ -805,8 +885,8 @@ function decState(s) {
   }
   id = 10;
   if(save_version <= 4096*1+9 && !state.fern) id -= 3; // fix mistake in pre-0.1.10 savegame version, values lastFernTime, lastBackupWarningTime, currentTab, lastPlanted, lastPlanted2 all got an id of 3 too low if state.fern was false. id should not depend on ifs.
-  state.lastFernTime = processFloat();
-  state.lastBackupWarningTime = processFloat();
+  state.lastFernTime = processTime();
+  state.lastBackupWarningTime = processTime();
   if(save_version >= 4096*1+9) state.currentTab = processInt();
   if(save_version >= 4096*1+9) state.lastPlanted = processInt();
   if(save_version >= 4096*1+9) state.lastPlanted2 = processInt();
@@ -832,10 +912,10 @@ function decState(s) {
   if(error) return err(4);
   id = 18;
   if(save_version >= 4096*1+30) {
-    state.negative_time = processFloat();
-    state.total_negative_time = processFloat();
-    state.max_negative_time = processFloat();
-    state.last_negative_time = processFloat();
+    state.negative_time = processTime();
+    state.total_negative_time = processTime();
+    state.max_negative_time = processTime();
+    state.last_negative_time = processTime();
   }
   id = 22;
   if(save_version >= 4096*1+36) {
@@ -844,6 +924,7 @@ function decState(s) {
   }
   if(save_version >= 4096*1+62) state.num_negative_time = processInt();
   if(save_version >= 4096*1+86) state.fernresin = processRes();
+  if(save_version >= 4096*1+98) state.lastReFernTime = processTime();
 
 
   section = 1; id = 0; // field
@@ -888,9 +969,11 @@ function decState(s) {
   array0 = processIntArray();
   array1 = (save_version >= 4096*1+9) ? processFloat2Array() : null;
   array2 = (save_version >= 4096*1+15) ? processBoolArray() : null;
+  array3 = (save_version >= 4096*1+98) ? processBoolArray() : null;
   index0 = 0;
   index1 = 0;
   index2 = 0;
+  index3 = 0;
   if(error) return err(4);
   for(var y = 0; y < h2; y++) {
     state.field2[y] = [];
@@ -901,6 +984,7 @@ function decState(s) {
       if(f.hasCrop()) {
         if(save_version >= 4096*1+9) f.growth = array1[index1++];
         if(save_version >= 4096*1+15) f.justplanted = array2[index2++];
+        if(save_version >= 4096*1+98) f.justreplaced = array3[index3++];
       }
     }
   }
@@ -1073,10 +1157,17 @@ function decState(s) {
   }
 
 
-  section = 8; id = 0; // cooldown times
-  state.misttime = processFloat();
-  state.suntime = processFloat();
-  state.rainbowtime = processFloat();
+  section = 8; id = 0; // weather
+  // misttime comes before suntime despite sun being the "earlier" weather ability due to legacy reasons
+  state.misttime = processTime();
+  state.suntime = processTime();
+  state.rainbowtime = processTime();
+  if(save_version >= 4096*1+98) {
+    state.lastWeather = processUint6();
+  } else {
+    if(state.misttime > state.suntime && state.misttime > state.rainbowtime) state.lastWeather = 1;
+    if(state.rainbowtime > state.suntime && state.rainbowtime > state.misttime) state.lastWeather = 2;
+  }
   if(error) return err(4);
 
 
@@ -1117,8 +1208,8 @@ function decState(s) {
   state.g_numloads = processUint();
   state.g_numimports = processUint();
   state.g_numexports = processUint();
-  state.g_lastexporttime = processFloat();
-  state.g_lastimporttime = processFloat();
+  state.g_lastexporttime = processTime();
+  state.g_lastimporttime = processTime();
   state.g_nummedals = processUint();
   state.g_treelevel = processUint();
   state.g_numplanted2 = processUint();
@@ -1174,8 +1265,8 @@ function decState(s) {
 
 
   section = 11; id = 0; // global run stats
-  state.g_starttime = processFloat();
-  state.g_runtime = processFloat();
+  state.g_starttime = processTime();
+  state.g_runtime = processTime();
   state.g_numticks = processUint();
   state.g_res = processRes();
   state.g_max_res = processRes();
@@ -1196,7 +1287,7 @@ function decState(s) {
   if(save_version >= 4096*1+60) state.g_numfused = processUint();
   if(save_version >= 4096*1+62) state.g_res_hr_best = processRes();
   if(save_version >= 4096*1+62) state.g_res_hr_at = processRes();
-  if(save_version >= 4096*1+71) state.g_pausetime = processFloat();
+  if(save_version >= 4096*1+71) state.g_pausetime = processTime();
   if(save_version >= 4096*1+78) state.g_res_hr_at_time = processRes();
   if(save_version >= 4096*1+94) state.g_numprestiges = processUint();
   if(save_version >= 4096*1+94) state.g_numautoprestiges = processUint();
@@ -1204,8 +1295,8 @@ function decState(s) {
 
 
   section = 12; id = 0; // current run stats
-  state.c_starttime = processFloat();
-  state.c_runtime = processFloat();
+  state.c_starttime = processTime();
+  state.c_runtime = processTime();
   state.c_numticks = processUint();
   state.c_res = processRes();
   state.c_max_res = processRes();
@@ -1226,7 +1317,7 @@ function decState(s) {
   if(save_version >= 4096*1+60) state.c_numfused = processUint();
   if(save_version >= 4096*1+62) state.c_res_hr_best = processRes();
   if(save_version >= 4096*1+62) state.c_res_hr_at = processRes();
-  if(save_version >= 4096*1+71) state.c_pausetime = processFloat();
+  if(save_version >= 4096*1+71) state.c_pausetime = processTime();
   if(save_version >= 4096*1+78) state.c_res_hr_at_time = processRes();
   if(save_version >= 4096*1+94) state.c_numprestiges = processUint();
   if(save_version >= 4096*1+94) state.c_numautoprestiges = processUint();
@@ -1235,8 +1326,8 @@ function decState(s) {
 
   section = 13; id = 0; // previous run stats
   if(state.g_numresets > 0) {
-    state.p_starttime = processFloat();
-    state.p_runtime = processFloat();
+    state.p_starttime = processTime();
+    state.p_runtime = processTime();
     state.p_numticks = processUint();
     state.p_res = processRes();
     if(save_version < 4096*1+86) state.g_max_res_earned = Res(state.p_res);
@@ -1259,7 +1350,7 @@ function decState(s) {
     if(save_version >= 4096*1+60) state.p_numfused = processUint();
     if(save_version >= 4096*1+62) state.p_res_hr_best = processRes();
     if(save_version >= 4096*1+62) state.p_res_hr_at = processRes();
-    if(save_version >= 4096*1+71) state.p_pausetime = processFloat();
+    if(save_version >= 4096*1+71) state.p_pausetime = processTime();
     if(save_version >= 4096*1+78) state.p_res_hr_at_time = processRes();
     if(save_version >= 4096*1+94) state.g_numprestiges = processUint();
     if(save_version >= 4096*1+94) state.g_numautoprestiges = processUint();
@@ -1319,13 +1410,13 @@ function decState(s) {
 
   section = 16; id = 0; // misc
   if(save_version >= 4096*1+14) state.delete2tokens = processUint();
-  if(save_version >= 4096*1+19) state.lasttreeleveluptime = processFloat();
-  if(save_version >= 4096*1+71) state.lasttree2leveluptime = processFloat();
-  if(save_version >= 4096*1+71) state.lastambertime = processFloat();
+  if(save_version >= 4096*1+19) state.lasttreeleveluptime = processTime();
+  if(save_version >= 4096*1+71) state.lasttree2leveluptime = processTime();
+  if(save_version >= 4096*1+71) state.lastambertime = processTime();
   if(save_version >= 4096*1+72) state.paused = processBool();
   if(save_version >= 4096*1+74) state.respec3tokens = processUint();
-  if(save_version >= 4096*1+83) state.resinfruittime = processFloat();
-  if(save_version >= 4096*1+83) state.twigsfruittime = processFloat();
+  if(save_version >= 4096*1+83) state.resinfruittime = processTime();
+  if(save_version >= 4096*1+83) state.twigsfruittime = processTime();
 
 
   section = 17; id = 0; // fruits
@@ -1495,10 +1586,10 @@ function decState(s) {
     }
     array2 = processUintArray();
     array3 = processUintArray();
-    array4 = processFloatArray();
+    array4 = processTimeArray();
     state.challenge = processUint();
     if(save_version >= 4096*1+43) {
-      array5 = processFloatArray();
+      array5 = processTimeArray();
       array6 = processUintArray();
       array7 = processUintArray();
     } else {
@@ -1514,8 +1605,8 @@ function decState(s) {
     }
     if(save_version >= 4096*1+69) {
       array8 = processUintArray();
-      array9 = processFloatArray();
-      array10 = processFloatArray();
+      array9 = processTimeArray();
+      array10 = processTimeArray();
     } else {
       array8 = [];
       array9 = [];
@@ -1560,7 +1651,6 @@ function decState(s) {
           c2.besttimes[0] = c2.besttime;
           c2.besttimes2[0] = c2.besttime2;
         }
-
       }
     }
     if(save_version >= 4096*1+69 && (index8 != array8.length || index9 != array9.length || index10 != array10.length)) return err(4);
@@ -1752,6 +1842,7 @@ function decState(s) {
     }
     state.res.nuts.addInPlace(refund);
   }
+  if(error) return err(4);
 
 
   section = 23; id = 0; // amber effects
@@ -1759,17 +1850,19 @@ function decState(s) {
   if(save_version >= 4096*1+77) state.amberseason = processBool();
   if(save_version >= 4096*1+77) state.seasonshift = processFloat();
   if(save_version >= 4096*1+80) state.seasonshifted = processUint6();
+  if(error) return err(4);
 
 
   section = 24; id = 0; // ethereal tree level stats
   if(save_version >= 4096*1+79) {
-    state.eth_stats_time = processFloatArray();
+    state.eth_stats_time = processTimeArray();
     state.eth_stats_res = processResArray();
     state.eth_stats_level = processUintArray();
     state.eth_stats_numresets = processUintArray();
     state.eth_stats_challenge = processNumArray();
     state.eth_stats_medal_bonus = processNumArray();
   }
+  if(error) return err(4);
 
 
   section = 25; id = 0; // holiday drops
@@ -1784,8 +1877,8 @@ function decState(s) {
     id = 5;
     state.presentwait = processFloat();
     state.present_seed = processInt();
-    state.lastPresentTime = processFloat();
-    state.present_grow_speed_time = processFloat();
+    state.lastPresentTime = processTime();
+    state.present_grow_speed_time = processTime();
   } else {
     state.present_seed = state.seed0 ^ 0x70726573; // ascii for "pres"
   }
@@ -1798,6 +1891,84 @@ function decState(s) {
     state.presentwait = 0;
     state.present_image = 0;
   }
+  if(error) return err(4);
+
+
+  section = 26; id = 0; // challenges last run stats
+
+  if(save_version >= 4096*1+98) {
+    array0 = processUintArray();
+    array1 = processTimeArray();
+    array2 = processUintArray();
+    array3 = processUintArray();
+    array4 = processTimeArray();
+    array5 = processUintArray();
+    array6 = processUintArray();
+    if(error) return err(4);
+    if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length || array0.length != array5.length || array0.length != array6.length) {
+      return err(4);
+    }
+    var index = 0;
+    for(var i = -1; i < registered_challenges.length; i++) {
+      // ci 0 correpsonds to no challenge, which also gets the run stats
+      var ci = (i == -1) ? 0 : registered_challenges[i];
+      if(i != -1 && !state.challenges[ci].unlocked) continue;
+      if(index >= array0.length) return err(4);
+      var c2 = state.challenges[ci];
+      c2.last_completion_level = array0[index];
+      c2.last_completion_time = array1[index];
+      c2.last_completion_resin = decApprox2Num(array2[index]);
+      c2.last_completion_twigs = decApprox2Num(array3[index]);
+      c2.last_completion_date = array4[index];
+      c2.last_completion_resin = decApprox2Num(array5[index]);
+      c2.last_completion_level2 = array6[index];
+      index++;
+    }
+  }
+  if(error) return err(4);
+
+
+  section = 27; id = 0; // ethereal blueprints
+
+  if(save_version >= 4096*1+98) {
+    array0 = processUintArray();
+    array1 = processUintArray();
+    array2 = processUintArray();
+    array3 = processUintArray();
+    array4 = processStringArray();
+    if(error) return err(4);
+    if(array0.length != array1.length) return err(4);
+    if(array0.length != array4.length) return err(4);
+    if(array2.length != array3.length) return err(4);
+    index2 = 0;
+    index3 = 0;
+    state.blueprints2 = [];
+    for(var i = 0; i < array0.length; i++) {
+      var w = array0[i];
+      var h = array1[i];
+      if(w > 20 || h > 20) return err(4);
+      var b = new BluePrint();
+      state.blueprints2[i] = b;
+      b.numw = w;
+      b.numh = h;
+      b.name = array4[i];
+      b.data = [];
+      b.tier = [];
+      for(var y = 0; y < h; y++) {
+        b.data[y] = [];
+        b.tier[y] = [];
+        for(var x = 0; x < w; x++) {
+          var code = array2[index2++];
+          b.data[y][x] = code;
+          var tier = array3[index3++] - 1;
+          b.tier[y][x] = tier;
+        }
+      }
+    }
+    if(index2 != array2.length) return err(4);
+    if(index3 != array3.length) return err(4);
+  }
+  if(error) return err(4);
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////

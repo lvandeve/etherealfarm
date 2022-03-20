@@ -762,6 +762,7 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
 
   text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
 
+  text += '<br>';
   for(var i = 0; i < f.abilities.length; i++) {
     var a = f.abilities[i];
     var level = f.levels[i];
@@ -773,8 +774,8 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
     } else {
       text += 'Ability: ' + upper(f.abilityToString(i)) + ' (' + getFruitBoost(a, level, f.tier).toPercentString() + ')';
     }
-
   }
+  text += '<br>';
   text += '<br>';
   text += 'Fruit essence available: ' + state.res.essence.sub(f.essence).toString() + ' of ' + state.res.essence.toString();
   text += '<br>';

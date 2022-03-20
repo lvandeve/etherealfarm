@@ -37,10 +37,10 @@ function getUpgrade3InfoText(u, gated, is_gate, unknown) {
 
 // Buys all squirrel upgrades required to reach this one, and this one itself, if affordable
 // Required upgrades are: all upgrades in the current branch before this one, all upgrades in the center branch of all previous stages, and all upgrades in all branches of all previous stages above the last gated stage
-function buyAllSquirrelUpgradesUpTo(stage, b, d) {
+function buyAllSquirrelUpgradesUpTo(stage, b, d, opt_final_gated) {
   var new_actions = [];
 
-  var gate = stage.index;
+  var gate = -1;//stage.index;
   for(var i = stage.index; i > 0; i--) {
     if(stages3[i].gated) {
       gate = i;
@@ -50,13 +50,16 @@ function buyAllSquirrelUpgradesUpTo(stage, b, d) {
   for(var si = 0; si < stage.index; si++) {
     var gated = si < gate;
     for(var i = 0; i < stages3[si].upgrades1.length; i++) {
+      if(squirrelUpgradeBuyable(si, 1, i) == 0) continue; // already bought
       new_actions.push({type:ACTION_UPGRADE3, s:si, b:1, d:i});
     }
     if(gated) {
       for(var i = 0; i < stages3[si].upgrades0.length; i++) {
+        if(squirrelUpgradeBuyable(si, 0, i) == 0) continue; // already bought
         new_actions.push({type:ACTION_UPGRADE3, s:si, b:0, d:i});
       }
       for(var i = 0; i < stages3[si].upgrades2.length; i++) {
+        if(squirrelUpgradeBuyable(si, 2, i) == 0) continue; // already bought
         new_actions.push({type:ACTION_UPGRADE3, s:si, b:2, d:i});
       }
     }
@@ -74,6 +77,13 @@ function buyAllSquirrelUpgradesUpTo(stage, b, d) {
     nuts.addInPlace(getUpgrade3Cost(i));
   }
   if(nuts.gt(state.res.nuts)) {
+    if(opt_final_gated) {
+      // If it's gated, don't show the multi-buy message below, instead add its
+      // attempt as a regular action, so that it'll then print the error
+      // message saying that it's gated.
+      addAction({type:ACTION_UPGRADE3, s:stage.index, b:b, d:d});
+      return;
+    }
     showMessage('not enough resources to buy these ' + num + ' squirrel upgrades' +
                 ': have: ' + state.res.nuts.toString(Math.max(5, Num.precision)) +
                 ', need: ' + nuts.toString(Math.max(5, Num.precision)) +
@@ -102,7 +112,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
     }
   }
 
-  var buyable = squirrelUpgradeBuyable(stage, s2, b, d);
+  var buyable = squirrelUpgradeBuyable(stage.index, b, d);
 
   var bought = buyable == 0;
   var gated = buyable == 2;
@@ -125,7 +135,10 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   var text = unknown ? '???' : upper(u.name);
   //var text = unknown ? ('?' + upper(u.name) + '?') : upper(u.name);
 
+  var can_afford = getNextUpgrade3Cost().le(state.res.nuts);
+
   if(bought) flex.div.className = 'efSquirrelBought';
+  else if(canbuy && !can_afford) flex.div.className = 'efSquirrelCantAfford';
   else if(canbuy) flex.div.className = 'efSquirrelBuy';
   else if(next) flex.div.className = 'efSquirrelNext';
   //else if(next2) flex.div.className = 'efSquirrelUnknown';
@@ -153,8 +166,8 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   var buyfun = undefined;
   if(showbuy || (state.g_numrespec3 > 0 && !unknown && !bought)) {
     buyfun = function(e) {
-      if(state.g_numrespec3 > 0 && !showbuy) {
-        buyAllSquirrelUpgradesUpTo(stage, b, d);
+      if(state.g_numrespec3 > 0 && !canbuy) {
+        buyAllSquirrelUpgradesUpTo(stage, b, d, gated);
       } else {
         addAction({type:ACTION_UPGRADE3, s:stage.index, b:b, d:d});
       }
@@ -307,9 +320,16 @@ function updateSquirrelUI() {
 
   var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1, 0.35);
   centerText2(titleFlex.div);
-  titleFlex.div.textEl.innerHTML = 'Squirrel Upgrades. Next costs: ' + getNextUpgrade3Cost().toString()
-     + ' nuts. Have: ' + state.res.nuts.toString() + ' nuts'
-     + '<br>' + 'Upgrades done: ' + state.upgrades3_count;
+  var cost = new Res({nuts:getNextUpgrade3Cost()});
+  var text =
+     'Upgrades done: ' + state.upgrades3_count + '. ' +
+     'Next costs: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')' +
+     '<br>' +
+     'Have: ' + state.res.nuts.toString() + ' nuts. ';
+  if(haveUnusedNutsBonus()) {
+    text += 'Unspent nuts production boost: ' + getUnusedNutsBonus().subr(1).toPercentString();
+  }
+  titleFlex.div.textEl.innerHTML = text;
 
   var buttonFlex = new Flex(squirrelFlex, 0, 0.1, 1, 0.2, 0.5);
 

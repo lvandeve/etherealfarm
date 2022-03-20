@@ -263,7 +263,10 @@ function updateTabButtons2() {
   tabnum = tabindex_automaton;
   if(tabbuttons[tabnum]) {
     var text = 'automaton';
-    if(!automatonEnabled()) {
+    if(!haveAutomaton()) {
+      text += '<br>(absent)';
+      text = '<font color="#c00">' + text + '</font>';
+    } else if(!automatonEnabled()) {
       text += '<br>(off)';
     }
 
@@ -279,6 +282,7 @@ function updateTabButtons2() {
     var text = 'squirrel';
     if(!haveSquirrel()) {
       text += '<br>(absent)';
+      text = '<font color="#c00">' + text + '</font>';
     } else if(!state.allupgrade3bought && getNextUpgrade3Cost().lte(state.res.nuts)) {
       text = '<b><font color="red">' + text + '</font></b>';
     }

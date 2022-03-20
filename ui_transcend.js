@@ -86,7 +86,7 @@ function createTranscendDialog(opt_from_challenge) {
   var shortcutfun = undefined;
 
   var automaton_unlocked = false;
-  if(haveAutomaton() && state.numnonemptyblueprints) {
+  if(automatonUnlocked() && state.numnonemptyblueprints) {
     extraname2 = 'with blueprint';
     extrafun2 = function() {
       createBlueprintsDialog(true);

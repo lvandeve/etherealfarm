@@ -47,7 +47,6 @@ function prodBreakdown(index) {
         var c = f.getCrop();
         var index2 = c.index;
         if(!o[index2]) o[index2] = Num(0);
-        //o[index2].addInPlace(c.getProd(f).toArray()[index]);
         o[index2].addInPlace(p.prod0b.toArray()[index]);
       }
     }
@@ -216,7 +215,14 @@ function getResourceDetails(i, special, index) {
 
     if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
 
-    if(index == 4) text += 'Nuts are used for squirrel upgrades, which you can access in the \'squirrel\' tab<br><br>';
+    if(index == 4) {
+      text += 'Nuts are used for squirrel upgrades, which you can access in the \'squirrel\' tab';
+      text += '<br><br>';
+      if(haveUnusedNutsBonus()) {
+        text += 'Production boost for unspent nuts: ' + getUnusedNutsBonus().subr(1).toPercentString();
+        text += '<br><br>';
+      }
+    }
 
     if(res_gain.neq(res_gain_pos)) {
       // Total production is production - consumption.
@@ -430,11 +436,11 @@ function updateResourceUI() {
       }
       result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
       result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
-      result += '<b>' + upper(seasonNames[getSeason()]) + ' Effects:</b><br>';
+      result += '<b>' + upper(seasonNames[getSeason()]) + ' effects:</b><br>';
       var s = getSeason();
       if(s == 0) {
         result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
-        if(state.upgrades2[upgrade2_season2[s]].count) {
+        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
           result += '• Crops grow ' + Num(upgrade2_spring_growspeed_bonus).toPercentString() + ' faster (ethereal upgrade)<br>';
           //result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
         }
@@ -444,7 +450,7 @@ function updateResourceUI() {
         if(getSummerMushroomBonus().neqr(1)) {
           result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production (but also consumption)<br>';
         }
-        if(state.upgrades2[upgrade2_season2[s]].count) {
+        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
           result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
         }
       }
@@ -453,10 +459,10 @@ function updateResourceUI() {
         if(getAutumnBerryBonus().neqr(1)) {
           result += '• +' + getAutumnBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
         }
-        if(state.upgrades2[upgrade2_mistletoe].count) {
+        if(state.upgrades2[upgrade2_mistletoe].count && !basicChallenge()) {
           result += '• Twigs bonus: ' + getAutumnMistletoeBonus().subr(1).toPercentString() + ' more twigs added when tree levels with mistletoes<br>';
         }
-        if(state.upgrades2[upgrade2_season2[s]].count) {
+        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
           result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
         }
       }
@@ -466,7 +472,7 @@ function updateResourceUI() {
         result += '• Brassica frost: -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying and -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying fruit ability when not next to the tree<br>';
         var winterwarmth_location_text = haveDiagonalTreeWarmth() ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
         result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats (also consumption) and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
-        if(state.upgrades2[upgrade2_season2[s]].count) {
+        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
           result += '• Winter tree warmth for flowers: ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' (ethereal upgrade)<br>';
         }
         result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';

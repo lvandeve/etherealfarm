@@ -35,7 +35,29 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       update();
       return true;
     };
-    dialog = createDialog(undefined, okfun, 'start');
+
+    var extrafun = undefined;
+    var extraname = undefined;
+    var automaton_unlocked = false;
+    var shortcutfun = undefined;
+    if(haveAutomaton() && state.numnonemptyblueprints && canUseBluePrintsDuringChallenge(challenge_id)) {
+      extraname = 'with blueprint';
+      extrafun = function() {
+        createBlueprintsDialog(true, challenge_id);
+        return true;
+      };
+      automaton_unlocked = true;
+
+      shortcutfun = function(e) {
+        var shift = util.eventHasShiftKey(e);
+        var ctrl = util.eventHasCtrlKey(e);
+        if(automaton_unlocked && (e.key == 'b' || e.key == 'B') && !ctrl) {
+          if(!blueprintdialogopen) createBlueprintsDialog(true, challenge_id);
+        }
+      };
+    }
+
+    dialog = createDialog(undefined, okfun, 'start', undefined, undefined, extrafun, extraname, undefined, undefined, undefined, undefined, shortcutfun);
   }
 
   var contentFlex = dialog.content;
@@ -259,6 +281,15 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   }
 
   text += '• Completed: ' + completedtext + '<br>';
+
+  if(c2.num) {
+    if(c2.last_completion_date) {
+      //text += '• Last time ran: ' + util.formatDate(c2.last_completion_date) + '<br>';
+      text += '• Last time ran: ' + util.formatDuration(util.getTime() - c2.last_completion_date, undefined, 1) + ' ago<br>';
+    } else {
+      text += '• Last time ran: unknown<br>'; // this stat was not saved in older saves, so it's unknown
+    }
+  }
 
   return text;
 }
@@ -570,6 +601,17 @@ function createAllChallengeStatsDialog() {
         text += '(unclaimed reward: ' + c.rewarddescription[0] + ')';
         text += '<br>';
       }
+    }
+    if(c2.num) {
+      if(c2.last_completion_date) {
+        text += 'last time ran: ' + util.formatDate(c2.last_completion_date);
+        //text += 'last time ran: ' + util.formatDuration(util.getTime() - c2.last_completion_date) + ' ago';
+        text += '<br>';
+        text += 'last runtime: ' + util.formatDuration(c2.last_completion_time) + ', to level ' + c2.last_completion_level;
+      } else {
+        text += 'last time ran: unknown'; // this stat was not saved in older saves, so it's unknown
+      }
+      text += '<br>';
     }
     text += '<br>';
   }

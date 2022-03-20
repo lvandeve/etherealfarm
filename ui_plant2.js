@@ -114,7 +114,6 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
 
       result += 'Cost: ' + c.getCost().toString();
       result += '<br><br>Grow time: ' + util.formatDuration(c.planttime);
-      //result += '<br> Production/sec: ' + c.getProd(undefined).toString();
 
       if(c.effect_description_long) {
         result += '<br><br>Effect: ' + c.effect_description_long;

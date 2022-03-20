@@ -361,7 +361,7 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
         } else if(c.type == CROPTYPE_BEE) {
           result += '.<br><br>Flower boost: ' + c.getBoostBoost(state.field[y][x]).toPercentString();
         } else {
-          result += '.<br><br>Production/sec: ' + c.getProd(state.field[y][x], true).toString();
+          result += '.<br><br>Production/sec: ' + c.getProd(state.field[y][x], 2).toString();
         }
         result += '.';
       }

@@ -64,7 +64,7 @@ function updateAbilitiesUI() {
     renderImage(image_sun, canvas);
 
     addButtonAction(sunbutton.div, function() {
-      addAction({type:ACTION_ABILITY, ability:1});
+      addAction({type:ACTION_ABILITY, ability:0});
       update();
     }, 'sun ability');
     sunbutton.div.id = 'sun_button';
@@ -76,7 +76,7 @@ function updateAbilitiesUI() {
     var d = util.getTime() - state.suntime;
     if(d > getSunWait()) {
       suntimerflex.div.textEl.innerHTML = '';
-    } else if(d > getSunDuration()) {
+    } else if(d > getSunDuration() || state.lastWeather != 0) {
       suntimerflex.div.className = 'efWeatherOff';
       suntimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getSunWait() - d, true);
     } else {
@@ -109,7 +109,7 @@ function updateAbilitiesUI() {
     renderImage(image_mist, canvas);
 
     var fun = function() {
-      addAction({type:ACTION_ABILITY, ability:0});
+      addAction({type:ACTION_ABILITY, ability:1});
       update();
     };
     addButtonAction(mistbutton.div, fun, 'mist ability');
@@ -122,7 +122,7 @@ function updateAbilitiesUI() {
     var d = util.getTime() - state.misttime;
     if(d > getMistWait()) {
       misttimerflex.div.textEl.innerHTML = '';
-    } else if(d > getMistDuration()) {
+    } else if(d > getMistDuration() || state.lastWeather != 1) {
       misttimerflex.div.className = 'efWeatherOff';
       misttimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getMistWait() - d, true);
     } else {
@@ -168,7 +168,7 @@ function updateAbilitiesUI() {
     var d = util.getTime() - state.rainbowtime;
     if(d > getRainbowWait()) {
       rainbowtimerflex.div.textEl.innerHTML = '';
-    } else if(d > getRainbowDuration()) {
+    } else if(d > getRainbowDuration() || state.lastWeather != 2) {
       rainbowtimerflex.div.className = 'efWeatherOff';
       rainbowtimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getRainbowWait() - d, true);
     } else {
@@ -321,11 +321,11 @@ document.addEventListener('keydown', function(e) {
 
     if(numberfun == 1) {
       if(key == '1') {
-        addAction({type:ACTION_ABILITY, ability:1});
+        addAction({type:ACTION_ABILITY, ability:0});
         update();
       }
       if(key == '2') {
-        addAction({type:ACTION_ABILITY, ability:0});
+        addAction({type:ACTION_ABILITY, ability:1});
         update();
       }
       if(key == '3') {
@@ -359,12 +359,13 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(key == 'w' && !shift && !ctrl) {
-    // NOTE: ctrl for this shortcut doesn't work, since ctrl+w closes browser window. For consistency, shift is also not supported.
+    // NOTE: ctrl for this shortcut doesn't work, since ctrl+w closes browser tab. For consistency, shift is also not supported.
     refreshWatercress();
   }
 
   if(key == 'b' && !shift && !ctrl) {
-    createBlueprintsDialog();
+    var ethereal = state.currentTab == tabindex_field2 || state.currentTab == tabindex_upgrades2;
+    createBlueprintsDialog(undefined, undefined, ethereal);
   }
 
   if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field) {

@@ -144,21 +144,21 @@ function getCropInfoHTML(f, c, opt_detailed) {
       }
     }
     result += '<br/>';
-    var expected_prod = c.getProd(f, true);
-    var expected_boost = c.getBoost(f, true);
-    var expected_boostboost = c.getBoostBoost(f, true);
+    var expected_prod = c.getProd(f, 2);
+    var expected_boost = c.getBoost(f, 2);
+    var expected_boostboost = c.getBoostBoost(f, 2);
     if(!expected_prod.empty()) {
-      result += 'Current production/sec: ' + c.getProd(f, false).toString() + '<br>';
+      result += 'Current production/sec: ' + c.getProd(f, 0).toString() + '<br>';
       result += 'Expected production/sec: ' + expected_prod.toString();
       if(state.challenge == challenge_wasabi) result += '<br>NOTE: this production is only accessible through copying with watercress etc... during the wasabi challenge!';
     }
     if(expected_boost.neqr(0)) {
-      var current_boost = c.getBoost(f, false);
+      var current_boost = c.getBoost(f, 0);
       if(current_boost.neqr(0)) result += 'Current boost: ' + current_boost.toPercentString() + '<br>';
       result += 'Expected boost: ' + expected_boost.toPercentString();
     }
     if(expected_boostboost.neqr(0)) {
-      var current_boost = c.getBoostBoost(f, false);
+      var current_boost = c.getBoostBoost(f, 0);
       if(current_boost.neqr(0)) result += 'Current boost: ' + current_boost.toPercentString() + '<br>';
       result += 'Expected boost: ' + expected_boostboost.toPercentString();
     }
@@ -270,6 +270,8 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
 
   var recoup = c.getRecoup();
+  var upgrade_cost = [undefined];
+  var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost, true);
 
   if(opt_detailed) {
     result += 'Num planted of this type: ' + state.cropcount[c.index] + '<br>';
@@ -277,18 +279,17 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += 'Cost: ' + '<br>';
     result += ' • Base planting cost: ' + c.cost.toString() + '<br>';
     result += ' • Last planting cost: ' + c.getCost(-1).toString() + '<br>';
-    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost (p): ' + c.getCost().toString() + '<br>';
-
-    result += ' • Recoup on delete (d): ' + recoup.toString();
+    if(c.type != CROPTYPE_NUT) result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
+    result += ' • Recoup on delete: ' + recoup.toString();
+    if(upgrade_crop && upgrade_cost[0]) {
+      result += '<br/> • Next tier cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    }
   } else {
     if(c.type != CROPTYPE_NUT) result += ' • Next planting cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
     result += ' • Recoup on delete (d): ' + recoup.toString();
-  }
-
-  var upgrade_cost = [undefined];
-  var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost, true);
-  if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/> • Next tier cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    if(upgrade_crop && upgrade_cost[0]) {
+      result += '<br/> • Next tier cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    }
   }
 
   return result;
@@ -297,12 +298,12 @@ function getCropInfoHTML(f, c, opt_detailed) {
 function makeTreeDialog() {
   var div;
 
-  var have_buttons = state.challenge || haveAutomaton() || state.challenges_unlocked || state.treelevel >= min_transcension_level;
+  var have_buttons = state.challenge || automatonUnlocked() || state.challenges_unlocked || state.treelevel >= min_transcension_level;
 
   var shortcutfun = function(e) {
     var shift = util.eventHasShiftKey(e);
     var ctrl = util.eventHasCtrlKey(e);
-    if(haveAutomaton() && (e.key == 'b' || e.key == 'B') && !ctrl) {
+    if(automatonUnlocked() && (e.key == 'b' || e.key == 'B') && !ctrl) {
       if(!blueprintdialogopen) createBlueprintsDialog(false);
     }
     if(state.challenges_unlocked && (e.key == 'c' || e.key == 'C') && !ctrl) {
@@ -317,11 +318,10 @@ function makeTreeDialog() {
   dialog.div.className = 'efDialogTranslucent';
 
   var contentFlex = dialog.content;
+
   var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
-
-
   flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4], 0.3);
   canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
@@ -535,7 +535,12 @@ function makeTreeDialog() {
       createChallengeDescriptionDialog(state.challenge, true, false);
     });
   } else if(state.treelevel < min_transcension_level) {
-    if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
+    //if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
+    if(state.treelevel >= 1) {
+      var temp = new Flex(f1, button0, y, button1, y + h, buttontextsize * 0.75);
+      temp.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
+      y += buttonshift;
+    }
   } else {
     var button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
     y += buttonshift;
@@ -562,7 +567,7 @@ function makeTreeDialog() {
     }
   }
 
-  if(haveAutomaton()) {
+  if(automatonUnlocked()) {
     button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
     y += buttonshift;
     styleButton(button);
@@ -570,6 +575,7 @@ function makeTreeDialog() {
     //button.textEl.style.boxShadow = '0px 0px 5px #44f';
     button.textEl.style.textShadow = '0px 0px 5px #008';
     addButtonAction(button, function() {
+      closeAllDialogs();
       createBlueprintsDialog();
     });
   }
@@ -681,6 +687,7 @@ function makeFieldDialog(x, y) {
     registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
       if(makeUpgradeCropAction(x, y)) {
+        closeAllDialogs();
         update();
       }
     });
@@ -698,6 +705,7 @@ function makeFieldDialog(x, y) {
     registerTooltip(button2, 'Delete crop and get some of its cost back.');
     addButtonAction(button2, function() {
       addAction({type:ACTION_DELETE, x:x, y:y});
+      closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 

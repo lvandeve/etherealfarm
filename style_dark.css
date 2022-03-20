@@ -220,6 +220,12 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   border: 1px solid #990;
 }
 
+.efSquirrelCantAfford {
+  background-color: #aa4;
+  color: #666;
+  border: 1px solid #990;
+}
+
 .efSquirrelNext {
   background-color: #400;
   border: 1px solid #100;
@@ -232,7 +238,7 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 
 .efSquirrelGated {
   background-color: #4aa;
-  color: #044;
+  color: #066;
   border: 1px solid #100;
 }
 
