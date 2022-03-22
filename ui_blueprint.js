@@ -643,12 +643,12 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
         }
       } else {
         if(shift && !ctrl && filled) {
-          if(opt_ethereal) plantBluePrint(blueprints[index], false);
+          if(opt_ethereal) plantBluePrint2(blueprints[index], false);
           else plantBluePrint(blueprints[index], false);
           closeAllDialogs();
           update();
         } else if(!shift && ctrl && filled) {
-          if(opt_ethereal) plantBluePrint(blueprints[index], true);
+          if(opt_ethereal) plantBluePrint2(blueprints[index], true);
           else plantBluePrint(blueprints[index], true);
           closeAllDialogs();
           update();

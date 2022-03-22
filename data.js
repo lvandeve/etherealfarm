@@ -259,13 +259,15 @@ var freeDelete2 = function(x, y) {
 var freeReplace2 = function(x, y, to_index) {
   if(freeDelete2(x, y)) return 2;
   var f = state.field2[y][x];
-  if(f.justreplaced) return false;
   if(f.index == CROPINDEX + to_index) return 2;
   var c = f.getCrop();
   if(!c) return 2;
   var c2 = crops2[to_index];
-  if(c2.is_template) return 1; // mark with justreplaced because original crop not free to delete, but template would be
   if(c2.type == c.type) return 1; // mark with justreplaced because original crop not free to delete, but growing new crop would be
+  if(c2.is_template) {
+    if(f.justreplaced) return 0; // just replaced and types don't match (that was checked above), so costs a token
+    return 1; // mark return value with justreplaced because original crop not free to delete, but template would be
+  }
   return 0;
 };
 
