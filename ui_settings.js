@@ -568,7 +568,7 @@ function createAdvancedSettingsDialog() {
   button = makeSettingsButton();
   updatebuttontext = function(button) { button.textEl.innerText = 'auto store interesting fruit: ' + (state.keepinterestingfruit ? 'yes' : 'no'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Whether to automatically store a fruit of a higher tier or higher season than ever seen. Normally fruits drop to the sacrificial pool automatically and must be manually moved to storage if you want to keep them. Automatically storing only works if there is space, and only if the fruit is of a newewr tier than seen before, you must still manually check fruits anyway when trying to find or fuse ones with particular abilities.');
+  registerTooltip(button, 'Whether to automatically store a fruit of a higher tier or higher season than ever seen. Normally fruits drop to the sacrificial pool automatically and must be manually moved to storage if you want to keep them. Automatically storing only works if there is space, and only if the fruit is of a newer tier than seen before, you must still manually check fruits anyway when trying to find or fuse ones with particular abilities.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.keepinterestingfruit = !state.keepinterestingfruit;
     updatebuttontext(button);

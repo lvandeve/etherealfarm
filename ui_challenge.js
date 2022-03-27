@@ -54,6 +54,9 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
         if(automaton_unlocked && (e.key == 'b' || e.key == 'B') && !ctrl) {
           if(!blueprintdialogopen) createBlueprintsDialog(true, challenge_id);
         }
+        if(e.key == 'Enter' && !shift && !ctrl) {
+          okfun();
+        }
       };
     }
 

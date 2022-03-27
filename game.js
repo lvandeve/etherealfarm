@@ -1096,7 +1096,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         var c = f.getRealCrop();
         if(c && c.index == challengecrop_1 && f.isFullGrown()) {
           var p = prefield[y][x];
-          var boost = c.getBoostBoost(f);
+          var boost = c.getBoostBoost(f, pretend);
           p.boost = Num(boost);
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -1105,7 +1105,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.index == challengecrop_2 && f2.isFullGrown()) {
-              p.boost.addInPlace(boost.mul(c2.getBoostBoost(f2)));
+              p.boost.addInPlace(boost.mul(c2.getBoostBoost(f2, pretend)));
             }
           }
         }
@@ -1117,7 +1117,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         var c = f.getRealCrop();
         if(c && c.index == challengecrop_0) {
           var p = prefield[y][x];
-          var boost = c.getBoostBoost(f);
+          var boost = c.getBoostBoost(f, pretend);
           if(f.isFullGrown()) p.boost = Num(boost);
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -1174,7 +1174,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           p.hasbreakdown_boost = true;
         }
         if(c.type == CROPTYPE_BEE) {
-          p.boost = c.getBoostBoost(f);
+          p.boost = c.getBoostBoost(f, pretend);
           p.hasbreakdown_boostboost = true;
         }
       }
@@ -1241,7 +1241,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           p.hasbreakdown_boost = true;
         }
         if(c.type == CROPTYPE_BEE) {
-          p.boost = c.getBoostBoost(f);
+          p.boost = c.getBoostBoost(f, pretend);
           p.hasbreakdown_boostboost = true;
         }
         if(c.type == CROPTYPE_MISTLETOE && p.treeneighbor) {

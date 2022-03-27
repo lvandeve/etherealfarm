@@ -335,7 +335,8 @@ function sanitizeBluePrint(b) {
   b.tier = [];
 }
 
-function createBluePrintText(b) {
+// include tiers is for ethereal blueprints to preserve the tiers rather than turn into templates
+function createBluePrintText(b, opt_include_tiers) {
   var text = '';
   if(b) {
     var w = b.numw;
@@ -344,6 +345,13 @@ function createBluePrintText(b) {
       for(var x = 0; x < w; x++) {
         var c = BluePrint.toChar(b.data[y][x]);
         text += c;
+        if(c != '.' && c != ' ' && opt_include_tiers && b.tier && b.tier[y]) {
+          var t = b.tier[y][x];
+          // -1 is template and does not get a numeric value
+          if(t >= 0) {
+            text += b.tier[y][x];
+          }
+        }
       }
       text += '\n';
     }
@@ -351,22 +359,24 @@ function createBluePrintText(b) {
   return text;
 }
 
-function exportBluePrint(b) {
-  var text = createBluePrintText(b);
+function exportBluePrint(b, ethereal, opt_include_tiers) {
+  var text = createBluePrintText(b, ethereal && opt_include_tiers);
   showExportTextDialog('export blueprint', text, 'blueprint-' + util.formatDate(util.getTime(), true) + '.txt', false);
 }
 
-function getBluePrintTypeHelpText() {
-  var squirreltext = '';
-  //if(state.crops2[squirrel2_0].unlocked) squirreltext = 'S=squirrel, ';
-
-  var nutstext = '';
-  if(state.crops[nut_0].unlocked) nutstext = 'U=nuts, ';
-
-  return 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress/brassica, ' + squirreltext + nutstext + '.=empty/tree';
+function getBluePrintTypeHelpText(ethereal) {
+  var result = 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress/brassica, ';
+  if(state.crops[nut_0].unlocked) result += 'U=nuts, '; // nuts not available in ethereal (currently), but shown anyway for completeness
+  if(ethereal) {
+    result += 'F=fern, L=lotus, ';
+    if(ethereal && state.crops2[automaton2_0].unlocked) result += 'A=automaton, ';
+    if(state.crops2[squirrel2_0].unlocked) result += 'S=squirrel, ';
+  }
+  result += '.=empty/tree';
+  return result;
 }
 
-function importBluePrintDialog(fun) {
+function importBluePrintDialog(fun, b, ethereal) {
   var w = 500, h = 500;
   var dialog = createDialog(false, function(e) {
     var shift = e.shiftKey;
@@ -374,12 +384,76 @@ function importBluePrintDialog(fun) {
     fun(text);
   }, 'import', undefined, 'cancel');
   var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
-  var squirreltext = '';
-  if(state.crops2[squirrel2_0].unlocked) squirreltext = 'S=squirrel, ';
-  textFlex.div.innerHTML = 'Import blueprint. Case insensitive. ' + getBluePrintTypeHelpText() + '.';
+  // TODO: this text is too long to get reasonable font size, move to a help dialog
+  var text = 'Import blueprint. Case insensitive. ' + getBluePrintTypeHelpText(ethereal);
+  textFlex.div.innerHTML = text;
+  text += '.';
   var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.content.div);
+  if(b) area.value = createBluePrintText(b, ethereal);
   area.select();
   area.focus();
+}
+
+function blueprintFromText(text, b, ethereal) {
+  if(text == '') return;
+  text = text.trim();
+  var s = text.split('\n');
+  var h = s.length;
+  if(h < 1 || h > 11) return;
+  var w = 0;
+  var data = [];
+  var tier = [];
+  for(var y = 0; y < h; y++) {
+    data[y] = [];
+    tier[y] = [];
+    var x = 0;
+    var line = s[y];
+    var pos = 0;
+    while(pos < line.length) {
+      data[y][x] = BluePrint.fromChar(line[pos++]);
+      // parse potential tier number. This is only used for ethereaal case, but also parsed (and ignored) in non-ethereal case
+      var num = '';
+      while(pos < line.length && line.charCodeAt(pos) >= 48 && line.charCodeAt(pos) <= 57) {
+        num += line[pos++];
+      }
+      if(ethereal) {
+        var t = num == '' ? -1 : parseInt(num);
+        tier[y][x] = t;
+      }
+      x++;
+    }
+    if(x > w) w = x;
+  }
+  if(w < 1) return;
+  if(w > 11) return;
+  for(var y = 0; y < h; y++) {
+    for(var x = data[y].length; x < w; x++) {
+      data[y][x] = 0;
+      if(ethereal) tier[y][x] = 0;
+    }
+  }
+  b.numw = w;
+  b.numh = h;
+  b.data = data;
+  b.tier = tier;
+
+/*  var w = 0;
+  for(var i = 0; i < h; i++) w = Math.max(w, s[i].length);
+  if(w < 1) return;
+  if(w > 11) w = 11;
+  b.numw = w;
+  b.numh = h;
+  b.data = [];
+  if(ethereal) b.tier = [];
+  for(var y = 0; y < h; y++) {
+    b.data[y] = [];
+    if(ethereal) b.tier[y] = [];
+    for(var x = 0; x < w; x++) {
+      b.data[y][x] = BluePrint.fromChar(s[y][x]);
+      if(ethereal) b.tier[y][x] = (s[y][x] == 'S' || s[y][x] == 's' || s[y][x] == 'A' || s[y][x] == 'a') ? 0 : -1;
+    }
+  }*/
+  sanitizeBluePrint(b);
 }
 
 // this is an extra layer of undo for the undo button on the blueprint editing dialog. Normally that button only does what you are currently doing while that dialog is open
@@ -464,37 +538,17 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     did_edit = true;
   }, 'Save the current field state into this blueprint. You can use the cancel button below to undo this.');
 
-  addButton('To TXT', function() {
-    exportBluePrint(b);
+  addButton('To TXT', function(e) {
+    // for now as a hidden feature (until better UI for this is implemented), holding shift exports the ethereal blueprint without the tier numbers
+    exportBluePrint(b, ethereal, ethereal && !e.shiftKey);
   }, 'Export the blueprint to text format, for external storage and sharing');
 
   addButton('From TXT', function() {
     importBluePrintDialog(function(text) {
-      if(text == '') return;
-      text = text.trim();
-      var s = text.split('\n');
-      var h = s.length;
-      if(h < 1 || h > 11) return;
-      var w = 0;
-      for(var i = 0; i < h; i++) w = Math.max(w, s[i].length);
-      if(w < 1) return;
-      if(w > 11) w = 11;
-      b.numw = w;
-      b.numh = h;
-      b.data = [];
-      if(ethereal) b.tier = [];
-      for(var y = 0; y < h; y++) {
-        b.data[y] = [];
-        if(ethereal) b.tier[y] = [];
-        for(var x = 0; x < w; x++) {
-          b.data[y][x] = BluePrint.fromChar(s[y][x]);
-          if(ethereal) b.tier[y][x] = (s[y][x] == 'S' || s[y][x] == 's' || s[y][x] == 'A' || s[y][x] == 'a') ? 0 : -1;
-        }
-      }
-      sanitizeBluePrint(b);
+      blueprintFromText(text, b, ethereal);
       renderBlueprint(b, ethereal, renderFlex, opt_index);
       did_edit = true;
-    });
+    }, b, ethereal);
   }, 'Import the blueprint from text format, as generated with To TXT. You can use the cancel button below to undo this.');
 
   addButton('Rename', function() {

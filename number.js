@@ -1122,7 +1122,7 @@ Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
   b *= f;
 
   if(e <= 0) {
-    var s = '' + b;
+    var s = '' + (b * 1.0000000001); // the 1.0000000001 is so that e.g. 0.00999999999 will show up as 0.01 instead. TODO: use better method for this
     s = s.substr(0, precision + 1); // +1 due to the decimal point
     if(s.indexOf('.') != -1) {
       while(s[s.length - 1] == '0') s = s.substr(0, s.length - 1);

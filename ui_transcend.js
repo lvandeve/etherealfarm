@@ -85,6 +85,13 @@ function createTranscendDialog(opt_from_challenge) {
   var extrafun2 = undefined;
   var shortcutfun = undefined;
 
+  var transcendfun = function(e) {
+    addAction({type:ACTION_TRANSCEND, challenge:0});
+    closeAllDialogs();
+    update();
+    return true;
+  };
+
   var automaton_unlocked = false;
   if(automatonUnlocked() && state.numnonemptyblueprints) {
     extraname2 = 'with blueprint';
@@ -104,6 +111,9 @@ function createTranscendDialog(opt_from_challenge) {
     if(challenge_unlocked && (e.key == 'c' || e.key == 'C') && !ctrl) {
       if(!challengedialogopen) createChallengeDialog();
     }
+    if(e.key == 'Enter' && !shift && !ctrl) {
+      transcendfun();
+    }
   };
 
 
@@ -114,12 +124,7 @@ function createTranscendDialog(opt_from_challenge) {
     extraname2 = undefined;
   }
 
-  var dialog = createDialog(DIALOG_MEDIUM, function(e) {
-      addAction({type:ACTION_TRANSCEND, challenge:0});
-      closeAllDialogs();
-      update();
-      return true;
-  }, 'transcend', undefined, 'cancel', extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, extrafun2, extraname2, shortcutfun);
+  var dialog = createDialog(DIALOG_MEDIUM, transcendfun, 'transcend', undefined, 'cancel', extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, extrafun2, extraname2, shortcutfun);
 
   dialog.div.className = 'efDialogEthereal';
 

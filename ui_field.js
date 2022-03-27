@@ -1028,14 +1028,22 @@ function updateFieldCellUI(x, y) {
 
   var f = state.field[y][x];
   var fd = fieldDivs[y][x];
-  var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
-  if(!(growstage >= 0 && growstage <= 4)) growstage = 0;
-  if(f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA) {
-    growstage = (f.growth >= 1) ? 5 : Math.min(Math.floor(f.growth * 5), 4);
+  var g = f.growth;
+  var c = f.getCrop();
+  var growstage;
+  if(c && c.type == CROPTYPE_BRASSICA) {
+    growstage = (g >= 1) ? 4 : Math.min(Math.floor(g * 5), 4);
     if(!(growstage >= 0 && growstage <= 4)) growstage = 0;
-    if(f.getCrop().isPostLife(f)) growstage = -1;
+    if(c.isPostLife(f)) growstage = -1;
+  } else {
+    if(g < 0.1) growstage = 0;
+    else if(g < 0.25) growstage = 1;
+    else if(g < 0.5) growstage = 2;
+    else if(g < 0.9) growstage = 3;
+    else growstage = 4; // already use the final fullgrown image for some time at the end of the growing phase too
+    if(state.challenge == challenge_wither) growstage = 4;
   }
-  if(state.challenge == challenge_wither && f.hasCrop() && f.getCrop().type != CROPTYPE_BRASSICA) growstage = 4;
+
   var season = getSeason();
 
   var progresspixel = -1;
@@ -1048,13 +1056,17 @@ function updateFieldCellUI(x, y) {
   var presentcode = ((state.presentx + state.presenty * state.numw) << 3) | state.present;
 
   var automatonplant = (x == state.automatonx && y == state.automatony && (state.time - state.automatontime < 0.5));
+  var growing = f.growth < 1;
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
+  if(fd.index != f.index || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
     if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
     renderImage(field_image, fd.bgcanvas);
+    fd.index = f.index;
+    fd.growing = growing;
+    fd.growstage = growstage;
     fd.season = season;
     fd.treelevel = state.treelevel;
     fd.ferncode = ferncode;
@@ -1064,8 +1076,6 @@ function updateFieldCellUI(x, y) {
 
     var label = 'field tile ' + x + ', ' + y;
 
-    fd.index = f.index;
-    fd.growstage = growstage;
     if(automatonplant) {
       renderImage(images_automaton[4], fd.canvas);
     } else if(f.hasCrop()) {

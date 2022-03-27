@@ -20,10 +20,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.98c (2022-03-27):';
+  text += '<br/>• Increased bonus of some of the resin and other achievements.';
+  text += '<br/>• Crops in the final time units of growing will now already show the final fullgrown image (but still with progress bar).';
+  text += '<br/>• New easier shortcut to transcend without blueprint: "t", "enter".';
+  text += '<br/>• Exporting ethereal blueprint as TXT now inlcudes the tier numbers.';
+  text += '<br/>• Bugfixes';
+  text += '<br/><br/>';
+
   text += '0.1.98 - Balancing and QoL (2022-03-20):';
   text += '<br/>• Added a new ethereal upgrade.';
-  text += '<br/>• Active weather can now be changed while one is running. This doesn\'t allow multiple at the same time and the use-time of the old one is lost.';
-  text += '<br/>• Fern resources are now computed as if all crops are fullgrown, so clicking a fern is no longer bad if new crops just started growing.';
+  text += '<br/>• Active weather can now be changed while one is running. This doesn\'t allow multiple at the same time and the use-time of the old one is lost.'; // more precisely, you can switch back and forth between the old and new one, but the use-time of one is always lost
+  text += '<br/>• Fern resources are now computed as if all crops are fullgrown, so clicking a fern is no longer bad if new crops just started growing.'; // except brassica, their growth (such as being withered but still semi active) is taken into account
   text += '<br/>• In the passive fern choice, ferns that are not taken for a long time now have a chance to become bushy.';
   text += '<br/>• Added support for ethereal blueprints.';
   text += '<br/>• Using blueprints no longer requires the automaton to be present, but still requires it to be unlocked.'; // since blueprints can now affect the ethereal field, it could be very confusing if a blueprint removes the automaton, and then you can't use blueprints anymore

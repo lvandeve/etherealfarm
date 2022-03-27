@@ -361,7 +361,7 @@ function makeField2Dialog(x, y) {
 
     styleButton(button1);
     button1.textEl.innerText = 'Downgrade crop';
-    registerTooltip(button1, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
+    registerTooltip(button1, 'Downgrade crop to 1 tier lower (refunding the resin cost difference), if it already is at the lowest tier it will be turned into a blueprint template.');
     addButtonAction(button1, function() {
       if(makeDowngradeCrop2Action(x, y)) {
         closeAllDialogs();

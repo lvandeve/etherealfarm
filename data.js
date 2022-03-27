@@ -2607,8 +2607,8 @@ var medal_crowded_id = registerMedal('crowded', 'planted something on every sing
   return state.numfullpermanentcropfields >= state.numw * state.numh - 5;
 }, Num(0.02));
 registerMedal('fern 100', 'clicked 100 ferns', images_fern[0], function() { return state.g_numferns >= 100; }, Num(0.01));
-registerMedal('fern 1000', 'clicked 1000 ferns', images_fern[0], function() { return state.g_numferns >= 1000; }, Num(0.05));
-registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { return state.g_numferns >= 10000; }, Num(0.2));
+registerMedal('fern 1000', 'clicked 1000 ferns', images_fern[0], function() { return state.g_numferns >= 1000; }, Num(0.1));
+registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { return state.g_numferns >= 10000; }, Num(1));
 
 var prevmedal;
 
@@ -2872,7 +2872,7 @@ for(var i = 0; i < level_achievement_values.length; i++) {
 medal_register_id = 1300;
 
 var resin_achievement_values =           [10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e12,1e15,1e18,1e21,1e24,1e27];
-var resin_achievement_bonuses_percent =  [ 1,  2,  5, 10, 15, 20, 25, 30, 40,  50,  60,  70,  80,  90, 100];
+var resin_achievement_bonuses_percent =  [ 1,  2,  5, 10, 15, 20, 35, 50,100, 250, 500,1000,2000,3000,4000];
 for(var i = 0; i < resin_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
   var num = Num(resin_achievement_values[i]);

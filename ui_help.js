@@ -503,6 +503,8 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"t"</b>: open the transcension dialog, when available.';
   text += '<br/>';
+  text += ' • <b>"t" followed by "Enter"</b>: transcend without blueprint.';
+  text += '<br/>';
   text += ' • <b>"t" followed by "b"</b>: transcend and open the transcend-with-blueprint dialog.';
   text += '<br/>';
   text += ' • <b>"t" followed by "c"</b>: transcend and open the start-new-challenge dialog.';

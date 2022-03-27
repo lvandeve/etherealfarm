@@ -127,9 +127,14 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
 
       // effect to base field
       if(c.effect.neqr(0)) {
-        // base here means: not taking lotuses into account (TODO: add function that computes it with that for here)
-        result += '.<br><br>Boost (base): ' + c.effect.toPercentString();
-        result += '.<br>Boost (here): ' + c.getBasicBoost(f).toPercentString();
+        var base = c.effect; // the base boost to the basic field, if it would have no neighbors (lotuses, ...) here
+        var actual = c.getBasicBoost(f); // the boost to basic, when planted at this specific spot (depending on lotuses and other neighbors)
+        if(base.eq(actual)) {
+          result += '.<br><br>Boost: ' + base.toPercentString();
+        } else {
+          result += '.<br><br>Boost (base): ' + base.toPercentString();
+          result += '.<br>Boost (here): ' + actual.toPercentString();
+        }
       }
       // effect of lotus here
       if(c.boost.neqr(0)) {
