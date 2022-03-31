@@ -3479,7 +3479,7 @@ var challenge_wasabi = registerChallenge('wasabi challenge', [65], Num(0.2),
 • The brassica copying fruit ability does not work during this challenge.<br>
 • As usual, having multiple brassica reduces the global brassica copying effect, max 2 or so works well.<br>
 `,
-['Unlocks the wasabi crop, which is the next tier of brassica after watercress. Once unlocked, it\'s available in the base game once you have grown a juniper (berry tier 8), and can be used in re-runs of this challenge as well.'],
+['Unlocks the wasabi crop, which is the next tier of brassica after watercress. Once unlocked, it\'s available in the base game once you have grown a juniper (berry tier 9), and can be used in re-runs of this challenge as well.'],
 'reaching ethereal tree level 7',
 
 function() {
