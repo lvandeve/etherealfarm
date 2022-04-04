@@ -466,6 +466,7 @@ function endPreviousRun() {
   c2.last_completion_date = util.getTime();
   c2.last_completion_total_resin = state.g_res.resin;
   c2.last_completion_level2 = state.treelevel2;
+  c2.last_completion_g_level = state.g_treelevel;
 
   showMessage(message, C_ETHEREAL, 669840411);
   if(state.g_numresets == 0) {
@@ -819,7 +820,8 @@ function loadUndo() {
 function getRandomPreferablyEmptyFieldSpot() {
   var num = 0;
   num = state.numemptyfields;
-  if(num < 2) {
+  var minemptyspots = holidayEventActive() ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
+  if(num < minemptyspots) {
     var x = Math.floor(Math.random() * state.numw);
     var y = Math.floor(Math.random() * state.numh);
     var f = state.field[y][x];
@@ -827,7 +829,7 @@ function getRandomPreferablyEmptyFieldSpot() {
     for(;;) {
       if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) x = (x + 1) % state.numw;
       if(state.fern && x == state.fernx && y == state.ferny) y = (y + 1) % state.numh;
-      if(state.present && x == state.presentx && y == state.presenty) y = (y + 1) % state.numh;
+      if(state.present_effect && x == state.presentx && y == state.presenty) y = (y + 1) % state.numh;
       if(maxruns-- < 0) break; // just in case there are e.g. tons of tree tops for some reason
     }
     return [x, y];
@@ -838,7 +840,7 @@ function getRandomPreferablyEmptyFieldSpot() {
     var f = state.field[state.ferny][state.fernx];
     if(f.index == 0 || f.index == FIELD_REMAINDER) num--;
   }
-  if(state.present) {
+  if(state.present_effect) {
     if(state.presentx >= state.numw) state.presentx = state.numw - 1;
     if(state.presenty >= state.numh) state.presenty = state.numh - 1;
     var f = state.field[state.presenty][state.presentx];
@@ -851,7 +853,7 @@ function getRandomPreferablyEmptyFieldSpot() {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
       var already_fern = state.fern && x == state.fernx && y == state.ferny;
-      var already_present = state.present && x == state.presentx && y == state.presenty;
+      var already_present = state.present_effect && x == state.presentx && y == state.presenty;
       if((f.index == 0 || f.index == FIELD_REMAINDER) && !already_fern && !already_present) {
         if(i == r) return [x, y];
         i++;
@@ -1012,9 +1014,6 @@ function PreCell(x, y) {
 
   this.last_it = -1;
 
-  // how many neighbors this was touching (for watercress. For deciding if there'll be a remainder.)
-  this.touchnum = 0;
-
   // for mistletoe, and winter warmth (for non-mistletoe, not computed in non-winter season)
   this.treeneighbor = false;
 
@@ -1048,7 +1047,6 @@ function PreCell(x, y) {
     this.hasbreakdown_watercress = false;
     this.breakdown_watercress_info = undefined;
     this.last_it = -1;
-    this.touchnum = 0;
     this.treeneighbor = false;
     this.flowerneighbor = false;
   };
@@ -1068,6 +1066,7 @@ var prefield = [];
 // - watercress depends on mushroom and berry for the leech, but you could see this the opposite direction, muchroom depends on watercress to precompute how much extra seeds are being consumed for the part copied by the watercress
 // --> watercress leech output is computed after all producing/consuming/bonuses have been done. watercress does not itself give seeds to mushrooms. watercress gets 0 seeds from a berry that has all seeds going to neighboring mushrooms.
 // - watercress depends on overall watercress amount on field for the large-amount penalty.
+// NOTE: if updating formulas here, they must also be updated in the Crop.getProd, Crop.getBoost and similar functions for the pretend != 0 cases implemented in those
 function precomputeField_(prefield, opt_pretend_fullgrown) {
   var pretend = opt_pretend_fullgrown ? 1 : 0;
   var w = state.numw;
@@ -1196,6 +1195,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             if(c2 && c2.type == CROPTYPE_NETTLE) {
               var p2 = prefield[y2][x2];
               var boost = p2.boost;
+              // when changing this formula, must also change Crop.prototype.computeNettleMalusReceived_ to match
               p.nettlemalus_received.divInPlace(boost.addr(1));
               p.num_nettle++;
             }
@@ -1220,6 +1220,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             if(c2 && c2.type == CROPTYPE_BEE) {
               var p2 = prefield[y2][x2];
               var boostboost = p2.boost;
+              // when changing this formula, must also change Crop.prototype.computeBeehiveBoostReceived_ to match
               p.beeboostboost_received.addInPlace(boostboost);
               p.num_bee++;
             }
@@ -1458,7 +1459,6 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2) {
-              if(c2.type != CROPTYPE_BRASSICA) p.touchnum++;
               var p2 = prefield[y2][x2];
               if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
                 // leech ratio that applies here
@@ -1528,7 +1528,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         var f2 = state.field[y2][x2];
         var c2 = f2.getCrop();
         if(!c2) continue;
-        if(score_ignore_templates && c2.istemplate) continue;
+        if(score_ignore_templates && !c2.isReal()) continue;
         if(dir >= 4 && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
         var p2 = prefield[y2][x2];
 
@@ -1734,7 +1734,7 @@ function getRandomFruitRoll() {
 }
 
 
-function addRandomFruitForLevel(treelevel) {
+function addRandomFruitForLevel(treelevel, opt_nodouble) {
   var fruits = [];
   for(;;) {
     // do same amount of rolls per fruit, even if some are unneeded, so that it's harder to affect the fruit seed by choosing when to do squirrel upgrades, transcends, ...
@@ -1838,7 +1838,7 @@ function addRandomFruitForLevel(treelevel) {
 
     fruits.push(fruit);
 
-    if(fruits.length == 1 && state.upgrades3[upgrade3_doublefruitprob].count && roll_double < upgrade3_doublefruitprob_prob) {
+    if(!opt_nodouble && fruits.length == 1 && state.upgrades3[upgrade3_doublefruitprob].count && roll_double < upgrade3_doublefruitprob_prob) {
       // probability of a second fruit
       continue;
     }
@@ -2065,7 +2065,7 @@ function computeNextAutoPlant() {
         var c = f.getCrop();
         if(c.type != type) continue;
         if(c.tier >= crop.tier) continue;
-        if(type == CROPTYPE_NUT && tooManyNutsPlants(!c.istemplate)) continue; // can only have 1 at the same time
+        if(type == CROPTYPE_NUT && tooManyNutsPlants(c.isReal())) continue; // can only have 1 at the same time
         if(next_auto_plant == undefined || time < next_auto_plant.time) next_auto_plant = {index:crop.index, x:x, y:y, time:time};
         x = state.numw;
         y = state.numh;
@@ -2275,7 +2275,7 @@ function nextEventTime() {
       var f = state.field[y][x];
       var c = f.getCrop();
       if(c) {
-        if(c.istemplate) continue;
+        if(!c.isReal()) continue;
         if(c.type == CROPTYPE_BRASSICA) {
           // watercress needs regular updates, but don't do that when it's a end-of-life wasabi, since once it has that state it doesn't change any further, and stays forever, that'd make long game updates very slow
           var infinitelifetime = c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0;
@@ -2399,6 +2399,7 @@ function maybeDropAmber() {
 }
 
 // computes the field gain, but then pretending all crops are fullgrown
+// this computation includes nuts, even though ferns don't give it (only relevant resources should be copied there), the nuts computation can be used e.g. for holiday events
 function computeFernGain() {
   var prefield2 = [];
   precomputeField_(prefield2, true);
@@ -3083,7 +3084,7 @@ var update = function(opt_ignorePause) {
           } else if(c.index == squirrel_0 && state.cropcount[squirrel_0]) {
             showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
             ok = false;
-          } else if(c.type == CROPTYPE_NUT && !c.istemplate && tooManyNutsPlants(type == ACTION_REPLACE && f.hasRealCrop() && f.getCrop().type == CROPTYPE_NUT)) {
+          } else if(c.type == CROPTYPE_NUT && c.isReal() && tooManyNutsPlants(type == ACTION_REPLACE && f.hasRealCrop() && f.getCrop().type == CROPTYPE_NUT)) {
             showMessage('you can only plant max 1 nut plant in the field', C_INVALID, 0, 0);
             ok = false;
           }
@@ -3092,7 +3093,7 @@ var update = function(opt_ignorePause) {
         if(ok && (type == ACTION_DELETE || type == ACTION_REPLACE)) {
           if(f.hasCrop()) {
             var c = f.getCrop();
-            if(!c.istemplate) {
+            if(c.isReal()) {
               // NOTE: during wither you can't delete crops. But even if you could (or if the game gets changed to allow it), during the wither challenge, crops growth is always < 1, though in theory could be 1 at the very start. During wither, numunplanted stat can't be gained, and the numplanted stat will always be decreased when deleting
               if((state.challenge == challenge_wither || f.growth < 1) && c.type != CROPTYPE_BRASSICA) {
                 if(!action.silent && full_refund) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
@@ -3127,7 +3128,7 @@ var update = function(opt_ignorePause) {
         if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
           var c = action.crop;
           var cost = c.getCost();
-          if(!c.istemplate) {
+          if(c.isReal()) {
             if(c.type == CROPTYPE_BRASSICA) {
               state.g_numplantedbrassica++;
               state.c_numplantedbrassica++;
@@ -3153,7 +3154,7 @@ var update = function(opt_ignorePause) {
           if(!action.by_automaton) store_undo = true;
           var nextcost = c.getCost(0);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
-          if(state.c_numplanted + state.c_numplantedbrassica <= 1 && !c.istemplate && state.g_numresets < 5) {
+          if(state.c_numplanted + state.c_numplantedbrassica <= 1 && c.isReal() && state.g_numresets < 5) {
             showMessage('Keep planting more crops on other field cells to get more income', C_HELP, 28466751);
           }
         }
@@ -3353,14 +3354,14 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PRESENT) {
-        // holiday event finished, commented out.
-        /*if(fast_forwarding) continue;
+        if(fast_forwarding) continue;
+        if(!holidayEventActive()) continue;
 
-        if(state.present && state.presentx == action.x && state.presenty == action.y) {
+        if(state.present_effect && state.presentx == action.x && state.presenty == action.y) {
           clickedpresent = true;
-          state.g_numpresents++;
+          state.g_numpresents[1]++;
           store_undo = true;
-        }*/
+        }
       } else if(type == ACTION_ABILITY) {
         if(fast_forwarding) continue;
 
@@ -3594,13 +3595,29 @@ var update = function(opt_ignorePause) {
 
         var f = fuseFruit(a, b, fruitmix);
         if(f) {
-          f.slot = a.slot;
+          // Try to ensure fused fruit appears in stored rather than sacrificial pool
+          f.slot = a.slot; // prefer the originally selected fruit
+          if(f.slot >= 100 && b.slot < 100) {
+            // if originally selected fruit was in sacrificial pool, prefer the other one
+            f.slot = b.slot;
+          }
+          if(f.slot >= 100 && state.fruit_stored.length < state.fruit_slots) {
+            // if both originals were in sacrificial pool and a slot in stored pool is still free, use that
+            f.slot = state.fruit_stored.length;
+          }
           if(f.slot < 100) {
             state.fruit_stored[f.slot] = f;
           } else {
             state.fruit_sacr[f.slot - 100] = f;
           }
-          setFruit(b.slot, null);
+          // remove the old fruits if needed, using the one with highest index first so the shifts don't affect other relevant index values
+          var fslot = f.slot;
+          var aslot = a.slot;
+          var bslot = b.slot;
+          if(fslot != bslot && bslot > aslot) setFruit(b.slot, null);
+          if(fslot != aslot) setFruit(a.slot, null);
+          if(fslot != bslot && bslot < aslot) setFruit(b.slot, null);
+
           state.c_numfused++;
           state.g_numfused++;
           store_undo = true;
@@ -3668,8 +3685,8 @@ var update = function(opt_ignorePause) {
           var c = f.getCrop();
           var prod = Res();
           if(c.type == CROPTYPE_BRASSICA || state.challenge == challenge_wither) {
-            var short = c.type == CROPTYPE_BRASSICA;
-            var croptime = short ? c.getPlantTime() : witherDuration();
+            var brassica = c.type == CROPTYPE_BRASSICA;
+            var croptime = brassica ? c.getPlantTime() : witherDuration();
             var g = d / croptime;
             var growth0 = f.growth;
             f.growth -= g;
@@ -3680,9 +3697,18 @@ var update = function(opt_ignorePause) {
                 f.growth = 0;
                 // add the remainder image, but only if this one was leeching at least 2 neighbors: it serves as a reminder of watercress you used for leeching, not *all* watercresses
                 var create_remainder = false;
-                if(short) {
-                  if(p.touchnum >= 2) create_remainder = true;
-                  if(p.touchnum == 1 && state.cropcount[brassica_0] <= 1 && state.specialfieldcount[FIELD_REMAINDER] == 0) create_remainder = true;
+                if(brassica) {
+                  var touchnum = 0;
+                  for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+                    var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+                    var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+                    if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+                    var f2 = state.field[y2][x2];
+                    var c2 = f2.getCrop();
+                    if(c2 && c2.type != CROPTYPE_BRASSICA && !c2.isghost) touchnum++;
+                  }
+                  if(touchnum >= 2) create_remainder = true;
+                  if(touchnum == 1 && state.cropcount[brassica_0] <= 1 && state.specialfieldcount[FIELD_REMAINDER] == 0) create_remainder = true;
                   if(create_remainder) f.index = FIELD_REMAINDER;
                 }
                 if(!create_remainder) f.index = 0;
@@ -3731,7 +3757,7 @@ var update = function(opt_ignorePause) {
           }
           gain.addInPlace(prod);
           actualgain.addInPlace(prod.mulr(d));
-        } else if(f.isTemplate()) {
+        } else if(f.isTemplate() || f.isGhost()) {
           f.growth = 1;
         }
       }
@@ -3855,84 +3881,120 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    // holiday event finished, commented out
-    /*if(clickedpresent) {
-      state.presentwait = (15 * 60) * (1 +  getRandomPresentRoll());
+    if(!holidayEventActive()) {
+      state.present_effect = 0;
+    } else {
+      // presents are now actually eggs (spring 2022)
+      if(clickedpresent) {
+        state.presentwait = (20 * 60) * (1 +  getRandomPresentRoll());
 
-      // alternatives for things that aren't unlocked yet
-      var alternative = false;
-      if(state.present == 1 && state.g_res.spores.ler(0)) {
-        alternative = true;
-      }
-      if(state.present == 2 && state.g_res.nuts.ler(0)) {
-        alternative = true;
-      }
-      if(state.present == 4 && state.g_numfruits <= 0) {
-        alternative = true;
-      }
-      if(state.present == 5 && state.g_res.amber.ler(0)) {
-        alternative = true;
-      }
+        var effect = state.present_effect;
 
-      if(state.present == 1 || alternative) {
-        var g = gain.mulr(60 * 7.5);
-        var starter = getStarterResources();
-        if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds);
-        if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
-        var presentres = new Res({seeds:g.seeds, spores:g.spores});
-        if(alternative && state.g_res.amber.ltr(0)) {
-          g.amber = Num(1);
+        // alternatives for things that aren't unlocked yet
+        if(effect == 2 && state.res.spores.ler(0)) {
+          // don't have spores yet, so no spores production, give seeds instead
+          effect = 1;
         }
-        showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
-        actualgain.addInPlace(presentres);
-      } else if(state.present == 2) {
-        var min_nuts = getNextUpgrade3Cost().mulr(0.0005).mulr(1 + getRandomPresentRoll());
-        var g = gain.mulr(60 * 7.5);
-        var starter = getStarterResources();
-        if(g.nuts.lt(min_nuts)) g.nuts = min_nuts;
-        var presentres = new Res({nuts:g.nuts});
-        showMessage('That present contained a nutcracker! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
-        actualgain.addInPlace(presentres);
-      } else if(state.present == 3) {
-        state.present_grow_speed_time = state.time;
-        showMessage('This present doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
-      } else if(state.present == 4) {
-        showMessage('This present contained fruit!', C_PRESENT, 38753631, 0.8, true);
-        var fruits = addRandomFruitForLevel(state.g_treelevel);
-        if(fruits) {
-          for(var i = 0; i < fruits.length; i++) {
-            if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_PRESENT, 38753631, 0.8);
+        if(effect == 4 && state.g_res.nuts.ler(0)) {
+          // don't have nuts yet, give seeds instead
+          effect = 1;
+        }
+        if(effect == 6 && state.g_numfruits <= 0) {
+          // don't have fruits yet, give production boost instead
+          effect = 3;
+        }
+        if(effect == 7 && state.g_res.amber.ler(0)) {
+          // don't have amber yet, give seeds instead
+          effect = 1;
+        }
+
+        var basic = basicChallenge();
+
+        // during basic challenge, effects are reduced
+        if(basic) {
+          if(effect == 3) effect = 1;
+          if(effect == 5) effect = (state.res.spores.ler(0) ? 1 : 2);
+        }
+
+        if(effect == 1) {
+          // seeds
+          var g = computeFernGain().mulr(60 * 5);
+          var starter = getStarterResources();
+          if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds);
+          if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
+          var presentres = new Res({seeds:g.seeds});
+          if(basic) presentres = presentres.mulr(0.25);
+          //showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          showMessage('That egg contained ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          actualgain.addInPlace(presentres);
+        } else if(effect == 2) {
+          // spores
+          var g = computeFernGain().mulr(60 * 5);
+          if(g.spores.ltr(1)) g.spores = Num.max(g.spores, Num(1));
+          var presentres = new Res({spores:g.spores});
+          if(basic) presentres = presentres.mulr(0.25);
+          //showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          showMessage('That egg contained ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          actualgain.addInPlace(presentres);
+        } else if(effect == 3) {
+          // production boost
+          state.present_production_boost_time = state.time;
+          showMessage('This egg boosts production for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+        } else if(effect == 4) {
+          // nuts
+          var min_nuts = getNextUpgrade3Cost().mulr(0.0004).mulr(1 + getRandomPresentRoll());
+          var g = computeFernGain().mulr(60 * 5);
+          if(g.nuts.lt(min_nuts)) g.nuts = min_nuts;
+          var presentres = new Res({nuts:g.nuts});
+          //showMessage('That present contained a nutcracker! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          showMessage('That egg was nut flavored! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          actualgain.addInPlace(presentres);
+        } else if(effect == 5) {
+          // grow speed
+          state.present_grow_speed_time = state.time;
+          //showMessage('This present doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+          showMessage('This egg doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+        } else if(effect == 6) {
+          // fruit
+          //showMessage('This present contained fruit!', C_PRESENT, 38753631, 0.8, true);
+          showMessage('This egg contained fruit!', C_PRESENT, 38753631, 0.8, true);
+          var fruits = addRandomFruitForLevel(Math.max(5, state.g_treelevel - 2), true);
+          if(fruits) {
+            for(var i = 0; i < fruits.length; i++) {
+              if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_PRESENT, 38753631, 0.8);
+            }
           }
+        } else if(effect == 7) {
+          // amber
+          var amber = Num(Math.floor(getRandomPresentRoll() * 3) + 2);
+          actualgain.amber.addInPlace(amber);
+          //showMessage('That present contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
+          showMessage('That egg contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
+        } else {
+         // nothing (invalid)
         }
-      } else if(state.present == 5) {
-        var amber = Num(Math.floor(getRandomPresentRoll() * 5) + 3);
-        actualgain.amber.addInPlace(amber);
-        showMessage('That present contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
-      } else {
+        state.lastPresentTime = state.time; // in seconds
+        state.present_effect = 0;
       }
-      state.lastPresentTime = state.time; // in seconds
-      state.present = 0;
+
+      // the state.g_numpresents < 3000 check is a safety guard in case bugs related to present spawning appear. 3000 is the max amount that could spawn in a month (it is at least 15 minutes per present)
+      if(!state.present_effect && !clickedpresent && state.g_numplanted >= 2 && state.g_numpresents[1] < 3000) {
+        if(state.time > state.lastPresentTime + state.presentwait) {
+          var s = getRandomPreferablyEmptyFieldSpot();
+          if(s) {
+            state.present_effect = 1 + Math.floor(getRandomPresentRoll() * 7) % 7;
+            state.present_image = Math.floor(getRandomPresentRoll() * 4) & 3;
+            state.presentx = s[0];
+            state.presenty = s[1];
+            // the coordinates are invisible but are for screenreaders
+            //showMessage('A present appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
+            showMessage('An egg appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
+          }
+
+          state.lastPresentTime = 0;
+        }
+      }
     }
-
-    var drop_present = false;
-    var presentTimeWorth = 0;
-    // the state.g_numpresents < 3000 check is a safety guard in case bugs related to present spawning appear. 3000 is the max amount that could spawn in a month (it is at least 15 minutes per present)
-    if(!state.present && !clickedpresent && state.g_numplanted >= 2 && state.g_numpresents < 3000) {
-      if(state.time > state.lastPresentTime + state.presentwait) {
-        drop_present = true;
-        var s = getRandomPreferablyEmptyFieldSpot();
-        if(s) {
-          state.present = 1 + Math.floor(getRandomPresentRoll() * 5) % 5;
-          state.present_image = Math.floor(getRandomPresentRoll() * 4) & 3;
-          state.presentx = s[0];
-          state.presenty = s[1];
-          // the coordinates are invisible but are for screenreaders
-          showMessage('A present appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
-        }
-
-        state.lastPresentTime = 0;
-      }
-    }*/
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -4444,11 +4506,11 @@ function showShiftCropChip(crop_id) {
   var verb = planting ? 'planting' : (deleting ? 'deleting' : (replacing ? 'replacing' : (selecting ? 'selecting' : 'upgrading')));
 
 
-  shiftCropFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.5);
+  shiftCropFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
   shiftCropFlex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCropFlex.div.style.zIndex = 100; // above medal chip
 
-  var textFlex = new Flex(shiftCropFlex, [0, 0, 0.0], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35], 0.4);
+  var textFlex = new Flex(shiftCropFlex, [0, 0, 0.0], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
@@ -4552,11 +4614,11 @@ function showShiftCrop2Chip(crop_id) {
   var verb = planting ? 'planting' : (deleting ? 'deleting' : (replacing ? 'replacing' : (selecting ? 'selecting' : 'upgrading')));
 
 
-  shiftCrop2Flex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.5);
+  shiftCrop2Flex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
   shiftCrop2Flex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
   shiftCrop2Flex.div.style.zIndex = 100; // above medal chip
 
-  var textFlex = new Flex(shiftCrop2Flex, [0, 0, 0.0], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35], 0.4);
+  var textFlex = new Flex(shiftCrop2Flex, [0, 0, 0.0], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);

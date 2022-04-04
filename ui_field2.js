@@ -26,7 +26,7 @@ var field2Rows;
 function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
   var result = 'Ethereal ' + c.name;
   result += '<br/>';
-  result += 'Crop type: ' + getCropTypeName(c.type) + ((c.tier && !c.istemplate) ? (' (tier ' + (c.tier + 1) + ')') : '');
+  result += 'Crop type: ' + getCropTypeName(c.type) + ((c.tier && c.isReal()) ? (' (tier ' + (c.tier + 1) + ')') : '');
   result += '<br/>';
 
   if(c.istemplate) {
@@ -119,7 +119,7 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     result += '<br><br>';
   }
 
-  if(f.justplanted && !c.istemplate && c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL) {
+  if(f.justplanted && c.isReal() && c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL) {
     //result += '<br><br>Just planted during this run, can only be deleted or replaced with a different type after transcension';
     result += '<br><br>Just planted during this run, can only be deleted after next transcension';
   }
@@ -257,19 +257,19 @@ function makeTree2Dialog() {
   dialog.div.className = 'efDialogTranslucent';
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][4], canvas);
-  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4], 0.3);
+  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4]);
   canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][4], canvas);
 
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75, 0.32);
+  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95, 0.3);
+  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95);
 
   var text = '';
 
@@ -308,11 +308,10 @@ function makeTree2Dialog() {
   // finetune the width of the buttons in flex f1
   var button0 = 0;
   var button1 = 0.8;
-  var buttontextsize = 0.6;
   var buttonshift = h * 1.15;
 
   if(automatonUnlocked()) {
-    var button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Ethereal blueprints';
@@ -335,18 +334,18 @@ function makeField2Dialog(x, y) {
 
     var dialog = createDialog();
     dialog.div.className = 'efDialogTranslucent';
-    var flex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
+    var flex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
 
-    var flex0 = new Flex(dialog.content, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.17, 0.29);
-    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.63 + buttonshift, 0, 0.01], 0.5, 0.695 + buttonshift, 0.8).div;
-    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.765 + buttonshift, 0.8).div;
-    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.835 + buttonshift, 0.8).div;
-    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.905 + buttonshift, 0.8).div;
-    var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift, 0.8).div;
+    var flex0 = new Flex(dialog.content, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.17);
+    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.63 + buttonshift, 0, 0.01], 0.5, 0.695 + buttonshift).div;
+    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.765 + buttonshift).div;
+    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.835 + buttonshift).div;
+    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.905 + buttonshift).div;
+    var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -560,7 +559,7 @@ function initField2UI() {
             if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
             state.lastPlanted2 = c3.index;
             if(c3.getCost().gt(state.res)) state.lastPlanted2 = c2.index;
-            if((state.allowshiftdelete || c2.istemplate) && c3.tier > c2.tier) {
+            if((state.allowshiftdelete || !c2.isReal()) && c3.tier > c2.tier) {
               addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }
@@ -702,9 +701,9 @@ function showEtherealTreeLevelDialog(level) {
 
   for(var i = 0; i < registered_crops2.length; i++) {
     var u = crops2[registered_crops2[i]];
-    if(u.istemplate) continue;
+    if(!u.isReal()) continue;
     if(u.treelevel2 == level) {
-      text += '<b>Crop</b>: ' + upper(u.name) + '<br>';
+      text += '<b>Crop</b>: Ethereal ' + u.name + '<br>';
       anything = true;
     }
   }

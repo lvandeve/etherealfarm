@@ -317,7 +317,7 @@ function encState(state, opt_raw_only) {
   processUintArray(state.g_amberbuy);
   processRes(state.g_max_res_earned);
   processRes(state.g_fernres);
-  processUint(state.g_numpresents);
+  processUintArray(state.g_numpresents);
   processRes(state.p_res_no_ferns);
 
 
@@ -672,8 +672,8 @@ function encState(state, opt_raw_only) {
 
   section = 25; id = 0; // holiday drops
 
-  processUint(state.present);
-  if(state.present) {
+  processUint(state.present_effect);
+  if(state.present_effect) {
     processUint(state.present_image);
     processUint(state.presentx);
     processUint(state.presenty);
@@ -683,6 +683,7 @@ function encState(state, opt_raw_only) {
   processInt(state.present_seed);
   processTime(state.lastPresentTime);
   processTime(state.present_grow_speed_time);
+  processTime(state.present_production_boost_time);
 
 
   section = 26; id = 0; // challenges last run stats
@@ -693,6 +694,7 @@ function encState(state, opt_raw_only) {
   array4 = [];
   array5 = [];
   array6 = [];
+  array7 = [];
   for(var i = -1; i < registered_challenges.length; i++) {
     // ci 0 correpsonds to no challenge, which also gets the run stats
     var ci = (i == -1) ? 0 : registered_challenges[i];
@@ -705,6 +707,7 @@ function encState(state, opt_raw_only) {
     array4.push(c2.last_completion_date);
     array5.push(encApprox2Num(c2.last_completion_resin));
     array6.push(c2.last_completion_level2);
+    array7.push(c2.last_completion_g_level);
   }
   processUintArray(array0);
   processTimeArray(array1);
@@ -713,6 +716,7 @@ function encState(state, opt_raw_only) {
   processTimeArray(array4);
   processUintArray(array5);
   processUintArray(array6);
+  processUintArray(array7);
 
   section = 27; id = 0; // ethereal blueprints
   array0 = [];
@@ -1258,7 +1262,14 @@ function decState(s) {
   } else {
     // g_max_res_earned handled below to set it to p_res then
   }
-  if(save_version >= 4096*1+93) state.g_numpresents = processUint();
+  if(save_version >= 4096*1+99) {
+    var presents = processUintArray();
+    if(error) return err(4);
+    if(presents.length > state.g_numpresents.length) return err(4);
+    for(var i = 0; i < presents.length; i++) state.g_numpresents[i] = presents[i];
+  } else if(save_version >= 4096*1+93) {
+    state.g_numpresents[0] = processUint();
+  }
   if(save_version >= 4096*1+96) state.p_res_no_ferns = processRes(); // else, for older versions, will be set below
 
   if(error) return err(4);
@@ -1868,8 +1879,8 @@ function decState(s) {
   section = 25; id = 0; // holiday drops
 
   if(save_version >= 4096*1+93) {
-    state.present = processUint();
-    if(state.present) {
+    state.present_effect = processUint();
+    if(state.present_effect) {
       state.present_image = processUint();
       state.presentx = processUint();
       state.presenty = processUint();
@@ -1879,19 +1890,20 @@ function decState(s) {
     state.present_seed = processInt();
     state.lastPresentTime = processTime();
     state.present_grow_speed_time = processTime();
+    if(save_version >= 4096*1+99) state.present_production_boost_time = processTime();
   } else {
     state.present_seed = state.seed0 ^ 0x70726573; // ascii for "pres"
   }
+  if(error) return err(4);
 
   // holiday event finished, remove presents since clicking them does nothing
-  if(state.present) {
-    state.present = 0;
+  /*if(state.present_effect) {
+    state.present_effect = 0;
     state.presentx = 0;
     state.presenty = 0;
     state.presentwait = 0;
     state.present_image = 0;
-  }
-  if(error) return err(4);
+  }*/
 
 
   section = 26; id = 0; // challenges last run stats
@@ -1904,8 +1916,11 @@ function decState(s) {
     array4 = processTimeArray();
     array5 = processUintArray();
     array6 = processUintArray();
+    if(save_version >= 4096*1+99) array7 = processUintArray();
     if(error) return err(4);
-    if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length || array0.length != array5.length || array0.length != array6.length) {
+    if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length ||
+       array0.length != array4.length || array0.length != array5.length || array0.length != array6.length ||
+       (save_version >= 4096*1+99 && array0.length != array7.length)) {
       return err(4);
     }
     var index = 0;
@@ -1922,6 +1937,7 @@ function decState(s) {
       c2.last_completion_date = array4[index];
       c2.last_completion_resin = decApprox2Num(array5[index]);
       c2.last_completion_level2 = array6[index];
+      if(save_version >= 4096*1+99) c2.last_completion_g_level = array7[index];
       index++;
     }
   }

@@ -386,8 +386,6 @@ function updateTabButtons() {
 
   tabNumbers = [];
 
-  var tabFontSize = '120%';
-
   tabnum = tabindex_field;
   if(wanted[tabnum]) {
     var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
@@ -395,7 +393,6 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'field';
@@ -413,7 +410,6 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
@@ -431,7 +427,6 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
@@ -450,7 +445,6 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
@@ -469,7 +463,6 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab', true);
     tabbuttons[tabnum].textEl.innerText = 'fruit';
@@ -487,11 +480,10 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: automaton tab', true);
     tabbuttons[tabnum].textEl.innerText = 'automaton';
-    tabbuttons[tabnum].id = 'achievements_tab';
+    tabbuttons[tabnum].id = 'automaton_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
     automatonButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     tabNumbers[index] = tabnum;
@@ -506,11 +498,10 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: squirrel tab', true);
     tabbuttons[tabnum].textEl.innerText = 'squirrel';
-    tabbuttons[tabnum].id = 'achievements_tab';
+    tabbuttons[tabnum].id = 'squirrel_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
     squirrelButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     tabNumbers[index] = tabnum;
@@ -525,11 +516,10 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
-    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: amber tab', true);
     tabbuttons[tabnum].textEl.innerText = 'amber';
-    tabbuttons[tabnum].id = 'achievements_tab';
+    tabbuttons[tabnum].id = 'amber_tab';
     //tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #000';
     amberButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     tabNumbers[index] = tabnum;
@@ -544,7 +534,6 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    tabbuttons[tabnum].style.fontSize = tabFontSize;
     styleButton(tabbuttons[tabnum]);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: achievements tab', true);
     tabbuttons[tabnum].id = 'achievements_tab';

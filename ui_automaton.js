@@ -67,7 +67,7 @@ function showConfigureAutoResourcesDialog(subject) {
 
 
   texth = 0.12;
-  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07, 0.45);
+  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Select max resource amount for ' + subjecttitle + ' of each crop type:';
   y += texth;
 
@@ -76,7 +76,7 @@ function showConfigureAutoResourcesDialog(subject) {
   if(subject == 2) {
     var addButton = function() {
       var h = 0.06;
-      var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.66);
+      var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
       y += h * 1.2;
       return flex;
     };
@@ -124,7 +124,7 @@ function showConfigureAutoResourcesDialog(subject) {
   for(var d = 0; d < typenames.length; d++) {
     var d2 = order[d];
 
-    flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.75);
+    flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
     y += h * 1.2;
     styleButton0(flex.div);
     centerText2(flex.div);
@@ -148,7 +148,7 @@ function showConfigureAutoResourcesDialog(subject) {
   }
 
   y += h / 2;
-  var flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.75);
+  var flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
   y += h * 1.2;
   styleButton0(flex.div);
   centerText2(flex.div);
@@ -166,7 +166,7 @@ function showConfigureAutoResourcesDialog(subject) {
     y = orig_y;
 
     h = 0.06;
-    var textFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h, 0.66);
+    var textFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h);
     y += h * 1.2;
     var temp = state.automaton_autounlock_max_cost; // only actually stored in state.automaton_autounlock_max_cost if input field changed, rather than just receiving keypress, to avoid unwanted buys while typing
     var setMaxCostText = function() {
@@ -178,7 +178,7 @@ function showConfigureAutoResourcesDialog(subject) {
     setMaxCostText();
 
     h = 0.06;
-    var inputFlex = new Flex(scrollFlex, x, y, x + 0.4, y + h, 0.66);
+    var inputFlex = new Flex(scrollFlex, x, y, x + 0.4, y + h);
     var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
     var changefun = function() {
       var v = Num.parse(area.value);
@@ -199,7 +199,7 @@ function showConfigureAutoResourcesDialog(subject) {
 
     y += 0.03;
     h = 0.06;
-    var infoFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h, 0.66);
+    var infoFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h);
     var info = '';
     info += 'Change cost limit in the text box above. Automaton will not buy unlocks more expensive than this value.';
     info += '<br><br>';
@@ -232,13 +232,13 @@ function showConfigureAutoChoiceDialog(subject) {
 
 
   texth = 0.15;
-  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07, 0.45);
+  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Choose the action for each choice upgrade dropped by the tree';
   y += texth;
 
   var addButton = function() {
     var h = 0.08;
-    var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h, 0.66);
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
     y += h * 1.2;
     return flex;
   };
@@ -290,11 +290,11 @@ function showConfigureAutoChoiceDialog(subject) {
 function showAutomatonFeatureSourceDialog() {
   var dialog = createDialog(undefined, createAutomatonHelpDialog, 'help');
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Automation features unlock sources';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -366,7 +366,7 @@ function updateAutomatonUI() {
 
   var addButton = function(opt_dont_manage) {
     var h = 0.08;
-    var flex  = new Flex(automatonFlex, 0.01, y, 0.4, y + h, 0.66);
+    var flex  = new Flex(automatonFlex, 0.01, y, 0.4, y + h);
     y += h * 1.2;
     if(!opt_dont_manage) buttons.push(flex);
     return flex;
@@ -375,7 +375,7 @@ function updateAutomatonUI() {
   var addConfigButton = function(opt_dont_manage) {
     var h = 0.08;
     y -= h * 1.2;
-    var flex  = new Flex(automatonFlex, [0.4, 0, 0.2, h], y, [0.4, 0, 1.2, h], y + h, 8);
+    var flex  = new Flex(automatonFlex, [0.4, 0, 0.2, h], y, [0.4, 0, 1.2, h], y + h, FONT_BIG_BUTTON);
     y += h * 1.2;
     if(!opt_dont_manage) buttons.push(flex);
     styleButton(flex.div);
@@ -404,7 +404,7 @@ function updateAutomatonUI() {
   var addHR = function() {
     y += 0.02;
     var h = 0.01;
-    var flex  = new Flex(automatonFlex, 0.01, y, 1, y + h, 0.66);
+    var flex  = new Flex(automatonFlex, 0.01, y, 1, y + h);
     flex.div.innerHTML = '<hr>';
     y += 0.02;
     return flex;
@@ -427,7 +427,7 @@ function updateAutomatonUI() {
 
   if(!haveAutomaton()) {
     texth = 0.1;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.6);
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Place automaton in ethereal field to enable automation options and crop templates. Reach higher ethereal tree level and beat new challenges to unlock more automaton features.';
     y += texth;
     return;
@@ -435,7 +435,7 @@ function updateAutomatonUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  var canvasFlex = new Flex(automatonFlex, [1, 0, -0.25], [0, 0, 0.01], [1, 0, -0.06], [0, 0, 0.2], 0.3);
+  var canvasFlex = new Flex(automatonFlex, [1, 0, -0.25], [0, 0, 0.01], [1, 0, -0.06], [0, 0, 0.2]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(images_automaton[4], canvas);
   styleButton0(canvasFlex.div, true);
@@ -444,7 +444,7 @@ function updateAutomatonUI() {
   });
 
   texth = 0.1;
-  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Toggle on or off all automation:';
   y += texth;
 
@@ -469,7 +469,7 @@ function updateAutomatonUI() {
 
 
   texth = 0.1;
-  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Special actions:';
   y += texth;
 
@@ -563,7 +563,7 @@ function updateAutomatonUI() {
   //////////////////////////////////////////////////////////////////////////////
 
   texth = 0.1;
-  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Automate choice upgrades:';
   registerTooltip(flex.div, 'Automate the choice upgrades that the tree drops at certain levels.\nThe choice is automatically made at the moment the corresponding upgrade unlocks, but not after the fact.');
   y += texth;
@@ -610,7 +610,7 @@ function updateAutomatonUI() {
 
   if(state.automaton_unlocked[1]) {
     texth = 0.1;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Automate crop upgrades:';
     registerTooltip(flex.div, 'Automatically upgrade crops. Only performs upgrades that boost crops for crops planted in the field, and up to the max cost that you can choose.');
     y += texth;
@@ -675,7 +675,7 @@ function updateAutomatonUI() {
     }
 
     texth = 0.1;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Auto-upgrades done: ' + state.c_numautoupgrades;
     y += texth;
     var numflex = flex;
@@ -691,14 +691,14 @@ function updateAutomatonUI() {
 
     if(!advanced) {
       texth = 0.1;
-      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
       flex.div.innerText = 'Start the no-upgrades challenge again and beat its next stage to unlock more finetuning options for auto-upgrade';
       y += texth * 1.2;
     }
 
   } else {
     texth = 0.15;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Reach ethereal tree level 2 and beat the no upgrades challenge to unlock auto-upgrades';
     y += texth;
   }
@@ -710,7 +710,7 @@ function updateAutomatonUI() {
 
   if(state.automaton_unlocked[2]) {
     texth = 0.1;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Auto-plant:';
     registerTooltip(flex.div, 'Automatically plants crops. Only replaces existing crops to higher tiers of the same type (e.g. berries stay berries), does not plant anything on empty field cells.');
     y += texth;
@@ -777,7 +777,7 @@ function updateAutomatonUI() {
     }
 
     texth = 0.1;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Auto-plants done: ' + state.c_numautoplant;
     y += texth;
     var numflex = flex;
@@ -860,21 +860,21 @@ function updateAutomatonUI() {
 
     if(!advanced) {
       texth = 0.1;
-      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
       flex.div.innerText = 'Start the withering challenge again and beat its next stage to unlock more finetuning options for auto-plant';
       y += texth * 1.2;
     }
 
     if(!state.automaton_unlocked[3]) {
       texth = 0.15;
-      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
       flex.div.innerText = 'Reach ethereal tree level 4 and beat the blackberry challenge to unlock auto-unlock of next-tier plants';
       y += texth;
     }
 
   } else if(state.automaton_unlocked[1]) {
     texth = 0.15;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07, 0.7);
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Reach ethereal tree level 3 and beat the withering challenge to unlock auto-plant';
     y += texth;
   }

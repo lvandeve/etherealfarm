@@ -209,6 +209,7 @@ function Crop() {
   this.tier = 0;
 
   this.istemplate = false; // if true, is a placeholder template
+  this.isghost = false; // if true, is a ghost. This is a remainder of a plant, currently only used for the undeletable challenge when a crop is prestiged: the ghost of the unprestiged versions remains, to ensure it still cannot be deleted
 
   this.cached_prestige_ = 0; // for recomputing crop stats data if prestige changed: the cost, prod, ... fields of this crop are overwritten for prestige
 };
@@ -272,6 +273,10 @@ var freeReplace2 = function(x, y, to_index) {
 };
 
 var respec3initial = 2; // how many squirrel upgrade respecs received at game start
+
+Crop.prototype.isReal = function() {
+  return !this.istemplate && !this.isghost;
+};
 
 // Returns a value based on x but smoothly capped to be no lower than lowest. The input x is also assumed to never be higher than highest, and no value higher than highest will be returned.
 // The softness determines how strongly the value gets capped: at 0, x goes down linearly, until reaching lowest, then stays at lowest.
@@ -456,16 +461,50 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
   }
 }
 
+Crop.prototype.computeNettleMalusReceived_ = function(f, pretend) {
+  // this computation must match what precomputeField does for nettlemalus_received
+  var malus = new Num(1);
+  if(!f) return malus;
+  for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+    var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+    var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+    if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+    var n = state.field[y2][x2];
+    if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_NETTLE) {
+      var boost = n.getCrop().getBoost(n, pretend);
+      malus.divInPlace(boost.addr(1));
+    }
+  }
+  return malus;
+};
+
+Crop.prototype.computeBeehiveBoostReceived_ = function(f, pretend) {
+  // this computation must match what precomputeField does for beeboostboost_received
+  var bonus = new Num(0);
+  if(!f) return bonus;
+  for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+    var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+    var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+    if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+    var n = state.field[y2][x2];
+    if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_BEE) {
+      var boostboost = n.getCrop().getBoostBoost(n, pretend);
+      bonus.addInPlace(boostboost);
+    }
+  }
+  return bonus;
+};
+
 var flower_nut_boost = Num(0.25);
 
 //var seed_consumption_mul = 1.0; // for testing only
 
 // f = Cell from field, or undefined to not take location-based production bonuses into account
-// prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called
-// pretend:
-//    0: normal
-//    1: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
-//    2: same as 1, but for tooltips/dialogs/..., so will also include brassica copying, but normally precomputefield handles this instead
+// prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called, unless pretent is non-0
+// pretend: if anything else than 0, pretents crops are fullgrown, and cannot use the prefield computations so is slower to compute
+//  0: normal
+//  1: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
+//  2: same as 1, but for tooltips/dialogs/..., so will also include brassica copying, but normally precomputefield handles this instead
 Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   //if(state.challenge == challenge_wasabi) return new Res(); // commented out: this is not handled here since this computation is still needed for brassica itself
@@ -661,7 +700,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
       if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_FLOWER) {
-        var boost = prefield[n.y][n.x].boost;
+        var boost;
+        if(pretend) boost = n.getCrop().getBoost(n, pretend);
+        else boost = prefield[n.y][n.x].boost;
         if(boost.neqr(0)) {
           mul_boost.addInPlace(boost);
           num++;
@@ -700,8 +741,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   // nettle malus
   if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT)) {
     var p = prefield[f.y][f.x];
-    var malus = p.nettlemalus_received;
     var num = p.num_nettle;
+    var malus;
+    if(pretend) {
+      // this malus computation must match what precomputeField does for nettlemalus_received
+      malus = this.computeNettleMalusReceived_(f, pretend);
+    } else {
+      malus = p.nettlemalus_received;
+    }
 
     if(num > 0) {
       result.mulInPlace(malus);
@@ -721,7 +768,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
       if(n.hasCrop() && n.getCrop().type == CROPTYPE_NETTLE) {
-        var boost = prefield[n.y][n.x].boost; //n.getCrop().getBoost(n);
+        var bost;
+        if(pretend) boost = n.getCrop().getBoost(n, pretend);
+        else boost = prefield[n.y][n.x].boost; //
         if(boost.neqr(0)) {
           spore_boost.addInPlace(boost);
           num++;
@@ -815,6 +864,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
   }
 
+  // present
+  if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+    var bonus = new Num(1.25);
+    result.posmulInPlace(bonus);
+    if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
+  }
+
   // leech, only computed here in case of pretend for tooltips/dialogs, without pretent leech is computed in more correct way in precomputeField()
   if(pretend == 2 && this.type == CROPTYPE_BRASSICA && f) {
     var leech = this.getLeech(f);
@@ -831,7 +887,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(c2) {
         var p2 = prefield[y2][x2];
         if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
-          total.addInPlace(p2.prod0);
+          total.addInPlace(p2.prod0); // TODO: this is not correct if crops are growing, since precompute is done taking growing into account while pretend does not. To be correct, instead recursively getProd of those neighbors should be called here. However this additional complexity is not super important to implement because pretend == 2 is for display purposes only
           num++;
         }
       }
@@ -859,6 +915,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
 
 // The result is the added value, e.g. a result of 0.5 means a multiplier of 1.5, or a bonus of +50%
+// this function requires that beehive boost and nettel malus were already computed by precomputeField, unless pretend is non-0
+// pretend: see comment at the definition of getProd
 Crop.prototype.getBoost = function(f, pretend, breakdown) {
   if(this.type != CROPTYPE_FLOWER && this.type != CROPTYPE_NETTLE) return Num(0);
   var result = this.boost.clone();
@@ -1004,8 +1062,13 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
     // beehives boostboost
     if(f && (this.type == CROPTYPE_FLOWER)) {
       var p = prefield[f.y][f.x];
-      var bonus = p.beeboostboost_received.addr(1);
       var num = p.num_bee;
+      var bonus;
+      if(pretend) {
+        bonus = this.computeBeehiveBoostReceived_(f, pretend);
+      } else {
+        bonus = p.beeboostboost_received.addr(1);
+      }
 
       if(num > 0) {
         result.mulInPlace(bonus);
@@ -1017,8 +1080,10 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
   // nettle negatively affecting flowers
   if(f && (this.type == CROPTYPE_FLOWER)) {
     var p = prefield[f.y][f.x];
-    var malus = p.nettlemalus_received;
     var num = p.num_nettle;
+    var malus;
+    if(pretend) malus = this.computeNettleMalusReceived_(f, pretend);
+    else malus = p.nettlemalus_received;
 
     if(num > 0) {
       result.mulInPlace(malus);
@@ -1560,19 +1625,19 @@ var nut_15 = registerNut('walnut', 15, nutplanttime0 * 16, undefined);
 crop_register_id = 200;
 
 var challengecrop_0 = registerChallengeCrop('worker bee', 0, Res({seeds:20000}), 60, images_workerbee,
-    'provides bonus to all crops, but only if next to a flower. This bonus is boosted if next to a queen bee. Since it boosts berries, flowers, mushrooms and mushroom economy, it scales cubically rather than just linearly.');
+    'provides bonus to all crops, but only if the worker is next to a flower. This bonus is boosted if the worker is also next to a drone. Since it boosts berries, flowers, mushrooms and mushroom economy, it scales cubically rather than just linearly.');
 crops[challengecrop_0].challengecroppricemul = Num(25);
 crops[challengecrop_0].boost = Num(0.2);
 
-var challengecrop_1 = registerChallengeCrop('queen bee', 0, Res({seeds:200000}), 90, images_queenbee, 'Boosts orthogonally neighboring worker bees. Can be boosted by beehive');
+var challengecrop_1 = registerChallengeCrop('drone', 0, Res({seeds:200000}), 90, images_dronebee, 'A male bee. Boosts orthogonally neighboring worker bees. Can be boosted by queen bee');
 crops[challengecrop_1].challengecroppricemul = Num(25);
 crops[challengecrop_1].boost = Num(1);
 
-var challengecrop_2 = registerChallengeCrop('beehive', 0, Res({seeds:2000000}), 120, images_beehive, 'Boosts orthogonally neighboring queen bees. Note: not related to main game beehive you get as bonus from completing this challenge, very different rules during the challenge.');
+var challengecrop_2 = registerChallengeCrop('queen bee', 0, Res({seeds:2000000}), 120, images_queenbee, 'Boosts orthogonally neighboring drones');
 crops[challengecrop_2].challengecroppricemul = Num(25);
 crops[challengecrop_2].boost = Num(1);
 
-var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0.1), 60, images_aster, 'This flower is only available during the bee challenge');
+var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0.1), 60, images_aster, 'This flower is only available during the bee challenge. Place worker bees orthogonally next to this flower for a global boost.');
 crops[challengeflower_0].type = CROPTYPE_FLOWER;
 crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+selecting" display work. Since the aster and clover (both tier 0, even though aster is cheaper) are never available at the same time, no confusion is possible.
 
@@ -1596,7 +1661,25 @@ var nettle_template = makeTemplate(registerNettle('nettle template', -1, Num(0),
 var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
 var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
 var nut_template = makeTemplate(registerNut('nuts template', -1, 0, images_nutstemplate));
-//var squirrel_template = makeTemplate(registerSquirrel('squirrel template', -1, Res(), 0, images_squirreltemplate));
+
+var ghosts_for_type = [];
+
+function makeGhost(crop_id) {
+  crops[crop_id].isghost = true;
+  crops[crop_id].cost = Res(0);
+  ghosts_for_type[crops[crop_id].type] = crop_id;
+  return crop_id;
+}
+
+crop_register_id = 400;
+var watercress_ghost = makeGhost(registerBrassica('watercress ghost', -1, Res(0), Num(1), 0, images_watercressghost));
+var berry_ghost = makeGhost(registerBerry('berry ghost', -1, 0, images_berryghost));
+var mush_ghost = makeGhost(registerMushroom('mushroom ghost', -1, 0, images_mushghost));
+var flower_ghost = makeGhost(registerFlower('flower ghost', -1, Num(0), 0, images_flowerghost));
+var nettle_ghost = makeGhost(registerNettle('nettle ghost', -1, Num(0), 0, images_nettleghost));
+var bee_ghost = makeGhost(registerBeehive('bee ghost', -1, Num(0), 0, images_beeghost));
+var mistletoe_ghost = makeGhost(registerMistletoe('mistletoe ghost', -1, 0, images_mistletoeghost));
+var nut_ghost = makeGhost(registerNut('nuts ghost', -1, 0, images_nutsghost));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2056,11 +2139,15 @@ var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), brassica_0, fun
   return (state.c_numplanted + state.c_numplantedbrassica) >= 10;
 });
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0, undefined, function() {
-  if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_0].count) return true;
+  if(basicChallenge()) return false;
+  if(state.challenge == challenge_nodelete) return false;
+  if(state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_0].count) return true;
   return false;
 });
 var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), berry_1, undefined, function() {
-  if(!basicChallenge() && state.upgrades2[upgrade2_cranberrysecret].count && state.upgrades[berryunlock_1].count) return true;
+  if(basicChallenge()) return false;
+  if(state.challenge == challenge_nodelete) return false;
+  if(state.upgrades2[upgrade2_cranberrysecret].count && state.upgrades[berryunlock_1].count) return true;
   return false;
 });
 var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), berry_2);
@@ -2305,10 +2392,10 @@ var challengecropmul_0 = registerBoostMultiplier(challengecrop_0, crops[challeng
 upgrades[challengecropmul_0].description = 'boosts the worker bee boost ' + upgrades[challengecropmul_0].bonus.toPercentString() +  ' (additive)';
 
 var challengecropmul_1 = registerBoostMultiplier(challengecrop_1, crops[challengecrop_1].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
-upgrades[challengecropmul_1].description = 'boosts the queen bee boost ' + upgrades[challengecropmul_1].bonus.toPercentString() +  ' (additive)';
+upgrades[challengecropmul_1].description = 'boosts the drone boost ' + upgrades[challengecropmul_1].bonus.toPercentString() +  ' (additive)';
 
 var challengecropmul_2 = registerBoostMultiplier(challengecrop_2, crops[challengecrop_2].cost.mulr(10), Num(0.5), 1, undefined, 10); // worker bee
-upgrades[challengecropmul_2].description = 'boosts the beehive boost ' + upgrades[challengecropmul_2].bonus.toPercentString() +  ' (additive)';
+upgrades[challengecropmul_2].description = 'boosts the queen bee boost ' + upgrades[challengecropmul_2].bonus.toPercentString() +  ' (additive)';
 
 upgrade_register_id = 500;
 var berrymul_0 = registerCropMultiplier(berry_0, berry_upgrade_power_increase, 1, berryunlock_0);
@@ -2697,10 +2784,10 @@ registerMedal('unbeelievable', 'fill the entire field (5x5) with bees and/or bee
 registerMedal('buzzy', 'fill the entire field (5x5) with worker bees during the bees challenge.', images_workerbee[4], function() {
   return state.fullgrowncropcount[challengecrop_0] >= 5 * 5 - 2;
 }, Num(0.3));
-registerMedal('royal buzz', 'fill the entire field (5x5) with queen bees during the bees challenge.', images_queenbee[4], function() {
+registerMedal('unbeetable', 'fill the entire field (5x5) with drones during the bees challenge.', images_dronebee[4], function() {
   return state.fullgrowncropcount[challengecrop_1] >= 5 * 5 - 2;
 }, Num(0.4));
-registerMedal('unbeetable', 'fill the entire field (5x5) with beehives during the bees challenge.', images_beehive[4], function() {
+registerMedal('royal buzz', 'fill the entire field (5x5) with queen bees during the bees challenge.', images_queenbee[4], function() {
   return state.fullgrowncropcount[challengecrop_2] >= 5 * 5 - 2;
 }, Num(0.5));
 
@@ -3040,22 +3127,22 @@ registerMedal('basic 20', 'reach level 20 in the basic challenge', genericicon, 
 
 registerMedal('basic 25', 'reach level 25 in the basic challenge', genericicon, function() {
   return state.challenge == challenge_basic && state.treelevel >= 25;
-}, Num(2));
+}, Num(2.5));
 
 // this medal is not necessarily actually reachable
 registerMedal('basic 30', 'reach level 30 in the basic challenge', genericicon, function() {
   return state.challenge == challenge_basic && state.treelevel >= 30;
-}, Num(2));
+}, Num(3));
 
 // this medal is not necessarily actually reachable
 registerMedal('basic 35', 'reach level 35 in the basic challenge', genericicon, function() {
   return state.challenge == challenge_basic && state.treelevel >= 35;
-}, Num(2));
+}, Num(3.5));
 
 // this medal is not necessarily actually reachable
 registerMedal('basic 40', 'reach level 40 in the basic challenge', genericicon, function() {
   return state.challenge == challenge_basic && state.treelevel >= 40;
-}, Num(2));
+}, Num(4));
 
 medal_register_id = 2150;
 
@@ -3071,17 +3158,17 @@ registerMedal('truly basic 15', 'reach level 15 in the truly basic challenge', g
 
 registerMedal('truly basic 20', 'reach level 20 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 20;
-}, Num(2));
+}, Num(2.5));
 
 // this medal is not necessarily actually reachable
 registerMedal('truly basic 25', 'reach level 25 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 25;
-}, Num(2));
+}, Num(3));
 
 // this medal is not necessarily actually reachable
 registerMedal('truly basic 30', 'reach level 30 in the truly basic challenge', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 30;
-}, Num(2));
+}, Num(3.5));
 
 medal_register_id = 2170;
 
@@ -3108,6 +3195,14 @@ medal_register_id = 2700;
 for(var i = 0; i < 8; i++) {
   registerPrestigeMedal(flower_0 + i);
 }
+
+medal_register_id = 3000;
+// various misc medals here
+
+// ghost crops can happen when prestiging during the undeletable challenge
+registerMedal('ghost in the field', 'have a ghost-crop', image_berryghost, function() {
+  return state.ghostcount > 0;
+}, Num(2.5));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3251,16 +3346,18 @@ function registerChallenge(name, targetlevel, bonus, description, rulesdescripti
 
 // 1
 var challenge_bees = registerChallenge('bee challenge', 10, Num(0.1),
-'Grow bees during this challenge! This has different gameplay than the regular game. The bee types of this challenge don\'t exist in the main game and the beehive in the main game works very differently than the one in this challenge.',
+'Grow bees during this challenge! This has different gameplay than the regular game.',
 `
-• The only types of crop available are 1 berry type, 1 mushroom type, 1 flower type and 3 types of bee/beehive. They\'re all available from the beginning, and no others unlock.<br>
-• Worker bees must be next to a flower.<br>
-• Queen bees boost neighboring worker bees.<br>
-• Beehives boost neighboring queen bees<br>
-• Worker bees boost the global ecosystem: berries, mushrooms and flowers (so effectively cubic scaling). They don't need to be next to the mushrooms, berries, or other flowers for this.<br>
-• "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching.<br>
+• You get only limited regular crops, and must instead boost global production using specially placed bees:<br>
+&nbsp;&nbsp;- Worker bees must be next to a flower, to add to a global boost.<br>
+&nbsp;&nbsp;- Drones must be next to a worker bee, to boost that worker.<br>
+&nbsp;&nbsp;- Queens must be next to a drone, to boost that drone.<br>
+&nbsp;&nbsp;- You still also have to use berries, mushrooms, flowers and watercress to get the necessary spores and seeds.<br>
+• The only types of crop available are 1 berry type, 1 mushroom type, 1 flower type and 3 types of bee. They\'re all available from the beginning, and no others unlock.<br>
+• The bee boost applies to the global ecosystem: all berries, mushrooms and flowers (so effectively cubic scaling).<br>
+• "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching but not diagonally.<br>
 `,
-'Beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers.',
+'Beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers next to the beehives. The bee types of this challenge don\'t exist in the main game and the beehive reward works very differently in the main game than the bees in this challenge.',
 'having grown a daisy.',
 function() {
   return state.fullgrowncropcount[flower_2] >= 1;
@@ -3303,7 +3400,7 @@ function() {
   return state.treelevel >= 27;
 }, function() {
   // nothing here: the reward is unlocked indirectly by having this challenge marked complete
-}, 31);
+}, 11);
 // idea: a harder version of this challenge that takes place on a fixed size field (5x5)
 
 
@@ -3578,8 +3675,12 @@ function Crop2() {
   this.treelevel2 = 0; // minimum treelevel2 to unlock this crop, this is for display purposes
 
   this.istemplate = false; // if true, is a placeholder template
+  this.isghost = false; // if true, is a ghost (currently unused for Crop2, but here for consistency with Crop
 };
 
+Crop2.prototype.isReal = function() {
+  return !this.istemplate && !this.isghost;
+};
 
 // opt_force_count, if not undefined, overrides anything, including opt_adjust_count
 Crop2.prototype.getCost = function(opt_adjust_count, opt_force_count) {
@@ -5642,6 +5743,19 @@ function totalChallengeBonus(challenge_bonus, alt_challenge_bonus) {
   return challenge_bonus.addr(1).mul(alt_challenge_bonus.addr(1)).subr(1);
 }
 
+// total challenge, but taking into account running challenge (with challenge_id) having the new given maxlevel
+function totalChallengeBonusWith(challenge_id, maxlevel) {
+  var c = challenges[challenge_id];
+  var c2 = state.challenges[challenge_id];
+
+  var diff = getChallengeBonus(c.index, maxlevel).sub(getChallengeBonus(c.index, c2.maxlevel));
+  var challenge0 = state.challenge_bonus0;
+  var challenge1 = state.challenge_bonus1;
+  if(c.alt_bonus) challenge1 = challenge1.add(diff);
+  else challenge0 = challenge0.add(diff);
+  return totalChallengeBonus(challenge0, challenge1);
+}
+
 // only during bee challenge
 function getWorkerBeeBonus() {
   return state.workerbeeboost;
@@ -5710,11 +5824,11 @@ function getMultiplicityNum(crop) {
 
   var below = undefined;
   if(tier > 0 && croptype_tiers[croptype]) below = croptype_tiers[croptype][tier - 1];
-  if(below && below.istemplate) below = undefined;
+  if(below && !below.isReal()) below = undefined;
 
   var above = undefined;
   if(tier != undefined && croptype_tiers[croptype]) above = croptype_tiers[croptype][tier + 1];
-  if(above && above.istemplate) above = undefined;
+  if(above && !above.isReal()) above = undefined;
 
   // This used to use state.growingcropcount instead of state.cropcount, however it's better for gameplay to let multiplicity work immediately,
   // for strategies that involve switching layouts. However, if this turns out to be too much, another option is to make it work with a very fast ramp-up time
@@ -5967,13 +6081,16 @@ function applyPrestige(crop_id, prestige) {
   c2.prestige = prestige;
   updatePrestigeData(crop_id);
 
+  var replacements = templates_for_type;
+  if(state.challenge == challenge_nodelete) replacements = ghosts_for_type;
+
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       var f = state.field[y][x];
       if(!f.hasCrop()) continue;
       if(f.cropIndex() == crop_id) {
         f.index = 0;
-        if(templates_for_type[c.type]) f.index = CROPINDEX + templates_for_type[c.type];
+        if(replacements[c.type]) f.index = CROPINDEX + replacements[c.type];
         f.growth = 0;
       }
     }
@@ -6065,9 +6182,17 @@ function canUseBluePrintsDuringChallenge(challenge, opt_print_message) {
   }
 
   if(challenge == challenge_nodelete) {
-    if(opt_print_message) showMessage('blueprints are disabled during the nodelete challenge', C_INVALID);
+    if(opt_print_message) showMessage('blueprints are disabled during the undeletable challenge', C_INVALID);
     return false;
   }
 
   return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function holidayEventActive() {
+  var time = util.getTime();
+  var date_20220501 = 1651363200;
+  return time < date_20220501;
 }

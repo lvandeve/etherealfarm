@@ -64,7 +64,7 @@ Cell.prototype.hasCrop = function() {
 
 // non-template
 Cell.prototype.hasRealCrop = function() {
-  return this.index >= CROPINDEX && !this.getCrop().istemplate;
+  return this.index >= CROPINDEX && !this.getCrop().istemplate && !this.getCrop().isghost;
 };
 
 // only valid if hasCrop()
@@ -85,7 +85,7 @@ Cell.prototype.getCrop = function() {
 // non-template
 Cell.prototype.getRealCrop = function() {
   var result = this.getCrop();
-  if(result && result.istemplate) return undefined;
+  if(result && (result.istemplate || result.isghost)) return undefined;
   return result;
 };
 
@@ -101,6 +101,11 @@ Cell.prototype.isTree = function() {
 Cell.prototype.isTemplate = function() {
   return this.hasCrop() && this.getCrop().istemplate;
 };
+
+Cell.prototype.isGhost = function() {
+  return this.hasCrop() && this.getCrop().isghost;
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -156,13 +161,14 @@ function ChallengeState() {
   this.besttimes2 = undefined; // for cycling challenges
 
   // last run stats. There is always only one of these, not multiple for cycling challenges. This is for the last run, whether it completed or not
-  this.last_completion_level = 0; // runtime of last completion
+  this.last_completion_level = 0; // challenge level of last completion
   this.last_completion_time = 0; // runtime of last completion
   this.last_completion_resin = Num(0); // resin gained during last run
   this.last_completion_twigs = Num(0); // twigs gained during last run
   this.last_completion_date = 0; // when did you complete this challenge the last time, or 0 if unknown
   this.last_completion_total_resin = Num(0); // approximate amount of resin owned during the last time this challenge was ran
   this.last_completion_level2 = 0; // level of ethereal tree at time of completing the challenge last time
+  this.last_completion_g_level = 0; // highest tree level ever (in any non-challenge or challenge run) at the time of last completion
 }
 
 function BluePrint() {
@@ -381,7 +387,8 @@ function State() {
   this.fern_seed = -1; // random seed for the fern drops
   this.fernresin = new Res(); // amount of resin gotten from ferns. counted separately from state.resin, to not count towards the max ever itself
 
-  this.present = 0; // 0 = no present, 1+ = various effects
+  // presents were holiday gifts in january 2022, eggs in spring 2022
+  this.present_effect = 0; // 0 = no present, 1+ = various effects
   this.present_image = 0;
   this.presentx = 0;
   this.presenty = 0;
@@ -389,6 +396,7 @@ function State() {
   this.present_seed = -1; // random seed for the present drops
   this.lastPresentTime = 0;
   this.present_grow_speed_time = 0;
+  this.present_production_boost_time = 0;
 
   // field size in amount of cells
   this.numw = 5;
@@ -616,7 +624,7 @@ function State() {
   this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
   this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
   this.g_fernres = Res(); // total resources gotten from ferns
-  this.g_numpresents = 0;
+  this.g_numpresents = [0, 0]; // order: holidays '21-'22, eggs '22
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -773,6 +781,10 @@ function State() {
   this.cropcount = [];
   this.crop2count = [];
   this.croptypecount = []; // excludes templates
+
+  // derived stat, not to be saved
+  this.templatecount = 0;
+  this.ghostcount = 0;
 
   // amount of fully grown plants of this type planted in fields
   // does not include partially growing ones, nor templates
@@ -1039,6 +1051,8 @@ function computeDerived(state) {
     state.highestoftype2unlocked[i] = -Infinity;
     state.highestoftypeknown[i] = -Infinity;
   }
+  state.templatecount = 0;
+  state.ghostcount = 0;
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
@@ -1060,7 +1074,7 @@ function computeDerived(state) {
           state.fullgrowncropcount[c.index]++;
         }
         state.growingcropcount[c.index] += Math.min(Math.max(0, f.growth), 1);
-        if(!f.isTemplate()) {
+        if(f.hasRealCrop()) {
           state.numcropfields++;
           state.croptypecount[c.type]++;
           if(f.isFullGrown()) {
@@ -1073,6 +1087,8 @@ function computeDerived(state) {
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
         if(f.growth >= 1) state.highestoftypefullgrown[c.type] = Math.max(c.tier || 0, state.highestoftypefullgrown[c.type]);
         state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
+        if(c.istemplate) state.templatecount++;
+        if(c.isghost) state.ghostcount++;
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.specialfieldcount[f.index]++;
         state.numemptyfields++;
@@ -1099,7 +1115,7 @@ function computeDerived(state) {
       if(f.hasCrop()) {
         var c = crops2[f.cropIndex()];
         state.crop2count[c.index]++;
-        if(!f.isTemplate()) {
+        if(f.hasRealCrop()) {
           state.numcropfields2++;
           if(f.growth >= 1) {
             state.fullgrowncrop2count[c.index]++;
@@ -1736,12 +1752,27 @@ function amberUnlocked() {
   return state.g_res.amber.neqr(0);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 function presentGrowSpeedTimeRemaining() {
   return state.present_grow_speed_time + 15 * 60 - state.time;
 }
 
 function presentGrowSpeedActive() {
+  if(!holidayEventActive()) return false;
+  if(basicChallenge()) return false;
   return presentGrowSpeedTimeRemaining() > 0;
+}
+
+function presentProductionBoostTimeRemaining() {
+  return state.present_production_boost_time + 15 * 60 - state.time;
+}
+
+function presentProductionBoostActive() {
+  if(!holidayEventActive()) return false;
+  if(basicChallenge()) return false;
+  return presentProductionBoostTimeRemaining() > 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1751,7 +1782,6 @@ function treeGestureBonus() {
   var num = state.upgrades2[upgrade2_highest_level].count;
 
   if(!num) return new Num(1);
-
 
   return upgrade2_highest_level_bonus.add(upgrade2_highest_level_bonus2.mulr(num - 1)).addr(1).powr(state.g_treelevel);
 }

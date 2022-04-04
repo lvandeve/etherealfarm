@@ -65,11 +65,11 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   var contentFlex = dialog.content;
 
-  var titleFlex = new Flex(contentFlex, 0.01, 0.01, 0.99, 0.1, 0.5);
+  var titleFlex = new Flex(contentFlex, 0.01, 0.01, 0.99, 0.1);
   centerText2(titleFlex.div);
   titleFlex.div.textEl.innerText = upper(c.name);
 
-  var scrollFlex = new Flex(contentFlex, 0.01, 0.11, 0.99, 1, 0.3);
+  var scrollFlex = new Flex(contentFlex, 0.01, 0.11, 0.99, 1);
   makeScrollable(scrollFlex);
 
   var text = '';
@@ -245,12 +245,7 @@ function getChallengeStatsString(challenge_id, include_current_run) {
     var maxlevel = Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0);
     if(currentlyrunning) {
       text += '• Max level reached before: ' + c2.maxlevel + ', <b>after: ' + maxlevel + '</b><br>';
-      var diff = getChallengeBonus(c.index, maxlevel).sub(getChallengeBonus(c.index, c2.maxlevel));
-      var challenge0 = state.challenge_bonus0;
-      var challenge1 = state.challenge_bonus1;
-      if(c.alt_bonus) challenge1 = challenge1.add(diff);
-      else challenge0 = challenge0.add(diff);
-      var challenge2 = totalChallengeBonus(challenge0, challenge1);
+      var challenge2 = totalChallengeBonusWith(challenge_id, maxlevel);
       text += '• Production bonus before: ' + getChallengeBonus(c.index, c2.maxlevel).toPercentString() + ', <b>after: ' + getChallengeBonus(c.index, maxlevel).toPercentString() +
               '</b>' + (c.alt_bonus ? ' (alternate multiplier)' : '') +
               '. Total (all challenges) before: ' + state.challenge_bonus.toPercentString() + ', <b>after: ' + challenge2.toPercentString() + '</b><br>';
@@ -286,7 +281,9 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   text += '• Completed: ' + completedtext + '<br>';
 
   if(c2.num) {
-    if(c2.last_completion_date) {
+    if(c.index == state.challenge) {
+      text += '• last time ran: now<br>';
+    } else if(c2.last_completion_date) {
       //text += '• Last time ran: ' + util.formatDate(c2.last_completion_date) + '<br>';
       text += '• Last time ran: ' + util.formatDuration(util.getTime() - c2.last_completion_date, undefined, 1) + ' ago<br>';
     } else {
@@ -310,7 +307,7 @@ function createChallengeDialog(opt_from_challenge) {
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3, 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3);
 
   var text = '';
 
@@ -329,7 +326,7 @@ function createChallengeDialog(opt_from_challenge) {
   flex.div.innerHTML = text;
 
 
-  var buttonFlex = new Flex(contentFlex, 0, 0.4, 1, 0.9, 0.3);
+  var buttonFlex = new Flex(contentFlex, 0, 0.4, 1, 0.9);
 
   var pos = 0;
   var h = 0.1;
@@ -396,7 +393,7 @@ function createFinishChallengeDialog() {
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3, 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3);
 
   var c = challenges[state.challenge];
   var c2 = state.challenges[state.challenge];
@@ -447,12 +444,7 @@ function createFinishChallengeDialog() {
   text += 'Production bonus from challenge max reached level' + ((c.cycling > 1) ? ' for this cycle' : '') + ':<br>';
   text += '• Before (level ' + maxlevel + '): ' + getChallengeBonus(state.challenge, maxlevel, cycle).toPercentString() + ' (' + state.challenge_bonus.toPercentString() + ' total for all challenges)<br>';
   if(state.treelevel > maxlevel) {
-    var diff = getChallengeBonus(c.index, newmax, cycle).sub(getChallengeBonus(c.index, maxlevel, cycle));
-    var challenge0 = state.challenge_bonus0;
-    var challenge1 = state.challenge_bonus1;
-    if(c.alt_bonus) challenge1 = challenge1.add(diff);
-    else challenge0 = challenge0.add(diff);
-    var new_total = totalChallengeBonus(challenge0, challenge1);
+    var new_total = totalChallengeBonusWith(c.index, newmax);
     //var new_total = state.challenge_bonus.sub(getChallengeBonus(state.challenge, maxlevel, cycle)).add(getChallengeBonus(state.challenge, newmax, cycle));
     text += '• After (level ' + newmax + '): ' + getChallengeBonus(state.challenge, newmax, cycle).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
     // TODO: if challenge not completed but max level beaten, add text here "you didn't complete the challenge, but at least you gained production bonus", but this taking cycling challenges and multi-level-target challenges into account
@@ -470,9 +462,9 @@ function createFinishChallengeDialog() {
   flex.div.innerHTML = text;
 
 
-  var buttonflex = new Flex(contentFlex, 0.25, 0.6, 0.75, 0.8, 0.3);
+  var buttonflex = new Flex(contentFlex, 0.25, 0.6, 0.75, 0.8);
 
-  var button = new Flex(buttonflex, 0, 0, 1, 0.3, 0.7).div;
+  var button = new Flex(buttonflex, 0, 0, 1, 0.3, FONT_BIG_BUTTON).div;
   styleButton(button);
   button.textEl.innerText = 'Start regular run';
   //button.textEl.style.boxShadow = '0px 0px 5px #ff0';
@@ -482,7 +474,7 @@ function createFinishChallengeDialog() {
     createTranscendDialog(true);
   });
 
-  button = new Flex(buttonflex, 0, 0.32, 1, 0.6, 0.7).div;
+  button = new Flex(buttonflex, 0, 0.32, 1, 0.6, FONT_BIG_BUTTON).div;
   styleButton(button);
   button.textEl.innerText = 'Start a new challenge';
   //button.textEl.style.boxShadow = '0px 0px 5px #f60';
@@ -507,11 +499,11 @@ function getChallengeFormulaString(c, opt_bonus_string) {
 function createAllChallengeStatsDialog() {
   var dialog = createDialog(DIALOG_LARGE);
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Challenge Stats';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -606,7 +598,9 @@ function createAllChallengeStatsDialog() {
       }
     }
     if(c2.num) {
-      if(c2.last_completion_date) {
+      if(c.index == state.challenge) {
+        text += 'last time ran: now';
+      } else if(c2.last_completion_date) {
         text += 'last time ran: ' + util.formatDate(c2.last_completion_date);
         //text += 'last time ran: ' + util.formatDuration(util.getTime() - c2.last_completion_date) + ' ago';
         text += '<br>';
@@ -639,7 +633,7 @@ function showChallengeChip(challenge) {
   var c = challenges[challenge];
   var c2 = state.challenges[challenge];
 
-  challengeChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
+  challengeChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
   challengeChipFlex.div.style.backgroundColor = '#fcce';
   challengeChipFlex.div.style.zIndex = 15;
 
@@ -672,7 +666,7 @@ function showchallengeUnlockedChip(challenge) {
   var c = challenges[challenge];
   var c2 = state.challenges[challenge];
 
-  challengeUnlockedChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
+  challengeUnlockedChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
   challengeUnlockedChipFlex.div.style.backgroundColor = '#fcce';
   challengeUnlockedChipFlex.div.style.zIndex = 15;
 

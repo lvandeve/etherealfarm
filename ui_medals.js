@@ -33,7 +33,7 @@ function updateMedalUI() {
     medal_canvases2 = [];
     medal_cache = [];
 
-    medalText = new Flex(medalFlex, 0.02, 0.02, 1, 0.05, 1.2);
+    medalText = new Flex(medalFlex, 0.02, 0.02, 1, 0.05);
     medalGrid = new Flex(medalFlex, 0.02, 0.15, 0.9, 2.0);
     //medalFlex.div.style.overflowY = 'scroll';
     //medalFlex.div.style.overflowX = 'hidden';
@@ -166,14 +166,14 @@ function updateMedalUI() {
     var xpos = 0;
     var ypos = Math.floor(numshown / numx) + 2;
 
-    var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + numx - 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005], 0.3);
+    var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + numx - 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005]);
     medalTierKeys.push(flex);
     flex.div.innerText = 'Key: tiers from lowest to highest:';
 
     for(var j = 0; j < tierColors.length; j++) {
       var xpos = j % numx;
       var ypos = Math.floor(numshown / numx) + 3;
-      var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005], 2);
+      var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005]);
       medalTierKeys.push(flex);
       flex.div.style.backgroundColor = tierColors_BG[j];
       flex.div.style.color = util.farthestColorHue(tierColors_BG[j]);
@@ -198,7 +198,7 @@ function showMedalChip(medal_id) {
   removeMedalChip();
   var m = medals[medal_id];
 
-  medalChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95, 0.35);
+  medalChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
   medalChipFlex.div.style.backgroundColor = '#ddde';
 
   var canvasFlex = new Flex(medalChipFlex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);

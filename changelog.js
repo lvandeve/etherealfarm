@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.99 (2022-04-04):';
+  text += '<br/>• New event started! Eggs with random rewards will drop every now and then. It will run throughout April.';
+  text += '<br/>• Changed the graphics of the bee challenge: now it has in order: worker bee, drone, queen bee. This to avoid confusion with the differently functioning main game beehive. The queen also got a crown.';
+  text += '<br/>• Made undeletable challenge a bit harder.'; // Blueberry secret and cranberry secret don't work, and when prestiging, undeletable ghosts remain. In addition (but this doesn't make it harder), nuts and mistletoe can no longer be used
+  text += '<br/>• Made font sizes more consistent.';
+  text += '<br/>• Fixed fern resource computation in case of growing flowers.';
+  text += '<br/>• Various minor UI tweaks.'; // includes another few improvements to the location of challenge target level / max level / production bonus related information, and, fused fruit prefers to go to storage pool over sacrificial pool now
+  text += '<br/><br/>';
+
   text += '0.1.98c (2022-03-27):';
   text += '<br/>• Increased bonus of some of the resin and other achievements.';
   text += '<br/>• Crops in the final time units of growing will now already show the final fullgrown image (but still with progress bar).';

@@ -128,8 +128,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
 
   var infoText = getUpgrade3InfoText(u, gated, is_gate, unknown);
 
-  //var textFlex = new Flex(flex, [0, 0, 0.9], 0, 1, 0.97, (gated ? 0.7 : 1));
-  var textFlex = new Flex(flex, [0, 0, 0.9], 0, 1, 0.97, 0.9);
+  var textFlex = new Flex(flex, [0, 0, 0.9], 0, 1, 0.97);
   centerText2(textFlex.div);
 
   var text = unknown ? '???' : upper(u.name);
@@ -295,7 +294,7 @@ function updateSquirrelUI() {
   if(!squirrelUnlocked()) return;
 
   if(!haveSquirrel()) {
-    var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1, 0.4);
+    var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1);
     titleFlex.div.innerText = 'You must have squirrel in ethereal field to use the squirrel upgrades tab, place squirrel there first.';
     return;
   }
@@ -318,7 +317,7 @@ function updateSquirrelUI() {
     }
   };
 
-  var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1, 0.35);
+  var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1);
   centerText2(titleFlex.div);
   var cost = new Res({nuts:getNextUpgrade3Cost()});
   var text =
@@ -331,16 +330,16 @@ function updateSquirrelUI() {
   }
   titleFlex.div.textEl.innerHTML = text;
 
-  var buttonFlex = new Flex(squirrelFlex, 0, 0.1, 1, 0.2, 0.5);
+  var buttonFlex = new Flex(squirrelFlex, 0, 0.1, 1, 0.2);
 
-  var helpButton = new Flex(buttonFlex, 0, 0, 0.24, 0.9, 0.8);
+  var helpButton = new Flex(buttonFlex, 0, 0, 0.24, 0.9);
   addButtonAction(helpButton.div, function() {
     showRegisteredHelpDialog(35, true);
   });
   styleButton(helpButton.div, 1);
   helpButton.div.textEl.innerText = 'Help';
 
-  var respecButton = new Flex(buttonFlex, 0.26, 0, 0.5, 0.9, 0.8);
+  var respecButton = new Flex(buttonFlex, 0.26, 0, 0.5, 0.9);
   addButtonAction(respecButton.div, respecfun);
   styleButton(respecButton.div, 1);
   respecButton.div.textEl.innerText = 'Respec\n(Available: ' + state.respec3tokens + ')';

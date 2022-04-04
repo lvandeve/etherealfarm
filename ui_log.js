@@ -111,7 +111,11 @@ function makeLogColor(type, seed, rarity) {
     } else if(type == C_AMBER) {
       h0 = h1 = 0.1;
     } else if(type == C_PRESENT) {
-      h0 = h1 = 0; // red
+      //h0 = h1 = 0; // red
+      h0 = 0.8;
+      h1 = 0.2
+      v1 = 1;
+      rarity = 0;
     }
 
     if(rarity > 0 || type == C_RANDOM) {

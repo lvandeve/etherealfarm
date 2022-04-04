@@ -27,7 +27,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   div.className = 'efEtherealUpgradeChip';
 
   var cost = u.getCost(completed ? -1 : 0);
-  var titleFlex = new Flex(flex, [0, 0, 0.8], 0.05, 1, 0.3, 1);
+  var titleFlex = new Flex(flex, [0, 0, 0.8], 0.05, 1, 0.3);
   var name = upper(completed ? u.getName() : u.getNextName());
   //titleFlex.div.innerHTML = name;
   //titleFlex.div.style.whiteSpace = 'nowrap';
@@ -49,7 +49,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     renderImage(u.image1, canvas);
   }
 
-  var buyFlex = new Flex(flex, [0, 0, 0.8], 0.01, 0.9, [0.5, 0, 0.35], 0.99);
+  var buyFlex = new Flex(flex, [0, 0, 0.8], 0.01, 0.9, [0.5, 0, 0.35]);
 
   var infoText = upper(name);
   infoText += '<br><br>Cost: ' + cost.toString();
@@ -160,7 +160,7 @@ function updateUpgrade2UI() {
   upgrade2ScrollFlex = scrollFlex;
   makeScrollable(scrollFlex);
 
-  var titleFlex = new Flex(scrollFlex, 0.01, 0, 0.99, 0.2, 0.25);
+  var titleFlex = new Flex(scrollFlex, 0.01, 0, 0.99, 0.2);
 
 
   var unlocked = [];
@@ -188,7 +188,7 @@ function updateUpgrade2UI() {
     var x = (i & 1);
     var y = (i >> 1);
     var w = 0.45;
-    var chip = new Flex(scrollFlex, x * w + 0.01, [0.25, 0, y * w + 0.01, 0.25], (x + 1) * w - 0.01, [0.25, 0, (y + 1) * w - 0.01, 0.25], 0.75);
+    var chip = new Flex(scrollFlex, x * w + 0.01, [0.25, 0, y * w + 0.01, 0.25], (x + 1) * w - 0.01, [0.25, 0, (y + 1) * w - 0.01, 0.25]);
     renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, false);
   }
 
@@ -204,7 +204,7 @@ function updateUpgrade2UI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
     var w = 0.45;
 
-    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.25, 0, y * w + 0.01, 0.27], (0 + 1) * w - 0.01, [0.25, 0, (y + 1) * w - 0.01, 0.27], 0.6, true);
+    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.25, 0, y * w + 0.01, 0.27], (0 + 1) * w - 0.01, [0.25, 0, (y + 1) * w - 0.01, 0.27], undefined, true);
     styleButton(flex.div);
     flex.div.innerText = 'See Completed Upgrades';
 
@@ -221,7 +221,7 @@ function updateUpgrade2UI() {
         var x = (i & 1);
         var y = i >> 1;
         var w = 0.45;
-        var chip = new Flex(scrollFlex, x * w + 0.01, [0, 0, y * w + 0.01, 0.27], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.27], 0.75);
+        var chip = new Flex(scrollFlex, x * w + 0.01, [0, 0, y * w + 0.01, 0.27], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.27]);
         renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, true);
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';

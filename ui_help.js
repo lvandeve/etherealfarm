@@ -37,7 +37,7 @@ function removeHelpChip() {
 function showHelpChip(text) {
   removeHelpChip();
 
-  helpChipFlex = new Flex(gameFlex, 0.19, 0.86, 0.81, 0.94, 0.35);
+  helpChipFlex = new Flex(gameFlex, 0.19, 0.86, 0.81, 0.94);
   helpChipFlex.div.style.backgroundColor = '#cffd';
   helpChipFlex.div.style.zIndex = 15;
 
@@ -173,7 +173,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     fy1 = 0.7;
   }
 
-  var flex = new Flex(dialog.content, fx0, fy0, fx1, fy1, 0.32);
+  var flex = new Flex(dialog.content, fx0, fy0, fx1, fy1);
   makeScrollable(flex);
 
   flex.div.innerHTML = text;
@@ -441,11 +441,11 @@ registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
 function createKeyboardHelpDialog() {
   var dialog = createDialog();
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Help';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -523,11 +523,11 @@ function createKeyboardHelpDialog() {
 function createMainHelpDialog() {
   var dialog = createDialog();
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Help';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -567,11 +567,11 @@ function createHelpDialog() {
     showing_help = false;
   });
 
-  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11, 0.5);
+  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11);
   centerText2(titleFlex.div);
   titleFlex.div.textEl.innerText = 'Help';
 
-  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   makeScrollable(scrollFlex);
 
   var pos = 0.05;
@@ -580,7 +580,7 @@ function createHelpDialog() {
 
   var makeButton = function(text) {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(scrollFlex, 0.08, pos, 0.92, pos + h, 0.55);
+    var buttonFlex = new Flex(scrollFlex, 0.08, pos, 0.92, pos + h);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -591,7 +591,7 @@ function createHelpDialog() {
   var addSpacer = function() {
     pos += h * 0.5;
   };
-  var tempFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
+  var tempFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
   tempFlex.div.innerText = 'More help topics will appear here as more features unlock';
   pos += h;
 
@@ -631,7 +631,7 @@ function createHelpDialog() {
     var d = registered_help_dialogs[id];
 
     if(!added) {
-      var tempFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
+      var tempFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
       tempFlex.div.innerText = 'Dynamic help dialogs';
       pos += h;
       added = true;
@@ -645,7 +645,7 @@ function createHelpDialog() {
 
   addSpacer();
 
-  var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
+  var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
   moreFlex.div.innerText = 'More help topics may appear here as the game progresses. Any in-game help dialog that pops up will become permanently available here once it\'s unlocked';
 }
 
@@ -657,11 +657,11 @@ function createAutomatonHelpDialog() {
     showing_help = false;
   });
 
-  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11, 0.5);
+  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11);
   centerText2(titleFlex.div);
   titleFlex.div.textEl.innerText = 'Automaton Help';
 
-  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   makeScrollable(scrollFlex);
 
   var pos = 0.05;
@@ -670,7 +670,7 @@ function createAutomatonHelpDialog() {
 
   var makeButton = function(text) {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(scrollFlex, 0.08, pos, 0.92, pos + h, 0.55);
+    var buttonFlex = new Flex(scrollFlex, 0.08, pos, 0.92, pos + h);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -691,7 +691,7 @@ function createAutomatonHelpDialog() {
     id));
   }
 
-  var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h, 0.5);
+  var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
   moreFlex.div.innerText = 'More help topics may appear here as the game progresses. Any in-game automaton-related help dialog that pops up will become permanently available here (as well as the main help dialog) once it\'s unlocked';
 }
 

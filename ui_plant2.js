@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ui for planting a new ethereal plant
 
 function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_field) {
-  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w + 0.010, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.5], 0.8);
+  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w + 0.010, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.5]);
   var div = flex.div;
   div.className = 'efEtherealPlantChip';
 
@@ -90,7 +90,7 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
   var ty = 0;
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, 0, 0, 1, 0.05, 0.5);
+  var flex = new Flex(contentFlex, 0, 0, 1, 0.05);
   centerText2(flex.div);
 
   if(opt_replace) {

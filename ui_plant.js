@@ -25,7 +25,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   if(fieldx != undefined && fieldy != undefined) {
     f = state.field[fieldy][fieldx];
   }
-  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w * 0.9 + 0.01, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w * 0.9 - 0.01, 0.5], 0.75);
+  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w * 0.9 + 0.01, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w * 0.9 - 0.01, 0.5]);
   var div = flex.div;
   div.className = 'efPlantChip';
 
@@ -240,11 +240,11 @@ function getCropOrder() {
 function showPlantingHelp() {
   var dialog = createDialog();
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Planting help';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -310,7 +310,7 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
   var tx = 0;
   var ty = 0;
 
-  var flex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.05, dialogsize == DIALOG_SMALL ? 1.2 : 0.7);
+  var flex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.05);
   if(opt_replace) {
     centerText2(flex.div);
     flex.div.textEl.innerHTML = 'Replace crop with...';
@@ -336,6 +336,8 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
         result += '<br/><br/>It is a placeholder for planning the field layout and does nothing.';
         result += '<br><br>Templates are a feature provided by the automaton.';
         result += '<br><br>Tip: ctrl+shift+click a template to turn it into a crop of highest available tier of this type.';
+      } else if(c.isghost) {
+        result += 'Ghostly remainder of a ' + getCropTypeName(c.type) + ', does nothing.';
       } else {
         result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
 

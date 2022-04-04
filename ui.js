@@ -66,10 +66,10 @@ function makeMainDivs() {
   topFlex = new Flex(gameFlex, 0, 0, 1, 0.05);
   if(showdebugborders) topFlex.div.style.border = '2px solid red';
 
-  infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.17, 0.25);
+  infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.17);
   if(showdebugborders) infoFlex.div.style.border = '2px solid blue';
 
-  tabFlex = new Flex(gameFlex, 0, 0.171, 1, 0.29, 0.22);
+  tabFlex = new Flex(gameFlex, 0, 0.171, 1, 0.29);
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
@@ -77,14 +77,14 @@ function makeMainDivs() {
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
   //contentFlex.div.style.backgroundColor = '#0004';
 
-  logFlex = new Flex(gameFlex, 0, 0.805, 1, 1, 0.25);
+  logFlex = new Flex(gameFlex, 0, 0.805, 1, 1);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
   // have right pane follow same vertical size rules as the left part for good alignment
   rightFlex = new Flex(mainFlex, [0, 0, 0.99, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 1.1], 0.99);
   rightFlex.div.style.overflow = 'hidden'; // avoid creating unwanted global scrollbars
   //rightFlex.div.style.border = '4px solid red';
-  topRightFlex = new Flex(rightFlex, 0.02, 0.05, 0.98, 0.25, 0.48);
+  topRightFlex = new Flex(rightFlex, 0.02, 0.05, 0.98, 0.25, FONT_SMALL);
   bottomRightFlex = new Flex(rightFlex, 0, 0.25, 0.98, 0.99);
   topRightFlex.div.className = 'efBordered';
   topRightFlex.div.style.padding = '1%';
@@ -187,7 +187,7 @@ function updatePausedUI() {
   var needflex = state.paused || large_time_delta;
 
   if(needflex && !pausedflex) {
-    pausedflex = new Flex(contentFlex, 0, 0, 1, 1, 2);
+    pausedflex = new Flex(contentFlex, 0, 0, 1, 1, FONT_FULL);
     centerText2(pausedflex.div);
     pausedflex.div.style.pointerEvents = 'none';
     pausedflex.div.style.color = '#f008';

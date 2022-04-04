@@ -104,6 +104,12 @@ function getCropInfoHTML(f, c, opt_detailed) {
     return result;
   }
 
+  if(c.isghost) {
+    result += '<br/><br/>ghostly remainder of a ' + getCropTypeName(c.type) + ', does nothing.';
+    return result;
+  }
+
+
   result += '<br/>';
   if(c2.prestige) {
     result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ', prestige: ' + c2.prestige + 'x)') : '');
@@ -319,19 +325,19 @@ function makeTreeDialog() {
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
-  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4], 0.3);
+  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4]);
   canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
 
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75, 0.32);
+  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95, 0.3);
+  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95);
 
   var createText = function() {
     var text;
@@ -356,6 +362,7 @@ function makeTreeDialog() {
       if(maxlevel > 0) {
         if(state.treelevel > maxlevel) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel + '.';
+          text += ' This will bring your total challenge production bonus from ' + state.challenge_bonus.toPercentString() + ' to ' + totalChallengeBonusWith(state.challenge, state.treelevel).toPercentString();
         } else {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet reach your previous best of lvl ' + maxlevel + '.';
         }
@@ -479,7 +486,6 @@ function makeTreeDialog() {
   // finetune the width of the buttons in flex f1
   var button0 = 0;
   var button1 = 0.8;
-  var buttontextsize = 0.6;
   var buttonshift = h * 1.15;
 
   if(state.challenge) {
@@ -490,7 +496,7 @@ function makeTreeDialog() {
     var targetlevel = c.nextTargetLevel();
     var success = state.treelevel >= targetlevel;
 
-    var button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
     styleButton(button);
     if(already_completed && success) {
@@ -526,7 +532,7 @@ function makeTreeDialog() {
     });
 
 
-    button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Current challenge info';
@@ -537,12 +543,12 @@ function makeTreeDialog() {
   } else if(state.treelevel < min_transcension_level) {
     //if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
     if(state.treelevel >= 1) {
-      var temp = new Flex(f1, button0, y, button1, y + h, buttontextsize * 0.75);
+      var temp = new Flex(f1, button0, y, button1, y + h);
       temp.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
       y += buttonshift;
     }
   } else {
-    var button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Transcension';
@@ -554,7 +560,7 @@ function makeTreeDialog() {
     });
 
     if(state.challenges_unlocked) {
-      button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+      button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
       y += buttonshift;
       styleButton(button);
       button.textEl.innerText = 'Challenges';
@@ -568,20 +574,20 @@ function makeTreeDialog() {
   }
 
   if(automatonUnlocked()) {
-    button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Blueprints';
     //button.textEl.style.boxShadow = '0px 0px 5px #44f';
     button.textEl.style.textShadow = '0px 0px 5px #008';
     addButtonAction(button, function() {
-      closeAllDialogs();
+      //closeAllDialogs();
       createBlueprintsDialog();
     });
   }
 
   if(have_buttons) {
-    button = new Flex(f1, button0, y, button1, y + h, buttontextsize).div;
+    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
     styleButton(button);
     button.textEl.innerText = 'Back';
@@ -601,7 +607,6 @@ function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
 
   if(c.type == CROPTYPE_CHALLENGE) return null;
   var tier = opt_include_locked ? state.highestoftypeknown[c.type] : state.highestoftypeunlocked[c.type];
-  ;
 
   var c2 = null;
 
@@ -666,18 +671,18 @@ function makeFieldDialog(x, y) {
     dialog.div.className = 'efDialogTranslucent';
 
     var contentFlex = dialog.content;
-    var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2], 0.3);
+    var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
     if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5, 0.29);
-    var button0 = new Flex(contentFlex, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.565 + buttonshift, 0.8).div;
-    var button1 = new Flex(contentFlex, [0.01, 0, 0.2], [0.57 + buttonshift, 0, 0.01], 0.5, 0.635 + buttonshift, 0.8).div;
-    var button2 = new Flex(contentFlex, [0.01, 0, 0.2], [0.64 + buttonshift, 0, 0.01], 0.5, 0.705 + buttonshift, 0.8).div;
-    var button3 = new Flex(contentFlex, [0.01, 0, 0.2], [0.71 + buttonshift, 0, 0.01], 0.5, 0.775 + buttonshift, 0.8).div;
+    var flex0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5);
+    var button0 = new Flex(contentFlex, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.565 + buttonshift).div;
+    var button1 = new Flex(contentFlex, [0.01, 0, 0.2], [0.57 + buttonshift, 0, 0.01], 0.5, 0.635 + buttonshift).div;
+    var button2 = new Flex(contentFlex, [0.01, 0, 0.2], [0.64 + buttonshift, 0, 0.01], 0.5, 0.705 + buttonshift).div;
+    var button3 = new Flex(contentFlex, [0.01, 0, 0.2], [0.71 + buttonshift, 0, 0.01], 0.5, 0.775 + buttonshift).div;
     var last0 = undefined;
 
     makeScrollable(flex0);
@@ -815,7 +820,7 @@ function initFieldUI() {
           } else {
             return 'fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
           }
-        } else if(state.present && x == state.presentx && y == state.presenty) {
+        } else if(state.present_effect && x == state.presentx && y == state.presenty) {
           return 'present: provides a random bonus when activated. Presents are a temporary festive event!';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
@@ -846,14 +851,14 @@ function initFieldUI() {
       addButtonAction(div, bind(function(x, y, div, e) {
         var f = state.field[y][x];
         var fern = state.fern && x == state.fernx && y == state.ferny;
-        var present = state.present && x == state.presentx && y == state.presenty;
+        var present = state.present_effect && x == state.presentx && y == state.presenty;
 
         if(state.fern && x == state.fernx && y == state.ferny) {
           addAction({type:ACTION_FERN, x:x, y:y});
           update();
         }
 
-        if(state.present && x == state.presentx && y == state.presenty) {
+        if(state.present_effect && x == state.presentx && y == state.presenty) {
           addAction({type:ACTION_PRESENT, x:x, y:y});
           update();
         }
@@ -920,7 +925,7 @@ function initFieldUI() {
             if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
             state.lastPlanted = c3.index;
             if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
-            if((state.allowshiftdelete || c2.istemplate) && c3.tier > c2.tier) {
+            if((state.allowshiftdelete || !c2.isReal()) && c3.tier > c2.tier) {
               addAction({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }
@@ -933,7 +938,7 @@ function initFieldUI() {
               if(c.cost.gt(c2.cost) && c.type == c2.type) safe = true; // allow to use shift+click to upgrade even if the "allowshiftdelete" setting is false, since replacing to higher type is safe and not a problem if not intended (while deleting or replacing with lower type may be unsafe)
               // the shift+delete just growing crop of same type behavior is not considered safe if state.allowshiftdelete is not enabled, since it may be surprising that shift that normally plants or replaces something can delete something too
               if(safe) {
-                if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate())) {
+                if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate() || f.isGhost())) {
                   // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
                   // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
                   // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
@@ -1053,7 +1058,7 @@ function updateFieldCellUI(x, y) {
   }
 
   var ferncode = ((state.fernx + state.ferny * state.numw) << 3) | state.fern;
-  var presentcode = ((state.presentx + state.presenty * state.numw) << 3) | state.present;
+  var presentcode = ((state.presentx + state.presenty * state.numw) << 3) | state.present_effect;
 
   var automatonplant = (x == state.automatonx && y == state.automatony && (state.time - state.automatontime < 0.5));
   var growing = f.growth < 1;
@@ -1118,9 +1123,9 @@ function updateFieldCellUI(x, y) {
     if(state.fern && x == state.fernx && y == state.ferny) {
       blendImage((state.fern == 2 ? images_fern2 : images_fern)[season], fd.canvas);
       label = 'fern. ' + label;
-    } else if(state.present && x == state.presentx && y == state.presenty) {
-      blendImage(present_images[state.present_image], fd.canvas);
-      label = 'present. ' + label;
+    } else if(state.present_effect && x == state.presentx && y == state.presenty) {
+      blendImage(holiday_images[state.present_image], fd.canvas);
+      label = 'egg. ' + label;
     } else if(f.index == 0) {
       label = 'empty ' + label;
     }

@@ -19,11 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function createNumberFormatHelp(notations, precision) {
   var dialog = createDialog(DIALOG_LARGE);
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Number Format help';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -132,32 +132,32 @@ function createNumberFormatDialog() {
   var h2;
 
   h2 = 0.05;
-  var titleFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.5);
+  var titleFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
   var titleDiv = titleFlex.div;
   //titleDiv.style.border = '1px solid red';
   centerText2(titleDiv);
   y2 += h2;
 
   h2 = 0.1;
-  var choiceFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.3);
+  var choiceFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
   var choiceDiv = choiceFlex.div;
   //choiceFlex.div.style.border = '1px solid green';
   y2 += h2 + 0.02;
 
   h2 = 0.08;
-  var descriptionFlex = new Flex(dialog.content, 0.01, y2, 0.99, y2 + h2, 0.3);
+  var descriptionFlex = new Flex(dialog.content, 0.01, y2, 0.99, y2 + h2);
   var descriptionDiv = descriptionFlex.div;
   //descriptionFlex.div.style.border = '1px solid blue';
   y2 += h2;
 
   h2 = 0.05;
-  var infoFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.3);
+  var infoFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
   var infoDiv = infoFlex.div;
   //infoFlex.div.style.border = '1px solid blue';
   y2 += h2 + 0.02;
 
   h2 = 0.25;
-  var examplesFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2, 0.3);
+  var examplesFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
   var examplesDiv = examplesFlex.div;
   //examplesFlex.div.style.border = '1px solid blue';
   y2 += h2;
@@ -238,7 +238,7 @@ function createNumberFormatDialog() {
   };
 
 
-  var button = new Flex(infoFlex, 0.01, 0.16, 0.3, 0.8, 1).div;
+  var button = new Flex(infoFlex, 0.01, 0.16, 0.3, 0.8).div;
   styleButton(button);
   button.textEl.innerText = 'help';
   addButtonAction(button.textEl, function() {
@@ -251,7 +251,7 @@ function createNumberFormatDialog() {
 function createShortcutsDialog() {
   var dialog = createDialog();
 
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
   centerText2(title.div);
   title.div.textEl.innerText = 'Controls';
   title.div.textEl.style.fontWeight = 'bold';
@@ -262,7 +262,7 @@ function createShortcutsDialog() {
 
   var makeSettingsButton = function() {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, FONT_BIG_BUTTON);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -347,7 +347,7 @@ function createShortcutsDialog() {
 function createNotificationSettingsDialog() {
   var dialog = createDialog();
 
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
   centerText2(title.div);
   title.div.textEl.innerText = 'Messages & Sounds';
   title.div.textEl.style.fontWeight = 'bold';
@@ -358,7 +358,7 @@ function createNotificationSettingsDialog() {
 
   var makeSettingsButton = function() {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, FONT_BIG_BUTTON);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -462,7 +462,7 @@ function createNotificationSettingsDialog() {
 function createAdvancedSettingsDialog() {
   var dialog = createDialog();
 
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
   centerText2(title.div);
   title.div.textEl.innerText = 'Preferences';
   title.div.textEl.style.fontWeight = 'bold';
@@ -473,7 +473,7 @@ function createAdvancedSettingsDialog() {
 
   var makeSettingsButton = function() {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, FONT_BIG_BUTTON);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -646,11 +646,11 @@ function createStatsDialog() {
     showing_stats = false;
   });
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Player Statistics';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.35);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -866,11 +866,11 @@ function createChangelogDialog() {
     showing_changelog = false;
   });
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'About';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -971,10 +971,10 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
   }, 'download', undefined, 'back', extrafun, extraname);
 
 
-  var textFlex = new Flex(dialog.content, 0.02, 0.01, 0.98, 0.15, 0.3);
+  var textFlex = new Flex(dialog.content, 0.02, 0.01, 0.98, 0.15);
   textFlex.div.innerHTML = title;
 
-  var areaFlex = new Flex(dialog.content, 0.02, 0.2, 0.98, 1, 0.3);
+  var areaFlex = new Flex(dialog.content, 0.02, 0.2, 0.98, 1);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', areaFlex.div);
 
   area.value = text;
@@ -989,7 +989,7 @@ function initSettingsUI_in(dialog) {
 
   var makeSettingsButton = function() {
     var h = 0.06;
-    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, 0.5);
+    var buttonFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h, FONT_BIG_BUTTON);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -998,7 +998,7 @@ function initSettingsUI_in(dialog) {
 
 
 
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05, 0.4);
+  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
   centerText2(title.div);
   title.div.textEl.innerText = 'Main Menu';
   title.div.textEl.style.fontWeight = 'bold';
@@ -1071,7 +1071,7 @@ function initSettingsUI_in(dialog) {
       });
       return true;
     }, 'import', undefined, 'cancel');
-    var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.55);
+    var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
     textFlex.div.innerHTML = 'Import a savegame backup. You can create a backup with "export save". Paste in here and press "import".<br/><font color="red">Warning: this overwrites your current game!</font>';
     var area = util.makeAbsElement('textarea', '1%', '30%', '98%', '68%', dialog.content.div);
     area.select();
@@ -1089,7 +1089,7 @@ function initSettingsUI_in(dialog) {
       closeAllDialogs();
       return true;
     }, 'reset');
-    var warningFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.65);
+    var warningFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
     warningFlex.div.innerText = hardresetwarning;
     warningFlex.div.style.color = 'red';
   });
@@ -1173,8 +1173,12 @@ function initSettingsUI() {
   // changelog / about button
   var aboutbutton = addTopBarFlex(10, 11).div;
   canvas = createCanvas('0%', '0%', '100%', '100%', aboutbutton);
-  renderImage(images_fern[1], canvas);
-  //renderImage(present_images[Math.floor(Math.random() * 4)], canvas);
+  if(holidayEventActive()) {
+    //renderImage(holiday_images[Math.floor(Math.random() * 4)], canvas);
+    renderImage(bunny_image, canvas);
+  } else {
+    renderImage(images_fern[1], canvas);
+  }
   styleButton0(aboutbutton, true);
   aboutbutton.title = 'About';
 
@@ -1201,7 +1205,7 @@ function initSettingsUI() {
   }, canvas), 'pause');
   aboutbutton.id = 'pause_button';
 
-  var undobutton = addTopBarFlex(2, 4, 1.8);
+  var undobutton = addTopBarFlex(2, 4, FONT_DIALOG_BUTTON);
   styleButton(undobutton.div);
   undobutton.div.textEl.innerText = 'Undo';
   addButtonAction(undobutton.div, function(e) {

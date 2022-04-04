@@ -257,9 +257,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
       } else {
         s++;
       }
-      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (s + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * s], [1.0, 0, -0.01], 1)).div;
+      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (s + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * s], [1.0, 0, -0.01], FONT_DIALOG_BUTTON)).div;
     } else {
-      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (buttonshift + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * buttonshift], [1.0, 0, -0.01], 1)).div;
+      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (buttonshift + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * buttonshift], [1.0, 0, -0.01], FONT_DIALOG_BUTTON)).div;
     }
     buttonshift++;
     return result;
@@ -348,13 +348,13 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
   if(!opt_nobgclose) overlay.onclick = dialog.cancelFun;
 
 
-  var xbutton = new Flex(dialogFlex, [1, 0, -0.07], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.07], 8);
+  var xbutton = new Flex(dialogFlex, [1, 0, -0.07], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.07]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', xbutton.div);
   renderImage(image_close, canvas);
   styleButton0(xbutton.div);
   //xbutton.div.style.border = '2px solid black';
 
-  //var xbutton = new Flex(dialogFlex, [1, 0, -0.05], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.05], 8);
+  //var xbutton = new Flex(dialogFlex, [1, 0, -0.05], [0, 0, 0.01], [1, 0, -0.01], [0, 0, 0.05]);
   //styleButton(xbutton.div);
   //xbutton.div.textEl.innerText = 'x';
 
@@ -363,7 +363,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
   var h = 0.88;
   if(opt_size == DIALOG_TINY) h = 0.8; // ensure content doesn't go over the buttons
   if(opt_size == DIALOG_SMALL) h = 0.8; // ensure content doesn't go over the buttons
-  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, 0, -0.07], h, 0.3);
+  dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, 0, -0.07], h);
 
   return dialogFlex;
 }
@@ -591,6 +591,31 @@ function removeAllTooltips() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+// Get one global font size for use by all flexes, to ensure consistency, as
+// compared to an older system where font size was relative to each flex, which
+// caused inconsistencies, and chance of having too small font size in some
+// cases depending on screen size
+function getGlobalFontSize() {
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+
+  // the ratio of the main game flex is "w, h * 0.75"
+  //return Math.min(w, h * 0.75) * 0.02;
+
+  // some ratio is added to w, which kicks in only if h is higher, this helps
+  // the font be a bit bigger on vertical mobile devices
+  return Math.min(w * 1.3, h * 0.75) * 0.021;
+}
+
+// Enum-style values for a small set of possible font size variations, for use by flexes
+var FONT_STANDARD = 0; // the font size to use in most cases (and when parameter not given), such as descriptions, help text, ... in dialogs
+var FONT_BIG_BUTTON = 1; // font size for buttons such as in the main menu, where the text should be bigger than standard
+var FONT_DIALOG_BUTTON = 2; // font size for buttons at the bottom of dialogs such as 'ok' and 'cancel'
+var FONT_FULL = 3; // full width such as the full screen "paused" message
+var FONT_SMALL = 4; // in case something really needs to fit in a space. Should not be overused, could be too small
+
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -748,8 +773,21 @@ Flex.prototype.updateSelf = function(parentdiv) {
   this.div.style.height = Math.floor(y1 - y0) + 'px';
   if(this.fontSize) {
     //this.div.style.fontSize = Math.floor(Math.min(x1 - x0, y1 - y0) * this.fontSize) + 'px';
-    this.div.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * this.fontSize) + 'px';
+    //this.div.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * this.fontSize) + 'px';
+    //this.div.style.fontSize = '26px';
+    //this.div.style.fontSize = '100%';
   }
+
+  if(this.fontSize == FONT_FULL) {
+    this.div.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * 2) + 'px';
+  } else {
+    var multiplier = 1.0;
+    if(this.fontSize == FONT_BIG_BUTTON) multiplier = 1.5;
+    else if(this.fontSize == FONT_DIALOG_BUTTON) multiplier = 1.25;
+    else if(this.fontSize == FONT_SMALL) multiplier = 0.9;
+    this.div.style.fontSize = Math.floor(getGlobalFontSize() * multiplier) + 'px';
+  }
+
 
 
   if(this.center) {
@@ -893,7 +931,7 @@ function makeDropdown(flex, title, current, choices, fun) {
   flex.div.className = 'efDropDown';
 
   // added to root, rather than flex itself, because otherwise any mouse action or styling applied to flex, also occurs on those choices, while that's not desired
-  var choiceFlex = new Flex(gameFlex, x0, y0, x1, y1, 0.6);
+  var choiceFlex = new Flex(gameFlex, x0, y0, x1, y1);
 
   choiceFlex.div.style.zIndex = '1000';
   choiceFlex.div.className = 'efDropDown';

@@ -27,7 +27,7 @@ var AMBER_SHORTEN = 3; // shorten current season
 
 function updateAmberUI() {
   amberFlex.clear();
-  var titleFlex = new Flex(amberFlex, 0, 0, 1, 0.1, 0.4);
+  var titleFlex = new Flex(amberFlex, 0, 0, 1, 0.1);
 
   titleFlex.div.innerHTML = `
       Amber Processor. Use amber for various effects.
@@ -42,7 +42,7 @@ function updateAmberUI() {
   var h = 0.065;
 
   var makeAmberButton = function(text, effect_index) {
-    var buttonFlex = new Flex(amberFlex, 0.1, pos, 0.75, pos + h, 0.5);
+    var buttonFlex = new Flex(amberFlex, 0.1, pos, 0.75, pos + h);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.35;

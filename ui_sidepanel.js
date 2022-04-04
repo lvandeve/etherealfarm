@@ -33,7 +33,7 @@ function updateRightPane() {
 
   var w = window.innerWidth;
   var h = window.innerHeight;
-  if(w / h < 0.9 || !enableSidePanel) {
+  if(w / h < 0.95 || !enableSidePanel) {
     //rightFlex.div.style.display = 'none';
     rightFlex.div.style.visibility = 'hidden';
     showingSidePanel = false;
@@ -74,7 +74,7 @@ function updateRightPane() {
     for(i = 0; i <= unlocked.length; i++) {
       if(i >= maxnum) break;
 
-      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.03, (0.03 + i) / maxnum, 1, (i + 1) / maxnum, 0.65);
+      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.03, (0.03 + i) / maxnum, 1, (i + 1) / maxnum);
       bottomrightSidePanelFlexCache[i] = chip;
 
       if(i == 0) {
@@ -179,8 +179,9 @@ function updateRightPane() {
   }
 
   if(state.g_numresets > 0 || state.upgrades_unlocked > 0) {
-    var text = '<center>Summary</center>';
-    text += '<br>';
+    var text = '';
+    //var text = '<center>Summary</center>';
+    //text += '<br>';
     if(state.g_res.resin.gtr(0)) {
       text += '• Total resin earned ever: ' + state.g_res.resin.toString();
       text += '<br>';
@@ -197,8 +198,9 @@ function updateRightPane() {
         }
         var newmaxlevel = Math.max(state.treelevel, maxlevel);
         if(c.fullyCompleted()) {
-          if(newmaxlevel >= maxlevel) {
-            text += '• Max challenge level: ' + newmaxlevel + ' (before: ' + maxlevel + ')';
+          if(newmaxlevel > maxlevel) {
+            //text += '• Max challenge level: ' + newmaxlevel + ' (before: ' + maxlevel + ')';
+            text += '• Previous max challenge level: ' + maxlevel + ' (now: ' + newmaxlevel + ')';
           } else {
             text += '• Max challenge level: ' + maxlevel;
           }
@@ -206,8 +208,8 @@ function updateRightPane() {
           var goal = c.nextTargetLevel();
           if(maxlevel == 0) {
             text += '• Challenge level goal: ' + goal;
-          } else if(newmaxlevel >= maxlevel) {
-            text += '• Previous challenge level: ' + maxlevel + ' (goal: ' + goal + ')';
+          } else if(newmaxlevel > maxlevel) {
+            text += '• Previous max challenge level: ' + maxlevel + ' (goal: ' + goal + ')';
           } else {
             text += '• Max challenge level: ' + maxlevel + ' (goal: ' + goal + ')';
           }
@@ -215,8 +217,8 @@ function updateRightPane() {
       } else {
         //text += '• #Transcensions: ' + state.g_numresets;
         //text += '<br>';
-        if(state.g_p_treelevel && (state.treelevel >= state.g_p_treelevel)) {
-          text += '• Max tree level ever: ' + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')';
+        if(state.g_p_treelevel && (state.treelevel > state.g_p_treelevel)) {
+          text += '• Previous max tree level ever: ' + state.g_p_treelevel + ' (now: ' + state.g_treelevel + ')';
         } else {
           text += '• Max tree level ever: ' + state.g_treelevel;
         }

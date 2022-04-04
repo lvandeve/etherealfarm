@@ -59,6 +59,7 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
   if(!b.numw || !b.numh) {
     centerText2(grid.div);
     grid.div.textEl.innerText = '[empty]';
+    grid.div.textEl.style.color = '#000';
   }
 
   var name = b.name;
@@ -197,7 +198,7 @@ function plantBluePrint2(b, allow_override, opt_get_tokens_cost_only) {
           if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
           if(c2.index == c.index) continue;
           // can't override crop that was just planted this run
-          if(c2 && f.justplanted && !c2.istemplate && c2.type != CROPTYPE_AUTOMATON && c2.type != CROPTYPE_SQUIRREL && c2.type != c.type) {
+          if(c2 && f.justplanted && c2.isReal() && c2.type != CROPTYPE_AUTOMATON && c2.type != CROPTYPE_SQUIRREL && c2.type != c.type) {
             numjustplanted++;
             if(squirrel_automaton) squirrel_automaton_blocked = true;
             continue;
@@ -240,7 +241,7 @@ function plantBluePrint2(b, allow_override, opt_get_tokens_cost_only) {
     // TODO: this sorting is very heuristic, do more exact
     var heuristiccost = function(c) {
       if(!c) return 0;
-      if(c.istemplate) return 0;
+      if(!c.isReal()) return 0;
       if(c.type == CROPTYPE_AUTOMATON || c.type == CROPTYPE_SQUIRREL) return 1;
       if(c.type == CROPTYPE_LOTUS) return (1 + c.tier) * 1000;
       if(c.type == CROPTYPE_BEE) return 5 + c.tier;
@@ -383,7 +384,7 @@ function importBluePrintDialog(fun, b, ethereal) {
     var text = area.value;
     fun(text);
   }, 'import', undefined, 'cancel');
-  var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
+  var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
   // TODO: this text is too long to get reasonable font size, move to a help dialog
   var text = 'Import blueprint. Case insensitive. ' + getBluePrintTypeHelpText(ethereal);
   textFlex.div.innerHTML = text;
@@ -501,7 +502,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   var y = 0.5;
   var addButton = function(text, fun, tooltip) {
     var h = 0.055;
-    var button = new Flex(dialog.content, [0, 0, 0.05], y, [0.5, 0, 0.05], y + h, 0.8).div;
+    var button = new Flex(dialog.content, [0, 0, 0.05], y, [0.5, 0, 0.05], y + h).div;
     y += h * 1.1;
     styleButton(button);
     button.textEl.innerText = text;
@@ -578,11 +579,11 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
 function showBluePrintHelp() {
   var dialog = createDialog();
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4).div;
+  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
   centerText2(titleDiv);
   titleDiv.textEl.innerText = 'Blueprint help';
 
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1, 0.3);
+  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
   var div = flex.div;
   makeScrollable(flex);
 
@@ -649,7 +650,7 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
   });
 
 
-  var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1, 0.4);
+  var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
   centerText2(titleFlex.div);
   if(opt_transcend) {
     if(opt_challenge) {
