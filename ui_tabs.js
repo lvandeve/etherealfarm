@@ -178,6 +178,9 @@ function updateTabButtons2() {
         }
       }
     }
+    if(!a && state.fruit_stored.length) {
+      num = 'none';
+    }
     var text = 'fruit<br/>(' + num + ')';
 
     if(special) {

@@ -453,7 +453,7 @@ function encState(state, opt_raw_only) {
   processInt(state.fruit_seed);
   processBool(state.fruit_seen);
   processUint(state.fruit_slots);
-  processUint(state.fruit_active);
+  processInt(state.fruit_active);
   processUint(state.fruit_stored.length);
   processUint(state.fruit_sacr.length);
 
@@ -1440,8 +1440,10 @@ function decState(s) {
       old_active_length = processUint(0);
       if(old_active_length > 1) return err(4);
       state.fruit_slots++; // the active slot became one of the regular fruit slots now
-    } else {
+    } else if(save_version < 4096*1+100) {
       state.fruit_active = processUint(0);
+    } else {
+      state.fruit_active = processInt(0);
     }
     state.fruit_stored.length = processUint(0);
     state.fruit_sacr.length = processUint(0);
@@ -1505,8 +1507,13 @@ function decState(s) {
           array10[index10] = (f.essence.eqr(0) && f.fuses == 0) ? f.levels[i] : 2; // 2 = typical average starter level of dropped fruits
         }
         f.starting_levels[i] = array10[index10++];
-        if(save_version < 4096*1+78 && f.abilities[i] >= FRUIT_SPRING && f.abilities[i] <= FRUIT_ALL_SEASON && f.type >= 1) {
-          f.abilities[i] = FRUIT_SPRING + f.type - 1; // fix fusing multiseason+single-season fruit resulted in single-season fruit with too good seasonal ability
+        if(save_version < 4096*1+78 && f.abilities[i] >= 9 && f.abilities[i] <= 17 && f.type >= 1) { // at that time, 9 was FRUIT_SPRING, 17 was FRUIT_ALL_SEASON (until version 4096*1+100)
+          f.abilities[i] = 9 + f.type - 1; // fix fusing multiseason+single-season fruit resulted in single-season fruit with too good seasonal ability
+        }
+        if(save_version < 4096*1+100 && f.abilities[i] >= 9) {
+          // a reordering of some ability indices happened here
+          if(f.abilities[i] >= 18) f.abilities[i] -= 9;
+          else f.abilities[i] += 11;
         }
       }
       return f;
@@ -1803,6 +1810,14 @@ function decState(s) {
     } else {
       for(var i = 0; i < array0.length; i++) array1[i] = array0[i];
     }
+    if(save_version < 4096*1+100 && array0.length >= 39 && array0[37]) {
+      // two new squirrel upgrades inserted, at the last group, move the one gated upgrade one forward, and refund it
+      // that gated upgrade moved from index 37 to 40
+      array0[37] = array0[39] = array0[40] = array0[41] = 0;
+      array1[40] = array1[37];
+      array1[37] = array1[39] = array1[41] = false;
+      squirrel_undo_refunds++;
+    }
 
     index0 = 0;
     index1 = 0;
@@ -1837,7 +1852,7 @@ function decState(s) {
   if(error) return err(4);
 
   if(squirrel_undo_refunds > 0) {
-    showMessage('Due to an update some squirrel updates changed, and ' + squirrel_undo_refunds + ' of your squirrel upgrades got refunded. Check the squirrel tab to re-buy them.', C_META, 0, 0, false, true);
+    showMessage('Due to an update some squirrel updates changed, and ' + squirrel_undo_refunds + ' of your squirrel upgrade(s) got refunded. Check the squirrel tab to re-buy them.', C_META, 0, 0, false, true);
     getUpgrade3Cost(i);
     var count = 0;
     for(var i = 0; i < registered_upgrades3.length; i++) {

@@ -417,21 +417,21 @@ registerHelpDialog(37, 'Combined Seasonal Fruits', 'You unlocked combined season
     <br><br>
     To get these multi-season fruits, fuse fruits as you usually do. All other fusing rules, such as the combining of abilities (and inability to fuse in case of full ability mismatches), work as usual, the change is now some mixed combinations give a new improved multi-season fruit rather than an apple.
     <br><br>
-    Later, if (and only if) you get the second fruit-mixing squirrel upgrade, you additionally get the following combinations to make the 4-seasons dragon fruit:
+    Later, if (and only if) you get the second fruit-mixing squirrel upgrade, you additionally get the following combinations to make the 4-seasons star fruit:
     <br><br>
-    • Mango + Quince = Dragon Fruit (4 seasons)
+    • Mango + Quince = Star Fruit (4 seasons)
     <br>
-    • Plum + Kumquat = Dragon Fruit (4 seasons)
+    • Plum + Kumquat = Star Fruit (4 seasons)
     <br><br>
     Combinations that don\'t cover all 4 seasons, such as mango+plum, won\'t work, it must be one of the combionations listed above.
     <br><br>
-    Remember, dragon fruit fusing is not yet available if you just unlocked the first fruit mixing upgrade now, the dragon fruit requires the second such squirrel upgrade. Now you already know how to prepare for it though.
+    Remember, star fruit fusing is not yet available if you just unlocked the first fruit mixing upgrade now, the star fruit requires the second such squirrel upgrade. Now you already know how to prepare for it though.
     `,
     images_apple[8],
     undefined,
   [[images_apricot[1],images_pineapple[1],images_pear[8]],
    [images_medlar[1],images_mango[4],images_plum[7]],
-   [images_quince[4],images_kumquat[1],images_dragonfruit[9]]]);
+   [images_quince[4],images_kumquat[1],images_starfruit[9]]]);
 
 registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
     'You unlocked auto-prestige for the automaton! This is integrated with auto-unlock: the same cost settings of auto-unlock are used for auto-prestige, and you can use a toggle to enable/disable auto-prestige.',
@@ -704,6 +704,9 @@ var prevArrowNumTabs = 0;
 // also updates them
 function showHelpArrows() {
   if(!fieldDivs) return; // field not rendered yet, some divs for arrows don't yet exist
+
+  if(state.g_numresets > 3 && arrows.length == 0) return; // arrows cannot appear that late, no need to execute the rest of this function.
+
   if(prevArrowNumTabs != numtabs) {
     // a new tab appeared (e.g. achievements after receiving the first one), some of the below arrows may be pointing at the wrong one now so force update this way
     prevArrowNumTabs = numtabs;
@@ -713,6 +716,7 @@ function showHelpArrows() {
   var arrowCode = 0;
   var numplanted = state.c_numplanted + state.c_numplantedbrassica;
 
+  // planting first watercress
   if(!arrowCode && state.g_numresets < 1 && state.res.seeds.ger(10) && numplanted == 0) {
     var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_watercress') : null;
     if(watercress_chip) {
@@ -732,7 +736,9 @@ function showHelpArrows() {
     }
   }
 
+  // upgrading watercress
   if(!arrowCode && state.g_numresets < 1 && state.upgrades[brassicamul_0].unlocked && state.upgrades[brassicamul_0].count == 0 && !state.upgrades[berryunlock_0].unlocked) {
+    // TODO: get better way to refer to a particular upgrade chip (in this case the watercress one)
     var text = 'upgrade watercress';
     var alreadyRelated = (prevArrowCode >= 3 && prevArrowCode <= 5);
     if(state.currentTab == 1 && upgradeFlexCache[0]) {
@@ -759,6 +765,7 @@ function showHelpArrows() {
     }
   }
 
+  // unlocking blackberry
   if(!arrowCode && state.g_numresets < 1 && state.upgrades[berryunlock_0].unlocked && state.upgrades[berryunlock_0].count == 0 && state.res.seeds.ger(1000)) {
     var text = 'unlock blackberry';
     var alreadyRelated = (prevArrowCode >= 6 && prevArrowCode <= 8);
@@ -788,6 +795,7 @@ function showHelpArrows() {
     }
   }
 
+  // planting first blackberry
   if(!arrowCode && state.g_numresets < 1 && state.res.seeds.ger(1000) && !!state.upgrades[berryunlock_0].count && !(state.upgrades[berryunlock_1].unlocked || state.cropcount[berry_0])) {
     var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
     if(watercress_chip) {

@@ -484,11 +484,11 @@ function State() {
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits
   this.fruit_seen = false; // whether seen latest fruit drop (for red color)
-  this.fruit_active = 0; // index in fruit_stored of currently active fruit
+  this.fruit_active = 0; // index in fruit_stored of currently active fruit, or -1 to explicitely disable fruit
   this.fruit_stored = []; // fruits in storage that stay after transcension
   this.fruit_slots = 3; // amount of slots for fruit_stored
   this.fruit_sacr = []; // fruits outside of storage that will be sacrificed on transcension
-  this.seen_seasonal_fruit = 0; // 4 flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit. For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
+  this.seen_seasonal_fruit = 0; // bit flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit, and so on for higher fruit types. For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
 
   // settings / preferences
   this.notation = Num.N_LATIN; // number notation
@@ -1320,7 +1320,8 @@ function Fruit() {
   // type 6: plum, summer+autumn
   // type 7: quince, autumn+winter
   // type 8: kumquat, winter+spring
-  // type 9: dragonfruit, all-season
+  // type 9: starfruit, all-season
+  // type 10: dragonfruit, all-season imrpoved
   this.type = 0;
   this.tier = 0;
   this.abilities = []; // array of the FRUIT_... abilities
@@ -1352,7 +1353,7 @@ function Fruit() {
   this.typeName = function() {
     return ['apple', 'apricot (spring)', 'pineapple (summer)', 'pear (autumn)', 'medlar (winter)',
             'mango (spring+summer)', 'plum (summer+autumn)', 'quince (autumn+winter)', 'kumquat (winter+spring)',
-            'dragon fruit (4 seasons)'][this.type];
+            'star fruit (4 seasons)', 'dragon fruit (4 seasons)'][this.type];
   };
 
   this.origName = function() {
@@ -1386,7 +1387,7 @@ function Fruit() {
 }
 
 function getActiveFruit() {
-  if(state.fruit_active >= state.fruit_stored.length) return undefined;
+  if(state.fruit_active < 0 || state.fruit_active >= state.fruit_stored.length) return undefined;
   return state.fruit_stored[state.fruit_active];
 }
 
@@ -1430,11 +1431,13 @@ function getFruitAbility_MultiSeasonal(ability, opt_basic) {
   // this assumes the seasonal ability is listed last, as it indeed is
   var last = f.abilities[f.abilities.length - 1];
 
-  if(last < FRUIT_SPRING_SUMMER || last > FRUIT_ALL_SEASON) return [0, ability]; // fruit is not a multi-season fruit.
+  if(last < FRUIT_SPRING_SUMMER || last > FRUIT_ALL_SEASON2) return [0, ability]; // fruit is not a multi-season fruit.
   if(!state.upgrades3[upgrade3_fruitmix]) return [0, ability]; // squirrel upgrade not active
-  if(last == FRUIT_ALL_SEASON && !state.upgrades3[upgrade3_fruitmix2]) return [0, ability]; // squirrel upgrade not active
+  if(last >= FRUIT_ALL_SEASON2 && !state.upgrades3[upgrade3_fruitmix3]) last = FRUIT_ALL_SEASON; // squirrel upgrade not active for dragon fruit, but try if it still works as star fruit instead
+  if(last >= FRUIT_ALL_SEASON && !state.upgrades3[upgrade3_fruitmix2]) return [0, ability]; // squirrel upgrade not active
 
   if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
+    if(last == FRUIT_ALL_SEASON2) return [1, last];
     if(last == FRUIT_ALL_SEASON) return [1, last];
     if(last == FRUIT_SPRING_SUMMER) return [(ability == FRUIT_SPRING || ability == FRUIT_SUMMER) ? 1 : 0, last];
     if(last == FRUIT_SUMMER_AUTUMN) return [(ability == FRUIT_SUMMER || ability == FRUIT_AUTUMN) ? 1 : 0, last];
@@ -1475,7 +1478,7 @@ function getFruit(slot) {
 
 // set f to something falsy to unset the fruit
 // will shift/resize arrays to fit the updated collection
-function setFruit(slot, f) {
+function insertFruit(slot, f) {
   if(slot < 100) {
     var j = slot;
     if(f) {
@@ -1503,6 +1506,20 @@ function setFruit(slot, f) {
       state.fruit_sacr.length = state.fruit_sacr.length - 1;
     }
   }
+}
+
+// sets fruit directly to this slot, without any checks for empty gaps or shfiting. f must be valid object, not null
+function setFruit(slot, f) {
+  if(slot < 100) state.fruit_stored[slot] = f;
+  else state.fruit_sacr[slot - 100] = f;
+  f.slot = slot;
+}
+
+function swapFruit(slot0, slot1) {
+  var f0 = getFruit(slot0);
+  var f1 = getFruit(slot1);
+  setFruit(slot0, f1);
+  setFruit(slot1, f0);
 }
 
 function getUpcomingFruitEssence(breakdown) {

@@ -97,7 +97,7 @@ function prodBreakdown2() {
 var season_styles = [ 'efSeasonBgSpring', 'efSeasonBgSummer', 'efSeasonBgAutumn', 'efSeasonBgWinter' ];
 
 
-// for tooltip and dialog, only compute if needed for thos
+// for tooltip and dialog, only compute if needed for those
 function getResourceDetails(i, special, index) {
   var name = resource_names[index];
   var res = state.res.atIndex(index);
@@ -314,6 +314,7 @@ function showResource(i, special, index) {
     text = name + '<br>' + res.toString() + '<br>' + fontopen + res_gain.toString() + '/s' + fontclose;
     if(hyp_neq) text += ' <font color="#888">(' + res_gain_hyp.toString() + '/s)</font>';
   }
+  // TODO: this causes "Parse HTML" and this one for the resource info despite being small shows up highest in profiling with chrome dev tools, find a faster way to do this
   div.textEl.innerHTML = text;
 
   if(!div.tooltipadded) {

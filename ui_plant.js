@@ -374,15 +374,18 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
       state.lastPlanted = index; // for shift key
       var c = crops[index];
       if(opt_all) {
+        var done_something = false;
         for(var y2 = 0; y2 < state.numh; y2++) {
           for(var x2 = 0; x2 < state.numw; x2++) {
             var f;
             f = state.field[y2][x2];
             if(f.isEmpty()) {
               addAction({type:ACTION_PLANT, x:x2, y:y2, crop:c, silent:true});
+              done_something = true;
             }
           }
         }
+        if(!done_something) showMessage('Entire field is already full, clear field first or have some open gaps to use "plant all"', C_INVALID);
       } else if(opt_replace) {
         addAction({type:ACTION_REPLACE, x:x, y:y, crop:c});
       } else {

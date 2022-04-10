@@ -40,10 +40,14 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_AUTUMN_WINTER: return ((getSeason() == 2 || getSeason() == 3) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
       case FRUIT_WINTER_SPRING: return ((getSeason() == 3 || getSeason() == 0) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
       case FRUIT_ALL_SEASON: return !!state.upgrades3[upgrade3_fruitmix2].count ? 'S' : 's';
+      case FRUIT_ALL_SEASON2: return !!state.upgrades3[upgrade3_fruitmix3].count ? 'S' : 's';
       case FRUIT_RESINBOOST: return 'RS';
       case FRUIT_TWIGSBOOST: return 'TW';
       case FRUIT_NUTBOOST: return 'NU';
       case FRUIT_BEEBOOST: return 'BE';
+      case FRUIT_MIX: return 'X';
+      case FRUIT_TREELEVEL: return 'T';
+      case FRUIT_SEED_OVERLOAD: return 'O';
     }
     return '?';
   }
@@ -66,10 +70,14 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_AUTUMN_WINTER: return 'autumn and winter boost';
     case FRUIT_WINTER_SPRING: return 'winter and spring boost';
     case FRUIT_ALL_SEASON: return '4-seasons boost';
+    case FRUIT_ALL_SEASON2: return 'ultra seasons boost';
     case FRUIT_RESINBOOST: return 'resin boost';
     case FRUIT_TWIGSBOOST: return 'twigs boost';
     case FRUIT_NUTBOOST: return 'nuts boost';
     case FRUIT_BEEBOOST: return 'bee boost';
+    case FRUIT_MIX: return 'mix nettle/brass/bee';
+    case FRUIT_TREELEVEL: return 'treelevel prod boost';
+    case FRUIT_SEED_OVERLOAD: return 'seed overload';
   }
   return 'unknown';
 }
@@ -94,10 +102,14 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_AUTUMN_WINTER: return 'boosts the autumn mushroom boost and the winter tree warmth effect, only during the respective seasons';
     case FRUIT_WINTER_SPRING: return 'boosts the winter tree warmth effect and the spring flower boost, only during the respective seasons';
     case FRUIT_ALL_SEASON: return 'boosts the special effect of each of the 4 seasons, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
+    case FRUIT_ALL_SEASON2: return 'boosts the special effect of each of the 4 seasons, even more for dragon fruit, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
     case FRUIT_RESINBOOST: return 'boost resin income (with a soft cap), taking into account the time this fruit was active';
     case FRUIT_TWIGSBOOST: return 'boost twigs income (with a soft cap), taking into account the time this fruit was active';
     case FRUIT_NUTBOOST: return 'boosts nuts production (with a soft cap)';
     case FRUIT_BEEBOOST: return 'boosts the beehive bonus';
+    case FRUIT_MIX: return 'divides given boost over nettle, brassica and bee, balanced differently for spores and seeds, but only additively if corresponding non-mix abilities are present';
+    case FRUIT_TREELEVEL: return 'boosts the production boost that is given by the tree level, the listed multiplier is reached for high enough tree level'; // that is, targeted to get close at tree levels 20 levels above where this tier of fruit drops
+    case FRUIT_SEED_OVERLOAD: return 'boosts seeds, but increases mushroom seed consumption by the same amount';
   }
   return 'unknown';
 }
@@ -119,7 +131,7 @@ function createFruitHelp() {
 
   text += 'Fruits drop when the tree reaches certain levels. Fruits have one or more abilities from a random set. At higher tree levels, higher tier fruits with more and stronger abilities can drop.';
   text += '<br/><br/>';
-  text += 'You can move fruits between the stored and sacrificial slots with the buttons in the fruit dialog. You can choose the active fruit with the arrows. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time.';
+  text += 'You can move fruits between the stored and sacrificial slots with the buttons in the fruit dialog. You can choose the active fruit with the arrows. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time. You can also select no fruit at all by toggling the arrow above an active one.';
   text += '<br/><br/>';
   text += 'Fruit essence can be used to level up abilities, increasing their effect. If the fruit has mutliple abilities, click the ability you want to upgrade first.';
   text += '<br/><br/>';
@@ -198,11 +210,11 @@ function createFruitHelp() {
     text += '<br>';
     text += '• Medlar + Apricot = Kumquat (winter + spring)';
     text += '<br/><br/>';
-    text += 'If (and only if) you also have the second fruit mixing upgrade purchased, then in addition you can create the legendary dragon fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
+    text += 'If (and only if) you also have the second fruit mixing upgrade purchased, then in addition you can create the all-season star fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
     text += '<br><br>';
-    text += '• Mango + Quince = Dragon Fruit (4 seasons)';
+    text += '• Mango + Quince = Star Fruit (4 seasons)';
     text += '<br>';
-    text += '• Plum + Kumquat = Dragon Fruit (4 seasons)';
+    text += '• Plum + Kumquat = Star Fruit (4 seasons)';
     text += '<br><br>';
     text += '<br><br>';
     text += '<br/>';
@@ -236,34 +248,41 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     scrollFlex.clear();
 
     var fruits = [];
+    var fruits_index_sacr = -1; // index in fruits array where the fruits come from sacrificial pool rather than storage pool, or -1 if there's no switch (either all or stored or all are sacr)
     for(var i = 0; i < state.fruit_stored.length + state.fruit_sacr.length; i++) {
       var f2 = (i < state.fruit_stored.length) ? state.fruit_stored[i] : (state.fruit_sacr[i - state.fruit_stored.length]);
       if(f2 == f) continue;
       if(f2.tier != f.tier) continue;
       //if(f2.type != f.type) continue;
+      if(fruits_index_sacr == -1 && f2.slot >= 100) fruits_index_sacr = fruits.length;
       fruits.push(f2);
     }
+    if(fruits_index_sacr == 0) fruits_index_sacr = -1;
 
     var s = 0.1; // relative width and height of a chip
     var x = 0;
     var y = 0.03;
 
-    var addTitle = function(text) {
-      y += s * 0.5;
-      var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
+    var addTitle = function(text, opt_x, opt_y) {
+      var y2 = opt_y || y;
+      var x2 = opt_x || 0;
+      var flex = new Flex(scrollFlex, [0.01, 0, x2], [0, 0, y2], 1, [0, 0, y2 + s]);
       flex.div.innerText = text;
-      y += s * 0.5;
+      if(opt_y == undefined) y += s * 0.5;
     };
 
-    addTitle('Fusing doesn\'t make fruits stronger. Fusing exists to gradually choose a set of abilities from the random drops. Only abilities marked [**] can be transfered to other fruits. The [*] then [**] marks can be created by fusing the same abilities. After fusing, some abilities need to be leveled up again, but no fruit essence is lost.');
-    y += s * 1;
+    addTitle('Fusing doesn\'t make fruits stronger, it exists to gradually choose a set of abilities from the random drops. Only abilities marked [**] can be transfered to other fruits. The [*] then [**] marks can be created by fusing the same abilities. After fusing, some abilities may need to be leveled up again, but no fruit essence is lost.');
+    y += s;
 
+    y += s;
     addTitle('Choose other fruit to fuse:');
 
     for(var i = 0; i < fruits.length; i++) {
-      if(x > s * 8.5) {
+      if(i == fruits_index_sacr) x += s; // a horizontal gap to indicate we switch to the sacrificial fruits
+      if(x > s * 9.5) {
         x = 0;
         y += s;
+        if(i == fruits_index_sacr) y += s * 0.1; // a vertical gap to indicate we switch to the sacrificial fruits
       }
       var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
       x += s;
@@ -284,10 +303,13 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     y += s;
 
 
+    y += s * 0.5;
+    var y0t = y; // temporary y position for result title
     addTitle('Fruits to fuse:');
 
     var fruits2 = [f, selected];
 
+    var y0c = y; // temporary y position for result chip
     x = 0;
     for(var i = 0; i <= fruits2.length; i++) {
       if(i == fruits2.length) x += s * 0.5;
@@ -325,18 +347,23 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     }
     y += s;
 
+    var result_x = 0.4;
 
-    addTitle('Fused fruit result:');
+    addTitle('Fused result:', result_x, y0t);
+    y += s * 0.5;
+    addTitle('Result stats:');
 
     var fruitmix = 0;
-    if(state.upgrades3[upgrade3_fruitmix].count) fruitmix += 2;
-    if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix += 2;
+    // due to gated squirrel upgrades, it's always ensured if you have a next one, you also have the previous one
+    if(state.upgrades3[upgrade3_fruitmix].count) fruitmix = 2;
+    if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix = 4;
+    if(state.upgrades3[upgrade3_fruitmix3].count) fruitmix = 5;
 
     var message = [undefined];
     var fuse = swapped ? fuseFruit(selected, f, fruitmix, message) : fuseFruit(f, selected, fruitmix, message);
 
     x = 0;
-    var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
+    var flex = new Flex(scrollFlex, [0.01, 0, x + result_x], [0, 0, y0c], [0.01, 0, x + s + result_x], [0, 0, y0c + s]);
     x += s;
     if(fuse) {
       makeFruitChip(flex, fuse, 0, true, 'fused fruit result');
@@ -349,7 +376,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       flex.div.style.border = '1px solid black';
       registerTooltip(flex.div, 'Fused fruit appears here when successful');
     }
-    y += s;
+    //y += s;
 
     if(message[0]) {
       y += s * 0.25;
@@ -358,21 +385,23 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       x += s;
       flex.div.innerText = message[0];
       flex.div.style.color = '#f00';
-      y += s * 1.5;
+      y += s * 1.1;
     }
 
 
     if(fuse) {
+      var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
+      var text = '';
       for(var i = -1; i < fuse.abilities.length; i++) {
-        var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
         if(i == -1) {
           flex.div.innerText = fuse.toString() + ', fused ' + fuse.fuses + ' times';
         } else {
           var other = swapped ? selected : f;
-          flex.div.innerText = 'ability: ' + fuse.abilityToString(i) + '  (was: ' + other.abilityToString(i) + ')';
+          text += 'ability: ' + fuse.abilityToString(i) + '  (was: ' + other.abilityToString(i) + ')\n';
         }
         y += s * 0.5;
       }
+      flex.div.innerText = text;
     }
   };
 
@@ -415,10 +444,10 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var selected = (opt_selected == undefined) ? (f.abilities.length > 1 ? -1 : 0) : opt_selected; // the selected ability for details and upgrade button
   var flexes = [];
 
-  var y = 0.22;
+  var y = 0.2;
   var h = 0.04;
   for(var i = 0; i < f.abilities.length; i++) {
-    var flex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.7, y + h);
+    var flex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.9, y + h);
     y += h * 1.1;
     var a = f.abilities[i];
     var level = f.levels[i];
@@ -443,8 +472,8 @@ function fillFruitDialog(dialog, f, opt_selected) {
   }
 
   y += 0.02;
-  h = 0.2;
-  var bottomflex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.7, y + h);
+  h = 0.27;
+  var bottomflex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.9, y + h);
   bottomflex.div.style.backgroundColor = '#0f02';
   bottomflex.div.style.border = '1px solid black';
   y += h;
@@ -590,7 +619,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     textFlex.div.innerHTML = text;
   };
 
-  y += 0.05;
+  y += 0.03;
   var h = 0.05;
 
   if(f.slot >= 100) {
@@ -723,8 +752,20 @@ function showStorageFruitSourceDialog() {
     text += ' • 1: for having seen at least 1 seasonal fruit';
     text += '<br/>';
   }
-  if(state.seen_seasonal_fruit == 15) {
+  if((state.seen_seasonal_fruit & 15) == 15) {
     text += ' • 1: for having seen all 4 types of seasonal fruit';
+    text += '<br/>';
+  }
+  if((state.seen_seasonal_fruit & 240) == 240) {
+    text += ' • 1: for having seen all 4 types of 2-seasonal fruit';
+    text += '<br/>';
+  }
+  if((state.seen_seasonal_fruit & 256) == 256) {
+    text += ' • 1: for having seen a star fruit';
+    text += '<br/>';
+  }
+  if((state.seen_seasonal_fruit & 512) == 512) {
+    text += ' • 1: for having seen a dragon fruit';
     text += '<br/>';
   }
 
@@ -732,6 +773,8 @@ function showStorageFruitSourceDialog() {
   if(state.upgrades2[upgrade2_extra_fruit_slot].count) num_ethereal_upgrades++;
   if(state.upgrades2[upgrade2_extra_fruit_slot2].count) num_ethereal_upgrades++;
   if(state.upgrades2[upgrade2_extra_fruit_slot3].count) num_ethereal_upgrades++;
+  if(state.upgrades2[upgrade2_extra_fruit_slot4].count) num_ethereal_upgrades++;
+  if(state.upgrades2[upgrade2_extra_fruit_slot5].count) num_ethereal_upgrades++;
   if(num_ethereal_upgrades > 0) {
     text += ' • ' + num_ethereal_upgrades + ': ethereal upgrades';
     text += '<br/>';
@@ -749,10 +792,10 @@ function styleFruitChip(flex, f) {
   var ratio = state.res.essence
   flex.div.style.backgroundColor = tierColors_BG[f.tier] + '6';
   if(f.mark) {
-    var color = f.mark == 1 ? '#f008' : (f.mark == 2 ? '#fe08' : (f.mark == 3 ? '#4c48' : '#06c8'));
+    var color = f.mark == 1 ? '#f008' : (f.mark == 2 ? '#fe08' : (f.mark == 3 ? '#4c48' : '#88ff'));
     flex.div.style.border = '3px solid ' + color;
   } else if(f.name) {
-    var color = '#0008';
+    var color = '#aaa';
     flex.div.style.border = '3px solid ' + color;
   } else {
     flex.div.style.border = '1px solid black';
@@ -872,6 +915,13 @@ function setupFruitDrag(flex, slot, f) {
   });
 }
 
+// this is also the max width of the fruit UI itself. Max 10 or 11 fits reasonably, 12 may be a bit too much
+var MAXFRUITARROWS = 10;
+
+function getNumFruitArrows() {
+  return Math.min(MAXFRUITARROWS, state.fruit_slots);
+}
+
 function updateFruitUI() {
   var scrollPos = 0;
   if(fruitScrollFlex) scrollPos = fruitScrollFlex.div.scrollTop;
@@ -882,14 +932,14 @@ function updateFruitUI() {
   fruitScrollFlex = scrollFlex;
   makeScrollable(scrollFlex);
 
-  var titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15);
+  //var titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15);
 
-  titleFlex.div.innerText = 'Fruit collection';
+  //titleFlex.div.innerText = 'Fruit collection';
 
-  var num_fruits_width = Math.max(10, state.fruit_slots); // amount of fruits rendered at the full width. TODO: this makes it not support 12+ active fruit slots unless they render on newlines (or fruits are made smaller, making them less visible/clickable)
+  var num_fruits_width = Math.max(10, getNumFruitArrows()); // amount of fruits rendered at the full width. TODO: this makes it not support 12+ active fruit slots unless they render on newlines (or fruits are made smaller, making them less visible/clickable)
   var s = 1 / num_fruits_width; // relative width and height of a chip
   var t = 0.1; // similar to s but for text
-  var y = 0.1;
+  var y = 0;
   var help;
 
   var num = state.fruit_slots;
@@ -897,42 +947,54 @@ function updateFruitUI() {
 
   ////////
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.85, [0, 0, y + t]);
-  y += s;
+  var titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.85, [0, 0, y + t]);
+  y += t * 0.8;
   var active_fruit_name = '<font color="red">none</font>';
+  if(state.fruit_active == -1) active_fruit_name = '<font color="red">none, click arrow above a fruit to select one</font>';
   var f_active = getActiveFruit();
   if(f_active) active_fruit_name = f_active.toString() + ': ' + f_active.abilitiesToString(true, true);
-  titleFlex.div.innerHTML = 'active fruit: ' + active_fruit_name;
+  titleFlex.div.innerHTML = 'Fruit collection. Active fruit: ' + active_fruit_name;
   help = 'The chosen active fruit. Active fruit requires a fruit in storage, and the arrow above it lit. You can choose it using the arrow buttons below.';
   registerTooltip(titleFlex.div, help);
 
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t]);
   y += s;
-  titleFlex.div.innerText = 'stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
+  titleFlex.div.innerText = 'Stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
   help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage.';
   registerTooltip(titleFlex.div, help);
 
 
+  var numarrows = getNumFruitArrows();
+
+  // This fixes cases where the selected fruit is above 10. It's not super great to adjust state automatically from the UI like this, but the 10 arrow limit is pretty much for a UI reason
+  if(state.fruit_active > 0 && state.fruit_active >= numarrows) state.fruit_active = numarrows - 1;
+
   x = 0;
-  for(var i = 0; i < num; i++) {
+  for(var i = 0; i < numarrows; i++) {
     var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
     x += s;
     //canvasFlex.div.style.border = '1px solid black';
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-    var image = i == state.fruit_active ? image_fruitsel_active : image_fruitsel_inactive;
+    var image = (i == state.fruit_active) ? image_fruitsel_active : image_fruitsel_inactive;
     renderImage(image, canvas);
+
+    var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
 
     styleButton0(canvasFlex.div, true);
     var fruit_name = 'none';
     if(state.fruit_stored[i]) fruit_name = state.fruit_stored[i].toString();
-    registerTooltip(canvasFlex.div, 'make this fruit active');
+    var tooltiptext = 'make this fruit active';
+    if(f) tooltiptext += '<br><br>' + f.toString();
+    registerTooltip(canvasFlex.div, tooltiptext);
     addButtonAction(canvasFlex.div, bind(function(i) {
-      addAction({type:ACTION_FRUIT_ACTIVE, slot:i, silent:true, allow_empty:true});
+      var slotnum = i;
+      if(i == state.fruit_active) slotnum = -1; // allow having no fruit at all active, by clicking the arrow of the active fruit
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:slotnum, silent:true, allow_empty:true});
       update();
     }, i), 'activate stored fruit ' + i + ': ' + fruit_name);
   }
-  y += s * 1.1;
+  y += s;
 
   ////////
 
@@ -941,6 +1003,11 @@ function updateFruitUI() {
 
   x = 0;
   for(var i = 0; i < num; i++) {
+    if(x + 0.5 * s > s * num_fruits_width) {
+      x = 0;
+      y += s * 1.2;
+    }
+
     var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
     x += s;
     canvasFlex.div.style.border = '1px solid black';
@@ -965,7 +1032,7 @@ function updateFruitUI() {
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t]);
   y += s;
-  titleFlex.div.innerText = 'sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
+  titleFlex.div.innerText = 'Sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
   help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
   registerTooltip(titleFlex.div, help);
 
@@ -1085,4 +1152,35 @@ function isFruitInteresting(fruit) {
   //if(getActiveFruit() && getActiveFruit().tier + 1 == fruit.tier) return 1; // if the player is using a fruit with tier - 1, then likely that one still has better abilities and the player is trying to collect next tier fruits, so consider it interesting. This is interesting, but not interesting enough to warrant returning 2, because this heuristic depends on carried fruit
 
   return 0;
+}
+
+
+// the "achievement unlocked" chip at the bottom
+var fruitChipFlex = undefined;
+
+function removeFruitChip() {
+  if(!fruitChipFlex) return;
+
+  fruitChipFlex.removeSelf(gameFlex);
+  fruitChipFlex = undefined;
+}
+
+function showFruitChip(message) {
+  showMessage(message, C_NATURE, 208302236);
+
+  removeFruitChip();
+
+  fruitChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
+  fruitChipFlex.div.style.backgroundColor = '#cfcd';
+
+  var canvasFlex = new Flex(fruitChipFlex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+  renderImage(images_apple[3], canvas);
+
+  var textFlex = new Flex(fruitChipFlex, [0, 0, 0.7], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  textFlex.div.innerHTML = message;
+
+  addButtonAction(fruitChipFlex.div, removeFruitChip);
 }

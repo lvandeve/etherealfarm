@@ -562,6 +562,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
 
+  if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+    if(state.upgrades[resin_choice0].count == 2) {
+      var mul = Num(resin_choice0_production_bonus + 1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['resin choice: production', true, mul, result.clone()]);
+    }
+  }
 
 
   if(!basic) {
@@ -613,6 +620,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
         var mul = getFruitBoost(FRUIT_NUTBOOST, level, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_NUTBOOST), true, mul, result.clone()]);
+      }
+    }
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+      var level = getFruitAbility(FRUIT_SEED_OVERLOAD, true);
+      if(level > 0) {
+        var mul = getFruitBoost(FRUIT_SEED_OVERLOAD, level, getFruitTier(true)).addr(1);
+        result.seeds.mulInPlace(mul);
+        if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_SEED_OVERLOAD), true, mul, result.clone()]);
       }
     }
   }
@@ -873,9 +888,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // leech, only computed here in case of pretend for tooltips/dialogs, without pretent leech is computed in more correct way in precomputeField()
   if(pretend == 2 && this.type == CROPTYPE_BRASSICA && f) {
-    var leech = this.getLeech(f);
-    var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var p = prefield[f.y][f.x];
+    var leech = this.getLeech(f, null, p.getBrassicaBreakdownCroptype());
+    var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var total = Res();
     var num = 0;
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -984,10 +999,28 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
 
     if(this.type == CROPTYPE_NETTLE) {
       var level = getFruitAbility(FRUIT_NETTLEBOOST, true);
+      var mul0;
       if(level > 0) {
         var mul = getFruitBoost(FRUIT_NETTLEBOOST, level, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_NETTLEBOOST), true, mul, result.clone()]);
+        mul0 = mul;
+      }
+      var level2 = getFruitAbility(FRUIT_MIX, true);
+      if(level2 > 0) {
+        var mul;
+        if(level > 0) {
+          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_nettle);
+          // combined with pure nettle ability. Don't take the cube root now, that'd cripple it too much in this case,
+          // instead make it additive. Which still cripples it a lot (it's worth only in the order of 2x, while the pure nettle ability is like 10000x or so, but at least it's not 1.02x which it'd be if we also did cuberoot thing now)
+          var sum = mul.add(mul0).subr(1); // effective combined multiplier
+          mul = sum.subr(1).div(mul0.subr(1));
+        } else {
+          // adjust with that cuberoot-ish power
+          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_nettle).addr(1).powr(mix_pow_nettle);
+        }
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MIX), true, mul, result.clone()]);
       }
     }
   }
@@ -1153,10 +1186,28 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   if(basic != 2) {
     if(this.type == CROPTYPE_BEE) {
       var level = getFruitAbility(FRUIT_BEEBOOST, true);
+      var mul0;
       if(level > 0) {
         var mul = getFruitBoost(FRUIT_BEEBOOST, level, getFruitTier(true)).addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BEEBOOST), true, mul, result.clone()]);
+        mul0 = mul;
+      }
+      var level2 = getFruitAbility(FRUIT_MIX, true);
+      if(level2 > 0) {
+        var mul;
+        if(level > 0) {
+          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_bee);
+          // combined with pure bee ability. Don't take the cube root now, that'd cripple it too much in this case,
+          // instead make it additive. Which still cripples it a lot (it's worth only in the order of 2x, while the pure bee ability is like 10000x or so, but at least it's not 1.02x which it'd be if we also did cuberoot thing now)
+          var sum = mul.add(mul0).subr(1); // effective combined multiplier
+          mul = sum.subr(1).div(mul0.subr(1));
+        } else {
+          // adjust with that cuberoot-ish power
+          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_bee).addr(1).powr(mix_pow_bee);
+        }
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MIX), true, mul, result.clone()]);
       }
     }
   }
@@ -1210,9 +1261,9 @@ Crop.prototype.isPostLife = function(f) {
 
 // This returns the leech ratio of this plant, not the actual resource amount leeched
 // Only correct for already planted leeching plants (for the penalty of multiple planted ones computation)
-// opt_nuts: return the leech from nuts, which is less
+// croptype: which croptype we're leeching from (CROPTYPE_BERRY, CROPTYPE_MUSH or CROPTYPE_NUTS)
 // aka getCopy
-Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
+Crop.prototype.getLeech = function(f, breakdown, croptype) {
   if(this.type != CROPTYPE_BRASSICA) {
     var result = Num(0);
     if(breakdown) breakdown.push(['none', true, Num(0), result.clone()]);
@@ -1269,27 +1320,65 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
     if(breakdown) breakdown.push(['winter malus', true, mul, result.clone()]);
   }
 
-  if(!opt_nuts) {
+  if(croptype != CROPTYPE_NUT) {
     var level = getFruitAbility(FRUIT_BRASSICA, true);
-    if(level > 0 && state.challenge != challenge_wasabi) {
-      var fruitbonus = getFruitBoost(FRUIT_BRASSICA, level, getFruitTier(true));
-      var mul = fruitbonus.addr(1);
+    var level2 = getFruitAbility(FRUIT_MIX, true);
+    if((level > 0 || level2 > 0) && state.challenge != challenge_wasabi) {
+      var mul = level > 0 ? getFruitBoost(FRUIT_BRASSICA, level, getFruitTier(true)).addr(1) : (new Num(1));
+      var mix_pow = (croptype == CROPTYPE_BERRY) ? mix_pow_brassica_berry : mix_pow_brassica_mush;
+
+      var mul_b = mul; // multiplier of pure brassica ability part only
+      var mul_m = null; // multiplier of fruit mix ability, combined with mul_b to form the final mul
+
+      if(level2 > 0) {
+        if(level > 0) {
+          // pure brassica ability also present, merely additively add this one, and without the cuberoot-ish reduction
+          var mul2 = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_brassica).addr(1);
+          var sum = mul.add(mul2).subr(1); // effective combined multiplier
+          mul_m = sum.subr(1).div(mul_b.subr(1));
+          mul = sum;
+        } else {
+          var b = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_brassica);
+
+          // normally, like for bee and nettle for FRUIT_MIX, the formula for mul_m would now be: mul_m = b.addr(1).powr(mix_pow), where 1 is added to turn bonus into multiplier, then the power applied
+          // however, brassica copying is not itself the actual bonus / multiplier you get from crops: if brassica copying is 100% it multiplies production by 2x. If there's a bonus of 50% (1.5x) added here, then it doesn't multiply production by 1.5x, but instead it brings it from 2x to 2.5x, effectively a bonus of only 25%
+          // to compensate for FRUIT_MIX's multiple abilities, a power is applied (that has roughtly the effect of: "FRUIT_MIX has 3 abilities, so take cuberoot of each multiplier")
+          // but we want to apply that cuberoot to the effect on production, not on the effect on the bonus on the brassica
+          // that's what the code below tries to achieve. This makes the mix fruit in between the brassica fruit and bee fruit on berries (if its base multiplier used in getFruitBoost is 1 at least), but only if all berries (at least those with highest production) touch brassica. If there are more berries than that, then pure bee fruit, or pure brassica fruit, do better than the mix.
+          var m = b.addr(1); // turn bonus into multiplier
+          var r0 = result.addr(1); // the result on global production (global here only referring to berries copied by this brassica, but global as opposed to looking at bonus on brassica copying itself only), without this bonus at all
+          var r1 = result.mul(m).addr(1); // the result on global production, with full b (non cuberoot corrected) applied
+          //var m2 = r1.div(r0).powr(mix_pow); // take the cube root (roughly, mix_pow is not 1/3) of the result that going from r0 to r1 has on global production
+          var m2 = r1.div(r0).addr(1).powr(mix_pow).subr(1); // take the cube root (roughly, mix_pow is not 1/3) of the result that going from r0 to r1 has on global production. The extra addr(1) and subr(1) are to make it also work in case of very low multipliers (like during basic challenge). TODO: verify if that is correct
+          var r2 = result.addr(1).mul(m2); // apply the cube rooted bonus to global production (the addr(1) is before the mul now, since we're computing the effect m2 has on r0)
+          var c = r2.div(result); // the multiplier that we actually need now, to get to the effect of r2, but in terms of brassica copying itself instead of on global production
+
+          mul_m = c;
+          mul = mul_b.mul(mul_m);
+        }
+      }
       var eol_malus = Num(1);
       var winter_malus = Num(1);
 
-      if(end_of_life) {
+     if(end_of_life) {
         // the malus affects the fruit multipleir, but not the base 100% that it's added to, so it's slightly differnt (very different if fruit is less than +100% bonus)
-        var mul2 = fruitbonus.mulr(sturdy ? 0.666666 : 0.333333).addr(1);
+        var mul2 = mul.subr(1).mulr(sturdy ? 0.666666 : 0.333333).addr(1);
         eol_malus = mul2.div(mul);
       }
       if(winter_weakness) {
         // the winter malus affects the fruit multipleir, but not the base 100% that it's added to, so it's slightly differnt (very different if fruit is less than +100% bonus)
-        var mul2 = fruitbonus.mul(winter_malus_brassica).addr(1);
+        var mul2 = mul.subr(1).mul(winter_malus_brassica).addr(1);
         winter_malus = mul2.div(mul);
       }
 
-      result.mulInPlace(mul);
-      if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BRASSICA), true, mul, result.clone()]);
+      if(level > 0) {
+        result.mulInPlace(mul_b);
+        if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_BRASSICA), true, mul_b, result.clone()]);
+      }
+      if(level2 > 0) {
+        result.mulInPlace(mul_m);
+        if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MIX), true, mul_m, result.clone()]);
+      }
 
       if(end_of_life) {
         result.mulInPlace(eol_malus);
@@ -1303,7 +1392,7 @@ Crop.prototype.getLeech = function(f, breakdown, opt_nuts) {
   }
 
 
-  if(opt_nuts) {
+  if(croptype == CROPTYPE_NUT) {
     var mul = Num(0.5);
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['copying from nuts', true, mul, result.clone()]);
@@ -2104,6 +2193,8 @@ function registerBrassicaTimeIncrease(cropid, cost, time_increase, prev_crop_num
   return result;
 }
 
+var choice_upgrades = [];
+
 // an upgrade that increases the multiplier of a crop
 function registerChoiceUpgrade(name, pre, fun, name_a, name_b, description_a, description_b, bgcolor, bordercolor, image0, image1) {
   // the index this new upgrade will get
@@ -2121,6 +2212,8 @@ function registerChoiceUpgrade(name, pre, fun, name_a, name_b, description_a, de
   u.choicename_b = name_b;
   u.description_a = description_a;
   u.description_b = description_b;
+
+  choice_upgrades.push(u);
 
   return result;
 }
@@ -2589,9 +2682,25 @@ var watercress_choice0 = registerChoiceUpgrade('watercress choice',
   },
  'Sturdy brassica', 'High-yield brassica',
  'Increases brassica (such as watercress) copying effect constantly by 25% and its lifetime by 50%. This benefits idle play more than active play, compared to the other choice. Other effects may apply to higher tier brassica.',
- 'Increases brassica (such as watercress) copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the watercress. Refreshing or replanting the watercress gives back the full bonus. This benefits active play more than idle play, compared to the other choice. Other effects may apply to higher tier brassica.',
+ 'Increases brassica (such as watercress) copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the brassica. Refreshing or replanting the brassica gives back the full bonus. This benefits active play more than idle play, compared to the other choice. Other effects may apply to higher tier brassica.',
  '#000', '#fff', images_watercress[4], undefined);
 upgrades[watercress_choice0].istreebasedupgrade = true;
+
+
+var resin_choice0_resin_bonus = 0.2;
+var resin_choice0_production_bonus = 0.2;
+
+var resin_choice0 = registerChoiceUpgrade('resin choice',
+  function() {
+    return state.treelevel >= 22;
+  }, function() {
+    // nothing to do, fact that upgrade is done is handled elsewhere
+  },
+ 'Resin bonus', 'Production bonus',
+ 'Gives a ' + (resin_choice0_resin_bonus * 100) + '% bonus to resin production, but not to seed and spores production',
+ 'Gives a ' + (resin_choice0_production_bonus * 100) + '% bonus to seed and spores production, but not to resin production',
+ '#000', '#fff', image_resin, undefined);
+upgrades[resin_choice0].istreebasedupgrade = true;
 
 
 
@@ -2836,8 +2945,8 @@ function registerPlantTypeMedals(cropid, opt_start_at_30) {
   var id2 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 20);
   var id3 = registerPlantTypeMedal(cropid, 30); // requires bigger field
   var id4 = registerPlantTypeMedal(cropid, 40);
-  // room for 50, 60 and 70 or 75. An 80 is most likely never needed, it's unlikely field size above 9x9 is supported (cells would get too small), which with 81 cells of which 2 taken by tree is not enough for an 80 medal.
-  medal_register_id++;
+  var id5 = registerPlantTypeMedal(cropid, 50);
+  // room for 60 and 70 or 75. An 80 is most likely never needed, it's unlikely field size above 9x9 is supported (cells would get too small), which with 81 cells of which 2 taken by tree is not enough for an 80 medal.
   medal_register_id++;
   medal_register_id++;
 
@@ -2847,6 +2956,7 @@ function registerPlantTypeMedals(cropid, opt_start_at_30) {
     if(medals[id1] && medals[id2]) medals[id2].hint = id1;
     if(medals[id2] && medals[id3]) medals[id3].hint = id2;
     if(medals[id3] && medals[id4]) medals[id4].hint = id3;
+    if(medals[id4] && medals[id5]) medals[id5].hint = id4;
   }
 
   return id0;
@@ -4428,6 +4538,10 @@ var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:
 }, function(){return state.numw >= 7 && state.numh >= 6}, 1, 'increase basic field size to 7x7 tiles', undefined, undefined, field_summer[0]);
 
 
+var upgrade2_extra_fruit_slot4 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:200e6,essence:100000}), 2, function() {
+  state.fruit_slots++;
+}, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[4]);
+
 ///////////////////////////
 LEVEL2 = 8;
 upgrade2_register_id = 300;
@@ -4466,6 +4580,11 @@ var upgrade2_twigs_siphoning = registerUpgrade2('twigs siphoning', LEVEL2, Res({
   return !!state.upgrades2[upgrade2_twigs_extraction].count;
 }, 1, 'gain more twigs at tree levels above ' + twigs_siphoning_level + ': base of exponentiation switches from ' + twigs_base_twigs_extraction + ' to ' + twigs_base_twigs_siphoning + ' starting from this level',
 undefined, undefined, mistletoe[1]);
+
+
+var upgrade2_extra_fruit_slot5 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:200e9,essence:1000000}), 2, function() {
+  state.fruit_slots++;
+}, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[5]);
 
 //function registerUpgrade2(name, treelevel2, cost, cost_increase, fun, pre, maxcount, description, bgcolor, bordercolor, image0, image1) {
 
@@ -4507,16 +4626,17 @@ var upgrade2_nuts_bonus = registerUpgrade2('unused nuts bonus', LEVEL2, Res({res
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// a function that starts at 0, and for x going towards infinity, outputs values towards 1 (horizontal asymptote at 1)
+// a function that starts at 0 for x = 0, and for x going towards infinity, outputs values towards 1 (horizontal asymptote at 1)
 // this for e.g. effects of upgrades with diminishing returns
 // h = when (for which x) should 50% (0.5) be reached
+// the function is also antisymmetric for negative x, it's an s curve
 function towards1(x, h) {
   // some options for this:
   // *) atan(x) / (pi/2)
   // *) tanh(x)
   // *) erf(x): goes too fast to 1 and too horizontal once 1 reached
   // *) x / sqrt(x * x + 1)
-  if(h == 0) return 1;
+  if(h == 0) return (x == 0) ? 0 : (x < 0 ? -1 : 1);
   x *= 0.57735 / h; // 0.57735 is the value such that towards1(h, h) returns 0.5
   return x / Math.sqrt(x * x + 1);
 }
@@ -4525,7 +4645,6 @@ function towards1(x, h) {
 // fruit abilities
 var fruit_index = 0;
 var FRUIT_NONE = fruit_index++; // 0 means no ability
-var firstFruitAbility = fruit_index;
 var FRUIT_BERRYBOOST = fruit_index++; // boosts seed production of berries
 var FRUIT_MUSHBOOST = fruit_index++; // boosts muchrooms spore production but also seed consumption
 var FRUIT_MUSHEFF = fruit_index++; // decreases seed consumption of mushroom (but same spore production output) (mushroom ecomony)
@@ -4534,7 +4653,18 @@ var FRUIT_BRASSICA = fruit_index++; // watercress copying
 var FRUIT_GROWSPEED = fruit_index++; // this one can be swapped when planting something. It's ok to have a few fruit types that require situational swapping
 var FRUIT_WEATHER = fruit_index++; // idem
 var FRUIT_NETTLEBOOST = fruit_index++;
+// platinum and higher abilities
+var FRUIT_RESINBOOST = fruit_index++;
+var FRUIT_TWIGSBOOST = fruit_index++;
+var FRUIT_NUTBOOST = fruit_index++;
+var FRUIT_BEEBOOST = fruit_index++;
+// sapphire and higher abilities
+var FRUIT_MIX = fruit_index++; // nettle/brassica/bee mix
+var FRUIT_TREELEVEL = fruit_index++; // treelevel production bonus
+var FRUIT_SEED_OVERLOAD = fruit_index++; // increase seed production but also mushrooms's seed consumption
+
 // These seasonal abilities only exist for the appropriate seasonal fruit and do not take up a regular slot
+fruit_index = 20; // leave a few available spots for non-seasonal abilities above
 var FRUIT_SPRING = fruit_index++;
 var FRUIT_SUMMER = fruit_index++;
 var FRUIT_AUTUMN = fruit_index++;
@@ -4543,15 +4673,10 @@ var FRUIT_SPRING_SUMMER = fruit_index++;
 var FRUIT_SUMMER_AUTUMN = fruit_index++;
 var FRUIT_AUTUMN_WINTER = fruit_index++;
 var FRUIT_WINTER_SPRING = fruit_index++;
-var FRUIT_ALL_SEASON = fruit_index++;
-// platinum and higher abilities
-var FRUIT_RESINBOOST = fruit_index++;
-var FRUIT_TWIGSBOOST = fruit_index++;
-var FRUIT_NUTBOOST = fruit_index++;
-var FRUIT_BEEBOOST = fruit_index++;
+var FRUIT_ALL_SEASON = fruit_index++; // star fruit
+var FRUIT_ALL_SEASON2 = fruit_index++; // dragon fruit
+// BEWARE: only add new ones at the end or before the seasonal ones, since the numeric index values are saved in savegames!
 
-// BEWARE: only add new ones at the end, since the numeric index values are saved in savegames!
-var numFruitAbilities = fruit_index - 1; // minus one because FRUIT_NONE doesn't count
 // NOT TODO: one that extends lifetime of watercress --> do not do this: too much manual work required with swapping fruits when active playing with watercress then
 // NOT TODO: one affecting ferns: same issue: causes too much manual work during active playing and counting on fern spawn times
 // NOT TODO: one decreasing cost: would cause an annoying technique where you have to swap fruits all the time before planting anything
@@ -4592,7 +4717,9 @@ function getFruitBoost(ability, level, tier) {
   }
   if(ability == FRUIT_NETTLEBOOST) {
     // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
-    return Num(base * 0.5 * level);
+    // but on the other hand, make it higher than the multiplier for bee boost, otherwise bee is strictly better than this one
+    // note that flower boost is strictly better than all of those but having 1 much stronger ability is ok
+    return Num(base * 0.75 * level);
   }
   if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
     return Num(0.25); // not upgradeable
@@ -4604,6 +4731,13 @@ function getFruitBoost(ability, level, tier) {
   if(ability == FRUIT_ALL_SEASON) {
     if(!state.upgrades3[upgrade3_fruitmix2].count) return Num(0)
     return Num(0.35); // not upgradeable
+  }
+  if(ability == FRUIT_ALL_SEASON2) {
+    if(!state.upgrades3[upgrade3_fruitmix3].count) {
+      if(!state.upgrades3[upgrade3_fruitmix2].count) return Num(0)
+      return Num(0.35); // act like star fruit in that case
+    }
+    return Num(1.0); // not upgradeable
   }
   if(ability == FRUIT_RESINBOOST) {
     var amount = towards1(level, 5);
@@ -4630,9 +4764,42 @@ function getFruitBoost(ability, level, tier) {
     // bee boost is very similar to flower boost, but smaller, to have some variation: flowerboost is better, but you can still combine both to get way more boost
     return Num(base * level * 0.5);
   }
+  if(ability == FRUIT_MIX) {
+    /*
+    mixes bee, nettle and brassica in an additive way with their corresponding fruits
+    nettle, brassica and bee's multipliers for the deticated abilities are weighted by respectively 0.75, 1.25 and 0.5
+    so it's used for different effects, but it should be ensured that it's still about as powerful as 1 effect for balance
+    each effect is an independent multiplier making the production higher, so in theory achieving a perfect equality is done by taking the cube root of the multiplier for each of the effect
+    however, bee/brassica/nettle all improve mushroom, but only bee/brassica improve seeds. For seeds using sqrt of the effects should be enough.
+    to strike a balance, do the following at the place where the multipliers from this fruit ability are computed:
+    apply for each effect the multiplier, then add 1 as is always done to make these boosts into multipliers, then apply the given power, with the numbers such as mix_mul_nettle and mix_pow_nettle defined further below
+    the multipliers are made to roughly match (but not 100%) those of the corresponding single abilities, and the powers are roughly like cube root, but adjusted to give less focus to nettle and a bit more to those abilities that can also benefit seeds
+
+    by design, combining this ability with another ability that is nettle, brassica or bee, severely harms this one: the fact that it's then additive (and so on the order of only 2x or so boost then), and the fact that fruit abilities are supposed to give boosts of thousands of percents at this point, makes this ability then much less useful.
+
+    A base multiplier of slightly higher than 1 is applied here, because even if perfectly balanced, without increasing its power a little bit its stats often fall short of a pure bee or brassica fruit
+    */
+    return Num(base * level * 1.2);
+  }
+  if(ability == FRUIT_TREELEVEL) {
+    // toned down a little bit, to not be too strong compared to flower boost, but still very useful as an overall production boost that becomes better than bee boost eventually
+    return Num(base * level * 0.75);
+  }
+  if(ability == FRUIT_SEED_OVERLOAD) {
+    return Num(base * level);
+  }
 
   return Num(0.1);
 }
+
+var mix_mul_nettle = 0.75;
+var mix_pow_nettle = 0.3;
+var mix_mul_brassica = 1.25;
+var mix_pow_brassica_berry = 0.6;
+var mix_pow_brassica_mush = 0.3;
+var mix_mul_bee = 0.5;
+var mix_pow_bee = 0.4;
+
 
 // Is an ability that doesn't take up a regular fruit ability slot, but comes in addition
 // Such ability cannot be upgraded
@@ -4646,6 +4813,7 @@ function isInherentAbility(ability) {
   if(ability == FRUIT_AUTUMN_WINTER) return true;
   if(ability == FRUIT_WINTER_SPRING) return true;
   if(ability == FRUIT_ALL_SEASON) return true;
+  if(ability == FRUIT_ALL_SEASON2) return true;
   return false;
 }
 
@@ -4689,13 +4857,13 @@ function getFruitTierCost(tier) {
     case 4: return 45; // this is a bit of a dip in the progression, for backwards compatibility when only up to gold was available and the formula progressed too slowly
     case 5: return 100;
     case 6: return 500;
+    case 7: return 1500;
     // TODO: these numbers must be tuned once those fruits are introduced
-    case 7: return 1000;
-    case 8: return 2000;
-    case 9: return 4000;
-    case 10: return 8000;
+    case 8: return 7500;
+    case 9: return 10000;
+    case 10: return 20000;
   }
-  return tier < 0 ? 0 : 10000;
+  return tier < 0 ? 0 : 20000;
 }
 
 // if due to a game update the costs of certain abilities of fruits changes, this recomputes the correct amount of essence spent
@@ -4869,8 +5037,48 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return (roll > prob20) ? 6 : 5;
   }
 
+  // level 115: sapphire introduced
+  if(treelevel >= 115 && treelevel <= 119) {
+    return (roll > prob75) ? 7 : 6;
+  }
+
+  // level 120
+  if(treelevel >= 120 && treelevel <= 124) {
+    return (roll > prob50) ? 7 : 6;
+  }
+
+  // level 125
+  if(treelevel >= 125 && treelevel <= 129) {
+    return (roll > prob25) ? 7 : 6;
+  }
+
+  // level 130
+  if(treelevel >= 130 && treelevel <= 134) {
+    return (roll > prob20) ? 7 : 6;
+  }
+
+  /*// level 135: emerald introduced
+  if(treelevel >= 135 && treelevel <= 139) {
+    return (roll > prob75) ? 8 : 7;
+  }
+
+  // level 140
+  if(treelevel >= 140 && treelevel <= 144) {
+    return (roll > prob50) ? 8 : 7;
+  }
+
+  // level 145
+  if(treelevel >= 145 && treelevel <= 149) {
+    return (roll > prob25) ? 8 : 7;
+  }
+
+  // level 150
+  if(treelevel >= 150 && treelevel <= 154) {
+    return (roll > prob20) ? 8 : 7;
+  }*/
+
   // Higher tree levels are not yet implemented for the fruits
-  return 6;
+  return 7;
 }
 
 // how many abilities should a fruit of this tier have (excluding any seasonal ability)
@@ -4879,8 +5087,9 @@ function getNumFruitAbilities(tier) {
   if(tier >= 1) num_abilities = 2;
   if(tier >= 3) num_abilities = 3;
   if(tier >= 5) num_abilities = 4;
-  // These are not yet supported, this is preliminary
   if(tier >= 7) num_abilities = 5;
+  // These are not yet supported
+  //if(tier >= 9) num_abilities = 6;
   return num_abilities;
 }
 
@@ -4916,6 +5125,7 @@ fuse_skip[FRUIT_SUMMER_AUTUMN] = true;
 fuse_skip[FRUIT_AUTUMN_WINTER] = true;
 fuse_skip[FRUIT_WINTER_SPRING] = true;
 fuse_skip[FRUIT_ALL_SEASON] = true;
+fuse_skip[FRUIT_ALL_SEASON2] = true;
 
 
 // automatically purchases ability levels in fruit c, given what the levels were in fruit a and b
@@ -4967,7 +5177,7 @@ function fuseFruitAutoLevel(a, b, c) {
 // whether this fruit's seasonal type fully contains the given type
 function fruitContainsSeasonalType(fruit, type) {
   if(fruit.type == type) return true;
-  if(fruit.type == 9) return true;
+  if(fruit.type == 9 || fruit.type == 10) return true;
   if(fruit.type == 5) return (type == 1 || type == 2);
   if(fruit.type == 6) return (type == 2 || type == 3);
   if(fruit.type == 7) return (type == 3 || type == 4);
@@ -4976,44 +5186,54 @@ function fruitContainsSeasonalType(fruit, type) {
 }
 
 // a and b are season types of 2 fruits (0=apple, etc...)
-// fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits
+// fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits, 5: allow forming the dragon fruit
 function fruitSeasonMix(a, b, fruitmix) {
   if(a == b) return a;
 
-  if(fruitmix == 2 || fruitmix == 4) {
+  if(fruitmix >= 2) {
     if((a == 1 && b == 2) || (a == 2 && b == 1)) return 5; // mango
     if((a == 2 && b == 3) || (a == 3 && b == 2)) return 6; // plum
     if((a == 3 && b == 4) || (a == 4 && b == 3)) return 7; // quince
     if((a == 4 && b == 1) || (a == 1 && b == 4)) return 8; // kumquat
   }
-  if(fruitmix == 4) {
-    if((a == 5 && b == 7) || (a == 7 && b == 5)) return 9; // dragonfruit
-    if((a == 6 && b == 8) || (a == 8 && b == 6)) return 9; // dragonfruit
+  if(fruitmix >= 4) {
+    if((a == 5 && b == 7) || (a == 7 && b == 5)) return 9; // star fruit
+    if((a == 6 && b == 8) || (a == 8 && b == 6)) return 9; // star fruit
+  }
+  if(fruitmix >= 5) {
+    if((a == 0 && b == 9) || (a == 9 && b == 0)) return 10; // dragon fruit
   }
 
   var a2 = 0; // flags: 1=spring, 2=summer, 4=autumn, 8=winter
   if(a >= 1 && a <= 4) a2 = (1 << (a - 1));
   else if(a >= 5 && a <= 7) a2 = (3 << (a - 5));
   else if(a == 8) a2 = 9;
-  else if(a == 9) a2 = 15;
+  else if(a == 9 || a == 10) a2 = 15;
 
   var b2 = 0; // flags: 1=spring, 2=summer, 4=autumn, 8=winter
   if(b >= 1 && b <= 4) b2 = (1 << (b - 1));
   else if(b >= 5 && b <= 7) b2 = (3 << (b - 5));
   else if(b == 8) b2 = 9;
-  else if(b == 9) b2 = 15;
+  else if(b == 9 || b == 10) b2 = 15;
 
-  // the type when going down (mixing disabled): still keeps for example winter if both a and b support winter (e.g. dragon fruit + quince, or quince + medlar)
+  // the type when going down (mixing disabled): still keeps for example winter if both a and b support winter (e.g. star fruit + quince, or quince + medlar)
   var c2 = a2 & b2;
+
+  var highest = Math.max(a, b); // could become up to 9 (star fruit) or 10 (dragon fruit)
 
   // This code makes it allow keeping a multi-season fruit if mixed with a matching single-season fruit
   // This makes the combining slightly easier, however not actually that much easier:
-  // Without this feature, it's still easy to create any multi-season fruit you want given a single-season fruit with the desired abilities, by mixing it with a dummy (don't care abilities) other-seasonal fruit, which is easy enough to get since there the abilities don't matter. Same for creating a dragon fruit with a dummy second 2-seasonal fruit.
+  // Without this feature, it's still easy to create any multi-season fruit you want given a single-season fruit with the desired abilities, by mixing it with a dummy (don't care abilities) other-seasonal fruit, which is easy enough to get since there the abilities don't matter. Same for creating a star fruit with a dummy second 2-seasonal fruit.
   var allow_keep_multi = true;
   if(allow_keep_multi) {
+    if(fruitmix >= 5) {
+      if(highest == 10) return 10; // dragon fruit can stay even if with apple. But due to other checks elsewhere that forbid fusing dragon fruits as final form, this never has actual effect
+      if((a2 == 15 || b2 == 15) && c2 != 0) return highest; // stay as is
+      if((a2 == 15 || b2 == 15) && c2 == 0) return 10; // star fruit with apple can become dragon fruit. Checks elsewhere will ensure that you can only fuse fruits with same abilities for this
+    }
     if(fruitmix >= 4) {
       // also allow to keep 4-season fruits, so long as at least not mixed with an apple
-      if((a2 == 15 || b2 == 15) && c2 != 0) return 9; // dragonfruit
+      if((a2 == 15 || b2 == 15) && c2 != 0) return 9; // star fruit
     }
     if(fruitmix >= 2) {
       // also allow to keep 2-season fruits when fused with a contained 1-season fruit
@@ -5024,7 +5244,8 @@ function fruitSeasonMix(a, b, fruitmix) {
     }
   }
 
-  if(c2 == 15) return 9; // dragon fruit
+  // some of these are only allowed if fruitmix large enough, but those checks are elsewhere
+  if(c2 == 15) return highest; // star fruit or dragon fruit
   else if((c2 & 3) == 3) return 5; // mango
   else if((c2 & 6) == 6) return 6; // plum
   else if((c2 & 12) == 12) return 7; // quince
@@ -5037,11 +5258,42 @@ function fruitSeasonMix(a, b, fruitmix) {
   return 0;
 }
 
-// when this is false, then once you have a good 2-seasonal fruit, it's trivial to make a dragon fruit out of it. If this is true, you need to get two perfect 2-seasonal fruits to make the dragon fruit, which makes the 2-seasonal fruits a bit more relevant during a certain period of the game (per fruit tier).
-var harder_dragonfruit_fusing = true;
+
+
+// when this is false, then once you have a good 2-seasonal fruit, it's trivial to make a star fruit out of it. If this is true, you need to get two perfect 2-seasonal fruits to make the star fruit, which makes the 2-seasonal fruits a bit more relevant during a certain period of the game (per fruit tier).
+// this also extends to higher fruits like the dragon fruit
+var harder_starfruit_fusing = true;
+
+function fruitsHaveSameAbilities(a, b) {
+  var na = a.abilities.length;
+  var nb = b.abilities.length;
+  var sameabilities = true;
+  var ma = {};
+  var mb = {};
+  for(var i = 0; i < na; i++) {
+    if(fuse_skip[a.abilities[i]]) continue;
+    ma[a.abilities[i]] = true;
+  }
+  for(var i = 0; i < nb; i++) {
+    if(fuse_skip[b.abilities[i]]) continue;
+    if(!ma[b.abilities[i]]) {
+      sameabilities = false;
+      break;
+    }
+    mb[b.abilities[i]] = true;
+  }
+  for(var i = 0; i < na; i++) {
+    if(fuse_skip[a.abilities[i]]) continue;
+    if(!mb[a.abilities[i]]) {
+      sameabilities = false;
+      break;
+    }
+  }
+  return sameabilities;
+}
 
 // opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
-// fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits
+// fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruit, 5: allow forming the dragon fruit
 function fuseFruit(a, b, fruitmix, opt_message) {
   if(!a || !b) return null;
   if(a == b) return null;
@@ -5052,39 +5304,45 @@ function fuseFruit(a, b, fruitmix, opt_message) {
   var nb = b.abilities.length;
 
   var seasonmix_result = fruitSeasonMix(a.type, b.type, fruitmix);
-  if(harder_dragonfruit_fusing) {
-    if(a.type == 9 || b.type == 9) {
-      if(opt_message) opt_message[0] = 'Dragon fruits are the final form and cannot be fused, their abilities cannot be changed';
+  if(harder_starfruit_fusing) {
+    if(a.type == 10 || b.type == 10) {
+      if(opt_message) opt_message[0] = 'dragon fruits are the final form and cannot be fused, their abilities cannot be changed';
       return null;
     }
-    if(seasonmix_result == 9) {
-      var sameabilities = true;
-      var ma = {};
-      var mb = {};
-      for(var i = 0; i < na; i++) {
-        if(fuse_skip[a.abilities[i]]) continue;
-        ma[a.abilities[i]] = true;
-      }
-      for(var i = 0; i < nb; i++) {
-        if(fuse_skip[b.abilities[i]]) continue;
-        if(!ma[b.abilities[i]]) {
-          sameabilities = false;
-          break;
+    if(a.type == 9 || b.type == 9) {
+      if(fruitmix < 5) {
+        if(a.type == b.type) {
+          if(opt_message) opt_message[0] = 'Star fruits cannot be fused with each other. Star fruits are an almost-final form and their abilities cannot be changed.';
+        } else if(!(a.type == 0 || b.type == 0)) {
+          if(opt_message) opt_message[0] = 'Star fruits cannot be fused with this fruit type. Star fruits are an almost-final form and its abilities cannot be changed.';
+        } else {
+          if(opt_message) opt_message[0] = 'You need another squirrel upgrade before you can perform a fuse like this.';
         }
-        mb[b.abilities[i]] = true;
+        return null;
       }
-      for(var i = 0; i < na; i++) {
-        if(fuse_skip[a.abilities[i]]) continue;
-        if(!mb[a.abilities[i]]) {
-          sameabilities = false;
-          break;
-        }
+      if(!(a.type == 0 || b.type == 0)) {
+        if(opt_message) opt_message[0] = 'Star fruits can only be fused with an apple with the same abilities, to get a dragon fruit';
+        return null;
       }
+    }
+    if(seasonmix_result == 10) {
+      var sameabilities = fruitsHaveSameAbilities(a, b);
       if(!sameabilities) {
         seasonmix_result = 0;
-        if(opt_message) opt_message[0] = 'You could get a legendary dragon fruit out of these fruit types, but only if they have the same abilities. Fuse two complementing two-seasonal fruits with the same abilities to get a dragon fruit instead of a mere apple.';
+        if(opt_message) opt_message[0] = 'You could get a legendary dragon fruit out of these fruit types, but only if they have the same abilities. Fuse a star fruit with an apple with the same set of abilities to get a dragon fruit.';
+        return null;
       } else {
-        if(opt_message) opt_message[0] = 'You fused a legendary dragon fruit! Beware, this is its final form, you cannot fuse a dragon fruit with anything and so cannot change its abilities. Ensure that this is what you want to spend the two input fruits on.';
+        if(opt_message) opt_message[0] = 'You fused a legendary dragon fruit! This is its final form, you cannot fuse a dragon fruit with anything else, but it\'s stronger than the original star fruit!';
+      }
+    }
+    if(seasonmix_result == 9) {
+      var sameabilities = fruitsHaveSameAbilities(a, b);
+      if(!sameabilities) {
+        seasonmix_result = 0;
+        if(opt_message) opt_message[0] = 'You could get a 4-season star fruit out of these fruit types, but only if they have the same abilities. Fuse two complementing two-seasonal fruits with the same set of abilities to get a star fruit.';
+        return null;
+      } else {
+        if(opt_message) opt_message[0] = 'You fused a 4-season star fruit! Beware, this is an almost-final form, you cannot fuse a star fruit with anything that changes its abilities anymore. Ensure that this is what you want to spend the two input fruits on.';
       }
     }
   }
@@ -5213,7 +5471,9 @@ var treeboost = Num(0.05); // additive production boost per tree level
 function getTreeBoost() {
   var result = Num(treeboost);
 
-  if(!basicChallenge()) {
+  var basic = basicChallenge();
+
+  if(!basic) {
     var n = state.upgrades2[upgrade2_basic_tree].count;
     n = Math.pow(n, treeboost_exponent_2);
     result.addInPlace(upgrade2_basic_tree_bonus.mulr(n));
@@ -5223,9 +5483,34 @@ function getTreeBoost() {
   l = Math.pow(l, treeboost_exponent_1);
   result.mulrInPlace(l);
 
+  if(basic != 2) {
+    // fruit ability
+    var level = getFruitAbility(FRUIT_TREELEVEL, true);
+    if(level > 0) {
+      var mul = treeLevelFruitBoost(getFruitTier(true), level, state.treelevel, 135);
+      result.mulInPlace(mul);
+    }
+  }
+
   return result;
 }
 
+// returns the boost given by the FRUIT_TREELEVEL fruit
+// for sapphire fruit (which drops as highest tier from 115 to 135) target_level should be 135
+function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, target_level) {
+  var mul = getFruitBoost(FRUIT_TREELEVEL, ability_level, fruit_tier).addr(1);
+  // For sapphire fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
+  // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
+  // TODO: for emerald and higher fruits, adjust target_level everywhere this function is called
+
+  // this is tuned so that from level0 to level1 (115 to 135 for sapphire fruit), about a 2x scaling of the effect happens, but the effect is soft cappped above level1
+  var level0 = target_level - 20;
+  var level1 = target_level;
+  var t = (tree_level - level0) / (level1 - level0);
+  var s = 0.5 * (towards1(t, 0.3) + 1);
+  //s = Math.pow(s, 5);
+  return mul.mulr(s).addr(1);
+}
 
 // outputs the minimum spores required for the tree to go to the given level
 function treeLevelReqBase(level) {
@@ -5319,6 +5604,13 @@ function treeLevelResin(level, breakdown) {
     var bonus = treelevel2_resin_bonus.mulr(state.treelevel2).addr(1);
     resin.mulInPlace(bonus);
     if(breakdown) breakdown.push(['ethereal tree level', true, bonus, resin.clone()]);
+  }
+
+  // resin choice upgrade
+  if(state.upgrades[resin_choice0].count == 1) {
+    var mul = Num(resin_choice0_resin_bonus + 1);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['resin choice: resin', true, mul, resin.clone()]);
   }
 
   // tree's gesture ethereal upgrade
@@ -5975,7 +6267,8 @@ var upgrade3_ethtree_boost = Num(0.2);
 var upgrade3_ethtree = registerUpgrade3('ethereal tree neighbor boost', undefined, 'ethereal tree boosts non-lotus neighbors (non-diagonal) by ' + upgrade3_ethtree_boost.toPercentString(), tree_images[6][1][4]);
 
 var upgrade3_fruitmix = registerUpgrade3('seasonal fruit mixing', undefined, 'Allows fusing mixed seasonal fruits, to get new multi-season fruit types that give the season bonus in 2 seasons:<br> • apricot + pineapple = mango (spring + summer),<br> • pineapple + pear = plum (summer + autumn),<br> • pear + medlar = quince (autumn + winter),<br> • medlar + apricot = kumquat (winter + spring).<br>Other fruit fusing rules work as usual. If this upgrade is removed due to respec, the multi-season fruits temporarily lose their season boost until getting this upgrade again. A later squirrel upgrade will extend the ability of this upgrade.', images_mango[4]);
-var upgrade3_fruitmix2 = registerUpgrade3('seasonal fruit mixing II', undefined, 'The next level of fruit mixing: allows creating the legendary all-season dragon fruit! Fuse mango+quince, or alternatively plum+kumquat, but only if they have the same abilities, to get the dragon fruit. The dragon fruit itself is the final form, it cannot be fused and its abilities cannot be changed. If this squirrel upgrade or its predecessor is removed due to respec, dragon fruits temporarily lose their season boost until getting this upgrade again.', images_dragonfruit[4]);
+var upgrade3_fruitmix2 = registerUpgrade3('seasonal fruit mixing II', undefined, 'A next level of fruit mixing: allows creating the 4-season star fruit! Fuse mango+quince, or alternatively plum+kumquat, but only if they have the same abilities, to get the star fruit. The star fruit is an almost-final form and cannot be fused with anything that changes its abilities anymore. If this squirrel upgrade or its predecessor is removed due to respec, star fruits temporarily lose their season boost until getting this upgrade again.', images_starfruit[4]);
+var upgrade3_fruitmix3 = registerUpgrade3('seasonal fruit mixing III', undefined, 'The next level of fruit mixing: allows creating the legendary dragon fruit! Fuse star fruit + apple, but only if they have the same abilities, to get the dragon fruit, which is a version of the star fruit with more season bonus. The dragon fruit itself is the final form, it cannot be fused and its abilities cannot be changed. If this squirrel upgrade is removed due to respec, dragon fruits temporarily act like star fruit, or lose the season boost entirely if the star fruit squirrel upgrade is also not active, until getting this upgrade again.', images_dragonfruit[4]);
 
 var upgrade3_resin_bonus = Num(0.25);
 var upgrade3_resin = registerUpgrade3('resin bonus', undefined, 'increases resin gain by ' + Num(upgrade3_resin_bonus).toPercentString(), image_resin);
@@ -6046,15 +6339,19 @@ upgrades3[upgrade3_weather_duration].fun = function() {
 registerStage3([upgrade3_berry], [upgrade3_squirrel], [upgrade3_mushroom]);
 registerStage3([upgrade3_nettle], [upgrade3_automaton], [upgrade3_flower]);
 registerStage3([upgrade3_fruitmix], undefined, [upgrade3_seasonfruitprob]);
+
 registerStage3(undefined, [upgrade3_ethtree], undefined, true);
 registerStage3([upgrade3_fruittierprob, upgrade3_growspeed], undefined, [upgrade3_essence, upgrade3_watercress_mush]);
 registerStage3([upgrade3_weather_duration, upgrade3_mushroom], undefined, [upgrade3_fruitmix2, upgrade3_flower_multiplicity]);
 registerStage3([upgrade3_watercresstime, upgrade3_bee], undefined, [upgrade3_doublefruitprob, upgrade3_berry]);
+
 registerStage3(undefined, [upgrade3_squirrel], undefined, true);
 registerStage3([upgrade3_resin], undefined, [upgrade3_twigs]);
 registerStage3([upgrade3_diagonal_brassica], undefined, [upgrade3_highest_level]);
 registerStage3([upgrade3_leveltime], undefined, [upgrade3_bee_multiplicity]);
 registerStage3([upgrade3_berry], undefined, [upgrade3_mushroom]);
+registerStage3([upgrade3_fruitmix3], undefined, [upgrade3_flower]);
+
 registerStage3(undefined, [upgrade3_automaton], undefined, true);
 
 

@@ -426,7 +426,12 @@ function makeTreeDialog() {
         text += '<br/>';
       }
 
-      text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString() + '<br>';
+      text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString();
+      if(getFruitAbility(FRUIT_TREELEVEL, true) > 0) {
+        var mul = treeLevelFruitBoost(getFruitTier(true), getFruitAbility(FRUIT_TREELEVEL, true), state.treelevel, 135);
+        text += ' (of which ' + mul.toPercentString() + ' from the fruit)';
+      }
+      text += '<br>';
 
       if(haveMultiplicity(CROPTYPE_BERRY)) {
         text += '<br/>';

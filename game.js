@@ -994,13 +994,14 @@ function PreCell(x, y) {
 
     return this.breakdown;
   };
+
   this.getBreakdownWatercress = function() {
     if(this.breakdown_leech == undefined) {
       this.breakdown_leech = [];
       var f = state.field[this.y][this.x];
       var c = f.getRealCrop();
       if(this.hasbreakdown_watercress) {
-        c.getLeech(f, this.breakdown_leech);
+        c.getLeech(f, this.breakdown_leech, this.getBrassicaBreakdownCroptype());
       }
     }
     return this.breakdown_leech;
@@ -1019,6 +1020,19 @@ function PreCell(x, y) {
 
   // whether worker bee has flower neighbor, for bee challenge only
   this.flowerneighbor = false;
+
+  // set of relevant neighbor types brassica has, as bit flags: 1 = berry, 2 = mushroom, 4 = nuts
+  // used for display and optimization purposes
+  this.brassicaneighbors = 0;
+
+  // only for brassica
+  // which one to show in the breakdown (because showing 3 breakdowns is a bit much). by default, do berry. if it has only mushroom or nut neighbors, show that breakdown instead (with mushroom as priority here)
+  this.getBrassicaBreakdownCroptype = function() {
+    if(this.brassicaneighbors & 1) return CROPTYPE_BERRY;
+    if(this.brassicaneighbors & 2) return CROPTYPE_MUSH;
+    if(this.brassicaneighbors & 4) return CROPTYPE_NUT;
+    return CROPTYPE_BERRY;
+  };
 
   // reset without reallocating any objects. Keeps this.x and this.y as-is.
   this.reset = function() {
@@ -1049,6 +1063,7 @@ function PreCell(x, y) {
     this.last_it = -1;
     this.treeneighbor = false;
     this.flowerneighbor = false;
+    this.brassicaneighbors = 0;
   };
 };
 
@@ -1088,6 +1103,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
 
   // pass 0: precompute several types of boost to avoid too many recursive calls when computing regular boosts: bee challenge, nettle and beehive
 
+  // bee challenge
   if(state.challenge == challenge_bees) {
     for(var y = 0; y < h; y++) {
       for(var x = 0; x < w; x++) {
@@ -1142,6 +1158,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
 
   var winter = (getSeason() == 3);
 
+  // mistletoes
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1162,6 +1179,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
     }
   }
 
+  // nettles and beehives
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1255,12 +1273,13 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
   // pass 2: compute amount of leech each cell gets
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
+      var p = prefield[y][x];
       var f = state.field[y][x];
       var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
-          // this computation is only used for mushroom seed consumption, so it's ok to not compute the leech value for nuts here.
-          var leech = c.getLeech(f);
+          // this computation is only used for mushroom seed consumption, so it's ok to not compute the leech value for nuts or mushrooms here.
+          var leech = c.getLeech(f, null, CROPTYPE_BERRY);
           var numdir = haveDiagonalBrassica() ? 8 : 4;
           for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
@@ -1268,13 +1287,20 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var p2 = prefield[y2][x2];
             p2.leech.addInPlace(leech);
+            var f2 = state.field[y2][x2];
+            var c2 = f2.getCrop(); // 'brassicaneighbors' is used for display purposes only (for which breakdown to show), so include templates and ghosts in this. Do change this to f2.getRealCrop() if this is ever used for a non-display purpose...
+            if(c2) {
+              if(c2.type == CROPTYPE_BERRY) p.brassicaneighbors |= 1;
+              if(c2.type == CROPTYPE_MUSH) p.brassicaneighbors |= 2;
+              if(c2.type == CROPTYPE_NUT) p.brassicaneighbors |= 4;
+            }
           }
         }
       }
     }
   }
 
-  var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
+  var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushrooms not cost seeds
 
   // pass 3: compute basic production/consumption of each cell, without taking input/output connections (berries to mushrooms) into account, just the full value
   // production without leech, consumption with leech (if watercress leeches from mushroom, adds that to its consumption, but not the leeched spores production, that's added in a later step)
@@ -1446,8 +1472,9 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
-          var leech_main = c.getLeech(f);
-          var leech_nuts = c.getLeech(f, undefined, true);
+          var leech_berry = (p.brassicaneighbors & 1) ? c.getLeech(f, null, CROPTYPE_BERRY) : Num(0);
+          var leech_mush = (p.brassicaneighbors & 2) ? c.getLeech(f, null, CROPTYPE_MUSH) : Num(0);
+          var leech_nuts = (p.brassicaneighbors & 4) ? c.getLeech(f, null, CROPTYPE_NUT) : Num(0);
           var p = prefield[y][x];
           total.reset();
           var num = 0;
@@ -1462,7 +1489,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
               var p2 = prefield[y2][x2];
               if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
                 // leech ratio that applies here
-                var leech = (c2.type == CROPTYPE_NUT) ? leech_nuts : leech_main;
+                var leech = (c2.type == CROPTYPE_NUT) ? leech_nuts : (c2.type == CROPTYPE_BERRY ? leech_berry : leech_mush);
                 // leeched resources
                 var leech2 = p2.prod2.mul(leech);
                 // leeched resources for UI only with possibly negative consumption (see description of prod3, is used for the hypothetical display)
@@ -1492,7 +1519,6 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           }
           // also add this to the breakdown
           if(!total.empty()) {
-            c.getLeech(f);
             p.hasbreakdown_watercress = true;
             p.breakdown_watercress_info = [true, num, total, p.prod3];
           } else {
@@ -1758,6 +1784,12 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       abilities.push(FRUIT_NUTBOOST);
       abilities.push(FRUIT_BEEBOOST);
     }
+    if(tier >= 7) {
+      abilities.splice(abilities.indexOf(FRUIT_MUSHEFF), 1); // remove the possibility to get the bad FRUIT_MUSHEFF ability from now on
+      abilities.push(FRUIT_MIX);
+      abilities.push(FRUIT_TREELEVEL);
+      abilities.push(FRUIT_SEED_OVERLOAD);
+    }
 
     for(var i = 0; i < num_abilities; i++) {
       var roll = Math.floor(roll_abilities[i] * abilities.length);
@@ -1807,11 +1839,11 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
     var season_after = state.seen_seasonal_fruit;
     if(!season_before && season_after) {
-      showMessage('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+      showFruitChip('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
       state.fruit_slots++;
     }
-    if(season_before != 15 && season_after == 15) {
-      showMessage('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+    if((season_before & 15) != 15 && (season_after & 15) == 15) {
+      showFruitChip('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
       state.fruit_slots++;
     }
 
@@ -1823,14 +1855,17 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     var no_fruit_intended = !getActiveFruit(); // if there is no active fruit selected in purpose, assume that is intended and keep it that way, don't let a random fruit drop that due to heuristics ends up in stored slots rather than sacrificial pool override that choice
 
     if(state.fruit_stored.length == 0) {
-      setFruit(state.fruit_stored.length, fruit);
+      insertFruit(state.fruit_stored.length, fruit);
     } else if(state.keepinterestingfruit && interesting && state.fruit_stored.length < state.fruit_slots && !(no_fruit_intended && state.fruit_stored.length + 1 == state.fruit_slots)) {
       // if it's an interesting fruit, such as highest tier ever, add it to the stored fruits if possible
-      setFruit(state.fruit_stored.length, fruit);
-      if(no_fruit_intended) state.fruit_active++;
+      insertFruit(state.fruit_stored.length, fruit);
+      if(no_fruit_intended) {
+        state.fruit_active++;
+        if(state.fruit_active >= getNumFruitArrows()) state.fruit_active = -1;
+      }
     } else {
       // add fruit to sacrificial pool, player is responsible for choosing to move fruits to storage or active lots
-      setFruit(100 + state.fruit_sacr.length, fruit);
+      insertFruit(100 + state.fruit_sacr.length, fruit);
     }
 
     state.c_numfruits++;
@@ -1868,20 +1903,17 @@ function unlockEtherealCrop(id) {
 
 function doNextAutoChoice() {
   var did_something = false;
-  for(var i = 0; i < registered_upgrades.length; i++) {
-    var j = registered_upgrades[i];
-    var u = upgrades[j];
+  for(var i = 0; i < choice_upgrades.length; i++) {
+    var u = choice_upgrades[i];
+    var j = u.index;
     var u2 = state.upgrades[j];
     if(!u.is_choice) continue;
     if(!u2.unlocked) continue;
     if(u.maxcount != 0 && u2.count >= u.maxcount) continue;
     var choice = 0;
-    if(j == fern_choice0 && state.automaton_choices[0] == 2) choice = 1;
-    if(j == fern_choice0 && state.automaton_choices[0] == 3) choice = 2;
-    if(j == active_choice0 && state.automaton_choices[1] == 2) choice = 1;
-    if(j == active_choice0 && state.automaton_choices[1] == 3) choice = 2;
-    if(j == watercress_choice0 && state.automaton_choices[2] == 2) choice = 1;
-    if(j == watercress_choice0 && state.automaton_choices[2] == 3) choice = 2;
+    if(state.automaton_choices[i] == 2) choice = 1;
+    if(state.automaton_choices[i] == 3) choice = 2;
+    if(j == resin_choice0 && choice == 1 && state.challenge && !challenges[state.challenge].allowsresin) choice = 2; // don't choose the resin choice when in a challenge that doesn't allow resin
     if(choice > 0) {
       showMessage('Automaton auto chose: ' + upper(u.name) + ': ' + upper(choice == 1 ? u.choicename_a : u.choicename_b), C_AUTOMATON, 101550953);
       addAction({type:ACTION_UPGRADE, u:u.index, shift:false, by_automaton:true, choice:choice});
@@ -2344,10 +2376,11 @@ function nextEventTime() {
     addtime(t);
   }
   if(state.fern == 1 && state.upgrades[fern_choice0].count == 1) {
-    var t = state.lastReFernTime - state.time + getReFernWaitTime();
+    var t0 = state.lastReFernTime - state.time + getReFernWaitTime();
+    var t1 = state.lastFernTime - state.time + getReFernWaitTime() * 3;
+    var t = Math.max(t0, t1);
     addtime(t);
   }
-
 
   // protect against possible bugs
   if(time < 0 || isNaN(time)) return 0;
@@ -3441,44 +3474,50 @@ var update = function(opt_ignorePause) {
           var from = f.slot;
 
           var ok = true;
+          var swap = false;
           if(to < 100 && from >= 100 && state.fruit_stored.length >= state.fruit_slots) {
-            ok = false;
-            showMessage('stored fruits already full, move one out of there to sacrificial pool first to make room', C_INVALID, 0, 0);
+            //ok = false;
+            //showMessage('stored fruits already full, move one out of there to sacrificial pool first to make room', C_INVALID, 0, 0);
+            swap = true;
           } else if(to < 100 && to >= state.fruit_slots) {
             ok = false;
           }
 
           if(ok) {
-            if(from < 100) {
-              for(var i = from; i + 1 < state.fruit_stored.length; i++) {
-                state.fruit_stored[i] = state.fruit_stored[i + 1];
-                if(state.fruit_stored[i]) state.fruit_stored[i].slot = i;
-              }
-              state.fruit_stored.length--;
+            if(swap) {
+              swapFruit(from, to);
             } else {
-              for(var i = from - 100; i + 1 < state.fruit_sacr.length; i++) {
-                state.fruit_sacr[i] = state.fruit_sacr[i + 1];
-                if(state.fruit_sacr[i]) state.fruit_sacr[i].slot = i;
+              if(from < 100) {
+                for(var i = from; i + 1 < state.fruit_stored.length; i++) {
+                  state.fruit_stored[i] = state.fruit_stored[i + 1];
+                  if(state.fruit_stored[i]) state.fruit_stored[i].slot = i;
+                }
+                state.fruit_stored.length--;
+              } else {
+                for(var i = from - 100; i + 1 < state.fruit_sacr.length; i++) {
+                  state.fruit_sacr[i] = state.fruit_sacr[i + 1];
+                  if(state.fruit_sacr[i]) state.fruit_sacr[i].slot = i;
+                }
+                state.fruit_sacr.length--;
               }
-              state.fruit_sacr.length--;
-            }
-            if(to < 100) {
-              while(to > state.fruit_stored.length) to--;
-              for(var i = state.fruit_stored.length; i > to; i--) {
-                state.fruit_stored[i] = state.fruit_stored[i - 1];
-                if(state.fruit_stored[i]) state.fruit_stored[i].slot = i;
+              if(to < 100) {
+                while(to > state.fruit_stored.length) to--;
+                for(var i = state.fruit_stored.length; i > to; i--) {
+                  state.fruit_stored[i] = state.fruit_stored[i - 1];
+                  if(state.fruit_stored[i]) state.fruit_stored[i].slot = i;
+                }
+                state.fruit_stored[to] = f;
+                f.slot = to;
+              } else {
+                var to2 = to - 100;
+                while(to2 > state.fruit_sacr.length) to2--;
+                for(var i = state.fruit_sacr.length; i > to2; i--) {
+                  state.fruit_sacr[i] = state.fruit_sacr[i - 1];
+                  if(state.fruit_sacr[i]) state.fruit_sacr[i].slot = i;
+                }
+                state.fruit_sacr[to2] = f;
+                f.slot = to;
               }
-              state.fruit_stored[to] = f;
-              f.slot = to;
-            } else {
-              var to2 = to - 100;
-              while(to2 > state.fruit_sacr.length) to2--;
-              for(var i = state.fruit_sacr.length; i > to2; i--) {
-                state.fruit_sacr[i] = state.fruit_sacr[i - 1];
-                if(state.fruit_sacr[i]) state.fruit_sacr[i].slot = i;
-              }
-              state.fruit_sacr[to2] = f;
-              f.slot = to;
             }
             store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
           }
@@ -3492,13 +3531,13 @@ var update = function(opt_ignorePause) {
               showMessage('stored slots already full', C_INVALID, 0, 0);
             } else {
               var slot = state.fruit_stored.length;
-              setFruit(f.slot, undefined);
-              setFruit(slot, f);
+              insertFruit(f.slot, undefined);
+              insertFruit(slot, f);
             }
           } else if(slottype == 1) {
             var slot = 100 + state.fruit_sacr.length;
-            setFruit(f.slot, undefined);
-            setFruit(slot, f);
+            insertFruit(f.slot, undefined);
+            insertFruit(slot, f);
           }
           store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
         }
@@ -3506,7 +3545,7 @@ var update = function(opt_ignorePause) {
       } else if(type == ACTION_FRUIT_ACTIVE) {
         var slot = action.slot;
         var ok = true;
-        if(slot < 0) ok = false;
+        if(slot < -1) ok = false;
         if(!action.allow_empty && slot >= state.fruit_stored.length) ok = false;
         if(slot >= state.fruit_slots) ok = false;
         if(ok) {
@@ -3590,8 +3629,10 @@ var update = function(opt_ignorePause) {
         var b = action.b;
 
         var fruitmix = 0;
-        if(state.upgrades3[upgrade3_fruitmix].count) fruitmix += 2;
-        if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix += 2;
+        // due to gated squirrel upgrades, it's always ensured if you have a next one, you also have the previous one
+        if(state.upgrades3[upgrade3_fruitmix].count) fruitmix = 2;
+        if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix = 4;
+        if(state.upgrades3[upgrade3_fruitmix3].count) fruitmix = 5;
 
         var f = fuseFruit(a, b, fruitmix);
         if(f) {
@@ -3614,9 +3655,25 @@ var update = function(opt_ignorePause) {
           var fslot = f.slot;
           var aslot = a.slot;
           var bslot = b.slot;
-          if(fslot != bslot && bslot > aslot) setFruit(b.slot, null);
-          if(fslot != aslot) setFruit(a.slot, null);
-          if(fslot != bslot && bslot < aslot) setFruit(b.slot, null);
+          if(fslot != bslot && bslot > aslot) insertFruit(b.slot, null);
+          if(fslot != aslot) insertFruit(a.slot, null);
+          if(fslot != bslot && bslot < aslot) insertFruit(b.slot, null);
+
+          var season_before = state.seen_seasonal_fruit;
+          if(f.type > 4) state.seen_seasonal_fruit |= (1 << (f.type - 1));
+          var season_after = state.seen_seasonal_fruit;
+          if((season_before & 240) != 240 && (season_after & 240) == 240) {
+            showFruitChip('You\'ve seen all 4 possible 2-seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+            state.fruit_slots++;
+          }
+          if((season_before & 256) != 256 && (season_after & 256) == 256) {
+            showFruitChip('You\'ve seen a star fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+            state.fruit_slots++;
+          }
+          if((season_before & 512) != 512 && (season_after & 512) == 512) {
+            showFruitChip('You\'ve seen a dragon fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+            state.fruit_slots++;
+          }
 
           state.c_numfused++;
           state.g_numfused++;
@@ -3912,8 +3969,8 @@ var update = function(opt_ignorePause) {
 
         // during basic challenge, effects are reduced
         if(basic) {
-          if(effect == 3) effect = 1;
-          if(effect == 5) effect = (state.res.spores.ler(0) ? 1 : 2);
+          if(effect == 3) effect = 1; // no production boost during basic challenge
+          if(effect == 5) effect = (state.res.spores.ler(0) ? 1 : 2); // no grow speed boost during basic challenge
         }
 
         if(effect == 1) {
@@ -4266,7 +4323,7 @@ var update = function(opt_ignorePause) {
         state.g_nummedals++;
         state.medals[j].earned = true;
         //medals_new = true;
-        showMessage('Achievement unlocked: ' + upper(medals[j].name), C_UNLOCK, 34776048, 0.75);
+        showMessage('Achievement unlocked: ' + upper(medals[j].name) + ' (+' + medals[j].prodmul.toPercentString() + ')', C_UNLOCK, 34776048, 0.75);
         updateMedalUI();
         showMedalChip(j);
 

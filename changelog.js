@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.100 - Fruity update (2022-04-10):';
+  text += '<br/>• Added sapphire fruits, and new fruit abilities only available from this tier.'; // The "mix" ability may need some extra explanation that doesn't fit in its UI description: its 3 multipliers are tuned (using sqrt/cbrt-ish powers) such that in overal game production boost it\'s roughly as good as 1 bee ability, or 1 brassica ability, or 1 nettle ability, but is a combination of them. The mix ability is also designed to be quite useless if combined with a bee, brassica or nettle boost ability on the same fruit (by making it additive with those), so for a good fruit either have only mix, or any amount of those others, but not both. Also, the watercress effect of mix fruit is different on mushroom copying vs berry copying, to make its tuning very exact when taking into account its nettle ability doesn't affect seeds. "Mix" is not always better than pure bee boost or pure brassica boost, it's situational, it's a bit more flexible (being "ok" in more situations), but there are only a few specific cases where it's not strictly worse than pure bee (e.g. when most berries are next to a brassica).
+  text += '<br/>• New fruit mixing type, unlocked by new squirrel upgrade. The original dragon fruit got renamed to star fruit, but behaves exactly the same.'; // the reason the rename, rather than keeping dragon fruit the 4-season one and adding a new one with a new name on top, is that "dragon fruit" sounds more powerful than "star fruit" and I couldn't find any fruit that sounds even more powerful than "dragon fruit" does. In addition, "star fruit" is quite excellent in that it grows in many seasons of the year, perfectly representing 4 seasons.
+  text += '<br/>• Added a few extra fruit storage space upgrades and other ways to get some.'; // The extra way requires fusing various combined seasonal fruit types, and due to how its computation is done, it must be done from scratch for existing savegames, already fused fruits aren't counted
+  text += '<br/>• Due to UI space reasons, only the first 10 fruit slots can be selected as active now, the others are purely storage.'; // because the arrow selectors require horizontal space, and having them wrap would be possible, but somewhat ugly
+  text += '<br/>• Added a new choice upgrade (resin vs production).'; // In challenges without resin, automaton will automatically pick the non-resin choice anyway if the resin one is selected.
+  text += '<br/>• Added new crop count achievements.'; // 50
+  text += '<br/>• Various other tweaks.'; // includes making nettle fruit ability a bit stronger, to make it not strictly worse than bee fruit, and, info buttons in the automaton choice-upgrade dialog. And subtle change that was needed for the mix fruit separate watercress multiplier for berry and mushroom: watercress copying breakdown UI will now show the mushroom breakdown if only next to mushroom, and the nuts breakdown if only next to nut, instead of always showing the berry breakdown
+  text += '<br/><br/>';
+
   text += '0.1.99 (2022-04-04):';
   text += '<br/>• New event started! Eggs with random rewards will drop every now and then. It will run throughout April.';
   text += '<br/>• Changed the graphics of the bee challenge: now it has in order: worker bee, drone, queen bee. This to avoid confusion with the differently functioning main game beehive. The queen also got a crown.';
@@ -97,7 +107,7 @@ function getChangeLog() {
   text += '<br/>• Added one more tier of berry and mushroom. To keep the name order of tiers alphabetical, they are inserted in the place of certain existing crops, so some currently planted crops may have changed name and image. Their stats are the same though.';
   text += '<br/>• Added three more tiers of nuts.';
   text += '<br/>• Added eight new squirrel upgrades.';
-  text += '<br/>• Fruit nerf: Creating a dragon fruit now requires two two-seasonal fruits that the same abilities, and a dragon fruit can no longer itself be fused with anything. This makes it more challenging to create it, but is done because it was trivial to make a dragon fruit once having one perfect two-seasonal fruit, making it irrelevant.';
+  text += '<br/>• Fruit nerf: Creating a dragon fruit now requires two two-seasonal fruits with the same abilities, and a dragon fruit can no longer itself be fused with anything. This makes it more challenging to create it, but is done because it was trivial to make a dragon fruit once having one perfect two-seasonal fruit, making it irrelevant.';
   text += '<br/>• Fruit buff: The upgrade cost scaling of linear boost fruit abilities is now cheaper. Check your your fruit tab, since you can likely upgrade their abilities significantly. As a reminder: shift+clicking the fruit ability upgrade button will upgrade it multiple times';
   text += '<br/><br/>';
 

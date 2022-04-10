@@ -324,6 +324,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
     // a tooltip created by an element from a dialog could remain, make sure those are removed too
     removeAllTooltips();
     dialog.removeSelfFun();
+    showHelpArrows(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
   };
   // more primitive close, only intended for external use by closeAllDialogs, since that does all the things that closeFun above does in a global way for all dialogs
   dialog.removeSelfFun = function() {
@@ -365,6 +366,9 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
   if(opt_size == DIALOG_SMALL) h = 0.8; // ensure content doesn't go over the buttons
   dialogFlex.content = new Flex(dialogFlex, 0.01, 0.01, [1, 0, -0.07], h);
 
+  window.setTimeout(function() {
+    showHelpArrows(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
+  });
   return dialogFlex;
 }
 

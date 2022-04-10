@@ -395,6 +395,12 @@ Num.prototype.div = function(b) {
 };
 Num.div = function(a, b) { return a.div(b); };
 
+Num.prototype.inv = function() {
+  var res = new Num(1);
+  res.divInPlace(this);
+  return res;
+};
+
 Num.prototype.divrInPlace = function(r) {
   this.b /= r;
   this.scaleInPlace();

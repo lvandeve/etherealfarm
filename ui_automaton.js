@@ -242,7 +242,17 @@ function showConfigureAutoChoiceDialog(subject) {
     y += h * 1.2;
     return flex;
   };
-  var choiceupgrades = [fern_choice0, active_choice0, watercress_choice0];
+
+  var addSideButton = function() {
+    var h = 0.08;
+    y -= h * 1.2; // undo height increase from previous button
+    var flex  = new Flex(scrollFlex, 0.45, y, 0.45 + h, y + h);
+    y += h * 1.2;
+    return flex;
+  };
+
+
+  var choiceupgrades = [fern_choice0, active_choice0, watercress_choice0, resin_choice0];
 
   var updateChoicesButton = function(flex, i) {
     var div = flex.div.textEl;
@@ -284,6 +294,17 @@ function showConfigureAutoChoiceDialog(subject) {
       updateChoicesButton(flex, i);
     }, flex, i));
     registerTooltip(flex.div, 'Configure automaton for this specific choice upgrade:<br><br><b>' + u.choicename_a + ':</b><br>' + u.description_a + '<br><br><b>' + u.choicename_b + ':</b><br>' + u.description_b + '<br><br><b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.');
+
+    flex = addSideButton();
+    styleButton0(flex.div, true);
+    var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
+    renderImage(image_info, canvas);
+    addButtonAction(flex.div, bind(function(i) {
+      var u = upgrades[choiceupgrades[i]];
+      var u2 = state.upgrades[choiceupgrades[i]];
+      var dialog = createDialog();
+      dialog.content.div.innerHTML = '<b>' + u.choicename_a + ':</b><br>' + u.description_a + '<br><br><b>' + u.choicename_b + ':</b><br>' + u.description_b + '<br><br><b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.';
+    }, i));
   }
 }
 
