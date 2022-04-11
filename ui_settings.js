@@ -862,17 +862,18 @@ var getAboutHeader = function() {
 
 function createChangelogDialog() {
   showing_changelog = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+
+  var icon = images_fern[1];
+  if(holidayEventActive()) {
+    //icon = holiday_images[Math.floor(Math.random() * 4)]
+    icon = bunny_image;
+  }
+
+  var dialog = createDialog2({title:'About', icon:icon, onclose:function(cancel) {
     showing_changelog = false;
-  });
+  }});
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'About';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  makeScrollable(dialog.content);
 
   var text = '';
 
@@ -891,7 +892,7 @@ function createChangelogDialog() {
 
   text += 'Copyright (c) 2020-2022 by Lode Vandevenne';
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 

@@ -4782,8 +4782,8 @@ function getFruitBoost(ability, level, tier) {
     return Num(base * level * 1.2);
   }
   if(ability == FRUIT_TREELEVEL) {
-    // toned down a little bit, to not be too strong compared to flower boost, but still very useful as an overall production boost that becomes better than bee boost eventually
-    return Num(base * level * 0.75);
+    // same multiplier as for bee, but another multiplier in treeLevelFruitBoost will make it worse or better than bee depending on tree level
+    return Num(base * level * 0.5);
   }
   if(ability == FRUIT_SEED_OVERLOAD) {
     return Num(base * level);
@@ -5495,6 +5495,15 @@ function getTreeBoost() {
   return result;
 }
 
+function treeLevelFruitBoostCurve(tree_level, target_level) {
+  var level0 = target_level - 20; // a new fruit range spans 20 levels
+  var level1 = target_level;
+  var t = (tree_level - level0) / (level1 - level0);
+  var s = 0.5 * (towards1(t, 0.3) + 1);
+  s *= 1.1811; // make it such that at level between the two, level 125, the multiplier is exactly 1
+  return s;
+}
+
 // returns the boost given by the FRUIT_TREELEVEL fruit
 // for sapphire fruit (which drops as highest tier from 115 to 135) target_level should be 135
 function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, target_level) {
@@ -5504,10 +5513,7 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, target_level
   // TODO: for emerald and higher fruits, adjust target_level everywhere this function is called
 
   // this is tuned so that from level0 to level1 (115 to 135 for sapphire fruit), about a 2x scaling of the effect happens, but the effect is soft cappped above level1
-  var level0 = target_level - 20;
-  var level1 = target_level;
-  var t = (tree_level - level0) / (level1 - level0);
-  var s = 0.5 * (towards1(t, 0.3) + 1);
+  var s = treeLevelFruitBoostCurve(tree_level, target_level);
   //s = Math.pow(s, 5);
   return mul.mulr(s).addr(1);
 }

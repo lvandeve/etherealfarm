@@ -274,7 +274,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
     button.textEl.innerText = opt_okname || 'ok';
     addButtonAction(button, function(e) {
       var keep = opt_okfun(e);
-      if(!keep) dialog.closeFun();
+      if(!keep) dialog.closeFun(false);
     });
   }
   if(opt_extrafun) {
@@ -284,7 +284,7 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
     button.textEl.innerText = opt_extraname || 'extra';
     addButtonAction(button, function(e) {
       var keep = opt_extrafun(e);
-      if(!keep) dialog.closeFun();
+      if(!keep) dialog.closeFun(false);
     });
   }
   if(opt_extrafun2) {
@@ -294,16 +294,16 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
     button.textEl.innerText = opt_extraname2 || 'extra2';
     addButtonAction(button, function(e) {
       var keep = opt_extrafun2(e);
-      if(!keep) dialog.closeFun();
+      if(!keep) dialog.closeFun(false);
     });
   }
   // function that will be called when the dialog is closed by cancel (including e.g. the esc key), but not ok and extra funs
   dialog.cancelFun = function() {
     if(opt_cancelfun) opt_cancelfun();
-    dialog.closeFun();
+    dialog.closeFun(true);
   };
   // function that will be called when the dialog is closed by cancel, ok and extra funs
-  dialog.closeFun = function() {
+  dialog.closeFun = function(opt_cancel) {
     updatedialogfun = undefined;
     dialogshortcutfun = undefined;
     util.removeElement(overlay);
@@ -323,13 +323,13 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
     dialog_level--;
     // a tooltip created by an element from a dialog could remain, make sure those are removed too
     removeAllTooltips();
-    dialog.removeSelfFun();
+    dialog.removeSelfFun(opt_cancel);
     showHelpArrows(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
   };
   // more primitive close, only intended for external use by closeAllDialogs, since that does all the things that closeFun above does in a global way for all dialogs
-  dialog.removeSelfFun = function() {
+  dialog.removeSelfFun = function(opt_cancel) {
     dialogFlex.removeSelf(gameFlex);
-    if(dialogFlex.onclose) dialogFlex.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
+    if(dialogFlex.onclose) dialogFlex.onclose(opt_cancel); // this must be called no matter with what method this dialog is closed/forcibly removed/...
   };
   dialogFlex.closeFun = dialog.closeFun;
   dialogFlex.cancelFun = dialog.cancelFun;
@@ -372,11 +372,219 @@ function createDialog(opt_size, opt_okfun, opt_okname, opt_cancelfun, opt_cancel
   return dialogFlex;
 }
 
+
+/*
+new style dialog, WIP
+
+params is object with following named parameters, all optional:
+params.title: title for top of the dialog
+params.icon: image, icon for top left of the dialog
+params.size: DIALOG_TINY, DIALOG_SMALL, DIALOG_MEDIUM or DIALOG_LARGE
+params.functions: function, or array of functions, for the ok/action buttons
+params.names: button names for the functions. This and functions must be either arrays of same size, or function and string (or undefined for default 'ok') if there should be exactly one non-cancel button, or both undefined for none at all
+params.onclose: function that is always called when the dialog closes, no matter how (whether through an action, the cancel button, or some other means like global close or escape key). It receives a boolean argument 'cancel' that's true if it was closed by any other means than a non-cancel button (so, true if it was canceled)
+params.cancelname: name for the cancel button, gets a default name if not given
+params.shortcutfun: a function handling shortcuts that are active while this dialog is open
+params.nobgclose: boolean, don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
+params.swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
+*/
+function createDialog2(params) {
+  var opt_title = params.title;
+  var opt_icon = params.icon;
+  var opt_size = params.size;
+  var opt_functions = params.functions;
+  var opt_names = params.names;
+  var opt_onclose = params.onclose;
+  var opt_cancelname = params.cancelname;
+  var opt_shortcutfun = params.shortcutfun;
+  var opt_nobgclose = params.nobgclose;
+  var opt_swapbuttons = params.swapbuttons;
+
+  if(!Array.isArray(opt_names)) opt_names = (opt_functions ? [opt_names || 'ok'] : []);
+  if(!Array.isArray(opt_functions)) opt_functions = (opt_functions ? [opt_functions] : []);
+
+  if(dialog_level < 0) {
+    // some bug involving having many help dialogs pop up at once and rapidly closing them using multiple methods at the same time (esc key, click next to dialog, ...) can cause this, and negative dialog_level makes dialogs appear in wrong z-order
+    closeAllDialogs();
+    dialog_level = 0;
+  }
+  dialog_level++;
+  dialogshortcutfun = opt_shortcutfun; // may be undefined
+
+  removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
+  removeAllDropdownElements();
+
+  var dialogFlex;
+  if(opt_size == DIALOG_TINY) {
+    dialogFlex = new Flex(gameFlex, 0.05, 0.33, 0.95, 0.66);
+  } else if(opt_size == DIALOG_SMALL) {
+    dialogFlex = new Flex(gameFlex, 0.05, 0.25, 0.95, 0.75);
+  } else if(opt_size == DIALOG_LARGE) {
+    dialogFlex = new Flex(gameFlex, 0.05, 0.05, 0.95, 0.9);
+  } else {
+    // default, medium. Designed to be as big as possible without covering up the resource display
+    dialogFlex = new Flex(gameFlex, 0.05, 0.12, 0.95, 0.9);
+  }
+
+  dialogFlex.onclose = opt_onclose;
+
+  created_dialogs.push([dialogFlex, opt_shortcutfun]);
+  var dialog = dialogFlex.div;
+
+  dialog.className = 'efDialog';
+  setAriaRole(dialog, 'dialog');
+
+  dialog.style.zIndex = '' + (dialog_level * 10 + 5);
+
+  var num_buttons = opt_functions.length + 1;
+
+  var buttonsize = 0.3;
+  if(opt_size == DIALOG_TINY) buttonsize = 0.5;
+  if(num_buttons > 3) buttonsize *= 0.82;
+
+
+  // the is_cancel is for positioning cancel as if it was first, when state.cancelbuttonright, given that this function is called last for the cancel button
+  var makeButton = function(is_cancel) {
+    var result;
+    if((!state || state.cancelbuttonright) != !!opt_swapbuttons) {
+      var s = buttonshift;
+      if(is_cancel) {
+        s = 0;
+      } else {
+        s++;
+      }
+      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (s + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * s], [1.0, 0, -0.01], FONT_DIALOG_BUTTON)).div;
+    } else {
+      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (buttonshift + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * buttonshift], [1.0, 0, -0.01], FONT_DIALOG_BUTTON)).div;
+    }
+    buttonshift++;
+    return result;
+  };
+
+  var button;
+  var buttonshift = 0;
+  if(opt_functions) {
+    for(var i = 0; i < opt_functions.length; i++) {
+      button = makeButton(false);
+      button.style.fontWeight = 'bold';
+      styleButton(button);
+      button.textEl.innerText = opt_names[i];
+      var fun = opt_functions[i];
+      addButtonAction(button, bind(function(fun, e) {
+        var keep = fun(e);
+        if(!keep) dialog.closeFun(false);
+      }, fun));
+    }
+  }
+
+  // function that will be called when the dialog is closed by cancel (including e.g. the esc key), but not ok and extra funs
+  dialog.cancelFun = function() {
+    dialog.closeFun(true);
+  };
+  // function that will be called when the dialog is closed by cancel, ok and extra funs
+  dialog.closeFun = function(opt_cancel) {
+    updatedialogfun = undefined;
+    dialogshortcutfun = undefined;
+    util.removeElement(overlay);
+    for(var i = 0; i < created_dialogs.length; i++) {
+      if(created_dialogs[i][0] == dialogFlex) {
+        created_dialogs.splice(i, 1);
+        if(i > 0) dialogshortcutfun = created_dialogs[i - 1][1];
+        break;
+      }
+    }
+    for(var i = 0; i < created_overlays.length; i++) {
+      if(created_overlays[i] == overlay) {
+        created_overlays.splice(i, 1);
+        break;
+      }
+    }
+    dialog_level--;
+    // a tooltip created by an element from a dialog could remain, make sure those are removed too
+    removeAllTooltips();
+    dialog.removeSelfFun(opt_cancel);
+    showHelpArrows(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
+  };
+  // more primitive close, only intended for external use by closeAllDialogs, since that does all the things that closeFun above does in a global way for all dialogs
+  dialog.removeSelfFun = function(opt_cancel) {
+    dialogFlex.removeSelf(gameFlex);
+    if(dialogFlex.onclose) dialogFlex.onclose(opt_cancel); // this must be called no matter with what method this dialog is closed/forcibly removed/...
+  };
+  dialogFlex.closeFun = dialog.closeFun;
+  dialogFlex.cancelFun = dialog.cancelFun;
+  if(opt_cancelname != NOCANCELBUTTON) {
+    button = makeButton(true);
+    styleButton(button);
+    button.textEl.innerText = opt_cancelname || (opt_functions.length > 0 ? 'cancel' : 'back');
+    addButtonAction(button, dialog.cancelFun);
+  }
+  var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
+  created_overlays.push(overlay);
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  overlay.style.position = 'fixed';
+  overlay.style.zIndex = '' + (dialog_level * 10);
+  if(!opt_nobgclose) overlay.onclick = dialog.cancelFun;
+
+
+  var topHeight = 0.11;
+  var topHeight0 = topHeight * 0.1; // smaller for some margin; begin
+  var topHeight1 = topHeight - topHeight0; // smaller for some margin; end
+  var topHeight0b = topHeight * 0.15; // smaller for some more margin; begin
+  var topHeight1b = topHeight - topHeight0b; // smaller for some more margin; end
+
+  // full virtual size for the xbutton and icon flexes:
+  // xbutton = new Flex(dialogFlex, [1, 0, -topHeight], 0, 1, [0, 0, topHeight]);
+  // result.icon = new Flex(dialogFlex, 0, 0.0, [0, 0, topHeight], [0, 0, topHeight]);
+  // and result.title is aligned to those
+  // but actual xbutton and icon below made a bit smaller to have some margins
+
+  var xbutton = new Flex(dialogFlex, [1, 0, -topHeight1b], [0, 0, topHeight0b], [1, 0, -topHeight0b], [0, 0, topHeight1b]);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', xbutton.div);
+  renderImage(image_close, canvas);
+  styleButton0(xbutton.div);
+
+  addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
+
+  var contentHeight = 0.88;
+  if(opt_size == DIALOG_TINY) contentHeight = 0.8; // ensure content doesn't go over the buttons
+  if(opt_size == DIALOG_SMALL) contentHeight = 0.8; // ensure content doesn't go over the buttons
+
+  var result = {};
+
+  result.flex = dialogFlex;
+  result.icon = new Flex(dialogFlex, [0, 0, topHeight0], [0, 0, topHeight0], [0, 0, topHeight1], [0, 0, topHeight1]);
+  result.title = new Flex(dialogFlex, [0, 0, topHeight], 0.01, [1, 0, -topHeight], [0, 0, topHeight], FONT_TITLE);
+  result.content = new Flex(dialogFlex, 0.02, [0, 0, topHeight], 0.98, contentHeight);
+
+  if(opt_title) {
+    centerText2(result.title.div);
+    result.title.div.textEl.innerText = opt_title;
+  }
+
+  if(opt_icon) {
+    canvas = createCanvas('0%', '0%', '100%', '100%', result.icon.div);
+    renderImage(opt_icon, canvas);
+  }
+
+  window.setTimeout(function() {
+    showHelpArrows(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
+  });
+
+  return result;
+}
+
+
+
+
+
+
 function closeAllDialogs() {
   updatedialogfun = undefined;
 
   for(var i = 0; i < created_dialogs.length; i++) {
-    created_dialogs[i][0].div.removeSelfFun();
+    created_dialogs[i][0].div.removeSelfFun(true);
   }
   for(var i = 0; i < created_overlays.length; i++) {
     util.removeElement(created_overlays[i]);
@@ -394,7 +602,7 @@ function closeTopDialog(opt_cancel) {
   if(created_dialogs && created_dialogs.length > 0) {
     var dialog = created_dialogs[created_dialogs.length - 1][0];
     if(opt_cancel) dialog.cancelFun();
-    else dialog.closeFun();
+    else dialog.closeFun(opt_cancel);
   }
 }
 
@@ -618,6 +826,7 @@ var FONT_BIG_BUTTON = 1; // font size for buttons such as in the main menu, wher
 var FONT_DIALOG_BUTTON = 2; // font size for buttons at the bottom of dialogs such as 'ok' and 'cancel'
 var FONT_FULL = 3; // full width such as the full screen "paused" message
 var FONT_SMALL = 4; // in case something really needs to fit in a space. Should not be overused, could be too small
+var FONT_TITLE = 5; // titles at top of dialogs
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -789,6 +998,7 @@ Flex.prototype.updateSelf = function(parentdiv) {
     if(this.fontSize == FONT_BIG_BUTTON) multiplier = 1.5;
     else if(this.fontSize == FONT_DIALOG_BUTTON) multiplier = 1.25;
     else if(this.fontSize == FONT_SMALL) multiplier = 0.9;
+    else if(this.fontSize == FONT_TITLE) multiplier = 1.25;
     this.div.style.fontSize = Math.floor(getGlobalFontSize() * multiplier) + 'px';
   }
 

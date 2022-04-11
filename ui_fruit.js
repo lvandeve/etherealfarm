@@ -397,7 +397,10 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
           flex.div.innerText = fuse.toString() + ', fused ' + fuse.fuses + ' times';
         } else {
           var other = swapped ? selected : f;
-          text += 'ability: ' + fuse.abilityToString(i) + '  (was: ' + other.abilityToString(i) + ')\n';
+          text += 'ability: ' + fuse.abilityToString(i);
+          if(i < other.abilities.length) text += '  (was: ' + other.abilityToString(i) + ')';
+          else text += '  (was: none)';
+          text += '\n';
         }
         y += s * 0.5;
       }
