@@ -177,7 +177,7 @@ function setProgressBar(div, value, color) {
 var updatedialogfun = undefined;
 
 var dialog_level = 0;
-var created_dialogs = []; // each element is array of: flex, opt_shortcutfun
+var created_dialogs = []; // each element is array of: flex, shortcutfun
 var created_overlays = [];
 
 var DIALOG_TINY = 0;
@@ -384,24 +384,17 @@ params.functions: function, or array of functions, for the ok/action buttons
 params.names: button names for the functions. This and functions must be either arrays of same size, or function and string (or undefined for default 'ok') if there should be exactly one non-cancel button, or both undefined for none at all
 params.onclose: function that is always called when the dialog closes, no matter how (whether through an action, the cancel button, or some other means like global close or escape key). It receives a boolean argument 'cancel' that's true if it was closed by any other means than a non-cancel button (so, true if it was canceled)
 params.cancelname: name for the cancel button, gets a default name if not given
+params.scrollable: whether to make the content flex scrollable with scrollbar if the content is too large
 params.shortcutfun: a function handling shortcuts that are active while this dialog is open
 params.nobgclose: boolean, don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 params.swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
 */
 function createDialog2(params) {
-  var opt_title = params.title;
-  var opt_icon = params.icon;
-  var opt_size = params.size;
-  var opt_functions = params.functions;
-  var opt_names = params.names;
-  var opt_onclose = params.onclose;
-  var opt_cancelname = params.cancelname;
-  var opt_shortcutfun = params.shortcutfun;
-  var opt_nobgclose = params.nobgclose;
-  var opt_swapbuttons = params.swapbuttons;
+  var functions = params.functions;
+  var names = params.names;
 
-  if(!Array.isArray(opt_names)) opt_names = (opt_functions ? [opt_names || 'ok'] : []);
-  if(!Array.isArray(opt_functions)) opt_functions = (opt_functions ? [opt_functions] : []);
+  if(!Array.isArray(names)) names = (functions ? [names || 'ok'] : []);
+  if(!Array.isArray(functions)) functions = (functions ? [functions] : []);
 
   if(dialog_level < 0) {
     // some bug involving having many help dialogs pop up at once and rapidly closing them using multiple methods at the same time (esc key, click next to dialog, ...) can cause this, and negative dialog_level makes dialogs appear in wrong z-order
@@ -409,26 +402,26 @@ function createDialog2(params) {
     dialog_level = 0;
   }
   dialog_level++;
-  dialogshortcutfun = opt_shortcutfun; // may be undefined
+  dialogshortcutfun = params.shortcutfun; // may be undefined
 
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
   removeAllDropdownElements();
 
   var dialogFlex;
-  if(opt_size == DIALOG_TINY) {
+  if(params.size == DIALOG_TINY) {
     dialogFlex = new Flex(gameFlex, 0.05, 0.33, 0.95, 0.66);
-  } else if(opt_size == DIALOG_SMALL) {
+  } else if(params.size == DIALOG_SMALL) {
     dialogFlex = new Flex(gameFlex, 0.05, 0.25, 0.95, 0.75);
-  } else if(opt_size == DIALOG_LARGE) {
+  } else if(params.size == DIALOG_LARGE) {
     dialogFlex = new Flex(gameFlex, 0.05, 0.05, 0.95, 0.9);
   } else {
     // default, medium. Designed to be as big as possible without covering up the resource display
     dialogFlex = new Flex(gameFlex, 0.05, 0.12, 0.95, 0.9);
   }
 
-  dialogFlex.onclose = opt_onclose;
+  dialogFlex.onclose = params.onclose;
 
-  created_dialogs.push([dialogFlex, opt_shortcutfun]);
+  created_dialogs.push([dialogFlex, params.shortcutfun]);
   var dialog = dialogFlex.div;
 
   dialog.className = 'efDialog';
@@ -436,17 +429,17 @@ function createDialog2(params) {
 
   dialog.style.zIndex = '' + (dialog_level * 10 + 5);
 
-  var num_buttons = opt_functions.length + 1;
+  var num_buttons = functions.length + 1;
 
   var buttonsize = 0.3;
-  if(opt_size == DIALOG_TINY) buttonsize = 0.5;
+  if(params.size == DIALOG_TINY) buttonsize = 0.5;
   if(num_buttons > 3) buttonsize *= 0.82;
 
 
   // the is_cancel is for positioning cancel as if it was first, when state.cancelbuttonright, given that this function is called last for the cancel button
   var makeButton = function(is_cancel) {
     var result;
-    if((!state || state.cancelbuttonright) != !!opt_swapbuttons) {
+    if((!state || state.cancelbuttonright) != !!params.swapbuttons) {
       var s = buttonshift;
       if(is_cancel) {
         s = 0;
@@ -463,13 +456,13 @@ function createDialog2(params) {
 
   var button;
   var buttonshift = 0;
-  if(opt_functions) {
-    for(var i = 0; i < opt_functions.length; i++) {
+  if(functions) {
+    for(var i = 0; i < functions.length; i++) {
       button = makeButton(false);
       button.style.fontWeight = 'bold';
       styleButton(button);
-      button.textEl.innerText = opt_names[i];
-      var fun = opt_functions[i];
+      button.textEl.innerText = names[i];
+      var fun = functions[i];
       addButtonAction(button, bind(function(fun, e) {
         var keep = fun(e);
         if(!keep) dialog.closeFun(false);
@@ -512,10 +505,10 @@ function createDialog2(params) {
   };
   dialogFlex.closeFun = dialog.closeFun;
   dialogFlex.cancelFun = dialog.cancelFun;
-  if(opt_cancelname != NOCANCELBUTTON) {
+  if(params.cancelname != NOCANCELBUTTON) {
     button = makeButton(true);
     styleButton(button);
-    button.textEl.innerText = opt_cancelname || (opt_functions.length > 0 ? 'cancel' : 'back');
+    button.textEl.innerText = params.cancelname || (functions.length > 0 ? 'cancel' : 'back');
     addButtonAction(button, dialog.cancelFun);
   }
   var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
@@ -525,7 +518,7 @@ function createDialog2(params) {
   overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
   overlay.style.position = 'fixed';
   overlay.style.zIndex = '' + (dialog_level * 10);
-  if(!opt_nobgclose) overlay.onclick = dialog.cancelFun;
+  if(!params.nobgclose) overlay.onclick = dialog.cancelFun;
 
 
   var topHeight = 0.11;
@@ -548,8 +541,8 @@ function createDialog2(params) {
   addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
 
   var contentHeight = 0.88;
-  if(opt_size == DIALOG_TINY) contentHeight = 0.8; // ensure content doesn't go over the buttons
-  if(opt_size == DIALOG_SMALL) contentHeight = 0.8; // ensure content doesn't go over the buttons
+  if(params.size == DIALOG_TINY) contentHeight = 0.8; // ensure content doesn't go over the buttons
+  if(params.size == DIALOG_SMALL) contentHeight = 0.8; // ensure content doesn't go over the buttons
 
   var result = {};
 
@@ -558,14 +551,16 @@ function createDialog2(params) {
   result.title = new Flex(dialogFlex, [0, 0, topHeight], 0.01, [1, 0, -topHeight], [0, 0, topHeight], FONT_TITLE);
   result.content = new Flex(dialogFlex, 0.02, [0, 0, topHeight], 0.98, contentHeight);
 
-  if(opt_title) {
+  if(params.scrollable) makeScrollable(result.content);
+
+  if(params.title) {
     centerText2(result.title.div);
-    result.title.div.textEl.innerText = opt_title;
+    result.title.div.textEl.innerText = params.title;
   }
 
-  if(opt_icon) {
+  if(params.icon) {
     canvas = createCanvas('0%', '0%', '100%', '100%', result.icon.div);
-    renderImage(opt_icon, canvas);
+    renderImage(params.icon, canvas);
   }
 
   window.setTimeout(function() {

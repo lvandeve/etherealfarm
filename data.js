@@ -4682,7 +4682,8 @@ var FRUIT_ALL_SEASON2 = fruit_index++; // dragon fruit
 // NOT TODO: one decreasing cost: would cause an annoying technique where you have to swap fruits all the time before planting anything
 
 // returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
-function getFruitBoost(ability, level, tier) {
+// opt_basic: if true, adjusts some abilities if basic challenge active. Doesn't adjust ability or level, as the getFruitTier and getFruitAbility already take an opt_basic parameter for that
+function getFruitBoost(ability, level, tier, opt_basic) {
   var base = Math.pow(getFruitTierCost(tier), 0.75) * 0.05;
 
   if(ability == FRUIT_BERRYBOOST) {
@@ -4737,6 +4738,7 @@ function getFruitBoost(ability, level, tier) {
       if(!state.upgrades3[upgrade3_fruitmix2].count) return Num(0)
       return Num(0.35); // act like star fruit in that case
     }
+    if(opt_basic && basicChallenge()) return Num(0.4); // in case of basic challenge, only be slightly better than starfruit rather than a big jump up
     return Num(1.0); // not upgradeable
   }
   if(ability == FRUIT_RESINBOOST) {
@@ -5513,10 +5515,8 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, fruit_drop_l
   // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
   // TODO: for emerald and higher fruits, adjust target_level everywhere this function is called
 
-
   var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level);
-  //s = Math.pow(s, 5);
-  return mul.mulr(s).addr(1);
+  return mul.mulr(s);
 }
 
 // outputs the minimum spores required for the tree to go to the given level
@@ -5858,7 +5858,7 @@ function getSpringFlowerBonus() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true)));
+    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true), true));
     bonus.mulInPlace(mul);
   }
 
@@ -5880,7 +5880,7 @@ function getSummerBerryBonus() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = getFruitBoost(ability, level, getFruitTier(true)).addr(1);
+    var mul = getFruitBoost(ability, level, getFruitTier(true), true).addr(1);
     bonus.mulInPlace(mul);
   }
 
@@ -5906,7 +5906,7 @@ function getAutumnMushroomBonus() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = getFruitBoost(ability, level, getFruitTier(true)).addr(1);
+    var mul = getFruitBoost(ability, level, getFruitTier(true), true).addr(1);
     bonus.mulInPlace(mul);
   }
 
@@ -5950,7 +5950,7 @@ function getWinterTreeWarmth() {
   var level = a[0];
   var ability = a[1];
   if(level > 0) {
-    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true)));
+    var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true), true));
     bonus.mulInPlace(mul);
   }
 

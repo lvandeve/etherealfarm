@@ -871,9 +871,7 @@ function createChangelogDialog() {
 
   var dialog = createDialog2({title:'About', icon:icon, onclose:function(cancel) {
     showing_changelog = false;
-  }});
-
-  makeScrollable(dialog.content);
+  }, scrollable:true});
 
   var text = '';
 
