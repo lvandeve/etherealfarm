@@ -320,24 +320,33 @@ function makeTreeDialog() {
     }
   };
 
-  var dialog = createDialog(undefined, undefined, undefined, undefined, have_buttons ? NOCANCELBUTTON : undefined, undefined, undefined, undefined, undefined, undefined, undefined, shortcutfun);
-  dialog.div.className = 'efDialogTranslucent';
+  var treedialogvisible = true;
+
+  var dialog = createDialog2({
+    nocancel:have_buttons,
+    shortcutfun:shortcutfun,
+    scrollable:false,
+    onclose:function(){treedialogvisible = false;},
+    narrow:true,
+    title:'Tree'
+  });
+  dialog.flex.div.className = 'efDialogTranslucent';
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
+  var flex = new Flex(dialog.icon, 0, 0, 1, 1);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
-  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4]);
+  flex = new Flex(dialog.icon, 0, 1, 1, 2);
   canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
 
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75);
+  var f0 = new Flex(contentFlex, 0, 0, 1, 0.65);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95);
+  var f1 = new Flex(contentFlex, 0, 0.67, 1, 1);
 
   var createText = function() {
     var text;
@@ -477,7 +486,7 @@ function makeTreeDialog() {
 
   var lastseentreelevel = state.treelevel;
   registerUpdateListener(function() {
-    if(!flex || !document.body.contains(flex.div)) return false;
+    if(!treedialogvisible) return false;
     if(lastseentreelevel != state.treelevel) {
       lastseentreelevel = state.treelevel;
       var text = createText();
@@ -486,11 +495,11 @@ function makeTreeDialog() {
     return true;
   });
 
-  var y = 0.1;
-  var h = 0.3;
+  var y = 0.05;
+  var h = 0.15;
   // finetune the width of the buttons in flex f1
-  var button0 = 0;
-  var button1 = 0.8;
+  var button0 = 0.15;
+  var button1 = 0.85;
   var buttonshift = h * 1.15;
 
   if(state.challenge) {
@@ -826,7 +835,8 @@ function initFieldUI() {
             return 'fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
           }
         } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-          return 'present: provides a random bonus when activated. Presents are a temporary festive event!';
+          //return 'present: provides a random bonus when activated. Presents are a temporary festive event!';
+          return 'egg: provides a random bonus when activated. Eggs are a temporary festive event!';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there

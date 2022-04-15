@@ -253,23 +253,31 @@ function makeDowngradeCrop2Action(x, y, opt_silent) {
 function makeTree2Dialog() {
   var div;
 
-  var dialog = createDialog();
-  dialog.div.className = 'efDialogTranslucent';
+  var have_buttons = automatonUnlocked();
+
+  var dialog = createDialog2({
+    nocancel:have_buttons,
+    scrollable:false,
+    narrow:true,
+    title:'Tree'
+  });
+
+  dialog.flex.div.className = 'efDialogTranslucent';
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
+  var flex = new Flex(dialog.icon, 0, 0, 1, 1);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][4], canvas);
-  flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.199], [0, 0, 0.2], [0, 0, 0.4]);
+  flex = new Flex(dialog.icon, 0, 1, 1, 2);
   canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][4], canvas);
 
   var ypos = 0;
   var ysize = 0.1;
 
-  var f0 = new Flex(contentFlex, [0.03, 0, 0.2], [0, 0, 0.02], 0.97, 0.75);
+  var f0 = new Flex(contentFlex, 0, 0, 1, 0.65);
   makeScrollable(f0);
-  var f1 = new Flex(contentFlex, [0.03, 0, 0.2], 0.77, 0.97, 0.95);
+  var f1 = new Flex(contentFlex, 0, 0.67, 1, 1);
 
   var text = '';
 
@@ -303,11 +311,11 @@ function makeTree2Dialog() {
 
   f0.div.innerHTML = text;
 
-  var y = 0.1;
-  var h = 0.3;
+  var y = 0.05;
+  var h = 0.15;
   // finetune the width of the buttons in flex f1
-  var button0 = 0;
-  var button1 = 0.8;
+  var button0 = 0.15;
+  var button1 = 0.85;
   var buttonshift = h * 1.15;
 
   if(automatonUnlocked()) {
@@ -320,6 +328,16 @@ function makeTree2Dialog() {
     addButtonAction(button, function() {
       closeAllDialogs();
       createBlueprintsDialog(undefined, undefined, true);
+    });
+  }
+
+  if(have_buttons) {
+    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
+    y += buttonshift;
+    styleButton(button);
+    button.textEl.innerText = 'Back';
+    addButtonAction(button, function() {
+      dialog.cancelFun();
     });
   }
 }

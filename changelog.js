@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+
   text += '0.1.100 - Fruity update (2022-04-10):';
   text += '<br/>• Added sapphire fruits, and new fruit abilities only available from this tier.'; // The "mix" ability may need some extra explanation that doesn't fit in its UI description: its 3 multipliers are tuned (using sqrt/cbrt-ish powers) such that in overal game production boost it\'s roughly as good as 1 bee ability, or 1 brassica ability, or 1 nettle ability, but is a combination of them. The mix ability is also designed to be quite useless if combined with a bee, brassica or nettle boost ability on the same fruit (by making it additive with those), so for a good fruit either have only mix, or any amount of those others, but not both. Also, the watercress effect of mix fruit is different on mushroom copying vs berry copying, to make its tuning very exact when taking into account its nettle ability doesn't affect seeds. "Mix" is not always better than pure bee boost or pure brassica boost, it's situational, it's a bit more flexible (being "ok" in more situations), but there are only a few specific cases where it's not strictly worse than pure bee (e.g. when most berries are next to a brassica).
   text += '<br/>• New fruit mixing type, unlocked by new squirrel upgrade. The original dragon fruit got renamed to star fruit, but behaves exactly the same.'; // the reason the rename, rather than keeping dragon fruit the 4-season one and adding a new one with a new name on top, is that "dragon fruit" sounds more powerful than "star fruit" and I couldn't find any fruit that sounds even more powerful than "dragon fruit" does. In addition, "star fruit" is quite excellent in that it grows in many seasons of the year, perfectly representing 4 seasons.
@@ -27,6 +28,7 @@ function getChangeLog() {
   text += '<br/>• Due to UI space reasons, only the first 10 fruit slots can be selected as active now, the others are purely storage.'; // because the arrow selectors require horizontal space, and having them wrap would be possible, but somewhat ugly
   text += '<br/>• Added a new choice upgrade (resin vs production).'; // In challenges without resin, automaton will automatically pick the non-resin choice anyway if the resin one is selected.
   text += '<br/>• Added new crop count achievements.'; // 50
+  text += '<br/>• The blueprint dialog now supports shortcut keys 1-9 to select a blueprint.';
   text += '<br/>• Various other tweaks.'; // includes making nettle fruit ability a bit stronger, to make it not strictly worse than bee fruit, and, info buttons in the automaton choice-upgrade dialog. And subtle change that was needed for the mix fruit separate watercress multiplier for berry and mushroom: watercress copying breakdown UI will now show the mushroom breakdown if only next to mushroom, and the nuts breakdown if only next to nut, instead of always showing the berry breakdown
   text += '<br/><br/>';
 

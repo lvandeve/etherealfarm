@@ -17,15 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 function createNumberFormatHelp(notations, precision) {
-  var dialog = createDialog(DIALOG_LARGE);
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Number Format help';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog2({size:DIALOG_LARGE, title:'Number format help', scrollable:true});
 
   var text = '';
 
@@ -112,7 +104,7 @@ function createNumberFormatHelp(notations, precision) {
     text += Num.N_Help[j] + '<br><br>';
   }
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,7 +118,20 @@ var notations_inv = [];
 for(var i = 0; i < notations.length; i++) notations_inv[notations[i]] = i;
 
 function createNumberFormatDialog() {
-  var dialog = createDialog(DIALOG_LARGE);
+  var changed = false;
+
+  var dialog = createDialog2({
+    size:DIALOG_LARGE,
+    title:'Choose large number notation',
+    help:function() { createNumberFormatHelp(notations, precision); },
+    onclose:function() {
+      // updateMedalUI is somewhat slow, so only do it if something possibly changed
+      if(changed) {
+        updateUI();
+        updateMedalUI();
+      }
+    }
+  });
 
   var y2 = 0;
   var h2;
@@ -164,14 +169,12 @@ function createNumberFormatDialog() {
 
   var notation = Num.notation;
 
-  titleDiv.textEl.innerText = 'Choose large number notation';
   var title = 'Select which notation to use for large numbers.\n\n';
   for(var i = 0; i < notations.length; i++) {
     var j = notations[i];
     title += Num.N_Names[j] + ':\n' + Num.N_Help[j] + '\n\n';
   }
-  titleDiv.textEl.innerText = 'Choose large number notation';
-  titleDiv.textEl.title = title;
+  dialog.title.div.textEl.title = title;
 
   var notationDropdown = util.makeAbsElement('select', '10%', '0%', '80%', '45%', choiceDiv);
   notationDropdown.title = title;
@@ -185,6 +188,7 @@ function createNumberFormatDialog() {
     notation = notations[notationDropdown.selectedIndex];
     Num.notation = notation;
     fill();
+    changed = true;
   };
   notationDropdown.selectedIndex = notations_inv[Num.notation];
   notationDropdown.style.fontSize = '100%'; // take that of the parent flex-managed element
@@ -199,6 +203,7 @@ function createNumberFormatDialog() {
     precision = precisionDropdown.selectedIndex + 3;
     Num.precision = precision;
     fill();
+    changed = true;
   };
   precisionDropdown.selectedIndex = Math.min(Math.max(0, Num.precision - 3), 4);
   precisionDropdown.style.fontSize = '100%'; // take that of the parent flex-managed element
@@ -208,7 +213,7 @@ function createNumberFormatDialog() {
   var precision = Num.precision;
   var examples = [0, 0.03, 1, 7.123456, 150, 1712.29, 14348907.5, 4294967296, 2048e20, 800e27, 7.10915e50, 2.1065e85, 3e303];
 
-  var fill = function() {
+  var fill = function(changed) {
     var tableText = '';
     tableText += '<table border="1" style="border-collapse:collapse">';
     tableText += '<tr><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td><td width="10%" style="border:none"></td><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td></tr>';
@@ -232,31 +237,19 @@ function createNumberFormatDialog() {
     descriptionDiv.innerHTML = '<b>Notation description:</b> ' + Num.N_Help[notation];
 
     div.innerHTML = tableText;
-
-    updateUI();
-    updateMedalUI();
   };
 
-
-  var button = new Flex(infoFlex, 0.01, 0.16, 0.3, 0.8).div;
-  styleButton(button);
-  button.textEl.innerText = 'help';
-  addButtonAction(button.textEl, function() {
-    createNumberFormatHelp(notations, precision);
-  });
+  //var tryFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
+  //var inputFlex = new Flex(tryFlex, 0, 0, 1, 1);
+  //var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
 
   fill();
 }
 
 function createShortcutsDialog() {
-  var dialog = createDialog();
+  var dialog = createDialog2({title:'Controls'});
 
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
-  centerText2(title.div);
-  title.div.textEl.innerText = 'Controls';
-  title.div.textEl.style.fontWeight = 'bold';
-
-  var pos = 0.05;
+  var pos = 0;
   var buttondiv;
   var h = 0.06;
 
@@ -345,14 +338,9 @@ function createShortcutsDialog() {
 }
 
 function createNotificationSettingsDialog() {
-  var dialog = createDialog();
+  var dialog = createDialog2({title:'Messages & Sounds'});
 
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
-  centerText2(title.div);
-  title.div.textEl.innerText = 'Messages & Sounds';
-  title.div.textEl.style.fontWeight = 'bold';
-
-  var pos = 0.05;
+  var pos = 0;
   var buttondiv;
   var h = 0.06;
 
@@ -460,14 +448,9 @@ function createNotificationSettingsDialog() {
 
 
 function createAdvancedSettingsDialog() {
-  var dialog = createDialog();
+  var dialog = createDialog2({title:'Preferences'});
 
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
-  centerText2(title.div);
-  title.div.textEl.innerText = 'Preferences';
-  title.div.textEl.style.fontWeight = 'bold';
-
-  var pos = 0.05;
+  var pos = 0;
   var buttondiv;
   var h = 0.06;
 
@@ -642,17 +625,11 @@ var showing_stats = false;
 
 function createStatsDialog() {
   showing_stats = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
+  var dialog = createDialog2({title:'Player statistics', scrollable:true, onclose:function() {
     showing_stats = false;
-  });
+  }});
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Player Statistics';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var div = dialog.content.div;
 
   var text = '';
 
@@ -981,8 +958,8 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
 }
 
 
-function initSettingsUI_in(dialog) {
-
+function createSettingsDialog() {
+  var dialog = createDialog2({title:'Main Menu'});
   var pos = 0.05;
   var gap = 0.025;
 
@@ -996,11 +973,6 @@ function initSettingsUI_in(dialog) {
   };
 
 
-
-  var title = new Flex(dialog.content, 0, 0, 1, 0.05);
-  centerText2(title.div);
-  title.div.textEl.innerText = 'Main Menu';
-  title.div.textEl.style.fontWeight = 'bold';
   var button;
   button = makeSettingsButton();
   button.textEl.innerText = 'save now';
@@ -1164,8 +1136,7 @@ function initSettingsUI() {
   gearbutton.title = 'Settings';
 
   addButtonAction(gearbutton, function() {
-    var dialog = createDialog();
-    initSettingsUI_in(dialog);
+    createSettingsDialog();
   }, 'settings');
   gearbutton.id = 'settings_button';
 

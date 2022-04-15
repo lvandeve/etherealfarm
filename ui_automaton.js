@@ -18,9 +18,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // subject: 0=auto upgrade, 1=auto plant, 2=auto unlock
 function showConfigureAutoResourcesDialog(subject) {
-  var dialog = createDialog();
+  var title;
+  if(subject == 0) title = 'Configure auto upgrade';
+  else if(subject == 1) title = 'Configure auto plant';
+  else if(subject == 2) title = 'Configure auto unlock';
+  var dialog = createDialog2({title:title, scrollable:true});
   var scrollFlex = dialog.content;
-  makeScrollable(scrollFlex);
 
   var texth = 0;
   var h = 0.06;
@@ -218,11 +221,14 @@ function showConfigureAutoChoiceDialog(subject) {
   // temporary disable automaton_autochoice so it doesn't trigger while cycling through the button values
   var temp = state.automaton_autochoice;
   state.automaton_autochoice = 0;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
-    state.automaton_autochoice = temp;
+  var dialog = createDialog2({
+    onclose:function() {
+      state.automaton_autochoice = temp;
+    },
+    scrollable:true,
+    title:'Configure auto choices'
   });
   var scrollFlex = dialog.content;
-  makeScrollable(scrollFlex);
 
   var texth = 0;
   var h = 0.06;
@@ -302,7 +308,7 @@ function showConfigureAutoChoiceDialog(subject) {
     addButtonAction(flex.div, bind(function(i) {
       var u = upgrades[choiceupgrades[i]];
       var u2 = state.upgrades[choiceupgrades[i]];
-      var dialog = createDialog();
+      var dialog = createDialog2({title:(u.name + ' info')});
       dialog.content.div.innerHTML = '<b>' + u.choicename_a + ':</b><br>' + u.description_a + '<br><br><b>' + u.choicename_b + ':</b><br>' + u.description_b + '<br><br><b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.';
     }, i));
   }
@@ -351,6 +357,10 @@ function showAutomatonFeatureSourceDialog() {
   }
   if(state.automaton_unlocked[3]) {
     text += ' • Auto-unlock: blackberry challenge (ethereal tree level 4)';
+    text += '<br/>';
+  }
+  if(state.automaton_unlocked[4]) {
+    text += ' • Auto-prestige: truly basic challenge';
     text += '<br/>';
   }
 

@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // opt_transcend: if true, use alternate background color to indicate it'll transcend with it
-function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challenge) {
+function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challenge, opt_indicate_shortcuts, opt_notitle) {
   flex.clear();
   flex.div.style.backgroundColor = ethereal ? '#aaf' : (opt_transcend ? (opt_challenge ? '#fbb' : '#ff7') : '#edc');
 
@@ -65,13 +65,23 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
   var name = b.name;
   //if(!name && opt_index != undefined) name = 'blueprint ' + opt_index;
 
-  if(name) {
-    var nameFlex = new Flex(flex, 0, -0.1, 1, 0);
-    nameFlex.div.innerText = name + ':';
+  if(!opt_notitle) {
+    var nametext = '';
+    if(name && opt_index != undefined && opt_indicate_shortcuts) {
+      nametext = '[' + (opt_index + 1) + '] ' + name + ':';
+    } else if(opt_index != undefined && opt_indicate_shortcuts) {
+      nametext = '[' + (opt_index + 1) + ']:';
+    } else if(name) {
+      nametext = name + ':';
+    }
+    if(nametext) {
+      var nameFlex = new Flex(flex, 0, -0.1, 1, 0);
+      nameFlex.div.innerText = nametext;
+    }
   }
 
   var name2 = 'blueprint';
-  if(opt_index != undefined) name2 += ' ' + opt_index;
+  if(opt_index != undefined) name2 += ' ' + (opt_index + 1);
   if(b.name) name2 += ': ' + b.name;
   var text = createBluePrintText(b);
 
@@ -471,6 +481,9 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   var orig = b;
   b = BluePrint.copy(b);
 
+  var title = b.name;
+  if(!title) title = ethereal ? 'Ethereal blueprint' : 'Blueprint';
+
   var okfun = function() {
     // this actually commits the change of the blueprint. This is the cancel function of the dialog: the only thing that does not commit it, is using undo.
     if(did_edit) {
@@ -483,31 +496,49 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   var undofun = function() {
     if(did_edit) {
       b = BluePrint.copy(orig);
-      renderBlueprint(b, ethereal, renderFlex, opt_index);
+      update();
       did_edit = false;
     } else if(!!lastpreundoblueprint && lastpreundoblueprintindex == opt_index) {
       b = BluePrint.copy(lastpreundoblueprint);
-      renderBlueprint(b, ethereal, renderFlex, opt_index);
+      update();
       did_edit = true;
     }
     return true;
   };
 
-  var dialog = createDialog(undefined, undofun, 'undo', okfun, 'ok', undefined, undefined, undefined, opt_onclose, undefined, undefined, undefined);
+  //var dialog = createDialog(undefined, undofun, 'undo', okfun, 'ok', undefined, undefined, undefined, opt_onclose, undefined, undefined, undefined);
+  var dialog = createDialog2({
+    functions:undofun,
+    names:'undo',
+    oncancel:okfun,
+    cancelname:'ok',
+    title:title,
+    onclose:opt_onclose,
+    help:showBluePrintHelp
+  });
 
-  var renderFlex = new Flex(dialog.content, [0, 0, 0.05], [0, 0, 0.05], [0, 0, 0.5], [0, 0, 0.5]);
-  renderBlueprint(b, ethereal, renderFlex, opt_index);
+  var renderFlex = new Flex(dialog.content, [0, 0, 0.25], 0, [0, 0, 0.75], [0, 0, 0.5]);
+  renderBlueprint(b, ethereal, renderFlex, opt_index, undefined, undefined, undefined, true);
+
+  var update = function() {
+    renderBlueprint(b, ethereal, renderFlex, opt_index, undefined, undefined, undefined, true);
+    var title = b.name;
+    if(!title) title = ethereal ? 'Ethereal blueprint' : 'Blueprint';
+    dialog.titleEl.innerText = title;
+    updateOverrideButton();
+  };
 
 
-  var y = 0.5;
+  var y = 0.51;
   var addButton = function(text, fun, tooltip) {
     var h = 0.055;
-    var button = new Flex(dialog.content, [0, 0, 0.05], y, [0.5, 0, 0.05], y + h).div;
+    var button = new Flex(dialog.content, [0, 0, 0.25], [0, 0, y], [0, 0, 0.75], [0, 0, y + h]).div;
     y += h * 1.1;
     styleButton(button);
     button.textEl.innerText = text;
     addButtonAction(button, fun);
     if(tooltip) registerTooltip(button, tooltip);
+    return button;
   };
 
   addButton('To field', function(e) {
@@ -524,7 +555,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     override_name = 'Override (' + num_tokens + ' tokens)';
   }
 
-  addButton(override_name, function(e) {
+  var override_button = addButton(override_name, function(e) {
     if(ethereal) plantBluePrint2(b, true);
     else plantBluePrint(b, true);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
@@ -532,10 +563,17 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     update();
   }, 'Plant this blueprint on the field. Existing crops from the field are also deleted and overridden, if their type differs and the blueprint is non-empty at that spot.');
 
+  var updateOverrideButton = function() {
+    if(!ethereal) return;
+    var num_tokens = plantBluePrint2(b, true, true);
+    override_name = 'Override (' + num_tokens + ' tokens)';
+    override_button.textEl.innerText = override_name;
+  };
+
   addButton('From field', function() {
     if(ethereal) blueprintFromField2(b);
     else blueprintFromField(b);
-    renderBlueprint(b, ethereal, renderFlex, opt_index);
+    update();
     did_edit = true;
   }, 'Save the current field state into this blueprint. You can use the cancel button below to undo this.');
 
@@ -547,7 +585,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   addButton('From TXT', function() {
     importBluePrintDialog(function(text) {
       blueprintFromText(text, b, ethereal);
-      renderBlueprint(b, ethereal, renderFlex, opt_index);
+      update();
       did_edit = true;
     }, b, ethereal);
   }, 'Import the blueprint from text format, as generated with To TXT. You can use the cancel button below to undo this.');
@@ -555,9 +593,9 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   addButton('Rename', function() {
     makeTextInput('Enter new blueprint name, or empty for default', function(name) {
       b.name = sanitizeName(name);
-      renderBlueprint(b, ethereal, renderFlex, opt_index);
+      update();
       did_edit = true;
-    });
+    }, b.name);
   }, 'Rename this blueprint. This name shows up in the main blueprint overview. You can use the cancel button below to undo this.');
 
   addButton('Delete blueprint', function() {
@@ -565,31 +603,21 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     b.numh = 0;
     b.data = [];
     b.name = '';
-    renderBlueprint(b, ethereal, renderFlex, opt_index);
+    update();
     did_edit = true;
   }, 'Delete this blueprint. You can use the cancel button below to undo this.');
-
-  addButton('Help', function() {
-    showBluePrintHelp();
-  });
 
   return dialog;
 }
 
 function showBluePrintHelp() {
-  var dialog = createDialog();
+  var dialog = createDialog2({title:'Blueprint help', scrollable:true});
 
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Blueprint help';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var div = dialog.content.div;
 
   var text = '';
 
-  text += 'Blueprint allow planting a whole field layout at once, and storing layouts';
+  text += 'Blueprints allow planting a whole field layout at once, and storing layouts';
   text += '<br/><br/>';
   text += 'A field layout represents a crop type for each tile. Crop types are for example berry, mushroom, flower, nettle, ... A layout never refers to a specific crop, such as blackberry or blueberry, only to the type (here "berry") in general.';
   text += '<br/><br/>';
@@ -620,11 +648,78 @@ function showBluePrintHelp() {
   text += ' • shift + click "To Field" button of a blueprint: plant it immediately and override differing crops on the field';
   text += '<br/>';
   text += ' • "t", "b": open transcend dialog, and then open transcend-with-blueprint dialog';
+  text += '<br/>';
+  text += ' • "1" - "9": shortcuts to open or use this blueprint in the blueprint selection dialog';
   text += '<br/><br/>';
   text += 'Once automaton is advanced enough, it can also use blueprints.';
 
   div.innerHTML = text;
 }
+
+
+function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, flex, e) {
+  var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
+
+
+  for(var i = 0; i <= index; i++) {
+    if(!blueprints[i]) blueprints[i] = new BluePrint();
+  }
+  var shift = util.eventHasShiftKey(e);
+  var ctrl = util.eventHasCtrlKey(e);
+  var filled = blueprints[index] && blueprints[index].numw && blueprints[index].numh;
+  if(opt_transcend) {
+    /*if(!state.allowshiftdelete) {
+      showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
+    } else*/ if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
+      showMessage('not high enough tree level to transcend (transcend with blueprint tries to transcend first, then plant the blueprint)', C_INVALID);
+    } else {
+      var new_challenge = opt_challenge || 0;
+      if(state.challenge) {
+        addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
+      } else {
+        if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
+      }
+      addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
+      closeAllDialogs();
+      update();
+    }
+  } else {
+    if(shift && !ctrl && filled) {
+      if(opt_ethereal) plantBluePrint2(blueprints[index], false);
+      else plantBluePrint(blueprints[index], false);
+      closeAllDialogs();
+      update();
+    } else if(!shift && ctrl && filled) {
+      if(opt_ethereal) plantBluePrint2(blueprints[index], true);
+      else plantBluePrint(blueprints[index], true);
+      closeAllDialogs();
+      update();
+    } else if(shift && ctrl && filled) {
+      if(!state.allowshiftdelete) {
+        // do nothing: this is a deprecated shortcut, only visible with exact correct usage
+        //showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
+      } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
+        // do nothing: this is a deprecated shortcut, only visible with exact correct usage
+        //showMessage('not high enough tree level to transcend (use shift+blueprint to just plant this blueprint)', C_INVALID);
+      } else {
+        // deprecated feature, but still supported for those who like its convenience of "b" + "ctrl+shift+click" (the alternative is: "t", "b", "click")
+        if(state.treelevel >= min_transcension_level) {
+          showMessage('Transcended and planted blueprint');
+          addAction({type:ACTION_TRANSCEND, challenge:0});
+        }
+        addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
+        closeAllDialogs();
+        update();
+      }
+    } else {
+      var closefun = bind(function(i, flex) {
+        renderBlueprint(blueprints[i], opt_ethereal, flex, index, opt_transcend, opt_challenge, true);
+      }, index, flex);
+      var subdialog = createBlueprintDialog(blueprints[index], opt_ethereal, index, closefun);
+    }
+  }
+}
+
 
 var blueprintdialogopen = false;
 
@@ -633,6 +728,8 @@ var blueprintdialogopen = false;
 // opt_ethereal: show blueprints for ethereal field instead
 function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
   if(!automatonUnlocked()) return;
+
+  var flexes = [];
 
   var challenge_button_name = undefined;
   var challenge_button_fun = undefined;
@@ -644,26 +741,52 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
     };
   }
 
-  blueprintdialogopen = true;
-  var dialog = createDialog(undefined, challenge_button_fun, challenge_button_name, undefined, 'back', undefined, undefined, undefined, function() {
-    blueprintdialogopen = false;
-  });
+  var shortcutfun = function(e) {
+    var keys = getEventKeys(e);
 
+    var key = keys.key;
+    var index = -1;
+    if(key == '1') index = 1;
+    if(key == '2') index = 2;
+    if(key == '3') index = 3;
+    if(key == '4') index = 4;
+    if(key == '5') index = 5;
+    if(key == '6') index = 6;
+    if(key == '7') index = 7;
+    if(key == '8') index = 8;
+    if(key == '9') index = 9;
+    if(index < 0) return;
+    index--;
+    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, flexes[index], e);
+  };
 
-  var titleFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
-  centerText2(titleFlex.div);
+  var title;
   if(opt_transcend) {
     if(opt_challenge) {
-      titleFlex.div.textEl.innerText = upper(challenges[opt_challenge].name) + ' with blueprint';
+      title = upper(challenges[opt_challenge].name) + ' with blueprint';
     } else {
-      titleFlex.div.textEl.innerText = 'Transcend with blueprint';
+      title = 'Transcend with blueprint';
     }
   } else {
-    titleFlex.div.textEl.innerText = opt_ethereal ? 'Ethereal blueprint library' : 'Blueprint library';
+    title = opt_ethereal ? 'Ethereal blueprint library' : 'Blueprint library';
   }
 
+  blueprintdialogopen = true;
+  var dialog = createDialog2({
+    functions:challenge_button_fun,
+    names:challenge_button_name,
+    cancelname:'back',
+    title:title,
+    shortcutfun:shortcutfun,
+    help:showBluePrintHelp,
+    onclose:function() {
+      blueprintdialogopen = false;
+    }});
+
+
+
   //var bflex = new Flex(dialog.content, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
-  var bflex = new Flex(null, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
+  var bflex = new Flex(dialog.content, 0, 0, 1, 1);
 
   var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
 
@@ -671,66 +794,11 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
     var x = i % 3;
     var y = Math.floor(i / 3);
     var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
-    renderBlueprint(blueprints[i], opt_ethereal, flex, i, opt_transcend, opt_challenge);
+    flexes[i] = flex;
+    renderBlueprint(blueprints[i], opt_ethereal, flex, i, opt_transcend, opt_challenge, true);
     styleButton0(flex.div, true);
     addButtonAction(flex.div, bind(function(index, flex, e) {
-      for(var i = 0; i <= index; i++) {
-        if(!blueprints[i]) blueprints[i] = new BluePrint();
-      }
-      var shift = util.eventHasShiftKey(e);
-      var ctrl = util.eventHasCtrlKey(e);
-      var filled = blueprints[index] && blueprints[index].numw && blueprints[index].numh;
-      if(opt_transcend) {
-        /*if(!state.allowshiftdelete) {
-          showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
-        } else*/ if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
-          showMessage('not high enough tree level to transcend (transcend with blueprint tries to transcend first, then plant the blueprint)', C_INVALID);
-        } else {
-          var new_challenge = opt_challenge || 0;
-          if(state.challenge) {
-            addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
-          } else {
-            if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
-          }
-          addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
-          closeAllDialogs();
-          update();
-        }
-      } else {
-        if(shift && !ctrl && filled) {
-          if(opt_ethereal) plantBluePrint2(blueprints[index], false);
-          else plantBluePrint(blueprints[index], false);
-          closeAllDialogs();
-          update();
-        } else if(!shift && ctrl && filled) {
-          if(opt_ethereal) plantBluePrint2(blueprints[index], true);
-          else plantBluePrint(blueprints[index], true);
-          closeAllDialogs();
-          update();
-        } else if(shift && ctrl && filled) {
-          if(!state.allowshiftdelete) {
-            // do nothing: this is a deprecated shortcut, only visible with exact correct usage
-            //showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
-          } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
-            // do nothing: this is a deprecated shortcut, only visible with exact correct usage
-            //showMessage('not high enough tree level to transcend (use shift+blueprint to just plant this blueprint)', C_INVALID);
-          } else {
-            // deprecated feature, but still supported for those who like its convenience of "b" + "ctrl+shift+click" (the alternative is: "t", "b", "click")
-            if(state.treelevel >= min_transcension_level) {
-              showMessage('Transcended and planted blueprint');
-              addAction({type:ACTION_TRANSCEND, challenge:0});
-            }
-            addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
-            closeAllDialogs();
-            update();
-          }
-        } else {
-          var closefun = bind(function(i, flex) {
-            renderBlueprint(blueprints[i], opt_ethereal, flex, index);
-          }, index, flex);
-          var subdialog = createBlueprintDialog(blueprints[index], opt_ethereal, index, closefun);
-        }
-      }
+      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, flex, e);
     }, i, flex));
   }
 

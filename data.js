@@ -1531,14 +1531,20 @@ function getBerryBase(i) {
   return Num.rpow(2000, Num(i));
 }
 
+
 function getBerryCost(i) {
-  var seeds = getBerryBase(i);
-  seeds.mulrInPlace(20);
-  if(i == 0) {
-    // 0 and 1 are manually tuned for the start of the game
-    seeds.mulrInPlace(50);
-  }
-  if(i >= 2) {
+  var seeds;
+  if(i < 1) {
+    // the first tiers are manually tuned
+    // the first values are: 0:1K, 1:40K, 2:120M
+    if(i == 0) {
+      seeds = Num(1000);
+    } else {
+      seeds = Num.rpow(40, Num(i)).mulr(1000);
+    }
+  } else {
+    seeds = getBerryBase(i);
+    seeds.mulrInPlace(20);
     // for higher tier berries, the cost is increased more than the production.
     // the reason is the ratio between production and consumption as the player progresses: upgrades, fruits, ... significantly increase the berry production over the base production from getBerryProd
     // that means that for higher level players, a berry that is planted would produce much more than its own plant cost in fractions of a second

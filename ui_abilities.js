@@ -277,6 +277,27 @@ function refreshWatercress(opt_clear, opt_all) {
 }
 
 
+// get keyboard keys in slightly different format: as object containing key, code, shift and ctrl
+// key and code are modified to represent some keys (numbers and letters) without shift being pressed, e.g. shift+a becomes 'a', not 'A'
+// opt_end_number: if given (as character in a string, such as '6'), numbers higher than this one will not be corrected to undo shift. if set to '0', none will be affected, if set to '9' all except 9 will be affected, if set to undefined all will be affected
+function getEventKeys(e, opt_end_number) {
+  var shift = util.eventHasShiftKey(e);
+  var ctrl = util.eventHasCtrlKey(e);
+  var key = e.key;
+  var code = e.code;
+
+  // for letters and numbers, avoid shift having an effect
+  if(code.length == 4 && code.substr(0, 3) == 'Key') {
+    if(code[3] >= 'A' && code[3] <= 'Z') key = code[3].toLowerCase();
+  }
+  if(code.length == 6 && code.substr(0, 5) == 'Digit') {
+    if(opt_end_number == undefined || code[5] < opt_end_number) {
+      key = code[5];
+    }
+  }
+  return {key:key, code:code, shift:shift, ctrl:ctrl};
+}
+
 document.addEventListener('keydown', function(e) {
   //if(e.target.matches('textarea')) return; // typing in a textarea, don't do global game shortcuts then
   if(dialog_level > 0) {
@@ -290,28 +311,17 @@ document.addEventListener('keydown', function(e) {
     return; // in a dialog, don't do global game shortcuts
   }
 
-  var shift = util.eventHasShiftKey(e);
-  var ctrl = util.eventHasCtrlKey(e);
-
   var numberfun = state.keys_numbers;
-  if(shift) numberfun = state.keys_numbers_shift;
+  if(util.eventHasShiftKey(e)) numberfun = state.keys_numbers_shift;
 
-  var key = e.key;
-  var code = e.code;
-  // for letters and numbers, avoid shift having an effect
-  if(code.length == 4 && code.substr(0, 3) == 'Key') {
-    if(code[3] >= 'A' && code[3] <= 'Z') key = code[3].toLowerCase();
-  }
-  if(code.length == 6 && code.substr(0, 5) == 'Digit') {
-    // for numbers, only do this if there's a setting using numbers enabled. The reason: ( and ) could be under numbers, and in that case you may genuinely want to use them
-    // and for weather, which only goes from 1-3, still allow other keys behind other numbers
-    if(numberfun != 0 && numberfun != 1) {
-      if(code[5] >= '0' && code[5] <= '9') key = code[5];
-    }
-    if(numberfun == 1) {
-      if(code[5] >= '1' && code[5] <= '3') key = code[5];
-    }
-  }
+  // for numbers, only let them ignore shift if there's a setting using numbers enabled. The reason: ( and ) could be under numbers, and in that case you may genuinely want to use them
+  // and for weather, which only goes from 1-3, still allow other keys behind other numbers
+  var keys = getEventKeys(e, (numberfun == 1) ? '4' : ((numberfun == 0) ? '0' : undefined));
+
+  var key = keys.key;
+  var code = keys.code;
+  var shift = keys.shift;
+  var ctrl = keys.ctrl;
 
   if(key >= '0' && key <= '9') {
     if(numberfun == 0) return;
@@ -488,8 +498,7 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(code == 'Escape' && !shift && !ctrl) {
-    var dialog = createDialog();
-    initSettingsUI_in(dialog);
+    createSettingsDialog();
   }
 
   // these keys for prev and next fruit are chosen such that hopefully at least one set of them is reachable on any keyboard layout, even if in combination with shift if necessary

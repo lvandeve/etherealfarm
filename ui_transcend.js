@@ -124,17 +124,20 @@ function createTranscendDialog(opt_from_challenge) {
     extraname2 = undefined;
   }
 
-  var dialog = createDialog(DIALOG_MEDIUM, transcendfun, 'transcend', undefined, 'cancel', extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, extrafun2, extraname2, shortcutfun);
+  var dialog = createDialog2({
+    size:DIALOG_MEDIUM,
+    functions:[transcendfun, extrafun, extrafun2],
+    names:['transcend', extraname, extraname2],
+    cancelname:'cancel',
+    shortcutfun:shortcutfun,
+    title:(opt_from_challenge ? 'New regular run' : 'Transcension')
+  });
 
   dialog.div.className = 'efDialogEthereal';
 
   var flex = dialog.content;
   var text = '';
-  if(opt_from_challenge) {
-    text += '<b>New regular run' + '</b><br/>';
-  } else {
-    text += '<b>Transcension</b><br/>';
-    text += '<br/>';
+  if(!opt_from_challenge) {
     text += 'Transcension starts a new basic field. Your first transcension also unlocks an ethereal field. On this field you can plant ethereal crops with resin. These crops give bonuses to the basic field in various ways. Resin can also be used for other ethereal upgrades. Unused resin also gives a slight boost. <br/>';
   }
   text += '<br/>';

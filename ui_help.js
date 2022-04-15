@@ -499,22 +499,29 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>esc</b>: close current dialog. If no dialogs are open, shows main menu.';
   text += '<br/>';
-  text += ' • <b>"b"</b>: open the blueprint library, when available.';
-  text += '<br/>';
-  text += ' • <b>"t"</b>: open the transcension dialog, when available.';
-  text += '<br/>';
-  text += ' • <b>"t" followed by "Enter"</b>: transcend without blueprint.';
-  text += '<br/>';
-  text += ' • <b>"t" followed by "b"</b>: transcend and open the transcend-with-blueprint dialog.';
-  text += '<br/>';
-  text += ' • <b>"t" followed by "c"</b>: transcend and open the start-new-challenge dialog.';
-  text += '<br/>';
-  text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
-  text += '<br/>';
-  text += ' • <b>shift + click blueprint "To Field"</b>: plant this blueprint, but let it override non-matching crops. Without shift, it only plants on empty field spots.';
-  text += '<br/>';
-  text += ' • <b>shift + click squirrel upgrade</b>: when you unlocked this type of upgrades and have respecced at least once: upgrade all upgrades until this one, only available if you can afford it and this upgrade was seen before.';
-  text += '<br/>';
+  if (haveAutomaton()) {
+    text += '<br/><b>Blueprints:</b>';
+    text += '<br/>';
+    text += '<br/>';
+    text += ' • <b>"b"</b>: open the blueprint library, when available.';
+    text += '<br/>';
+    text += ' • <b>"t"</b>: open the transcension dialog, when available.';
+    text += '<br/>';
+    text += ' • <b>"t" followed by "Enter"</b>: transcend without blueprint.';
+    text += '<br/>';
+    text += ' • <b>"t" followed by "b"</b>: transcend and open the transcend-with-blueprint dialog.';
+    text += '<br/>';
+    text += ' • <b>"t" followed by "c"</b>: transcend and open the start-new-challenge dialog.';
+    text += '<br/>';
+    text += ' • <b>"1" - "9" in blueprint selection dialog</b>: open or use this blueprint';
+    text += '<br/>';
+    text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
+    text += '<br/>';
+    text += ' • <b>shift + click blueprint "To Field"</b>: plant this blueprint, but let it override non-matching crops. Without shift, it only plants on empty field spots.';
+    text += '<br/>';
+    text += ' • <b>shift + click squirrel upgrade</b>: when you unlocked this type of upgrades and have respecced at least once: upgrade all upgrades until this one, only available if you can afford it and this upgrade was seen before.';
+    text += '<br/>';
+  }
   text += '<br/><br/>';
 
   div.innerHTML = text;
@@ -653,15 +660,16 @@ function createHelpDialog() {
 // shows a subset of the dynamic registered help buttons, for automaton related topics only
 function createAutomatonHelpDialog() {
   showing_help = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
-    showing_help = false;
+  var dialog = createDialog2({
+    title:'Automaton help',
+    scrollable:true,
+    onclose:function() {
+      showing_help = false;
+    }
   });
 
-  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11);
-  centerText2(titleFlex.div);
-  titleFlex.div.textEl.innerText = 'Automaton Help';
 
-  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
+  var scrollFlex = dialog.content;
   makeScrollable(scrollFlex);
 
   var pos = 0.05;
@@ -685,7 +693,7 @@ function createAutomatonHelpDialog() {
     if(!state.help_seen_text[id] && !state.help_seen[id]) continue;
     var d = registered_help_dialogs[id];
 
-    var button = makeButton(d.name + ' ' + id);
+    var button = makeButton(d.name);
     addButtonAction(button, bind(function(id) {
       showRegisteredHelpDialog(id, true);},
     id));
