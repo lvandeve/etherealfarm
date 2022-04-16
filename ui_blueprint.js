@@ -668,9 +668,7 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, fl
   var ctrl = util.eventHasCtrlKey(e);
   var filled = blueprints[index] && blueprints[index].numw && blueprints[index].numh;
   if(opt_transcend) {
-    /*if(!state.allowshiftdelete) {
-      showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
-    } else*/ if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
+    if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
       showMessage('not high enough tree level to transcend (transcend with blueprint tries to transcend first, then plant the blueprint)', C_INVALID);
     } else {
       var new_challenge = opt_challenge || 0;
@@ -695,8 +693,8 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, fl
       closeAllDialogs();
       update();
     } else if(shift && ctrl && filled) {
-      if(!state.allowshiftdelete) {
-        // do nothing: this is a deprecated shortcut, only visible with exact correct usage
+      if(!state.allowshiftdelete || state.g_starttime > 1640995200) {
+        // do nothing: this is a deprecated shortcut, only visible with exact correct usage and old enough saves
         //showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
       } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
         // do nothing: this is a deprecated shortcut, only visible with exact correct usage

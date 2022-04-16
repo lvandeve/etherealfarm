@@ -461,19 +461,15 @@ document.addEventListener('keydown', function(e) {
       addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
       did_something = true;
     }
-    if(state.allowshiftdelete) {
-      if(state.field[shiftCropFlexY]) {
-        var f = state.field[shiftCropFlexY][shiftCropFlexX];
-        if(f) {
-          if(f.hasCrop()) {
-            // delete crop
-            addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
-            did_something = true;
-          }
+    if(state.field[shiftCropFlexY]) {
+      var f = state.field[shiftCropFlexY][shiftCropFlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          // delete crop
+          addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
+          did_something = true;
         }
       }
-    } else {
-      showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting crops with "d" is allowed', C_INVALID, 0, 0);
     }
     if(did_something) {
       update();
@@ -481,19 +477,15 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field2) {
-    if(state.allowshiftdelete) {
-      if(state.field2[shiftCrop2FlexY]) {
-        var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
-        if(f) {
-          if(f.hasCrop()) {
-            // delete crop
-            addAction({type:ACTION_DELETE2, x:shiftCrop2FlexX, y:shiftCrop2FlexY});
-            update();
-          }
+    if(state.field2[shiftCrop2FlexY]) {
+      var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          // delete crop
+          addAction({type:ACTION_DELETE2, x:shiftCrop2FlexX, y:shiftCrop2FlexY});
+          update();
         }
       }
-    } else {
-      showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting crops with "d" is allowed', C_INVALID, 0, 0);
     }
   }
 

@@ -151,7 +151,9 @@ function createTranscendDialog(opt_from_challenge) {
   text += '• Basic upgrades<br/>';
   text += '• Basic resources: seeds, spores<br/>';
   text += '• Tree level<br/>';
-  text += '• Fruits in the sacrificial pool<br/>';
+  text += '• Fruits in the sacrificial pool';
+  if(state.fruit_sacr.length) text += ' (you have: ' + state.fruit_sacr.length + ' fruits in there)';
+  text += '<br/>';
   if(amberUnlocked()) text += '• Some types of activated amber effects<br/>';
   text += '<br/>';
   text += 'What will be kept:<br/>';

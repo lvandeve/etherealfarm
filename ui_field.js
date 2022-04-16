@@ -238,7 +238,13 @@ function getCropInfoHTML(f, c, opt_detailed) {
         }
       } else if(p.prod3.neq(p.prod2)) {
         if(!(p.prod2.seeds.ltr(0) && p.prod2.seeds.gtr(-1e-6))) { // avoid a possible numerical display issue
-          result += 'After consumption: ' + p.prod2.toString() + '<br/>';
+          result += 'After consumption: ';
+          if(p.prod2.empty() && tooHighSeedConsumption()) {
+            result += 'none: a mushroom is consumping all seeds. Plant high tier berries away from a mushroom to get some income for upgrades.';
+          } else {
+            result += p.prod2.toString();
+          }
+          result += '<br/>';
         }
       }
       result += '<br/>';

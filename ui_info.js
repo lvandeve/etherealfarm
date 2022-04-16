@@ -97,6 +97,16 @@ function prodBreakdown2() {
 var season_styles = [ 'efSeasonBgSpring', 'efSeasonBgSummer', 'efSeasonBgAutumn', 'efSeasonBgWinter' ];
 
 
+
+function tooHighSeedConsumption() {
+  return gain_pos.seeds.gtr(0) && gain.seeds.lt(gain_pos.seeds.mulr(0.3));
+}
+
+function tooLowMushroomSeeds() {
+  return gain_pos.spores.gtr(0) && gain.spores.lt(gain_pos.spores.mulr(0.9));
+}
+
+
 // for tooltip and dialog, only compute if needed for those
 function getResourceDetails(i, special, index) {
   var name = resource_names[index];
@@ -214,6 +224,14 @@ function getResourceDetails(i, special, index) {
     var text = '<b>' + upper(name) + '</b><br/><br/>';
     text += 'Current amount: ' + res.toString() + '<br/><br/>';
 
+    if(index == 0 && tooHighSeedConsumption()) {
+      text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops</b><br/><br/>';
+    }
+
+    if(index == 1 && tooLowMushroomSeeds()) {
+      text += '<b>Mushrooms are getting less seeds than they can potentially consume! Better upgrade berries first now, upgrading mushrooms doesn\'t help now because they\'ll then want to consume even more seeds</b><br/><br/>';
+    }
+
     if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
 
     if(index == 4) {
@@ -225,28 +243,35 @@ function getResourceDetails(i, special, index) {
       }
     }
 
-    if(res_gain.neq(res_gain_pos)) {
-      // Total production is production - consumption.
-      text += 'Production (' + name + '/s):<br/>';
-      text += '• Total: ' + res_gain_pos.toString() + '/s<br/>';
-      text += '• To stacks: ' + res_gain.toString() + '/s<br/>';
-      text += '• To consumers: ' + (res_gain_pos.sub(res_gain)).toString() + '/s<br/>';
-      text += '<br/>';
-    } else {
-      text += '• Production: ' + res_gain.toString() + '/s<br/>';
-      text += '• Consumption: 0/s<br/>'; // This serves as a teaser that consumption can exist
-      text += '<br/>';
-    }
+    if(index == 0) { // seeds
+      if(res_gain.neq(res_gain_pos)) {
+        text += 'Production (' + name + '/s):<br/>';
+        text += '• Total: ' + res_gain_pos.toString() + '/s (= excluding mushroom consumption)<br/>';
+        text += '• To stacks: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
+        text += '• To consumers: ' + (res_gain_pos.sub(res_gain)).toString() + '/s (= going to neighboring mushrooms)<br/>';
+        text += '<br/>';
+      } else {
+        text += '• Production: ' + res_gain.toString() + '/s<br/>';
+        text += '• Consumption: 0/s<br/>'; // This serves as a teaser that consumption can exist
+        text += '<br/>';
+      }
 
-    if(hyp_neq) {
-      // Total production is production - consumption.
-      text += 'Potential production (' + name + '/s):<br/>';
-      text += '• Total: ' + res_gain_hyp_pos.toString() + '/s<br/>';
-      text += '• To stacks: ' + res_gain_hyp.toString() + '/s<br/>';
-      text += '• To consumers: ' + (res_gain_hyp_pos.sub(res_gain_hyp)).toString() + '/s<br/>';
+      if(hyp_neq) {
+        text += 'Potential production (' + name + '/s):<br/>';
+        text += '• Total: ' + res_gain_hyp_pos.toString() + '/s (= excluding mushroom consumption)<br/>';
+        text += '• To stacks: ' + res_gain_hyp.toString() + '/s (= if mushrooms could over-consume)<br/>';
+        text += '• To consumers: ' + (res_gain_hyp_pos.sub(res_gain_hyp)).toString() + '/s (= what mushrooms want to consume if enough seed production available)<br/>';
+        text += '<br/><br/>';
+      }
+    } else {
+      if(res_gain.neq(res_gain_pos)) {
+        text += 'Production (' + name + '/s):<br/>';
+        text += '• Actual: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
+        text += '• Potential: ' + res_gain_pos.toString() + '/s (= what mushrooms can produce if given enough seed income from neighboring berries)<br/>';
+      } else {
+        text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s <br/>';
+      }
       text += '<br/>';
-      text += 'Potential production means: if mushrooms could consume as many seed as it needs, even if this is more than neighbor berries can produce';
-      text += '<br/><br/>';
     }
   }
 
@@ -311,8 +336,12 @@ function showResource(i, special, index) {
       fontclose = '</span>';
     }
 
-    text = name + '<br>' + res.toString() + '<br>' + fontopen + res_gain.toString() + '/s' + fontclose;
-    if(hyp_neq) text += ' <font color="#888">(' + res_gain_hyp.toString() + '/s)</font>';
+
+    text = name;
+    text += '<br>' + res.toString();
+    text += '<br>' + fontopen + res_gain.toString() + '/s' + fontclose;
+    if(index == 0 && tooHighSeedConsumption()) text += ' <font color="#888">(' + res_gain_pos.toString() + '/s)</font>';
+    if(index == 1 && hyp_neq) text += ' <font color="#888">(' + res_gain_hyp.toString() + '/s)</font>';
   }
   // TODO: this causes "Parse HTML" and this one for the resource info despite being small shows up highest in profiling with chrome dev tools, find a faster way to do this
   div.textEl.innerHTML = text;

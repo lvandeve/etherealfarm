@@ -224,21 +224,31 @@ registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your 
 
 
 registerHelpDialog(19, 'Mushrooms', 'You unlocked your first type of mushroom',
-               'You unlocked your first type of mushroom. Mushrooms produce spores, but they consume seeds. Mushrooms must touch berries to get their seeds. If the berry cannot produce enough seeds for the mushroom, the mushroom produces less spores. If the berry produces more seeds than needed, the remaining seeds go to the regular seeds stack<br><br>Spores let the tree level up, unlocking next kinds of bonuses.<br><br>Spores are used by the tree, but the mushroom is not required to touch the tree.',
+               'You unlocked your first type of mushroom. Mushrooms produce spores, but they consume seeds. Mushrooms must touch berries to get their seeds. If the berry cannot produce enough seeds for the mushroom, the mushroom produces less spores. If the berry produces more seeds than needed, the remaining seeds go to the regular seeds stack' +
+               '<br><br>' +
+               'Spores let the tree level up, unlocking next kinds of bonuses.' +
+               '<br><br>' +
+               'Spores are used by the tree, but the mushroom is not required to touch the tree.' +
+               '<br><br>' +
+               'The mushroom can (and should!) be boosted by flowers. This boosts its production, but also increases its seed consumption.' +
+               '<br><br>' +
+               'Leave some berries without mushrooms too, otherwise you won\'t get enough seed production for next upgrades and crops.',
                undefined,
                '<br><br>'+
-               'The image shows a possible configuration for mushrooms: it extracts some seeds from the berries it touches.',
-               [[champignon[4],blueberry[4]],[blueberry[4],undefined]]);
+               'The image shows a possible configuration for mushrooms: it extracts seeds from the berry it touches. In addition, both the mushroom and berry are boosted by flowers. In addition, there\'s another berry that doesn\'t touch a mushroom so that there\'s some production too',
+               [[champignon[4],blueberry[4], undefined],
+                [images_anemone[4],images_anemone[4], undefined],
+                [blueberry[4], images_anemone[4], undefined]]);
+
 registerHelpDialog(20, 'Flowers', 'You unlocked your first type of flower',
-               'You unlocked your first type of flower. Flowers boost berries and mushrooms. In case of mushrooms, it boosts their spore production, but also increases their seed consumption equally',
+               'You unlocked your first type of flower. Flowers boost resource-producing crops such as berries, if they are planted next to them. It can boost all the 4 orthogonal neighboring crops.',
                undefined,
                '<br><br>'+
-               'The image shows a possible good configuration for flower boost: multiple flowers boost multiple berries or mushrooms. It\'s also ensured that both the mushroom and the berry it consumes from both have a flower.',
+               'The image shows a possible good configuration for flower boost: multiple flowers boost multiple berries. The center-most blackberry is receiving the boost 4 times.',
                [
-                 [blackberry[4],clover[4],blackberry[4],undefined],
-                 [clover[4],blackberry[4],clover[4],clover[4]],
-                 [blackberry[4],clover[4],blackberry[4],champignon[4]],
-                 [    undefined,undefined,undefined,undefined]
+                 [blackberry[4],images_anemone[4],blackberry[4]],
+                 [images_anemone[4],blackberry[4],images_anemone[4]],
+                 [blackberry[4],images_anemone[4],blackberry[4]],
                ]);
 
 registerHelpDialog(21, 'Nettles', 'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches.',
@@ -246,9 +256,9 @@ registerHelpDialog(21, 'Nettles', 'Unlocked a new crop: nettle. Nettle boosts mu
   images_nettle[4],
   '<br><br>'+
   'The image shows a possible configuration where the mushroom receives boost from both nettle (top) and flower (bottom). The top left flower and top right blackberry in this image however are negatively affected by the nettle.',
-  [[clover[4],images_nettle[4],blackberry[4]],
+  [[images_anemone[4],images_nettle[4],blackberry[4]],
    [blueberry[4],champignon[4],blueberry[4]],
-   [undefined,clover[4],undefined]]);
+   [undefined,images_clover[4],undefined]]);
 
 
 registerHelpDialog(6, 'Tree leveled up', 'Tree leveled up', 'Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(1)][0] + ', level ' + 1 + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree in the field for more info.',
@@ -262,14 +272,14 @@ registerHelpDialog(2, 'Tree dropped fruit', 'Tree reached level 5 and dropped a 
 registerHelpDialog(18, 'Tree dropped better fruit', 'Tree reached level 15 and dropped another fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! It drops one every 5 levels. Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
 
 
-registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now possible to transcend', 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog. The tree also dropped another fruit.',
+registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now possible to transcend', 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog. The tree also dropped another fruit, check the fruit tab whether you want to keep it since it\'s in the sacrificial pool for now.',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(10)][1][0]], [undefined, tree_images[treeLevelIndex(10)][2][0]]]);
 
 
 registerHelpDialog(1, 'Transcension', 'You performed your first transcension! You can use resin in the ethereal field tab.', 'You performed your first transcension! Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.',
   undefined,
   '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all type of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
-  [[undefined,clover[4],undefined],
+  [[undefined,images_anemone[4],undefined],
    [blackberry[4],images_whitelotus[4],champignon[4]],
    [undefined,blackberry[4],undefined]]);
 
@@ -297,7 +307,7 @@ registerHelpDialog(24, 'Challenges', 'You unlocked a challenge!',
 
 
 registerHelpDialog(25, 'Bee challenge', undefined,
-    'You started the bee challenge! Rules are different from the standard game. You can click the tree at any time to view the current challenge rules, reward and stats.',
+    'You started the bee challenge! Rules are different from the standard game. You can click the tree at any time to view the current challenge rules, reward and stats. Plant some watercress or blackberry to get started.',
     images_queenbee[4],
     '<br><br>'+
     'The image below shows a possible configuration for the bees: all workers touch a flower as required, queens optionally touch workers for extra boost (so beehives provide a boost-boost), and hives touch queens to make that boost stronger (a boost-boost-boost). More than 1 flower does not increase boost but multiple queens or hives do. The rightmost worker bee gives most boost because it touches 3 queens, and the topmost queen gives least boost since it touches the least hives. You can fill in gaps in the picture where more queens or hives would increase the boost more. Not shown in the picture is that you also need some mushroom and berry production running somewhere, which can also be boosted by flowers in the standard way.',
@@ -317,10 +327,10 @@ registerHelpDialog(27, 'Beehives', 'You unlocked beehives!',
   '<br><br>'+
   'The image shows a possible configuration for beehives, such that the beehives boost flowers, which in turn boost berries and mushrooms. It\'s ensured both the mushroom and the berry it consumes from have a hive-boosted flower.',
   [
-    [undefined,grape[4],daisy[4],grape[4]],
-    [grape[4],daisy[4],images_beehive[4],daisy[4]],
-    [undefined,grape[4],daisy[4],grape[4]],
-    [undefined,images_beehive[4],daisy[4],amanita[4]],
+    [undefined,grape[4],images_daisy[4],grape[4]],
+    [grape[4],images_daisy[4],images_beehive[4],images_daisy[4]],
+    [undefined,grape[4],images_daisy[4],grape[4]],
+    [undefined,images_beehive[4],images_daisy[4],amanita[4]],
   ]);
 
 
@@ -383,9 +393,9 @@ registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nut
     `,
     images_squirrel[4],
     undefined,
-  [[mulberry[4],iris[4],mulberry[4]],
-   [iris[4],images_almond[4],images_watercress[4]],
-   [mulberry[4],iris[4],mulberry[4]]]);
+  [[mulberry[4],images_iris[4],mulberry[4]],
+   [images_iris[4],images_almond[4],images_watercress[4]],
+   [mulberry[4],images_iris[4],mulberry[4]]]);
 
 registerHelpDialog(36, 'Amber', 'The tree dropped amber!',
     `The tree dropped a piece of amber! From now on, every now and then, the tree can drop amber when it levels up.

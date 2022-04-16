@@ -1854,7 +1854,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
 
     var no_fruit_intended = !getActiveFruit(); // if there is no active fruit selected in purpose, assume that is intended and keep it that way, don't let a random fruit drop that due to heuristics ends up in stored slots rather than sacrificial pool override that choice
 
-    if(state.fruit_stored.length == 0) {
+    if(state.fruit_stored.length == 0 /*|| (state.g_numresets == 0 && state.fruit_stored.length < state.fruit_slots)*/) {
       insertFruit(state.fruit_stored.length, fruit);
     } else if(state.keepinterestingfruit && interesting && state.fruit_stored.length < state.fruit_slots && !(no_fruit_intended && state.fruit_stored.length + 1 == state.fruit_slots)) {
       // if it's an interesting fruit, such as highest tier ever, add it to the stored fruits if possible

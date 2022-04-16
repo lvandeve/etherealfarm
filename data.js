@@ -1605,11 +1605,13 @@ function getNutProd(i) {
 
 function getFlowerCost(tier) {
   // Flowers start after berry 2, and then appear after every 2 berries.
-  return getBerryCost(2.5 + tier * 2);
+  return getBerryCost(0.5 + tier * 2);
 }
 
 function getFlowerBoost(tier) {
-  return fower_base.mul(flower_increase.powr(tier));
+  if(tier == 0) return Num(0.5);
+  if(tier == 1) return Num(2);
+  return Num(0.5).mul(Num(16).powr(tier - 1));
 }
 
 function getNettleCost(i) {
@@ -1617,14 +1619,14 @@ function getNettleCost(i) {
 }
 
 function getBeehiveCost(i) {
-  // Beehives start (and end, for now) after flower_2
-  return getFlowerCost((i + 1) * 2 + 0.15);
+  // Beehives start (and end, for now) after flower_3
+  return getFlowerCost((i + 1) * 3 + 0.15);
 }
 
 var berryplanttime0 = 60;
 var mushplanttime0 = 60;
 var nutplanttime0 = 60;
-var flowerplanttime0 = 120;
+var flowerplanttime0 = 90;
 
 // berries: give seeds
 crop_register_id = 25;
@@ -1656,19 +1658,16 @@ var mush_5 = registerMushroom('portobello', 5, mushplanttime0 * 20, portobello);
 var mush_6 = registerMushroom('shiitake', 6, mushplanttime0 * 25, shiitake);
 var mush_7 = registerMushroom('truffle', 7, mushplanttime0 * 30, truffle);
 
-var fower_base = Num(0.5);
-var flower_increase = Num(16);
-
 // flowers: give boost to neighbors
 crop_register_id = 75;
-var flower_0 = registerFlower('clover', 0, getFlowerBoost(0), flowerplanttime0, clover);
-var flower_1 = registerFlower('cornflower', 1, getFlowerBoost(1), flowerplanttime0 * 3, cornflower);
-var flower_2 = registerFlower('daisy', 2, getFlowerBoost(2), flowerplanttime0 * 6, daisy);
-var flower_3 = registerFlower('dandelion', 3, getFlowerBoost(3), flowerplanttime0 * 9, dandelion);
-var flower_4 = registerFlower('iris', 4, getFlowerBoost(4), flowerplanttime0 * 12, iris);
-var flower_5 = registerFlower('lavender', 5, getFlowerBoost(5), flowerplanttime0 * 15, lavender);
-var flower_6 = registerFlower('orchid', 6, getFlowerBoost(6), flowerplanttime0 * 18, orchid);
-var flower_7 = registerFlower('sunflower', 7, getFlowerBoost(7), flowerplanttime0 * 21, images_sunflower);
+var flower_0 = registerFlower('anemone', 0, getFlowerBoost(0), flowerplanttime0, images_anemone);
+var flower_1 = registerFlower('clover', 1, getFlowerBoost(1), flowerplanttime0 * 3, images_clover);
+var flower_2 = registerFlower('cornflower', 2, getFlowerBoost(2), flowerplanttime0 * 6, images_cornflower);
+var flower_3 = registerFlower('daisy', 3, getFlowerBoost(3), flowerplanttime0 * 9, images_daisy);
+var flower_4 = registerFlower('dandelion', 4, getFlowerBoost(4), flowerplanttime0 * 12, images_dandelion);
+var flower_5 = registerFlower('iris', 5, getFlowerBoost(5), flowerplanttime0 * 15, images_iris);
+var flower_6 = registerFlower('lavender', 6, getFlowerBoost(6), flowerplanttime0 * 18, images_lavender);
+var flower_7 = registerFlower('orchid', 7, getFlowerBoost(7), flowerplanttime0 * 21, images_orchid);
 
 
 crop_register_id = 100;
@@ -1732,9 +1731,9 @@ var challengecrop_2 = registerChallengeCrop('queen bee', 0, Res({seeds:2000000})
 crops[challengecrop_2].challengecroppricemul = Num(25);
 crops[challengecrop_2].boost = Num(1);
 
-var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0.1), 60, images_aster, 'This flower is only available during the bee challenge. Place worker bees orthogonally next to this flower for a global boost.');
+var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0.1), 60, images_aster, 'Special flower only available in the bee challenge. Place worker bees orthogonally next to this flower for a global boost.');
 crops[challengeflower_0].type = CROPTYPE_FLOWER;
-crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+selecting" display work. Since the aster and clover (both tier 0, even though aster is cheaper) are never available at the same time, no confusion is possible.
+crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+selecting" display work. Since the anemone and aster (both tier 0) are never available at the same time, no confusion is possible.
 
 // templates
 
@@ -1748,11 +1747,11 @@ function makeTemplate(crop_id) {
 }
 
 crop_register_id = 300;
-var watercress_template = makeTemplate(registerBrassica('watercress template', -1, Res(0), Num(1), 0, images_watercresstemplate));
+var watercress_template = makeTemplate(registerBrassica('brassica template', -1, Res(0), Num(1), 0, images_watercresstemplate));
 var berry_template = makeTemplate(registerBerry('berry template', -1, 0, images_berrytemplate));
 var mush_template = makeTemplate(registerMushroom('mushroom template', -1, 0, images_mushtemplate));
 var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0), 0, images_flowertemplate));
-var nettle_template = makeTemplate(registerNettle('nettle template', -1, Num(0), 0, images_nettletemplate));
+var nettle_template = makeTemplate(registerNettle('prickly template', -1, Num(0), 0, images_nettletemplate));
 var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
 var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
 var nut_template = makeTemplate(registerNut('nuts template', -1, 0, images_nutstemplate));
@@ -1767,11 +1766,11 @@ function makeGhost(crop_id) {
 }
 
 crop_register_id = 400;
-var watercress_ghost = makeGhost(registerBrassica('watercress ghost', -1, Res(0), Num(1), 0, images_watercressghost));
+var watercress_ghost = makeGhost(registerBrassica('brassica ghost', -1, Res(0), Num(1), 0, images_watercressghost));
 var berry_ghost = makeGhost(registerBerry('berry ghost', -1, 0, images_berryghost));
 var mush_ghost = makeGhost(registerMushroom('mushroom ghost', -1, 0, images_mushghost));
 var flower_ghost = makeGhost(registerFlower('flower ghost', -1, Num(0), 0, images_flowerghost));
-var nettle_ghost = makeGhost(registerNettle('nettle ghost', -1, Num(0), 0, images_nettleghost));
+var nettle_ghost = makeGhost(registerNettle('prickly ghost', -1, Num(0), 0, images_nettleghost));
 var bee_ghost = makeGhost(registerBeehive('bee ghost', -1, Num(0), 0, images_beeghost));
 var mistletoe_ghost = makeGhost(registerMistletoe('mistletoe ghost', -1, 0, images_mistletoeghost));
 var nut_ghost = makeGhost(registerNut('nuts ghost', -1, 0, images_nutsghost));
@@ -1944,7 +1943,7 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
     } else if(crop.type == CROPTYPE_BEE) {
       description += ' Boosts neighboring flower\'s boost.';
     } else {
-      description += ' Boosts neighbors. Does not boost watercress directly, but watercress gets same boosts as its neighbor resource-producing crops.';
+      description += ' Boosts neighbors such as berries and mushrooms. Does not boost watercress, but watercress can copy everything from berries that are boosted by flowers.';
     }
   }
 
@@ -2099,12 +2098,14 @@ function registerCropPrestige(cropid, cost, prev_unlock_crop_type, prev_unlock_c
 }
 
 function setBoostMultiplierCosts(u, crop) {
-  // for flowers, each next tier boosts 16x more. So 15 of the additive +50% upgrades makes previous tier as strong
-  // so ensure the price of teh 30th upgrade is more expensive than the next flower tier, else the next flower tier is not worth it
+  // for flowers, each next tier boosts 16x more. So 31 of the additive +50% upgrades makes previous tier as strong
+  // so ensure the price of the 30th upgrade is more expensive than the next flower tier, else the next flower tier is not worth it
+  // between tier 0 and tier 1, and between tier 1 and tier 2, the multiplier is only 4x so steps is adjusted to 7
   var costmul = u.cost_increase;
   // During the bee challenge, challengeflower_0 is used, but it doesn't actually have upgrades so in practice this check doesn't matter. But the check is here since challengeflower_0 doesn't participate in the regular flower tier system that the other flower upgrades are bsaed on.
   if(crop.type == CROPTYPE_FLOWER && crop.index != challengeflower_0) {
     var upgrade_steps = 30;
+    if(crop.tier == 0 || crop.tier == 1) upgrade_steps = 7;
     u.cost = new Res({seeds:getFlowerCost(crop.tier).seeds.mulr(flower_upgrade_initial_cost)});
     var cost0 = u.cost.seeds;
     var cost1 = getFlowerCost(crop.tier + 1).seeds.mulr(flower_upgrade_initial_cost);
@@ -2277,16 +2278,20 @@ var mushunlock_6 = registerCropUnlock(mush_6, getMushroomCost(6), berry_13, func
 var mushunlock_7 = registerCropUnlock(mush_7, getMushroomCost(7), berry_15, function(){return !!state.upgrades[mushunlock_6].count;});
 
 upgrade_register_id = 75;
-var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), berry_2, undefined, function() {
+var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), berry_0, undefined, function() {
+  //if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_1].count) return true;
+  if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count && state.upgrades[berryunlock_0].count) return true;
+  return false;
+});
+var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), berry_2, undefined, function() {
   if(!basicChallenge() && state.upgrades2[upgrade2_cranberrysecret].count && state.upgrades[berryunlock_2].count) return true;
   return false;
 });
-var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), berry_4, function(){return !!state.upgrades[flowerunlock_0].count;});
-var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), berry_6, function(){return !!state.upgrades[flowerunlock_1].count;});
-var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), berry_8, function(){return !!state.upgrades[flowerunlock_2].count;});
-var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), berry_10, function(){return !!state.upgrades[flowerunlock_3].count;});
-var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), berry_12, function(){return !!state.upgrades[flowerunlock_4].count;});
-var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), berry_14, function(){return !!state.upgrades[flowerunlock_5].count;});
+var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), berry_4, function(){return !!state.upgrades[flowerunlock_1].count;});
+var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), berry_6, function(){return !!state.upgrades[flowerunlock_2].count;});
+var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), berry_8, function(){return !!state.upgrades[flowerunlock_3].count;});
+var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), berry_10, function(){return !!state.upgrades[flowerunlock_4].count;});
+var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), berry_12, function(){return !!state.upgrades[flowerunlock_5].count;});
 var flowerunlock_7 = registerCropUnlock(flower_7, getFlowerCost(7), undefined, function(){
   if(!state.upgrades[flowerunlock_6].count) return false;
   if(state.highestoftypefullgrown[CROPTYPE_BERRY] >= 16) return true;
@@ -2330,9 +2335,9 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, functi
   if(basicChallenge() == 2) return false; // not available during truly basic challenge
   if(!state.challenges[challenge_bees].completed) return false;
 
-  // prev_crop is flower_2, but also unlock once higher level berries available, in case player skips placing this flower
-  if(state.fullgrowncropcount[flower_2]) return true;
-  if(state.fullgrowncropcount[berry_7]) return true; // the berry after flower_2
+  // prev_crop is flower_3, but also unlock once higher level berries available, in case player skips placing this flower
+  if(state.fullgrowncropcount[flower_3]) return true;
+  if(state.fullgrowncropcount[berry_7]) return true; // the berry after flower_3
 
   return false;
 });
@@ -2451,14 +2456,14 @@ var mushprestige_7 = registerCropPrestige(mush_7, getMushroomCost(15), CROPTYPE_
 
 
 upgrade_register_id = 375;
-var flowerprestige_0 = registerCropPrestige(flower_0, getFlowerCost(8), CROPTYPE_BERRY, 18);
-var flowerprestige_1 = registerCropPrestige(flower_1, getFlowerCost(9), CROPTYPE_BERRY, 20);
-var flowerprestige_2 = registerCropPrestige(flower_2, getFlowerCost(10), CROPTYPE_BERRY, 22);
-var flowerprestige_3 = registerCropPrestige(flower_3, getFlowerCost(11), CROPTYPE_BERRY, 24);
-var flowerprestige_4 = registerCropPrestige(flower_4, getFlowerCost(12), CROPTYPE_BERRY, 26);
-var flowerprestige_5 = registerCropPrestige(flower_5, getFlowerCost(13), CROPTYPE_BERRY, 28);
-var flowerprestige_6 = registerCropPrestige(flower_6, getFlowerCost(14), CROPTYPE_BERRY, 30);
-var flowerprestige_7 = registerCropPrestige(flower_7, getFlowerCost(15), CROPTYPE_BERRY, 32);
+var flowerprestige_0 = registerCropPrestige(flower_0, getFlowerCost(8), CROPTYPE_BERRY, 16);
+var flowerprestige_1 = registerCropPrestige(flower_1, getFlowerCost(9), CROPTYPE_BERRY, 18);
+var flowerprestige_2 = registerCropPrestige(flower_2, getFlowerCost(10), CROPTYPE_BERRY, 20);
+var flowerprestige_3 = registerCropPrestige(flower_3, getFlowerCost(11), CROPTYPE_BERRY, 22);
+var flowerprestige_4 = registerCropPrestige(flower_4, getFlowerCost(12), CROPTYPE_BERRY, 24);
+var flowerprestige_5 = registerCropPrestige(flower_5, getFlowerCost(13), CROPTYPE_BERRY, 26);
+var flowerprestige_6 = registerCropPrestige(flower_6, getFlowerCost(14), CROPTYPE_BERRY, 28);
+var flowerprestige_7 = registerCropPrestige(flower_7, getFlowerCost(15), CROPTYPE_BERRY, 30);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2673,7 +2678,7 @@ var active_choice0_b = registerDeprecatedUpgrade();
 
 
 
-var watercress_choice0 = registerChoiceUpgrade('watercress choice',
+var watercress_choice0 = registerChoiceUpgrade('brassica choice',
   function() {
     return state.treelevel >= 14;
   }, function() {
@@ -2877,7 +2882,7 @@ registerMedal('watercress', 'plant the entire field full of watercress', images_
 registerMedal('berries', 'plant the entire field full of berries', blackberry[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_BERRY] == state.numw * state.numh - 2;
 }, Num(0.01));
-registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at least that\'s something', clover[4], function() {
+registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at least that\'s something', images_clover[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_FLOWER] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one, respect our new fungus overlords.', champignon[4], function() {
@@ -2923,8 +2928,8 @@ for(var i = 0; i < numreset_achievement_values.length; i++) {
 }
 
 function getPlantTypeMedalBonus(croptype, tier, num) {
-  if(croptype == CROPTYPE_MUSH) tier = tier * 2 + 1;
-  if(croptype == CROPTYPE_FLOWER) tier = tier * 2 + 2;
+  if(croptype == CROPTYPE_MUSH) tier = tier * 2 + 1.5;
+  if(croptype == CROPTYPE_FLOWER) tier = tier * 2 + 0.5;
   if(croptype == CROPTYPE_NETTLE) tier = tier * 8 + 3;
   if(croptype == CROPTYPE_MISTLETOE) tier = 4;
   if(croptype == CROPTYPE_BEE) tier = 6;
@@ -3476,7 +3481,7 @@ var challenge_bees = registerChallenge('bee challenge', 10, Num(0.1),
 'Beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers next to the beehives. The bee types of this challenge don\'t exist in the main game and the beehive reward works very differently in the main game than the bees in this challenge.',
 'having grown a daisy.',
 function() {
-  return state.fullgrowncropcount[flower_2] >= 1;
+  return state.fullgrowncropcount[flower_3] >= 1;
 }, function() {
   // nothing here: the reward is unlocked indirectly by having this challenge marked complete
 }, 0);
@@ -3618,7 +3623,7 @@ var challenge_blackberry = registerChallenge('blackberry challenge', [18], Num(0
 During this challenge, only the first tier of each crop type is available.
 `,
 `
-• Only blackberries, champignons, clovers, nettle, beehives, watercress and mistletoe are available, from the beginning<br>
+• Only blackberries, champignons, anemones, nettle, beehives, watercress and mistletoe are available, from the beginning<br>
 `,
 ['unlock the auto-unlock ability of the automaton'],
 'reaching ethereal tree level 4 and having automaton with auto-plant',
@@ -4089,11 +4094,11 @@ var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), 10
 
 // flowers2
 crop2_register_id = 75;
-var flower2_0 = registerFlower2('clover', 0, 0, Res({resin:50}), 10, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', clover);
-var flower2_1 = registerFlower2('cornflower', 3, 1, Res({resin:25000}), 10, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', cornflower);
-var flower2_2 = registerFlower2('daisy', 6, 2, Res({resin:5e6}), 10, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', daisy);
-var flower2_3 = registerFlower2('dandelion', 9, 3, Res({resin:10e9}), 10, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', dandelion);
-var flower2_4 = registerFlower2('iris', 12, 4, Res({resin:50e12}), 10, Num(64), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', iris);
+var flower2_0 = registerFlower2('anemone', 0, 0, Res({resin:50}), 10, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_anemone);
+var flower2_1 = registerFlower2('clover', 3, 1, Res({resin:25000}), 10, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_clover);
+var flower2_2 = registerFlower2('cornflower', 6, 2, Res({resin:5e6}), 10, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_cornflower);
+var flower2_3 = registerFlower2('daisy', 9, 3, Res({resin:10e9}), 10, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_daisy);
+var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), 10, Num(64), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_dandelion);
 
 crop2_register_id = 100;
 var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 10, Num(0.35), undefined, 'boosts prickly plants in the basic field (additive).', images_nettle);
@@ -6256,7 +6261,7 @@ var upgrade3_growspeed_bonus = 0.2; // how much % faster it grows
 
 var upgrade3_berry = registerUpgrade3('berry boost', undefined, 'boosts berries +' + upgrade3_berry_bonus.toPercentString(), blackberry[4]);
 var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString(), champignon[4]);
-var upgrade3_flower = registerUpgrade3('flower boost', undefined, 'boosts the flower boost by +' + upgrade3_flower_bonus.toPercentString(), clover[4]);
+var upgrade3_flower = registerUpgrade3('flower boost', undefined, 'boosts the flower boost by +' + upgrade3_flower_bonus.toPercentString(), images_anemone[4]);
 var upgrade3_nettle = registerUpgrade3('nettle boost', undefined, 'boosts the nettle boost by +' + upgrade3_nettle_bonus.toPercentString(), images_nettle[4]);
 var upgrade3_bee = registerUpgrade3('beehive boost', undefined, 'boosts the beehive boost by +' + upgrade3_bee_bonus.toPercentString(), images_beehive[4]);
 
@@ -6295,7 +6300,7 @@ var upgrade3_essence = registerUpgrade3('essence bonus', undefined, 'increases e
 var upgrade3_flower_multiplicity_bonus = Num(0.1);
 var upgrade3_flower_multiplicity = registerUpgrade3('flower multiplicity', undefined,
     'Unlocks multiplicity of flowers. Requires that regular multiplicity for berries and mushrooms has been unlocked. Given that, then this allows also the presence of multiple flowers anywhere in the field to give a global flower bonus, for all flowers with max 1 tier difference. The bonus per flower is ' + upgrade3_flower_multiplicity_bonus.toPercentString(),
-    daisy[3]);
+    images_daisy[3]);
 
 var upgrade3_diagonal_brassica = registerUpgrade3('diagonal brassica', undefined, 'brassica (such as watercress) can also copy diagonally, they can get up to 8 instead of 4 neighbors to copy from', images_watercress[4]);
 
