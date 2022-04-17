@@ -2292,12 +2292,7 @@ var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), berry_6, fun
 var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), berry_8, function(){return !!state.upgrades[flowerunlock_3].count;});
 var flowerunlock_5 = registerCropUnlock(flower_5, getFlowerCost(5), berry_10, function(){return !!state.upgrades[flowerunlock_4].count;});
 var flowerunlock_6 = registerCropUnlock(flower_6, getFlowerCost(6), berry_12, function(){return !!state.upgrades[flowerunlock_5].count;});
-var flowerunlock_7 = registerCropUnlock(flower_7, getFlowerCost(7), undefined, function(){
-  if(!state.upgrades[flowerunlock_6].count) return false;
-  if(state.highestoftypefullgrown[CROPTYPE_BERRY] >= 16) return true;
-  if(state.highestoftypeunlocked[CROPTYPE_BERRY] > 16) return true;
-  return false;
-});
+var flowerunlock_7 = registerCropUnlock(flower_7, getFlowerCost(7), berry_14, function(){return !!state.upgrades[flowerunlock_6].count;});
 
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, function() {
