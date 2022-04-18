@@ -337,7 +337,7 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
         result += '<br><br>Templates are a feature provided by the automaton.';
         result += '<br><br>Tip: ctrl+shift+click a template to turn it into a crop of highest available tier of this type.';
       } else if(c.isghost) {
-        result += 'Ghostly remainder of a ' + getCropTypeName(c.type) + ', does nothing.';
+        result += 'Ghostly remainder of a ' + getCropTypeName(c.type) + ', does nothing. Automaton won\'t touch this either.';
       } else {
         result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
 

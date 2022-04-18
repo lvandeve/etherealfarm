@@ -886,7 +886,7 @@ function State() {
   this.highestoftypeplanted = [];
   // same but only fullgrown
   this.highestoftypefullgrown = [];
-  this.lowestoftypeplanted = [];
+  this.lowestoftypeplanted = []; // excludes ghosts (NOTE: if for some reason this must be changed to include ghosts, then getCheapestNextOfCropType must be fixed to take lowest tier of -2 into account, or automaton won't do crop upgrades at all if a ghost of the same type is present)
   this.lowestcropoftypeunlocked = []; // this is for in case plants are prestiged: the lowest tier of this plant that exists, e.g. normally this is 0, but if blackberry and blueberry have been prestiged, this is 2. Does not include the templates (tier -1)
 
   // higest tier unlocked by research for this croptype
@@ -1094,7 +1094,7 @@ function computeDerived(state) {
         }
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
         if(f.growth >= 1) state.highestoftypefullgrown[c.type] = Math.max(c.tier || 0, state.highestoftypefullgrown[c.type]);
-        state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
+        if(!c.isghost) state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
         if(c.istemplate) state.templatecount++;
         if(c.isghost) state.ghostcount++;
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {

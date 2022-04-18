@@ -105,7 +105,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
 
   if(c.isghost) {
-    result += '<br/><br/>ghostly remainder of a ' + getCropTypeName(c.type) + ', does nothing.';
+    result += '<br/><br/>ghostly remainder of a ' + getCropTypeName(c.type) + ', does nothing. Automaton won\'t touch this either.';
     return result;
   }
 

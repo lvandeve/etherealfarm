@@ -2186,6 +2186,7 @@ function autoPlant(res) {
       var f = state.field[y2][x2];
       if(!f.hasCrop()) continue;
       var c = f.getCrop();
+      if(c.isghost) continue; // at least during stormy challenge, automaton should not upgrade ghosts
       if(c.type != oldtype) continue;
       if(c.tier >= crop.tier) continue;
       var p2 = prefield[y2][x2];
