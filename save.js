@@ -263,6 +263,7 @@ function encState(state, opt_raw_only) {
   processTime(state.suntime);
   processTime(state.rainbowtime);
   processUint6(state.lastWeather);
+  processTime(state.lastLightningTime);
 
 
   section = 9; id = 0; // settings
@@ -348,6 +349,7 @@ function encState(state, opt_raw_only) {
   processRes(state.g_res_hr_at_time);
   processUint(state.g_numprestiges);
   processUint(state.g_numautoprestiges);
+  processUint(state.g_lightnings);
 
 
   section = 12; id = 0; // current run stats
@@ -377,6 +379,7 @@ function encState(state, opt_raw_only) {
   processRes(state.c_res_hr_at_time);
   processUint(state.c_numprestiges);
   processUint(state.c_numautoprestiges);
+  processUint(state.c_lightnings);
 
 
   section = 13; id = 0; // previous run stats
@@ -407,6 +410,7 @@ function encState(state, opt_raw_only) {
     processRes(state.p_res_hr_at_time);
     processUint(state.p_numprestiges);
     processUint(state.p_numautoprestiges);
+    processUint(state.p_lightnings);
   }
 
 
@@ -1158,6 +1162,11 @@ function decState(s) {
     if(!medals[index]) return err(4);
     state.medals[index].earned = true;
     state.medals[index].seen = array1[i];
+
+    if(medals[index].deprecated) {
+      state.medals[index].earned = false;
+      state.medals[index].seen = false;
+    }
   }
 
 
@@ -1171,6 +1180,9 @@ function decState(s) {
   } else {
     if(state.misttime > state.suntime && state.misttime > state.rainbowtime) state.lastWeather = 1;
     if(state.rainbowtime > state.suntime && state.rainbowtime > state.misttime) state.lastWeather = 2;
+  }
+  if(save_version >= 4096*1+102) {
+    state.lastLightningTime = processTime();
   }
   if(error) return err(4);
 
@@ -1302,6 +1314,7 @@ function decState(s) {
   if(save_version >= 4096*1+78) state.g_res_hr_at_time = processRes();
   if(save_version >= 4096*1+94) state.g_numprestiges = processUint();
   if(save_version >= 4096*1+94) state.g_numautoprestiges = processUint();
+  if(save_version >= 4096*1+102) state.g_lightnings = processUint();
   if(error) return err(4);
 
 
@@ -1332,6 +1345,7 @@ function decState(s) {
   if(save_version >= 4096*1+78) state.c_res_hr_at_time = processRes();
   if(save_version >= 4096*1+94) state.c_numprestiges = processUint();
   if(save_version >= 4096*1+94) state.c_numautoprestiges = processUint();
+  if(save_version >= 4096*1+102) state.c_lightnings = processUint();
   if(error) return err(4);
 
 
@@ -1363,8 +1377,9 @@ function decState(s) {
     if(save_version >= 4096*1+62) state.p_res_hr_at = processRes();
     if(save_version >= 4096*1+71) state.p_pausetime = processTime();
     if(save_version >= 4096*1+78) state.p_res_hr_at_time = processRes();
-    if(save_version >= 4096*1+94) state.g_numprestiges = processUint();
-    if(save_version >= 4096*1+94) state.g_numautoprestiges = processUint();
+    if(save_version >= 4096*1+94) state.p_numprestiges = processUint();
+    if(save_version >= 4096*1+94) state.p_numautoprestiges = processUint();
+    if(save_version >= 4096*1+102) state.p_lightnings = processUint();
     if(error) return err(4);
   }
 

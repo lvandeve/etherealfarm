@@ -172,6 +172,8 @@ function updateUpgrade2UI() {
   var text = '';
   text += 'Ethereal upgrades are permanent and the resin is not refundable. You can also spend resin on plants in the ethereal field instead.';
   text += '<br><br>'
+  text += 'Level up the ethereal tree to get more upgrades.';
+  text += '<br><br>'
   if(unlocked.length == 0) {
     text += '<i>No further ethereal upgrades are available for now.</i>';
   } else {

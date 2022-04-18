@@ -62,7 +62,7 @@ Cell.prototype.hasCrop = function() {
   return this.index >= CROPINDEX;
 };
 
-// non-template
+// a crop that actually produces or does something, excluding templates or ghosts
 Cell.prototype.hasRealCrop = function() {
   return this.index >= CROPINDEX && !this.getCrop().istemplate && !this.getCrop().isghost;
 };
@@ -471,6 +471,7 @@ function State() {
   this.suntime = 0; // similar
   this.rainbowtime = 0;
   this.lastWeather = 0; // last clicked weather ability, if multiple are active according to the timer, only the one matching this counts as active
+  this.lastLightningTime = 0; // for the stormy challenge
 
   this.lastFernTime = 0;
   this.lastReFernTime = 0; // last time fern was checked to perhaps become bushy
@@ -624,7 +625,7 @@ function State() {
   this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
   this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
   this.g_fernres = Res(); // total resources gotten from ferns
-  this.g_numpresents = [0, 0]; // order: holidays '21-'22, eggs '22
+  this.g_numpresents = [0, 0]; // order: presents '21-'22, eggs '22
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -652,6 +653,7 @@ function State() {
   this.g_pausetime = 0;
   this.g_numprestiges = 0; // prestiges performed
   this.g_numautoprestiges = 0; // prestiges performed by automaton
+  this.g_lightnings = 0; // lightnings during the stormy challenge
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -684,6 +686,7 @@ function State() {
   this.p_pausetime = 0;
   this.p_numprestiges = 0;
   this.p_numautoprestiges = 0;
+  this.p_lightnings = 0; // lightnings during the stormy challenge
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -713,6 +716,7 @@ function State() {
   this.c_pausetime = 0;
   this.c_numprestiges = 0;
   this.c_numpautorestiges = 0;
+  this.c_lightnings = 0; // lightnings during the stormy challenge
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
@@ -766,6 +770,8 @@ function State() {
   // derived stat, not to be saved
   this.numcropfields = 0;
   this.numcropfields2 = 0;
+  // same as numcropfields but only counts crops that can be struck by lightning during the stormy challenge
+  this.numcropfields_lightning = 0;
 
   // fullgrown only, not growing, any type >= CROPINDEX. Includes shoft-lived plants.
   // derived stat, not to be saved
@@ -1037,6 +1043,7 @@ function computeDerived(state) {
   // field
   state.numemptyfields = 0;
   state.numcropfields = 0;
+  state.numcropfields_lightning = 0;
   state.numfullgrowncropfields = 0;
   state.numfullpermanentcropfields = 0;
   for(var i = 0; i < NUM_CROPTYPES; i++) {
@@ -1076,6 +1083,7 @@ function computeDerived(state) {
         state.growingcropcount[c.index] += Math.min(Math.max(0, f.growth), 1);
         if(f.hasRealCrop()) {
           state.numcropfields++;
+          if(cropCanBeHitByLightning(f)) state.numcropfields_lightning++;
           state.croptypecount[c.type]++;
           if(f.isFullGrown()) {
             state.fullgrowncroptypecount[c.type]++;

@@ -315,15 +315,11 @@ function showConfigureAutoChoiceDialog(subject) {
 }
 
 function showAutomatonFeatureSourceDialog() {
-  var dialog = createDialog(undefined, createAutomatonHelpDialog, 'help');
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Automation features unlock sources';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog2({
+    help:createAutomatonHelpDialog,
+    title:'Automation features unlock sources',
+    scrollable:true
+  });
 
   var text = '';
 
@@ -365,7 +361,7 @@ function showAutomatonFeatureSourceDialog() {
   }
 
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

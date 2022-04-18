@@ -25,21 +25,23 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   var c = challenges[challenge_id];
   var c2 = state.challenges[challenge_id];
 
-  var dialog;
-  if(info_only) {
-    dialog = createDialog();
-  } else {
-    var okfun = function() {
+  var automaton_unlocked = false;
+
+  var okfun = undefined;
+  var okname = undefined;
+  var extrafun = undefined;
+  var extraname = undefined;
+  var shortcutfun = undefined;
+
+  if(!info_only) {
+    okfun = function() {
       addAction({type:ACTION_TRANSCEND, challenge:c.index});
       closeAllDialogs();
       update();
       return true;
     };
+    okname = 'start';
 
-    var extrafun = undefined;
-    var extraname = undefined;
-    var automaton_unlocked = false;
-    var shortcutfun = undefined;
     if(haveAutomaton() && state.numnonemptyblueprints && canUseBluePrintsDuringChallenge(challenge_id)) {
       extraname = 'with blueprint';
       extrafun = function() {
@@ -59,58 +61,24 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
         }
       };
     }
-
-    dialog = createDialog(undefined, okfun, 'start', undefined, undefined, extrafun, extraname, undefined, undefined, undefined, undefined, shortcutfun);
   }
 
-  var contentFlex = dialog.content;
-
-  var titleFlex = new Flex(contentFlex, 0.01, 0.01, 0.99, 0.1);
-  centerText2(titleFlex.div);
-  titleFlex.div.textEl.innerText = upper(c.name);
-
-  var scrollFlex = new Flex(contentFlex, 0.01, 0.11, 0.99, 1);
-  makeScrollable(scrollFlex);
+  var dialog = createDialog2({
+    functions:[okfun, extrafun],
+    names:[okname, extraname],
+    shortcutfun:shortcutfun,
+    title:upper(c.name),
+    scrollable:true
+  });
 
   var text = '';
 
   text += c.description;
   text += '<br><br>';
 
-  if(c.fullyCompleted(include_current_run)) {
-    text += '<br>';
-    text += 'You already got all rewards for this challenge, but can still keep beating max level to increase challenge production bonus.';
-    text += '<br><br>';
-  } else {
-    text += '<br>';
-    if(c.targetlevel.length > 1) {
-      text += '<b>Next target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
-      text += '<b>Next completion reward:</b> ' + c.rewarddescription[c.numCompleted(include_current_run)];
-    } else {
-      text += '<b>Target level:</b> ' + c.nextTargetLevel(include_current_run) + '<br>';
-      text += '<b>Reward:</b> ' + c.rewarddescription[0];
-    }
-    text += '<br><br>';
-  }
-
   text += '<b>Challenge rules:</b>';
   text += '<br>';
   text += c.rulesdescription;
-  if(c.targetlevel.length > 1) {
-    var targetlevel = c.nextTargetLevel(include_current_run);
-    text += '• Reach <b>tree level ' + targetlevel + '</b> to successfully complete the next stage of the challenge, or reach any other max level to increase challenge production bonus.';
-    text += '<br>';
-    text += '• This challenge has ' + c.targetlevel.length + ' stages in total, each gives 1 reward, you can complete only 1 stage at the time';
-  } else {
-    text += '• Reach <b>tree level ' + c.targetlevel[0] + '</b> to successfully complete the challenge, or reach any other max level to increase challenge production bonus.';
-  }
-  text += '<br>';
-  text += '• Max level reached with this challenge gives <b>' + getChallengeFormulaString(c, c.bonus.toPercentString()) + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
-  text += '<br>';
-  if(c.alt_bonus) {
-    text += '• ' + altChallengeBonusInfo;
-    text += '<br>';
-  }
   if(c.allowsresin && c.allowsfruits && c.allowstwigs && c.allowsnuts && c.allowbeyondhighestlevel) {
     if(squirrelUnlocked()) {
       text += '• You can gain resin, twigs, nuts and fruits as usual (but they only become available at at least tree level 10)';
@@ -173,10 +141,47 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     }
   }
 
+  var targetlevel = c.nextTargetLevel(include_current_run);
+
+  text += '<br>';
+  text += '<b>Goal:</b>';
+  text += '<br>';
   if(c.targetlevel.length > 1) {
-    text += '<br><br>';
-    text += 'All reward target level stages (can only complete one per run): ';
+    text += '• Reach <b>tree level ' + targetlevel + '</b> to successfully complete the next stage of the challenge, or reach any other max level to increase challenge production bonus.';
+    text += '<br>';
+    text += '• This challenge has ' + c.targetlevel.length + ' stages in total, each gives 1 reward, you can complete only 1 stage at the time';
+  } else {
+    text += '• Reach <b>tree level ' + c.targetlevel[0] + '</b> to successfully complete the challenge, or reach any other max level to increase challenge production bonus.';
+  }
+  text += '<br>';
+
+  text += '<br>';
+  text += '<b>Rewards:</b>';
+  text += '<br>';
+
+
+
+  if(!c.fullyCompleted(include_current_run)) {
+    if(c.targetlevel.length > 1) {
+      text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numCompleted(include_current_run)];
+    } else {
+      text += '• Reward (at level ' + targetlevel + '): ' + c.rewarddescription[0];
+    }
+    text += '<br>';
+  }
+  text += '• Max level reached with this challenge gives <b>(' + getChallengeFormulaString(c, c.bonus.toPercentString()) + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  text += '<br>';
+  if(c.alt_bonus) {
+    text += '• ' + altChallengeBonusInfo;
+    text += '<br>';
+  }
+  if(c.targetlevel.length > 1) {
+    text += '• All reward target level stages (can only complete one per run): ';
     for(var i = 0; i < c.targetlevel.length; i++) text += (i ? ', ' : '') + c.targetlevel[i];
+    text += '<br>';
+  }
+  for(var j = 0; j < c2.completed; j++) {
+    text += '• Reward gotten: ' + c.rewarddescription[j];
     text += '<br>';
   }
 
@@ -187,15 +192,10 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   text += '<b>Current stats:</b><br>';
   text += getChallengeStatsString(challenge_id, include_current_run);
 
-  for(var j = 0; j < c2.completed; j++) {
-    text += '• Reward gotten: ' + c.rewarddescription[j];
-    text += '<br>';
-  }
-
   text += '<br>';
   text += '<b>This challenge was unlocked by:</b> ' + c.unlockdescription;
 
-  scrollFlex.div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 
@@ -294,13 +294,29 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   return text;
 }
 
+function getEndChallengeButtonName(already_completed, success) {
+  if(already_completed && success) {
+    // Successfully finish, but it already was completed beforehand, so it's called just "finish", not "complete"
+    return 'Finish challenge';
+  } else if(already_completed && !success) {
+    // End the challenge early, but it already was completed beforehand, so it's called "end", not "abort"
+    return 'End challenge';
+  } else if(success) {
+    return 'Complete challenge';
+  } else {
+    // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
+    return 'Abort challenge';
+  }
+}
+
 
 var challengedialogopen = false;
 // opt_from_challenge = whether you open this dialog after just having completed a challenge as well
 function createChallengeDialog(opt_from_challenge) {
   challengedialogopen = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
-    challengedialogopen = false;
+  var dialog = createDialog2({
+    onclose:function() { challengedialogopen = false; },
+    title:'Challenge'
   });
 
   dialog.div.className = 'efDialogEthereal';
@@ -326,10 +342,10 @@ function createChallengeDialog(opt_from_challenge) {
   flex.div.innerHTML = text;
 
 
-  var buttonFlex = new Flex(contentFlex, 0, 0.4, 1, 0.9);
+  var buttonFlex = new Flex(contentFlex, 0, 0.3, 1, 1);
 
   var pos = 0;
-  var h = 0.1;
+  var h = 0.075;
 
   for(var i = 0; i < challenges_order.length; i++) {
     var c = challenges[challenges_order[i]];
@@ -387,14 +403,6 @@ function createFinishChallengeDialog() {
     }
   };
 
-
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, undefined, undefined, shortcutfun);
-  dialog.div.className = 'efDialogEthereal';
-
-  var contentFlex = dialog.content;
-
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3);
-
   var c = challenges[state.challenge];
   var c2 = state.challenges[state.challenge];
 
@@ -402,7 +410,18 @@ function createFinishChallengeDialog() {
   var targetlevel = c.nextTargetLevel();
   var success = state.treelevel >= targetlevel;
 
+  //var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, undefined, undefined, shortcutfun);
+  var dialog = createDialog2({
+    functions:extrafun,
+    names:extraname,
+    shortcutfun:shortcutfun,
+    title:getEndChallengeButtonName(already_completed, success)
+  });
+  dialog.div.className = 'efDialogEthereal';
+
   var text = '';
+
+  var text = upper(c.name) + '<br>';
 
   if(already_completed) {
     // nothing to display here
@@ -459,10 +478,9 @@ function createFinishChallengeDialog() {
   text += '<br><br>';
   text += 'You can now choose to start a new regular run, or any challenge of your choice, from the beginning.';
 
-  flex.div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 
-
-  var buttonflex = new Flex(contentFlex, 0.25, 0.6, 0.75, 0.8);
+  var buttonflex = new Flex(dialog.content, 0.25, 0.6, 0.75, 0.8);
 
   var button = new Flex(buttonflex, 0, 0, 1, 0.3, FONT_BIG_BUTTON).div;
   styleButton(button);

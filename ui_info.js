@@ -160,7 +160,7 @@ function getResourceDetails(i, special, index) {
       if(basicChallenge()) text += ' (not active during basic challenge)';
       text += '<br><br>';
       text += 'Collected upcoming resin: ' + upcoming.toString()
-      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.resin.toString() + ')';
+      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.resin.toString() + ' at level ' + state.p_treelevel + ')';
       text += '<br>';
       if(upcoming.neqr(0)) text += '→ Upcoming boost with unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
 
@@ -185,8 +185,8 @@ function getResourceDetails(i, special, index) {
       var text = '<b>' + upper(name) + '</b><br/><br/>';
       text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
       text += '<br><br>';
-      text += 'Collected upcoming twigs: ' + upcoming.toString();
-      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.twigs.toString() + ')';
+      text += 'Collected upcoming twigs: ' + upcoming.toString()
+      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.twigs.toString() + ' at level ' + state.p_treelevel + ')';
       text += '<br>';
 
       text += 'Twigs/hour: ' + getTwigsHour().toString();

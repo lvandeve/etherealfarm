@@ -873,11 +873,11 @@ function createChangelogDialog() {
 
 // if opt_failed_save is true, the dialog is shown due to an actual failed save so the message is different.
 function showSavegameRecoveryDialog(opt_failed_save) {
-  var title;
+  var description;
   if(opt_failed_save) {
-    title = '<font color="red"><b>Loading failed</b></font>. Read this carefully to help recover your savegame if you don\'t have backups. Copypaste all the recovery savegame(s) below and save them in a text file. Once they\'re stored safely by you, try some of them in the "import save" dialog under settings. One of them may be recent enough and work. Even if the recovery saves don\'t work now, a future version of the game may fix it. Apologies for this.';
+    description = '<font color="red"><b>Loading failed</b></font>. Read this carefully to help recover your savegame if you don\'t have backups. Copypaste all the recovery savegame(s) below and save them in a text file. Once they\'re stored safely by you, try some of them in the "import save" dialog under settings. One of them may be recent enough and work. Even if the recovery saves don\'t work now, a future version of the game may fix it. Apologies for this.';
   } else {
-    title = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues. Try importing each of them, hopefully at least one will be good and recent enough.';
+    description = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues. Try importing each of them, hopefully at least one will be good and recent enough.';
   }
 
   var saves = getRecoverySaves();
@@ -898,15 +898,15 @@ function showSavegameRecoveryDialog(opt_failed_save) {
     // also add current
     save(state, function(s) {
       text += 'current' + '\n' + s + '\n\n';
-      showExportTextDialog(title, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
+      showExportTextDialog('Recover save', description, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
     });
   } else {
-    showExportTextDialog(title, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
+    showExportTextDialog('Recover old save', description, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
   }
 }
 
 // show a dialog to export the text, to clipboard, by save as file, ...
-function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
+function showExportTextDialog(title, description, text, filename, opt_close_on_clipboard) {
   var large = title.length > 400 || text.length > 1000;
 
   var clipboardSupported = document.queryCommandSupported && document.queryCommandSupported('copy') && document.execCommand;
@@ -933,22 +933,30 @@ function showExportTextDialog(title, text, filename, opt_close_on_clipboard) {
     extraname = 'to clipboard';
   }
 
-  dialog = createDialog(large ? DIALOG_MEDIUM : DIALOG_SMALL, function(e) {
-    var a = document.createElement('a');
-    a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(area.value + '\n'));
-    a.setAttribute('download', filename);
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    if(opt_close_on_clipboard) closeAllDialogs();
-    showMessage('save exported to file');
-    return true;
-  }, 'download', undefined, 'back', extrafun, extraname);
+  dialog = createDialog2({
+    title:title,
+    size:(large ? DIALOG_MEDIUM : DIALOG_SMALL),
+    functions:[function(e) {
+      var a = document.createElement('a');
+      a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(area.value + '\n'));
+      a.setAttribute('download', filename);
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if(opt_close_on_clipboard) closeAllDialogs();
+      showMessage('save exported to file');
+      return true;
+    }, extrafun],
+    names:['download', extraname],
+    cancelname:'back'
+  });
 
 
-  var textFlex = new Flex(dialog.content, 0.02, 0.01, 0.98, 0.15);
-  textFlex.div.innerHTML = title;
+  if(description) {
+    var textFlex = new Flex(dialog.content, 0.02, 0.01, 0.98, 0.15);
+    textFlex.div.innerHTML = description;
+  }
 
   var areaFlex = new Flex(dialog.content, 0.02, 0.2, 0.98, 1);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', areaFlex.div);
@@ -994,8 +1002,8 @@ function createSettingsDialog() {
     // this gets updated even if user would then close the dialog without actually saving it, we can't know whether they actually properly stored the text or not
     state.g_lastexporttime = util.getTime();
     save(state, function(s) {
-      var title = 'Export a savegame backup: copy or download the encoded savegame below, and store it somewhere safe. Do this regularly: even though the game autosaves in the web browser, browsers can easily lose this data. This contains all your progress!';
-      showExportTextDialog(title, s, 'ethereal-farm-' + util.formatDate(util.getTime(), true) + '.txt', true);
+      var description = 'Export a savegame backup: copy or download the encoded savegame below, and store it somewhere safe. Do this regularly: even though the game autosaves locally in the web browser, browsers can easily lose this data. This contains all your progress!';
+      showExportTextDialog('Export save', description, s, 'ethereal-farm-' + util.formatDate(util.getTime(), true) + '.txt', true);
     });
   });
   button.id = 'settings_export';

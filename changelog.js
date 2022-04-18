@@ -21,6 +21,16 @@ function getChangeLog() {
   var text = '';
 
 
+  text += '0.1.102 (2022-04-18):';
+  text += '<br/>• Added stormy challenge with perma weather reward.';
+  text += '<br/>• Added 6 new higher level ethereal crops.';
+  text += '<br/>• Added reward level caps to basic and truly basic challenge, and tweaked their bonuses to give more earlier, but diminishing returns later. The caps are very high and not intended to be reached as this takes a long time and rewards are very diminishing at that point.'; // the caps are 30 for basic challenge, 25 for truly basic challenge
+  text += '<br/>• Mushroom boost and nettle boost fruit abilities a bit increased.';
+  text += '<br/>• Shift + click, and shift + number key in blueprint dialog now plants with overriding rather than without (and the ctrl shortcut got deprecated).'; // the reason is that ctrl+numberkey shortcuts are taken over by browsers to switch browser tabs, and override field is generally the more useful action
+  text += '<br/>• Reorganized the challenge info dialog in more sections to more easily find rules, goal and rewards between the text.';
+  text += '<br/>• Bugfixes.';
+  text += '<br/><br/>';
+
   text += '0.1.101 (2022-04-16):';
   text += '<br/>• A new first flower tier, anemone, is now available after blackberry instead of cranberry, much sooner, to improve the early game experience.';
   text += '<br/>• Lategame flower prices and effects are the same (including prestiged anemone which is what sunflower used to be).';

@@ -681,7 +681,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   styleButton(renameButton);
   renameButton.textEl.innerText = 'rename';
   addButtonAction(renameButton, function() {
-    makeTextInput('Enter new fruit name, or empty for default', function(name) {
+    makeTextInput('Rename fruit', 'Enter new fruit name, or empty for default', function(name) {
       f.name = sanitizeName(name);
       updateFruitUI();
       if(dialog_level) recreate();
@@ -810,13 +810,7 @@ function styleFruitChip(flex, f) {
   }
 }
 
-// type: 0=storage, 1=sacrificial
-function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
-  var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-  renderImage(images_fruittypes[f.type][f.tier], canvas);
-
-
-
+function getFruitTooltipText(f, opt_label) {
   var text = '';
   if(opt_label) text += opt_label + '<br>';
 
@@ -846,6 +840,18 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
   text += 'Fruit essence available: ' + state.res.essence.sub(f.essence).toString() + ' of ' + state.res.essence.toString();
   text += '<br>';
   text += 'Get on sacrifice: ' + getFruitSacrifice(f).toString();
+
+  return text;
+}
+
+// type: 0=storage, 1=sacrificial
+function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
+  var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
+  renderImage(images_fruittypes[f.type][f.tier], canvas);
+
+
+
+  var text = getFruitTooltipText(f, opt_label);
 
   styleFruitChip(flex, f);
 
@@ -987,8 +993,9 @@ function updateFruitUI() {
     styleButton0(canvasFlex.div, true);
     var fruit_name = 'none';
     if(state.fruit_stored[i]) fruit_name = state.fruit_stored[i].toString();
-    var tooltiptext = 'make this fruit active';
-    if(f) tooltiptext += '<br><br>' + f.toString();
+    var tooltiptext = 'Make this fruit active';
+
+    if(f) tooltiptext += '<br><br>' + getFruitTooltipText(f);
     registerTooltip(canvasFlex.div, tooltiptext);
     addButtonAction(canvasFlex.div, bind(function(i) {
       var slotnum = i;

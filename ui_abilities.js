@@ -27,13 +27,69 @@ var suntimerflex = undefined;
 var rainbowbutton = undefined;
 var rainbowtimerflex = undefined;
 
+var lightningicon = undefined;
+
 // not really an ability, but part of the same toolbar so handled here for now
 var watercressbutton = undefined;
 
+/*
+index = 0 for sun, 1 for mist, 2 for rainbow
+perma is the reward from the stormy challenge
+return values:
+0: not active, not recharging, not selected for perma
+1: not active, not recharging, selected for perma
+2: recharging, not selected for perma
+3: recharging, selected for perma
+4: active
+*/
+function getAbilityStatus(index) {
+  var unlocked = false;
+  if(index == 0) unlocked = !!state.upgrades[upgrade_sununlock].count;
+  if(index == 1) unlocked = !!state.upgrades[upgrade_mistunlock].count;
+  if(index == 2) unlocked = !!state.upgrades[upgrade_rainbowunlock].count;
+  if(!unlocked) return null;
+
+  var wait;
+  if(index == 0) wait = getSunWait();
+  if(index == 1) wait = getMistWait();
+  if(index == 2) wait = getRainbowWait();
+
+  var duration;
+  if(index == 0) duration = getSunDuration();
+  if(index == 1) duration = getMistDuration();
+  if(index == 2) duration = getRainbowDuration();
+
+  var time;
+  if(index == 0) time = state.suntime;
+  if(index == 1) time = state.misttime;
+  if(index == 2) time = state.rainbowtime;
+
+  var perma = havePermaWeatherFor(index);
+
+  var d = state.time - time;
+
+  if(d > wait) return perma ? 1 : 0;
+  if(d > duration || state.lastWeather != index) return perma ? 3 : 2;
+  return 4;
+}
+
+function getAbilityStatusWord(index) {
+  var status = getAbilityStatus(index);
+  if(status == 0) return 'ready';
+  if(status == 1) return 'ready, perma';
+  if(status == 2) return 'recharging';
+  if(status == 3) return 'recharging, perma';
+  if(status == 4) return 'active';
+  return null;
+}
+
 // just like how the numbers are defined in data: duration is the running time, wait is the cooldown time plus the running time (total cycle time)
-function formatAbilityDurationTooltipText(name, description, duration, wait) {
+function formatAbilityDurationTooltipText(index, name, description, duration, wait) {
+  var statusWord = getAbilityStatusWord(index);
   var cooldown = wait - duration;
-  return name + ': ' + description + '<br>' + 'Run time: ' + util.formatDuration(duration) + '. Cooldown time: ' + util.formatDuration(cooldown);
+  var text = name + ': ' + description + '<br>' + 'Run time: ' + util.formatDuration(duration) + '. Cooldown time: ' + util.formatDuration(cooldown);
+  if(statusWord) text += '<br><br>Status: ' + upper(statusWord);
+  return text;
 }
 
 var prev_brassica_index = -1; // for updating the button if the image for brassica changes
@@ -42,13 +98,15 @@ function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
 
 
+  var havePerma = havePermaWeather();
+
   if(sunbutton && !state.upgrades[upgrade_sununlock].count) {
     sunbutton.removeSelf(topFlex);
     suntimerflex.removeSelf(topFlex);
     sunbutton = undefined;
   }
 
-  if(!sunbutton && state.upgrades[upgrade_sununlock].count) {
+  if(state.challenge != challenge_stormy && !sunbutton && state.upgrades[upgrade_sununlock].count) {
     sunbutton = addTopBarFlex(4, 5);
     styleButton0(sunbutton.div, true);
 
@@ -69,15 +127,20 @@ function updateAbilitiesUI() {
     }, 'sun ability');
     sunbutton.div.id = 'sun_button';
 
-    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText('sun ability', 'berries get a +' + getSunSeedsBoost().toPercentString() + ' production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
+    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText(0, 'sun ability', 'berries get a +' + getSunSeedsBoost().toPercentString() + ' production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
   }
 
-  if(state.upgrades[upgrade_sununlock].count) {
+  if(state.upgrades[upgrade_sununlock].count && sunbutton) {
     var d = util.getTime() - state.suntime;
     if(d > getSunWait()) {
-      suntimerflex.div.textEl.innerHTML = '';
+      if(havePerma && state.lastWeather == 0) {
+        suntimerflex.div.className = 'efWeatherPerma';
+        suntimerflex.div.textEl.innerHTML = '<br>__';
+      } else {
+        suntimerflex.div.textEl.innerHTML = '';
+      }
     } else if(d > getSunDuration() || state.lastWeather != 0) {
-      suntimerflex.div.className = 'efWeatherOff';
+      suntimerflex.div.className = (havePerma && state.lastWeather == 0) ? 'efWeatherPerma' : 'efWeatherOff';
       suntimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getSunWait() - d, true);
     } else {
       suntimerflex.div.className = 'efWeatherOn';
@@ -94,7 +157,7 @@ function updateAbilitiesUI() {
     mistbutton = undefined;
   }
 
-  if(!mistbutton && state.upgrades[upgrade_mistunlock].count) {
+  if(state.challenge != challenge_stormy && !mistbutton && state.upgrades[upgrade_mistunlock].count) {
     mistbutton = addTopBarFlex(5, 6);
     styleButton0(mistbutton.div, true);
 
@@ -115,15 +178,20 @@ function updateAbilitiesUI() {
     addButtonAction(mistbutton.div, fun, 'mist ability');
     mistbutton.div.id = 'mist_button';
 
-    registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText('mist ability', 'mushrooms produce ' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
+    registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText(1, 'mist ability', 'mushrooms produce ' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
   }
 
-  if(state.upgrades[upgrade_mistunlock].count) {
+  if(state.upgrades[upgrade_mistunlock].count && mistbutton) {
     var d = util.getTime() - state.misttime;
     if(d > getMistWait()) {
-      misttimerflex.div.textEl.innerHTML = '';
+      if(havePerma && state.lastWeather == 1) {
+        misttimerflex.div.className = 'efWeatherPerma';
+        misttimerflex.div.textEl.innerHTML = '<br>__';
+      } else {
+        misttimerflex.div.textEl.innerHTML = '';
+      }
     } else if(d > getMistDuration() || state.lastWeather != 1) {
-      misttimerflex.div.className = 'efWeatherOff';
+      misttimerflex.div.className = (havePerma && state.lastWeather == 1) ? 'efWeatherPerma' : 'efWeatherOff';
       misttimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getMistWait() - d, true);
     } else {
       misttimerflex.div.className = 'efWeatherOn';
@@ -141,7 +209,7 @@ function updateAbilitiesUI() {
     rainbowbutton = undefined;
   }
 
-  if(!rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
+  if(state.challenge != challenge_stormy && !rainbowbutton && state.upgrades[upgrade_rainbowunlock].count) {
     rainbowbutton = addTopBarFlex(6, 7);
     styleButton0(rainbowbutton.div, true);
 
@@ -161,20 +229,45 @@ function updateAbilitiesUI() {
     }, 'rainbow ability');
     rainbowbutton.div.id = 'rainbow_button';
 
-    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText('rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
+    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText(2, 'rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
   }
 
-  if(state.upgrades[upgrade_rainbowunlock].count) {
+  if(state.upgrades[upgrade_rainbowunlock].count && rainbowbutton) {
     var d = util.getTime() - state.rainbowtime;
     if(d > getRainbowWait()) {
-      rainbowtimerflex.div.textEl.innerHTML = '';
+      if(havePerma && state.lastWeather == 2) {
+        rainbowtimerflex.div.className = 'efWeatherPerma';
+        rainbowtimerflex.div.textEl.innerHTML = '<br>__';
+      } else {
+        rainbowtimerflex.div.textEl.innerHTML = '';
+      }
     } else if(d > getRainbowDuration() || state.lastWeather != 2) {
-      rainbowtimerflex.div.className = 'efWeatherOff';
+      rainbowtimerflex.div.className = (havePerma && state.lastWeather == 2) ? 'efWeatherPerma' : 'efWeatherOff';
       rainbowtimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getRainbowWait() - d, true);
     } else {
       rainbowtimerflex.div.className = 'efWeatherOn';
       rainbowtimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getRainbowDuration() - d, true);
     }
+  }
+
+
+  if(state.challenge == challenge_stormy && !lightningicon) {
+    lightningicon = addTopBarFlex(4, 5);
+    styleButton0(lightningicon.div, true);
+
+    var canvasFlex = new Flex(lightningicon, 0, 0, 1, 1);
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    renderImage(image_storm, canvas);
+
+    addButtonAction(lightningicon.div, function() {
+      createDialog2({title:'Lightning info'}).content.div.innerText = 'Stormy weather is active throughout this challenge and lightning will strike a crop every ' + Math.round(lightningTime / 60) + ' minutes. In addition, berries, mushrooms and flowers are half as effective.';
+    }, 'lightning info');
+    lightningicon.div.id = 'lightning_button';
+
+    registerTooltip(lightningicon.div, 'Stormy weather is active throughout this challenge and lightning will strike a crop every ' + Math.round(lightningTime / 60) + ' minutes. In addition, berries, mushrooms and flowers are half as effective.');
+  } else if(state.challenge != challenge_stormy && lightningicon) {
+    lightningicon.removeSelf(topFlex);
+    lightningicon = undefined;
   }
 
 
@@ -234,8 +327,8 @@ function refreshWatercress(opt_clear, opt_all) {
       var f = state.field[y][x];
       var c = f.getCrop();
       if(opt_all) {
-        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template)) {
-          if(f.index == CROPINDEX + watercress_template) {
+        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost)) {
+          if(f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) {
             addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
           }
           seeds_available.subInPlace(cresscost);
@@ -258,7 +351,7 @@ function refreshWatercress(opt_clear, opt_all) {
           addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
         }
         refreshed = true;
-      } else if(f.index == CROPINDEX + watercress_template && can_afford) {
+      } else if((f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) && can_afford) {
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
           addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});

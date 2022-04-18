@@ -307,6 +307,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   return result;
 }
 
+
 function makeTreeDialog() {
   var div;
 
@@ -519,16 +520,14 @@ function makeTreeDialog() {
     var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
     styleButton(button);
+    button.textEl.innerText = getEndChallengeButtonName(already_completed, success);
     if(already_completed && success) {
       // Successfully finish, but it already was completed beforehand, so it's called just "finish", not "complete"
-      button.textEl.innerText = 'Finish challenge';
       registerTooltip(button, 'Finish the challenge. If you broke the max level record, your challenge production bonus will increase.');
     } else if(already_completed && !success) {
       // End the challenge early, but it already was completed beforehand, so it's called "end", not "abort"
-      button.textEl.innerText = 'End challenge';
       registerTooltip(button, 'End the challenge.');
     } else if(success) {
-      button.textEl.innerText = 'Complete challenge' + (c2.completed ? (' ' + util.toRoman(c2.completed + 1)) : '');
       if(c2.completed) {
         // This is a completion of a higher stage of the challenge
         registerTooltip(button, 'Successfully finish the next stage of this challenge.');
@@ -537,7 +536,6 @@ function makeTreeDialog() {
       }
     } else {
       // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
-      button.textEl.innerText = 'Abort challenge';
       if(c.targetlevel.length > 1) {
         registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its next reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');
       } else {

@@ -503,6 +503,16 @@ Res.min = function(a, b) {
 
 
 
+// Sum of the resources
+Res.prototype.sum = function() {
+  var result = new Num(0);
+  var arr = this.toArray();
+  for(var i = 0; i < arr.length; i++) {
+    result.addInPlace(arr[i]);
+  }
+  return result;
+};
+
 // Get some measure of progress of the player through value of resources
 // Not very accurate, except during earlier stages of the game.
 Res.prototype.weighedSum = function() {

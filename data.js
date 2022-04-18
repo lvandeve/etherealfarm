@@ -825,24 +825,44 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   this.addSeasonBonus_(result, season, f, breakdown);
 
-  // mist
-  if(mistActive() && this.type == CROPTYPE_MUSH) {
-    var bonus_mist0 = getMistSeedsBoost();
-    result.seeds.mulInPlace(bonus_mist0);
-    if(breakdown) breakdown.push(['mist (less seeds)', true, bonus_mist0, result.clone()]);
-
-    var bonus_mist1 = getMistSporesBoost();
-    bonus_mist1.addrInPlace(1);
-    result.spores.mulInPlace(bonus_mist1);
-    if(breakdown) breakdown.push(['mist (more spores)', true, bonus_mist1, result.clone()]);
+  if(state.challenge == challenge_stormy && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+    var malus = Num(0.5);
+    result.mulInPlace(malus);
+    if(breakdown) breakdown.push(['stormy', true, malus, result.clone()]);
   }
 
   // sun
-  if(sunActive() && this.type == CROPTYPE_BERRY) {
-    var bonus_sun = getSunSeedsBoost();
-    bonus_sun.addrInPlace(1);
-    result.seeds.mulrInPlace(bonus_sun);
-    if(breakdown) breakdown.push(['sun', true, bonus_sun, result.clone()]);
+  if(this.type == CROPTYPE_BERRY) {
+    if(sunActive()) {
+      var bonus_sun = getSunSeedsBoost();
+      bonus_sun.addrInPlace(1);
+      result.seeds.mulrInPlace(bonus_sun);
+      if(breakdown) breakdown.push(['sun', true, bonus_sun, result.clone()]);
+    } else if(havePermaWeatherFor(0)) {
+      var bonus_sun = getSunSeedsBoost().mulr(challenge_stormy_mul);
+      bonus_sun.addrInPlace(1);
+      result.seeds.mulrInPlace(bonus_sun);
+      if(breakdown) breakdown.push(['sun (inactive)', true, bonus_sun, result.clone()]);
+    }
+  }
+
+  // mist
+  if(this.type == CROPTYPE_MUSH) {
+    if(mistActive()) {
+      var bonus_mist0 = getMistSeedsBoost();
+      result.seeds.mulInPlace(bonus_mist0);
+      if(breakdown) breakdown.push(['mist (less seeds)', true, bonus_mist0, result.clone()]);
+
+      var bonus_mist1 = getMistSporesBoost();
+      bonus_mist1.addrInPlace(1);
+      result.spores.mulInPlace(bonus_mist1);
+      if(breakdown) breakdown.push(['mist (more spores)', true, bonus_mist1, result.clone()]);
+    } else if(havePermaWeatherFor(1)) {
+      var bonus_mist1 = getMistSporesBoost().mulr(challenge_stormy_mul);
+      bonus_mist1.addrInPlace(1);
+      result.spores.mulInPlace(bonus_mist1);
+      if(breakdown) breakdown.push(['mist (inactive)', true, bonus_mist1, result.clone()]);
+    }
   }
 
   if(!basic) {
@@ -1060,6 +1080,12 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
     }
   }
 
+  if(state.challenge == challenge_stormy && this.type == CROPTYPE_FLOWER) {
+    var malus = Num(0.5);
+    result.mulInPlace(malus);
+    if(breakdown) breakdown.push(['stormy', true, malus, result.clone()]);
+  }
+
   // rainbow
   if(this.type == CROPTYPE_FLOWER) {
     if(rainbowActive()) {
@@ -1067,6 +1093,11 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
       bonus_rainbow.addrInPlace(1);
       result.mulrInPlace(bonus_rainbow);
       if(breakdown) breakdown.push(['rainbow', true, bonus_rainbow, result.clone()]);
+    } else if(havePermaWeather(2)) {
+      var bonus_rainbow = getRainbowFlowerBoost().mulr(challenge_stormy_mul);
+      bonus_rainbow.addrInPlace(1);
+      result.mulrInPlace(bonus_rainbow);
+      if(breakdown) breakdown.push(['rainbow (inactive)', true, bonus_rainbow, result.clone()]);
     }
   }
 
@@ -2572,6 +2603,7 @@ upgrade_register_id = 1000;
 var upgrade_mistunlock = registerUpgrade('mist ability', treeLevelReqBase(4).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
+  if(state.challenge == challenge_stormy) return false;
   if(state.treelevel >= 4) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_mistunlock].unlocked = true;
@@ -2588,6 +2620,7 @@ upgrades[upgrade_mistunlock].istreebasedupgrade = true;
 var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReqBase(2).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
+  if(state.challenge == challenge_stormy) return false;
   if(state.treelevel >= 2) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_sununlock].unlocked = true;
@@ -2604,6 +2637,7 @@ upgrades[upgrade_sununlock].istreebasedupgrade = true;
 var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(6).mulr(0.05 * 0), function() {
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
+  if(state.challenge == challenge_stormy) return false;
   if(state.treelevel >= 6) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_rainbowunlock].unlocked = true;
@@ -2738,6 +2772,8 @@ function Medal() {
 
   this.index = 0; // its index in registered_medals
   this.order = 0; // its index in medals_order
+
+  this.deprecated = false; // no longer existing medal from earlier game version
 };
 
 // Tier for achievement images if no specific one given, maps to zinc, copper, silver, electrum, gold, etc..., see images_medals.js
@@ -2797,6 +2833,11 @@ function registerMedal(name, description, icon, conditionfun, prodmul) {
   if(!icon) medal.icon = medalgeneric[medal.getTier()];
 
   return medal.index;
+}
+
+function registerDeprecatedMedal() {
+  var id = registerMedal('deprecated', 'deprecated', genericicon, function() { return false; }, Num(0));
+  medals[id].deprecated = true;
 }
 
 var genericicon = undefined; // use default generic medal icon. value is undefined, just given a name here.
@@ -3245,20 +3286,13 @@ registerMedal('basic 25', 'reach level 25 in the basic challenge', genericicon, 
   return state.challenge == challenge_basic && state.treelevel >= 25;
 }, Num(2.5));
 
-// this medal is not necessarily actually reachable
-registerMedal('basic 30', 'reach level 30 in the basic challenge', genericicon, function() {
+// this takes almost a month to reach
+registerMedal('basic 30', 'this is the final achievement for the basic challenge. Higher levels are capped and won\'t give additional challenge bonus.', genericicon, function() {
   return state.challenge == challenge_basic && state.treelevel >= 30;
 }, Num(3));
 
-// this medal is not necessarily actually reachable
-registerMedal('basic 35', 'reach level 35 in the basic challenge', genericicon, function() {
-  return state.challenge == challenge_basic && state.treelevel >= 35;
-}, Num(3.5));
-
-// this medal is not necessarily actually reachable
-registerMedal('basic 40', 'reach level 40 in the basic challenge', genericicon, function() {
-  return state.challenge == challenge_basic && state.treelevel >= 40;
-}, Num(4));
+registerDeprecatedMedal(); // was reserved for basic 35, but doing this takes too long and the game now caps it at 30 to avoid incentivizing this
+registerDeprecatedMedal(); // was reserved for basic 40, but doing this takes too long and the game now caps it at 30 to avoid incentivizing this
 
 medal_register_id = 2150;
 
@@ -3276,17 +3310,18 @@ registerMedal('truly basic 20', 'reach level 20 in the truly basic challenge', g
   return state.challenge == challenge_truly_basic && state.treelevel >= 20;
 }, Num(2.5));
 
-// this medal is not necessarily actually reachable
-registerMedal('truly basic 25', 'reach level 25 in the truly basic challenge', genericicon, function() {
+// this medal may require more than a month of truly basic to reach
+registerMedal('truly basic 25', 'this is the final achievement for the truly basic challenge. Higher levels are capped and won\'t give additional challenge bonus.', genericicon, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 25;
 }, Num(3));
 
-// this medal is not necessarily actually reachable
-registerMedal('truly basic 30', 'reach level 30 in the truly basic challenge', genericicon, function() {
-  return state.challenge == challenge_truly_basic && state.treelevel >= 30;
-}, Num(3.5));
+registerDeprecatedMedal(); // was reserved for truly basic 30, but doing this takes too long and the game now caps it at 25 to avoid incentivizing this
 
 medal_register_id = 2170;
+
+var medal_challenge_thistle = registerMedal('stormy', 'completed the stormy challenge', image_storm, function() {
+  return state.challenges[challenge_stormy].completed;
+}, Num(1));
 
 medal_register_id = 2500;
 
@@ -3315,10 +3350,10 @@ for(var i = 0; i < 8; i++) {
 medal_register_id = 3000;
 // various misc medals here
 
-// ghost crops can happen when prestiging during the undeletable challenge
+// ghost crops can happen when prestiging during the undeletable challenge, or during the stormy challenge
 registerMedal('ghost in the field', 'have a ghost-crop', image_berryghost, function() {
   return state.ghostcount > 0;
-}, Num(2.5));
+}, Num(1));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3364,6 +3399,7 @@ function Challenge() {
   // this is additive for all challenges together.
   this.bonus = Num(0);
   this.bonus_min_level = 0; // if higher than 0, bonus only starts working from that level + 1, e.g. set to 9 to have level 10 be the first to give some bonus
+  this.bonus_max_level = 0; // if higher than 0, bonus stops above this level, it's a hard cap
   this.bonus_exponent = 1.1; // exponent for the bonus formula
   this.alt_bonus = false; // if true, the bonus is part of a second pool, which is its own independent multiplier
 
@@ -3703,7 +3739,7 @@ function() {
 
 
 // 10
-var challenge_basic = registerChallenge('basic challenge', [10], Num(0.03),
+var challenge_basic = registerChallenge('basic challenge', [10], Num(0.15),
 `Upgrades and effects that last through transcensions don't work, everything is back to basics`,
 `
 • Everything, except the effects listed below, is back to basics like at the first run of the game: Upgrades and effects that last through transcensions (e.g. ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, ...) or unlock later (amber, ...) don't work.<br>
@@ -3723,12 +3759,13 @@ function() {
   return state.treelevel >= 50;
 }, function() {
 }, 0);
-challenges[challenge_basic].bonus_exponent = Num(1.2);
+challenges[challenge_basic].bonus_exponent = Num(0.7);
 challenges[challenge_basic].bonus_min_level = 9;
+challenges[challenge_basic].bonus_max_level = 35;
 challenges[challenge_basic].alt_bonus = true;
 
 // 11
-var challenge_truly_basic = registerChallenge('truly basic challenge', [10], Num(0.05),
+var challenge_truly_basic = registerChallenge('truly basic challenge', [10], Num(0.35),
 `Like the basic challenge, but even less effects work, truly everything is back to basics.`,
 `
 • Truly everything is back to basics like at the first run of the game and even a bit more difficult. Running this challenge now is as good as it can get since no future game advancement can make it easier.<br>
@@ -3747,15 +3784,54 @@ function() {
   showRegisteredHelpDialog(38);
   showMessage('Auto-prestige unlocked!', C_AUTOMATON, 2067714398);
 }, 0);
-challenges[challenge_truly_basic].bonus_exponent = Num(1.2);
+challenges[challenge_truly_basic].bonus_exponent = Num(0.5);
 challenges[challenge_truly_basic].bonus_min_level = 9;
+challenges[challenge_truly_basic].bonus_max_level = 25;
 challenges[challenge_truly_basic].alt_bonus = true;
 
-// returns 0 if no basic challenge is active, 1 if the basic challenge is active, 2 if the truly basic challenge is active
-function basicChallenge() {
-  if(state.challenge == challenge_truly_basic) return 2;
-  if(state.challenge == challenge_basic) return 1;
-  return 0;
+
+var lightningTime = 120;
+var challenge_stormy_mul = 0.25; // multiplier to weather effects of the reward
+
+
+// have the weaker but permanent after-weather effect reward from the stormy challenge
+function havePermaWeather() {
+  return state.challenges[challenge_stormy].completed && !basicChallenge() && state.challenge != challenge_stormy;
+}
+
+function havePermaWeatherFor(ability) {
+  var unlocked = false;
+  if(ability == 0) unlocked = !!state.upgrades[upgrade_sununlock].count;
+  if(ability == 1) unlocked = !!state.upgrades[upgrade_mistunlock].count;
+  if(ability == 2) unlocked = !!state.upgrades[upgrade_rainbowunlock].count;
+  if(!unlocked) return false;
+
+  //return state.challenges[challenge_stormy].completed && !basicChallenge() && state.challenge != challenge_stormy;
+  return havePermaWeather() && state.lastWeather == ability;
+}
+
+// 12
+var challenge_stormy = registerChallenge('stormy challenge', [65], Num(0.1),
+`The weather is stormy, other weather doesn't work`,
+`
+• The weather is stormy throughout the challenge, and other weather abilities don't work.<br>
+• Every ` + Math.round(lightningTime / 60) + ` minutes, a crop gets hit by lightning and turns into a ghost. By an amazing coincidence, the lightning always hits the most expensive crop.<br>
+• Berries, mushrooms and flowers are half as efficient as normal.<br>
+`,
+['Weather effects permanently last in a weaker form after they were activated.'],
+'reaching tree level 65',
+function() {
+  return state.treelevel >= 65;
+}, function() {
+}, 31);
+
+
+function cropCanBeHitByLightning(f) {
+  if(!f.hasRealCrop()) return false;
+  if(f.growth < 0.1) return false;
+  var c = f.getCrop();
+  //return (c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BEE || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_MISTLETOE);
+  return c.type != CROPTYPE_BRASSICA; // brassica are immune, this is because otherwise lighting will always strike those first when a blueprint was just planted, and it should hit a real crop first
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3764,13 +3840,20 @@ function basicChallenge() {
 
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_basic, challenge_thistle, challenge_wasabi, challenge_truly_basic];
+var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_thistle, challenge_stormy, challenge_wasabi, challenge_basic, challenge_truly_basic];
 
 
 if(challenges_order.length != registered_challenges.length) {
   throw 'challenges order not same length as challenges!';
 }
 
+
+// returns 0 if no basic challenge is active, 1 if the basic challenge is active, 2 if the truly basic challenge is active
+function basicChallenge() {
+  if(state.challenge == challenge_truly_basic) return 2;
+  if(state.challenge == challenge_basic) return 1;
+  return 0;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4060,11 +4143,14 @@ function registerBeehive2(name, treelevel2, tier, cost, planttime, effect, effec
 }
 
 
+var default_ethereal_growtime = 10;
+
 crop2_register_id = 0;
 var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
 var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
 var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), 1.5, 'gives 10000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
 var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), 1.5, 'gives 100000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
+var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), 1.5, 'gives 1000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop5);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -4072,44 +4158,48 @@ var squirrel2_0 = registerSquirrel2('squirrel', 5, 0, Res({resin:10}), 1.5, 'Aut
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), 10, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
-var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), 10, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
-var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), 10, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
-var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), 10, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
-var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), 10, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
+var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), default_ethereal_growtime, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
+var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), default_ethereal_growtime, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
+var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), default_ethereal_growtime, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
+var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), default_ethereal_growtime, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
+var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), default_ethereal_growtime, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
+var berry2_5 = registerBerry2('gooseberry', 14, 5, Res({resin:2e15}), default_ethereal_growtime, Num(256), undefined, 'boosts berries in the basic field (additive)', gooseberry);
 
 // mushrooms2
 crop2_register_id = 50;
-var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), 10, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
-var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), 10, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
-var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), 10, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
-var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), 10, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
-var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), 10, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
+var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), default_ethereal_growtime, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
+var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), default_ethereal_growtime, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
+var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), default_ethereal_growtime, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
+var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), default_ethereal_growtime, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
+var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), default_ethereal_growtime, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
+var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), default_ethereal_growtime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
 
 
 // flowers2
 crop2_register_id = 75;
-var flower2_0 = registerFlower2('anemone', 0, 0, Res({resin:50}), 10, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_anemone);
-var flower2_1 = registerFlower2('clover', 3, 1, Res({resin:25000}), 10, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_clover);
-var flower2_2 = registerFlower2('cornflower', 6, 2, Res({resin:5e6}), 10, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_cornflower);
-var flower2_3 = registerFlower2('daisy', 9, 3, Res({resin:10e9}), 10, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_daisy);
-var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), 10, Num(64), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_dandelion);
+var flower2_0 = registerFlower2('anemone', 0, 0, Res({resin:50}), default_ethereal_growtime, Num(0.25), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_anemone);
+var flower2_1 = registerFlower2('clover', 3, 1, Res({resin:25000}), default_ethereal_growtime, Num(1), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_clover);
+var flower2_2 = registerFlower2('cornflower', 6, 2, Res({resin:5e6}), default_ethereal_growtime, Num(4), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_cornflower);
+var flower2_3 = registerFlower2('daisy', 9, 3, Res({resin:10e9}), default_ethereal_growtime, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_daisy);
+var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), default_ethereal_growtime, Num(64), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_dandelion);
+var flower2_5 = registerFlower2('iris', 15, 5, Res({resin:50e15}), default_ethereal_growtime, Num(256), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, 10, Num(0.35), undefined, 'boosts prickly plants in the basic field (additive).', images_nettle);
-var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, 10, Num(1.4), undefined, 'boosts prickly plants in the basic field (additive).', images_thistle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts prickly plants in the basic field (additive).', images_nettle);
+var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, default_ethereal_growtime, Num(1.4), undefined, 'boosts prickly plants in the basic field (additive).', images_thistle);
 
 crop2_register_id = 150;
-var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, 10, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
-var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, 10, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
-var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, 10, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
-var lotus2_3 = registerLotus2('black lotus', 12, 3, Res({resin:200e12}), 256, 10, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_blacklotus);
+var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
+var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
+var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
+var lotus2_3 = registerLotus2('black lotus', 12, 3, Res({resin:200e12}), 256, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_blacklotus);
+var lotus2_4 = registerLotus2('gold lotus', 16, 4, Res({resin:500e15}), 1024, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_goldlotus);
 
 crop2_register_id = 200;
 // the first beehive has only 1% boost, however by the time you unlock this beehive you can get a massive boost from blue lotuses next to a beehive, one blue lotus next to a beehive turns this boost into 33%, and you can have more than 1 blue lotus next to it. For that reason it starts so low, because if this has a base boost of e.g. 25% this would be a way too huge jump in gameplay boost by just unlocking this new ethereal crop type at a time when you already have many lotuses
 // also this makes the ethereal beest require some care, you can't just plant it in a corner with no lotuses.
-var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), 10, Num(0.01), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
-
+var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), default_ethereal_growtime, Num(0.01), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
+var bee2_1 = registerBeehive2('drone', 13, 1, Res({resin:1e15}), default_ethereal_growtime, Num(0.04), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_dronebee);
 
 // templates
 
@@ -4452,12 +4542,12 @@ upgrade2_register_id = 160;
 var upgrade2_berry_bonus = Num(0.25);
 var upgrade2_berry = registerUpgrade2('ethereal berries', LEVEL2, Res({resin:500e3}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal berries by ' + upgrade2_berry_bonus.toPercentString() + ' (additive).', undefined, undefined, image_berrytemplate);
+}, function(){return true;}, 0, 'increase bonus of all ethereal berries by ' + upgrade2_berry_bonus.toPercentString() + ' (additive).', undefined, undefined, image_berrytemplate, upgrade_arrow);
 
 var upgrade2_mush_bonus = Num(0.25);
 var upgrade2_mush = registerUpgrade2('ethereal mushrooms', LEVEL2, Res({resin:500e3}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal mushrooms by ' + upgrade2_mush_bonus.toPercentString() + ' (additive).', undefined, undefined, image_mushtemplate);
+}, function(){return true;}, 0, 'increase bonus of all ethereal mushrooms by ' + upgrade2_mush_bonus.toPercentString() + ' (additive).', undefined, undefined, image_mushtemplate, upgrade_arrow);
 
 
 
@@ -4530,7 +4620,7 @@ upgrade2_season2[3] = registerUpgrade2('winter warmth flowers', LEVEL2, Res({res
 var upgrade2_flower_bonus = Num(0.25);
 var upgrade2_flower = registerUpgrade2('ethereal flowers', LEVEL2, Res({resin:10e6}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal flowers by ' + upgrade2_flower_bonus.toPercentString() + ' (additive).', undefined, undefined, image_flowertemplate);
+}, function(){return true;}, 0, 'increase bonus of all ethereal flowers by ' + upgrade2_flower_bonus.toPercentString() + ' (additive).', undefined, undefined, image_flowertemplate, upgrade_arrow);
 
 
 ///////////////////////////
@@ -4567,7 +4657,7 @@ upgrade2_register_id = 400;
 var upgrade2_nettle_bonus = Num(0.25);
 var upgrade2_nettle = registerUpgrade2('ethereal nettles', LEVEL2, Res({resin:50e9}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal nettles (and other prickly plants) by ' + upgrade2_nettle_bonus.toPercentString() + ' (additive).', undefined, undefined, image_nettletemplate);
+}, function(){return true;}, 0, 'increase bonus of all ethereal nettles (and other prickly plants) by ' + upgrade2_nettle_bonus.toPercentString() + ' (additive).', undefined, undefined, image_nettletemplate, upgrade_arrow);
 
 
 ///////////////////////////
@@ -4619,7 +4709,7 @@ upgrade2_register_id = 700;
 var upgrade2_bee_bonus = Num(0.25);
 var upgrade2_bee = registerUpgrade2('ethereal bees', LEVEL2, Res({resin:100e12}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal bees by ' + upgrade2_bee_bonus.toPercentString() + ' (additive).', undefined, undefined, image_beetemplate);
+}, function(){return true;}, 0, 'increase bonus of all ethereal bees by ' + upgrade2_bee_bonus.toPercentString() + ' (additive).', undefined, undefined, image_workerbeetemplate, upgrade_arrow);
 
 var upgrade2_nuts_bonus = registerUpgrade2('unused nuts bonus', LEVEL2, Res({resin:25e12}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
@@ -4696,7 +4786,9 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     return Num(base * level);
   }
   if(ability == FRUIT_MUSHBOOST) {
-    return Num(base * level);
+    // FRUIT_MUSHBOOST is in theory mostly only useful in combination with FRUIT_BERRYBOOST (due to needing more seeds too), and since the combination of both then takes up 2 slots (while flower takes up only 1 slot), this one can get a bit higher multiplier to compensate
+    // note that this doesn't help that much, given that for high level fruits, multipliers per slot are in the thousands
+    return Num(base * 1.5 * level);
   }
   if(ability == FRUIT_MUSHEFF) {
     // this is a worse version of FRUIT_NETTLE, but not all fruits should have an awesome ability plus for later fruits with many slots this one still combines well together with FRUIT_NETTLE.
@@ -4726,7 +4818,7 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
     // but on the other hand, make it higher than the multiplier for bee boost, otherwise bee is strictly better than this one
     // note that flower boost is strictly better than all of those but having 1 much stronger ability is ok
-    return Num(base * 0.75 * level);
+    return Num(base * level);
   }
   if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
     return Num(0.25); // not upgradeable
@@ -4800,7 +4892,7 @@ function getFruitBoost(ability, level, tier, opt_basic) {
   return Num(0.1);
 }
 
-var mix_mul_nettle = 0.75;
+var mix_mul_nettle = 1.0;
 var mix_pow_nettle = 0.3;
 var mix_mul_brassica = 1.25;
 var mix_pow_brassica_berry = 0.6;
@@ -5795,6 +5887,11 @@ function getStarterResources(opt_add_type, opt_sub_type) {
   if(opt_sub_type == fern2_3) count--;
   ethereal_seeds += count * count * count * 100000;
 
+  count = state.fullgrowncrop2count[fern2_4];
+  if(opt_add_type == fern2_4) count++;
+  if(opt_sub_type == fern2_4) count--;
+  ethereal_seeds += count * count * count * 1000000;
+
   return Res({seeds:ethereal_seeds});
 }
 
@@ -6037,6 +6134,7 @@ function getChallengeBonus(challenge_id, level, opt_cycle) {
   if(c.cycling && opt_cycle != undefined) bonus = c.cycling_bonus[opt_cycle];
 
   var level2 = level;
+  if(c.bonus_max_level) level2 = Math.min(c.bonus_max_level, level2);
   if(c.bonus_min_level) level2 = Math.max(0, level - c.bonus_min_level);
 
   var score = Num(level2).powr(c.bonus_exponent);

@@ -549,6 +549,10 @@ function endPreviousRun() {
     state.p_treelevel = state.treelevel;
   }
 
+  if(state.challenge == challenge_stormy) {
+    state.p_lightnings = state.c_lightnings;
+  }
+
   var runtime2 = state.time - state.c_starttime;
 
   // this type of statistics, too, is only for regular runs
@@ -628,6 +632,7 @@ function beginNextRun(opt_challenge) {
   state.c_pausetime = 0;
   state.c_numprestiges = 0;
   state.c_numautoprestiges = 0;
+  state.c_lightnings = 0;
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
@@ -864,6 +869,36 @@ function getRandomPreferablyEmptyFieldSpot() {
 }
 
 
+// get the field cell with the most expensive crop, or null if none
+function getStormyCropCell() {
+  var best = Num(-1);
+  var grow = 0;
+  var result = null;
+  for(var yi = 0; yi < state.numh; yi++) {
+    for(var xi = 0; xi < state.numw; xi++) {
+      var x = xi;
+      var y = yi;
+      // balance it, don't always go from top to bottom
+      if(state.numcropfields_lightning & 1) {
+        x = state.numw - 1 - xi;
+        y = state.numh - 1 - yi;
+      }
+      var f = state.field[y][x];
+      if(!f.hasRealCrop()) continue;
+      var c = f.getCrop();
+      if(!cropCanBeHitByLightning(f)) continue;
+      //var cost = c.cost.sum();
+      var cost = c.cost.seeds; // only use seeds, don't count the nuts which cost spores
+      if(cost.gt(best) || (cost.eq(best) && f.growth > grow)) {
+        best = cost;
+        grow = f.growth;
+        result = f;
+      }
+    }
+  }
+  return result;
+}
+
 function getSeasonTime(time) {
   return  time - state.g_starttime - state.g_pausetime - state.seasonshift;
 }
@@ -1049,6 +1084,7 @@ function PreCell(x, y) {
     this.gotten.reset();
     this.prod2.reset();
     this.prod3.reset();
+    this.prod3b.reset();
     this.consumers = [];
     this.producers = [];
     this.leech.reset();
@@ -2095,6 +2131,7 @@ function computeNextAutoPlant() {
         var f = state.field[y][x];
         if(!f.hasCrop()) continue;
         var c = f.getCrop();
+        if(c.isghost) continue; // at least during stormy challenge, automaton should not upgrade ghosts
         if(c.type != type) continue;
         if(c.tier >= crop.tier) continue;
         if(type == CROPTYPE_NUT && tooManyNutsPlants(c.isReal())) continue; // can only have 1 at the same time
@@ -2380,6 +2417,11 @@ function nextEventTime() {
     var t1 = state.lastFernTime - state.time + getReFernWaitTime() * 3;
     var t = Math.max(t0, t1);
     addtime(t);
+  }
+
+  // lightning
+  if(state.challenge == challenge_stormy && state.numcropfields_lightning > 0) {
+    addtime(Math.max(0, lightningTime - (state.time - state.lastLightningTime)));
   }
 
   // protect against possible bugs
@@ -3068,7 +3110,8 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok && type == ACTION_REPLACE) {
-          if(action.crop && f.index == CROPINDEX + action.crop.index) {
+          // exception for brassica to allow refreshing it
+          if(action.crop && f.index == CROPINDEX + action.crop.index && f.hasCrop() && f.getCrop().type != CROPTYPE_BRASSICA) {
             showMessage('Already have this crop here', C_INVALID, 0, 0);
             ok = false;
           }
@@ -3366,6 +3409,12 @@ var update = function(opt_ignorePause) {
             state.g_res.addInPlace(extrastarter);
             state.c_res.addInPlace(extrastarter);
           }
+          if(f.cropIndex() == fern2_4) {
+            var extrastarter = getStarterResources(fern2_4).sub(getStarterResources());
+            state.res.addInPlace(extrastarter);
+            state.g_res.addInPlace(extrastarter);
+            state.c_res.addInPlace(extrastarter);
+          }
           if(c.index == automaton2_0) {
             if(!state.automaton_unlocked[0]) {
               state.automaton_unlocked[0] = 1;
@@ -3402,20 +3451,19 @@ var update = function(opt_ignorePause) {
         var mistd = state.time - state.misttime;
         var sund = state.time - state.suntime;
         var rainbowd = state.time - state.rainbowtime;
-        var already_ability = false;
-        //if(mistd < getMistDuration() || sund < getSunDuration() || rainbowd < getRainbowDuration()) already_ability = true;
+        var havePerma = havePermaWeather();
         if(a == 0) {
           if(!state.upgrades[upgrade_sununlock].count) {
             // not possible, ignore
           } else if(sund < getSunWait()) {
-            if(state.lastWeather != a && sund < getSunDuration()) {
+            if(havePerma) {
+              showMessage('Sun selected.');
+            } else if(state.lastWeather != a && sund < getSunDuration()) {
               state.lastWeather = a;
               showMessage('Changed weather into sun. Only one weather effect can be active at the same time.');
             } else {
               showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', C_INVALID, 0, 0);
             }
-          } else if(already_ability) {
-            showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.suntime = state.time;
             showMessage('sun activated, berries get a +' + getSunSeedsBoost().toPercentString()  + ' boost and aren\'t negatively affected by winter');
@@ -3428,14 +3476,14 @@ var update = function(opt_ignorePause) {
           if(!state.upgrades[upgrade_mistunlock].count) {
             // not possible, ignore
           } else if(mistd < getMistWait()) {
-            if(state.lastWeather != a && mistd < getMistDuration()) {
+            if(havePerma) {
+              showMessage('Mist selected.');
+            } else if(state.lastWeather != a && mistd < getMistDuration()) {
               state.lastWeather = a;
               showMessage('Changed weather into mist. Only one weather effect can be active at the same time.');
             } else {
-              showMessage(mistd < getMistDuration() ? 'mist is already active' : 'mist is not ready yet', C_INVALID, 0, 0);
+              if(!havePerma) showMessage(mistd < getMistDuration() ? 'mist is already active' : 'mist is not ready yet', C_INVALID, 0, 0);
             }
-          } else if(already_ability) {
-            showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.misttime = state.time;
             showMessage('mist activated, mushrooms produce +' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter');
@@ -3448,14 +3496,14 @@ var update = function(opt_ignorePause) {
           if(!state.upgrades[upgrade_rainbowunlock].count) {
             // not possible, ignore
           } else if(rainbowd < getRainbowWait()) {
-            if(state.lastWeather != a && rainbowd < getRainbowDuration()) {
+            if(havePerma) {
+              showMessage('Rainbow selected.');
+            } else if(state.lastWeather != a && rainbowd < getRainbowDuration()) {
               state.lastWeather = a;
               showMessage('Changed weather into rainbow. Only one weather effect can be active at the same time.');
             } else {
               showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', C_INVALID, 0, 0);
             }
-          } else if(already_ability) {
-            showMessage('there already is an active weather ability', C_INVALID, 0, 0);
           } else {
             state.rainbowtime = state.time;
             showMessage('rainbow activated, flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter');
@@ -3465,6 +3513,7 @@ var update = function(opt_ignorePause) {
             state.lastWeather = a;
           }
         }
+        if(havePerma) state.lastWeather = a;
       } else if(type == ACTION_FRUIT_SLOT) {
         if(fast_forwarding) continue;
 
@@ -3730,6 +3779,22 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
+
+    if(state.challenge == challenge_stormy && state.numcropfields_lightning > 0 && state.time >= state.lastLightningTime + lightningTime) {
+      var f = getStormyCropCell();
+      if(f) {
+        showMessage(f.getCrop().name + ' was hit by lighting!');
+        var ghost = ghosts_for_type[f.getCrop().type];
+        f.index = CROPINDEX + ghost;
+        f.growth = 1;
+        state.c_lightnings++;
+        state.g_lightnings++;
+      }
+      state.lastLightningTime = state.time;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
     precomputeField();
 
     gain = Res();
@@ -3762,7 +3827,7 @@ var update = function(opt_ignorePause) {
                     if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
                     var f2 = state.field[y2][x2];
                     var c2 = f2.getCrop();
-                    if(c2 && c2.type != CROPTYPE_BRASSICA && !c2.isghost) touchnum++;
+                    if(c2 && c2.type != CROPTYPE_BRASSICA) touchnum++;
                   }
                   if(touchnum >= 2) create_remainder = true;
                   if(touchnum == 1 && state.cropcount[brassica_0] <= 1 && state.specialfieldcount[FIELD_REMAINDER] == 0) create_remainder = true;
@@ -4243,6 +4308,7 @@ var update = function(opt_ignorePause) {
       if(state.treelevel2 >= 8) {
         unlockEtherealCrop(lotus2_2);
         unlockEtherealCrop(bee2_0);
+        unlockEtherealCrop(fern2_4);
       }
       if(state.treelevel2 >= 9) {
         unlockEtherealCrop(flower2_3);
@@ -4257,6 +4323,19 @@ var update = function(opt_ignorePause) {
       if(state.treelevel2 >= 12) {
         unlockEtherealCrop(flower2_4);
         unlockEtherealCrop(lotus2_3);
+      }
+      if(state.treelevel2 >= 13) {
+        unlockEtherealCrop(bee2_1);
+        unlockEtherealCrop(mush2_5);
+      }
+      if(state.treelevel2 >= 14) {
+        unlockEtherealCrop(berry2_5);
+      }
+      if(state.treelevel2 >= 15) {
+        unlockEtherealCrop(flower2_5);
+      }
+      if(state.treelevel2 >= 16) {
+        unlockEtherealCrop(lotus2_4);
       }
     }
 

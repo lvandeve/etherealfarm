@@ -151,7 +151,10 @@ function updateMedalUI() {
     util.setEvent(div, 'mouseover', 'medalseen', seenfun);
 
     addButtonAction(div, bind(function(getMedalText, seenfun) {
-      var dialog = createDialog(DIALOG_SMALL);
+      var dialog = createDialog2({
+        size:DIALOG_SMALL,
+        title:'Achievement'
+      });
       dialog.content.div.innerHTML = getMedalText();
       seenfun();
     }, getMedalText, seenfun));

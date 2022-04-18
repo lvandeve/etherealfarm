@@ -1251,14 +1251,19 @@ function makeDropdown(flex, title, current, choices, fun) {
 ////////////////////////////////////////////////////////////////////////////////
 
 
-function makeTextInput(title, fun, opt_value) {
-  var dialog = createDialog(DIALOG_TINY, function() {
-    fun(area.value);
+function makeTextInput(title, description, fun, opt_value) {
+  var dialog = createDialog2({
+    size:DIALOG_TINY,
+    functions:function() {
+      fun(area.value);
+    },
+    title:title
   });
 
-  var titleFlex = new Flex(dialog.content, 0, 0.05, 1, 0.1);
-  centerText(titleFlex.div);
-  titleFlex.div.innerText = title;
+  if(description) {
+    var descriptionFlex = new Flex(dialog.content, 0.1, 0.2, 0.9, 0.3);
+    descriptionFlex.div.innerText = description;
+  }
 
   var inputFlex = new Flex(dialog.content, 0.1, 0.4, 0.9, 0.6);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);

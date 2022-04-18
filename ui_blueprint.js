@@ -129,19 +129,24 @@ function plantBluePrint(b, allow_override) {
         d = b.data[y][x];
       }
       var c = crops[BluePrint.toCrop(d)];
-      var c2 = undefined;
       if(!c) continue;
-      if(allow_override) {
+      var c2 = f.getCrop();
+      if(c2 && c2.type == CROPTYPE_BRASSICA && c.type == CROPTYPE_BRASSICA) {
+        // refresh brassica
+        if(state.res.seeds.gtr(10000)) c = c2; // refresh existing brassica
+        else if(f.growth > 0.25) continue; // extremely rare case where can't really afford brassica, and it's still young, then don't replace it with blueprint
+      } else if(allow_override) {
         if(f.index != 0 && f.index != FIELD_REMAINDER) {
           c2 = f.getCrop();
           if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
-          if(c2.type == c.type) continue; // keep same types
+          if(c2.index == c.index) continue;
+          if(c2.type == c.type && !c2.isghost) continue; // keep same types
         }
       } else {
         // don't overwrite anything that already exists on the field
         // that includes existing blueprint spots: if you want to combine blueprints, start from the smallest one, then bigger one to fill in the remaining gaps, not the opposite
         // reason: automaton may already start building up blueprint, so combining the opposite way (overwrite blueprint tiles) may not work due to already becoming real plants
-        if(f.index != 0 && f.index != FIELD_REMAINDER) continue;
+        if(f.index != 0 && f.index != FIELD_REMAINDER && !(c2 && c2.isghost && c2.type == c.type)) continue;
       }
       if(!state.crops[c.index].unlocked) continue;
       var action_type = !!c2 ? ACTION_REPLACE : ACTION_PLANT;
@@ -372,7 +377,7 @@ function createBluePrintText(b, opt_include_tiers) {
 
 function exportBluePrint(b, ethereal, opt_include_tiers) {
   var text = createBluePrintText(b, ethereal && opt_include_tiers);
-  showExportTextDialog('export blueprint', text, 'blueprint-' + util.formatDate(util.getTime(), true) + '.txt', false);
+  showExportTextDialog('Export blueprint', undefined, text, 'blueprint-' + util.formatDate(util.getTime(), true) + '.txt', false);
 }
 
 function getBluePrintTypeHelpText(ethereal) {
@@ -389,14 +394,22 @@ function getBluePrintTypeHelpText(ethereal) {
 
 function importBluePrintDialog(fun, b, ethereal) {
   var w = 500, h = 500;
-  var dialog = createDialog(false, function(e) {
-    var shift = e.shiftKey;
-    var text = area.value;
-    fun(text);
-  }, 'import', undefined, 'cancel');
-  var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
+
+  var dialog = createDialog2({
+    functions:function(e) {
+      var shift = e.shiftKey;
+      var text = area.value;
+      fun(text);
+    },
+    names:'import',
+    title:'Import blueprint'
+  });
+
+
+
+  var textFlex = dialog.content;
   // TODO: this text is too long to get reasonable font size, move to a help dialog
-  var text = 'Import blueprint. Case insensitive. ' + getBluePrintTypeHelpText(ethereal);
+  var text = 'Letter meanings: ' + getBluePrintTypeHelpText(ethereal);
   textFlex.div.innerHTML = text;
   text += '.';
   var area = util.makeAbsElement('textarea', '1%', '15%', '98%', '70%', dialog.content.div);
@@ -506,7 +519,6 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     return true;
   };
 
-  //var dialog = createDialog(undefined, undofun, 'undo', okfun, 'ok', undefined, undefined, undefined, opt_onclose, undefined, undefined, undefined);
   var dialog = createDialog2({
     functions:undofun,
     names:'undo',
@@ -591,7 +603,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   }, 'Import the blueprint from text format, as generated with To TXT. You can use the cancel button below to undo this.');
 
   addButton('Rename', function() {
-    makeTextInput('Enter new blueprint name, or empty for default', function(name) {
+    makeTextInput('Rename blueprint', 'Enter new blueprint name, or empty for default', function(name) {
       b.name = sanitizeName(name);
       update();
       did_edit = true;
@@ -641,11 +653,7 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • "u": when mouse hovering over blueprint template: upgrade template to highest crop tier you can afford of that type';
   text += '<br/>';
-  text += ' • shift + click blueprint in main blueprint dialog: plant it immediately rather than opening its editing dialog (if not empty)';
-  text += '<br/>';
-  text += ' • ctrl + click blueprint in main blueprint dialog: plant it immediately and override differing plants on the field';
-  text += '<br/>';
-  text += ' • shift + click "To Field" button of a blueprint: plant it immediately and override differing crops on the field';
+  text += ' • shift + click blueprint in main blueprint dialog: plant it immediately, and overriding existing field crops, rather than opening its editing dialog (if not empty)';
   text += '<br/>';
   text += ' • "t", "b": open transcend dialog, and then open transcend-with-blueprint dialog';
   text += '<br/>';
@@ -682,12 +690,8 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, fl
       update();
     }
   } else {
-    if(shift && !ctrl && filled) {
-      if(opt_ethereal) plantBluePrint2(blueprints[index], false);
-      else plantBluePrint(blueprints[index], false);
-      closeAllDialogs();
-      update();
-    } else if(!shift && ctrl && filled) {
+    // ctrl click is deprecated, replaced with shift click now, ctrl only available for old saves to keep the muscle memory
+    if(((shift && !ctrl) || (!shift && ctrl && state.g_starttime < 1650240000)) && filled) {
       if(opt_ethereal) plantBluePrint2(blueprints[index], true);
       else plantBluePrint(blueprints[index], true);
       closeAllDialogs();
