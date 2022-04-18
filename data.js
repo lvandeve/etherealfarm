@@ -839,7 +839,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       result.seeds.mulrInPlace(bonus_sun);
       if(breakdown) breakdown.push(['sun', true, bonus_sun, result.clone()]);
     } else if(havePermaWeatherFor(0)) {
-      var bonus_sun = getSunSeedsBoost().mulr(challenge_stormy_mul);
+      var bonus_sun = getSunSeedsBoost(true);
       bonus_sun.addrInPlace(1);
       result.seeds.mulrInPlace(bonus_sun);
       if(breakdown) breakdown.push(['sun (inactive)', true, bonus_sun, result.clone()]);
@@ -858,7 +858,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       result.spores.mulInPlace(bonus_mist1);
       if(breakdown) breakdown.push(['mist (more spores)', true, bonus_mist1, result.clone()]);
     } else if(havePermaWeatherFor(1)) {
-      var bonus_mist1 = getMistSporesBoost().mulr(challenge_stormy_mul);
+      var bonus_mist1 = getMistSporesBoost(true);
       bonus_mist1.addrInPlace(1);
       result.spores.mulInPlace(bonus_mist1);
       if(breakdown) breakdown.push(['mist (inactive)', true, bonus_mist1, result.clone()]);
@@ -1094,7 +1094,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
       result.mulrInPlace(bonus_rainbow);
       if(breakdown) breakdown.push(['rainbow', true, bonus_rainbow, result.clone()]);
     } else if(havePermaWeather(2)) {
-      var bonus_rainbow = getRainbowFlowerBoost().mulr(challenge_stormy_mul);
+      var bonus_rainbow = getRainbowFlowerBoost(true);
       bonus_rainbow.addrInPlace(1);
       result.mulrInPlace(bonus_rainbow);
       if(breakdown) breakdown.push(['rainbow (inactive)', true, bonus_rainbow, result.clone()]);
@@ -6107,10 +6107,11 @@ function getAlternateResinBonus(season) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-function getSunSeedsBoost() {
+function getSunSeedsBoost(opt_perma) {
   var bonus_sun = Num(1.5); // +150%
   bonus_sun.mulInPlace(getWeatherBoost());
-  if(state.upgrades[active_choice0].count == 2) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
+  if(state.upgrades[active_choice0].count == 2 && !opt_perma) bonus_sun.mulrInPlace(1 + active_choice0_b_bonus);
+  if(opt_perma) bonus_sun.mulrInPlace(challenge_stormy_mul);
   return bonus_sun;
 }
 
@@ -6122,17 +6123,19 @@ function getMistSeedsBoost() {
   return bonus_mist0;
 }
 
-function getMistSporesBoost() {
+function getMistSporesBoost(opt_perma) {
   var bonus_mist1 = Num(1); // +100%
   bonus_mist1.mulInPlace(getWeatherBoost());
-  if(state.upgrades[active_choice0].count == 2) bonus_mist1.mulrInPlace(1 + active_choice0_b_bonus);
+  if(state.upgrades[active_choice0].count == 2 && !opt_perma) bonus_mist1.mulrInPlace(1 + active_choice0_b_bonus);
+  if(opt_perma) bonus_mist1.mulrInPlace(challenge_stormy_mul);
   return bonus_mist1;
 }
 
-function getRainbowFlowerBoost() {
+function getRainbowFlowerBoost(opt_perma) {
   var bonus_rainbow = Num(0.75); // +75%
   bonus_rainbow.mulInPlace(getWeatherBoost());
-  if(state.upgrades[active_choice0].count == 2) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
+  if(state.upgrades[active_choice0].count == 2 && !opt_perma) bonus_rainbow.mulrInPlace(1 + active_choice0_b_bonus);
+  if(opt_perma) bonus_rainbow.mulrInPlace(challenge_stormy_mul);
   return bonus_rainbow;
 }
 

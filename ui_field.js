@@ -685,22 +685,20 @@ function makeFieldDialog(x, y) {
     var c = f.getCrop();
     var div;
 
-    var dialog = createDialog();
+    var dialog = createDialog2({
+      icon:c.image[4],
+      title:'Crop info'
+    });
     dialog.div.className = 'efDialogTranslucent';
-
-    var contentFlex = dialog.content;
-    var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
-    var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-    renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
     if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(contentFlex, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5);
-    var button0 = new Flex(contentFlex, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.565 + buttonshift).div;
-    var button1 = new Flex(contentFlex, [0.01, 0, 0.2], [0.57 + buttonshift, 0, 0.01], 0.5, 0.635 + buttonshift).div;
-    var button2 = new Flex(contentFlex, [0.01, 0, 0.2], [0.64 + buttonshift, 0, 0.01], 0.5, 0.705 + buttonshift).div;
-    var button3 = new Flex(contentFlex, [0.01, 0, 0.2], [0.71 + buttonshift, 0, 0.01], 0.5, 0.775 + buttonshift).div;
+    var flex0 = new Flex(dialog.content, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5);
+    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.565 + buttonshift).div;
+    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.57 + buttonshift, 0, 0.01], 0.5, 0.635 + buttonshift).div;
+    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.64 + buttonshift, 0, 0.01], 0.5, 0.705 + buttonshift).div;
+    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.71 + buttonshift, 0, 0.01], 0.5, 0.775 + buttonshift).div;
     var last0 = undefined;
 
     makeScrollable(flex0);

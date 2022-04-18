@@ -410,7 +410,6 @@ function createFinishChallengeDialog() {
   var targetlevel = c.nextTargetLevel();
   var success = state.treelevel >= targetlevel;
 
-  //var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, extrafun, extraname, /*opt_nobgclose=*/undefined, /*opt_onclose=*/undefined, undefined, undefined, shortcutfun);
   var dialog = createDialog2({
     functions:extrafun,
     names:extraname,
@@ -515,15 +514,11 @@ function getChallengeFormulaString(c, opt_bonus_string) {
 }
 
 function createAllChallengeStatsDialog() {
-  var dialog = createDialog(DIALOG_LARGE);
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Challenge Stats';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog2({
+    size:DIALOG_LARGE,
+    title:'Challenge stats',
+    scrollable:true
+  });
 
   var text = '';
 
@@ -631,7 +626,7 @@ function createAllChallengeStatsDialog() {
     text += '<br>';
   }
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 

@@ -3135,6 +3135,16 @@ var update = function(opt_ignorePause) {
 
         if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
           var c = action.crop;
+
+          if(action.shiftPlanted && c.isghost) {
+            c = crops[templates_for_type[c.type]];
+            if(c) {
+              action.crop = c;
+            } else {
+              c = action.crop;
+            }
+          }
+
           var cost = c.getCost();
           if(type == ACTION_REPLACE && f.hasCrop()) cost = cost.sub(recoup);
           if(type != ACTION_REPLACE && f.hasCrop()) {
@@ -3143,7 +3153,7 @@ var update = function(opt_ignorePause) {
           } else if(f.index != 0 && f.index != FIELD_REMAINDER && !f.hasCrop()) {
             showMessage('field already has something', C_INVALID, 0, 0);
             ok = false;
-          } else if(!state.crops[c.index].unlocked) {
+          } else if(!state.crops[c.index].unlocked || c.isghost) {
             if(action.shiftPlanted) {
               state.lastPlanted = -1;
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
