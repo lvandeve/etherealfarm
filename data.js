@@ -3355,6 +3355,21 @@ registerMedal('ghost in the field', 'have a ghost-crop', image_berryghost, funct
   return state.ghostcount > 0;
 }, Num(1));
 
+registerMedal('ghost town', 'have 10 ghost crops in the field', image_berryghost, function() {
+  return state.ghostcount >= 10;
+}, Num(1.5));
+
+registerMedal('who you gonna call?', 'have the whole field full of ghost crops', image_berryghost, function() {
+  if(state.ghostcount == 0) return false;
+  var numfield = state.numw * state.numh - 2; // subtract tree
+  if(state.ghostcount >= numfield) return true;
+  if(state.ghostcount2 >= numfield) {
+    var dead_brassica = state.ghostcount2 - state.ghostcount;
+    if(dead_brassica <= 4) return true; // allow up to 4 dead brassica instead of true ghosts: so that someone with a layout with brassica who leaves it overnight during the stormy challenge, still has a chance to get this achieve
+  }
+  return false;
+}, Num(2));
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4193,7 +4208,7 @@ var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, default
 var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
 var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
 var lotus2_3 = registerLotus2('black lotus', 12, 3, Res({resin:200e12}), 256, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_blacklotus);
-var lotus2_4 = registerLotus2('gold lotus', 16, 4, Res({resin:500e15}), 1024, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_goldlotus);
+var lotus2_4 = registerLotus2('gold lotus', 16, 4, Res({resin:500e15}), 2048, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_goldlotus);
 
 crop2_register_id = 200;
 // the first beehive has only 1% boost, however by the time you unlock this beehive you can get a massive boost from blue lotuses next to a beehive, one blue lotus next to a beehive turns this boost into 33%, and you can have more than 1 blue lotus next to it. For that reason it starts so low, because if this has a base boost of e.g. 25% this would be a way too huge jump in gameplay boost by just unlocking this new ethereal crop type at a time when you already have many lotuses

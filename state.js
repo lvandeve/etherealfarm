@@ -791,6 +791,7 @@ function State() {
   // derived stat, not to be saved
   this.templatecount = 0;
   this.ghostcount = 0;
+  this.ghostcount2 = 0; // includes other things that could be considered ghost: brassica remainders and brassica at 0 growth (for the field full of ghosts medal)
 
   // amount of fully grown plants of this type planted in fields
   // does not include partially growing ones, nor templates
@@ -1060,6 +1061,7 @@ function computeDerived(state) {
   }
   state.templatecount = 0;
   state.ghostcount = 0;
+  state.ghostcount2 = 0;
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
@@ -1097,9 +1099,11 @@ function computeDerived(state) {
         if(!c.isghost) state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
         if(c.istemplate) state.templatecount++;
         if(c.isghost) state.ghostcount++;
+        if(c.isghost || (c.type == CROPTYPE_BRASSICA && f.growth <= 0)) state.ghostcount2++;
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.specialfieldcount[f.index]++;
         state.numemptyfields++;
+        if(f.index == FIELD_REMAINDER) state.ghostcount2++;
       } else {
         state.specialfieldcount[f.index]++;
       }
