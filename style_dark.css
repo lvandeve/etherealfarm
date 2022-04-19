@@ -156,8 +156,7 @@ body {
 }
 
 .efWeatherPerma {
-  text-shadow: 0 0 0.3em #faa, 0 0 0.3em #faa, 0 0 0.3em #faa, 0 0 0.3em #faa;
-  color: #000;
+  background-color: #faa8;
 }
 
 .efWatercressHighlight {

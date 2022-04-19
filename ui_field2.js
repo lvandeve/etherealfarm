@@ -350,20 +350,20 @@ function makeField2Dialog(x, y) {
     var c = crops2[f.cropIndex()];
     var div;
 
-    var dialog = createDialog();
+    var dialog = createDialog2({
+      icon:c.image[4],
+      title:'Ethereal crop info'
+    });
     dialog.div.className = 'efDialogTranslucent';
-    var flex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.2], [0, 0, 0.2]);
-    var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-    renderImage(c.image[4], canvas);
 
     var buttonshift = 0;
 
-    var flex0 = new Flex(dialog.content, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.17);
-    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.63 + buttonshift, 0, 0.01], 0.5, 0.695 + buttonshift).div;
-    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.7 + buttonshift, 0, 0.01], 0.5, 0.765 + buttonshift).div;
-    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.77 + buttonshift, 0, 0.01], 0.5, 0.835 + buttonshift).div;
-    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.84 + buttonshift, 0, 0.01], 0.5, 0.905 + buttonshift).div;
-    var button4 = new Flex(dialog.content, [0.01, 0, 0.2], [0.91 + buttonshift, 0, 0.01], 0.5, 0.975 + buttonshift).div;
+    var flex0 = new Flex(dialog.content, 0, [0, 0, 0.01], 1, 0.17);
+    var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.63 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.695 + buttonshift).div;
+    var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.7 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.765 + buttonshift).div;
+    var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.77 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.835 + buttonshift).div;
+    var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.84 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.905 + buttonshift).div;
+    var button4 = new Flex(dialog.content, [0, 0, 0.2], [0.91 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.975 + buttonshift).div;
     var last0 = undefined;
 
     styleButton(button0);

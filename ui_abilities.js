@@ -20,12 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var mistbutton = undefined;
 var misttimerflex = undefined;
+var mistpermaflex = undefined;
 
 var sunbutton = undefined;
 var suntimerflex = undefined;
+var sunpermaflex = undefined;
 
 var rainbowbutton = undefined;
 var rainbowtimerflex = undefined;
+var rainbowpermaflex = undefined;
 
 var lightningicon = undefined;
 
@@ -116,6 +119,8 @@ function updateAbilitiesUI() {
     suntimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     suntimerflex.div.style.pointerEvents = 'none';
 
+    sunpermaflex = new Flex(sunbutton, 0, -0.1, 1, 0);
+    sunpermaflex.div.className = 'efWeatherPerma';
 
     var canvasFlex = new Flex(sunbutton, 0, 0, 1, 1);
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -133,19 +138,17 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_sununlock].count && sunbutton) {
     var d = util.getTime() - state.suntime;
     if(d > getSunWait()) {
-      if(havePerma && state.lastWeather == 0) {
-        suntimerflex.div.className = 'efWeatherPerma';
-        suntimerflex.div.textEl.innerHTML = '<br>__';
-      } else {
-        suntimerflex.div.textEl.innerHTML = '';
-      }
+      suntimerflex.div.textEl.innerHTML = '';
     } else if(d > getSunDuration() || state.lastWeather != 0) {
-      suntimerflex.div.className = (havePerma && state.lastWeather == 0) ? 'efWeatherPerma' : 'efWeatherOff';
+      suntimerflex.div.className = 'efWeatherOff';
       suntimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getSunWait() - d, true);
     } else {
       suntimerflex.div.className = 'efWeatherOn';
       suntimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getSunDuration() - d, true);
     }
+
+    if(havePerma && state.lastWeather == 0) sunpermaflex.div.style.visibility = 'visible';
+    else sunpermaflex.div.style.visibility = 'hidden';
   }
 
 
@@ -166,6 +169,8 @@ function updateAbilitiesUI() {
     misttimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     misttimerflex.div.style.pointerEvents = 'none';
 
+    mistpermaflex = new Flex(mistbutton, 0, -0.1, 1, 0);
+    mistpermaflex.div.className = 'efWeatherPerma';
 
     var canvasFlex = new Flex(mistbutton, 0, 0, 1, 1);
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -184,19 +189,17 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_mistunlock].count && mistbutton) {
     var d = util.getTime() - state.misttime;
     if(d > getMistWait()) {
-      if(havePerma && state.lastWeather == 1) {
-        misttimerflex.div.className = 'efWeatherPerma';
-        misttimerflex.div.textEl.innerHTML = '<br>__';
-      } else {
-        misttimerflex.div.textEl.innerHTML = '';
-      }
+      misttimerflex.div.textEl.innerHTML = '';
     } else if(d > getMistDuration() || state.lastWeather != 1) {
-      misttimerflex.div.className = (havePerma && state.lastWeather == 1) ? 'efWeatherPerma' : 'efWeatherOff';
+      misttimerflex.div.className = 'efWeatherOff';
       misttimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getMistWait() - d, true);
     } else {
       misttimerflex.div.className = 'efWeatherOn';
       misttimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getMistDuration() - d, true);
     }
+
+    if(havePerma && state.lastWeather == 1) mistpermaflex.div.style.visibility = 'visible';
+    else mistpermaflex.div.style.visibility = 'hidden';
   }
 
 
@@ -218,6 +221,8 @@ function updateAbilitiesUI() {
     rainbowtimerflex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
     rainbowtimerflex.div.style.pointerEvents = 'none';
 
+    rainbowpermaflex = new Flex(rainbowbutton, 0, -0.1, 1, 0);
+    rainbowpermaflex.div.className = 'efWeatherPerma';
 
     var canvasFlex = new Flex(rainbowbutton, 0, 0, 1, 1);
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -235,19 +240,17 @@ function updateAbilitiesUI() {
   if(state.upgrades[upgrade_rainbowunlock].count && rainbowbutton) {
     var d = util.getTime() - state.rainbowtime;
     if(d > getRainbowWait()) {
-      if(havePerma && state.lastWeather == 2) {
-        rainbowtimerflex.div.className = 'efWeatherPerma';
-        rainbowtimerflex.div.textEl.innerHTML = '<br>__';
-      } else {
-        rainbowtimerflex.div.textEl.innerHTML = '';
-      }
+      rainbowtimerflex.div.textEl.innerHTML = '';
     } else if(d > getRainbowDuration() || state.lastWeather != 2) {
-      rainbowtimerflex.div.className = (havePerma && state.lastWeather == 2) ? 'efWeatherPerma' : 'efWeatherOff';
+      rainbowtimerflex.div.className = 'efWeatherOff';
       rainbowtimerflex.div.textEl.innerHTML = '<small>ready in:</small><br>' + util.formatDuration(getRainbowWait() - d, true);
     } else {
       rainbowtimerflex.div.className = 'efWeatherOn';
       rainbowtimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getRainbowDuration() - d, true);
     }
+
+    if(havePerma && state.lastWeather == 2) rainbowpermaflex.div.style.visibility = 'visible';
+    else rainbowpermaflex.div.style.visibility = 'hidden';
   }
 
 

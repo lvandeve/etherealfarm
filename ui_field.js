@@ -694,11 +694,11 @@ function makeFieldDialog(x, y) {
     var buttonshift = 0;
     if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(dialog.content, [0.01, 0, 0.2], [0, 0, 0.01], 1, 0.5);
-    var button0 = new Flex(dialog.content, [0.01, 0, 0.2], [0.5 + buttonshift, 0, 0.01], 0.5, 0.565 + buttonshift).div;
-    var button1 = new Flex(dialog.content, [0.01, 0, 0.2], [0.57 + buttonshift, 0, 0.01], 0.5, 0.635 + buttonshift).div;
-    var button2 = new Flex(dialog.content, [0.01, 0, 0.2], [0.64 + buttonshift, 0, 0.01], 0.5, 0.705 + buttonshift).div;
-    var button3 = new Flex(dialog.content, [0.01, 0, 0.2], [0.71 + buttonshift, 0, 0.01], 0.5, 0.775 + buttonshift).div;
+    var flex0 = new Flex(dialog.content, 0, [0, 0, 0.01], 1, 0.5);
+    var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.5 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.565 + buttonshift).div;
+    var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.57 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.635 + buttonshift).div;
+    var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.64 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.705 + buttonshift).div;
+    var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.71 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.775 + buttonshift).div;
     var last0 = undefined;
 
     makeScrollable(flex0);
@@ -734,18 +734,14 @@ function makeFieldDialog(x, y) {
     button3.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button3, function() {
-      var dialog = createDialog(DIALOG_LARGE);
+      var dialog = createDialog2({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
       dialog.div.className = 'efDialogTranslucent';
-      var flex = dialog.content;
       var text = '';
-
-      makeScrollable(flex);
-
 
       text += getCropInfoHTML(f, c, true);
       text += '<br/>';
       text += getCropInfoHTMLBreakdown(f, c);
-      flex.div.innerHTML = text;
+      dialog.content.div.innerHTML = text;
     });
 
     updatedialogfun = bind(function(f, c, flex) {

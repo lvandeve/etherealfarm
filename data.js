@@ -882,12 +882,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.upgrades3[upgrade3_leveltime].count) {
-      var time = timeAtTreeLevel(state);
+      var origtime = timeAtTreeLevel(state);
+      var time = Math.floor(origtime / 300) * 300; // rounded at 5 minute intervals, going stepwise so that e.g. production time prediction timers aren't continuously changing
       if(time > upgrade3_leveltime_maxtime) time = upgrade3_leveltime_maxtime;
+      if(origtime > upgrade3_leveltime_maxtime) origtime = upgrade3_leveltime_maxtime;
       if(time > 0) {
         var bonus = Num(1 + time * upgrade3_leveltime_maxbonus / upgrade3_leveltime_maxtime);
         result.mulInPlace(bonus);
-        if(breakdown) breakdown.push(['time at level: ' + util.formatDuration(time), true, bonus, result.clone()]);
+        if(breakdown) breakdown.push(['time at level: ' + util.formatDuration(origtime), true, bonus, result.clone()]);
       }
     }
 
@@ -1093,7 +1095,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
       bonus_rainbow.addrInPlace(1);
       result.mulrInPlace(bonus_rainbow);
       if(breakdown) breakdown.push(['rainbow', true, bonus_rainbow, result.clone()]);
-    } else if(havePermaWeather(2)) {
+    } else if(havePermaWeatherFor(2)) {
       var bonus_rainbow = getRainbowFlowerBoost(true);
       bonus_rainbow.addrInPlace(1);
       result.mulrInPlace(bonus_rainbow);
