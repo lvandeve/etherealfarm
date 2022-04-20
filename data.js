@@ -912,7 +912,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(pretend == 2 && this.type == CROPTYPE_BRASSICA && f) {
     var p = prefield[f.y][f.x];
     var leech = this.getLeech(f, null, p.getBrassicaBreakdownCroptype());
-    var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
+    var soup = !basic && state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var total = Res();
     var num = 0;
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -1032,11 +1032,11 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
       if(level2 > 0) {
         var mul;
         if(level > 0) {
-          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_nettle);
+          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_nettle).addr(1);
           // combined with pure nettle ability. Don't take the cube root now, that'd cripple it too much in this case,
           // instead make it additive. Which still cripples it a lot (it's worth only in the order of 2x, while the pure nettle ability is like 10000x or so, but at least it's not 1.02x which it'd be if we also did cuberoot thing now)
           var sum = mul.add(mul0).subr(1); // effective combined multiplier
-          mul = sum.subr(1).div(mul0.subr(1));
+          mul = sum.div(mul0);
         } else {
           // adjust with that cuberoot-ish power
           mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_nettle).addr(1).powr(mix_pow_nettle);
@@ -1230,11 +1230,11 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
       if(level2 > 0) {
         var mul;
         if(level > 0) {
-          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_bee);
+          mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_bee).addr(1);
           // combined with pure bee ability. Don't take the cube root now, that'd cripple it too much in this case,
           // instead make it additive. Which still cripples it a lot (it's worth only in the order of 2x, while the pure bee ability is like 10000x or so, but at least it's not 1.02x which it'd be if we also did cuberoot thing now)
           var sum = mul.add(mul0).subr(1); // effective combined multiplier
-          mul = sum.subr(1).div(mul0.subr(1));
+          mul = sum.div(mul0);
         } else {
           // adjust with that cuberoot-ish power
           mul = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_bee).addr(1).powr(mix_pow_bee);
@@ -1368,7 +1368,7 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
           // pure brassica ability also present, merely additively add this one, and without the cuberoot-ish reduction
           var mul2 = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_brassica).addr(1);
           var sum = mul.add(mul2).subr(1); // effective combined multiplier
-          mul_m = sum.subr(1).div(mul_b.subr(1));
+          mul_m = sum.div(mul_b);
           mul = sum;
         } else {
           var b = getFruitBoost(FRUIT_MIX, level2, getFruitTier(true)).mulr(mix_mul_brassica);
@@ -5604,7 +5604,7 @@ function getTreeBoost() {
     // fruit ability
     var level = getFruitAbility(FRUIT_TREELEVEL, true);
     if(level > 0) {
-      var mul = treeLevelFruitBoost(getFruitTier(true), level, state.treelevel, 115);
+      var mul = treeLevelFruitBoost(getFruitTier(true), level, state.treelevel, 115).addr(1);
       result.mulInPlace(mul);
     }
   }
@@ -5625,13 +5625,13 @@ function treeLevelFruitBoostCurve(tree_level, fruit_drop_level) {
 // returns the boost given by the FRUIT_TREELEVEL fruit
 // for sapphire fruit (which drops as highest tier from 115 to 135) fruit_drop_level should be 115, for emerald it should be 135, etc...
 function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, fruit_drop_level) {
-  var mul = getFruitBoost(FRUIT_TREELEVEL, ability_level, fruit_tier).addr(1);
+  var boost = getFruitBoost(FRUIT_TREELEVEL, ability_level, fruit_tier);
   // For sapphire fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
   // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
   // TODO: for emerald and higher fruits, adjust target_level everywhere this function is called
-
+  // TODO: also support lower fruit tier, for e.g. basic challenge
   var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level);
-  return mul.mulr(s);
+  return boost.mulr(s);
 }
 
 // outputs the minimum spores required for the tree to go to the given level

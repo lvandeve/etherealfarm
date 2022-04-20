@@ -337,9 +337,9 @@ le is implemented as: all individual resources le, so means "all resources are l
 gt is implmemeted as !le, so means "any resource is strictly greater than"
 lt is implmemeted as !ge, so means "any resource is strictly lesser than"
 Reason why lt and gt are different than ge and le: an lt or gt for all (rather than any) resources would almost always return false since there'll always be some irrelevant resource type that's 0 on both sides.
-For cost computations (including treating NaN in have as can't afford), use the following:
-for can_afford: have.ge(cost) or cost.le(have)
-for cannot_afford: have.lt(cost) or cost.gt(have)
+For cost computations (including treating NaN in have as can't afford), use the following, where the can_afford function treats negatives better (see further)
+for can_afford: have.ge(cost), cost.le(have) or have.can_afford(cost)
+for cannot_afford: have.lt(cost), cost.gt(have) or !have.can_afford(cost)
 */
 
 // greater than or equal for all resources
@@ -390,6 +390,26 @@ Res.prototype.gte = Res.prototype.ge;
 Res.gte = Res.ge;
 Res.prototype.gter = Res.prototype.ger;
 Res.gter = Res.ger;
+
+// similar to this.ge(cost), except resources with value 0 in cost are ignored. This makes a difference if due to a bug a player has a negative value in some resource type
+// 'this' represents the current resources you have
+Res.prototype.can_afford = function(cost) {
+  if(cost.seeds.neqr(0) && !this.seeds.ge(cost.seeds)) return false;
+  if(cost.spores.neqr(0) && !this.spores.ge(cost.spores)) return false;
+  if(cost.resin.neqr(0) && !this.resin.ge(cost.resin)) return false;
+  if(cost.twigs.neqr(0) && !this.twigs.ge(cost.twigs)) return false;
+  if(cost.nuts.neqr(0) && !this.nuts.ge(cost.nuts)) return false;
+  if(cost.spores2.neqr(0) && !this.spores2.ge(cost.spores2)) return false;
+  if(cost.amber.neqr(0) && !this.amber.ge(cost.amber)) return false;
+  if(cost.essence.neqr(0) && !this.essence.ge(cost.essence)) return false;
+  return true;
+};
+
+// similar to have.ge(cost), except resources with value 0 in cost are ignored. This makes a difference if due to a bug a player has a negative value in some resource type
+Res.can_afford = function(have, cost) {
+  return have.can_afford(cost);
+};
+
 
 
 // returns whether the resources are empty

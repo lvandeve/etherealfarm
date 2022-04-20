@@ -387,6 +387,7 @@ params.cancelname: name for the cancel button, gets a default name if not given
 params.nocancel: if set, no cancel button will be rendered at all
 params.title: title for top of the dialog. If empty, title can still be set on the flex result.title
 params.icon: image, icon for top left of the dialog. If empty, title can still be set on the flex result.icon
+params.iconmargin: if present, gives this percentage of margin to the icon, if not present there's 0 margin. Should be used only when filling the dialog.icon space yourself, so when not using params.icon: params.icon already applies its own margin.
 params.help: optional function or string for help text. If set, there'll be a help button. If text, a dialog with the help text will be opened. If function, the function will be executed when pressing the help button
 params.size: DIALOG_TINY, DIALOG_SMALL, DIALOG_MEDIUM or DIALOG_LARGE
 parrams.narrow: content will be more narrow, the width of the top icon / close button will be removed from each side, allows making a taller icon
@@ -464,9 +465,9 @@ function createDialog2(params) {
       } else {
         s++;
       }
-      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (s + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * s], [1.0, 0, -0.01], FONT_DIALOG_BUTTON)).div;
+      result = (new Flex(dialogFlex, 1.0 - buttonsize * (s + 1), [1.0, -0.4 * buttonsize], 1.0 - 0.01 - buttonsize * s, [1.0, -0.01], FONT_DIALOG_BUTTON)).div;
     } else {
-      result = (new Flex(dialogFlex, [1.0, 0, -buttonsize * (buttonshift + 1)], [1.0, 0, -0.4 * buttonsize], [1.0, 0, -0.01 - buttonsize * buttonshift], [1.0, 0, -0.01], FONT_DIALOG_BUTTON)).div;
+      result = (new Flex(dialogFlex, 1.0 - buttonsize * (buttonshift + 1), [1.0, -0.4 * buttonsize], 1.0 - 0.01 - buttonsize * buttonshift, [1.0, -0.01], FONT_DIALOG_BUTTON)).div;
     }
     buttonshift++;
     return result;
@@ -541,12 +542,6 @@ function createDialog2(params) {
 
   var topHeight = 0.11;
 
-  // full virtual size for the xbutton and icon flexes:
-  // xbutton = new Flex(dialogFlex, [1, 0, -topHeight], 0, 1, [0, 0, topHeight]);
-  // result.icon = new Flex(dialogFlex, 0, 0.0, [0, 0, topHeight], [0, 0, topHeight]);
-  // and result.title is aligned to those
-  // but actual xbutton and icon below made a bit smaller to have some margins
-
   var title_x0;
   var title_x1;
   var helpbutton;
@@ -565,14 +560,14 @@ function createDialog2(params) {
     }
     addButtonAction(helpbutton.div, params.help, 'help');
     helpbutton.div.title = 'help';
-    title_x0 = [0, 0, topHeight * 2];
-    title_x1 = [1, 0, -topHeight * 2];
+    title_x0 = topHeight * 2;
+    title_x1 = 1 -topHeight * 2;
   } else {
-    title_x0 = [0, 0, topHeight];
-    title_x1 = [1, 0, -topHeight];
+    title_x0 = topHeight;
+    title_x1 = 1 - topHeight;
   }
 
-  var xbutton = new Flex(dialogFlex, [1, 0, -topHeight], [0, 0, 0], [1, 0, -0], [0, 0, topHeight]);
+  var xbutton = new Flex(dialogFlex, 1 - topHeight, 0, 1, [0, topHeight]);
   var canvas = createCanvas('20%', '20%', '60%', '60%', xbutton.div);
   renderImage(image_close, canvas);
   styleButton0(xbutton.div);
@@ -588,14 +583,15 @@ function createDialog2(params) {
 
   result.flex = dialogFlex;
   result.div = dialogFlex.div;
-  result.icon = new Flex(dialogFlex, 0, 0, [0, 0, topHeight], [0, 0, topHeight]);
+  var iconmargin = params.iconmargin || 0;
+  result.icon = new Flex(dialogFlex, topHeight * iconmargin, [0, topHeight * iconmargin], topHeight * (1 - iconmargin), [0, topHeight * (1 - iconmargin)]);
 
   if(params.narrow) {
-    result.title = new Flex(dialogFlex, title_x0, 0.01, title_x1, [0, 0, topHeight * 0.5], FONT_TITLE);
-    result.content = new Flex(dialogFlex, [0, 0, topHeight], [0, 0, topHeight * 0.5], [1, 0, -topHeight], contentHeight);
+    result.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight * 0.5], FONT_TITLE);
+    result.content = new Flex(dialogFlex, topHeight, [0, topHeight * 0.5], 1 - topHeight, contentHeight);
   } else {
-    result.title = new Flex(dialogFlex, title_x0, 0.01, title_x1, [0, 0, topHeight], FONT_TITLE);
-    result.content = new Flex(dialogFlex, 0.02, [0, 0, topHeight], 0.98, contentHeight);
+    result.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight], FONT_TITLE);
+    result.content = new Flex(dialogFlex, 0.02, [0, topHeight], 0.98, contentHeight);
   }
 
   if(params.scrollable) makeScrollable(result.content);

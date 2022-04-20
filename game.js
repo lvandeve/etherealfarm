@@ -974,6 +974,8 @@ function PreCell(x, y) {
   this.prod1 = new Res();
   this.wanted = new Res();
   this.gotten = new Res();
+  // for the "satisfied" display of mushroom in the case when it't >= 100% satisfied
+  this.gotten2 = new Res();
   // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
   this.prod2 = new Res();
@@ -1082,6 +1084,7 @@ function PreCell(x, y) {
     this.prod1.reset();
     this.wanted.reset();
     this.gotten.reset();
+    this.gotten2.reset();
     this.prod2.reset();
     this.prod3.reset();
     this.prod3b.reset();
@@ -1336,7 +1339,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
     }
   }
 
-  var soup = state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushrooms not cost seeds
+  var soup = !basicChallenge() && state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushrooms not cost seeds
 
   // pass 3: compute basic production/consumption of each cell, without taking input/output connections (berries to mushrooms) into account, just the full value
   // production without leech, consumption with leech (if watercress leeches from mushroom, adds that to its consumption, but not the leeched spores production, that's added in a later step)
@@ -1430,6 +1433,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
                 var want = p.wanted.seeds.sub(p.gotten.seeds);
                 var have = p2.prod1.seeds;
                 var amount = Num.min(want, have);
+                p.gotten2.seeds.addInPlace(have);
                 if(amount.gter(0)) {
                   did_something = true;
                   p.gotten.seeds.addInPlace(amount);
@@ -1461,6 +1465,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
                 have = p2.prod1.seeds;
               }
               var amount = Num.min(want, have);
+              if(want.gtr(0)) p.gotten2.seeds.addInPlace(have); // only count it if we still want seeds. this is to avoid an overestimation by double counting, when the mushroom is fully satisfied, the same "have" will be here multiple iterations because only "want" was subtracted from it. so it only adds it the first iteration. This is still only an approximation, it doesn't take into account the case when a mushroom gets everything from a berry when another mushroom was already fully satisfied from a private berry, but this value is only used as an approximate indication in the UI anyway to see roughly how much headroom for upgrading mushrooms there is
               if(amount.gter(0)) {
                 did_something = true;
                 p.gotten.seeds.addInPlace(amount);
@@ -3159,7 +3164,7 @@ var update = function(opt_ignorePause) {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
             ok = false;
-          } else if(state.res.lt(cost)) {
+          } else if(!state.res.can_afford(cost)) {
             if(!action.silent) {
               showMessage('not enough resources to plant ' + c.name +
                           ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
@@ -3614,7 +3619,7 @@ var update = function(opt_ignorePause) {
           updateRightPane();
           if(!action.silent) {
             var f_active = getActiveFruit();
-            var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(true, true)) : 'none';
+            var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(false, true)) : 'none';
             showMessage('Set active fruit: ' + name);
           }
           store_undo = true; // non-destructive action, but store undo anyway for consistency and to avoid confusion when pressing undo after e.g. first swapping fruit for sun, then activating sun

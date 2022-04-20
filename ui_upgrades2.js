@@ -86,7 +86,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   styleButton0(canvasFlex.div);
 
   addButtonAction(canvasFlex.div, function() {
-    var dialog = createDialog(DIALOG_SMALL);
+    var dialog = createDialog2({size:DIALOG_SMALL, title:'Ethereal upgrade info'});
     dialog.content.div.innerHTML = infoText;
   }, 'ethereal upgrade icon for ' + name);
 
@@ -211,25 +211,22 @@ function updateUpgrade2UI() {
     flex.div.innerText = 'See Completed Upgrades';
 
     addButtonAction(flex.div, function() {
-      var dialog = createDialog();
-
-      var scrollFlex = dialog.content;
-      makeScrollable(scrollFlex);
+      var dialog = createDialog2({scrollable:true, title:'Completed ethereal upgrades'});
 
       for(var i = 0; i < researched.length; i++) {
         var u = upgrades2[researched[i]];
-        var div = makeDiv(pos[0], pos[1], 200, 20, scrollFlex.div);
+        var div = makeDiv(pos[0], pos[1], 200, 20, dialog.content.div);
 
         var x = (i & 1);
         var y = i >> 1;
         var w = 0.45;
-        var chip = new Flex(scrollFlex, x * w + 0.01, [0, 0, y * w + 0.01, 0.27], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.27]);
+        var chip = new Flex(dialog.content, x * w + 0.01, [0, 0, y * w + 0.01, 0.27], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.27]);
         renderUpgrade2Chip(u, i & 1, i >> 1, 0.45, chip, true);
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';
       }
 
-      scrollFlex.update(); // something goes wrong with the last chip in the scrollflex when not updating this now.
+      dialog.content.update(); // something goes wrong with alignment some chips (due to the point where scrollbar appears) in the scrollflex when not updating this now.
     });
   }
 

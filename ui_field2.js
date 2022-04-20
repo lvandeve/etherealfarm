@@ -409,18 +409,15 @@ function makeField2Dialog(x, y) {
     button4.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button4, function() {
-      var dialog = createDialog(DIALOG_LARGE);
+      var dialog = createDialog2({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
       dialog.div.className = 'efDialogTranslucent';
       var flex = dialog.content;
       var text = '';
 
-      makeScrollable(flex);
-
-
       text += getCropInfoHTML2(f, c, true, false);
       text += '<br/>';
       text += getCropInfoHTML2Breakdown(f, c);
-      flex.div.innerHTML = text;
+      dialog.content.div.innerHTML = text;
     });
 
     updatedialogfun = bind(function(f, c, flex) {
@@ -693,10 +690,7 @@ function renderField2() {
 }
 
 function showEtherealTreeLevelDialog(level) {
-  var dialog = createDialog(undefined, undefined, undefined, undefined, 'ok');
-
-  var flex = dialog.content;
-  makeScrollable(flex);
+  var dialog = createDialog2({cancelname:'ok', scrollable:true, title:('Ethereal tree level ' + level)});
 
   var text = 'The ethereal tree leveled up to level ' + level + '!<br><br>';
 
@@ -759,6 +753,6 @@ function showEtherealTreeLevelDialog(level) {
     text += 'These are available in the ethereal field and/or the ethereal upgrades tab.';
   }
 
-  flex.div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 

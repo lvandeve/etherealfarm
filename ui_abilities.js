@@ -478,6 +478,7 @@ document.addEventListener('keydown', function(e) {
     // upgrade crop
     var did_something = false;
     did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
+    var upgraded = did_something;
     if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
       addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
       did_something = true;
@@ -486,8 +487,13 @@ document.addEventListener('keydown', function(e) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f && f.index == FIELD_REMAINDER) {
         addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[brassica_0], ctrlPlanted:true});
+        did_something = true;
       }
-      did_something = true;
+      // special case: allow also refreshing watercress this way
+      if(!upgraded && f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1) {
+        addAction({type:ACTION_REPLACE, x:shiftCropFlexX, y:shiftCropFlexY, crop:f.getCrop(), ctrlPlanted:true, silent:true});
+        did_something = true;
+      }
     }
     if(did_something) {
       update();

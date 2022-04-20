@@ -132,16 +132,26 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     var oktext = 'never show again';
   }
 
+  var title = registered_help_dialogs[id].name;
+
   numhelpdialogs++;
-  var dialog = createDialog(images ? DIALOG_LARGE : DIALOG_MEDIUM, okfun, oktext, undefined, 'ok', undefined, undefined, false, function() {
-    numhelpdialogs--;
-    if(helpDialogQueue.length) {
-      var args = Array.prototype.slice.call(helpDialogQueue[0], 0);
-      args[7] = true; // opt_recursive
-      helpDialogQueue.shift();
-      showHelpDialog.apply(this, args);
+  var dialog = createDialog2({
+    size:(images ? DIALOG_LARGE : DIALOG_MEDIUM),
+    title:title,
+    functions:okfun,
+    names:oktext,
+    cancelname:'ok',
+    onclose:function() {
+      numhelpdialogs--;
+      if(helpDialogQueue.length) {
+        var args = Array.prototype.slice.call(helpDialogQueue[0], 0);
+        args[7] = true; // opt_recursive
+        helpDialogQueue.shift();
+        showHelpDialog.apply(this, args);
+      }
     }
   });
+
   dialog.div.className = 'efDialogTranslucent';
   var fx0 = 0.01;
   var fy0 = 0.01;
@@ -176,7 +186,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
   var flex = new Flex(dialog.content, fx0, fy0, fx1, fy1);
   makeScrollable(flex);
 
-  flex.div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 
   return true;
 }

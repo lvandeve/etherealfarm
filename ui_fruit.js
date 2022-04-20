@@ -117,15 +117,7 @@ function getFruitAbilityDescription(ability) {
 var lastTouchedFruit = null; // for some visual indication only
 
 function createFruitHelp() {
-  var dialog = createDialog();
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Fruit help';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog2({title:'Fruit help', scrollable:true});
 
   var text = '';
 
@@ -220,7 +212,7 @@ function createFruitHelp() {
     text += '<br/>';
   }
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 function createFruitFuseDialog(f, parentdialogrecreatefun) {
@@ -230,18 +222,23 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
   var swapped = false;
 
-  var dialog = createDialog(undefined, function() {
-    if(selected) {
-      if(swapped) {
-        addAction({type:ACTION_FRUIT_FUSE, a:selected, b:f});
-      } else {
-        addAction({type:ACTION_FRUIT_FUSE, a:f, b:selected});
+  var dialog = createDialog2({undefined,
+    functions:function() {
+      if(selected) {
+        if(swapped) {
+          addAction({type:ACTION_FRUIT_FUSE, a:selected, b:f});
+        } else {
+          addAction({type:ACTION_FRUIT_FUSE, a:f, b:selected});
+        }
       }
-    }
-    update();
-    if(parentdialogrecreatefun) parentdialogrecreatefun(lastTouchedFruit);
-  }, 'fuse');
-  makeScrollable(dialog.content);
+      update();
+      if(parentdialogrecreatefun) parentdialogrecreatefun(lastTouchedFruit);
+    },
+    names:'fuse',
+    scrollable:true,
+    title:'Fuse fruits',
+    help:createFruitHelp
+  });
 
   var make = function() {
     var scrollFlex = dialog.content;
@@ -413,6 +410,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
 function fillFruitDialog(dialog, f, opt_selected) {
   dialog.content.clear();
+  dialog.icon.clear();
   if(lastTouchedFruit != f) {
     lastTouchedFruit = f;
     updateFruitUI(); // to update lastTouchedFruit style
@@ -423,12 +421,14 @@ function fillFruitDialog(dialog, f, opt_selected) {
   };
   dialog.div.className = 'efDialogTranslucent';
 
-  var canvasFlex = new Flex(dialog.content, [0, 0, 0.01], [0, 0, 0.01], [0, 0, 0.15], [0, 0, 0.15]);
+  var canvasFlex = new Flex(dialog.icon, 0.05, 0.05, 0.95, 0.95);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(images_fruittypes[f.type][f.tier], canvas);
   styleFruitChip(canvasFlex, f);
 
-  var topFlex = new Flex(dialog.content, [0.01, 0, 0.15], 0.01, 0.99, 0.15);
+  var margin = 0.1;
+
+  var topFlex = new Flex(dialog.content, margin, 0.01, 1 - margin, 0.15);
   var text = upper(f.toString());
   text += '<br>';
   text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
@@ -447,10 +447,10 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var selected = (opt_selected == undefined) ? (f.abilities.length > 1 ? -1 : 0) : opt_selected; // the selected ability for details and upgrade button
   var flexes = [];
 
-  var y = 0.2;
+  var y = 0.22;
   var h = 0.04;
   for(var i = 0; i < f.abilities.length; i++) {
-    var flex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.9, y + h);
+    var flex = new Flex(dialog.content, margin, y, 1 - margin, y + h);
     y += h * 1.1;
     var a = f.abilities[i];
     var level = f.levels[i];
@@ -476,7 +476,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
   y += 0.02;
   h = 0.27;
-  var bottomflex = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.9, y + h);
+  var bottomflex = new Flex(dialog.content, margin, y, 1 - margin, y + h);
   bottomflex.div.style.backgroundColor = '#0f02';
   bottomflex.div.style.border = '1px solid black';
   y += h;
@@ -626,7 +626,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var h = 0.05;
 
   if(f.slot >= 100) {
-    var moveButton1 = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h).div;
+    var moveButton1 = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
     y += h * 1.1;
     styleButton(moveButton1);
     moveButton1.textEl.innerText = 'to storage slot';
@@ -640,7 +640,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   }
 
   if(f.slot < 100) {
-    var moveButton2 = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h).div;
+    var moveButton2 = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
     y += h * 1.1;
     styleButton(moveButton2);
     moveButton2.textEl.innerText = 'to sacrificial pool';
@@ -651,11 +651,19 @@ function fillFruitDialog(dialog, f, opt_selected) {
       closeAllDialogs();
     });
 
-    var moveButton3 = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h).div;
+    var moveButton3 = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
     y += h * 1.1;
     styleButton(moveButton3);
     moveButton3.textEl.innerText = 'make active';
     addButtonAction(moveButton3, function() {
+      if(f.slot >= MAXFRUITARROWS) {
+        // The UI only allows to make the top 10 (MAXFRUITARROWS) active. So the "make active" button of further ones
+        // must move this one to the top row.
+        // We could instead not have this button at all, but then the issue is that the only way to make this fruit active is to
+        // drag it to a top slot, so if dragging isn't available on the device it couldn't be made active at all.
+        // So swap it with the active one, that even allows choosing its destination spot
+        swapFruit(f.slot, state.fruit_active);
+      }
       state.fruit_active = f.slot;
       updateFruitUI();
       update();
@@ -666,7 +674,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
   // can't do fusing on fruits that only have 1 ability
   if(f.tier > 0) {
-    var fuseButton = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h).div;
+    var fuseButton = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
     y += h * 1.1;
     styleButton(fuseButton);
     fuseButton.textEl.innerText = 'fuse';
@@ -676,7 +684,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     });
   }
 
-  var renameButton = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h).div;
+  var renameButton = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
   y += h * 1.1;
   styleButton(renameButton);
   renameButton.textEl.innerText = 'rename';
@@ -687,13 +695,6 @@ function fillFruitDialog(dialog, f, opt_selected) {
       if(dialog_level) recreate();
     }, f.name);
   });
-
-  var helpButton = new Flex(dialog.content, [0.01, 0, 0.15], y, 0.45, y + h).div;
-  y += h * 1.1;
-  styleButton(helpButton);
-  helpButton.textEl.innerText = 'help';
-  addButtonAction(helpButton, createFruitHelp);
-
 
   styleButton0(canvas, true);
   addButtonAction(canvas, function() {
@@ -710,16 +711,22 @@ function fillFruitDialog(dialog, f, opt_selected) {
 }
 
 function createFruitDialog(f, opt_selected) {
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
-    // onclose function: updates the relevant fruit chip with new upgrade levels. TODO: it's inefficient to redraw all fruit chips for this
-    updateFruitUI();
+  var dialog = createDialog2({
+    onclose:function() {
+      // onclose function: updates the relevant fruit chip with new upgrade levels. TODO: it's inefficient to redraw all fruit chips for this
+      updateFruitUI();
+    },
+    help:createFruitHelp,
+    title:'Fruit'
   });
 
   fillFruitDialog(dialog, f, opt_selected);
 }
 
 function createFruitInfoDialog(f) {
-  var dialog = createDialog();
+  var dialog = createDialog2({
+    title:'Fruit info'
+  });
 
   var scrollFlex = dialog.content;
 
@@ -734,15 +741,7 @@ function createFruitInfoDialog(f) {
 }
 
 function showStorageFruitSourceDialog() {
-  var dialog = createDialog();
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Fruit storage slot sources';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog2({title:'Fruit storage slot sources', scrollable:true});
 
   var text = '';
 
@@ -788,7 +787,7 @@ function showStorageFruitSourceDialog() {
     text += '<br/>';
   }
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 function styleFruitChip(flex, f) {

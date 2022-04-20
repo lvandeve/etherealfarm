@@ -137,7 +137,9 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
   }
 
-  if(f.growth < 1 && c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) {
+  var growing = f.growth < 1 && c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither;
+
+  if(growing) {
     if(state.challenge == challenge_wither) {
       result += 'Withering. Time left: ' + util.formatDuration(witherDuration() * f.growth);
     } else {
@@ -149,7 +151,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true) + ' (of: ' + util.formatDuration(c.getPlantTime(), true, 4, true)  + ')';
       }
     }
-    result += '<br/>';
+    result += '<br/><br/>';
     var expected_prod = c.getProd(f, 2);
     var expected_boost = c.getBoost(f, 2);
     var expected_boostboost = c.getBoostBoost(f, 2);
@@ -168,7 +170,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       if(current_boost.neqr(0)) result += 'Current boost: ' + current_boost.toPercentString() + '<br>';
       result += 'Expected boost: ' + expected_boostboost.toPercentString();
     }
-    result += '<br/><br/>';
+    result += '<br/>';
   } else {
     if(c.type == CROPTYPE_BRASSICA) {
       if(opt_detailed) {
@@ -186,7 +188,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += text0 + '. Time left: ' + util.formatDuration(growthremaining * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
         if(state.upgrades[berryunlock_0].count) {
           result += '<br/><span class="efWatercressHighlight">Copies neighbors: Duplicates full production of long-lived berry and mushroom neighbors for free';
-          if(!state.upgrades3[upgrade3_watercress_mush].count) result += ' (mushroom copy also consumes more seeds)';
+          if(basicChallenge() || !state.upgrades3[upgrade3_watercress_mush].count) result += ' (mushroom copy also consumes more seeds)';
           result += '</span><br/>';
         }
       }
@@ -199,86 +201,84 @@ function getCropInfoHTML(f, c, opt_detailed) {
       if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       result += '<br/><br/>';
     }
-    var prod3 = p.prod3;
-    var prod0 = p.prod0;
-    if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA && p.prod3_wasabi_challenge) {
-      prod3 = p.prod3_wasabi_challenge;
-      prod0 = p.prod0_wasabi_challenge;
+  }
+
+  var prod3 = p.prod3;
+  var prod0 = p.prod0;
+  if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA && p.prod3_wasabi_challenge) {
+    prod3 = p.prod3_wasabi_challenge;
+    prod0 = p.prod0_wasabi_challenge;
+  }
+  if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY) {
+    if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
+      result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
+    } else if(!growing) {
+      result += 'Production per second: ' + prod3.toString() + '<br/>';
     }
-    if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY) {
-      if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
-        result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
-      } else {
-        result += 'Production per second: ' + prod3.toString() + '<br/>';
-      }
-      if(c.type == CROPTYPE_BRASSICA) {
-        var breakdown_copy = p.getBreakdownWatercress();
-        if(breakdown_copy && breakdown_copy.length) {
-          var copy = breakdown_copy[breakdown_copy.length - 1][3];
-          if(copy && copy.neqr && copy.neqr(0)) {
-            result += 'Copying: ' + copy.toPercentString() + '<br/>';
-          }
+    if(c.type == CROPTYPE_BRASSICA) {
+      var breakdown_copy = p.getBreakdownWatercress();
+      if(breakdown_copy && breakdown_copy.length) {
+        var copy = breakdown_copy[breakdown_copy.length - 1][3];
+        if(copy && copy.neqr && copy.neqr(0)) {
+          result += 'Copying: ' + copy.toPercentString() + '<br/>';
         }
       }
-      if(prod3.hasNeg() || c.type == CROPTYPE_MUSH) {
-        if(prod0.neq(prod3)) {
-          if(c.type == CROPTYPE_MUSH) {
-            result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + prod0.toString() + '<br/>';
-            result += 'Satisfied: ' + prod3.seeds.div(prod0.seeds).toPercentString() + '<br/>';
-          } else if(c.type == CROPTYPE_BRASSICA) {
-            // nothing to print.
-          } else {
-            result += 'Needs more input resources, potential max production: ' + prod0.toString() + '<br/>';
-          }
+    }
+    if(prod3.hasNeg() || c.type == CROPTYPE_MUSH) {
+      if(prod0.neq(prod3)) {
+        if(c.type == CROPTYPE_MUSH) {
+          result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + prod0.toString() + '<br/>';
+          result += 'Satisfied: no (' + prod3.seeds.div(prod0.seeds).toPercentString() + ')<br/>';
+        } else if(c.type == CROPTYPE_BRASSICA) {
+          // nothing to print.
         } else {
-          // commented out, the crop type description already says this
-          //result += 'Consumes a resource produced by neighboring crops.<br/>';
-          // NOTE: always shows 100% even if the berry produces more than enough. Making that show more than 100% would require a completely separate production/consumption computation in precomputeField with a hypothetical mushroom requesting way more seeds, and that'd be unecessarily expensive to compute for just this display.
-          result += 'Satisfied: >= 100%.<br/>Tip: flowers next to mushrooms give them a large boost.<br/>';
+          result += 'Needs more input resources, potential max production: ' + prod0.toString() + '<br/>';
         }
-      } else if(p.prod3.neq(p.prod2)) {
-        if(!(p.prod2.seeds.ltr(0) && p.prod2.seeds.gtr(-1e-6))) { // avoid a possible numerical display issue
-          result += 'After consumption: ';
-          if(p.prod2.empty() && tooHighSeedConsumption()) {
-            result += 'none: a mushroom is consumping all seeds. Plant high tier berries away from a mushroom to get some income for upgrades.';
-          } else {
-            result += p.prod2.toString();
-          }
-          result += '<br/>';
-        }
-      }
-      result += '<br/>';
-    }
-    if(c.type == CROPTYPE_MUSH) {
-      result += 'Efficiency: ' + prod0.spores.div(prod0.seeds.neg()).toString() + ' spores/seed, ' +
-          prod0.seeds.div(prod0.spores.neg()).toString() + ' seeds/spore<br/>';
-    }
-    if(c.index == challengecrop_0) {
-      result += 'Global field-wide boost to berries, flowers and mushrooms: ' + p.boost.toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
-      result += 'All worker bees together: ' + getWorkerBeeBonus().toPercentString() + '<br/>';
-      //result += 'One worker bee: ' + challenge_worker_bees_boost.mulr(state.upgrades[challengecropmul_1].count * challengecropmul_1_boost + 1).toPercentString() + ' (double if next to queen)<br/>';
-      result += '<br/>';
-    }
-    if(c.index == challengecrop_1) {
-      result += 'Boost to neighbor worker bees: ' + p.boost.toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
-      result += '<br/>';
-    }
-    if(c.index == challengecrop_2) {
-      result += 'Boost to neighbor queen bees: ' + c.getBoostBoost(f).toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
-      result += '<br/>';
-    }
-    if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
-      if(c.type == CROPTYPE_NETTLE) {
-        result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing neighbor berries and flowers<br/>';
       } else {
-        result += 'Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
+        result += 'Satisfied: fully (' + p.gotten2.seeds.div(p.wanted.seeds).toPercentString() + ')<br/>';
       }
-      result += '<br/>';
+    } else if(p.prod3.neq(p.prod2)) {
+      if(!(p.prod2.seeds.ltr(0) && p.prod2.seeds.gtr(-1e-6))) { // avoid a possible numerical display issue
+        result += 'After consumption: ';
+        if(p.prod2.empty() && tooHighSeedConsumption() /*&& !growing*/) {
+          result += 'none: a mushroom is consumping all seeds. Plant high tier berries away from a mushroom to get some income for upgrades.';
+        } else {
+          result += p.prod2.toString();
+        }
+        result += '<br/>';
+      }
     }
-    if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
-      result += 'Boosting flowers: ' + (c.getBoostBoost(f).toPercentString()) + '<br/>';
-      result += '<br/>';
+    result += '<br/>';
+  }
+  if(c.type == CROPTYPE_MUSH) {
+    result += 'Efficiency: ' + prod0.spores.div(prod0.seeds.neg()).toString() + ' spores/seed, ' +
+        prod0.seeds.div(prod0.spores.neg()).toString() + ' seeds/spore<br/>';
+  }
+  if(c.index == challengecrop_0) {
+    result += 'Global field-wide boost to berries, flowers and mushrooms: ' + p.boost.toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
+    result += 'All worker bees together: ' + getWorkerBeeBonus().toPercentString() + '<br/>';
+    //result += 'One worker bee: ' + challenge_worker_bees_boost.mulr(state.upgrades[challengecropmul_1].count * challengecropmul_1_boost + 1).toPercentString() + ' (double if next to queen)<br/>';
+    result += '<br/>';
+  }
+  if(c.index == challengecrop_1) {
+    result += 'Boost to neighbor worker bees: ' + p.boost.toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
+    result += '<br/>';
+  }
+  if(c.index == challengecrop_2) {
+    result += 'Boost to neighbor queen bees: ' + c.getBoostBoost(f).toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
+    result += '<br/>';
+  }
+  if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
+    if(c.type == CROPTYPE_NETTLE) {
+      result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing neighbor berries and flowers<br/>';
+    } else {
+      result += 'Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
     }
+    result += '<br/>';
+  }
+  if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
+    result += 'Boosting flowers: ' + (c.getBoostBoost(f).toPercentString()) + '<br/>';
+    result += '<br/>';
   }
 
   var recoup = c.getRecoup();
@@ -444,8 +444,8 @@ function makeTreeDialog() {
 
       text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString();
       if(getFruitAbility(FRUIT_TREELEVEL, true) > 0) {
-        var mul = treeLevelFruitBoost(getFruitTier(true), getFruitAbility(FRUIT_TREELEVEL, true), state.treelevel, 115);
-        text += ' (of which ' + mul.toPercentString() + ' from the fruit)';
+        var mul = treeLevelFruitBoost(getFruitTier(true), getFruitAbility(FRUIT_TREELEVEL, true), state.treelevel, 115).addr(1);
+        text += ' (of which ' + mul.toPercentString() + ' multiplicative from the fruit)';
       }
       text += '<br>';
 
@@ -692,9 +692,9 @@ function makeFieldDialog(x, y) {
     dialog.div.className = 'efDialogTranslucent';
 
     var buttonshift = 0;
-    if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.2; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
+    if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.17; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
 
-    var flex0 = new Flex(dialog.content, 0, [0, 0, 0.01], 1, 0.5);
+    var flex0 = new Flex(dialog.content, 0, [0, 0, 0.01], 1, 0.5 + buttonshift);
     var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.5 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.565 + buttonshift).div;
     var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.57 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.635 + buttonshift).div;
     var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.64 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.705 + buttonshift).div;
@@ -965,14 +965,19 @@ function initFieldUI() {
               }
             }
           } else if(ctrl && !shift) {
-            var safe = false;
-            if(state.allowshiftdelete) safe = true;
-            if(f.growth < 0.25) safe = true; // growing crop gives full refund, so if not too much time was spent yet growing this is safe to do even if the state.allowshiftdelete setting is false.
-            if(safe) {
-              addAction({type:ACTION_DELETE, x:x, y:y});
-              update();
+            var brassica = getHighestBrassica();
+            if(f.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
+              addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[brassica], ctrlPlanted:true});
             } else {
-              showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting with this shortcut it is allowed', C_INVALID, 0, 0);
+              var safe = false;
+              if(state.allowshiftdelete) safe = true;
+              if(f.growth < 0.25) safe = true; // growing crop gives full refund, so if not too much time was spent yet growing this is safe to do even if the state.allowshiftdelete setting is false.
+              if(safe) {
+                addAction({type:ACTION_DELETE, x:x, y:y});
+                update();
+              } else {
+                showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting with this shortcut it is allowed', C_INVALID, 0, 0);
+              }
             }
           } else if(!fern && !present) {
             makeFieldDialog(x, y);

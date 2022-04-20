@@ -16,6 +16,25 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+function renderUpgraceIcon(canvasFlex, u) {
+  canvasFlex.div.style.backgroundColor = '#ccc';
+  canvasFlex.div.style.border = '1px solid black';
+  if(u.bgcolor) {
+    canvasFlex.div.style.backgroundColor = u.bgcolor;
+  }
+  if(u.bordercolor) {
+    canvasFlex.div.style.border = '1px solid ' + u.bordercolor;
+  }
+  if(u.image0) {
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    renderImage(u.image0, canvas);
+  }
+  if(u.image1) {
+    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+    renderImage(u.image1, canvas);
+  }
+}
+
 function rerenderUpgradeChip(u, chip, completed) {
   var div = chip.div;
   div.className = 'efUpgradeChip';
@@ -50,23 +69,8 @@ function rerenderUpgradeChip(u, chip, completed) {
   var text = name;
 
   var canvasFlex = chip.canvasFlex;
-  canvasFlex.clear();
-  canvasFlex.div.style.backgroundColor = '#ccc';
-  canvasFlex.div.style.border = '1px solid black';
-  if(u.bgcolor) {
-    canvasFlex.div.style.backgroundColor = u.bgcolor;
-  }
-  if(u.bordercolor) {
-    canvasFlex.div.style.border = '1px solid ' + u.bordercolor;
-  }
-  if(u.image0) {
-    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-    renderImage(u.image0, canvas);
-  }
-  if(u.image1) {
-    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-    renderImage(u.image1, canvas);
-  }
+  chip.canvasFlex.clear();
+  renderUpgraceIcon(chip.canvasFlex, u);
 
   var buyFlex = chip.buyFlex;
 
@@ -180,8 +184,17 @@ function renderUpgradeDialog(chip, completed) {
     extraname = 'buy many';
   }
   chip.updateInfoText();
-  var dialog = createDialog(DIALOG_SMALL, okfun, okname, undefined, 'close', extrafun, extraname);
+  var dialog = createDialog2({
+    size:DIALOG_SMALL,
+    functions:[okfun, extrafun],
+    names:[okname, extraname],
+    cancelname:'close',
+    title:upper(u.name),
+    iconmargin:0.1
+  });
   dialog.content.div.innerHTML = getUpgradeInfoText(u, completed);
+  renderUpgraceIcon(dialog.icon, u);
+
 }
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
@@ -220,8 +233,15 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
           addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
           update();
         };
-        dialog = createDialog(undefined, funa, u.choicename_a, undefined, undefined, funb, u.choicename_b);
+        dialog = createDialog2({
+          size:DIALOG_MEDIUM,
+          title:upper(u.name),
+          functions:[funa, funb],
+          names:[u.choicename_a, u.choicename_b],
+          iconmargin:0.1
+        });
         dialog.content.div.innerHTML = u.description;
+        renderUpgraceIcon(dialog.icon, u);
       } else {
         addAction({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
         update();
@@ -526,24 +546,21 @@ function updateUpgradeUI() {
     chip.div.innerText = 'See Completed Upgrades';
 
     addButtonAction(chip.div, function() {
-      var dialog = createDialog();
-
-      var scrollFlex = dialog.content;
-      makeScrollable(scrollFlex);
+      var dialog = createDialog2({scrollable:true, title:'Completed upgrades'});
 
       for(var i = 0; i < researched.length; i++) {
         var u = upgrades[researched[i]];
-        var div = makeDiv(pos[0], pos[1], 200, 20, scrollFlex.div);
+        var div = makeDiv(pos[0], pos[1], 200, 20, dialog.content.div);
 
         var x = (i & 1);
         var y = i >> 1;
-        var chip = new Flex(scrollFlex, x * w + 0.01, [0, 0, y * h + 0.01, 0.27], (x + 1) * w - 0.01, [0, 0, (y + 1) * h - 0.01, 0.27]);
+        var chip = new Flex(dialog.content, x * w + 0.01, [0, 0, y * h + 0.01, 0.27], (x + 1) * w - 0.01, [0, 0, (y + 1) * h - 0.01, 0.27]);
         renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, true);
         chip.div.style.color = '#2a2';
         chip.div.style.borderColor = '#2a2';
       }
 
-      scrollFlex.update(); // something goes wrong with the last chip in the scrollflex when not updating this now.
+      dialog.content.update(); // something goes wrong with alignment some chips (due to the point where scrollbar appears) in the scrollflex when not updating this now.
     });
   }
 
