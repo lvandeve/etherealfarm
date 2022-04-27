@@ -168,7 +168,7 @@ function updateRightPane() {
         chip.div.textEl.innerText = 'more in upgrades tab...';
       } else {
         var u = upgrades[unlocked[i - 1]];
-        renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
+        renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false, 2);
       }
     }
     for(; i < bottomrightSidePanelFlexCache.length; i++) {

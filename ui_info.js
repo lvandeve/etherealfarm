@@ -153,6 +153,8 @@ function getResourceDetails(i, special, index) {
     if(index == 2) {
       // resin
       var text = '<b>' + upper(name) + '</b><br/><br/>';
+      text += 'Transcend to gain the upcoming resin.';
+      text += '<br><br>';
       text += 'Total resin earned ever: ' + state.g_res.resin.toString();
       text += '<br/><br/>';
       text += 'Unspent resin: ' + res.toString() + '<br/>';
@@ -183,6 +185,8 @@ function getResourceDetails(i, special, index) {
     if(index == 3) {
       // twigs
       var text = '<b>' + upper(name) + '</b><br/><br/>';
+      text += 'Plant a mistletoe next to the tree in the basic field to gain twigs on transcension.';
+      text += '<br><br>';
       text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
       text += '<br><br>';
       text += 'Collected upcoming twigs: ' + upcoming.toString()
@@ -225,11 +229,15 @@ function getResourceDetails(i, special, index) {
     text += 'Current amount: ' + res.toString() + '<br/><br/>';
 
     if(index == 0 && tooHighSeedConsumption()) {
-      text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops</b><br/><br/>';
+      text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops, or remove some mushrooms if stuck without income</b><br/><br/>';
     }
 
     if(index == 1 && tooLowMushroomSeeds()) {
-      text += '<b>Mushrooms are getting less seeds than they can potentially consume! Better upgrade berries first now, upgrading mushrooms doesn\'t help now because they\'ll then want to consume even more seeds</b><br/><br/>';
+      if(tooHighSeedConsumption()) {
+        text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops, or remove some mushrooms if stuck without income</b><br/><br/>';
+      } else {
+        text += '<b>Mushrooms are getting less seeds than they can potentially consume! Better upgrade berries first now, upgrading mushrooms doesn\'t help now because they\'ll then want to consume even more seeds</b><br/><br/>';
+      }
     }
 
     if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
@@ -318,6 +326,7 @@ function showResource(i, special, index) {
     }
   } else {
     res_gain = gain.atIndex(index); // actual
+    if(res_gain.gtr(-1e-9) && res_gain.ltr(1e-9)) res_gain = Num(0); // avoid numerical display problem when mushrooms consume all seeds, where it may show something like -227e-15 instead of 0
     res_gain_pos = gain_pos.atIndex(index); // actual, without consumption
     res_gain_hyp = gain_hyp.atIndex(index); // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
     res_gain_hyp_pos = gain_hyp_pos.atIndex(index); // hypothetical aka potential, without consumption
@@ -353,7 +362,7 @@ function showResource(i, special, index) {
     }, /*opt_poll=*/true, /*allow_mobile=*/true);
     div.style.cursor = 'pointer';
     addButtonAction(div, function() {
-      var dialog = createDialog(DIALOG_MEDIUM);
+      var dialog = createDialog({size:DIALOG_MEDIUM, title:upper(name + ' income')});
       dialog.div.className = 'efDialogTranslucent';
       // computed here rather than inside of updatedialogfun to avoid it being too slow
       // NOTE: this means it doesn't get auto-updated though.
@@ -450,7 +459,7 @@ function updateResourceUI() {
   resourceDivs[0].textEl.innerHTML = title + '<br>' + timedisplay + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
   addButtonAction(resourceDivs[0], function() {
-    var dialog = createDialog(DIALOG_MEDIUM);
+    var dialog = createDialog({size:DIALOG_MEDIUM, title:'Game info'});
     var flex = dialog.content;
     var getText = function() {
       var result = '';
@@ -559,7 +568,7 @@ function updateResourceUI() {
   if(state.g_max_res.seeds.neqr(0)) showResource(i++, false, 0);
   if(state.g_max_res.spores.neqr(0))showResource(i++, false, 1);
   if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, true, 2);
-  if(state.g_max_res.twigs.neqr(0)) showResource(i++, true, 3);
+  if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, true, 3);
   if(state.g_max_res.essence.neqr(0)) showResource(i++, true, 7);
   if(state.g_max_res.nuts.neqr(0)) showResource(i++, false, 4);
   if(state.g_max_res.amber.neqr(0)) showResource(i++, true, 6);

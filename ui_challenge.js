@@ -63,7 +63,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     }
   }
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     functions:[okfun, extrafun],
     names:[okname, extraname],
     shortcutfun:shortcutfun,
@@ -314,7 +314,7 @@ var challengedialogopen = false;
 // opt_from_challenge = whether you open this dialog after just having completed a challenge as well
 function createChallengeDialog(opt_from_challenge) {
   challengedialogopen = true;
-  var dialog = createDialog2({
+  var dialog = createDialog({
     onclose:function() { challengedialogopen = false; },
     title:'Challenge'
   });
@@ -323,7 +323,7 @@ function createChallengeDialog(opt_from_challenge) {
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.3);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.33);
 
   var text = '';
 
@@ -342,10 +342,10 @@ function createChallengeDialog(opt_from_challenge) {
   flex.div.innerHTML = text;
 
 
-  var buttonFlex = new Flex(contentFlex, 0, 0.3, 1, 1);
+  var buttonFlex = new Flex(contentFlex, 0, 0.33, 1, 1);
 
   var pos = 0;
-  var h = 0.075;
+  var h = 0.078;
 
   for(var i = 0; i < challenges_order.length; i++) {
     var c = challenges[challenges_order[i]];
@@ -410,7 +410,7 @@ function createFinishChallengeDialog() {
   var targetlevel = c.nextTargetLevel();
   var success = state.treelevel >= targetlevel;
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     functions:extrafun,
     names:extraname,
     shortcutfun:shortcutfun,
@@ -514,7 +514,7 @@ function getChallengeFormulaString(c, opt_bonus_string) {
 }
 
 function createAllChallengeStatsDialog() {
-  var dialog = createDialog2({
+  var dialog = createDialog({
     size:DIALOG_LARGE,
     title:'Challenge stats',
     scrollable:true

@@ -24,7 +24,7 @@ var croptype_index = 0;
 var CROPTYPE_BERRY = croptype_index++;
 var CROPTYPE_MUSH = croptype_index++;
 var CROPTYPE_FLOWER = croptype_index++;
-var CROPTYPE_NETTLE = croptype_index++; // actually means "prickly plant" since thistle also belongs to this group
+var CROPTYPE_STINGING = croptype_index++; // stinging plants such as nettle and thistle
 var CROPTYPE_BRASSICA = croptype_index++; // watercress, wasabi, etc...
 var CROPTYPE_AUTOMATON = croptype_index++;
 var CROPTYPE_LOTUS = croptype_index++; // ethereal field only, this is an ethereal crop that boost their ethereal neighbors, so a flower type, but regular flowers in ethereal field boost the basic field flowers instead
@@ -46,12 +46,12 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_BERRY) return 'berry';
   if(type == CROPTYPE_MUSH) return 'mushroom';
   if(type == CROPTYPE_FLOWER) return 'flower';
-  if(type == CROPTYPE_NETTLE) return 'prickly';
+  if(type == CROPTYPE_STINGING) return 'stinging';
   if(type == CROPTYPE_BRASSICA) return 'brassica';
   if(type == CROPTYPE_AUTOMATON) return 'automaton';
   if(type == CROPTYPE_LOTUS) return 'lotus';
   if(type == CROPTYPE_MISTLETOE) return 'mistletoe';
-  if(type == CROPTYPE_BEE) return 'beehive';
+  if(type == CROPTYPE_BEE) return 'bee';
   if(type == CROPTYPE_CHALLENGE) return 'challenge';
   if(type == CROPTYPE_FERN2) return 'fern';
   if(type == CROPTYPE_SQUIRREL) return 'squirrel';
@@ -65,7 +65,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (opt_no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
     case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers' + (opt_no_nettles ? '' : ' and nettles') + '. Neighboring watercress can copy its production (but also consumption).';
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
-    case CROPTYPE_NETTLE: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects neighboring berries and flowers, so avoid touching those with this plant';
+    case CROPTYPE_STINGING: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects orthogonally neighboring berries and flowers, so avoid touching those with this plant';
     case CROPTYPE_BRASSICA: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those. Unlike other crops, has limited lifetime.';
     case CROPTYPE_MISTLETOE: return 'Produces twigs (which you receive on transcend) when tree levels up, when orthogonally next to the tree only. Having more than one increases level up spores requirement and slightly decreases resin gain.';
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
@@ -195,7 +195,7 @@ function Crop() {
   this.planttime = 0; // in seconds
   this.planttime0 = 0; // planttime if not prestiged
   // how much this boosts neighboring crops, 0 means no boost, 1 means +100%, etc... (do not use directly, use getBoost() to get all multipliers taken into account)
-  // meaning depends on crop type, e.g. for beehives this is boostboost instead, challenge specific crops may use this value, ...
+  // meaning depends on crop type, e.g. for bees this is boostboost instead, challenge specific crops may use this value, ...
   this.boost = Num(0);
   this.tagline = '';
 
@@ -470,7 +470,7 @@ Crop.prototype.computeNettleMalusReceived_ = function(f, pretend) {
     var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
     if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
     var n = state.field[y2][x2];
-    if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_NETTLE) {
+    if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_STINGING) {
       var boost = n.getCrop().getBoost(n, pretend);
       malus.divInPlace(boost.addr(1));
     }
@@ -500,7 +500,7 @@ var flower_nut_boost = Num(0.25);
 //var seed_consumption_mul = 1.0; // for testing only
 
 // f = Cell from field, or undefined to not take location-based production bonuses into account
-// prefield must already have been computed for flowers, beehives and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called, unless pretent is non-0
+// prefield must already have been computed for flowers, bees and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called, unless pretent is non-0
 // pretend: if anything else than 0, pretents crops are fullgrown, and cannot use the prefield computations so is slower to compute
 //  0: normal
 //  1: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
@@ -530,32 +530,32 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(breakdown) breakdown.push(['withering', true, t, result.clone()]);
     } else {
       // still growing
-      var t = f.growth * f.growth; // unlike flowers etc..., the actual producers ramp up quadratically (= a slower start, but not applied to flowers/beehives/... to count this effect in only once)
+      var t = f.growth * f.growth; // unlike flowers etc..., the actual producers ramp up quadratically (= a slower start, but not applied to flowers/bees/... to count this effect in only once)
 
-      // mushrooms ramp up much later: when progressing through low tier mushrooms, grow speed should be a limiting factor, to avoid the game having the highest resin/hr after too short time (should be at 1-2 hours, not at 20 minutes), to avoid the game being too active
-      if(this.type == CROPTYPE_MUSH) t = Math.pow(t, 4);
-
-      result.mulrInPlace(t);
+      if(this.type == CROPTYPE_MUSH) {
+        // mushrooms spores ramp up much later: when progressing through low tier mushrooms, grow speed should be a limiting factor, to avoid the game having the highest resin/hr after too short time (should be at 1-2 hours, not at 20 minutes), to avoid the game being too active
+        result.seeds.mulrInPlace(t);
+        t = Math.pow(t, 4);
+        result.spores.mulrInPlace(t);
+      } else {
+        result.mulrInPlace(t);
+      }
       if(breakdown) breakdown.push(['growing', true, Num(t), result.clone()]);
     }
   }
 
   // upgrades
-  if(this.basic_upgrade != null && this.type != CROPTYPE_BRASSICA) {
+  if(this.basic_upgrade != null) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
-      var mul_upgrade = u2.bonus.powr(u.count);
-      result.mulInPlace(mul_upgrade);
-      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
-    }
-  }
-  if(this.basic_upgrade != null && this.type == CROPTYPE_BRASSICA) {
-    var u = state.upgrades[this.basic_upgrade];
-    var u2 = upgrades[this.basic_upgrade];
-    if(u.count > 0) {
-      var brassica_bonus = Num(1.0);
-      var mul_upgrade = Num(1).add(brassica_bonus.mulr(u.count)); // brassica upgrade is additive instead of multiplicative
+      var mul_upgrade;
+      if(this.type == CROPTYPE_BRASSICA) {
+        var brassica_bonus = 1.0;
+        mul_upgrade = Num(brassica_bonus * u.count + 1); // brassica upgrade is additive instead of multiplicative
+      } else {
+        mul_upgrade = u2.bonus.powr(u.count);
+      }
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
@@ -782,7 +782,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
-      if(n.hasCrop() && n.getCrop().type == CROPTYPE_NETTLE) {
+      if(n.hasCrop() && n.getCrop().type == CROPTYPE_STINGING) {
         var bost;
         if(pretend) boost = n.getCrop().getBoost(n, pretend);
         else boost = prefield[n.y][n.x].boost; //
@@ -882,14 +882,16 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.upgrades3[upgrade3_leveltime].count) {
-      var origtime = timeAtTreeLevel(state);
-      var time = Math.floor(origtime / 300) * 300; // rounded at 5 minute intervals, going stepwise so that e.g. production time prediction timers aren't continuously changing
+      var origtime = weightedTimeAtLevel(state);
+      var time = Math.floor(origtime / 60) * 60; // rounded at certain intervals, going stepwise so that e.g. production time prediction timers aren't continuously changing
       if(time > upgrade3_leveltime_maxtime) time = upgrade3_leveltime_maxtime;
       if(origtime > upgrade3_leveltime_maxtime) origtime = upgrade3_leveltime_maxtime;
       if(time > 0) {
         var bonus = Num(1 + time * upgrade3_leveltime_maxbonus / upgrade3_leveltime_maxtime);
         result.mulInPlace(bonus);
-        if(breakdown) breakdown.push(['time at level: ' + util.formatDuration(origtime), true, bonus, result.clone()]);
+        if(breakdown) breakdown.push(['weighted time at level: ' + util.formatDuration(origtime), true, bonus, result.clone()]);
+      } else {
+        if(breakdown) breakdown.push(['time at level (begins after 1 minute)', true, Num(1), result.clone()]);
       }
     }
 
@@ -901,10 +903,11 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
   }
 
-  // present
+  // present/egg
   if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
     var bonus = new Num(1.25);
     result.posmulInPlace(bonus);
+    //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
     if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
   }
 
@@ -952,10 +955,10 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
 
 // The result is the added value, e.g. a result of 0.5 means a multiplier of 1.5, or a bonus of +50%
-// this function requires that beehive boost and nettel malus were already computed by precomputeField, unless pretend is non-0
+// this function requires that bee boost and stinging malus were already computed by precomputeField, unless pretend is non-0
 // pretend: see comment at the definition of getProd
 Crop.prototype.getBoost = function(f, pretend, breakdown) {
-  if(this.type != CROPTYPE_FLOWER && this.type != CROPTYPE_NETTLE) return Num(0);
+  if(this.type != CROPTYPE_FLOWER && this.type != CROPTYPE_STINGING) return Num(0);
   var result = this.boost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
@@ -987,15 +990,13 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
     }
   }
 
-  // TODO: have some achievements that give a boostmul instead of a prodmul
-
   // upgrades
   if(this.basic_upgrade != null) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
       var n = u.count;
-      if(this.type == CROPTYPE_NETTLE) {
+      if(this.type == CROPTYPE_STINGING) {
         n = Math.pow(n, nettle_upgrade_power_exponent);
       }
       var mul_upgrade = u2.bonus.mulr(n).addr(1); // the flower upgrades are additive, unlike the crop upgrades which are multiplicative. This because the flower bonus itself is already multiplicative to the plants.
@@ -1019,7 +1020,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
       }
     }
 
-    if(this.type == CROPTYPE_NETTLE) {
+    if(this.type == CROPTYPE_STINGING) {
       var level = getFruitAbility(FRUIT_NETTLEBOOST, true);
       var mul0;
       if(level > 0) {
@@ -1056,7 +1057,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
         if(breakdown) breakdown.push(['ethereal crops', true, ethereal_boost, result.clone()]);
       }
     }
-    if(this.type == CROPTYPE_NETTLE) {
+    if(this.type == CROPTYPE_STINGING) {
       var ethereal_boost = state.ethereal_nettle_bonus.addr(1);
       if(ethereal_boost.neqr(1)) {
         result.mulInPlace(ethereal_boost);
@@ -1065,7 +1066,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
     }
 
     if(haveSquirrel()) {
-      if(this.type == CROPTYPE_NETTLE) {
+      if(this.type == CROPTYPE_STINGING) {
         if(state.upgrades3[upgrade3_nettle].count) {
           var bonus = upgrade3_nettle_bonus.mulr(state.upgrades3[upgrade3_nettle].count).addr(1);
           result.mulInPlace(bonus);
@@ -1125,7 +1126,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
 
 
   if(basic != 2) {
-    // beehives boostboost
+    // bees boostboost
     if(f && (this.type == CROPTYPE_FLOWER)) {
       var p = prefield[f.y][f.x];
       var num = p.num_bee;
@@ -1138,7 +1139,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
 
       if(num > 0) {
         result.mulInPlace(bonus);
-        if(breakdown) breakdown.push(['beehives (' + num + ')', true, bonus, result.clone()]);
+        if(breakdown) breakdown.push(['bees (' + num + ')', true, bonus, result.clone()]);
       }
     }
   }
@@ -1161,7 +1162,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
 };
 
 
-// beehive boosting the boost of flowers
+// bee boosting the boost of flowers
 Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   var result = Num(0);
 
@@ -1518,7 +1519,7 @@ function registerFlower(name, tier, boost, planttime, image, opt_tagline) {
 
 function registerNettle(name, tier, boost, planttime, image, opt_tagline) {
   var cost = getNettleCost(tier);
-  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline, CROPTYPE_NETTLE, tier);
+  var index = registerCrop(name, cost, Res({}), boost, planttime, image, opt_tagline, CROPTYPE_STINGING, tier);
   //var crop = crops[index];
   return index;
 }
@@ -1532,7 +1533,7 @@ function registerBrassica(name, tier, prod, leech, planttime, image, opt_tagline
 }
 
 function registerMistletoe(name, tier, planttime, image, opt_tagline) {
-  var cost = getMushroomCost(0).mulr(2);
+  var cost = getFlowerCost(0).mulr(2);
   var prod = Res({});
   var index = registerCrop(name, cost, prod, Num(0), planttime, image, opt_tagline, CROPTYPE_MISTLETOE, tier);
   //var crop = crops[index];
@@ -1540,7 +1541,7 @@ function registerMistletoe(name, tier, planttime, image, opt_tagline) {
 }
 
 function registerBeehive(name, tier, boost, planttime, image, opt_tagline) {
-  var cost = getBeehiveCost(tier);
+  var cost = getBeeCost(tier);
   var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline, CROPTYPE_BEE, tier);
   var crop = crops[index];
   crop.boost = boost;
@@ -1613,7 +1614,7 @@ function getMushroomProd(i) {
   var spores = seeds.div(seeds0).mulr(1);
 
   // higher tier mushrooms get a slightly more efficient spores/seed ratio, this also helps make longer runtimes (1-2 hours instead of 20 minutes) more worth it
-  spores.mulrInPlace(Math.pow(1.25, i));
+  if(i > 1) spores.mulrInPlace(Math.pow(1.25, i - 1));
 
   return Res({seeds:seeds, spores:spores});
 }
@@ -1648,12 +1649,12 @@ function getFlowerBoost(tier) {
 }
 
 function getNettleCost(i) {
-  return getMushroomCost(1.1 + i * 4);
+  return getMushroomCost(1.05 + i * 4);
 }
 
-function getBeehiveCost(i) {
-  // Beehives start (and end, for now) after flower_3
-  return getFlowerCost((i + 1) * 3 + 0.15);
+function getBeeCost(i) {
+  // Beehives start at flower_3, next one is at flower_7
+  return getFlowerCost(3 + i * 4 + 0.15);
 }
 
 var berryplanttime0 = 60;
@@ -1676,7 +1677,7 @@ var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry)
 var berry_10 = registerBerry('mulberry', 10, berryplanttime0 * 40, mulberry);
 var berry_11 = registerBerry('physalis', 11, berryplanttime0 * 45, physalis);
 var berry_12 = registerBerry('raspberry', 12, berryplanttime0 * 50, raspberry);
-var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'Actually not a berry, but in this game it acts as one');
+var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'Botanically speaking, not actually not a berry!');
 var berry_14 = registerBerry('wampee', 14, berryplanttime0 * 60, images_wampee);
 var berry_15 = registerBerry('whitecurrant', 15, berryplanttime0 * 65, whitecurrant);
 
@@ -1704,9 +1705,9 @@ var flower_7 = registerFlower('orchid', 7, getFlowerBoost(7), flowerplanttime0 *
 
 
 crop_register_id = 100;
-var nettle_0 = registerNettle('nettle', 0, Num(4), berryplanttime0, images_nettle);
+var nettle_0 = registerNettle('nettle', 0, Num(5), berryplanttime0, images_nettle);
 // This has so much more boost, because it has to compete against the 1.05^n scaling of the nettle upgrades that you have by the time you get this crop
-var nettle_1 = registerNettle('thistle', 1, Num(300), berryplanttime0 * 2, images_thistle);
+var nettle_1 = registerNettle('thistle', 1, Num(375), berryplanttime0 * 2, images_thistle);
 
 crop_register_id = 105;
 var brassica_0 = registerBrassica('watercress', 0, Res({seeds:1}), Num(1), 60, images_watercress);
@@ -1720,11 +1721,12 @@ crop_register_id = 110;
 var mistletoe_0 = registerMistletoe('mistletoe', 0, 50, mistletoe);
 
 crop_register_id = 120;
-// In theory, a beehive giving a 50% boost is already worth it: touching 4 flowers means getting 2 flowers worth of production bonus from 1 beehive,
-// spread to multiple berries touching those 4 flowers, making the beehive then slightly better than putting a berry in this spot instead.
-// However, to make the complexity of the beehive mechanic truly worth it, and taking into account that there's likely only room for 1 or 2 on a 6x6 field,
+// In theory, a bee giving a 50% boost is already worth it: touching 4 flowers means getting 2 flowers worth of production bonus from 1 bee,
+// spread to multiple berries touching those 4 flowers, making the bee then slightly better than putting a berry in this spot instead.
+// However, to make the complexity of the bee mechanic truly worth it, and taking into account that there's likely only room for 1 or 2 on a 6x6 field,
 // the bonus should be much more generous: set to 300% (3.0) now, and upgrades kan make it much higher, just like flowers reach the 10-thousands
-var bee_0 = registerBeehive('beehive', 0, Num(3.0), /*growtime=*/300, images_beehive);
+var bee_0 = registerBeehive('bee nest', 0, Num(3.0), /*growtime=*/60, images_beenest);
+var bee_1 = registerBeehive('beehive', 1, Num(243.0), /*growtime=*/120, images_beehive);
 
 crop_register_id = 130;
 // NOTE: this is squirrel in basic field instead of ethereal field. This exists for now but is unused. Code kept for in case it finds a use.
@@ -1784,7 +1786,7 @@ var watercress_template = makeTemplate(registerBrassica('brassica template', -1,
 var berry_template = makeTemplate(registerBerry('berry template', -1, 0, images_berrytemplate));
 var mush_template = makeTemplate(registerMushroom('mushroom template', -1, 0, images_mushtemplate));
 var flower_template = makeTemplate(registerFlower('flower template', -1, Num(0), 0, images_flowertemplate));
-var nettle_template = makeTemplate(registerNettle('prickly template', -1, Num(0), 0, images_nettletemplate));
+var nettle_template = makeTemplate(registerNettle('stinging template', -1, Num(0), 0, images_nettletemplate));
 var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
 var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
 var nut_template = makeTemplate(registerNut('nuts template', -1, 0, images_nutstemplate));
@@ -1803,7 +1805,7 @@ var watercress_ghost = makeGhost(registerBrassica('brassica ghost', -1, Res(0), 
 var berry_ghost = makeGhost(registerBerry('berry ghost', -1, 0, images_berryghost));
 var mush_ghost = makeGhost(registerMushroom('mushroom ghost', -1, 0, images_mushghost));
 var flower_ghost = makeGhost(registerFlower('flower ghost', -1, Num(0), 0, images_flowerghost));
-var nettle_ghost = makeGhost(registerNettle('prickly ghost', -1, Num(0), 0, images_nettleghost));
+var nettle_ghost = makeGhost(registerNettle('stinging ghost', -1, Num(0), 0, images_nettleghost));
 var bee_ghost = makeGhost(registerBeehive('bee ghost', -1, Num(0), 0, images_beeghost));
 var mistletoe_ghost = makeGhost(registerMistletoe('mistletoe ghost', -1, 0, images_mistletoeghost));
 var nut_ghost = makeGhost(registerNut('nuts ghost', -1, 0, images_nutsghost));
@@ -1971,8 +1973,8 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
   if(crop.prod.seeds.gtr(0)) description += ' Produces seeds.';
   if(crop.prod.spores.gtr(0)) description += ' Produces spores.';
   if(!crop.boost.eqr(0)) {
-    if(crop.type == CROPTYPE_NETTLE) {
-      description += ' Boosts neighbor mushroom spores production without increasing seed consumption. However, negatively affects neighboring berries and flowers, so avoid touching those with this plant.';
+    if(crop.type == CROPTYPE_STINGING) {
+      description += ' Boosts neighbor mushroom spores production without increasing seed consumption, but negatively orthogonally affects neighboring berries and flowers, so avoid touching those with this plant.';
     } else if(crop.type == CROPTYPE_BEE) {
       description += ' Boosts neighboring flower\'s boost.';
     } else {
@@ -2143,6 +2145,12 @@ function setBoostMultiplierCosts(u, crop) {
     var cost0 = u.cost.seeds;
     var cost1 = getFlowerCost(crop.tier + 1).seeds.mulr(flower_upgrade_initial_cost);
     costmul = cost1.div(cost0).powr(1 / upgrade_steps);
+  } else if(crop.type == CROPTYPE_BEE) {
+    var upgrade_steps = 80;
+    u.cost = new Res({seeds:getBeeCost(crop.tier).seeds.mulr(beehive_upgrade_initial_cost)});
+    var cost0 = u.cost.seeds;
+    var cost1 = getBeeCost(crop.tier + 1).seeds.mulr(beehive_upgrade_initial_cost);
+    costmul = cost1.div(cost0).powr(1 / upgrade_steps);
   }
 
   u.getCost = function(opt_adjust_count) {
@@ -2175,7 +2183,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
 
   var aspect = 'boost';
   var description;
-  if(crop.type == CROPTYPE_NETTLE) {
+  if(crop.type == CROPTYPE_STINGING) {
     description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (scales by n^' + nettle_upgrade_power_exponent + ' )';
   } else if(crop.type == CROPTYPE_BEE) {
     description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor((adder * 100)) + '% (scales by n^' + beehive_upgrade_power_exponent + ' )';
@@ -2346,26 +2354,38 @@ var nettleunlock_1 = registerCropUnlock(nettle_1, getNettleCost(1), undefined, f
 });
 
 upgrade_register_id = 110;
-var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getMushroomCost(0).mulr(2), undefined, function() {
+var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getFlowerCost(0).mulr(2), undefined, function() {
   if(basicChallenge()) return false; // not available during basic challenge
+
+  if(state.challenge && !challenges[state.challenge].allowstwigs) return false;
 
   if(!(state.g_numresets > 0 && state.upgrades2[upgrade2_mistletoe].count)) return false;
 
-  if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_1].count) return true;
+  if(state.fullgrowncropcount[berry_0]) return true;
+  if(state.upgrades[berryunlock_1].count) return true;
 
-  // prev_crop is berry_1, but also unlock once higher level berries available, in case player skips placing this berry
-  if(state.fullgrowncropcount[berry_1]) return true;
   return false;
 });
 
 upgrade_register_id = 120;
-var beeunlock_0 = registerCropUnlock(bee_0, getBeehiveCost(0), undefined, function() {
+var beeunlock_0 = registerCropUnlock(bee_0, getBeeCost(0), undefined, function() {
   if(basicChallenge() == 2) return false; // not available during truly basic challenge
   if(!state.challenges[challenge_bees].completed) return false;
 
   // prev_crop is flower_3, but also unlock once higher level berries available, in case player skips placing this flower
   if(state.fullgrowncropcount[flower_3]) return true;
   if(state.fullgrowncropcount[berry_7]) return true; // the berry after flower_3
+
+  return false;
+});
+var beeunlock_1 = registerCropUnlock(bee_1, getBeeCost(1), undefined, function() {
+  if(basicChallenge() == 2) return false; // not available during truly basic challenge
+  if(!state.challenges[challenge_bees].completed) return false;
+  if(!state.upgrades[beeunlock_0].count) return false;
+
+  // prev_crop is flower_7, but also unlock once higher level berries available, in case player skips placing this flower
+  if(state.fullgrowncropcount[flower_7]) return true;
+  if(state.fullgrowncropcount[berry_15]) return true; // the berry after flower_7
 
   return false;
 });
@@ -2514,7 +2534,7 @@ var nettle_upgrade_power_exponent = 1.05;
 var beehive_upgrade_power_increase = 0.5; // additive
 var beehive_upgrade_cost_increase = 5;
 var beehive_upgrade_power_exponent = 1.05;
-
+var beehive_upgrade_initial_cost = 10;
 
 upgrade_register_id = 400;
 
@@ -2579,7 +2599,8 @@ var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0
 var brassicamul_1 = registerBrassicaTimeIncrease(brassica_1, Res({seeds:1000}), 0.2, 1, brassicaunlock_1);
 
 upgrade_register_id = 590;
-var beemul_0 = registerBoostMultiplier(bee_0, crops[bee_0].cost.mulr(10), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
+var beemul_0 = registerBoostMultiplier(bee_0, getBeeCost(0).mulr(beehive_upgrade_initial_cost), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
+var beemul_1 = registerBoostMultiplier(bee_1, getBeeCost(1).mulr(beehive_upgrade_initial_cost), beehive_upgrade_power_increase, 1, beeunlock_1, beehive_upgrade_cost_increase);
 
 upgrade_register_id = 600;
 var nutmul_0 = registerCropMultiplier(nut_0, nut_upgrade_power_increase, 1, nutunlock_0);
@@ -2858,8 +2879,8 @@ registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { 
 var prevmedal;
 
 medal_register_id = 4;
-var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e72];
-var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   4,     5,    6,    7,    8,   10,   12,   15,   30,   50];
+var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e66, 1e72, 1e78, 1e84, 1e90, 1e96, 1e102, 1e108, 1e114, 1e120];
+var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   4,     5,    6,    7,    8,   10,   12,   15,   30,   50,  100,  200,  300,  400,  500,   600,   700,   800,   900];
 for(var i = 0; i < seeds_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
   var num = Num(seeds_achievement_values[i]);
@@ -2927,15 +2948,15 @@ registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one
   return state.fullgrowncroptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('stingy situation', 'plant the entire field full of nettles', images_nettle[4], function() {
-  return state.fullgrowncroptypecount[CROPTYPE_NETTLE] == state.numw * state.numh - 2;
+  return state.fullgrowncroptypecount[CROPTYPE_STINGING] == state.numw * state.numh - 2;
 }, Num(0.01));
 registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', mistletoe[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_MISTLETOE] == state.numw * state.numh - 2;
 }, Num(0.05));
-registerMedal('not the bees', 'build the entire field full of beehives.', images_beehive[0], function() {
+registerMedal('not the bees', 'build the entire field full of bees.', images_beenest[0], function() {
   return state.fullgrowncroptypecount[CROPTYPE_BEE] == state.numw * state.numh - 2;
 }, Num(0.1));
-registerMedal('unbeelievable', 'fill the entire field (5x5) with bees and/or beehives during the bee challenge.', images_workerbee[4], function() {
+registerMedal('unbeelievable', 'fill the entire field (5x5) with bees during the bee challenge.', images_workerbee[4], function() {
   var num = state.fullgrowncropcount[challengecrop_0] + state.fullgrowncropcount[challengecrop_1] + state.fullgrowncropcount[challengecrop_2];
   return num >= 5 * 5 - 2;
 }, Num(0.2));
@@ -2968,9 +2989,9 @@ for(var i = 0; i < numreset_achievement_values.length; i++) {
 function getPlantTypeMedalBonus(croptype, tier, num) {
   if(croptype == CROPTYPE_MUSH) tier = tier * 2 + 1.5;
   if(croptype == CROPTYPE_FLOWER) tier = tier * 2 + 0.5;
-  if(croptype == CROPTYPE_NETTLE) tier = tier * 8 + 3;
+  if(croptype == CROPTYPE_STINGING) tier = tier * 8 + 3;
   if(croptype == CROPTYPE_MISTLETOE) tier = 4;
-  if(croptype == CROPTYPE_BEE) tier = 6;
+  if(croptype == CROPTYPE_BEE) tier = tier * 8 + 6.75;
   if(croptype == CROPTYPE_NUT) tier = tier + 9;
   var num2 = (Math.floor(num / 10) + 1);
   //var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
@@ -3050,6 +3071,7 @@ registerPlantTypeMedals(nettle_0);
 registerPlantTypeMedals(nettle_1);
 medal_register_id = 560;
 var planttypemedals_bee0 = registerPlantTypeMedals(bee_0);
+var planttypemedals_bee1 = registerPlantTypeMedals(bee_1);
 medal_register_id = 640;
 // for the watercress, only start this at 30: the ones for 1, 10, 20 are not added because a medal for 1 watercress is too soon, and for 20 there's already the full field full of watercress medal
 // idem for the wasabi since planting a few is trivial
@@ -3210,7 +3232,7 @@ registerMedal('berried', 'completed the blackberry challenge', blackberry[4], fu
   return state.challenges[challenge_blackberry].completed >= 1;
 }, Num(1.0));
 
-registerMedal('B', 'place a beehive during the blackberry challenge', images_beehive[4], function() {
+registerMedal('B', 'place a bee nest during the blackberry challenge', images_beenest[4], function() {
   return state.challenge == challenge_blackberry && state.fullgrowncropcount[bee_0] > 0;
 }, Num(1.5));
 
@@ -3270,7 +3292,7 @@ var medal_challenge_basic = registerMedal('the basics', 'ran the basic challenge
 }, Num(1));
 
 // NOTE: this achievement is quasy-unobtainable, since in testing it took over 60 days to get it with 7x7 field and platinum fruit
-registerMedal('beesic', 'get a beehive during the basic challenge', images_beehive[4], function() {
+registerMedal('beesic', 'get a bee nest during the basic challenge', images_beenest[4], function() {
   return state.challenge == challenge_basic && state.fullgrowncropcount[bee_0] > 0;
 }, Num(2));
 
@@ -3348,6 +3370,24 @@ medal_register_id = 2700;
 for(var i = 0; i < 8; i++) {
   registerPrestigeMedal(flower_0 + i);
 }
+
+medal_register_id = 2900;
+var nuts_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33, 1e36, 1e39, 1e42, 1e45, 1e48, 1e51, 1e54, 1e57, 1e60, 1e63, 1e66, 1e69, 1e72, 1e75, 1e78, 1e81, 1e84, 1e87, 1e90];
+var nuts_achievement_bonuses_percent =   [  1,   3,   5,   10,   20,   30,   40,   50,   60,   70,   80,  100,  150,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
+for(var i = 0; i < nuts_achievement_values.length; i++) {
+  // have a good spread of this medal, more than exponential growth for its requirement
+  var num = Num(nuts_achievement_values[i]);
+  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  var s0 = num.toString(3, Num.N_LATIN);
+  var s1 = num.toString(3, Num.N_SCI);
+  var name = full + ' nuts';
+  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') nuts', image_nuts,
+      bind(function(num) { return state.res.nuts.gt(num); }, num),
+      Num(nuts_achievement_bonuses_percent[i]).mulr(0.01));
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
 
 medal_register_id = 3000;
 // various misc medals here
@@ -3526,7 +3566,7 @@ var challenge_bees = registerChallenge('bee challenge', 10, Num(0.1),
 • The bee boost applies to the global ecosystem: all berries, mushrooms and flowers (so effectively cubic scaling).<br>
 • "Neighbor" and "next to" mean the 4-neighborhood, so orthogonally touching but not diagonally.<br>
 `,
-'Beehives available in the regular game from now on after planting daisies. In the main game, beehives boost flowers next to the beehives. The bee types of this challenge don\'t exist in the main game and the beehive reward works very differently in the main game than the bees in this challenge.',
+'Bee nests available in the regular game from now on after planting daisies. In the main game, bee nests boost flowers next to the bee nests. The bee types of this challenge don\'t exist in the main game and the bee nest works very differently in the main game (no global boost) than the bees in this challenge.',
 'having grown a daisy.',
 function() {
   return state.fullgrowncropcount[flower_3] >= 1;
@@ -3671,7 +3711,7 @@ var challenge_blackberry = registerChallenge('blackberry challenge', [18], Num(0
 During this challenge, only the first tier of each crop type is available.
 `,
 `
-• Only blackberries, champignons, anemones, nettle, beehives, watercress and mistletoe are available, from the beginning<br>
+• Only blackberries, champignons, anemones, nettle, bee nests, watercress and mistletoe are available, from the beginning<br>
 `,
 ['unlock the auto-unlock ability of the automaton'],
 'reaching ethereal tree level 4 and having automaton with auto-plant',
@@ -3762,7 +3802,7 @@ var challenge_basic = registerChallenge('basic challenge', [10], Num(0.15),
 • Everything, except the effects listed below, is back to basics like at the first run of the game: Upgrades and effects that last through transcensions (e.g. ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, ...) or unlock later (amber, ...) don't work.<br>
 • Basic upgrades, weather, seasons, etc... work, since these are part of a single run, not an effect that lasts through transcensions<br>
 • Automation with the automaton works<br>
-• Crops that were unlocked by a challenge, like beehives, are available if unlocked, but they may not be feasibly reachable<br>
+• Crops that were unlocked by a challenge, like bee nests, are available if unlocked, but they may not be feasibly reachable<br>
 • Fruits only partially work, as follows:<br>
 &nbsp;&nbsp;- The fruit abilities strength is virtually reduced to that of a fruit with tier as low as current tree level could drop (e.g. zinc or bronze) with all abilities at maximum level 3.<br>
 &nbsp;&nbsp;- This will be visible in the detailed crop stats in the field, the fruit tab itself will show the fruits with their original levels as if the challenge isn't active.<br>
@@ -3786,7 +3826,7 @@ var challenge_truly_basic = registerChallenge('truly basic challenge', [10], Num
 `Like the basic challenge, but even less effects work, truly everything is back to basics.`,
 `
 • Truly everything is back to basics like at the first run of the game and even a bit more difficult. Running this challenge now is as good as it can get since no future game advancement can make it easier.<br>
-• Examples of effects that don't work: ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, resin bonus, amber, fruits, automaton, field size (it will be 5x5), beehives don't exist, ...<br>
+• Examples of effects that don't work: ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, resin bonus, amber, fruits, automaton, field size (it will be 5x5), bees don't exist, ...<br>
 • Basic upgrades, weather, seasons, etc... work, since these are part of a single run, not an effect that lasts through transcensions<br>
 • The tabs such as fruit, automaton, squirrel and ethereal field are visible and usable, but won't affect the basic field during this challenge.<br>
 • Reminder: you have to plant enough watercress before blackberry unlocks<br>
@@ -3847,7 +3887,7 @@ function cropCanBeHitByLightning(f) {
   if(!f.hasRealCrop()) return false;
   if(f.growth < 0.1) return false;
   var c = f.getCrop();
-  //return (c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BEE || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_MISTLETOE);
+  //return (c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BEE || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_MISTLETOE);
   return c.type != CROPTYPE_BRASSICA; // brassica are immune, this is because otherwise lighting will always strike those first when a blueprint was just planted, and it should hit a real crop first
 }
 
@@ -4035,7 +4075,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     }
   }
 
-  if(this.type == CROPTYPE_NETTLE) {
+  if(this.type == CROPTYPE_STINGING) {
     var u = state.upgrades2[upgrade2_nettle];
     var u2 = upgrades2[upgrade2_nettle];
     if(u.count > 0) {
@@ -4122,7 +4162,7 @@ function registerFlower2(name, treelevel2, tier, cost, planttime, effect, effect
 }
 
 function registerNettle2(name, treelevel2, tier, cost, boost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_NETTLE, tier);
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_STINGING, tier);
   var crop = crops2[index];
   crop.effect = effect;
   return index;
@@ -4202,8 +4242,8 @@ var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), default_
 var flower2_5 = registerFlower2('iris', 15, 5, Res({resin:50e15}), default_ethereal_growtime, Num(256), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts prickly plants in the basic field (additive).', images_nettle);
-var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, default_ethereal_growtime, Num(1.4), undefined, 'boosts prickly plants in the basic field (additive).', images_thistle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
+var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, default_ethereal_growtime, Num(1.4), undefined, 'boosts stinging plants in the basic field (additive).', images_thistle);
 
 crop2_register_id = 150;
 var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
@@ -4215,8 +4255,8 @@ var lotus2_4 = registerLotus2('gold lotus', 16, 4, Res({resin:500e15}), 2048, de
 crop2_register_id = 200;
 // the first beehive has only 1% boost, however by the time you unlock this beehive you can get a massive boost from blue lotuses next to a beehive, one blue lotus next to a beehive turns this boost into 33%, and you can have more than 1 blue lotus next to it. For that reason it starts so low, because if this has a base boost of e.g. 25% this would be a way too huge jump in gameplay boost by just unlocking this new ethereal crop type at a time when you already have many lotuses
 // also this makes the ethereal beest require some care, you can't just plant it in a corner with no lotuses.
-var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), default_ethereal_growtime, Num(0.01), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
-var bee2_1 = registerBeehive2('drone', 13, 1, Res({resin:1e15}), default_ethereal_growtime, Num(0.04), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_dronebee);
+var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), default_ethereal_growtime, Num(0.01), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
+var bee2_1 = registerBeehive2('drone', 13, 1, Res({resin:1e15}), default_ethereal_growtime, Num(0.04), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_dronebee);
 
 // templates
 
@@ -4235,7 +4275,7 @@ var lotus2_template = makeTemplate2(registerLotus2('lotus template', 1, -1, Res(
 var fern2_template = makeTemplate2(registerFern2('fern template', 1, -1, Res(), 0, undefined, '', images_ferntemplate));
 var automaton2_template = makeTemplate2(registerAutomaton2('automaton template', 1, -1, Res(), 0, undefined, '', images_automatontemplate));
 var squirrel2_template = makeTemplate2(registerSquirrel2('squirrel template', 5, -1, Res(), 0, undefined, '', images_squirreltemplate));
-var bee2_template = makeTemplate2(registerBeehive2('bee template', 8, -1, Res(), 0, Num(0), undefined, 'boosts beehives in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_beetemplate));
+var bee2_template = makeTemplate2(registerBeehive2('bee template', 8, -1, Res(), 0, Num(0), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_beetemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4444,7 +4484,7 @@ var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', LEVEL2, Res({resin:
 upgrade2_register_id = 99;
 var upgrade2_mistletoe = registerUpgrade2('unlock mistletoe', LEVEL2, Res({resin:25}), 1, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true}, 1, 'Unlock mistletoe crop in the basic field. This crop will allow leveling up the ethereal tree through a basic field mechanic giving twigs, and the ethereal tree levels then allow to get next sets of ethereal upgrades and crops. The mistletoe will become available in the basic field when mushrooms become available and then needs to then be unlocked with a regular upgrade first as usual. Then it can be planted next to the basic tree to start getting twigs (which you actually get on transcend, like resin). This ethereal upgrade is the first step in that process, and this is ultimately required to progress to next stages of the game.', undefined, undefined, mistletoe[3]);
+}, function(){return true}, 1, 'Unlock mistletoe crop in the basic field. This crop will allow leveling up the ethereal tree through a basic field mechanic giving twigs, and the ethereal tree levels then allow to get next sets of ethereal upgrades and crops. The mistletoe will become available in the basic field when anemones become available and then needs to then be unlocked with a regular upgrade first as usual. Then it can be planted next to the basic tree to start getting twigs (which you actually get on transcend, like resin). This ethereal upgrade is the first step in that process, and this is ultimately required to progress to next stages of the game.', undefined, undefined, mistletoe[3]);
 
 ///////////////////////////
 LEVEL2 = 1;
@@ -4674,7 +4714,7 @@ upgrade2_register_id = 400;
 var upgrade2_nettle_bonus = Num(0.25);
 var upgrade2_nettle = registerUpgrade2('ethereal nettles', LEVEL2, Res({resin:50e9}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal nettles (and other prickly plants) by ' + upgrade2_nettle_bonus.toPercentString() + ' (additive).', undefined, undefined, image_nettletemplate, upgrade_arrow);
+}, function(){return true;}, 0, 'increase bonus of all ethereal nettles (and other stinging plants) by ' + upgrade2_nettle_bonus.toPercentString() + ' (additive).', undefined, undefined, image_nettletemplate, upgrade_arrow);
 
 
 ///////////////////////////
@@ -5802,7 +5842,13 @@ function treeLevelTwigs(level, breakdown) {
 
   var multi = Num(Math.log2(state.mistletoes + 1));
   res.twigs.mulInPlace(multi);
-  if(breakdown && state.mistletoes != 1) breakdown.push(['#mistletoes (' + state.mistletoes + ')', true, multi, res.clone()]);
+  if(breakdown) {
+    if(state.mistletoes == 1) {
+      breakdown.push(['1 mistletoe (the minimum)', true, multi, res.clone()]);
+    } else {
+      breakdown.push(['#mistletoes (' + state.mistletoes + ')', true, multi, res.clone()]);
+    }
+  }
 
   if(getSeason() == 2) {
     var bonus = getAutumnMistletoeBonus();
@@ -5861,7 +5907,10 @@ function nextTwigs(breakdown) {
 
 function treeLevel2ReqBase(level) {
   var res = new Res();
-  res.twigs = Num.rpow(12, Num(level - 1)).mulr(144);
+  // all are powers of 12, in theory starting at 144, but to make the first ethereal tree levelup faster to reach, the first 2 are reduced (no powers, but still multiples, of 12). Reducing to 12 would be too little though.
+  if(level == 1) res.twigs = Num(72);
+  else if(level == 2) res.twigs = Num(1296);
+  else res.twigs = Num.rpow(12, Num(level - 1)).mulr(144);
   return res;
 }
 
@@ -6376,7 +6425,7 @@ var upgrade3_berry = registerUpgrade3('berry boost', undefined, 'boosts berries 
 var upgrade3_mushroom = registerUpgrade3('mushroom boost', undefined, 'boosts mushroom production but also consumption by +' + upgrade3_mushroom_bonus.toPercentString(), champignon[4]);
 var upgrade3_flower = registerUpgrade3('flower boost', undefined, 'boosts the flower boost by +' + upgrade3_flower_bonus.toPercentString(), images_anemone[4]);
 var upgrade3_nettle = registerUpgrade3('nettle boost', undefined, 'boosts the nettle boost by +' + upgrade3_nettle_bonus.toPercentString(), images_nettle[4]);
-var upgrade3_bee = registerUpgrade3('beehive boost', undefined, 'boosts the beehive boost by +' + upgrade3_bee_bonus.toPercentString(), images_beehive[4]);
+var upgrade3_bee = registerUpgrade3('bee boost', undefined, 'boosts the bee boost by +' + upgrade3_bee_bonus.toPercentString(), images_beenest[4]);
 
 var upgrade3_fruittierprob = registerUpgrade3('fruit tier probability', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels', images_apple[4]);
 var upgrade3_seasonfruitprob = registerUpgrade3('seasonal fruit probability', undefined, 'increases probability of getting a better seasonal fruit drop from 1/4th to 1/3rd', images_apricot[3]);
@@ -6429,12 +6478,12 @@ var upgrade3_highest_level = registerUpgrade3('highest tree level ever bonus', u
 
 var upgrade3_leveltime_maxbonus = 4;
 var upgrade3_leveltime_maxtime = 7200; // in seconds
-var upgrade3_leveltime = registerUpgrade3('time at level bonus', undefined, 'unlocks a production bonus that depends how much time the tree has spent at the current level. The time resets to 0 when the tree levels up. The maximum bonus is +' + Num(upgrade3_leveltime_maxbonus).toPercentString() + ' after ' + (upgrade3_leveltime_maxtime / 3600) + ' hours.', image_hourglass);
+var upgrade3_leveltime = registerUpgrade3('time at level bonus', undefined, 'unlocks a production bonus that depends how much time the tree has spent at the current level, with a weighed average including 2 previous level durations. The maximum bonus is +' + Num(upgrade3_leveltime_maxbonus).toPercentString() + ' after ' + (upgrade3_leveltime_maxtime / 3600) + ' hours.', image_hourglass);
 
 var upgrade3_bee_multiplicity_bonus = Num(0.1);
 var upgrade3_bee_multiplicity = registerUpgrade3('bee multiplicity', undefined,
     'Unlocks multiplicity of bees. Requires that regular multiplicity for berries and mushrooms has been unlocked. Given that, then this allows also the presence of multiple bees anywhere in the field to give a global bee bonus. The bonus per bee is ' + upgrade3_bee_multiplicity_bonus.toPercentString(),
-    images_beehive[4]);
+    images_beenest[4]);
 
 
 
@@ -6616,7 +6665,28 @@ function canUseBluePrintsDuringChallenge(challenge, opt_print_message) {
     return false;
   }
 
+  if(challenge == challenge_bees) {
+    if(opt_print_message) showMessage('blueprints are disabled during the bee challenge', C_INVALID);
+    return false;
+  }
+
+  if(challenge == challenge_truly_basic) {
+    if(opt_print_message) showMessage('blueprints are disabled during the truly basic challenge', C_INVALID);
+    return false;
+  }
+
   return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// for the "time at level" bonus: is weighted with previous level durations to make a single tree level-up event not wipe the entire bonus
+function weightedTimeAtLevel() {
+  var a = timeAtTreeLevel(state);
+  var b = state.prevleveltime[0];
+  var c = 0.66 * state.prevleveltime[1];
+  var d = 0.33 * state.prevleveltime[2];
+  return Math.max(Math.max(a, b), Math.max(c, d));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

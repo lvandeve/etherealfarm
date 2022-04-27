@@ -93,7 +93,6 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
 // if allow_override is false, will not replace any existing crop on the field
 function plantBluePrint(b, allow_override) {
   if(!b || b.numw == 0 || b.numh == 0) return;
-
   if(!canUseBluePrintsDuringChallenge(state.challenge, true)) return false;
 
   // match up corners such that standard tree position overlap, in case field sizes are different
@@ -261,7 +260,7 @@ function plantBluePrint2(b, allow_override, opt_get_tokens_cost_only) {
       if(c.type == CROPTYPE_LOTUS) return (1 + c.tier) * 1000;
       if(c.type == CROPTYPE_BEE) return 5 + c.tier;
       if(c.type == CROPTYPE_FLOWER) return 2 + c.tier;
-      if(c.type == CROPTYPE_NETTLE) return 3 + c.tier * 2;
+      if(c.type == CROPTYPE_STINGING) return 3 + c.tier * 2;
       return 1 + c.tier;
     };
     newactions.sort(function(a, b) {
@@ -381,12 +380,12 @@ function exportBluePrint(b, ethereal, opt_include_tiers) {
 }
 
 function getBluePrintTypeHelpText(ethereal) {
-  var result = 'B=berry, M=mushroom, F=flower, N=nettle, H=beehive, I=mistletoe, W=watercress/brassica, ';
-  if(state.crops[nut_0].unlocked) result += 'U=nuts, '; // nuts not available in ethereal (currently), but shown anyway for completeness
+  var result = 'B=berry, M=mushroom, F=flower, S=stinging, Z=bee, I=mistletoe, W=brassica (watercress, ...), ';
+  if(state.crops[nut_0].unlocked) result += 'N=nuts, '; // nuts not available in ethereal (currently), but shown anyway for completeness
   if(ethereal) {
-    result += 'F=fern, L=lotus, ';
+    result += 'E=fern, L=lotus, ';
     if(ethereal && state.crops2[automaton2_0].unlocked) result += 'A=automaton, ';
-    if(state.crops2[squirrel2_0].unlocked) result += 'S=squirrel, ';
+    if(state.crops2[squirrel2_0].unlocked) result += 'Q=squirrel, ';
   }
   result += '.=empty/tree';
   return result;
@@ -395,7 +394,7 @@ function getBluePrintTypeHelpText(ethereal) {
 function importBluePrintDialog(fun, b, ethereal) {
   var w = 500, h = 500;
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     functions:function(e) {
       var shift = e.shiftKey;
       var text = area.value;
@@ -519,7 +518,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     return true;
   };
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     functions:undofun,
     names:'undo',
     oncancel:okfun,
@@ -623,7 +622,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
 }
 
 function showBluePrintHelp() {
-  var dialog = createDialog2({title:'Blueprint help', scrollable:true});
+  var dialog = createDialog({title:'Blueprint help', scrollable:true});
 
   var div = dialog.content.div;
 
@@ -774,7 +773,7 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
   }
 
   blueprintdialogopen = true;
-  var dialog = createDialog2({
+  var dialog = createDialog({
     functions:challenge_button_fun,
     names:challenge_button_name,
     cancelname:'back',

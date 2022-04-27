@@ -28,10 +28,10 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
 
   var cost = u.getCost(completed ? -1 : 0);
   var titleFlex = new Flex(flex, [0, 0, 0.8], 0.05, 1, 0.3);
-  var name = upper(completed ? u.getName() : u.getNextName());
+  var name = completed ? u.getName() : u.getNextName();
   //titleFlex.div.innerHTML = name;
   //titleFlex.div.style.whiteSpace = 'nowrap';
-  var text = name;
+  var text = upper(name);
 
   var canvasFlex = new Flex(flex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
   if(u.bgcolor) {
@@ -81,12 +81,13 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   }
 
 
-  registerTooltip(flex.div, infoText);
+  registerTooltip(buyFlex.div, infoText);
+  registerTooltip(canvasFlex.div, 'Show ' + name + ' info');
 
   styleButton0(canvasFlex.div);
 
   addButtonAction(canvasFlex.div, function() {
-    var dialog = createDialog2({size:DIALOG_SMALL, title:'Ethereal upgrade info'});
+    var dialog = createDialog({size:DIALOG_SMALL, title:'Ethereal upgrade info'});
     dialog.content.div.innerHTML = infoText;
   }, 'ethereal upgrade icon for ' + name);
 
@@ -211,7 +212,7 @@ function updateUpgrade2UI() {
     flex.div.innerText = 'See Completed Upgrades';
 
     addButtonAction(flex.div, function() {
-      var dialog = createDialog2({scrollable:true, title:'Completed ethereal upgrades'});
+      var dialog = createDialog({scrollable:true, title:'Completed ethereal upgrades'});
 
       for(var i = 0; i < researched.length; i++) {
         var u = upgrades2[researched[i]];

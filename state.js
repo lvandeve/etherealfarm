@@ -184,7 +184,7 @@ function BluePrint() {
   4: m: mushroom
   5: f: flower
   6: n: nettle
-  7: h: beehive
+  7: z: bee ("buzz")
   8: i: mistletoe
   9: u: nuts
   ethereal:
@@ -250,7 +250,7 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_BERRY) return 3;
   if(c.type == CROPTYPE_MUSH) return 4;
   if(c.type == CROPTYPE_FLOWER) return 5;
-  if(c.type == CROPTYPE_NETTLE) return 6;
+  if(c.type == CROPTYPE_STINGING) return 6;
   if(c.type == CROPTYPE_BEE) return 7;
   if(c.type == CROPTYPE_MISTLETOE) return 8;
   if(c.type == CROPTYPE_NUT) return 9;
@@ -267,12 +267,12 @@ BluePrint.toChar = function(i) {
   if(i == 3) return 'B'; // berry
   if(i == 4) return 'M'; // mushroom
   if(i == 5) return 'F'; // flower
-  if(i == 6) return 'N'; // nettle (prickly plants)
-  if(i == 7) return 'H'; // hive (bees)
+  if(i == 6) return 'S'; // stinging (nettle, ...)
+  if(i == 7) return 'Z'; // bee ("buzz")
   if(i == 8) return 'I'; // mistletoe
-  if(i == 9) return 'U'; // nuts
+  if(i == 9) return 'N'; // nuts
   if(i == 32) return 'A'; // automaton
-  if(i == 33) return 'S'; // squirrel
+  if(i == 33) return 'Q'; // squirrel
   if(i == 34) return 'L'; // lotus
   if(i == 35) return 'E'; // fern
   return -1;
@@ -285,12 +285,12 @@ BluePrint.fromChar = function(c) {
   if(c == 'B') return 3;
   if(c == 'M') return 4;
   if(c == 'F') return 5;
-  if(c == 'N') return 6;
-  if(c == 'H') return 7;
+  if(c == 'S') return 6;
+  if(c == 'Z') return 7;
   if(c == 'I') return 8;
-  if(c == 'U') return 9;
+  if(c == 'N') return 9;
   if(c == 'A') return 32;
-  if(c == 'S') return 33;
+  if(c == 'Q') return 33;
   if(c == 'L') return 34;
   if(c == 'E') return 35;
   //if(c == 'S') return 10;
@@ -362,6 +362,7 @@ function State() {
   this.seed0 = -1; // if there's ever a new feature added to the game requiring a new random seed, this can be used to initialize that new seed to ensure the new seed can't be cheesed by refreshing with a savegame that didn't have the new seed yet
 
   this.currentTab = 0; // currently selected tab
+  this.numTabs = 0; // amount of visible tabs
   this.lastPlanted = -1; // for shift+plant
   this.lastPlanted2 = -1; // for shift+plant on field2
 
@@ -373,12 +374,14 @@ function State() {
   this.twigs = Num(0);
 
   this.treelevel = 0;
-  this.lasttreeleveluptime = 0; // time of previous time tree leveled, after transcend this is time tree leveled before that transcend! if that's undesired, then use the function lastTreeLevelUpTime(state)
+  this.lasttreeleveluptime = 0; // time of previous time tree leveled, after transcend this is time tree leveled before that transcend (for amber)! if that's undesired, then use the function lastTreeLevelUpTime(state) or timeAtTreeLevel(state)
   this.lasttree2leveluptime = 0;
   this.lastambertime = 0;
   // for the fruit abilities that increase twigs and resin
   this.resinfruittime = 0;
   this.twigsfruittime = 0;
+
+  this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively
 
   this.fern = 0; // 0 = no fern, 1 = standard fern, 2 = lucky fern
   this.fernx = 0;
@@ -601,7 +604,7 @@ function State() {
   this.g_numexports = 0;
   this.g_lastexporttime = 0; // last save export time, to give warnings
   this.g_lastimporttime = 0; // last save import time, for those same warnings
-  this.g_nummedals = 0; // TODO: nothing actually increments this yet! increment whenever new medal achieved.
+  this.g_nummedals = 0;
   this.g_treelevel = 0; // max tree level of any run
   this.g_numplanted2 = 0;
   this.g_numunplanted2 = 0;
@@ -772,6 +775,8 @@ function State() {
   this.numcropfields2 = 0;
   // same as numcropfields but only counts crops that can be struck by lightning during the stormy challenge
   this.numcropfields_lightning = 0;
+  // same as numcropfields but excludes brassica
+  this.numcropfields_permanent = 0;
 
   // fullgrown only, not growing, any type >= CROPINDEX. Includes shoft-lived plants.
   // derived stat, not to be saved
@@ -1045,6 +1050,7 @@ function computeDerived(state) {
   state.numemptyfields = 0;
   state.numcropfields = 0;
   state.numcropfields_lightning = 0;
+  state.numcropfields_permanent = 0;
   state.numfullgrowncropfields = 0;
   state.numfullpermanentcropfields = 0;
   for(var i = 0; i < NUM_CROPTYPES; i++) {
@@ -1086,6 +1092,7 @@ function computeDerived(state) {
         if(f.hasRealCrop()) {
           state.numcropfields++;
           if(cropCanBeHitByLightning(f)) state.numcropfields_lightning++;
+          if(c.type != CROPTYPE_BRASSICA) state.numcropfields_permanent++;
           state.croptypecount[c.type]++;
           if(f.isFullGrown()) {
             state.fullgrowncroptypecount[c.type]++;
@@ -1255,7 +1262,7 @@ function computeDerived(state) {
         if(type == CROPTYPE_FLOWER) {
           state.ethereal_flower_bonus.addInPlace(c.getBasicBoost(f));
         }
-        if(type == CROPTYPE_NETTLE) {
+        if(type == CROPTYPE_STINGING) {
           state.ethereal_nettle_bonus.addInPlace(c.getBasicBoost(f));
         }
         if(type == CROPTYPE_BEE) {

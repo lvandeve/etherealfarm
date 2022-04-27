@@ -65,7 +65,7 @@ function getCropInfoHTMLBreakdown(f, c) {
     var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, false, bdname + ' (production/s)');
   }
-  if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
+  if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING)) {
     var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, true, bdname + ' (neighbor boost +%)');
   }
@@ -268,8 +268,8 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += 'Boost to neighbor queen bees: ' + c.getBoostBoost(f).toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
     result += '<br/>';
   }
-  if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE)) {
-    if(c.type == CROPTYPE_NETTLE) {
+  if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING)) {
+    if(c.type == CROPTYPE_STINGING) {
       result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing neighbor berries and flowers<br/>';
     } else {
       result += 'Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
@@ -329,7 +329,7 @@ function makeTreeDialog() {
 
   var treedialogvisible = true;
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     nocancel:have_buttons,
     shortcutfun:shortcutfun,
     scrollable:false,
@@ -365,7 +365,7 @@ function makeTreeDialog() {
 
     text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
     text += 'Tree level: ' + state.treelevel + '<br/>';
-    if(state.treelevel == 0) {
+    if(state.treelevel == 0 && state.res.spores.eqr(0)) {
       text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
     }
 
@@ -397,9 +397,11 @@ function makeTreeDialog() {
       text += '<br>';
     }
 
-    if(state.treelevel > 0) {
+    if(state.treelevel > 0 || state.res.spores.gtr(0)) {
       text += '<br/>';
-      text += 'Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br/>';
+      var req = treeLevelReq(state.treelevel + 1);
+      var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+      text += 'Next level requires: ' + req.toString() + ' (' + (getCostAffordTimer(req)) + ', ' + nextlevelprogress.toPercentString() + ') ' + '<br/>';
       if(state.mistletoes > 0) {
         text += 'This requirement was increased ' + (getMistletoeLeech().subr(1)).toPercentString() + ' by ' + state.mistletoes + ' mistletoes' + '<br/>';
       }
@@ -667,9 +669,9 @@ function makeUpgradeCropAction(x, y, opt_silent) {
         showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
       } else if(!(x >= 0 && x < state.numw && y >= 0 && y < state.numh) || state.field[y][x].index < CROPINDEX) {
-        showMessage('No crop to upgrade here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+        showMessage('No crop to tier up here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
       } else if(state.field[y][x].index != 0) {
-        showMessage('Crop not upgraded, no higher tier unlocked or available', C_INVALID);
+        showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
       }
     }
   }
@@ -685,7 +687,7 @@ function makeFieldDialog(x, y) {
     var c = f.getCrop();
     var div;
 
-    var dialog = createDialog2({
+    var dialog = createDialog({
       icon:c.image[4],
       title:'Crop info'
     });
@@ -704,8 +706,8 @@ function makeFieldDialog(x, y) {
     makeScrollable(flex0);
 
     styleButton(button0);
-    button0.textEl.innerText = 'Upgrade crop';
-    registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
+    button0.textEl.innerText = 'Tier up';
+    registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
       if(makeUpgradeCropAction(x, y)) {
         closeAllDialogs();
@@ -715,7 +717,7 @@ function makeFieldDialog(x, y) {
 
     styleButton(button1);
     button1.textEl.innerText = 'Replace crop';
-    registerTooltip(button1, 'Replace the crop with a new one, same as delete then plant. Shows the list of unlocked crops.');
+    registerTooltip(button1, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked crops.');
     addButtonAction(button1, function() {
       makePlantDialog(x, y, true, c.getRecoup());
     });
@@ -734,7 +736,7 @@ function makeFieldDialog(x, y) {
     button3.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button3, function() {
-      var dialog = createDialog2({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
+      var dialog = createDialog({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
       dialog.div.className = 'efDialogTranslucent';
       var text = '';
 
@@ -846,7 +848,7 @@ function initFieldUI() {
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
           if(time.ltr(0)) time = Num(0);
-          if(state.treelevel <= 0) {
+          if(state.treelevel <= 0 && state.res.spores.eqr(0)) {
             var result = 'a weathered tree';
             if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
             return result;
@@ -1156,59 +1158,10 @@ function updateFieldCellUI(x, y) {
   }
 }
 
-var specialborder = false;
-var specialborderx = 0;
-var specialbordery = 0;
-
-function renderFieldInitialPlantHint() {
-  if(specialborder) {
-    if(fieldDivs[specialbordery] && fieldDivs[specialbordery][specialborderx]) {
-      fieldDivs[specialbordery][specialborderx].div.style.border = '';
-    }
-    specialborder = false;
-  }
-
-  var numplanted = state.c_numplanted + state.c_numplantedbrassica;
-  if((state.res.seeds.ger(10) /*|| numplanted > 0*/) && state.g_numresets < 3 && numplanted <= 11) {
-    var do_border = false;
-    var x = 0;
-    var y = 0;
-    var do_border = false;
-    for(;;) {
-      if(state.field[y][x].index == 0) {
-        do_border = true;
-        break;
-      }
-      x++;
-      if(x >= state.numw) {
-        x = 0;
-        y++;
-      }
-      if(y >= state.numh) break;
-    }
-    if(do_border) {
-      var fade = numplanted;
-      // fade them out, to indicate that the player is on their own now to find spots to plant
-      var alpha = ['ff', 'dd', 'bb', '99', '66', '33', '22', '11', '08', '04', '02', '01'][fade];
-      var color = '#ff0000' + alpha;
-      // indicate that you should plant
-      // TODO: use some nicer kind of indication, a pixel art arrow pointing at it, a tutorial bubble, ...
-      fieldDivs[y][x].div.style.border = '10px solid ' + color;
-      specialborder = true;
-      specialborderx = x;
-      specialbordery = y;
-      //fieldDivs[y][x].div.innerText = 'etc';
-    }
-  }
-}
-
 function renderField() {
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       updateFieldCellUI(x, y);
     }
   }
-
-  //renderFieldInitialPlantHint();
-  //makeArrow2(fieldFlex.div, 0.5, 0.5, fieldDivs[0][0].div, 0,5, 0.5);
 }

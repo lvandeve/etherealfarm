@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 function createNumberFormatHelp(notations, precision) {
-  var dialog = createDialog2({size:DIALOG_LARGE, title:'Number format help', scrollable:true});
+  var dialog = createDialog({size:DIALOG_LARGE, title:'Number format help', scrollable:true});
 
   var text = '';
 
@@ -120,7 +120,7 @@ for(var i = 0; i < notations.length; i++) notations_inv[notations[i]] = i;
 function createNumberFormatDialog() {
   var changed = false;
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     size:DIALOG_LARGE,
     title:'Choose large number notation',
     help:function() { createNumberFormatHelp(notations, precision); },
@@ -150,7 +150,7 @@ function createNumberFormatDialog() {
   y2 += h2 + 0.02;
 
   h2 = 0.08;
-  var descriptionFlex = new Flex(dialog.content, 0.01, y2, 0.99, y2 + h2);
+  var descriptionFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
   var descriptionDiv = descriptionFlex.div;
   //descriptionFlex.div.style.border = '1px solid blue';
   y2 += h2;
@@ -247,7 +247,7 @@ function createNumberFormatDialog() {
 }
 
 function createShortcutsDialog() {
-  var dialog = createDialog2({title:'Controls'});
+  var dialog = createDialog({title:'Controls'});
 
   var pos = 0;
   var buttondiv;
@@ -338,7 +338,7 @@ function createShortcutsDialog() {
 }
 
 function createNotificationSettingsDialog() {
-  var dialog = createDialog2({title:'Messages & Sounds'});
+  var dialog = createDialog({title:'Messages & Sounds'});
 
   var pos = 0;
   var buttondiv;
@@ -448,7 +448,7 @@ function createNotificationSettingsDialog() {
 
 
 function createAdvancedSettingsDialog() {
-  var dialog = createDialog2({title:'Preferences'});
+  var dialog = createDialog({title:'Preferences'});
 
   var pos = 0;
   var buttondiv;
@@ -565,11 +565,16 @@ function createAdvancedSettingsDialog() {
   button.textEl.innerText = 'reset "never show again" help dialogs';
   registerTooltip(button, 'Resets the "never show again" of all help dialogs, so you\'ll see them again next time until you disable them individually again.');
   addButtonAction(button, function(e) {
-    var dialog = createDialog(DIALOG_MEDIUM, function() {
-      state.help_disable = {};
-      closeAllDialogs();
-      return true;
-    }, 'reset', undefined, 'cancel');
+    var dialog = createDialog({
+      size:DIALOG_SMALL,
+      functions:function() {
+        state.help_disable = {};
+        closeAllDialogs();
+        return true;
+      },
+      names:'reset',
+      title:'Reset help'
+    });
     dialog.content.div.innerHTML = 'This resets the "never show again" setting of all individual help dialogs. You\'ll get the help dialogs again in the situations that make them appear. You can individually disable them again.';
   });
   button.id = 'preferences_resethelp';
@@ -625,7 +630,7 @@ var showing_stats = false;
 
 function createStatsDialog() {
   showing_stats = true;
-  var dialog = createDialog2({title:'Player statistics', scrollable:true, onclose:function() {
+  var dialog = createDialog({title:'Player statistics', scrollable:true, onclose:function() {
     showing_stats = false;
   }});
 
@@ -846,7 +851,7 @@ function createChangelogDialog() {
     icon = bunny_image;
   }
 
-  var dialog = createDialog2({title:'About', icon:icon, onclose:function(cancel) {
+  var dialog = createDialog({title:'About', icon:icon, onclose:function(cancel) {
     showing_changelog = false;
   }, scrollable:true});
 
@@ -933,7 +938,7 @@ function showExportTextDialog(title, description, text, filename, opt_close_on_c
     extraname = 'to clipboard';
   }
 
-  dialog = createDialog2({
+  dialog = createDialog({
     title:title,
     size:(large ? DIALOG_MEDIUM : DIALOG_SMALL),
     functions:[function(e) {
@@ -954,11 +959,11 @@ function showExportTextDialog(title, description, text, filename, opt_close_on_c
 
 
   if(description) {
-    var textFlex = new Flex(dialog.content, 0.02, 0.01, 0.98, 0.15);
+    var textFlex = new Flex(dialog.content, 0, 0, 1, 0.15);
     textFlex.div.innerHTML = description;
   }
 
-  var areaFlex = new Flex(dialog.content, 0.02, 0.2, 0.98, 1);
+  var areaFlex = new Flex(dialog.content, 0, 0.2, 1, 1);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', areaFlex.div);
 
   area.value = text;
@@ -966,8 +971,45 @@ function showExportTextDialog(title, description, text, filename, opt_close_on_c
 }
 
 
+function importSaveFromDialog(e, enc, messageFlex) {
+  var shift = util.eventHasShiftKey(e);
+  var ctrl = util.eventHasCtrlKey(e);
+  enc = enc.trim();
+  if(enc == '') return;
+  load(enc, function(state) {
+    showMessage(loadedFromLocalImportMessage, C_UNIMPORTANT, 0, 0);
+    state.g_numimports++;
+    state.g_lastimporttime = util.getTime();
+    closeAllDialogs();
+    removeChallengeChip();
+    removeMedalChip();
+    removeHelpChip();
+    clearUndo();
+    initUI();
+    if(shift) state.paused = true;
+    if(ctrl) state.paused = false;
+    updatePausedUI();
+    update();
+    util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
+    savegame_recovery_situation = false;
+  }, function(state) {
+    var message = importfailedmessage;
+    if(state && state.error_reason == 1) message += '\n' + loadfailreason_toosmall;
+    if(state && state.error_reason == 2) message += '\n' + loadfailreason_notbase64;
+    if(state && state.error_reason == 3) message += '\n' + loadfailreason_signature;
+    if(state && state.error_reason == 4) message += '\n' + loadfailreason_format;
+    if(state && state.error_reason == 5) message += '\n' + loadfailreason_decompression;
+    if(state && state.error_reason == 6) message += '\n' + loadfailreason_checksum;
+    if(state && state.error_reason == 7) message += '\n' + loadfailreason_toonew;
+    if(state && state.error_reason == 8) message += '\n' + loadfailreason_tooold;
+    messageFlex.div.innerText = message;
+    messageFlex.div.style.color = '';
+  });
+}
+
+
 function createSettingsDialog() {
-  var dialog = createDialog2({title:'Main Menu'});
+  var dialog = createDialog({title:'Main Menu'});
   var pos = 0.05;
   var gap = 0.025;
 
@@ -1013,44 +1055,14 @@ function createSettingsDialog() {
   registerTooltip(button, 'Import a save, which you created with "export save". Hold shift while pressing the import button to load the savegame paused (frozen in time like it was back then, season and all, without gaining extra resources)');
   addButtonAction(button, function(e) {
     var w = 500, h = 500;
-    var dialog = createDialog(false, function(e) {
-      var shift = util.eventHasShiftKey(e);
-      var ctrl = util.eventHasCtrlKey(e);
-      var enc = area.value;
-      enc = enc.trim();
-      if(enc == '') return true;
-      load(enc, function(state) {
-        showMessage(loadedFromLocalImportMessage, C_UNIMPORTANT, 0, 0);
-        state.g_numimports++;
-        state.g_lastimporttime = util.getTime();
-        closeAllDialogs();
-        removeChallengeChip();
-        removeMedalChip();
-        removeHelpChip();
-        clearUndo();
-        initUI();
-        if(shift) state.paused = true;
-        if(ctrl) state.paused = false;
-        updatePausedUI();
-        update();
-        util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
-        savegame_recovery_situation = false;
-      }, function(state) {
-        var message = importfailedmessage;
-        if(state && state.error_reason == 1) message += '\n' + loadfailreason_toosmall;
-        if(state && state.error_reason == 2) message += '\n' + loadfailreason_notbase64;
-        if(state && state.error_reason == 3) message += '\n' + loadfailreason_signature;
-        if(state && state.error_reason == 4) message += '\n' + loadfailreason_format;
-        if(state && state.error_reason == 5) message += '\n' + loadfailreason_decompression;
-        if(state && state.error_reason == 6) message += '\n' + loadfailreason_checksum;
-        if(state && state.error_reason == 7) message += '\n' + loadfailreason_toonew;
-        if(state && state.error_reason == 8) message += '\n' + loadfailreason_tooold;
-        textFlex.div.innerText = message;
-        textFlex.div.style.color = 'black';
-      });
-      return true;
-    }, 'import', undefined, 'cancel');
-    var textFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
+    var dialog = createDialog({
+      size:DIALOG_SMALL,
+      functions: function(e) { importSaveFromDialog(e, area.value, textFlex); return true; },
+      names:'import',
+      cancelname:'cancel',
+      title:'Import savegame'
+    });
+    var textFlex = new Flex(dialog.content, 0, 0, 1, 0.1);
     textFlex.div.innerHTML = 'Import a savegame backup. You can create a backup with "export save". Paste in here and press "import".<br/><font color="red">Warning: this overwrites your current game!</font>';
     var area = util.makeAbsElement('textarea', '1%', '30%', '98%', '68%', dialog.content.div);
     area.select();
@@ -1063,14 +1075,14 @@ function createSettingsDialog() {
   registerTooltip(button, hardresetwarning);
   addButtonAction(button, function(e) {
     var w = 500, h = 500;
-    var dialog = createDialog(false, function(e) {
-      hardReset();
-      closeAllDialogs();
-      return true;
-    }, 'reset');
-    var warningFlex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1);
-    warningFlex.div.innerText = hardresetwarning;
-    warningFlex.div.style.color = 'red';
+    var dialog = createDialog({
+      size:DIALOG_SMALL,
+      functions:function(e) { hardReset(); closeAllDialogs(); return true; },
+      names:'reset',
+      title:'Hard reset'
+    });
+    dialog.content.div.innerText = hardresetwarning;
+    dialog.content.div.style.color = 'red';
   });
   button.id = 'settings_hardreset';
 

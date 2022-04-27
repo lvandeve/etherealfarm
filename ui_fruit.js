@@ -77,7 +77,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_BEEBOOST: return 'bee boost';
     case FRUIT_MIX: return 'mix nettle/brass/bee';
     case FRUIT_TREELEVEL: return 'treelevel prod boost';
-    case FRUIT_SEED_OVERLOAD: return 'seed overload';
+    case FRUIT_SEED_OVERLOAD: return 'seeds overload';
   }
   return 'unknown';
 }
@@ -117,7 +117,7 @@ function getFruitAbilityDescription(ability) {
 var lastTouchedFruit = null; // for some visual indication only
 
 function createFruitHelp() {
-  var dialog = createDialog2({title:'Fruit help', scrollable:true});
+  var dialog = createDialog({title:'Fruit help', scrollable:true});
 
   var text = '';
 
@@ -222,7 +222,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
   var swapped = false;
 
-  var dialog = createDialog2({undefined,
+  var dialog = createDialog({undefined,
     functions:function() {
       if(selected) {
         if(swapped) {
@@ -401,6 +401,9 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         }
         y += s * 0.5;
       }
+      text += '\n';
+      text += 'Note: if you would like to keep a different set of abilities, try swapping the two input fruits, or rearrange the order of the abilities of the leftmost fruits using the ^ and v buttons in that fruit\'s main ability dialog: abilities higher up get priority.';
+      text += '\n';
       flex.div.innerText = text;
     }
   };
@@ -655,6 +658,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     y += h * 1.1;
     styleButton(moveButton3);
     moveButton3.textEl.innerText = 'make active';
+    if(f.slot == state.fruit_active) moveButton3.className = 'efButtonCantAfford';
     addButtonAction(moveButton3, function() {
       if(f.slot >= MAXFRUITARROWS) {
         // The UI only allows to make the top 10 (MAXFRUITARROWS) active. So the "make active" button of further ones
@@ -711,7 +715,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
 }
 
 function createFruitDialog(f, opt_selected) {
-  var dialog = createDialog2({
+  var dialog = createDialog({
     onclose:function() {
       // onclose function: updates the relevant fruit chip with new upgrade levels. TODO: it's inefficient to redraw all fruit chips for this
       updateFruitUI();
@@ -724,7 +728,7 @@ function createFruitDialog(f, opt_selected) {
 }
 
 function createFruitInfoDialog(f) {
-  var dialog = createDialog2({
+  var dialog = createDialog({
     title:'Fruit info'
   });
 
@@ -741,7 +745,7 @@ function createFruitInfoDialog(f) {
 }
 
 function showStorageFruitSourceDialog() {
-  var dialog = createDialog2({title:'Fruit storage slot sources', scrollable:true});
+  var dialog = createDialog({title:'Fruit storage slot sources', scrollable:true});
 
   var text = '';
 
@@ -969,7 +973,7 @@ function updateFruitUI() {
   titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t]);
   y += s;
   titleFlex.div.innerText = 'Stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
-  help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage.';
+  help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage, or drag and drop it here.';
   registerTooltip(titleFlex.div, help);
 
 
@@ -1042,7 +1046,7 @@ function updateFruitUI() {
   titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t]);
   y += s;
   titleFlex.div.innerText = 'Sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
-  help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool.';
+  help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool, or drag and drop it here.';
   registerTooltip(titleFlex.div, help);
 
   var num = Math.max(6, state.fruit_sacr.length + 2);

@@ -35,7 +35,7 @@ function renderUpgraceIcon(canvasFlex, u) {
   }
 }
 
-function rerenderUpgradeChip(u, chip, completed) {
+function rerenderUpgradeChip(u, chip, completed, opt_ui_location) {
   var div = chip.div;
   div.className = 'efUpgradeChip';
 
@@ -52,6 +52,13 @@ function rerenderUpgradeChip(u, chip, completed) {
     if(chip.u_cant_afford != cant_afford) same = false;
     if(chip.u_format != format) same = false;
     if(same) return;
+  }
+
+  if(opt_ui_location) {
+    if(u.index == brassicamul_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_upgrade_watercress' : 'help_arrow_upgrade_watercress_side';
+    if(u.index == berryunlock_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_unlock_blackberry' : 'help_arrow_unlock_blackberry_side';
+    if(u.index == flowerunlock_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_unlock_anemone' : 'help_arrow_unlock_anemone_side';
+    if(u.index == nettleunlock_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_unlock_nettle' : 'help_arrow_unlock_nettle_side';
   }
 
   chip.u = u.index; // the upgrade this chip now represents
@@ -119,12 +126,13 @@ var getUpgradeInfoText = function(u, completed) {
 
   infoText += '<br><br>Cost: ' + cost.toString();
   if(!completed) infoText += ' (' + getCostAffordTimer(cost) + ')';
-  infoText += '<br><br>' + 'Have of this upgrade: ' + state.upgrades[u.index].count;
+  if(u.is_choice && state.upgrades[u.index].count != 0) {
+    infoText += '<br><br>Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
+  } else {
+    infoText += '<br><br>' + 'Have of this upgrade: ' + state.upgrades[u.index].count;
+  }
   if(u.cropid != undefined && !u.iscropunlock) {
     infoText += '<br>' + 'Have of this crop: ' + state.cropcount[u.cropid];
-  }
-  if(u.is_choice && completed) {
-    infoText += '<br><br>Chosen: ' + ((state.upgrades[u.index].count == 1) ? u.choicename_a : u.choicename_b);
   }
   if(u.cropid != undefined && !u.isprestige) {
     var c = crops[u.cropid];
@@ -184,7 +192,7 @@ function renderUpgradeDialog(chip, completed) {
     extraname = 'buy many';
   }
   chip.updateInfoText();
-  var dialog = createDialog2({
+  var dialog = createDialog({
     size:DIALOG_SMALL,
     functions:[okfun, extrafun],
     names:[okname, extraname],
@@ -198,9 +206,10 @@ function renderUpgradeDialog(chip, completed) {
 }
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
-function renderUpgradeChip(u, x, y, w, chip, completed) {
+// opt_ui_location: 1 = upgrades tab, 2 = side panel (for other locations like the completed upgrades window, leave undefined or 0)
+function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
   if(chip.titleFlex) {
-    rerenderUpgradeChip(u, chip, completed);
+    rerenderUpgradeChip(u, chip, completed, opt_ui_location);
     chip.updateInfoText();
     return;
   }
@@ -211,6 +220,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
   chip.canvasFlex = canvasFlex;
   var buyFlex = new Flex(chip, [0, 0, 0.8], 0.01, 0.9, [0.5, 0, 0.35]);
   chip.buyFlex = buyFlex;
+  chip.u = u.index;
 
 
   var infoText = '';
@@ -233,7 +243,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
           addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
           update();
         };
-        dialog = createDialog2({
+        dialog = createDialog({
           size:DIALOG_MEDIUM,
           title:upper(u.name),
           functions:[funa, funb],
@@ -256,14 +266,16 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
       var u = upgrades[chip.u];
       state.upgrades[u.index].seen = true;
     });
-
   }
 
 
-  registerTooltip(chip.div, function() {
+  registerTooltip(buyFlex.div, function() {
     updateInfoText();
     return infoText;
   }, true);
+  registerTooltip(canvasFlex.div, function() {
+    return 'Show ' + lower(upgrades[chip.u].name) + ' info';
+  });
 
   styleButton0(canvasFlex.div);
 
@@ -272,7 +284,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed) {
   }, 'upgrade icon for ' + name);
 
   chip.updateInfoText = updateInfoText;
-  rerenderUpgradeChip(u, chip, completed);
+  rerenderUpgradeChip(u, chip, completed, opt_ui_location);
   chip.updateInfoText();
 
   util.setEvent(chip.div, 'mouseover', 'fieldover', bind(function(x, y) {
@@ -376,7 +388,7 @@ function computeUpgradeUIOrder() {
   findtop(CROPTYPE_NUT, array);
   findtop(CROPTYPE_FLOWER, array);
   findtop(CROPTYPE_BEE, array);
-  findtop(CROPTYPE_NETTLE, array);
+  findtop(CROPTYPE_STINGING, array);
   findtop(CROPTYPE_BRASSICA, array);
   array = array.sort(function(a, b) {
     a = upgrades[a];
@@ -519,7 +531,7 @@ function updateUpgradeUI() {
     var chip = upgradeFlexCache[i] || new Flex(scrollFlex, x * w + 0.01, [0.15, 0, y * h + 0.01, 0.27], (x + 1) * w - 0.01, [0.15, 0, (y + 1) * h - 0.01, 0.27]);
     upgradeFlexCache[i] = chip;
 
-    renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false);
+    renderUpgradeChip(u, i & 1, i >> 1, 0.45, chip, false, 1);
   }
   for(var i = unlocked.length; i < upgradeFlexCache.length; i++) {
     if(!upgradeFlexCache[i]) continue;
@@ -546,7 +558,7 @@ function updateUpgradeUI() {
     chip.div.innerText = 'See Completed Upgrades';
 
     addButtonAction(chip.div, function() {
-      var dialog = createDialog2({scrollable:true, title:'Completed upgrades'});
+      var dialog = createDialog({scrollable:true, title:'Completed upgrades'});
 
       for(var i = 0; i < researched.length; i++) {
         var u = upgrades[researched[i]];

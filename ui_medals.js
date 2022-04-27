@@ -42,6 +42,8 @@ function updateMedalUI() {
 
   var infoText = ''
   infoText += 'Achievement production bonus: +' + (state.medal_prodmul.subr(1)).toPercentString();
+  infoText += '<br>';
+  infoText += 'Achievements earned: ' + state.medals_earned;
 
   medalText.div.innerHTML = infoText;
 
@@ -151,7 +153,7 @@ function updateMedalUI() {
     util.setEvent(div, 'mouseover', 'medalseen', seenfun);
 
     addButtonAction(div, bind(function(getMedalText, seenfun) {
-      var dialog = createDialog2({
+      var dialog = createDialog({
         size:DIALOG_SMALL,
         title:'Achievement'
       });

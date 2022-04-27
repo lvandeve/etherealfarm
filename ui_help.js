@@ -133,11 +133,11 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
   }
 
   var title = registered_help_dialogs[id].name;
-
   numhelpdialogs++;
-  var dialog = createDialog2({
+  var dialog = createDialog({
     size:(images ? DIALOG_LARGE : DIALOG_MEDIUM),
     title:title,
+    icon:image,
     functions:okfun,
     names:oktext,
     cancelname:'ok',
@@ -153,17 +153,11 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
   });
 
   dialog.div.className = 'efDialogTranslucent';
-  var fx0 = 0.01;
-  var fy0 = 0.01;
-  var fx1 = 0.99;
+  var fx0 = 0;
+  var fy0 = 0;
+  var fx1 = 1;
   var fy1 = 0.8;
 
-  if(image) {
-    var canvasflex = new Flex(dialog.content, [0.01, 0, 0], [0.01, 0, 0], [0.01, 0, 0.1], [0.01, 0, 0.1]);
-    var canvas = createCanvas('0%', '0%', '100%', '100%', canvasflex.div);
-    renderImage(image, canvas);
-    fx0 = 0.11;
-  }
 
   if(images) {
     var w = images[0].length;
@@ -186,7 +180,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
   var flex = new Flex(dialog.content, fx0, fy0, fx1, fy1);
   makeScrollable(flex);
 
-  dialog.content.div.innerHTML = text;
+  flex.div.innerHTML = text;
 
   return true;
 }
@@ -210,10 +204,13 @@ function registerHelpDialog(id, name, text_short, text, image, opt_text2, images
 }
 
 // returns whether an actual dialog was shown (and not just log messages or nothing)
-function showRegisteredHelpDialog(id, opt_force)  {
+// set id to a negative value to not show the dialog, but only unlock it for the dynamic help system
+function showRegisteredHelpDialog(id, opt_force, opt_unlock_only)  {
+  var neg = id < 0;
+  id = Math.abs(id);
   var d = registered_help_dialogs[id];
   if(!d) return;
-  return showHelpDialog(d.id, d.text_short, d.text, d.image, d.opt_text2, d.images, opt_force);
+  return showHelpDialog(d.id * (neg ? -1 : 1), d.text_short, d.text, d.image, d.opt_text2, d.images, opt_force);
 }
 
 
@@ -221,9 +218,9 @@ registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!',
     'You unlocked your first upgrade! Upgrades can unlock new crops, upgrade existing crops, or have various other effects. Upgrades usually cost seeds.<br><br>Upgrades can be performed in the "upgrades" tab. Depending on screen size, it may also be available directly on the right side of the screen.');
 
 registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your first permanent type of plant.',
-    'You unlocked your first permanent type of plant. Plants like this stay on the field forever, keep producing forever, and have much more powerful production upgrades too.' +
+    'You unlocked your first permanent type of plant. Plants like this don\'t wither, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
-    'Watercress also remains useful: if you plant watercress next to permanent plants, the watercress copy all its neighbors (orthogonally, not diagonally) production. If there is more than 1 watercress in the entire field they copy less, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plants have later in the game.' +
+    'Watercress also remains useful: if you plant a watercress next to permanent plants, the watercress copies all its neighbors\' production (orthogonally, not diagonally). If there is more than 1 watercress in the entire field they copy less, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plants have later in the game.' +
     '<br><br>'+
     'TIP: press "p" to plant last used crop type at mouse cursor, or shift+click for the same effect, or ctrl (or command) + click to plant watercress. More shortcuts are listed in the main game help menu.',
     undefined,
@@ -251,7 +248,7 @@ registerHelpDialog(19, 'Mushrooms', 'You unlocked your first type of mushroom',
                 [blueberry[4], images_anemone[4], undefined]]);
 
 registerHelpDialog(20, 'Flowers', 'You unlocked your first type of flower',
-               'You unlocked your first type of flower. Flowers boost resource-producing crops such as berries, if they are planted next to them. It can boost all the 4 orthogonal neighboring crops.',
+               'You unlocked your first type of flower. Flowers boost resource-producing crops such as berries and mushrooms, if planted next to them. It can boost all the 4 orthogonal neighboring crops.',
                undefined,
                '<br><br>'+
                'The image shows a possible good configuration for flower boost: multiple flowers boost multiple berries. The center-most blackberry is receiving the boost 4 times.',
@@ -288,7 +285,7 @@ registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now
 
 registerHelpDialog(1, 'Transcension', 'You performed your first transcension! You can use resin in the ethereal field tab.', 'You performed your first transcension! Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.',
   undefined,
-  '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all type of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
+  '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all types of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
   [[undefined,images_anemone[4],undefined],
    [blackberry[4],images_whitelotus[4],champignon[4]],
    [undefined,blackberry[4],undefined]]);
@@ -321,10 +318,10 @@ registerHelpDialog(25, 'Bee challenge', undefined,
     images_queenbee[4],
     '<br><br>'+
     'The image below shows a possible configuration for the bees: all workers touch a flower as required, queens optionally touch workers for extra boost (so beehives provide a boost-boost), and hives touch queens to make that boost stronger (a boost-boost-boost). More than 1 flower does not increase boost but multiple queens or hives do. The rightmost worker bee gives most boost because it touches 3 queens, and the topmost queen gives least boost since it touches the least hives. You can fill in gaps in the picture where more queens or hives would increase the boost more. Not shown in the picture is that you also need some mushroom and berry production running somewhere, which can also be boosted by flowers in the standard way.',
-    [[undefined, images_workerbee[4], images_queenbee[4], images_beehive[4]],
+    [[undefined, images_workerbee[4], images_queenbee[4], images_beenest[4]],
      [images_workerbee[4], images_aster[4], images_workerbee[4], images_queenbee[4]],
-     [undefined, images_workerbee[4], images_queenbee[4], images_beehive[4]],
-     [undefined, images_queenbee[4], images_beehive[4], undefined],
+     [undefined, images_workerbee[4], images_queenbee[4], images_beenest[4]],
+     [undefined, images_queenbee[4], images_beenest[4], undefined],
     ]);
 
 registerHelpDialog(26, 'Challenge completed', '',
@@ -333,20 +330,20 @@ registerHelpDialog(26, 'Challenge completed', '',
 
 registerHelpDialog(27, 'Beehives', 'You unlocked beehives!',
   'You unlocked beehives! Beehives boost orthogonally neighboring flowers, while flowers boost berries and mushrooms (beehives boost-boost). This adds a new independent multiplier that can be upgraded to the game.',
-  images_beehive[4],
+  images_beenest[4],
   '<br><br>'+
   'The image shows a possible configuration for beehives, such that the beehives boost flowers, which in turn boost berries and mushrooms. It\'s ensured both the mushroom and the berry it consumes from have a hive-boosted flower.',
   [
     [undefined,grape[4],images_daisy[4],grape[4]],
-    [grape[4],images_daisy[4],images_beehive[4],images_daisy[4]],
+    [grape[4],images_daisy[4],images_beenest[4],images_daisy[4]],
     [undefined,grape[4],images_daisy[4],grape[4]],
-    [undefined,images_beehive[4],images_daisy[4],amanita[4]],
+    [undefined,images_beenest[4],images_daisy[4],amanita[4]],
   ]);
 
 
 registerHelpDialog(28, 'Automaton & Blueprints', 'You unlocked the automaton!',
     'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, it gives a boost to neighbors, and the automaton tab and blueprints unlock, allowing to automate various parts of the game.<br><br>' +
-    'You must place the automaton in the ethereal field before this works, go to its tab, and configure its settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>' +
+    'You must place the automaton in the ethereal field before this works, then go to the new automaton tab, and configure its settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>' +
     'When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>' +
     'The automaton initially has the following features unlocked:<br><br>' +
     ' • Blueprints and templates: Templates are translucent blue looking versions of crops that can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint button in the tree.<br>' +
@@ -369,7 +366,7 @@ registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upg
     images_automaton[4]);
 
 registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
-    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will upgrade existing crops or blueprint templates to a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only upgrade crops or blueprint templates to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically upgrade all planted blackberries in the field to blueberries, given enough resources.',
+    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will replace existing crops or blueprint templates with a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only replace crops or blueprint templates to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically replace all planted blackberries in the field with blueberries, given enough resources.',
     images_automaton[4]);
 
 registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more options!',
@@ -459,15 +456,7 @@ registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
 
 
 function createKeyboardHelpDialog() {
-  var dialog = createDialog();
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Help';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog({scrollable:true, title:'Shortcuts'});
 
   var text = '';
 
@@ -487,7 +476,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"d"</b>: delete crop under mouse cursor (no mouse click required, only if this is enabled in preferences)';
   text += '<br/>';
-  text += ' • <b>"u"</b>: upgrade crop or template under mouse cursor (no mouse click required)';
+  text += ' • <b>"u"</b>: tier up: replace crop or template under mouse cursor with highest available tier you can afford (no mouse click required)';
   text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted or unlocked crop type.';
   text += '<br/>';
@@ -497,7 +486,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click non-empty field</b>: replace crop, only if this is enabled in preferences.';
   text += '<br/>';
-  text += ' • <b>ctrl + shift + click field</b>: upgrade crop or template to highest unlocked level (if enabled in preferences), pick this crop type as last planted, and on empty field, plant highest of picked crop type you can afford.';
+  text += ' • <b>ctrl + shift + click field</b>: tier up: replace crop or template with highest unlocked tier (if enabled in preferences), pick this crop type as last planted, and on empty field, plant highest tier of picked crop type you can afford.';
   text += '<br/>';
   text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford.';
   text += '<br/>';
@@ -544,19 +533,11 @@ function createKeyboardHelpDialog() {
   }
   text += '<br/><br/>';
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 function createMainHelpDialog() {
-  var dialog = createDialog();
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Help';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog({scrollable:true, title:'Help'});
 
   var text = '';
 
@@ -571,14 +552,14 @@ function createMainHelpDialog() {
   text += '<br/><br/>';
   text += 'This game auto-saves every few minutes in local storage in the web browser, but please use <i>settings -> export save</i> regularly for backups, because a local storage savegame can easily get lost.';
   text += '<br/><br/>';
-  text += 'If something goes wrong with your savegame, there may be a few older recovery savegames. Click <a style="color:#44f;" id="recovery">here</a> to view them.';
+  text += 'If something goes wrong with your savegame, there may be a few older recovery savegames. Click <a style="color:#11f;" id="recovery">here</a> to view them.';
 
   text += '<br/><br/><br/>';
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';
   text += 'Copyright (c) 2020-2022 by Lode Vandevenne';
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 
   var el = document.getElementById('recovery');
   addButtonAction(el, function() {
@@ -590,16 +571,11 @@ var showing_help = false; // for medal
 
 function createHelpDialog() {
   showing_help = true;
-  var dialog = createDialog(undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, function() {
-    showing_help = false;
+  var dialog = createDialog({
+    onclose:function() { showing_help = false; },
+    scrollable:true,
+    title:'Help'
   });
-
-  var titleFlex = new Flex(dialog.content, 0, 0.01, 1, 0.11);
-  centerText2(titleFlex.div);
-  titleFlex.div.textEl.innerText = 'Help';
-
-  var scrollFlex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  makeScrollable(scrollFlex);
 
   var pos = 0.05;
   var buttondiv;
@@ -607,7 +583,7 @@ function createHelpDialog() {
 
   var makeButton = function(text) {
     //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(scrollFlex, 0.08, pos, 0.92, pos + h);
+    var buttonFlex = new Flex(dialog.content, 0.08, pos, 0.92, pos + h);
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.1;
@@ -618,7 +594,7 @@ function createHelpDialog() {
   var addSpacer = function() {
     pos += h * 0.5;
   };
-  var tempFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
+  var tempFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h);
   tempFlex.div.innerText = 'More help topics will appear here as more features unlock';
   pos += h;
 
@@ -658,7 +634,7 @@ function createHelpDialog() {
     var d = registered_help_dialogs[id];
 
     if(!added) {
-      var tempFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
+      var tempFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h);
       tempFlex.div.innerText = 'Dynamic help dialogs';
       pos += h;
       added = true;
@@ -672,7 +648,7 @@ function createHelpDialog() {
 
   addSpacer();
 
-  var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
+  var moreFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h);
   moreFlex.div.innerText = 'More help topics may appear here as the game progresses. Any in-game help dialog that pops up will become permanently available here once it\'s unlocked';
 }
 
@@ -680,7 +656,7 @@ function createHelpDialog() {
 // shows a subset of the dynamic registered help buttons, for automaton related topics only
 function createAutomatonHelpDialog() {
   showing_help = true;
-  var dialog = createDialog2({
+  var dialog = createDialog({
     title:'Automaton help',
     scrollable:true,
     onclose:function() {
@@ -724,160 +700,386 @@ function createAutomatonHelpDialog() {
 }
 
 
-var prevArrowCode = 0;
-var prevArrowX = 0;
-var prevArrowY = 0;
-var prevArrowNumTabs = 0;
 
-// also updates them
+
+var GOAL_index = 0;
+var GOAL_NONE = GOAL_index++;
+var GOAL_CHALLENGE_INFO = GOAL_index++;
+var GOAL_CHALLENGE_FINISH = GOAL_index++;
+var GOAL_FERN = GOAL_index++;
+var GOAL_WC5 = GOAL_index++;
+var GOAL_WC_UPGRADE = GOAL_index++; // skippable
+var GOAL_WC10 = GOAL_index++;
+var GOAL_BLACKBERRY_UNLOCK = GOAL_index++;
+var GOAL_BLACKBERRY_PLANT = GOAL_index++;
+var GOAL_FLOWER_UNLOCK = GOAL_index++;
+var GOAL_FLOWER_PLANT = GOAL_index++;
+var GOAL_BLUEBERRY_PLANT = GOAL_index++;
+var GOAL_CHAMPIGNON_UNLOCK = GOAL_index++;
+var GOAL_CHAMPIGNON_PLANT = GOAL_index++;
+var GOAL_TREE_LEVELUP = GOAL_index++;
+var GOAL_SUN = GOAL_index++;
+var GOAL_TREELEVEL_5 = GOAL_index++;
+var GOAL_FRUIT_TAB = GOAL_index++;
+var GOAL_NETTLE_UNLOCK = GOAL_index++;
+var GOAL_NETTLE_PLANT = GOAL_index++;
+var GOAL_TREELEVEL_10 = GOAL_index++;
+var GOAL_TRANSCEND = GOAL_index++;
+var GOAL_ETHEREAL_CROP = GOAL_index++;
+var GOAL_COLLECT_RESIN_FOR_MISTLETOE = GOAL_index++;
+var GOAL_ETHEREAL_UPGRADE = GOAL_index++;
+var GOAL_MISTLETOE_UNLOCK = GOAL_index++;
+var GOAL_PRE_MISTLETOE_PLANT = GOAL_index++;
+var GOAL_MISTLETOE_PLANT = GOAL_index++;
+var GOAL_TREELEVEL2_1 = GOAL_index++;
+var GOAL_AUTOMATON_AFFORD = GOAL_index++;
+var GOAL_AUTOMATON_UNLOCK = GOAL_index++;
+
+var prevGoal = GOAL_NONE;
+var prevGoalSubCode = 0;
+
+// returns array of 2 values: [goal, subcode]
+// goal is the actual goal from the enum values above, or GOAL_NONE if there is no goal (goals are mostly only active as tutorial in the early game)
+// subcode is a code that represents unique state within that goal, which changes if e.g. arrow must be pointed at something else. If the value remains the same, no UI updates are needed. Its value does not matter, its changes do
+function getGoal_() {
+  if(automatonUnlocked()) {
+    // far enough in the game, there are no more goals
+    return [GOAL_NONE, 0];
+  }
+
+  // state.c_numplanted is only permanent crops, while numplanted includes temporary brassica and permanent crops
+  var numplanted = state.c_numplanted + state.c_numplantedbrassica;
+
+  if(state.g_numresets == 0) {
+    if(state.c_numfullgrown == 0) {
+      // pre-berry
+      if(state.res.seeds.ltr(10) && numplanted == 0) {
+        return [GOAL_FERN, 0];
+      }
+      if(state.c_numplantedbrassica < 5) {
+        var subcode = (state.numemptyfields * 25 + state.c_numplantedbrassica) * 2 + (dialog_level > 0 ? 1 : 0);
+        return [GOAL_WC5, subcode];
+      }
+      if(state.upgrades[brassicamul_0].unlocked && state.upgrades[brassicamul_0].count == 0 && !state.upgrades[berryunlock_0].unlocked) {
+        var subcode = (state.currentTab == tabindex_upgrades ? 0 : 1) + (showingSidePanel ? 0 : 2) + (state.upgrades_new ? 0 : 4) + (state.res.seeds.ger(100) ? 0 : 8);
+        return [GOAL_WC_UPGRADE, subcode];
+      }
+      if(state.c_numplantedbrassica < 10) {
+        var subcode = (state.numemptyfields * 25 + state.c_numplantedbrassica) * 2 + (dialog_level > 0 ? 1 : 0);
+        return [GOAL_WC10, subcode];
+      }
+      if(state.upgrades[berryunlock_0].unlocked && state.upgrades[berryunlock_0].count == 0) {
+        var subcode = (state.currentTab == tabindex_upgrades ? 0 : 1) + (showingSidePanel ? 0 : 2) + (state.upgrades_new ? 0 : 4) + (state.res.seeds.ger(1000) ? 0 : 8);
+        return [GOAL_BLACKBERRY_UNLOCK, subcode];
+      }
+      if(state.c_numfullgrown < 1) {
+        var subcode = (state.numemptyfields * 25 + state.c_numplanted) * 8 + (dialog_level > 0 ? 4 : 0) + (state.numcropfields_permanent ? 2 : 0) + (state.res.seeds.ger(1000) ? 1 : 0);
+        return [GOAL_BLACKBERRY_PLANT, subcode];
+      }
+    } else if(state.treelevel == 0) {
+      // post-berry, pre spores
+      if(state.upgrades[flowerunlock_0].unlocked && state.upgrades[flowerunlock_0].count == 0) {
+        var subcode = (state.currentTab == tabindex_upgrades ? 0 : 1) + (showingSidePanel ? 0 : 2) + (state.upgrades_new ? 0 : 4) + (state.res.seeds.ger(6330) ? 0 : 8);
+        return [GOAL_FLOWER_UNLOCK, subcode];
+      }
+      if(state.fullgrowncropcount[flower_0] < 1 && !state.upgrades[berryunlock_1].count) {
+        return [GOAL_FLOWER_PLANT, 0];
+      }
+      if(state.fullgrowncropcount[berry_1] < 1 && !state.upgrades[berryunlock_2].count) {
+        var subcode = (state.numemptyfields * 25 + state.c_numplanted) * 8 + (dialog_level > 0 ? 4 : 0) + (state.numcropfields_permanent ? 2 : 0) + (state.res.seeds.ger(1000) ? 1 : 0);
+        return [GOAL_BLUEBERRY_PLANT, subcode];
+      }
+      if(state.upgrades[mushunlock_0].count == 0) {
+        return [GOAL_CHAMPIGNON_UNLOCK, 0];
+      }
+      if(state.res.spores.ler(0)) {
+        return [GOAL_CHAMPIGNON_PLANT, 0];
+      }
+      return [GOAL_TREE_LEVELUP, 0];
+    } else if(state.treelevel < 10) {
+      if(!state.c_numabilities && state.treelevel <= 3) {
+        var subcode = state.treelevel;
+        return [GOAL_SUN, subcode];
+      }
+      if(state.treelevel < 5) {
+        return [GOAL_TREELEVEL_5, 0];
+      }
+      if(!state.fruit_seen && state.treelevel >= 5 && state.treelevel < 7) {
+        var subcode = ((state.currentTab == tabindex_fruit) ? 1 : 0) + (state.numTabs * 2);
+        return [GOAL_FRUIT_TAB, subcode];
+      }
+      if(!state.upgrades[nettleunlock_0].count) {
+        var subcode = (state.currentTab == tabindex_upgrades ? 0 : 1) + (showingSidePanel ? 0 : 2) + ((state.res.seeds.ger(238e12) && state.upgrades[mushunlock_1].count) ? 0 : 4);
+        return [GOAL_NETTLE_UNLOCK, subcode];
+      }
+      if(state.fullgrowncropcount[nettle_0] < 1 && !state.upgrades[berryunlock_5].count) {
+        return [GOAL_NETTLE_PLANT, 0];
+      }
+      if(state.treelevel < 10) {
+        return [GOAL_TREELEVEL_10, 0];
+      }
+    } else {
+      // tree ready to transcend first time
+      var subcode = (dialog_level > 0) ? 1 : 0;
+      return [GOAL_TRANSCEND, subcode];
+    }
+  } else {
+    // post-transcension
+    if(!state.g_numplanted2) {
+      var subcode = ((state.currentTab == tabindex_field2) ? 1 : 0) + (state.numTabs * 2);
+      return [GOAL_ETHEREAL_CROP, subcode];
+    }
+    if(!state.upgrades2[upgrade2_mistletoe].count && state.treelevel2 == 0) {
+      if(state.g_res.resin.ltr(40) && state.g_numresets < 3) {
+        if(state.res.resin.ltr((state.g_numupgrades2 > 2) ? 25 : ((state.g_numresets > 2) ? 15 : 10))) {
+          return [GOAL_COLLECT_RESIN_FOR_MISTLETOE, 0];
+        } else {
+          return [GOAL_ETHEREAL_UPGRADE, 0];
+        }
+      } else {
+        return [GOAL_MISTLETOE_UNLOCK, 0];
+      }
+    }
+    /*if(state.upgrades2[upgrade2_mistletoe].count && state.res.twigs.ler(0)) {
+      return [GOAL_TWIGS, 0];
+    }*/
+    if(state.upgrades2[upgrade2_mistletoe].count && state.treelevel2 == 0) {
+      if(state.cropcount[mistletoe_0]) {
+        return [GOAL_TREELEVEL2_1, 0];
+      } else if(state.upgrades[mistletoeunlock_0].unlocked) {
+        subcode = state.upgrades[mistletoeunlock_0].unlocked ? 1 : 0;
+        return [GOAL_MISTLETOE_PLANT, subcode];
+      } else {
+        return [GOAL_PRE_MISTLETOE_PLANT, 0];
+      }
+    }
+
+    if(state.treelevel2 >= 1 && !automatonUnlocked()) {
+      return [state.res.resin.ger(100) ? GOAL_AUTOMATON_UNLOCK : GOAL_AUTOMATON_AFFORD, 0];
+    }
+  }
+
+  return [GOAL_NONE, 0];
+}
+
+
+function getGoal() {
+  if(automatonUnlocked()) {
+    // far enough in the game, there are no more goals
+    return [GOAL_NONE, 0];
+  }
+
+  var goal = getGoal_();
+
+  // don't enable most of the goals during a challenge, it already has its own different kind of goal to reach
+  // however, do show some goals related to the ethereal field
+  if(goal && state.challenge) {
+    if(goal[0] == GOAL_ETHEREAL_CROP || goal[0] == GOAL_ETHEREAL_UPGRADE || goal[0] == GOAL_MISTLETOE_UNLOCK || goal[0] == GOAL_AUTOMATON_UNLOCK) return goal;
+
+    if(state.challenges_completed == 0) {
+      var c = challenges[state.challenge];
+      if(state.treelevel >= c.nextTargetLevel()) {
+        return [GOAL_CHALLENGE_FINISH, 0];
+      } else {
+        return [GOAL_CHALLENGE_INFO, 0];
+      }
+    } else {
+      return [GOAL_NONE, 0];
+    }
+  }
+
+  return goal;
+}
+
+function getEmptyFieldCellForArrow() {
+  var x = 0;
+  var y = 0;
+  for(;;) {
+    if(state.field[y][x].index == 0 || state.field[y][x].index == FIELD_REMAINDER) {
+      return [x, y];
+    }
+    x++;
+    if(x >= state.numw) {
+      x = 0;
+      y++;
+    }
+    if(y >= state.numh) break;
+  }
+  return null;
+}
+
+// also updates them, also shows goal chip under the log
 function showHelpArrows() {
   if(!fieldDivs) return; // field not rendered yet, some divs for arrows don't yet exist
 
-  if(state.g_numresets > 3 && arrows.length == 0) return; // arrows cannot appear that late, no need to execute the rest of this function.
+  var goalarray = getGoal();
+  var goal = goalarray[0];
+  var subcode = goalarray[1];
 
-  if(prevArrowNumTabs != numtabs) {
-    // a new tab appeared (e.g. achievements after receiving the first one), some of the below arrows may be pointing at the wrong one now so force update this way
-    prevArrowNumTabs = numtabs;
-    prevArrowCode = -1;
-  }
+  if(goal == prevGoal && subcode == prevGoalSubCode) return; // nothing to do, already rendered matching arrow and goal
 
-  var arrowCode = 0;
-  var numplanted = state.c_numplanted + state.c_numplantedbrassica;
+  removeAllArrows();
 
-  // planting first watercress
-  if(!arrowCode && state.g_numresets < 1 && state.res.seeds.ger(10) && numplanted == 0) {
+  if(goal == GOAL_NONE) {
+    setGoalText(undefined);
+  } else if(goal == GOAL_CHALLENGE_INFO) {
+    setGoalText('Click the challenge info dialog in the tree to see the goal and reward during a challenge.', true);
+  } else if(goal == GOAL_CHALLENGE_FINISH) {
+    setGoalText('You finished the challenge, transcend to complete challenge and get its reward.');
+  } else if(goal == GOAL_FERN) {
+    setGoalText('Collect 10 seeds by clicking ferns.');
+  } else if(goal == GOAL_WC5) {
+    setGoalText('Plant 5 watercresss on the field (' + state.c_numplantedbrassica + ' / 5 planted).');
     var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_watercress') : null;
     if(watercress_chip) {
-      arrowCode = 2;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(fieldDivs[1][1].div, 0.9, 0.9, watercress_chip, 0.8, 0.8);
-        //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
-      }
+      makeArrow2(watercress_chip, 1.5, 1, watercress_chip, 0.8, 0.5);
     } else {
-      arrowCode = 1;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(fieldDivs[1][1].div, 0.9, 0.9, fieldDivs[0][0].div, 0.8, 0.8);
-        //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
+      var coords = getEmptyFieldCellForArrow();
+      if(coords) {
+        var x = coords[0];
+        var y = coords[1];
+        makeArrow2(fieldDivs[y][x].div, 1.5, 1.5, fieldDivs[y][x].div, 0.8, 0.8, fieldFlex.div);
       }
     }
-  }
-
-  // upgrading watercress
-  if(!arrowCode && state.g_numresets < 1 && state.upgrades[brassicamul_0].unlocked && state.upgrades[brassicamul_0].count == 0 && !state.upgrades[berryunlock_0].unlocked) {
-    // TODO: get better way to refer to a particular upgrade chip (in this case the watercress one)
-    var text = 'upgrade watercress';
-    var alreadyRelated = (prevArrowCode >= 3 && prevArrowCode <= 5);
+  } else if(goal == GOAL_WC_UPGRADE) {
+    setGoalText('Upgrade watercress, after getting enough seeds from watercress production.');
     if(state.currentTab == 1 && upgradeFlexCache[0]) {
-      arrowCode = 3;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(contentFlex.div, 0.6, 0.2, upgradeFlexCache[0].div, 0.85, 0.5);
-        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
-      }
+      var chip = document.getElementById('help_arrow_upgrade_watercress');
+      if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
     } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
-      arrowCode = 4;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(contentFlex.div, 0.9, 0.2, bottomrightSidePanelFlexCache[1].div, 0.15, 0.5);
-        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
-      }
-    } else if(!showingSidePanel) {
-      arrowCode = 5;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
-        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
-      }
+      var chip = document.getElementById('help_arrow_upgrade_watercress_side');
+      if(chip) makeArrow2(contentFlex.div, 0.9, 0.2, chip, 0.15, 0.5);
+    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(100))) {
+      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
     }
-  }
-
-  // unlocking blackberry
-  if(!arrowCode && state.g_numresets < 1 && state.upgrades[berryunlock_0].unlocked && state.upgrades[berryunlock_0].count == 0 && state.res.seeds.ger(1000)) {
-    var text = 'unlock blackberry';
-    var alreadyRelated = (prevArrowCode >= 6 && prevArrowCode <= 8);
+  } else if(goal == GOAL_WC10) {
+    setGoalText('Plant up to 10 watercress on the field to reveal a next upgrade (' + state.c_numplantedbrassica + ' / 10 planted).');
+  } else if(goal == GOAL_BLACKBERRY_UNLOCK) {
+    setGoalText('Buy the "Unlock blackberry" upgrade. If needed, plant and re-plant more watercress to gain enough seeds to afford it.');
     if(state.currentTab == 1 && upgradeFlexCache[0]) {
-      arrowCode = 6;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(contentFlex.div, 0.6, 0.2, upgradeFlexCache[0].div, 0.85, 0.5);
-        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
-      }
+      var chip = document.getElementById('help_arrow_unlock_blackberry');
+      if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
     } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
-      arrowCode = 7;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        if(bottomrightSidePanelFlexCache[1]) {
-          removeAllArrows();
-          makeArrow2(contentFlex.div, 0.9, 0.3, bottomrightSidePanelFlexCache[1].div, 0.25, 0.7);
-          //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
-        }
-      }
-    } else if(!showingSidePanel) {
-      arrowCode = 8;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
-        //if(!alreadyRelated) showMessage(text, C_HELP, 0, 0);
-      }
+      var chip = document.getElementById('help_arrow_unlock_blackberry_side');
+      if(chip) makeArrow2(contentFlex.div, 0.9, 0.25, chip, 0.15, 0.5);
+    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(1000))) {
+      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
     }
-  }
-
-  // planting first blackberry
-  if(!arrowCode && state.g_numresets < 1 && state.res.seeds.ger(1000) && !!state.upgrades[berryunlock_0].count && !(state.upgrades[berryunlock_1].unlocked || state.cropcount[berry_0])) {
-    var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
-    if(watercress_chip) {
-      arrowCode = 9;
-      if(prevArrowCode != arrowCode || arrows.length == 0) {
-        removeAllArrows();
-        makeArrow2(fieldDivs[1][1].div, 0.9, 0.9, watercress_chip, 0.8, 0.8);
-        //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
-      }
-    } else {
-      arrowCode = 10;
-      if(prevArrowCode != arrowCode || arrows.length == 0 || state.field[prevArrowY][prevArrowX].index != 0) {
-        removeAllArrows();
-        var ax = 0;
-        var ay = 0;
-        var found = false;
-        for(var y = 0; y < state.numh; y++) {
-          for(var x = 0; x < state.numw; x++) {
-            var f = state.field[y][x];
-            if(f.index == 0) {
-              found = true;
-              ax = x;
-              ay = y;
-              y = state.numh;
-              break;
-            }
-          }
-        }
-        if(found) {
-          var ax2 = ax + 1;
-          var ay2 = ay + 1;
-          var ox = 0.9;
-          var oy = 0.9;
-          var dx = 0.8;
-          var dy = 0.8;
-          if(ax2 >= state.numw) {
-            ax2 = ax - 1;
-            ox = 0.1;
-            dx = 0.2;
-          }
-          if(ay2 >= state.numh) {
-            ay2 = ay - 1;
-            oy = 0.1;
-            dy = 0.2;
-          }
-          makeArrow2(fieldDivs[ay2][ax2].div, ox, oy, fieldDivs[ay][ax].div, dx, dy);
-          //if(prevArrowCode != arrowCode) showMessage('plant watercress in any field cell', C_HELP, 0, 0);
-          prevArrowX = ax;
-          prevArrowY = ay;
+  } else if(goal == GOAL_BLACKBERRY_PLANT) {
+    setGoalText('Plant a blackberry and wait for it to grow. If needed, plant and re-plant more watercress to gain enough seeds to afford it.');
+    if(!state.numcropfields_permanent && state.res.seeds.ger(1000)) {
+      var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
+      if(chip) {
+        makeArrow2(chip, 1.5, 1, chip, 0.8, 0.5);
+      } else {
+        var coords = getEmptyFieldCellForArrow();
+        if(coords) {
+          var x = coords[0];
+          var y = coords[1];
+          makeArrow2(fieldDivs[y][x].div, 1.5, 1.5, fieldDivs[y][x].div, 0.8, 0.8, fieldFlex.div);
         }
       }
     }
+  } else if(goal == GOAL_FLOWER_UNLOCK) {
+    setGoalText('Unlock anemone. If needed, plant more blackberries and watercress to get more seed production to afford its cost.');
+    if(state.currentTab == 1 && upgradeFlexCache[0]) {
+      var chip = document.getElementById('help_arrow_unlock_anemone');
+      if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);
+    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(6330))) {
+      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+    }
+  } else if(goal == GOAL_FLOWER_PLANT) {
+    setGoalText('Plant an anemone flower. Plant it orthogonally next to a berry to boost the berry (a flower on its own doesn\'t produce anything). Keep planting more berries and flowers for more income.');
+  } else if(goal == GOAL_BLUEBERRY_PLANT) {
+    setGoalText('Unlock blueberry, plant one (or replace a blackberry by one) and wait for it to grow. To afford this, if needed plant more blackberries boosted by flowers and watercress copying, or use upgrades.');
+    if(!state.cropcount[berry_1] && state.res.seeds.ger(40000) && state.upgrades[berryunlock_1].count && !state.upgrades[berryunlock_2].unlocked) {
+      var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blueberry') : null;
+      if(chip) {
+        makeArrow2(chip, 1.5, 1, chip, 0.8, 0.5);
+      } else {
+        // disabled: don't show arrow on field, that can be misleading, it could be pointing to a very bad spot compared to where the flowers are planted, or it may be better to upgrade a blackberry into a blueberry
+        /*var coords = getEmptyFieldCellForArrow();
+        if(coords) {
+          var x = coords[0];
+          var y = coords[1];
+          makeArrow2(fieldDivs[y][x].div, 1.5, 1.5, fieldDivs[y][x].div, 0.8, 0.8, fieldFlex.div);
+        }*/
+      }
+    }
+  } else if(goal == GOAL_CHAMPIGNON_UNLOCK) {
+    setGoalText('Unlock champignon. To afford this, if needed plant more berries boosted by flowers and watercress copying, or use upgrades.');
+  } else if(goal == GOAL_CHAMPIGNON_PLANT) {
+    setGoalText('Plant champignon next to a berry to produce spores. The champignon must be planted next to a high tier berry as it will consume seeds directly from that berry.');
+  } else if(goal == GOAL_TREE_LEVELUP) {
+    setGoalText('Wait for the tree to level up through enough spores. Upgrade berries and get more berry seed production next to the champignon to speed up its spore production.');
+  } else if(goal == GOAL_SUN) {
+    setGoalText('Reach tree level 2 and activate the sun ability. It\'s also possible to unlock other crops like cranberry while waiting.');
+    if(state.treelevel >= 2) {
+      var chip = document.getElementById('sun_button');
+      if(chip) makeArrow2(chip, 2.5, 1.5, chip, 1, 0.6);
+    }
+  } else if(goal == GOAL_TREELEVEL_5) {
+    setGoalText('Reach tree level 5 to get a fruit drop. Keep doing upgrades and unlocking and replacing crops for more income. Find an effective field layout. Put a flower next to mushrooms for more spores.');
+  } else if(goal == GOAL_FRUIT_TAB) {
+    setGoalText('Check the fruit tab to see the newly dropped fruit and inspect its abilities.');
+    if(state.currentTab != tabindex_fruit) {
+      makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_fruit], 0.5, 1.0);
+    }
+  } else if(goal == GOAL_NETTLE_UNLOCK) {
+    setGoalText('Unlock nettle. To reach this, unlock and grow other crops first, up to matsutake mushroom. Keep doing upgrades and planting and replacing crops for more income.');
+    if(state.currentTab == 1 && upgradeFlexCache[0]) {
+      var chip = document.getElementById('help_arrow_unlock_nettle');
+      if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);
+    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+      var chip = document.getElementById('help_arrow_unlock_nettle_side');
+      if(chip) makeArrow2(contentFlex.div, 0.9, 0.2, chip, 0.15, 0.5);
+    } else if(!showingSidePanel && state.res.seeds.ger(238e12) && state.upgrades[mushunlock_1].count) {
+      makeArrow2(contentFlex.div, 0.5, 0.3, tabbuttons[1], 0.5, 0.9);
+    }
+  } else if(goal == GOAL_NETTLE_PLANT) {
+    setGoalText('Plant a nettle. Plant it next to a mushroom to boost its spore production by 500% (but keep at least 1 berry and flower). Beware that nettle negatively affects other flowers and berries.');
+  } else if(goal == GOAL_TREELEVEL_10) {
+    setGoalText('Reach tree level 10 to unlock transcension.');
+  } else if(goal == GOAL_TRANSCEND) {
+    setGoalText('Click the tree and then transcend. Check fruit tab first in case you want to keep a fruit. You can also get a few more tree levels to collect more resin first - but transcending will be worth it!');
+  } else if(goal == GOAL_ETHEREAL_CROP) {
+    setGoalText('Plant an ethereal crop of your choice in the new ethereal field.');
+    if(state.currentTab != tabindex_field2) {
+      makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_field2], 0.6, 0.95);
+    }
+  } else if(goal == GOAL_COLLECT_RESIN_FOR_MISTLETOE) {
+    setGoalText('Grow the basic field and level up the tree to 10 or higher to transcend again for more resin, get more ethereal upgrades and achievements to reach higher levels and earn more resin faster each transcension.');
+  } else if(goal == GOAL_ETHEREAL_UPGRADE) {
+    setGoalText('Plant a crop in the ethereal field, or choose an upgrade in the ethereal upgrades tab, with the resin you have.');
+  } else if(goal == GOAL_MISTLETOE_UNLOCK) {
+    //setGoalText('Unlock mistletoes in the ethereal upgrades tab. This ethereal upgrade is essential to level up the ethereal tree, which unlocks more ethereal upgrades, automation, etc...');
+    setGoalText('Unlock mistletoes in the ethereal upgrades tab once you have enough resin from transcensions.');
+  //} else if(goal == GOAL_TWIGS) {
+  //  setGoalText('Plant one or more mistletoes next to the tree in the basic field, then transcend to get twigs');
+  } else if(goal == GOAL_PRE_MISTLETOE_PLANT) {
+    setGoalText('Grow the basic field until you can plant mistletoe.', true);
+  } else if(goal == GOAL_MISTLETOE_PLANT) {
+    setGoalText('Unlock and plant a mistletoe next to the basic tree to collect twigs.');
+  } else if(goal == GOAL_TREELEVEL2_1) {
+    setGoalText('Reach enough twigs through transcensions to level up the ethereal tree.', true);
+  } else if(goal == GOAL_AUTOMATON_AFFORD) {
+    setGoalText('Unlock the automaton in the ethereal upgrades tab once you have enough resin.', true);
+  } else if(goal == GOAL_AUTOMATON_UNLOCK) {
+    setGoalText('Unlock the automaton in the ethereal upgrades tab');
+  } else {
+    setGoalText('UNKNOWN GOAL (TODO)');
   }
 
-  if(arrowCode == 0) removeAllArrows();
-  prevArrowCode = arrowCode;
+  if(prevGoal != goal) {
+    if(prevGoal != GOAL_NONE && prevGoal >= 0) {
+      if(goal == GOAL_NONE) showMessage('Goal completed!', C_GOAL);
+      else if(goal > prevGoal) {
+        showMessage('Goal completed! A new goal appeared.', C_GOAL);
+      }
+    }
+    if(goal != GOAL_NONE) animateGoalText();
+  }
+
+  prevGoal = goal;
+  prevGoalSubCode = subcode;
 }

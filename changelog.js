@@ -20,6 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.103 - Early game balancing (2022-04-27):';
+  text += '<br/>• Added a new bee tier for the basic field.';
+  text += '<br/>• Added achievements for amount of nuts, and more for seeds.';
+  text += '<br/>• The "time at level" bonus is now weighted with the duration of several previous levels.';
+  text += '<br/>• Added goals, an interactive tutorial for the early game, giving direction up to unlocking of automaton. Goal chips appear above the message log.';
+  text += '<br/>• Reduced spore production of mushrooms above champignon by 25% but increased nettle/thistle boost by 25% and made them cheaper to compensate exactly. This makes nettles more interesting during the first run of the game.';
+  text += '<br/>• Mistletoe now unlocks after blackberry instead of after blueberry (still requires the ethereal upgrade), and is cheaper.';
+  text += '<br/>• The first ethereal tree level now costs 72 instead of 144 twigs, and the second 1296 instead of 1728. All others stay the same (powers of 12).';
+  text += '<br/>• Tweaked automaton planting heuristics to prefer berries touching brassica a bit more.';
+  text += '<br/>• Changed some blueprint letter symbols, due some crops having become whole series, and for possible future crop types. The changes are: stinging: S (was: N), bees: Z ("buzz", was: H), squirrel: Q (was: S), nuts: N (was: U)';
+  text += '<br/>• Renamed some in-game names for clarity: old beehive -> "bee nest", new beehive -> "beehive", beehive crop type -> "bee", prickly/nettle crop type -> "stinging", upgrade crop (in field) -> "tier up"';
+  text += '<br/>• Twigs resource display, tree spore requirement and automaton tab appear sooner in early game, for clarity.';
+  text += '<br/>• Bugfixes and UI improvements.'; // includes: more clear message when trying to plant blueprint in truly basic and bee challenge, showing "disabled" in name of some tabs during truly basic challenge, amount of amber shown on amber tab, dialog consistency, one less popup dialog on first ethereal tree levelup, wrapping tooltip text fix, ...
+  text += '<br/><br/>';
 
   text += '0.1.102 (2022-04-18):';
   text += '<br/>• Added stormy challenge with perma weather reward.';

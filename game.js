@@ -659,6 +659,7 @@ function beginNextRun(opt_challenge) {
   }
 
   state.treelevel = 0;
+  state.prevleveltime = [0, 0, 0];
 
   state.fernres = new Res();
   state.fern = false;
@@ -1225,7 +1226,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
-        if(c.type == CROPTYPE_NETTLE) {
+        if(c.type == CROPTYPE_STINGING) {
           p.boost = c.getBoost(f, pretend);
           p.hasbreakdown_boost = true;
         }
@@ -1249,7 +1250,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
-            if(c2 && c2.type == CROPTYPE_NETTLE) {
+            if(c2 && c2.type == CROPTYPE_STINGING) {
               var p2 = prefield[y2][x2];
               var boost = p2.boost;
               // when changing this formula, must also change Crop.prototype.computeNettleMalusReceived_ to match
@@ -1348,7 +1349,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       var f = state.field[y][x];
       var c = f.getRealCrop();
       if(c) {
-        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) continue; // don't overwrite their boost breakdown with production breakdown
+        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE) continue; // don't overwrite their boost breakdown with production breakdown
         var p = prefield[y][x];
         var prod = c.getProd(f, pretend);
         if(prod.seeds.ltr(0)) {
@@ -1601,13 +1602,14 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
 
         if(c.type == CROPTYPE_BERRY) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
-          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 2) ? 1 : 2);
-          if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
+          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 4) ? 1.5 : 2.5);
+          if(c2.type == CROPTYPE_STINGING) score_malus *= 0.25;
           if(!score_ignore_mushrooms && c2.type == CROPTYPE_MUSH) score_mul *= 2;
         }
         if(c.type == CROPTYPE_MUSH) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
-          if(c2.type == CROPTYPE_NETTLE) score_mul++;
+          // TODO: also score brassica here?
+          if(c2.type == CROPTYPE_STINGING) score_mul++;
           if(c2.type == CROPTYPE_BERRY) score_num++;
         }
       }
@@ -1646,13 +1648,13 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
 
         if(c.type == CROPTYPE_FLOWER) {
           if(c2.type == CROPTYPE_BEE) score_mul++;
-          if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
+          if(c2.type == CROPTYPE_STINGING) score_malus *= 0.5;
           // these 3 values and their multipliers are tweaked to make sensible choices for relative value of berries, mushrooms and nuts and likely intended preference
           if(c2.type == CROPTYPE_BERRY) score_num += p2.score;
           if(c2.type == CROPTYPE_MUSH) score_num += p2.score * 0.5;
           if(c2.type == CROPTYPE_NUT) score_num += 0.65;
         }
-        if(c.type == CROPTYPE_NETTLE) {
+        if(c.type == CROPTYPE_STINGING) {
           if(c2.type == CROPTYPE_MUSH) score_num++;
           if(c2.type == CROPTYPE_BERRY) score_num--;
           if(c2.type == CROPTYPE_NUT) score_num--;
@@ -1660,7 +1662,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         }
         if(c.type == CROPTYPE_BEE) {
           if(c2.type == CROPTYPE_FLOWER) score_num++;
-          if(c2.type == CROPTYPE_NETTLE) score_malus *= 0.5;
+          if(c2.type == CROPTYPE_STINGING) score_malus *= 0.5;
         }
       }
 
@@ -1668,7 +1670,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
         p.score = score_mul * score_malus * score_num;
       }
-      if(c.type == CROPTYPE_NETTLE) {
+      if(c.type == CROPTYPE_STINGING) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
         p.score = score_num;
       }
@@ -1977,7 +1979,7 @@ function getAutoFraction(advanced, fractions, croptype) {
     if(croptype == CROPTYPE_BERRY) fraction = fractions[3];
     else if(croptype == CROPTYPE_MUSH) fraction = fractions[4];
     else if(croptype == CROPTYPE_FLOWER) fraction = fractions[5];
-    else if(croptype == CROPTYPE_NETTLE) fraction = fractions[6];
+    else if(croptype == CROPTYPE_STINGING) fraction = fractions[6];
     else if(croptype == CROPTYPE_BEE) fraction = fractions[7];
     else if(croptype == CROPTYPE_BRASSICA) fraction = fractions[2];
     else if(croptype == CROPTYPE_MISTLETOE) fraction = fractions[8];
@@ -2099,7 +2101,7 @@ function computeNextAutoPlant() {
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
   // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
-  var types = [CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_NETTLE, CROPTYPE_NUT];
+  var types = [CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_STINGING, CROPTYPE_NUT];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
@@ -3127,7 +3129,7 @@ var update = function(opt_ignorePause) {
           var is_brassica = f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA;
           // the f.growth >= 1 is because growing crops used to produce nothing. now they do, so don't allow that anymore.
           if(state.challenge == challenge_nodelete && !is_brassica /*&& f.growth >= 1*/ && !f.isTemplate()) {
-            showMessage('Cannot delete or upgrade crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
+            showMessage('Cannot delete or replace crops during the nodelete challenge. Ensure to leave open field spots for higher level plants.', C_INVALID, 0, 0);
             ok = false;
           } else if(state.challenge == challenge_wither && !is_brassica && !f.isTemplate()) {
             var more_expensive_same_type = type == ACTION_REPLACE && f.hasCrop() && action.crop.cost.gt(f.getCrop().cost) && action.crop.type == f.getCrop().type;
@@ -3986,7 +3988,7 @@ var update = function(opt_ignorePause) {
           state.fern = 1;
           state.fernx = s[0];
           state.ferny = s[1];
-          if(state.g_numferns == 3 || (state.g_numferns > 7 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
+          if(state.g_numferns == 3 || (basicChallenge() && state.c_numferns == 3) || (state.g_numferns > 7 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
           if(state.notificationsounds[0]) playNotificationSound(1000);
           // the coordinates are invisible but are for screenreaders
           showMessage('A fern spawned<span style="color:#0000"> at ' + state.fernx + ', ' + state.ferny + '</span>', C_NATURE, 2352600596, 0.5);
@@ -4167,6 +4169,8 @@ var update = function(opt_ignorePause) {
       state.g_treelevel = Math.max(state.treelevel, state.g_treelevel);
 
       // this must happen after do_resin above, so that the state.lasttreeleveluptime is still used in the currentTreeLevelResin computation
+      for(var i = 1; i < state.prevleveltime.length; i++) state.prevleveltime[state.prevleveltime.length - i] = state.prevleveltime[state.prevleveltime.length - 1 - i];
+      state.prevleveltime[0] = timeAtTreeLevel(state);;
       state.lasttreeleveluptime = state.time;
       state.resinfruittime = 0;
       state.twigsfruittime = 0;
@@ -4274,7 +4278,7 @@ var update = function(opt_ignorePause) {
 
         showEtherealTreeLevelDialog(state.treelevel2);
         if(state.treelevel2 == 1) {
-          showRegisteredHelpDialog(22);
+          showRegisteredHelpDialog(-22);
         }
 
         for(var i = 0; i < state.treelevel2 - 1; i++) {

@@ -49,7 +49,7 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
     result += 'Effect: ' + c.effect_description_short + '<br/>';
   }
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE) {
     var total = c.getBasicBoost(f);
     result += '<br/>';
     result += 'Boost amount: ' + total.toPercentString();
@@ -131,7 +131,7 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
 function getCropInfoHTML2Breakdown(f, c) {
   var result = '';
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_NETTLE || c.type == CROPTYPE_BEE) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE) {
     var breakdown = [];
     var total = c.getBasicBoost(f, breakdown);
     result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
@@ -230,9 +230,9 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
         showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString(), C_INVALID, 0, 0);
       } else if(!(x >= 0 && x < state.numw2 && y >= 0 && y < state.numh2) || state.field2[y][x].index < CROPINDEX) {
-        showMessage('No crop to upgrade here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+        showMessage('No crop to tier up here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
       } else {
-        showMessage('Crop not upgraded, no higher tier unlocked or available', C_INVALID);
+        showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
       }
     }
   }
@@ -255,7 +255,7 @@ function makeTree2Dialog() {
 
   var have_buttons = automatonUnlocked();
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     nocancel:have_buttons,
     scrollable:false,
     narrow:true,
@@ -350,7 +350,7 @@ function makeField2Dialog(x, y) {
     var c = crops2[f.cropIndex()];
     var div;
 
-    var dialog = createDialog2({
+    var dialog = createDialog({
       icon:c.image[4],
       title:'Ethereal crop info'
     });
@@ -367,8 +367,8 @@ function makeField2Dialog(x, y) {
     var last0 = undefined;
 
     styleButton(button0);
-    button0.textEl.innerText = 'Upgrade crop';
-    registerTooltip(button0, 'Upgrade crop to the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
+    button0.textEl.innerText = 'Tier up';
+    registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
       if(makeUpgradeCrop2Action(x, y)) {
         closeAllDialogs();
@@ -377,7 +377,7 @@ function makeField2Dialog(x, y) {
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Downgrade crop';
+    button1.textEl.innerText = 'Tier down';
     registerTooltip(button1, 'Downgrade crop to 1 tier lower (refunding the resin cost difference), if it already is at the lowest tier it will be turned into a blueprint template.');
     addButtonAction(button1, function() {
       if(makeDowngradeCrop2Action(x, y)) {
@@ -388,7 +388,7 @@ function makeField2Dialog(x, y) {
 
     styleButton(button2);
     button2.textEl.innerText = 'Replace crop';
-    registerTooltip(button2, 'Replace the crop with a new one, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
+    registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
     addButtonAction(button2, function() {
       makePlantDialog2(x, y, true, c.getRecoup());
     });
@@ -409,7 +409,7 @@ function makeField2Dialog(x, y) {
     button4.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button4, function() {
-      var dialog = createDialog2({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
+      var dialog = createDialog({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
       dialog.div.className = 'efDialogTranslucent';
       var flex = dialog.content;
       var text = '';
@@ -511,7 +511,7 @@ function initField2UI() {
           }
           var twigs_req = treeLevel2Req(state.treelevel2 + 1);
           var nextlevelprogress = state.res.twigs.div(twigs_req.twigs);
-          result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' of ' + twigs_req.toString() + ' (' + nextlevelprogress.toPercentString() + ')';
+          result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' of ' + twigs_req.toString() + ' (have ' + state.res.twigs.toString() + ', ' + nextlevelprogress.toPercentString() + ')';
         }
         return result;
       }, x, y, div), true);
@@ -690,16 +690,23 @@ function renderField2() {
 }
 
 function showEtherealTreeLevelDialog(level) {
-  var dialog = createDialog2({cancelname:'ok', scrollable:true, title:('Ethereal tree level ' + level)});
+  var dialog = createDialog({cancelname:'ok', scrollable:true, title:('Ethereal tree level ' + level)});
 
-  var text = 'The ethereal tree leveled up to level ' + level + '!<br><br>';
+  var text;
+
+  if(level == 1) {
+   text = 'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.'
+  } else {
+   text = 'The ethereal tree leveled up to level ' + level + '!';
+  }
+  text += '<br><br>';
 
   var twigs_now = treeLevel2Req(level);
   var twigs_next = treeLevel2Req(level + 1);
 
   text += 'The ethereal tree consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
 
-  text += 'The following new ethereal things got unlocked:<br><br>';
+  text += 'The following new ethereal things got, or will get, unlocked:<br><br>';
 
   var anything = false;
 

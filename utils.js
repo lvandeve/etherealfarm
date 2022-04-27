@@ -639,6 +639,12 @@ var Utils = (function() {
   };
   result.upperCaseFirstWord = upperCaseFirstWord;
 
+  var lowerCaseFirstWord = function(text) {
+    if(text && text.length > 0) text = text[0].toLowerCase() + text.substr(1);
+    return text;
+  };
+  result.lowerCaseFirstWord = lowerCaseFirstWord;
+
   // adds event listener
   // event is string of existing JS event function excluding 'on': 'click', 'mouseover', 'mouseout', ...
   var addEvent = function(el, event, fun) {
@@ -696,5 +702,6 @@ var util = Utils;
 var bind = util.bind;
 var makeDiv = util.makeDiv;
 var upper = util.upperCaseFirstWord;
+var lower = util.lowerCaseFirstWord;
 var eventHasCtrlKey = util.eventHasCtrlKey;
 var eventHasShiftKey = util.eventHasShiftKey

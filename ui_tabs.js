@@ -181,49 +181,55 @@ function updateTabButtons2() {
     if(!a && state.fruit_stored.length) {
       num = 'none';
     }
-    var text = 'fruit<br/>(' + num + ')';
+    var text;
 
-    if(special) {
-      var lowest = 7; // lowest category of other fruit you have
-      var tier = a ? a.tier : 0;
-      for(var i = 0; i < state.fruit_stored.length; i++) {
-        var f = state.fruit_stored[i];
-        if(!f) continue;
-        if(f == a) continue;
-        if(f.tier < tier - 1) continue;
-        var special2 = getFruitCategory(f);
-        if(special2 < lowest) lowest = special2;
-      }
-      if(special < 7 && special < lowest) special = 0; // don't indicate you don't have a production fruit active, when you don't have a production fruit in the first place
-      if(special == 7 && (state.fruit_stored.length + state.fruit_sacr.length == 0)) special = 0;
-    }
+    if(basicChallenge() == 2) {
+      text = 'fruit<br/>(disabled)';
+    } else {
+      text = 'fruit<br/>(' + num + ')';
 
-    var color = undefined;
-    var bold = false;
-    var darkstyle = state.uistyle == 2 || state.uistyle == 3;
-    if(!state.fruit_seen || special == 7) {
-      color = 'red';
-      bold = true;
-    } else if(special >= 5) {
-      // grow or weather: green
-      color = darkstyle ? '#cec' : '#050';
-    } else if(special >= 4) {
-      // mushroom eff: blue
-      color = darkstyle ? '#ccf' : '#00b';
-    } else if(special >= 2) {
-      // resin/twigs/nuts: brown/orange
-      color = darkstyle ? '#ecb' : '#630';
-    } else if(special >= 1) {
-      if(special == 1 && state.croptypecount[CROPTYPE_BRASSICA] == 0) {
-        // watercress fruit but no watercress planted: red-ish
-        color = darkstyle ? '#fbb' : '#700';
+      if(special) {
+        var lowest = 7; // lowest category of other fruit you have
+        var tier = a ? a.tier : 0;
+        for(var i = 0; i < state.fruit_stored.length; i++) {
+          var f = state.fruit_stored[i];
+          if(!f) continue;
+          if(f == a) continue;
+          if(f.tier < tier - 1) continue;
+          var special2 = getFruitCategory(f);
+          if(special2 < lowest) lowest = special2;
+        }
+        if(special < 7 && special < lowest) special = 0; // don't indicate you don't have a production fruit active, when you don't have a production fruit in the first place
+        if(special == 7 && (state.fruit_stored.length + state.fruit_sacr.length == 0)) special = 0;
       }
-    }
-    if(color) {
-      text = '<font color="' + color + '">' + text + '</font>';
-    }
-    if(bold) {
-      text = '<b>' + text + '</b>';
+
+      var color = undefined;
+      var bold = false;
+      var darkstyle = state.uistyle == 2 || state.uistyle == 3;
+      if(!state.fruit_seen || special == 7) {
+        color = 'red';
+        bold = true;
+      } else if(special >= 5) {
+        // grow or weather: green
+        color = darkstyle ? '#cec' : '#050';
+      } else if(special >= 4) {
+        // mushroom eff: blue
+        color = darkstyle ? '#ccf' : '#00b';
+      } else if(special >= 2) {
+        // resin/twigs/nuts: brown/orange
+        color = darkstyle ? '#ecb' : '#630';
+      } else if(special >= 1) {
+        if(special == 1 && state.croptypecount[CROPTYPE_BRASSICA] == 0) {
+          // watercress fruit but no watercress planted: red-ish
+          color = darkstyle ? '#fbb' : '#700';
+        }
+      }
+      if(color) {
+        text = '<font color="' + color + '">' + text + '</font>';
+      }
+      if(bold) {
+        text = '<b>' + text + '</b>';
+      }
     }
 
     if(text != fruitButtonLastText) {
@@ -270,7 +276,11 @@ function updateTabButtons2() {
       text += '<br>(absent)';
       text = '<font color="#c00">' + text + '</font>';
     } else if(!automatonEnabled()) {
-      text += '<br>(off)';
+      if(basicChallenge() == 2) {
+        text += '<br>(disabled)';
+      } else {
+        text += '<br>(off)';
+      }
     }
 
     if(text != automatonButtonLastText) {
@@ -294,6 +304,17 @@ function updateTabButtons2() {
       tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
       tabbuttons[tabnum].textEl.innerHTML  = text;
       squirrelButtonLastText = text;
+    }
+  }
+
+  tabnum = tabindex_amber;
+  if(tabbuttons[tabnum]) {
+    var text = 'amber<br/>(' + state.res.amber.toString() + ')';
+
+    if(text != amberButtonLastText) {
+      tabbuttons[tabnum].textEl.innerHTML = text;
+      amberButtonLastText = text;
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
     }
   }
 
@@ -323,7 +344,7 @@ function updateTabButtons() {
   wanted[tabindex_fruit] = state.g_numfruits > 0;
   wanted[tabindex_field2] = state.g_numresets > 0;
   wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
-  wanted[tabindex_automaton] = haveAutomaton() || state.treelevel2 >= 2;
+  wanted[tabindex_automaton] = automatonUnlocked();
   wanted[tabindex_medals] = state.medals_earned > 0;
   wanted[tabindex_squirrel] = squirrelUnlocked();
   wanted[tabindex_amber] = amberUnlocked();
@@ -333,6 +354,7 @@ function updateTabButtons() {
     if(wanted[i]) num++;
   }
   numtabs = num;
+  state.numTabs = numtabs;
 
   if(num == 1) {
     // if there's only one, then hide the tabs completely

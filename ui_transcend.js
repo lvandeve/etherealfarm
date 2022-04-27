@@ -37,7 +37,11 @@ function getTranscendValueInfo(opt_from_challenge) {
   var actual_twigs = getUpcomingTwigs();
   if(!opt_from_challenge || actual_twigs.neqr(0)) {
     have_item = true;
-    text += '• ' + actual_twigs.toString() + ' twigs from mistletoes'; // this is shown even if mistletoes are not yet unlocked: as a teaser and hint because getting mistletoes soon is important to progress
+    if(state.g_numresets == 0) {
+      text += '• ' + actual_twigs.toString() + ' twigs from mistletoes (not yet available on first transcend)'; // this is shown even if mistletoes are not yet unlocked: as a teaser and hint because getting mistletoes soon is important to progress
+    } else {
+      text += '• ' + actual_twigs.toString() + ' twigs from mistletoes';
+    }
     text += '<br>';
   }
 
@@ -46,9 +50,10 @@ function getTranscendValueInfo(opt_from_challenge) {
   if(do_fruit) {
     have_item = true;
     text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool (see fruit tab)<br/>';
-    if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) {
+    // commented out: only the first fruit automatically goes to storage now, if sacr is empty it's because the player chose to move fruits to storage
+    /*if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) {
       text += '→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before transcending<br/>';
-    }
+    }*/
     var highest = 0, highestsacr = 0;
     for(var i = 0; i < state.fruit_stored.length; i++) highest = Math.max(highest, state.fruit_stored[i].tier);
     for(var i = 0; i < state.fruit_sacr.length; i++) highestsacr = Math.max(highestsacr, state.fruit_sacr[i].tier);
@@ -59,7 +64,7 @@ function getTranscendValueInfo(opt_from_challenge) {
   }
 
   if(!have_item) {
-    text += '• Nothing. But, see current challenge rules for challenge specific results.<br/>';
+    text += '• Nothing. But, see current challenge rules for challenge specific rewards.<br/>';
   }
 
   return text;
@@ -124,7 +129,7 @@ function createTranscendDialog(opt_from_challenge) {
     extraname2 = undefined;
   }
 
-  var dialog = createDialog2({
+  var dialog = createDialog({
     size:DIALOG_MEDIUM,
     functions:[transcendfun, extrafun, extrafun2],
     names:['transcend', extraname, extraname2],
@@ -161,7 +166,7 @@ function createTranscendDialog(opt_from_challenge) {
   text += '• Resin, twigs and fruit essence<br/>';
   text += '• Ethereal field and ethereal crops<br/>';
   text += '• Ethereal upgrades<br/>';
-  text += '• Fruits in the storage slots<br/>';
+  text += '• Fruits in the storage slots (have: ' + state.fruit_stored.length + ')<br/>';
   text += '• Current season<br/>';
   if(amberUnlocked()) text += '• Amber resource<br/>';
   if(squirrelUnlocked()) text += '• Nuts and squirrel upgrades<br/>';

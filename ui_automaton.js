@@ -22,7 +22,7 @@ function showConfigureAutoResourcesDialog(subject) {
   if(subject == 0) title = 'Configure auto upgrade';
   else if(subject == 1) title = 'Configure auto plant';
   else if(subject == 2) title = 'Configure auto unlock';
-  var dialog = createDialog2({title:title, scrollable:true});
+  var dialog = createDialog({title:title, scrollable:true});
   var scrollFlex = dialog.content;
 
   var texth = 0;
@@ -221,7 +221,7 @@ function showConfigureAutoChoiceDialog(subject) {
   // temporary disable automaton_autochoice so it doesn't trigger while cycling through the button values
   var temp = state.automaton_autochoice;
   state.automaton_autochoice = 0;
-  var dialog = createDialog2({
+  var dialog = createDialog({
     onclose:function() {
       state.automaton_autochoice = temp;
     },
@@ -259,6 +259,7 @@ function showConfigureAutoChoiceDialog(subject) {
 
 
   var choiceupgrades = [fern_choice0, active_choice0, watercress_choice0, resin_choice0];
+  var choiceupgrade_levels = [3, 8, 14, 22];
 
   var updateChoicesButton = function(flex, i) {
     var div = flex.div.textEl;
@@ -286,6 +287,7 @@ function showConfigureAutoChoiceDialog(subject) {
   };
 
   for(var i = 0; i < choiceupgrades.length; i++) {
+    if(state.g_treelevel < choiceupgrade_levels[i]) continue;
     var u = upgrades[choiceupgrades[i]];
     var u2 = state.upgrades[choiceupgrades[i]];
     flex = addButton();
@@ -308,14 +310,14 @@ function showConfigureAutoChoiceDialog(subject) {
     addButtonAction(flex.div, bind(function(i) {
       var u = upgrades[choiceupgrades[i]];
       var u2 = state.upgrades[choiceupgrades[i]];
-      var dialog = createDialog2({title:(u.name + ' info')});
+      var dialog = createDialog({title:(u.name + ' info')});
       dialog.content.div.innerHTML = '<b>' + u.choicename_a + ':</b><br>' + u.description_a + '<br><br><b>' + u.choicename_b + ':</b><br>' + u.description_b + '<br><br><b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.';
     }, i));
   }
 }
 
 function showAutomatonFeatureSourceDialog() {
-  var dialog = createDialog2({
+  var dialog = createDialog({
     help:createAutomatonHelpDialog,
     title:'Automation features unlock sources',
     scrollable:true
@@ -455,7 +457,7 @@ function updateAutomatonUI() {
   if(!haveAutomaton()) {
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
-    flex.div.innerText = 'Place automaton in ethereal field to enable automation options and crop templates. Reach higher ethereal tree level and beat new challenges to unlock more automaton features.';
+    flex.div.innerText = 'Place automaton in ethereal field to enable automation options, special actions and a boost to its neighboring ethereal crops. Reach higher ethereal tree levels and beat new challenges to unlock more automation features.';
     y += texth;
     return;
   }
@@ -470,7 +472,7 @@ function updateAutomatonUI() {
     showAutomatonFeatureSourceDialog();
   });
 
-  texth = 0.1;
+  texth = 0.07;
   flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Toggle on or off all automation:';
   y += texth;
@@ -494,8 +496,10 @@ function updateAutomatonUI() {
   flex.isGlobalButtonItself = true;
   flex.enabledStyle = true;
 
+  addHR();
 
-  texth = 0.1;
+
+  texth = 0.07;
   flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Special actions:';
   y += texth;
@@ -589,7 +593,7 @@ function updateAutomatonUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  texth = 0.1;
+  texth = 0.07;
   flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Automate choice upgrades:';
   registerTooltip(flex.div, 'Automate the choice upgrades that the tree drops at certain levels.\nThe choice is automatically made at the moment the corresponding upgrade unlocks, but not after the fact.');
@@ -613,6 +617,7 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   updateChoiceButton(flex);
   addButtonAction(flex.div, bind(function(flex) {
+    var automaton_autochoice_before = state.automaton_autochoice;
     if(state.paused) {
       state.automaton_autochoice = state.automaton_autochoice ? 0 : 1;
       updateChoiceButton(flex);
@@ -622,6 +627,20 @@ function updateAutomatonUI() {
         updateChoiceButton(flex);
       }});
       update();
+    }
+    if(!automaton_autochoice_before) {
+      var ok = false;
+      for(var i = 0; i < state.automaton_choices.length; i++) {
+        var v = state.automaton_choices[i];
+        if(v > 1) {
+          ok = true;
+          break;
+        }
+      }
+      if(!ok) {
+        // if you turn on auto-choice, but every auto choice is configured to do nothing, show the dialog that is normally only shown by the smaller gear button
+        showConfigureAutoChoiceDialog();
+      }
     }
   }, flex));
 
@@ -725,8 +744,9 @@ function updateAutomatonUI() {
 
   } else {
     texth = 0.15;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
+    flex  = new Flex(automatonFlex, 0.05, y + 0.01, 0.95, y + 0.08);
     flex.div.innerText = 'Reach ethereal tree level 2 and beat the no upgrades challenge to unlock auto-upgrades';
+    flex.div.className = 'efGoal';
     y += texth;
   }
 
@@ -894,15 +914,17 @@ function updateAutomatonUI() {
 
     if(!state.automaton_unlocked[3]) {
       texth = 0.15;
-      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
+      flex  = new Flex(automatonFlex, 0.05, y + 0.01, 0.95, y + 0.08);
       flex.div.innerText = 'Reach ethereal tree level 4 and beat the blackberry challenge to unlock auto-unlock of next-tier plants';
+      flex.div.className = 'efGoal';
       y += texth;
     }
 
   } else if(state.automaton_unlocked[1]) {
     texth = 0.15;
-    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
+    flex  = new Flex(automatonFlex, 0.05, y + 0.01, 0.95, y + 0.08);
     flex.div.innerText = 'Reach ethereal tree level 3 and beat the withering challenge to unlock auto-plant';
+    flex.div.className = 'efGoal';
     y += texth;
   }
 

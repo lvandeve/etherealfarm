@@ -260,3 +260,19 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   color: #fff;
 }
 
+.efGoal {
+  background-color: #fff;
+  border: 2px solid red;
+  border-radius: 8px;
+  color: red;
+  padding-left: 4px;
+}
+
+.efGoalSmall {
+  background-color: #000;
+  border: 2px solid #e66;
+  border-radius: 8px;
+  color: #e66;
+  padding-left: 4px;
+}
+

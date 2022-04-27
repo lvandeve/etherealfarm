@@ -36,6 +36,7 @@ var infoFlex;
 var tabFlex;
 var contentFlex;
 var logFlex;
+var goalFlex;
 
 var medalFlex;
 
@@ -79,6 +80,11 @@ function makeMainDivs() {
 
   logFlex = new Flex(gameFlex, 0, 0.805, 1, 1);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
+
+  goalFlex = new Flex(gameFlex, 0, 0.805, 1, 0.85);
+  if(showdebugborders) goalFlex.div.style.border = '2px solid yellow';
+  goalFlex.div.style.visibility = 'hidden';
+  goalFlex.div.className = 'efGoal';
 
   // have right pane follow same vertical size rules as the left part for good alignment
   rightFlex = new Flex(mainFlex, [0, 0, 0.99, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 1.1], 0.99);
@@ -177,6 +183,8 @@ function initUI() {
 
   if(state) setTab(state.currentTab);
   else setTab(0, true);
+
+  prevGoal = -1; // causes redraw of goal chips, arrows, ... if necessary
 }
 
 var pausedflex = undefined;

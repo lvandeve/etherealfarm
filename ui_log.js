@@ -24,6 +24,8 @@ var lastMessage = '';
 var sameMessageCount = 1;
 var lastMessageElement = undefined;
 
+var goalText = undefined;
+
 var spans = [];
 
 var futuremessages = [];
@@ -43,6 +45,7 @@ var C_UNDO = 10;
 var C_AUTOMATON = 11;
 var C_AMBER = 12;
 var C_PRESENT = 13;
+var C_GOAL = 14;
 
 
 // this system exists to make it possible to have messages to be distinguishable from each other but also have color according to some theme,
@@ -75,6 +78,9 @@ function makeLogColor(type, seed, rarity) {
     h1 = 0.16 - util.pseudoRandom(0, seed) * 0.05 * rarity;
     s1 = 1;
     bgcolor = RGBtoCSS(HSVtoRGB([h1 * 255, s1 * 255, v1 * 255, 255]));
+  } else if(type == C_GOAL) {
+    fgcolor = '#f00';
+    bgcolor = '#000';
   } else {
     // hue is 0-1 based: 0=red, 0.33=green, 0.66=blue
     // h0 = foreground hue, h1 = background hue
@@ -217,6 +223,60 @@ function showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, 
     util.removeElement(spans[0]);
     spans.shift(0);
   }
+}
+
+var lastGoalText = undefined;
+var lastGoalTextSmall = false;
+
+// set to undefined to clear goal
+// opt_small: make the box smaller and less noticeable
+function setGoalText(text, opt_small) {
+  if(text == lastGoalText) return;
+  lastGoalText = text;
+  lastGoalTextSmall = !!opt_small;
+  //goalFlex.div.style.border = '1px solid red';
+  if(!text) {
+    logFlex.y0 = goalFlex.y0;
+    logFlex.updateSelf(gameFlex.div);
+    goalFlex.div.style.visibility = 'hidden';
+  } else {
+    // see makeMainDivs for the basis of these values
+    var logy0 = opt_small ? 0.84 : 0.865;
+    var goaly1 = opt_small ? 0.835 : 0.861;
+    if(logFlex.y0 != logy0) {
+      logFlex.y0 = logy0;
+      logFlex.updateSelf(gameFlex.div);
+      goalFlex.y1 = goaly1;
+      goalFlex.updateSelf(gameFlex.div);
+      goalFlex.div.className = opt_small ? 'efGoalSmall' : 'efGoal';
+      goalFlex.div.style.visibility = 'visible';
+    }
+    goalFlex.div.innerText = 'Goal: ' + text;
+  }
+}
+
+var animatingGoalText_ = false;
+
+function animateGoalText() {
+  if(animatingGoalText_) return;
+  if(!lastGoalText) return;
+  if(lastGoalTextSmall) return;
+  animatingGoalText_ = true;
+  goalFlex.div.style.opacity = '0';
+  var opacity = 0;
+  var interval = 50; // in ms
+  var fun = function() {
+    opacity += 0.05;
+    if(opacity >= 1) {
+      goalFlex.div.style.opacity = '';
+      animatingGoalText_ = false;
+      return;
+    } else {
+      goalFlex.div.style.opacity = opacity;
+    }
+    util.setTimeoutSafe(fun, interval);
+  };
+  util.setTimeoutSafe(fun, interval);
 }
 
 function initMessageUI() {

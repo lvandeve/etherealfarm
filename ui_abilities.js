@@ -263,7 +263,8 @@ function updateAbilitiesUI() {
     renderImage(image_storm, canvas);
 
     addButtonAction(lightningicon.div, function() {
-      createDialog2({title:'Lightning info'}).content.div.innerText = 'Stormy weather is active throughout this challenge and lightning will strike a crop every ' + Math.round(lightningTime / 60) + ' minutes. In addition, berries, mushrooms and flowers are half as effective.';
+      var dialog = createDialog({title:'Lightning info', icon:image_storm});
+      dialog.content.div.innerHTML = 'Stormy weather is active throughout this challenge and lightning will strike a crop every ' + Math.round(lightningTime / 60) + ' minutes. In addition, berries, mushrooms and flowers are half as effective.<br><br>Struck crops become ghosts. These can\'t be replanted by the automaton, but you can override multiple at once with a blueprint.';
     }, 'lightning info');
     lightningicon.div.id = 'lightning_button';
 
@@ -475,7 +476,7 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field) {
-    // upgrade crop
+    // tier up
     var did_something = false;
     did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
     var upgraded = did_something;

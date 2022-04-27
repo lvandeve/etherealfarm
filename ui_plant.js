@@ -25,15 +25,15 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   if(fieldx != undefined && fieldy != undefined) {
     f = state.field[fieldy][fieldx];
   }
-  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w * 0.9 + 0.01, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w * 0.9 - 0.01, 0.5]);
+  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w * 0.9 + 0.01, 0.6], (x + 1) * w - 0.01, [0, 0, (y + 1) * w * 0.9 - 0.01, 0.6]);
   var div = flex.div;
   div.className = 'efPlantChip';
 
-  var canvasFlex = new Flex(flex, 0, [0.5, 0, -0.33], [0, 0, 0.66], [0.5, 0, 0.33]);
+  var canvasFlex = new Flex(flex, 0, [0.5, 0, -0.25], [0, 0, 0.5], [0.5, 0, 0.25]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
 
-  var infoFlex = new Flex(flex, [0, 0, 0.7], 0.05, 1, 0.95);
+  var infoFlex = new Flex(flex, [0, 0, 0.5], 0.05, 1, 0.95);
   var text = '';
   text +=  '<b>Plant ' + crop.name + '</b><br>';
   var cost = crop.getCost();
@@ -46,6 +46,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
 
   if(crop.index == brassica_0) infoFlex.div.id = 'help_arrow_plant_watercress';
   if(crop.index == berry_0) infoFlex.div.id = 'help_arrow_plant_blackberry';
+  if(crop.index == berry_1) infoFlex.div.id = 'help_arrow_plant_blueberry';
 
   if(opt_showfun) {
     styleButton0(canvasFlex.div, true);
@@ -59,17 +60,18 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   if(opt_tooltipfun) {
     if(opt_showfun) {
       registerTooltip(canvasFlex.div, function() {
-        return 'Show ' + crop.name + ' info<br><br>' + opt_tooltipfun();
+        return 'Show ' + crop.name + ' info';
       }, true);
     }
     if(opt_plantfun) {
       registerTooltip(infoFlex.div, function() {
         return (opt_replace ? 'Replace with ' : 'Plant ') + crop.name + '<br><br>' + opt_tooltipfun();
       }, true);
+    } else {
+      registerTooltip(infoFlex.div, function() {
+        return upper(crop.name) + '<br><br>' + opt_tooltipfun();
+      }, true);
     }
-    registerTooltip(infoFlex.div, function() {
-      return upper(crop.name) + '<br><br>' + opt_tooltipfun();
-    }, true);
   } else {
     if(opt_showfun) registerTooltip(canvasFlex.div, 'Show ' + crop.name + ' info');
     if(opt_plantfun) registerTooltip(canvasFlex.div, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
@@ -182,7 +184,7 @@ function getCropOrder() {
   for(var i = 0; i < unlocked.length; i++) {
     if(added[unlocked[i]]) continue;
     var c = crops[unlocked[i]];
-    if(c.type == CROPTYPE_NETTLE && (!highest || c.cost.gt(highest.cost))) highest = c;
+    if(c.type == CROPTYPE_STINGING && (!highest || c.cost.gt(highest.cost))) highest = c;
   }
   if(highest) {
     result.push(highest.index);
@@ -238,15 +240,7 @@ function getCropOrder() {
 }
 
 function showPlantingHelp() {
-  var dialog = createDialog();
-
-  var titleDiv = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.1).div;
-  centerText2(titleDiv);
-  titleDiv.textEl.innerText = 'Planting help';
-
-  var flex = new Flex(dialog.content, 0.01, 0.11, 0.99, 1);
-  var div = flex.div;
-  makeScrollable(flex);
+  var dialog = createDialog({scrollable:true, title:'Planting help'});
 
   var text = '';
 
@@ -272,7 +266,7 @@ function showPlantingHelp() {
   text += '<br><br>';
   text += 'To replace a crop to the highest unlocked tier of its type that you can afford:';
   text += '<br>';
-  text += '• Click the crop on the field, then the "Upgrade crop" button';
+  text += '• Click the crop on the field, then the "Tier up" button';
   text += '<br>';
   text += '• OR: Hover mouse over the crop in the field, then press the "u" key';
   text += '<br>';
@@ -284,7 +278,7 @@ function showPlantingHelp() {
   text += '<br>';
   text += '• OR: Shift+click the crop in the field to replace it with the last planted or unlocked crop (requires a setting under preferences)';
 
-  div.innerHTML = text;
+  dialog.content.div.innerHTML = text;
 }
 
 
@@ -305,7 +299,11 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
   if(num_unlocked > 9) dialogsize = DIALOG_MEDIUM;
   if(num_unlocked > 12) dialogsize = DIALOG_LARGE;
 
-  var dialog = createDialog(dialogsize, showPlantingHelp, 'help');
+  var dialog = createDialog({
+    size:dialogsize,
+    help:showPlantingHelp,
+    title:(opt_replace ? 'Replace crop' : 'Plant crop')
+  });
   dialog.div.className = 'efDialogTranslucent';
   var tx = 0;
   var ty = 0;
@@ -398,7 +396,7 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
 
     var showfun = bind(function(tooltipfun) {
       var text = tooltipfun();
-      var dialog = createDialog(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM);
+      var dialog = createDialog({size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM), title:'Crop info'});
       dialog.content.div.innerHTML = text;
     }, tooltipfun);
 

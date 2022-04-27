@@ -51,7 +51,7 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   if(opt_tooltipfun) {
     if(opt_showfun) {
       registerTooltip(canvasFlex.div, function() {
-        return 'Show ethereal ' + crop.name + ' info<br><br>' + opt_tooltipfun();
+        return 'Show ethereal ' + crop.name + ' info';
       }, true);
     }
     if(opt_plantfun) {
@@ -84,7 +84,7 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
     if(state.crops2[registered_crops2[i]].unlocked) numplants++;
   }
 
-  var dialog = createDialog();
+  var dialog = createDialog({title:(opt_replace ? 'Replace ethereal crop' : 'Plant ethereal crop')});
   dialog.div.className = 'efDialogEthereal';
   var tx = 0;
   var ty = 0;
@@ -158,7 +158,7 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
 
     var showfun = bind(function(tooltipfun) {
         var text = tooltipfun();
-        var dialog = createDialog(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM);
+        var dialog = createDialog({size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM), title:'Ethereal crop info'});
         dialog.content.div.innerHTML = text;
     }, tooltipfun);
 

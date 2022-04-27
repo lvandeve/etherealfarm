@@ -452,6 +452,7 @@ function encState(state, opt_raw_only) {
   processUint(state.respec3tokens);
   processTime(state.resinfruittime);
   processTime(state.twigsfruittime);
+  processTimeArray(state.prevleveltime);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -1443,6 +1444,11 @@ function decState(s) {
   if(save_version >= 4096*1+74) state.respec3tokens = processUint();
   if(save_version >= 4096*1+83) state.resinfruittime = processTime();
   if(save_version >= 4096*1+83) state.twigsfruittime = processTime();
+  if(save_version >= 4096*1+103) {
+    state.prevleveltime = processTimeArray();
+    if(error || state.prevleveltime.length != 3) return err(4);
+  }
+  if(error) return err(4);
 
 
   section = 17; id = 0; // fruits
