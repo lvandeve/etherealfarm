@@ -35,9 +35,14 @@ function updateMedalUI() {
 
     medalText = new Flex(medalFlex, 0.02, 0.02, 1, 0.05);
     medalGrid = new Flex(medalFlex, 0.02, 0.15, 0.9, 2.0);
+    // TODO: use 'grid' aria role (and also add the correct annotations to the children then), like field already has
     //medalFlex.div.style.overflowY = 'scroll';
     //medalFlex.div.style.overflowX = 'hidden';
     makeScrollable(medalFlex);
+
+    var heading = util.makeElement('span', medalGrid.div);
+    setAriaRole(heading, 'heading');
+    setAriaLabel(heading, 'achievements list');
   }
 
   var infoText = ''

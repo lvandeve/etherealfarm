@@ -409,6 +409,7 @@ function updateAutomatonUI() {
     if(!opt_dont_manage) buttons.push(flex);
     styleButton(flex.div);
     centerText2_unicode(flex.div);
+    setAriaLabel(flex.div, 'configure');
     flex.div.textEl.innerText = '⚙';
     flex.div.textEl.title = 'Configure';
     return flex;
@@ -470,7 +471,7 @@ function updateAutomatonUI() {
   styleButton0(canvasFlex.div, true);
   addButtonAction(canvasFlex.div, function() {
     showAutomatonFeatureSourceDialog();
-  });
+  }, 'automaton icon');
 
   texth = 0.07;
   flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);

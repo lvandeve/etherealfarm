@@ -77,7 +77,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     addButtonAction(buyFlex.div, bind(function(i, e) {
       addAction({type:ACTION_UPGRADE2, u:u.index});
       update();
-    }, i));
+    }, i), 'buy ' + name);
   }
 
 
@@ -89,7 +89,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   addButtonAction(canvasFlex.div, function() {
     var dialog = createDialog({size:DIALOG_SMALL, title:'Ethereal upgrade info'});
     dialog.content.div.innerHTML = infoText;
-  }, 'ethereal upgrade icon for ' + name);
+  }, 'info: ' + name);
 
   titleFlex.div.innerHTML = text;
 

@@ -855,7 +855,7 @@ function initFieldUI() {
           } else {
             var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
             var result = upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
-            result += '<br>Time at this level: ' + util.formatDuration(timeAtTreeLevel(state)) + '<br/>';
+            result += '<br>Time at this level: ' + util.formatDuration(timeAtTreeLevel(state), true) + '<br/>';
             return result;
           }
         }

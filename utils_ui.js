@@ -82,7 +82,9 @@ function setAriaRole(div, role) {
 
 // use this instead of ".onclick = ..." for more accessible buttons
 // opt_label is an optional textual name for image-icon-buttons
+// opt_immediate = make the button respond immediately on mousedown, rather than only on mouseup
 function addButtonAction(div, fun, opt_label, opt_immediate) {
+  //var div = makeDiv('0', '0', '100%', '100%', div);
   if(opt_immediate && !isTouchDevice()) {
     // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
     div.onmousedown = fun;
@@ -265,6 +267,7 @@ function createDialog(params) {
 
   dialogFlex.div.className = 'efDialog';
   setAriaRole(dialogFlex.div, 'dialog');
+  dialogFlex.div.setAttribute('aria-modal', 'true');
   dialogFlex.div.style.zIndex = '' + (dialog_level * 10 + 5);
 
   var num_buttons = functions.length + 1;
@@ -507,9 +510,13 @@ opt_poll, if true, will make the tooltip dynamically update by calling fun again
 opt_allowmobile, if true, then the tooltip will show when clicking the item. It will likely be too tiny though. Do not use if clicking the item already has some other action.
 */
 function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
+  var istext = (typeof fun == 'string');
   if((typeof fun == 'string') || !fun) fun = bind(function(text) { return text; }, fun);
   // can't set this if opt_poll, fun() then most likely returns something incorrect now (e.g. on the field tiles)
-  if(!opt_poll) el.setAttribute('aria-description', fun());
+  if(!opt_poll) {
+    el.setAttribute('aria-description', fun());
+    if(!istext) el.onfocus = function() { el.setAttribute('aria-description', fun()); }; // dynamic (but without opt_poll), so update every now and then
+  }
   var div = undefined;
 
   var MOBILEMODE = isTouchDevice();

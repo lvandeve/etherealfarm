@@ -315,14 +315,17 @@ function showResource(i, special, index) {
   var hyp_neq = false; // res_gain_hyp.neq(res_gain) but allowing some numerical tolerance
 
   var text = '';
+  var label = '';
   if(special) {
     if(index == 2 || index == 3) {
       // 2=resin, 3=twigs
       var hr = (index == 2) ? getResinHour() : getTwigsHour();
       text = name + '<br>' + res.toString() + '<br>(+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
+      label = name + ' ' + res.toString() + ' (+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
     } else {
       text = name + '<br>' + res.toString();
       if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
+      label = name + ' ' + res.toString();
     }
   } else {
     res_gain = gain.atIndex(index); // actual
@@ -351,9 +354,13 @@ function showResource(i, special, index) {
     text += '<br>' + fontopen + res_gain.toString() + '/s' + fontclose;
     if(index == 0 && tooHighSeedConsumption()) text += ' <font color="#888">(' + res_gain_pos.toString() + '/s)</font>';
     if(index == 1 && hyp_neq) text += ' <font color="#888">(' + res_gain_hyp.toString() + '/s)</font>';
+    label = name + ' ' + res.toString() + ', ' + res_gain.toString() + '/s';
   }
   // TODO: this causes "Parse HTML" and this one for the resource info despite being small shows up highest in profiling with chrome dev tools, find a faster way to do this
   div.textEl.innerHTML = text;
+
+  // the label is set to e.g. 'info box: seeds', however the info inside it is more important, so set the label that screen readers read to the useful contents instead
+  setAriaLabel(div, label);
 
   if(!div.tooltipadded) {
     div.tooltipadded = true;
@@ -411,6 +418,92 @@ function showResource(i, special, index) {
   }
 };
 
+function openTimeInfoDialog() {
+  var dialog = createDialog({size:DIALOG_MEDIUM, title:'Game info'});
+  var flex = dialog.content;
+
+  var nextlevelprogress = Math.min(1, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
+
+  var getText = function() {
+    var result = '';
+    if(state.treelevel > 0) {
+      result += '<b>Level:</b> ' + state.treelevel;
+
+      if(state.treelevel >= min_transcension_level) {
+        result += '. Transcension available, click the tree.';
+      }
+
+      result += '<br><br>';
+
+      var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+      result += '<b>Next tree level requires:</b> ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')' + '<br><br>';
+
+      result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br><br>';
+    }
+    result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
+    result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
+    result += '<b>' + upper(seasonNames[getSeason()]) + ' effects:</b><br>';
+    var s = getSeason();
+    if(s == 0) {
+      result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
+      if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
+        result += '• Crops grow ' + Num(upgrade2_spring_growspeed_bonus).toPercentString() + ' faster (ethereal upgrade)<br>';
+        //result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
+      }
+    }
+    if(s == 1) {
+      result += '• +' + getSummerBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
+      if(getSummerMushroomBonus().neqr(1)) {
+        result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production (but also consumption)<br>';
+      }
+      if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
+        result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
+      }
+    }
+    if(s == 2) {
+      result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, without increasing consumption<br>';
+      if(getAutumnBerryBonus().neqr(1)) {
+        result += '• +' + getAutumnBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
+      }
+      if(state.upgrades2[upgrade2_mistletoe].count && !basicChallenge()) {
+        result += '• Twigs bonus: ' + getAutumnMistletoeBonus().subr(1).toPercentString() + ' more twigs added when tree levels with mistletoes<br>';
+      }
+      if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
+        result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
+      }
+    }
+    if(s == 3) {
+      var seen_beehives = state.medals[planttypemedals_bee0].earned;
+      result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower' + (seen_beehives ? ' / beehive' : '') + ' stats when not next to the tree<br>';
+      result += '• Brassica frost: -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying and -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying fruit ability when not next to the tree<br>';
+      var winterwarmth_location_text = haveDiagonalTreeWarmth() ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
+      result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats (also consumption) and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
+      if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
+        result += '• Winter tree warmth for flowers: ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' (ethereal upgrade)<br>';
+      }
+      result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
+    }
+    result += '<br>';
+    result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
+    result += '<br>';
+
+    var have_sun = !!state.upgrades[upgrade_sununlock].count;
+    var have_mist = !!state.upgrades[upgrade_mistunlock].count;
+    var have_rainbow = !!state.upgrades[upgrade_rainbowunlock].count;
+    if(have_sun || have_mist || have_rainbow) {
+      result += '<b>Weather abilities:</b><br>';
+      if(have_sun) result += '<b>Sun:</b> berry production boost: +' + getSunSeedsBoost().toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getSunDuration()) + '. Cooldown time: ' + util.formatDuration(getSunWait() - getSunDuration()) + '<br>';
+      if(have_mist) result += '<b>Mist:</b> mushroom production boost: +' + getMistSporesBoost().toPercentString() + ', consumption reduced by ' + getMistSeedsBoost().rsub(1).toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getMistDuration()) + '. Cooldown time: ' + util.formatDuration(getMistWait() - getMistDuration()) + '<br>';
+      if(have_rainbow) result += '<b>Rainbow:</b> flower boost: +' + getRainbowFlowerBoost().toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getRainbowDuration()) + '. Cooldown time: ' + util.formatDuration(getRainbowWait() - getRainbowDuration()) + '<br>';
+    }
+    return result;
+  };
+  flex.div.innerHTML = getText();
+  updatedialogfun = function() {
+    flex.div.innerHTML = getText();
+  };
+}
+
 
 function updateResourceUI() {
   var infoDiv = infoFlex.div;
@@ -458,107 +551,32 @@ function updateResourceUI() {
 
   resourceDivs[0].textEl.innerHTML = title + '<br>' + timedisplay + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
-  addButtonAction(resourceDivs[0], function() {
-    var dialog = createDialog({size:DIALOG_MEDIUM, title:'Game info'});
-    var flex = dialog.content;
-    var getText = function() {
-      var result = '';
-      if(state.treelevel > 0) {
-        result += '<b>Level:</b> ' + state.treelevel;
-
-        if(state.treelevel >= min_transcension_level) {
-          result += '. Transcension available, click the tree.';
-        }
-
-        result += '<br><br>';
-
+  if(!resourceDivs[0].tooltipSet) {
+    resourceDivs[0].tooltipSet = true;
+    addButtonAction(resourceDivs[0], function() {
+      openTimeInfoDialog();
+    }, 'info box: time and level');
+    registerTooltip(resourceDivs[0], function() {
+      var text = '';
+      text += 'Season change in: ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
+      if(state.treelevel >= 1) {
         var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-        result += '<b>Next tree level requires:</b> ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')' + '<br><br>';
+        text += '<br>Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+      }
 
-        result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br><br>';
+      if(presentGrowSpeedActive()) {
+        text += '<br><br>';
+        //text += 'Grow speed effect from present active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
+        text += 'Grow speed effect from egg active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
       }
-      result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
-      result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
-      result += '<b>' + upper(seasonNames[getSeason()]) + ' effects:</b><br>';
-      var s = getSeason();
-      if(s == 0) {
-        result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
-        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
-          result += '• Crops grow ' + Num(upgrade2_spring_growspeed_bonus).toPercentString() + ' faster (ethereal upgrade)<br>';
-          //result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';
-        }
+      if(presentProductionBoostActive()) {
+        text += '<br><br>';
+        text += 'Production boost effect from egg active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
       }
-      if(s == 1) {
-        result += '• +' + getSummerBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
-        if(getSummerMushroomBonus().neqr(1)) {
-          result += '• +' + getSummerMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spore production (but also consumption)<br>';
-        }
-        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
-          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
-        }
-      }
-      if(s == 2) {
-        result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, without increasing consumption<br>';
-        if(getAutumnBerryBonus().neqr(1)) {
-          result += '• +' + getAutumnBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
-        }
-        if(state.upgrades2[upgrade2_mistletoe].count && !basicChallenge()) {
-          result += '• Twigs bonus: ' + getAutumnMistletoeBonus().subr(1).toPercentString() + ' more twigs added when tree levels with mistletoes<br>';
-        }
-        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
-          result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (ethereal upgrade)<br>';
-        }
-      }
-      if(s == 3) {
-        var seen_beehives = state.medals[planttypemedals_bee0].earned;
-        result += '• Harsh conditions: -' + Num(1).sub(getWinterMalus()).toPercentString() + ' berry / mushroom / flower' + (seen_beehives ? ' / beehive' : '') + ' stats when not next to the tree<br>';
-        result += '• Brassica frost: -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying and -' + Num(1).sub(winter_malus_brassica).toPercentString() + ' brassica copying fruit ability when not next to the tree<br>';
-        var winterwarmth_location_text = haveDiagonalTreeWarmth() ? ' (orthogonal or diagonal: 10 spots)' : ' (current reach: orthogonal, 6 spots)';
-        result += '• Winter tree warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats (also consumption) and no harsh conditions for any crop when next to the tree ' + winterwarmth_location_text + '<br>';
-        if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
-          result += '• Winter tree warmth for flowers: ' + upgrade2_winter_flower_bonus.subr(1).toPercentString() + ' (ethereal upgrade)<br>';
-        }
-        result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
-      }
-      result += '<br>';
-      result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
-      result += '<br>';
-
-      var have_sun = !!state.upgrades[upgrade_sununlock].count;
-      var have_mist = !!state.upgrades[upgrade_mistunlock].count;
-      var have_rainbow = !!state.upgrades[upgrade_rainbowunlock].count;
-      if(have_sun || have_mist || have_rainbow) {
-        result += '<b>Weather abilities:</b><br>';
-        if(have_sun) result += '<b>Sun:</b> berry production boost: +' + getSunSeedsBoost().toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getSunDuration()) + '. Cooldown time: ' + util.formatDuration(getSunWait() - getSunDuration()) + '<br>';
-        if(have_mist) result += '<b>Mist:</b> mushroom production boost: +' + getMistSporesBoost().toPercentString() + ', consumption reduced by ' + getMistSeedsBoost().rsub(1).toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getMistDuration()) + '. Cooldown time: ' + util.formatDuration(getMistWait() - getMistDuration()) + '<br>';
-        if(have_rainbow) result += '<b>Rainbow:</b> flower boost: +' + getRainbowFlowerBoost().toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getRainbowDuration()) + '. Cooldown time: ' + util.formatDuration(getRainbowWait() - getRainbowDuration()) + '<br>';
-      }
-      return result;
-    };
-    flex.div.innerHTML = getText();
-    updatedialogfun = function() {
-      flex.div.innerHTML = getText();
-    };
-  }, 'info box: time and level');
-  registerTooltip(resourceDivs[0], function() {
-    var text = '';
-    text += 'Season change in: ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
-    if(state.treelevel >= 1) {
-      var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-      text += '<br>Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
-    }
-
-    if(presentGrowSpeedActive()) {
-      text += '<br><br>';
-      //text += 'Grow speed effect from present active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
-      text += 'Grow speed effect from egg active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
-    }
-    if(presentProductionBoostActive()) {
-      text += '<br><br>';
-      text += 'Production boost effect from egg active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
-    }
-    return text;
-  }, true);
+      return text;
+    }, true);
+  }
+  setAriaLabel(resourceDivs[0], title + ', ' + timedisplay + ', ' + seasonName);
 
 
   prodBreakdown2();

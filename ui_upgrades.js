@@ -78,8 +78,10 @@ function rerenderUpgradeChip(u, chip, completed, opt_ui_location) {
   var canvasFlex = chip.canvasFlex;
   chip.canvasFlex.clear();
   renderUpgraceIcon(chip.canvasFlex, u);
+  setAriaLabel(chip.canvasFlex.div, 'info: ' + name);
 
   var buyFlex = chip.buyFlex;
+  setAriaLabel(buyFlex.div, 'buy: ' + name + ', cost: ' + cost.toString());
 
   if(!completed) {
     text += '<br>';
@@ -281,7 +283,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
 
   addButtonAction(canvasFlex.div, function() {
     renderUpgradeDialog(chip);
-  }, 'upgrade icon for ' + name);
+  });
 
   chip.updateInfoText = updateInfoText;
   rerenderUpgradeChip(u, chip, completed, opt_ui_location);

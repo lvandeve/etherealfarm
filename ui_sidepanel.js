@@ -59,6 +59,9 @@ function updateRightPane() {
       bottomRightFlex.clear();
       bottomrightSidePanelFlexCache = [];
       bottomrightSidePanelFlexCacheParent = bottomRightFlex;
+      var heading = util.makeElement('span', bottomRightFlex.div);
+      setAriaRole(heading, 'heading');
+      setAriaLabel(heading, 'sidepanel upgrades (only a subset of upgrades tab)');
     }
 
 
