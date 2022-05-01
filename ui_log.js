@@ -159,13 +159,14 @@ function makeLogColor(type, seed, rarity) {
 // shows message in the message log
 // opt_forcenew: force a new line for this message, do not combine with previous line if same text
 // opt_showlate: show the message as late as possible, that is, at the end of the next update() function call rather than right now, so it'll appear after anything else update() may show first.
+// opt_showlate0: similar to showlate, but with delay of 0, so will still appear after other messages in the same streak of code, but have no visible delay
 // opt_colorrarity: 0-1
-function showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, opt_showlate) {
-  if(opt_showlate) {
+function showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, opt_showlate, opt_showlate0) {
+  if(opt_showlate || opt_showlate0) {
     window.setTimeout(function() {
       //futuremessages.push([text, colortype, colorseed, opt_colorrarity, opt_forcenew]);
       showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, false);
-    }, 700);
+    }, opt_showlate ? 700 : 0);
     return;
   }
 

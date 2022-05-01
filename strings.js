@@ -46,4 +46,5 @@ var hardresetwarning = 'Perform a hard reset. This removes all savegame data, de
 var shiftClickPlantUnset = 'shift+click, or p, repeats last planted plant, but no last plant is set, plant the regular way first';
 var leechInfo = 'Copy ability: if this plant has orthogonal (non-diagonal) berry or mushroom neighbors, the watercress will duplicate all their production (but also consumption), no matter what tier. This has diminishing returns if there are multiple watercress in the field, max 2 watercress makes sense. A badly placed watercress can negatively affect the copying of others. At early game, having many watercress is useful though due to their regular (non-copy) production.';
 var altChallengeBonusInfo = 'This challenge uses the alternate bonus pool, it is part of a separate multiplier and so has more effect than regular challenges';
-
+var pausedMessage = 'game paused';
+var unpausedMessage = 'game resumed from pause';

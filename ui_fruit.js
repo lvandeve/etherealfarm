@@ -155,7 +155,7 @@ function createFruitHelp() {
   text += '<br/>';
   text += ' • The order of abilities of first and second fruit matters, and you can freely reorder abilities in the regular fruit dialog (where you level up abilities), so you can control which abilities of the first fruit stay and which get pushed out.';
   text += '<br/>';
-  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participiate in fusing. The resulting fruit will be an apple if the two original fruits are of a different type, or will be seasonal if both original fruits are the same seasonal type (e.g. both pineapple). NOTE: some later upgrades in the game change this.';
+  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participate in fusing. The resulting fruit will be an apple if the two original fruits are of a different type, or will be seasonal if both original fruits are the same seasonal type (e.g. both pineapple). NOTE: some later upgrades in the game change this.';
   text += '<br/>';
   text += ' • After fusing, abilities will be auto-leveled up (using the usual amount of fruit essence), based on what levels they had before, and leaving some essence unused if a new unupgraded ability is added.';
   text += '<br/><br/>';
@@ -207,6 +207,10 @@ function createFruitHelp() {
     text += '• Mango + Quince = Star Fruit (4 seasons)';
     text += '<br>';
     text += '• Plum + Kumquat = Star Fruit (4 seasons)';
+    text += '<br/><br/>';
+    text += 'If (and only if) you also have the second fruit mixing upgrade purchased, then in addition you can create the all-season star fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
+    text += '<br>';
+    text += '• Star Fruit + Apple = Dragon Fruit (stronger 4 seasons boost)';
     text += '<br><br>';
     text += '<br><br>';
     text += '<br/>';
@@ -1043,7 +1047,7 @@ function updateFruitUI() {
 
   ////////
 
-  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t]);
+  titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.99, [0, 0, y + t]);
   y += s;
   titleFlex.div.innerText = 'Sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
   help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool, or drag and drop it here.';
@@ -1095,6 +1099,13 @@ function updateFruitUI() {
     setupFruitDrag(canvasFlex, i + 100, f);
   }
   y += s;
+
+  var upcoming = getUpcomingFruitEssence();
+  if(!upcoming.empty()) {
+    titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.99, [0, 0, y + t]);
+    y += s;
+    titleFlex.div.innerText = 'Sacrifice value on transcend: ' + getUpcomingFruitEssence();
+  }
 
   ////////
 

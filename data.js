@@ -2216,7 +2216,7 @@ function registerBrassicaTimeIncrease(cropid, cost, time_increase, prev_crop_num
   var fun = function() {};
 
   var pre = function() {
-    if(opt_pre_fun && !opt_pre_fun()) return false;
+    if(opt_pre_fun && opt_pre_fun()) return true; // opt_pre_fun works in a positive rather than negative way here, to let the unlocked watercress upgrade by blackberrysecret work
     if(crop_unlock_id == undefined) {
       return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
     } else {
@@ -2282,13 +2282,11 @@ var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), brassica_0, fun
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0, undefined, function() {
   if(basicChallenge()) return false;
   if(state.challenge == challenge_nodelete) return false;
-  if(state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_0].count) return true;
   return false;
 });
 var berryunlock_2 = registerCropUnlock(berry_2, getBerryCost(2), berry_1, undefined, function() {
   if(basicChallenge()) return false;
   if(state.challenge == challenge_nodelete) return false;
-  if(state.upgrades2[upgrade2_cranberrysecret].count && state.upgrades[berryunlock_1].count) return true;
   return false;
 });
 var berryunlock_3 = registerCropUnlock(berry_3, getBerryCost(3), berry_2);
@@ -2307,7 +2305,7 @@ var berryunlock_15 = registerCropUnlock(berry_15, getBerryCost(15), berry_14);
 
 upgrade_register_id = 50;
 var mushunlock_0 = registerCropUnlock(mush_0, getMushroomCost(0), berry_1, undefined, function() {
-  if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_1].count) return true;
+  if(!basicChallenge() && state.upgrades2[upgrade2_cranberrysecret].count) return true; // cranberrysecret also makes the first mushroom unlock visible, as if having a fullgrown blueberry
   return false;
 });
 var mushunlock_1 = registerCropUnlock(mush_1, getMushroomCost(1), berry_3, function(){return !!state.upgrades[mushunlock_0].count;});
@@ -2320,14 +2318,10 @@ var mushunlock_7 = registerCropUnlock(mush_7, getMushroomCost(7), berry_15, func
 
 upgrade_register_id = 75;
 var flowerunlock_0 = registerCropUnlock(flower_0, getFlowerCost(0), berry_0, undefined, function() {
-  //if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count && state.upgrades[berryunlock_1].count) return true;
-  if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count && state.upgrades[berryunlock_0].count) return true;
+  if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count) return true; // blueberrysecret also makes the first flower unlock visible, as if having a fullgrown blackberry
   return false;
 });
-var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), berry_2, undefined, function() {
-  if(!basicChallenge() && state.upgrades2[upgrade2_cranberrysecret].count && state.upgrades[berryunlock_2].count) return true;
-  return false;
-});
+var flowerunlock_1 = registerCropUnlock(flower_1, getFlowerCost(1), berry_2, function(){return !!state.upgrades[flowerunlock_0].count;});
 var flowerunlock_2 = registerCropUnlock(flower_2, getFlowerCost(2), berry_4, function(){return !!state.upgrades[flowerunlock_1].count;});
 var flowerunlock_3 = registerCropUnlock(flower_3, getFlowerCost(3), berry_6, function(){return !!state.upgrades[flowerunlock_2].count;});
 var flowerunlock_4 = registerCropUnlock(flower_4, getFlowerCost(4), berry_8, function(){return !!state.upgrades[flowerunlock_3].count;});
@@ -2363,6 +2357,8 @@ var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getFlowerCost(0).mulr(2)
 
   if(state.fullgrowncropcount[berry_0]) return true;
   if(state.upgrades[berryunlock_1].count) return true;
+
+  if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count) return true; // blueberrysecret also makes mistletoe unlock visible, as if having a fullgrown blackberry
 
   return false;
 });
@@ -2593,6 +2589,7 @@ var nettlemul_1 = registerBoostMultiplier(nettle_1, getNettleCost(1).mulr(10), f
 
 upgrade_register_id = 580;
 var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0.2, 1, undefined, function(){
+  if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count) return true; // blackberry secret makes the watercress upgrade visible from the start rather than after 5 brassica
   return (state.c_numplanted >= 1 || state.c_numplantedbrassica >= 5) && (state.c_numplantedbrassica >= 1);
 });
 
@@ -3912,6 +3909,11 @@ function basicChallenge() {
   return 0;
 }
 
+// returns that we're not in a challenge where field size is fixed. If returns true, then don't change field size now but only after transcend
+function changingFieldSizeNowOk() {
+  return !basicChallenge();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4477,7 +4479,7 @@ upgrade2_register_id = 50;
 var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', LEVEL2, Res({resin:100}), 1, function() {
   var numw = Math.max(6, state.numw);
   var numh = Math.max(6, state.numh);
-  changeFieldSize(state, numw, numh);
+  if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
 }, function(){return state.numw >= 5 && state.numh >= 5}, 1, 'increase basic field size to 6x6 tiles', undefined, undefined, field_summer[0]);
 
 
@@ -4497,14 +4499,14 @@ var upgrade2_resin = registerUpgrade2('resin gain', LEVEL2, Res({resin:50}), 2, 
 }, function(){return true;}, 0, 'increase resin gain from tree by ' + (upgrade2_resin_bonus * 100) + '% (additive).', undefined, undefined, image_resin);
 
 function applyBlackberrySecret() {
+  if(basicChallenge()) return;
   if(!state.upgrades[berryunlock_0].count) upgrades[berryunlock_0].fun();
-  state.upgrades[brassicamul_0].unlocked = true; // also let the watercress behave like others and have its upgrade already visible, since the upgrade tab already exists now from the start anyway
 }
 
 var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
   applyBlackberrySecret();
 }, function(){return true;}, 1,
-'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free',
+'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the upgrade-watercress upgrade is available from the start rather than after 5 watercress.',
 undefined, undefined, blackberry[4]);
 
 var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({resin:150}), 2, function() {
@@ -4545,12 +4547,18 @@ var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res
 }, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction,
 undefined, undefined, mistletoe[1]);
 
+
+function applyBlueberrySecret() {
+  if(basicChallenge()) return;
+  if(!state.upgrades[berryunlock_1].count) upgrades[berryunlock_1].fun();
+}
+
 var upgrade2_blueberrysecret = registerUpgrade2('blueberry secret', LEVEL2, Res({resin:1000}), 2, function() {
-  // nothing to do, upgrade count causes the effect elsewhere
+  applyBlueberrySecret();
 }, function(){
   return state.upgrades2[upgrade2_blackberrysecret].count;
 }, 1,
-'blueberry\'s unlock is available from the start, and champignon\'s and mistletoe\'s unlock is available as soon as blueberry is unlocked, rather than after a blueberry has fullgrown',
+'blueberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the unlock-anemone and unlock-mistletoe upgrades are visible (but not actually unlocked) from the start rather than after a fullgrown blackberry.',
 undefined, undefined, blueberry[4]);
 
 
@@ -4579,16 +4587,21 @@ upgrade2_register_id = 145;
 var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:100e3}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(6, state.numh);
-  changeFieldSize(state, numw, numh);
+  if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
 }, function(){return state.numw >= 6 && state.numh >= 6}, 1, 'increase basic field size to 7x6 tiles', undefined, undefined, field_summer[0]);
+
+function applyCranberrySecret() {
+  if(basicChallenge()) return;
+  if(!state.upgrades[berryunlock_2].count) upgrades[berryunlock_2].fun();
+}
 
 // NOTE: further "secret" upgrades beyond this one are not needed, because at ethereal tree level 4, auto-unlock from the automaton becomes available, removing the need to manually wait for crops to unluck. The "secret" upgrades are a feature to slightly improve quality of the time before auto-unlock exists, but are not intended to speed up runs once auto-unlock exists, runs must have a certain long enough useful duration to avoid too manual gameplay
 var upgrade2_cranberrysecret = registerUpgrade2('cranberry secret', LEVEL2, Res({resin:10000}), 2, function() {
-  // nothing to do, upgrade count causes the effect elsewhere
+  applyCranberrySecret();
 }, function(){
   return state.upgrades2[upgrade2_blueberrysecret].count;
 }, 1,
-'cranberry\'s unlock is available as soon as blueberry is unlocked, rather than after a blueberry has fullgrown, and clover\'s unlock is available as soon as cranberry is unlocked, rather than after a cranberry has fullgrown',
+'cranberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the unlock-champignon upgrade is visible (but not actually unlocked) from the start rather than after a fullgrown blueberry.', // This is the last of the "secret" upgrades! Soon, automaton will be able to unlock crops instead.
 undefined, undefined, cranberry[4]);
 
 
@@ -4687,7 +4700,7 @@ upgrade2_register_id = 220;
 var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:500e6}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(7, state.numh);
-  changeFieldSize(state, numw, numh);
+  if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
 }, function(){return state.numw >= 7 && state.numh >= 6}, 1, 'increase basic field size to 7x7 tiles', undefined, undefined, field_summer[0]);
 
 
@@ -4724,7 +4737,7 @@ upgrade2_register_id = 500;
 var upgrade2_field7x8 = registerUpgrade2('larger field 7x8', LEVEL2, Res({resin:1.5e12}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(8, state.numh);
-  changeFieldSize(state, numw, numh);
+  if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
 }, function(){return state.numw >= 7 && state.numh >= 7}, 1, 'increase basic field size to 7x8 tiles', undefined, undefined, field_summer[0]);
 
 
@@ -6207,7 +6220,6 @@ function getChallengeBonus(challenge_id, level, opt_cycle) {
   if(c.bonus_min_level) level2 = Math.max(0, level - c.bonus_min_level);
 
   var score = Num(level2).powr(c.bonus_exponent);
-
   return bonus.mulr(score);
 }
 
@@ -6216,13 +6228,20 @@ function totalChallengeBonus(challenge_bonus, alt_challenge_bonus) {
 }
 
 // total challenge, but taking into account running challenge (with challenge_id) having the new given maxlevel
+// for cycling challenge, uses the current cycle (= of the current run, or upcoming run if the challenge is not active now).
 function totalChallengeBonusWith(challenge_id, maxlevel) {
   var c = challenges[challenge_id];
   var c2 = state.challenges[challenge_id];
+  var cycle = undefined;
+  var maxlevel2 = c2.maxlevel;
+  if(c.cycling) {
+    cycle = c2.num_completed % c.cycling;
+    maxlevel2 = c2.maxlevels[cycle];
+  }
 
-  var diff = getChallengeBonus(c.index, maxlevel).sub(getChallengeBonus(c.index, c2.maxlevel));
-  var challenge0 = state.challenge_bonus0;
-  var challenge1 = state.challenge_bonus1;
+  var diff = getChallengeBonus(c.index, maxlevel, cycle).sub(getChallengeBonus(c.index, maxlevel2, cycle));
+  var challenge0 = state.challenge_bonus0; // regular challenge bonus
+  var challenge1 = state.challenge_bonus1; // alt challenge bonus
   if(c.alt_bonus) challenge1 = challenge1.add(diff);
   else challenge0 = challenge0.add(diff);
   return totalChallengeBonus(challenge0, challenge1);

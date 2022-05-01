@@ -2257,6 +2257,8 @@ var postload = function(new_state) {
   Num.precision = state.precision;
 
   resetGlobalStateVars(new_state);
+
+  if(state.paused) showMessage(pausedMessage, undefined, undefined, undefined, undefined, undefined, /*opt_showlate0=*/true);
 };
 
 // normally you must almost always call presave before save

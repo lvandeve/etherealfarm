@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.1.104 (2022-05-01):';
+  text += '<br/>• Blueberry secret and cranberry secret now also already buy the unlock upgrade (rather than merely make it visible), for clarity and consitency with blackberry secret. They also no longer make unlock clover visible, instead blueberry secret makes unlock anemone immediately visible.';
+  text += '<br/>• Bugfixes.';
+
   text += '0.1.103 - Early game balancing (2022-04-27):';
   text += '<br/>• Added a new bee tier for the basic field.';
   text += '<br/>• Added achievements for amount of nuts, and more for seeds.';

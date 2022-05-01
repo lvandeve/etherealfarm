@@ -162,7 +162,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
 
   if(!c.fullyCompleted(include_current_run)) {
-    if(c.targetlevel.length > 1) {
+    if(c.targetlevel.length > 1 && c.completed > 0) {
       text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numCompleted(include_current_run)];
     } else {
       text += '• Reward (at level ' + targetlevel + '): ' + c.rewarddescription[0];

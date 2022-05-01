@@ -1188,10 +1188,11 @@ function initSettingsUI() {
   addButtonAction(pausebutton, bind(function(canvas) {
     state.paused = !state.paused;
     if(state.messagelogenabled[4]) {
-      if(state.paused) showMessage('game paused');
-      else showMessage('game resumed from pause');
+      if(state.paused) showMessage(pausedMessage);
+      else showMessage(unpausedMessage);
     }
     updatePausedUI();
+    setAriaLabel(pausebutton, state.paused ? 'paused' : 'pause');
   }, canvas), 'pause');
   aboutbutton.id = 'pause_button';
 

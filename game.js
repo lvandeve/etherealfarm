@@ -24,6 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var state = undefined;
 
+// values set before initUIGlobal, or undo's tooltip may show 'NaN' for these times
+var minUndoTime = 10;
+var maxUndoTime = 3600;
+
 initUIGlobal();
 
 var savegame_recovery_situation = false; // if true, makes it less likely to autosave, to ensure local storage preserves a valid older save
@@ -692,9 +696,9 @@ function beginNextRun(opt_challenge) {
     startChallenge(opt_challenge);
   }
 
-  if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count) {
-    applyBlackberrySecret();
-  }
+  if(state.upgrades2[upgrade2_blackberrysecret].count) applyBlackberrySecret();
+  if(state.upgrades2[upgrade2_blueberrysecret].count) applyBlueberrySecret();
+  if(state.upgrades2[upgrade2_cranberrysecret].count) applyCranberrySecret();
 
   state.lastPlanted = -1;
   //state.lastPlanted2 = -1;
@@ -771,8 +775,6 @@ var lastnonpausetime = 0;
 
 var undoSave = '';
 var lastUndoSaveTime = 0;
-var minUndoTime = 10;
-var maxUndoTime = 3600;
 
 function clearUndo() {
   undoSave = '';
