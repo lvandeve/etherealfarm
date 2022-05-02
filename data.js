@@ -42,6 +42,10 @@ num_tiers_per_crop_type[CROPTYPE_BERRY] = 16;
 num_tiers_per_crop_type[CROPTYPE_MUSH] = 8;
 num_tiers_per_crop_type[CROPTYPE_FLOWER] = 8;
 
+var etherealDeleteSessionTime = 60; // how long time to delete/replace more ethereal crops after deleting one for this session
+var etherealDeleteStartTime = 120; // how long it's free to delete/replant without being considered a "session" at the start of a run
+var etherealDeleteWaitTime = 7200; // how long to wait til next ethereal deletion session once this one is over
+
 function getCropTypeName(type) {
   if(type == CROPTYPE_BERRY) return 'berry';
   if(type == CROPTYPE_MUSH) return 'mushroom';
@@ -229,48 +233,6 @@ var sameTypeCostMultiplier2 = 1.5;
 var sameTypeCostMultiplier_Lotus2 = 2;
 var sameTypeCostMultiplier_Fern2 = 1.5;
 var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
-
-//for state.delete2tokens
-var delete2initial = 4; // how many ethereal field delete tokens received at game start
-
-// how many deletions on the ethereal field may be done per season
-var getDelete2PerSeason = function() {
-  return Math.ceil(state.numw2 * state.numh2 * 0.5);
-}
-
-// how many deletions can be saved up for future use when seasons change
-var getDelete2maxBuildup = function() {
-  return getDelete2PerSeason() * 4;
-}
-
-// returns true if deleting the ethereal crop at this position does not cost an ethereal delete token
-// this assumes the field cell has a crop. for an empty field the return value has no meaning
-var freeDelete2 = function(x, y) {
-  var f = state.field2[y][x];
-  if(f.justreplaced) return false;
-  if(f.index == CROPINDEX + automaton2_0) return true;
-  if(f.index == CROPINDEX + squirrel2_0) return true;
-  if(f.growth < 1) return true;
-  var c = f.getCrop();
-  if(c && c.istemplate) return true;
-  return false;
-};
-
-// returns 0 if not free to replace (costs token), 1 if free but the field cell must be marked as "justreplaced" so that its delete is not free, and 2 if totally free and new cell is free to delete
-var freeReplace2 = function(x, y, to_index) {
-  if(freeDelete2(x, y)) return 2;
-  var f = state.field2[y][x];
-  if(f.index == CROPINDEX + to_index) return 2;
-  var c = f.getCrop();
-  if(!c) return 2;
-  var c2 = crops2[to_index];
-  if(c2.type == c.type) return 1; // mark with justreplaced because original crop not free to delete, but growing new crop would be
-  if(c2.is_template) {
-    if(f.justreplaced) return 0; // just replaced and types don't match (that was checked above), so costs a token
-    return 1; // mark return value with justreplaced because original crop not free to delete, but template would be
-  }
-  return 0;
-};
 
 var respec3initial = 2; // how many squirrel upgrade respecs received at game start
 
@@ -3394,11 +3356,11 @@ registerMedal('ghost in the field', 'have a ghost-crop', image_berryghost, funct
   return state.ghostcount > 0;
 }, Num(1));
 
-registerMedal('ghost town', 'have 10 ghost crops in the field', image_berryghost, function() {
+registerMedal('ghost town', 'have 10 ghost crops in the field', image_mushghost, function() {
   return state.ghostcount >= 10;
 }, Num(1.5));
 
-registerMedal('who you gonna call?', 'have the whole field full of ghost crops', image_berryghost, function() {
+registerMedal('who you gonna call?', 'have the whole field full of ghost crops', image_flowerghost, function() {
   if(state.ghostcount == 0) return false;
   var numfield = state.numw * state.numh - 2; // subtract tree
   if(state.ghostcount >= numfield) return true;
@@ -3408,6 +3370,11 @@ registerMedal('who you gonna call?', 'have the whole field full of ghost crops',
   }
   return false;
 }, Num(2));
+
+// this is equivalent to prestiging during the undeletable challenge
+registerMedal('undeletable ghost', 'get a ghost-crop during the undeletable challenge', image_berryghost, function() {
+  return state.ghostcount > 0 && state.challenge == challenge_nodelete;
+}, Num(1));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4205,11 +4172,11 @@ function registerBeehive2(name, treelevel2, tier, cost, planttime, effect, effec
 var default_ethereal_growtime = 10;
 
 crop2_register_id = 0;
-var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), 1.5, 'gives 100 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
-var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), 1.5, 'gives 1000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
-var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), 1.5, 'gives 10000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
-var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), 1.5, 'gives 100000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
-var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), 1.5, 'gives 1000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop5);
+var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), default_ethereal_growtime, 'gives 100 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
+var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), default_ethereal_growtime, 'gives 1000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
+var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), default_ethereal_growtime, 'gives 10000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
+var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), default_ethereal_growtime, 'gives 100000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
+var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal_growtime, 'gives 1000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop5);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -4217,21 +4184,21 @@ var squirrel2_0 = registerSquirrel2('squirrel', 5, 0, Res({resin:10}), 1.5, 'Aut
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), default_ethereal_growtime, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
-var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), default_ethereal_growtime, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
-var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), default_ethereal_growtime, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
-var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), default_ethereal_growtime, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
-var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), default_ethereal_growtime, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
-var berry2_5 = registerBerry2('gooseberry', 14, 5, Res({resin:2e15}), default_ethereal_growtime, Num(256), undefined, 'boosts berries in the basic field (additive)', gooseberry);
+var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), etherealDeleteSessionTime, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
+var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), etherealDeleteSessionTime, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
+var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), etherealDeleteSessionTime, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
+var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), etherealDeleteSessionTime, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
+var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), etherealDeleteSessionTime, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
+var berry2_5 = registerBerry2('gooseberry', 14, 5, Res({resin:2e15}), etherealDeleteSessionTime, Num(256), undefined, 'boosts berries in the basic field (additive)', gooseberry);
 
 // mushrooms2
 crop2_register_id = 50;
-var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), default_ethereal_growtime, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
-var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), default_ethereal_growtime, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
-var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), default_ethereal_growtime, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
-var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), default_ethereal_growtime, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
-var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), default_ethereal_growtime, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
-var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), default_ethereal_growtime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
+var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), etherealDeleteSessionTime, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
+var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), etherealDeleteSessionTime, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
+var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), etherealDeleteSessionTime, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
+var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), etherealDeleteSessionTime, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
+var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), etherealDeleteSessionTime, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
+var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), etherealDeleteSessionTime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
 
 
 // flowers2
@@ -4244,8 +4211,8 @@ var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), default_
 var flower2_5 = registerFlower2('iris', 15, 5, Res({resin:50e15}), default_ethereal_growtime, Num(256), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
-var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, default_ethereal_growtime, Num(1.4), undefined, 'boosts stinging plants in the basic field (additive).', images_thistle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, etherealDeleteSessionTime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
+var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, etherealDeleteSessionTime, Num(1.4), undefined, 'boosts stinging plants in the basic field (additive).', images_thistle);
 
 crop2_register_id = 150;
 var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
@@ -4550,6 +4517,9 @@ undefined, undefined, mistletoe[1]);
 
 function applyBlueberrySecret() {
   if(basicChallenge()) return;
+  if(state.challenge == challenge_nodelete) return;
+  if(state.challenge == challenge_bees) return;
+  if(state.challenge == challenge_blackberry) return;
   if(!state.upgrades[berryunlock_1].count) upgrades[berryunlock_1].fun();
 }
 
@@ -4592,6 +4562,9 @@ var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:
 
 function applyCranberrySecret() {
   if(basicChallenge()) return;
+  if(state.challenge == challenge_nodelete) return;
+  if(state.challenge == challenge_bees) return;
+  if(state.challenge == challenge_blackberry) return;
   if(!state.upgrades[berryunlock_2].count) upgrades[berryunlock_2].fun();
 }
 
@@ -6710,8 +6683,66 @@ function weightedTimeAtLevel() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// return values:
+// 0: can't do ethereal delete
+// 1: can ethereal delete, lastEtherealDeleteTime should not be updated
+// 2: can ethereal delete, lastEtherealDeleteTime should be updated to current time
+// NOTE: state.lastEtherealDeleteTime should be set to theoretically 0 at start of a run
+function canEtherealDelete() {
+  /*
+  The rules for ethereal deletion (main goal of these rules: allow replacing ethereal fields at key points during runs, but not too often to not require too much activity, prevent corner case abuse, prevent gotcha's, and ensure you can do enough replants in a single run to give no reason to want to do a short run just for a replant followed by a longer run):
+  -in general with the rules below, a replant can be done at start of run, at any time after start of run (e.g. 10 minutes after it), and per any 2 hours after that. For example: one at 0 minutes runtime, one at 10 minutes, one at 2 hours and 10 minutes, one at 4 hours 10 minutes, etc...
+  -at the start of a run, before anything is planted in the basic field (other than templates), any ethereal crop deletions and plants can be done freely, over any timespan
+  -similarly, during the first etherealDeleteStartTime of a run any replanting can be done as well (but this is of limited time duration, but more than enough to plant a blueprint)
+  -when deleting an ethereal crop, a "session" of limited time begins, during which multiple deletes/replants/plants can be done. When using a blueprint, this limited time is of no issue. Some extra time (etherealDeleteSessionTime) is given when not using a session
+  -once a session is over, you must wait etherealDeleteWaitTime (2 hours) before another deletion session can be done. So during a very long run, it's possible to replant ethereal field every 2 hours, not more
+  -the next replant is possible 2 hours after the previous, it's not related to runtime of the transcend, e.g. waiting 24 hours does not grant 12 replants
+  -the start-of-run deleting/replanting does not count as a regular session so does not reset the 2 hour timer (which is initialized at unix epoch 0 at start of a run), so after start of run (e.g. 10 minutes in) you can also do a replant, before the 2h window.
+  -a streak of deletions without planting/replacing in between is allowed to take longer than etherealDeleteSessionTime: this because there's no benefit of it taking longer when not planting in-between, and to allow more time when manually deleting crops one by one (however, using "replace" with a new type of crop will end this). Normally when using blueprints this should not be something to rely on often
+  -the grow time of ethereal berry, mushroom and nettle crops is set to etherealDeleteSessionTime: so it's not allowed to grow e.g. berries, then do weather/berry fern in main field, then quickly grow mushrooms in ethereal field during the same session: the grow times limit 1 type per session
+  -down-tiering of a crop is treated the same as deletion
+  -up-tiering a crop is treated the same a planting and not deletion (up-tiering = replacing with crop of same type but higher tier, not lower tier)
+  -templates can always be deleted and planted freely, they don't participate in the above system at all
+  -planting and up-tiering is always possible, not just during the deletion sessions.
+  -as an exception, using replace crop (but not delete) to replace a crop with a squirrel or automaton, when there is no squirrel or automaton present, is possible. This to prevent stuck situations especially when not having automaton
+  */
+  var d = state.time - state.lastEtherealDeleteTime;
+  if(state.c_numplanted == 0 && state.c_numplantedbrassica == 0) return 1; // nothing planted yet this run, can delete without restrictions
+  if(state.time - state.c_starttime < etherealDeleteStartTime) return 1; // beginning of the run, also can delete without restrictions
+  if(d < etherealDeleteSessionTime) return 1; // deletion shortly after other deletions, is part of the same session
+  if(d > etherealDeleteWaitTime) return 2; // last deletion was long enough ago, new deletion session
+  if(state.lastEtherealDeleteTime > state.lastEtherealPlantTime) return 1; // doing only consecutive deletes, without doing any planting in between, allows to take a longer time to manually do the multiple delete actions (rather than have to try to do it in 60 seconds)
+  return 0;
+}
+
+function getEtherealDeleteWaitTime() {
+  var d = state.time - state.lastEtherealDeleteTime;
+  if(d < etherealDeleteSessionTime) return 0;
+  if(d > etherealDeleteWaitTime) return 0;
+  return etherealDeleteWaitTime - d;
+}
+
+function freeDelete2Crop(crop) {
+  if(!crop) return false;
+  if(crop.istemplate) return true;
+  return false;
+}
+
+// whether the crop in the ethereal field at position x, y can be alwyas deleted, even if canEtherealDelete() is false
+function freeDelete2(x, y) {
+  var f = state.field2[y][x];
+  if(f.growth < 1 && !f.justreplaced) return true;
+  var c = f.getCrop();
+  if(c && freeDelete2Crop(c)) return true;
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 function holidayEventActive() {
   var time = util.getTime();
   var date_20220501 = 1651363200;
   return time < date_20220501;
 }
+
+

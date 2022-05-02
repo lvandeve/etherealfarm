@@ -368,21 +368,6 @@ function showAutomatonFeatureSourceDialog() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function etherealDeleteTokensNeededForAll() {
-  var tokens_needed = 0;
-  for(var y = 0; y < state.numh2; y++) {
-    for(var x = 0; x < state.numw2; x++) {
-      var f = state.field2[y][x];
-      if(f.hasCrop() && !freeDelete2(x, y) && !f.justplanted) {
-        tokens_needed++;
-      }
-    }
-  }
-  return tokens_needed;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 function updateAutomatonUI() {
   automatonFlex.clear();
 
@@ -539,36 +524,25 @@ function updateAutomatonUI() {
   flex = addButton();
   styleButton(flex.div);
   centerText2(flex.div);
-  var tokens_needed = etherealDeleteTokensNeededForAll();
-  flex.div.textEl.innerText = 'Clear ethereal field (' + tokens_needed + ' tokens)';
+  flex.div.textEl.innerText = 'Clear ethereal field';
   flex.div.style.textShadow = '0px 0px 5px #ff8';
   addButtonAction(flex.div, bind(function() {
-    if(tokens_needed > state.delete2tokens) {
-      showMessage('Cannot execute delete ethereal field: need ' + tokens_needed + ' ethereal delete tokens total, but have only ' + state.delete2tokens, C_INVALID, 0, 0);
-      return;
-    }
-    /*if(tokens_needed == 0) {
-      showMessage('There is nothing left to delete on the ethereal field', C_INVALID, 0, 0);
-      return;
-    }*/
-
-    var num_justplanted = 0;
+    var candelete = canEtherealDelete();
     var num_tried_delete = 0;
+    var num_could_delete = 0;
     setTab(tabindex_field2);
     window.setTimeout(function() {
       for(var y = 0; y < state.numh2; y++) {
         for(var x = 0; x < state.numw2; x++) {
           var f = state.field2[y][x];
           if(f.hasCrop()) {
+            num_tried_delete++;
+            if(!candelete && !freeDelete2(x, y)) continue;
+            num_could_delete++;
             var c = f.getCrop();
             //if(c.type == CROPTYPE_AUTOMATON) continue;
             //if(c.type == CROPTYPE_SQUIRREL) continue;
-            if(f.justplanted && !c.istemplate) {
-              num_justplanted++;
-              continue;
-            }
             addAction({type:ACTION_DELETE2, x:x, y:y, silent:true});
-            num_tried_delete++;
           }
         }
       }
@@ -576,19 +550,19 @@ function updateAutomatonUI() {
       update();
       var resin_after = state.res.resin;
       if(!num_tried_delete) {
-        if(num_justplanted) {
-          showMessage('Nothing to delete in ethereal field. Some crops are just planted and can only be deleted after the next transcension.');
+        showMessage('Nothing to delete in ethereal field');
+      } else if(num_tried_delete != num_could_delete) {
+        if(num_could_delete == 0) {
+          showMessage('Couldn\'t yet clear ethereal field: must wait ' + util.formatDuration(getEtherealDeleteWaitTime()) + '. ' + etherealDeleteExtraInfo, C_INVALID, 0, 0);
         } else {
-          showMessage('Nothing to delete in ethereal field');
+          showMessage('Deleted entire ethereal field, where possible');
         }
-      } else if(num_justplanted) {
-        showMessage('Deleted entire ethereal field, where possible. ' + num_justplanted + ' crops were just planted and can\'t be deleted until next transcension. ' + ' All resin refunded: ' + (resin_after.sub(resin_before).toString()) + '. Ethereal delete tokens spent: ' + tokens_needed + '. Ethereal delete tokens left: ' + state.delete2tokens);
       } else {
-        showMessage('Deleted entire ethereal field.' + ' All resin refunded: ' + (resin_after.sub(resin_before).toString()) + '. Ethereal delete tokens spent: ' + tokens_needed + '. Ethereal delete tokens left: ' + state.delete2tokens);
+        showMessage('Deleted entire ethereal field.' + ' All resin refunded: ' + (resin_after.sub(resin_before).toString()));
       }
     }, 333);
   }));
-  registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds when enough ethereal deletion tokens are available. Cannot delete ethereal crops that were planted during this transcension. As usual, all resin is refunded, but ethereal delete tokens will be used. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
+  registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
 
   addHR();
 

@@ -23,7 +23,7 @@ var field2Rows;
 
 
 // get crop info in HTML
-function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
+function getCropInfoHTML2(f, c, opt_detailed) {
   var result = 'Ethereal ' + c.name;
   result += '<br/>';
   result += 'Crop type: ' + getCropTypeName(c.type) + ((c.tier && c.isReal()) ? (' (tier ' + (c.tier + 1) + ')') : '');
@@ -110,19 +110,6 @@ function getCropInfoHTML2(f, c, opt_detailed, opt_deletetokensinfo) {
 
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
-
-  if(opt_deletetokensinfo) {
-    result += '<br><br>';
-    result += 'Deleting ethereal crops refunds all resin, but can only be done after at least one more transcend and requires ethereal deletion tokens. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)';
-    result += '<br><br>';
-    result += 'Deletion tokens available: ' + state.delete2tokens + ' (max: ' + getDelete2maxBuildup() + ')';
-    result += '<br><br>';
-  }
-
-  if(f.justplanted && c.isReal() && c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL) {
-    //result += '<br><br>Just planted during this run, can only be deleted or replaced with a different type after transcension';
-    result += '<br><br>Just planted during this run, can only be deleted after next transcension';
-  }
 
   return result;
 }
@@ -378,7 +365,8 @@ function makeField2Dialog(x, y) {
 
     styleButton(button1);
     button1.textEl.innerText = 'Tier down';
-    registerTooltip(button1, 'Downgrade crop to 1 tier lower (refunding the resin cost difference), if it already is at the lowest tier it will be turned into a blueprint template.');
+    if(!canEtherealDelete() && !freeDelete2(x, y)) button1.textEl.style.color = '#888';
+    registerTooltip(button1, 'Downgrade crop to 1 tier lower (refunding the resin cost difference), if it already is at the lowest tier it will be turned into a blueprint template. Only works if deleitng in ethereal field is currently possible. ' + etherealDeleteExtraInfo);
     addButtonAction(button1, function() {
       if(makeDowngradeCrop2Action(x, y)) {
         closeAllDialogs();
@@ -388,7 +376,7 @@ function makeField2Dialog(x, y) {
 
     styleButton(button2);
     button2.textEl.innerText = 'Replace crop';
-    registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Requires deletion token as usual. Shows the list of unlocked ethereal crops.');
+    registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked ethereal crops. If this changes the type of the crop or lowers the tier, then this only works if deleting is currently possible in the ethereal field. ' + etherealDeleteExtraInfo);
     addButtonAction(button2, function() {
       makePlantDialog2(x, y, true, c.getRecoup());
     });
@@ -396,9 +384,8 @@ function makeField2Dialog(x, y) {
     styleButton(button3);
     button3.textEl.innerText = 'Delete crop';
     button3.textEl.style.color = '#c00';
-    if(f.justplanted && (c.planttime <= 2 || f.growth >= 1) && (c.type != CROPTYPE_AUTOMATON && c.type != CROPTYPE_SQUIRREL)) button3.textEl.style.color = '#888';
-    if(!state.delete2tokens) button3.textEl.style.color = '#888';
-    registerTooltip(button3, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back, but pay one ethereal deletion token.');
+    if(!canEtherealDelete() && !freeDelete2(x, y)) button3.textEl.style.color = '#888';
+    registerTooltip(button3, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back. Only works if deleting in ethereal field is currently possible. ' + etherealDeleteExtraInfo);
     addButtonAction(button3, function() {
       addAction({type:ACTION_DELETE2, x:x, y:y});
       closeAllDialogs();
@@ -414,14 +401,14 @@ function makeField2Dialog(x, y) {
       var flex = dialog.content;
       var text = '';
 
-      text += getCropInfoHTML2(f, c, true, false);
+      text += getCropInfoHTML2(f, c, true);
       text += '<br/>';
       text += getCropInfoHTML2Breakdown(f, c);
       dialog.content.div.innerHTML = text;
     });
 
     updatedialogfun = bind(function(f, c, flex) {
-      var html0 = getCropInfoHTML2(f, c, false, true);
+      var html0 = getCropInfoHTML2(f, c, false);
       if(html0 != last0) {
         flex0.div.innerHTML = html0;
         last0 = html0;
@@ -502,7 +489,7 @@ function initField2UI() {
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
         } else if(f.hasCrop()) {
           var c = crops2[f.cropIndex()];
-          result = getCropInfoHTML2(f, c, false, false);
+          result = getCropInfoHTML2(f, c, false);
         } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
           if(state.treelevel2 > 0) {
             result = 'Ethereal tree level ' + state.treelevel2;

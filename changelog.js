@@ -20,9 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
-  text += '0.1.104 (2022-05-01):';
-  text += '<br/>• Blueberry secret and cranberry secret now also already buy the unlock upgrade (rather than merely make it visible), for clarity and consitency with blackberry secret. They also no longer make unlock clover visible, instead blueberry secret makes unlock anemone immediately visible.';
+  text += '0.1.104 (2022-05-02):';
+  text += '<br/>• Ethereal delete tokens have been removed from the game. Instead, the ethereal field can now be freely replanted at the beginning of any run, any time later in the run, and every 2 hours thereafter. Templates can always be freely deleted. To prevent stuck situations, replacing a crop with a squirrel or automaton is always possible if no other free field spots are available.'; // The time limit is there because the game shouldn't be about constantly changing the ethereal field, but planning a layout at the beginning at the run, and one or two phases later on is possible
+  text += '<br/>• Blueberry secret and cranberry secret now also already buy the unlock upgrade for free (rather than merely make it visible), for clarity and consitency with blackberry secret. They also no longer make unlock clover visible, instead blueberry secret makes unlock anemone immediately visible.';
   text += '<br/>• Bugfixes.';
+  text += '<br/><br/>';
 
   text += '0.1.103 - Early game balancing (2022-04-27):';
   text += '<br/>• Added a new bee tier for the basic field.';

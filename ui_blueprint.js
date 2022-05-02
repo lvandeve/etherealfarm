@@ -157,11 +157,10 @@ function plantBluePrint(b, allow_override) {
   else showMessage('This blueprint had no effect on the current field');
 }
 
+// for ethereal field
 // if allow_override is true, overrides all non-matching crops, but keeps matching ones there
 // if allow_override is false, will not replace any existing crop on the field
-// opt_get_tokens_cost_only: if true, returns the cost in ethereal delete tokens but doesn't do anything
-function plantBluePrint2(b, allow_override, opt_get_tokens_cost_only) {
-  if(!allow_override && opt_get_tokens_cost_only) return 0;
+function plantBluePrint2(b, allow_override) {
   if(!b || b.numw == 0 || b.numh == 0) return 0;
 
   // match up corners such that standard tree position overlap, in case field sizes are different
@@ -174,126 +173,101 @@ function plantBluePrint2(b, allow_override, opt_get_tokens_cost_only) {
   var sy = treey1 - treey0;
   var w = b.numw;
   var h = b.numh;
-  var single = false;
-  if(w == 1 && h == 1) {
-    w = state.numw2;
-    h = state.numh2;
-    single = true; // special case: 1x1 blueprint fills entire field
-  }
-  var did_something = false;
+  // 1x1 "single" case for basic field blueprint feature disabled for ethereal blueprints: otherwise can get stuck without automaton
   var newactions = [];
-  var tokens_cost = 0;
-  var numjustplanted = 0;
-  var squirrel_automaton_blocked = false;
-  for(var y = 0; y < h; y++) {
-    for(var x = 0; x < w; x++) {
-      var f, d, t, fx, fy;
-      if(single) {
-        f = state.field2[y][x];
-        d = b.data[0][0];
-        t = b.tier[0][0];
-        fx = x;
-        fy = y;
-      } else {
-        fx = x - sx;
-        fy = y - sy;
-        if(fx < 0 || fy < 0 || fx >= state.numw2 || fy >= state.numh2) continue;
-        f = state.field2[fy][fx];
-        d = b.data[y][x];
-        t = b.tier[y][x];
-      }
-      var c = crops2[BluePrint.toCrop2(d, t)];
-      var c2 = undefined;
-      if(!c) continue;
-      var squirrel_automaton = c.type == CROPTYPE_AUTOMATON || c.type == CROPTYPE_SQUIRREL;
-      if(allow_override) {
-        if(f.index != 0) {
-          c2 = f.getCrop();
-          if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
-          if(c2.index == c.index) continue;
-          // can't override crop that was just planted this run
-          if(c2 && f.justplanted && c2.isReal() && c2.type != CROPTYPE_AUTOMATON && c2.type != CROPTYPE_SQUIRREL && c2.type != c.type) {
-            numjustplanted++;
-            if(squirrel_automaton) squirrel_automaton_blocked = true;
-            continue;
+
+  // if the ethereal field freely allows deleting, then don't use the replace action, instead first delete everything that must be replaced, then plant everything from scratch
+  // that is the most cost effective order to do things, it guarantees you get all resin back, before attempting to plant again
+  // if candelete is false, then we can't do that and must use replace operations to do as much as possible that's still allowed (up-tiering, and gauranteeing to get squirrel and automaton)
+  var candelete = canEtherealDelete();
+
+  if(candelete) {
+    var newactions_delete = [];
+    var newactions_plant = [];
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var fx = x - sx;
+        var fy = y - sy;
+        var f = state.field2[fy][fx];
+        var d = b.data[y][x];
+        var t = b.tier[y][x];
+        var c2 = crops2[BluePrint.toCrop2(d, t)];
+        if(!c2) continue;
+        var c = f.getCrop();
+        if(c) {
+          if(c.index == c2.index) continue;
+          if(!allow_override) {
+            if(c.type != c2.type) continue;
+            if(c.tier >= c2.tier) continue;
           }
+          if(c.type == c2.type) {
+            if(c2.tier < c.tier) {
+              newactions_delete.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+            } else {
+              newactions_plant.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+            }
+          } else {
+            newactions_delete.push({type:ACTION_DELETE2, x:fx, y:fy, shiftPlanted:false, silent:true});
+            newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+          }
+        } else {
+          newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
         }
-      } else {
-        // don't overwrite anything that already exists on the field
-        // that includes existing blueprint spots: if you want to combine blueprints, start from the smallest one, then bigger one to fill in the remaining gaps, not the opposite
-        // reason: automaton may already start building up blueprint, so combining the opposite way (overwrite blueprint tiles) may not work due to already becoming real plants
-        if(f.index != 0) continue;
-      }
-      if(!state.crops2[c.index].unlocked) continue;
-      var action_type;
-      if(!!c2) {
-        action_type = ACTION_REPLACE2;
-        if(!freeReplace2(x, y, c.index)) tokens_cost++;
-      } else {
-        action_type = ACTION_PLANT2;
-      }
-      var action_type = !!c2 ? ACTION_REPLACE2 : ACTION_PLANT2;
-      if(!opt_get_tokens_cost_only) newactions.push({type:action_type, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true, lowerifcantafford:true});
-      did_something = true;
-    }
-  }
-  if(opt_get_tokens_cost_only) return tokens_cost;
-  if(tokens_cost > state.delete2tokens) {
-    showMessage('not enough ethereal deletion tokens to use this blueprint, need ' + tokens_cost + ', have: ' + state.delete2tokens, C_INVALID, 0, 0);
-    return tokens_cost;
-  }
-  if(squirrel_automaton_blocked) {
-    // reason for not planting the blueprint if there are justplanted that blocked automaton or squirrel from the blueprint:
-    // if most of the field is justplanted, the blueprint will have almost no effect, but it will have an effect on the existing squirrel and automaton (since those can always be deleted and overwritten), so it will change almost nothing except the squirrel and automaton, which will then be overplanted with a crop that now also can't be deleted
-    // so then you have to continue the run without squirrel and automaton, which is not a good situation (all there bonuses are then disabled)
-    // that's a trap, and most likely not wanted. So therefore, don't do it.
-    showMessage('blueprint not planted, ethereal field has several just-planted crops, a transcension is needed before crops can be over-planted', C_INVALID, 0, 0);
-    return tokens_cost;
-  }
-  if(did_something) {
-    // sort the actions such that those that give back resin are first, to prevent situation where the new ethereal field can't be planted due to replacing crops while not enough resin
-    // TODO: this sorting is very heuristic, do more exact
-    var heuristiccost = function(c) {
-      if(!c) return 0;
-      if(!c.isReal()) return 0;
-      if(c.type == CROPTYPE_AUTOMATON || c.type == CROPTYPE_SQUIRREL) return 1;
-      if(c.type == CROPTYPE_LOTUS) return (1 + c.tier) * 1000;
-      if(c.type == CROPTYPE_BEE) return 5 + c.tier;
-      if(c.type == CROPTYPE_FLOWER) return 2 + c.tier;
-      if(c.type == CROPTYPE_STINGING) return 3 + c.tier * 2;
-      return 1 + c.tier;
-    };
-    newactions.sort(function(a, b) {
-      var fa = state.field2[a.y][a.x];
-      var fb = state.field2[b.y][b.x];
-      var ca0 = fa.getCrop();
-      var cb0 = fb.getCrop();
-      var ca1 = a.crop;
-      var cb1 = b.crop;
-      var costa = heuristiccost(ca1) - heuristiccost(ca0);
-      var costb = heuristiccost(cb1) - heuristiccost(cb0);
-      return costa - costb;
-    });
-    // separate out automaton/squirrel: otherwise there's risk the error "already have squirrel/automaton" appears
-    for(var i = 0; i < newactions.length; i++) {
-      var a = newactions[i];
-      if(a.type != ACTION_REPLACE2) continue;
-      var f = state.field2[a.y][a.x];
-      var c = f.getCrop();
-      if(!c) continue;
-      if(c.type == CROPTYPE_AUTOMATON || c.type == CROPTYPE_SQUIRREL) {
-        var delaction = {type:ACTION_DELETE2, x:a.x, y:a.y, shiftPlanted:false, silent:true};
-        a.type = ACTION_PLANT2;
-        addAction(delaction);
       }
     }
+    for(var i = 0; i < newactions_delete.length; i++) newactions.push(newactions_delete[i]);
+    for(var i = 0; i < newactions_plant.length; i++) newactions.push(newactions_plant[i]);
+  } else {
+    var newactions_plant_replace = [];
+    var newactions_automaton_squirrel = [];
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var fx = x - sx;
+        var fy = y - sy;
+        if(fx < 0 || fy < 0 || fx >= state.numw2 || fy >= state.numh2) continue;
+        var f = state.field2[fy][fx];
+        var d = b.data[y][x];
+        var t = b.tier[y][x];
+        var c2 = crops2[BluePrint.toCrop2(d, t)];
+        var c = undefined;
+        if(!c2) continue;
+        var squirrel_automaton = c2.type == CROPTYPE_AUTOMATON || c2.type == CROPTYPE_SQUIRREL;
+        if(allow_override) {
+          if(f.index != 0) {
+            c = f.getCrop();
+            if(!c) continue; // field has something, but not crop (e.g. tree), so continue
+            if(c.index == c2.index) continue;
+          }
+        } else {
+          // don't overwrite anything that already exists on the field
+          // that includes existing blueprint spots: if you want to combine blueprints, start from the smallest one, then bigger one to fill in the remaining gaps, not the opposite
+          // reason: automaton may already start building up blueprint, so combining the opposite way (overwrite blueprint tiles) may not work due to already becoming real plants
+          if(f.index != 0) continue;
+        }
+        if(!state.crops2[c2.index].unlocked) continue;
+        var action_type;
+        if(c) {
+          action_type = ACTION_REPLACE2;
+        } else {
+          action_type = ACTION_PLANT2;
+        }
+        var action_type = c ? ACTION_REPLACE2 : ACTION_PLANT2;
+        var array = squirrel_automaton ? newactions_automaton_squirrel : newactions_plant_replace;
+        array.push({type:action_type, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+      }
+      for(var i = 0; i < newactions_plant_replace.length; i++) newactions.push(newactions_plant_replace[i]);
+      for(var i = 0; i < newactions_automaton_squirrel.length; i++) newactions.push(newactions_automaton_squirrel[i]);
+    }
+  }
+
+
+  if(newactions.length) {
     for(var i = 0; i < newactions.length; i++) {
       addAction(newactions[i]);
     }
     showMessage('Planted ethereal blueprint');
   }
   else showMessage('This ethereal blueprint had no effect on the current field');
-  return tokens_cost;
 }
 
 function blueprintFromField(b) {
@@ -536,7 +510,6 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     var title = b.name;
     if(!title) title = ethereal ? 'Ethereal blueprint' : 'Blueprint';
     dialog.titleEl.innerText = title;
-    updateOverrideButton();
   };
 
 
@@ -560,26 +533,13 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     update();
   }, 'Plant this blueprint on the field. Only empty spots of the field are overridden, existing crops will stay, even if their type differs.');
 
-  var override_name = 'Override field';
-  if(ethereal) {
-    var num_tokens = plantBluePrint2(b, true, true);
-    override_name = 'Override (' + num_tokens + ' tokens)';
-  }
-
-  var override_button = addButton(override_name, function(e) {
+  var override_button = addButton('Override field', function(e) {
     if(ethereal) plantBluePrint2(b, true);
     else plantBluePrint(b, true);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
     closeAllDialogs();
     update();
   }, 'Plant this blueprint on the field. Existing crops from the field are also deleted and overridden, if their type differs and the blueprint is non-empty at that spot.');
-
-  var updateOverrideButton = function() {
-    if(!ethereal) return;
-    var num_tokens = plantBluePrint2(b, true, true);
-    override_name = 'Override (' + num_tokens + ' tokens)';
-    override_button.textEl.innerText = override_name;
-  };
 
   addButton('From field', function() {
     if(ethereal) blueprintFromField2(b);

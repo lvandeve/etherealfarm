@@ -35,8 +35,8 @@ function Cell(x, y, is_ethereal) {
   this.y = y;
 
   // only used for ethereal field. TODO: make a Cell2 class for ethereal field instead
-  this.justplanted = false; // planted during this run (this transcension), so can't be deleted until next one.
-  this.justreplaced = false; // has been replaced from a crop that costs ethereal token to delete (such as regular berry) for free (without costing to replace due to same type) into something that doesn't cost ethereal token to delete (such as template of same type, or a crop that's now growing) and so it must be non-free and cost a token to delete anyway
+  this.justplanted = false; // planted during this run (this transcension), in the past this meant couldn't be deleted until next run. Currently unused, maybe needed for ethereal ferns.
+  this.justreplaced = false; // has been replaced, so if it's growing now it doesn't count as a free ethereal delete
 
   this.is_ethereal = is_ethereal;
 }
@@ -481,9 +481,11 @@ function State() {
   this.lastBackupWarningTime = 0;
 
   // misc
-  this.delete2tokens = delete2initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
+  this.delete2tokens = 4; // obsolete but for now still present in case the tokens need to come back
   this.respec3tokens = respec3initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
   this.paused = false;
+  this.lastEtherealDeleteTime = 0;
+  this.lastEtherealPlantTime = 0;
 
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits
@@ -613,7 +615,7 @@ function State() {
   this.g_numfullgrown2 = 0;
   this.g_seasons = 0; // season changes actually seen (a savegame from multiple days ago counts as only 1)
   this.g_resin_from_transcends = Num(0); // this is likely the same value as g_res.resin, but is a separate counter for amount of resin ever earned from transcends in case it's needed for recovery in transcension-changing game updates
-  this.g_delete2tokens = 0; // global count of ethereal deletion tokens received, this is not the actual recource but a stat
+  this.g_delete2tokens = 0; //  obsolete but for now still present in case the tokens need to come back
   this.g_fastestrun = 0; // runtime of fastest transcension
   this.g_slowestrun = 0; // runtime of slowest transcension
   this.g_fastestrun2 = 0; // as measured on wall clock instead of the runtime that gets deltas added each time
@@ -1644,6 +1646,7 @@ function automatonUnlocked() {
   return state.crops2[automaton2_0].unlocked;
 }
 
+// have the automaton planted in the ethereal field (irrespective of unlocks, ...)
 function haveAutomaton() {
   return !!state.crop2count[automaton2_0];
 }
@@ -1692,11 +1695,10 @@ function getEtherealAutomatonNeighborBoost() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// have ethereal squirrel
+// have the squirrel planted in the ethereal field (irrespective of unlocks, ...)
 function haveSquirrel() {
   return !!state.crop2count[squirrel2_0];
 }
-
 
 // have the ability to place squirrel, the upgrade unlocked
 function squirrelUnlocked() {

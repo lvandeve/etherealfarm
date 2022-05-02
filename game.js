@@ -597,6 +597,9 @@ function beginNextRun(opt_challenge) {
 
   state.amberprod = false;
 
+  state.lastEtherealDeleteTime = 0;
+  state.lastEtherealPlantTime = 0;
+
   // first ethereal crops
   state.crops2[berry2_0].unlocked = true;
   state.crops2[mush2_0].unlocked = true;
@@ -2566,6 +2569,8 @@ var update = function(opt_ignorePause) {
     state.lasttreeleveluptime += d;
     state.lasttree2leveluptime += d;
     state.lastambertime += d;
+    state.lastEtherealDeleteTime += d;
+    state.lastEtherealPlantTime += d;
 
     // this is for e.g. after importing a save while paused
     // TODO: try to do this only when needed rather than every tick while paused
@@ -2728,7 +2733,7 @@ var update = function(opt_ignorePause) {
     state.prevtime = nexttime;
 
     /*
-    season_will_change computes that season will change next tick. This is one tick too early, but reliable, even across multiple sessions where game was closed and reopened in between. this is the one to use for deletion token get and num season stat computations
+    season_will_change computes that season will change next tick. This is one tick too early, but reliable, even across multiple sessions where game was closed and reopened in between. this is the one to use num season stat computations
     num_season_changes (integer) computes that the season changed during this tick. This may miss some events if game was closed/reopened at some very particular time. But this one will have the correct prev_season_gain and current gain, so is the one to use for the message that shows resources before and after season change
     */
     var current_season = getSeasonAt(state.time);
@@ -3263,10 +3268,33 @@ var update = function(opt_ignorePause) {
 
         var recoup = undefined;
 
-        var freedeletetoken = freeDelete2(action.x, action.y);
-        var freereplacetoken = type == ACTION_REPLACE2 && freeReplace2(action.x, action.y, action.crop.index);
-        var sametypereplace = type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type;
-        //var sametypeupgrade = sametypereplace && action.crop.tier > f.getCrop().tier;
+        var candelete = canEtherealDelete();
+        var freedelete = freeDelete2(action.x, action.y); // the crop is free to delete even if candelete is false
+        // whether the action counts as delete. This is the case if it's the actual delete action, or it's replace to a different crop type or a lower tier (down-tier). But replacing with higher tier (up-tier) does not count as delete
+        var isdelete = (type == ACTION_DELETE2 && f.hasCrop());
+        if(type == ACTION_REPLACE2 && f.hasCrop()) {
+          var c = f.getCrop();
+          if(c.type != action.crop.type) {
+            isdelete = true;
+          } else if(action.crop.tier < c.tier) {
+            isdelete = true;
+          }
+        }
+        // whether the action counts as plant. This is when a new crop is planted, when a crop is replaced to a different type, or when a crop is up-tiered (but not down-tiered)
+        var isplant = (type == ACTION_PLANT2);
+        if(type == ACTION_REPLACE2) {
+          var c = f.getCrop();
+          if(!c || c.type != action.crop.type) {
+            isplant = true;
+          } else if(c && action.crop.tier > c.tier) {
+            isplant = true;
+          }
+        }
+
+        var ishardreplace = !freedelete; // whether this should update f.justreplaced. If true, a the growing crop resulting of this replace cannot be deleted for free.
+        // exception to freedelete: if you have no automaton and ethereal field is full, you can always replace a crop by automaton. Idem for squirrel. But this does not count for ishardreplace.
+        if(type == ACTION_REPLACE2 /*&& state.numemptyfields2 <= 2*/ && !haveAutomaton() && action.crop.index == automaton2_0) freedelete = true;
+        if(type == ACTION_REPLACE2 /*&& state.numemptyfields2 <= 2*/ && !haveSquirrel() && action.crop.index == squirrel2_0) freedelete = true;
 
         var oldcroptype = -1;
 
@@ -3293,12 +3321,8 @@ var update = function(opt_ignorePause) {
           var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
           if(f.cropIndex() == fern2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_0));
           if(f.cropIndex() == fern2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_1));
-          if(!freedeletetoken && !freereplacetoken && state.delete2tokens <= 0 && f.hasCrop()) {
-            showMessage('cannot delete ' + f.getCrop().name + ': must have ethereal deletion tokens to delete ethereal crops. You get ' + getDelete2PerSeason() + ' new such tokens per season (a season lasts 1 real-life day)' , C_INVALID, 0, 0);
-            ok = false;
-          } else if(!freedeletetoken && f.justplanted && !sametypereplace) {
-            // the growth >= 1 check does allow deleting if it wasn't fullgrown yet, as a quick undo, but not for the crops with very fast plant time such as those that give starting cash
-            showMessage('cannot delete ' + f.getCrop().name + ': this ethereal crop was planted during this transcension. Must transcend at least once.', C_INVALID, 0, 0);
+          if(isdelete && !candelete && !freedelete && f.hasCrop()) {
+            showMessage('cannot delete in ethereal field at this time, must wait ' + util.formatDuration(getEtherealDeleteWaitTime()) + '. ' + etherealDeleteExtraInfo, C_INVALID, 0, 0);
             ok = false;
           } else if(f.cropIndex() == fern2_0 && state.res.lt(remstarter)) {
             showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', C_INVALID, 0, 0);
@@ -3312,9 +3336,11 @@ var update = function(opt_ignorePause) {
           if(type == ACTION_REPLACE2 && f.hasCrop()) cost = cost.sub(recoup);
           if(action.lowerifcantafford && state.res.lt(cost)) {
             var tier = c.tier;
+            var mintier = -1;
+            if(type == ACTION_REPLACE2 && f.hasCrop() && f.getCrop().type == action.crop.type) mintier = f.getCrop().tier + 1; // otherwise this could turn into a down-tier action for free even if deletes not currently allowed
             for(;;) {
               tier--;
-              if(tier < -1) break;
+              if(tier < mintier) break;
               var c2 = croptype2_tiers[c.type][tier];
               if(f.hasCrop() && c2.index == f.getCrop().index) continue;
               if(!c2) break;
@@ -3363,21 +3389,10 @@ var update = function(opt_ignorePause) {
           if(f.growth < 1) {
             state.g_numplanted2--;
           }
-          if(freedeletetoken) {
-            if(f.growth < 1) {
-              if(!action.silent) showMessage('plant was still growing, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
-            } else {
-              if(!action.silent) showMessage('this crop is free to delete, ' + recoup.toString() + ' refunded and no delete token used', C_UNDO, 1624770609);
-            }
-          } else if(freereplacetoken) {
-            if(!action.silent) showMessage('replaced crop with same type, so no ethereal delete token used');
-          } else {
+          if(!freedelete) {
             state.g_numunplanted2++;
-            if(state.delete2tokens > 0) {
-              state.delete2tokens--;
-            }
-            if(!action.silent) showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString() + ', used 1 ethereal deletion token, ' + state.delete2tokens + ' tokens left');
           }
+          if(!action.silent) showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString());
           f.index = 0;
           f.growth = 0;
           computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
@@ -3385,6 +3400,11 @@ var update = function(opt_ignorePause) {
 
           if(type == ACTION_DELETE2) f.justreplaced = false;
 
+          if(isdelete && !freedelete && candelete == 2) {
+            state.lastEtherealDeleteTime = state.time;
+          }
+
+          if(type == ACTION_DELETE2) computeDerived(state); // correctly update derived stats based on changed field state (replace will do it below)
           store_undo = true;
         }
 
@@ -3400,7 +3420,7 @@ var update = function(opt_ignorePause) {
           f.growth = 0;
           if(type == ACTION_REPLACE2) {
             f.justplanted |= (oldcroptype != action.crop.type);
-            f.justreplaced |= (freereplacetoken == 1);
+            f.justreplaced |= ishardreplace;
           } else {
             f.justplanted = true;
             f.justreplaced = false;
@@ -3441,6 +3461,11 @@ var update = function(opt_ignorePause) {
               showMessage('Automation of choice upgrades unlocked!', C_AUTOMATON, 1067714398);
             }
           }
+
+          if(isplant && !freeDelete2Crop(action.crop)) {
+            state.lastEtherealPlantTime = state.time;
+          }
+
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
@@ -3922,7 +3947,7 @@ var update = function(opt_ignorePause) {
                 if(state.g_numfullgrown2 == 1) {
                   showMessage('your first ethereal plant in the ethereal field has fullgrown! It provides a bonus to your basic field.', C_HELP, 126850492);
                 }
-                if(!c.istemplate && c.type != CROPTYPE_SQUIRREL && c.type != CROPTYPE_AUTOMATON) f.justreplaced = false;
+                f.justreplaced = false;
               }
             }
           } else {
@@ -4561,15 +4586,6 @@ var update = function(opt_ignorePause) {
 
 
   if(num_season_changes > 0) {
-    var num_get = getDelete2PerSeason();
-    var max_num = getDelete2maxBuildup();
-
-    var num_tokens = num_season_changes * num_get;
-    if(state.delete2tokens + num_tokens > max_num) num_tokens = max_num - state.delete2tokens;
-    state.delete2tokens += num_tokens;
-    state.g_delete2tokens += num_tokens;
-    if(num_tokens > 0 && state.g_numresets > 0) showMessage('Received ' + num_tokens + ' ethereal deletion tokens', C_ETHEREAL, 510324665);
-
     state.amberseason = false;
   }
 

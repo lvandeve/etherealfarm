@@ -764,7 +764,6 @@ function createStatsDialog() {
     }
     text += '• ethereal planted: ' + open + state.g_numfullgrown2 + close + '<br>';
     text += '• ethereal deleted: ' + open + state.g_numunplanted2 + close + '<br>';
-    text += '• ethereal delete tokens: ' + open + state.delete2tokens + ' / ' + getDelete2maxBuildup() + close + '<br>';
     text += '<br>';
   }
 

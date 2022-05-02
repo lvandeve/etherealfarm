@@ -233,10 +233,6 @@ function updateRightPane() {
       text += '• Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')';
       text += '<br>';
     }
-    if(state.g_numresets > 0) {
-      text += '• Ethereal delete tokens: ' + state.delete2tokens + ' / ' + getDelete2maxBuildup();
-      text += '<br>';
-    }
     text += '• Season change in: ' + util.formatDuration(timeTilNextSeason(), true);
     text += '<br>';
     var f_active = getActiveFruit();

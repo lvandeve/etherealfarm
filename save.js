@@ -303,7 +303,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numfullgrown2);
   processUint(state.g_seasons);
   processNum(state.g_resin_from_transcends);
-  processUint(state.g_delete2tokens);
+  processUint(state.g_delete2tokens); // obsolete but for now still present in case the tokens need to come back
   processFloat(state.g_fastestrun);
   processFloat(state.g_slowestrun);
   processFloat(state.g_fastestrun2);
@@ -444,7 +444,7 @@ function encState(state, opt_raw_only) {
 
 
   section = 16; id = 0; // misc
-  processUint(state.delete2tokens);
+  processUint(state.delete2tokens); // obsolete but for now still present in case the tokens need to come back
   processTime(state.lasttreeleveluptime);
   processTime(state.lasttree2leveluptime);
   processTime(state.lastambertime);
@@ -453,6 +453,8 @@ function encState(state, opt_raw_only) {
   processTime(state.resinfruittime);
   processTime(state.twigsfruittime);
   processTimeArray(state.prevleveltime);
+  processTime(state.lastEtherealDeleteTime);
+  processTime(state.lastEtherealPlantTime);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -1244,7 +1246,7 @@ function decState(s) {
     }
   }
   if(save_version >= 4096*1+14) {
-    state.g_delete2tokens = processUint();
+    state.g_delete2tokens = processUint(); // obsolete but for now still present in case the tokens need to come back
     state.g_fastestrun = processFloat();
     state.g_slowestrun = processFloat();
   }
@@ -1436,7 +1438,7 @@ function decState(s) {
   // do not reuse to not break backwards compatibility.
 
   section = 16; id = 0; // misc
-  if(save_version >= 4096*1+14) state.delete2tokens = processUint();
+  if(save_version >= 4096*1+14) state.delete2tokens = processUint(); // obsolete but for now still present in case the tokens need to come back
   if(save_version >= 4096*1+19) state.lasttreeleveluptime = processTime();
   if(save_version >= 4096*1+71) state.lasttree2leveluptime = processTime();
   if(save_version >= 4096*1+71) state.lastambertime = processTime();
@@ -1448,6 +1450,8 @@ function decState(s) {
     state.prevleveltime = processTimeArray();
     if(error || state.prevleveltime.length != 3) return err(4);
   }
+  if(save_version >= 4096*1+104) state.lastEtherealDeleteTime = processTime();
+  if(save_version >= 4096*1+104) state.lastEtherealPlantTime = processTime();
   if(error) return err(4);
 
 
@@ -2174,19 +2178,9 @@ function decState(s) {
     state.res.resin.addInPlace(refund);
   }
 
-  // fix medal accidently given out wehn not completed challenge
+  // fix medal accidently given out when not completed challenge
   if(save_version <= 4096*1+84 && !state.challenges[challenge_thistle].completed && state.medals[medal_challenge_thistle].earned) {
     state.medals[medal_challenge_thistle].seen = state.medals[medal_challenge_thistle].earned = false;
-  }
-
-  if(state.g_numresets >= 1 && save_version <= 4096*1+87) {
-    var tokens = Math.ceil(state.numw2 * state.numh2 * 0.5);
-    if(state.delete2tokens > tokens) {
-      state.delete2tokens = (state.delete2tokens % tokens) + tokens;
-    } else {
-      showMessage('Seasons now drop more ethereal delete tokens, since this save was loaded from an older version one extra drop is given for free: ' + tokens + ' tokens added');
-      state.delete2tokens += tokens;
-    }
   }
 
   // a bug in v0.1.94 could cause NaN times, fix this as best as possible. Too bad this does mean some stats become inaccurate
