@@ -39,10 +39,11 @@ var stem_metal_header3 = 'ho:#bf6'; // electrum
 var stem_metal_header4 = 'ho:#ff0'; // gold
 var stem_metal_header5 = 'X:#eee O:#ddd o:#ccc x:#bbb'; // platinum
 var stem_metal_header6 = 'X:#fee O:#ecc o:#dbb x:#caa'; // rhodium
-var stem_metal_header7 = 'ho:#00f'; // sapphire
-var stem_metal_header8 = 'ho:#0c0'; // emerald
-var stem_metal_header9 = 'ho:#c00'; // ruby
-var stem_metal_header10 = 'X:#fff O:#eee o:#ddd x:#ccc'; // diamond
+var stem_metal_header7 = 'ho:#a5f'; // amethyst
+var stem_metal_header8 = 'ho:#00f'; // sapphire
+var stem_metal_header9 = 'ho:#0c0'; // emerald
+var stem_metal_header10 = 'ho:#c00'; // ruby
+var stem_metal_header11 = 'X:#fff O:#eee o:#ddd x:#ccc'; // diamond
 
 
 // the images have season dependent palette, for colors qgGQ. Use them as green, but they'll become season dependent. Only those 4 colors.
@@ -966,10 +967,11 @@ createTreeImages('electrum tree', image_metal_tree_top, image_metal_tree_stem, s
 createTreeImages('gold tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header4),
 createTreeImages('platinum tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header5),
 createTreeImages('rhodium tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header6),
-createTreeImages('sapphire tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header7),
-createTreeImages('emerald tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header8),
-createTreeImages('ruby tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header9),
-createTreeImages('diamond tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header10),
+createTreeImages('amethyst tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header7),
+createTreeImages('sapphire tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header8),
+createTreeImages('emerald tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header9),
+createTreeImages('ruby tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header10),
+createTreeImages('diamond tree', image_metal_tree_top, image_metal_tree_stem, stem_metal_header11),
 createTreeImages('magnificent tree', `
 ................
 ......QQQGG.....

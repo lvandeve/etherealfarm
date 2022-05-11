@@ -29,7 +29,11 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
 
   var infoFlex = new Flex(flex, [0, 0, 0.7], 0, 1, [0, 0, 1]);
   var text = '';
-  text += '<b>Plant ' + crop.name + '</b><br>';
+  if(opt_replace) {
+    text +=  '<b>' + upper(crop.name) + '</b><br>';
+  } else {
+    text +=  '<b>Plant ' + crop.name + '</b><br>';
+  }
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
   if(opt_replace && opt_field && opt_field.cropIndex() == crop.index) cost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, amount used in cost computation is one less
@@ -156,11 +160,16 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
         return true;
     }, index);
 
-    var showfun = bind(function(tooltipfun) {
+    var showfun = bind(function(tooltipfun, plantfun) {
         var text = tooltipfun();
-        var dialog = createDialog({size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM), title:'Ethereal crop info'});
+        var dialog = createDialog({
+          size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM),
+          title:'Ethereal crop info',
+          names:'plant',
+          functions:plantfun
+        });
         dialog.content.div.innerHTML = text;
-    }, tooltipfun);
+    }, tooltipfun, plantfun);
 
 
     var chip = makePlantChip2(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.field2[y][x]);

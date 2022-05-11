@@ -368,6 +368,61 @@ function showAutomatonFeatureSourceDialog() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+function deleteEntireField() {
+  setTab(tabindex_field);
+  window.setTimeout(function() {
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f;
+        f = state.field[y][x];
+        if(f.hasCrop()) {
+          addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
+        }
+      }
+    }
+    update();
+  }, 333);
+}
+
+function deleteEtherealField() {
+  var candelete = canEtherealDelete();
+  var num_tried_delete = 0;
+  var num_could_delete = 0;
+  setTab(tabindex_field2);
+  window.setTimeout(function() {
+    for(var y = 0; y < state.numh2; y++) {
+      for(var x = 0; x < state.numw2; x++) {
+        var f = state.field2[y][x];
+        if(f.hasCrop()) {
+          num_tried_delete++;
+          if(!candelete && !freeDelete2(x, y)) continue;
+          num_could_delete++;
+          var c = f.getCrop();
+          //if(c.type == CROPTYPE_AUTOMATON) continue;
+          //if(c.type == CROPTYPE_SQUIRREL) continue;
+          addAction({type:ACTION_DELETE2, x:x, y:y, silent:true});
+        }
+      }
+    }
+    var resin_before = Num(state.res.resin);
+    update();
+    var resin_after = state.res.resin;
+    if(!num_tried_delete) {
+      showMessage('Nothing to delete in ethereal field');
+    } else if(num_tried_delete != num_could_delete) {
+      if(num_could_delete == 0) {
+        showMessage('Couldn\'t yet clear ethereal field: must wait ' + util.formatDuration(getEtherealDeleteWaitTime()) + '. ' + etherealDeleteExtraInfo, C_INVALID, 0, 0);
+      } else {
+        showMessage('Deleted entire ethereal field, where possible');
+      }
+    } else {
+      showMessage('Deleted entire ethereal field.' + ' All resin refunded: ' + (resin_after.sub(resin_before).toString()));
+    }
+  }, 333);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 function updateAutomatonUI() {
   automatonFlex.clear();
 
@@ -443,8 +498,24 @@ function updateAutomatonUI() {
   if(!haveAutomaton()) {
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
-    flex.div.innerText = 'Place automaton in ethereal field to enable automation options, special actions and a boost to its neighboring ethereal crops. Reach higher ethereal tree levels and beat new challenges to unlock more automation features.';
-    y += texth;
+    flex.div.innerText = 'You must have an automaton in the ethereal field to use the automaton tab. Place automaton in ethereal field, or replace an existing ethereal field crop by automaton. This enables automation options, more special actions and it will also boost to its neighboring ethereal crops. Reach higher ethereal tree levels and beat new challenges to unlock more automation features.';
+    y += 0.2;
+
+    /*flex = addButton();
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Clear entire field';
+    addButtonAction(flex.div, deleteEntireField);
+    registerTooltip(flex.div, 'Immediately delete all crops from the entire field');*/
+
+    flex = addButton();
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Clear ethereal field';
+    flex.div.style.textShadow = '0px 0px 5px #ff8';
+    addButtonAction(flex.div, deleteEtherealField);
+    registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
+
     return;
   }
 
@@ -494,21 +565,7 @@ function updateAutomatonUI() {
   styleButton(flex.div);
   centerText2(flex.div);
   flex.div.textEl.innerText = 'Clear entire field';
-  addButtonAction(flex.div, bind(function() {
-    setTab(tabindex_field);
-    window.setTimeout(function() {
-      for(var y = 0; y < state.numh; y++) {
-        for(var x = 0; x < state.numw; x++) {
-          var f;
-          f = state.field[y][x];
-          if(f.hasCrop()) {
-            addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
-          }
-        }
-      }
-      update();
-    }, 333);
-  }));
+  addButtonAction(flex.div, deleteEntireField);
   registerTooltip(flex.div, 'Immediately delete all crops from the entire field');
 
   flex = addButton();
@@ -526,42 +583,7 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   flex.div.textEl.innerText = 'Clear ethereal field';
   flex.div.style.textShadow = '0px 0px 5px #ff8';
-  addButtonAction(flex.div, bind(function() {
-    var candelete = canEtherealDelete();
-    var num_tried_delete = 0;
-    var num_could_delete = 0;
-    setTab(tabindex_field2);
-    window.setTimeout(function() {
-      for(var y = 0; y < state.numh2; y++) {
-        for(var x = 0; x < state.numw2; x++) {
-          var f = state.field2[y][x];
-          if(f.hasCrop()) {
-            num_tried_delete++;
-            if(!candelete && !freeDelete2(x, y)) continue;
-            num_could_delete++;
-            var c = f.getCrop();
-            //if(c.type == CROPTYPE_AUTOMATON) continue;
-            //if(c.type == CROPTYPE_SQUIRREL) continue;
-            addAction({type:ACTION_DELETE2, x:x, y:y, silent:true});
-          }
-        }
-      }
-      var resin_before = Num(state.res.resin);
-      update();
-      var resin_after = state.res.resin;
-      if(!num_tried_delete) {
-        showMessage('Nothing to delete in ethereal field');
-      } else if(num_tried_delete != num_could_delete) {
-        if(num_could_delete == 0) {
-          showMessage('Couldn\'t yet clear ethereal field: must wait ' + util.formatDuration(getEtherealDeleteWaitTime()) + '. ' + etherealDeleteExtraInfo, C_INVALID, 0, 0);
-        } else {
-          showMessage('Deleted entire ethereal field, where possible');
-        }
-      } else {
-        showMessage('Deleted entire ethereal field.' + ' All resin refunded: ' + (resin_after.sub(resin_before).toString()));
-      }
-    }, 333);
-  }));
+  addButtonAction(flex.div, deleteEtherealField);
   registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
 
   addHR();

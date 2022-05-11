@@ -220,12 +220,12 @@ registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!',
 registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your first permanent type of plant.',
     'You unlocked your first permanent type of plant. Plants like this don\'t wither, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
-    'Watercress also remains useful: if you plant a watercress next to permanent plants, the watercress copies all its neighbors\' production (orthogonally, not diagonally). If there is more than 1 watercress in the entire field they copy less, so having 1 or perhaps 2 max makes sense (by design: no need to replant many watercress all the time. Check the seeds/s income to experiment). The watercress is its own independent multiplier so it works well and is relevant no matter how high level other boosts the permanent plants have later in the game.' +
+    'Watercress also remains useful: if you plant a watercress next to permanent plants, it copies all its orthogonal neighbors\' production, no matter how high it is. However there\'s a penalty to copying for having many watercress, so max 1 or 2 makes sense.' +
     '<br><br>'+
-    'TIP: press "p" to plant last used crop type at mouse cursor, or shift+click for the same effect, or ctrl (or command) + click to plant watercress. More shortcuts are listed in the main game help menu.',
+    'TIP: See shortcuts in the main help menu for various shortcuts that make planting easier ("p" or shift+click to plant last crop, ctrl+click to plant watercress, ...).',
     undefined,
     '<br><br>'+
-    'The image below shows an optimal configuration to use for watercress copying: the single watercress duplicates the production of 4 blackberries:',
+    'The image below shows an optimal configuration to use for watercress copying: it duplicates the production of 4 blackberries:',
     [[undefined,blackberry[4],undefined],[blackberry[4],images_watercress[4],blackberry[4]],[undefined,blackberry[4],undefined]]);
 
 
@@ -462,32 +462,86 @@ function createKeyboardHelpDialog() {
 
   text += '<b>List of keyboard shortcuts:</b>';
   text += '<br/><br/>';
+  if(!haveAutomaton()) {
+    text += 'More shortcuts will appear in this list later as you progress through the game.';
+    text += '<br/><br/>';
+  }
   text += 'Note: on mac, ctrl means command instead.';
   text += '<br/><br/>';
-  text += ' • <b>number keys "1-9"</b>: by default, select fruit slot (when available). Can be changed in the preferences under "controls" to instead activate weather or change game tabs.';
+  text += ' • <b>esc</b>: close current dialog. If no dialogs are open, shows main menu.';
   text += '<br/>';
-  text += ' • <b>"shift" + number keys "1-9"</b>: by default, activate weather (1-3). Can be changed in the preferences under "controls" to instead select fruit slots or change game tabs.';
+  text += ' • <b>"p"</b>: when crop in field under mouse cursor: pick (select) this crop for planting (no mouse click required)';
   text += '<br/>';
-  text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
+  text += ' • <b>"p"</b>: when empty field mouse cursor: plant the selected crop here (no mouse click required)';
   text += '<br/>';
-  text += ' • <b>"t"</b>: show transcend dialog (if available)';
+  text += ' • <b>"d"</b>: delete crop under mouse cursor (no mouse click required)';
   text += '<br/>';
-  text += ' • <b>"p"</b>: pick (select) or plant (if empty field) crop under mouse cursor (no mouse click required)';
-  text += '<br/>';
-  text += ' • <b>"d"</b>: delete crop under mouse cursor (no mouse click required, only if this is enabled in preferences)';
-  text += '<br/>';
-  text += ' • <b>"u"</b>: tier up: replace crop or template under mouse cursor with highest available tier you can afford (no mouse click required)';
+  text += ' • <b>"u"</b>: tier up: replace crop or template under mouse cursor with highest available tier of the same type that you can afford (no mouse click required)';
   text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted or unlocked crop type.';
   text += '<br/>';
   text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key).';
   text += '<br/>';
-  text += ' • <b>ctrl + click non-empty field</b>: delete crop, only if this is enabled in preferences.';
+  text += ' • <b>ctrl + click non-empty field</b>: delete crop.';
   text += '<br/>';
-  text += ' • <b>shift + click non-empty field</b>: replace crop, only if this is enabled in preferences.';
+  text += ' • <b>shift + click non-empty field</b>: replace crop.';
   text += '<br/>';
   text += ' • <b>ctrl + shift + click field</b>: tier up: replace crop or template with highest unlocked tier (if enabled in preferences), pick this crop type as last planted, and on empty field, plant highest tier of picked crop type you can afford.';
   text += '<br/>';
+  text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
+  text += '<br/>';
+  text += ' • <b>"t"</b>: show transcend dialog (if available)';
+  text += '<br/>';
+  text += ' • <b>"f"</b>: go to the basic field tab';
+  text += '<br/>';
+  text += ' • <b>"e"</b>: go to the ethereal field tab (if available)';
+  text += '<br/>';
+  text += ' • <b>], }, ) or ></b>: select next active fruit. Can be changed in the preferences under "controls" to instead select next game tab.';
+  text += '<br/>';
+  text += ' • <b>[, {, ( or <</b>: select previous active fruit. Can be changed in the preferences under "controls" to instead select previous game tab.';
+  text += '<br/>';
+  text += ' • <b>number keys "1-9"</b>: by default, select fruit slot (when available). Can be changed in the preferences under "controls" to instead activate weather or change game tabs.';
+  text += '<br/>';
+  text += ' • <b>"shift" + number keys "1-9"</b>: by default, activate weather (1-3). Can be changed in the preferences under "controls" to instead select fruit slots or change game tabs.';
+  text += '<br/>';
+  if(state.g_numfruits > 0) {
+    text += '<br/><b>Fruits tab:</b>';
+    text += '<br/><br/>';
+    text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
+    text += '<br/>';
+    text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
+    text += '<br/>';
+    text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence.';
+    text += '<br/>';
+  }
+  if(haveAutomaton()) {
+    text += '<br/><b>Blueprints:</b>';
+    text += '<br/><br/>';
+    text += ' • <b>"b"</b>: open the blueprint library, when available.';
+    text += '<br/>';
+    text += ' • <b>"t" followed by "b"</b>: transcend and open the transcend-with-blueprint dialog.';
+    text += '<br/>';
+    text += ' • <b>"t" followed by "Enter"</b>: transcend without blueprint.';
+    text += '<br/>';
+    text += ' • <b>"t" followed by "c"</b>: transcend and open the start-new-challenge dialog.';
+    text += '<br/>';
+    text += ' • <b>number keys "1-9" in blueprint selection dialog</b>: open or use this blueprint';
+    text += '<br/>';
+    text += ' • <b>"shift" + number keys "1-9" in blueprint selection dialog</b>: plant this blueprint (overriding)';
+    text += '<br/>';
+    text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
+    text += '<br/>';
+    text += ' • <b>shift + click blueprint "To Field"</b>: plant this blueprint, but let it override non-matching crops. Without shift, it only plants on empty field spots.';
+    text += '<br/>';
+    text += ' • <b>shift + click squirrel upgrade</b>: when you unlocked this type of upgrades and have respecced at least once: upgrade all upgrades until this one, only available if you can afford it and this upgrade was seen before.';
+    text += '<br/>';
+    text += ' • <b>"f" in blueprint editing dialog</b>: set blueprint from field.';
+    text += '<br/>';
+    text += ' • <b>"enter" in blueprint editing dialog</b>: plant blueprint (overriding).';
+    text += '<br/>';
+  }
+  text += '<br/><b>Special button actions:</b>';
+  text += '<br/><br/>';
   text += ' • <b>shift + click upgrade</b>: buy as many of this upgrade as you can afford.';
   text += '<br/>';
   text += ' • <b>shift + click undo</b>: save the undo state now, rather than load it. This overwrites your undo so eliminates any chance of undoing now. This will also be overwritten again if you do actions a minute later.';
@@ -496,41 +550,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>ctrl + click save import dialog</b>: import and old savegame, but force non-paused state, even if the savegame was saved while paused, this will cause all time between saving and now to be ran.';
   text += '<br/>';
-  text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
-  text += '<br/>';
-  text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
-  text += '<br/>';
-  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence.';
-  text += '<br/>';
-  text += ' • <b>], }, ) or ></b>: select next active fruit. Can be changed in the preferences under "controls" to instead select next game tab.';
-  text += '<br/>';
-  text += ' • <b>[, {, ( or <</b>: select previous active fruit. Can be changed in the preferences under "controls" to instead select previous game tab.';
-  text += '<br/>';
-  text += ' • <b>esc</b>: close current dialog. If no dialogs are open, shows main menu.';
-  text += '<br/>';
-  if (haveAutomaton()) {
-    text += '<br/><b>Blueprints:</b>';
-    text += '<br/>';
-    text += '<br/>';
-    text += ' • <b>"b"</b>: open the blueprint library, when available.';
-    text += '<br/>';
-    text += ' • <b>"t"</b>: open the transcension dialog, when available.';
-    text += '<br/>';
-    text += ' • <b>"t" followed by "Enter"</b>: transcend without blueprint.';
-    text += '<br/>';
-    text += ' • <b>"t" followed by "b"</b>: transcend and open the transcend-with-blueprint dialog.';
-    text += '<br/>';
-    text += ' • <b>"t" followed by "c"</b>: transcend and open the start-new-challenge dialog.';
-    text += '<br/>';
-    text += ' • <b>"1" - "9" in blueprint selection dialog</b>: open or use this blueprint';
-    text += '<br/>';
-    text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
-    text += '<br/>';
-    text += ' • <b>shift + click blueprint "To Field"</b>: plant this blueprint, but let it override non-matching crops. Without shift, it only plants on empty field spots.';
-    text += '<br/>';
-    text += ' • <b>shift + click squirrel upgrade</b>: when you unlocked this type of upgrades and have respecced at least once: upgrade all upgrades until this one, only available if you can afford it and this upgrade was seen before.';
-    text += '<br/>';
-  }
+
   text += '<br/><br/>';
 
   dialog.content.div.innerHTML = text;
@@ -594,9 +614,9 @@ function createHelpDialog() {
   var addSpacer = function() {
     pos += h * 0.5;
   };
-  var tempFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h);
-  tempFlex.div.innerText = 'More help topics will appear here as more features unlock';
-  pos += h;
+  //var tempFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h);
+  //tempFlex.div.innerText = 'More help topics will appear here as more features unlock';
+  //pos += h;
 
   var button;
 
@@ -955,7 +975,7 @@ function showHelpArrows() {
   } else if(goal == GOAL_WC10) {
     setGoalText('Plant up to 10 watercress on the field to reveal a next upgrade (' + state.c_numplantedbrassica + ' / 10 planted).');
   } else if(goal == GOAL_BLACKBERRY_UNLOCK) {
-    setGoalText('Buy the "Unlock blackberry" upgrade. If needed, plant and re-plant more watercress to gain enough seeds to afford it.');
+    setGoalText('Buy the "Unlock blackberry" upgrade. To get seeds to afford it, plant more watercress first.');
     if(state.currentTab == 1 && upgradeFlexCache[0]) {
       var chip = document.getElementById('help_arrow_unlock_blackberry');
       if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
@@ -966,7 +986,7 @@ function showHelpArrows() {
       makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
     }
   } else if(goal == GOAL_BLACKBERRY_PLANT) {
-    setGoalText('Plant a blackberry and wait for it to grow. If needed, plant and re-plant more watercress to gain enough seeds to afford it.');
+    setGoalText('Plant a blackberry and wait for it to grow. To get seeds to afford it, plant more watercress first.');
     if(!state.numcropfields_permanent && state.res.seeds.ger(1000)) {
       var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
       if(chip) {
@@ -981,7 +1001,7 @@ function showHelpArrows() {
       }
     }
   } else if(goal == GOAL_FLOWER_UNLOCK) {
-    setGoalText('Unlock anemone. If needed, plant more blackberries and watercress to get more seed production to afford its cost.');
+    setGoalText('Unlock anemone. To get more seed production to afford it, plant more blackberries and watercress first.');
     if(state.currentTab == 1 && upgradeFlexCache[0]) {
       var chip = document.getElementById('help_arrow_unlock_anemone');
       if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);

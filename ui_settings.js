@@ -323,18 +323,6 @@ function createShortcutsDialog() {
     setStyle();
   }, button, updatebuttontext));
   button.id = 'controls_brackets';
-
-  addSettingsSpacer();
-
-  button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'shortcuts may delete crop: ' + (state.allowshiftdelete ? 'yes' : 'no'); };
-  updatebuttontext(button);
-  registerTooltip(button, 'Allow deleting crop without any dialog or confirmation by ctrl+clicking it on the field or pressing "d", or replacing by shift+clicking it. Note that you can always shift+click empty fields to repeat last planted type (opposite of deleting), regardless of this setting.');
-  addButtonAction(button, bind(function(button, updatebuttontext, e) {
-    state.allowshiftdelete = !state.allowshiftdelete;
-    updatebuttontext(button);
-  }, button, updatebuttontext));
-  button.id = 'controls_shiftdelete';
 }
 
 function createNotificationSettingsDialog() {
@@ -630,9 +618,14 @@ var showing_stats = false;
 
 function createStatsDialog() {
   showing_stats = true;
-  var dialog = createDialog({title:'Player statistics', scrollable:true, onclose:function() {
-    showing_stats = false;
-  }});
+  var dialog = createDialog({
+    title:'Player statistics',
+    scrollable:true,
+    icon:image_stats,
+    onclose:function() {
+      showing_stats = false;
+    }
+  });
 
   var div = dialog.content.div;
 
@@ -646,7 +639,8 @@ function createStatsDialog() {
   }
   if(state.g_numresets > 0 || state.treelevel > 0) text += '• tree level: ' + open + state.treelevel + close + '<br>';
   text += '• start time: ' + open + util.formatDate(state.c_starttime) + close + '<br>';
-  text += '• duration: ' + open + util.formatDuration(util.getTime() - state.c_starttime - state.c_pausetime) + close + '<br>';
+  var duration = util.getTime() - state.c_starttime - state.c_pausetime;
+  text += '• duration: ' + open + util.formatDuration(duration) + close + '<br>';
   var c_res = Res(state.c_res);
   c_res.essence.addInPlace(getUpcomingFruitEssence().essence);
   text += '• total earned: ' + open + c_res.toString() + close + '<br>';
@@ -654,8 +648,8 @@ function createStatsDialog() {
   text += '• highest production/s: ' + open + state.c_max_prod.toString() + close + '<br>';
   text += '• ferns: ' + open + state.c_numferns + close + '<br>';
   text += '• planted (permanent): ' + open + state.c_numfullgrown + close + '<br>';
-  text += '• planted (watercress): ' + open + state.c_numplantedbrassica + close + '<br>';
-  text += '• deleted: ' + open + state.c_numunplanted + close + '<br>';
+  text += '• planted (brassica): ' + open + state.c_numplantedbrassica + close + '<br>';
+  text += '• crops deleted: ' + open + state.c_numunplanted + close + '<br>';
   text += '• upgrades: ' + open + state.c_numupgrades + close + '<br>';
   if(state.g_numfruits > 0) {
     text += '• fruits: ' + open + state.c_numfruits + close + '<br>';
@@ -694,8 +688,8 @@ function createStatsDialog() {
     text += '• highest earned any run: ' + open + state.g_max_res_earned.toString() + close + '<br>';
     text += '• ferns: ' + open + state.g_numferns + close + '<br>';
     text += '• planted (permanent): ' + open + state.g_numfullgrown + close + '<br>';
-    text += '• planted (watercress): ' + open + state.g_numplantedbrassica + close + '<br>';
-    text += '• deleted: ' + open + state.g_numunplanted + close + '<br>';
+    text += '• planted (brassica): ' + open + state.g_numplantedbrassica + close + '<br>';
+    text += '• crops deleted: ' + open + state.g_numunplanted + close + '<br>';
     text += '• upgrades: ' + open + state.g_numupgrades + close + '<br>';
     if(state.g_numfruits > 0) {
       text += '• fruits: ' + open + state.g_numfruits + close + '<br>';
@@ -715,14 +709,21 @@ function createStatsDialog() {
   var s = getSeason();
   text += '• current season: ' + open + seasonNames[s] + close + '<br>';
   text += '• spring flower bonus: ' + open + '+' + getSpringFlowerBonus().subr(1).toPercentString() + close + '<br>';
-  text += '• summer berry bonus: ' + open + '+' + getSummerBerryBonus().subr(1).toPercentString() + close + '<br>';
-  text += '• summer mushroom bonus: ' + open + '+' + getSummerMushroomBonus().subr(1).toPercentString() + close + '<br>';
-  text += '• autumn mushroom bonus: ' + open + '+' + getAutumnMushroomBonus().subr(1).toPercentString() + close + '<br>';
-  text += '• autumn berry bonus: ' + open + '+' + getAutumnBerryBonus().subr(1).toPercentString() + close + '<br>';
-  text += '• autumn twigs bonus: ' + open + '+' + getAutumnMistletoeBonus().subr(1).toPercentString() + close + '<br>';
-  text += '• winter harsh conditions malus: ' + open + '-' + Num(1).sub(getWinterMalus()).toPercentString() + close + '<br>';
-  text += '• winter tree warmth bonus: ' + open + '+' + getWinterTreeWarmth().subr(1).toPercentString() + close + '<br>';
-  text += '• winter resin bonus: ' + open + '+' + getWinterTreeResinBonus().subr(1).toPercentString() + close + '<br>';
+  var duration_day = 3600 * 24;
+  if(duration >= duration_day) {
+    text += '• summer berry bonus: ' + open + '+' + getSummerBerryBonus().subr(1).toPercentString() + close + '<br>';
+    text += '• summer mushroom bonus: ' + open + '+' + getSummerMushroomBonus().subr(1).toPercentString() + close + '<br>';
+  }
+  if(duration >= duration_day * 2) {
+    text += '• autumn mushroom bonus: ' + open + '+' + getAutumnMushroomBonus().subr(1).toPercentString() + close + '<br>';
+    text += '• autumn berry bonus: ' + open + '+' + getAutumnBerryBonus().subr(1).toPercentString() + close + '<br>';
+    text += '• autumn twigs bonus: ' + open + '+' + getAutumnMistletoeBonus().subr(1).toPercentString() + close + '<br>';
+  }
+  if(duration >= duration_day * 3) {
+    text += '• winter harsh conditions malus: ' + open + '-' + Num(1).sub(getWinterMalus()).toPercentString() + close + '<br>';
+    text += '• winter tree warmth bonus: ' + open + '+' + getWinterTreeWarmth().subr(1).toPercentString() + close + '<br>';
+    text += '• winter resin bonus: ' + open + '+' + getWinterTreeResinBonus().subr(1).toPercentString() + close + '<br>';
+  }
   if(haveMultiplicity(CROPTYPE_BERRY)) {
     text += '• multiplicity (berry and mushroom): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
@@ -763,7 +764,7 @@ function createStatsDialog() {
       text += close + '<br>';
     }
     text += '• ethereal planted: ' + open + state.g_numfullgrown2 + close + '<br>';
-    text += '• ethereal deleted: ' + open + state.g_numunplanted2 + close + '<br>';
+    text += '• ethereal crops deleted: ' + open + state.g_numunplanted2 + close + '<br>';
     text += '<br>';
   }
 
@@ -800,8 +801,8 @@ function createStatsDialog() {
     text += '• highest production/s: ' + open + state.p_max_prod.toString() + close + '<br>';
     text += '• ferns: ' + open + state.p_numferns + close + '<br>';
     text += '• planted (permanent): ' + open + state.p_numfullgrown + close + '<br>';
-    text += '• planted (watercress): ' + open + state.p_numplantedbrassica + close + '<br>';
-    text += '• deleted: ' + open + state.p_numunplanted + close + '<br>';
+    text += '• planted (brassica): ' + open + state.p_numplantedbrassica + close + '<br>';
+    text += '• crops deleted: ' + open + state.p_numunplanted + close + '<br>';
     text += '• upgrades: ' + open + state.p_numupgrades + close + '<br>';
     if(state.g_numfruits > 0) {
       text += '• fruits: ' + open + state.p_numfruits + close + '<br>';
@@ -856,13 +857,11 @@ function createChangelogDialog() {
 
   var text = '';
 
-  text += 'Ethereal Farm';
+  text += programname + ' v' + formatVersion();
   text += '<br/><br/>';
 
   text += getAboutHeader();
 
-  text += 'Game version: ' + programname + ' v' + formatVersion();
-  text += '<br/><br/>';
   text += 'Changelog:';
   text += '<br/><br/>';
 
@@ -902,7 +901,7 @@ function showSavegameRecoveryDialog(opt_failed_save) {
     // also add current
     save(state, function(s) {
       text += 'current' + '\n' + s + '\n\n';
-      showExportTextDialog('Recover save', description, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
+      showExportTextDialog('Recovery saves', description, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
     });
   } else {
     showExportTextDialog('Recover old save', description, text, 'ethereal-farm-recovery-' + util.formatDate(util.getTime(), true) + '.txt', !opt_failed_save);
@@ -1025,8 +1024,9 @@ function createSettingsDialog() {
   var button;
   button = makeSettingsButton();
   button.textEl.innerText = 'save now';
-  registerTooltip(button, 'Save to local storage now. The game also autosaves every few minutes so you don\'t need this button often.');
+  registerTooltip(button, 'Save to local storage now. The game also autosaves every few minutes so you don\'t need this button often. Also force-stores the undo state.');
   addButtonAction(button, function() {
+    storeUndo(state); // also store undo state now, similar to shift+click on the undo button
     saveNow(function(s) {
       showMessage(manualSavedStateMessage);
       closeAllDialogs();

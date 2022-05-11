@@ -16,6 +16,12 @@ practice it does.*/
   image-rendering: -moz-crisp-edges;
   image-rendering: pixelated;
 }
+/* Disables the pixelated style */
+.nonpixelated {
+  -ms-interpolation-mode: initial;
+  image-rendering: initial;
+  image-rendering: initial;
+}
 /*prevent the tabindex from creating visible borders, which do not fit the look of the game*/
 :focus { outline: none; }
 /* make everything box-sizing border-box to make all element size computations in JS easier */

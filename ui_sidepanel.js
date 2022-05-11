@@ -77,7 +77,7 @@ function updateRightPane() {
     for(i = 0; i <= unlocked.length; i++) {
       if(i >= maxnum) break;
 
-      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.03, (0.03 + i) / maxnum, 1, (i + 1) / maxnum);
+      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.01, (0.03 + i) / maxnum, 0.99, (i + 1) / maxnum);
       bottomrightSidePanelFlexCache[i] = chip;
 
       if(i == 0) {

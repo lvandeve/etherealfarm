@@ -501,7 +501,6 @@ function State() {
   this.precision = 3; // precision of the numeric notation
   this.mobilemode = false;
   this.saveonexit = true; // save with the window unload event (this is different than the interval based autosave)
-  this.allowshiftdelete = false; // allow deleting a crop without dialog or confirmation by shift+clicking it
   this.tooltipstyle = 1;
   this.disableHelp = false; // disable all popup help dialogs
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark, 3=darkest

@@ -516,6 +516,7 @@ function getChallengeFormulaString(c, opt_bonus_string) {
 function createAllChallengeStatsDialog() {
   var dialog = createDialog({
     size:DIALOG_LARGE,
+    icon:image_stats,
     title:'Challenge stats',
     scrollable:true
   });

@@ -241,7 +241,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       if(!(p.prod2.seeds.ltr(0) && p.prod2.seeds.gtr(-1e-6))) { // avoid a possible numerical display issue
         result += 'After consumption: ';
         if(p.prod2.empty() && tooHighSeedConsumption() /*&& !growing*/) {
-          result += 'none: a mushroom is consumping all seeds. Plant high tier berries away from a mushroom to get some income for upgrades.';
+          result += 'none: a mushroom is consuming all seeds. Plant high tier berries away from a mushroom to get some income for upgrades.';
         } else {
           result += p.prod2.toString();
         }
@@ -830,13 +830,13 @@ function initFieldUI() {
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
           if(state.g_numresets > 1 && state.fern == 2) {
-            return 'fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
+            return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
           } else {
-            return 'fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+            return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
           }
         } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-          //return 'present: provides a random bonus when activated. Presents are a temporary festive event!';
-          return 'egg: provides a random bonus when activated. Eggs are a temporary festive event!';
+          //return 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
+          return 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
@@ -940,7 +940,7 @@ function initFieldUI() {
             if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
             state.lastPlanted = c3.index;
             if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
-            if((state.allowshiftdelete || !c2.isReal()) && c3.tier > c2.tier) {
+            if(c3.tier > c2.tier) {
               addAction({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
               update();
             }
@@ -948,38 +948,23 @@ function initFieldUI() {
             if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
               var c2 = f.getCrop();
-              var safe = false;
-              if(state.allowshiftdelete) safe = true;
-              if(c.cost.gt(c2.cost) && c.type == c2.type) safe = true; // allow to use shift+click to upgrade even if the "allowshiftdelete" setting is false, since replacing to higher type is safe and not a problem if not intended (while deleting or replacing with lower type may be unsafe)
-              // the shift+delete just growing crop of same type behavior is not considered safe if state.allowshiftdelete is not enabled, since it may be surprising that shift that normally plants or replaces something can delete something too
-              if(safe) {
-                if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate() || f.isGhost())) {
-                  // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
-                  // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
-                  // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-                  addAction({type:ACTION_DELETE, x:x, y:y});
-                } else {
-                  addAction({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
-                }
-                update();
+              if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate() || f.isGhost())) {
+                // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+                // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+                // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+                addAction({type:ACTION_DELETE, x:x, y:y});
               } else {
-                showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before replacing crops with shift is allowed', C_INVALID, 0, 0);
+                addAction({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
               }
+              update();
             }
           } else if(ctrl && !shift) {
             var brassica = getHighestBrassica();
             if(f.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
               addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[brassica], ctrlPlanted:true});
             } else {
-              var safe = false;
-              if(state.allowshiftdelete) safe = true;
-              if(f.growth < 0.25) safe = true; // growing crop gives full refund, so if not too much time was spent yet growing this is safe to do even if the state.allowshiftdelete setting is false.
-              if(safe) {
-                addAction({type:ACTION_DELETE, x:x, y:y});
-                update();
-              } else {
-                showMessage('"shortcuts may delete crop" must be enabled in preferences->controls before deleting with this shortcut it is allowed', C_INVALID, 0, 0);
-              }
+              addAction({type:ACTION_DELETE, x:x, y:y});
+              update();
             }
           } else if(!fern && !present) {
             makeFieldDialog(x, y);
@@ -993,6 +978,7 @@ function initFieldUI() {
       var px = x0 + x * tw + ((tw - pw) >> 1);
       var py = y0 + (y + 1) * th - ph * 2;
       var progress = makeDiv((((x + 0.2) / state.numw) * 100) + '%', (((y + 0.9) / state.numh) * 100) + '%', (100 / state.numw * 0.6) + '%', (100 / state.numh * 0.05) + '%', fieldGrid.div);
+      progress.style.minHeight = '3px';
       initProgressBar(progress);
       fieldDivs[y][x].progress = progress;
     }

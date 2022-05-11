@@ -43,7 +43,7 @@ num_tiers_per_crop_type[CROPTYPE_MUSH] = 8;
 num_tiers_per_crop_type[CROPTYPE_FLOWER] = 8;
 
 var etherealDeleteSessionTime = 60; // how long time to delete/replace more ethereal crops after deleting one for this session
-var etherealDeleteStartTime = 120; // how long it's free to delete/replant without being considered a "session" at the start of a run
+var etherealDeleteStartTime = 600; // how long it's free to delete/replant without being considered a "session" at the start of a run
 var etherealDeleteWaitTime = 7200; // how long to wait til next ethereal deletion session once this one is over
 
 function getCropTypeName(type) {
@@ -1094,7 +1094,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
       var num = p.num_bee;
       var bonus;
       if(pretend) {
-        bonus = this.computeBeehiveBoostReceived_(f, pretend);
+        bonus = this.computeBeehiveBoostReceived_(f, pretend).addr(1);
       } else {
         bonus = p.beeboostboost_received.addr(1);
       }
@@ -2762,16 +2762,17 @@ function Medal() {
 Medal.prototype.getTier = function() {
   var percent = this.prodmul.mulr(100);
   if(percent.ltr(1)) return 0;
-  if(percent.ltr(3)) return 1;
-  if(percent.ltr(7.5)) return 2;
-  if(percent.ltr(15)) return 3;
-  if(percent.ltr(30)) return 4;
-  if(percent.ltr(75)) return 5;
-  if(percent.ltr(150)) return 6;
-  if(percent.ltr(300)) return 7;
-  if(percent.ltr(750)) return 8;
-  if(percent.ltr(1500)) return 9;
-  return 10;
+  if(percent.ltr(5)) return 1;
+  if(percent.ltr(20)) return 2;
+  if(percent.ltr(100)) return 3;
+  if(percent.ltr(500)) return 4;
+  if(percent.ltr(2000)) return 5;
+  if(percent.ltr(10000)) return 6;
+  if(percent.ltr(50000)) return 7;
+  if(percent.ltr(200000)) return 8;
+  if(percent.ltr(1000000)) return 9;
+  if(percent.ltr(5000000)) return 10;
+  return 11;
 };
 
 var registered_medals = []; // indexed consecutively, gives the index to medal
@@ -3118,15 +3119,15 @@ for(var i = 0; i < resin_achievement_values.length; i++) {
 // was: 1000
 medal_register_id = 2000;
 
-registerMedal('help', 'viewed the main help dialog', undefined, function() {
+registerMedal('help', 'viewed the main help dialog', image_help, function() {
   return showing_help == true;
 }, Num(0.01));
 
-registerMedal('changelog', 'viewed the changelog', undefined, function() {
+registerMedal('changelog', 'viewed the changelog', images_fern[0], function() {
   return showing_changelog == true;
 }, Num(0.01));
 
-registerMedal('stats', 'viewed the player stats', undefined, function() {
+registerMedal('stats', 'viewed the player stats', image_stats, function() {
   return showing_stats == true;
 }, Num(0.01));
 
@@ -3782,7 +3783,7 @@ function() {
 }, 0);
 challenges[challenge_basic].bonus_exponent = Num(0.7);
 challenges[challenge_basic].bonus_min_level = 9;
-challenges[challenge_basic].bonus_max_level = 35;
+challenges[challenge_basic].bonus_max_level = 30;
 challenges[challenge_basic].alt_bonus = true;
 
 // 11
@@ -4698,9 +4699,9 @@ LEVEL2 = 9;
 upgrade2_register_id = 400;
 
 var upgrade2_nettle_bonus = Num(0.25);
-var upgrade2_nettle = registerUpgrade2('ethereal nettles', LEVEL2, Res({resin:50e9}), 2, function() {
+var upgrade2_nettle = registerUpgrade2('ethereal stinging', LEVEL2, Res({resin:50e9}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true;}, 0, 'increase bonus of all ethereal nettles (and other stinging plants) by ' + upgrade2_nettle_bonus.toPercentString() + ' (additive).', undefined, undefined, image_nettletemplate, upgrade_arrow);
+}, function(){return true;}, 0, 'increase bonus of all ethereal stinging plants (such as nettles) by ' + upgrade2_nettle_bonus.toPercentString() + ' (additive).', undefined, undefined, image_nettletemplate, upgrade_arrow);
 
 
 ///////////////////////////

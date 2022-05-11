@@ -239,7 +239,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       if(parentdialogrecreatefun) parentdialogrecreatefun(lastTouchedFruit);
     },
     names:'fuse',
-    scrollable:true,
+    scrollable_canchange:true,
     title:'Fuse fruits',
     help:createFruitHelp
   });
@@ -279,11 +279,18 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     addTitle('Choose other fruit to fuse:');
 
     for(var i = 0; i < fruits.length; i++) {
-      if(i == fruits_index_sacr) x += s; // a horizontal gap to indicate we switch to the sacrificial fruits
+      //if(i == fruits_index_sacr) x += s; // a horizontal gap to indicate we switch to the sacrificial fruits
+      if(i != 0 && i == fruits_index_sacr) {
+        x = 0;
+        y += s;
+        y += s * 0.1;
+        addTitle('Sacrificial:');
+        y -= s * 0.1;
+      }
       if(x > s * 9.5) {
         x = 0;
         y += s;
-        if(i == fruits_index_sacr) y += s * 0.1; // a vertical gap to indicate we switch to the sacrificial fruits
+        //if(i == fruits_index_sacr) y += s * 0.1; // a vertical gap to indicate we switch to the sacrificial fruits
       }
       var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
       x += s;

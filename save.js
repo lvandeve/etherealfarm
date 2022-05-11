@@ -270,7 +270,7 @@ function encState(state, opt_raw_only) {
   processUint16(state.notation);
   processUint16(state.precision);
   processBool(state.saveonexit);
-  processBool(state.allowshiftdelete);
+  id++; // was 'allowshiftdelete'
   processUint16(state.tooltipstyle);
   processBool(state.disableHelp);
   processUint16(state.uistyle);
@@ -765,7 +765,7 @@ function encState(state, opt_raw_only) {
   var checksum = computeChecksum(e);
   // ticks code: some indication of how much gameplay has been spent in this save, for recovery purpose (distinguish old saves from new ones after game reset)
   var ticks_code = toBase64[Math.min(63, Math.floor(Math.log2((state.g_numticks / 100) + 1)))];
-  var save_version = toBase64[(version >> 12) & 63] + toBase64[(version >> 6) & 63] + toBase64[version & 63];
+  var save_version = toBase64[(version >> 18) & 63] + toBase64[(version >> 12) & 63] + toBase64[(version >> 6) & 63] + toBase64[version & 63];
   var result = 'EF' + save_version + ticks_code + compress(e) + checksum;
   return result;
 }
@@ -793,13 +793,18 @@ function decState(s) {
   if(s[0] != 'E' || s[1] != 'F') return err(3); // invalid signature "Ethereal Farm"
 
   // game version at the time of saving
-  var save_version = fromBase64[s[2]] * 4096 + fromBase64[s[3]] * 64 + fromBase64[s[4]];
+  var save_version;
+  // if < 0, it's a save from the older 3-character version format
+  var major = fromBase64[s[2]] - 2;
+  if(major < 0) save_version = fromBase64[s[2]] * 4096 + fromBase64[s[3]] * 64 + fromBase64[s[4]];
+  else save_version = fromBase64[s[2]] * 262144 + fromBase64[s[3]] * 4096 + fromBase64[s[4]] * 64 + fromBase64[s[5]];
+  // 1 character, ticks_code, ignored here
 
   if(save_version > version) return err(7); // cannot load games from future versions
-  var ticks_code = fromBase64[s[5]]; // ignored here
   var checksum = s.substr(s.length - 16);
 
-  s = s.substr(6, s.length - 22);
+  var begin = major < 0 ? 6 : 7;
+  s = s.substr(begin, s.length - 16 - begin);
 
   s = decompress(s);
 
@@ -1194,7 +1199,7 @@ function decState(s) {
   state.notation = processUint16();
   state.precision = processUint16();
   state.saveonexit = processBool();
-  state.allowshiftdelete = processBool();
+  id++; // was 'allowshiftdelete'
   state.tooltipstyle = processUint16();
   if(save_version >= 4096*1+20) state.disableHelp = processBool();
   if(save_version >= 4096*1+22) state.uistyle = processUint16();

@@ -80,8 +80,8 @@ function loadFromLocalStorage(onsuccess, onfail) {
     var save_last_known_good = true;
     var duration = state.g_numticks;
     var lastsuccess = util.getLocalStorage(localstorageName_success);
-    // only overwrite existing last known save if it has at least as much ticks (indicated in character 5 of the save)
-    if(!lastsuccess || !lastsuccess.length || fromBase64[e[5]] >= fromBase64[lastsuccess[5]]) {
+    // only overwrite existing last known save if it has at least as much ticks (indicated in character 6 of the save, "ticks_code")
+    if(!lastsuccess || !lastsuccess.length || fromBase64[e[6]] >= fromBase64[lastsuccess[6]]) {
       util.setLocalStorage(e, localstorageName_success);
     }
   }, function(state) {

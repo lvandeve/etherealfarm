@@ -169,6 +169,24 @@ Res.prototype.sub = function(b) {
 };
 Res.sub = function(a, b) { return a.sub(b); };
 
+Res.prototype.negInPlace = function() {
+  this.seeds.negInPlace();
+  this.spores.negInPlace();
+  this.resin.negInPlace();
+  this.twigs.negInPlace();
+  this.nuts.negInPlace();
+  this.spores2.negInPlace();
+  this.amber.negInPlace();
+  this.essence.negInPlace();
+  return this;
+};
+Res.prototype.neg = function() {
+  var res = Res(this);
+  res.negInPlace();
+  return res;
+};
+Res.neg = function(a) { return a.neg(); };
+
 
 // multiply with a Num.
 Res.prototype.mulInPlace = function(v) {

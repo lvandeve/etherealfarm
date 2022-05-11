@@ -738,7 +738,7 @@ a@@@@@@@@@@@@@@a
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// the metal colors for images. There is also tierColors and tierColors_BG in images_medals.js.
+// the metal colors for images. There is also tierColors, tierColors_BG and medalheader[0..11] in images_medals.js, and stem_metal_header[0..11] in images_tree.js.
 var metalheader0 = ' hm:#999';
 var metalheader1 = ' hm:#c70';
 var metalheader2 = ' N:#eee M:#bbb m:#888 n:#555';
@@ -746,10 +746,11 @@ var metalheader3 = ' hm:#cfa';
 var metalheader4 = ' hm:#fe0';
 var metalheader5 = ' N:#fff M:#eee m:#ddd n:#ccc';
 var metalheader6 = ' N:#fee M:#ecc m:#dbb n:#caa';
-var metalheader7 = ' hm:#00f';
-var metalheader8 = ' hm:#0f0';
-var metalheader9 = ' hm:#f00';
-var metalheader10 = ' N:#fff M:#eee m:#ddd n:#ccc';
+var metalheader7 = ' N:#c8f M:#b7e m:#86d n:#75b';
+var metalheader8 = ' hm:#00f';
+var metalheader9 = ' hm:#0f0';
+var metalheader10 = ' hm:#f00';
+var metalheader11 = ' N:#fff M:#eee m:#ddd n:#ccc';
 
 var image_apple = `
 ................
@@ -986,6 +987,7 @@ generateImageCanvas(metalheader7 + image_apple),
 generateImageCanvas(metalheader8 + image_apple),
 generateImageCanvas(metalheader9 + image_apple),
 generateImageCanvas(metalheader10 + image_apple),
+generateImageCanvas(metalheader11 + image_apple),
 ];
 var images_apricot = [
 generateImageCanvas(metalheader0 + image_apricot),
@@ -999,6 +1001,7 @@ generateImageCanvas(metalheader7 + image_apricot),
 generateImageCanvas(metalheader8 + image_apricot),
 generateImageCanvas(metalheader9 + image_apricot),
 generateImageCanvas(metalheader10 + image_apricot),
+generateImageCanvas(metalheader11 + image_apricot),
 ];
 var images_pineapple = [
 generateImageCanvas(metalheader0 + image_pineapple),
@@ -1012,6 +1015,7 @@ generateImageCanvas(metalheader7 + image_pineapple),
 generateImageCanvas(metalheader8 + image_pineapple),
 generateImageCanvas(metalheader9 + image_pineapple),
 generateImageCanvas(metalheader10 + image_pineapple),
+generateImageCanvas(metalheader11 + image_pineapple),
 ];
 var images_pear = [
 generateImageCanvas(metalheader0 + image_pear),
@@ -1025,6 +1029,7 @@ generateImageCanvas(metalheader7 + image_pear),
 generateImageCanvas(metalheader8 + image_pear),
 generateImageCanvas(metalheader9 + image_pear),
 generateImageCanvas(metalheader10 + image_pear),
+generateImageCanvas(metalheader11 + image_pear),
 ];
 var images_medlar = [
 generateImageCanvas(metalheader0 + image_medlar),
@@ -1038,6 +1043,7 @@ generateImageCanvas(metalheader7 + image_medlar),
 generateImageCanvas(metalheader8 + image_medlar),
 generateImageCanvas(metalheader9 + image_medlar),
 generateImageCanvas(metalheader10 + image_medlar),
+generateImageCanvas(metalheader11 + image_medlar),
 ];
 var images_mango = [
 generateImageCanvas(metalheader0 + image_mango),
@@ -1051,6 +1057,7 @@ generateImageCanvas(metalheader7 + image_mango),
 generateImageCanvas(metalheader8 + image_mango),
 generateImageCanvas(metalheader9 + image_mango),
 generateImageCanvas(metalheader10 + image_mango),
+generateImageCanvas(metalheader11 + image_mango),
 ];
 var images_plum = [
 generateImageCanvas(metalheader0 + image_plum),
@@ -1064,6 +1071,7 @@ generateImageCanvas(metalheader7 + image_plum),
 generateImageCanvas(metalheader8 + image_plum),
 generateImageCanvas(metalheader9 + image_plum),
 generateImageCanvas(metalheader10 + image_plum),
+generateImageCanvas(metalheader11 + image_plum),
 ];
 var images_quince = [
 generateImageCanvas(metalheader0 + image_quince),
@@ -1077,6 +1085,7 @@ generateImageCanvas(metalheader7 + image_quince),
 generateImageCanvas(metalheader8 + image_quince),
 generateImageCanvas(metalheader9 + image_quince),
 generateImageCanvas(metalheader10 + image_quince),
+generateImageCanvas(metalheader11 + image_quince),
 ];
 var images_kumquat = [
 generateImageCanvas(metalheader0 + image_kumquat),
@@ -1090,6 +1099,7 @@ generateImageCanvas(metalheader7 + image_kumquat),
 generateImageCanvas(metalheader8 + image_kumquat),
 generateImageCanvas(metalheader9 + image_kumquat),
 generateImageCanvas(metalheader10 + image_kumquat),
+generateImageCanvas(metalheader11 + image_kumquat),
 ];
 var images_starfruit = [
 generateImageCanvas(metalheader0 + image_starfruit),
@@ -1103,6 +1113,7 @@ generateImageCanvas(metalheader7 + image_starfruit),
 generateImageCanvas(metalheader8 + image_starfruit),
 generateImageCanvas(metalheader9 + image_starfruit),
 generateImageCanvas(metalheader10 + image_starfruit),
+generateImageCanvas(metalheader11 + image_starfruit),
 ];
 var images_dragonfruit = [
 generateImageCanvas(metalheader0 + image_dragonfruit),
@@ -1116,6 +1127,7 @@ generateImageCanvas(metalheader7 + image_dragonfruit),
 generateImageCanvas(metalheader8 + image_dragonfruit),
 generateImageCanvas(metalheader9 + image_dragonfruit),
 generateImageCanvas(metalheader10 + image_dragonfruit),
+generateImageCanvas(metalheader11 + image_dragonfruit),
 ];
 
 
@@ -1392,4 +1404,24 @@ var image_info = generateImageCanvas(`
 ......000.......
 ................
 `);
+
+var image_stats = generateImageCanvas(`
+................
+.0........RRRR..
+.0..........RR..
+.0.........R.R..
+.0....R...R..R..
+.0...R.R.R......
+.0..R...R...00..
+.0.R........00..
+.0....00....00..
+.0....00.00.00..
+.0.00.00.00.00..
+.0.00.00.00.00..
+.0.00.00.00.00..
+.0.00.00.00.00..
+.00000000000000.
+................
+`);
+
 

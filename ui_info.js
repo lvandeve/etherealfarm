@@ -168,7 +168,7 @@ function getResourceDetails(i, special, index) {
 
       text += '<br>';
       text += 'Resin/hour: ' + getResinHour().toString();
-      if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ')';
+      if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ', ' + util.formatDuration(state.p_runtime, true) + ')';
       text += '<br>';
       text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true);
       if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.resin.toString() + ', lvl ' + state.p_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + ')';
@@ -194,7 +194,7 @@ function getResourceDetails(i, special, index) {
       text += '<br>';
 
       text += 'Twigs/hour: ' + getTwigsHour().toString();
-      if(state.g_numresets > 0) text += ' (previous run: ' + getPrevTwigsHour().toString() + ')';
+      if(state.g_numresets > 0) text += ' (previous run: ' + getPrevTwigsHour().toString() + ', ' + util.formatDuration(state.p_runtime, true) + ')';
       text += '<br>';
       text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true);
       if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.twigs.toString() + ', lvl ' + state.p_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + ')';

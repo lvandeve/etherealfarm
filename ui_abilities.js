@@ -592,6 +592,14 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
+  if(key == 'f' && !shift && !ctrl) {
+    setTab(tabindex_field);
+  }
+
+  if(key == 'e' && !shift && !ctrl) {
+    if(state.g_numresets > 0) setTab(tabindex_field2);
+  }
+
   if(code == 'Escape' && !shift && !ctrl) {
     createSettingsDialog();
   }

@@ -65,6 +65,32 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
   var name = b.name;
   //if(!name && opt_index != undefined) name = 'blueprint ' + opt_index;
 
+  if(ethereal) {
+    var cost0 = computeBlueprint2Cost(b, 0); // current field
+    var cost1 = computeBlueprint2Cost(b, 1); // blueprint itself
+    var cost2 = computeBlueprint2Cost(b, 2); // planting without override
+    var cost3 = computeBlueprint2Cost(b, 3); // planting with override
+    registerTooltip(canvas, function() {
+      var candelete = canEtherealDelete();
+      var text = '';
+      text += 'Ethereal field resin value: ' + (cost0.empty() ? '0 resin' : cost0.toString());
+      text += '<br>';
+      text += 'Blueprint resin value: ' + (cost1.empty() ? '0 resin' : cost1.toString());
+      text += '<br>';
+      text += 'Plant resin cost: ' + (cost2.empty() ? '0 resin' : cost2.toString());
+      text += '<br>';
+      text += 'Override resin cost: ' + (cost3.empty() ? '0 resin' : cost3.toString());
+      text += '<br>';
+      text += 'Currently have resin: ' + state.res.resin.toString();
+      if(!candelete) {
+        var waittime = getEtherealDeleteWaitTime();
+        text += '<br>';
+        text += 'Ethereal delete wait time: ' +  util.formatDuration(waittime, true);
+      }
+      return text;
+    });
+  }
+
   if(!opt_notitle) {
     var nametext = '';
     if(name && opt_index != undefined && opt_indicate_shortcuts) {
@@ -157,6 +183,73 @@ function plantBluePrint(b, allow_override) {
   else showMessage('This blueprint had no effect on the current field');
 }
 
+// turns index into x,y coordinates of a rectangular spiral, counterclockwise around origin. Index 0 corresponds to the origin, and so on.
+// If w and h are given, the origin must be at floor(w/2), floor(h/2)
+// If w and h are not given, an unconstrained spiral is assumed
+// Example pattern:
+// 20 12 11 10  9 19
+// 21 13  2  1  8 18
+// 22 14  3  0  7 17
+// 23 15  4  5  6 16
+function getSpiralFromIndex(i, w, h) {
+  if(i == 0) return [0, 0]; // center not supported by the code below
+  if(i < 0) return [0, 0]; // error, but return something valid
+
+  if(w != undefined && h != undefined) {
+    if(i < 0 || i >= w * h) return [0, 0]; // error, but return something valid
+    var dim = Math.min(w, h);
+    var ox = Math.floor((dim - 1) / 2);
+    var oy = Math.floor(dim / 2);
+    var maxnum = dim * dim;
+    if(i >= maxnum) {
+      // beyond the true spiral square shaped area. Now everything alternates between two sides left/right, or top/bottom
+      var j = i - maxnum;
+      var jx = j % dim;
+      var jy = Math.floor(j / dim);
+      if(w > h) {
+        var left = (dim & 1) == (jy & 1);
+        if(left) {
+          return [-(-ox - 1 - Math.floor(jy / 2)), oy - jx - ((dim & 1) ? 0 : 1)];
+        } else {
+          return [-(dim - ox + Math.floor(jy / 2)), jx - oy];
+        }
+      } else {
+        var top = (dim & 1) != (jy & 1);
+        if(top) {
+          return [ox - jx, -oy - 1 - Math.floor(jy / 2)];
+        } else {
+          return [jx - ox - ((dim & 1) ? 0 : 1), dim - oy + Math.floor(jy / 2)];
+        }
+      }
+    }
+  }
+
+  var r = Math.floor((Math.sqrt(i) - 1) / 2) + 1;
+  var p = 4 * r * (r - 1);
+  var a = (i - p) % (8 * r);
+  var ax = a % (2 * r);
+  var ay = Math.floor(a / (2 * r));
+  switch(ay) {
+    case 0: return [r - a, -r];
+    case 1: return [-r, ax - r];
+    case 2: return [ax - r, r];
+    case 3: return [r, r - ax];
+  }
+}
+
+// converts scanline x/y coordinates to spiral
+function getSpiralXY(x, y, w, h) {
+  var ox = w >> 1;
+  var oy = h >> 1;
+
+  var result = getSpiralFromIndex(y * w + x);
+
+  result[0] += ox;
+  result[1] += oy;
+
+  return result;
+}
+
 // for ethereal field
 // if allow_override is true, overrides all non-matching crops, but keeps matching ones there
 // if allow_override is false, will not replace any existing crop on the field
@@ -184,8 +277,11 @@ function plantBluePrint2(b, allow_override) {
   if(candelete) {
     var newactions_delete = [];
     var newactions_plant = [];
-    for(var y = 0; y < h; y++) {
-      for(var x = 0; x < w; x++) {
+    for(var yo = 0; yo < h; yo++) {
+      for(var xo = 0; xo < w; xo++) {
+        var spiral = getSpiralXY(xo, yo, w, h);
+        var x = spiral[0];
+        var y = spiral[1];
         var fx = x - sx;
         var fy = y - sy;
         var f = state.field2[fy][fx];
@@ -197,8 +293,9 @@ function plantBluePrint2(b, allow_override) {
         if(c) {
           if(c.index == c2.index) continue;
           if(!allow_override) {
-            if(c.type != c2.type) continue;
-            if(c.tier >= c2.tier) continue;
+            //if(c.type != c2.type) continue;
+            //if(c.tier >= c2.tier) continue;
+            continue; // if the above code to support increasing tier is used, computeBlueprint2Cost must be updated to take this into account. However, the above is disabled, override can already do this and when not using override one may intend to not tier-up crops either since the resin can only be spent on so many higher tier crops
           }
           if(c.type == c2.type) {
             if(c2.tier < c.tier) {
@@ -378,8 +475,6 @@ function importBluePrintDialog(fun, b, ethereal) {
     title:'Import blueprint'
   });
 
-
-
   var textFlex = dialog.content;
   // TODO: this text is too long to get reasonable font size, move to a help dialog
   var text = 'Letter meanings: ' + getBluePrintTypeHelpText(ethereal);
@@ -434,22 +529,6 @@ function blueprintFromText(text, b, ethereal) {
   b.data = data;
   b.tier = tier;
 
-/*  var w = 0;
-  for(var i = 0; i < h; i++) w = Math.max(w, s[i].length);
-  if(w < 1) return;
-  if(w > 11) w = 11;
-  b.numw = w;
-  b.numh = h;
-  b.data = [];
-  if(ethereal) b.tier = [];
-  for(var y = 0; y < h; y++) {
-    b.data[y] = [];
-    if(ethereal) b.tier[y] = [];
-    for(var x = 0; x < w; x++) {
-      b.data[y][x] = BluePrint.fromChar(s[y][x]);
-      if(ethereal) b.tier[y][x] = (s[y][x] == 'S' || s[y][x] == 's' || s[y][x] == 'A' || s[y][x] == 'a') ? 0 : -1;
-    }
-  }*/
   sanitizeBluePrint(b);
 }
 
@@ -466,9 +545,6 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
 
   var orig = b;
   b = BluePrint.copy(b);
-
-  var title = b.name;
-  if(!title) title = ethereal ? 'Ethereal blueprint' : 'Blueprint';
 
   var okfun = function() {
     // this actually commits the change of the blueprint. This is the cancel function of the dialog: the only thing that does not commit it, is using undo.
@@ -492,28 +568,84 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     return true;
   };
 
+
+  var shortcutfun = function(e) {
+    var keys = getEventKeys(e);
+
+    var key = keys.key;
+
+    if(key == 'f' && !keys.shift && !keys.ctrl) {
+      if(ethereal) blueprintFromField2(b);
+      else blueprintFromField(b);
+      update();
+      did_edit = true;
+      //closeAllDialogs();
+    }
+
+    if(e.key == 'Enter' && !keys.shift && !keys.ctrl) {
+      if(ethereal) plantBluePrint2(b, true);
+      else plantBluePrint(b, true);
+      BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
+      closeAllDialogs();
+      update();
+    }
+  };
+
   var dialog = createDialog({
     functions:undofun,
     names:'undo',
     oncancel:okfun,
     cancelname:'ok',
-    title:title,
+    title:'Blueprint', // will be updated with update()
     onclose:opt_onclose,
-    help:showBluePrintHelp
+    help:showBluePrintHelp,
+    shortcutfun:shortcutfun
   });
 
   var renderFlex = new Flex(dialog.content, [0, 0, 0.25], 0, [0, 0, 0.75], [0, 0, 0.5]);
   renderBlueprint(b, ethereal, renderFlex, opt_index, undefined, undefined, undefined, true);
+
+  var plant_button;
+  var override_button;
+  var value_indicator;
 
   var update = function() {
     renderBlueprint(b, ethereal, renderFlex, opt_index, undefined, undefined, undefined, true);
     var title = b.name;
     if(!title) title = ethereal ? 'Ethereal blueprint' : 'Blueprint';
     dialog.titleEl.innerText = title;
+    if(ethereal && !canEtherealDelete()) override_button.textEl.style.color = '#888';
+    else override_button.textEl.style.color = '';
+
+    if(ethereal) {
+      var coststring;
+
+      var tofieldtext = 'To field';
+      var cost = computeBlueprint2Cost(b, 2);
+      coststring = cost.empty() ? '0 resin' : cost.toString();
+      tofieldtext += ' (' + coststring + ')';
+
+      var overridetext = 'Override field';
+      var overridecost = computeBlueprint2Cost(b, 3);
+      coststring = overridecost.empty() ? '0 resin' : overridecost.toString();
+      overridetext += ' (' + coststring + ')';
+
+      plant_button.textEl.innerText = tofieldtext;
+      override_button.textEl.innerText = overridetext;
+
+      var maincost = computeBlueprint2Cost(b, 1);
+      value_indicator.div.innerText = 'Total value: ' + maincost.toString();
+    }
   };
 
-
   var y = 0.51;
+
+  if(ethereal) {
+    var h = 0.055;
+    value_indicator = new Flex(dialog.content, [0, 0, 0.25], [0, 0, y], [0, 0, 0.75], [0, 0, y + h]);
+    y += h;
+  }
+
   var addButton = function(text, fun, tooltip) {
     var h = 0.055;
     var button = new Flex(dialog.content, [0, 0, 0.25], [0, 0, y], [0, 0, 0.75], [0, 0, y + h]).div;
@@ -525,7 +657,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     return button;
   };
 
-  addButton('To field', function(e) {
+  plant_button = addButton('To field', function(e) {
     if(ethereal) plantBluePrint2(b, false);
     else plantBluePrint(b, false);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
@@ -533,7 +665,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     update();
   }, 'Plant this blueprint on the field. Only empty spots of the field are overridden, existing crops will stay, even if their type differs.');
 
-  var override_button = addButton('Override field', function(e) {
+  override_button = addButton('Override field', function(e) {
     if(ethereal) plantBluePrint2(b, true);
     else plantBluePrint(b, true);
     BluePrint.copyTo(b, orig); // since this closes the dialog, remember it like the ok button does
@@ -578,6 +710,8 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     did_edit = true;
   }, 'Delete this blueprint. You can use the cancel button below to undo this.');
 
+  update();
+
   return dialog;
 }
 
@@ -608,15 +742,21 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += 'Note: on mac, ctrl means command instead.';
   text += '<br/>';
-  text += ' • "b": open the blueprint dialog';
-  text += '<br/>';
-  text += ' • "u": when mouse hovering over blueprint template: upgrade template to highest crop tier you can afford of that type';
+  text += ' • "b": open the blueprint dialog (from field, or from ethereal field)';
   text += '<br/>';
   text += ' • shift + click blueprint in main blueprint dialog: plant it immediately, and overriding existing field crops, rather than opening its editing dialog (if not empty)';
   text += '<br/>';
   text += ' • "t", "b": open transcend dialog, and then open transcend-with-blueprint dialog';
   text += '<br/>';
-  text += ' • "1" - "9": shortcuts to open or use this blueprint in the blueprint selection dialog';
+  text += ' • "1-9" in blueprint selection dialog: shortcuts to open or use this blueprint';
+  text += '<br/>';
+  text += ' • "shift 1-9" in blueprint selection dialog: override field with this blueprint (shift key not necessary in transcend-with-blueprint dialog)';
+  text += '<br/>';
+  text += ' • "f" in blueprint editing dialog: set blueprint from fuild';
+  text += '<br/>';
+  text += ' • "Enter" in blueprint editing dialog: override field with blueprint';
+  text += '<br/>';
+  text += ' • "u": when mouse hovering over blueprint template: upgrade template to highest crop tier you can afford of that type';
   text += '<br/><br/>';
   text += 'Once automaton is advanced enough, it can also use blueprints.';
 
@@ -656,7 +796,7 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, fl
       closeAllDialogs();
       update();
     } else if(shift && ctrl && filled) {
-      if(!state.allowshiftdelete || state.g_starttime > 1640995200) {
+      if(state.g_starttime > 1640995200) {
         // do nothing: this is a deprecated shortcut, only visible with exact correct usage and old enough saves
         //showMessage('enable "shortcuts may delete crop" in the preferences before the shortcut to transcend and plant blueprint is allowed', C_INVALID);
       } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
@@ -767,3 +907,82 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
 
   return dialog;
 }
+
+// type:
+//   0: computes the cost of the current field rather than the blueprint cost
+//   1: resin cost of the blueprint if it were planted from scratch, with no existint ethereal crops already planted
+//   2: when planting the blueprint without override
+//   3: when planting the blueprint with override
+// does not take into account the case when ethereal deletion is not possible
+function computeBlueprint2Cost(b, type) {
+  var result = Res();
+
+  if(type == 0) return computeField2Cost();
+
+  if(!b || b.numw == 0 || b.numh == 0) return result;
+
+  var treex0 = Math.floor((state.numw2 - 1) / 2);
+  var treey0 = Math.floor(state.numh2 / 2);
+  var treex1 = Math.floor((b.numw - 1) / 2);
+  var treey1 = Math.floor(b.numh / 2);
+  var sx = treex1 - treex0;
+  var sy = treey1 - treey0;
+
+  var counts = {};
+
+  if(type == 3) { // override
+    result = computeField2Cost().neg();
+    var w = state.numw2;
+    var h = state.numh2;
+    for(var fy = 0; fy < h; fy++) {
+      for(var fx = 0; fx < w; fx++) {
+        var x = fx + sx;
+        var y = fy + sy;
+        var inblueprint = x >= 0 && y >= 0 && x < b.numw && y < b.numh;
+        var c2 = undefined;
+        if(inblueprint) {
+          var d = b.data[y][x];
+          var t = b.tier[y][x];
+          c2 = crops2[BluePrint.toCrop2(d, t)];
+        }
+        var f = state.field2[fy][fx];
+        if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) continue;
+        var c = f.getCrop();
+        // for override, take into account the existing field crop if it exists and will not be overridden due to empty spot in the blueprint
+        if(!c2) c2 = c;
+        if(!c2) continue;
+        var count = counts[c2.index] || 0;
+        counts[c2.index] = count + 1;
+        result.addInPlace(c2.getCost(undefined, count));
+      }
+    }
+    if(result.resin.ltr(0.5) && result.resin.gtr(-0.5)) result.resin = Num(0); // it's a subtraction, numerical error can make it something like 1e-9 while it is 0, avoid displaying the ugly 1e-9
+  } else {
+    var w = b.numw;
+    var h = b.numh;
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var fx = x - sx;
+        var fy = y - sy;
+        if(fx < 0 || fy < 0 || fx >= state.numw2 || fy >= state.numh2) continue;
+        var d = b.data[y][x];
+        var t = b.tier[y][x];
+        var c2 = crops2[BluePrint.toCrop2(d, t)];
+        if(!c2) continue;
+        var f = state.field2[fy][fx];
+        if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) continue;
+        if(type == 2 && f.index != 0) continue;
+        var count = counts[c2.index] || 0;
+        counts[c2.index] = count + 1;
+        if(type == 2) count += state.crop2count[c2.index];
+        result.addInPlace(c2.getCost(undefined, count));
+      }
+    }
+  }
+
+
+  return result;
+}
+
+
+

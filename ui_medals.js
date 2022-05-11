@@ -58,7 +58,7 @@ function updateMedalUI() {
   var w = 64;
   var h = 64;
   var num = medals_order.length;
-  var numx = tierColors.length;
+  var numx = 10;
   //medalFlex.div.removeChild(medalGrid.div);
 
   var changed = false;
@@ -151,20 +151,21 @@ function updateMedalUI() {
       if(!m2.earned) {
         return upper(m.name) + '<br><br>Not yet earned. Unearned achievements are normally hidden, except hinted ones like this shown as "?"<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
       }
-      return upper(m.name) + '<br><br>' + upper(m.description) + '<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
+      return upper(m.name) + ': ' + lower(m.description) + '<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br><br>Tier ' + util.toRoman(tier) + ': ' + tierNames[tier];
     }, m, m2, div, canvas2, i);
 
     registerTooltip(div, getMedalText);
     util.setEvent(div, 'mouseover', 'medalseen', seenfun);
 
-    addButtonAction(div, bind(function(getMedalText, seenfun) {
+    addButtonAction(div, bind(function(getMedalText, seenfun, m) {
       var dialog = createDialog({
         size:DIALOG_SMALL,
-        title:'Achievement'
+        title:'Achievement',
+        icon:m.icon
       });
       dialog.content.div.innerHTML = getMedalText();
       seenfun();
-    }, getMedalText, seenfun));
+    }, getMedalText, seenfun, m));
   }
   var numshown = i;
 
@@ -180,9 +181,11 @@ function updateMedalUI() {
     medalTierKeys.push(flex);
     flex.div.innerText = 'Key: tiers from lowest to highest:';
 
+    var numx2 = numx; // 6
+
     for(var j = 0; j < tierColors.length; j++) {
-      var xpos = j % numx;
-      var ypos = Math.floor(numshown / numx) + 3;
+      var xpos = j % numx2;
+      var ypos = Math.floor(numshown / numx) + Math.floor(j / numx2) + 3;
       var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005]);
       medalTierKeys.push(flex);
       flex.div.style.backgroundColor = tierColors_BG[j];

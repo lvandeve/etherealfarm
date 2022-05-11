@@ -20,6 +20,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.2.0 (2022-05-11):';
+  text += '<br/>• New version number scheme: the middle number now is incremented for changes with significant effect on gameplay (e.g. a new challenge, ...), and the rightmost for smaller tweaks or bugfixes.';
+  text += '<br/>• New shortcuts added: "f" goes to basic field tab, "e" goes to ethereal field tab, in blueprint edit dialog "f" sets blueprint from field, "enter" overrides field with blueprint.'; // This particular set of tabs/shortcuts was chosen to make ethereal blueprint switching easier. In addition, in fruit/blueprint rename dialogs, enter key now accepts it rather than add newline.';
+  text += '<br/>• Removed the "shortcuts may delete crop" setting, it\'s always allowed now.'; // this used to be required for ctrl+click to delete and other similar shortcuts
+  text += '<br/>• Added a new tier name and color, amethyst, to get 12 tiers total. There doesn\'t seem to exist a memorable real or fictional gem considered more precious than diamond, so it had to be inserted before sapphire: sapphire fruits now became amethyst.';
+  text += '<br/>• Achievement tier value requirements increased. This is purely cosmetic.';
+  text += '<br/>• Ethereal blueprints now show the resin cost.';
+  text += '<br/>• Ethereal blueprints now get planted with priority around the tree spiraling outwards, to get likely important crops first when there\'s not enough resin.'; // spiral is not yet as good as a heuristic that computes importance of each crop, but it's an improvement over left to right top to bottom order
+  text += '<br/>• "Clear ethereal field" action is now available in the automaton tab even if the automaton is absent.'; // but not clear basic field: this is only intended to make it easier to clear the ethereal field and place an automaton there
+  text += '<br/>• The time to freely replant ethereal field at start of a run extended to 10 minutes.';
+  text += '<br/>• Tweaks and fixes';
+  text += '<br/><br/>';
+
   text += '0.1.104 (2022-05-02):';
   text += '<br/>• Ethereal delete tokens have been removed from the game. Instead, the ethereal field can now be freely replanted at the beginning of any run, any time later in the run, and every 2 hours thereafter. Templates can always be freely deleted. To prevent stuck situations, replacing a crop with a squirrel or automaton is always possible if no other free field spots are available.'; // The time limit is there because the game shouldn't be about constantly changing the ethereal field, but planning a layout at the beginning at the run, and one or two phases later on is possible
   text += '<br/>• Blueberry secret and cranberry secret now also already buy the unlock upgrade for free (rather than merely make it visible), for clarity and consitency with blackberry secret. They also no longer make unlock clover visible, instead blueberry secret makes unlock anemone immediately visible.';

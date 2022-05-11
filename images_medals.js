@@ -21,7 +21,7 @@ The generic medal images are for when no specific icon for it exists. The
 generic ones come in tiers of better and better metals for higher level
 medals.
 
-The materials in increasing level are:
+The 12 tier materials in increasing level are:
 
 -0: zinc: dark gray
 -1: bronze: brown
@@ -30,22 +30,25 @@ The materials in increasing level are:
 -4: gold: yellow
 -5: platinum: light gray
 -6: rhodium: rose
--7: sapphire: blue
--8: emerald: green
--9: ruby: red
--10: diamond: white
+-7: amethyst: purple
+-8: sapphire: blue
+-9: emerald: green
+-10: ruby: red
+-11: diamond: white
 */
 
-// These tiers are also used for other things than medals, e.g. fruits and some of the tree images. There are in addition also the metalheader0, 1, ... definitions for images in images.js.
-var tierNames =     ['zinc', 'bronze', 'silver', 'electrum', 'gold', 'platinum', 'rhodium', 'sapphire', 'emerald', 'ruby', 'diamond'];
-var tierColors =    ['#444',   '#840',   '#888',     '#af5', '#ff0',     '#ddd',    '#fdd',     '#00f',    '#0c4', '#f00',    '#fff'];
-var tierColors_BG = ['#000',   '#420',   '#666',     '#7a3', '#bb0',     '#aaa',    '#a88',     '#00a',    '#092', '#a00',    '#eee'];
+// These tiers are also used for other things than medals, e.g. fruits and some of the tree images.
+// There are in addition also the metalheader0, 1, ... definitions for images in images.js, and stem_metal_header[0..11] in images_tree.js.
+var tierNames =     ['zinc', 'bronze', 'silver', 'electrum', 'gold', 'platinum', 'rhodium', 'amethyst', 'sapphire', 'emerald', 'ruby', 'diamond'];
+var tierColors =    ['#444',   '#840',   '#888',     '#af5', '#ff0',     '#ddd',    '#fdd',     '#b6f',     '#00f',    '#0c4', '#f00',    '#fff'];
+var tierColors_BG = ['#000',   '#420',   '#666',     '#7a3', '#bb0',     '#aaa',    '#a88',     '#95a',     '#00a',    '#092', '#a00',    '#eee'];
 
 
 // medals, too, get more saturation
 var medalimageheader = 'l0:#c22 l1:#d44 l2:#e66 l3:#f88';
 var hiddenmedalimageheader = 'l0:#8558 l1:#a778 l2:#c998 l3:#fcc8';
 
+// there are also metalheader[0..11] in images.js
 var medalheader0 = ' hm:#999';
 var medalheader1 = ' hm:#c70';
 var medalheader2 = ' hm:#fff';
@@ -53,10 +56,11 @@ var medalheader3 = ' hm:#dfb';
 var medalheader4 = ' hm:#ff0';
 var medalheader5 = ' N:#fff M:#eee m:#ddd n:#ccc';
 var medalheader6 = ' N:#fee M:#ecc m:#dbb n:#caa';
-var medalheader7 = ' hm:#00f';
-var medalheader8 = ' hm:#0f0';
-var medalheader9 = ' hm:#f00';
-var medalheader10 = ' N:#fff M:#eee m:#ddd n:#ccc';
+var medalheader7 = ' hm:#95f';
+var medalheader8 = ' hm:#00f';
+var medalheader9 = ' hm:#0f0';
+var medalheader10 = ' hm:#f00';
+var medalheader11 = ' N:#fff M:#eee m:#ddd n:#ccc';
 
 
 var medalgenericmetal = `

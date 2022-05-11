@@ -295,7 +295,7 @@ function updateSquirrelUI() {
 
   if(!haveSquirrel()) {
     var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1);
-    titleFlex.div.innerText = 'You must have squirrel in ethereal field to use the squirrel upgrades tab, place squirrel there first.';
+    titleFlex.div.innerText = 'You must have squirrel in ethereal field to use the squirrel upgrades tab, place squirrel there first or replace an existing ethereal crop by a squirrel.';
     return;
   }
 

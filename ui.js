@@ -49,7 +49,7 @@ var bottomRightFlex;
 
 window.onresize = function() {
   if(mainFlex) mainFlex.update();
-}
+};
 
 function makeMainDivs() {
   var showdebugborders = false;
@@ -91,9 +91,12 @@ function makeMainDivs() {
   rightFlex.div.style.overflow = 'hidden'; // avoid creating unwanted global scrollbars
   //rightFlex.div.style.border = '4px solid red';
   topRightFlex = new Flex(rightFlex, 0.02, 0.05, 0.98, 0.25, FONT_SMALL);
-  bottomRightFlex = new Flex(rightFlex, 0, 0.25, 0.98, 0.99);
+  bottomRightFlex = new Flex(rightFlex, 0.02, 0.25, 0.98, 1);
   topRightFlex.div.className = 'efBordered';
   topRightFlex.div.style.padding = '1%';
+  bottomRightFlex.div.className = 'efBordered';
+  topRightFlex.div.style.borderBottom = 'none';
+  bottomRightFlex.div.style.borderTop = 'none';
 
   mainFlex.attachTo(document.body);
   mainFlex.update();

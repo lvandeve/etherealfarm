@@ -208,6 +208,7 @@ params.help: optional function or string for help text. If set, there'll be a he
 params.size: DIALOG_TINY, DIALOG_SMALL, DIALOG_MEDIUM or DIALOG_LARGE
 parrams.narrow: content will be more narrow, the width of the top icon / close button will be removed from each side, allows making a taller icon
 params.scrollable: whether to make the content flex scrollable with scrollbar if the content is too large
+params.scrollable_canchange: like scrollable, but with more event listeners to adapt to changing content
 params.shortcutfun: a function handling shortcuts that are active while this dialog is open
 params.nobgclose: boolean, don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 params.swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
@@ -414,7 +415,8 @@ function createDialog(params) {
     dialog.content = new Flex(dialogFlex, 0.02, [0, topHeight], 0.98, contentHeight);
   }
 
-  if(params.scrollable) makeScrollable(dialog.content);
+  if(params.scrollable) makeScrollable(dialog.content, false);
+  if(params.scrollable_canchange) makeScrollable(dialog.content, true);
 
   centerText2(dialog.title.div);
   dialog.titleEl = dialog.title.div.textEl;
@@ -982,17 +984,31 @@ function getCostAffordTimer(cost) {
 
 
 // adds scrollbar and shadow effect if needed, otherwise not.
-function makeScrollable(flex) {
+// opt_canchange: if true, a mutation observer will listen for changes and update style when needed. Don't use this for elements that constantly change but are unlikely to change whether or not there are scrollbars (such as dialog with plant growtime, for performance reasons), use for something that may significantly change size based on user action like fruit fusing dialog
+function makeScrollable(flex, opt_canchange) {
   flex.div.style.overflowY = 'auto';
   flex.div.style.overflowX = 'hidden';
 
-  // TODO: let this dynamically update if the flex changes size
+
   // timeout: ensure the computation happens after text was assigned to the div, ...
   window.setTimeout(function() {
     if(flex.div.scrollHeight > flex.div.clientHeight) {
       flex.div.className = 'efScrollGradient';
     } else {
       flex.div.className = '';
+    }
+    if(opt_canchange) {
+      // also observe later changes, e.g. when adding new fruits in the fuse dialog causing it to need to get the scroll gradient effect
+      // TODO: find a better way than MutationObserver to do this, something that can observe the inner size (ResizeObserver observes outer size)
+      new MutationObserver(function(mutations) {
+        if(!mutations[0]) return;
+        var div = mutations[0].target;
+        if(div.scrollHeight > div.clientHeight) {
+          div.className = 'efScrollGradient';
+        } else {
+          div.className = '';
+        }
+      }).observe(flex.div, {childList:true});
     }
   });
 }
@@ -1071,7 +1087,7 @@ function makeDropdown(flex, title, current, choices, fun) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
+// for single line of text
 function makeTextInput(title, description, fun, opt_value) {
   var dialog = createDialog({
     size:DIALOG_TINY,
@@ -1088,6 +1104,15 @@ function makeTextInput(title, description, fun, opt_value) {
 
   var inputFlex = new Flex(dialog.content, 0.1, 0.4, 0.9, 0.6);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
+
+  area.onkeydown = function(e) {
+    if((e.keyCode == 13 || e.code == 'Enter') && !e.shiftKey) {
+      e.preventDefault();
+      fun(area.value);
+      dialog.closeFun();
+    }
+  };
+
   if(opt_value) {
     area.value = opt_value;
     area.select();
@@ -1102,13 +1127,21 @@ function makeTextInput(title, description, fun, opt_value) {
 
 // creates an arrow on top of the div of the given flex. The arrow points from x0, y0 to x1, y1 (in relative coordinates in the flex) and is click-throughable
 function makeArrow(div, x0, y0, x1, y1) {
-  var dx = x1 - x0;
-  var dy = y1 - y0;
+  var cw0 = div.clientWidth;
+  var ch0 = div.clientHeight;
+
+  var px0 = x0 * cw0;
+  var py0 = y0 * ch0;
+  var px1 = x1 * cw0;
+  var py1 = y1 * ch0;
+
+  var dx = px1 - px0;
+  var dy = py1 - py0;
   var length = Math.sqrt(dx * dx + dy * dy);
   var angle = Math.atan2(dy, dx);
 
-  var thickness = length * 0.025;
-  var head = length * 0.3;
+  var thickness = Math.sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)) * 0.025;
+  var headLength = length * 0.3;
   var headAngle = Math.PI * 0.16;
 
 
@@ -1117,10 +1150,15 @@ function makeArrow(div, x0, y0, x1, y1) {
   // 0-----------1
   //           2/
 
-  var x2 = x1 - head * Math.cos(angle - headAngle);
-  var y2 = y1 - head * Math.sin(angle - headAngle);
-  var x3 = x1 - head * Math.cos(angle + headAngle);
-  var y3 = y1 - head * Math.sin(angle + headAngle);
+  var px2 = px1 - headLength * Math.cos(angle - headAngle);
+  var py2 = py1 - headLength * Math.sin(angle - headAngle);
+  var px3 = px1 - headLength * Math.cos(angle + headAngle);
+  var py3 = py1 - headLength * Math.sin(angle + headAngle);
+
+  var x2 = px2 / cw0;
+  var y2 = py2 / ch0;
+  var x3 = px3 / cw0;
+  var y3 = py3 / ch0;
 
   // size of HTML element to create that will contain the arrow, big enough to fit the entire arrow, but not too much bigger to not require higher than necessary canvas pixel resolution
   var cx0 = Math.min(x0, x1, x2, x3) - thickness * 2;
@@ -1132,8 +1170,6 @@ function makeArrow(div, x0, y0, x1, y1) {
   var ch = cy1 - cy0;
 
   var res = 256;
-
-
 
   var canvas = createCanvas((cx0 * 100) + '%', (cy0 * 100) + '%', ((cx1 - cx0) * 100) + '%', ((cy1 - cy0) * 100) + '%', div);
   var cw2 = canvas.clientWidth;
@@ -1152,6 +1188,8 @@ function makeArrow(div, x0, y0, x1, y1) {
   canvas.height = h;
   canvas.style.pointerEvents = 'none'; // make it possible to click through the arrow
   var ctx = canvas.getContext("2d");
+  // since the arrows aren't pixel art but use fine pixels, override their pixelated style with the standard smoothened style that browsers use by default
+  canvas.className = 'nonpixelated';
 
   var px0 = (x0 - cx0) / cw * w;
   var py0 = (y0 - cy0) / ch * h;

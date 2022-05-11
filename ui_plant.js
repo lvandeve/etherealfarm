@@ -35,7 +35,11 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
 
   var infoFlex = new Flex(flex, [0, 0, 0.5], 0.05, 1, 0.95);
   var text = '';
-  text +=  '<b>Plant ' + crop.name + '</b><br>';
+  if(opt_replace) {
+    text +=  '<b>' + upper(crop.name) + '</b><br>';
+  } else {
+    text +=  '<b>Plant ' + crop.name + '</b><br>';
+  }
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
 
@@ -394,13 +398,16 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
       return true;
     }, index);
 
-    var showfun = bind(function(tooltipfun) {
+    var showfun = bind(function(tooltipfun, plantfun) {
       var text = tooltipfun();
-      var dialog = createDialog({size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM), title:'Crop info'});
+      var dialog = createDialog({
+        size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM),
+        title:'Crop info',
+        names:'plant',
+        functions:plantfun
+      });
       dialog.content.div.innerHTML = text;
-    }, tooltipfun);
-
-
+    }, tooltipfun, plantfun);
 
     var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y, plantfun, showfun, tooltipfun, opt_replace, opt_recoup);
     tx++;
