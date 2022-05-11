@@ -81,6 +81,7 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
       text += '<br>';
       text += 'Override resin cost: ' + (cost3.empty() ? '0 resin' : cost3.toString());
       text += '<br>';
+      text += '<br>';
       text += 'Currently have resin: ' + state.res.resin.toString();
       if(!candelete) {
         var waittime = getEtherealDeleteWaitTime();
@@ -931,7 +932,6 @@ function computeBlueprint2Cost(b, type) {
   var counts = {};
 
   if(type == 3) { // override
-    result = computeField2Cost().neg();
     var w = state.numw2;
     var h = state.numh2;
     for(var fy = 0; fy < h; fy++) {
@@ -956,7 +956,8 @@ function computeBlueprint2Cost(b, type) {
         result.addInPlace(c2.getCost(undefined, count));
       }
     }
-    if(result.resin.ltr(0.5) && result.resin.gtr(-0.5)) result.resin = Num(0); // it's a subtraction, numerical error can make it something like 1e-9 while it is 0, avoid displaying the ugly 1e-9
+    var orig = computeField2Cost();
+    result.subInPlace(orig);
   } else {
     var w = b.numw;
     var h = b.numh;
@@ -979,7 +980,6 @@ function computeBlueprint2Cost(b, type) {
       }
     }
   }
-
 
   return result;
 }
