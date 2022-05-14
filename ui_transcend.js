@@ -135,10 +135,9 @@ function createTranscendDialog(opt_from_challenge) {
     names:['transcend', extraname, extraname2],
     cancelname:'cancel',
     shortcutfun:shortcutfun,
-    title:(opt_from_challenge ? 'New regular run' : 'Transcension')
+    title:(opt_from_challenge ? 'New regular run' : 'Transcension'),
+    bgstyle:'efDialogEthereal'
   });
-
-  dialog.div.className = 'efDialogEthereal';
 
   var flex = dialog.content;
   var text = '';

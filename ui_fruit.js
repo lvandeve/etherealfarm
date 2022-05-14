@@ -246,6 +246,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
   var make = function() {
     var scrollFlex = dialog.content;
+    var scrollPos = scrollFlex.div.scrollTop;
     scrollFlex.clear();
 
     var fruits = [];
@@ -275,7 +276,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     addTitle('Fusing doesn\'t make fruits stronger, it exists to gradually choose a set of abilities from the random drops. Only abilities marked [**] can be transfered to other fruits. The [*] then [**] marks can be created by fusing the same abilities. After fusing, some abilities may need to be leveled up again, but no fruit essence is lost.');
     y += s;
 
-    y += s;
+    y += s * 0.5;
     addTitle('Choose other fruit to fuse:');
 
     for(var i = 0; i < fruits.length; i++) {
@@ -391,7 +392,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       x = 0;
       var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], [0.99, 0, 0], [0, 0, y + s]);
       x += s;
-      flex.div.innerText = message[0];
+      flex.div.innerHTML = message[0] + '<br><br><br><br>&nbsp;'; // the br are to maintain scroll position if you were scrolled down in a fuse with more text
       flex.div.style.color = '#f00';
       y += s * 1.1;
     }
@@ -417,6 +418,8 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       text += '\n';
       flex.div.innerText = text;
     }
+
+    scrollFlex.div.scrollTop = scrollPos;
   };
 
   make();
@@ -433,7 +436,6 @@ function fillFruitDialog(dialog, f, opt_selected) {
     if(opt_f) f = opt_f;
     fillFruitDialog(dialog, f, selected);
   };
-  dialog.div.className = 'efDialogTranslucent';
 
   var canvasFlex = new Flex(dialog.icon, 0.05, 0.05, 0.95, 0.95);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -445,7 +447,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   var topFlex = new Flex(dialog.content, margin, 0.01, 1 - margin, 0.15);
   var text = upper(f.toString());
   text += '<br>';
-  text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
+  text += 'Tier ' + toRomanUpTo(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
   text += '<br><br>';
   text += 'Fruit essence available: ' + state.res.essence.sub(f.essence).toString() + ' of ' + state.res.essence.toString();
   text += '<br>';
@@ -554,7 +556,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     y += h;
 
     text = upper(getFruitAbilityName(a));
-    if(!isInherentAbility(a)) text += ' ' + util.toRoman(level);
+    if(!isInherentAbility(a)) text += ' ' + toRomanUpTo(level);
     text += '<br>';
     //text += 'Cost to level: ????';
     text += upper(getFruitAbilityDescription(a));
@@ -732,7 +734,8 @@ function createFruitDialog(f, opt_selected) {
       updateFruitUI();
     },
     help:createFruitHelp,
-    title:'Fruit'
+    title:'Fruit',
+    bgstyle:'efDialogTranslucent'
   });
 
   fillFruitDialog(dialog, f, opt_selected);
@@ -832,9 +835,9 @@ function getFruitTooltipText(f, opt_label) {
 
   text += '<br>';
   //text += 'type: ' + f.origName();
-  //text += ', tier ' + util.toRoman(f.tier);
+  //text += ', tier ' + toRomanUpTo(f.tier);
 
-  text += 'Tier ' + util.toRoman(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
+  text += 'Tier ' + toRomanUpTo(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
 
   text += '<br>';
   for(var i = 0; i < f.abilities.length; i++) {

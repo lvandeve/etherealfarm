@@ -57,6 +57,7 @@ function rerenderUpgradeChip(u, chip, completed, opt_ui_location) {
   if(opt_ui_location) {
     if(u.index == brassicamul_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_upgrade_watercress' : 'help_arrow_upgrade_watercress_side';
     if(u.index == berryunlock_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_unlock_blackberry' : 'help_arrow_unlock_blackberry_side';
+    if(u.index == berryunlock_1) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_unlock_blueberry' : 'help_arrow_unlock_blueberry_side';
     if(u.index == flowerunlock_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_unlock_anemone' : 'help_arrow_unlock_anemone_side';
     if(u.index == nettleunlock_0) chip.div.id = (opt_ui_location == 1) ? 'help_arrow_unlock_nettle' : 'help_arrow_unlock_nettle_side';
   }

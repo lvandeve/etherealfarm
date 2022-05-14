@@ -270,7 +270,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
   if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING)) {
     if(c.type == CROPTYPE_STINGING) {
-      result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing neighbor berries and flowers<br/>';
+      result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing orthogonally neighboring berries and flowers<br/>';
     } else {
       result += 'Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
     }
@@ -335,9 +335,9 @@ function makeTreeDialog() {
     scrollable:false,
     onclose:function(){treedialogvisible = false;},
     narrow:true,
-    title:'Tree'
+    title:'Tree',
+    bgstyle:'efDialogTranslucent'
   });
-  dialog.flex.div.className = 'efDialogTranslucent';
 
   var contentFlex = dialog.content;
 
@@ -689,9 +689,9 @@ function makeFieldDialog(x, y) {
 
     var dialog = createDialog({
       icon:c.image[4],
-      title:'Crop info'
+      title:'Crop info',
+      bgstyle:'efDialogTranslucent'
     });
-    dialog.div.className = 'efDialogTranslucent';
 
     var buttonshift = 0;
     if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.17; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
@@ -736,8 +736,13 @@ function makeFieldDialog(x, y) {
     button3.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button3, function() {
-      var dialog = createDialog({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
-      dialog.div.className = 'efDialogTranslucent';
+      var dialog = createDialog({
+        size:DIALOG_LARGE,
+        title:'Detailed crop stats',
+        scrollable:true,
+        icon:c.image[4],
+        bgstyle:'efDialogTranslucent'
+      });
       var text = '';
 
       text += getCropInfoHTML(f, c, true);

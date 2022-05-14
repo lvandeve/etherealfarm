@@ -316,10 +316,9 @@ function createChallengeDialog(opt_from_challenge) {
   challengedialogopen = true;
   var dialog = createDialog({
     onclose:function() { challengedialogopen = false; },
-    title:'Challenge'
+    title:'Challenge',
+    bgstyle:'efDialogEthereal'
   });
-
-  dialog.div.className = 'efDialogEthereal';
 
   var contentFlex = dialog.content;
 
@@ -414,9 +413,9 @@ function createFinishChallengeDialog() {
     functions:extrafun,
     names:extraname,
     shortcutfun:shortcutfun,
-    title:getEndChallengeButtonName(already_completed, success)
+    title:getEndChallengeButtonName(already_completed, success),
+    bgstyle:'efDialogEthereal'
   });
-  dialog.div.className = 'efDialogEthereal';
 
   var text = '';
 

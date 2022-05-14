@@ -282,6 +282,7 @@ function encState(state, opt_raw_only) {
   processUint6(state.keys_numbers_shift);
   processUint6(state.keys_brackets);
   processBool(state.keepinterestingfruit);
+  processBool(state.roman);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -1222,6 +1223,7 @@ function decState(s) {
     state.keys_brackets = 3;
   }
   if(save_version >= 4096*1+90) state.keepinterestingfruit = processBool();
+  if(save_version >= 262144*2+64*2+1) state.roman = processBool();
   if(error) return err(4);
 
 

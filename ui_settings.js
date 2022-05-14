@@ -243,6 +243,20 @@ function createNumberFormatDialog() {
   //var inputFlex = new Flex(tryFlex, 0, 0, 1, 1);
   //var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
 
+  var romanbutton = new Flex(dialog.content, 0.1, 0.75, 0.9, 0.8, FONT_BIG_BUTTON).div;
+  styleButton(romanbutton, 1);
+  var updatebuttontext = function(romanbutton) {
+    romanbutton.textEl.innerText = state.roman ? 'roman numbers: enabled' : 'roman numbers: up to 12';
+  };
+  updatebuttontext(romanbutton);
+  registerTooltip(romanbutton, 'Choose whether to use roman numbers for upgrade levels, fruit levels, etc... If disabled, roman numbers are still used up to 12, but for higher values switch to decimal.');
+  addButtonAction(romanbutton, bind(function(romanbutton, updatebuttontext, e) {
+    state.roman = !state.roman;
+    updatebuttontext(romanbutton);
+    updateUI();
+  }, romanbutton, updatebuttontext));
+  romanbutton.id = 'numbers_roman';
+
   fill();
 }
 
@@ -526,9 +540,9 @@ function createAdvancedSettingsDialog() {
   addSettingsSpacer();
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'save on close: ' + (state.saveonexit ? 'yes' : 'no'); };
+  updatebuttontext = function(button) { button.textEl.innerText = 'save when refreshing tab: ' + (state.saveonexit ? 'yes' : 'no'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Whether to auto-save when closing the browser window or tab. If off, then still auto-saves every few minutes, but no longer on unload. Toggling this setting will also immediately cause a save.');
+  registerTooltip(button, 'Whether to auto-save when closing or refreshing the browser tab. May not work for closing the entire browser or shutting down computer, do a manual "save now" before those to guarantee keeping the latest state. If off, then the game still auto-saves every few minutes. Toggling this setting will also immediately cause a save.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.saveonexit = !state.saveonexit;
     updatebuttontext(button);
@@ -1024,7 +1038,7 @@ function createSettingsDialog() {
   var button;
   button = makeSettingsButton();
   button.textEl.innerText = 'save now';
-  registerTooltip(button, 'Save to local storage now. The game also autosaves every few minutes so you don\'t need this button often. Also force-stores the undo state.');
+  registerTooltip(button, 'Save to local storage now. The game also autosaves every few minutes, but this button is useful before shutting down the computer or browser right after doing some game actions to ensure they are saved. Also force-stores the undo state.');
   addButtonAction(button, function() {
     storeUndo(state); // also store undo state now, similar to shift+click on the undo button
     saveNow(function(s) {

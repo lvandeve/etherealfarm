@@ -88,8 +88,10 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
     if(state.crops2[registered_crops2[i]].unlocked) numplants++;
   }
 
-  var dialog = createDialog({title:(opt_replace ? 'Replace ethereal crop' : 'Plant ethereal crop')});
-  dialog.div.className = 'efDialogEthereal';
+  var dialog = createDialog({
+    title:(opt_replace ? 'Replace ethereal crop' : 'Plant ethereal crop'),
+    bgstyle:'efDialogEthereal'
+  });
   var tx = 0;
   var ty = 0;
   var contentFlex = dialog.content;
@@ -101,7 +103,7 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
     centerText2(flex.div);
     flex.div.textEl.innerHTML = 'Replace crop with...';
   } else {
-    flex.div.textEl.innerHTML = 'Choose an ethereal crop to plant.<br>They cost resin, so choose wisely.<br>Ethereal crops give various bonuses to the basic field';
+    flex.div.textEl.innerHTML = 'Choose an ethereal crop to plant. Click the icon for more info, or the text to plant it now.<br>They cost resin, so choose wisely.<br>Ethereal crops give various bonuses to the basic field.';
   }
 
   flex = new Flex(contentFlex, 0, 0.1, 1, 1);

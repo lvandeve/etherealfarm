@@ -149,9 +149,9 @@ function updateMedalUI() {
     var getMedalText = bind(function(m, m2, div, canvas2, i) {
       var tier = m.getTier();
       if(!m2.earned) {
-        return upper(m.name) + '<br><br>Not yet earned. Unearned achievements are normally hidden, except hinted ones like this shown as "?"<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br>Tier ' + util.toRoman(tier) + ': ' + upper(tierNames[tier]);
+        return upper(m.name) + '<br><br>Not yet earned. Unearned achievements are normally hidden, except hinted ones like this shown as "?"<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br>Tier ' + toRomanUpTo(tier) + ': ' + upper(tierNames[tier]);
       }
-      return upper(m.name) + ': ' + lower(m.description) + '<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br><br>Tier ' + util.toRoman(tier) + ': ' + tierNames[tier];
+      return upper(m.name) + ': ' + lower(m.description) + '<br><br>' + 'Production bonus: +' + m.prodmul.toPercentString() + '<br><br>Tier ' + toRomanUpTo(tier) + ': ' + tierNames[tier];
     }, m, m2, div, canvas2, i);
 
     registerTooltip(div, getMedalText);

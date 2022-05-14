@@ -32,12 +32,15 @@ initUIGlobal();
 
 var savegame_recovery_situation = false; // if true, makes it less likely to autosave, to ensure local storage preserves a valid older save
 
+var last_daily_save = 0; // this gets reset on refresh but that is ok
+
 function saveDailyCycle(e) {
-  if(!window_unloading) {
-    var day_cycle = (Math.floor(util.getTime() / (24 * 3600)) % 3);
+  var time = util.getTime();
+  if(time > last_daily_save + 24 * 3600) {
+    var day_cycle = (Math.floor(time / (24 * 3600)) % 2);
     if(day_cycle == 0) util.setLocalStorage(e, localstorageName_daily1);
     if(day_cycle == 1) util.setLocalStorage(e, localstorageName_daily2);
-    if(day_cycle == 2) util.setLocalStorage(e, localstorageName_daily3);
+    last_daily_save = time;
   }
 }
 
@@ -45,7 +48,7 @@ function saveDailyCycle(e) {
 function saveNow(onsuccess) {
   save(state, function(s) {
     util.setLocalStorage(s, localstorageName);
-    saveDailyCycle(s);
+    if(!window_unloading) saveDailyCycle(s);
     if(onsuccess) onsuccess(s);
   });
 }
@@ -54,6 +57,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
   var e = util.getLocalStorage(localstorageName);
   if(!e) {
     e = util.getLocalStorage(localstorageName_undo);
+    if(e) console.log('local storage was corrupted, loaded from last undo save');
   }
   if(!e) {
     if(onfail) onfail(undefined); // there was no save in local storage
@@ -64,14 +68,9 @@ function loadFromLocalStorage(onsuccess, onfail) {
     prev_version = 4096 * fromBase64[e[2]] + 64 * fromBase64[e[3]] + fromBase64[e[4]];
     // NOTE: if there is a bug, and prev_version is a bad version with bug, then do NOT overwrite if prev_version is that bad one
     if(prev_version < version) {
-      var prev2 = util.getLocalStorage(localstorageName_prev_version);
-      if(prev2) {
-        util.setLocalStorage(prev2, localstorageName_prev_version2);
-      }
       util.setLocalStorage(e, localstorageName_prev_version);
     }
   }
-  saveDailyCycle(e);
   load(e, function(state) {
     initUI();
     update();
@@ -123,10 +122,6 @@ function getRecoverySaves() {
   if(prev) {
     result.push(['last from older game version', prev]);
   }
-  var prev2 = util.getLocalStorage(localstorageName_prev_version2);
-  if(prev2) {
-    result.push(['last from second-older game version', prev2]);
-  }
   var day;
   day = util.getLocalStorage(localstorageName_daily1);
   if(day) {
@@ -135,10 +130,6 @@ function getRecoverySaves() {
   day = util.getLocalStorage(localstorageName_daily2);
   if(day) {
     result.push(['daily cycle B', day]);
-  }
-  day = util.getLocalStorage(localstorageName_daily3);
-  if(day) {
-    result.push(['daily cycle C', day]);
   }
   var undo = util.getLocalStorage(localstorageName_undo);
   if(undo) {
@@ -171,6 +162,9 @@ function resetGlobalStateVars(opt_state) {
   global_season_changes = 0;
   global_tree_levelups = 0;
   helpNeverAgainLocal = {};
+  prevGoal = GOAL_NONE;
+  prevGoalSubCode = 0;
+  actually_updated = false;
 }
 
 function hardReset() {
@@ -180,13 +174,14 @@ function hardReset() {
   util.clearLocalStorage(localstorageName_recover);
   util.clearLocalStorage(localstorageName_success);
   util.clearLocalStorage(localstorageName_prev_version);
-  util.clearLocalStorage(localstorageName_prev_version2);
   util.clearLocalStorage(localstorageName_undo);
-  util.clearLocalStorage(localstorageName + '_manual'); // no longer supported, but cleared in case old game version created it
-  util.clearLocalStorage(localstorageName + '_transcend'); // no longer supported, but cleared in case old game version created it
   util.clearLocalStorage(localstorageName_daily1);
   util.clearLocalStorage(localstorageName_daily2);
-  util.clearLocalStorage(localstorageName_daily3);
+  // no longer supported, but cleared in case old game version created it
+  util.clearLocalStorage(localstorageName + '_manual');
+  util.clearLocalStorage(localstorageName + '_transcend');
+  util.clearLocalStorage(localstorageName + '_prev_version2');
+  util.clearLocalStorage(localstorageName + '_daily3');
   postload(createInitialState());
 
   removeChallengeChip();
@@ -2534,8 +2529,11 @@ var update_prev_state_ctor_count = -1;
 
 var inner_loop_count = 0;
 
+var actually_updated = false; // called update. This is for UI initialization
+
 // opt_ignorePause should be used for debugging only, as it can make time intervals nonsensical
 var update = function(opt_ignorePause) {
+  actually_updated = true;
   var paused_ = state.paused && !opt_ignorePause;
   var update_ui_paused = state_ctor_count != update_prev_state_ctor_count || paused_ != update_prev_paused;
   update_prev_paused = paused_;

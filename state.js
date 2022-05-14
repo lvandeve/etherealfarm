@@ -499,6 +499,7 @@ function State() {
   // settings / preferences
   this.notation = Num.N_LATIN; // number notation
   this.precision = 3; // precision of the numeric notation
+  this.roman = true; // use roman numbers in various places (upgrade levels, ...)
   this.mobilemode = false;
   this.saveonexit = true; // save with the window unload event (this is different than the interval based autosave)
   this.tooltipstyle = 1;
@@ -1389,7 +1390,7 @@ function Fruit() {
     var result = '';
     result += getFruitAbilityName(this.abilities[i], opt_abbreviated);
     if(this.abilities[i] != FRUIT_NONE) {
-      if(!opt_nolevels && !isInherentAbility(this.abilities[i])) result += ' ' + util.toRoman(this.levels[i]);
+      if(!opt_nolevels && !isInherentAbility(this.abilities[i])) result += ' ' + toRomanUpTo(this.levels[i]);
       if(!opt_nolevels && this.charge[i] == 1) result += ' [*]';
       if(!opt_nolevels && this.charge[i] == 2) result += ' [**]';
     }
@@ -1635,8 +1636,15 @@ function getPrevTwigsHour() {
 
 // for UI invalidation, ...
 function getNumberFormatCode() {
-  return Num.precision * 100 + Num.notation;
+  return Num.precision * 200 + Num.notation * 2 + (state.roman ? 1 : 0);
 }
+
+// to roman numeral, but only up to 12 if the roman numerals option is disabled in the state.
+// Can only be used when the state is already initialized
+var toRomanUpTo = function(v) {
+  if(!state.roman && v > 12) return v.toString();
+  return util.toRoman(v);
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

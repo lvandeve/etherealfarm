@@ -162,13 +162,13 @@ function getResourceDetails(i, special, index) {
       if(basicChallenge()) text += ' (not active during basic challenge)';
       text += '<br><br>';
       text += 'Collected upcoming resin: ' + upcoming.toString()
-      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.resin.toString() + ' at level ' + state.p_treelevel + ')';
+      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.resin.toString() + ' at level ' + state.p_treelevel + ', ' + util.formatDuration(state.p_runtime, true) + ')';
       text += '<br>';
       if(upcoming.neqr(0)) text += '→ Upcoming boost with unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
 
       text += '<br>';
       text += 'Resin/hour: ' + getResinHour().toString();
-      if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ', ' + util.formatDuration(state.p_runtime, true) + ')';
+      if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ')';
       text += '<br>';
       text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true);
       if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.resin.toString() + ', lvl ' + state.p_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + ')';
@@ -230,6 +230,11 @@ function getResourceDetails(i, special, index) {
 
     if(index == 0 && tooHighSeedConsumption()) {
       text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops, or remove some mushrooms if stuck without income</b><br/><br/>';
+    }
+
+    if(index == 0 || index == 1) {
+      text += 'Highest had: ' + state.c_max_res.atIndex(index).toString();
+      text += '<br><br>';
     }
 
     if(index == 1 && tooLowMushroomSeeds()) {
@@ -369,8 +374,11 @@ function showResource(i, special, index) {
     }, /*opt_poll=*/true, /*allow_mobile=*/true);
     div.style.cursor = 'pointer';
     addButtonAction(div, function() {
-      var dialog = createDialog({size:DIALOG_MEDIUM, title:upper(name + ' income')});
-      dialog.div.className = 'efDialogTranslucent';
+      var dialog = createDialog({
+        size:DIALOG_MEDIUM,
+        title:upper(name + ' income'),
+        bgstyle:'efDialogTranslucent'
+      });
       // computed here rather than inside of updatedialogfun to avoid it being too slow
       // NOTE: this means it doesn't get auto-updated though.
       var breakdown = prodBreakdown(index);

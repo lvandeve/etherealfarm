@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.2.1 (2022-05-14):';
+  text += '<br/>• Added setting to disable roman numerals (for upgrade and fruit levels). It will still display them up to 12 (XII), but after that it switches to decimal.';
+  text += '<br/>• Renamed the "save on close" setting to "save on refresh tab": this setting only works for closing tabs, but not when closing the entire browser or shutting down computer.';
+  text += '<br/>• The seeds and spores tooltips now also show max amount had so far this run.';
+  text += '<br/>• Tweaks to the early game tutorial.';
+  text += '<br/><br/>';
+
   text += '0.2.0 (2022-05-11):';
   text += '<br/>• New version number scheme: the middle number now is incremented for changes with significant effect on gameplay (e.g. a new challenge, ...), and the rightmost for smaller tweaks or bugfixes.';
   text += '<br/>• New shortcuts added: "f" goes to basic field tab, "e" goes to ethereal field tab, in blueprint edit dialog "f" sets blueprint from field, "enter" overrides field with blueprint.'; // This particular set of tabs/shortcuts was chosen to make ethereal blueprint switching easier. In addition, in fruit/blueprint rename dialogs, enter key now accepts it rather than add newline.';

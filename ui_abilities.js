@@ -330,16 +330,7 @@ function refreshWatercress(opt_clear, opt_all) {
       var can_afford = seeds_available.ge(cresscost);
       var f = state.field[y][x];
       var c = f.getCrop();
-      if(opt_all) {
-        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost)) {
-          if(f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) {
-            addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
-          }
-          seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
-          fullyplanted = true;
-        }
-      } else if(f.index == FIELD_REMAINDER) {
+      if(f.index == FIELD_REMAINDER) {
         if(opt_clear) {
           addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
           remcleared = true;
@@ -360,6 +351,15 @@ function refreshWatercress(opt_clear, opt_all) {
           seeds_available.subInPlace(cresscost);
           addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
           refreshed = true;
+        }
+      } else if(opt_all) {
+        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost)) {
+          if(f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) {
+            addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
+          }
+          seeds_available.subInPlace(cresscost);
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
+          fullyplanted = true;
         }
       }
     }

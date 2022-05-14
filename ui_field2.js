@@ -246,10 +246,9 @@ function makeTree2Dialog() {
     nocancel:have_buttons,
     scrollable:false,
     narrow:true,
-    title:'Tree'
+    title:'Tree',
+    bgstyle:'efDialogTranslucent'
   });
-
-  dialog.flex.div.className = 'efDialogTranslucent';
   var contentFlex = dialog.content;
 
   var flex = new Flex(dialog.icon, 0, 0, 1, 1);
@@ -339,9 +338,9 @@ function makeField2Dialog(x, y) {
 
     var dialog = createDialog({
       icon:c.image[4],
-      title:'Ethereal crop info'
+      title:'Ethereal crop info',
+      bgstyle:'efDialogTranslucent'
     });
-    dialog.div.className = 'efDialogTranslucent';
 
     var buttonshift = 0;
 
@@ -396,8 +395,13 @@ function makeField2Dialog(x, y) {
     button4.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button4, function() {
-      var dialog = createDialog({size:DIALOG_LARGE, title:'Detailed crop stats', scrollable:true, icon:c.image[4]});
-      dialog.div.className = 'efDialogTranslucent';
+      var dialog = createDialog({
+        size:DIALOG_LARGE,
+        title:'Detailed crop stats',
+        scrollable:true,
+        icon:c.image[4],
+        bgstyle:'efDialogTranslucent'
+      });
       var flex = dialog.content;
       var text = '';
 
@@ -613,7 +617,7 @@ function updateField2CellUI(x, y) {
 
   var ferncode = 0;
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || ferncode != fd.ferncode) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || ferncode != fd.ferncode || progresspixel != fd.progresspixel) {
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
@@ -622,6 +626,7 @@ function updateField2CellUI(x, y) {
     fd.season = season;
     fd.treelevel2 = state.treelevel2;
     fd.ferncode = ferncode;
+    fd.progresspixel = progresspixel;
 
     var label = 'ethereal field tile ' + x + ', ' + y;
 
@@ -669,7 +674,13 @@ function renderField2() {
 }
 
 function showEtherealTreeLevelDialog(level) {
-  var dialog = createDialog({cancelname:'ok', scrollable:true, title:('Reached ethereal tree ' + level)});
+  var dialog = createDialog({
+    cancelname:'ok',
+    scrollable:true,
+    title:('Reached ethereal tree level ' + level),
+    nobgclose:true,
+    bgstyle:'efDialogEthereal'
+  });
 
   var text;
 

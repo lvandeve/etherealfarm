@@ -1834,14 +1834,14 @@ function Upgrade() {
   // gets the name, taking stage into account if it has stages
   this.getName = function() {
     var name = this.name;
-    if(state.upgrades[this.index].count > 0 && this.maxcount != 1) name += ' ' + util.toRoman((state.upgrades[this.index].count));
+    if(state.upgrades[this.index].count > 0 && this.maxcount != 1) name += ' ' + toRomanUpTo((state.upgrades[this.index].count));
     return name;
   };
 
   // name of next instance of this upgrade, if multi-staged
   this.getNextName = function() {
     var name = this.name;
-    if(this.maxcount != 1) name += ' ' + util.toRoman((state.upgrades[this.index].count + 1));
+    if(this.maxcount != 1) name += ' ' + toRomanUpTo((state.upgrades[this.index].count + 1));
     return name;
   };
 
@@ -2045,7 +2045,7 @@ function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_i
   var description = 'Improves ' + aspect + ' of ' + crop.name + ' by ' + Math.floor(((multiplier - 1) * 100)) + '% (multiplicative)';
   var shortdescription = description;
 
-  if(crop.type == CROPTYPE_MUSH) description += '<br><br>WARNING! if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help you for now since it also increases the consumption. Get your seeds production up first!';
+  if(crop.type == CROPTYPE_MUSH) description += '<br><br>Warning: if your mushrooms don\'t have enough seeds from neighbors, this upgrade will not help since it also increases the consumption. Get your seeds production up first.';
 
   var result = registerUpgrade('Upgrade ' + name, /*cost0=*/undefined, fun, pre, 0, description, shortdescription, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
@@ -2550,7 +2550,7 @@ var nettlemul_0 = registerBoostMultiplier(nettle_0, getNettleCost(0).mulr(10), f
 var nettlemul_1 = registerBoostMultiplier(nettle_1, getNettleCost(1).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_1, flower_upgrade_cost_increase);
 
 upgrade_register_id = 580;
-var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0.2, 1, undefined, function(){
+var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0.2, 5, undefined, function(){
   if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count) return true; // blackberry secret makes the watercress upgrade visible from the start rather than after 5 brassica
   return (state.c_numplanted >= 1 || state.c_numplantedbrassica >= 5) && (state.c_numplantedbrassica >= 1);
 });
@@ -2594,7 +2594,7 @@ var upgrade_mistunlock = registerUpgrade('mist ability', treeLevelReqBase(4).mul
   }
   return false;
 }, 1,
-   'While enabled, mist temporarily decreases mushroom seed consumption while increasing spore production of mushrooms. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+2".',
+   'While enabled, mist temporarily increases mushroom spore production while decreasing seed consumption. In addition, mushrooms are then not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+2".',
    'Unlocks active weather ability',
    '#fff', '#88f', image_mist, undefined);
 upgrades[upgrade_mistunlock].istreebasedupgrade = true;
@@ -2628,7 +2628,7 @@ var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(
   }
   return false;
 }, 1,
-   'While enabled, flowers get a boost, and in addition are not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+3".',
+   'While enabled, flowers get a boost, and are not affected by winter. This active ability is enabled using its icon button at the top or (by default) the shortcut "shift+3".',
    'Unlocks active weather ability',
    '#ccf', '#00f', image_rainbow, undefined);
 upgrades[upgrade_rainbowunlock].istreebasedupgrade = true;
@@ -4289,14 +4289,14 @@ function Upgrade2() {
   // gets the name, taking stage into account if it has stages
   this.getName = function() {
     var name = this.name;
-    if(state.upgrades2[this.index].count > 1) name += ' ' + util.toRoman((state.upgrades2[this.index].count));
+    if(state.upgrades2[this.index].count > 1) name += ' ' + toRomanUpTo((state.upgrades2[this.index].count));
     return name;
   };
 
   // name of next instance of this upgrade, if multi-staged
   this.getNextName = function() {
     var name = this.name;
-    if(state.upgrades2[this.index].count > 0) name += ' ' + util.toRoman((state.upgrades2[this.index].count + 1));
+    if(state.upgrades2[this.index].count > 0) name += ' ' + toRomanUpTo((state.upgrades2[this.index].count + 1));
     return name;
   };
 
@@ -4474,7 +4474,7 @@ function applyBlackberrySecret() {
 var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
   applyBlackberrySecret();
 }, function(){return true;}, 1,
-'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the upgrade-watercress upgrade is available from the start rather than after 5 watercress.',
+'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the upgrade-watercress upgrade is available from the start rather than after 5 watercress. This makes the start of a run much more convenient.',
 undefined, undefined, blackberry[4]);
 
 var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({resin:150}), 2, function() {

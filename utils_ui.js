@@ -212,6 +212,7 @@ params.scrollable_canchange: like scrollable, but with more event listeners to a
 params.shortcutfun: a function handling shortcuts that are active while this dialog is open
 params.nobgclose: boolean, don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 params.swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
+params.bgstyle: className of alternative background CSS style, e.g. 'efDialogEthereal'
 
 Return object contains (amongst other fields):
 dialog.content: flex where the main content can be put
@@ -266,7 +267,8 @@ function createDialog(params) {
 
   created_dialogs.push(dialog);
 
-  dialogFlex.div.className = 'efDialog';
+
+  dialogFlex.div.className = params.bgstyle || 'efDialog';
   setAriaRole(dialogFlex.div, 'dialog');
   dialogFlex.div.setAttribute('aria-modal', 'true');
   dialogFlex.div.style.zIndex = '' + (dialog_level * 10 + 5);

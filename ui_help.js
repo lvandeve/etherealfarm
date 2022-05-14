@@ -149,10 +149,10 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
         helpDialogQueue.shift();
         showHelpDialog.apply(this, args);
       }
-    }
+    },
+    bgstyle:'efDialogTranslucent'
   });
 
-  dialog.div.className = 'efDialogTranslucent';
   var fx0 = 0;
   var fy0 = 0;
   var fx1 = 1;
@@ -220,7 +220,7 @@ registerHelpDialog(8, 'Upgrades', 'You unlocked your first upgrade!',
 registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your first permanent type of plant.',
     'You unlocked your first permanent type of plant. Plants like this don\'t wither, keep producing forever, and have much more powerful production upgrades too.' +
     '<br><br>'+
-    'Watercress also remains useful: if you plant a watercress next to permanent plants, it copies all its orthogonal neighbors\' production, no matter how high it is. However there\'s a penalty to copying for having many watercress, so max 1 or 2 makes sense.' +
+    'Watercress also remains useful: if you plant a watercress next to permanent plants, it copies all its orthogonal neighbors\' production, no matter how high level it is. However there\'s a penalty to copying for having many watercress, so max 1 or 2 makes sense.' +
     '<br><br>'+
     'TIP: See shortcuts in the main help menu for various shortcuts that make planting easier ("p" or shift+click to plant last crop, ctrl+click to plant watercress, ...).',
     undefined,
@@ -231,18 +231,16 @@ registerHelpDialog(3, 'Permanent crop & watercress copying', 'You unlocked your 
 
 
 registerHelpDialog(19, 'Mushrooms', 'You unlocked your first type of mushroom',
-               'You unlocked your first type of mushroom. Mushrooms produce spores, but they consume seeds. Mushrooms must touch berries to get their seeds. If the berry cannot produce enough seeds for the mushroom, the mushroom produces less spores. If the berry produces more seeds than needed, the remaining seeds go to the regular seeds stack' +
+               'You unlocked your first type of mushroom. Mushrooms produce spores, but they consume seeds from orthogonally touching berries. If the berry cannot produce enough seeds for the mushroom, the mushroom produces less spores.' +
                '<br><br>' +
-               'Spores let the tree level up, unlocking next kinds of bonuses.' +
-               '<br><br>' +
-               'Spores are used by the tree, but the mushroom is not required to touch the tree.' +
+               'Spores let the tree level up (but mushrooms don\'t have to touch the tree), unlocking next kinds of bonuses.' +
                '<br><br>' +
                'The mushroom can (and should!) be boosted by flowers. This boosts its production, but also increases its seed consumption.' +
                '<br><br>' +
                'Leave some berries without mushrooms too, otherwise you won\'t get enough seed production for next upgrades and crops.',
                undefined,
                '<br><br>'+
-               'The image shows a possible configuration for mushrooms: it extracts seeds from the berry it touches. In addition, both the mushroom and berry are boosted by flowers. In addition, there\'s another berry that doesn\'t touch a mushroom so that there\'s some production too',
+               'The image shows a possible configuration for mushrooms: it extracts seeds from the berry it touches. In addition, both the mushroom and berry are boosted by flowers. In addition, there\'s another berry that doesn\'t touch a mushroom so that there\'s some global seed production too.',
                [[champignon[4],blueberry[4], undefined],
                 [images_anemone[4],images_anemone[4], undefined],
                 [blueberry[4], images_anemone[4], undefined]]);
@@ -258,14 +256,14 @@ registerHelpDialog(20, 'Flowers', 'You unlocked your first type of flower',
                  [blackberry[4],images_anemone[4],blackberry[4]],
                ]);
 
-registerHelpDialog(21, 'Nettles', 'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches.',
-  'Unlocked a new crop: nettle. Nettle boosts mushrooms, but hurts flowers and berries it touches. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower next to a mushroom works even greater.',
+registerHelpDialog(21, 'Nettles', 'Unlocked a new crop: nettle. Nettle boosts mushrooms it touches orthogonally, but hurts flowers and berries.',
+  'Unlocked a new crop: nettle. Nettle boosts mushrooms it touches orthogonally, but hurts flowers and berries. The mushroom boost increases spore production without increasing seeds consumption. The boost is an additional multiplier independent from flower boost to mushroom, so having both a nettle and a flower works even better.',
   images_nettle[4],
   '<br><br>'+
   'The image shows a possible configuration where the mushroom receives boost from both nettle (top) and flower (bottom). The top left flower and top right blackberry in this image however are negatively affected by the nettle.',
   [[images_anemone[4],images_nettle[4],blackberry[4]],
    [blueberry[4],champignon[4],blueberry[4]],
-   [undefined,images_clover[4],undefined]]);
+   [images_clover[4],images_clover[4],images_clover[4]]]);
 
 
 registerHelpDialog(6, 'Tree leveled up', 'Tree leveled up', 'Thanks to spores, the tree completely rejuvenated and is now a ' + tree_images[treeLevelIndex(1)][0] + ', level ' + 1 + '. More spores will level up the tree more. The tree can unlock abilities and more at higher levels. Click the tree in the field for more info.',
@@ -275,11 +273,12 @@ registerHelpDialog(6, 'Tree leveled up', 'Tree leveled up', 'Thanks to spores, t
 registerHelpDialog(12, 'Sun ability', 'Tree reached level 2 and discovered sun ability', 'The tree reached level ' + 2 + ' and discovered the sun ability!<br><br>' + upgrades[upgrade_sununlock].description, image_sun);
 registerHelpDialog(14, 'Mist ability', 'Tree reached level 4 and discovered mist ability', 'The tree reached level ' + 4 + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
 registerHelpDialog(15, 'Rainbow ability', 'Tree reached level 6 and discovered rainbow ability', 'The tree reached level ' + 6 + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
-registerHelpDialog(2, 'Tree dropped fruit', 'Tree reached level 5 and dropped a fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and all full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surplus fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
+registerHelpDialog(2, 'Tree dropped fruit', 'Tree reached level 5 and dropped a fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and the full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surplus fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
 registerHelpDialog(18, 'Tree dropped better fruit', 'Tree reached level 15 and dropped another fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! It drops one every 5 levels. Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
 
 
-registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now possible to transcend', 'The tree reached adulthood, and is now able to transcend! Click the tree in the field to view the transcension dialog. The tree also dropped another fruit, check the fruit tab whether you want to keep it since it\'s in the sacrificial pool for now.',
+registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now possible to transcend',
+    'The tree reached adulthood at level 10, and is now able to transcend! Click the tree in the field to view the transcension dialog.<br><br>Transcension will restart the basic field from the beginning, but will unlock a new type of field and a new type of upgrades. You can choose to transcend now, or level the tree a bit more first and transcend later.<br><br> The tree also dropped another fruit, check the fruit tab whether you want to keep it since it\'s in the sacrificial pool for now.',
     undefined, undefined, [[undefined, tree_images[treeLevelIndex(10)][1][0]], [undefined, tree_images[treeLevelIndex(10)][2][0]]]);
 
 
@@ -317,22 +316,22 @@ registerHelpDialog(25, 'Bee challenge', undefined,
     'You started the bee challenge! Rules are different from the standard game. You can click the tree at any time to view the current challenge rules, reward and stats. Plant some watercress or blackberry to get started.',
     images_queenbee[4],
     '<br><br>'+
-    'The image below shows a possible configuration for the bees: all workers touch a flower as required, queens optionally touch workers for extra boost (so beehives provide a boost-boost), and hives touch queens to make that boost stronger (a boost-boost-boost). More than 1 flower does not increase boost but multiple queens or hives do. The rightmost worker bee gives most boost because it touches 3 queens, and the topmost queen gives least boost since it touches the least hives. You can fill in gaps in the picture where more queens or hives would increase the boost more. Not shown in the picture is that you also need some mushroom and berry production running somewhere, which can also be boosted by flowers in the standard way.',
-    [[undefined, images_workerbee[4], images_queenbee[4], images_beenest[4]],
-     [images_workerbee[4], images_aster[4], images_workerbee[4], images_queenbee[4]],
-     [undefined, images_workerbee[4], images_queenbee[4], images_beenest[4]],
-     [undefined, images_queenbee[4], images_beenest[4], undefined],
+    'The image below shows a possible configuration for the bees: all workers touch a flower as required, drones touch workers for extra boost (so bees provide a boost-boost), and queens touch drones to make that boost stronger (a boost-boost-boost). More than 1 flower does not increase boost but multiple drones or queens do. The rightmost worker bee gives most boost because it touches 3 drones, and the topmost drone gives least boost since it touches the least queens. You can fill in gaps in the picture where more drones or queens would increase the boost more. Not shown in the picture is that you also need some mushroom and berry production running somewhere, which can also be boosted by flowers in the standard way.',
+    [[undefined, images_workerbee[4], images_dronebee[4], images_queenbee[4]],
+     [images_workerbee[4], images_aster[4], images_workerbee[4], images_dronebee[4]],
+     [undefined, images_workerbee[4], images_dronebee[4], images_queenbee[4]],
+     [undefined, images_dronebee[4], images_queenbee[4], undefined],
     ]);
 
 registerHelpDialog(26, 'Challenge completed', '',
     'The tree reached the challenge\'s target level, you can successfully complete the challenge and can get its main reward! You can complete the challenge from the tree dialog, or continue to reach a higher level for more challenge max-level bonus. You can also replay the challenge at any later time to increase the max level.',
     undefined);
 
-registerHelpDialog(27, 'Beehives', 'You unlocked beehives!',
-  'You unlocked beehives! Beehives boost orthogonally neighboring flowers, while flowers boost berries and mushrooms (beehives boost-boost). This adds a new independent multiplier that can be upgraded to the game.',
+registerHelpDialog(27, 'Bees', 'You unlocked bees!',
+  'You unlocked bees! Bees boost orthogonally neighboring flowers, while flowers boost berries and mushrooms (so bees are a boost of a boost). This adds a new independent multiplier that can be upgraded to the game.',
   images_beenest[4],
   '<br><br>'+
-  'The image shows a possible configuration for beehives, such that the beehives boost flowers, which in turn boost berries and mushrooms. It\'s ensured both the mushroom and the berry it consumes from have a hive-boosted flower.',
+  'The image shows a possible configuration for bees, such that the bees boost flowers, which in turn boost berries and mushrooms. It\'s ensured both the mushroom and the berry it consumes from have a bee-boosted flower.',
   [
     [undefined,grape[4],images_daisy[4],grape[4]],
     [grape[4],images_daisy[4],images_beenest[4],images_daisy[4]],
@@ -374,7 +373,7 @@ registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more 
     images_automaton[4]);
 
 registerHelpDialog(33, 'Auto unlock', 'You unlocked auto-unlock!',
-    'You unlocked auto-unlock. This will unlock the next tiers of crops automatically. Combined with auto-plant and blueprint templates, this can almost fully automate a run.<br><br>Once you planted the general shape of your field with cheap crops or blueprint templates, everything will happen automatically from then on. Just place berries, mushrooms, flowers, nettles and beehives once to indicate the layout.<br><br>Tip: ensure there are some berries that don\'t touch a mushroom, because if a mushroom consumes all seeds of a berry, income will stop and the automaton won\'t get resources for further upgrades and planting, resulting in a deadlock.',
+    'You unlocked auto-unlock. This will unlock the next tiers of crops automatically. Combined with auto-plant and blueprint templates, this can almost fully automate a run.<br><br>Once you planted the general shape of your field with cheap crops or blueprint templates, everything will happen automatically from then on. Just place berries, mushrooms, flowers, nettles and bees once to indicate the layout.<br><br>Tip: ensure there are some berries that don\'t touch a mushroom, because if a mushroom consumes all seeds of a berry, income will stop and the automaton won\'t get resources for further upgrades and planting, resulting in a deadlock.',
     images_automaton[4]);
 
 registerHelpDialog(34, 'Multiplicity', 'You unlocked multiplicity! Mushrooms and berries boost each other no matter at what location.',
@@ -734,6 +733,7 @@ var GOAL_BLACKBERRY_UNLOCK = GOAL_index++;
 var GOAL_BLACKBERRY_PLANT = GOAL_index++;
 var GOAL_FLOWER_UNLOCK = GOAL_index++;
 var GOAL_FLOWER_PLANT = GOAL_index++;
+var GOAL_BLUEBERRY_UNLOCK = GOAL_index++;
 var GOAL_BLUEBERRY_PLANT = GOAL_index++;
 var GOAL_CHAMPIGNON_UNLOCK = GOAL_index++;
 var GOAL_CHAMPIGNON_PLANT = GOAL_index++;
@@ -746,8 +746,9 @@ var GOAL_NETTLE_PLANT = GOAL_index++;
 var GOAL_TREELEVEL_10 = GOAL_index++;
 var GOAL_TRANSCEND = GOAL_index++;
 var GOAL_ETHEREAL_CROP = GOAL_index++;
-var GOAL_COLLECT_RESIN_FOR_MISTLETOE = GOAL_index++;
 var GOAL_ETHEREAL_UPGRADE = GOAL_index++;
+var GOAL_COLLECT_RESIN = GOAL_index++;
+var GOAL_COLLECT_RESIN_FOR_MISTLETOE = GOAL_index++;
 var GOAL_MISTLETOE_UNLOCK = GOAL_index++;
 var GOAL_PRE_MISTLETOE_PLANT = GOAL_index++;
 var GOAL_MISTLETOE_PLANT = GOAL_index++;
@@ -805,8 +806,12 @@ function getGoal_() {
       if(state.fullgrowncropcount[flower_0] < 1 && !state.upgrades[berryunlock_1].count) {
         return [GOAL_FLOWER_PLANT, 0];
       }
+      if(!state.upgrades[berryunlock_1].count) {
+        var subcode = (state.currentTab == tabindex_upgrades ? 0 : 1) + (showingSidePanel ? 0 : 2) + (state.upgrades_new ? 0 : 4) + (state.res.seeds.ger(40000) ? 0 : 8);
+        return [GOAL_BLUEBERRY_UNLOCK, subcode];
+      }
       if(state.fullgrowncropcount[berry_1] < 1 && !state.upgrades[berryunlock_2].count) {
-        var subcode = (state.numemptyfields * 25 + state.c_numplanted) * 8 + (dialog_level > 0 ? 4 : 0) + (state.numcropfields_permanent ? 2 : 0) + (state.res.seeds.ger(1000) ? 1 : 0);
+        var subcode = (state.numemptyfields * 25 + state.c_numplanted) * 8 + (dialog_level > 0 ? 4 : 0) + (state.numcropfields_permanent ? 2 : 0) + (state.res.seeds.ger(40000) ? 1 : 0);
         return [GOAL_BLUEBERRY_PLANT, subcode];
       }
       if(state.upgrades[mushunlock_0].count == 0) {
@@ -846,18 +851,18 @@ function getGoal_() {
   } else {
     // post-transcension
     if(!state.g_numplanted2) {
-      var subcode = ((state.currentTab == tabindex_field2) ? 1 : 0) + (state.numTabs * 2);
+      var subcode = ((state.currentTab == tabindex_field2) ? 1 : 0) + (state.numTabs * 2) + (dialog_level > 0 ? 4 : 0);;
       return [GOAL_ETHEREAL_CROP, subcode];
     }
     if(!state.upgrades2[upgrade2_mistletoe].count && state.treelevel2 == 0) {
-      if(state.g_res.resin.ltr(40) && state.g_numresets < 3) {
+      if(state.g_res.resin.ltr(50) && state.g_numresets < 4) {
         if(state.res.resin.ltr((state.g_numupgrades2 > 2) ? 25 : ((state.g_numresets > 2) ? 15 : 10))) {
-          return [GOAL_COLLECT_RESIN_FOR_MISTLETOE, 0];
+          return [GOAL_COLLECT_RESIN, 0];
         } else {
           return [GOAL_ETHEREAL_UPGRADE, 0];
         }
       } else {
-        return [GOAL_MISTLETOE_UNLOCK, 0];
+        return [state.res.resin.ltr(25) ? GOAL_COLLECT_RESIN_FOR_MISTLETOE : GOAL_MISTLETOE_UNLOCK, 0];
       }
     }
     /*if(state.upgrades2[upgrade2_mistletoe].count && state.res.twigs.ler(0)) {
@@ -931,6 +936,7 @@ function getEmptyFieldCellForArrow() {
 // also updates them, also shows goal chip under the log
 function showHelpArrows() {
   if(!fieldDivs) return; // field not rendered yet, some divs for arrows don't yet exist
+  if(!actually_updated) return;
 
   var goalarray = getGoal();
   var goal = goalarray[0];
@@ -1010,8 +1016,19 @@ function showHelpArrows() {
     }
   } else if(goal == GOAL_FLOWER_PLANT) {
     setGoalText('Plant an anemone flower. Plant it orthogonally next to a berry to boost the berry (a flower on its own doesn\'t produce anything). Keep planting more berries and flowers for more income.');
+  } else if(goal == GOAL_BLUEBERRY_UNLOCK) {
+    setGoalText('Unlock blueberry. To afford this, if needed plant more blackberries boosted by flowers and watercress copying, or use upgrades.');
+    if(state.currentTab == 1 && upgradeFlexCache[0]) {
+      var chip = document.getElementById('help_arrow_unlock_blueberry');
+      if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
+    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+      //var chip = document.getElementById('help_arrow_unlock_blackberry_side');
+      //if(chip) makeArrow2(contentFlex.div, 0.9, 0.25, chip, 0.15, 0.5);
+    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(1000))) {
+      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+    }
   } else if(goal == GOAL_BLUEBERRY_PLANT) {
-    setGoalText('Unlock blueberry, plant one (or replace a blackberry by one) and wait for it to grow. To afford this, if needed plant more blackberries boosted by flowers and watercress copying, or use upgrades.');
+    setGoalText('Plant a blueberry, or replace a blackberry by one, and wait for it to grow.');
     if(!state.cropcount[berry_1] && state.res.seeds.ger(40000) && state.upgrades[berryunlock_1].count && !state.upgrades[berryunlock_2].unlocked) {
       var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blueberry') : null;
       if(chip) {
@@ -1029,9 +1046,9 @@ function showHelpArrows() {
   } else if(goal == GOAL_CHAMPIGNON_UNLOCK) {
     setGoalText('Unlock champignon. To afford this, if needed plant more berries boosted by flowers and watercress copying, or use upgrades.');
   } else if(goal == GOAL_CHAMPIGNON_PLANT) {
-    setGoalText('Plant champignon next to a berry to produce spores. The champignon must be planted next to a high tier berry as it will consume seeds directly from that berry.');
+    setGoalText('Plant champignon next to a high tier berry to produce spores. It will consume seeds directly from that berry. Also leave some berry without mushroom to keep global seed production.');
   } else if(goal == GOAL_TREE_LEVELUP) {
-    setGoalText('Wait for the tree to level up through enough spores. Upgrade berries and get more berry seed production next to the champignon to speed up its spore production.');
+    setGoalText('Wait for the tree to level up through enough spores. Improve berries next to champignons to speed up spore production. Also keep berries without champignon for global seed production.');
   } else if(goal == GOAL_SUN) {
     setGoalText('Reach tree level 2 and activate the sun ability. It\'s also possible to unlock other crops like cranberry while waiting.');
     if(state.treelevel >= 2) {
@@ -1039,14 +1056,14 @@ function showHelpArrows() {
       if(chip) makeArrow2(chip, 2.5, 1.5, chip, 1, 0.6);
     }
   } else if(goal == GOAL_TREELEVEL_5) {
-    setGoalText('Reach tree level 5 to get a fruit drop. Keep doing upgrades and unlocking and replacing crops for more income. Find an effective field layout. Put a flower next to mushrooms for more spores.');
+    setGoalText('Reach tree level 5 to get a fruit drop. Keep upgrading, unlocking new crop tiers (clover, currant, ...) and replacing existing crops with them for more income. Find an effective field layout. Put a flower next to mushrooms for more spores.');
   } else if(goal == GOAL_FRUIT_TAB) {
     setGoalText('Check the fruit tab to see the newly dropped fruit and inspect its abilities.');
     if(state.currentTab != tabindex_fruit) {
       makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_fruit], 0.5, 1.0);
     }
   } else if(goal == GOAL_NETTLE_UNLOCK) {
-    setGoalText('Unlock nettle. To reach this, unlock and grow other crops first, up to matsutake mushroom. Keep doing upgrades and planting and replacing crops for more income.');
+    setGoalText('Unlock nettle. To reach this, unlock and grow other crops first, up to matsutake mushroom (requires fullgrown currant). Keep upgrading and improving for more income.');
     if(state.currentTab == 1 && upgradeFlexCache[0]) {
       var chip = document.getElementById('help_arrow_unlock_nettle');
       if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);
@@ -1057,31 +1074,35 @@ function showHelpArrows() {
       makeArrow2(contentFlex.div, 0.5, 0.3, tabbuttons[1], 0.5, 0.9);
     }
   } else if(goal == GOAL_NETTLE_PLANT) {
-    setGoalText('Plant a nettle. Plant it next to a mushroom to boost its spore production by 500% (but keep at least 1 berry and flower). Beware that nettle negatively affects other flowers and berries.');
+    setGoalText('Plant a nettle. Plant it next to a mushroom to boost its spore production by 500% (but keep at least 1 berry and flower). Beware that nettle negatively affects other flowers and berries it orthogonally touches.');
   } else if(goal == GOAL_TREELEVEL_10) {
     setGoalText('Reach tree level 10 to unlock transcension.');
   } else if(goal == GOAL_TRANSCEND) {
     setGoalText('Click the tree and then transcend. Check fruit tab first in case you want to keep a fruit. You can also get a few more tree levels to collect more resin first - but transcending will be worth it!');
   } else if(goal == GOAL_ETHEREAL_CROP) {
     setGoalText('Plant an ethereal crop of your choice in the new ethereal field.');
-    if(state.currentTab != tabindex_field2) {
+    if(state.currentTab != tabindex_field2 && dialog_level == 0) {
       makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_field2], 0.6, 0.95);
     }
+  } else if(goal == GOAL_COLLECT_RESIN) {
+    //setGoalText('Grow the basic field again and reach tree level 10 or higher to transcend again for more resin. Get more ethereal crops and upgrades, and achievements, to reach higher levels faster and earn more resin with each transcension.');
+    setGoalText('Grow the basic field again and reach tree level 10 or higher to transcend again for more resin.', true);
   } else if(goal == GOAL_COLLECT_RESIN_FOR_MISTLETOE) {
-    setGoalText('Grow the basic field and level up the tree to 10 or higher to transcend again for more resin, get more ethereal upgrades and achievements to reach higher levels and earn more resin faster each transcension.');
+    //setGoalText('Grow the basic field again and reach tree level 10 or higher to transcend again for more resin. Get more ethereal crops and upgrades, and achievements, to reach higher levels faster and earn more resin with each transcension.');
+    setGoalText('Collect 25 resin from transcensions to afford the "unlock mistletoe" ethereal upgrade.', true);
   } else if(goal == GOAL_ETHEREAL_UPGRADE) {
     setGoalText('Plant a crop in the ethereal field, or choose an upgrade in the ethereal upgrades tab, with the resin you have.');
   } else if(goal == GOAL_MISTLETOE_UNLOCK) {
     //setGoalText('Unlock mistletoes in the ethereal upgrades tab. This ethereal upgrade is essential to level up the ethereal tree, which unlocks more ethereal upgrades, automation, etc...');
-    setGoalText('Unlock mistletoes in the ethereal upgrades tab once you have enough resin from transcensions.');
+    setGoalText('Unlock mistletoes in the ethereal upgrades tab.');
   //} else if(goal == GOAL_TWIGS) {
   //  setGoalText('Plant one or more mistletoes next to the tree in the basic field, then transcend to get twigs');
   } else if(goal == GOAL_PRE_MISTLETOE_PLANT) {
-    setGoalText('Grow the basic field until you can plant mistletoe.', true);
+    setGoalText('Grow the basic field until you can plant mistletoe.');
   } else if(goal == GOAL_MISTLETOE_PLANT) {
     setGoalText('Unlock and plant a mistletoe next to the basic tree to collect twigs.');
   } else if(goal == GOAL_TREELEVEL2_1) {
-    setGoalText('Reach enough twigs through transcensions to level up the ethereal tree.', true);
+    setGoalText('Reach enough twigs from mistletoes through transcensions to level up the ethereal tree.', true);
   } else if(goal == GOAL_AUTOMATON_AFFORD) {
     setGoalText('Unlock the automaton in the ethereal upgrades tab once you have enough resin.', true);
   } else if(goal == GOAL_AUTOMATON_UNLOCK) {

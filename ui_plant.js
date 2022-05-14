@@ -306,9 +306,9 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
   var dialog = createDialog({
     size:dialogsize,
     help:showPlantingHelp,
-    title:(opt_replace ? 'Replace crop' : 'Plant crop')
+    title:(opt_replace ? 'Replace crop' : 'Plant crop'),
+    bgstyle:'efDialogTranslucent'
   });
-  dialog.div.className = 'efDialogTranslucent';
   var tx = 0;
   var ty = 0;
 

@@ -19,13 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // release version. format is as follows: number is made as: 262144*(MAJOR+2) + 64*MINOR + PATCH
 // meaning:
-// -major: -2..61, only incremented for really game changing updates. Starts at -2 instead of 0 for compatibility with an older version number format in saves.
+// -major: 0..61, only incremented for really game changing updates. Encoded starting at -2 instead of 0 (so major version 0 is encoded as 2) for compatibility with an older version number format in saves.
 // -minor: 0..4095: increment for any significant new feature, such as a new challenge, new ethereal crops, ...
 // -patch: 0..63: increment for small bugfixes, ...
 // -sub: 0..any: does not change the numeric version code. if non-0, adds 'b', 'c'. ... to the version name. Should not affect savegame format. Cosmetic changes only. Version name including this part is appended to CSS URL query part to ensure no stale cached CSS file is used.
-var version_major = 0;
-var version_minor = 2;
-var version_patch = 0;
+var version_major = 0; // 0..61
+var version_minor = 2; // 0..4095
+var version_patch = 1; // 0..63
 var version = 262144 * (version_major + 2) + 64 * version_minor + version_patch;
 var version_sub = 0;
 
@@ -75,6 +75,7 @@ function autoSaveOk() {
 
 var window_unloading = false;
 
+// this only works reliably for closing tabs, not for closing browser or shutting down computer
 window.onbeforeunload = function() {
   window_unloading = true;
   if(!state.saveonexit) return;

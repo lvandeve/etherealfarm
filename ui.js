@@ -88,6 +88,7 @@ function makeMainDivs() {
 
   // have right pane follow same vertical size rules as the left part for good alignment
   rightFlex = new Flex(mainFlex, [0, 0, 0.99, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 1.1], 0.99);
+  rightFlex.div.style.visibility = 'hidden';
   rightFlex.div.style.overflow = 'hidden'; // avoid creating unwanted global scrollbars
   //rightFlex.div.style.border = '4px solid red';
   topRightFlex = new Flex(rightFlex, 0.02, 0.05, 0.98, 0.25, FONT_SMALL);

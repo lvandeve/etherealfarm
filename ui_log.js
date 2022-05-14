@@ -242,8 +242,8 @@ function setGoalText(text, opt_small) {
     goalFlex.div.style.visibility = 'hidden';
   } else {
     // see makeMainDivs for the basis of these values
-    var logy0 = opt_small ? 0.84 : 0.865;
-    var goaly1 = opt_small ? 0.835 : 0.861;
+    var logy0 = opt_small ? 0.845 : 0.865;
+    var goaly1 = opt_small ? 0.84 : 0.861;
     if(logFlex.y0 != logy0) {
       logFlex.y0 = logy0;
       logFlex.updateSelf(gameFlex.div);
@@ -263,6 +263,8 @@ function animateGoalText() {
   if(!lastGoalText) return;
   if(lastGoalTextSmall) return;
   animatingGoalText_ = true;
+
+  /*// background fade in animation: JS based
   goalFlex.div.style.opacity = '0';
   var opacity = 0;
   var interval = 50; // in ms
@@ -277,7 +279,17 @@ function animateGoalText() {
     }
     util.setTimeoutSafe(fun, interval);
   };
-  util.setTimeoutSafe(fun, interval);
+  util.setTimeoutSafe(fun, interval);*/
+
+
+  // text animation: CSS based. Setting it to none and then back to '' re-triggers the CSS animation.
+  goalFlex.div.style.animation = 'none';
+  window.setTimeout(function() {
+    goalFlex.div.style.animation = 'efGoalAnimFrame 0.5s';
+  });
+  window.setTimeout(function() {
+    animatingGoalText_ = false;
+  }, 1000);
 }
 
 function initMessageUI() {
