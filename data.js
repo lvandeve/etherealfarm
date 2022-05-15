@@ -18,7 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // The game data: definition of upgrades, crops, ...
 
-var seasonNames = ['spring', 'summer', 'autumn', 'winter'];
+var seasonNames = ['spring', 'summer', 'autumn', 'winter',
+                   'ethereal', 'infernal'];
 
 var croptype_index = 0;
 var CROPTYPE_BERRY = croptype_index++;
@@ -351,6 +352,16 @@ Crop.prototype.getRecoup = function() {
   return this.getCost(-1).mulr(getCropRecoup());
 };
 
+var infernal_tier_base = 0.5;
+var infernal_berry_tier_mul = 700; // same as getBerryProd(n + 1).spores.div(getBerryProd(n).spores) for any high enough n
+var infernal_berry_upgrade_count = 29; // matches value in setCropMultiplierCosts. TODO: make single variable
+var infernal_mush_tier_mul = 612500; // same as getMushroomProd(n + 1).spores.div(getMushroomProd(n).spores) for any high enough n
+var infernal_mush_upgrade_count = 52; // matches value in setCropMultiplierCosts. TODO: make single variable
+
+var infernal_berry_upgrade_base = Num.pow(Num(infernal_berry_tier_mul), Num(1.0 / infernal_berry_upgrade_count)).div(Num.pow(Num(infernal_berry_tier_mul * infernal_tier_base), Num(1.0 / infernal_berry_upgrade_count)));
+var infernal_mush_upgrade_base = Num.pow(Num(infernal_mush_tier_mul), Num(1.0 / infernal_mush_upgrade_count)).div(Num.pow(Num(infernal_mush_tier_mul * infernal_tier_base), Num(1.0 / infernal_mush_upgrade_count)));
+
+
 // used for multiple possible aspects, such as production, boost if this is a flower, etc...
 // f is field, similar to in Crop.prototype.getProd
 // result is change in-place and may be either Num or Res. Nothing is returned.
@@ -420,6 +431,27 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
         if(breakdown) breakdown.push(['winter tree warmth (flowers)', true, bonus, result.clone()]);
       }
     }
+  }
+
+  if(state.challenge == challenge_infernal && season == 5 && this.tier >= 0) {
+    var tier_effective = -1;
+    var upgrade_base = undefined;
+    if(this.type == CROPTYPE_BERRY) {
+      tier_effective = this.tier;
+      upgrade_base = infernal_berry_upgrade_base;
+    }
+    if(this.type == CROPTYPE_MUSH) {
+      tier_effective = this.tier * 2 + 2;
+      upgrade_base = infernal_mush_upgrade_base;
+    }
+    var malus = Num(1e-9); // this applies to berries, flowers, mushrooms, bees, nettles, watercress production (but not copying)
+    if(tier_effective >= 0) {
+      malus.mulInPlace(Num.powr(Num(infernal_tier_base), tier_effective + 1));
+      var u = state.upgrades[this.basic_upgrade];
+      malus.mulInPlace(Num.powr(Num(upgrade_base), -u.count));
+    }
+    result.mulInPlace(malus);
+    if(breakdown) breakdown.push(['infernal', true, malus, result.clone()]);
   }
 }
 
@@ -3303,9 +3335,13 @@ registerDeprecatedMedal(); // was reserved for truly basic 30, but doing this ta
 
 medal_register_id = 2170;
 
-var medal_challenge_thistle = registerMedal('stormy', 'completed the stormy challenge', image_storm, function() {
+var medal_challenge_stormy = registerMedal('stormy', 'completed the stormy challenge', image_storm, function() {
   return state.challenges[challenge_stormy].completed;
 }, Num(1));
+
+var medal_challenge_infernal = registerMedal('infernal', 'completed the infernal challenge', field_infernal[2], function() {
+  return state.challenges[challenge_infernal].completed;
+}, Num(1.5));
 
 medal_register_id = 2500;
 
@@ -3420,7 +3456,7 @@ function Challenge() {
   // e.g. at 0.1, this challenge provides +10% production bonus per tree level reached during this challenge
   // this is additive for all challenges together.
   this.bonus = Num(0);
-  this.bonus_min_level = 0; // if higher than 0, bonus only starts working from that level + 1, e.g. set to 9 to have level 10 be the first to give some bonus
+  this.bonus_min_level = 0; // if higher than 0, bonus only starts working from that level
   this.bonus_max_level = 0; // if higher than 0, bonus stops above this level, it's a hard cap
   this.bonus_exponent = 1.1; // exponent for the bonus formula
   this.alt_bonus = false; // if true, the bonus is part of a second pool, which is its own independent multiplier
@@ -3782,7 +3818,7 @@ function() {
 }, function() {
 }, 0);
 challenges[challenge_basic].bonus_exponent = Num(0.7);
-challenges[challenge_basic].bonus_min_level = 9;
+challenges[challenge_basic].bonus_min_level = 10;
 challenges[challenge_basic].bonus_max_level = 30;
 challenges[challenge_basic].alt_bonus = true;
 
@@ -3807,7 +3843,7 @@ function() {
   showMessage('Auto-prestige unlocked!', C_AUTOMATON, 2067714398);
 }, 0);
 challenges[challenge_truly_basic].bonus_exponent = Num(0.5);
-challenges[challenge_truly_basic].bonus_min_level = 9;
+challenges[challenge_truly_basic].bonus_min_level = 10;
 challenges[challenge_truly_basic].bonus_max_level = 25;
 challenges[challenge_truly_basic].alt_bonus = true;
 
@@ -3856,13 +3892,37 @@ function cropCanBeHitByLightning(f) {
   return c.type != CROPTYPE_BRASSICA; // brassica are immune, this is because otherwise lighting will always strike those first when a blueprint was just planted, and it should hit a real crop first
 }
 
+// 13
+var challenge_infernal = registerChallenge('infernal challenge', [20], Num(0.25),
+`A challenge where the season is infernal and everything is difficult.`,
+`
+• There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>
+• Everything produces less and scales more difficultly.<br>
+• Seasonal boosts don't work.<br>
+`,
+['Alternate challenge production bonus.'],
+'reaching tree level 85',
+function() {
+  return false; // in development, not yet enabled for now
+  // would have been neat to unlock this challenge at 66, but stormy already unlocks at 65 which is too close
+  return state.treelevel >= 85;
+}, function() {
+}, 0);
+challenges[challenge_infernal].bonus_exponent = Num(0.7);
+challenges[challenge_infernal].bonus_min_level = 20;
+challenges[challenge_infernal].alt_bonus = true;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
-var challenges_order = [challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_thistle, challenge_stormy, challenge_wasabi, challenge_basic, challenge_truly_basic];
+var challenges_order = [
+  challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_thistle, challenge_stormy, challenge_wasabi,
+  challenge_basic, challenge_infernal, challenge_truly_basic
+];
 
 
 if(challenges_order.length != registered_challenges.length) {
@@ -6191,7 +6251,7 @@ function getChallengeBonus(challenge_id, level, opt_cycle) {
 
   var level2 = level;
   if(c.bonus_max_level) level2 = Math.min(c.bonus_max_level, level2);
-  if(c.bonus_min_level) level2 = Math.max(0, level - c.bonus_min_level);
+  if(c.bonus_min_level) level2 = Math.max(0, level - c.bonus_min_level + 1);
 
   var score = Num(level2).powr(c.bonus_exponent);
   return bonus.mulr(score);

@@ -505,7 +505,7 @@ function getChallengeFormulaString(c, opt_bonus_string) {
   var bonus_string = opt_bonus_string || 'bonus';
 
   if(c.bonus_min_level) {
-    return bonus_string + ' * max(0, level - ' + c.bonus_min_level + ') ^ ' + c.bonus_exponent;
+    return bonus_string + ' * max(0, level - ' + (c.bonus_min_level + 1) + ') ^ ' + c.bonus_exponent;
   } else {
     return bonus_string + ' * level ^ ' + c.bonus_exponent;
   }

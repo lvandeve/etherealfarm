@@ -491,9 +491,15 @@ function openTimeInfoDialog() {
       }
       result += '• Resin bonus: ' + getWinterTreeResinBonus().subr(1).toPercentString() + ' more resin added when tree levels up during the winter<br>';
     }
+    if(s == 5) {
+      // infernal
+      result += '• Crops produce less, the higher tier and upgrade level the worse the effect<br>';
+    }
     result += '<br>';
-    result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
-    result += '<br>';
+    if(s <= 3) {
+      result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
+      result += '<br>';
+    }
 
     var have_sun = !!state.upgrades[upgrade_sununlock].count;
     var have_mist = !!state.upgrades[upgrade_mistunlock].count;
@@ -538,7 +544,7 @@ function updateResourceUI() {
   }
 
   var texts = [];
-  var seasonName = ['🌱 spring 🌱', '☀️ summer ☀️', '🍂 autumn 🍂', '❄️ winter ❄️'][getSeason()];
+  var seasonName = ['🌱 spring 🌱', '☀️ summer ☀️', '🍂 autumn 🍂', '❄️ winter ❄️', 'ethereal', '🔥 infernal 🔥'][getSeason()];
   var title = state.treelevel > 0 ? ('level ' + state.treelevel) : ('time');
   var nextlevelprogress = Math.min(1, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
   if(state.treelevel > 0) {

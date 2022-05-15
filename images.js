@@ -23,6 +23,7 @@ var fern_summer_header = 'hg:#0f4';
 var fern_autumn_header = 'q:#a30 g:#f70';
 var fern_winter_header = 'q:#8ae g:#acf G:#cef Q:#eef';
 var fern_ethereal_header = 'q:#ff8 g:#ffa G:#ffc Q:#ffe';
+var fern_infernal_header = 'q:#f88 g:#f44 G:#f22 Q:#f00';
 
 var fern_base_image = `
 ................
@@ -87,6 +88,7 @@ var images_fern = [
   generateImageCanvas(fern_autumn_header + fern_base_image),
   generateImageCanvas(fern_winter_header + fern_base_image),
   generateImageCanvas(fern_ethereal_header + fern_base_image),
+  generateImageCanvas(fern_infernal_header + fern_base_image),
 ];
 
 var images_fern2 = [
@@ -95,6 +97,7 @@ var images_fern2 = [
   generateImageCanvas(fern_autumn_header + fern_base_image2),
   generateImageCanvas(fern_winter_header + fern_base_image2),
   generateImageCanvas(fern_ethereal_header + fern_base_image2),
+  generateImageCanvas(fern_infernal_header + fern_base_image2),
 ];
 
 var present_header = '0:#000';
@@ -310,6 +313,7 @@ var fieldheader_summer = '+:#bda -:#ba5';
 var fieldheader_autumn = '+:#d3be9c -:#cea78b';
 var fieldheader_winter = '+:#fff -:#eef';
 var fieldheader_ethereal = '+:#9df -:#aaa';
+var fieldheader_infernal = '+:#b00 -:#f00';
 
 var field0 = `
 ++++++++++++++++
@@ -450,12 +454,21 @@ generateImageCanvas(fieldheader_ethereal + field3),
 generateImageCanvas(fieldheader_ethereal + field_empty),
 ];
 
+var field_infernal = [
+generateImageCanvas(fieldheader_infernal + field0),
+generateImageCanvas(fieldheader_infernal + field1),
+generateImageCanvas(fieldheader_infernal + field2),
+generateImageCanvas(fieldheader_infernal + field3),
+generateImageCanvas(fieldheader_infernal + field_empty),
+];
+
 var images_field = [
   field_spring,
   field_summer,
   field_autumn,
   field_winter,
   field_ethereal,
+  field_infernal,
 ];
 
 

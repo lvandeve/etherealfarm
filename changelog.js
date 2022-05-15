@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.2.2 (2022-05-15):';
+  text += '<br/>• Removed the red tutorial arrows, only the goals serve as the tutorial now.';
+  text += '<br/><br/>';
+
   text += '0.2.1 (2022-05-14):';
   text += '<br/>• Added setting to disable roman numerals (for upgrade and fruit levels). It will still display them up to 12 (XII), but after that it switches to decimal.';
   text += '<br/>• Renamed the "save on close" setting to "save on refresh tab": this setting only works for closing tabs, but not when closing the entire browser or shutting down computer.';

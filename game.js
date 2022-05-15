@@ -910,6 +910,8 @@ function getSeasonShifted() {
 }
 
 function getSeasonAtUnshifted(time) {
+  if(state.challenge == challenge_infernal) return 5;
+
   var t = getSeasonTime(time);
   if(isNaN(t) || t == Infinity || t == -Infinity) return 0;
   t /= (24 * 3600);
@@ -922,7 +924,15 @@ function getSeasonAt(time) {
   return getSeasonAtUnshifted(time + getSeasonShifted());
 }
 
-// result: 0=spring, 1=summer, 2=autumn, 3=winter
+/*
+result is numeric season value:
+0: spring
+1: summer
+2: autumn
+3: winter
+4: ethereal (not used, but this is the code for the ethereal versions of textures)
+5: infernal (for a challenge)
+*/
 function getSeason() {
   return getSeasonAt(state.time);
 }
@@ -4590,6 +4600,7 @@ var update = function(opt_ignorePause) {
   if(do_transcend) {
     var action = do_transcend;
     softReset(action.challenge);
+    console.log(state.treelevel);
     computeDerived(state);
     precomputeField();
   }
@@ -4604,7 +4615,7 @@ var update = function(opt_ignorePause) {
 
   updateUI2();
   if(update_fruit_ui) updateFruitUI();
-  showHelpArrows();
+  showGoalChips();
 
   for(var i = 0; i < update_listeners.length; i++) {
     if(!update_listeners[i]()) {
@@ -4612,7 +4623,6 @@ var update = function(opt_ignorePause) {
       i--;
     }
   }
-
 
   if(do_transcend && actions.length) {
     // when transcending with blueprint, do the next actions immediately to avoid having a momentary empty field visible

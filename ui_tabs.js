@@ -96,7 +96,7 @@ function setTab(i, opt_temp) {
   removeAllDropdownElements();
 
   updateTabButtons();
-  showHelpArrows();
+  showGoalChips(); // some goal chips or help arrows depend on tab
 }
 
 

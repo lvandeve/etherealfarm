@@ -27,21 +27,31 @@ function formatBreakdown(breakdown, percent, title) {
   result += '<br/>' + title + ':<br/>';
   for(var i = 0; i < breakdown.length; i++) {
     result += '• ' + breakdown[i][0];
+    var bonus = breakdown[i][2];
     if(breakdown[i][1]) {
       // multiplicative
-      var p = (breakdown[i][2].subr(1)).toPercentString();
-      if(p && p[0] != '-' && p[0] != '+') p = '+' + p;
-      if(breakdown[i][2] != undefined && i > 0) result += ': ' + p; // first is base production
+      if(bonus.gtr(0) && bonus.ltr(0.05)) {
+        // a very low multiplier malus, like * 0.00001, would show up simply as -100% which doesn't give any information.
+        // show as a division with obelus sign
+        // TODO: this symbol when rendered in small font looks a bit like a +, find some other clear notation
+        result += ': ÷ ' + bonus.inv().toString();
+        //result += ': ' + bonus.toString() + 'x';
+      } else {
+        var p = (bonus.subr(1)).toPercentString();
+        if(p && p[0] != '-' && p[0] != '+') p = '+' + p;
+        if(bonus != undefined && i > 0) result += ': ' + p; // first is base production
+      }
     } else {
       // additive
-      if(breakdown[i][2] != undefined && i > 0) result += ': ' + (breakdown[i][2]).toString();
+      if(bonus != undefined && i > 0) result += ': ' + (bonus).toString();
     }
-    if(breakdown[i][3] != undefined) {
+    var after = breakdown[i][3];
+    if(after != undefined) {
       result += (i == 0) ? ': ' : ' ⇒ ';
       if(percent) {
-        result += breakdown[i][3].toPercentString();
+        result += after.toPercentString();
       } else {
-        result += breakdown[i][3].toString();
+        result += after.toString();
       }
     }
     result += '<br/>';
@@ -384,6 +394,12 @@ function makeTreeDialog() {
         }
       } else {
         text += '<b>Challenge active</b>: ' + upper(c.name);
+        //text += state.challenge_bonus.toPercentString();
+        var bonus_before = state.challenge_bonus;
+        var bonus_after = totalChallengeBonusWith(state.challenge, state.treelevel);
+        if(bonus_before.neq(bonus_after)) {
+          text += '. So far, it will bring your total challenge production bonus from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
+        }
       }
       if(c.targetlevel.length > 1) {
         if(!c.fullyCompleted()) {

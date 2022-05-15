@@ -933,8 +933,10 @@ function getEmptyFieldCellForArrow() {
   return null;
 }
 
-// also updates them, also shows goal chip under the log
-function showHelpArrows() {
+var enableHelpArrows = false; // enables red help arrows. However, they may be a bit too intrusive and the goal chips may be enough
+
+// shows goal chip under the log
+function showGoalChips() {
   if(!fieldDivs) return; // field not rendered yet, some divs for arrows don't yet exist
   if(!actually_updated) return;
 
@@ -957,46 +959,9 @@ function showHelpArrows() {
   } else if(goal == GOAL_WC5) {
     setGoalText('Plant 5 watercresss on the field (' + state.c_numplantedbrassica + ' / 5 planted).');
     var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_watercress') : null;
-    if(watercress_chip) {
-      makeArrow2(watercress_chip, 1.5, 1, watercress_chip, 0.8, 0.5);
-    } else {
-      var coords = getEmptyFieldCellForArrow();
-      if(coords) {
-        var x = coords[0];
-        var y = coords[1];
-        makeArrow2(fieldDivs[y][x].div, 1.5, 1.5, fieldDivs[y][x].div, 0.8, 0.8, fieldFlex.div);
-      }
-    }
-  } else if(goal == GOAL_WC_UPGRADE) {
-    setGoalText('Upgrade watercress, after getting enough seeds from watercress production.');
-    if(state.currentTab == 1 && upgradeFlexCache[0]) {
-      var chip = document.getElementById('help_arrow_upgrade_watercress');
-      if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
-    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
-      var chip = document.getElementById('help_arrow_upgrade_watercress_side');
-      if(chip) makeArrow2(contentFlex.div, 0.9, 0.2, chip, 0.15, 0.5);
-    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(100))) {
-      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
-    }
-  } else if(goal == GOAL_WC10) {
-    setGoalText('Plant up to 10 watercress on the field to reveal a next upgrade (' + state.c_numplantedbrassica + ' / 10 planted).');
-  } else if(goal == GOAL_BLACKBERRY_UNLOCK) {
-    setGoalText('Buy the "Unlock blackberry" upgrade. To get seeds to afford it, plant more watercress first.');
-    if(state.currentTab == 1 && upgradeFlexCache[0]) {
-      var chip = document.getElementById('help_arrow_unlock_blackberry');
-      if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
-    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
-      var chip = document.getElementById('help_arrow_unlock_blackberry_side');
-      if(chip) makeArrow2(contentFlex.div, 0.9, 0.25, chip, 0.15, 0.5);
-    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(1000))) {
-      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
-    }
-  } else if(goal == GOAL_BLACKBERRY_PLANT) {
-    setGoalText('Plant a blackberry and wait for it to grow. To get seeds to afford it, plant more watercress first.');
-    if(!state.numcropfields_permanent && state.res.seeds.ger(1000)) {
-      var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
-      if(chip) {
-        makeArrow2(chip, 1.5, 1, chip, 0.8, 0.5);
+    if(enableHelpArrows) {
+      if(watercress_chip) {
+        makeArrow2(watercress_chip, 1.5, 1, watercress_chip, 0.8, 0.5);
       } else {
         var coords = getEmptyFieldCellForArrow();
         if(coords) {
@@ -1006,41 +971,92 @@ function showHelpArrows() {
         }
       }
     }
+  } else if(goal == GOAL_WC_UPGRADE) {
+    setGoalText('Upgrade watercress, after getting enough seeds from watercress production.');
+    if(enableHelpArrows) {
+      if(state.currentTab == 1 && upgradeFlexCache[0]) {
+        var chip = document.getElementById('help_arrow_upgrade_watercress');
+        if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
+      } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+        var chip = document.getElementById('help_arrow_upgrade_watercress_side');
+        if(chip) makeArrow2(contentFlex.div, 0.9, 0.2, chip, 0.15, 0.5);
+      } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(100))) {
+        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+      }
+    }
+  } else if(goal == GOAL_WC10) {
+    setGoalText('Plant up to 10 watercress on the field to reveal a next upgrade (' + state.c_numplantedbrassica + ' / 10 planted).');
+  } else if(goal == GOAL_BLACKBERRY_UNLOCK) {
+    setGoalText('Buy the "Unlock blackberry" upgrade. To get seeds to afford it, plant more watercress first.');
+    if(enableHelpArrows) {
+      if(state.currentTab == 1 && upgradeFlexCache[0]) {
+        var chip = document.getElementById('help_arrow_unlock_blackberry');
+        if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
+      } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+        var chip = document.getElementById('help_arrow_unlock_blackberry_side');
+        if(chip) makeArrow2(contentFlex.div, 0.9, 0.25, chip, 0.15, 0.5);
+      } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(1000))) {
+        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+      }
+    }
+  } else if(goal == GOAL_BLACKBERRY_PLANT) {
+    setGoalText('Plant a blackberry and wait for it to grow. To get seeds to afford it, plant more watercress first.');
+    if(enableHelpArrows) {
+      if(!state.numcropfields_permanent && state.res.seeds.ger(1000)) {
+        var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
+        if(chip) {
+          makeArrow2(chip, 1.5, 1, chip, 0.8, 0.5);
+        } else {
+          var coords = getEmptyFieldCellForArrow();
+          if(coords) {
+            var x = coords[0];
+            var y = coords[1];
+            makeArrow2(fieldDivs[y][x].div, 1.5, 1.5, fieldDivs[y][x].div, 0.8, 0.8, fieldFlex.div);
+          }
+        }
+      }
+    }
   } else if(goal == GOAL_FLOWER_UNLOCK) {
     setGoalText('Unlock anemone. To get more seed production to afford it, plant more blackberries and watercress first.');
-    if(state.currentTab == 1 && upgradeFlexCache[0]) {
-      var chip = document.getElementById('help_arrow_unlock_anemone');
-      if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);
-    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(6330))) {
-      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+    if(enableHelpArrows) {
+      if(state.currentTab == 1 && upgradeFlexCache[0]) {
+        var chip = document.getElementById('help_arrow_unlock_anemone');
+        if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);
+      } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(6330))) {
+        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+      }
     }
   } else if(goal == GOAL_FLOWER_PLANT) {
     setGoalText('Plant an anemone flower. Plant it orthogonally next to a berry to boost the berry (a flower on its own doesn\'t produce anything). Keep planting more berries and flowers for more income.');
   } else if(goal == GOAL_BLUEBERRY_UNLOCK) {
     setGoalText('Unlock blueberry. To afford this, if needed plant more blackberries boosted by flowers and watercress copying, or use upgrades.');
-    if(state.currentTab == 1 && upgradeFlexCache[0]) {
-      var chip = document.getElementById('help_arrow_unlock_blueberry');
-      if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
-    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
-      //var chip = document.getElementById('help_arrow_unlock_blackberry_side');
-      //if(chip) makeArrow2(contentFlex.div, 0.9, 0.25, chip, 0.15, 0.5);
-    } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(1000))) {
-      makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+    if(enableHelpArrows) {
+      if(state.currentTab == 1 && upgradeFlexCache[0]) {
+        var chip = document.getElementById('help_arrow_unlock_blueberry');
+        if(chip) makeArrow2(contentFlex.div, 0.6, 0.2, chip, 0.85, 0.5);
+      } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+        //var chip = document.getElementById('help_arrow_unlock_blackberry_side');
+        //if(chip) makeArrow2(contentFlex.div, 0.9, 0.25, chip, 0.15, 0.5);
+      } else if(!showingSidePanel && (state.upgrades_new || state.res.seeds.ger(1000))) {
+        makeArrow2(contentFlex.div, 0.6, 0.2, tabbuttons[1], 0.5, 1.0);
+      }
     }
   } else if(goal == GOAL_BLUEBERRY_PLANT) {
     setGoalText('Plant a blueberry, or replace a blackberry by one, and wait for it to grow.');
-    if(!state.cropcount[berry_1] && state.res.seeds.ger(40000) && state.upgrades[berryunlock_1].count && !state.upgrades[berryunlock_2].unlocked) {
-      var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blueberry') : null;
-      if(chip) {
-        makeArrow2(chip, 1.5, 1, chip, 0.8, 0.5);
-      } else {
-        // disabled: don't show arrow on field, that can be misleading, it could be pointing to a very bad spot compared to where the flowers are planted, or it may be better to upgrade a blackberry into a blueberry
-        /*var coords = getEmptyFieldCellForArrow();
-        if(coords) {
-          var x = coords[0];
-          var y = coords[1];
-          makeArrow2(fieldDivs[y][x].div, 1.5, 1.5, fieldDivs[y][x].div, 0.8, 0.8, fieldFlex.div);
-        }*/
+    if(enableHelpArrows) {
+      if(!state.cropcount[berry_1] && state.res.seeds.ger(40000) && state.upgrades[berryunlock_1].count && !state.upgrades[berryunlock_2].unlocked) {
+        var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blueberry') : null;
+        if(chip) {
+          makeArrow2(chip, 1.5, 1, chip, 0.8, 0.5);
+        } else {
+          // disabled: don't show arrow on field, that can be misleading, it could be pointing to a very bad spot compared to where the flowers are planted, or it may be better to upgrade a blackberry into a blueberry
+          /*var coords = getEmptyFieldCellForArrow();
+          if(coords) {
+            var x = coords[0];
+            var y = coords[1];
+            makeArrow2(fieldDivs[y][x].div, 1.5, 1.5, fieldDivs[y][x].div, 0.8, 0.8, fieldFlex.div);
+          }*/
+        }
       }
     }
   } else if(goal == GOAL_CHAMPIGNON_UNLOCK) {
@@ -1051,27 +1067,33 @@ function showHelpArrows() {
     setGoalText('Wait for the tree to level up through enough spores. Improve berries next to champignons to speed up spore production. Also keep berries without champignon for global seed production.');
   } else if(goal == GOAL_SUN) {
     setGoalText('Reach tree level 2 and activate the sun ability. It\'s also possible to unlock other crops like cranberry while waiting.');
-    if(state.treelevel >= 2) {
-      var chip = document.getElementById('sun_button');
-      if(chip) makeArrow2(chip, 2.5, 1.5, chip, 1, 0.6);
+    if(enableHelpArrows) {
+      if(state.treelevel >= 2) {
+        var chip = document.getElementById('sun_button');
+        if(chip) makeArrow2(chip, 2.5, 1.5, chip, 1, 0.6);
+      }
     }
   } else if(goal == GOAL_TREELEVEL_5) {
     setGoalText('Reach tree level 5 to get a fruit drop. Keep upgrading, unlocking new crop tiers (clover, currant, ...) and replacing existing crops with them for more income. Find an effective field layout. Put a flower next to mushrooms for more spores.');
   } else if(goal == GOAL_FRUIT_TAB) {
     setGoalText('Check the fruit tab to see the newly dropped fruit and inspect its abilities.');
-    if(state.currentTab != tabindex_fruit) {
-      makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_fruit], 0.5, 1.0);
+    if(enableHelpArrows) {
+      if(state.currentTab != tabindex_fruit) {
+        makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_fruit], 0.5, 1.0);
+      }
     }
   } else if(goal == GOAL_NETTLE_UNLOCK) {
     setGoalText('Unlock nettle. To reach this, unlock and grow other crops first, up to matsutake mushroom (requires fullgrown currant). Keep upgrading and improving for more income.');
-    if(state.currentTab == 1 && upgradeFlexCache[0]) {
-      var chip = document.getElementById('help_arrow_unlock_nettle');
-      if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);
-    } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
-      var chip = document.getElementById('help_arrow_unlock_nettle_side');
-      if(chip) makeArrow2(contentFlex.div, 0.9, 0.2, chip, 0.15, 0.5);
-    } else if(!showingSidePanel && state.res.seeds.ger(238e12) && state.upgrades[mushunlock_1].count) {
-      makeArrow2(contentFlex.div, 0.5, 0.3, tabbuttons[1], 0.5, 0.9);
+    if(enableHelpArrows) {
+      if(state.currentTab == 1 && upgradeFlexCache[0]) {
+        var chip = document.getElementById('help_arrow_unlock_nettle');
+        if(chip) makeArrow2(chip, 1.2, 1.2, chip, 0.85, 0.5, contentFlex.div);
+      } else if(showingSidePanel && bottomrightSidePanelFlexCache[1]) {
+        var chip = document.getElementById('help_arrow_unlock_nettle_side');
+        if(chip) makeArrow2(contentFlex.div, 0.9, 0.2, chip, 0.15, 0.5);
+      } else if(!showingSidePanel && state.res.seeds.ger(238e12) && state.upgrades[mushunlock_1].count) {
+        makeArrow2(contentFlex.div, 0.5, 0.3, tabbuttons[1], 0.5, 0.9);
+      }
     }
   } else if(goal == GOAL_NETTLE_PLANT) {
     setGoalText('Plant a nettle. Plant it next to a mushroom to boost its spore production by 500% (but keep at least 1 berry and flower). Beware that nettle negatively affects other flowers and berries it orthogonally touches.');
@@ -1081,8 +1103,10 @@ function showHelpArrows() {
     setGoalText('Click the tree and then transcend. Check fruit tab first in case you want to keep a fruit. You can also get a few more tree levels to collect more resin first - but transcending will be worth it!');
   } else if(goal == GOAL_ETHEREAL_CROP) {
     setGoalText('Plant an ethereal crop of your choice in the new ethereal field.');
-    if(state.currentTab != tabindex_field2 && dialog_level == 0) {
-      makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_field2], 0.6, 0.95);
+    if(enableHelpArrows) {
+      if(state.currentTab != tabindex_field2 && dialog_level == 0) {
+        makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_field2], 0.6, 0.95);
+      }
     }
   } else if(goal == GOAL_COLLECT_RESIN) {
     //setGoalText('Grow the basic field again and reach tree level 10 or higher to transcend again for more resin. Get more ethereal crops and upgrades, and achievements, to reach higher levels faster and earn more resin with each transcension.');
