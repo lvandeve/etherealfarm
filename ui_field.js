@@ -275,7 +275,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += '<br/>';
   }
   if(c.index == challengecrop_2) {
-    result += 'Boost to neighbor queen bees: ' + c.getBoostBoost(f).toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
+    result += 'Boost to neighbor drones: ' + c.getBoostBoost(f).toPercentString() + ' (base: ' + c.boost.toPercentString() + ')' + '<br/>';
     result += '<br/>';
   }
   if(c.boost.neqr(0) && (c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING)) {
@@ -687,7 +687,11 @@ function makeUpgradeCropAction(x, y, opt_silent) {
       } else if(!(x >= 0 && x < state.numw && y >= 0 && y < state.numh) || state.field[y][x].index < CROPINDEX) {
         showMessage('No crop to tier up here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
       } else if(state.field[y][x].index != 0) {
-        showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
+        if(state.field[y][x].hasCrop() && state.field[y][x].getCrop().istemplate && !state.upgrades[berryunlock_0].count) {
+          showMessage('Crop not replaced, no higher tier unlocked or available. Must plant watercress first to unlock blackberry.', C_INVALID);
+        } else {
+          showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
+        }
       }
     }
   }
@@ -1023,12 +1027,12 @@ var digits = [
 ];
 
 // progresspixel = pixel to use different color for progress bar effect, must be an integer in range 0..5
-function renderDigit(ctx, digit, x0, y0, progresspixel) {
-  ctx.fillStyle = '#840';
+function renderDigit(ctx, digit, x0, y0, progresspixel, opt_color_off, opt_color_on) {
+  ctx.fillStyle = opt_color_off || '#840';
   var ax = digit * 3;
   var aw = 30;
   for(var y = 0; y < 5; y++) {
-    if(y >= (5 - progresspixel)) ctx.fillStyle = '#f80';
+    if(y >= (5 - progresspixel)) ctx.fillStyle = opt_color_on || '#f80';
     var as = y * aw + ax;
     for(var x = 0; x < 3; x++) {
       if(digits[as + x]) ctx.fillRect(x0 + x, y0 + y, 1, 1);
@@ -1036,22 +1040,22 @@ function renderDigit(ctx, digit, x0, y0, progresspixel) {
   }
 };
 
-function renderLevel(canvas, level, x, y, progresspixel) {
+function renderLevel(canvas, level, x, y, progresspixel, opt_color_off, opt_color_on) {
   var ctx = canvas.getContext('2d');
   if(level < 10) {
-    renderDigit(ctx, level, x + 6, y, progresspixel);
+    renderDigit(ctx, level, x + 6, y, progresspixel, opt_color_off, opt_color_on);
   } else if(level < 100) {
-    renderDigit(ctx, Math.floor(level / 10), x + 4, y, progresspixel);
-    renderDigit(ctx, level % 10, x + 8, y, progresspixel);
+    renderDigit(ctx, Math.floor(level / 10), x + 4, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(ctx, level % 10, x + 8, y, progresspixel, opt_color_off, opt_color_on);
   } else if(level < 1000) {
-    renderDigit(ctx, Math.floor(level / 100), x + 2, y, progresspixel);
-    renderDigit(ctx, Math.floor(level / 10) % 10, x + 6, y, progresspixel);
-    renderDigit(ctx, level % 10, x + 10, y, progresspixel);
+    renderDigit(ctx, Math.floor(level / 100), x + 2, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(ctx, Math.floor(level / 10) % 10, x + 6, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(ctx, level % 10, x + 10, y, progresspixel, opt_color_off, opt_color_on);
   } else if(level < 10000) {
-    renderDigit(ctx, Math.floor(level / 1000), x + 0, y, progresspixel);
-    renderDigit(ctx, Math.floor(level / 100) % 10, x + 4, y, progresspixel);
-    renderDigit(ctx, Math.floor(level / 10) % 10, x + 8, y, progresspixel);
-    renderDigit(ctx, level % 10, x + 12, y, progresspixel);
+    renderDigit(ctx, Math.floor(level / 1000), x + 0, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(ctx, Math.floor(level / 100) % 10, x + 4, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(ctx, Math.floor(level / 10) % 10, x + 8, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(ctx, level % 10, x + 12, y, progresspixel, opt_color_off, opt_color_on);
   }
 }
 
@@ -1130,7 +1134,13 @@ function updateFieldCellUI(x, y) {
     } else if(f.index == FIELD_TREE_BOTTOM) {
       renderImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;
-      if(state.treelevel > 0 || state.res.spores.gtr(0)) renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
+      if(state.treelevel > 0 || state.res.spores.gtr(0)) {
+        if(state.challenge == challenge_infernal) {
+          renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel, '#a74', '#fa0');
+        } else {
+          renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
+        }
+      }
     } else if(f.index == FIELD_REMAINDER) {
       var highest_brassica = getHighestBrassica();
       if(highest_brassica < 0) highest_brassica = 0;

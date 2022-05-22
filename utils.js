@@ -223,7 +223,7 @@ var Utils = (function() {
 
   var clearLocalStorage = function(name) {
     if(!localStorageSupported()) return;
-    setLocalStorage(undefined, name);
+    window.localStorage.removeItem(name);
   };
   result.clearLocalStorage = clearLocalStorage;
 
@@ -398,6 +398,7 @@ var Utils = (function() {
     if(opt_short == 1) {
       // For durations longer than 'days', everything involving abbreviations such as 'M' for month, Ga for giga-annum, ... is pretty
       // unclear (e.g. M can be confused with million), so return those instead as formatted number with the full word 'years' or 'days'
+      // NOTE: this can return fractional values, like "1.23 years"
       if(s >= 31557600000) { // 31557600000 = seconds in 1000 365.25-day years
         var formatted = Num(s / 31557600000).toString();
         return formatted + ((formatted == '1') ? ' millenium' : ' millenia');
@@ -409,6 +410,42 @@ var Utils = (function() {
       if(s >= 27 * 86400) { // 86400 = seconds in a day
         var formatted = Num(s / 86400).toString();
         return formatted + ((formatted == '1') ? ' day' : ' days');
+      }
+    }
+
+    if(opt_maxSections == 1 && !opt_inv) {
+      // avoid returning "1 month" for e.g. 35 days, when e.g. 29 days gets full precision with "29 days". Show with a bit more precision.
+      /*if(s >= 4 * 31557600000) { // 31557600000 = seconds in 1000 365.25-day years
+        var formatted = Math.floor(s / 31557600000).toString();
+        return formatted + ((formatted == '1') ? ' millenium' : ' millenia');
+      }
+      if(s >= 4 * 31557600) { // 31557600 = seconds in a 365.25 day year
+        var formatted = Math.floor(s / 31557600).toString();
+        return formatted + ((formatted == '1') ? ' year' : ' years');
+      }
+      if(s >= 4 * 2635200) { // 2635200 = seconds in a 30.5 day month
+        var formatted = Math.floor(s / 2635200).toString();
+        return formatted + ((formatted == '1') ? ' month' : ' months');
+      }
+      if(s >= 4.5 * 604800) { // 604800 = seconds in a week
+        var formatted = Math.floor(s / 604800).toString();
+        return formatted + ((formatted == '1') ? ' week' : ' weeks');
+      }
+      if(s >= 27 * 86400) { // 86400 = seconds in a day
+        var formatted = Math.floor(s / 86400).toString();
+        return formatted + ((formatted == '1') ? ' day' : ' days');
+      }*/
+      if(s >= 31557600000) { // 31557600000 = seconds in 1000 365.25-day years
+        var formatted = Num(s / 31557600000).toString();
+        return formatted + ((formatted == '1') ? ' millenium' : ' millenia');
+      }
+      if(s >= 31557600) { // 31557600 = seconds in a 365.25 day year
+        var formatted = Num(s / 31557600).toString();
+        return formatted + ((formatted == '1') ? ' year' : ' years');
+      }
+      if(s >= 2635200) { // 2635200 = seconds in a 30.5 day month
+        var formatted = Num(s / 2635200).toString();
+        return formatted + ((formatted == '1') ? ' month' : ' months');
       }
     }
 

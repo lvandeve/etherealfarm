@@ -341,10 +341,10 @@ function createChallengeDialog(opt_from_challenge) {
   flex.div.innerHTML = text;
 
 
-  var buttonFlex = new Flex(contentFlex, 0, 0.33, 1, 1);
+  var buttonFlex = new Flex(contentFlex, 0, 0.3, 1, 1);
 
   var pos = 0;
-  var h = 0.078;
+  var h = 0.075;
 
   for(var i = 0; i < challenges_order.length; i++) {
     var c = challenges[challenges_order[i]];
@@ -505,7 +505,7 @@ function getChallengeFormulaString(c, opt_bonus_string) {
   var bonus_string = opt_bonus_string || 'bonus';
 
   if(c.bonus_min_level) {
-    return bonus_string + ' * max(0, level - ' + (c.bonus_min_level + 1) + ') ^ ' + c.bonus_exponent;
+    return bonus_string + ' * max(0, level - ' + (c.bonus_min_level - 1) + ') ^ ' + c.bonus_exponent;
   } else {
     return bonus_string + ' * level ^ ' + c.bonus_exponent;
   }

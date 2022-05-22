@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.3.0 (2022-05-22):';
+  text += '<br/>• Added the infernal challenge.';
+  text += '<br/>• Added sapphire fruits. In these, relative importance of some abilities is changed: nettle and mushroom more important, weather less important';
+  text += '<br/>• Seed overload slightly buffed for both amethist and sapphire fruits.';
+  text += '<br/>• Added a first truly basic speed achievement (level 10 in 2.5 hours).';
+  text += '<br/>• When getting automaton, the watercress upgrade is now visible from the start (as a reminder, when not yet having blackberry secret).';
+  text += '<br/>• Tuned automaton plant order heuristics for mushrooms with brassica, and brassica fruit.';
+  text += '<br/>• Typo fixes.';
+  text += '<br/><br/>';
+
   text += '0.2.2 (2022-05-15):';
   text += '<br/>• Removed the red tutorial arrows, only the goals serve as the tutorial now.';
   text += '<br/><br/>';

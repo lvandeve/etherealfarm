@@ -337,6 +337,8 @@ function showAutomatonFeatureSourceDialog() {
   text += '<br/>';
   text += ' • Neighbor bonus in ethereal field: initial';
   text += '<br/>';
+  text += ' • Watercress upgrade visible from the start: initial'; // even without blackberry secret, it serves more as a reminder to plant watercress before blackberry unlocks
+  text += '<br/>';
   if(state.automaton_unlocked[1]) {
     text += ' • Auto-upgrades: no-upgrades challenge (ethereal tree level 2)';
     text += '<br/>';

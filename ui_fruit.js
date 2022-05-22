@@ -734,7 +734,7 @@ function createFruitDialog(f, opt_selected) {
       updateFruitUI();
     },
     help:createFruitHelp,
-    title:'Fruit',
+    title:'Configure fruit',
     bgstyle:'efDialogTranslucent'
   });
 

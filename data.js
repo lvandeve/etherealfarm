@@ -2584,6 +2584,7 @@ var nettlemul_1 = registerBoostMultiplier(nettle_1, getNettleCost(1).mulr(10), f
 upgrade_register_id = 580;
 var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0.2, 5, undefined, function(){
   if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count) return true; // blackberry secret makes the watercress upgrade visible from the start rather than after 5 brassica
+  if(basicChallenge() != 2 && automatonUnlocked()) return true; // when having templates and automaton, unlock this upgrade from the beginning because with a field full of templates it starts getting unclear why no upgrades are available and that you must plant watercress (if watercress secret not yet available)
   return (state.c_numplanted >= 1 || state.c_numplantedbrassica >= 5) && (state.c_numplantedbrassica >= 1);
 });
 
@@ -3240,7 +3241,7 @@ changeMedalDisplayOrder(medal_rock2, medal_rock1);
 
 var medal_rock3 = registerMedal('rock star', 'completed the rocks challenge stage 4', images_rock[0], function() {
   return state.challenges[challenge_rocks].completed >= 4;
-}, Num(0.75));
+}, Num(2));
 changeMedalDisplayOrder(medal_rock3, medal_rock2);
 
 medal_register_id = 2120;
@@ -3343,6 +3344,14 @@ var medal_challenge_infernal = registerMedal('infernal', 'completed the infernal
   return state.challenges[challenge_infernal].completed;
 }, Num(1.5));
 
+registerMedal('infernal bees', 'have bees during the infernal challenge', images_beenest[4], function() {
+  return state.challenge == challenge_infernal && state.fullgrowncropcount[bee_0] > 0;
+}, Num(2));
+
+registerMedal('infernal prestige', 'prestige a crop during infernal challenge', field_infernal[3], function() {
+  return state.challenge == challenge_infernal && state.crops[berry_0].prestige >= 1;
+}, Num(3));
+
 medal_register_id = 2500;
 
 function registerPrestigeMedal(cropid) {
@@ -3412,6 +3421,10 @@ registerMedal('who you gonna call?', 'have the whole field full of ghost crops',
 registerMedal('undeletable ghost', 'get a ghost-crop during the undeletable challenge', image_berryghost, function() {
   return state.ghostcount > 0 && state.challenge == challenge_nodelete;
 }, Num(1));
+
+registerMedal('truly basic speed', 'reach level 10 in the truly basic challenge in 2.5 hours or less', image_hourglass, function() {
+  return state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= 9000;
+}, Num(2));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3786,7 +3799,7 @@ var challenge_wasabi = registerChallenge('wasabi challenge', [65], Num(0.2),
 • The brassica copying fruit ability does not work during this challenge.<br>
 • As usual, having multiple brassica reduces the global brassica copying effect, max 2 or so works well.<br>
 `,
-['Unlocks the wasabi crop, which is the next tier of brassica after watercress. Once unlocked, it\'s available in the base game once you have grown a juniper (berry tier 8), and can be used in re-runs of this challenge as well.'],
+['Unlocks the wasabi crop, which is the next tier of brassica after watercress. Once unlocked, it\'s available in the base game once you have grown a juniper (berry tier 9), and can be used in re-runs of this challenge as well.'],
 'reaching ethereal tree level 7',
 
 function() {
@@ -3893,22 +3906,22 @@ function cropCanBeHitByLightning(f) {
 }
 
 // 13
-var challenge_infernal = registerChallenge('infernal challenge', [20], Num(0.25),
+var challenge_infernal = registerChallenge('infernal challenge', [20], Num(0.2),
 `A challenge where the season is infernal and everything is difficult.`,
 `
 • There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>
-• Everything produces less and scales more difficultly.<br>
+• Production or boost of most crops divided through 1 billion.<br>
+• In addition, the stats of berries and mushrooms are reduced even more for higher tiers.<br>
 • Seasonal boosts don't work.<br>
 `,
 ['Alternate challenge production bonus.'],
 'reaching tree level 85',
 function() {
-  return false; // in development, not yet enabled for now
   // would have been neat to unlock this challenge at 66, but stormy already unlocks at 65 which is too close
   return state.treelevel >= 85;
 }, function() {
 }, 0);
-challenges[challenge_infernal].bonus_exponent = Num(0.7);
+challenges[challenge_infernal].bonus_exponent = Num(0.6);
 challenges[challenge_infernal].bonus_min_level = 20;
 challenges[challenge_infernal].alt_bonus = true;
 
@@ -4887,12 +4900,16 @@ function getFruitBoost(ability, level, tier, opt_basic) {
   var base = Math.pow(getFruitTierCost(tier), 0.75) * 0.05;
 
   if(ability == FRUIT_BERRYBOOST) {
-    return Num(base * level);
+    return Num(base * 1.0 * level);
   }
   if(ability == FRUIT_MUSHBOOST) {
-    // FRUIT_MUSHBOOST is in theory mostly only useful in combination with FRUIT_BERRYBOOST (due to needing more seeds too), and since the combination of both then takes up 2 slots (while flower takes up only 1 slot), this one can get a bit higher multiplier to compensate
-    // note that this doesn't help that much, given that for high level fruits, multipliers per slot are in the thousands
-    return Num(base * 1.5 * level);
+    if(tier >= 8) {
+      return Num(base * 2 * level);
+    } else {
+      // FRUIT_MUSHBOOST is in theory mostly only useful in combination with FRUIT_BERRYBOOST (due to needing more seeds too), and since the combination of both then takes up 2 slots (while flower takes up only 1 slot), this one can get a bit higher multiplier to compensate
+      // note that this doesn't help that much, given that for high level fruits, multipliers per slot are in the thousands
+      return Num(base * 1.5 * level);
+    }
   }
   if(ability == FRUIT_MUSHEFF) {
     // this is a worse version of FRUIT_NETTLE, but not all fruits should have an awesome ability plus for later fruits with many slots this one still combines well together with FRUIT_NETTLE.
@@ -4901,7 +4918,7 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     return Num(max * amount);
   }
   if(ability == FRUIT_FLOWERBOOST) {
-    return Num(base * level);
+    return Num(base * 1.0 * level);
   }
   if(ability == FRUIT_BRASSICA) {
     /*var amount = towards1(level, 10);
@@ -4916,13 +4933,23 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     return Num(max * amount);
   }
   if(ability == FRUIT_WEATHER) {
-    return Num(base * 1.5 * level);
+    if(tier >= 8) {
+      // test making weather less important for fruits starting from sapphire
+      return Num(base * 1.0 * level);
+    } else {
+      return Num(base * 1.5 * level);
+    }
   }
   if(ability == FRUIT_NETTLEBOOST) {
-    // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
-    // but on the other hand, make it higher than the multiplier for bee boost, otherwise bee is strictly better than this one
-    // note that flower boost is strictly better than all of those but having 1 much stronger ability is ok
-    return Num(base * level);
+    if(tier >= 8) {
+      // test making nettle more important for fruits starting from sapphire
+      return Num(base * 1.5 * level);
+    } else {
+      // this is a better version of FRUIT_MUSHBOOST, so make its multiplier less strong than that one
+      // but on the other hand, make it higher than the multiplier for bee boost, otherwise bee is strictly better than this one
+      // note that flower boost is strictly better than all of those but having 1 much stronger ability is ok
+      return Num(base * 1.0 * level);
+    }
   }
   if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
     return Num(0.25); // not upgradeable
@@ -4969,28 +4996,32 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     return Num(base * level * 0.5);
   }
   if(ability == FRUIT_MIX) {
-    /*
-    mixes bee, nettle and brassica in an additive way with their corresponding fruits
-    nettle, brassica and bee's multipliers for the deticated abilities are weighted by respectively 0.75, 1.25 and 0.5
-    so it's used for different effects, but it should be ensured that it's still about as powerful as 1 effect for balance
-    each effect is an independent multiplier making the production higher, so in theory achieving a perfect equality is done by taking the cube root of the multiplier for each of the effect
-    however, bee/brassica/nettle all improve mushroom, but only bee/brassica improve seeds. For seeds using sqrt of the effects should be enough.
-    to strike a balance, do the following at the place where the multipliers from this fruit ability are computed:
-    apply for each effect the multiplier, then add 1 as is always done to make these boosts into multipliers, then apply the given power, with the numbers such as mix_mul_nettle and mix_pow_nettle defined further below
-    the multipliers are made to roughly match (but not 100%) those of the corresponding single abilities, and the powers are roughly like cube root, but adjusted to give less focus to nettle and a bit more to those abilities that can also benefit seeds
+    if(tier >= 8) {
+      return Num(base * level * 1.25);
+    } else {
+      /*
+      mixes bee, nettle and brassica in an additive way with their corresponding fruits
+      nettle, brassica and bee's multipliers for the deticated abilities are weighted by respectively 0.75, 1.25 and 0.5
+      so it's used for different effects, but it should be ensured that it's still about as powerful as 1 effect for balance
+      each effect is an independent multiplier making the production higher, so in theory achieving a perfect equality is done by taking the cube root of the multiplier for each of the effect
+      however, bee/brassica/nettle all improve mushroom, but only bee/brassica improve seeds. For seeds using sqrt of the effects should be enough.
+      to strike a balance, do the following at the place where the multipliers from this fruit ability are computed:
+      apply for each effect the multiplier, then add 1 as is always done to make these boosts into multipliers, then apply the given power, with the numbers such as mix_mul_nettle and mix_pow_nettle defined further below
+      the multipliers are made to roughly match (but not 100%) those of the corresponding single abilities, and the powers are roughly like cube root, but adjusted to give less focus to nettle and a bit more to those abilities that can also benefit seeds
 
-    by design, combining this ability with another ability that is nettle, brassica or bee, severely harms this one: the fact that it's then additive (and so on the order of only 2x or so boost then), and the fact that fruit abilities are supposed to give boosts of thousands of percents at this point, makes this ability then much less useful.
+      by design, combining this ability with another ability that is nettle, brassica or bee, severely harms this one: the fact that it's then additive (and so on the order of only 2x or so boost then), and the fact that fruit abilities are supposed to give boosts of thousands of percents at this point, makes this ability then much less useful.
 
-    A base multiplier of slightly higher than 1 is applied here, because even if perfectly balanced, without increasing its power a little bit its stats often fall short of a pure bee or brassica fruit
-    */
-    return Num(base * level * 1.2);
+      A base multiplier of slightly higher than 1 is applied here, because even if perfectly balanced, without increasing its power a little bit its stats often fall short of a pure bee or brassica fruit
+      */
+      return Num(base * level * 1.2);
+    }
   }
   if(ability == FRUIT_TREELEVEL) {
     // same multiplier as for bee, but another multiplier in treeLevelFruitBoost will make it worse or better than bee depending on tree level
     return Num(base * level * 0.5);
   }
   if(ability == FRUIT_SEED_OVERLOAD) {
-    return Num(base * level);
+    return Num(base * 1.1 * level);
   }
 
   return Num(0.1);
@@ -5063,7 +5094,7 @@ function getFruitTierCost(tier) {
     case 6: return 500;
     case 7: return 1500;
     // TODO: these numbers must be tuned once those fruits are introduced
-    case 8: return 7500;
+    case 8: return 4000;
     case 9: return 10000;
     case 10: return 20000;
   }
@@ -5241,7 +5272,7 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return (roll > prob20) ? 6 : 5;
   }
 
-  // level 115: sapphire introduced
+  // level 115: amethist introduced
   if(treelevel >= 115 && treelevel <= 119) {
     return (roll > prob75) ? 7 : 6;
   }
@@ -5261,7 +5292,7 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return (roll > prob20) ? 7 : 6;
   }
 
-  /*// level 135: emerald introduced
+  // level 135: sapphire introduced
   if(treelevel >= 135 && treelevel <= 139) {
     return (roll > prob75) ? 8 : 7;
   }
@@ -5279,7 +5310,7 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
   // level 150
   if(treelevel >= 150 && treelevel <= 154) {
     return (roll > prob20) ? 8 : 7;
-  }*/
+  }
 
   // Higher tree levels are not yet implemented for the fruits
   return 7;
@@ -5724,7 +5755,13 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, fruit_drop_l
 // outputs the minimum spores required for the tree to go to the given level
 function treeLevelReqBase(level) {
   var res = new Res();
-  res.spores = Num.rpow(9, Num(level - 1)).mulr(6.666666);
+  if(level <= 150) {
+    res.spores = Num.rpow(9, Num(level - 1)).mulr(6.666666);
+  } else {
+    var pre = Num.rpow(9, Num(150 - 1)).mulr(6.666666);
+    var post = Num.rpow(18, Num(level - 150));
+    res.spores = pre.mul(post);
+  }
   return res;
 }
 
@@ -5954,10 +5991,15 @@ function nextTwigs(breakdown) {
 
 function treeLevel2ReqBase(level) {
   var res = new Res();
-  // all are powers of 12, in theory starting at 144, but to make the first ethereal tree levelup faster to reach, the first 2 are reduced (no powers, but still multiples, of 12). Reducing to 12 would be too little though.
-  if(level == 1) res.twigs = Num(72);
-  else if(level == 2) res.twigs = Num(1296);
-  else res.twigs = Num.rpow(12, Num(level - 1)).mulr(144);
+  if(level <= 20) {
+    // all are powers of 12, in theory starting at 144, but to make the first ethereal tree levelup faster to reach, the first 2 are reduced (no powers, but still multiples, of 12). Reducing to 12 would be too little though.
+    if(level == 1) res.twigs = Num(72);
+    else if(level == 2) res.twigs = Num(1296);
+    else res.twigs = Num.rpow(12, Num(level - 1)).mulr(144);
+  } else {
+    var req20 = 4.6005119909369397248e22;
+    res.twigs = Num.rpow(24, Num(level - 20)).mulr(req20);
+  }
   return res;
 }
 
