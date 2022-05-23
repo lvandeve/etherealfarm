@@ -313,7 +313,7 @@ var fieldheader_summer = '+:#bda -:#ba5';
 var fieldheader_autumn = '+:#d3be9c -:#cea78b';
 var fieldheader_winter = '+:#fff -:#eef';
 var fieldheader_ethereal = '+:#9df -:#aaa';
-var fieldheader_infernal = '+:#b00 -:#f00';
+var fieldheader_infernal = '+:#c42 -:#f63';
 
 var field0 = `
 ++++++++++++++++

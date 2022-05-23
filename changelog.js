@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.3.1 (2022-05-24):';
+  text += '<br/>• Fixed sapphire fruit treelevel ability: it scaled up too early and should only start becoming good around tree level 145';
+  text += '<br/><br/>';
+
   text += '0.3.0 (2022-05-22):';
   text += '<br/>• Added the infernal challenge.';
   text += '<br/>• Added sapphire fruits. In these, relative importance of some abilities is changed: nettle and mushroom more important, weather less important';

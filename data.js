@@ -5093,8 +5093,8 @@ function getFruitTierCost(tier) {
     case 5: return 100;
     case 6: return 500;
     case 7: return 1500;
-    // TODO: these numbers must be tuned once those fruits are introduced
     case 8: return 4000;
+    // TODO: these numbers must be tuned once those fruits are introduced
     case 9: return 10000;
     case 10: return 20000;
   }
@@ -5722,7 +5722,7 @@ function getTreeBoost() {
     // fruit ability
     var level = getFruitAbility(FRUIT_TREELEVEL, true);
     if(level > 0) {
-      var mul = treeLevelFruitBoost(getFruitTier(true), level, state.treelevel, 115).addr(1);
+      var mul = treeLevelFruitBoost(getFruitTier(true), level, state.treelevel).addr(1);
       result.mulInPlace(mul);
     }
   }
@@ -5741,12 +5741,13 @@ function treeLevelFruitBoostCurve(tree_level, fruit_drop_level) {
 }
 
 // returns the boost given by the FRUIT_TREELEVEL fruit
-// for sapphire fruit (which drops as highest tier from 115 to 135) fruit_drop_level should be 115, for emerald it should be 135, etc...
-function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, fruit_drop_level) {
+function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
+  // for amethist fruit (which drops as highest tier from 115 to 135) fruit_drop_level should be 115, for sapphire it should be 135, etc...
+  var fruit_drop_level = 115;
+  if(fruit_tier > 7) fruit_drop_level += 20 * (fruit_tier - 7);
   var boost = getFruitBoost(FRUIT_TREELEVEL, ability_level, fruit_tier);
-  // For sapphire fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
+  // For amethist fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
   // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
-  // TODO: for emerald and higher fruits, adjust target_level everywhere this function is called
   // TODO: also support lower fruit tier, for e.g. basic challenge
   var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level);
   return boost.mulr(s);
@@ -5755,11 +5756,11 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, fruit_drop_l
 // outputs the minimum spores required for the tree to go to the given level
 function treeLevelReqBase(level) {
   var res = new Res();
-  if(level <= 150) {
+  if(level < 150) {
     res.spores = Num.rpow(9, Num(level - 1)).mulr(6.666666);
   } else {
-    var pre = Num.rpow(9, Num(150 - 1)).mulr(6.666666);
-    var post = Num.rpow(18, Num(level - 150));
+    var pre = Num.rpow(9, Num(149 - 1)).mulr(6.666666);
+    var post = Num.rpow(18, Num(level - 149));
     res.spores = pre.mul(post);
   }
   return res;
@@ -5991,14 +5992,14 @@ function nextTwigs(breakdown) {
 
 function treeLevel2ReqBase(level) {
   var res = new Res();
-  if(level <= 20) {
+  if(level < 20) {
     // all are powers of 12, in theory starting at 144, but to make the first ethereal tree levelup faster to reach, the first 2 are reduced (no powers, but still multiples, of 12). Reducing to 12 would be too little though.
     if(level == 1) res.twigs = Num(72);
     else if(level == 2) res.twigs = Num(1296);
     else res.twigs = Num.rpow(12, Num(level - 1)).mulr(144);
   } else {
-    var req20 = 4.6005119909369397248e22;
-    res.twigs = Num.rpow(24, Num(level - 20)).mulr(req20);
+    var req19 = 3.833759992447472640000e21;
+    res.twigs = Num.rpow(24, Num(level - 19)).mulr(req19);
   }
   return res;
 }

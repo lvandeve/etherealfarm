@@ -462,7 +462,7 @@ function makeTreeDialog() {
 
       text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString();
       if(getFruitAbility(FRUIT_TREELEVEL, true) > 0) {
-        var mul = treeLevelFruitBoost(getFruitTier(true), getFruitAbility(FRUIT_TREELEVEL, true), state.treelevel, 115).addr(1);
+        var mul = treeLevelFruitBoost(getFruitTier(true), getFruitAbility(FRUIT_TREELEVEL, true), state.treelevel).addr(1);
         text += ' (of which ' + mul.toPercentString() + ' multiplicative from the fruit)';
       }
       text += '<br>';
@@ -1136,7 +1136,7 @@ function updateFieldCellUI(x, y) {
       label = 'tree level ' + state.treelevel + '. ' + label;
       if(state.treelevel > 0 || state.res.spores.gtr(0)) {
         if(state.challenge == challenge_infernal) {
-          renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel, '#a74', '#fa0');
+          renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel, '#420', '#fa0');
         } else {
           renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
         }
