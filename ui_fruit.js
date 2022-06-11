@@ -115,77 +115,84 @@ function getFruitAbilityDescription(ability) {
 }
 
 var lastTouchedFruit = null; // for some visual indication only
+var lastTouchedFruit2 = null; // similar but only used in fruit fusing dialog
 
-function createFruitHelp() {
+function createFruitHelp(opt_fusing_only) {
   var dialog = createDialog({title:'Fruit help', scrollable:true});
 
   var text = '';
 
-  text += 'Fruits drop when the tree reaches certain levels. Fruits have one or more abilities from a random set. At higher tree levels, higher tier fruits with more and stronger abilities can drop.';
-  text += '<br/><br/>';
-  text += 'You can move fruits between the stored and sacrificial slots with the buttons in the fruit dialog. You can choose the active fruit with the arrows. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time. You can also select no fruit at all by toggling the arrow above an active one.';
-  text += '<br/><br/>';
-  text += 'Fruit essence can be used to level up abilities, increasing their effect. If the fruit has mutliple abilities, click the ability you want to upgrade first.';
-  text += '<br/><br/>';
-  text += 'All fruit essence is available for all fruits, leveling up an ability in one fruit does not consume any fruit essence for other fruits. Example: if you have 50 fruit essence and 3 fruits, then you can use 50 essence in fruit 1, you can also use 50 essence in fruit 2, and you can also use 50 essence in fruit 3, and in any future fruits as well. If you now sacrifice a fruit that gives 10 essence, you have 10 more essence available for all the others.';
-  text += '<br/><br/>';
-  text += 'Leveling up abilities permanently affects this fruit, you cannot undo it. This only matters if this fruit has more than one ability so that you have to choose which ones to level up. And if unhappy with this fruit, you can always wait for a next one and sacrifice this one.';
-  text += '<br/><br/>';
-  text += 'To get more fruit essence, sacrifice fruits by putting them in the sacrificial pool and transcending (available at high enough tree level). The amount of fruit essence of sacrificed fruits depends on their tier (zinc, bronze, ...), the ability levels or how much essence you\'ve used to level them up don\'t matter for this.';
-  text += '<br/><br/>';
-  text += 'The active and stored fruits do not get sacrificed and stay after transcension.';
-  text += '<br/><br/>';
-  text += 'Higher tier fruits may have more abilities, and abilities provide more boost.';
-  text += '<br/><br/>';
-  text += 'You can rename fruits with the rename button. Named fruits will also have their name show up in the fruit tab when active. You can also mark fruits as favorite: click the fruit logo in the fruit dialog to alter border color (visual effect only).';
-  text += '<br/><br/>';
+  if(!opt_fusing_only) {
+    text += 'Fruits drop when the tree reaches certain levels. Fruits have one or more abilities from a random set. At higher tree levels, higher tier fruits with more and stronger abilities can drop.';
+    text += '<br/><br/>';
+    text += 'You can move fruits between the stored and sacrificial slots with the buttons in the fruit dialog. You can choose the active fruit with the arrows. You can only have one active fruit and only the abilities of the active fruit have an effect. You can switch the active fruit at any time. You can also select no fruit at all by toggling the arrow above an active one.';
+    text += '<br/><br/>';
+    text += 'Fruit essence can be used to level up abilities, increasing their effect. If the fruit has mutliple abilities, click the ability you want to upgrade first.';
+    text += '<br/><br/>';
+    text += 'All fruit essence is available for all fruits, leveling up an ability in one fruit does not consume any fruit essence for other fruits. Example: if you have 50 fruit essence and 3 fruits, then you can use 50 essence in fruit 1, you can also use 50 essence in fruit 2, and you can also use 50 essence in fruit 3, and in any future fruits as well. If you now sacrifice a fruit that gives 10 essence, you have 10 more essence available for all the others.';
+    text += '<br/><br/>';
+    text += 'Leveling up abilities permanently affects this fruit, you cannot undo it. This only matters if this fruit has more than one ability so that you have to choose which ones to level up. And if unhappy with this fruit, you can always wait for a next one and sacrifice this one.';
+    text += '<br/><br/>';
+    text += 'To get more fruit essence, sacrifice fruits by putting them in the sacrificial pool and transcending (available at high enough tree level). The amount of fruit essence of sacrificed fruits depends on their tier (zinc, bronze, ...), the ability levels or how much essence you\'ve used to level them up don\'t matter for this.';
+    text += '<br/><br/>';
+    text += 'The active and stored fruits do not get sacrificed and stay after transcension.';
+    text += '<br/><br/>';
+    text += 'Higher tier fruits may have more abilities, and abilities provide more boost.';
+    text += '<br/><br/>';
+    text += 'You can rename fruits with the rename button. Named fruits will also have their name show up in the fruit tab when active. You can also mark fruits as favorite: click the fruit logo in the fruit dialog to alter border color (visual effect only).';
+    text += '<br/><br/>';
+    text += '<b>Fruit related hotkeys</b>';
+    text += '<br/><br/>';
+    text += 'Note: on mac, ctrl means command instead.';
+    text += '<br/>';
+    text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
+    text += '<br/>';
+    text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
+    text += '<br/>';
+    text += ' • <b>drag & drop</b>: drag fruits between slots, re-order slots.';
+    text += '<br/>';
+    text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence';
+    text += '<br/>';
+    text += ' • <b>], } or )</b>: select next active fruit';
+    text += '<br/>';
+    text += ' • <b>[, { or (</b>: select previous active fruit';
+    text += '<br/><br/>';
+  }
   text += '<b>Fusing Fruits</b>';
   text += '<br/><br/>';
-  text += 'Fruits of the same tier (tier bronze and up) can be fused together to allow transfering abilities to create the fruit with the combination you want, when the random drops aren\'t giving it. Fusing does not increase strength of stats, it\'s only about allowing control of the combination.';
+  text += 'Fruits of the same tier (bronze and up) can be fused together to allow transferring abilities to create the fruit with the combination you want, when the random drops aren\'t giving it. Fusing does not increase strength of stats, it\'s only about allowing control of the combination.';
   text += '<br/><br/>';
   text += 'Fusing fruits destroys the two original fruits and creates a new one with a new set of abilities. The rules are as follows:';
   text += '<br/>';
-  text += ' • The new fruit will initially have the same abilities as the first original fruit (but all reset to level 1), but some may be pushed out in a next step';
+  text += ' • The two input fruits, called the "from" and the "into" fruits, create one new fruit the "result" fruit';
   text += '<br/>';
-  text += ' • Any abilities in the second fruit that match the first fruit, will charge up the matching ability: it becomes charged (marked [*]), or fusible (marked [**]) if already charged';
+  text += ' • The result fruit will initially have the same abilities as the "into" fruit, but some may be pushed out if transferring occurs';
   text += '<br/>';
-  text += ' • Any abilities in the second fruit that are fusible [**] will be transfered to the result fruit and push out the last ability of the result fruit';
+  text += ' • Any abilities in the "from" fruit that match the "into" fruit, will charge up the matching ability: it becomes charged (marked [*]), or transferable (marked [**]) if already charged';
   text += '<br/>';
-  text += ' • Any other abilities of the second fruit disappear and don\'t matter, the only abilities of the second fruit that matter are: abilities that match the first fruit, to charge them up, and fusible abilities, to replace abilities of the first fruit.';
+  text += ' • Any abilities in the "from" fruit that are transferable [**] will be transferred to the result fruit and push out the last ability of the result fruit. The fuse dialog also gives the option to disable some of them from being transferred, if they are undesired.';
   text += '<br/>';
-  text += ' • The order of abilities of first and second fruit matters, and you can freely reorder abilities in the regular fruit dialog (where you level up abilities), so you can control which abilities of the first fruit stay and which get pushed out.';
+  text += ' • Any other abilities of the "from" fruit disappear and don\'t matter, the only abilities of the "from" fruit that matter are: abilities that match the "into" fruit (to charge them up), and transferable abilities (to replace abilities).';
   text += '<br/>';
-  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participate in fusing. The resulting fruit will be an apple if the two original fruits are of a different type, or will be seasonal if both original fruits are the same seasonal type (e.g. both pineapple). NOTE: some later upgrades in the game change this.';
+  text += ' • The order of abilities of the input fruits matters (to determine which get pushed out), but you can freely reorder abilities: either in the regular fruit dialog (where abilities can be moved up or down), or using the priority checkboxes in the fuse dialog.';
   text += '<br/>';
-  text += ' • After fusing, abilities will be auto-leveled up (using the usual amount of fruit essence), based on what levels they had before, and leaving some essence unused if a new unupgraded ability is added.';
+  text += ' • The seasonal abilities of some fruit types (pineapple, ...) do not participate in fusing. The resulting fruit will be an apple if the two original fruits are of a different type, or will be seasonal if both original fruits are the same seasonal type (e.g. both pineapple). Some later upgrades in the game change this.';
+  text += '<br/>';
+  text += ' • After fusing, abilities will be auto-leveled up (using the usual amount of fruit essence), based on what levels they had before, and leaving some essence unused if a new unupgraded ability is added. You may need to do a few more upgrades manually again anyway. No essence is lost in this process.';
   text += '<br/><br/>';
-  text += 'Summary of the rules: getting 3 fruits with the same ability allows to create a fusible ability that you can transfer to any fruit of choice, replacing an unwanted ability of choice. Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:';
+  text += 'Summary of the rules: getting 3 fruits with the same ability allows, with at least two fuse actions, to create a transferable ability that you can transfer to any fruit of choice with a third fuse action, replacing an unwanted ability of choice.';
+  text += '<br/>';
+  text += 'Example: if you desire a silver fruit with flower boost and berry boost, one way you could reach it is:'
   text += '<br/>';
   text += ' • collect 3 silver fruits that have flower boost in any slot, fruits A, B and C';
   text += '<br/>';
   text += ' • fuse A with B, resulting in a fruit AB with charged flower boost, marked [*]';
   text += '<br/>';
-  text += ' • fuse AB with C, resulting in a fruit ABC with fusible flower boost, marked [**]';
+  text += ' • fuse AB with C, resulting in a fruit ABC with transferable flower boost, marked [**]';
   text += '<br/>';
-  text += ' • collect a fruit D that has berry boost, and if necessary, move berry boost to the first slot ';
+  text += ' • collect a fruit D that has berry boost, and if necessary, move berry boost to the first slot';
   text += '<br/>';
   text += ' • fuse ABC into D, resulting in the desired fruit with flower boost and berry boost. Don\'t forget to level up its abilities, since they\'ll all be set to level 1.';
-  text += '<br/><br/>';
-  text += '<b>Fruit related hotkeys</b>';
-  text += '<br/><br/>';
-  text += 'Note: on mac, ctrl means command instead.';
-  text += '<br/>';
-  text += ' • <b>ctrl + click fruit</b>: move fruit between sacrificial and storage slots, if possible.';
-  text += '<br/>';
-  text += ' • <b>shift + click fruit</b>: same as ctrl + click fruit.';
-  text += '<br/>';
-  text += ' • <b>drag & drop</b>: drag fruits between slots, re-order slots.';
-  text += '<br/>';
-  text += ' • <b>shift + click fruit ability upgrade</b>: buy multiple abilities up to 25% of currently available essence';
-  text += '<br/>';
-  text += ' • <b>], } or )</b>: select next active fruit';
-  text += '<br/>';
-  text += ' • <b>[, { or (</b>: select previous active fruit';
   if(state.upgrades3[upgrade3_fruitmix].count) {
     text += '<br/><br/>';
     text += '<b>Seasonal fruit mixing</b>';
@@ -193,7 +200,7 @@ function createFruitHelp() {
     text += 'You unlocked the squirrel upgrade for seasonal fruit mixing! This works when fuxing certain combinations of two different seasonal fruits together.';
     text += '<br/><br/>';
     text += 'The combinations are:';
-    text += '<br>';
+    text += '<br><br>';
     text += '• Apricot + Pineapple = Mango (spring + summer)';
     text += '<br>';
     text += '• Pineapple + Pear = Plum (summer + autumn)';
@@ -209,30 +216,33 @@ function createFruitHelp() {
     text += '• Plum + Kumquat = Star Fruit (4 seasons)';
     text += '<br/><br/>';
     text += 'If (and only if) you also have the second fruit mixing upgrade purchased, then in addition you can create the all-season star fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
-    text += '<br>';
-    text += '• Star Fruit + Apple = Dragon Fruit (stronger 4 seasons boost)';
     text += '<br><br>';
+    text += '• Star Fruit + Apple = Dragon Fruit (stronger 4 seasons boost)';
     text += '<br><br>';
     text += '<br/>';
   }
-
   dialog.content.div.innerHTML = text;
 }
 
 function createFruitFuseDialog(f, parentdialogrecreatefun) {
+  var oldLastTouchedFruit = lastTouchedFruit;
   lastTouchedFruit = null;
+  lastTouchedFruit2 = null;
 
   var selected = undefined;
 
   var swapped = false;
 
+  var transfer_choices = [];
+  var keep_choices = [];
+
   var dialog = createDialog({undefined,
     functions:function() {
       if(selected) {
         if(swapped) {
-          addAction({type:ACTION_FRUIT_FUSE, a:selected, b:f});
+          addAction({type:ACTION_FRUIT_FUSE, a:selected, b:f, transfer_choices:transfer_choices, keep_choices:keep_choices});
         } else {
-          addAction({type:ACTION_FRUIT_FUSE, a:f, b:selected});
+          addAction({type:ACTION_FRUIT_FUSE, a:f, b:selected, transfer_choices:transfer_choices, keep_choices:keep_choices});
         }
       }
       update();
@@ -241,8 +251,24 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     names:'fuse',
     scrollable_canchange:true,
     title:'Fuse fruits',
-    help:createFruitHelp
+    help:bind(createFruitHelp, true),
+    onclose:function() {
+      lastTouchedFruit = oldLastTouchedFruit;
+      lastTouchedFruit2 = null;
+    }
   });
+
+  var n = getNumFruitAbilities(f.tier); // abilities excluding the fixed seasonal one
+
+
+  var resetChoices = function() {
+    for(var i = 0; i < n; i++) {
+      transfer_choices[i] = true;
+      keep_choices[i] = false;
+    }
+  };
+  resetChoices();
+
 
   var make = function() {
     var scrollFlex = dialog.content;
@@ -273,7 +299,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       if(opt_y == undefined) y += s * 0.5;
     };
 
-    addTitle('Fusing doesn\'t make fruits stronger, it exists to gradually choose a set of abilities from the random drops. Only abilities marked [**] can be transfered to other fruits. The [*] then [**] marks can be created by fusing the same abilities. After fusing, some abilities may need to be leveled up again, but no fruit essence is lost.');
+    addTitle('Fusing exists to gradually choose a set of abilities from the random drops, it doesn\'t make fruits stronger. Only abilities marked [**] can be transferred to other fruits. The [*] then [**] marks can be created by fusing the same abilities. No fruit essence is lost from fusing.');
     y += s;
 
     y += s * 0.5;
@@ -301,7 +327,8 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       styleButton0(flex.div);
       addButtonAction(flex.div, bind(function(f) {
         selected = f;
-        lastTouchedFruit = f;
+        lastTouchedFruit2 = f;
+        resetChoices();
         make();
       }, f2));
     }
@@ -314,24 +341,19 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
     y += s * 0.5;
     var y0t = y; // temporary y position for result title
-    addTitle('Fruits to fuse:');
+    addTitle('From:');
+    addTitle('Into:', 0.2, y0t);
 
     var fruits2 = [f, selected];
 
     var y0c = y; // temporary y position for result chip
     x = 0;
-    for(var i = 0; i <= fruits2.length; i++) {
-      if(i == fruits2.length) x += s * 0.5;
+    for(var i = 0; i < 3; i++) {
       var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
       x += s;
-      var f2 = fruits2[(swapped && i < fruits2.length) ? (fruits2.length - 1 - i) : i]
-      if(f2) {
-        makeFruitChip(flex, f2, 0, true, (i == 0 ? 'first' : 'second') + ' selected fuse fruit');
-        styleButton0(flex.div);
-        addButtonAction(flex.div, bind(function(f2) {
-          createFruitInfoDialog(f);
-        }, f));
-      } else if(i == fruits2.length) {
+      var f2 = f;
+      if(swapped != (i == 0)) f2 = selected;
+      if(i == 1) {
         var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
         renderImage(image_swap, canvas);
         styleButton0(flex.div, true);
@@ -348,6 +370,12 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
           }
         }, f));
         registerTooltip(flex.div, 'Swap the fuse order of the two fruits');
+      } else if(f2) {
+        makeFruitChip(flex, f2, 0, true, (i == 0 ? 'first' : 'second') + ' selected fuse fruit');
+        styleButton0(flex.div);
+        addButtonAction(flex.div, bind(function(f2) {
+          createFruitInfoDialog(f);
+        }, f));
       } else {
         flex.div.style.backgroundColor = '#ccc';
         flex.div.style.border = '1px solid black';
@@ -369,7 +397,9 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     if(state.upgrades3[upgrade3_fruitmix3].count) fruitmix = 5;
 
     var message = [undefined];
-    var fuse = swapped ? fuseFruit(selected, f, fruitmix, message) : fuseFruit(f, selected, fruitmix, message);
+    var intofruit = swapped ? selected : f;
+    var fromfruit = swapped ? f : selected;
+    var fuse = fuseFruit(intofruit, fromfruit, fruitmix, transfer_choices, keep_choices, message);
 
     x = 0;
     var flex = new Flex(scrollFlex, [0.01, 0, x + result_x], [0, 0, y0c], [0.01, 0, x + s + result_x], [0, 0, y0c + s]);
@@ -398,25 +428,90 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     }
 
 
+
     if(fuse) {
-      var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + s]);
-      var text = '';
+      var h = s * 0.35;
       for(var i = -1; i < fuse.abilities.length; i++) {
+        var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
         if(i == -1) {
-          flex.div.innerText = fuse.toString() + ', fused ' + fuse.fuses + ' times';
+          flex.div.innerText = upper(fuse.toString()) + ', fused ' + fuse.fuses + ' times';
         } else {
+          var text = '';
           var other = swapped ? selected : f;
           text += 'ability: ' + fuse.abilityToString(i);
-          if(i < other.abilities.length) text += '  (was: ' + other.abilityToString(i) + ')';
-          else text += '  (was: none)';
-          text += '\n';
+          if(i < other.abilities.length) {
+            text += '  (was: ' + other.abilityToString(i) + ')';
+          } else {
+            text += '  (was: none)';
+          }
+          flex.div.innerText = text;
         }
-        y += s * 0.5;
+        y += h * 1.2;
       }
       text += '\n';
-      text += 'Note: if you would like to keep a different set of abilities, try swapping the two input fruits, or rearrange the order of the abilities of the leftmost fruits using the ^ and v buttons in that fruit\'s main ability dialog: abilities higher up get priority.';
-      text += '\n';
-      flex.div.innerText = text;
+
+      var num_transfer = false;
+      for(var i = 0; i < fromfruit.abilities.length; i++) {
+        if(fromfruit.charge[i] == 2) {
+          num_transfer++;
+        }
+      }
+
+      if(num_transfer == 0) {
+        y += h;
+        addTitle('Transferred abilities: None. The "from" fruit must have two-star [**] abilities to allow transfer. To get [**] abilities, fuse two fruits with the same ability to get [*], then one more fuse to get [**].');
+      } else {
+        y += h;
+        addTitle('Transferred abilities: Two-star [**] abilities that can transfer from the "from" fruit to the "into" fruit. Optionally you can uncheck checkboxes to discard abilities:');
+        y += h;
+
+        for(var i = 0; i < fromfruit.abilities.length; i++) {
+          var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
+          if(fromfruit.charge[i] == 2) {
+            var text = '';
+            var flex0 = new Flex(flex, 0, 0, [0, 1], 1);
+            var flex1 = new Flex(flex, [0, 1.2], 0, 1, 1);
+            var canvas = createCanvas('0%', '0%', '100%', '100%', flex0.div);
+            renderImage(transfer_choices[i] ? image_checkbox_on : image_checkbox_off, canvas);
+
+            styleButton0(flex0.div);
+            addButtonAction(flex0.div, bind(function(i) {
+              transfer_choices[i] = !transfer_choices[i];
+              make();
+            }, i), 'Checkbox to transfer ' + fromfruit.abilityToString(i) + ': ' + (transfer_choices[i] ? 'checked' : 'unchecked'));
+
+            text += fromfruit.abilityToString(i);
+            text += '\n';
+            flex1.div.innerText = text;
+            y += h * 1.2;
+          }
+        }
+
+
+        y += h;
+        addTitle('Original abilities from the "into" fruit. Optionally, using the checkboxes, you can prioritize some abilities, to affect which ones get kept or get pushed out by the transferred abilities:');
+        y += h * 2;
+
+        for(var i = 0; i < n; i++) {
+          var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
+          var text = '';
+          var flex0 = new Flex(flex, 0, 0, [0, 1], 1);
+          var flex1 = new Flex(flex, [0, 1.2], 0, 1, 1);
+          var canvas = createCanvas('0%', '0%', '100%', '100%', flex0.div);
+          renderImage(keep_choices[i] ? image_checkbox_on : image_checkbox_off, canvas);
+
+          styleButton0(flex0.div);
+          addButtonAction(flex0.div, bind(function(i) {
+            keep_choices[i] = !keep_choices[i];
+            make();
+          }, i), 'Checkbox to prioritize ' + intofruit.abilityToString(i) + ': ' + (keep_choices[i] ? 'checked' : 'unchecked'));
+
+          text += intofruit.abilityToString(i);
+          text += '\n';
+          flex1.div.innerText = text;
+          y += h * 1.2;
+        }
+      }
     }
 
     scrollFlex.div.scrollTop = scrollPos;
@@ -733,7 +828,7 @@ function createFruitDialog(f, opt_selected) {
       // onclose function: updates the relevant fruit chip with new upgrade levels. TODO: it's inefficient to redraw all fruit chips for this
       updateFruitUI();
     },
-    help:createFruitHelp,
+    help:bind(createFruitHelp, false),
     title:'Configure fruit',
     bgstyle:'efDialogTranslucent'
   });
@@ -822,6 +917,8 @@ function styleFruitChip(flex, f) {
   }
   if(lastTouchedFruit == f) {
     flex.div.style.boxShadow = '0px 0px 16px #000';
+  } else if(lastTouchedFruit2 == f) {
+    flex.div.style.boxShadow = '0px 0px 16px #800';
   } else {
     flex.div.style.boxShadow = '';
   }

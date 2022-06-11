@@ -1437,4 +1437,29 @@ var image_stats = generateImageCanvas(`
 ................
 `);
 
+var image_checkbox_on = generateImageCanvas(`
+000000000
+088888880
+089999090
+089990090
+080900990
+080009990
+089099990
+089999990
+000000000
+`);
+
+var image_checkbox_off = generateImageCanvas(`
+000000000
+088888880
+089999990
+089999990
+089999990
+089999990
+089999990
+089999990
+000000000
+`);
+
+
 

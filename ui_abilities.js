@@ -465,9 +465,9 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(key == 'w' && !shift && !ctrl) {
-    // NOTE: ctrl for this shortcut doesn't work, since ctrl+w closes browser tab. For consistency, shift is also not supported.
-    refreshWatercress();
+  if(key == 'w' && !ctrl) {
+    // NOTE: ctrl for this shortcut (for deleting watercress) doesn't work, since ctrl+w closes browser tab.
+    refreshWatercress(false, /*opt_all=*/shift);
   }
 
   if(key == 'b' && !shift && !ctrl) {

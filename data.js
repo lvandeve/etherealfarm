@@ -5527,9 +5527,14 @@ function fruitsHaveSameAbilities(a, b) {
   return sameabilities;
 }
 
-// opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
+// fuses from fruit b into a
+// a: the "into" fruit
+// b: the "from" fruit
 // fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruit, 5: allow forming the dragon fruit
-function fuseFruit(a, b, fruitmix, opt_message) {
+// transfer_choices: array of bools which, if false, indicate you do NOT want to transfer this **-ability from fruit b into fruit a
+// keep_choices: array of bools which, if true, indicate you don't want this ability pushed out by transfered abilities. This only enforces priority, it doesn't change the amount of abilities being pushed out. If all booleans are true or all booleans are false, fruit a's ability order is used (last ones pushed out first). If there is a mix of true and false, those that are false will be pushed out first.
+// opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
+function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) {
   if(!a || !b) return null;
   if(a == b) return null;
   if(a.tier != b.tier) return null;
@@ -5643,18 +5648,41 @@ function fuseFruit(a, b, fruitmix, opt_message) {
     f.charge[i] = charge;
   }
 
-  // transfer fusible abilities
+  // transfer transferable abilities
 
-  arr = [];
-  // first add all fusible abilities of b to the array
+  var num_transfer = 0;
   for(var i = 0; i < nb; i++) {
     if(b.charge[i] != 2) continue;
-    arr.push([b.abilities[i], 2]);
+    if(!transfer_choices[i]) continue;
+    if(ma[b.abilities[i]] != undefined) continue; // already present in a, so not a newly transfered ability
+    num_transfer++;
   }
-  // now append the old non-fusible abilities to the end of the array
+
+  arr = [];
+  // add the kept original abilities of a to the array (but from f, where the new charge is now stored), ensuring to prioritize the chosen ones to keep
+  var num_priority = 0;
   for(var i = 0; i < n; i++) {
-    if(mb[f.abilities[i]] == 2) continue; // already in the array, prevent duplicates
+    if(keep_choices[i]) num_priority++;
+  }
+  var num_fixed = Math.max(0, n - num_priority - num_transfer); // the ones that, despite not having priority, can still go to the front anyway, to keep original order more closely
+  for(var i = 0; i < num_fixed; i++) {
+    if(arr.length >= n - num_transfer) break;
     arr.push([f.abilities[i], f.charge[i]]);
+  }
+  for(var i = num_fixed; i < n; i++) {
+    if(arr.length >= n - num_transfer) break;
+    if(keep_choices[i]) arr.push([f.abilities[i], f.charge[i]]);
+  }
+  for(var i = num_fixed; i < n - num_transfer; i++) {
+    if(arr.length >= n - num_transfer) break;
+    if(!keep_choices[i]) arr.push([f.abilities[i], f.charge[i]]);
+  }
+  // add transfered abilities of b to the array
+  for(var i = 0; i < nb; i++) {
+    if(b.charge[i] != 2) continue;
+    if(!transfer_choices[i]) continue;
+    if(ma[b.abilities[i]] != undefined) continue; // already present in a, so not a newly transfered ability
+    arr.push([b.abilities[i], 2]);
   }
   for(var i = 0; i < arr.length; i++) {
     if(i >= n) break;
@@ -5681,12 +5709,12 @@ function fuseFruit(a, b, fruitmix, opt_message) {
   }
   // this check is not done for b: for example, if b has 3 [**] abilities and is not seasonal, and a is seasonal, then this is a legit change.
 
-  if(worse) {
+  /*if(worse) {
     if(opt_message) {
-      opt_message[0] = 'No fuse done: this fuse results in the same fruit as the original or worse. Try fusing with a different fruit, or swapping the fuse order.';
+      opt_message[0] = 'Warning: this fuse results in the same or worse fruit than the original. Try fusing with a different fruit, or swapping the fuse order.';
     }
-    return null;
-  }
+    //return null;
+  }*/
 
   fuseFruitAutoLevel(a, b, f);
 

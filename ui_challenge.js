@@ -169,10 +169,19 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     }
     text += '<br>';
   }
-  text += '• Max level reached with this challenge gives <b>(' + getChallengeFormulaString(c, c.bonus.toPercentString()) + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  text += '• Max level reached with this challenge gives <b>(' + getChallengeFormulaString(c, c.cycling ? undefined : c.bonus.toPercentString()) + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  if(c.cycling) {
+    text += '<br>';
+    text += '• <b>bonus</b> value itself depends on cycle, respectively: ';
+    for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
+  }
   text += '<br>';
   if(c.alt_bonus) {
     text += '• ' + altChallengeBonusInfo;
+    text += '<br>';
+  }
+  if(c.bonus_max_level) {
+    text += '• This challenge is capped to level ' + c.bonus_max_level + ' and gives no further bonus after that.';
     text += '<br>';
   }
   if(c.targetlevel.length > 1) {

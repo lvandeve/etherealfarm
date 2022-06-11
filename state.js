@@ -1342,7 +1342,7 @@ function Fruit() {
   // type 7: quince, autumn+winter
   // type 8: kumquat, winter+spring
   // type 9: starfruit, all-season
-  // type 10: dragonfruit, all-season imrpoved
+  // type 10: dragonfruit, all-season improved
   this.type = 0;
   this.tier = 0;
   this.abilities = []; // array of the FRUIT_... abilities
@@ -1354,7 +1354,7 @@ function Fruit() {
   // free starting level of each ability
   this.starting_levels = [];
 
-  // for fused fruits: charge of each ability. 0: normal, 1: charged, 2: fusible
+  // for fused fruits: charge of each ability. 0: normal, 1: charged, 2: transferable
   this.charge = [];
 
   // how many fuse-fruit actions were involved in this fruit

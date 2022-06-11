@@ -26,7 +26,7 @@ var Utils = (function() {
 
   var makeElement = function(tag, opt_parent) {
     var parent = opt_parent || document.body;
-    var el =  document.createElement(tag);
+    var el = document.createElement(tag);
     if(parent != doNotAddToParent) parent.appendChild(el);
     return el;
   };

@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.3.2 (2022-06-12):';
+  text += '<br/>• When fusing fruits, you can now choose to keep or discard two-star [**] abilities that get transferred, and also change the priority of which abilities get pushed out by the transfered ones. Scroll down in the fuse dialog to see these new controls, but they are only visible if there\'s a two-star [**] ability in the "from"-fruit.';
+  text += '<br/>• Layout and help of the fuse fruit dialog slightly adjusted for clarity.';
+  text += '<br/>• Minor fixes.'; // includes a few fixes in the challenge display related to cycling bonus and capped bonus level
+  text += '<br/><br/>';
+
   text += '0.3.1 (2022-05-24):';
   text += '<br/>• Fixed sapphire fruit treelevel ability: it scaled up too early and should only start becoming good around tree level 145';
   text += '<br/><br/>';

@@ -3738,7 +3738,7 @@ var update = function(opt_ignorePause) {
         if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix = 4;
         if(state.upgrades3[upgrade3_fruitmix3].count) fruitmix = 5;
 
-        var f = fuseFruit(a, b, fruitmix);
+        var f = fuseFruit(a, b, fruitmix, action.transfer_choices, action.keep_choices);
         if(f) {
           // Try to ensure fused fruit appears in stored rather than sacrificial pool
           f.slot = a.slot; // prefer the originally selected fruit
