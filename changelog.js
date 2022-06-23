@@ -20,9 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.3.3 (2022-06-23):';
+  text += '<br/>• Added 2 new ethereal crops and 2 new ethereal upgrades (field size), requires high level ethereal tree to unlock.';
+  text += '<br/>• Ethereal tree now has a dialog to see the things that got unlocked at previous levels.';
+  text += '<br/>• Bugfixes, including a minor fruit fusing dialog bug.';
+  text += '<br/><br/>';
+
   text += '0.3.2 (2022-06-12):';
   text += '<br/>• When fusing fruits, you can now choose to keep or discard two-star [**] abilities that get transferred, and also change the priority of which abilities get pushed out by the transfered ones. Scroll down in the fuse dialog to see these new controls, but they are only visible if there\'s a two-star [**] ability in the "from"-fruit.';
   text += '<br/>• Layout and help of the fuse fruit dialog slightly adjusted for clarity.';
+  text += '<br/>• Fusing a fruit that\'s worse than the original is no longer prevented: it\'s easier to learn how fusing works when allowed to see all the possible results.';
   text += '<br/>• Minor fixes.'; // includes a few fixes in the challenge display related to cycling bonus and capped bonus level
   text += '<br/><br/>';
 

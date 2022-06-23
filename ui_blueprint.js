@@ -803,6 +803,8 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, fl
       } else if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
         // do nothing: this is a deprecated shortcut, only visible with exact correct usage
         //showMessage('not high enough tree level to transcend (use shift+blueprint to just plant this blueprint)', C_INVALID);
+      } else if(opt_ethereal) {
+        // do nothing: this only works in basic field
       } else {
         // deprecated feature, but still supported for those who like its convenience of "b" + "ctrl+shift+click" (the alternative is: "t", "b", "click")
         if(state.treelevel >= min_transcension_level) {

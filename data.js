@@ -4264,6 +4264,7 @@ var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), etherealDe
 var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), etherealDeleteSessionTime, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
 var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), etherealDeleteSessionTime, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
 var berry2_5 = registerBerry2('gooseberry', 14, 5, Res({resin:2e15}), etherealDeleteSessionTime, Num(256), undefined, 'boosts berries in the basic field (additive)', gooseberry);
+var berry2_6 = registerBerry2('grape', 18, 6, Res({resin:3e19}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts berries in the basic field (additive)', grape);
 
 // mushrooms2
 crop2_register_id = 50;
@@ -4273,6 +4274,7 @@ var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), etherealDelet
 var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), etherealDeleteSessionTime, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
 var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), etherealDeleteSessionTime, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
 var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), etherealDeleteSessionTime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
+var mush2_6 = registerMushroom2('shiitake', 17, 6, Res({resin:3e18}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', shiitake);
 
 
 // flowers2
@@ -4300,6 +4302,7 @@ crop2_register_id = 200;
 // also this makes the ethereal beest require some care, you can't just plant it in a corner with no lotuses.
 var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), default_ethereal_growtime, Num(0.01), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
 var bee2_1 = registerBeehive2('drone', 13, 1, Res({resin:1e15}), default_ethereal_growtime, Num(0.04), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_dronebee);
+//var bee2_2 = registerBeehive2('queen bee', 19, 2, Res({resin:5e21}), default_ethereal_growtime, Num(0.12), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_queenbee);
 
 // templates
 
@@ -4832,7 +4835,42 @@ var upgrade2_nuts_bonus = registerUpgrade2('unused nuts bonus', LEVEL2, Res({res
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return squirrelUnlocked();}, 1, 'get a production bonus for unused nuts (logarithmic).', undefined, undefined, image_nuts);
 
+///////////////////////////
+LEVEL2 = 13;
+upgrade2_register_id = 800;
 
+///////////////////////////
+LEVEL2 = 14;
+upgrade2_register_id = 900;
+
+///////////////////////////
+LEVEL2 = 15;
+upgrade2_register_id = 1000;
+
+///////////////////////////
+LEVEL2 = 16;
+upgrade2_register_id = 1100;
+
+///////////////////////////
+LEVEL2 = 17;
+upgrade2_register_id = 1200;
+
+var upgrade2_field8x8 = registerUpgrade2('larger field 8x8', LEVEL2, Res({resin:20e18}), 1, function() {
+  var numw = Math.max(8, state.numw);
+  var numh = Math.max(8, state.numh);
+  if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
+}, function(){return state.numw >= 7 && state.numh >= 8}, 1, 'increase basic field size to 8x8 tiles', undefined, undefined, field_summer[0]);
+
+///////////////////////////
+LEVEL2 = 18;
+upgrade2_register_id = 1300;
+
+var upgrade2_field2_8x8 = registerUpgrade2('ethereal field 8x8', LEVEL2, Res({resin:20e19}), 1, function() {
+  var numw = Math.max(8, state.numw2);
+  var numh = Math.max(8, state.numh2);
+  changeField2Size(state, numw, numh);
+  initField2UI();
+}, function(){return state.numw2 >= 7 && state.numh2 >= 8}, 1, 'increase ethereal field size to 8x8 tiles', undefined, undefined, field_ethereal[0]);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -5612,27 +5650,27 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
   f.name = a.name || b.name;
   f.mark = a.mark || b.mark;
 
-  for(var i = 0; i < n; i++) {
-    f.abilities[i] = a.abilities[i];
-    f.charge[i] = a.charge[i];
-  }
-
   var arr;
 
-  var m = {};
+  var m = {}; // starting levels of all possible resulting fruit abilities
 
   var ma = {};
   for(var i = 0; i < na; i++) {
     if(fuse_skip[a.abilities[i]]) continue;
-    ma[a.abilities[i]] = a.charge[i];
+    ma[a.abilities[i]] = [i, a.charge[i]];
     m[a.abilities[i]] = a.starting_levels[i];
   }
 
   var mb = {};
   for(var i = 0; i < nb; i++) {
     if(fuse_skip[b.abilities[i]]) continue;
-    mb[b.abilities[i]] = b.charge[i];
+    mb[b.abilities[i]] = [i, b.charge[i]];
     m[b.abilities[i]] = (m[b.abilities[i]] == undefined) ? b.starting_levels[i] : (fuseFruitStartLevel(m[b.abilities[i]], b.starting_levels[i]));
+  }
+
+  for(var i = 0; i < n; i++) {
+    f.abilities[i] = a.abilities[i];
+    f.charge[i] = a.charge[i];
   }
 
 
@@ -5643,18 +5681,25 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
     if(fuse_skip[ability]) continue;
     if(mb[ability] == undefined) continue; // not duplicate
 
-    var charge = ma[ability] + mb[ability] + 1;
+    var charge = ma[ability][1] + mb[ability][1] + 1;
     if(charge > 2) charge = 2;
     f.charge[i] = charge;
   }
 
+
   // transfer transferable abilities
+
+  var cloned = false; // to prevent modifying input object.
 
   var num_transfer = 0;
   for(var i = 0; i < nb; i++) {
     if(b.charge[i] != 2) continue;
     if(!transfer_choices[i]) continue;
-    if(ma[b.abilities[i]] != undefined) continue; // already present in a, so not a newly transfered ability
+    if(ma[b.abilities[i]] != undefined) {
+      if(!cloned) keep_choices = util.clone(keep_choices);
+      keep_choices[ma[b.abilities[i]][0]] = true; // ability is in both a and b, to enforce keeping it, use "keep_choices" instead
+      continue; // already present in a, so not a newly transfered ability; do not increase num_transfer in this case, or ability duplication is possible
+    }
     num_transfer++;
   }
 
@@ -5696,25 +5741,6 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
     f.levels[i] = level;
     f.starting_levels[i] = level;
   }
-
-  var worse = true;
-  if(f.type > a.type) worse = false;
-  if(worse) {
-    for(var i = 0; i < n; i++) {
-      if(f.abilities[i] != a.abilities[i] || f.charge[i] > a.charge[i] || f.levels[i] > a.levels[i] || f.starting_levels[i] > a.starting_levels[i]) {
-        worse = false;
-        break;
-      }
-    }
-  }
-  // this check is not done for b: for example, if b has 3 [**] abilities and is not seasonal, and a is seasonal, then this is a legit change.
-
-  /*if(worse) {
-    if(opt_message) {
-      opt_message[0] = 'Warning: this fuse results in the same or worse fruit than the original. Try fusing with a different fruit, or swapping the fuse order.';
-    }
-    //return null;
-  }*/
 
   fuseFruitAutoLevel(a, b, f);
 

@@ -371,7 +371,8 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         }, f));
         registerTooltip(flex.div, 'Swap the fuse order of the two fruits');
       } else if(f2) {
-        makeFruitChip(flex, f2, 0, true, (i == 0 ? 'first' : 'second') + ' selected fuse fruit');
+        var text = (i == 0) ? 'First selected fuse fruit: "from" fruit' : 'Second selected fuse fruit: "into" fruit';
+        makeFruitChip(flex, f2, 0, true, text);
         styleButton0(flex.div);
         addButtonAction(flex.div, bind(function(f2) {
           createFruitInfoDialog(f);

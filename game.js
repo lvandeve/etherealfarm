@@ -4394,6 +4394,15 @@ var update = function(opt_ignorePause) {
       if(state.treelevel2 >= 16) {
         unlockEtherealCrop(lotus2_4);
       }
+      if(state.treelevel2 >= 17) {
+        unlockEtherealCrop(mush2_6);
+      }
+      if(state.treelevel2 >= 18) {
+        unlockEtherealCrop(berry2_6);
+      }
+      /*if(state.treelevel2 >= 19) {
+        unlockEtherealCrop(bee2_2);
+      }*/
     }
 
     // For safety, in case something goes wrong, because NaNs spread once they appear

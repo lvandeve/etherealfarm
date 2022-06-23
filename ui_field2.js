@@ -317,6 +317,17 @@ function makeTree2Dialog() {
     });
   }
 
+  if(state.treelevel2 > 0) {
+    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
+    y += buttonshift;
+    styleButton(button);
+    button.textEl.innerText = 'See previous unlocks';
+    addButtonAction(button, function() {
+      showEtherealTreeLevelDialogs();
+    });
+    registerTooltip(button, 'Show the things that got unlocked by reaching previous ethereal tree levels');
+  }
+
   if(have_buttons) {
     button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
@@ -673,30 +684,36 @@ function renderField2() {
   }
 }
 
-function showEtherealTreeLevelDialog(level) {
+// opt_later: when viewing the dialog later, so it shouldn't show messages that indicate the ethereal tree leveled up just now
+function showEtherealTreeLevelDialog(level, opt_later) {
   var dialog = createDialog({
     cancelname:'ok',
     scrollable:true,
-    title:('Reached ethereal tree level ' + level),
-    nobgclose:true,
+    title:((opt_later ? 'Ethereal tree level ' : 'Reached ethereal tree level ') + level),
+    nobgclose:!opt_later,
     bgstyle:'efDialogEthereal'
   });
 
-  var text;
+  var text = '';
 
-  if(level == 1) {
-   text = 'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.'
+  if(!opt_later) {
+    if(level == 1) {
+     text += 'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.'
+    } else {
+     text += 'The ethereal tree leveled up to level ' + level + '!';
+    }
+    text += '<br><br>';
+
+    var twigs_now = treeLevel2Req(level);
+    var twigs_next = treeLevel2Req(level + 1);
+
+    text += 'The ethereal tree consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
+
+    text += 'The following new ethereal things got, or will get, unlocked:<br><br>';
   } else {
-   text = 'The ethereal tree leveled up to level ' + level + '!';
+    text += 'The following new ethereal things got, or will get, unlocked at this level:<br><br>';
   }
-  text += '<br><br>';
 
-  var twigs_now = treeLevel2Req(level);
-  var twigs_next = treeLevel2Req(level + 1);
-
-  text += 'The ethereal tree consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
-
-  text += 'The following new ethereal things got, or will get, unlocked:<br><br>';
 
   var anything = false;
 
@@ -753,7 +770,33 @@ function showEtherealTreeLevelDialog(level) {
   dialog.content.div.innerHTML = text;
 }
 
+function showEtherealTreeLevelDialogs() {
+  var dialog = createDialog({
+    onclose:function() { showing_help = false; },
+    scrollable:true,
+    title:'Previous ethereal tree level unlocks'
+  });
 
+  var pos = 0.05;
+  var buttondiv;
+  var h = 0.06;
+
+  var makeButton = function(text) {
+    //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
+    var buttonFlex = new Flex(dialog.content, 0.08, pos, 0.92, pos + h);
+    var button = buttonFlex.div;
+    styleButton(button, 1);
+    pos += h * 1.1;
+    button.textEl.innerText = text;
+    return button;
+  };
+
+  for(var i = 0; i <= state.treelevel2; i++) {
+    var level = state.treelevel2 - i;
+    var button = makeButton('level ' + level);
+    addButtonAction(button, bind(showEtherealTreeLevelDialog, level, true));
+  }
+}
 
 function computeField2Cost() {
   var result = Res();
