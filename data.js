@@ -4631,6 +4631,7 @@ var upgrade2_diagonal_mistletoes = registerUpgrade2('diagonal mistletoes', LEVEL
 
 
 upgrade2_register_id = 145;
+// also update getNewFieldSize for this type of upgrade!!
 var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:100e3}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(6, state.numh);
@@ -4747,6 +4748,7 @@ var upgrade2_flower = registerUpgrade2('ethereal flowers', LEVEL2, Res({resin:10
 LEVEL2 = 7;
 upgrade2_register_id = 220;
 
+// also update getNewFieldSize for this type of upgrade!!
 var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:500e6}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(7, state.numh);
@@ -4784,6 +4786,7 @@ var upgrade2_nettle = registerUpgrade2('ethereal stinging', LEVEL2, Res({resin:5
 LEVEL2 = 10;
 upgrade2_register_id = 500;
 
+// also update getNewFieldSize for this type of upgrade!!
 var upgrade2_field7x8 = registerUpgrade2('larger field 7x8', LEVEL2, Res({resin:1.5e12}), 1, function() {
   var numw = Math.max(7, state.numw);
   var numh = Math.max(8, state.numh);
@@ -4855,6 +4858,7 @@ upgrade2_register_id = 1100;
 LEVEL2 = 17;
 upgrade2_register_id = 1200;
 
+// also update getNewFieldSize for this type of upgrade!!
 var upgrade2_field8x8 = registerUpgrade2('larger field 8x8', LEVEL2, Res({resin:20e18}), 1, function() {
   var numw = Math.max(8, state.numw);
   var numh = Math.max(8, state.numh);

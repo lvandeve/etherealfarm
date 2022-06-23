@@ -375,7 +375,9 @@ function startChallenge(challenge_id) {
 // get the field size to have after a reset
 function getNewFieldSize() {
   if(basicChallenge() == 2) return [5, 5];
-  if(state.upgrades2[upgrade2_field7x8].count) {
+  if(state.upgrades2[upgrade2_field8x8].count) {
+    return [8, 8];
+  } else if(state.upgrades2[upgrade2_field7x8].count) {
     return [7, 8];
   } else if(state.upgrades2[upgrade2_field7x7].count) {
     return [7, 7];
