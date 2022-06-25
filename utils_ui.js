@@ -1076,6 +1076,7 @@ function makeDropdown(flex, title, current, choices, fun) {
       addButtonAction(choice.div, bind(function(i) {
         flex.choice = i;
         flex.div.textEl.innerText = title + ': ' + choices[i];
+        setAriaLabel(flex.div, title + ': ' + choices[i] + ' - dropdown')
         if(fun) fun(i);
         choiceFlex.showFun(false);
       }, i));
@@ -1084,7 +1085,7 @@ function makeDropdown(flex, title, current, choices, fun) {
 
   addButtonAction(flex.div, function() {
     choiceFlex.showFun(!showing);
-  }, 'dropdown');
+  }, title + ': ' + choices[current] + ' - dropdown');
 }
 
 ////////////////////////////////////////////////////////////////////////////////

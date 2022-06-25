@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.3.4 (2022-06-25):';
+  text += '<br/>• Improved label annotations for automaton dropdowns.';
+  text += '<br/><br/>';
+
   text += '0.3.3 (2022-06-23):';
   text += '<br/>• Added 2 new ethereal crops and 2 new ethereal upgrades (field size), requires high level ethereal tree to unlock.';
   text += '<br/>• Ethereal tree now has a dialog to see the things that got unlocked at previous levels.';
