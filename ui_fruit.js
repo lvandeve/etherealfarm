@@ -322,7 +322,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
       x += s;
       var f2 = fruits[i]
-      makeFruitChip(flex, f2, 0, true);
+      makeFruitChip(flex, f2, 0, undefined, true);
 
       styleButton0(flex.div);
       addButtonAction(flex.div, bind(function(f) {
@@ -330,7 +330,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         lastTouchedFruit2 = f;
         resetChoices();
         make();
-      }, f2));
+      }, f2), 'select ' + getFruitAriaLabel(f2));
     }
     if(fruits.length == 0) {
       var flex = new Flex(scrollFlex, 0.01, [0, 0, y], 0.9, [0, 0, y + s]);
@@ -357,7 +357,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
         renderImage(image_swap, canvas);
         styleButton0(flex.div, true);
-        addButtonAction(flex.div, bind(function(f2, e) {
+        addButtonAction(flex.div, bind(function(f, e) {
           if(e.shiftKey) {
             if(!selected) return;
             var temp = f;
@@ -368,19 +368,26 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
             swapped = !swapped;
             make();
           }
-        }, f));
-        registerTooltip(flex.div, 'Swap the fuse order of the two fruits');
-      } else if(f2) {
-        var text = (i == 0) ? 'First selected fuse fruit: "from" fruit' : 'Second selected fuse fruit: "into" fruit';
-        makeFruitChip(flex, f2, 0, true, text);
-        styleButton0(flex.div);
-        addButtonAction(flex.div, bind(function(f2) {
-          createFruitInfoDialog(f);
-        }, f));
+        }, f), 'swap fuse order');
+        registerTooltip(flex.div, 'Swap the fuse order of the two input fruits');
       } else {
-        flex.div.style.backgroundColor = '#ccc';
-        flex.div.style.border = '1px solid black';
-        registerTooltip(flex.div, 'Empty fuse fruit slot, select a fruit above to fuse');
+        if(f2) {
+          var text = (i == 0) ? 'First selected fuse fruit: "from" fruit' : 'Second selected fuse fruit: "into" fruit';
+          makeFruitChip(flex, f2, 0, undefined, true, text);
+        } else {
+          flex.div.style.backgroundColor = '#ccc';
+          flex.div.style.border = '1px solid black';
+          registerTooltip(flex.div, 'Empty fuse fruit slot, select a fruit above to fuse');
+        }
+        styleButton0(flex.div);
+        var fruitname = (i == 0) ? 'From fruit' : 'Into fruit';
+        addButtonAction(flex.div, bind(function(f, i) {
+          if(f) {
+            createFruitInfoDialog(f, fruitname + ' stats');
+          } else {
+            showMessage(fruitname + ' empty, select one from the list above first', C_INVALID);
+          }
+        }, f2, i), fruitname + ': see stats' + (f2 ? ('. ' + getFruitAriaLabel(f2)) : '. Empty.'));
       }
     }
     y += s;
@@ -406,15 +413,18 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     var flex = new Flex(scrollFlex, [0.01, 0, x + result_x], [0, 0, y0c], [0.01, 0, x + s + result_x], [0, 0, y0c + s]);
     x += s;
     if(fuse) {
-      makeFruitChip(flex, fuse, 0, true, 'fused fruit result');
+      makeFruitChip(flex, fuse, 0, undefined, true, 'fused fruit result');
       styleButton0(flex.div);
       addButtonAction(flex.div, bind(function(f) {
-        createFruitInfoDialog(f);
-      }, fuse));
+        createFruitInfoDialog(f, 'Fuse result fruit stats');
+      }, fuse), 'Fused result: see stats' + (f2 ? ('. ' + getFruitAriaLabel(f2)) : ''));
     } else {
       flex.div.style.backgroundColor = '#ccc';
       flex.div.style.border = '1px solid black';
       registerTooltip(flex.div, 'Fused fruit appears here when successful');
+      addButtonAction(flex.div, bind(function(f) {
+        showMessage(fruitname + ' empty, select one from the list above first', C_INVALID);
+      }, fuse), 'Fused result: see stats. Empty');
     }
     //y += s;
 
@@ -814,7 +824,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     f.mark = ((f.mark || 0) + 1) % 5;
     updateFruitUI();
     recreate();
-  }, 'mark favorite');
+  }, 'fruit icon: ' + getFruitAriaLabel(f) + '. Click to mark favorite');
   registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');
 
 
@@ -837,9 +847,9 @@ function createFruitDialog(f, opt_selected) {
   fillFruitDialog(dialog, f, opt_selected);
 }
 
-function createFruitInfoDialog(f) {
+function createFruitInfoDialog(f, opt_label) {
   var dialog = createDialog({
-    title:'Fruit info'
+    title:(opt_label || 'Fruit info')
   });
 
   var scrollFlex = dialog.content;
@@ -907,8 +917,9 @@ function showStorageFruitSourceDialog() {
 function styleFruitChip(flex, f) {
   var ratio = state.res.essence
   flex.div.style.backgroundColor = tierColors_BG[f.tier] + '6';
+  // see also array fruitmarkcolornames
   if(f.mark) {
-    var color = f.mark == 1 ? '#f008' : (f.mark == 2 ? '#fe08' : (f.mark == 3 ? '#4c48' : '#88ff'));
+    var color = fruitmarkcolors[f.mark] || '#fff';
     flex.div.style.border = '3px solid ' + color;
   } else if(f.name) {
     var color = '#aaa';
@@ -923,6 +934,19 @@ function styleFruitChip(flex, f) {
   } else {
     flex.div.style.boxShadow = '';
   }
+}
+
+var fruitmarkcolors = ['#000', '#f008', '#fe08', '#4c48', '#88ff'];
+var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue'];
+
+function getFruitAriaLabel(f, opt_fallback_if_empty) {
+  if(!f) return opt_fallback_if_empty || 'none';
+  //var result = f.toString();
+  var result = '';
+  if(f.name) result += '"' + f.name + '". ';
+  result += f.origName();
+  if(f.mark) result += '. Mark: ' + fruitmarkcolornames[f.mark];
+  return result;
 }
 
 function getFruitTooltipText(f, opt_label) {
@@ -959,12 +983,10 @@ function getFruitTooltipText(f, opt_label) {
   return text;
 }
 
-// type: 0=storage, 1=sacrificial
-function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
+// slot_type: 0=storage, 1=sacrificial
+function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, opt_label) {
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
   renderImage(images_fruittypes[f.type][f.tier], canvas);
-
-
 
   var text = getFruitTooltipText(f, opt_label);
 
@@ -973,9 +995,14 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
   registerTooltip(flex.div, text);
   flex.div.style.userSelect = 'none';
 
-  var typename = type == 0 ? 'storage' : 'sacrificial';
-
   if(!opt_nobuttonaction) {
+    var typename = slot_type == 0 ? 'storage' : 'sacrificial';
+    var label;
+    if(opt_slot_index == undefined) {
+      label = typename + ' slot: ' + getFruitAriaLabel(f);
+    } else {
+      label = typename + ' slot ' + opt_slot_index + ': ' + getFruitAriaLabel(f);
+    }
     styleButton0(flex.div);
     addButtonAction(flex.div, function(e) {
       if(e.shiftKey || eventHasCtrlKey(e)) {
@@ -993,7 +1020,7 @@ function makeFruitChip(flex, f, type, opt_nobuttonaction, opt_label) {
       } else {
         createFruitDialog(f);
       }
-    }, typename + ' fruit slot: ' + f.toString());
+    }, label);
   }
 }
 
@@ -1106,8 +1133,6 @@ function updateFruitUI() {
     var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
 
     styleButton0(canvasFlex.div, true);
-    var fruit_name = 'none';
-    if(state.fruit_stored[i]) fruit_name = state.fruit_stored[i].toString();
     var tooltiptext = 'Make this fruit active';
 
     if(f) tooltiptext += '<br><br>' + getFruitTooltipText(f);
@@ -1117,7 +1142,7 @@ function updateFruitUI() {
       if(i == state.fruit_active) slotnum = -1; // allow having no fruit at all active, by clicking the arrow of the active fruit
       addAction({type:ACTION_FRUIT_ACTIVE, slot:slotnum, silent:true, allow_empty:true});
       update();
-    }, i), 'activate stored fruit ' + i + ': ' + fruit_name);
+    }, i), 'activate fruit ' + i + ': ' + getFruitAriaLabel(state.fruit_stored[i], 'none'));
   }
   y += s;
 
@@ -1138,7 +1163,7 @@ function updateFruitUI() {
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
     if(f) {
-      makeFruitChip(canvasFlex, f, 0);
+      makeFruitChip(canvasFlex, f, 0, i);
     } else {
       canvasFlex.div.style.backgroundColor = '#ccc';
       registerTooltip(canvasFlex.div, 'No stored fruit present in this slot. ' + help);
@@ -1173,7 +1198,7 @@ function updateFruitUI() {
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_sacr.length ? state.fruit_sacr[i] : undefined;
     if(f) {
-      makeFruitChip(canvasFlex, f, 1);
+      makeFruitChip(canvasFlex, f, 1, i);
     } else {
       var j = Math.min(i, i - state.fruit_sacr.length + 4);
       if(j == 0) {

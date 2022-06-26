@@ -3952,7 +3952,8 @@ function basicChallenge() {
 
 // returns that we're not in a challenge where field size is fixed. If returns true, then don't change field size now but only after transcend
 function changingFieldSizeNowOk() {
-  return !basicChallenge();
+  // during the truly basic challenge, field must remain 5x5. During the regular basic challenge, changing field size is ok
+  return basicChallenge() != 2;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

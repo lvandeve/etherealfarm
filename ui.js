@@ -40,6 +40,8 @@ var goalFlex;
 
 var medalFlex;
 
+var topDialogFlex = null;
+var nonDialogFlex = null;
 var mainFlex = null;
 var gameFlex = null;
 
@@ -58,11 +60,15 @@ function makeMainDivs() {
 
   if(mainFlex) mainFlex.removeSelf(null);
   mainFlex = new Flex(null, 0, 0, 1, 1);
+  nonDialogFlex = new Flex(mainFlex, 0, 0, 1, 1);
 
-  gameFlex = new Flex(mainFlex, [0, 0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 0.75], 0.99);
+  gameFlex = new Flex(nonDialogFlex, [0, 0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 0.75], 0.99);
   if(showdebugborders) gameFlex.div.style.border = '2px solid green';
   //gameFlex.div.style.border = '2px solid black';
   //gameFlex.div.style.backgroundColor = '#0001';
+
+  topDialogFlex = new Flex(mainFlex, [0, 0, 0.01, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 0.75], 0.99);
+  topDialogFlex.div.style.visibility = 'hidden';
 
   topFlex = new Flex(gameFlex, 0, 0, 1, 0.05);
   if(showdebugborders) topFlex.div.style.border = '2px solid red';
@@ -87,7 +93,7 @@ function makeMainDivs() {
   goalFlex.div.className = 'efGoal';
 
   // have right pane follow same vertical size rules as the left part for good alignment
-  rightFlex = new Flex(mainFlex, [0, 0, 0.99, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 1.1], 0.99);
+  rightFlex = new Flex(nonDialogFlex, [0, 0, 0.99, 0.75], has_top_notice ? 0.03 : 0.01, [0, 0, 0.99, 1.1], 0.99);
   rightFlex.div.style.visibility = 'hidden';
   rightFlex.div.style.overflow = 'hidden'; // avoid creating unwanted global scrollbars
   //rightFlex.div.style.border = '4px solid red';

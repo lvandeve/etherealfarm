@@ -227,23 +227,15 @@ function createDialog(params) {
   if(!Array.isArray(names)) names = (functions ? [names || 'ok'] : []);
   if(!Array.isArray(functions)) functions = (functions ? [functions] : []);
 
-  // allow giving undefined at input to set an extra function/name to be disabled, remove this from the array here
-  for(var i = 0; i < functions.length; i++) {
-    if(functions[i] == undefined || names[i] == undefined) {
-      functions.splice(i, 1);
-      names.splice(i, 1);
-      i--;
-    }
-  }
 
   var dialog = {};
 
   if(dialog_level < 0) {
     // some bug involving having many help dialogs pop up at once and rapidly closing them using multiple methods at the same time (esc key, click next to dialog, ...) can cause this, and negative dialog_level makes dialogs appear in wrong z-order
     closeAllDialogs();
-    dialog_level = 0;
   }
   dialog_level++;
+  updateDialogLevel();
   dialogshortcutfun = params.shortcutfun; // may be undefined
 
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
@@ -251,14 +243,14 @@ function createDialog(params) {
 
   var dialogFlex;
   if(params.size == DIALOG_TINY) {
-    dialogFlex = new Flex(gameFlex, 0.05, 0.33, 0.95, 0.66);
+    dialogFlex = new Flex(topDialogFlex, 0.05, 0.33, 0.95, 0.66);
   } else if(params.size == DIALOG_SMALL) {
-    dialogFlex = new Flex(gameFlex, 0.05, 0.25, 0.95, 0.75);
+    dialogFlex = new Flex(topDialogFlex, 0.05, 0.25, 0.95, 0.75);
   } else if(params.size == DIALOG_LARGE) {
-    dialogFlex = new Flex(gameFlex, 0.05, 0.05, 0.95, 0.9);
+    dialogFlex = new Flex(topDialogFlex, 0.05, 0.05, 0.95, 0.9);
   } else {
     // default, medium. Designed to be as big as possible without covering up the resource display
-    dialogFlex = new Flex(gameFlex, 0.05, 0.12, 0.95, 0.9);
+    dialogFlex = new Flex(topDialogFlex, 0.05, 0.12, 0.95, 0.9);
   }
 
   dialog.onclose = params.onclose;
@@ -272,6 +264,124 @@ function createDialog(params) {
   setAriaRole(dialogFlex.div, 'dialog');
   dialogFlex.div.setAttribute('aria-modal', 'true');
   dialogFlex.div.style.zIndex = '' + (dialog_level * 10 + 5);
+
+  // function that will be called when the dialog is closed by cancel (including e.g. the esc key), but not ok and extra funs
+  dialog.cancelFun = function() {
+    dialog.closeFun(true);
+  };
+  // function that will be called when the dialog is closed by cancel, ok and extra funs
+  dialog.closeFun = function(opt_cancel) {
+    updatedialogfun = undefined;
+    dialogshortcutfun = undefined;
+    util.removeElement(overlay);
+    for(var i = 0; i < created_dialogs.length; i++) {
+      if(created_dialogs[i] == dialog) {
+        created_dialogs.splice(i, 1);
+        if(i > 0) dialogshortcutfun = created_dialogs[i - 1].shortcutfun;
+        break;
+      }
+    }
+    for(var i = 0; i < created_overlays.length; i++) {
+      if(created_overlays[i] == overlay) {
+        created_overlays.splice(i, 1);
+        break;
+      }
+    }
+    dialog_level--;
+    // a tooltip created by an element from a dialog could remain, make sure those are removed too
+    removeAllTooltips();
+    dialog.removeSelfFun(opt_cancel);
+    showGoalChips(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
+    updateDialogLevel();
+  };
+  // more primitive close, only intended for external use by closeAllDialogs, since that does all the things that closeFun above does in a global way for all dialogs
+  dialog.removeSelfFun = function(opt_cancel) {
+    dialogFlex.removeSelf(topDialogFlex);
+    if(opt_cancel && dialog.oncancel) dialog.oncancel();
+    if(dialog.onclose) dialog.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
+  };
+
+  var topHeight = 0.11;
+
+  var title_x0;
+  var title_x1;
+
+  var xbutton = new Flex(dialogFlex, 1 - topHeight, 0, 1, [0, topHeight]);
+  var canvas = createCanvas('20%', '20%', '60%', '60%', xbutton.div);
+  renderImage(image_close, canvas);
+  styleButton0(xbutton.div);
+  addButtonAction(xbutton.div, dialog.cancelFun, (params.title ? (' close dialog: "' + params.title + '"') : 'dialog close button'));
+  xbutton.div.title = 'close';
+
+  var helpbutton;
+  if(params.help) {
+    helpbutton = new Flex(dialogFlex, 1- topHeight * 2, 0, 1 - topHeight, [0, topHeight]);
+    var canvas = createCanvas('20%', '20%', '60%', '60%', helpbutton.div);
+    renderImage(image_help, canvas);
+    styleButton0(helpbutton.div);
+
+    if(typeof params.help == 'string') {
+      var helptext = params.help;
+      params.help =  function() {
+        var helpdialog = createDialog({scrollable:true});
+        helpdialog.content.div.innerHTML = helptext;
+      };
+    }
+    addButtonAction(helpbutton.div, params.help, 'help');
+    helpbutton.div.title = 'help';
+    title_x0 = topHeight * 2;
+    title_x1 = 1 -topHeight * 2;
+  } else {
+    title_x0 = topHeight;
+    title_x1 = 1 - topHeight;
+  }
+
+  var nobottombuttons = params.nocancel && functions.length == 0;
+  var contentHeight = 0.88;
+  if(params.size == DIALOG_TINY) contentHeight = 0.8; // ensure content doesn't go over the buttons
+  if(params.size == DIALOG_SMALL) contentHeight = 0.8; // ensure content doesn't go over the buttons
+  if(nobottombuttons) contentHeight = 1;
+
+
+  dialog.flex = dialogFlex;
+  dialog.div = dialogFlex.div;
+  var iconmargin = params.iconmargin || 0;
+  dialog.icon = new Flex(dialogFlex, topHeight * iconmargin, [0, topHeight * iconmargin], topHeight * (1 - iconmargin), [0, topHeight * (1 - iconmargin)]);
+
+  if(params.narrow) {
+    dialog.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight * 0.75], FONT_TITLE);
+    dialog.content = new Flex(dialogFlex, topHeight, [0, topHeight * 0.75], 1 - topHeight, contentHeight);
+  } else {
+    dialog.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight], FONT_TITLE);
+    dialog.content = new Flex(dialogFlex, 0.02, [0, topHeight], 0.98, contentHeight);
+  }
+
+  if(params.scrollable) makeScrollable(dialog.content, false);
+  if(params.scrollable_canchange) makeScrollable(dialog.content, true);
+
+  centerText2(dialog.title.div);
+  dialog.titleEl = dialog.title.div.textEl;
+
+  if(params.title) {
+    dialog.title.div.textEl.innerText = params.title;
+    setAriaLabel(dialog.title.div, 'Dialog: ' + params.title);
+  }
+
+  if(params.icon) {
+    canvas = createCanvas('5%', '5%', '90%', '90%', dialog.icon.div);
+    renderImage(params.icon, canvas);
+  }
+
+
+
+  // allow giving undefined at input to set an extra function/name to be disabled, remove this from the array here
+  for(var i = 0; i < functions.length; i++) {
+    if(functions[i] == undefined || names[i] == undefined) {
+      functions.splice(i, 1);
+      names.splice(i, 1);
+      i--;
+    }
+  }
 
   var num_buttons = functions.length + 1;
 
@@ -308,50 +418,17 @@ function createDialog(params) {
       addButtonAction(button, bind(function(fun, e) {
         var keep = fun(e);
         if(!keep) dialog.closeFun(false);
-      }, fun));
+      }, fun), names[i] + ': dialog button');
     }
   }
 
-  // function that will be called when the dialog is closed by cancel (including e.g. the esc key), but not ok and extra funs
-  dialog.cancelFun = function() {
-    dialog.closeFun(true);
-  };
-  // function that will be called when the dialog is closed by cancel, ok and extra funs
-  dialog.closeFun = function(opt_cancel) {
-    updatedialogfun = undefined;
-    dialogshortcutfun = undefined;
-    util.removeElement(overlay);
-    for(var i = 0; i < created_dialogs.length; i++) {
-      if(created_dialogs[i] == dialog) {
-        created_dialogs.splice(i, 1);
-        if(i > 0) dialogshortcutfun = created_dialogs[i - 1].shortcutfun;
-        break;
-      }
-    }
-    for(var i = 0; i < created_overlays.length; i++) {
-      if(created_overlays[i] == overlay) {
-        created_overlays.splice(i, 1);
-        break;
-      }
-    }
-    dialog_level--;
-    // a tooltip created by an element from a dialog could remain, make sure those are removed too
-    removeAllTooltips();
-    dialog.removeSelfFun(opt_cancel);
-    showGoalChips(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
-  };
-  // more primitive close, only intended for external use by closeAllDialogs, since that does all the things that closeFun above does in a global way for all dialogs
-  dialog.removeSelfFun = function(opt_cancel) {
-    dialogFlex.removeSelf(gameFlex);
-    if(opt_cancel && dialog.oncancel) dialog.oncancel();
-    if(dialog.onclose) dialog.onclose(); // this must be called no matter with what method this dialog is closed/forcibly removed/...
-  };
 
   if(!params.nocancel) {
     button = makeButton(true);
     styleButton(button);
-    button.textEl.innerText = params.cancelname || (functions.length > 0 ? 'cancel' : 'back');
-    addButtonAction(button, dialog.cancelFun);
+    var cancelname = params.cancelname || (functions.length > 0 ? 'cancel' : 'back');
+    button.textEl.innerText = cancelname;
+    addButtonAction(button, dialog.cancelFun, cancelname + ': dialog button');
   }
   var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
   created_overlays.push(overlay);
@@ -362,79 +439,11 @@ function createDialog(params) {
   overlay.style.zIndex = '' + (dialog_level * 10);
   if(!params.nobgclose) overlay.onclick = dialog.cancelFun;
 
-
-  var topHeight = 0.11;
-
-  var title_x0;
-  var title_x1;
-  var helpbutton;
-  if(params.help) {
-    helpbutton = new Flex(dialogFlex, 1- topHeight * 2, 0, 1 - topHeight, [0, topHeight]);
-    var canvas = createCanvas('20%', '20%', '60%', '60%', helpbutton.div);
-    renderImage(image_help, canvas);
-    styleButton0(helpbutton.div);
-
-    if(typeof params.help == 'string') {
-      var helptext = params.help;
-      params.help =  function() {
-        var helpdialog = createDialog({scrollable:true});
-        helpdialog.content.div.innerHTML = helptext;
-      };
-    }
-    addButtonAction(helpbutton.div, params.help, 'help');
-    helpbutton.div.title = 'help';
-    title_x0 = topHeight * 2;
-    title_x1 = 1 -topHeight * 2;
-  } else {
-    title_x0 = topHeight;
-    title_x1 = 1 - topHeight;
-  }
-
-  var xbutton = new Flex(dialogFlex, 1 - topHeight, 0, 1, [0, topHeight]);
-  var canvas = createCanvas('20%', '20%', '60%', '60%', xbutton.div);
-  renderImage(image_close, canvas);
-  styleButton0(xbutton.div);
-  addButtonAction(xbutton.div, dialog.cancelFun, 'dialog close button');
-  xbutton.div.title = 'close';
-
-  var nobottombuttons = params.nocancel && functions.length == 0;
-  var contentHeight = 0.88;
-  if(params.size == DIALOG_TINY) contentHeight = 0.8; // ensure content doesn't go over the buttons
-  if(params.size == DIALOG_SMALL) contentHeight = 0.8; // ensure content doesn't go over the buttons
-  if(nobottombuttons) contentHeight = 1;
-
-
-  dialog.flex = dialogFlex;
-  dialog.div = dialogFlex.div;
-  var iconmargin = params.iconmargin || 0;
-  dialog.icon = new Flex(dialogFlex, topHeight * iconmargin, [0, topHeight * iconmargin], topHeight * (1 - iconmargin), [0, topHeight * (1 - iconmargin)]);
-
-  if(params.narrow) {
-    dialog.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight * 0.75], FONT_TITLE);
-    dialog.content = new Flex(dialogFlex, topHeight, [0, topHeight * 0.75], 1 - topHeight, contentHeight);
-  } else {
-    dialog.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight], FONT_TITLE);
-    dialog.content = new Flex(dialogFlex, 0.02, [0, topHeight], 0.98, contentHeight);
-  }
-
-  if(params.scrollable) makeScrollable(dialog.content, false);
-  if(params.scrollable_canchange) makeScrollable(dialog.content, true);
-
-  centerText2(dialog.title.div);
-  dialog.titleEl = dialog.title.div.textEl;
-
-  if(params.title) {
-    dialog.title.div.textEl.innerText = params.title;
-  }
-
-  if(params.icon) {
-    canvas = createCanvas('5%', '5%', '90%', '90%', dialog.icon.div);
-    renderImage(params.icon, canvas);
-  }
-
   window.setTimeout(function() {
     showGoalChips(); // this ensures a faster response time for the display of red help arrows when dialogs are opening/closing, otherwise it only happens after a tick, which, even if sub-second, feels sluggish
   });
+
+  xbutton.div.focus(); // focus an element of the dialog for aria
 
   return dialog;
 }
@@ -457,6 +466,25 @@ function closeAllDialogs() {
 
   // a tooltip created by an element from a dialog could remain, make sure those are removed too
   removeAllTooltips();
+  updateDialogLevel();
+}
+
+// update other effects that are there due to the dialog level
+function updateDialogLevel() {
+  if(dialog_level == 0) {
+    topDialogFlex.div.style.visibility = 'hidden';
+    makeAriaHidden(nonDialogFlex.div, false);
+  } else {
+    topDialogFlex.div.style.visibility = '';
+    makeAriaHidden(nonDialogFlex.div, true);
+
+    if(created_dialogs.length >= dialog_level) {
+      makeAriaHidden(created_dialogs[dialog_level - 1].flex.div, false);
+    }
+    if(dialog_level > 1) {
+      makeAriaHidden(created_dialogs[dialog_level - 2].flex.div, true);
+    }
+  }
 }
 
 // opt_cancel: boolean, whether this is an intential cancel (from the Escape key), so that the dialog's cancel function will be called as well, or a close for another programmatic reason where only closeFun of the dialog should be called.
@@ -465,6 +493,23 @@ function closeTopDialog(opt_cancel) {
     var dialog = created_dialogs[created_dialogs.length - 1];
     if(opt_cancel) dialog.cancelFun();
     else dialog.closeFun(opt_cancel);
+  }
+}
+
+function makeAriaHidden(div, hidden) {
+  // the goal is to make all elements, recursively, of this element hidden, even any focusable elements inside, but have it be still visual (no "display none")
+  // this is for the background behind modal dialogs.
+  // aria-hidden seems to not really work as focusable elements will still be tabbable too, even when due to
+  // modal dialog these elements are not clickable for non screenreader users
+  // but the attribute 'inert' seems to work correctly
+  // also set aria-hidden anyway to really indicate it
+  if(hidden) {
+    div.setAttribute('aria-hidden', true);
+    div.setAttribute('inert', true);
+  } else {
+    div.setAttribute('aria-hidden', false);
+    div.removeAttribute('inert');
+    //div.setAttribute('inert', false);
   }
 }
 

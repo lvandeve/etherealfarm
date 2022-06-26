@@ -20,8 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.3.5 (2022-06-26):';
+  text += '<br/>• Improved HTML aria annotations of modal dialogs and fruit fusing dialog. It should no longer be possible to access HTML elements that are not part of the currently active dialog.';
+  text += '<br/>• Fixed bug preventing field size change during non-truly basic challenge.';
+  text += '<br/><br/>';
+
   text += '0.3.4 (2022-06-25):';
-  text += '<br/>• Improved label annotations for automaton dropdowns.';
+  text += '<br/>• Improved HTML aria annotations for automaton dropdowns.';
   text += '<br/><br/>';
 
   text += '0.3.3 (2022-06-23):';
