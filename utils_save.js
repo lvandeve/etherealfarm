@@ -110,14 +110,22 @@ function decLZ77(s) {
   while(reader.pos < s.length) {
     var num = decUint(reader);
     var len = decUint(reader);
-    if(result.length + num + len > 100000) return null; // too suspiciously long
+    if(result.length + num + len > 100000) {
+      return null; // too suspiciously long
+    }
     var dist = decUint(reader);
-    if(reader.error) return null;
+    if(reader.error) {
+      return null;
+    }
     for(var i = 0; i < num; i++) {
-      if(reader.pos >= s.length) return null;
+      if(reader.pos >= s.length) {
+        return null;
+      }
       result += s[reader.pos++];
     }
-    if(dist > result.length) return null;
+    if(dist > result.length) {
+      return null;
+    }
     for(var i = 0; i < len; i++) {
       result += result[result.length - dist];
     }

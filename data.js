@@ -6798,7 +6798,7 @@ var upgrade3_evolution = registerUpgrade3('Evolve squirrel', function() {
     'Resets and removes all squirrel upgrades. Gives a flat permanent production bonus. Replaces the squirrel upgrade tree with a new, more expensive, tree. You will be weaker after this, but eventually get stronger than ever before thanks to the new upgrades.',
     image_squirrel_evolution);
 
-var upgrade3_stinging_multiplicity_bonus = Num(2);
+var upgrade3_stinging_multiplicity_bonus = Num(1);
 var upgrade3_stinging_multiplicity = registerUpgrade3('stinging multiplicity', undefined,
     'Unlocks multiplicity of stingy crops. Requires that regular multiplicity for berries and mushrooms has been unlocked. Presence of multiple nettles anywhere in the field will give a global nettle bonus. The bonus per nettle is ' + upgrade3_stinging_multiplicity_bonus.toPercentString(),
     images_nettle[4]);
@@ -6813,19 +6813,19 @@ function haveFruitMix(num) {
   return false;
 }
 
-var upgrade3_prestiged_flower_bonus = Num(2);
+var upgrade3_prestiged_flower_bonus = Num(1.5);
 var upgrade3_prestiged_flower = registerUpgrade3('prestiged flower boost', undefined,
     'Prestiged flowers get a ' + upgrade3_prestiged_flower_bonus.toPercentString() + ' boost',
     images_anemone[4]);
 
 
-var upgrade3_prestiged_berry_bonus = Num(3);
+var upgrade3_prestiged_berry_bonus = Num(2);
 var upgrade3_prestiged_berry = registerUpgrade3('prestiged berry boost', undefined,
     'Prestiged berries get a ' + upgrade3_prestiged_berry_bonus.toPercentString() + ' boost',
     blackberry[4]);
 
 
-var upgrade3_prestiged_mushroom_bonus = Num(3);
+var upgrade3_prestiged_mushroom_bonus = Num(2);
 var upgrade3_prestiged_mushroom = registerUpgrade3('prestiged mushroom boost', undefined,
     'Prestiged mushrooms get a ' + upgrade3_prestiged_mushroom_bonus.toPercentString() + ' boost',
     champignon[4]);
@@ -6903,7 +6903,7 @@ registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_automaton], undefi
 ////////////////////////////////////////////////////////////////////////////////
 
 
-var squirrel_epoch_prod_bonus = Num(201);
+var squirrel_epoch_prod_bonus = Num(101);
 
 // as Num, in nuts.
 // i = current amount of squirrel upgrades gotten
