@@ -197,7 +197,7 @@ function registerHelpDialog(id, name, text_short, text, image, opt_text2, images
   d.id = id;
   d.text_short = text_short; // text shown in message log when the help message was already seen and disabled, or undefined to use same as text, or empty string '' to show nothing in this case
   d.name = name;
-  d.text = text;
+  d.text = text; // this may also be a function that returns text instead, for dynamic texts
   d.image = image;
   d.opt_text2 = opt_text2;
   d.images = images;
@@ -210,7 +210,8 @@ function showRegisteredHelpDialog(id, opt_force)  {
   id = Math.abs(id);
   var d = registered_help_dialogs[id];
   if(!d) return;
-  return showHelpDialog(d.id * (neg ? -1 : 1), d.text_short, d.text, d.image, d.opt_text2, d.images, opt_force);
+  var text = (typeof d.text == 'function') ? d.text() : d.text;
+  return showHelpDialog(d.id * (neg ? -1 : 1), d.text_short, text, d.image, d.opt_text2, d.images, opt_force);
 }
 
 // unlock a registered help dialog in the help menu, without actually showing it now
@@ -460,7 +461,7 @@ registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
     images_automaton[4]);
 
 registerHelpDialog(39, 'Squirrel evolution', 'Squirrel evolution',
-    squirrelEvolutionHelp,
+    function() { return getSquirrelEvolutionHelp(); },
     image_squirrel_evolution);
 
 

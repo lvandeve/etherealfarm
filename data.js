@@ -7155,7 +7155,7 @@ function showEvolution3Dialog() {
     cancelname:'cancel',
     title:'Squirrel evolution'
   });
-  dialog.content.div.innerHTML = squirrelEvolutionHelp;
+  dialog.content.div.innerHTML = getSquirrelEvolutionHelp();
   unlockRegisteredHelpDialog(39);
 }
 

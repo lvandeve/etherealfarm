@@ -377,3 +377,28 @@ function updateSquirrelUI() {
     scrollFlex.div.scrollTop = squirrel_scrollpos;
   }
 }
+
+function getSquirrelEvolutionHelp() {
+  return `
+    This will reset all squirrel upgrades and remove their effects, but unlocks a new squirrel tree with more expensive upgrades, and gives a permanent flat bonus.
+    <br><br>
+    After doing this, you will initially be weaker than before, but the new upgrade tree will eventually make you much stronger, so doing this is worth it at some point and you can earn your strength back multifold.
+    Most upgrades of the old squirrel upgrade tree will come back in the new tree (not necessarily in the same order as before), and some new ones appear too.
+    <br><br>
+    What you lose:
+    <br> • All current squirrel upgrades and their effects (including layout effects such as diagonal brassica)
+    <br> • All your nuts will be set to 0
+    <br> • Nuts will stay at 0 and cannot be produced until next transcension
+    <br><br>
+    What you get:
+    <br> • Permanent flat production bonus of ` + squirrel_epoch_prod_bonus.toPercentString() + `
+    <br> • Permanent ethereal tree neighbor bonus of ` + evolution3_ethtree_boost.toPercentString() + `
+    <br> • New squirrel upgrade tree with more expensive upgrades, a mix of new ones and the old ones returning
+    <br> • The first new squirrel upgrade is free and can be chosen immediately
+    <br><br>
+    WARNING: this is irreversible, you cannot respec to go back. Since you will initially be weaker, if there are any challenges or other runs you want to push soon, you may wish to do those first.
+    You can also store a backup of your savegame using export from the main menu first, so that if you feel the reset was not worth it yet, you can still go back to the old savegame.
+    <br><br>
+    TIP: to get back to original strength over the next days, try to get the first new squirrel upgrades. To get those, push to high level berries and mushrooms, then focus on spore production to afford better nuts crops.
+    `;
+}
