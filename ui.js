@@ -40,10 +40,10 @@ var goalFlex;
 
 var medalFlex;
 
-var topDialogFlex = null;
+var mainFlex = null; // takes width of entire screen, not of the actual game
+var gameFlex = null; // anything in this one becomes inactive during modal dialog
+var topDialogFlex = null; // has exactly same size as gameFlex, but can contain elements even during modal dialogs (and the modal dialogs themselves)
 var nonDialogFlex = null;
-var mainFlex = null;
-var gameFlex = null;
 
 var rightFlex;
 var topRightFlex;

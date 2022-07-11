@@ -447,6 +447,8 @@ function openTimeInfoDialog() {
       result += '<b>Next tree level requires:</b> ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')' + '<br><br>';
 
       result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br><br>';
+
+      if(state.g_numresets >= 1) result += '<b>Max level ever:</b> ' + state.g_treelevel + '<br><br>';
     }
     result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
     result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
@@ -577,6 +579,7 @@ function updateResourceUI() {
         var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
         text += '<br>Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
       }
+      if(state.g_numresets >= 1) text += '<br><br>Max level ever: ' + state.g_treelevel;
 
       if(presentGrowSpeedActive()) {
         text += '<br><br>';

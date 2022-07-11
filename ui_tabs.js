@@ -36,6 +36,8 @@ var amberButtonLastText = '';
 var tabNumbers = [];
 var tabNumbersInv = [];
 
+var squirrel_red = false;
+
 // set tab according to its visible numeric order, rather than the internal code
 function setTabNumber(i) {
   if(tabNumbers[i] == undefined) return;
@@ -50,6 +52,8 @@ function getTabNumber() {
 
 function setTab(i, opt_temp) {
   //if(!tabbuttons[i]) return; // trying to set a tab that is not supposed to be visible
+
+  var oldtab = state.currentTab;
 
   if(state.currentTab == tabindex_medals && state.currentTab != i && state.medals_new) {
     // when leaving the achievements tab and there are unseen medals, mark them all as seen now, to not let the player hunt for which
@@ -91,6 +95,10 @@ function setTab(i, opt_temp) {
   }
   if(i == tabindex_squirrel) {
     updateSquirrelUI();
+  }
+  if(oldtab == tabindex_squirrel) {
+    if(state.allupgrade3bought2) state.seen_evolution = true;
+    if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
   }
 
   removeAllDropdownElements();
@@ -243,7 +251,11 @@ function updateTabButtons2() {
   if(tabbuttons[tabnum]) {
     var text = 'ethereal field';
 
-    if(state.treelevel2 > 0) {
+    if(state.treelevel2 > 1) {
+      var twigs_req = treeLevel2Req(state.treelevel2 + 1);
+      var nextlevelprogress = state.res.twigs.div(twigs_req.twigs);
+      text += '<br/>' + state.treelevel2 + ' (' + nextlevelprogress.toPercentString(2) + ')';
+    } else if(state.treelevel2 > 0) {
       text += '<br/>(' + state.treelevel2 + ')';
     }
 
@@ -296,8 +308,12 @@ function updateTabButtons2() {
     if(!haveSquirrel()) {
       text += '<br>(absent)';
       text = '<font color="#c00">' + text + '</font>';
-    } else if(!state.allupgrade3bought && getNextUpgrade3Cost().lte(state.res.nuts)) {
+    } else if(!state.allupgrade3bought && !(state.allupgrade3bought2 && state.seen_evolution) && getNextUpgrade3Cost().lte(state.res.nuts)) {
       text = '<b><font color="red">' + text + '</font></b>';
+      if(!squirrel_red) updateSquirrelUI(); // some gray colored prices become black now, if the tab is currently open
+      squirrel_red = true;
+    } else {
+      squirrel_red = false;
     }
 
     if(text != squirrelButtonLastText) {

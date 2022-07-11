@@ -162,16 +162,17 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
         return true;
     }, index);
 
-    var showfun = bind(function(tooltipfun, plantfun) {
-        var text = tooltipfun();
+    var showfun = bind(function(tooltipfun, plantfun, c) {
+        var text = 'Ethereal ' + upper(c.name) + '<br><br>' + tooltipfun();
         var dialog = createDialog({
           size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM),
           title:'Ethereal crop info',
           names:'plant',
-          functions:plantfun
+          functions:plantfun,
+          icon:c.image[4]
         });
         dialog.content.div.innerHTML = text;
-    }, tooltipfun, plantfun);
+    }, tooltipfun, plantfun, c);
 
 
     var chip = makePlantChip2(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.field2[y][x]);

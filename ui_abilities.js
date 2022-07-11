@@ -600,6 +600,11 @@ document.addEventListener('keydown', function(e) {
     if(state.g_numresets > 0) setTab(tabindex_field2);
   }
 
+  if(key == 'z' && !shift && ctrl) {
+    loadUndo();
+    update();
+  }
+
   if(code == 'Escape' && !shift && !ctrl) {
     createSettingsDialog();
   }

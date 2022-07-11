@@ -262,7 +262,7 @@ var Utils = (function() {
   // See explanation at setIntervalSafe
   var setTimeoutSafe = function(fun, msec) {
     // NOTE: this is very unreliable in modern browsers, especially when tabs come back from background
-    var time0 = (new Date()).getTime(); // milliseconds since epich
+    var time0 = (new Date()).getTime(); // milliseconds since unix epoch
     var canceled = false;
 
     // test: disable the requestAnimationFrame step: makes it faster for small msec amounts, but however

@@ -337,7 +337,7 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
         result += 'This template represents all crops of type ' + getCropTypeName(c.type);
         result += '<br/><br/>It is a placeholder for planning the field layout and does nothing.';
         result += '<br><br>Templates are a feature provided by the automaton.';
-        result += '<br><br>Tip: ctrl+shift+click a template to turn it into a crop of highest available tier of this type.';
+        result += '<br><br>Tip: ctrl+shift+click a template, or hover over it and press \'u\', to turn it into a crop of highest available tier of this type.';
       } else if(c.isghost) {
         result += 'Ghostly remainder of a ' + getCropTypeName(c.type) + ', does nothing. Automaton won\'t touch this either.';
       } else {
@@ -398,16 +398,17 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
       return true;
     }, index);
 
-    var showfun = bind(function(tooltipfun, plantfun) {
-      var text = tooltipfun();
+    var showfun = bind(function(tooltipfun, plantfun, c) {
+      var text = upper(c.name) + '<br><br>' + tooltipfun();
       var dialog = createDialog({
         size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM),
         title:'Crop info',
         names:'plant',
-        functions:plantfun
+        functions:plantfun,
+        icon:c.image[4]
       });
       dialog.content.div.innerHTML = text;
-    }, tooltipfun, plantfun);
+    }, tooltipfun, plantfun, c);
 
     var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y, plantfun, showfun, tooltipfun, opt_replace, opt_recoup);
     tx++;

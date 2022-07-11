@@ -71,7 +71,7 @@ function getCropInfoHTMLBreakdown(f, c) {
     result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
   }
   var prod = c.getProd(f);
-  if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
+  if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_NUT) {
     var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, false, bdname + ' (production/s)');
   }

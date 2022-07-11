@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.4.0 (2022-07-11):';
+  text += '<br/>• Added squirrel evolution at the end of the squirrel upgrade tree. When purchased, this resets the squirrel tree to a new one with a new mix of new and old upgrades. This makes production initially significantly weaker, but allows getting much stronger than before eventually.';
+  text += '<br/>• Added 4 more tiers of nuts crops.';
+  text += '<br/>• In squirrel UI, simplified the rule used when it reveals the name of the upgrade or shows "???". There are no more red colored chips, only gray for those that aren\'t in reach to buy.';
+  text += '<br/>• Added ctrl+z as shortcut for undo.';
+  text += '<br/>• Fixed lightning bolt after game pause during stormy challenge.';
+  text += '<br/>• Fixed automaton cost configuration dropdowns, which broke by the modal dialogs update.';
+  text += '<br/>• Various other fixes and tweaks.'; // max tree level in top left info box popup, fix fruit ability order sometimes not preserved after fusing, auto upgrades of nuts crops not working after unlocking squirrel first time and defaulting to 100% instead of 50%, bold highlight for fruit fuse that increases charge, ethereal tree percentage to next level shown in tab, icons in the while-planting 'show crop info' dialogs, ...
+  text += '<br/><br/>';
+
   text += '0.3.5 (2022-06-26):';
   text += '<br/>• Improved HTML aria annotations of modal dialogs and fruit fusing dialog. It should no longer be possible to access HTML elements that are not part of the currently active dialog.';
   text += '<br/>• Fixed bug preventing field size change during non-truly basic challenge.';

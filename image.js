@@ -524,6 +524,17 @@ function generateImage(text) {
   return [data, w, h];
 };
 
+function fillCanvas(id, data, canvas, w, h) {
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      id.data[(y * w + x) * 4 + 0] = data[y][x][0];
+      id.data[(y * w + x) * 4 + 1] = data[y][x][1];
+      id.data[(y * w + x) * 4 + 2] = data[y][x][2];
+      id.data[(y * w + x) * 4 + 3] = data[y][x][3];
+    }
+  }
+}
+
 // internal canvas (in memory texture)
 function createCanvasImageFor(image) {
   if(!image) return undefined;
@@ -537,14 +548,7 @@ function createCanvasImageFor(image) {
   var ctx = canvas.getContext("2d");
   var id = ctx.createImageData(w, h);
 
-  for(var y = 0; y < h; y++) {
-    for(var x = 0; x < w; x++) {
-      id.data[(y * w + x) * 4 + 0] = data[y][x][0];
-      id.data[(y * w + x) * 4 + 1] = data[y][x][1];
-      id.data[(y * w + x) * 4 + 2] = data[y][x][2];
-      id.data[(y * w + x) * 4 + 3] = data[y][x][3];
-    }
-  }
+  fillCanvas(id, data, canvas, w, h);
 
   ctx.putImageData(id, 0, 0);
   return [id, w, h, canvas, image];
@@ -556,7 +560,17 @@ function createCanvasImageFor(image) {
 // like generateImage, but creates a canvas data for it (not a visible canvas, but one that servers as texture in memory that can be put on visible canvases)
 function generateImageCanvas(text) {
   return createCanvasImageFor(generateImage(text));
-};
+}
+
+// overwrites canvas of existing image result with new data. object is what was returned by generateImageCanvas
+function regenerateImageCanvas(text, object) {
+  var image = generateImage(text);
+  var id = object[0];
+  var canvas = object[3];
+  fillCanvas(id, image[0], canvas, image[1], image[2]);
+  var ctx = canvas.getContext("2d");
+  ctx.putImageData(id, 0, 0);
+}
 
 // creates a new canvas, doesn't delete any. WARNING: If re-using this function on existing div, ensure to clear it first!
 // difference from generateImageCanvas: the canvas from createCanvas is a visible canvas, that of generateImageCanvas is the texture in memory

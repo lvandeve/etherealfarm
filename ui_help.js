@@ -205,12 +205,18 @@ function registerHelpDialog(id, name, text_short, text, image, opt_text2, images
 
 // returns whether an actual dialog was shown (and not just log messages or nothing)
 // set id to a negative value to not show the dialog, but only unlock it for the dynamic help system
-function showRegisteredHelpDialog(id, opt_force, opt_unlock_only)  {
+function showRegisteredHelpDialog(id, opt_force)  {
   var neg = id < 0;
   id = Math.abs(id);
   var d = registered_help_dialogs[id];
   if(!d) return;
   return showHelpDialog(d.id * (neg ? -1 : 1), d.text_short, d.text, d.image, d.opt_text2, d.images, opt_force);
+}
+
+// unlock a registered help dialog in the help menu, without actually showing it now
+function unlockRegisteredHelpDialog(id) {
+  if(state.help_seen_text[id] != id) showMessage('Unlocked dynamic help dialog: ' + registered_help_dialogs[id].text_short, C_HELP);
+  state.help_seen_text[id] = id;
 }
 
 
@@ -389,7 +395,7 @@ registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nut
     <br><br>
     Nuts crops unlock at tree level 45, the first one is Almond. You can have max 1 nut crop in the main field, but it can be upgraded and replaced with better types. Nuts crops benefit from flowers, but only in a limited form independent of flower upgrades or bees, nuts crops are not affected by the same boosts as berries or mushrooms, they have their own more limited boosts. Watercress can copy from nuts, but only at half effectiveness and without fruit bonus.
     <br><br>
-    Buy squirrel upgrades in the squirrel tab. Squirrel upgrades are laid out in a tech tree. Each next squirrel upgrade costs ` + upgrade3_mul.toString() + `x more than the previous one, no matter what order you do them in. Get higher tree levels and nut crops to get enough nuts for the next one.
+    Buy squirrel upgrades in the squirrel tab. Squirrel upgrades are laid out in a tech tree. Each next squirrel upgrade costs exponentially more than the previous one, no matter what order you do them in. Get higher tree levels and nut crops to get enough nuts for the next one.
     <br><br>
     You can respec the squirrel upgrades if you regret a decision, using a respec token. You get a few for free, more can be gotten for amber in the amber tab.
     <br><br>
@@ -453,6 +459,10 @@ registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
     'You unlocked auto-prestige for the automaton! This is integrated with auto-unlock: the same cost settings of auto-unlock are used for auto-prestige, and you can use a toggle to enable/disable auto-prestige.',
     images_automaton[4]);
 
+registerHelpDialog(39, 'Squirrel evolution', 'Squirrel evolution',
+    squirrelEvolutionHelp,
+    image_squirrel_evolution);
+
 
 function createKeyboardHelpDialog() {
   var dialog = createDialog({scrollable:true, title:'Shortcuts'});
@@ -494,6 +504,8 @@ function createKeyboardHelpDialog() {
   text += ' • <b>"f"</b>: go to the basic field tab';
   text += '<br/>';
   text += ' • <b>"e"</b>: go to the ethereal field tab (if available)';
+  text += '<br/>';
+  text += ' • <b>"ctrl + z"</b>: undo / redo';
   text += '<br/>';
   text += ' • <b>], }, ) or ></b>: select next active fruit. Can be changed in the preferences under "controls" to instead select next game tab.';
   text += '<br/>';

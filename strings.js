@@ -47,3 +47,16 @@ var altChallengeBonusInfo = 'This challenge uses the alternate bonus pool, it is
 var pausedMessage = 'game paused';
 var unpausedMessage = 'game resumed from pause';
 var etherealDeleteExtraInfo = 'You can re-arrange the ethereal field (deleting crops) only at the start of a run, once more at any time later during the run, and after that once every two hours. Planting, tier up, or if you have no automaton or squirrel replacing 1 crop by it, is always possible.';
+var squirrelEvolutionHelp = `
+This will reset all squirrel upgrades and remove their effects (including layout effects such as diagonal brassica), set your nuts to zero, and keep them zero until transcension.
+<br><br>
+Instead you will get a flat permanent production bonus (a large bonus, but not as large as the original squirrel upgrades were worth), and a completely new squirrel upgrade tree with more expensive upgrades. The ethereal tree also gets a small permanent boost to its neighbors from the start. And the first new squirrel upgrade is free!
+<br><br>
+After doing this, you will initially be weaker than before, but the new upgrade tree will eventually make you much stronger, so doing this is worth it at some point and you can earn your strength back multifold.
+Most upgrades of the old squirrel upgrade tree will come back in the new tree (not necessarily in the same order as before), and some new ones appear too.
+<br><br>
+WARNING: this is irreversible, you cannot respec to go back. Since you will initially be weaker, if there are any challenges or other runs you want to push soon, you may wish to do those first.
+You can also store a backup of your savegame using export from the main menu first, so that if you feel the reset was not worth it yet, you can still go back to the old savegame.
+<br><br>
+TIP: to get back to original strength over the next days, try to get the first new squirrel upgrades. To get those, push to high level berries and mushrooms, then focus on spore production to afford better nuts crops.
+`;

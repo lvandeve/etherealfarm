@@ -246,12 +246,13 @@ function createNumberFormatDialog() {
   var romanbutton = new Flex(dialog.content, 0.1, 0.75, 0.9, 0.8, FONT_BIG_BUTTON).div;
   styleButton(romanbutton, 1);
   var updatebuttontext = function(romanbutton) {
-    romanbutton.textEl.innerText = state.roman ? 'roman numbers: enabled' : 'roman numbers: up to 12';
+    romanbutton.textEl.innerText = (state.roman == 1) ? 'roman numbers: enabled' : ((state.roman == 0) ? 'roman numbers: up to 12' : 'roman numbers: disabled');
   };
   updatebuttontext(romanbutton);
   registerTooltip(romanbutton, 'Choose whether to use roman numbers for upgrade levels, fruit levels, etc... If disabled, roman numbers are still used up to 12, but for higher values switch to decimal.');
   addButtonAction(romanbutton, bind(function(romanbutton, updatebuttontext, e) {
-    state.roman = !state.roman;
+    state.roman++;
+    if(!(state.roman >= 0 && state.roman <= 1)) state.roman = 0;
     updatebuttontext(romanbutton);
     updateUI();
   }, romanbutton, updatebuttontext));
@@ -739,13 +740,20 @@ function createStatsDialog() {
     text += '• winter resin bonus: ' + open + '+' + getWinterTreeResinBonus().subr(1).toPercentString() + close + '<br>';
   }
   if(haveMultiplicity(CROPTYPE_BERRY)) {
-    text += '• multiplicity (berry and mushroom): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+    text += '• berry multiplicity: ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+    text += '• mushroom multiplicity: ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_MUSH)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
   if(haveMultiplicity(CROPTYPE_FLOWER)) {
-    text += '• multiplicity (flower): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+    text += '• flower multiplicity: ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
   if(haveMultiplicity(CROPTYPE_BEE)) {
-    text += '• multiplicity (bee): ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BEE)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+    text += '• bee multiplicity: ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_BEE)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+  }
+  if(haveMultiplicity(CROPTYPE_STINGING)) {
+    text += '• stinging multiplicity: ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_STINGING)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
+  }
+  if(state.evolution3 > 0) {
+    text += '• squirrel evolutions: ' + open + state.evolution3 + close + '<br>';
   }
   text += '<br>';
 

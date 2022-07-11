@@ -711,6 +711,8 @@ function beginNextRun(opt_challenge) {
   state.resinfruittime = 0;
   state.twigsfruittime = 0;
 
+  state.just_evolution = false;
+
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
   if(state.negative_time > 3600) state.negative_time = 3600;
 }
@@ -765,6 +767,7 @@ var ACTION_PLANT_BLUEPRINT = action_index++;
 var ACTION_PLANT_BLUEPRINT2 = action_index++;
 var ACTION_UPGRADE3 = action_index++; // squirrel upgrade
 var ACTION_RESPEC3 = action_index++; // respec squirrel upgrades
+var ACTION_EVOLUTION3 = action_index++; // reset squirrel evolution
 var ACTION_AMBER = action_index++; // amber effects
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 
@@ -2583,6 +2586,7 @@ var update = function(opt_ignorePause) {
     state.lastambertime += d;
     state.lastEtherealDeleteTime += d;
     state.lastEtherealPlantTime += d;
+    state.lastLightningTime += d;
 
     // this is for e.g. after importing a save while paused
     // TODO: try to do this only when needed rather than every tick while paused
@@ -2903,7 +2907,7 @@ var update = function(opt_ignorePause) {
       } else if(type == ACTION_UPGRADE3) {
         if(fast_forwarding) continue;
 
-        var s = stages3[action.s];
+        var s = stages3[state.evolution3][action.s];
         var s2 = state.stages3[action.s];
         var b = action.b; // which branch (left: 0, middle: 1, right: 2)
         var d = action.d; // depth in the branch
@@ -2955,21 +2959,28 @@ var update = function(opt_ignorePause) {
         if(ok) {
           var u = upgrades3[us[d]];
           var u2 = state.upgrades3[us[d]];
-          u2.count++;
-          s2.num[b]++;
-          s2.seen[b] = Math.max(s2.seen[b], s2.num[b]);
-          state.res.nuts.subInPlace(nuts);
-          state.upgrades3_spent.addInPlace(nuts);
-          state.g_numupgrades3++;
-          showMessage('Purchased squirrel upgrade: ' + u.name);
 
-          state.upgrades3_count++; // this is a derived state computed in computeDerived, but update it now here as well so that if there are multiple upgrade3 action in a row, the gated checks work correctly
+          var cancel = false;
+          if(u.fun) {
+            // e.g. the reset-squirrel-tree upgrade is special
+            cancel = u.fun();
+          }
 
-          if(u.index == upgrade3_fruitmix || u.index == upgrade3_fruitmix2) showRegisteredHelpDialog(37);
+          if(!cancel) {
+            u2.count++;
+            s2.num[b]++;
+            s2.seen[b] = Math.max(s2.seen[b], s2.num[b]);
+            state.res.nuts.subInPlace(nuts);
+            state.upgrades3_spent.addInPlace(nuts);
+            state.g_numupgrades3++;
+            state.upgrades3_count++; // this is a derived state computed in computeDerived, but update it now here as well so that if there are multiple upgrade3 action in a row, the gated checks work correctly
+            showMessage('Purchased squirrel upgrade: ' + u.name + '. Next costs: ' + getUpgrade3Cost(state.upgrades3_count).toString() + ' nuts');
 
-          if(u.fun) u.fun();
 
-          store_undo = true;
+            if(u.index == upgrade3_fruitmix || u.index == upgrade3_fruitmix2 || u.index == upgrade3_fruitmix3) showRegisteredHelpDialog(37);
+
+            store_undo = true;
+          }
         }
       } else if(type == ACTION_RESPEC3) {
         if(fast_forwarding) continue;
@@ -2989,7 +3000,7 @@ var update = function(opt_ignorePause) {
             state.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
           }
           var new_stages3 = [];
-          for(var i = 0; i < stages3.length; i++) {
+          for(var i = 0; i < stages3[state.evolution3].length; i++) {
             new_stages3[i] = new Stage3State();
             if(state.stages3[i]) {
               for(var j = 0; j < new_stages3[i].seen.length; j++) new_stages3[i].seen[j] = state.stages3[i].seen[j];
@@ -3009,6 +3020,9 @@ var update = function(opt_ignorePause) {
 
           store_undo = true;
         }
+      } else if(type == ACTION_EVOLUTION3) {
+        performEvolution3();
+        store_undo = true;
       } else if(type == ACTION_AMBER) {
         if(fast_forwarding) continue;
 
@@ -3736,9 +3750,9 @@ var update = function(opt_ignorePause) {
 
         var fruitmix = 0;
         // due to gated squirrel upgrades, it's always ensured if you have a next one, you also have the previous one
-        if(state.upgrades3[upgrade3_fruitmix].count) fruitmix = 2;
-        if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix = 4;
-        if(state.upgrades3[upgrade3_fruitmix3].count) fruitmix = 5;
+        if(haveFruitMix(1)) fruitmix = 2;
+        if(haveFruitMix(2)) fruitmix = 4;
+        if(haveFruitMix(3)) fruitmix = 5;
 
         var f = fuseFruit(a, b, fruitmix, action.transfer_choices, action.keep_choices);
         if(f) {

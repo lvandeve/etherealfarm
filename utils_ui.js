@@ -1083,7 +1083,7 @@ function makeDropdown(flex, title, current, choices, fun) {
   flex.div.className = 'efDropDown';
 
   // added to root, rather than flex itself, because otherwise any mouse action or styling applied to flex, also occurs on those choices, while that's not desired
-  var choiceFlex = new Flex(gameFlex, x0, y0, x1, y1);
+  var choiceFlex = new Flex(topDialogFlex, x0, y0, x1, y1);
 
   choiceFlex.div.style.zIndex = '1000';
   choiceFlex.div.className = 'efDropDown';

@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getUpgrade3InfoText(u, gated, is_gate, unknown) {
   var infoText = 'Squirrel upgrade: ' + (unknown ? '???' : u.name);
   infoText += '<br><br>';
+  infoText += unknown ? 'Buy more upgrades to reveal the description of this one' : upper(u.description);
+  infoText += '<br><br>';
   if(gated || is_gate) {
     infoText += 'Gated: you must buy all squirrel upgrades that come before this, including side branches above, before this one unlocks.';
     infoText += '<br><br>';
@@ -27,11 +29,7 @@ function getUpgrade3InfoText(u, gated, is_gate, unknown) {
   var cost = new Res({nuts:getNextUpgrade3Cost()});
   infoText += 'Next costs: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
   infoText += '<br>';
-  infoText += 'Nuts available: ' + state.res.nuts.toString();
-  infoText += '<br>';
-  infoText += 'Grow nut crops in the main field to get more nuts.';
-  infoText += '<br><br>';
-  infoText += unknown ? 'Buy more upgrades to reveal the description of this one' : upper(u.description);
+  infoText += 'Nuts available: ' + state.res.nuts.toString() + '. Grow nut crops in the main field to get more nuts.';
   return infoText;
 }
 
@@ -39,26 +37,27 @@ function getUpgrade3InfoText(u, gated, is_gate, unknown) {
 // Required upgrades are: all upgrades in the current branch before this one, all upgrades in the center branch of all previous stages, and all upgrades in all branches of all previous stages above the last gated stage
 function buyAllSquirrelUpgradesUpTo(stage, b, d, opt_final_gated) {
   var new_actions = [];
+  var stages3e = stages3[state.evolution3];
 
   var gate = -1;//stage.index;
   for(var i = stage.index; i > 0; i--) {
-    if(stages3[i].gated) {
+    if(stages3e[i].gated) {
       gate = i;
       break;
     }
   }
   for(var si = 0; si < stage.index; si++) {
     var gated = si < gate;
-    for(var i = 0; i < stages3[si].upgrades1.length; i++) {
+    for(var i = 0; i < stages3e[si].upgrades1.length; i++) {
       if(squirrelUpgradeBuyable(si, 1, i) == 0) continue; // already bought
       new_actions.push({type:ACTION_UPGRADE3, s:si, b:1, d:i});
     }
     if(gated) {
-      for(var i = 0; i < stages3[si].upgrades0.length; i++) {
+      for(var i = 0; i < stages3e[si].upgrades0.length; i++) {
         if(squirrelUpgradeBuyable(si, 0, i) == 0) continue; // already bought
         new_actions.push({type:ACTION_UPGRADE3, s:si, b:0, d:i});
       }
-      for(var i = 0; i < stages3[si].upgrades2.length; i++) {
+      for(var i = 0; i < stages3e[si].upgrades2.length; i++) {
         if(squirrelUpgradeBuyable(si, 2, i) == 0) continue; // already bought
         new_actions.push({type:ACTION_UPGRADE3, s:si, b:2, d:i});
       }
@@ -99,14 +98,15 @@ function buyAllSquirrelUpgradesUpTo(stage, b, d, opt_final_gated) {
 
 // s2 = stage state, u = the upgrade for this branch and depth in this stage, b = branch in this stage, d = depth of upgrade in this stage
 function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
+  var stages3e = stages3[state.evolution3];
   // whether the last chip of the previous stage is in state "can buy"
   var prev_canbuy = false;
   if(stage.index > 0) {
-    var p = stages3[stage.index - 1];
+    var p = stages3e[stage.index - 1];
     var p2 = state.stages3[stage.index - 1];
     if(p2.num[1] + 1 == p.upgrades1.length && p2.num[1] > 0) prev_canbuy = true;
     if(stage.index > 1 && !prev_canbuy && p.upgrades1.length == 1) {
-      var pp = stages3[stage.index - 2];
+      var pp = stages3e[stage.index - 2];
       var pp2 = state.stages3[stage.index - 2];
       if(pp2.num[1] == pp.upgrades1.length) prev_canbuy = true;
     }
@@ -117,12 +117,20 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   var bought = buyable == 0;
   var gated = buyable == 2;
   var canbuy = buyable == 1;
-  var next = buyable == 3;
-  //var next2 = buyable == 4;
-  //var unknown = buyable >= 5;
-  var next2 = false; // not used after all: since many stages have no center upgrade, quite a lot is visible in future already anyway
+  /*var next = buyable == 3;
   var unknown = buyable >= 4 && s2.seen[b] <= d;
   var known = buyable >= 4 && s2.seen[b] > d; // seen before, so name is revealed instead of '???', but otherwise still rendered with the color of an unknown chip.
+  */
+
+  //var next_gated = (stage.index + 1 < stages3e.length && stages3e[stage.index + 1].gated) || (stage.index + 2 < stages3e.length && stages3e[stage.index + 2].gated) ;
+  //var next_gated = (stage.index > 0 && stages3e[stage.index - 1].gated) || (stage.index > 1 && stages3e[stage.index - 2].gated) ;
+  //var next_gated = (stage.index > 0 && stages3e[stage.index - 1].gated);
+  var next_gated = stage.gated_index > state.highest_gated_index;
+
+  var next = buyable == 3;
+  var unknown = buyable >= 3;
+  var known = unknown && (s2.seen[b] > d || stage.gated_index2 <= state.highest_gated_index2 || (next && !next_gated));
+  if(known) unknown = false;
 
   var is_gate = stage.gated;
 
@@ -132,15 +140,13 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   centerText2(textFlex.div);
 
   var text = unknown ? '???' : upper(u.name);
-  //var text = unknown ? ('?' + upper(u.name) + '?') : upper(u.name);
 
   var can_afford = getNextUpgrade3Cost().le(state.res.nuts);
 
   if(bought) flex.div.className = 'efSquirrelBought';
   else if(canbuy && !can_afford) flex.div.className = 'efSquirrelCantAfford';
   else if(canbuy) flex.div.className = 'efSquirrelBuy';
-  else if(next) flex.div.className = 'efSquirrelNext';
-  //else if(next2) flex.div.className = 'efSquirrelUnknown';
+  //else if(next) flex.div.className = 'efSquirrelNext';
   else if(gated) flex.div.className = 'efSquirrelGated';
   else flex.div.className = 'efSquirrelUnknown';
 
@@ -151,7 +157,7 @@ function renderUpgrade3Chip(flex, stage, s2, u, b, d) {
   canvasFlex.div.style.backgroundColor = '#ccc';
   canvasFlex.div.style.border = '1px solid black';
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
-  var image = (unknown || known) ? medalhidden[0] : u.image;
+  var image = unknown ? medalhidden[0] : u.image;
   renderImage(image, canvas);
   styleButton0(canvasFlex.div);
 
@@ -289,6 +295,7 @@ var squirrel_scrollpos = undefined;
 var squirrel_scrollflex = undefined;
 
 function updateSquirrelUI() {
+  var stages3e = stages3[state.evolution3];
   squirrelFlex.clear();
   squirrel_scrollflex = undefined;
   if(!squirrelUnlocked()) return;
@@ -359,9 +366,12 @@ function updateSquirrelUI() {
 
   var y = 0.15;
 
-  for(var i = 0; i < stages3.length; i++) {
-    y = renderStage(scrollFlex, stages3[i], y);
+  for(var i = 0; i < stages3e.length; i++) {
+    y = renderStage(scrollFlex, stages3e[i], y);
   }
+
+  // only upgrade is squirrel evolution, scroll to it by default
+  if(state.allupgrade3bought2 && !state.allupgrade3bought && (squirrel_scrollpos == undefined || squirrel_scrollpos == 0)) squirrel_scrollpos = scrollFlex.div.scrollHeight;
 
   if(squirrel_scrollpos) {
     scrollFlex.div.scrollTop = squirrel_scrollpos;

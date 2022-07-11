@@ -35,12 +35,12 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_SUMMER: return getSeason() == 1 ? 'S' : 's';
       case FRUIT_AUTUMN: return getSeason() == 2 ? 'S' : 's';
       case FRUIT_WINTER: return getSeason() == 3 ? 'S' : 's';
-      case FRUIT_SPRING_SUMMER: return ((getSeason() == 0 || getSeason() == 1) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
-      case FRUIT_SUMMER_AUTUMN: return ((getSeason() == 1 || getSeason() == 2) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
-      case FRUIT_AUTUMN_WINTER: return ((getSeason() == 2 || getSeason() == 3) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
-      case FRUIT_WINTER_SPRING: return ((getSeason() == 3 || getSeason() == 0) && !!state.upgrades3[upgrade3_fruitmix].count) ? 'S' : 's';
-      case FRUIT_ALL_SEASON: return !!state.upgrades3[upgrade3_fruitmix2].count ? 'S' : 's';
-      case FRUIT_ALL_SEASON2: return !!state.upgrades3[upgrade3_fruitmix3].count ? 'S' : 's';
+      case FRUIT_SPRING_SUMMER: return ((getSeason() == 0 || getSeason() == 1) && haveFruitMix(1)) ? 'S' : 's';
+      case FRUIT_SUMMER_AUTUMN: return ((getSeason() == 1 || getSeason() == 2) && haveFruitMix(1)) ? 'S' : 's';
+      case FRUIT_AUTUMN_WINTER: return ((getSeason() == 2 || getSeason() == 3) && haveFruitMix(1)) ? 'S' : 's';
+      case FRUIT_WINTER_SPRING: return ((getSeason() == 3 || getSeason() == 0) && haveFruitMix(1)) ? 'S' : 's';
+      case FRUIT_ALL_SEASON: return haveFruitMix(2) ? 'S' : 's';
+      case FRUIT_ALL_SEASON2: return haveFruitMix(3) ? 'S' : 's';
       case FRUIT_RESINBOOST: return 'RS';
       case FRUIT_TWIGSBOOST: return 'TW';
       case FRUIT_NUTBOOST: return 'NU';
@@ -193,7 +193,7 @@ function createFruitHelp(opt_fusing_only) {
   text += ' • collect a fruit D that has berry boost, and if necessary, move berry boost to the first slot';
   text += '<br/>';
   text += ' • fuse ABC into D, resulting in the desired fruit with flower boost and berry boost. Don\'t forget to level up its abilities, since they\'ll all be set to level 1.';
-  if(state.upgrades3[upgrade3_fruitmix].count) {
+  if(haveFruitMix(1)) {
     text += '<br/><br/>';
     text += '<b>Seasonal fruit mixing</b>';
     text += '<br/><br/>';
@@ -400,9 +400,9 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
     var fruitmix = 0;
     // due to gated squirrel upgrades, it's always ensured if you have a next one, you also have the previous one
-    if(state.upgrades3[upgrade3_fruitmix].count) fruitmix = 2;
-    if(state.upgrades3[upgrade3_fruitmix2].count) fruitmix = 4;
-    if(state.upgrades3[upgrade3_fruitmix3].count) fruitmix = 5;
+    if(haveFruitMix(1)) fruitmix = 2;
+    if(haveFruitMix(2)) fruitmix = 4;
+    if(haveFruitMix(3)) fruitmix = 5;
 
     var message = [undefined];
     var intofruit = swapped ? selected : f;
@@ -449,13 +449,15 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         } else {
           var text = '';
           var other = swapped ? selected : f;
-          text += 'ability: ' + fuse.abilityToString(i);
+          var highlight = false;
+          if(i < other.abilities.length && other.abilities[i] == fuse.abilities[i] && fuse.charge[i] > other.charge[i]) highlight = true;
+          text += 'ability: ' + fuse.abilityToString(i, false, false, highlight);
           if(i < other.abilities.length) {
             text += '  (was: ' + other.abilityToString(i) + ')';
           } else {
             text += '  (was: none)';
           }
-          flex.div.innerText = text;
+          flex.div.innerHTML = text;
         }
         y += h * 1.2;
       }

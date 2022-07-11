@@ -456,18 +456,20 @@ function State() {
     this.upgrades2[registered_upgrades2[i]] = new Upgrade2State();
   }
 
+  this.evolution3 = 0;
+  this.stages3 = []; // must be inited with initStages3 at appropriate times
+  this.upgrades3_spent = Num(0); // nuts spent on upgrades3, can be given back on respec
+  this.nuts_before = Num(0); // nuts before evolution change
+  this.just_evolution = false; // if true, did squirrel evolution during this run so no nuts are produced
+  this.seen_evolution = false; // to no longer color tab red if only upgrade is evolution
+
+
   // squirrel upgrades
   // NOT saved, stages3 is saved instead. But does give the info of upgrades from stages, including "count" if an upgrade appears multiple times in various stages. This one is kept in sync, not computed by computeDerived.
   this.upgrades3 = [];
   for(var i = 0; i < registered_upgrades3.length; i++) {
     this.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
   }
-  // this is saved
-  this.stages3 = [];
-  for(var i = 0; i < stages3.length; i++) {
-    this.stages3[i] = new Stage3State();
-  }
-  this.upgrades3_spent = Num(0); // nuts spent on upgrades3, can be given back on respec
 
 
   this.misttime = 0; // mist is unlocked if state.upgrades[upgrade_mistunlock].count
@@ -499,7 +501,7 @@ function State() {
   // settings / preferences
   this.notation = Num.N_LATIN; // number notation
   this.precision = 3; // precision of the numeric notation
-  this.roman = true; // use roman numbers in various places (upgrade levels, ...)
+  this.roman = 1; // use roman numbers in various places (upgrade levels, ...). 1: all roman, 0: roman up to 12, 2: no roman
   this.mobilemode = false;
   this.saveonexit = true; // save with the window unload event (this is different than the interval based autosave)
   this.tooltipstyle = 1;
@@ -565,7 +567,7 @@ function State() {
   8: mistletoe (not used for upgrade, but used for auto unlock for example in other fraction arrays below)
   9: nuts
   */
-  this.automaton_autoupgrade_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autoupgrade_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
   /*
   0: auto plant disabled
@@ -834,9 +836,15 @@ function State() {
   // derived stat, not to be saved
   this.upgrades3_count = 0;
 
+  // derived stat, not to be saved
+  this.highest_gated_index = 0; // e.g. 0 if in no squirrel upgrade gated upgrades bought yet, 1 if in the stages after the first such gate, etc...
+  this.highest_gated_index2 = 0; // similar but for gated_index2
+
   // whether all squirrel upgrades (all stages) bought
   // derived stat, not to be saved
   this.allupgrade3bought = false;
+  // similar, but ignores squirrel evolution once seen
+  this.allupgrade3bought2 = false;
 
   // derived stat, not to be saved
   this.medals_earned = 0;
@@ -909,6 +917,19 @@ function State() {
   // derived stat, not to be saved.
   this.numnonemptyblueprints = 0;
 }
+
+// this.evolution3 must already be set to the intended evolution
+// must be called for new state, after loading save, or after evolution3 changes
+State.prototype.initStages3 = function() {
+  this.stages3 = [];
+  var stages3e = stages3[this.evolution3];
+  for(var i = 0; i < stages3e.length; i++) {
+    this.stages3[i] = new Stage3State();
+  }
+
+  var image_squirrel_evolution = (this.evolution3 == 0) ? image_squirrel : image_squirrel2;
+  for(var i = 0; i < images_squirrel.length; i++) regenerateImageCanvas(image_squirrel_evolution, images_squirrel[i]);
+};
 
 function lastTreeLevelUpTime(state) {
   // state.lasttreeleveluptime is time of previous time tree leveled, after transcend this is time tree leveled before that transcend! but for this function's return value, the starttime is used for that instead to fix that
@@ -1020,9 +1041,7 @@ function createInitialState() {
   clearField(state);
   clearField2(state);
 
-
   state.crops[brassica_0].unlocked = true;
-
 
   state.g_starttime = util.getTime();
   state.c_starttime = state.g_starttime;
@@ -1034,6 +1053,8 @@ function createInitialState() {
   state.fruit_seed = Math.floor(Math.random() * 281474976710656);
   state.fern_seed = Math.floor(Math.random() * 281474976710656);
   state.present_seed = Math.floor(Math.random() * 281474976710656);
+
+  state.initStages3();
 
   return state;
 }
@@ -1229,17 +1250,35 @@ function computeDerived(state) {
     state.upgrades3_count += u2.count;
   }
 
+  var stages3e = stages3[state.evolution3];
+
+  state.highest_gated_index = 0;
+  state.highest_gated_index2 = 0;
+  for(var i = 0; i < stages3e.length; i++) {
+    if(i >= state.stages3.length) break;
+    var bought = false;
+    if(state.stages3[i].num[0] > 0 && state.stages3[i].num[0] >= stages3e[i].upgrades0.length) bought = true;
+    if(state.stages3[i].num[1] > 0 && state.stages3[i].num[1] >= stages3e[i].upgrades1.length) bought = true;
+    if(state.stages3[i].num[2] > 0 && state.stages3[i].num[2] >= stages3e[i].upgrades2.length) bought = true;
+    if(bought) {
+      state.highest_gated_index = Math.max(state.highest_gated_index, stages3e[i].gated_index);
+      state.highest_gated_index2 = Math.max(state.highest_gated_index2, stages3e[i].gated_index2);
+    }
+  }
+
   state.allupgrade3bought = true;
-  for(var i = 0; i < stages3.length; i++) {
+  for(var i = 0; i < stages3e.length; i++) {
     if(i >= state.stages3.length) {
       state.allupgrade3bought = false;
       break;
     }
-    if(state.stages3[i].num[0] < stages3[i].upgrades0.length) state.allupgrade3bought = false;
-    if(state.stages3[i].num[1] < stages3[i].upgrades1.length) state.allupgrade3bought = false;
-    if(state.stages3[i].num[2] < stages3[i].upgrades2.length) state.allupgrade3bought = false;
+    if(state.stages3[i].num[0] < stages3e[i].upgrades0.length) state.allupgrade3bought = false;
+    if(state.stages3[i].num[1] < stages3e[i].upgrades1.length) state.allupgrade3bought = false;
+    if(state.stages3[i].num[2] < stages3e[i].upgrades2.length) state.allupgrade3bought = false;
     if(!state.allupgrade3bought) break;
   }
+  state.allupgrade3bought2 = state.allupgrade3bought;
+  if(state.evolution3 == 0 && state.upgrades3_count == 33) state.allupgrade3bought2 = true;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1386,13 +1425,17 @@ function Fruit() {
     return this.origName();
   };
 
-  this.abilityToString = function(i, opt_abbreviated, opt_nolevels) {
+  this.abilityToString = function(i, opt_abbreviated, opt_nolevels, opt_highlightcharge) {
     var result = '';
     result += getFruitAbilityName(this.abilities[i], opt_abbreviated);
     if(this.abilities[i] != FRUIT_NONE) {
       if(!opt_nolevels && !isInherentAbility(this.abilities[i])) result += ' ' + toRomanUpTo(this.levels[i]);
-      if(!opt_nolevels && this.charge[i] == 1) result += ' [*]';
-      if(!opt_nolevels && this.charge[i] == 2) result += ' [**]';
+      if(!opt_nolevels && this.charge[i]) {
+        if(opt_highlightcharge) result += '<b>';
+        if(this.charge[i] == 1) result += ' [*]';
+        if(this.charge[i] == 2) result += ' [**]';
+        if(opt_highlightcharge) result += '</b>';
+      }
     }
     return result;
   };
@@ -1453,9 +1496,9 @@ function getFruitAbility_MultiSeasonal(ability, opt_basic) {
   var last = f.abilities[f.abilities.length - 1];
 
   if(last < FRUIT_SPRING_SUMMER || last > FRUIT_ALL_SEASON2) return [0, ability]; // fruit is not a multi-season fruit.
-  if(!state.upgrades3[upgrade3_fruitmix]) return [0, ability]; // squirrel upgrade not active
-  if(last >= FRUIT_ALL_SEASON2 && !state.upgrades3[upgrade3_fruitmix3]) last = FRUIT_ALL_SEASON; // squirrel upgrade not active for dragon fruit, but try if it still works as star fruit instead
-  if(last >= FRUIT_ALL_SEASON && !state.upgrades3[upgrade3_fruitmix2]) return [0, ability]; // squirrel upgrade not active
+  if(!haveFruitMix(1)) return [0, ability]; // squirrel upgrade not active
+  if(last >= FRUIT_ALL_SEASON2 && !haveFruitMix(3)) last = FRUIT_ALL_SEASON; // squirrel upgrade not active for dragon fruit, but try if it still works as star fruit instead
+  if(last >= FRUIT_ALL_SEASON && !haveFruitMix(2)) return [0, ability]; // squirrel upgrade not active
 
   if(ability >= FRUIT_SPRING && ability <= FRUIT_WINTER) {
     if(last == FRUIT_ALL_SEASON2) return [1, last];
@@ -1636,13 +1679,14 @@ function getPrevTwigsHour() {
 
 // for UI invalidation, ...
 function getNumberFormatCode() {
-  return Num.precision * 200 + Num.notation * 2 + (state.roman ? 1 : 0);
+  return Num.precision * 300 + Num.notation * 3 + state.roman;
 }
 
 // to roman numeral, but only up to 12 if the roman numerals option is disabled in the state.
 // Can only be used when the state is already initialized
 var toRomanUpTo = function(v) {
-  if(!state.roman && v > 12) return v.toString();
+  if(state.roman == 2) return v.toString();
+  if(state.roman == 0 && v > 12) return v.toString();
   return util.toRoman(v);
 };
 
@@ -1696,7 +1740,10 @@ function autoPrestigeEnabled() {
 }
 
 function getEtherealAutomatonNeighborBoost() {
-  return automatonboost.add(upgrade3_automaton_boost.mulr(state.upgrades3[upgrade3_automaton].count));
+  var result = Num(automatonboost);
+  result.addInPlace(upgrade3_automaton_boost.mulr(state.upgrades3[upgrade3_automaton].count));
+  result.addInPlace(upgrade3_automaton_boost2.mulr(state.upgrades3[upgrade3_automaton2].count));
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1712,15 +1759,6 @@ function squirrelUnlocked() {
   return !!state.upgrades2[upgrade2_squirrel].count;
 }
 
-// as Num, in nuts.
-function getUpgrade3Cost(i) {
-  return upgrade3_base.mul(upgrade3_mul.powr(i));
-}
-
-function getNextUpgrade3Cost() {
-  return getUpgrade3Cost(state.upgrades3_count);
-}
-
 // opt_replacing: set to true if this crop replaces an existing non-template (aka real) nuts crop
 function tooManyNutsPlants(opt_replacing) {
   // Reason for this limitation: the intention of nut plants is to have an extra resource alongside an otherwise normal resin and twigs generating field, and make it more fun to do a deeper push with such a field by having the highly exponentially growing nuts resource
@@ -1729,7 +1767,10 @@ function tooManyNutsPlants(opt_replacing) {
 }
 
 function getEtherealSquirrelNeighborBoost() {
-  return squirrelboost.add(upgrade3_squirrel_boost.mulr(state.upgrades3[upgrade3_squirrel].count));
+  var result = Num(squirrelboost);
+  result.addInPlace(upgrade3_squirrel_boost.mulr(state.upgrades3[upgrade3_squirrel].count));
+  result.addInPlace(upgrade3_squirrel_boost2.mulr(state.upgrades3[upgrade3_squirrel2].count));
+  return result;
 }
 
 /*
@@ -1746,14 +1787,15 @@ b = branch
 d = depth in branch
 */
 function squirrelUpgradeBuyable(si, b, d) {
-  var s = stages3[si]; // the stage, as Stage3 object
+  var stages3e = stages3[state.evolution3];
+  var s = stages3e[si]; // the stage, as Stage3 object
   var s2 = state.stages3[si]; // Stage3State object
   // how many non-bought ones in the center branch of the previous stages, when going up one by one until we reach the bought one or the root (capped at 3)
   var above = 0;
   var u = s.index - 1;
   for(;;) {
     if(u < 0) break;
-    var p = stages3[u];
+    var p = stages3e[u];
     var p2 = state.stages3[u];
     var numfree = p.upgrades1.length - p2.num[1];
     above += numfree;

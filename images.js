@@ -1462,4 +1462,23 @@ var image_checkbox_off = generateImageCanvas(`
 `);
 
 
+var image_squirrel_evolution = generateImageCanvas(`
+....aaaaa.......
+...aAAAAAaa.....
+..aA@@@@@AAa....
+..A@.....@@AXO..
+.aA@..o....XOoo.
+aA@oooaaa.XOoooo
+aAoo0oAAAXOooooo
+aAoooo@@@XOooooo
+aA@.Xoo..XOo@oo.
+aA@ooooo.XOoAa..
+aA@.XXooOOooA@..
+aA@..XXooooAa@A.
+.aA@ooooaaaa.@Aa
+..aAA@@@@@@@@Aa.
+...aaAAAAAAAAa..
+.....aaaaaaaa...
+`);
+
 

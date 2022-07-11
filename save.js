@@ -282,7 +282,7 @@ function encState(state, opt_raw_only) {
   processUint6(state.keys_numbers_shift);
   processUint6(state.keys_brackets);
   processBool(state.keepinterestingfruit);
-  processBool(state.roman);
+  processUint6(state.roman);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -661,6 +661,11 @@ function encState(state, opt_raw_only) {
   }
   processUintArray(array0);
   processUintArray(array1);
+  id = 3; // indicating id of below one extra clearly, because it was added later but is read as the first value in decoding
+  processUint(state.evolution3);
+  processNum(state.nuts_before);
+  processBool(state.just_evolution);
+  processBool(state.seen_evolution);
 
   section = 23; id = 0; // amber effects
   processBool(state.amberprod);
@@ -1223,7 +1228,7 @@ function decState(s) {
     state.keys_brackets = 3;
   }
   if(save_version >= 4096*1+90) state.keepinterestingfruit = processBool();
-  if(save_version >= 262144*2+64*2+1) state.roman = processBool();
+  else if(save_version >= 262144*2+64*2+1) state.roman = (save_version >= 262144*2+64*4+0) ? processUint6() : processBool();
   if(error) return err(4);
 
 
@@ -1832,7 +1837,16 @@ function decState(s) {
 
   var squirrel_undo_refunds = 0; // in case some upgrades get refunded due to version changes
 
+  if(save_version >= 262144*2+64*4+0) {
+    id = 3; // this one is further in the savegame, but read it first since it's needed for the below
+    state.evolution3 = processUint();
+    id = 0; // reset it back
+  }
+  state.initStages3();
+
   if(save_version >= 4096*1+74) {
+    var stages3e = stages3[state.evolution3];
+
     state.upgrades3_spent = processNum();
     array0 = processUintArray();
     array1 = [];
@@ -1841,6 +1855,12 @@ function decState(s) {
       if(array1.length != array0.length) return err(4);
     } else {
       for(var i = 0; i < array0.length; i++) array1[i] = array0[i];
+    }
+    id = 4; // skip state.evolution3 which was already read above
+    if(save_version >= 262144*2+64*4+0) {
+      state.nuts_before = processNum();
+      state.just_evolution = processBool();
+      state.seen_evolution = processBool();
     }
     if(save_version < 4096*1+100 && array0.length >= 39 && array0[37]) {
       // two new squirrel upgrades inserted, at the last group, move the one gated upgrade one forward, and refund it
@@ -1854,7 +1874,7 @@ function decState(s) {
     index0 = 0;
     index1 = 0;
     if(array0.length % 3 != 0) return err(4);
-    if(array0.length > stages3.length * 3) return err(4);
+    if(array0.length > stages3e.length * 3) return err(4);
 
     var num = Math.floor(array0.length / 3);
     for(var i = 0; i < num; i++) {
@@ -1870,15 +1890,15 @@ function decState(s) {
         s3.num[1] = 0;
         s3.seen[1] = false;
       }
-      if(s3.num[0] > stages3[i].upgrades0.length) return err(4);
-      if(s3.num[1] > stages3[i].upgrades1.length) return err(4);
-      if(s3.num[2] > stages3[i].upgrades2.length) return err(4);
-      for(var j = 0; j < s3.num[0]; j++) state.upgrades3[stages3[i].upgrades0[j]].count++;
-      for(var j = 0; j < s3.num[1]; j++) state.upgrades3[stages3[i].upgrades1[j]].count++;
-      for(var j = 0; j < s3.num[2]; j++) state.upgrades3[stages3[i].upgrades2[j]].count++;
-      if(s3.seen[0] > stages3[i].upgrades0.length) return err(4);
-      if(s3.seen[1] > stages3[i].upgrades1.length) return err(4);
-      if(s3.seen[2] > stages3[i].upgrades2.length) return err(4);
+      if(s3.num[0] > stages3e[i].upgrades0.length) return err(4);
+      if(s3.num[1] > stages3e[i].upgrades1.length) return err(4);
+      if(s3.num[2] > stages3e[i].upgrades2.length) return err(4);
+      for(var j = 0; j < s3.num[0]; j++) state.upgrades3[stages3e[i].upgrades0[j]].count++;
+      for(var j = 0; j < s3.num[1]; j++) state.upgrades3[stages3e[i].upgrades1[j]].count++;
+      for(var j = 0; j < s3.num[2]; j++) state.upgrades3[stages3e[i].upgrades2[j]].count++;
+      if(s3.seen[0] > stages3e[i].upgrades0.length) return err(4);
+      if(s3.seen[1] > stages3e[i].upgrades1.length) return err(4);
+      if(s3.seen[2] > stages3e[i].upgrades2.length) return err(4);
     }
   }
   if(error) return err(4);

@@ -516,6 +516,22 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
   }
 
+  if(!basic) {
+    // squirrel evolution
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+      if(state.evolution3 > 0) {
+        result.mulInPlace(squirrel_epoch_prod_bonus);
+        if(breakdown) breakdown.push(['squirrel evolution', true, squirrel_epoch_prod_bonus, result.clone()]);
+      }
+    }
+  }
+
+  if(this.type == CROPTYPE_NUT && state.just_evolution) {
+    result.mulrInPlace(0);
+    if(breakdown) breakdown.push(['squirrel evolution in progress', true, Num(0), result.clone()]);
+    return result;
+  }
+
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     if(state.challenge == challenge_wither) {
       // wither challenge
@@ -671,12 +687,24 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
         }
+        if(state.crops[this.index].prestige && state.upgrades3[upgrade3_prestiged_berry].count) {
+          var bonus = upgrade3_prestiged_berry_bonus.mulr(state.upgrades3[upgrade3_prestiged_berry].count).addr(1);
+          bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
+          result.mulInPlace(bonus);
+          if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
+        }
       }
       if(this.type == CROPTYPE_MUSH) {
         if(state.upgrades3[upgrade3_mushroom].count) {
           var bonus = upgrade3_mushroom_bonus.mulr(state.upgrades3[upgrade3_mushroom].count).addr(1);
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
+        }
+        if(state.crops[this.index].prestige && state.upgrades3[upgrade3_prestiged_mushroom].count) {
+          var bonus = upgrade3_prestiged_mushroom_bonus.mulr(state.upgrades3[upgrade3_prestiged_mushroom].count).addr(1);
+          bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
+          result.mulInPlace(bonus);
+          if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
         }
       }
     }
@@ -1073,6 +1101,12 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
         }
+        if(state.crops[this.index].prestige && state.upgrades3[upgrade3_prestiged_flower].count) {
+          var bonus = upgrade3_prestiged_flower_bonus.mulr(state.upgrades3[upgrade3_prestiged_flower].count).addr(1);
+          bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
+          result.mulInPlace(bonus);
+          if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
+        }
       }
     }
   }
@@ -1100,7 +1134,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
 
   if(!basic) {
     // multiplicity
-    if((this.type == CROPTYPE_FLOWER) && haveMultiplicity(this.type)) {
+    if((this.type == CROPTYPE_FLOWER || this.type == CROPTYPE_STINGING) && haveMultiplicity(this.type)) {
       // multiplicity only works by fully grown crops, not for intermediate growing ones
       var num = getMultiplicityNum(this);
       if(num > 0) {
@@ -1741,9 +1775,9 @@ var nut_9  = registerNut('macadamia nut', 9, nutplanttime0 * 10, images_macademi
 var nut_10  = registerNut('peanut', 10, nutplanttime0 * 11, images_peanut);
 var nut_11  = registerNut('pecan nut', 11, nutplanttime0 * 12, images_pecan);
 var nut_12  = registerNut('pili nut', 12, nutplanttime0 * 13, images_pili);
-var nut_13  = registerNut('pine nut', 13, nutplanttime0 * 14, undefined);
-var nut_14 = registerNut('pistachio', 14, nutplanttime0 * 15, undefined);
-var nut_15 = registerNut('walnut', 15, nutplanttime0 * 16, undefined);
+var nut_13  = registerNut('pine nut', 13, nutplanttime0 * 14, images_pinenut);
+var nut_14 = registerNut('pistachio', 14, nutplanttime0 * 15, images_pistachio);
+var nut_15 = registerNut('walnut', 15, nutplanttime0 * 16, images_walnut);
 
 crop_register_id = 200;
 
@@ -2432,22 +2466,18 @@ var nutunlock_11 = registerCropUnlock(nut_11, getNutCost(11), nut_10, function()
   return true;
 });
 var nutunlock_12 = registerCropUnlock(nut_12, getNutCost(12), nut_11, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_13 = registerCropUnlock(nut_13, getNutCost(13), nut_12, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_14 = registerCropUnlock(nut_14, getNutCost(14), nut_13, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
 var nutunlock_15 = registerCropUnlock(nut_15, getNutCost(15), nut_14, function(){
-  return false; // not yet enabled for now
   if(!haveSquirrel()) return false;
   return true;
 });
@@ -3086,6 +3116,9 @@ registerPlantTypeMedal(nut_9, 1);
 registerPlantTypeMedal(nut_10, 1);
 registerPlantTypeMedal(nut_11, 1);
 registerPlantTypeMedal(nut_12, 1);
+registerPlantTypeMedal(nut_13, 1);
+registerPlantTypeMedal(nut_14, 1);
+registerPlantTypeMedal(nut_15, 1);
 
 // was: 600
 medal_register_id = 1000;
@@ -3377,8 +3410,8 @@ for(var i = 0; i < 8; i++) {
 }
 
 medal_register_id = 2900;
-var nuts_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33, 1e36, 1e39, 1e42, 1e45, 1e48, 1e51, 1e54, 1e57, 1e60, 1e63, 1e66, 1e69, 1e72, 1e75, 1e78, 1e81, 1e84, 1e87, 1e90];
-var nuts_achievement_bonuses_percent =   [  1,   3,   5,   10,   20,   30,   40,   50,   60,   70,   80,  100,  150,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
+var nuts_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33, 1e36, 1e39, 1e42, 1e45, 1e48, 1e51, 1e54, 1e57, 1e60, 1e63, 1e66, 1e69, 1e72, 1e75, 1e78, 1e81, 1e84, 1e87, 1e90, 1e93, 1e96, 1e99];
+var nuts_achievement_bonuses_percent =   [  1,   3,   5,   10,   20,   30,   40,   50,   60,   70,   80,  100,  150,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000];
 for(var i = 0; i < nuts_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
   var num = Num(nuts_achievement_values[i]);
@@ -3425,6 +3458,14 @@ registerMedal('undeletable ghost', 'get a ghost-crop during the undeletable chal
 registerMedal('truly basic speed', 'reach level 10 in the truly basic challenge in 2.5 hours or less', image_hourglass, function() {
   return state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= 9000;
 }, Num(2));
+
+
+medal_register_id = 3020;
+
+registerMedal('squirrel evolution', 'evolve the squirrel', image_squirrel_evolution, function() {
+  return state.evolution3 >= 1;
+}, Num(100));
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4070,8 +4111,10 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
           num_squirrel++;
         }
       }
-      if(dir < 4 && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM) && state.upgrades3[upgrade3_ethtree].count) {
-        treemul.addInPlace(upgrade3_ethtree_boost);
+      if(dir < 4 && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM)) {
+        if(state.evolution3 > 0) treemul.addInPlace(evolution3_ethtree_boost);
+        if(state.upgrades3[upgrade3_ethtree].count) treemul.addInPlace(upgrade3_ethtree_boost.mulr(state.upgrades3[upgrade3_ethtree].count));
+        if(state.upgrades3[upgrade3_ethtree2].count) treemul.addInPlace(upgrade3_ethtree_boost2.mulr(state.upgrades3[upgrade3_ethtree2].count));
         num_tree++;
       }
     }
@@ -4696,7 +4739,7 @@ var upgrade2_squirrel = registerUpgrade2('unlock squirrel', LEVEL2, Res({resin:1
   unlockEtherealCrop(squirrel2_0);
   state.res.nuts = Num(0); // reset nuts to 0 when squirrel unlocks first time, to avoid accidental nuts available from one of the older version of the game (in one old version, these were an actual resource, in another nut plants were accidently released with too high nuts production)
   showRegisteredHelpDialog(35);
-}, function(){return true;}, 1, 'the squirrel can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks nuts, squirrel upgrades and the squirrel in the basic field', undefined, undefined, images_squirrel[4]);
+}, function(){return true;}, 1, 'unlocks the squirrel, nut crops, and a new squirrel tab with a new kind of upgrade. The squirrel must be placed in the ethereal field and then also boosts 8 neighboring ethereal plants. Nuts crops unlock starting from tree level 45.', undefined, undefined, images_squirrel[4]);
 
 
 var upgrade2_highest_level_bonus = Num(0.005);
@@ -4998,16 +5041,16 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     return Num(0.25); // not upgradeable
   }
   if(ability >= FRUIT_SPRING_SUMMER && ability <= FRUIT_WINTER_SPRING) {
-    if(!state.upgrades3[upgrade3_fruitmix].count) return Num(0)
+    if(!haveFruitMix(1)) return Num(0)
     return Num(0.3); // not upgradeable
   }
   if(ability == FRUIT_ALL_SEASON) {
-    if(!state.upgrades3[upgrade3_fruitmix2].count) return Num(0)
+    if(!haveFruitMix(2)) return Num(0)
     return Num(0.35); // not upgradeable
   }
   if(ability == FRUIT_ALL_SEASON2) {
-    if(!state.upgrades3[upgrade3_fruitmix3].count) {
-      if(!state.upgrades3[upgrade3_fruitmix2].count) return Num(0)
+    if(!haveFruitMix(3)) {
+      if(!haveFruitMix(2)) return Num(0)
       return Num(0.35); // act like star fruit in that case
     }
     if(opt_basic && basicChallenge()) return Num(0.4); // in case of basic challenge, only be slightly better than starfruit rather than a big jump up
@@ -5570,6 +5613,57 @@ function fruitsHaveSameAbilities(a, b) {
   return sameabilities;
 }
 
+// In fuseFruit, sometimes abilities don't line up, e.g. both original and fused fruit result have "bee boost", but they won't be on the same line.
+// It is easier to see what the effect of the fuse is if matching abilities match, so this reorders them if needed.
+// orig is the "into" fruit
+// NOTE: only affects the charge and abilities arrays, not levels or starting levels! Must be used before setting those but after already setting charge and abilities.
+// TODO: instead make the code in fuseFruit not cause the badly-ordered abilities if possible, to avoid the need for this
+function fuseFruitMatchOrder(f, orig) {
+  var ma = {};
+  var mb = {};
+  for(var i = 0; i < orig.abilities.length; i++) {
+    ma[orig.abilities[i]] = i;
+  }
+  var known = [];
+  var unk = [];
+  var ok = true;
+  for(var i = 0; i < f.abilities.length; i++) {
+    mb[f.abilities[i]] = i;
+    if(ma[f.abilities[i]] != undefined) {
+      if(orig.abilities[i] != f.abilities[i]) ok = false;
+    } else {
+      unk.push(i);
+    }
+  }
+  if(ok) return; // nothing to do, skip the rest
+
+  for(var i = 0; i < orig.abilities.length; i++) {
+    if(mb[orig.abilities[i]] != undefined) {
+      known.push(mb[orig.abilities[i]]);
+    }
+  }
+
+  var known_index = 0;
+  var unk_index = 0;
+  var arr = [];
+  for(var i = 0; i < f.abilities.length; i++) {
+    var a = f.abilities[i];
+    if(ma[a] != undefined) {
+      arr[i] = known[known_index++];
+    } else {
+      arr[i] = unk[unk_index++];
+    }
+  }
+  for(var i = 0; i < arr.length; i++) {
+    var j = arr[i];
+    arr[i] = [f.abilities[j], f.charge[j]];
+  }
+  for(var i = 0; i < arr.length; i++) {
+    f.abilities[i] = arr[i][0];
+    f.charge[i] = arr[i][1];
+  }
+}
+
 // fuses from fruit b into a
 // a: the "into" fruit
 // b: the "from" fruit
@@ -5739,6 +5833,8 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
     f.abilities[i] = arr[i][0];
     f.charge[i] = arr[i][1];
   }
+  fuseFruitMatchOrder(f, a);
+
 
   // set up starting levels
   for(var i = 0; i < n; i++) {
@@ -5746,6 +5842,7 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
     f.levels[i] = level;
     f.starting_levels[i] = level;
   }
+
 
   fuseFruitAutoLevel(a, b, f);
 
@@ -6425,18 +6522,37 @@ function haveMultiplicity(opt_croptype) {
 
   if(opt_croptype == CROPTYPE_BEE) return state.challenges[challenge_rockier].completed && state.upgrades3[upgrade3_bee_multiplicity].count;
 
+  if(opt_croptype == CROPTYPE_STINGING) return state.challenges[challenge_rockier].completed && state.upgrades3[upgrade3_stinging_multiplicity].count;
+
   return false;
 }
 
 // the result must be multiplied by getMultiplicityNum, to get the actual intended resulting bonus
 function getMultiplicityBonusBase(croptype) {
+  if(croptype == CROPTYPE_BERRY) {
+    var result = Num(0.25);
+    if(state.upgrades3[upgrade3_berry_multiplicity_boost].count) {
+      result.addInPlace(upgrade3_berry_multiplicity_boost_bonus.mulr(state.upgrades3[upgrade3_berry_multiplicity_boost].count));
+    }
+    return result;
+  }
+  if(croptype == CROPTYPE_MUSH) {
+    var result = Num(0.25);
+    if(state.upgrades3[upgrade3_mushroom_multiplicity_boost].count) {
+      result.addInPlace(upgrade3_mushroom_multiplicity_boost_bonus.mulr(state.upgrades3[upgrade3_mushroom_multiplicity_boost].count));
+    }
+    return result;
+  }
   if(croptype == CROPTYPE_FLOWER) {
     return upgrade3_flower_multiplicity_bonus;
   }
   if(croptype == CROPTYPE_BEE) {
     return upgrade3_bee_multiplicity_bonus;
   }
-  return Num(0.25);
+  if(croptype == CROPTYPE_STINGING) {
+    return upgrade3_stinging_multiplicity_bonus;
+  }
+  return Num(0.1);
 }
 
 function getMultiplicityNum(crop) {
@@ -6476,19 +6592,12 @@ function getMultiplicityNum(crop) {
 ////////////////////////////////////////////////////////////////////////////////
 
 
-// cost of the first upgrade3
-var upgrade3_base = Num(1000);
-// how much more expensive every next upgrade3 is
-// this is a large exponential factor on purpose: higher tree levels will also give exponentialy more nuts income, so this
-// encourages pushing for high tree levels. The high factor also makes even planting multiple nuts plants not significant compared to getting higher tree levels
-var upgrade3_mul = Num(10);
-
 // @constructor
 function Upgrade3() {
   this.name = 'a';
   this.description = undefined; // longer description than the name, with details, shown if not undefined
 
-  // function that applies the upgrade. If non-empty, gets called after the count of this upgrade was incremented in the state.
+  // function that applies the upgrade. If non-empty, gets called after the count of this upgrade was incremented in the state. If it returns true, that also means: 'cancel', e.g. if it has a delayed effect like a dialog with ok button that handles everything (like squirrel evolution)
   this.fun = undefined;
 
   // optional extra precondition for this upgrade to unlock
@@ -6511,6 +6620,8 @@ function Stage3() {
   this.gated = false;
 
   this.index = 0;
+  this.gated_index = 0; // index of gated section this stage is in
+  this.gated_index2 = 0; // similar to gated, but considers any stage with upgrade in the center as gated. Used for revealing of unknown upgrades in the squirrel UI
 
   this.num_above = 0; // how many upgrades are in the stages above. This is for counting whether you had all upgrades when gated
 
@@ -6539,7 +6650,7 @@ function registerUpgrade3(name, fun, description, image) {
 
   upgrade.image = image || medalhidden[0];
 
-  upgrade.fun = null;
+  upgrade.fun = fun || null;
 
   upgrade.description = description;
 
@@ -6548,23 +6659,34 @@ function registerUpgrade3(name, fun, description, image) {
 
 
 var stages3 = [];
+var stages3_gated_index = [];
+var stages3_gated_index2 = [];
 
 // These are only ever registered in the exact order they appear, and are not intended to ever change order in future game updates, only append at the end.
-function registerStage3(upgrades0, upgrades1, upgrades2, opt_gated) {
+function registerStage3(evolution, upgrades0, upgrades1, upgrades2, opt_gated) {
+  if(!stages3[evolution]) stages3[evolution] = [];
+  var stages3e = stages3[evolution];
+  if(!stages3_gated_index[evolution]) stages3_gated_index[evolution] = 0;
+  if(!stages3_gated_index2[evolution]) stages3_gated_index2[evolution] = 0;
+
   var stage = new Stage3();
   stage.upgrades0 = upgrades0 || [];
   stage.upgrades1 = upgrades1 || [];
   stage.upgrades2 = upgrades2 || [];
   stage.gated = !!opt_gated;
 
-  stage.index = stages3.length;
+  stage.index = stages3e.length;
+  if(opt_gated) stages3_gated_index[evolution]++;
+  if(opt_gated || !!upgrades1) stages3_gated_index2[evolution]++;
+  stage.gated_index = stages3_gated_index[evolution];
+  stage.gated_index2 = stages3_gated_index2[evolution];
 
   if(stage.index > 0) {
-    var prev = stages3[stage.index - 1];
+    var prev = stages3e[stage.index - 1];
     stage.num_above = prev.num_above + prev.upgrades0.length + prev.upgrades1.length + prev.upgrades2.length;
   }
 
-  stages3.push(stage);
+  stages3e.push(stage);
 }
 
 upgrade3_register_id = 10;
@@ -6637,10 +6759,8 @@ var upgrade3_leveltime = registerUpgrade3('time at level bonus', undefined, 'unl
 
 var upgrade3_bee_multiplicity_bonus = Num(0.1);
 var upgrade3_bee_multiplicity = registerUpgrade3('bee multiplicity', undefined,
-    'Unlocks multiplicity of bees. Requires that regular multiplicity for berries and mushrooms has been unlocked. Given that, then this allows also the presence of multiple bees anywhere in the field to give a global bee bonus. The bonus per bee is ' + upgrade3_bee_multiplicity_bonus.toPercentString(),
+    'Unlocks multiplicity of bees. Requires that regular multiplicity for berries and mushrooms has been unlocked. Presence of multiple bees anywhere in the field will give a global bee bonus. The bonus per bee is ' + upgrade3_bee_multiplicity_bonus.toPercentString(),
     images_beenest[4]);
-
-
 
 // by default wait time is 5x the runtime, so runtime can easily be lenghtened
 var upgrade3_weather_duration_bonus = 0.5;
@@ -6671,23 +6791,145 @@ upgrades3[upgrade3_weather_duration].fun = function() {
   }
 };
 
-registerStage3([upgrade3_berry], [upgrade3_squirrel], [upgrade3_mushroom]);
-registerStage3([upgrade3_nettle], [upgrade3_automaton], [upgrade3_flower]);
-registerStage3([upgrade3_fruitmix], undefined, [upgrade3_seasonfruitprob]);
+var upgrade3_evolution = registerUpgrade3('Evolve squirrel', function() {
+      showEvolution3Dialog();
+      return true; // indicate that this upgrade is not bought and applied immediately, it shows a dialog first
+    },
+    'Resets and removes all squirrel upgrades. Gives a flat permanent production bonus. Replaces the squirrel upgrade tree with a new, more expensive, tree. You will be weaker after this, but eventually get stronger than ever before thanks to the new upgrades.',
+    image_squirrel_evolution);
 
-registerStage3(undefined, [upgrade3_ethtree], undefined, true);
-registerStage3([upgrade3_fruittierprob, upgrade3_growspeed], undefined, [upgrade3_essence, upgrade3_watercress_mush]);
-registerStage3([upgrade3_weather_duration, upgrade3_mushroom], undefined, [upgrade3_fruitmix2, upgrade3_flower_multiplicity]);
-registerStage3([upgrade3_watercresstime, upgrade3_bee], undefined, [upgrade3_doublefruitprob, upgrade3_berry]);
+var upgrade3_stinging_multiplicity_bonus = Num(2);
+var upgrade3_stinging_multiplicity = registerUpgrade3('stinging multiplicity', undefined,
+    'Unlocks multiplicity of stingy crops. Requires that regular multiplicity for berries and mushrooms has been unlocked. Presence of multiple nettles anywhere in the field will give a global nettle bonus. The bonus per nettle is ' + upgrade3_stinging_multiplicity_bonus.toPercentString(),
+    images_nettle[4]);
 
-registerStage3(undefined, [upgrade3_squirrel], undefined, true);
-registerStage3([upgrade3_resin], undefined, [upgrade3_twigs]);
-registerStage3([upgrade3_diagonal_brassica], undefined, [upgrade3_highest_level]);
-registerStage3([upgrade3_leveltime], undefined, [upgrade3_bee_multiplicity]);
-registerStage3([upgrade3_berry], undefined, [upgrade3_mushroom]);
-registerStage3([upgrade3_fruitmix3], undefined, [upgrade3_flower]);
+var upgrade3_fruitmix123 = registerUpgrade3('seasonal fruit mixing', undefined, 'Unlocks all fruit mixing including dragon fruit. This upgrade combines seasonal fruit mixing I, II and III.', images_dragonfruit[4]);
 
-registerStage3(undefined, [upgrade3_automaton], undefined, true);
+// 1 = fruit mixing I, 2 = fruit mixing II, 3 = fruit mixing III
+function haveFruitMix(num) {
+  if(num == 1) return state.upgrades3[upgrade3_fruitmix].count || state.upgrades3[upgrade3_fruitmix123].count;
+  if(num == 2) return state.upgrades3[upgrade3_fruitmix2].count || state.upgrades3[upgrade3_fruitmix123].count;
+  if(num == 3) return state.upgrades3[upgrade3_fruitmix3].count || state.upgrades3[upgrade3_fruitmix123].count;
+  return false;
+}
+
+var upgrade3_prestiged_flower_bonus = Num(2);
+var upgrade3_prestiged_flower = registerUpgrade3('prestiged flower boost', undefined,
+    'Prestiged flowers get a ' + upgrade3_prestiged_flower_bonus.toPercentString() + ' boost',
+    images_anemone[4]);
+
+
+var upgrade3_prestiged_berry_bonus = Num(3);
+var upgrade3_prestiged_berry = registerUpgrade3('prestiged berry boost', undefined,
+    'Prestiged berries get a ' + upgrade3_prestiged_berry_bonus.toPercentString() + ' boost',
+    blackberry[4]);
+
+
+var upgrade3_prestiged_mushroom_bonus = Num(3);
+var upgrade3_prestiged_mushroom = registerUpgrade3('prestiged mushroom boost', undefined,
+    'Prestiged mushrooms get a ' + upgrade3_prestiged_mushroom_bonus.toPercentString() + ' boost',
+    champignon[4]);
+
+var upgrade3_berry_multiplicity_boost_bonus = Num(0.1);
+var upgrade3_berry_multiplicity_boost = registerUpgrade3('berry multiplicity boost', undefined,
+    'Boosts the berry multiplicity by an additional ' + upgrade3_berry_multiplicity_boost_bonus.toPercentString() + '. Requires berry multiplicity has been unlocked.',
+    blackberry[4]);
+
+var upgrade3_mushroom_multiplicity_boost_bonus = Num(0.2);
+var upgrade3_mushroom_multiplicity_boost = registerUpgrade3('mushroom multiplicity boost', undefined,
+    'Boosts the mushroom multiplicity by an additional ' + upgrade3_mushroom_multiplicity_boost_bonus.toPercentString() + '. Requires mushroom multiplicity has been unlocked.',
+    champignon[4]);
+
+
+var upgrade3_squirrel_boost2 = Num(0.5);
+var upgrade3_squirrel2 = registerUpgrade3('ethereal squirrel boost II', undefined, 'adds an additional ' + upgrade3_squirrel_boost2.toPercentString() + ' to the neighbor boost (which is originally 50%) of the ethereal squirrel', images_squirrel[4]);
+
+var upgrade3_automaton_boost2 = Num(0.5);
+var upgrade3_automaton2 = registerUpgrade3('ethereal automaton boost II', undefined, 'adds an additional ' + upgrade3_automaton_boost2.toPercentString() + ' to the neighbor boost (which is originally 50%) of the ethereal automaton', images_automaton[4]);
+
+var upgrade3_ethtree_boost2 = Num(0.5);
+var upgrade3_ethtree2 = registerUpgrade3('ethereal tree neighbor boost II', undefined, 'ethereal tree boosts non-lotus neighbors (non-diagonal) by ' + upgrade3_ethtree_boost2.toPercentString(), tree_images[6][1][4]);
+
+var evolution3_ethtree_boost = Num(0.2);
+
+
+////////////////////////////////////////////////////////////////////////////////
+var STAGE_REGISTER_EVOLUTION;
+////////////////////////////////////////////////////////////////////////////////
+
+STAGE_REGISTER_EVOLUTION = 0;
+
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_berry], [upgrade3_squirrel], [upgrade3_mushroom]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_nettle], [upgrade3_automaton], [upgrade3_flower]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruitmix], undefined, [upgrade3_seasonfruitprob]);
+
+registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_ethtree], undefined, true);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruittierprob, upgrade3_growspeed], undefined, [upgrade3_essence, upgrade3_watercress_mush]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_weather_duration, upgrade3_mushroom], undefined, [upgrade3_fruitmix2, upgrade3_flower_multiplicity]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_watercresstime, upgrade3_bee], undefined, [upgrade3_doublefruitprob, upgrade3_berry]);
+
+registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_squirrel], undefined, true);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_resin], undefined, [upgrade3_twigs]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_diagonal_brassica], undefined, [upgrade3_highest_level]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_leveltime], undefined, [upgrade3_bee_multiplicity]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_berry], undefined, [upgrade3_mushroom]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruitmix3], undefined, [upgrade3_flower]);
+
+registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_automaton], undefined, true);
+registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_evolution], undefined, true);
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+STAGE_REGISTER_EVOLUTION = 1;
+
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_prestiged_berry], undefined, [upgrade3_prestiged_mushroom]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_stinging_multiplicity], undefined, [upgrade3_prestiged_flower]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruitmix123], undefined, [upgrade3_watercress_mush]);
+registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_squirrel2], undefined, true);
+
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruittierprob, upgrade3_essence, upgrade3_leveltime], undefined, [upgrade3_seasonfruitprob, upgrade3_growspeed, upgrade3_bee_multiplicity]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_doublefruitprob, upgrade3_ethtree, upgrade3_highest_level], undefined, [upgrade3_mushroom, upgrade3_berry, upgrade3_flower]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_resin], undefined, [upgrade3_twigs]);
+registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_automaton2], undefined, true);
+
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_diagonal_brassica], [upgrade3_mushroom_multiplicity_boost], [upgrade3_mushroom]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_watercresstime], [upgrade3_ethtree2], [upgrade3_berry]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_nettle], [upgrade3_squirrel], [upgrade3_flower]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_bee], [upgrade3_weather_duration], [upgrade3_flower_multiplicity]);
+registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_automaton], undefined, true);
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+var squirrel_epoch_prod_bonus = Num(201);
+
+// as Num, in nuts.
+// i = current amount of squirrel upgrades gotten
+function getUpgrade3Cost(i) {
+  if(state.evolution3 == 0) {
+    // this uses a large exponential base on purpose: higher tree levels will also give exponentialy more nuts income, so this
+    // encourages pushing for high tree levels. The high factor also makes even planting multiple nuts plants not significant compared to getting higher tree levels
+    var result = Num(10).powr(i).mulr(1000);
+    // squirrel evolution is only significantly later, so that there is a certain timespan where all upgrades are active
+    if(i >= 33) result.mulrInPlace(1000000);
+    return result;
+  }
+  if(state.evolution3 == 1) {
+    // the first one is free at this evolution
+    if(i == 0) return Num(0);
+    i--;
+    // the last one of evolution 0 costs 1e42, but given the set-back after squirrel reset that's very hard to reach now, 1e39 is quite a bit more reachable
+    var result = Num(20).powr(i).mulr(1e39);
+    return result;
+  }
+  return Num(Infinity);
+}
+
+function getNextUpgrade3Cost() {
+  return getUpgrade3Cost(state.upgrades3_count);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -6898,6 +7140,47 @@ function freeDelete2(x, y) {
   var c = f.getCrop();
   if(c && freeDelete2Crop(c)) return true;
   return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+function showEvolution3Dialog() {
+  var dialog = createDialog({
+    icon:image_squirrel_evolution,
+    size:DIALOG_MEDIUM,
+    functions:function() {
+      addAction({type:ACTION_EVOLUTION3});
+    },
+    names:'evolution',
+    cancelname:'cancel',
+    title:'Squirrel evolution'
+  });
+  dialog.content.div.innerHTML = squirrelEvolutionHelp;
+  unlockRegisteredHelpDialog(39);
+}
+
+function performEvolution3() {
+  if(state.evolution3 + 1 >= stages3.length) return; // doesn't exist
+
+  state.evolution3++;
+
+  state.nuts_before = state.upgrades3_spent.add(state.res.nuts);
+  state.res.nuts = Num(0);
+  state.upgrades3_spent = Num(0);
+
+  state.initStages3();
+
+  for(var i = 0; i < registered_upgrades3.length; i++) {
+    state.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
+  }
+
+  state.just_evolution = true;
+  state.seen_evolution = false;
+
+  computeDerived(state);
+
+  squirrel_scrollpos = undefined;
+  updateSquirrelUI();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
