@@ -323,7 +323,7 @@ function createDialog(params) {
     if(typeof params.help == 'string') {
       var helptext = params.help;
       params.help =  function() {
-        var helpdialog = createDialog({scrollable:true});
+        var helpdialog = createDialog({scrollable:true, title:'Help'});
         helpdialog.content.div.innerHTML = helptext;
       };
     }
@@ -430,13 +430,8 @@ function createDialog(params) {
     button.textEl.innerText = cancelname;
     addButtonAction(button, dialog.cancelFun, cancelname + ': dialog button');
   }
-  var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
+  var overlay = createOverlay(dialog_level * 10);
   created_overlays.push(overlay);
-  overlay.style.width = '100%';
-  overlay.style.height = '100%';
-  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-  overlay.style.position = 'fixed';
-  overlay.style.zIndex = '' + (dialog_level * 10);
   if(!params.nobgclose) overlay.onclick = dialog.cancelFun;
 
   window.setTimeout(function() {
@@ -448,6 +443,15 @@ function createDialog(params) {
   return dialog;
 }
 
+function createOverlay(zIndex) {
+  var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  overlay.style.position = 'fixed';
+  overlay.style.zIndex = '' + zIndex;
+  return overlay;
+}
 
 
 
@@ -1063,9 +1067,14 @@ function makeScrollable(flex, opt_canchange) {
 ////////////////////////////////////////////////////////////////////////////////
 
 var dropdownEl = undefined;
+var dropdownOverlayEl = undefined;
 
 function removeAllDropdownElements() {
   if(dropdownEl) dropdownEl.showFun(false);
+  if(dropdownOverlayEl) {
+    util.removeElement(dropdownOverlayEl);
+    dropdownOverlayEl = undefined;
+  }
 }
 
 function makeDropdown(flex, title, current, choices, fun) {
@@ -1102,6 +1111,12 @@ function makeDropdown(flex, title, current, choices, fun) {
       dropdownEl = undefined;
     }
     if(showing) choiceFlex.update(gameFlex);
+
+    if(show && !dropdownOverlayEl) dropdownOverlayEl = createOverlay((dialog_level + 1) * 10);
+    if(!show && dropdownOverlayEl) {
+      util.removeElement(dropdownOverlayEl);
+      dropdownOverlayEl = undefined;
+    }
   };
   choiceFlex.showFun(false);
 

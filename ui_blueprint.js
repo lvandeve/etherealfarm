@@ -118,7 +118,8 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
 
 // if allow_override is true, overrides all non-matching crops, but keeps matching ones there
 // if allow_override is false, will not replace any existing crop on the field
-function plantBluePrint(b, allow_override) {
+// opt_by_automaton: indicate the plant actions as by_automaton, to circumvent fast_forwarding in game.js
+function plantBluePrint(b, allow_override, opt_by_automaton) {
   if(!b || b.numw == 0 || b.numh == 0) return;
   if(!canUseBluePrintsDuringChallenge(state.challenge, true)) return false;
 
@@ -176,10 +177,11 @@ function plantBluePrint(b, allow_override) {
       }
       if(!state.crops[c.index].unlocked) continue;
       var action_type = !!c2 ? ACTION_REPLACE : ACTION_PLANT;
-      addAction({type:action_type, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true});
+      addAction({type:action_type, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true, by_automaton:!!opt_by_automaton});
       did_something = true;
     }
   }
+
   if(did_something) showMessage('Planted blueprint');
   else showMessage('This blueprint had no effect on the current field');
 }
@@ -737,7 +739,7 @@ function showBluePrintHelp() {
   text += '<br/>';
   text += ' • From field: the current field layout is copied to the blueprint, e.g. wherever there\'s any berry on the field, produces a berry template in the blueprint.';
   text += '<br/>';
-  text += ' • From text (TXT): Write a field layout on multiple lines of text using the following letters: ' + getBluePrintTypeHelpText() + '. Export TXT does the opposite.';
+  text += ' • From text (TXT): Write a field layout on multiple lines of text using letter symbols (B for berry, ...). Export TXT does the opposite.';
   text += '<br/><br/>';
   text += 'Keyboard shotcuts for blueprints:';
   text += '<br/>';
@@ -765,9 +767,14 @@ function showBluePrintHelp() {
 }
 
 
-function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, flex, e) {
-  var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
+function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, e) {
+  if(opt_custom_fun) {
+    opt_custom_fun(index);
+    closeTopDialog(); // the blueprint dialog
+    return;
+  }
 
+  var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
 
   for(var i = 0; i <= index; i++) {
     if(!blueprints[i]) blueprints[i] = new BluePrint();
@@ -785,7 +792,7 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, fl
       } else {
         if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
       }
-      addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
+      addAction({type:ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND, blueprint:blueprints[index]});
       closeAllDialogs();
       update();
     }
@@ -811,7 +818,7 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, fl
           showMessage('Transcended and planted blueprint');
           addAction({type:ACTION_TRANSCEND, challenge:0});
         }
-        addAction({type:ACTION_PLANT_BLUEPRINT, blueprint:blueprints[index]});
+        addAction({type:ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND, blueprint:blueprints[index]});
         closeAllDialogs();
         update();
       }
@@ -830,7 +837,8 @@ var blueprintdialogopen = false;
 // opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
 // opt_challenge: if opt_transcend is true and this has a challenge index, will transcent with blueprint with that challenge
 // opt_ethereal: show blueprints for ethereal field instead
-function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
+// opt_custom_fun: if defined, then opt_transcend and opt_challenge are ignored, no built-in action will be taken and instead opt_custom_fun will be executed with the blueprint index
+function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun) {
   if(!automatonUnlocked()) return;
 
   var flexes = [];
@@ -860,8 +868,8 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
     if(key == '8') index = 8;
     if(key == '9') index = 9;
     if(index < 0) return;
-    index--;
-    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, flexes[index], e);
+    index--; // make 0-index based
+    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes[index], e);
   };
 
   var title;
@@ -879,7 +887,7 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
   var dialog = createDialog({
     functions:challenge_button_fun,
     names:challenge_button_name,
-    cancelname:'back',
+    cancelname:(opt_custom_fun ? 'cancel' : 'back'),
     title:title,
     shortcutfun:shortcutfun,
     help:showBluePrintHelp,
@@ -902,7 +910,7 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal) {
     renderBlueprint(blueprints[i], opt_ethereal, flex, i, opt_transcend, opt_challenge, true);
     styleButton0(flex.div, true);
     addButtonAction(flex.div, bind(function(index, flex, e) {
-      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, index, flex, e);
+      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, e);
     }, i, flex));
   }
 

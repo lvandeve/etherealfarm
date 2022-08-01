@@ -166,6 +166,13 @@ function getResourceDetails(i, special, index) {
       text += '<br>';
       if(upcoming.neqr(0)) text += '→ Upcoming boost with unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
 
+      var early_penalty = getEarlyResinPenalty();
+      if(early_penalty < 1 && upcoming.gtr(0)) {
+        text += '<br>';
+        text += 'Reduction for being very early in run: -' + Num(1 - early_penalty).toPercentString();
+        text += '<br>';
+      }
+
       text += '<br>';
       text += 'Resin/hour: ' + getResinHour().toString();
       if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ')';
@@ -192,6 +199,13 @@ function getResourceDetails(i, special, index) {
       text += 'Collected upcoming twigs: ' + upcoming.toString()
       if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.twigs.toString() + ' at level ' + state.p_treelevel + ')';
       text += '<br>';
+
+      var early_penalty = getEarlyResinPenalty();
+      if(early_penalty < 1 && upcoming.gtr(0)) {
+        text += '<br>';
+        text += 'Reduction for being very early in run: -' + Num(1 - early_penalty).toPercentString();
+        text += '<br>';
+      }
 
       text += 'Twigs/hour: ' + getTwigsHour().toString();
       if(state.g_numresets > 0) text += ' (previous run: ' + getPrevTwigsHour().toString() + ', ' + util.formatDuration(state.p_runtime, true) + ')';

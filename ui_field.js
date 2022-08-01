@@ -403,11 +403,11 @@ function makeTreeDialog() {
       }
       if(c.targetlevel.length > 1) {
         if(!c.fullyCompleted()) {
-          text += '<br>Current challenge target level: ' + c.targetlevel[c2.completed];
+          text += '<br>Current challenge target level: <b>' + c.targetlevel[c2.completed] + '</b>';
         }
       } else {
         if(!c2.completed) {
-          text += '<br>Challenge target level: ' + c.targetlevel[0];
+          text += '<br>Challenge target level: <b>' + c.targetlevel[0] + '</b>';
         }
       }
       text += '<br>';

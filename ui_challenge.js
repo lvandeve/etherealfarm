@@ -162,7 +162,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
 
   if(!c.fullyCompleted(include_current_run)) {
-    if(c.targetlevel.length > 1 && c.completed > 0) {
+    if(c.targetlevel.length > 1 && c2.completed > 0) {
       text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numCompleted(include_current_run)];
     } else {
       text += '• Reward (at level ' + targetlevel + '): ' + c.rewarddescription[0];
@@ -349,8 +349,7 @@ function createChallengeDialog(opt_from_challenge) {
 
   flex.div.innerHTML = text;
 
-
-  var buttonFlex = new Flex(contentFlex, 0, 0.3, 1, 1);
+  var buttonFlex = new Flex(contentFlex, 0, 0.32, 1, 1);
 
   var pos = 0;
   var h = 0.075;
@@ -433,7 +432,7 @@ function createFinishChallengeDialog() {
   if(already_completed) {
     // nothing to display here
   } else {
-    if(c.targetlevel.length > 1) {
+    if(c.targetlevel.length > 1 && c2.completed > 0) {
       if(success) {
         text += 'You successfully completed the next stage of the challenge for the first time!<br><br>Reward: ';
         text += c.rewarddescription[c2.completed];

@@ -207,7 +207,7 @@ function lockAllUpgrades() {
 
 // unlock any templates that are available, or lock them if not
 function unlockTemplates() {
-  var wither_incomplete = (state.challenge == challenge_wither) && state.challenges[challenge_wither].completed < 3;
+  var wither_incomplete = (state.challenge == challenge_wither) && state.challenges[challenge_wither].completed < 2;
   if(automatonUnlocked() && state.challenge != challenge_nodelete && !wither_incomplete && state.challenge != challenge_bees && basicChallenge() != 2) {
     state.crops[watercress_template].unlocked = true;
     state.crops[berry_template].unlocked = true;
@@ -713,6 +713,10 @@ function beginNextRun(opt_challenge) {
 
   state.just_evolution = false;
 
+  for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
+    state.automaton_autoblueprints[i].done = false;
+  }
+
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
   if(state.negative_time > 3600) state.negative_time = 3600;
 }
@@ -763,8 +767,7 @@ var ACTION_FRUIT_ACTIVE = action_index++; // select active fruit
 var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
 var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
-var ACTION_PLANT_BLUEPRINT = action_index++;
-var ACTION_PLANT_BLUEPRINT2 = action_index++;
+var ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND = action_index++; // normally you can use the plantBlueprint function directly (since that one also merely adds more actions), but for transcend it needs to be delayed and that's done through having it as an action
 var ACTION_UPGRADE3 = action_index++; // squirrel upgrade
 var ACTION_RESPEC3 = action_index++; // respec squirrel upgrades
 var ACTION_EVOLUTION3 = action_index++; // reset squirrel evolution
@@ -1593,6 +1596,8 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
   // during the beginning of the basic challenge, adjust the heuristics to ignore flower templates (it takes a long while before they become flowers), and upgrade berries next to mushrooms sooner rather than later (because early tree levels are useful here)
   var score_ignore_templates = !!basicChallenge() && state.highestoftypeunlocked[CROPTYPE_BERRY] < 4;
   var score_ignore_mushrooms = !score_ignore_templates; // normally these are ignored
+  // if you already have several of the highest unlocked berry type available, then score mushrooms higher in the heuristics score
+  if(state.cropcount[berry_0 + state.highestoftypeunlocked[CROPTYPE_BERRY]] >= 2) score_ignore_mushrooms = false;
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1985,6 +1990,28 @@ function doNextAutoChoice() {
 
 
 
+function doAutoBlueprint() {
+  var did_something = false;
+  for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
+    var o = state.automaton_autoblueprints[i];
+    if(o.done) continue;
+    if(!o.enabled) continue;
+    if(o.blueprint == 0) continue;
+    if(state.treelevel >= o.level) {
+      o.done = true;
+      var b = state.blueprints[o.blueprint - 1];
+      if(b) {
+        plantBluePrint(b, true, true);
+        did_something = true;
+        break;
+      }
+    }
+  }
+
+  return did_something;
+}
+
+
 // next chosen auto upgrade, if applicable.
 // type: either undefined, or object {index:upgrade id, time:time until reached given current resource gain}
 var next_auto_upgrade = undefined;
@@ -2028,6 +2055,8 @@ function computeFractionTime(cost, fraction) {
 function computeNextAutoUpgrade() {
   next_auto_upgrade = undefined;
 
+  if(state.res.seeds.ler(3000)) return; // do not do autoupgrades very early on: ensure having enough seeds to plant a first berry first, do not do watercress upgrades yet
+
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
     var u2 = state.upgrades[registered_upgrades[i]];
@@ -2041,7 +2070,7 @@ function computeNextAutoUpgrade() {
     if(crops[u.cropid].tier < state.highestoftypeplanted[crops[u.cropid].type]) continue; // don't upgrade lower types anymore once a higher type of berry/mushroom/... is on the field
 
     // how much resources willing to spend
-    var advanced = state.automaton_unlocked[1] >= 2;
+    var advanced = autoFinetuningUnlocked();
     var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, crops[u.cropid].type);
 
     var cost = u.getCost();
@@ -2062,7 +2091,7 @@ function autoUpgrade(res) {
   var u = upgrades[next_auto_upgrade.index];
 
   // how much resources willing to spend
-  var advanced = state.automaton_unlocked[1] >= 2;
+  var advanced = autoFinetuningUnlocked();
   var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, crops[u.cropid].type);
 
   var count = 0;
@@ -2137,12 +2166,12 @@ function computeNextAutoPlant() {
 
 
     // how much resources willing to spend
-    var advanced = state.automaton_unlocked[2] >= 2;
+    var advanced = autoFinetuningUnlocked();
     var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.type);
     if(fraction == 0) continue; // even if the crop itself costs 0 (e.g. squirrel), fraction 0 means that this type is configured to be skipped entirely
     var cost = crop.getCost();
 
-    // NOTE: must match simimar checks in autoPlant()
+    // NOTE: must match similar checks in autoPlant()
     if(state.c_numfullgrown == 0 && fraction > 0 && (type == CROPTYPE_BRASSICA || type == CROPTYPE_BERRY)) {
       fraction = 1; // first watercress/berries allowed to be 100% (unless fully disabled) to get the game kickstarted when having 1000 seeds, using blueprints and having automaton berry% to something less than 100%
     }
@@ -2176,7 +2205,7 @@ function autoPlant(res) {
   var y = next_auto_plant.y;
 
   // how much resources willing to spend
-  var advanced = state.automaton_unlocked[2] >= 2;
+  var advanced = autoFinetuningUnlocked();
   var fraction = getAutoFraction(advanced, state.automaton_autoplant_fraction, crop.type);
 
   var type = crop.type;
@@ -2248,7 +2277,7 @@ function computeNextAutoUnlock() {
     if(state.automaton_autounlock_max_cost.gtr(0) && cost.seeds.gtr(state.automaton_autounlock_max_cost)) continue;
 
     // how much resources willing to spend. This uses the same fractions as autoplant does.
-    var advanced = state.automaton_unlocked[2] >= 2;
+    var advanced = autoFinetuningUnlocked();
     var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
     var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
 
@@ -2271,7 +2300,7 @@ function autoUnlock(res) {
   var u = upgrades[next_auto_unlock.index];
 
   // how much resources willing to spend
-  var advanced = state.automaton_unlocked[2] >= 2;
+  var advanced = autoFinetuningUnlocked();
   var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
   var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
 
@@ -2307,7 +2336,7 @@ function computeNextAutoPrestige() {
     if(state.automaton_autounlock_max_cost.gtr(0) && cost.seeds.gtr(state.automaton_autounlock_max_cost)) continue;
 
     // how much resources willing to spend. This uses the same fractions as autoplant does.
-    var advanced = state.automaton_unlocked[2] >= 2;
+    var advanced = autoFinetuningUnlocked();
     var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
     var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
 
@@ -2325,7 +2354,7 @@ function autoPrestige(res) {
   var u = upgrades[next_auto_prestige.index];
 
   // how much resources willing to spend, the autounlock settings are used for this
-  var advanced = state.automaton_unlocked[2] >= 2;
+  var advanced = autoFinetuningUnlocked();
   var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
   var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
 
@@ -2676,6 +2705,10 @@ var update = function(opt_ignorePause) {
       computeNextAutoUpgrade();
       // don't do this if an autoplant or unlock was done: when just autoplanting, it's more useful if it finishes planting all those crops, before spending seeds trying to upgrade it
       if(!did_autoplant && !did_autounlock) autoUpgrade(autores);
+    }
+
+    if(autoBlueprintEnabled()) {
+      doAutoBlueprint();
     }
 
     // this function is simple and light enough that it can just be called every time. It can depend on changes mid-game hence needs to be updated regularly.
@@ -3098,14 +3131,10 @@ var update = function(opt_ignorePause) {
           state.g_amberbuy[action.effect]++;
           store_undo = true;
         }
-      } else if(type == ACTION_PLANT_BLUEPRINT) {
+      } else if(type == ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND) {
         if(fast_forwarding) continue;
 
         plantBluePrint(action.blueprint, false);
-      } else if(type == ACTION_PLANT_BLUEPRINT2) {
-        if(fast_forwarding) continue;
-
-        plantBluePrint2(action.blueprint, false);
       } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
         if(fast_forwarding && !action.by_automaton) continue;
 
@@ -3167,7 +3196,7 @@ var update = function(opt_ignorePause) {
           } else if(state.challenge == challenge_wither && !is_brassica && !f.isTemplate()) {
             var more_expensive_same_type = type == ACTION_REPLACE && f.hasCrop() && action.crop.cost.gt(f.getCrop().cost) && action.crop.type == f.getCrop().type;
             if(!more_expensive_same_type) {
-              showMessage('Cannot delete or downgrade crops during the wither challenge, but they\'ll naturally disappear over time. However, you can replace crops with more expensive crops (see the replace dialog).', C_INVALID, 0, 0);
+              showMessage('Cannot delete or downgrade crops during the wither challenge, but they\'ll naturally disappear over time. However, you can replace crops with more expensive crops.', C_INVALID, 0, 0);
               ok = false;
             }
           }
@@ -3480,12 +3509,6 @@ var update = function(opt_ignorePause) {
             state.res.addInPlace(extrastarter);
             state.g_res.addInPlace(extrastarter);
             state.c_res.addInPlace(extrastarter);
-          }
-          if(c.index == automaton2_0) {
-            if(!state.automaton_unlocked[0]) {
-              state.automaton_unlocked[0] = 1;
-              showMessage('Automation of choice upgrades unlocked!', C_AUTOMATON, 1067714398);
-            }
           }
 
           if(isplant && !freeDelete2Crop(action.crop)) {
@@ -3819,6 +3842,9 @@ var update = function(opt_ignorePause) {
         }
         if(action.what == 3) {
           state.automaton_autounlock = action.on;
+        }
+        if(action.what == 5) {
+          state.automaton_autoblueprint = action.on;
         }
         if(action.fun) action.fun();
         store_undo = true;

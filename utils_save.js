@@ -915,6 +915,10 @@ function decApprox2Num(e) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+
+// Type is encoded in code together with a few other bits. Code is a value in range [0..63].
+// Types of inclusive range [0..11] are supported, and the same 12 more, that is [12..23] for the array types.
+
 var type_index = 0;
 var TYPE_BOOL = type_index++; // boolean true/false value
 var TYPE_UINT6 = type_index++; // single base64 character
@@ -942,9 +946,17 @@ var TYPE_ARRAY_STRING = type_index++;
 var TYPE_ARRAY_RES = type_index++;
 var TYPE_ARRAY_TIME = type_index++;
 
+// this type only exists as array, and represents one or more nested instances of a "struct", where struct means an entire set of fields just like the top level main save is, with its own id's, sections, ...
+// this will use two different types of encodings internally depending on the nested fields:
+// -if all instances are exactly the same (exactly same amount of fields with example same id and section), will use "fixed" encoding, which is as efficient as a transposed struct array encoding
+// -if instances have different fields (e.g. field present on one instances, but not in other, or different ids), then "flexible" encoding is used, which us recursively the same format as the top level save, but more expensive, since every field will have the id and type for every instance, and section numbers are encoded
+// if the goal is to encode many instances of the same object, say e.g. 4 instances of a automaton configuration for 4 seasons, ensure to fill in the same fields in every instance to get the efficient coding (and don't e.g. leave out an optional field in one but not another instance)
+// if the goal instead is to encode multiple instances of a complex variable sized structure, or to encode only a single instance of a nested save for example, then using flexible is likely better
+// whether fixed or flexible used is determined automatically, so to get fixed, ensure its conditions are satisfied.
+var TYPE_ARRAY_STRUCT = 60;
+
 
 var compactBool = true;
-
 
 function Token(value, type, id) {
   // Allow calling it without new, but act like new
@@ -952,7 +964,7 @@ function Token(value, type, id) {
     return new Token(value, type, id);
   }
 
-  this.id = id; // section*64 + subid, where subid is id within section, so there can be max 64 unique tokens within 1 section (but a token can be an array of data)
+  this.id = id; // section_id*64 + subid, where subid is id within section, so there can be max 64 unique tokens within 1 section (but a token can be an array of data)
 
   this.value = value; // once filled in, must be relevant for the type
 
@@ -976,33 +988,149 @@ function encTokenValue(value, type) {
   return undefined;
 }
 
+// like encTokenValue, but includes support for tokens with direct value, array, or struct
+// does not include the shortcode for value 0/empty
+function encTokenValues(token) {
+  var type = token.type;
+  var value = token.value;
+
+  if(type == TYPE_ARRAY_STRUCT) {
+    return encArrayStruct(value);
+  } else if(type < 12) {
+    return encTokenValue(value, type);
+  } else {
+    var result = '';
+    result += encUint(value.length);
+    if(type == TYPE_ARRAY_BOOL && compactBool) {
+      for(var i = 0; i < value.length; i += 6) {
+        var v = 0;
+        for(var j = 0; j < 6 && i + j < value.length; j++) {
+          if(value[i + j]) v |= (1 << j);
+        }
+        result += encUint6(v);
+      }
+    } else {
+      for(var i = 0; i < value.length; i++) {
+        result += encTokenValue(value[i], type - 12);
+      }
+    }
+    return result;
+  }
+}
+
+// value is an array of tokens-arrays
+function encArrayStruct(value) {
+  var result = '';
+
+  var fixed = true; // whether the more efficient fixed encoding (transposed struct) can be used
+  for(var i = 1; i < value.length; i++) {
+    var tokens0 = value[0];
+    var tokensi = value[i];
+    if(tokens0.length != tokensi.length) {
+      fixed = false;
+      break;
+    }
+    for(var j = 0; j < tokens0.length; j++) {
+      var t0 = tokens0[j];
+      var ti = tokens0[j];
+      if(t0.id != ti.id || t0.type != ti.type) {
+        fixed = false;
+        break;
+      }
+    }
+  }
+  if(value.length < 2) fixed = false;
+  // amount of instances of the struct, and a bit to indicate if fixed encoding is used
+  result += encUint((value.length << 1) | (fixed ? 1 : 0));
+
+  if(fixed) {
+    var w = value.length; // amount of instances
+    var h = tokens0.length; // amount of fields per instance
+    var tokens0 = value[0];
+    result += encUint(h);
+    var order = {};
+    var sections = encExtractSections(tokens0, order);
+    for(var i = 0; i < tokens0.length; i++) order[tokens0[i].id] = i;
+    var order2 = [];
+    for(var section_id in sections) {
+      if(!sections.hasOwnProperty(section_id)) continue;
+      var prev_id = (section_id << 6) - 1;
+      var t = sections[section_id];
+      result += encUint(section_id);
+      result += encUint(t.length);
+      for(var i = 0; i < t.length; i++) {
+        var t0 = t[i];
+        result += encTokenIdType(t0.id, t0.type, prev_id);
+        prev_id = t0.id;
+        order2.push(order[t0.id]);
+      }
+    }
+    // encode all values in transposed order
+    for(var y = 0; y < h; y++) {
+      var y2 = order2[y];
+      for(var x = 0; x < w; x++) {
+        var token = value[x][y2];
+        result += encTokenValues(token);
+      }
+    }
+  } else {
+    for(var i = 0; i < value.length; i++) {
+      var enc = encTokens(value[i], 0);
+      result += encUint(enc.length);
+      result += enc;
+    }
+  }
+
+  return result;
+}
+
+// encodes id and type, or both combined. Does not handle the value-0 tokens short-encoding
+function encTokenIdType(id, type, prev_id) {
+  var result = '';
+
+  if(type == TYPE_ARRAY_STRUCT) {
+    result += encUint6(type);
+    result += encUint6(id & 63);
+  } else if(type < 12) {
+    if(id == prev_id + 1) {
+      result += encUint6(type + 12);
+    } else {
+      result += encUint6(type + 24);
+      result += encUint6(id & 63);
+    }
+  } else {
+    if(id == prev_id + 1) {
+      result += encUint6(type - 12 + 36);
+    } else {
+      result += encUint6(type - 12 + 48);
+      result += encUint6(id & 63);
+    }
+  }
+  return result;
+}
+
 function encToken(token, prev_id) {
   var type = token.type;
   var value = token.value;
 
   var result = '';
 
-  if(type < 12) {
-    if((type != TYPE_STRING && value === 0) || (type == TYPE_STRING && value == '') || (type == TYPE_RES && value.empty()) || (type == TYPE_NUM && value.eqr(0))) {
-      result += encUint6(type + 0);
-      result += encUint6(token.id & 63);
-    } else if(token.id == prev_id + 1) {
-      result += encUint6(type + 12);
-      result += encTokenValue(token.value, type);
-    } else {
-      result += encUint6(type + 24);
-      result += encUint6(token.id & 63);
-      result += encTokenValue(token.value, type);
-    }
+  if(type < 12 && (type != TYPE_STRING && value === 0) || (type == TYPE_STRING && value == '') || (type == TYPE_RES && value.empty()) || (type == TYPE_NUM && value.eqr(0))) {
+    // short-code for empty/0 values
+    result += encUint6(type + 0);
+    result += encUint6(token.id & 63);
   } else {
-    if(token.id == prev_id + 1) {
-      result += encUint6(type - 12 + 36);
-      result += encUint(token.value.length);
-    } else {
-      result += encUint6(type - 12 + 48);
-      result += encUint6(token.id & 63);
-      result += encUint(token.value.length);
-    }
+    result += encTokenIdType(token.id, token.type, prev_id);
+    result += encTokenValues(token);
+  }
+  return result;
+
+  if(type == TYPE_ARRAY_STRUCT) {
+    result += encArrayStruct(token.value);
+  } else if(type < 12) {
+    result += encTokenValue(token.value, type);
+  } else {
+    result += encUint(token.value.length);
     if(type == TYPE_ARRAY_BOOL && compactBool) {
       for(var i = 0; i < token.value.length; i += 6) {
         var v = 0;
@@ -1020,67 +1148,100 @@ function encToken(token, prev_id) {
   return result;
 }
 
-function decToken(reader, prev_id, section) {
-  var token = new Token(0, 0, 0);
-  var code = decUint6(reader);
-  if((code >= 12 && code <= 23) || (code >= 36 && code <= 47)) {
-    token.id = prev_id + 1;
-  } else {
-    token.id = decUint6(reader);
-    token.id += (section << 6);
-  }
-
-  if(code < 36) {
-    var type = code % 12;
-    token.type = type;
-    if(code < 12) {
-      switch(type) {
-        case TYPE_BOOL: token.value = false; break;
-        case TYPE_UINT6: token.value = 0; break;
-        case TYPE_INT: token.value = 0; break;
-        case TYPE_UINT: token.value = 0; break;
-        case TYPE_UINT16: token.value = 0; break;
-        case TYPE_FLOAT: token.value = 0; break;
-        case TYPE_FLOAT2: token.value = 0; break;
-        case TYPE_NUM: token.value = Num(0); break;
-        case TYPE_STRING: token.value = ''; break;
-        case TYPE_RES: token.value = Res(0); break;
-        case TYPE_TIME: token.value = 0; break;
-        default: {
-          reader.error = true;
-          return token;
-        }
+function decArrayStruct(reader, token) {
+  var d = decUint(reader);
+  var count = d >> 1;
+  var fixed = d & 1;
+  if(reader.error) return;
+  token.value = [];
+  if(fixed) {
+    var tokens_template = [];
+    var w = count; // amount of instances
+    var h = decUint(reader); // amount of fields in an instance
+    if(reader.error) return;
+    var y = 0;
+    while(y < h) {
+      var section_id = decUint(reader);
+      var num = decUint(reader);
+      y += num;
+      if(y > h) reader.error = true;
+      if(reader.error) return;
+      var prev_id = (section_id << 6) - 1;
+      for(var i = 0; i < num; i++) {
+        var t = new Token(0, 0, 0);
+        var code = decUint6(reader);
+        t.id = decTokenId(code, reader, prev_id, section_id);
+        t.type = decTokenType(code);
+        prev_id = t.id;
+        tokens_template.push(t);
+        if(reader.error) return;
       }
-    } else {
-      switch(type) {
-        case TYPE_BOOL: token.value = decBool(reader); break;
-        case TYPE_UINT6: token.value = decUint6(reader); break;
-        case TYPE_INT: token.value = decInt(reader); break;
-        case TYPE_UINT: token.value = decUint(reader); break;
-        case TYPE_UINT16: token.value = decUint16(reader); break;
-        case TYPE_FLOAT: token.value = decFloat(reader); break;
-        case TYPE_FLOAT2: token.value = decFloat2(reader); break;
-        case TYPE_NUM: token.value = decNum(reader); break;
-        case TYPE_STRING: token.value = decString(reader); break;
-        case TYPE_RES: token.value = decRes(reader); break;
-        case TYPE_TIME: token.value = decTime(reader); break;
-        default: {
-          reader.error = true;
-          return token;
-        }
+    }
+    var arr = [];
+    for(var x = 0; x < w; x++) {
+      var tokens = {};
+      token.value.push(tokens);
+      for(var y = 0; y < h; y++) {
+        var id = tokens_template[y].id;
+        token.value[x][id] = new Token(0, tokens_template[y].type, id);
+      }
+    }
+    // decode fields in transposed order
+    for(var y = 0; y < h; y++) {
+      var id = tokens_template[y].id;
+      for(var x = 0; x < w; x++) {
+        // t is token nested inside of the main token variable
+        var t = token.value[x][id];
+        decTokenValue(reader, t);
+        if(reader.error) return;
       }
     }
   } else {
-    var type = 12 + (code % 12);
-    token.type = type;
+    for(var i = 0; i < count; i++) {
+      var len = decUint(reader);
+      if(reader.pos + len > reader.s.length) reader.error = true;
+      if(reader.error) return;
+      var reader2 = {s:reader.s.substr(reader.pos, len), pos:0, error:false};
+      token.value[i] = decTokens(reader2);
+      if(reader2.error || reader2.pos != len) reader.error = true;
+      if(reader.error) return;
+      reader.pos += len;
+    }
+  }
+}
+
+// does not support the short-code for tokens with value 0 or empty
+// includes support for array, struct, ...
+// modifies the given token object, does not return anything
+function decTokenValue(reader, token) {
+  var type = token.type;
+  if(type == TYPE_ARRAY_STRUCT) {
+    decArrayStruct(reader, token);
+  } else if(type < 12) {
+    switch(type) {
+      case TYPE_BOOL: token.value = decBool(reader); break;
+      case TYPE_UINT6: token.value = decUint6(reader); break;
+      case TYPE_INT: token.value = decInt(reader); break;
+      case TYPE_UINT: token.value = decUint(reader); break;
+      case TYPE_UINT16: token.value = decUint16(reader); break;
+      case TYPE_FLOAT: token.value = decFloat(reader); break;
+      case TYPE_FLOAT2: token.value = decFloat2(reader); break;
+      case TYPE_NUM: token.value = decNum(reader); break;
+      case TYPE_STRING: token.value = decString(reader); break;
+      case TYPE_RES: token.value = decRes(reader); break;
+      case TYPE_TIME: token.value = decTime(reader); break;
+      default: {
+        reader.error = true;
+        return token;
+      }
+    }
+  } else {
     var n = decUint(reader);
     token.value = [];
     if(type == TYPE_ARRAY_BOOL && compactBool) {
       for(var i = 0; i < n; i += 6) {
         var v = decUint6(reader);
-        if(reader.error) {
-          return token;
-        }
+        if(reader.error) return;
         for(var j = 0; j < 6 && i + j < n; j++) {
           token.value[i + j] = (v & (1 << j)) ? true : false;
         }
@@ -1101,45 +1262,94 @@ function decToken(reader, prev_id, section) {
           case TYPE_ARRAY_TIME: token.value[i] = decTime(reader); break;
           default: {
             reader.error = true;
-            return token;
+            return;
           }
         }
-        if(reader.error) {
-          return token;
-        }
+        if(reader.error) return;
       }
     }
   }
+}
+
+function decTokenId(code, reader, prev_id, section_id) {
+  if((code >= 12 && code <= 23) || (code >= 36 && code <= 47)) {
+    return prev_id + 1;
+  } else {
+    return (section_id << 6) + decUint6(reader);
+  }
+}
+
+function decTokenType(code) {
+  if(code < 36) return code % 12;
+  else if(code < 60) return (code % 12) + 12; // array types
+  else return code; // e.g. TYPE_ARRAY_STRUCT
+}
+
+// reader has fields s (base64 string), pos (reading position in the string), error (false if ok)
+function decToken(reader, prev_id, section_id) {
+  var token = new Token(0, 0, 0);
+  var code = decUint6(reader);
+
+  token.id = decTokenId(code, reader, prev_id, section_id);
+  token.type = decTokenType(code);
+
+  // short codes for default empty or 0 value
+  if(code < 12) {
+    switch(token.type) {
+      case TYPE_BOOL: token.value = false; break;
+      case TYPE_UINT6: token.value = 0; break;
+      case TYPE_INT: token.value = 0; break;
+      case TYPE_UINT: token.value = 0; break;
+      case TYPE_UINT16: token.value = 0; break;
+      case TYPE_FLOAT: token.value = 0; break;
+      case TYPE_FLOAT2: token.value = 0; break;
+      case TYPE_NUM: token.value = Num(0); break;
+      case TYPE_STRING: token.value = ''; break;
+      case TYPE_RES: token.value = Res(0); break;
+      case TYPE_TIME: token.value = 0; break;
+      default: reader.error = true;
+    }
+    return token;
+  }
+
+  decTokenValue(reader, token);
+
   return token;
 }
 
-function encTokens(tokens) {
-
+function encExtractSections(tokens) {
   var sections = {};
   for(var i = 0; i < tokens.length; i++) {
     var token = tokens[i];
-    var section = token.id >> 6;
-    if(!sections[section]) sections[section] = [];
-    sections[section].push(token);
+    var section_id = token.id >> 6;
+    if(!sections[section_id]) sections[section_id] = [];
+    sections[section_id].push(token);
   }
-  var result = '';
-  for(section in sections) {
-    if(!sections.hasOwnProperty(section)) continue;
-
-    var prev_id = (section << 6) - 1;
-    var t = sections[section];
+  for(var section_id in sections) {
+    if(!sections.hasOwnProperty(section_id)) continue;
+    var t = sections[section_id];
     t.sort(function(a, b) {
       return a.id - b.id;
     });
-    var r = '';
+  }
+  return sections;
+}
+
+function encTokens(tokens) {
+  var sections = encExtractSections(tokens);
+  var result = '';
+  for(var section_id in sections) {
+    if(!sections.hasOwnProperty(section_id)) continue;
+
+    var prev_id = (section_id << 6) - 1;
+    var t = sections[section_id];
+    result += encUint(section_id);
+    result += encUint(t.length);
     for(var i = 0; i < t.length; i++) {
       var token = t[i];
-      r += encToken(t[i], prev_id);
+      result += encToken(t[i], prev_id);
       prev_id = token.id;
     }
-    result += encUint(section);
-    result += encUint(t.length);
-    result += r;
   }
 
   return result;
@@ -1149,17 +1359,17 @@ function decTokens(reader) {
   var result = {};
   for(;;) {
     if(reader.pos == reader.s.length) break;
-    var section = decUint(reader);
+    var section_id = decUint(reader);
     var num = decUint(reader);
-    //console.log('begin section ' + section + ', num: ' + num + ', pos: ' + reader.pos);
+    //console.log('begin section ' + section_id + ', num: ' + num + ', pos: ' + reader.pos);
     if(reader.error) {
       return result;
     }
 
     var section_begin = reader.pos;
-    var prev_id = (section << 6) - 1;
+    var prev_id = (section_id << 6) - 1;
     for(var i = 0; i < num; i++) {
-      var token = decToken(reader, prev_id, section);
+      var token = decToken(reader, prev_id, section_id);
       //console.log('id: ' + (token.id&63) + ', type: ' + token.type + ', value: ' + token.value + ', pos: ' + reader.pos);
       if(reader.error) {
         return result;
@@ -1168,7 +1378,7 @@ function decTokens(reader) {
       result[token.id] = token;
     }
     var section_length = reader.pos - section_begin;
-    //console.log('*** end section ' + section + ', num: ' + num + ', length: ' + section_length + ' ***');
+    //console.log('*** end section ' + section_id + ', num: ' + num + ', length: ' + section_length + ' ***');
   }
   return result;
 }
@@ -1180,7 +1390,7 @@ function decTokens(reader) {
 /*
 reasons: 0: unknown
 1:string too short
-2: not base64
+2:not base64
 3:signature EF missing
 4:format
 5:compression

@@ -22,194 +22,239 @@ function showConfigureAutoResourcesDialog(subject) {
   if(subject == 0) title = 'Configure auto upgrade';
   else if(subject == 1) title = 'Configure auto plant';
   else if(subject == 2) title = 'Configure auto unlock';
-  var dialog = createDialog({title:title, scrollable:true});
+
+  var helpindex = subject == 0 ? 29 : (subject == 1 ? 31 : 33);
+
+  var dialog = createDialog({
+    title:title,
+    help:bind(showRegisteredHelpDialog, helpindex, false),
+    scrollable:true});
   var scrollFlex = dialog.content;
+
+  var advanced = autoFinetuningUnlocked();
 
   var texth = 0;
   var h = 0.06;
   var y = 0;
 
+  var addButton = function() {
+    var h = 0.06;
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
+    y += h * 1.2;
+    return flex;
+  };
+
+
   var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.0005, 0.0002, 0.0001, 0];
-
-  var typenames, order;
-  var statefraction;
-
-  if(subject == 0) {
-    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'brassica'];
-    order = [3, 4, 5, 6, 7, 2]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
-    if(squirrelUnlocked()) {
-      typenames.push('nuts');
-      order.push(9);
-    }
-    typenames.push('other');
-    order.push(1);
-    statefraction = state.automaton_autoupgrade_fraction;
-  } else if(subject == 1 || subject == 2) {
-    typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
-    order = [3, 4, 5, 6, 7, 8]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
-    if(subject == 1) {
-      typenames.push('brassica');
-      order.push(2);
-      statefraction = state.automaton_autoplant_fraction;
-    } else {
-      statefraction = state.automaton_autounlock_fraction;
-    }
-    if(squirrelUnlocked()) {
-      typenames.push('nuts');
-      order.push(9);
-    }
-    typenames.push('other');
-    order.push(1);
-  }
-
-
-  var current;
-  var flex;
 
   var subjecttitle = subject == 0 ? 'upgrades' : (subject == 1 ? 'planting' : 'unlock');
 
+  if(advanced) {
+    var typenames, order;
+    var statefraction;
 
-  texth = 0.12;
-  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
-  flex.div.innerText = 'Select max resource amount for ' + subjecttitle + ' of each crop type:';
-  y += texth;
+    if(subject == 0) {
+      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'brassica'];
+      order = [3, 4, 5, 6, 7, 2]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+      if(squirrelUnlocked()) {
+        typenames.push('nuts');
+        order.push(9);
+      }
+      typenames.push('other');
+      order.push(1);
+      statefraction = state.automaton_autoupgrade_fraction;
+    } else if(subject == 1 || subject == 2) {
+      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe'];
+      order = [3, 4, 5, 6, 7, 8]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
+      if(subject == 1) {
+        typenames.push('brassica');
+        order.push(2);
+        statefraction = state.automaton_autoplant_fraction;
+      } else {
+        statefraction = state.automaton_autounlock_fraction;
+      }
+      if(squirrelUnlocked()) {
+        typenames.push('nuts');
+        order.push(9);
+      }
+      typenames.push('other');
+      order.push(1);
+    }
 
-  var orig_y = y;
 
-  if(subject == 2) {
-    var addButton = function() {
-      var h = 0.06;
-      var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
-      y += h * 1.2;
-      return flex;
-    };
-    if(state.automaton_unlocked[4]) {
-      // prestige
+    var current;
+    var flex;
+
+
+
+    texth = 0.12;
+    flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
+    flex.div.innerText = 'Select max resource amount for ' + subjecttitle + ' of each crop type:';
+    y += texth;
+
+    var orig_y = y;
+
+    if(subject == 2) {
+      if(autoPrestigeUnlocked()) {
+        // prestige
+        var button = addButton();
+        y += h * 0.4;
+        button.div.className = 'efButton';
+        var updateButton = function() {
+          button.div.textEl.innerText = state.automaton_autoprestige ? 'auto-prestige enabled' : 'auto-prestige disabled';
+        };
+        styleButton0(button.div);
+        centerText2(button.div);
+        registerTooltip(button.div, 'whether to also apply automation of crop prestige upgrades. This uses the same cost settings as auto-unlock');
+        updateButton();
+        addButtonAction(button.div, function() {
+          state.automaton_autoprestige = (state.automaton_autoprestige ? 0 : 1);
+          updateButton();
+          closeTopDialog();
+          showConfigureAutoResourcesDialog(subject);
+        }, 'enable or disable auto-prestige');
+      }
       var button = addButton();
-      y += h * 0.4;
+      y += h * 0.5;
       button.div.className = 'efButton';
       var updateButton = function() {
-        button.div.textEl.innerText = state.automaton_autoprestige ? 'auto-prestige enabled' : 'auto-prestige disabled';
+        button.div.textEl.innerText = state.automaton_autounlock_copy_plant_fraction ? 'shared with auto-plant' : 'customized below';
       };
       styleButton0(button.div);
       centerText2(button.div);
-      registerTooltip(button.div, 'whether to also apply automation of crop prestige upgrades. This uses the same cost settings as auto-unlock');
       updateButton();
       addButtonAction(button.div, function() {
-        state.automaton_autoprestige = (state.automaton_autoprestige ? 0 : 1);
+        state.automaton_autounlock_copy_plant_fraction = !state.automaton_autounlock_copy_plant_fraction;
         updateButton();
         closeTopDialog();
         showConfigureAutoResourcesDialog(subject);
-      }, 'enable or disable auto-prestige');
+      }, 'share auto-unlock resource fraction settings with auto-plant');
     }
-    var button = addButton();
-    y += h * 0.5;
-    button.div.className = 'efButton';
-    var updateButton = function() {
-      button.div.textEl.innerText = state.automaton_autounlock_copy_plant_fraction ? 'shared with auto-plant' : 'customized below';
-    };
-    styleButton0(button.div);
-    centerText2(button.div);
-    updateButton();
-    addButtonAction(button.div, function() {
-      state.automaton_autounlock_copy_plant_fraction = !state.automaton_autounlock_copy_plant_fraction;
-      updateButton();
-      closeTopDialog();
-      showConfigureAutoResourcesDialog(subject);
-    }, 'share auto-unlock resource fraction settings with auto-plant');
-  }
 
-  var inactive = subject == 2 && state.automaton_autounlock_copy_plant_fraction;
+    var inactive = subject == 2 && state.automaton_autounlock_copy_plant_fraction;
 
-  if(inactive) return;
+    if(inactive) return;
 
 
-  for(var d = 0; d < typenames.length; d++) {
-    var d2 = order[d];
+    for(var d = 0; d < typenames.length; d++) {
+      var d2 = order[d];
 
-    flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
+      flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
+      y += h * 1.2;
+      styleButton0(flex.div);
+      centerText2(flex.div);
+      var names = [];
+      current = 0;
+      var bestdist = 1;
+      for(var i = 0; i < fractions.length; i++) {
+        names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
+        var dist = Math.abs(fractions[i] - statefraction[d2]);
+        if(dist < bestdist) {
+          current = i;
+          bestdist = dist;
+        }
+      }
+      // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
+      statefraction[d2] = fractions[current];
+      makeDropdown(flex, typenames[d], current, names, bind(function(d2, i) {
+        statefraction[d2] = fractions[i];
+      }, d2));
+      registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on this type of auto ' + subjecttitle);
+    }
+
+    y += h / 2;
+    var flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
     y += h * 1.2;
     styleButton0(flex.div);
     centerText2(flex.div);
+    makeDropdown(flex, 'set all to', current, names, function(i) {
+      for(var d = 0; d < typenames.length; d++) {
+        var d2 = order[d];
+        statefraction[d2] = fractions[i];
+      }
+      closeTopDialog();
+      showConfigureAutoResourcesDialog(subject);
+    });
+
+    if(subject == 2) {
+      var x = 0.5;
+      y = orig_y;
+
+      h = 0.06;
+      var textFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h);
+      y += h * 1.2;
+      var temp = state.automaton_autounlock_max_cost; // only actually stored in state.automaton_autounlock_max_cost if input field changed, rather than just receiving keypress, to avoid unwanted buys while typing
+      var setMaxCostText = function() {
+        var text = 'Cost limit: ' + temp.toString();
+        if(temp.eqr(0)) text += ' (unlimited)';
+        else text += ' seeds';
+        textFlex.div.innerText = text;
+      };
+      setMaxCostText();
+
+      h = 0.06;
+      var inputFlex = new Flex(scrollFlex, x, y, x + 0.4, y + h);
+      var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
+      var changefun = function() {
+        var v = Num.parse(area.value);
+        if(!v || Num.isNaN(v) || v.ltr(0)) v = Num(0);
+        temp = v;
+        setMaxCostText();
+      };
+      area.onchange = function() {
+        changefun();
+        state.automaton_autounlock_max_cost = temp;
+      };
+      area.onkeyup = changefun;
+      y += h * 1.2;
+      /*area.value = state.automaton_autounlock_max_cost.toString(3, Num.N_SCI);
+      area.onclick = function() {
+        area.select();
+      };*/
+
+      y += 0.03;
+      h = 0.06;
+      var infoFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h);
+      var info = '';
+      info += 'Change cost limit in the text box above. Automaton will not buy unlocks more expensive than this value.';
+      info += '<br><br>';
+      info += 'Use 0 to indicate unlimited (default). For example, set to 1001 to prevent auto-unlocking anything higher than blackberry.'
+      //info += '<br><br>'
+      //info += 'Supported input notation examples: 0, 1000000, 1e6, 100e48, 1M, 100QiD, ...'
+      //info += 'The output value above the box renders it in your preferred number notation for verification.';
+      infoFlex.div.innerHTML = info;
+      y += h * 1.2;
+    }
+  } else { // !advanced
+    var array = subject == 0 ? state.automaton_autoupgrade_fraction : (subject == 1 ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction);
+
+    flex = addButton();
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
     var names = [];
-    current = 0;
+    var current = 0;
     var bestdist = 1;
     for(var i = 0; i < fractions.length; i++) {
       names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
-      var dist = Math.abs(fractions[i] - statefraction[d2]);
+      var dist = Math.abs(fractions[i] - array[0]);
       if(dist < bestdist) {
         current = i;
         bestdist = dist;
       }
     }
     // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
-    statefraction[d2] = fractions[current];
-    makeDropdown(flex, typenames[d], current, names, bind(function(d2, i) {
-      statefraction[d2] = fractions[i];
-    }, d2));
-    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on this type of auto ' + subjecttitle);
-  }
-
-  y += h / 2;
-  var flex = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
-  y += h * 1.2;
-  styleButton0(flex.div);
-  centerText2(flex.div);
-  makeDropdown(flex, 'set all to', current, names, function(i) {
-    for(var d = 0; d < typenames.length; d++) {
-      var d2 = order[d];
-      statefraction[d2] = fractions[i];
-    }
-    closeTopDialog();
-    showConfigureAutoResourcesDialog(subject);
-  });
-
-  if(subject == 2) {
-    var x = 0.5;
-    y = orig_y;
-
-    h = 0.06;
-    var textFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h);
-    y += h * 1.2;
-    var temp = state.automaton_autounlock_max_cost; // only actually stored in state.automaton_autounlock_max_cost if input field changed, rather than just receiving keypress, to avoid unwanted buys while typing
-    var setMaxCostText = function() {
-      var text = 'Cost limit: ' + temp.toString();
-      if(temp.eqr(0)) text += ' (unlimited)';
-      else text += ' seeds';
-      textFlex.div.innerText = text;
-    };
-    setMaxCostText();
-
-    h = 0.06;
-    var inputFlex = new Flex(scrollFlex, x, y, x + 0.4, y + h);
-    var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', inputFlex.div);
-    var changefun = function() {
-      var v = Num.parse(area.value);
-      if(!v || Num.isNaN(v) || v.ltr(0)) v = Num(0);
-      temp = v;
-      setMaxCostText();
-    };
-    area.onchange = function() {
-      changefun();
-      state.automaton_autounlock_max_cost = temp;
-    };
-    area.onkeyup = changefun;
-    y += h * 1.2;
-    /*area.value = state.automaton_autounlock_max_cost.toString(3, Num.N_SCI);
-    area.onclick = function() {
-      area.select();
-    };*/
+    array[0] = fractions[current];
+    makeDropdown(flex, 'max cost', current, names, function(i) {
+      array[0] = fractions[i];
+    });
+    registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on auto ' + subjecttitle);
 
     y += 0.03;
     h = 0.06;
-    var infoFlex  = new Flex(scrollFlex, x, y, x + 0.4, y + h);
+    var infoFlex  = new Flex(scrollFlex, 0, y, 1, y + h);
     var info = '';
-    info += 'Change cost limit in the text box above. Automaton will not buy unlocks more expensive than this value.';
-    info += '<br><br>';
-    info += 'Use 0 to indicate unlimited (default). For example, set to 1001 to prevent auto-unlocking anything higher than blackberry.'
-    //info += '<br><br>'
-    //info += 'Supported input notation examples: 0, 1000000, 1e6, 100e48, 1M, 100QiD, ...'
-    //info += 'The output value above the box renders it in your preferred number notation for verification.';
+    info += 'Start the no-upgrades challenge again and beat its next stage to unlock more finetuning options in this dialog';
     infoFlex.div.innerHTML = info;
     y += h * 1.2;
   }
@@ -331,41 +376,161 @@ function showAutomatonFeatureSourceDialog() {
   text += '<br/>';
   text += ' • Blueprints and templates: initial';
   text += '<br/>';
-  text += ' • Automation of choice upgrades: initial';
-  text += '<br/>';
   text += ' • Clear / Plant entire field buttons: initial';
   text += '<br/>';
   text += ' • Neighbor bonus in ethereal field: initial';
+  //text += '<br/>';
+  //text += ' • Watercress upgrade visible from the start: initial'; // even without blackberry secret, it serves more as a reminder to plant watercress before blackberry unlocks
   text += '<br/>';
-  text += ' • Watercress upgrade visible from the start: initial'; // even without blackberry secret, it serves more as a reminder to plant watercress before blackberry unlocks
+  text += ' • Auto-plant (blueprints, and increase crop tier when unlocked): initial';
   text += '<br/>';
-  if(state.automaton_unlocked[1]) {
+  if(autoUpgradesUnlocked()) {
     text += ' • Auto-upgrades: no-upgrades challenge (ethereal tree level 2)';
     text += '<br/>';
   }
-  if(state.automaton_unlocked[1] >= 2) {
-    text += ' • Auto-upgrades finetuning options: no-upgrades challenge stage 2';
+  if(autoFinetuningUnlocked()) {
+    text += ' • Finetuning options for auto-plant and auto-upgrades costs: no-upgrades challenge stage 2';
     text += '<br/>';
   }
-  if(state.automaton_unlocked[2]) {
-    text += ' • Auto-plant: wither challenge (ethereal tree level 3)';
+  if(autoChoiceUnlocked()) {
+    text += ' • Automation of choice upgrades: no-upgrades challenge (ethereal tree level 2)';
     text += '<br/>';
   }
-  if(state.automaton_unlocked[2] >= 2) {
-    text += ' • Auto-plant finetuning options: wither challenge stage 2';
+  if(autoUnlockUnlocked()) {
+    text += ' • Auto-unlock: blackberry challenge (ethereal tree level 3)';
     text += '<br/>';
   }
-  if(state.automaton_unlocked[3]) {
-    text += ' • Auto-unlock: blackberry challenge (ethereal tree level 4)';
+  if(autoBlueprintsUnlocked()) {
+    text += ' • Auto-blueprint override: wither challenge (ethereal tree level 5)';
     text += '<br/>';
   }
-  if(state.automaton_unlocked[4]) {
+  if(autoPrestigeUnlocked()) {
     text += ' • Auto-prestige: truly basic challenge';
     text += '<br/>';
   }
 
 
   dialog.content.div.innerHTML = text;
+}
+
+
+
+function showConfigureAutoBlueprintDialog(subject) {
+  // temporary disable automaton_autoblueprint so it doesn't trigger while cycling through the button values
+  var temp = state.automaton_autoblueprint;
+  state.automaton_autoblueprint = 0;
+  var dialog = createDialog({
+    onclose:function() {
+      state.automaton_autoblueprint = temp;
+    },
+    scrollable:true,
+    title:'Configure auto blueprint override',
+    help:('Auto-blueprint lets the automaton override the field with another blueprint at a chosen tree level. ' + autoBlueprintHelp)
+  });
+  var scrollFlex = dialog.content;
+
+  var texth = 0;
+  var h = 0.06;
+  var y = 0;
+
+  var flex;
+
+
+  texth = 0.15;
+  flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
+  flex.div.innerText = 'Choose at which tree level to override with which blueprint';
+  y += texth;
+
+  var addControl = function() {
+    var h = 0.08;
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.6, y + h);
+    y += h * 1.2;
+    return flex;
+  };
+
+  var setButtonIndicationStyle = function(flex) {
+    if(flex.enabledStyle != undefined) {
+      flex.div.className = flex.enabledStyle == 0 ? 'efAutomatonManual' : (flex.enabledStyle == 1 ? 'efAutomatonAuto2' : 'efAutomatonAuto');
+    }
+  };
+
+
+  var flex;
+
+  var updateToggleButton = function(flex, state) {
+    var div = flex.div.textEl;
+    var text = '';
+    if(state) {
+      flex.enabledStyle = 2;
+      text += 'on';
+    } else {
+      flex.enabledStyle = 0;
+      text += 'off';
+    }
+    div.innerText = text;
+    setButtonIndicationStyle(flex);
+  };
+
+  var num = autoBlueprintsUnlocked();
+
+  for(var j = 0; j < num; j++) {
+    // toggle button disabled if num is 1, since there's only one auto-override action for now, the global enable/disable already does this
+    if(num > 1) {
+      flex = addControl();
+      flex.div.innerHTML = '<br>Auto-blueprint ' + (j + 1) + ':';
+      flex.div.style.vAlign = 'bottom';
+
+      flex = addControl();
+      styleButton0(flex.div);
+      centerText2(flex.div);
+      flex.div.textEl.innerText = 'toggle';
+      addButtonAction(flex.div, bind(function(flex, j) {
+        state.automaton_autoblueprints[j].enabled = !state.automaton_autoblueprints[j].enabled;
+        updateToggleButton(flex, state.automaton_autoblueprints[j].enabled);
+      }, flex, j));
+      updateToggleButton(flex, state.automaton_autoblueprints[j].enabled);
+    }
+
+    flex = addControl();
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    var updateLevelButton = bind(function(flex, j) {
+      updateToggleButton(flex, true);
+      flex.div.textEl.innerText = 'At tree level: ' + state.automaton_autoblueprints[j].level;
+    }, flex, j);
+    addButtonAction(flex.div, bind(function(flex, j, updateLevelButton) {
+      makeTextInput('Tree level', 'Enter tree level at which to perform blueprint override', function(text) {
+        var i = parseInt(text);
+        if(!(i >= 0 && i < 1000000)) i = 0;
+        state.automaton_autoblueprints[j].level = i;
+        updateLevelButton();
+      }, '' + state.automaton_autoblueprints[j].level);
+    }, flex, j, updateLevelButton));
+    updateLevelButton();
+
+
+    flex = addControl();
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    var updateBlueprintButton = bind(function(flex, j) {
+      updateToggleButton(flex, true);
+      var i = state.automaton_autoblueprints[j].blueprint;
+      if(i == 0) {
+        flex.div.textEl.innerText = 'Chosen blueprint: none';
+      } else {
+        var b = state.blueprints[i - 1];
+        var empty = !b || (b.data.length == 0);
+        flex.div.textEl.innerText = 'Chosen blueprint: [' + i + '] ' + (empty ? '[empty]' : b.name);
+      }
+    }, flex, j);
+    addButtonAction(flex.div, bind(function(flex, j, updateBlueprintButton) {
+      createBlueprintsDialog(undefined, undefined, undefined, function(index) {
+        state.automaton_autoblueprints[j].blueprint = index + 1;
+        updateBlueprintButton();
+      });
+    }, flex, j, updateBlueprintButton));
+    updateBlueprintButton();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -500,7 +665,8 @@ function updateAutomatonUI() {
   if(!haveAutomaton()) {
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
-    flex.div.innerText = 'You must have an automaton in the ethereal field to use the automaton tab. Place automaton in ethereal field, or replace an existing ethereal field crop by automaton. This enables automation options, more special actions and it will also boost to its neighboring ethereal crops. Reach higher ethereal tree levels and beat new challenges to unlock more automation features.';
+    //flex.div.innerText = 'You must have an automaton in the ethereal field to use the automaton tab. Place automaton in ethereal field, or replace an existing ethereal field crop by automaton. This enables automation options, more special actions and it will also boost to its neighboring ethereal crops. Reach higher ethereal tree levels and beat new challenges to unlock more automation features.';
+    flex.div.innerHTML = '<br><br>Place automaton in the ethereal field first to unlock the automation features of this tab. You can plant it there like any other ethereal crop.';
     y += 0.2;
 
     /*flex = addButton();
@@ -510,13 +676,22 @@ function updateAutomatonUI() {
     addButtonAction(flex.div, deleteEntireField);
     registerTooltip(flex.div, 'Immediately delete all crops from the entire field');*/
 
-    flex = addButton();
+    /*flex = addButton();
     styleButton(flex.div);
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Clear ethereal field';
     flex.div.style.textShadow = '0px 0px 5px #ff8';
     addButtonAction(flex.div, deleteEtherealField);
-    registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
+    registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');*/
+
+    flex = addButton();
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Go to ethereal field now';
+    flex.div.style.textShadow = '0px 0px 5px #ff8';
+    addButtonAction(flex.div, function() {
+      setTab(tabindex_field2);
+    });
 
     return;
   }
@@ -555,9 +730,12 @@ function updateAutomatonUI() {
   flex.isGlobalButtonItself = true;
   flex.enabledStyle = true;
 
+  //////////////////////////////////////////////////////////////////////////////
   addHR();
+  //////////////////////////////////////////////////////////////////////////////
 
 
+  var y0 = y;
   texth = 0.07;
   flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Special actions:';
@@ -573,7 +751,7 @@ function updateAutomatonUI() {
   flex = addButton();
   styleButton(flex.div);
   centerText2(flex.div);
-  flex.div.textEl.innerText = 'Plant entire field';
+  flex.div.textEl.innerText = 'Plant entire field...';
   addButtonAction(flex.div, bind(function() {
     setTab(tabindex_field);
     makePlantDialog(0, 0, false, false, true);
@@ -588,72 +766,85 @@ function updateAutomatonUI() {
   addButtonAction(flex.div, deleteEtherealField);
   registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
 
-  addHR();
+  var text = undefined;
+  if(!autoUpgradesUnlocked()) {
+    text = 'Reach ethereal tree level 2 and beat the no upgrades challenge to unlock auto-upgrades';
+  } else if(!autoUnlockUnlocked()) {
+    text = 'Reach ethereal tree level 3 and beat the blackberry challenge to unlock auto-unlock of next-tier plants';
+  } else if(!autoBlueprintUnlocked()) {
+    text = 'Reach ethereal tree level 5 and beat the wither challenge to unlock auto-blueprint override';
+  }
+  if(text != undefined) {
+    flex = new Flex(automatonFlex, 0.5, y0 + texth, 0.9, y0 + texth * 3);
+    flex.div.innerText = text;
+    flex.div.className = 'efGoal';
+  }
+
 
   //////////////////////////////////////////////////////////////////////////////
+  if(autoUpgradesUnlocked() || autoChoiceUnlocked()) addHR();
+  //////////////////////////////////////////////////////////////////////////////
+  if(autoChoiceUnlocked()) {
+    texth = 0.07;
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
+    flex.div.innerText = 'Automate choice upgrades:';
+    registerTooltip(flex.div, 'Automate the choice upgrades that the tree drops at certain levels.\nThe choice is automatically made at the moment the corresponding upgrade unlocks, but not after the fact.');
+    y += texth;
 
-  texth = 0.07;
-  flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
-  flex.div.innerText = 'Automate choice upgrades:';
-  registerTooltip(flex.div, 'Automate the choice upgrades that the tree drops at certain levels.\nThe choice is automatically made at the moment the corresponding upgrade unlocks, but not after the fact.');
-  y += texth;
 
+    var updateChoiceButton = function(flex) {
+      var div = flex.div.textEl;
+      if(state.automaton_autochoice) {
+        div.innerText = 'Auto-choice on';
+        flex.enabledStyle = 1;
+      } else {
+        div.innerText = 'Auto-choice off';
+        flex.enabledStyle = 0;
+      }
+      setButtonIndicationStyle(flex);
+    };
 
-  var updateChoiceButton = function(flex) {
-    var div = flex.div.textEl;
-    if(state.automaton_autochoice) {
-      div.innerText = 'Auto-choice on';
-      flex.enabledStyle = 1;
-    } else {
-      div.innerText = 'Auto-choice off';
-      flex.enabledStyle = 0;
-    }
-    setButtonIndicationStyle(flex);
-  };
-
-  flex = addButton();
-  styleButton0(flex.div);
-  centerText2(flex.div);
-  updateChoiceButton(flex);
-  addButtonAction(flex.div, bind(function(flex) {
-    var automaton_autochoice_before = state.automaton_autochoice;
-    if(state.paused) {
-      state.automaton_autochoice = state.automaton_autochoice ? 0 : 1;
-      updateChoiceButton(flex);
-      updateRightPane();
-    } else {
-      addAction({type:ACTION_TOGGLE_AUTOMATON, what:4, on:(state.automaton_autochoice ? 0 : 1), fun:function() {
+    flex = addButton();
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    updateChoiceButton(flex);
+    addButtonAction(flex.div, bind(function(flex) {
+      var automaton_autochoice_before = state.automaton_autochoice;
+      if(state.paused) {
+        state.automaton_autochoice = state.automaton_autochoice ? 0 : 1;
         updateChoiceButton(flex);
-      }});
-      update();
-    }
-    if(!automaton_autochoice_before) {
-      var ok = false;
-      for(var i = 0; i < state.automaton_choices.length; i++) {
-        var v = state.automaton_choices[i];
-        if(v > 1) {
-          ok = true;
-          break;
+        updateRightPane();
+      } else {
+        addAction({type:ACTION_TOGGLE_AUTOMATON, what:4, on:(state.automaton_autochoice ? 0 : 1), fun:function() {
+          updateChoiceButton(flex);
+        }});
+        update();
+      }
+      if(!automaton_autochoice_before) {
+        var ok = false;
+        for(var i = 0; i < state.automaton_choices.length; i++) {
+          var v = state.automaton_choices[i];
+          if(v > 1) {
+            ok = true;
+            break;
+          }
+        }
+        if(!ok) {
+          // if you turn on auto-choice, but every auto choice is configured to do nothing, show the dialog that is normally only shown by the smaller gear button
+          showConfigureAutoChoiceDialog();
         }
       }
-      if(!ok) {
-        // if you turn on auto-choice, but every auto choice is configured to do nothing, show the dialog that is normally only shown by the smaller gear button
-        showConfigureAutoChoiceDialog();
-      }
-    }
-  }, flex));
+    }, flex));
 
 
-  flex = addConfigButton();
-  addButtonAction(flex.div, function() {
-    showConfigureAutoChoiceDialog();
-  });
+    flex = addConfigButton();
+    addButtonAction(flex.div, function() {
+      showConfigureAutoChoiceDialog();
+    });
+  }
 
-  addHR();
 
-  //////////////////////////////////////////////////////////////////////////////
-
-  if(state.automaton_unlocked[1]) {
+  if(autoUpgradesUnlocked()) {
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Automate crop upgrades:';
@@ -689,35 +880,10 @@ function updateAutomatonUI() {
       }
     }, flex));
 
-    var advanced = state.automaton_unlocked[1] >= 2;
-    if(advanced) {
-      flex = addConfigButton();
-      addButtonAction(flex.div, function() {
-        showConfigureAutoResourcesDialog(0);
-      });
-    } else {
-      flex = addButton();
-      styleButton0(flex.div);
-      centerText2(flex.div);
-      var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
-      var names = [];
-      var current = 0;
-      var bestdist = 1;
-      for(var i = 0; i < fractions.length; i++) {
-        names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
-        var dist = Math.abs(fractions[i] - state.automaton_autoupgrade_fraction[0]);
-        if(dist < bestdist) {
-          current = i;
-          bestdist = dist;
-        }
-      }
-      // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
-      state.automaton_autoupgrade_fraction[0] = fractions[current];
-      makeDropdown(flex, 'max cost', current, names, function(i) {
-        state.automaton_autoupgrade_fraction[0] = fractions[i];
-      });
-      registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on autoupgrades');
-    }
+    flex = addConfigButton();
+    addButtonAction(flex.div, function() {
+      showConfigureAutoResourcesDialog(0);
+    });
 
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
@@ -733,28 +899,13 @@ function updateAutomatonUI() {
       }
       return true;
     });
-
-    if(!advanced) {
-      texth = 0.1;
-      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
-      flex.div.innerText = 'Start the no-upgrades challenge again and beat its next stage to unlock more finetuning options for auto-upgrade';
-      y += texth * 1.2;
-    }
-
-  } else {
-    texth = 0.15;
-    flex  = new Flex(automatonFlex, 0.05, y + 0.01, 0.95, y + 0.08);
-    flex.div.innerText = 'Reach ethereal tree level 2 and beat the no upgrades challenge to unlock auto-upgrades';
-    flex.div.className = 'efGoal';
-    y += texth;
   }
 
-
+  //////////////////////////////////////////////////////////////////////////////
   addHR();
-
   //////////////////////////////////////////////////////////////////////////////
 
-  if(state.automaton_unlocked[2]) {
+  if(autoPlantUnlocked()) {
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
     flex.div.innerText = 'Auto-plant:';
@@ -792,35 +943,10 @@ function updateAutomatonUI() {
       }
     }, flex));
 
-    var advanced = state.automaton_unlocked[2] >= 2;
-    if(advanced) {
-      flex = addConfigButton();
-      addButtonAction(flex.div, function() {
-        showConfigureAutoResourcesDialog(1);
-      });
-    } else {
-      flex = addButton();
-      styleButton0(flex.div);
-      centerText2(flex.div);
-      var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
-      var names = [];
-      var current = 0;
-      var bestdist = 1;
-      for(var i = 0; i < fractions.length; i++) {
-        names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
-        var dist = Math.abs(fractions[i] - state.automaton_autoplant_fraction[0]);
-        if(dist < bestdist) {
-          current = i;
-          bestdist = dist;
-        }
-      }
-      // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
-      state.automaton_autoplant_fraction[0] = fractions[current];
-      makeDropdown(flex, 'max cost', current, names, function(i) {
-        state.automaton_autoplant_fraction[0] = fractions[i];
-      });
-      registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on autoplanting');
-    }
+    flex = addConfigButton();
+    addButtonAction(flex.div, function() {
+      showConfigureAutoResourcesDialog(1);
+    });
 
     texth = 0.1;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
@@ -849,7 +975,7 @@ function updateAutomatonUI() {
       setButtonIndicationStyle(flex);
     };
 
-    if(state.automaton_unlocked[3]) {
+    if(autoUnlockUnlocked()) {
       flex = addButton();
       flex.extraConditionFun = function() {
         return !!state.automaton_autoplant;
@@ -871,62 +997,92 @@ function updateAutomatonUI() {
       }, flex));
 
 
-      // advanced for auto-unlock is shared with that of auto-plant (for now, maybe could become a stage 2 of the blackberry challenge in the future)
-      var advanced = state.automaton_unlocked[2] >= 2;
-      if(advanced) {
-        flex = addConfigButton();
-        addButtonAction(flex.div, function() {
-          showConfigureAutoResourcesDialog(2);
-        });
+      flex = addConfigButton();
+      addButtonAction(flex.div, function() {
+        showConfigureAutoResourcesDialog(2);
+      });
+    }
+  }
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  addHR();
+  //////////////////////////////////////////////////////////////////////////////
+
+  if(autoBlueprintUnlocked()) {
+
+    texth = 0.07;
+    flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
+    flex.div.innerText = 'Auto-blueprint override at condition:';
+    registerTooltip(flex.div, 'Allows to override blueprint (overplant the field with a different chosen blueprint) at a configurable condition (tree level reached).');
+    y += texth;
+
+
+    var updateOverrideButton = function(flex) {
+      var div = flex.div.textEl;
+      if(state.automaton_autoblueprint) {
+        div.innerText = 'Auto blueprint override on';
+        flex.enabledStyle = 1;
       } else {
-        flex = addButton();
-        styleButton0(flex.div);
-        centerText2(flex.div);
-        var fractions = [1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001];
-        var names = [];
-        var current = 0;
-        var bestdist = 1;
-        for(var i = 0; i < fractions.length; i++) {
-          names[i] = Num(fractions[i]).toPercentString(3, Num.N_FULL);
-          var dist = Math.abs(fractions[i] - state.automaton_autounlock_fraction[0]);
-          if(dist < bestdist) {
-            current = i;
-            bestdist = dist;
+        div.innerText = 'Auto blueprint override off';
+        flex.enabledStyle = 0;
+      }
+      setButtonIndicationStyle(flex);
+    };
+
+    flex = addButton();
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    updateOverrideButton(flex);
+    addButtonAction(flex.div, bind(function(flex) {
+      var automaton_autoblueprint_before = state.automaton_autoblueprint;
+      if(state.paused) {
+        state.automaton_autoblueprint = state.automaton_autoblueprint ? 0 : 1;
+        if(state.automaton_autoblueprint && !state.automaton_autoblueprints[0].enabled) {
+          // if you have only 1, the nested 'enabled' setting of it is not visible, ensure it's not accidently false due to some bug
+          if(autoBlueprintsUnlocked() == 1) state.automaton_autoblueprints[0].enabled = true;
+        }
+        updateOverrideButton(flex);
+        updateRightPane();
+      } else {
+        addAction({type:ACTION_TOGGLE_AUTOMATON, what:5, on:(state.automaton_autoblueprint ? 0 : 1), fun:function() {
+          updateOverrideButton(flex);
+        }});
+        update();
+      }
+      if(!automaton_autoblueprint_before) {
+        var ok = false;
+        for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
+          var v = state.automaton_autoblueprints[i];
+          if(v.blueprint > 0) {
+            ok = true;
+            break;
           }
         }
-        // if the state has some value that's not present in the UI, change it to that one now to avoid misleading display
-        state.automaton_autounlock_fraction[0] = fractions[current];
-        makeDropdown(flex, 'max cost', current, names, function(i) {
-          state.automaton_autounlock_fraction[0] = fractions[i];
-        });
-        registerTooltip(flex.div, 'max fraction of current amount of resources that the automaton is allowed to spend on auto unlocking');
+        if(!ok) {
+          // if you turn on auto-override, but every auto override is configured to do nothing, show the dialog that is normally only shown by the smaller gear button
+          showConfigureAutoBlueprintDialog();
+        }
       }
-    }
+    }, flex));
 
 
-    if(!advanced) {
-      texth = 0.1;
-      flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
-      flex.div.innerText = 'Start the withering challenge again and beat its next stage to unlock more finetuning options for auto-plant';
-      y += texth * 1.2;
-    }
-
-    if(!state.automaton_unlocked[3]) {
-      texth = 0.15;
-      flex  = new Flex(automatonFlex, 0.05, y + 0.01, 0.95, y + 0.08);
-      flex.div.innerText = 'Reach ethereal tree level 4 and beat the blackberry challenge to unlock auto-unlock of next-tier plants';
-      flex.div.className = 'efGoal';
-      y += texth;
-    }
-
-  } else if(state.automaton_unlocked[1]) {
-    texth = 0.15;
-    flex  = new Flex(automatonFlex, 0.05, y + 0.01, 0.95, y + 0.08);
-    flex.div.innerText = 'Reach ethereal tree level 3 and beat the withering challenge to unlock auto-plant';
-    flex.div.className = 'efGoal';
-    y += texth;
+    flex = addConfigButton();
+    addButtonAction(flex.div, function() {
+      showConfigureAutoBlueprintDialog();
+    });
   }
 
   //////////////////////////////////////////////////////////////////////////////
+}
 
+// Some of these help dialogs get unlocked by finishing a challenge, but challenges changed around in v0.5, and it's possible some dialogs will never get unlocked due to that. This function fixes the state of this.
+function checkUnlockedAutomatonHelpDialogs() {
+  if(!state.help_seen_text[28] && automatonUnlocked()) state.help_seen_text[28] = 28;
+  if(!state.help_seen_text[31] && autoPlantUnlocked()) state.help_seen_text[31] = 31;
+  if(!state.help_seen_text[29] && autoUpgradesUnlocked()) state.help_seen_text[29] = 29;
+  if(!state.help_seen_text[30] && autoFinetuningUnlocked()) state.help_seen_text[30] = 30;
+  if(!state.help_seen_text[33] && autoUnlockUnlocked()) state.help_seen_text[33] = 33;
+  if(!state.help_seen_text[38] && autoPrestigeUnlocked()) state.help_seen_text[38] = 38;
+  if(!state.help_seen_text[40] && autoBlueprintUnlocked()) state.help_seen_text[40] = 40;
 }

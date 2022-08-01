@@ -281,7 +281,7 @@ registerHelpDialog(12, 'Sun ability', 'Tree reached level 2 and discovered sun a
 registerHelpDialog(14, 'Mist ability', 'Tree reached level 4 and discovered mist ability', 'The tree reached level ' + 4 + ' and discovered the mist ability! You now have multiple abilities, only one ability can be active at the same time.<br><br>' + upgrades[upgrade_mistunlock].description, image_mist);
 registerHelpDialog(15, 'Rainbow ability', 'Tree reached level 6 and discovered rainbow ability', 'The tree reached level ' + 6 + ' and discovered the rainbow ability!<br><br>' + upgrades[upgrade_rainbowunlock].description, image_rainbow);
 registerHelpDialog(2, 'Tree dropped fruit', 'Tree reached level 5 and dropped a fruit', 'The tree reached level ' + 5 + ' and dropped a fruit! Fruits provide boosts and can be upgraded with fruit essence. Essence is gained by sacrificing fruits, and the full amount of fruit essence can be used for upgrading all other fruits at the same time. See the "fruit" tab, it also has a more extensive help dialog for fruits.<br><br>A possible strategy: keep fruits with good abilities you like. Sacrifice any other surplus fruits, so you can use the essence to upgrade the good fruits.', images_apple[0]);
-registerHelpDialog(18, 'Tree dropped better fruit', 'Tree reached level 15 and dropped another fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! It drops one every 5 levels. Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[2]);
+registerHelpDialog(18, 'Tree dropped better fruit', 'Tree reached level 15 and dropped another fruit', 'The tree reached level ' + 15 + ' and dropped another fruit! It drops one every 5 levels. Fruits from higher tree levels have random probability to be of better, higher tier, types.', images_apple[1]);
 
 
 registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now possible to transcend',
@@ -291,8 +291,8 @@ registerHelpDialog(7, 'Tree can transcend', 'Tree reached level 10 and it\'s now
 
 registerHelpDialog(1, 'Transcension', 'You performed your first transcension! You can use resin in the ethereal field tab.', 'You performed your first transcension! Check the new ethereal field tab, spend resin on ethereal plants for bonuses to your basic field. Get more resin by transcending again.',
   undefined,
-  '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all types of basic field berries, mushrooms and flowers are boosted by this example. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
-  [[undefined,images_anemone[4],undefined],
+  '<br><br>The following image shows an example of an ethereal field setup with several ethereal crops that give boosts to the main field: all types of basic field berries, mushrooms and flowers are boosted by this example, and runs start with starting seeds from the fern. The image also shows a white lotus that boosts the neighboring ethereal crops to make their boosts even bigger.',
+  [[image_fern_as_crop[4],images_anemone[4],undefined],
    [blackberry[4],images_whitelotus[4],champignon[4]],
    [undefined,blackberry[4],undefined]]);
 
@@ -350,11 +350,11 @@ registerHelpDialog(27, 'Bees', 'You unlocked bees!',
 registerHelpDialog(28, 'Automaton & Blueprints', 'You unlocked the automaton!',
     'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, it gives a boost to neighbors, and the automaton tab and blueprints unlock, allowing to automate various parts of the game.<br><br>' +
     'You must place the automaton in the ethereal field before this works, then go to the new automaton tab, and configure its settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>' +
-    'When removing the automaton from the ethereal field, all automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>' +
+    'When removing the automaton from the ethereal field, most automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>' +
     'The automaton initially has the following features unlocked:<br><br>' +
     ' • Blueprints and templates: Templates are translucent blue looking versions of crops that can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint button in the tree.<br>' +
+    ' • Auto-plant: the automaton will automatically plant crops according to a blueprint, and plant higher tiers once you unlock those tiers.<br>' +
     ' • Buttons to delete all crops in the main field or in the ethereal field: these are in the automaton tab and are for convenience. Deleting the ethereal field still uses tokens as usual.<br>' +
-    ' • Automation of choice upgrades: Use the button in the automaton tab to enable/disable this. Use the "gear" button to set up which choice to make for which upgrade. You have to use the gear for the initial setup of this.<br>' +
     ' • Neighbor boost in the ethereal field: the automaton in the ethereal field gives an independent boost to neighbors, similar to lotuses.<br>' +
     '',
     images_automaton[4],
@@ -364,15 +364,15 @@ registerHelpDialog(28, 'Automaton & Blueprints', 'You unlocked the automaton!',
    [undefined,images_flowertemplate[4],undefined]]);
 
 registerHelpDialog(29, 'Auto upgrades', 'You unlocked auto upgrades!',
-    'You unlocked auto-upgrades for the automaton! See the automaton tab. You can enable or disable auto-upgrades, and choose a max cost the automaton is allowed to spend. All basic upgrades that boost crops, will be automatically performed by the automaton, at their normal cost, when enabled.',
+    'You unlocked auto-upgrades for the automaton! See the automaton tab. You can enable or disable auto-upgrades, and choose a max cost the automaton is allowed to spend.<br><br>All basic upgrades that boost crops will be automatically performed by the automaton, at their normal cost, when enabled.<br><br>In addition, you can automate the choice upgrades, but you must configure which choice for which upgrade you prefer in the automaton settings first.',
     images_automaton[4]);
 
 registerHelpDialog(30, 'Auto upgrades more options', 'You unlocked more auto upgrade options!',
-    'You unlocked more finetuning options for the auto upgrades. See the automaton tab. There is now a "gear" button next to the auto upgrade button: you can now configure the max cost per crop type (berry, mushroom, flower, ...).',
+    'You unlocked more finetuning options for the auto upgrades. See the automaton tab in the dialogs behind the "gear": you can now configure the max cost per crop type (berry, mushroom, flower, ...).',
     images_automaton[4]);
 
 registerHelpDialog(31, 'Auto plant', 'You unlocked auto plant!',
-    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will replace existing crops or blueprint templates with a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only replace crops or blueprint templates to the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically replace all planted blackberries in the field with blueberries, given enough resources.',
+    'You unlocked auto-planting for the automaton! See the automaton tab. You can enable or disable auto-plant, and choose a max cost the automaton is allowed to spend.<br><br>How this works: the automaton will replace existing crops or blueprint templates with a higher tier, if that higher tier is unlocked. The automaton will not plant new crops from scratch, and will only replace crops or blueprint templates of the same type, e.g. berry to berry, flower to flower, ...<br><br>For example: If you have a blackberry, and now unlock blueberry, the automaton will automatically replace all planted blackberries in the field with blueberries, given enough resources.',
     images_automaton[4]);
 
 registerHelpDialog(32, 'Auto plant more options', 'You unlocked auto plant more options!',
@@ -457,12 +457,16 @@ registerHelpDialog(37, 'Combined Seasonal Fruits', 'You unlocked combined season
    [images_quince[4],images_kumquat[1],images_starfruit[9]]]);
 
 registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
-    'You unlocked auto-prestige for the automaton! This is integrated with auto-unlock: the same cost settings of auto-unlock are used for auto-prestige, and you can use a toggle to enable/disable auto-prestige.',
+    'You unlocked auto-prestige for the automaton! This is integrated with auto-unlock: the same cost settings of auto-unlock are used for auto-prestige, and you can use a toggle to enable/disable auto-prestige in the auto-unlock settings.',
     images_automaton[4]);
 
 registerHelpDialog(39, 'Squirrel evolution', 'Squirrel evolution',
     function() { return getSquirrelEvolutionHelp(); },
     image_squirrel_evolution);
+
+registerHelpDialog(40, 'Auto blueprint override', 'You unlocked auto blueprint override!',
+    'You unlocked auto blueprint override! This lets the automaton override the field with another blueprint at a chosen tree level. ' + autoBlueprintHelp,
+    images_automaton[4]);
 
 
 function createKeyboardHelpDialog() {
@@ -714,7 +718,7 @@ function createAutomatonHelpDialog() {
     return button;
   };
 
-  var ids = [28, 29, 30, 31, 32, 33];
+  var ids = [28, 30, 31, 29, 32, 33, 40, 38];
 
   for(var i = 0; i < ids.length; i++) {
     var id = ids[i];
@@ -728,7 +732,7 @@ function createAutomatonHelpDialog() {
   }
 
   var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
-  moreFlex.div.innerText = 'More help topics may appear here as the game progresses. Any in-game automaton-related help dialog that pops up will become permanently available here (as well as the main help dialog) once it\'s unlocked';
+  moreFlex.div.innerText = 'More help topics may appear here as the game progresses, when new automaton features get unlocked';
 }
 
 
@@ -760,6 +764,7 @@ var GOAL_TREELEVEL_10 = GOAL_index++;
 var GOAL_TRANSCEND = GOAL_index++;
 var GOAL_ETHEREAL_CROP = GOAL_index++;
 var GOAL_ETHEREAL_UPGRADE = GOAL_index++;
+var GOAL_COLLECT_RESIN0 = GOAL_index++; // like GOAL_COLLECT_RESIN but with an additional tip in the text
 var GOAL_COLLECT_RESIN = GOAL_index++;
 var GOAL_COLLECT_RESIN_FOR_MISTLETOE = GOAL_index++;
 var GOAL_MISTLETOE_UNLOCK = GOAL_index++;
@@ -867,10 +872,11 @@ function getGoal_() {
       var subcode = ((state.currentTab == tabindex_field2) ? 1 : 0) + (state.numTabs * 2) + (dialog_level > 0 ? 4 : 0);;
       return [GOAL_ETHEREAL_CROP, subcode];
     }
-    if(!state.upgrades2[upgrade2_mistletoe].count && state.treelevel2 == 0) {
+    if(!state.upgrades2[upgrade2_mistletoe].count && state.treelevel2 == 0 && !state.challenge) {
       if(state.g_res.resin.ltr(50) && state.g_numresets < 4) {
-        if(state.res.resin.ltr((state.g_numupgrades2 > 2) ? 25 : ((state.g_numresets > 2) ? 15 : 10))) {
-          return [GOAL_COLLECT_RESIN, 0];
+        if(state.res.resin.ltr((state.g_numupgrades2 > 2) ? 25 : ((state.g_numresets >= 2) ? 15 : 10))) {
+          var early = state.g_numresets < 2 && state.treelevel < 1 && !state.upgrades[berryunlock_1].count /*&& !state.upgrades[flowerunlock_0].count*/;
+          return [early ? GOAL_COLLECT_RESIN0 : GOAL_COLLECT_RESIN, 0];
         } else {
           return [GOAL_ETHEREAL_UPGRADE, 0];
         }
@@ -1121,6 +1127,8 @@ function showGoalChips() {
         makeArrow2(contentFlex.div, 0.5, 0.2, tabbuttons[tabindex_field2], 0.6, 0.95);
       }
     }
+  } else if(goal == GOAL_COLLECT_RESIN0) {
+    setGoalText('Grow the basic field again and reach tree level 10 or higher to transcend again for more resin.\nTIP: shift+click watercress icon in top right corner to fill entire field with watercress (requires enough seeds). Check help -> keyboard shoftcuts for easier ways to plant.', false);
   } else if(goal == GOAL_COLLECT_RESIN) {
     //setGoalText('Grow the basic field again and reach tree level 10 or higher to transcend again for more resin. Get more ethereal crops and upgrades, and achievements, to reach higher levels faster and earn more resin with each transcension.');
     setGoalText('Grow the basic field again and reach tree level 10 or higher to transcend again for more resin.', true);

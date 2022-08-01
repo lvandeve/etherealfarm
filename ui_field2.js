@@ -276,6 +276,9 @@ function makeTree2Dialog() {
 
   var twigs_req = treeLevel2Req(state.treelevel2 + 1);
   text += '<b>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' (total: ' + twigs_req.toString() + ')';
+  if(state.treelevel2 > 0 && state.treelevel2 <= 5 && state.cropcount[mistletoe_0] == 0 && state.challenge == 0) {
+    text += '<br><font color="red">You must plant mistletoe(s) in the basic field to get twigs to level up the ethereal tree and progress the game</font>';
+  }
   text += '<br><br>';
 
   if(state.treelevel2 > 0) {
@@ -738,21 +741,21 @@ function showEtherealTreeLevelDialog(level, opt_later) {
     var u = crops2[registered_crops2[i]];
     if(!u.istemplate) continue;
     if(u.treelevel2 == level) {
-      text += '<b>Template</b>: ' + upper(u.name) + '<br>';
+      text += '<b>Template</b>: Ethereal ' + u.name + '<br>';
       anything = true;
     }
   }
 
   if(level == 2) {
-    text += '<b>Challenge</b>: No upgrades challenge (requires automaton to unlock)<br>';
+    text += '<b>Challenge</b>: No upgrades challenge (requires having automaton to unlock)<br>';
     anything = true;
   }
   if(level == 3) {
-    text += '<b>Challenge</b>: Wither challenge (requires automaton upgrade to unlock)<br>';
+    text += '<b>Challenge</b>: Blackberry challenge (requires automaton with auto-upgrades to unlock)<br>';
     anything = true;
   }
-  if(level == 4) {
-    text += '<b>Challenge</b>: Blackberry challenge (requires automaton upgrade to unlock)<br>';
+  if(level == 5) {
+    text += '<b>Challenge</b>: Wither challenge (requires automaton with auto-unlock crops to unlock)<br>';
     anything = true;
   }
   if(level == 7) {
@@ -765,6 +768,10 @@ function showEtherealTreeLevelDialog(level, opt_later) {
   } else {
     text += '<br>';
     text += 'These are available in the ethereal field and/or the ethereal upgrades tab.';
+    if(!opt_later) {
+      text += '<br><br>';
+      text += 'You can always see this dialog again through the ethereal tree dialog.';
+    }
   }
 
   dialog.content.div.innerHTML = text;

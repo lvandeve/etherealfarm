@@ -20,6 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.5.0 (2022-08-01):';
+  text += '<br/>• Automaton features get unlocked earlier and there\'s a new automation feature too:';
+  text += '<br/>&nbsp;&nbsp;1. Auto-plant is now unlocked immediately when getting automaton (at ethereal tree level 1, without a required challenge), instead of auto-choice. Before, auto-plant unlocked only at ethereal tree level 3 with the wither challenge';
+  text += '<br/>&nbsp;&nbsp;2. Auto-upgrades and auto-choice now both unlock at ethereal tree level 2, with the no-upgrades challenge.';
+  text += '<br/>&nbsp;&nbsp;3. Blackberry challenge now appears at ethereal tree level 3 instead of 4. This means automaton auto-unlock is now available already at ethereal tree level 3.';
+  text += '<br/>&nbsp;&nbsp;4. Wither challenge now unlocks at ethereal tree level 5 instead of 3, and unlocks a completely new ability: auto-blueprint override (before it unlocked auto-plant).';
+  text += '<br/>• The new auto-blueprint override ability allows to program the automaton to override the field with a chosen blueprint once a chosen tree level is reached.';
+  text += '<br/>• Challenge target levels tweaked where appropriate, e.g. the second target of the no upgrades challenge got harder, and wither much higher.'; // also, automaton cost-finetuning options are now all unlocked at once with stage 2 of no upgrades challenge, rather than separately for auto-upgrades and auto-plant
+  text += '<br/>• Blackberry secret, blueberry secret and cranberry secret all unlock one ethereal tree level earlier now.';
+  text += '<br/>• Blueberry secret and cranberry secret now also come with other unlocks (anemone, champignon, ...) already bought rather than just made visible.';
+  text += '<br/>• Resin income from transcensions reduced during the first 10 minutes of the run to prevent resin/hr being higher after 1 minute than rest of the run when not having resin extraction yet.';
+  text += '<br/>• Various other tweaks and fixes.'; // roman number setting not remembered, small bugfix in challenge reward listed in some cases, automaton will now prioritize planting a blackberry before buying watercress upgrades, automaton auto-plant mushroom prioritization tweak, guarantee first bronze fruit promised by a help dialog, ...
+  text += '<br/><br/>';
+
   text += '0.4.0 (2022-07-11):';
   text += '<br/>• Added squirrel evolution at the end of the squirrel upgrade tree. When purchased, this resets the squirrel tree to a new one with a new mix of new and old upgrades. This makes production initially significantly weaker, but allows getting much stronger than before eventually.';
   text += '<br/>• Added 4 more tiers of nuts crops.';

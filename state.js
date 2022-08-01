@@ -318,6 +318,20 @@ BluePrint.copy = function(b) {
   return result;
 }
 
+function AutoBlueprintState() {
+  this.enabled = false; // if false, this one is individually disabled
+
+  this.done = false; // already done this action this round
+
+  this.type = 0; // 0 = based on tree level. Other types (e.g. based on time, seeds, crop tiers, ...) not yet supported
+
+  this.blueprint = 0; // index of blueprint to use + 1, or 0 if not yet configured
+
+  this.ethereal = false; // if true, replaces ethereal blueprint instead (not yet supported)
+
+  this.level = 10; // tree level, for type 0
+}
+
 
 var state_ctor_count = 0;
 
@@ -525,17 +539,6 @@ function State() {
   // automaton
   this.automaton_enabled = true; // default is true, but is not active until you actually placed the automaton
 
-  /*
-  array of integers. unlocked automation features. If array too short, means everything behind that counts as false.
-  at each index (value 0 means not yet unlocked):
-  0: automation of choice upgrades
-  1: automation of crop upgrades (1=basic, 2=more options enabled)
-  2: automation of planting (1=basic, 2=more options enabled)
-  3: automation of crop-unlock upgrades (1=unlocked. The advanced options are shared with automation of planting)
-  4: automation of crop-prestige upgrades (1=unlocked. The advanced options are shared with automation of planting)
-  */
-  this.automaton_unlocked = [];
-
   this.automaton_autochoice = 0;
 
   /*
@@ -551,7 +554,7 @@ function State() {
   0: auto upgrades disabled
   1: auto upgrades enabled
   */
-  this.automaton_autoupgrade = 0;
+  this.automaton_autoupgrade = 1;
 
   /*
   fraction of resources the automaton is allowed to use for auto-upgrades, e.g. 0.1 to allow to use up to 10% of resources for auto upgrades
@@ -573,28 +576,37 @@ function State() {
   0: auto plant disabled
   1: auto plant enabled
   */
-  this.automaton_autoplant = 0;
+  this.automaton_autoplant = 1;
 
   /*
   fraction of resources automation is allowed to use for auto-plant
   the indices are the same as for automaton_autoupgrade_fraction, even though some are unused (e.g. watercress)
   */
-  this.automaton_autoplant_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autoplant_fraction = [1, 0.5, 0.5, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
 
   /*
   0: autounlock disabled
   1: autounlock enabled, but only if also autoplant is enabled
   */
-  this.automaton_autounlock = 0;
+  this.automaton_autounlock = 1;
   this.automaton_autounlock_copy_plant_fraction = false;
-  this.automaton_autounlock_fraction = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  this.automaton_autounlock_fraction = [1, 0.5, 0.5, 1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
   this.automaton_autounlock_max_cost = Num(0);
 
   /*
   0: autoprestige disabled
   1: autoprestige enabled, but only if also autoplant is enabled
   */
-  this.automaton_autoprestige = 0;
+  this.automaton_autoprestige = 1;
+
+  /*
+  auto override = automatically plant a blueprint (with override) at certain programmable points
+  0: auto override globally disabled
+  1: auto override enabled
+  */
+  this.automaton_autoblueprint = 0;
+
+  this.automaton_autoblueprints = []; // array of AutoBlueprintState
 
   // challenges
   this.challenge = 0;
@@ -930,6 +942,17 @@ State.prototype.initStages3 = function() {
   var image_squirrel_evolution = (this.evolution3 == 0) ? image_squirrel : image_squirrel2;
   for(var i = 0; i < images_squirrel.length; i++) regenerateImageCanvas(image_squirrel_evolution, images_squirrel[i]);
 };
+
+State.prototype.updateAutoBlueprintAmount = function(amount) {
+  if(amount == this.automaton_autoblueprints.length) return;
+
+  if(amount < this.automaton_autoblueprints.length) {
+    this.automaton_autoblueprints.length = amount;
+    return;
+  }
+
+  while(this.automaton_autoblueprints.length < amount) this.automaton_autoblueprints.push(new AutoBlueprintState());
+}
 
 function lastTreeLevelUpTime(state) {
   // state.lasttreeleveluptime is time of previous time tree leveled, after transcend this is time tree leveled before that transcend! but for this function's return value, the starttime is used for that instead to fix that
@@ -1603,6 +1626,20 @@ function getUpcomingFruitEssence(breakdown) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+
+// also applies to twigs
+function getEarlyResinPenalty() {
+  var itime = 600;
+  if(state.c_runtime < itime) {
+    var f = state.c_runtime / itime;
+    var result = Math.pow(0.1, 1 - f);
+    if(result > 1) result = 1;
+    if(result < 0) result = 0;
+    return result;
+  }
+  return 1;
+}
+
 // get upcoming resin, excluding that from ferns
 function getUpcomingResin() {
   var suppress = false; // more resin suppressed by challenge
@@ -1618,6 +1655,9 @@ function getUpcomingResin() {
     var next = nextTreeLevelResin();
     result.addInPlace(progress.mul(next));
   }
+
+  result.mulrInPlace(getEarlyResinPenalty());
+
   return result;
 }
 
@@ -1636,10 +1676,13 @@ function getUpcomingTwigs() {
     var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
     if(progress.gtr(1)) progress = Num(1);
     if(progress.ltr(0)) progress = Num(0);
-    progress = progress.mulr(0.97); // make leveling cause a slight jump anyway, mostly such that the resin/hr stat will be higher after rather than before the leveling
+    progress = progress.mulr(0.97); // make leveling cause a slight jump anyway, mostly such that the twigs/hr stat will be higher after rather than before the leveling
     var next = nextTwigs().twigs;
     result.addInPlace(progress.mul(next));
   }
+
+  result.mulrInPlace(getEarlyResinPenalty());
+
   return result;
 }
 
@@ -1706,34 +1749,92 @@ function automatonEnabled() {
   return haveAutomaton() && state.automaton_enabled && basicChallenge() != 2;
 }
 
+function autoChoiceUnlocked() {
+  if(!automatonUnlocked()) return false;
+  if(!state.challenges[challenge_noupgrades].completed) return false;
+  return true;
+}
+
 function autoChoiceEnabled() {
   if(!automatonEnabled()) return false;
-  if(!state.automaton_unlocked[0]) return false;
+  if(!autoChoiceUnlocked()) return false;
   return !!state.automaton_autochoice;
+}
+
+function autoUpgradesUnlocked() {
+  if(!automatonUnlocked()) return false;
+  if(!state.challenges[challenge_noupgrades].completed) return false;
+  return true;
 }
 
 function autoUpgradesEnabled() {
   if(!automatonEnabled()) return false;
-  if(!state.automaton_unlocked[1]) return false;
+  if(!autoUpgradesUnlocked()) return false;
   return !!state.automaton_autoupgrade;
+}
+
+// extra finetuning options for costs in auto-upgrades and auto-plant
+function autoFinetuningUnlocked() {
+  if(!automatonUnlocked()) return false;
+  if(state.challenges[challenge_noupgrades].completed <= 1) return false;
+  return true;
+}
+
+function autoPlantUnlocked() {
+  if(!automatonUnlocked()) return false;
+  return true; // auto-plant is enabled as soon as you have automaton, since v0.5.0
 }
 
 function autoPlantEnabled() {
   if(!automatonEnabled()) return false;
-  if(!state.automaton_unlocked[2]) return false;
+  if(!autoPlantUnlocked()) return false;
   return !!state.automaton_autoplant;
+}
+
+function autoUnlockUnlocked() {
+  if(!automatonUnlocked()) return false;
+  if(!state.challenges[challenge_blackberry].completed) return false;
+  return true;
 }
 
 function autoUnlockEnabled() {
   if(!automatonEnabled()) return false;
-  if(!state.automaton_unlocked[3]) return false;
+  if(!autoUnlockUnlocked()) return false;
   if(!autoPlantEnabled()) return false; // auto unlock also gets disabled when auto plant is disabled
   return !!state.automaton_autounlock;
 }
 
+// auto-blueprint override
+function autoBlueprintUnlocked() {
+  if(!automatonUnlocked()) return false;
+  if(!state.challenges[challenge_wither].completed) return false;
+  if(state.treelevel2 < 5) return false; // normally this check is not needed, but wither challenge changed to become the challenge unlocking this and became a higher level challenge, do not yet unlock the new feature if wither was finished earlier at the now too early ethereal tree level
+  return true;
+}
+
+// returns amount of auto-blueprint overrides that are unlocked
+function autoBlueprintsUnlocked() {
+  if(!autoBlueprintUnlocked()) return 0;
+  if(state.challenges[challenge_wither].completed >= 3) return 2; // the second completion does something else
+  return 1;
+}
+
+// auto-blueprint override
+function autoBlueprintEnabled() {
+  if(!automatonEnabled()) return false;
+  if(!autoBlueprintUnlocked()) return false;
+  return !!state.automaton_autoblueprint;
+}
+
+function autoPrestigeUnlocked() {
+  if(!automatonUnlocked()) return false;
+  if(!state.challenges[challenge_truly_basic].completed) return false;
+  return true;
+}
+
 function autoPrestigeEnabled() {
   if(!automatonEnabled()) return false;
-  if(!state.automaton_unlocked[4]) return false;
+  if(!autoPrestigeUnlocked()) return false;
   if(!autoPlantEnabled()) return false; // auto prestige also gets disabled when auto plant is disabled
   if(!state.automaton_autounlock) return false; // auto prestige also gets disabled when auto-unlock is disabled
   return !!state.automaton_autoprestige;

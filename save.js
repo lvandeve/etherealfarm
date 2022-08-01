@@ -32,8 +32,11 @@ function encState(state, opt_raw_only) {
   state.g_numsaves++;
 
   var tokens = [];
+  var tokens_stack = [];
   var section;
+  var section_stack = [];
   var id;
+  var id_stack = [];
 
   var process = function(value, type) { tokens.push(Token(value, type, section * 64 + (id++))); };
   var processBool = function(value) { process(value, TYPE_BOOL); };
@@ -64,6 +67,30 @@ function encState(state, opt_raw_only) {
     for(var i = 0; i < value.length; i++) arr[i] = encFractionChoice(value[i]);
     process(arr, TYPE_ARRAY_UINT6);
   };
+
+  // processStructArrayBegin must be followed by matching pairs of processStructBegin/processStructEnd, and then processStructArrayEnd
+  var processStructArrayBegin = function() {
+    process([], TYPE_ARRAY_STRUCT);
+  };
+  // this will reset the id to 0 recursively
+  var processStructBegin = function() { // can only, and must, be used after processStructArrayBegin, for each instance
+    var subtokens = [];
+    tokens[tokens.length - 1].value.push(subtokens);
+    tokens_stack.push(tokens);
+    tokens = subtokens;
+    section_stack.push(section);
+    section = 0;
+    id_stack.push(id);
+    id = 0;
+  };
+  // this will reset the id to the one at the previous processStructBegin, so after the processStructArrayBegin call
+  var processStructEnd = function() {
+    tokens = tokens_stack.pop();
+    id = id_stack.pop();
+    section = section_stack.pop();
+  };
+  // you must set the id variable back to e.g. the next one after the processStructArrayBegin call after calling this
+  var processStructArrayEnd = function() { };
 
   var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10;
 
@@ -602,10 +629,9 @@ function encState(state, opt_raw_only) {
   processTimeArray(array10);
 
 
-
   section = 20; id = 0; // automaton
   processBool(state.automaton_enabled);
-  processUintArray(state.automaton_unlocked);
+  id++; // this used to be the state.automaton_unlocked array, but it's redundant
   processUintArray(state.automaton_choices);
   processUint(state.automaton_autoupgrade);
   processFractionChoiceArray(state.automaton_autoupgrade_fraction);
@@ -617,6 +643,21 @@ function encState(state, opt_raw_only) {
   processUint(state.automaton_autochoice);
   processNum(state.automaton_autounlock_max_cost);
   processUint(state.automaton_autoprestige);
+  processUint(state.automaton_autoblueprint);
+
+  processStructArrayBegin();
+  for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
+    var o = state.automaton_autoblueprints[i];
+    processStructBegin();
+    processBool(o.enabled);
+    processBool(o.done);
+    processUint6(o.type);
+    processUint(o.blueprint);
+    processBool(o.ethereal);
+    processUint(o.level);
+    processStructEnd();
+  }
+  processStructArrayEnd();
 
   section = 21; id = 0; // blueprints
   array0 = [];
@@ -826,22 +867,24 @@ function decState(s) {
 
   var tokens = decTokens(reader);
   if(reader.error) return err(4);
+  var tokens_stack = [];
+  var parent_stack = []; // for parent token
 
-  var found, error;
+  var error = false;
 
   var section;
+  var section_stack = [];
   var id;
+  var id_stack = [];
 
   // def = default value, or undefined to make it required to be there and indicate error if not there
   var process = function(def, type) {
     var token = tokens[section * 64 + id];
     id++;
     if(token == undefined || token.type != type) {
-      found = false;
       if(def == undefined && !debug_allow_missing_fields) error = true;
       return def;
     }
-    found = true;
     return token.value;
   };
   var processBool = function(def) { return process(def, TYPE_BOOL); };
@@ -878,6 +921,35 @@ function decState(s) {
     if(!arr) return arr;
     for(var i = 0; i < arr.length; i++) arr[i] = decFractionChoice(arr[i]);
     return arr;
+  };
+
+  var processStructArrayBegin = function() { // must be followed by matching pairs of processStructBegin/processStructEnd, and then processStructArrayEnd
+    var value = process([], TYPE_ARRAY_STRUCT);
+    parent_stack.push(value);
+    return value.length;
+  };
+  var processStructBegin = function() { // can only, and must, be used after processStructArrayBegin, for each instance
+    var value = parent_stack[parent_stack.length - 1];
+    if(!value.length) {
+      error = true;
+      return;
+    }
+    tokens_stack.push(tokens);
+    tokens = value[0];
+    section_stack.push(section);
+    section = 0;
+    id_stack.push(id);
+    id = 0;
+  };
+  var processStructEnd = function() {
+    var value = parent_stack[parent_stack.length - 1];
+    value.shift(0, 1);
+    tokens = tokens_stack.pop();
+    id = id_stack.pop();
+    section = section_stack.pop();
+  };
+  var processStructArrayEnd = function() {
+    parent_stack.pop();
   };
 
   var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10;
@@ -1228,7 +1300,7 @@ function decState(s) {
     state.keys_brackets = 3;
   }
   if(save_version >= 4096*1+90) state.keepinterestingfruit = processBool();
-  else if(save_version >= 262144*2+64*2+1) state.roman = (save_version >= 262144*2+64*4+0) ? processUint6() : processBool();
+  if(save_version >= 262144*2+64*2+1) state.roman = (save_version >= 262144*2+64*4+0) ? processUint6() : processBool();
   if(error) return err(4);
 
 
@@ -1629,6 +1701,7 @@ function decState(s) {
     if(state.help_seen_text[30]) ensureMissedHelpDialogAvailable(29, state);
   }
 
+
   section = 19; id = 0; // challenges
   if(save_version >= 4096*1+29) {
     array0 = processUintArray();
@@ -1733,12 +1806,7 @@ function decState(s) {
   section = 20; id = 0; // automaton
   if(save_version >= 4096*1+40) {
     state.automaton_enabled = processBool();
-    if(save_version >= 4096*1+43) {
-      state.automaton_unlocked = processUintArray();
-    } else {
-      state.automaton_unlocked = processBoolArray();
-      for(var i = 0; i < state.automaton_unlocked.length; i++) state.automaton_unlocked[i] = (state.automaton_unlocked[i] ? 1 : 0);
-    }
+    id++; // this used to be the state.automaton_unlocked array, but it's redundant
     state.automaton_choices = processUintArray();
   }
   if(save_version >= 4096*1+42) {
@@ -1787,8 +1855,48 @@ function decState(s) {
   if(save_version >= 4096*1+94) {
     state.automaton_autoprestige = processUint();
   }
+  if(save_version >= 262144*2+64*5+0) {
+    state.automaton_autoblueprint = processUint();
+  }
   if(error) return err(4);
 
+
+  // wither challenge moved from ethereal tree 3 to ethereal tree 5 in v0.5.0, and got significantly higher target levels
+  if(save_version < 262144*2+64*5+0 && state.challenges[challenge_wither].unlocked) {
+    var c = state.challenges[challenge_wither];
+    var c2 = challenges[challenge_wither];
+    if(state.treelevel2 < 5) c.unlocked = false;
+    if(c.completed) {
+      if(c.maxlevel < c2.targetlevel[0]) c.completed = 0;
+      else if(c.maxlevel < c2.targetlevel[1]) c.completed = 1;
+      else if(c.maxlevel < c2.targetlevel[2]) c.completed = 2;
+      if(!c.completed) c.num_completed = 0;
+      if(c.completed < 2) c.num_completed2 = 0;
+    }
+  }
+
+  var blueprint_overrides_count = state.challenges[challenge_wither].completed;
+  if(blueprint_overrides_count >= 2) blueprint_overrides_count--; // second challenge_wither completion does something else
+  state.automaton_autoblueprints = [];
+  state.updateAutoBlueprintAmount(blueprint_overrides_count);
+
+  if(save_version >= 262144*2+64*5+0) {
+    var count = processStructArrayBegin(); // expected to be same as blueprint_overrides_count, but due to version changes / situation before unlocking this, some lenience is allowed
+    for(var i = 0; i < count; i++) {
+      var o = i < blueprint_overrides_count ? state.automaton_autoblueprints[i] : {};
+      state.automaton_autoblueprints[i] = o;
+      processStructBegin();
+      o.enabled = processBool();
+      o.done = processBool();
+      o.type = processUint6();
+      o.blueprint = processUint();
+      o.ethereal = processBool();
+      o.level = processUint();
+      processStructEnd();
+    }
+    processStructArrayEnd();
+  }
+  if(error) return err(4);
 
   section = 21; id = 0; // blueprints
   if(save_version >= 4096*1+58) {
@@ -1829,9 +1937,6 @@ function decState(s) {
     if(index2 != array2.length) return err(4);
   }
   if(error) return err(4);
-
-
-
 
   section = 22; id = 0; // squirrel upgrades
 
@@ -2278,6 +2383,8 @@ var postload = function(new_state) {
   Num.precision = state.precision;
 
   resetGlobalStateVars(new_state);
+
+  checkUnlockedAutomatonHelpDialogs();
 
   if(state.paused) showMessage(pausedMessage, undefined, undefined, undefined, undefined, undefined, /*opt_showlate0=*/true);
 };

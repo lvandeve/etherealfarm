@@ -3254,6 +3254,8 @@ registerMedal('withered', 'completed the wither challenge stage 2', undefined, f
   return state.challenges[challenge_wither].completed >= 2;
 }, Num(0.7));
 
+// TODO: medal for wither stage 3 (but can't squeeze its ID between these two here unfortunately)
+
 registerMedal('berried', 'completed the blackberry challenge', blackberry[4], function() {
   return state.challenges[challenge_blackberry].completed >= 1;
 }, Num(1.0));
@@ -3631,8 +3633,7 @@ function() {
 
 // 2
 var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105], Num(0.05),
-`The field has rocks on which you can't plant. The rock pattern is determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours.
-`,
+`The field has rocks on which you can't plant. The rock pattern is randomly generated at the start of the challenge, but will always be the same within the same when starting in the same 3-hour time interval (based on global UTC time)`,
 `
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
@@ -3670,7 +3671,7 @@ function() {
 
 // 4
 // reason why watercress upgrade is still present: otherwise it disappears after a minute, requiring too much manual work when one wants to upkeep the watercress
-var challenge_noupgrades = registerChallenge('no upgrades challenge', [21, 25], Num(0.1),
+var challenge_noupgrades = registerChallenge('no upgrades challenge', [20, 30], Num(0.1),
 `
 During this challenge, crops cannot be upgraded.
 `,
@@ -3678,21 +3679,22 @@ During this challenge, crops cannot be upgraded.
 • Crops cannot be upgraded, except watercress<br>
 • Ethereal upgrades, achievement boost, etc..., still apply as normal<br>
 `,
-['unlock the auto-upgrade ability of the automaton' ,'add more options to the auto-upgrade ability of the automaton'],
+['unlock the auto-upgrade ability of the automaton' ,'add more options to the cost configuration dialogs of the automaton'],
 'reaching ethereal tree level 2 and having automaton',
 function() {
   return state.treelevel2 >= 2 && haveAutomaton();
 },
 [
 function() {
-  state.automaton_unlocked[1] = Math.max(1, state.automaton_unlocked[1] || 0);
   showRegisteredHelpDialog(29);
   showMessage('Auto-upgrade unlocked!', C_AUTOMATON, 1067714398);
 },
 function() {
-  state.automaton_unlocked[1] = Math.max(2, state.automaton_unlocked[1] || 0);
   for(var i = 1; i < state.automaton_autoupgrade_fraction.length; i++) {
     state.automaton_autoupgrade_fraction[i] = state.automaton_autoupgrade_fraction[0];
+  }
+  for(var i = 1; i < state.automaton_autoplant_fraction.length; i++) {
+    state.automaton_autoplant_fraction[i] = state.automaton_autoplant_fraction[0];
   }
   showRegisteredHelpDialog(30);
   showMessage('Auto-upgrade extra options unlocked!', C_AUTOMATON, 1067714398);
@@ -3711,7 +3713,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [30, 35, 40], Num(0.075),
+var challenge_wither = registerChallenge('wither challenge', [50, 70, 90], Num(0.075),
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -3722,27 +3724,25 @@ During this challenge, crops wither and must be replanted.
 • Cannot delete crops, they'll disappear over time instead, but you can replace crops immediately by more expensive crops of the same type.<br>
 • Cannot use blueprints. However, one of the later target levels of this challenge unlocks the ability to use them in this challenge too.<br>
 `,
-['unlock the auto-plant ability of the automaton' ,'add more options to the auto-plant ability of the automaton' ,'allow using blueprints during future wither challenge runs'],
-'reaching ethereal tree level 3 and having automaton with autoupgrade',
+['unlock the auto-blueprint override ability of the automaton', 'allow using blueprints during future wither challenge runs' ,'unlock a second configurable blueprint-override'],
+'reaching ethereal tree level 5 and having automaton with auto-unlock plants',
 function() {
-  return state.treelevel2 >= 3 && haveAutomaton() && state.automaton_unlocked[1];
+  return state.treelevel2 >= 5 && haveAutomaton() && autoUnlockUnlocked();
 },
 [
 function() {
-  state.automaton_unlocked[2] = Math.max(1, state.automaton_unlocked[2] || 0);
-  showRegisteredHelpDialog(31);
-  showMessage('Auto-plant unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
-},
-function() {
-  state.automaton_unlocked[2] = Math.max(2, state.automaton_unlocked[2] || 0);
-  for(var i = 1; i < state.automaton_autoplant_fraction.length; i++) {
-    state.automaton_autoplant_fraction[i] = state.automaton_autoplant_fraction[0];
-  }
-  showRegisteredHelpDialog(32);
-  showMessage('Auto-plant extra options unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  state.updateAutoBlueprintAmount(1);
+  state.automaton_autoblueprints[0].enabled = true;
+  showMessage('Auto-blueprint override unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  showRegisteredHelpDialog(40);
 },
 function() {
   showMessage('From now on, you can use blueprints during the wither challenge!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+},
+function() {
+  state.updateAutoBlueprintAmount(2);
+  //showRegisteredHelpDialog(32); // auto-plant fine-tuning help dialog?
+  showMessage('An additional auto-blueprint override unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);
 
@@ -3761,7 +3761,7 @@ function witherCurve(t) {
 }
 
 // 6
-var challenge_blackberry = registerChallenge('blackberry challenge', [18], Num(0.1),
+var challenge_blackberry = registerChallenge('blackberry challenge', [19], Num(0.1),
 `
 During this challenge, only the first tier of each crop type is available.
 `,
@@ -3769,13 +3769,12 @@ During this challenge, only the first tier of each crop type is available.
 • Only blackberries, champignons, anemones, nettle, bee nests, watercress and mistletoe are available, from the beginning<br>
 `,
 ['unlock the auto-unlock ability of the automaton'],
-'reaching ethereal tree level 4 and having automaton with auto-plant',
+'reaching ethereal tree level 3 and having automaton with auto-upgrade',
 function() {
-  return state.treelevel2 >= 4 && haveAutomaton() && state.automaton_unlocked[1] && state.automaton_unlocked[2];
+  return state.treelevel2 >= 3 && haveAutomaton() && autoUpgradesUnlocked();
 },
 [
 function() {
-  state.automaton_unlocked[3] = Math.max(1, state.automaton_unlocked[3] || 0);
   showMessage('Auto-unlock unlocked!', C_AUTOMATON, 1067714398);
   showRegisteredHelpDialog(33);
 },
@@ -3892,7 +3891,6 @@ function() {
   return state.g_numprestiges >= 1;
 }, function() {
   state.automaton_autoprestige = 1; // enable it by default, as part of auto planting
-  state.automaton_unlocked[4] = Math.max(1, state.automaton_unlocked[4] || 0);
   showRegisteredHelpDialog(38);
   showMessage('Auto-prestige unlocked!', C_AUTOMATON, 2067714398);
 }, 0);
@@ -3974,7 +3972,9 @@ challenges[challenge_infernal].alt_bonus = true;
 // the register order is not suitable for display order, so use different array
 // this should be roughly the order challenges are unlocked in the game
 var challenges_order = [
-  challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete, challenge_noupgrades, challenge_wither, challenge_blackberry, challenge_thistle, challenge_stormy, challenge_wasabi,
+  challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete,
+  challenge_noupgrades, challenge_blackberry, challenge_wither,
+  challenge_thistle, challenge_stormy, challenge_wasabi,
   challenge_basic, challenge_infernal, challenge_truly_basic
 ];
 
@@ -4563,6 +4563,19 @@ var upgrade2_extra_fruit_slot = registerUpgrade2('extra fruit slot', 0, Res({res
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[1]);
 
 
+function applyBlackberrySecret() {
+  if(basicChallenge()) return;
+  if(!state.upgrades[berryunlock_0].count) upgrades[berryunlock_0].fun();
+}
+
+upgrade2_register_id = 101; // this upgraded used to be LEVEL2=1 and must keep its old id
+var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:50}), 2, function() {
+  applyBlackberrySecret();
+}, function(){return true;}, 1,
+'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the upgrade-watercress upgrade is available from the start rather than after 5 watercress. This makes the start of a run more convenient. TIP: get enough ferns in ethereal field to get 1000+ starting seeds to be able to plant a blackberry immediately too.',
+undefined, undefined, blackberry[4]);
+upgrade2_register_id = 28;
+
 upgrade2_register_id = 50;
 var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', LEVEL2, Res({resin:100}), 1, function() {
   var numw = Math.max(6, state.numw);
@@ -4586,16 +4599,7 @@ var upgrade2_resin = registerUpgrade2('resin gain', LEVEL2, Res({resin:50}), 2, 
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'increase resin gain from tree by ' + (upgrade2_resin_bonus * 100) + '% (additive).', undefined, undefined, image_resin);
 
-function applyBlackberrySecret() {
-  if(basicChallenge()) return;
-  if(!state.upgrades[berryunlock_0].count) upgrades[berryunlock_0].fun();
-}
-
-var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:100}), 2, function() {
-  applyBlackberrySecret();
-}, function(){return true;}, 1,
-'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the upgrade-watercress upgrade is available from the start rather than after 5 watercress. This makes the start of a run much more convenient.',
-undefined, undefined, blackberry[4]);
+upgrade2_register_id++; // upgrade2_blackberrysecret used to be here but it moved one ethereal tree level earlier
 
 var upgrade2_diagonal = registerUpgrade2('diagonal winter warmth', LEVEL2, Res({resin:150}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
@@ -4608,6 +4612,9 @@ function haveDiagonalTreeWarmth() {
 var upgrade2_automaton = registerUpgrade2('unlock automaton', LEVEL2, Res({resin:100}), 2, function() {
   unlockEtherealCrop(automaton2_0);
   showRegisteredHelpDialog(28);
+  showMessage('Auto-plant unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  // also enable auto-plant so that it works immediately without needing to use the UI
+  state.automaton_autoplant = 1;
 }, function(){return true;}, 1, 'the automaton can be placed in the ethereal field, and when placed, boosts 8 neighboring ethereal plants, unlocks the automaton tab, allows to automate things, and allows to place crop templates', undefined, undefined, images_automaton[4]);
 
 
@@ -4617,6 +4624,25 @@ var upgrade2_twigs = registerUpgrade2('twigs gain', LEVEL2, Res({resin:100}), 2,
 }, function(){return true;}, 0, 'increase twigs gain from tree by ' + (upgrade2_twigs_bonus * 100) + '% (additive).',
 undefined, undefined, mistletoe[2]);
 
+function applyBlueberrySecret() {
+  if(basicChallenge()) return;
+  if(state.challenge == challenge_nodelete) return;
+  if(state.challenge == challenge_bees) return;
+  if(state.challenge == challenge_blackberry) return;
+  if(!state.upgrades[berryunlock_1].count) upgrades[berryunlock_1].fun();
+  if(!state.upgrades[flowerunlock_0].count) upgrades[flowerunlock_0].fun();
+  if(!state.upgrades[mistletoeunlock_0].count) upgrades[mistletoeunlock_0].fun();
+}
+
+upgrade2_register_id = 122; // this upgraded used to be LEVEL2=2 and must keep its old id
+var upgrade2_blueberrysecret = registerUpgrade2('blueberry secret', LEVEL2, Res({resin:200}), 2, function() {
+  applyBlueberrySecret();
+}, function(){
+  return state.upgrades2[upgrade2_blackberrysecret].count;
+}, 1,
+'blueberry, as well as anemone and mistletoe, are unlocked immediately after a transcension, the upgrades to unlock them are no longer needed and given for free, and there is no more waiting required for a fullgrown blackberry.',
+undefined, undefined, blueberry[4]);
+upgrade2_register_id = 105;
 
 
 ///////////////////////////
@@ -4635,24 +4661,27 @@ var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res
 }, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction,
 undefined, undefined, mistletoe[1]);
 
+upgrade2_register_id++; // blueberrysecret used to be here but moved to one ethereal tree level lower
 
-function applyBlueberrySecret() {
+function applyCranberrySecret() {
   if(basicChallenge()) return;
   if(state.challenge == challenge_nodelete) return;
   if(state.challenge == challenge_bees) return;
   if(state.challenge == challenge_blackberry) return;
-  if(!state.upgrades[berryunlock_1].count) upgrades[berryunlock_1].fun();
+  if(!state.upgrades[berryunlock_2].count) upgrades[berryunlock_2].fun();
+  if(!state.upgrades[mushunlock_0].count) upgrades[mushunlock_0].fun();
 }
 
-var upgrade2_blueberrysecret = registerUpgrade2('blueberry secret', LEVEL2, Res({resin:1000}), 2, function() {
-  applyBlueberrySecret();
+upgrade2_register_id = 146; // this upgraded used to be LEVEL2=3 and must keep its old id
+// NOTE: further "secret" upgrades beyond this one are not needed, because at ethereal tree level 4, auto-unlock from the automaton becomes available, removing the need to manually wait for crops to unluck. The "secret" upgrades are a feature to slightly improve quality of the time before auto-unlock exists, but are not intended to speed up runs once auto-unlock exists, runs must have a certain long enough useful duration to avoid too manual gameplay
+var upgrade2_cranberrysecret = registerUpgrade2('cranberry secret', LEVEL2, Res({resin:1000}), 2, function() {
+  applyCranberrySecret();
 }, function(){
-  return state.upgrades2[upgrade2_blackberrysecret].count;
+  return state.upgrades2[upgrade2_blueberrysecret].count;
 }, 1,
-'blueberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the unlock-anemone and unlock-mistletoe upgrades are visible (but not actually unlocked) from the start rather than after a fullgrown blackberry.',
-undefined, undefined, blueberry[4]);
-
-
+'cranberry, as well as champignon, are unlocked immediately after a transcension, the upgrades to unlock them are no longer needed and given for free, and there is no more waiting required for a fullgrown blueberry.', // This is the last of the "secret" upgrades! Soon, automaton will be able to unlock crops instead.
+undefined, undefined, cranberry[4]);
+upgrade2_register_id = 123;
 
 ///////////////////////////
 LEVEL2 = 3;
@@ -4663,8 +4692,6 @@ upgrade2_register_id = 140;
 var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:5000,essence:250}), 2, function() {
   state.fruit_slots++;
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[2]);
-
-
 
 
 var upgrade2_resin_extraction = registerUpgrade2('resin extraction', LEVEL2, Res({resin:50e3}), 1, function() {
@@ -4682,22 +4709,7 @@ var upgrade2_field7x6 = registerUpgrade2('larger field 7x6', LEVEL2, Res({resin:
   if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
 }, function(){return state.numw >= 6 && state.numh >= 6}, 1, 'increase basic field size to 7x6 tiles', undefined, undefined, field_summer[0]);
 
-function applyCranberrySecret() {
-  if(basicChallenge()) return;
-  if(state.challenge == challenge_nodelete) return;
-  if(state.challenge == challenge_bees) return;
-  if(state.challenge == challenge_blackberry) return;
-  if(!state.upgrades[berryunlock_2].count) upgrades[berryunlock_2].fun();
-}
-
-// NOTE: further "secret" upgrades beyond this one are not needed, because at ethereal tree level 4, auto-unlock from the automaton becomes available, removing the need to manually wait for crops to unluck. The "secret" upgrades are a feature to slightly improve quality of the time before auto-unlock exists, but are not intended to speed up runs once auto-unlock exists, runs must have a certain long enough useful duration to avoid too manual gameplay
-var upgrade2_cranberrysecret = registerUpgrade2('cranberry secret', LEVEL2, Res({resin:10000}), 2, function() {
-  applyCranberrySecret();
-}, function(){
-  return state.upgrades2[upgrade2_blueberrysecret].count;
-}, 1,
-'cranberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the unlock-champignon upgrade is visible (but not actually unlocked) from the start rather than after a fullgrown blueberry.', // This is the last of the "secret" upgrades! Soon, automaton will be able to unlock crops instead.
-undefined, undefined, cranberry[4]);
+upgrade2_register_id++; // cranberrysecret used to be here but moved to one ethereal tree level lower
 
 
 ///////////////////////////
@@ -4919,6 +4931,12 @@ var upgrade2_field2_8x8 = registerUpgrade2('ethereal field 8x8', LEVEL2, Res({re
   changeField2Size(state, numw, numh);
   initField2UI();
 }, function(){return state.numw2 >= 7 && state.numh2 >= 8}, 1, 'increase ethereal field size to 8x8 tiles', undefined, undefined, field_ethereal[0]);
+
+////////////////////////////////////////////////////////////////////////////////
+
+registered_upgrades2.sort(function(a, b) {
+  return upgrades2[a].index - upgrades2[b].index;
+});
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -5260,6 +5278,7 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
 
   // level 15
   if(treelevel >= 15 && treelevel <= 19) {
+    if(state.g_p_treelevel < 15) return 1; // guarantee a bronze fruit if reaching this level the first time, to match what a help dialog that then pops up says
     return (roll > prob50) ? 1 : 0;
   }
 
@@ -7051,14 +7070,14 @@ function updateAllPrestigeData() {
 ////////////////////////////////////////////////////////////////////////////////
 
 function canUseBluePrintsDuringChallenge(challenge, opt_print_message) {
-  var wither_incomplete = challenge == challenge_wither && state.challenges[challenge_wither].completed < 3;
+  var wither_incomplete = challenge == challenge_wither && state.challenges[challenge_wither].completed < 2;
   if(wither_incomplete) {
     if(opt_print_message) showMessage('blueprints are disabled during the wither challenge, for now...', C_INVALID);
     return false;
   }
 
   if(challenge == challenge_nodelete) {
-    if(opt_print_message) showMessage('blueprints are disabled during the undeletable challenge', C_INVALID);
+    if(opt_print_message) showMessage('blueprints are disabled during the undeletable challenge, instead carefully plant crops 1 by 1 since you can never delete them', C_INVALID);
     return false;
   }
 
