@@ -435,7 +435,6 @@ function showConfigureAutoBlueprintDialog(subject) {
 
   var flex;
 
-
   texth = 0.15;
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Choose at which tree level to override with which blueprint';
@@ -453,7 +452,6 @@ function showConfigureAutoBlueprintDialog(subject) {
       flex.div.className = flex.enabledStyle == 0 ? 'efAutomatonManual' : (flex.enabledStyle == 1 ? 'efAutomatonAuto2' : 'efAutomatonAuto');
     }
   };
-
 
   var flex;
 
@@ -1038,10 +1036,6 @@ function updateAutomatonUI() {
       var automaton_autoblueprint_before = state.automaton_autoblueprint;
       if(state.paused) {
         state.automaton_autoblueprint = state.automaton_autoblueprint ? 0 : 1;
-        if(state.automaton_autoblueprint && !state.automaton_autoblueprints[0].enabled) {
-          // if you have only 1, the nested 'enabled' setting of it is not visible, ensure it's not accidently false due to some bug
-          if(autoBlueprintsUnlocked() == 1) state.automaton_autoblueprints[0].enabled = true;
-        }
         updateOverrideButton(flex);
         updateRightPane();
       } else {
@@ -1086,3 +1080,4 @@ function checkUnlockedAutomatonHelpDialogs() {
   if(!state.help_seen_text[38] && autoPrestigeUnlocked()) state.help_seen_text[38] = 38;
   if(!state.help_seen_text[40] && autoBlueprintUnlocked()) state.help_seen_text[40] = 40;
 }
+

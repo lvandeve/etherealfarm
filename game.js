@@ -1991,6 +1991,9 @@ function doNextAutoChoice() {
 
 
 function doAutoBlueprint() {
+  // this is also something that can be wrong when importing old savegames... such as one with wither already completed but not yet the second blueprints unlocked stage
+  if(autoBlueprintsUnlocked() == 1 && !state.automaton_autoblueprints[0].enabled) state.automaton_autoblueprints[0].enabled = true;
+
   var did_something = false;
   for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
     var o = state.automaton_autoblueprints[i];

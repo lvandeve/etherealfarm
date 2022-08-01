@@ -186,7 +186,8 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
   else showMessage('This blueprint had no effect on the current field');
 }
 
-// turns index into x,y coordinates of a rectangular spiral, counterclockwise around origin. Index 0 corresponds to the origin, and so on.
+// turns index into x,y coordinates of a rectangular spiral, counterclockwise around origin.
+// Index 0 corresponds to the origin, and so on.
 // If w and h are given, the origin must be at floor(w/2), floor(h/2)
 // If w and h are not given, an unconstrained spiral is assumed
 // Example pattern:
@@ -245,7 +246,7 @@ function getSpiralXY(x, y, w, h) {
   var ox = w >> 1;
   var oy = h >> 1;
 
-  var result = getSpiralFromIndex(y * w + x);
+  var result = getSpiralFromIndex(y * w + x, w, h);
 
   result[0] += ox;
   result[1] += oy;
@@ -287,6 +288,7 @@ function plantBluePrint2(b, allow_override) {
         var y = spiral[1];
         var fx = x - sx;
         var fy = y - sy;
+        if(fx < 0 || fy < 0 || fx >= state.numw2 || fy >= state.numh2) continue;
         var f = state.field2[fy][fx];
         var d = b.data[y][x];
         var t = b.tier[y][x];

@@ -26,13 +26,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var version_major = 0; // 0..61
 var version_minor = 5; // 0..4095
 var version_patch = 0; // 0..63
-var version_sub = 0; // 1=a, 2=b, ...
+var version_sub = 1; // 0=no suffix, 1=b, 2=c, ...
 
 var version = 262144 * (version_major + 2) + 64 * version_minor + version_patch;
 
 function formatVersion() {
   var result = '' + version_major + '.' + version_minor + '.' + version_patch;
-  if(version_sub > 0) result += String.fromCharCode(96 + version_sub);
+  if(version_sub > 0) result += String.fromCharCode(97 + version_sub);
   return result;
 }
 
