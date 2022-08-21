@@ -30,7 +30,7 @@ function getChangeLog() {
   text += '<br/>• The game now starts with 10 seeds rather than 0 seeds, so a watercress can be planted immediately without collecting ferns in the first playthough.';
   text += '<br/>• Ferns spawn at regular rate at the start of the game now, rather than sped up.';
   text += '<br/>• All ethereal ferns give 10x more seeds, e.g. the first one now gives 1000 seeds.';
-  text += '<br/>• Brassica production upgrade now only gives +25% instead of +100% seeds. Only early-game income is affected by this.';
+  text += '<br/>• Brassica production upgrade now only gives +25% instead of +100% seeds. Only early-game income is briefly affected by this.';
   // requiring 10 watercress is the behavior of the main game's first playthrough, but that's as a tutorial, in the challenges it's confusing instead (requiring a single watercress is ok and often present in blueprint) and it doesn't make the challenge easier anyway since you need to collect seeds for the unlock with watercress anyway
   text += '<br/>• During the basic and truly basic challenge, as well as any other run other than the first playthrough, the blackberry unlock now becomes visible after a single watercress rather than after 10.';
   text += '<br/>• Reordered some of the evolved squirrel upgrades near the end.';

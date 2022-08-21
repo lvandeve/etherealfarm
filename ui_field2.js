@@ -58,6 +58,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
   var automaton = c.index == automaton2_0;
   var squirrel = c.index == squirrel2_0;
+  var mistletoe = c.index == mistletoe2_0;
 
   if(f.growth >= 1) {
     if(c.boost.neqr(0)) {
@@ -68,6 +69,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     }
     if(squirrel) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealSquirrelNeighborBoost().toPercentString()) + '<br/>';
+    }
+    if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
+      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeBonus(mistle_upgrade_neighbor).toPercentString()) + '<br/>';
     }
   }
 
@@ -82,7 +86,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop2(f.x, f.y, upgrade_cost);
 
-  if(automaton || squirrel) {
+  if(automaton || squirrel || mistletoe) {
     result += '<br/>• Cost: ' + c.cost.toString();
     result += '<br/>• Recoup on delete (d): ' + c.getCost(-1).mulr(cropRecoup2).toString() + ' (' + refund_text + ')';
   } else if(!opt_detailed) {
@@ -406,7 +410,7 @@ function makeEtherealMistletoeDialog(x, y) {
       var m2 = state.mistletoeupgrades[index];
       var tooltiptext = 'Upgrade: ' + m.name;
       if(m2.time == 0) tooltiptext += '. Time: ' + util.formatDuration(m.getTime());
-      else tooltiptext += '. Total time: ' + util.formatDuration(m.getTime(), true) + '. Time left: ' + util.formatDuration(m.getTime() - m2.time, true);
+      else tooltiptext += '. Total time: ' + util.formatDuration(m.getTime(), true) + '. Time left: ' + util.formatDuration(m.getTime() - m2.time, true, 4);
       var res = m.getResourceCost();
       if(res) {
         tooltiptext += '. Resource cost: ' + res.toString();
@@ -428,7 +432,7 @@ function makeEtherealMistletoeDialog(x, y) {
       var button = buttons[button_index];
       var res = m.getResourceCost();
       var buttontext = '<b>' + upper(m.name) + ' ' + toRomanUpTo(m2.num + 1) + '</b>';
-      var timetext = (m2.time == 0) ? ('Time: ' + util.formatDuration(m.getTime(), true)) : ('Time left: ' + util.formatDuration(m.getTime() - m2.time, true));
+      var timetext = (m2.time == 0) ? ('Time: ' + util.formatDuration(m.getTime(), true)) : ('Time left: ' + util.formatDuration(m.getTime() - m2.time, true, 4));
       if(res) buttontext += '. Cost: ' + res.toString() + ', ' + util.formatDuration(m.getTime() - m2.time, true);
       else buttontext += '. ' + timetext;
       button.textEl.innerHTML = buttontext;
@@ -487,7 +491,7 @@ function makeEtherealMistletoeDialog(x, y) {
       text += 'Upgrading: ' + m.name + '. ' + upper(m.description);
       text += '<br><br>';
       var timeleft = m.getTime() - m2.time;
-      text += 'Time left: ' + util.formatDuration(timeleft, true);
+      text += 'Time left: ' + util.formatDuration(timeleft, true, 4);
     } else {
       text += 'Not upgrading';
     }

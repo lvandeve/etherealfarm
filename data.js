@@ -3693,7 +3693,7 @@ var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
 `,
-['one extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits'],
+['one extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits'],
 'reaching tree level 15',
 function() { return state.treelevel >= 15; },
 [
@@ -4363,11 +4363,11 @@ function registerMistletoe2(name, treelevel2, tier, cost, planttime, effect, eff
 var default_ethereal_growtime = 10;
 
 crop2_register_id = 0;
-var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), default_ethereal_growtime, 'gives 1000 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
-var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), default_ethereal_growtime, 'gives 10000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
-var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), default_ethereal_growtime, 'gives 100000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
-var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), default_ethereal_growtime, 'gives 1000000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
-var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal_growtime, 'gives 10000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop5);
+var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), default_ethereal_growtime, 'gives 1000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop);
+var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), default_ethereal_growtime, 'gives 10000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop2);
+var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), default_ethereal_growtime, 'gives 100000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop3);
+var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), default_ethereal_growtime, 'gives 1000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop4);
+var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal_growtime, 'gives 10000000 * n^3 starter seeds', 'Gives 10000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000000, with two you get 80000000, three gives 270000000, four gives 640000000, and so on.', image_fern_as_crop5);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -6060,6 +6060,7 @@ var mistletoe_resin_malus = Num(0.15);
 var treelevel2_resin_bonus = Num(0.05);
 
 // amount with bonuses etc..., that you get to go to this level
+// see also the function: getUpcomingResin
 function treeLevelResin(level, breakdown) {
   if(level <= 0) return Num(0);
 
@@ -6228,7 +6229,7 @@ function treeLevelTwigs(level, breakdown) {
   }
 
   // ethereal mistletoe
-  if(haveEtherealMistletoeUpgrade(mistle_upgrade_twigs)) {
+  if(haveEtherealMistletoeEffect(mistle_upgrade_twigs)) {
     var mul = getEtherealMistletoeBonus(mistle_upgrade_twigs).addr(1);
     res.twigs.mulInPlace(mul);
     if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, res.clone()]);
@@ -6258,6 +6259,7 @@ function treeLevelTwigs(level, breakdown) {
   return res;
 }
 
+// see also the function: getUpcomingTwigs
 function nextTwigs(breakdown) {
   return treeLevelTwigs(state.treelevel + 1, breakdown);
 }
@@ -7361,7 +7363,7 @@ function registerMistletoeUpgrade(name, bonus, evo, basetime, description) {
 // a twigs bonus that's given for having the ethereal mistletoe in the first place, even without any upgrades
 var mistle_main_twigs_bonus = Num(0.1);
 
-var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Gives an extra %BONUS% bonus to all other bonuses (additive with evolution levels), and at some levels unlocks new types of bonuses');
+var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Does not reset anything. Gives an extra %BONUS% bonus to all other bonuses (additive with evolution levels), and at some levels unlocks new types of bonuses');
 
 var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
 
@@ -7380,6 +7382,8 @@ var mistle_upgrade_twigs = registerMistletoeUpgrade('twigginess', Num(0.07), 7, 
 mistletoeupgrades[mistle_upgrade_twigs].getResourceCostForLevel_ = function(level) {
   return Res({resin:1e18}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
+
+////////////////////////////////////////////////////////////////////////////////
 
 function getEtherealMistletoeEvolutionBonus() {
   return mistletoeupgrades[mistle_upgrade_evolve].bonus.mulr(state.mistletoeupgrades[mistle_upgrade_evolve].num);
@@ -7411,6 +7415,13 @@ function haveEtherealMistletoeUpgrade(index) {
   if(!knowEtherealMistletoeUpgrade(index)) return 0;
   if(!haveEtherealMistletoe()) return 0; // this also returns 0 if having it but it's not next to tree
   return state.mistletoeupgrades[index].num;
+}
+
+// similar to haveEtherealMistletoeUpgrade, but also returns effect if you don't het have the upgrade but the mistletoe gives it from the beginning. That is, the twigs bonus.
+function haveEtherealMistletoeEffect(index) {
+  if(!haveEtherealMistletoe()) return false; // this also returns 0 if having it but it's not next to tree
+  if(index == mistle_upgrade_twigs) return true;
+  return !!haveEtherealMistletoeUpgrade(index);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

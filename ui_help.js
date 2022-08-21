@@ -473,7 +473,7 @@ registerHelpDialog(41, 'Ethereal mistletoe', 'You got the ethereal mistletoe!',
     <br><br>
     This crop has more effect the more you upgrade it. Upgrades cost time, and most don't cost other resources except some with other costs that unlock later.
     <br><br>
-    The evolve upgrade will unlock new upgrades at certain levels, and also gives a boost to the effects of all other upgrades at the same time.
+    The evolve upgrade will unlock new upgrades at certain levels, and also gives a boost to the effects of all other upgrades at the same time. The first such upgrade unlocks after the first evolve, the next only at the third evolve, and more follow after that. Evolve does not reset current upgrades, they keep existing at their level and can still be leveled up as normal.
     <br><br>
     The ethereal mistletoe must be planted orthogonally (not diagonally) next to the ethereal tree, otherwise none of its effects work and its upgrades don't progress.
     <br><br>
@@ -481,7 +481,7 @@ registerHelpDialog(41, 'Ethereal mistletoe', 'You got the ethereal mistletoe!',
     <br><br>
     You can only have one upgrade in progress at the same time. You can always freely stop an upgrade. This pauses the upgrade, it remembers the time spent so far. You can do any other upgrade during this time. Any other resources are also paid back during pause.
     <br><br>
-    If the mistletoe is sitting idle and not doing any upgrades, unused idle time is accumulated. Unused idle time will speed up active upgrades by 2x, so unused time is not lost.
+    If the mistletoe is sitting idle and not doing any upgrades, unused idle time is accumulated. Unused idle time will speed up active upgrades by 2x, so unused time is not lost. The mistletoe must still be correctly planted for idle time to accumulate.
     `,
     images_mistletoe[4],
     undefined,

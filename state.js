@@ -1685,6 +1685,7 @@ function getEarlyResinPenalty() {
 }
 
 // get upcoming resin, excluding that from ferns
+// see also the function: treeLevelResin
 function getUpcomingResin() {
   var suppress = false; // more resin suppressed by challenge
   if(state.challenge && !challenges[state.challenge].allowsresin) suppress = true;
@@ -1710,6 +1711,7 @@ function getUpcomingResinIncludingFerns() {
 }
 
 // get upcoming twigs
+// see also the function: nextTwigs
 function getUpcomingTwigs() {
   var suppress = false; // more twigs suppressed by challenge
   if(state.challenge && !challenges[state.challenge].allowstwigs) suppress = true;
