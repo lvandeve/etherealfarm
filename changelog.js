@@ -20,6 +20,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.6.0 (2022-08-20):';
+  text += '<br/>• Added ethereal mistletoe. Only one of this crop can be planted in the ethereal field, and it has upgrades inside that cost time. Unlocks at ethereal tree 15.';
+  text += '<br/>• Added another new high level ethereal crop.';
+  text += '<br/>• Automaton auto-blueprints can now also use unlocked or planted crop types as a trigger condition.';
+  text += '<br/>• Added more truly basic challenge speed achievements';
+  text += '<br/>• Added one more rocks challenge reward stage';
+  text += '<br/>• Added a few more fruit-marking border colors. As a reminder, fruit border colors can be chosen by clicking the fruit icon in the "configure fruit" dialog (marking as favorite).';
+  text += '<br/>• The game now starts with 10 seeds rather than 0 seeds, so a watercress can be planted immediately without collecting ferns in the first playthough.';
+  text += '<br/>• Ferns spawn at regular rate at the start of the game now, rather than sped up.';
+  text += '<br/>• All ethereal ferns give 10x more seeds, e.g. the first one now gives 1000 seeds.';
+  text += '<br/>• Brassica production upgrade now only gives +25% instead of +100% seeds. Only early-game income is affected by this.';
+  // requiring 10 watercress is the behavior of the main game's first playthrough, but that's as a tutorial, in the challenges it's confusing instead (requiring a single watercress is ok and often present in blueprint) and it doesn't make the challenge easier anyway since you need to collect seeds for the unlock with watercress anyway
+  text += '<br/>• During the basic and truly basic challenge, as well as any other run other than the first playthrough, the blackberry unlock now becomes visible after a single watercress rather than after 10.';
+  text += '<br/>• Reordered some of the evolved squirrel upgrades near the end.';
+  text += '<br/>• UI tweaks and fixes.'; // typo fix, target levels shown next to rewards gotten in the challenge stats dialog, crop progress bars a bit more min pixels, ...
+  text += '<br/><br/>';
+
   text += '0.5.0 (2022-08-01):';
   text += '<br/>• Automaton features get unlocked earlier and there\'s a new automation feature too:';
   text += '<br/>&nbsp;&nbsp;1. Auto-plant is now unlocked immediately when getting automaton (at ethereal tree level 1, without a required challenge), instead of auto-choice. Before, auto-plant unlocked only at ethereal tree level 3 with the wither challenge';

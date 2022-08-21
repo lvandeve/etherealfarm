@@ -333,7 +333,7 @@ function plantBluePrint2(b, allow_override) {
         var c2 = crops2[BluePrint.toCrop2(d, t)];
         var c = undefined;
         if(!c2) continue;
-        var squirrel_automaton = c2.type == CROPTYPE_AUTOMATON || c2.type == CROPTYPE_SQUIRREL;
+        var squirrel_automaton = c2.type == CROPTYPE_AUTOMATON || c2.type == CROPTYPE_SQUIRREL || c2.type == CROPTYPE_MISTLETOE;
         if(allow_override) {
           if(f.index != 0) {
             c = f.getCrop();

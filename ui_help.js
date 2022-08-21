@@ -304,10 +304,10 @@ registerHelpDialog(9, 'Ethereal upgrades', 'You unlocked your first ethereal upg
 
 registerHelpDialog(17, 'Mistletoes', 'Unlocked a new crop: mistletoe',
   'Unlocked a new crop: mistletoe. Mistletoe can be placed next to the basic field tree to create twigs, orthogonally, not diagonally. They produce twigs, which, like resin, you only actually get when transcending. Twigs help the ethereal field tree. However having more than one mistletoe increases the spore requirement for leveling the basic tree and slightly decreases resin gain, and more mistletoes give diminishing returns (but still increases it). Mistletoes that are not planted next to the tree do nothing at all.',
-  mistletoe[4],
+  images_mistletoe[4],
   '<br><br>'+
   'The image shows a possible configuration where mistletoes are next to the tree and thus give twigs on tree level up.',
-  [[tree_images[treeLevelIndex(2)][1][0], mistletoe[4]], [tree_images[treeLevelIndex(2)][2][0], mistletoe[4]]]);
+  [[tree_images[treeLevelIndex(2)][1][0], images_mistletoe[4]], [tree_images[treeLevelIndex(2)][2][0], images_mistletoe[4]]]);
 
 
 registerHelpDialog(22, 'Ethereal tree leveled up', 'The ethereal tree leveled up, unlocking new ethereal upgrades, crops and boosts',
@@ -446,7 +446,7 @@ registerHelpDialog(37, 'Combined Seasonal Fruits', 'You unlocked combined season
     <br>
     • Plum + Kumquat = Star Fruit (4 seasons)
     <br><br>
-    Combinations that don\'t cover all 4 seasons, such as mango+plum, won\'t work, it must be one of the combionations listed above.
+    Combinations that don\'t cover all 4 seasons, such as mango+plum, won\'t work, it must be one of the combinations listed above.
     <br><br>
     Remember, star fruit fusing is not yet available if you just unlocked the first fruit mixing upgrade now, the star fruit requires the second such squirrel upgrade. Now you already know how to prepare for it though.
     `,
@@ -467,6 +467,26 @@ registerHelpDialog(39, 'Squirrel evolution', 'Squirrel evolution',
 registerHelpDialog(40, 'Auto blueprint override', 'You unlocked auto blueprint override!',
     'You unlocked auto blueprint override! This lets the automaton override the field with another blueprint at a chosen tree level. ' + autoBlueprintHelp,
     images_automaton[4]);
+
+registerHelpDialog(41, 'Ethereal mistletoe', 'You got the ethereal mistletoe!',
+    `You got the ethereal mistletoe!
+    <br><br>
+    This crop has more effect the more you upgrade it. Upgrades cost time, and most don't cost other resources except some with other costs that unlock later.
+    <br><br>
+    The evolve upgrade will unlock new upgrades at certain levels, and also gives a boost to the effects of all other upgrades at the same time.
+    <br><br>
+    The ethereal mistletoe must be planted orthogonally (not diagonally) next to the ethereal tree, otherwise none of its effects work and its upgrades don't progress.
+    <br><br>
+    Similar to squirrel and automaton, the ethereal mistletoe can give a boost to neighbors in the ethereal field, but this ability is unlocked only by later upgrades.
+    <br><br>
+    You can only have one upgrade in progress at the same time. You can always freely stop an upgrade. This pauses the upgrade, it remembers the time spent so far. You can do any other upgrade during this time. Any other resources are also paid back during pause.
+    <br><br>
+    If the mistletoe is sitting idle and not doing any upgrades, unused idle time is accumulated. Unused idle time will speed up active upgrades by 2x, so unused time is not lost.
+    `,
+    images_mistletoe[4],
+    undefined,
+  [[tree_images[treeLevelIndex(15)][1][4],images_mistletoe[4]],
+   [tree_images[treeLevelIndex(15)][2][4],undefined]]);
 
 
 function createKeyboardHelpDialog() {
@@ -976,7 +996,7 @@ function showGoalChips() {
   } else if(goal == GOAL_FERN) {
     setGoalText('Collect 10 seeds by clicking ferns.');
   } else if(goal == GOAL_WC5) {
-    setGoalText('Plant 5 watercresss on the field (' + state.c_numplantedbrassica + ' / 5 planted).');
+    setGoalText('Plant 5 watercresss on the field (' + state.c_numplantedbrassica + ' / 5 planted). To plant, click a field cell, then choose the watercress crop. Each costs 10 seeds.');
     var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_watercress') : null;
     if(enableHelpArrows) {
       if(watercress_chip) {
@@ -991,7 +1011,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_WC_UPGRADE) {
-    setGoalText('Upgrade watercress, after getting enough seeds from watercress production.');
+    setGoalText('Upgrade watercress, after getting enough seeds.');
     if(enableHelpArrows) {
       if(state.currentTab == 1 && upgradeFlexCache[0]) {
         var chip = document.getElementById('help_arrow_upgrade_watercress');
@@ -1019,7 +1039,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_BLACKBERRY_PLANT) {
-    setGoalText('Plant a blackberry and wait for it to grow. To get seeds to afford it, plant more watercress first.');
+    setGoalText('Plant a blackberry and wait for it to grow. To get seeds to afford it, plant more watercress first. If the field is full of watercress, you can use "replace crop" to delete it and plant blackberry there.');
     if(enableHelpArrows) {
       if(!state.numcropfields_permanent && state.res.seeds.ger(1000)) {
         var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
@@ -1036,7 +1056,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_FLOWER_UNLOCK) {
-    setGoalText('Unlock anemone. To get more seed production to afford it, plant more blackberries and watercress first.');
+    setGoalText('Unlock the anemone flower. To get more seed production to afford it, plant more blackberries and watercress first.');
     if(enableHelpArrows) {
       if(state.currentTab == 1 && upgradeFlexCache[0]) {
         var chip = document.getElementById('help_arrow_unlock_anemone');
@@ -1046,7 +1066,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_FLOWER_PLANT) {
-    setGoalText('Plant an anemone flower. Plant it orthogonally next to a berry to boost the berry (a flower on its own doesn\'t produce anything). Keep planting more berries and flowers for more income.');
+    setGoalText('Plant an anemone flower. Plant it orthogonally next to a berry to boost the berry (a flower on its own doesn\'t produce anything). Keep planting more watercress, berries and flowers for more income.');
   } else if(goal == GOAL_BLUEBERRY_UNLOCK) {
     setGoalText('Unlock blueberry. To afford this, if needed plant more blackberries boosted by flowers and watercress copying, or use upgrades.');
     if(enableHelpArrows) {
@@ -1079,7 +1099,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_CHAMPIGNON_UNLOCK) {
-    setGoalText('Unlock champignon. To afford this, if needed plant more berries boosted by flowers and watercress copying, or use upgrades.');
+    setGoalText('Unlock champignon. To afford this, if needed plant more berries boosted by flowers and watercress copying, or use upgrades. Plant watercress next to your best berry to copy its production, this copy effect works best if there are only a few watercress on the whole field');
   } else if(goal == GOAL_CHAMPIGNON_PLANT) {
     setGoalText('Plant champignon next to a high tier berry to produce spores. It will consume seeds directly from that berry. Also leave some berry without mushroom to keep global seed production.');
   } else if(goal == GOAL_TREE_LEVELUP) {

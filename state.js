@@ -112,6 +112,7 @@ Cell.prototype.isGhost = function() {
 function CropState() {
   this.unlocked = false;
   this.prestige = 0;
+  this.known = 0; // ever seen in any run. If it has an unlock upgrade, having seen the upgrade is enough. Value >= 1 means it was ever seen, value >= 2 means ever seen in prestiged form (e.g. the prestige upgrade visible), etc...
 }
 
 function Crop2State() {
@@ -223,7 +224,7 @@ function toCrop2Base(i) {
   if(i == 5) return flower2_template;
   if(i == 6) return nettle2_template;
   if(i == 7) return bee2_template;
-  //if(i == 8) return mistletoe2_template;
+  if(i == 8) return mistletoe2_template;
   //if(i == 9) return nut2_template;
   if(i == 32) return automaton2_template;
   if(i == 33) return squirrel2_template;
@@ -323,15 +324,23 @@ function AutoBlueprintState() {
 
   this.done = false; // already done this action this round
 
-  this.type = 0; // 0 = based on tree level. Other types (e.g. based on time, seeds, crop tiers, ...) not yet supported
+  this.type = 0; // what triggers this action: 0 = based on tree level, 1/2/3 = based on unlocked/growing/fullgrown crop type
 
   this.blueprint = 0; // index of blueprint to use + 1, or 0 if not yet configured
 
   this.ethereal = false; // if true, replaces ethereal blueprint instead (not yet supported)
 
   this.level = 10; // tree level, for type 0
+
+  this.crop = 0; // unlocked crop id + 1, or 0 to indicate none, for type 1/2/3
+  this.prestige = 0; // prestige level required from the crop
 }
 
+
+function MistletoeUpgradeState() {
+  this.time = 0; // current time spent upgrading it
+  this.num = 0; // current level
+}
 
 var state_ctor_count = 0;
 
@@ -645,6 +654,11 @@ function State() {
   this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
   this.g_fernres = Res(); // total resources gotten from ferns
   this.g_numpresents = [0, 0]; // order: presents '21-'22, eggs '22
+  this.g_nummistletoeupgradesdone = 0;
+  this.g_nummistletoeupgrades = 0; // started or continued
+  this.g_nummistletoecancels = 0;
+  this.g_mistletoeidletime = 0;
+  this.g_mistletoeupgradetime = 0; // this is the effective upgrade time, that is, idle time that was used for upgrades is also counted (e.g. if a single 1 day worth upgrade is done in total, the value of this will be exactly 1d)
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -769,6 +783,15 @@ function State() {
   // The purpose of this is for when you extend the duration of the current season by 1 hour, but we're only in the first few minutes of this season:
   // then it is more than 24h til the next season, but without this variable, that's not supported, as the season is computed to cycle every 24h.
   this.seasonshifted = 0;
+
+
+  // ethereal mistletoe stats
+  this.mistletoeupgrades = []; // contains MistletoeUpgradeState's for registered MistletoeUpgrade
+  for(var i = 0; i < registered_mistles.length; i++) {
+    this.mistletoeupgrades[registered_mistles[i]] = new MistletoeUpgradeState();
+  }
+  this.mistletoeupgrade = -1; // if >= 0, index of mistletoeupgrade currently being done
+  this.mistletoeidletime = 0; // time when idle, not upgrading anything. NOTE: if used, should be capped
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -928,6 +951,9 @@ function State() {
 
   // derived stat, not to be saved.
   this.numnonemptyblueprints = 0;
+
+  // derived stat, not to be saved.
+  this.etherealmistletoenexttotree = false;
 }
 
 // this.evolution3 must already be set to the intended evolution
@@ -1058,8 +1084,7 @@ function changeField2Size(state, w, h) {
 function createInitialState() {
   var state = new State();
 
-  //state.res = Res({seeds:15}); // NOTE: ensure to start with a bit more than needed for first plant, numerical precision in plant cost computation could make it cost 10.000001 instead of 10
-  state.res = Res({});
+  state.res = Res({seeds:initial_starter_seeds});
 
   clearField(state);
   clearField2(state);
@@ -1070,6 +1095,7 @@ function createInitialState() {
   state.c_starttime = state.g_starttime;
   state.g_lastexporttime = state.g_starttime;
   state.g_lastimporttime = state.g_starttime;
+  state.lastFernTime = state.g_starttime;
 
   computeDerived(state);
   state.seed0 = Math.floor(Math.random() * 281474976710656);
@@ -1086,6 +1112,18 @@ function createInitialState() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+function isNextToTree2(x, y, diagonal_ok) {
+  var end = diagonal_ok ? 8 : 4;
+  for(var dir = 0; dir < end; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+    var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+    var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
+    if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
+    var f2 = state.field2[y2][x2];
+    if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) return true;
+  }
+  return false;
+}
 
 // stats derived from the state. These should not be saved in a savegame. They can be recomputed from the
 // state every now and then (e.g. every upgrade)
@@ -1167,6 +1205,7 @@ function computeDerived(state) {
   state.numemptyfields2 = 0;
   state.numcropfields2 = 0;
   state.numfullgrowncropfields2 = 0;
+  state.etherealmistletoenexttotree = false;
   for(var i = 0; i < registered_crops2.length; i++) {
     state.crop2count[registered_crops2[i]] = 0;
     state.fullgrowncrop2count[registered_crops2[i]] = 0;
@@ -1185,6 +1224,11 @@ function computeDerived(state) {
           if(f.growth >= 1) {
             state.fullgrowncrop2count[c.index]++;
             state.numfullgrowncropfields2++;
+          }
+        }
+        if(c.index == mistletoe2_0) {
+          if(isNextToTree2(x, y, false)) {
+            state.etherealmistletoenexttotree = true;
           }
         }
       } else if(f.index == 0) {
@@ -1936,6 +1980,23 @@ function squirrelUpgradeBuyable(si, b, d) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+function etherealMistletoeUnlocked() {
+  return state.crops2[mistletoe2_0].unlocked;
+}
+
+// includes in invalid location (not next to tree)
+function haveEtherealMistletoeAnywhere() {
+  return !!state.crop2count[mistletoe2_0];
+}
+
+// have ethereal mistletoe with valid placement
+function haveEtherealMistletoe() {
+  return state.etherealmistletoenexttotree;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 function amberUnlocked() {
   return state.g_res.amber.neqr(0);
 }
@@ -1984,3 +2045,4 @@ function getHighestBrassica() {
   if(!crops[cropindex]) return -1;
   return cropindex;
 }
+

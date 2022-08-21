@@ -220,15 +220,18 @@ function encState(state, opt_raw_only) {
   }
   array0 = [];
   array1 = [];
+  array2 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'crops must be registered in increasing order';
     array0.push(unlocked[i] - prev);
     prev = unlocked[i];
     array1.push(state.crops[unlocked[i]].prestige);
+    array2.push(state.crops[unlocked[i]].known);
   }
   processUintArray(array0);
   processUintArray(array1);
+  processUintArray(array2);
 
 
   section = 5; id = 0; // upgrades2
@@ -348,6 +351,11 @@ function encState(state, opt_raw_only) {
   processRes(state.g_fernres);
   processUintArray(state.g_numpresents);
   processRes(state.p_res_no_ferns);
+  processUint(state.g_nummistletoeupgradesdone);
+  processUint(state.g_nummistletoeupgrades);
+  processUint(state.g_nummistletoecancels);
+  processTime(state.g_mistletoeidletime);
+  processTime(state.g_mistletoeupgradetime);
 
 
   section = 11; id = 0; // global run stats
@@ -655,6 +663,8 @@ function encState(state, opt_raw_only) {
     processUint(o.blueprint);
     processBool(o.ethereal);
     processUint(o.level);
+    processUint(o.crop);
+    processUint(o.prestige);
     processStructEnd();
   }
   processStructArrayEnd();
@@ -796,12 +806,34 @@ function encState(state, opt_raw_only) {
       }
     }
   }
-
   processUintArray(array0);
   processUintArray(array1);
   processUintArray(array2);
   processUintArray(array3);
   processStringArray(array4);
+
+
+  section = 28; id = 0; // ethereal mistletoe
+  prev = 0;
+  processStructArrayBegin();
+  for(var i = 0; i < registered_mistles.length; i++) {
+    var index = registered_mistles[i];
+    if(index - prev < 0) throw 'ethereal mistletoe upgrades must be registered in increasing order';
+    var m = mistletoeupgrades[index];
+    var m2 = state.mistletoeupgrades[index];
+    processStructBegin();
+    processUint(index - prev);
+    processUint(m2.num);
+    processTime(m2.time);
+    processStructEnd();
+    prev = index;
+  }
+  processStructArrayEnd();
+  processInt(state.mistletoeupgrade);
+  processTime(state.mistletoeidletime);
+
+
+
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1172,6 +1204,12 @@ function decState(s) {
     array1 = [];
     for(var i = 0; i < array0.length; i++) array1[i] = 0;
   }
+  if(save_version >= 262144*2+64*6+0) {
+    array2 = processUintArray(); // crop.known
+  } else {
+    array2 = [];
+    for(var i = 0; i < array0.length; i++) array2[i] = 0;
+  }
   if(error) return err(4);
   prev = 0;
   for(var i = 0; i < array0.length; i++) {
@@ -1184,8 +1222,8 @@ function decState(s) {
     }
     state.crops[index].unlocked = true;
     state.crops[index].prestige = array1[i];
+    state.crops[index].known = array2[i];
   }
-
 
   section = 5; id = 0; // upgrades2
   array0 = processUintArray();
@@ -1370,6 +1408,13 @@ function decState(s) {
     state.g_numpresents[0] = processUint();
   }
   if(save_version >= 4096*1+96) state.p_res_no_ferns = processRes(); // else, for older versions, will be set below
+  if(save_version >= 262144*2+64*6+0) {
+    state.g_nummistletoeupgradesdone = processUint();
+    state.g_nummistletoeupgrades = processUint();
+    state.g_nummistletoecancels = processUint();
+    state.g_mistletoeidletime = processTime();
+    state.g_mistletoeupgradetime = processTime();
+  }
 
   if(error) return err(4);
 
@@ -1892,6 +1937,8 @@ function decState(s) {
       o.blueprint = processUint();
       o.ethereal = processBool();
       o.level = processUint();
+      if(save_version >= 262144*2+64*6+0) o.crop = processUint();
+      if(save_version >= 262144*2+64*6+0) o.prestige = processUint();
       processStructEnd();
     }
     processStructArrayEnd();
@@ -2157,6 +2204,30 @@ function decState(s) {
     if(index3 != array3.length) return err(4);
   }
   if(error) return err(4);
+
+
+  section = 28; id = 0; // ethereal mistletoe
+  if(save_version >= 262144*2+64*6+0) {
+    prev = 0;
+    var count = processStructArrayBegin();
+    for(var i = 0; i < count; i++) {
+      processStructBegin();
+      var index = processUint();
+      index += prev;
+      if(!mistletoeupgrades[index]) continue; //obsolete non-existing (TODO: give error instead?)
+      var m = mistletoeupgrades[index];
+      var m2 = state.mistletoeupgrades[index];
+      m2.num = processUint();
+      m2.time = processTime();
+      processStructEnd();
+      prev = index;
+    }
+    processStructArrayEnd();
+    state.mistletoeupgrade = processInt();
+    state.mistletoeidletime = processTime();
+  }
+  if(error) return err(4);
+
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////

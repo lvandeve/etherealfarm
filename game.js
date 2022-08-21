@@ -249,6 +249,7 @@ function unlockTemplates() {
     state.crops2[automaton2_template].unlocked = (state.crops2[automaton2_0].unlocked);
     state.crops2[squirrel2_template].unlocked = (state.crops2[squirrel2_0].unlocked);
     state.crops2[bee2_template].unlocked = (state.crops2[bee2_0].unlocked);
+    state.crops2[mistletoe2_template].unlocked = (state.crops2[mistletoe2_0].unlocked);
   } else {
     state.crops2[berry2_template].unlocked = false;
     state.crops2[mush2_template].unlocked = false;
@@ -259,6 +260,7 @@ function unlockTemplates() {
     state.crops2[automaton2_template].unlocked = false;
     state.crops2[squirrel2_template].unlocked = false;
     state.crops2[bee2_template].unlocked = false;
+    state.crops2[mistletoe2_template].unlocked = false;
   }
 }
 
@@ -773,6 +775,8 @@ var ACTION_RESPEC3 = action_index++; // respec squirrel upgrades
 var ACTION_EVOLUTION3 = action_index++; // reset squirrel evolution
 var ACTION_AMBER = action_index++; // amber effects
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
+var ACTION_MISTLE_UPGRADE = action_index++; // begin an ethereal mistletoe upgrade
+var ACTION_CANCEL_MISTLE_UPGRADE = action_index++;
 
 var lastSaveTime = util.getTime();
 
@@ -1056,7 +1060,7 @@ function PreCell(x, y) {
       this.breakdown_leech = [];
       var f = state.field[this.y][this.x];
       var c = f.getRealCrop();
-      if(this.hasbreakdown_watercress) {
+      if(c && this.hasbreakdown_watercress) {
         c.getLeech(f, this.breakdown_leech, this.getBrassicaBreakdownCroptype());
       }
     }
@@ -1904,11 +1908,11 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
     var season_after = state.seen_seasonal_fruit;
     if(!season_before && season_after) {
-      showFruitChip('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+      showFruitChip('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.');
       state.fruit_slots++;
     }
     if((season_before & 15) != 15 && (season_after & 15) == 15) {
-      showFruitChip('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+      showFruitChip('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.');
       state.fruit_slots++;
     }
 
@@ -2000,7 +2004,26 @@ function doAutoBlueprint() {
     if(o.done) continue;
     if(!o.enabled) continue;
     if(o.blueprint == 0) continue;
-    if(state.treelevel >= o.level) {
+    var triggered = false;
+    if(o.type == 0 && state.treelevel >= o.level) {
+      triggered = true;
+    }
+    if(o.type >= 1 && o.type <= 3) {
+      if(o.crop == 0) continue;
+      var c = crops[o.crop - 1];
+      var c2 = state.crops[o.crop - 1];
+      if(!c || !c2) continue;
+      var unlocked = c2.unlocked && c2.prestige >= o.prestige;
+      if(!unlocked) continue; // can also not have it planted or fullgrown in this case
+      if(o.type == 1 && unlocked) triggered = true;
+      if(o.type == 2 && state.cropcount[c.index] > 0) triggered = true;
+      if(o.type == 3 && state.fullgrowncropcount[c.index] > 0) triggered = true;
+      if(!triggered && c.type == CROPTYPE_BERRY && o.type >= 2) {
+        var next_unlocked = state.highestoftypeunlocked[c.type] > c.tier;
+        if(next_unlocked) triggered = true; // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a hier tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
+      }
+    }
+    if(triggered) {
       o.done = true;
       var b = state.blueprints[o.blueprint - 1];
       if(b) {
@@ -3316,6 +3339,11 @@ var update = function(opt_ignorePause) {
           if(state.c_numplanted + state.c_numplantedbrassica <= 1 && c.isReal() && state.g_numresets < 5) {
             showMessage('Keep planting more crops on other field cells to get more income', C_HELP, 28466751);
           }
+          var c2 = state.crops[c.index];
+          if(c2) {
+            var known = c2.prestige + 1;
+            if(c2.known < known) c2.known = known;
+          }
         }
       } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
         if(fast_forwarding) continue;
@@ -3351,8 +3379,13 @@ var update = function(opt_ignorePause) {
 
         var ishardreplace = !freedelete; // whether this should update f.justreplaced. If true, a the growing crop resulting of this replace cannot be deleted for free.
         // exception to freedelete: if you have no automaton and ethereal field is full, you can always replace a crop by automaton. Idem for squirrel. But this does not count for ishardreplace.
-        if(type == ACTION_REPLACE2 /*&& state.numemptyfields2 <= 2*/ && !haveAutomaton() && action.crop.index == automaton2_0) freedelete = true;
-        if(type == ACTION_REPLACE2 /*&& state.numemptyfields2 <= 2*/ && !haveSquirrel() && action.crop.index == squirrel2_0) freedelete = true;
+        // this can only be done for replace, not delete: if this would allow deleting one cell, it could still be replaced by something else than squirrel/automaton/... afterwards
+        if(type == ACTION_REPLACE2 && !haveAutomaton() && action.crop.index == automaton2_0) freedelete = true;
+        if(type == ACTION_REPLACE2 && !haveSquirrel() && action.crop.index == squirrel2_0) freedelete = true;
+        // this only if in valid location, given that having mistletoe in invalid location also gives a free delete, so it could then be used to freely delete/replace crops anywyere
+        if(type == ACTION_REPLACE2 && !haveEtherealMistletoeAnywhere() && action.crop.index == mistletoe2_0 && isNextToTree2(action.x, action.y, false)) freedelete = true;
+        // always ok to fix a wrongly placed ethereal mistletoe
+        if((type == ACTION_REPLACE2 || type == ACTION_DELETE2) && !state.etherealmistletoenexttotree && f.hasCrop() && f.getCrop().index == mistletoe2_0) freedelete = true;
 
         var oldcroptype = -1;
 
@@ -3433,6 +3466,9 @@ var update = function(opt_ignorePause) {
             ok = false;
           } else if(c.index == squirrel2_0 && state.crop2count[squirrel2_0]) {
             showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
+            ok = false;
+          } else if(c.index == mistletoe2_0 && state.crop2count[mistletoe2_0]) {
+            showMessage('already have ethereal mistletoe, cannot place more', C_INVALID, 0, 0);
             ok = false;
           }
         }
@@ -3809,15 +3845,15 @@ var update = function(opt_ignorePause) {
           if(f.type > 4) state.seen_seasonal_fruit |= (1 << (f.type - 1));
           var season_after = state.seen_seasonal_fruit;
           if((season_before & 240) != 240 && (season_after & 240) == 240) {
-            showFruitChip('You\'ve seen all 4 possible 2-seasonal fruits! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+            showFruitChip('You\'ve seen all 4 possible 2-seasonal fruits! One extra fruit storage slot added to cope with the variety.');
             state.fruit_slots++;
           }
           if((season_before & 256) != 256 && (season_after & 256) == 256) {
-            showFruitChip('You\'ve seen a star fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+            showFruitChip('You\'ve seen a star fruit for the first time! One extra fruit storage slot added to cope with the variety.');
             state.fruit_slots++;
           }
           if((season_before & 512) != 512 && (season_after & 512) == 512) {
-            showFruitChip('You\'ve seen a dragon fruit for the first time! One extra fruit storage slot added to cope with the variety.', C_NATURE, 208302236);
+            showFruitChip('You\'ve seen a dragon fruit for the first time! One extra fruit storage slot added to cope with the variety.');
             state.fruit_slots++;
           }
 
@@ -3851,6 +3887,52 @@ var update = function(opt_ignorePause) {
         }
         if(action.fun) action.fun();
         store_undo = true;
+      } else if(type == ACTION_MISTLE_UPGRADE) {
+        var ok = true;
+        if(ok && state.mistletoeupgrade >= 0) {
+          showMessage('Already have an ethereal mistletoe upgrade active', C_INVALID, 0, 0);
+          ok = false;
+        }
+        var m = mistletoeupgrades[action.index];
+        var m2 = state.mistletoeupgrades[action.index];
+        if(!m || !m2) ok = false;
+        if(!knowEtherealMistletoeUpgrade(m.index)) {
+          ok = false;
+        }
+        var cost = m.getResourceCost();
+        if(cost) {
+          if(!state.res.can_afford(cost)) {
+            showMessage('not enough resources for ' + m.name +
+                          ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                          ', need: ' + cost.toString(Math.max(5, Num.precision)) +
+                          ' (' + getCostAffordTimer(cost) + ')',
+                          C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+        if(ok) {
+          if(m2.time == 0) showMessage('Started ethereal mistletoe upgrade: ' + upper(m.name), C_NATURE, 35481154, 0.5, true);
+          else showMessage('Continued ethereal mistletoe upgrade: ' + upper(m.name), C_NATURE, 35481154, 0.5, true);
+          state.mistletoeupgrade = action.index;
+          state.g_nummistletoeupgrades++;
+          if(cost) state.res.subInPlace(cost);
+          store_undo = true;
+        }
+      } else if(type == ACTION_CANCEL_MISTLE_UPGRADE) {
+        var m = mistletoeupgrades[state.mistletoeupgrade];
+        var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
+        if(state.mistletoeupgrade >= 0 && m && m2) {
+          var cost = m.getResourceCost();
+          if(cost) {
+            showMessage('Stopped mistletoe upgrade. Got back the cost: ' + cost.toString() + '. The time is remembered and the upgrade can be continued at any later time, by paying the cost again');
+            state.res.addInPlace(cost);
+          }
+          state.g_nummistletoecancels++;
+          state.mistletoeupgrade = -1;
+          store_undo = true;
+        } else if(state.mistletoeupgrade < 0) {
+            showMessage('Cannot stop upgrade, no mistletoe upgrade in progress', C_INVALID, 0, 0);
+        }
       } else if(type == ACTION_TRANSCEND) {
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
           // do nothing, invalid reset attempt
@@ -4435,6 +4517,7 @@ var update = function(opt_ignorePause) {
       }
       if(state.treelevel2 >= 15) {
         unlockEtherealCrop(flower2_5);
+        //unlockEtherealCrop(mistletoe2_0); // commented out: done by an upgrade instead
       }
       if(state.treelevel2 >= 16) {
         unlockEtherealCrop(lotus2_4);
@@ -4445,10 +4528,49 @@ var update = function(opt_ignorePause) {
       if(state.treelevel2 >= 18) {
         unlockEtherealCrop(berry2_6);
       }
-      /*if(state.treelevel2 >= 19) {
+      if(state.treelevel2 >= 19) {
         unlockEtherealCrop(bee2_2);
-      }*/
+      }
     }
+
+    // ethereal mistletoe
+    if(haveEtherealMistletoe()) {
+      if(state.mistletoeupgrade >= 0) {
+        var m = mistletoeupgrades[state.mistletoeupgrade];
+        var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
+        if(m && m2) {
+          var time_before = m2.time;
+          m2.time += d;
+          var targettime = m.getTime();
+          // extra time makes it go 2x as fast. But don't overshoot.
+          if(state.mistletoeidletime) {
+            var t = state.mistletoeidletime;
+            t = Math.min(t, d);
+            t = Math.min(t, targettime - m2.time); // don't make it overshoot
+            if(t > 0) {
+              m2.time += t;
+              state.mistletoeidletime -= t;
+            }
+          }
+          var time_after = Math.min(m2.time, targettime);
+          if(time_after > time_before) state.g_mistletoeupgradetime += time_after - time_before;
+          if(m2.time >= targettime) {
+            var d2 = m2.time - targettime;
+            state.mistletoeidletime += d2;
+            state.g_mistletoeidletime += d2;
+            m2.time = 0;
+            m2.num++;
+            state.mistletoeupgrade = -1;
+            showMessage('Ethereal mistletoe upgrade completed: ' + upper(m.name), C_NATURE, 172897358, 0.75);
+            state.g_nummistletoeupgradesdone++;
+          }
+        }
+      } else {
+        state.mistletoeidletime += d;
+        state.g_mistletoeidletime += d;
+      }
+    }
+
 
     // For safety, in case something goes wrong, because NaNs spread once they appear
     gain.removeNaN();
@@ -4482,6 +4604,15 @@ var update = function(opt_ignorePause) {
             var text = 'Upgrade available: "' + u.getName() + '"';
             if(u.shortdescription) text += ': ' + u.shortdescription;
             showMessage(text, C_UNLOCK, 193917138);
+          }
+
+          if(u.iscropunlock || u.isprestige) {
+            var c2 = state.crops[u.cropid];
+            if(c2) {
+              var known = c2.prestige + 1;
+              if(u.isprestige) known++;
+              if(c2.known < known) c2.known = known;
+            }
           }
         }
         u2.seen2 = true;
@@ -4579,9 +4710,9 @@ var update = function(opt_ignorePause) {
   } // end of loop for long ticks //////////////////////////////////////////////
 
 
-  if(state.g_numticks == 0) {
+  /*if(state.g_numticks == 0) {
     showMessage('You need to gather some resources. Click a fern to get some.', C_HELP, 5646478);
-  }
+  }*/
 
   if(state.c_numticks == 0 && state.challenge == challenge_bees) {
     showRegisteredHelpDialog(25);

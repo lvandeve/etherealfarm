@@ -251,12 +251,26 @@ function updateTabButtons2() {
   if(tabbuttons[tabnum]) {
     var text = 'ethereal field';
 
+    var color = undefined;
+
     if(state.treelevel2 > 0) {
       var twigs_req = treeLevel2Req(state.treelevel2 + 1);
       var nextlevelprogress = state.res.twigs.div(twigs_req.twigs);
       text += '<br/>' + state.treelevel2 + ' (' + nextlevelprogress.toPercentString(2) + ')';
     } else if(state.treelevel2 > 0) {
       text += '<br/>(' + state.treelevel2 + ')';
+    }
+
+    if(haveEtherealMistletoe() && state.mistletoeupgrade < 0) {
+      // ethereal mistletoe upgrade available
+      color = '#0f0';
+    }
+    if(haveEtherealMistletoeAnywhere() && !state.etherealmistletoenexttotree) {
+      // ethereal mistletoe not placed next to tree
+      color = '#fa0';
+    }
+    if(color) {
+      text = '<font color="' + color + '">' + text + '</font>';
     }
 
     if(text != field2ButtonLastText) {

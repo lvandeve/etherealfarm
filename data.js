@@ -212,6 +212,7 @@ function Crop() {
 
   this.type = undefined;
   this.tier = 0;
+  this.tier_non_prestiged = 0;
 
   this.istemplate = false; // if true, is a placeholder template
   this.isghost = false; // if true, is a ghost. This is a remainder of a plant, currently only used for the undeletable challenge when a crop is prestiged: the ghost of the unprestiged versions remains, to ensure it still cannot be deleted
@@ -561,8 +562,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(u.count > 0) {
       var mul_upgrade;
       if(this.type == CROPTYPE_BRASSICA) {
-        var brassica_bonus = 1.0;
-        mul_upgrade = Num(brassica_bonus * u.count + 1); // brassica upgrade is additive instead of multiplicative
+        mul_upgrade = Num(brassica_prod_upgrade_boost * u.count + 1); // brassica upgrade is additive instead of multiplicative
       } else {
         mul_upgrade = u2.bonus.powr(u.count);
       }
@@ -720,6 +720,15 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       result.mulInPlace(resin_bonus);
       if(breakdown) breakdown.push(['unused resin', true, resin_bonus, result.clone()]);
     }
+
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+      if(haveEtherealMistletoeUpgrade(mistle_upgrade_prod)) {
+        var mul = getEtherealMistletoeBonus(mistle_upgrade_prod).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, result.clone()]);
+      }
+    }
+
   }
 
 
@@ -1107,6 +1116,14 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
         }
+      }
+    }
+
+    if(this.type == CROPTYPE_STINGING) {
+      if(haveEtherealMistletoeUpgrade(mistle_upgrade_stingy)) {
+        var mul = getEtherealMistletoeBonus(mistle_upgrade_stingy).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, result.clone()]);
       }
     }
   }
@@ -1502,6 +1519,7 @@ function registerCrop(name, cost, prod, boost, planttime, image, opt_tagline, op
 
   crop.type = opt_croptype;
   crop.tier = opt_tier;
+  crop.tier_non_prestiged = opt_tier;
 
   if(opt_croptype != undefined && opt_tier != undefined) {
     if(!croptype_tiers[opt_croptype]) croptype_tiers[opt_croptype] = [];
@@ -1746,7 +1764,7 @@ crops[brassica_1].image_remainder = image_wasabi_remainder;
 crops[brassica_1].image_post = image_wasabi_post;
 
 crop_register_id = 110;
-var mistletoe_0 = registerMistletoe('mistletoe', 0, 50, mistletoe);
+var mistletoe_0 = registerMistletoe('mistletoe', 0, 50, images_mistletoe);
 
 crop_register_id = 120;
 // In theory, a bee giving a 50% boost is already worth it: touching 4 flowers means getting 2 flowers worth of production bonus from 1 bee,
@@ -2231,6 +2249,8 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
   return result;
 }
 
+var brassica_prod_upgrade_boost = 0.25;
+
 // increases lifetime but also the initial production of watercress
 function registerBrassicaTimeIncrease(cropid, cost, time_increase, prev_crop_num, crop_unlock_id, opt_pre_fun) {
   var crop = crops[cropid];
@@ -2253,7 +2273,7 @@ function registerBrassicaTimeIncrease(cropid, cost, time_increase, prev_crop_num
     }
   };
 
-  var description = '+100% ' + crop.name + ' base production (additive), +' + (time_increase * 100) + '%  lifespan duration';
+  var description = '+' + Num(brassica_prod_upgrade_boost).toPercentString() + ' ' + crop.name + ' base production (additive), +' + (time_increase * 100) + '%  lifespan duration';
 
   var result = registerUpgrade('Upgrade ' + name, cost, fun, pre, 0, description, description, '#fdd', '#f00', crop.image[4], upgrade_arrow);
   var u = upgrades[result];
@@ -2305,6 +2325,7 @@ function registerDeprecatedUpgrade() {
 
 upgrade_register_id = 25;
 var berryunlock_0 = registerCropUnlock(berry_0, getBerryCost(0), brassica_0, function(){
+  if(state.g_numresets > 0) return true; // having it hidden is only during first playthrough now. With this, only a single watercress rather than 10 as in the check below is required to make this upgrade visible. This makes (truly) basic challenge start less confusing. For regular game this has no effect once having blackberry secret.
   return (state.c_numplanted + state.c_numplantedbrassica) >= 10;
 });
 var berryunlock_1 = registerCropUnlock(berry_1, getBerryCost(1), berry_0, undefined, function() {
@@ -2973,7 +2994,7 @@ registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one
 registerMedal('stingy situation', 'plant the entire field full of nettles', images_nettle[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_STINGING] == state.numw * state.numh - 2;
 }, Num(0.01));
-registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', mistletoe[4], function() {
+registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', images_mistletoe[4], function() {
   return state.fullgrowncroptypecount[CROPTYPE_MISTLETOE] == state.numw * state.numh - 2;
 }, Num(0.05));
 registerMedal('not the bees', 'build the entire field full of bees.', images_beenest[0], function() {
@@ -3032,6 +3053,7 @@ function registerPlantTypeMedal(cropid, num) {
   }, Num(mul));
 };
 
+// crop count achievements
 function registerPlantTypeMedals(cropid, opt_start_at_30) {
   var id0 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 1);
   var id1 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 10); // easy to get for most crops, harder for flowers due to multiplier
@@ -3279,6 +3301,11 @@ var medal_rock3 = registerMedal('rock star', 'completed the rocks challenge stag
 }, Num(2));
 changeMedalDisplayOrder(medal_rock3, medal_rock2);
 
+var medal_rock4 = registerMedal('rocking on', 'completed the rocks challenge stage 5', images_rock[1], function() {
+  return state.challenges[challenge_rocks].completed >= 5;
+}, Num(5));
+changeMedalDisplayOrder(medal_rock4, medal_rock3);
+
 medal_register_id = 2120;
 
 registerMedal('rock solid', 'completed the rockier challenge', images_rock[0], function() {
@@ -3457,9 +3484,37 @@ registerMedal('undeletable ghost', 'get a ghost-crop during the undeletable chal
   return state.ghostcount > 0 && state.challenge == challenge_nodelete;
 }, Num(1));
 
-registerMedal('truly basic speed', 'reach level 10 in the truly basic challenge in 2.5 hours or less', image_hourglass, function() {
-  return state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= 9000;
+var medal_tb_speed_0 = registerMedal('truly basic speed 2.5h', 'reach level 10 in the truly basic challenge in 2.5 hours or less', image_hourglass, function() {
+  var runtime = 9000;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(1));
+
+
+var medal_tb_speed_1 = registerMedal('truly basic speed 2h', 'reach level 10 in the truly basic challenge in 2 hours or less', image_hourglass, function() {
+  var runtime = 7200;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
 }, Num(2));
+medals[medal_tb_speed_1].hint = medal_tb_speed_0;
+
+var medal_tb_speed_2 = registerMedal('truly basic speed 1.5h', 'reach level 10 in the truly basic challenge in 1.5 hours or less', image_hourglass, function() {
+  var runtime = 5400;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(3));
+medals[medal_tb_speed_2].hint = medal_tb_speed_1;
+
+var medal_tb_speed_3 = registerMedal('truly basic speed 1h', 'reach level 10 in the truly basic challenge in 1 hour or less', image_hourglass, function() {
+  var runtime = 3600;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(4));
+medals[medal_tb_speed_3].hint = medal_tb_speed_2;
 
 
 medal_register_id = 3020;
@@ -3632,7 +3687,7 @@ function() {
 }, 0);
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105], Num(0.05),
+var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135], Num(0.05),
 `The field has rocks on which you can't plant. The rock pattern is randomly generated at the start of the challenge, but will always be the same within the same when starting in the same 3-hour time interval (based on global UTC time)`,
 `
 • All regular crops, upgrades, ... are available and work as usual<br>
@@ -3642,6 +3697,7 @@ var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105], Nu
 'reaching tree level 15',
 function() { return state.treelevel >= 15; },
 [
+function() { state.fruit_slots++; },
 function() { state.fruit_slots++; },
 function() { state.fruit_slots++; },
 function() { state.fruit_slots++; },
@@ -4091,9 +4147,11 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
   if(f) {
     var automatonmul = new Num(1);
     var squirrelmul = new Num(1);
+    var mistlemul = new Num(1);
     var treemul = new Num(1);
     var num_automaton = 0;
     var num_squirrel = 0;
+    var num_mistle = 0;
     var num_tree = 0;
 
     for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
@@ -4110,6 +4168,10 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
           squirrelmul.addInPlace(getEtherealSquirrelNeighborBoost());
           num_squirrel++;
         }
+        if(n.cropIndex() == mistletoe2_0 && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
+          mistlemul.addInPlace(getEtherealMistletoeBonus(mistle_upgrade_neighbor));
+          num_mistle++;
+        }
       }
       if(dir < 4 && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM)) {
         if(state.evolution3 > 0) treemul.addInPlace(evolution3_ethtree_boost);
@@ -4125,6 +4187,10 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     if(num_squirrel) {
       result.mulInPlace(squirrelmul);
       if(breakdown) breakdown.push(['squirrel neighbor', true, squirrelmul, result.clone()]);
+    }
+    if(num_mistle) {
+      result.mulInPlace(mistlemul);
+      if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
     }
     if(num_tree) {
       result.mulInPlace(treemul);
@@ -4286,15 +4352,22 @@ function registerBeehive2(name, treelevel2, tier, cost, planttime, effect, effec
   return index;
 }
 
+function registerMistletoe2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_MISTLETOE, tier);
+  var crop = crops2[index];
+  crop.effect = effect;
+  return index;
+}
+
 
 var default_ethereal_growtime = 10;
 
 crop2_register_id = 0;
-var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), default_ethereal_growtime, 'gives 100 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
-var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), default_ethereal_growtime, 'gives 1000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
-var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), default_ethereal_growtime, 'gives 10000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
-var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), default_ethereal_growtime, 'gives 100000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
-var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal_growtime, 'gives 1000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop5);
+var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), default_ethereal_growtime, 'gives 1000 * n^3 starter seeds', 'Gives 100 starter seeds after every transcension and also immediately now. If you have multiple, gives 100 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 100, with two you get 800, three gives 2700, four gives 6400, and so on.', image_fern_as_crop);
+var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), default_ethereal_growtime, 'gives 10000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop2);
+var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), default_ethereal_growtime, 'gives 100000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop3);
+var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), default_ethereal_growtime, 'gives 1000000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop4);
+var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal_growtime, 'gives 10000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop5);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -4346,7 +4419,10 @@ crop2_register_id = 200;
 // also this makes the ethereal beest require some care, you can't just plant it in a corner with no lotuses.
 var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), default_ethereal_growtime, Num(0.01), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
 var bee2_1 = registerBeehive2('drone', 13, 1, Res({resin:1e15}), default_ethereal_growtime, Num(0.04), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_dronebee);
-//var bee2_2 = registerBeehive2('queen bee', 19, 2, Res({resin:5e21}), default_ethereal_growtime, Num(0.12), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_queenbee);
+var bee2_2 = registerBeehive2('queen bee', 19, 2, Res({resin:1e21}), default_ethereal_growtime, Num(0.12), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_queenbee);
+
+crop2_register_id = 250;
+var mistletoe2_0 = registerMistletoe2('mistletoe', 15, 0, Res({resin:10}), 1.5, Num(0.01), undefined, 'Must be planted next to ethereal tree to work. Can have only max one. Gives multiple bonuses, which can be unlocked and upgraded over time.', images_mistletoe);
 
 // templates
 
@@ -4365,7 +4441,8 @@ var lotus2_template = makeTemplate2(registerLotus2('lotus template', 1, -1, Res(
 var fern2_template = makeTemplate2(registerFern2('fern template', 1, -1, Res(), 0, undefined, '', images_ferntemplate));
 var automaton2_template = makeTemplate2(registerAutomaton2('automaton template', 1, -1, Res(), 0, undefined, '', images_automatontemplate));
 var squirrel2_template = makeTemplate2(registerSquirrel2('squirrel template', 5, -1, Res(), 0, undefined, '', images_squirreltemplate));
-var bee2_template = makeTemplate2(registerBeehive2('bee template', 8, -1, Res(), 0, Num(0), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_beetemplate));
+var bee2_template = makeTemplate2(registerBeehive2('bee template', 8, -1, Res(), 0, Num(0), undefined, '', images_beetemplate));
+var mistletoe2_template = makeTemplate2(registerMistletoe2('mistletoe template', 15, -1, Res(), 0, Num(0), undefined, '', images_mistletoetemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4572,7 +4649,7 @@ upgrade2_register_id = 101; // this upgraded used to be LEVEL2=1 and must keep i
 var upgrade2_blackberrysecret = registerUpgrade2('blackberry secret', LEVEL2, Res({resin:50}), 2, function() {
   applyBlackberrySecret();
 }, function(){return true;}, 1,
-'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the upgrade-watercress upgrade is available from the start rather than after 5 watercress. This makes the start of a run more convenient. TIP: get enough ferns in ethereal field to get 1000+ starting seeds to be able to plant a blackberry immediately too.',
+'blackberry is unlocked immediately after a transcension, the upgrade to unlock it is no longer needed and given for free. In addition, the upgrade-watercress upgrade is available from the start rather than after 5 watercress. This makes the start of a run more convenient. TIP: get a fern in the ethereal field to get 1000+ starting seeds to be able to plant a blackberry immediately too.',
 undefined, undefined, blackberry[4]);
 upgrade2_register_id = 28;
 
@@ -4587,7 +4664,7 @@ var upgrade2_field6x6 = registerUpgrade2('larger field 6x6', LEVEL2, Res({resin:
 upgrade2_register_id = 99;
 var upgrade2_mistletoe = registerUpgrade2('unlock mistletoe', LEVEL2, Res({resin:25}), 1, function() {
   // nothing to do, upgrade count causes the effect elsewhere
-}, function(){return true}, 1, 'Unlock mistletoe crop in the basic field. This crop will allow leveling up the ethereal tree through a basic field mechanic giving twigs, and the ethereal tree levels then allow to get next sets of ethereal upgrades and crops. The mistletoe will become available in the basic field when anemones become available and then needs to then be unlocked with a regular upgrade first as usual. Then it can be planted next to the basic tree to start getting twigs (which you actually get on transcend, like resin). This ethereal upgrade is the first step in that process, and this is ultimately required to progress to next stages of the game.', undefined, undefined, mistletoe[3]);
+}, function(){return true}, 1, 'Unlock mistletoe crop in the basic field. This crop will allow leveling up the ethereal tree through a basic field mechanic giving twigs, and the ethereal tree levels then allow to get next sets of ethereal upgrades and crops. The mistletoe will become available in the basic field when anemones become available and then needs to then be unlocked with a regular upgrade first as usual. Then it can be planted next to the basic tree to start getting twigs (which you actually get on transcend, like resin). This ethereal upgrade is the first step in that process, and this is ultimately required to progress to next stages of the game.', undefined, undefined, images_mistletoe[3]);
 
 ///////////////////////////
 LEVEL2 = 1;
@@ -4622,7 +4699,7 @@ var upgrade2_twigs_bonus = Num(0.25);
 var upgrade2_twigs = registerUpgrade2('twigs gain', LEVEL2, Res({resin:100}), 2, function() {
   // nothing to do, upgrade count causes the effect elsewhere
 }, function(){return true;}, 0, 'increase twigs gain from tree by ' + (upgrade2_twigs_bonus * 100) + '% (additive).',
-undefined, undefined, mistletoe[2]);
+undefined, undefined, images_mistletoe[2]);
 
 function applyBlueberrySecret() {
   if(basicChallenge()) return;
@@ -4659,7 +4736,7 @@ var upgrade2_field2_6x6 = registerUpgrade2('ethereal field 6x6', LEVEL2, Res({re
 
 var upgrade2_twigs_extraction = registerUpgrade2('twigs extraction', LEVEL2, Res({resin:10000}), 1, function() {
 }, function(){return true;}, 1, 'increase the multiplier per level for twigs, giving exponentially more twigs at higher tree levels: base of exponentiation before: ' + twigs_base + ', after: ' + twigs_base_twigs_extraction,
-undefined, undefined, mistletoe[1]);
+undefined, undefined, images_mistletoe[1]);
 
 upgrade2_register_id++; // blueberrysecret used to be here but moved to one ethereal tree level lower
 
@@ -4698,7 +4775,7 @@ var upgrade2_resin_extraction = registerUpgrade2('resin extraction', LEVEL2, Res
 }, function(){return true;}, 1, 'increase the multiplier per level for resin, giving exponentially more resin at higher tree levels: base of exponentiation before: ' + resin_base + ', after: ' + resin_base_resin_extraction, undefined, undefined, image_resin);
 
 var upgrade2_diagonal_mistletoes = registerUpgrade2('diagonal mistletoes', LEVEL2, Res({resin:75e3}), 1, function() {
-}, function(){return true;}, 1, 'mistletoes also work diagonally to the tree (10 instead of 6 possible spots)', undefined, undefined, mistletoe[4]);
+}, function(){return true;}, 1, 'mistletoes also work diagonally to the tree (10 instead of 6 possible spots)', undefined, undefined, images_mistletoe[4]);
 
 
 upgrade2_register_id = 145;
@@ -4854,7 +4931,7 @@ var upgrade2_twigs_siphoning = registerUpgrade2('twigs siphoning', LEVEL2, Res({
 }, function(){
   return !!state.upgrades2[upgrade2_twigs_extraction].count;
 }, 1, 'gain more twigs at tree levels above ' + twigs_siphoning_level + ': base of exponentiation switches from ' + twigs_base_twigs_extraction + ' to ' + twigs_base_twigs_siphoning + ' starting from this level',
-undefined, undefined, mistletoe[1]);
+undefined, undefined, images_mistletoe[1]);
 
 
 var upgrade2_extra_fruit_slot5 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:200e9,essence:1000000}), 2, function() {
@@ -4905,6 +4982,12 @@ upgrade2_register_id = 900;
 ///////////////////////////
 LEVEL2 = 15;
 upgrade2_register_id = 1000;
+
+var upgrade2_ethereal_mistletoe = registerUpgrade2('unlock ethereal mistletoe', LEVEL2, Res({resin:1e15}), 2, function() {
+  unlockEtherealCrop(mistletoe2_0);
+  showRegisteredHelpDialog(41);
+}, function(){return true;}, 1, 'unlocks the ethereal mistletoe. This crop must be placed in the ethereal field next to the tree. You can have only one of this crop at the same time. It has multiple effects that can get unlocked and upgraded over time. Upgrades cost time.', undefined, undefined, images_mistletoe[4]);
+
 
 ///////////////////////////
 LEVEL2 = 16;
@@ -6042,6 +6125,13 @@ function treeLevelResin(level, breakdown) {
     if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, resin.clone()]);
   }
 
+  // ethereal mistletoe
+  if(haveEtherealMistletoeUpgrade(mistle_upgrade_resin)) {
+    var mul = getEtherealMistletoeBonus(mistle_upgrade_resin).addr(1);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, resin.clone()]);
+  }
+
   // challenges
   if(state.challenge_bonus.neqr(0)) {
     var challenge_bonus = state.challenge_bonus.divr(100).addr(1);
@@ -6137,6 +6227,13 @@ function treeLevelTwigs(level, breakdown) {
     if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, res.clone()]);
   }
 
+  // ethereal mistletoe
+  if(haveEtherealMistletoeUpgrade(mistle_upgrade_twigs)) {
+    var mul = getEtherealMistletoeBonus(mistle_upgrade_twigs).addr(1);
+    res.twigs.mulInPlace(mul);
+    if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, res.clone()]);
+  }
+
   // challenges
   if(state.challenge_bonus.neqr(0)) {
     var challenge_bonus = state.challenge_bonus.divr(100).addr(1);
@@ -6191,39 +6288,44 @@ function treeLevel2Req(level) {
 ////////////////////////////////////////////////////////////////////////////////
 
 
+// NOTE: ensure to start with a bit more than needed for first plant, numerical precision in plant cost computation could make it cost 10.000001 instead of 10
+var initial_starter_seeds = 10.00001;
+
 // opt_add_type and opt_sub_type: when adding or removing one of that type
 function getStarterResources(opt_add_type, opt_sub_type) {
-  if(basicChallenge()) return Res(); // none during a basic challenge
+  var res = new Res();
 
   var count;
-  var ethereal_seeds = 0;
+  res.seeds = Num(initial_starter_seeds);
+
+  if(basicChallenge()) return res; // ethereal ferns don't count during a basic challenge
 
   count = state.fullgrowncrop2count[fern2_0];
   if(opt_add_type == fern2_0) count++;
   if(opt_sub_type == fern2_0) count--;
-  ethereal_seeds += count * count * count * 100;
+  res.seeds.addrInPlace(count * count * count * 1000);
 
   count = state.fullgrowncrop2count[fern2_1];
   if(opt_add_type == fern2_1) count++;
   if(opt_sub_type == fern2_1) count--;
-  ethereal_seeds += count * count * count * 1000;
+  res.seeds.addrInPlace(count * count * count * 10000);
 
   count = state.fullgrowncrop2count[fern2_2];
   if(opt_add_type == fern2_2) count++;
   if(opt_sub_type == fern2_2) count--;
-  ethereal_seeds += count * count * count * 10000;
+  res.seeds.addrInPlace(count * count * count * 100000);
 
   count = state.fullgrowncrop2count[fern2_3];
   if(opt_add_type == fern2_3) count++;
   if(opt_sub_type == fern2_3) count--;
-  ethereal_seeds += count * count * count * 100000;
+  res.seeds.addrInPlace(count * count * count * 1000000);
 
   count = state.fullgrowncrop2count[fern2_4];
   if(opt_add_type == fern2_4) count++;
   if(opt_sub_type == fern2_4) count--;
-  ethereal_seeds += count * count * count * 1000000;
+  res.seeds.addrInPlace(count * count * count * 10000000);
 
-  return Res({seeds:ethereal_seeds});
+  return res;
 }
 
 function getUnusedResinBonusFor(resin){
@@ -6514,12 +6616,9 @@ function getFernWaitTime() {
   var mintime = fern_wait_minutes * 60;
   if(state.upgrades[fern_choice0].count == 1) mintime += fern_choice0_a_minutes * 60;
 
-  if(gain.seeds.ltr(0.5)) {
-    if(progress.eqr(0) && gain.empty()) mintime = (state.challenge ? 1 : 0);
-    else if(progress.ltr(15)) mintime = (state.g_numresets > 0 ? 5 : 2.5);
-    else if(progress.ltr(150)) mintime = 10;
-    else if(progress.ltr(1500)) mintime = fern_wait_minutes * 60 / 2;
-  }
+  // no seeds and no income, speed up appearance of ferns
+  if(state.res.seeds.ltr(10) && gain.seeds.ltr(0.5)) mintime = 5;
+
   return mintime;
 }
 
@@ -6750,7 +6849,7 @@ var upgrade3_resin_bonus = Num(0.25);
 var upgrade3_resin = registerUpgrade3('resin bonus', undefined, 'increases resin gain by ' + Num(upgrade3_resin_bonus).toPercentString(), image_resin);
 
 var upgrade3_twigs_bonus = Num(0.25);
-var upgrade3_twigs = registerUpgrade3('twigs bonus', undefined, 'increases twigs gain by ' + Num(upgrade3_twigs_bonus).toPercentString(), mistletoe[2]);
+var upgrade3_twigs = registerUpgrade3('twigs bonus', undefined, 'increases twigs gain by ' + Num(upgrade3_twigs_bonus).toPercentString(), images_mistletoe[2]);
 
 var upgrade3_essence_bonus = Num(0.5);
 var upgrade3_essence = registerUpgrade3('essence bonus', undefined, 'increases essence from sacrificed fruits by ' + Num(upgrade3_essence_bonus).toPercentString(), images_apple[3]);
@@ -6912,10 +7011,10 @@ registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_doublefruitprob, upgrade3_eth
 registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_resin], undefined, [upgrade3_twigs]);
 registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_automaton2], undefined, true);
 
-registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_diagonal_brassica], [upgrade3_mushroom_multiplicity_boost], [upgrade3_mushroom]);
-registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_watercresstime], [upgrade3_ethtree2], [upgrade3_berry]);
-registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_nettle], [upgrade3_squirrel], [upgrade3_flower]);
-registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_bee], [upgrade3_weather_duration], [upgrade3_flower_multiplicity]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_diagonal_brassica], [upgrade3_mushroom_multiplicity_boost], [upgrade3_watercresstime]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_flower], [upgrade3_ethtree2], [upgrade3_flower_multiplicity]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_mushroom], [upgrade3_squirrel], [upgrade3_berry]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_bee], [upgrade3_weather_duration], [upgrade3_nettle]);
 registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_automaton], undefined, true);
 
 
@@ -7200,6 +7299,118 @@ function performEvolution3() {
 
   squirrel_scrollpos = undefined;
   updateSquirrelUI();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+function MistletoeUpgrade() {
+  this.index = 0;
+
+  this.evo = 0; // which mistletoe evolution level is required to see this upgrade
+
+  this.name = 'a';
+  this.description = '';
+
+  this.basetime = 3600; // hos much time the first upgrade of this costs. Next upgrades cost a multiple of this.
+
+  this.bonus = Num(0.1); // bonus per level
+
+  this.getTime = function() {
+    var m2 = state.mistletoeupgrades[this.index];
+    return this.basetime * (m2.num + 1);
+  };
+
+  // returns undefined if there is no resrouce cost.
+  // otherwise, may be overridden to give resource cost based on level to upgrade to
+  this.getResourceCostForLevel_ = function(level) {
+    return undefined;
+  };
+
+  this.getResourceCost = function(level) {
+    var m2 = state.mistletoeupgrades[this.index];
+    return this.getResourceCostForLevel_(m2.num + 1);
+  };
+};
+
+var registered_mistles = [];
+var mistletoeupgrades = [];
+
+// 16-bit ID, auto incremented with registerMistle, but you can also set it to a value yourself, to ensure consistent IDs for various crops (between savegames) in case of future upgrades
+var mistle_register_id = 0;
+
+function registerMistletoeUpgrade(name, bonus, evo, basetime, description) {
+  var mistle = new MistletoeUpgrade();
+  mistle.index = mistle_register_id++;
+
+  mistletoeupgrades[mistle.index] = mistle;
+  registered_mistles.push(mistle.index);
+
+  description = description.replace('%BONUS%', bonus.toPercentString());
+
+  mistle.name = name;
+  mistle.bonus = bonus;
+  mistle.evo = evo;
+  mistle.basetime = basetime;
+  mistle.description = description;
+
+  return mistle.index;
+}
+
+// a twigs bonus that's given for having the ethereal mistletoe in the first place, even without any upgrades
+var mistle_main_twigs_bonus = Num(0.1);
+
+var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Gives an extra %BONUS% bonus to all other bonuses (additive with evolution levels), and at some levels unlocks new types of bonuses');
+
+var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
+
+var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', Num(0.07), 1, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring ethereal crops, of any type that can receive bonus from lotuses');
+
+var mistle_upgrade_stingy = registerMistletoeUpgrade('stinginess', Num(0.07), 5, 3600, 'Gives a %BONUS% bonus to stingy crops (for spore production) per level');
+
+mistle_register_id = 50;
+
+var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', Num(0.07), 3, 3600, 'Gives a %BONUS% bonus to resin production per level');
+mistletoeupgrades[mistle_upgrade_resin].getResourceCostForLevel_ = function(level) {
+  return Res({twigs:100e15}).mul(Num.pow(new Num(2), new Num(level - 1)));
+};
+
+var mistle_upgrade_twigs = registerMistletoeUpgrade('twigginess', Num(0.07), 7, 3600, 'Gives a %BONUS% bonus to twigs production per level');
+mistletoeupgrades[mistle_upgrade_twigs].getResourceCostForLevel_ = function(level) {
+  return Res({resin:1e18}).mul(Num.pow(new Num(2), new Num(level - 1)));
+};
+
+function getEtherealMistletoeEvolutionBonus() {
+  return mistletoeupgrades[mistle_upgrade_evolve].bonus.mulr(state.mistletoeupgrades[mistle_upgrade_evolve].num);
+}
+
+function getEtherealMistletoeTwigsBonus() {
+  var result = mistle_main_twigs_bonus.add(mistletoeupgrades[mistle_upgrade_twigs].bonus.mulr(state.mistletoeupgrades[mistle_upgrade_twigs].num));
+  result.mulInPlace(getEtherealMistletoeEvolutionBonus().addr(1));
+  return result;
+}
+
+function getEtherealMistletoeBonus(index) {
+  if(index == mistle_upgrade_evolve) return getEtherealMistletoeEvolutionBonus();
+  if(index == mistle_upgrade_twigs) return getEtherealMistletoeTwigsBonus();
+  var result = mistletoeupgrades[index].bonus.mulr(state.mistletoeupgrades[index].num);
+  result.mulInPlace(getEtherealMistletoeEvolutionBonus().addr(1));
+  return result;
+}
+
+
+function knowEtherealMistletoeUpgrade(index) {
+  if(index == mistle_upgrade_evolve) return true;
+  return state.mistletoeupgrades[mistle_upgrade_evolve].num >= mistletoeupgrades[index].evo;
+}
+
+// returns how many you have
+// does NOT prevent basic challenge, you must have other checks for that (these bonuses should not work during basic challenge)
+function haveEtherealMistletoeUpgrade(index) {
+  if(!knowEtherealMistletoeUpgrade(index)) return 0;
+  if(!haveEtherealMistletoe()) return 0; // this also returns 0 if having it but it's not next to tree
+  return state.mistletoeupgrades[index].num;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

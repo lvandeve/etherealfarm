@@ -602,7 +602,7 @@ function createAllChallengeStatsDialog() {
     }
     if(c.targetlevel.length > 1) {
       for(var j = 0; j < c2.completed; j++) {
-        text += 'reward gotten: ' + c.rewarddescription[j];
+        text += 'reward gotten (at level ' + c.targetlevel[j] + '): ' + c.rewarddescription[j];
         text += '<br>';
       }
       if(!c.fullyCompleted) {

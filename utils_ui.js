@@ -1022,6 +1022,13 @@ function getCostAffordTimer(cost) {
     percent = Num.min(percent, p);
   }
 
+  if(cost.twigs.gtr(0)) {
+    var p = cost.twigs.div(state.res.twigs).mulr(100);
+    var t = cost.twigs.sub(state.res.twigs).div(gain.twigs);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
   var result = '';
   if(percent.gtr(100) && !time.eqr(Infinity)) {
     result += util.formatDuration(time.valueOf(), true);
@@ -1029,6 +1036,44 @@ function getCostAffordTimer(cost) {
     if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
     result += percent.toString() + '% of stacks';
   }
+
+  return result;
+}
+
+
+// similar to getCostAffordTimer, but only shows percentage of resources, whether higher or lower
+function getCostAffordPercentage(cost) {
+  var percent = Num(Infinity);
+
+
+  if(cost.seeds.gtr(0)) {
+    var p = cost.seeds.div(state.res.seeds).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.spores.gtr(0)) {
+    var p = cost.spores.div(state.res.spores).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.nuts.gtr(0)) {
+    var p = cost.nuts.div(state.res.nuts).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.resin.gtr(0)) {
+    var p = cost.resin.div(state.res.resin).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.twigs.gtr(0)) {
+    var p = cost.twigs.div(state.res.twigs).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  var result = '';
+  if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+  result += percent.toString() + '% of stacks';
 
   return result;
 }
@@ -1077,19 +1122,21 @@ function removeAllDropdownElements() {
   }
 }
 
-function makeDropdown(flex, title, current, choices, fun) {
+// opt_dont_change_style: don't change style of the uppermost button
+function makeDropdown(flex, title, current, choices, fun, opt_dont_change_style) {
   var el = flex.div.textEl ? flex.div.textEl : flex.div;
   //flex.div.style.border = '1px solid #fff';
   flex.choice = current;
   el.innerText = title + ': ' + choices[flex.choice];
 
+  var numchips = choices.length + 2; // 2 larger: for the title and the cancel button
   var x0 = 0.25;
   var x1 = 0.75;
-  var h = (choices.length + 1) * 0.02;
+  var h = numchips * 0.02;
   var y0 = 0.5 - h;
   var y1 = 0.5 + h;
 
-  flex.div.className = 'efDropDown';
+  if(!opt_dont_change_style) flex.div.className = 'efDropDown';
 
   // added to root, rather than flex itself, because otherwise any mouse action or styling applied to flex, also occurs on those choices, while that's not desired
   var choiceFlex = new Flex(topDialogFlex, x0, y0, x1, y1);
@@ -1120,9 +1167,13 @@ function makeDropdown(flex, title, current, choices, fun) {
   };
   choiceFlex.showFun(false);
 
+  var titleEl = new Flex(choiceFlex, 0, 0, 1, 1 / numchips);
+  centerText2(titleEl.div);
+  titleEl.div.textEl.innerText = title + ':';
+
   for(var i = 0; i <= choices.length; i++) {
     var iscancel = (i == choices.length);
-    var choice = new Flex(choiceFlex, 0, i / (choices.length + 1), 1, (i + 1) / (choices.length + 1));
+    var choice = new Flex(choiceFlex, 0.01, (i + 1.01) / numchips, 0.99, (i + 1.99) / numchips);
     styleButton0(choice.div);
     centerText2(choice.div);
     choice.div.textEl.innerText = iscancel ? 'cancel' : choices[i];

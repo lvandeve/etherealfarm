@@ -755,6 +755,12 @@ function createStatsDialog() {
   if(state.evolution3 > 0) {
     text += '• squirrel evolutions: ' + open + state.evolution3 + close + '<br>';
   }
+  if(etherealMistletoeUnlocked()) {
+    text += '• ethereal mistletoe upgrades completed: ' + open + state.g_nummistletoeupgradesdone + close + '<br>';
+    text += '• ethereal mistletoe upgrades time spent: ' + open + util.formatDuration(state.g_mistletoeupgradetime, true) + close + '<br>';
+    text += '• ethereal mistletoe unspent idle time: ' + open + util.formatDuration(state.mistletoeidletime, true) + close + '<br>';
+    text += '• ethereal mistletoe total idle time: ' + open + util.formatDuration(state.g_mistletoeidletime, true) + close + '<br>';
+  }
   text += '<br>';
 
   if(state.g_numresets > 0) {

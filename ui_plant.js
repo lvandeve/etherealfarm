@@ -20,12 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
 // opt_recoup is the cost you get back when opt_replace is true
-function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup) {
+// opt_select_only: makes a simpler plant chip that serves to select it. Will call opt_plantfun as usual but it may do something else than planting. Costs are not shown.
+function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_select_only) {
   var f = undefined;
   if(fieldx != undefined && fieldy != undefined) {
     f = state.field[fieldy][fieldx];
   }
-  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w * 0.9 + 0.01, 0.6], (x + 1) * w - 0.01, [0, 0, (y + 1) * w * 0.9 - 0.01, 0.6]);
+  var h = opt_select_only ? 0.4 : 0.6;
+  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w * 0.9 + 0.01, h], (x + 1) * w - 0.01, [0, 0, (y + 1) * w * 0.9 - 0.01, h]);
   var div = flex.div;
   div.className = 'efPlantChip';
 
@@ -33,9 +35,11 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(crop.image[4], canvas);
 
-  var infoFlex = new Flex(flex, [0, 0, 0.5], 0.05, 1, 0.95);
+  var ypos = opt_select_only ? 0.1 : 0.05;
+  var xpos = opt_select_only ? 0.1 : 0;
+  var infoFlex = new Flex(flex, [xpos, 0, 0.5], ypos, 1, 0.95);
   var text = '';
-  if(opt_replace) {
+  if(opt_replace || opt_select_only) {
     text +=  '<b>' + upper(crop.name) + '</b><br>';
   } else {
     text +=  '<b>Plant ' + crop.name + '</b><br>';
@@ -43,8 +47,10 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
 
-  text += 'type: ' + getCropTypeName(crop.type) + '<br>';
-  text += 'cost: ' + cost.toString();
+  text += 'type: ' + getCropTypeName(crop.type);
+  if(!opt_select_only) {
+    text += '<br>cost: ' + cost.toString();
+  }
 
   infoFlex.div.innerHTML = text;
 
@@ -81,7 +87,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
     if(opt_plantfun) registerTooltip(canvasFlex.div, (opt_replace ? 'Replace with ' : 'Plant ') + crop.name);
   }
 
-  if(opt_plantfun && state.res.lt(cost)) {
+  if(opt_plantfun && state.res.lt(cost) && !opt_select_only) {
     flex.div.className = 'efButtonTranslucentCantAfford';
     registerUpdateListener(function() {
       if(!flex || !document.body.contains(infoFlex.div)) return false;
@@ -97,6 +103,7 @@ function makePlantChip(crop, x, y, w, parent, fieldx, fieldy, opt_plantfun, opt_
 
   return flex;
 }
+
 
 
 // get the array of unlocked crops in the plant dialog, in order they should be displayed:
@@ -288,12 +295,6 @@ function showPlantingHelp() {
 
 // opt_all is for planting in the entire field with automaton, and makes it ignore various other parameters like x and y
 function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
-
-  var numplants = 0;
-  for(var i = 0; i < registered_crops.length; i++) {
-    if(state.crops[registered_crops[i]].unlocked) numplants++;
-  }
-
   var num_unlocked = 0;
   for(var i = 0; i < registered_crops.length; i++) {
     if(state.crops[registered_crops[i]].unlocked) num_unlocked++;
@@ -411,6 +412,81 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
     }, tooltipfun, plantfun, c);
 
     var chip = makePlantChip(c, tx, ty, 0.33, flex, x, y, plantfun, showfun, tooltipfun, opt_replace, opt_recoup);
+    tx++;
+    if(tx >= 3) {
+      tx = 0;
+      ty++;
+    }
+  }
+
+  flex.update(); // something about the makeScrollable above misplaces some of the flex-managed sub positions, this update fixes it
+}
+
+
+
+// Similar to makePlantDialog, but for selecting a plant for custom purposes (such as automaton auto-action triggers).
+// Also allows choosing prestige level.
+// Calls the callback with as parameters the index of the selected crop, and the chosen prestige level
+// Shows all known plants over all runs ever
+function makePlantSelectDialog(cropid, prestiged, callback) {
+  var crops_order = []; // = getCropOrder();
+
+  var prestige_known = (state.g_numprestiges >= 1);
+  for(var i = 0; i < registered_crops.length; i++) {
+    var c = state.crops[registered_crops[i]];
+    if(!(c.known || c.unlocked)) continue;
+    if(c.known > 1 || c.prestige) prestige_known = true;
+    crops_order.push(registered_crops[i]);
+  }
+
+  var help = undefined;
+  if(prestige_known) help = 'Select crop by clicking it. This will immediately close the dialog, so the "prestige" checkbox must be checked or unchecked before choosing the crop.<br><br>Note that this dialog does not prevent combinations of prestiged with crops that cannot be prestiged, ensure an existing combination is chosen for your use case.';
+
+  var dialog = createDialog({
+    help:help,
+    title:'Select crop',
+    bgstyle:'efDialogTranslucent',
+    cancelname:'cancel'
+  });
+  var tx = 0;
+  var ty = 0;
+
+  if(prestige_known) {
+    var cbflex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.05);
+    //flex.div.textEl.innerHTML = 'Prestige TODO';
+    var update = function() {
+      var text = '';
+      var flex0 = new Flex(cbflex, 0, 0, [0, 1], 1);
+      var flex1 = new Flex(cbflex, [0, 1.2], 0, 1, 1);
+      var canvas = createCanvas('0%', '0%', '100%', '100%', flex0.div);
+      renderImage(prestiged ? image_checkbox_on : image_checkbox_off, canvas);
+      styleButton0(flex0.div);
+      addButtonAction(flex0.div, bind(function(i) {
+        prestiged = (prestiged ? 0 : 1);
+        //callback(cropid, prestiged);
+        update();
+      }, i), 'checkbox "prestiged" (' + (prestiged ? 'checked' : 'unchecked') + ')');
+      text += 'Prestiged';
+      text += '\n';
+      flex1.div.innerText = text;
+    };
+    update();
+  }
+
+  var flex = new Flex(dialog.content, 0, 0.12, 1, 1);
+  makeScrollable(flex);
+
+  for(var i = 0; i < crops_order.length; i++) {
+    var index = crops_order[i];
+    var c = crops[index];
+
+    var plantfun = bind(function(index) {
+      cropid = index;
+      callback(cropid, prestiged);
+      closeTopDialog();
+    }, index);
+
+    var chip = makePlantChip(c, tx, ty, 0.33, flex, undefined, undefined, plantfun, undefined, undefined, false, undefined, true);
     tx++;
     if(tx >= 3) {
       tx = 0;

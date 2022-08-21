@@ -435,7 +435,7 @@ function showConfigureAutoBlueprintDialog(subject) {
 
   var flex;
 
-  texth = 0.15;
+  texth = 0.05;
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Choose at which tree level to override with which blueprint';
   y += texth;
@@ -471,6 +471,8 @@ function showConfigureAutoBlueprintDialog(subject) {
 
   var num = autoBlueprintsUnlocked();
 
+  var levelflexes = [];
+
   for(var j = 0; j < num; j++) {
     // toggle button disabled if num is 1, since there's only one auto-override action for now, the global enable/disable already does this
     if(num > 1) {
@@ -490,28 +492,63 @@ function showConfigureAutoBlueprintDialog(subject) {
     }
 
     flex = addControl();
-    styleButton0(flex.div);
+    styleButton(flex.div);
     centerText2(flex.div);
-    var updateLevelButton = bind(function(flex, j) {
-      updateToggleButton(flex, true);
-      flex.div.textEl.innerText = 'At tree level: ' + state.automaton_autoblueprints[j].level;
-    }, flex, j);
-    addButtonAction(flex.div, bind(function(flex, j, updateLevelButton) {
-      makeTextInput('Tree level', 'Enter tree level at which to perform blueprint override', function(text) {
-        var i = parseInt(text);
-        if(!(i >= 0 && i < 1000000)) i = 0;
-        state.automaton_autoblueprints[j].level = i;
-        updateLevelButton();
-      }, '' + state.automaton_autoblueprints[j].level);
-    }, flex, j, updateLevelButton));
-    updateLevelButton();
+    var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop'];
+    var current = state.automaton_autoblueprints[j].type;
+    makeDropdown(flex, 'Trigger by', current, typenames, bind(function(j, i) {
+      state.automaton_autoblueprints[j].type = i;
+      updateLevelButton(j);
+    }, j), true);
+    //flex.div.className = 'efAutomatonAuto';
 
 
     flex = addControl();
-    styleButton0(flex.div);
+    styleButton(flex.div);
+    centerText2(flex.div);
+    levelflexes.push(flex);
+    var updateLevelButton = function(j) {
+      var flex = levelflexes[j];
+      var b = state.automaton_autoblueprints[j];
+      if(b.type == 0) {
+        flex.div.textEl.innerText = 'At tree level: ' + b.level;
+      } else if(b.type >= 1 && b.type <= 3) {
+        var c = crops[b.crop - 1];
+        var p = b.prestige;
+        var cropname = c ? c.name : 'none';
+        if(c && p) cropname += ' (prestiged)';
+        if(b.type == 1) flex.div.textEl.innerText = 'At unlocked crop: ' + cropname;
+        if(b.type == 2) flex.div.textEl.innerText = 'At planted crop: ' + cropname;
+        if(b.type == 3) flex.div.textEl.innerText = 'At fullgrown crop: ' + cropname;
+      }
+      //updateToggleButton(flex, true);
+    };
+    addButtonAction(flex.div, bind(function(j) {
+      var b = state.automaton_autoblueprints[j];
+      if(b.type == 0) {
+        makeTextInput('Tree level', 'Enter tree level at which to perform blueprint override', function(text) {
+          var i = parseInt(text);
+          if(!(i >= 0 && i < 1000000)) i = 0;
+          state.automaton_autoblueprints[j].level = i;
+          updateLevelButton(j);
+          //makePlantDialog();
+        }, '' + state.automaton_autoblueprints[j].level);
+      } else {
+        makePlantSelectDialog(b.crop, b.prestige, function(cropid, prestiged) {
+          b.crop = cropid + 1;
+          b.prestige = prestiged;
+          updateLevelButton(j);
+        });
+      }
+    }, j));
+    updateLevelButton(j);
+
+
+    flex = addControl();
+    styleButton(flex.div);
     centerText2(flex.div);
     var updateBlueprintButton = bind(function(flex, j) {
-      updateToggleButton(flex, true);
+      //updateToggleButton(flex, true);
       var i = state.automaton_autoblueprints[j].blueprint;
       if(i == 0) {
         flex.div.textEl.innerText = 'Chosen blueprint: none';

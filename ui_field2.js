@@ -294,7 +294,7 @@ function makeTree2Dialog() {
   text += '• berry boost: ' + state.ethereal_berry_bonus.toPercentString() + '<br>';
   text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
   text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
-  if(state.ethereal_nettle_bonus.neqr(0)) text += '• nettle boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
+  if(state.ethereal_nettle_bonus.neqr(0)) text += '• stinging boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
   if(state.ethereal_bee_bonus.neqr(0)) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
   text += '<br><br>';
 
@@ -342,11 +342,185 @@ function makeTree2Dialog() {
   }
 }
 
-function makeField2Dialog(x, y) {
+function makeEtherealMistletoeDialog(x, y) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
 
-  if(f.hasCrop()) {
+  var c = crops2[f.cropIndex()];
+  var dialog = createDialog({
+    icon:c.image[4],
+    title:'Ethereal mistletoe',
+    bgstyle:'efDialogTranslucent',
+    functions:[function() {makeField2Dialog(x, y, true); return true;}],
+    names:['crop info'],
+    scrollable:true,
+    help:function(){showRegisteredHelpDialog(41, true);}
+  });
+
+  if(!state.etherealmistletoenexttotree) {
+    dialog.content.div.innerText = 'The ethereal mistletoe must be planted orthogonally (not diagonally) next to the tree, otherwise it does nothing. Its upgrades are currently paused.';
+    return;
+  }
+
+
+  var buttonpos = 0;
+  var buttonh = 0.07;
+  var buttonextraseparater = 0.01;
+
+  var buttons = [];
+
+  // of all the standard plant buttons, the delete button is also shown in the mistletoe dialog. Others can be accessed through the 'crop info' button at the bottom
+  var deletebutton = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
+  buttonpos += buttonh;
+  styleButton(deletebutton);
+  deletebutton.textEl.innerText = 'Delete crop';
+  deletebutton.textEl.style.color = '#c00';
+  if(!canEtherealDelete() && !freeDelete2(x, y)) deletebutton.textEl.style.color = '#888';
+  registerTooltip(deletebutton, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back. Only works if deleting in ethereal field is currently possible. While deleted or not planted next to the tree, the mistletoe upgrades are paused.');
+  addButtonAction(deletebutton, function() {
+    addAction({type:ACTION_DELETE2, x:x, y:y});
+    closeAllDialogs();
+    update(); // do update immediately rather than wait for tick, for faster feeling response time
+  });
+
+  buttonpos += buttonextraseparater;
+
+  for(var i = 0; i < registered_mistles.length; i++) {
+    var index = registered_mistles[i];
+    if(index == mistle_upgrade_resin) buttonpos += buttonextraseparater;
+    if(!knowEtherealMistletoeUpgrade(index)) continue;
+    var m = mistletoeupgrades[index];
+    var m2 = state.mistletoeupgrades[index];
+    var button = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
+    buttonpos += buttonh;
+    if(index == mistle_upgrade_evolve) buttonpos += buttonextraseparater;
+    styleButton(button);
+    addButtonAction(button, bind(function(index) {
+      addAction({type:ACTION_MISTLE_UPGRADE, index});
+      update(); // do update immediately rather than wait for tick, for faster feeling response time
+      updatecontent();
+    }, m.index));
+    var tooltipfun = bind(function(i) {
+      var index = registered_mistles[i];
+      var m = mistletoeupgrades[index];
+      var m2 = state.mistletoeupgrades[index];
+      var tooltiptext = 'Upgrade: ' + m.name;
+      if(m2.time == 0) tooltiptext += '. Time: ' + util.formatDuration(m.getTime());
+      else tooltiptext += '. Total time: ' + util.formatDuration(m.getTime(), true) + '. Time left: ' + util.formatDuration(m.getTime() - m2.time, true);
+      var res = m.getResourceCost();
+      if(res) {
+        tooltiptext += '. Resource cost: ' + res.toString();
+        tooltiptext += ' (' /* + have: ' + Res.getMatchingResourcesOnly(res, state.res).toString() + ', '*/ + getCostAffordPercentage(res) + ')';
+      }
+      tooltiptext += '. Current level: ' + toRomanUpTo(m2.num) + '. ' + upper(m.description);
+      if(m.index != mistle_upgrade_evolve) tooltiptext += '. Unlocked at evolution level ' + toRomanUpTo(m.evo);
+      return tooltiptext;
+    }, i);
+    var tooltiptext = tooltipfun();
+    // if there's a resource cost, the tooltip could change after doing the upgrade and keeping the window open long enough, so make it dynamic function based tooltip text in that case
+    if(m.getResourceCost()) tooltiptext = tooltipfun;
+    registerTooltip(button, tooltiptext);
+    buttons.push(button);
+    button.updatefun = bind(function(i, button_index) {
+      var index = registered_mistles[i];
+      var m = mistletoeupgrades[index];
+      var m2 = state.mistletoeupgrades[index];
+      var button = buttons[button_index];
+      var res = m.getResourceCost();
+      var buttontext = '<b>' + upper(m.name) + ' ' + toRomanUpTo(m2.num + 1) + '</b>';
+      var timetext = (m2.time == 0) ? ('Time: ' + util.formatDuration(m.getTime(), true)) : ('Time left: ' + util.formatDuration(m.getTime() - m2.time, true));
+      if(res) buttontext += '. Cost: ' + res.toString() + ', ' + util.formatDuration(m.getTime() - m2.time, true);
+      else buttontext += '. ' + timetext;
+      button.textEl.innerHTML = buttontext;
+      if(state.mistletoeupgrade >= 0) {
+        button.textEl.style.color = '#888';
+      } else {
+        button.textEl.style.color = '';
+      }
+    }, i, buttons.length - 1);
+    //button.updatefun();
+  }
+
+  buttonpos += buttonextraseparater;
+
+  // of all the standard plant buttons, the delete button is also shown in the mistletoe dialog. Others can be accessed through the 'crop info' button at the bottom
+  var cancelbutton = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
+  buttonpos += buttonh;
+  styleButton(cancelbutton);
+  cancelbutton.textEl.innerText = 'Stop current upgrade';
+  registerTooltip(cancelbutton, 'Stops current ongoing upgrade, if there is one. The current time duration of the ongoing upgrade will be remembered, so if you start it again later it will continue where it left off. This also works if doing other upgrades in-between.');
+  addButtonAction(cancelbutton, function() {
+    addAction({type:ACTION_CANCEL_MISTLE_UPGRADE});
+    update(); // do update immediately rather than wait for tick, for faster feeling response time
+    updatecontent();
+  });
+  buttons.push(cancelbutton);
+  cancelbutton.updatefun = function() {
+    if(state.mistletoeupgrade < 0) {
+      cancelbutton.textEl.style.color = '#888';
+    } else {
+      cancelbutton.textEl.style.color = '';
+    }
+  };
+
+  var textel = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], 0.8);
+
+
+  var prevtext = '';
+
+  var prev_evo = state.mistletoeupgrades[mistle_upgrade_evolve].num;
+
+  var updatecontent = function() {
+    if(state.mistletoeupgrades[mistle_upgrade_evolve].num != prev_evo) {
+      // amount of visible updates changed, more update of all the HTML dialog needed, recreate it completely
+      closeTopDialog();
+      makeEtherealMistletoeDialog(x, y);
+    }
+    for(var i = 0; i < buttons.length; i++) {
+      buttons[i].updatefun();
+    }
+
+    var text = '';
+    if(state.mistletoeupgrade >= 0) {
+      var m = mistletoeupgrades[state.mistletoeupgrade];
+      var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
+      text += 'Upgrading: ' + m.name + '. ' + upper(m.description);
+      text += '<br><br>';
+      var timeleft = m.getTime() - m2.time;
+      text += 'Time left: ' + util.formatDuration(timeleft, true);
+    } else {
+      text += 'Not upgrading';
+    }
+    if(state.mistletoeidletime) {
+      text += '<br>Unused time: '  + util.formatDuration(state.mistletoeidletime, true);// + '. Collected when not upgrading. Makes upgrades go twice as fast.';
+    } else {
+      //text += '<br>Unused time: none.';
+    }
+    //text += '<br>Total time: '  + util.formatDuration(state.g_mistletoeupgradetime, true);
+    text += '<br><br>';
+    text += '<b>Current bonuses:</b>';
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_prod)) text += '<br>Production: ' + getEtherealMistletoeBonus(mistle_upgrade_prod).toPercentString();
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) text += '<br>Neighbor: ' + getEtherealMistletoeBonus(mistle_upgrade_neighbor).toPercentString();
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_stingy)) text += '<br>Stingy: ' + getEtherealMistletoeBonus(mistle_upgrade_stingy).toPercentString();
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_resin)) text += '<br>Resin: ' + getEtherealMistletoeBonus(mistle_upgrade_resin).toPercentString();
+    text += '<br>Twigs: ' + getEtherealMistletoeBonus(mistle_upgrade_twigs).toPercentString();
+    text += '<br><br>';
+    text += 'Evolution bonus (already included in above bonuses): ' + getEtherealMistletoeEvolutionBonus().toPercentString();
+    if(text != prevtext) textel.div.innerHTML = text;
+    prevtext = text;
+  };
+
+  updatecontent();
+  updatedialogfun = updatecontent;
+}
+
+function makeField2Dialog(x, y, opt_override_mistletoe) {
+  var f = state.field2[y][x];
+  var fd = field2Divs[y][x];
+
+  if(f.hasCrop() && f.getCrop().index == mistletoe2_0 && !opt_override_mistletoe) {
+    makeEtherealMistletoeDialog(x, y);
+  } else if(f.hasCrop()) {
     var c = crops2[f.cropIndex()];
     var div;
 
@@ -610,7 +784,8 @@ function initField2UI() {
       if(ph < 4) ph = 4;
       var px = x0 + x * tw + ((tw - pw) >> 1);
       var py = y0 + (y + 1) * th - ph * 2;
-      var progress = makeDiv((((x + 0.2) / state.numw2) * 100) + '%', (((y + 0.9) / state.numh2) * 100) + '%', (100 / state.numw2 * 0.6) + '%', (100 / state.numh2 * 0.05) + '%', field2Grid.div);
+      var progress = makeDiv((((x + 0.2) / state.numw2) * 100) + '%', (((y + 0.85) / state.numh2) * 100) + '%', (100 / state.numw2 * 0.6) + '%', (100 / state.numh2 * 0.05) + '%', field2Grid.div);
+      progress.style.minHeight = '5px';
       initProgressBar(progress);
       field2Divs[y][x].progress = progress;
     }

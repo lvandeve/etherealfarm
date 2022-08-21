@@ -196,9 +196,9 @@ function getCropInfoHTML(f, c, opt_detailed) {
           growthremaining = 0;
         }
         result += text0 + '. Time left: ' + util.formatDuration(growthremaining * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
-        if(state.upgrades[berryunlock_0].count) {
-          result += '<br/><span class="efWatercressHighlight">Copies neighbors: Duplicates full production of long-lived berry and mushroom neighbors for free';
-          if(basicChallenge() || !state.upgrades3[upgrade3_watercress_mush].count) result += ' (mushroom copy also consumes more seeds)';
+        if(state.upgrades[berryunlock_0].count || state.g_numresets > 0) {
+          result += '<br/><span class="efWatercressHighlight">Copies neighbors: Duplicates full production of long-lived berry and mushroom neighbors for free, but copies less if there are more brassica on the whole field, so try to get a few well-placed brassica instead.';
+          if(basicChallenge() || !state.upgrades3[upgrade3_watercress_mush].count) result += ' (note: mushroom copy also consumes more seeds)';
           result += '</span><br/>';
         }
       }
@@ -1002,8 +1002,8 @@ function initFieldUI() {
       if(ph < 4) ph = 4;
       var px = x0 + x * tw + ((tw - pw) >> 1);
       var py = y0 + (y + 1) * th - ph * 2;
-      var progress = makeDiv((((x + 0.2) / state.numw) * 100) + '%', (((y + 0.9) / state.numh) * 100) + '%', (100 / state.numw * 0.6) + '%', (100 / state.numh * 0.05) + '%', fieldGrid.div);
-      progress.style.minHeight = '3px';
+      var progress = makeDiv((((x + 0.2) / state.numw) * 100) + '%', (((y + 0.85) / state.numh) * 100) + '%', (100 / state.numw * 0.6) + '%', (100 / state.numh * 0.05) + '%', fieldGrid.div);
+      progress.style.minHeight = '5px';
       initProgressBar(progress);
       fieldDivs[y][x].progress = progress;
     }

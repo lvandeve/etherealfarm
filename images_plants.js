@@ -4896,7 +4896,7 @@ subtleplantimageheader + `
 
 // mistletoe
 
-var mistletoe = createPlantImages2(seeds_mushroom0,
+var images_mistletoe = createPlantImages2(seeds_mushroom0,
 subtleplantimageheader + `
 ................
 ................
@@ -5807,9 +5807,9 @@ var images_beeghost = [image_beeghost, image_beeghost, image_beeghost, image_bee
 
 var image_workerbeetemplate = createCanvasImageFor(blueprintifyImage(images_workerbee[4][4]));
 
-var image_mistletoetemplate = createCanvasImageFor(blueprintifyImage(mistletoe[4][4]));
+var image_mistletoetemplate = createCanvasImageFor(blueprintifyImage(images_mistletoe[4][4]));
 var images_mistletoetemplate = [image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate];
-var image_mistletoeghost = createCanvasImageFor(ghostifyImage(mistletoe[4][4]));
+var image_mistletoeghost = createCanvasImageFor(ghostifyImage(images_mistletoe[4][4]));
 var images_mistletoeghost = [image_mistletoeghost, image_mistletoeghost, image_mistletoeghost, image_mistletoeghost, image_mistletoeghost];
 
 var image_lotustemplate = createCanvasImageFor(blueprintifyImage(images_whitelotus[4][4]));

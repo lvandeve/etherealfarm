@@ -823,7 +823,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
   styleButton0(canvas, true);
   addButtonAction(canvas, function() {
-    f.mark = ((f.mark || 0) + 1) % 5;
+    f.mark = ((f.mark || 0) + 1) % 7;
     updateFruitUI();
     recreate();
   }, 'fruit icon: ' + getFruitAriaLabel(f) + '. Click to mark favorite');
@@ -924,7 +924,7 @@ function styleFruitChip(flex, f) {
     var color = fruitmarkcolors[f.mark] || '#fff';
     flex.div.style.border = '3px solid ' + color;
   } else if(f.name) {
-    var color = '#aaa';
+    var color = '#999';
     flex.div.style.border = '3px solid ' + color;
   } else {
     flex.div.style.border = '1px solid black';
@@ -938,8 +938,8 @@ function styleFruitChip(flex, f) {
   }
 }
 
-var fruitmarkcolors = ['#000', '#f008', '#fe08', '#4c48', '#88ff'];
-var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue'];
+var fruitmarkcolors = ['#000', '#f00a', '#fe0a', '#4c4a', '#66ff', '#fffe', '#f80a'];
+var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue', 'white', 'orange'];
 
 function getFruitAriaLabel(f, opt_fallback_if_empty) {
   if(!f) return opt_fallback_if_empty || 'none';

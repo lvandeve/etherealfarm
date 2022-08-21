@@ -212,7 +212,8 @@ function updateRightPane() {
     }
     if(state.treelevel >= 1) {
       var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-      text += '• Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')';
+      text += '• Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString();
+      if(time.gtr(0)) text += ' (' + util.formatDuration(time.valueOf(), true) + ')';
       text += '<br>';
     }
     text += '• Season change in: ' + util.formatDuration(timeTilNextSeason(), true);
