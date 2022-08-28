@@ -452,7 +452,7 @@ function makePlantSelectDialog(cropid, prestiged, callback) {
   var ty = 0;
 
   if(prestige_known) {
-    var cbflex = new Flex(dialog.content, 0.01, 0.01, 0.99, 0.05);
+    var cbflex = new Flex(dialog.content, 0.01, 0.01, 0.25, 0.05);
     //flex.div.textEl.innerHTML = 'Prestige TODO';
     var update = function() {
       var text = '';
@@ -461,15 +461,16 @@ function makePlantSelectDialog(cropid, prestiged, callback) {
       var canvas = createCanvas('0%', '0%', '100%', '100%', flex0.div);
       renderImage(prestiged ? image_checkbox_on : image_checkbox_off, canvas);
       styleButton0(flex0.div);
-      addButtonAction(flex0.div, bind(function(i) {
-        prestiged = (prestiged ? 0 : 1);
-        //callback(cropid, prestiged);
-        update();
-      }, i), 'checkbox "prestiged" (' + (prestiged ? 'checked' : 'unchecked') + ')');
       text += 'Prestiged';
       text += '\n';
       flex1.div.innerText = text;
     };
+    addButtonAction(cbflex.div, bind(function(i) {
+      prestiged = (prestiged ? 0 : 1);
+      //callback(cropid, prestiged);
+      update();
+    }, i), 'checkbox "prestiged" (' + (prestiged ? 'checked' : 'unchecked') + ')');
+
     update();
   }
 

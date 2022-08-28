@@ -725,10 +725,25 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(haveEtherealMistletoeUpgrade(mistle_upgrade_prod)) {
         var mul = getEtherealMistletoeBonus(mistle_upgrade_prod).addr(1);
         result.mulInPlace(mul);
-        if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, result.clone()]);
+        if(breakdown) breakdown.push(['ethereal mistletoe leafiness', true, mul, result.clone()]);
       }
     }
 
+    if(this.type == CROPTYPE_BERRY) {
+      if(haveEtherealMistletoeUpgrade(mistle_upgrade_berry)) {
+        var mul = getEtherealMistletoeBonus(mistle_upgrade_berry).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal mistletoe berry-ness', true, mul, result.clone()]);
+      }
+    }
+
+    if(this.type == CROPTYPE_MUSH) {
+      if(haveEtherealMistletoeUpgrade(mistle_upgrade_mush)) {
+        var mul = getEtherealMistletoeBonus(mistle_upgrade_mush).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal mistletoe funginess', true, mul, result.clone()]);
+      }
+    }
   }
 
 
@@ -4173,7 +4188,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
           num_mistle++;
         }
       }
-      if(dir < 4 && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM)) {
+      if((dir < 4 || state.upgrades3[upgrade3_ethtree_diag].count) && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM)) {
         if(state.evolution3 > 0) treemul.addInPlace(evolution3_ethtree_boost);
         if(state.upgrades3[upgrade3_ethtree].count) treemul.addInPlace(upgrade3_ethtree_boost.mulr(state.upgrades3[upgrade3_ethtree].count));
         if(state.upgrades3[upgrade3_ethtree2].count) treemul.addInPlace(upgrade3_ethtree_boost2.mulr(state.upgrades3[upgrade3_ethtree2].count));
@@ -6972,6 +6987,13 @@ var upgrade3_ethtree2 = registerUpgrade3('ethereal tree neighbor boost II', unde
 
 var evolution3_ethtree_boost = Num(0.2);
 
+var upgrade3_ethtree_diag = registerUpgrade3('diagonal ethereal tree', undefined, 'ethereal tree boost also works diagonally', tree_images[6][1][4]);
+
+// these also each add half of the upgrade3_doublefruitprob upgrade's double fruit chance, so doing these 2 is same as doing the 3 original fruit chance related upgrades
+var upgrade3_doublefruitprob_prob_half = 0.125;
+var upgrade3_fruittierprob2 = registerUpgrade3('fruit tier and double fruit chance', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels. In addition, adds ' + Num(upgrade3_doublefruitprob_prob_half).toPercentString() + ' chance to drop 2 fruits at once', images_apple[4]);
+var upgrade3_seasonfruitprob2 = registerUpgrade3('seasonal fruit and double fruit chance', undefined, 'increases probability of getting a better seasonal fruit drop from 1/4th to 1/3rd. In addition, adds ' + Num(upgrade3_doublefruitprob_prob_half).toPercentString() + ' chance to drop 2 fruits at once', images_apricot[3]);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 var STAGE_REGISTER_EVOLUTION;
@@ -7008,8 +7030,8 @@ registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_stinging_multiplicity], undef
 registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruitmix123], undefined, [upgrade3_watercress_mush]);
 registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_squirrel2], undefined, true);
 
-registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruittierprob, upgrade3_essence, upgrade3_leveltime], undefined, [upgrade3_seasonfruitprob, upgrade3_growspeed, upgrade3_bee_multiplicity]);
-registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_doublefruitprob, upgrade3_ethtree, upgrade3_highest_level], undefined, [upgrade3_mushroom, upgrade3_berry, upgrade3_flower]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_fruittierprob2, upgrade3_essence, upgrade3_leveltime], undefined, [upgrade3_seasonfruitprob2, upgrade3_growspeed, upgrade3_bee_multiplicity]);
+registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_ethtree, upgrade3_ethtree_diag, upgrade3_highest_level], undefined, [upgrade3_mushroom, upgrade3_berry, upgrade3_flower]);
 registerStage3(STAGE_REGISTER_EVOLUTION, [upgrade3_resin], undefined, [upgrade3_twigs]);
 registerStage3(STAGE_REGISTER_EVOLUTION, undefined, [upgrade3_automaton2], undefined, true);
 
@@ -7363,7 +7385,7 @@ function registerMistletoeUpgrade(name, bonus, evo, basetime, description) {
 // a twigs bonus that's given for having the ethereal mistletoe in the first place, even without any upgrades
 var mistle_main_twigs_bonus = Num(0.1);
 
-var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Does not reset anything. Gives an extra %BONUS% bonus to all other bonuses (additive with evolution levels), and at some levels unlocks new types of bonuses');
+var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Does not reset anything (existing upgrades stay). Gives an extra %BONUS% bonus to all other bonuses (additive with evolution levels), and at some levels unlocks new types of bonuses');
 
 var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
 
@@ -7371,9 +7393,18 @@ var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', Num(0.07)
 
 var mistle_upgrade_stingy = registerMistletoeUpgrade('stinginess', Num(0.07), 5, 3600, 'Gives a %BONUS% bonus to stingy crops (for spore production) per level');
 
+var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', Num(0.07), 9, 3600, 'Gives a %BONUS% bonus to mushrooms (both produciton and consumption) per level');
+
+var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', Num(0.07), 11, 3600, 'Gives a %BONUS% bonus to berry seed production per level');
+
+
+
+
+
+// mistletoe upgrades that also cost other resources. Give higher id so they show up more to the bottom in the UI
 mistle_register_id = 50;
 
-var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', Num(0.07), 3, 3600, 'Gives a %BONUS% bonus to resin production per level');
+var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', Num(0.07), 3, 3600, 'Gives a %BONUS% bonus to resin production per level'); // sappiness as in tree sap
 mistletoeupgrades[mistle_upgrade_resin].getResourceCostForLevel_ = function(level) {
   return Res({twigs:100e15}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
@@ -7422,6 +7453,19 @@ function haveEtherealMistletoeEffect(index) {
   if(!haveEtherealMistletoe()) return false; // this also returns 0 if having it but it's not next to tree
   if(index == mistle_upgrade_twigs) return true;
   return !!haveEtherealMistletoeUpgrade(index);
+}
+
+// returns at which next evolution level a new upgrade unlocks, or -1 if none
+function etherealMistletoeNextEvolutionUnlockLevel() {
+  var result = -1;
+  var curr = haveEtherealMistletoeUpgrade(mistle_upgrade_evolve);
+  for(var i = 0; i < registered_mistles.length; i++) {
+    var u = mistletoeupgrades[registered_mistles[i]];
+    if(u.evo <= curr) continue;
+    if(result >= 0 && u.evo > result) continue;
+    result = u.evo;
+  }
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

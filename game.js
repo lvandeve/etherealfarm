@@ -1839,7 +1839,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     var roll_abilities = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
     var roll_abilities_level = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
 
-    var tier = getNewFruitTier(roll_tier, treelevel, !!state.upgrades3[upgrade3_fruittierprob].count);
+    var tier = getNewFruitTier(roll_tier, treelevel, state.upgrades3[upgrade3_fruittierprob].count || state.upgrades3[upgrade3_fruittierprob2].count);
 
     var fruit = new Fruit();
     fruit.tier = tier;
@@ -1873,7 +1873,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
 
     if(state.g_numfruits >= 4) {
       var prob = 0.75;
-      if(state.upgrades3[upgrade3_seasonfruitprob].count) prob = 0.666; // from 1/4th to 1/3th probability
+      if(state.upgrades3[upgrade3_seasonfruitprob].count || state.upgrades3[upgrade3_seasonfruitprob2].count) prob = 0.666; // from 1/4th to 1/3th probability
       if(roll_season > prob) {
         var season = getSeason();
         if(season >= 0 && season <= 3) {
@@ -1942,7 +1942,12 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
 
     fruits.push(fruit);
 
-    if(!opt_nodouble && fruits.length == 1 && state.upgrades3[upgrade3_doublefruitprob].count && roll_double < upgrade3_doublefruitprob_prob) {
+    var double_prob = 0;
+    if(state.upgrades3[upgrade3_doublefruitprob].count) double_prob = upgrade3_doublefruitprob_prob;
+    if(state.upgrades3[upgrade3_fruittierprob2].count) double_prob += upgrade3_doublefruitprob_prob_half;
+    if(state.upgrades3[upgrade3_seasonfruitprob2].count) double_prob += upgrade3_doublefruitprob_prob_half;
+
+    if(double_prob && !opt_nodouble && fruits.length == 1 && roll_double < double_prob) {
       // probability of a second fruit
       continue;
     }

@@ -83,13 +83,20 @@ function setAriaRole(div, role) {
 // use this instead of ".onclick = ..." for more accessible buttons
 // opt_label is an optional textual name for image-icon-buttons
 // opt_immediate = make the button respond immediately on mousedown, rather than only on mouseup
-function addButtonAction(div, fun, opt_label, opt_immediate) {
+// opt_noenterkey = do not make it activate on enter key (e.g. for the close button of dialogs, which is selected by default normally but shouldn't make the dialog close on pressing enter)
+function addButtonAction(div, fun, opt_label, opt_immediate, opt_noenterkey) {
   //var div = makeDiv('0', '0', '100%', '100%', div);
   if(opt_immediate && !isTouchDevice()) {
     // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
     div.onmousedown = fun;
   } else {
     div.onclick = fun;
+  }
+  if(!opt_noenterkey) {
+    div.onkeypress = function(e) {
+      if(e.key == 'Enter') fun(e);
+      e.preventDefault();
+    };
   }
   div.tabIndex = 0;
   setAriaRole(div, 'button');
@@ -310,7 +317,8 @@ function createDialog(params) {
   var canvas = createCanvas('20%', '20%', '60%', '60%', xbutton.div);
   renderImage(image_close, canvas);
   styleButton0(xbutton.div);
-  addButtonAction(xbutton.div, dialog.cancelFun, (params.title ? (' close dialog: "' + params.title + '"') : 'dialog close button'));
+  addButtonAction(xbutton.div, dialog.cancelFun, (params.title ? (' close dialog: "' + params.title + '"') : 'dialog close button'), true);
+  xbutton.div.className = 'efNoOutline';
   xbutton.div.title = 'close';
 
   var helpbutton;

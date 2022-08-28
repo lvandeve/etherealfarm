@@ -352,7 +352,7 @@ function updateTabButtons2() {
   if(tabbuttons[tabnum]) {
     var text = 'achievements<br/>(' + state.medals_earned + ')';
 
-    if(state.medals_new) {
+    if(state.medals_new && state.currentTab != tabindex_medals) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
 

@@ -290,3 +290,10 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
     opacity: 100%;
   }
 }
+
+.efNoOutline {
+  outline: unset;
+}
+.efNoOutline:focus {
+  outline: unset;
+}

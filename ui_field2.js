@@ -49,6 +49,17 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += 'Effect: ' + c.effect_description_short + '<br/>';
   }
 
+  if(c.index == mistletoe2_0) {
+    var m = mistletoeupgrades[state.mistletoeupgrade];
+    var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
+    if(m) {
+      var t = m.getTime() - m2.time;
+      result += '<br/>Upgrade time left: ' + util.formatDuration(t, true, 4) + '<br/>';
+    } else {
+      result += '<br/>Not upgrading<br/>';
+    }
+  }
+
   if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE) {
     var total = c.getBasicBoost(f);
     result += '<br/>';
@@ -218,7 +229,7 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
   } else {
     if(!opt_silent) {
       if(too_expensive[1]) {
-        showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
+        showMessage('not enough resources for next crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString(), C_INVALID, 0, 0);
       } else if(!(x >= 0 && x < state.numw2 && y >= 0 && y < state.numh2) || state.field2[y][x].index < CROPINDEX) {
         showMessage('No crop to tier up here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
@@ -227,7 +238,7 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
       }
     }
   }
-  return false;
+  return true;
 }
 
 function makeDowngradeCrop2Action(x, y, opt_silent) {
@@ -236,9 +247,13 @@ function makeDowngradeCrop2Action(x, y, opt_silent) {
 
   if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
-    return true;
+  } else if(c2 && too_expensive[1]) {
+    // TODO: instead go to an even lower tier?
+    showMessage('not enough resources for lower crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() + ', need ' + too_expensive[0].toString() + '. This can happen if you have a lot of the lower tier crop planted.', C_INVALID, 0, 0);
+  } else if(!c2) {
+    showMessage('Crop not replaced, no lower tier available', C_INVALID);
   }
-  return false;
+  return true;
 }
 
 function makeTree2Dialog() {
@@ -358,7 +373,8 @@ function makeEtherealMistletoeDialog(x, y) {
     functions:[function() {makeField2Dialog(x, y, true); return true;}],
     names:['crop info'],
     scrollable:true,
-    help:function(){showRegisteredHelpDialog(41, true);}
+    help:function(){showRegisteredHelpDialog(41, true);},
+    cancelname:'close'
   });
 
   if(!state.etherealmistletoenexttotree) {
@@ -418,6 +434,12 @@ function makeEtherealMistletoeDialog(x, y) {
       }
       tooltiptext += '. Current level: ' + toRomanUpTo(m2.num) + '. ' + upper(m.description);
       if(m.index != mistle_upgrade_evolve) tooltiptext += '. Unlocked at evolution level ' + toRomanUpTo(m.evo);
+      if(m.index == mistle_upgrade_evolve) {
+        var next = etherealMistletoeNextEvolutionUnlockLevel();
+        //if(next >= 0) tooltiptext += '. Next new upgrade unlocks at evolution level: ' + toRomanUpTo(next) + ' (current level: ' + toRomanUpTo(haveEtherealMistletoeUpgrade(mistle_upgrade_evolve)) + ')';
+        if(next >= 0) tooltiptext += '. Next new upgrade unlocks at evolution level: ' + next + ' (current level: ' + haveEtherealMistletoeUpgrade(mistle_upgrade_evolve) + ')';
+        else tooltiptext += '. Next new upgrade unlocks at evolution level: N/A';
+      }
       return tooltiptext;
     }, i);
     var tooltiptext = tooltipfun();

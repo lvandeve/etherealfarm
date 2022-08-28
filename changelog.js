@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.6.1 (2022-08-28):';
+  text += '<br/>• In the evolved squirrel upgrade tree, combined the 3 fruit probability upgrades into 2, and changed one into a new upgrade.';
+  text += '<br/>• Added two more ethereal mistletoe upgrades (requiring higher evolution).';
+  text += '<br/>• Pressing the enter key on a button focused with tab now also activates it. Let me know if this causes any issues.';
+  text += '<br/>• Various other tweaks and bugfixes.'; // e.g. the tooltip of the mistletoe evolution upgrade now says at which level a new upgrade unlocks, and the mistletoe tooltip in ethereal field says remaining time
+  text += '<br/><br/>';
+
   text += '0.6.0 (2022-08-20):';
   text += '<br/>• Added ethereal mistletoe. Only one of this crop can be planted in the ethereal field, and it has upgrades inside that cost time. Unlocks at ethereal tree 15.';
   text += '<br/>• Added another new high level ethereal crop.';
