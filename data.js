@@ -4160,10 +4160,6 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
 
   // automaton and squirrel
   if(f) {
-    var automatonmul = new Num(1);
-    var squirrelmul = new Num(1);
-    var mistlemul = new Num(1);
-    var treemul = new Num(1);
     var num_automaton = 0;
     var num_squirrel = 0;
     var num_mistle = 0;
@@ -4176,40 +4172,44 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       var n = state.field2[y2][x2];
       if(n.hasCrop() && n.isFullGrown()) {
         if(n.cropIndex() == automaton2_0) {
-          automatonmul.addInPlace(getEtherealAutomatonNeighborBoost());
           num_automaton++;
         }
         if(n.cropIndex() == squirrel2_0) {
-          squirrelmul.addInPlace(getEtherealSquirrelNeighborBoost());
           num_squirrel++;
         }
-        if(n.cropIndex() == mistletoe2_0 && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
-          mistlemul.addInPlace(getEtherealMistletoeBonus(mistle_upgrade_neighbor));
+        if(n.cropIndex() == mistletoe2_0) {
           num_mistle++;
         }
       }
       if((dir < 4 || state.upgrades3[upgrade3_ethtree_diag].count) && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM)) {
-        if(state.evolution3 > 0) treemul.addInPlace(evolution3_ethtree_boost);
-        if(state.upgrades3[upgrade3_ethtree].count) treemul.addInPlace(upgrade3_ethtree_boost.mulr(state.upgrades3[upgrade3_ethtree].count));
-        if(state.upgrades3[upgrade3_ethtree2].count) treemul.addInPlace(upgrade3_ethtree_boost2.mulr(state.upgrades3[upgrade3_ethtree2].count));
+        // this can be 2 when diagonally touching two parts of the tree, but the multiplier is applied only once below.
         num_tree++;
       }
     }
     if(num_automaton) {
+      var automatonmul = getEtherealAutomatonNeighborBoost().addr(1);
       result.mulInPlace(automatonmul);
       if(breakdown) breakdown.push(['automaton neighbor', true, automatonmul, result.clone()]);
     }
     if(num_squirrel) {
+      var squirrelmul = getEtherealSquirrelNeighborBoost().addr(1);
       result.mulInPlace(squirrelmul);
       if(breakdown) breakdown.push(['squirrel neighbor', true, squirrelmul, result.clone()]);
     }
-    if(num_mistle) {
+    if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
+      var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_neighbor).addr(1);
       result.mulInPlace(mistlemul);
       if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
     }
     if(num_tree) {
-      result.mulInPlace(treemul);
-      if(breakdown) breakdown.push(['tree neighbor', true, treemul, result.clone()]);
+      var treemul = new Num(1);
+      if(state.evolution3 > 0) treemul.addInPlace(evolution3_ethtree_boost);
+      if(state.upgrades3[upgrade3_ethtree].count) treemul.addInPlace(upgrade3_ethtree_boost.mulr(state.upgrades3[upgrade3_ethtree].count));
+      if(state.upgrades3[upgrade3_ethtree2].count) treemul.addInPlace(upgrade3_ethtree_boost2.mulr(state.upgrades3[upgrade3_ethtree2].count));
+      if(treemul.neqr(1)) {
+        result.mulInPlace(treemul);
+        if(breakdown) breakdown.push(['tree neighbor', true, treemul, result.clone()]);
+      }
     }
   }
 
