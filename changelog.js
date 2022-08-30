@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.6.2 (2022-08-30):';
+  text += '<br/>• The ethereal mistletoe evolution no longer boosts the twigs or resin bonuses. The base value of the twigs and resin bonuses was increased to compensate.';
+  text += '<br/><br/>';
+
   text += '0.6.1 (2022-08-28):';
   text += '<br/>• In the evolved squirrel upgrade tree, combined the 3 fruit probability upgrades into 2, and changed one into a new upgrade.';
   text += '<br/>• Added two more ethereal mistletoe upgrades (requiring higher evolution).';

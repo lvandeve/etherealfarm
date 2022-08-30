@@ -525,13 +525,11 @@ function makeEtherealMistletoeDialog(x, y) {
     //text += '<br>Total time: '  + util.formatDuration(state.g_mistletoeupgradetime, true);
     text += '<br><br>';
     text += '<b>Current bonuses:</b>';
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_prod)) text += '<br>Production: ' + getEtherealMistletoeBonus(mistle_upgrade_prod).toPercentString();
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) text += '<br>Neighbor: ' + getEtherealMistletoeBonus(mistle_upgrade_neighbor).toPercentString();
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_stingy)) text += '<br>Stingy: ' + getEtherealMistletoeBonus(mistle_upgrade_stingy).toPercentString();
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_resin)) text += '<br>Resin: ' + getEtherealMistletoeBonus(mistle_upgrade_resin).toPercentString();
-    text += '<br>Twigs: ' + getEtherealMistletoeBonus(mistle_upgrade_twigs).toPercentString();
-    text += '<br><br>';
-    text += 'Evolution bonus (already included in above bonuses): ' + getEtherealMistletoeEvolutionBonus().toPercentString();
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_prod)) text += '<br>Production: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_prod);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) text += '<br>Neighbor: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_neighbor);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_stingy)) text += '<br>Stingy: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_stingy);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_resin)) text += '<br>Resin: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_resin);
+    text += '<br>Twigs: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_twigs);
     if(text != prevtext) textel.div.innerHTML = text;
     prevtext = text;
   };

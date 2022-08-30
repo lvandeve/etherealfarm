@@ -7383,9 +7383,9 @@ function registerMistletoeUpgrade(name, bonus, evo, basetime, description) {
 }
 
 // a twigs bonus that's given for having the ethereal mistletoe in the first place, even without any upgrades
-var mistle_main_twigs_bonus = Num(0.1);
+var mistle_main_twigs_bonus = Num(0.15);
 
-var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Does not reset anything (existing upgrades stay). Gives an extra %BONUS% bonus to all other bonuses (additive with evolution levels), and at some levels unlocks new types of bonuses');
+var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Does not reset anything (existing upgrades stay). At some levels unlocks new types of bonuses. Gives an extra %BONUS% bonus to the other bonuses except those that give resin or twigs (additive with evolution levels)');
 
 var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
 
@@ -7404,12 +7404,12 @@ var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', Num(0.07), 11,
 // mistletoe upgrades that also cost other resources. Give higher id so they show up more to the bottom in the UI
 mistle_register_id = 50;
 
-var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', Num(0.07), 3, 3600, 'Gives a %BONUS% bonus to resin production per level'); // sappiness as in tree sap
+var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', Num(0.1), 3, 3600, 'Gives a %BONUS% bonus to resin production per level'); // sappiness as in tree sap
 mistletoeupgrades[mistle_upgrade_resin].getResourceCostForLevel_ = function(level) {
   return Res({twigs:100e15}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
 
-var mistle_upgrade_twigs = registerMistletoeUpgrade('twigginess', Num(0.07), 7, 3600, 'Gives a %BONUS% bonus to twigs production per level');
+var mistle_upgrade_twigs = registerMistletoeUpgrade('twigginess', Num(0.1), 7, 3600, 'Gives a %BONUS% bonus to twigs production per level');
 mistletoeupgrades[mistle_upgrade_twigs].getResourceCostForLevel_ = function(level) {
   return Res({resin:1e18}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
@@ -7420,17 +7420,36 @@ function getEtherealMistletoeEvolutionBonus() {
   return mistletoeupgrades[mistle_upgrade_evolve].bonus.mulr(state.mistletoeupgrades[mistle_upgrade_evolve].num);
 }
 
+function getEtherealMistletoeEvolutionBonusFor(index) {
+  if(index == mistle_upgrade_twigs || index == mistle_upgrade_resin) return Num(1);
+  return getEtherealMistletoeEvolutionBonus();
+}
+
 function getEtherealMistletoeTwigsBonus() {
   var result = mistle_main_twigs_bonus.add(mistletoeupgrades[mistle_upgrade_twigs].bonus.mulr(state.mistletoeupgrades[mistle_upgrade_twigs].num));
   result.mulInPlace(getEtherealMistletoeEvolutionBonus().addr(1));
   return result;
 }
 
+// includes what evolution adds to it
 function getEtherealMistletoeBonus(index) {
   if(index == mistle_upgrade_evolve) return getEtherealMistletoeEvolutionBonus();
   if(index == mistle_upgrade_twigs) return getEtherealMistletoeTwigsBonus();
   var result = mistletoeupgrades[index].bonus.mulr(state.mistletoeupgrades[index].num);
-  result.mulInPlace(getEtherealMistletoeEvolutionBonus().addr(1));
+  result.mulInPlace(getEtherealMistletoeEvolutionBonusFor(index).addr(1));
+  return result;
+}
+
+function getEtherealMistleToeBonusWithEvoString(index) {
+  if(index == mistle_upgrade_evolve) return getEtherealMistletoeEvolutionBonus().toPercentString();
+  var base = mistletoeupgrades[index].bonus.mulr(state.mistletoeupgrades[index].num);
+  if(index == mistle_upgrade_twigs) base.addInPlace(mistle_main_twigs_bonus);
+  var result = '';
+  result += base.toPercentString();
+  var evo = getEtherealMistletoeEvolutionBonusFor(index);
+  if(evo.neqr(1)) {
+    result += ' with ' + evo.toPercentString() + ' evo = ' + getEtherealMistletoeBonus(index).toPercentString();
+  }
   return result;
 }
 
