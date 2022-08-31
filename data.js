@@ -7421,13 +7421,13 @@ function getEtherealMistletoeEvolutionBonus() {
 }
 
 function getEtherealMistletoeEvolutionBonusFor(index) {
-  if(index == mistle_upgrade_twigs || index == mistle_upgrade_resin) return Num(1);
+  if(index == mistle_upgrade_twigs || index == mistle_upgrade_resin) return Num(0);
   return getEtherealMistletoeEvolutionBonus();
 }
 
 function getEtherealMistletoeTwigsBonus() {
   var result = mistle_main_twigs_bonus.add(mistletoeupgrades[mistle_upgrade_twigs].bonus.mulr(state.mistletoeupgrades[mistle_upgrade_twigs].num));
-  result.mulInPlace(getEtherealMistletoeEvolutionBonus().addr(1));
+  result.mulInPlace(getEtherealMistletoeEvolutionBonusFor(mistle_upgrade_twigs).addr(1));
   return result;
 }
 
@@ -7447,7 +7447,7 @@ function getEtherealMistleToeBonusWithEvoString(index) {
   var result = '';
   result += base.toPercentString();
   var evo = getEtherealMistletoeEvolutionBonusFor(index);
-  if(evo.neqr(1)) {
+  if(evo.neqr(0)) {
     result += ' with ' + evo.toPercentString() + ' evo = ' + getEtherealMistletoeBonus(index).toPercentString();
   }
   return result;
