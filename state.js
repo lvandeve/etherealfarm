@@ -319,21 +319,31 @@ BluePrint.copy = function(b) {
   return result;
 }
 
+// actual auto-action now (can also do other actions than blueprint)
+// TODO: rename to AutoActionState
 function AutoBlueprintState() {
   this.enabled = false; // if false, this one is individually disabled
 
   this.done = false; // already done this action this round
 
-  this.type = 0; // what triggers this action: 0 = based on tree level, 1/2/3 = based on unlocked/growing/fullgrown crop type
-
-  this.blueprint = 0; // index of blueprint to use + 1, or 0 if not yet configured
-
-  this.ethereal = false; // if true, replaces ethereal blueprint instead (not yet supported)
+  this.type = 0; // what triggers this action: 0 = based on tree level, 1/2/3 = based on unlocked/growing/fullgrown crop type, 4 = based on run time
 
   this.level = 10; // tree level, for type 0
 
   this.crop = 0; // unlocked crop id + 1, or 0 to indicate none, for type 1/2/3
   this.prestige = 0; // prestige level required from the crop
+
+  this.time = 0; // runtime for the trigger based on runtime, for type 4
+
+  this.enable_blueprint = false;
+  this.blueprint = 0; // index of blueprint to use + 1, or 0 if not yet configured
+
+  // TODO: rename to enable_ethereal_blueprint once supported
+  this.ethereal = false; // if true, replaces ethereal blueprint instead (not yet supported)
+  this.ethereal_blueprint = 0; // index of ethereal blueprint to use + 1, or 0 if not yet configured (not yet supported)
+
+  this.enable_fruit = false;
+  this.fruit = 0; // fruit slot for enable_fruit
 }
 
 
@@ -615,7 +625,7 @@ function State() {
   */
   this.automaton_autoblueprint = 0;
 
-  this.automaton_autoblueprints = []; // array of AutoBlueprintState
+  this.automaton_autoblueprints = []; // array of AutoBlueprintState. TODO: rename to automaton_autoactions
 
   // challenges
   this.challenge = 0;
@@ -1850,6 +1860,7 @@ function autoUnlockEnabled() {
   return !!state.automaton_autounlock;
 }
 
+// TODO: rename these to auto-action/autoAction/...
 // auto-blueprint override
 function autoBlueprintUnlocked() {
   if(!automatonUnlocked()) return false;

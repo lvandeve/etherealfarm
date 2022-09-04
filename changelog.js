@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.6.3 (2022-09-04):';
+  text += '<br/>• Automaton auto-action (formerly named auto-blueprint) can now also automatically choose a fruit to switch to.';
+  text += '<br/>• Automaton auto-action can now also use time since start of run as a possible action trigger.';
+  text += '<br/>• Expected total income per second (once all crops are fullgrown) is now shown in the top resource tooltips for seeds, spores and nuts.';
+  text += '<br/>• Rockier challenge completion levels now also shown on its button when choosing challenges, when all rockier cycles have already been done.';
+  text += '<br/>• When importing a blueprint from text, tab characters are now ignored, so importing from a spreadsheet works.'; // also spaces but only with some heuristic, but spreadsheets use tab characters
+  text += '<br/><br/>';
+
   text += '0.6.2 (2022-08-30):';
   text += '<br/>• The ethereal mistletoe evolution no longer boosts the twigs or resin bonuses. The base value of the twigs and resin bonuses was increased to compensate.';
   text += '<br/><br/>';

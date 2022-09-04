@@ -1123,6 +1123,15 @@ function updateFruitUI() {
   // This fixes cases where the selected fruit is above 10. It's not super great to adjust state automatically from the UI like this, but the 10 arrow limit is pretty much for a UI reason
   if(state.fruit_active > 0 && state.fruit_active >= numarrows) state.fruit_active = numarrows - 1;
 
+  // the ones that are used in auto-actions, so they get an indicator symbol
+  var for_automaton = [];
+  if(autoBlueprintsUnlocked()) {
+    for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
+      var o = state.automaton_autoblueprints[i];
+      if(o.enable_fruit) for_automaton[o.fruit] = true;
+    }
+  }
+
   x = 0;
   for(var i = 0; i < numarrows; i++) {
     var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
@@ -1130,6 +1139,7 @@ function updateFruitUI() {
     //canvasFlex.div.style.border = '1px solid black';
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
     var image = (i == state.fruit_active) ? image_fruitsel_active : image_fruitsel_inactive;
+    if(for_automaton[i]) image = (i == state.fruit_active) ? image_fruitsel_active_automaton : image_fruitsel_inactive_automaton;
     renderImage(image, canvas);
 
     var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
@@ -1342,4 +1352,45 @@ function showFruitChip(message) {
   textFlex.div.innerHTML = message;
 
   addButtonAction(fruitChipFlex.div, removeFruitChip);
+}
+
+
+function createSelectFruitSlotDialog(fun, opt_maxnum, opt_help) {
+  var dialog = createDialog({undefined,
+    scrollable:true,
+    title:'Select fruit slot',
+    help:opt_help
+  });
+
+  var scrollFlex = dialog.content;
+
+  var s = 0.1; // relative width and height of a chip
+  var x = 0;
+  var y = 0.03;
+
+  for(var i = 0; i < state.fruit_slots; i++) {
+    if(i >= opt_maxnum) break;
+    if(x > s * 9.5) {
+      x = 0;
+      y += s;
+    }
+
+    var f = state.fruit_stored[i];
+    var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
+    x += s * 1.01;
+    if(f) {
+      makeFruitChip(flex, f, 0, undefined, true);
+    } else {
+      flex.div.style.backgroundColor = '#ccc';
+      flex.div.style.border = '1px solid black';
+      registerTooltip(flex.div, 'Slot ' + i + ', no stored fruit present in this slot.');
+    }
+    styleButton0(flex.div);
+    var arialabel = 'select fruit slot ' + i;
+    if(f) arialabel += '. "' + getFruitAriaLabel(f) + '"';
+    addButtonAction(flex.div, bind(function(i) {
+      fun(i);
+      closeTopDialog();
+    }, i), arialabel);
+  }
 }

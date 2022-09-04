@@ -665,6 +665,10 @@ function encState(state, opt_raw_only) {
     processUint(o.level);
     processUint(o.crop);
     processUint(o.prestige);
+    processBool(o.enable_blueprint);
+    processTime(o.time);
+    processBool(o.enable_fruit);
+    processUint(o.fruit);
     processStructEnd();
   }
   processStructArrayEnd();
@@ -1939,6 +1943,15 @@ function decState(s) {
       o.level = processUint();
       if(save_version >= 262144*2+64*6+0) o.crop = processUint();
       if(save_version >= 262144*2+64*6+0) o.prestige = processUint();
+      if(save_version >= 262144*2+64*6+3) {
+        o.enable_blueprint = processBool();
+      } else {
+        o.enable_blueprint = (o.blueprint > 0);
+        if(o.blueprint > 0) o.blueprint--; // 0 used to indicate 'none' before this version
+      }
+      if(save_version >= 262144*2+64*6+3) o.time = processTime();
+      if(save_version >= 262144*2+64*6+3) o.enable_fruit = processBool();
+      if(save_version >= 262144*2+64*6+3) o.fruit = processUint();
       processStructEnd();
     }
     processStructArrayEnd();

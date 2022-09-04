@@ -957,10 +957,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
   }
 
-  // leech, only computed here in case of pretend for tooltips/dialogs, without pretent leech is computed in more correct way in precomputeField()
+  // leech (brassica-copying), only computed for the pretend cases, non-pretend leech: brassica copying's actual gameplay computation is done in precomputeField() intead
+  // this computation is only used for UI/tooltips/dialogs. It is not guaranteed to be correct, but tries to be as much as possible since it's for UI that tells what the production will look like after all crops are fullgrown (gain_expected)
   if(pretend == 2 && this.type == CROPTYPE_BRASSICA && f) {
     var p = prefield[f.y][f.x];
     var leech = this.getLeech(f, null, p.getBrassicaBreakdownCroptype());
+    var leech_seeds = this.getLeech(f, null, CROPTYPE_BERRY);
+    var leech_spores = this.getLeech(f, null, CROPTYPE_MUSH);
+    var leech_nuts = this.getLeech(f, null, CROPTYPE_NUT);
     var soup = !basic && state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var total = Res();
     var num = 0;
@@ -972,12 +976,17 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var c2 = f2.getCrop();
       if(c2) {
         var p2 = prefield[y2][x2];
-        if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH) {
-          total.addInPlace(p2.prod0); // TODO: this is not correct if crops are growing, since precompute is done taking growing into account while pretend does not. To be correct, instead recursively getProd of those neighbors should be called here. However this additional complexity is not super important to implement because pretend == 2 is for display purposes only
+        if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
+          //total.addInPlace(p2.prod0); // TODO: this is not correct if crops are growing, since precompute is done taking growing into account while pretend does not. To be correct, instead recursively getProd of those neighbors should be called here. However this additional complexity is not super important to implement because pretend == 2 is for display purposes only
+          total.addInPlace(c2.getProd(f2, pretend));
           num++;
         }
       }
     }
+    //total.mulInPlace(leech);
+    total.seeds.mulInPlace(leech_seeds);
+    total.spores.mulInPlace(leech_spores);
+    total.nuts.mulInPlace(leech_nuts);
     if(soup && total.seeds.ltr(0)) total.seeds = new Num(0);
     result.addInPlace(total);
     if(breakdown) {
@@ -3795,7 +3804,7 @@ During this challenge, crops wither and must be replanted.
 • Cannot delete crops, they'll disappear over time instead, but you can replace crops immediately by more expensive crops of the same type.<br>
 • Cannot use blueprints. However, one of the later target levels of this challenge unlocks the ability to use them in this challenge too.<br>
 `,
-['unlock the auto-blueprint override ability of the automaton', 'allow using blueprints during future wither challenge runs' ,'unlock a second configurable blueprint-override'],
+['unlock the auto-action ability of the automaton', 'allow using blueprints during future wither challenge runs' ,'unlock a second automaton auto-action'],
 'reaching ethereal tree level 5 and having automaton with auto-unlock plants',
 function() {
   return state.treelevel2 >= 5 && haveAutomaton() && autoUnlockUnlocked();
@@ -3804,7 +3813,7 @@ function() {
 function() {
   state.updateAutoBlueprintAmount(1);
   state.automaton_autoblueprints[0].enabled = true;
-  showMessage('Auto-blueprint override unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  showMessage('Automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
   showRegisteredHelpDialog(40);
 },
 function() {
@@ -3813,7 +3822,7 @@ function() {
 function() {
   state.updateAutoBlueprintAmount(2);
   //showRegisteredHelpDialog(32); // auto-plant fine-tuning help dialog?
-  showMessage('An additional auto-blueprint override unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);
 

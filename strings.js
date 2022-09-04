@@ -61,9 +61,7 @@ You can also store a backup of your savegame using export from the main menu fir
 TIP: to get back to original strength over the next days, try to get the first new squirrel upgrades. To get those, push to high level berries and mushrooms, then focus on spore production to afford better nuts crops.
 `;
 var autoBlueprintHelp = `
-This is useful to get a different layout later in the run than at the start of the run. You choose your starting blueprint as usual at the start of the run, the automaton will override with the chosen one.
+The automatic blueprint is useful to get a different layout later in the run than at the start of the run. You choose your starting blueprint as usual at the start of the run, the automaton will override with the chosen one. You can also choose a fruit to match.
 <br><br>
-You must enable and configure this feature in the automaton tab before it works, using the auto-blueprint toggle and configuration buttons. Choose a tree level and which blueprint to plant at that level.
-<br><br>
-During some challenges you may want this disabled, toggle it off in the automaton tab in this case.,
+During some challenges you may want this disabled, toggle it off in the automaton tab in this case.
 `;

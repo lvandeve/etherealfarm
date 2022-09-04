@@ -464,8 +464,8 @@ registerHelpDialog(39, 'Squirrel evolution', 'Squirrel evolution',
     function() { return getSquirrelEvolutionHelp(); },
     image_squirrel_evolution);
 
-registerHelpDialog(40, 'Auto blueprint override', 'You unlocked auto blueprint override!',
-    'You unlocked auto blueprint override! This lets the automaton override the field with another blueprint at a chosen tree level. ' + autoBlueprintHelp,
+registerHelpDialog(40, 'Auto action', 'You unlocked auto actions by the automaton!',
+    'You unlocked auto actions by the automaton! This lets the automaton override the field with another blueprint and/or pick a fruit after a chosen trigger, such as tree level, unlocked crop or time.<br><br>You must enable and configure this feature in the automaton tab before it works, using the auto-action toggle and configuration buttons. You must configure both a trigger, and the action(s), and set buttons and checkboxes to enabled.<br><br>' + autoBlueprintHelp,
     images_automaton[4]);
 
 registerHelpDialog(41, 'Ethereal mistletoe', 'You got the ethereal mistletoe!',

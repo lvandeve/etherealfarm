@@ -2008,7 +2008,6 @@ function doAutoBlueprint() {
     var o = state.automaton_autoblueprints[i];
     if(o.done) continue;
     if(!o.enabled) continue;
-    if(o.blueprint == 0) continue;
     var triggered = false;
     if(o.type == 0 && state.treelevel >= o.level) {
       triggered = true;
@@ -2028,14 +2027,22 @@ function doAutoBlueprint() {
         if(next_unlocked) triggered = true; // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a hier tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
       }
     }
+    if(o.type == 4 && state.c_runtime >= o.time) {
+      triggered = true;
+    }
     if(triggered) {
       o.done = true;
-      var b = state.blueprints[o.blueprint - 1];
-      if(b) {
-        plantBluePrint(b, true, true);
-        did_something = true;
-        break;
+      if(o.enable_blueprint) {
+        var b = state.blueprints[o.blueprint];
+        if(b) {
+          plantBluePrint(b, true, true);
+          did_something = true;
+        }
       }
+      if(o.enable_fruit) {
+        addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit});
+      }
+      if(did_something) break;
     }
   }
 
@@ -2507,6 +2514,18 @@ function nextEventTime() {
   // lightning
   if(state.challenge == challenge_stormy && state.numcropfields_lightning > 0) {
     addtime(Math.max(0, lightningTime - (state.time - state.lastLightningTime)));
+  }
+
+  if(autoBlueprintEnabled()) {
+    for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
+      var o = state.automaton_autoblueprints[i];
+      if(!o.enabled) continue;
+      if(o.done) continue;
+      if(o.type == 4) {
+        if(o.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
+        addtime(o.time - state.c_runtime);
+      }
+    }
   }
 
   // protect against possible bugs
@@ -4802,6 +4821,17 @@ var update = function(opt_ignorePause) {
     global_tree_levelups = 0;
     large_time_delta_res = Res(state.res);
     large_time_delta_time = 0;
+  }
+
+  // Computed for UI display only: the expected gain if all crops would be fullgrown
+  gain_expected = new Res();
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(!c) continue;
+      gain_expected.addInPlace(c.getProd(f, 2));
+    }
   }
 
   updateUI2();

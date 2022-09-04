@@ -500,6 +500,12 @@ function blueprintFromText(text, b, ethereal) {
   var w = 0;
   var data = [];
   var tier = [];
+  // heuristic: if the first line contains whitespace, then remove the whitespace from all lines
+  // there are cases where someone may import a blueprint that has whitespace in each line from a spreadsheet. In this case, it should all be stripped
+  // in other cases, one may not have whitespace like that, but some whitespace in the center where the tree is due to not using the '.' character there. For this, it's assumed that this never happens on the first line
+  // tabs are always removed, it's not likely those would get used instead of the '.'
+  var strip_spaces = false;
+
   for(var y = 0; y < h; y++) {
     data[y] = [];
     tier[y] = [];
@@ -507,7 +513,13 @@ function blueprintFromText(text, b, ethereal) {
     var line = s[y];
     var pos = 0;
     while(pos < line.length) {
-      data[y][x] = BluePrint.fromChar(line[pos++]);
+      var c = line[pos++];
+      if(c == '\t') continue;
+      if(c == ' ') {
+        if(y == 0) strip_spaces = true; // see the heuristic described above
+        if(strip_spaces) continue;
+      }
+      data[y][x] = BluePrint.fromChar(c);
       // parse potential tier number. This is only used for ethereaal case, but also parsed (and ignored) in non-ethereal case
       var num = '';
       while(pos < line.length && line.charCodeAt(pos) >= 48 && line.charCodeAt(pos) <= 57) {

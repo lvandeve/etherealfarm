@@ -401,7 +401,7 @@ function showAutomatonFeatureSourceDialog() {
     text += '<br/>';
   }
   if(autoBlueprintsUnlocked()) {
-    text += ' • Auto-blueprint override: wither challenge (ethereal tree level 5)';
+    text += ' • Auto-action: wither challenge (ethereal tree level 5)';
     text += '<br/>';
   }
   if(autoPrestigeUnlocked()) {
@@ -414,8 +414,240 @@ function showAutomatonFeatureSourceDialog() {
 }
 
 
+function getBluePrintActionDescription(o) {
+  var text = '';
 
-function showConfigureAutoBlueprintDialog(subject) {
+  text += 'Trigger: ';
+  if(o.type == 0) {
+    text += 'tree level: ' + o.level;
+  } else if(o.type >= 1 && o.type <= 3) {
+    var c = crops[o.crop - 1];
+    var p = o.prestige;
+    var cropname = c ? c.name : 'none';
+    if(c && p) cropname += ' (prestiged)';
+    if(o.type == 1) text += 'unlocked crop: ' + cropname;
+    if(o.type == 2) text += 'planted crop: ' + cropname;
+    if(o.type == 3) text += 'fullgrown crop: ' + cropname;
+  } else if(o.type == 4) {
+    text += 'run time: ' + util.formatDuration(o.time, true);
+  }
+
+  text += '<br>';
+  text += 'Action: ';
+  var actiontext = '';
+  if(o.enable_blueprint) {
+    var b = state.blueprints[o.blueprint];
+    var empty = !b || (b.data.length == 0);
+    actiontext += 'Override blueprint: [' + i + '] ' + (empty ? '[empty]' : b.name);;
+  }
+  if(o.enable_fruit) {
+    if(actiontext != '') actiontext += '. ';
+    var f = state.fruit_stored[o.fruit];
+    actiontext += 'Select fruit slot: ' + o.fruit;
+    if(f) {
+      actiontext += '. "' + f.toString() + '"';
+    }
+  }
+  if(actiontext == '') actiontext = 'None';
+  text += actiontext;
+
+  return text;
+}
+
+
+function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
+  var dialog = createDialog({
+    onclose:closefun,
+    scrollable:true,
+    title:'Configure automaton action trigger',
+    help:'Here you can configure the conditions at which this automaton action will trigger, e.g. after some tree level is reached, some crops are unlocked or after a certain time'
+  });
+  var scrollFlex = dialog.content;
+
+  var texth = 0;
+  var h = 0.06;
+  var y = 0;
+
+  var flex;
+
+  var addControl = function() {
+    var h = 0.08;
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.6, y + h);
+    y += h * 1.2;
+    return flex;
+  };
+
+  var setButtonIndicationStyle = function(flex) {
+    if(flex.enabledStyle != undefined) {
+      flex.div.className = flex.enabledStyle == 0 ? 'efAutomatonManual' : (flex.enabledStyle == 1 ? 'efAutomatonAuto2' : 'efAutomatonAuto');
+    }
+  };
+  var o = state.automaton_autoblueprints[index];
+
+  var flex;
+
+  var updateToggleButton = function(flex, state) {
+    var div = flex.div.textEl;
+    var text = '';
+    if(state) {
+      flex.enabledStyle = 2;
+      text += 'on';
+    } else {
+      flex.enabledStyle = 0;
+      text += 'off';
+    }
+    div.innerText = text;
+    setButtonIndicationStyle(flex);
+  };
+
+  flex = addControl();
+  styleButton(flex.div);
+  centerText2(flex.div);
+  var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop', 'run time'];
+  var current = state.automaton_autoblueprints[index].type;
+  makeDropdown(flex, 'Trigger by', current, typenames, function(i) {
+    state.automaton_autoblueprints[index].type = i;
+    updateLevelButton(index);
+  }, true);
+  //flex.div.className = 'efAutomatonAuto';
+
+
+  var levelflex = addControl();
+  styleButton(levelflex.div);
+  centerText2(levelflex.div);
+  var updateLevelButton = function() {
+      var text = '';
+      if(o.type == 0) {
+        text += 'tree level: ' + o.level;
+      } else if(o.type >= 1 && o.type <= 3) {
+        var c = crops[o.crop - 1];
+        var p = o.prestige;
+        var cropname = c ? c.name : 'none';
+        if(c && p) cropname += ' (prestiged)';
+        if(o.type == 1) text += 'unlocked crop: ' + cropname;
+        if(o.type == 2) text += 'planted crop: ' + cropname;
+        if(o.type == 3) text += 'fullgrown crop: ' + cropname;
+      } else if(o.type == 4) {
+        text += 'run time: ' + util.formatDuration(o.time, true);
+      }
+      levelflex.div.textEl.innerText = text;
+  };
+  addButtonAction(levelflex.div, function() {
+    var o = state.automaton_autoblueprints[index];
+    if(o.type == 0) {
+      makeTextInput('Tree level', 'Enter tree level at which to perform action', function(text) {
+        var i = parseInt(text);
+        if(!(i >= 0 && i < 1000000)) i = 0;
+        state.automaton_autoblueprints[index].level = i;
+        updateLevelButton(index);
+      }, '' + state.automaton_autoblueprints[index].level);
+    } else if(o.type >= 1 && o.type <= 3) {
+      makePlantSelectDialog(o.crop, o.prestige, function(cropid, prestiged) {
+        o.crop = cropid + 1;
+        o.prestige = prestiged;
+        updateLevelButton();
+      });
+    } else if(o.type == 4) {
+      var current = state.automaton_autoblueprints[index].time / 60;
+      makeTextInput('Run time', 'Enter total time since start of run in minutes (e.g. enter 180 for 3 hours) after which to perform action', function(text) {
+        var i = parseFloat(text);
+        if(!(i >= 0)) i = 0;
+        state.automaton_autoblueprints[index].time = i * 60;
+        updateLevelButton(index);
+      }, '' + current);
+    }
+  });
+  updateLevelButton();
+}
+
+
+function showConfigureAutoBlueprintActionDialog(index, closefun) {
+  var dialog = createDialog({
+    onclose:closefun,
+    scrollable:true,
+    title:'Configure automaton action',
+    help:'Here you can select one or more automaton actions that occur when the condition is triggered'
+  });
+  var scrollFlex = dialog.content;
+
+  var o = state.automaton_autoblueprints[index];
+
+  var texth = 0;
+  var h = 0.06;
+  var y = 0;
+
+  var flex;
+
+  var addControl = function(opt_height) {
+    var h = 0.08 * ((opt_height == undefined) ? 1 : opt_height);
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.8, y + h);
+    y += h * 1.2;
+    return flex;
+  };
+
+  var setButtonIndicationStyle = function(flex) {
+    if(flex.enabledStyle != undefined) {
+      flex.div.className = flex.enabledStyle == 0 ? 'efAutomatonManual' : (flex.enabledStyle == 1 ? 'efAutomatonAuto2' : 'efAutomatonAuto');
+    }
+  };
+
+  var flex;
+
+
+  flex = addControl(0.7);
+  makeCheckbox(flex, o.enable_blueprint, 'Enable auto-action', function(state) {
+    o.enable_blueprint = state;
+  }, 'Enable auto-action');
+
+
+  flex = addControl();
+  styleButton(flex.div);
+  centerText2(flex.div);
+  var updateBlueprintButton = bind(function(flex, index) {
+    //updateToggleButton(flex, true);
+    var i = o.blueprint;
+    var b = state.blueprints[i];
+    var empty = !b || (b.data.length == 0);
+    flex.div.textEl.innerText = 'Chosen blueprint: [' + (i + 1) + '] ' + (empty ? '[empty]' : b.name);
+  }, flex, index);
+  addButtonAction(flex.div, function() {
+    createBlueprintsDialog(undefined, undefined, undefined, function(i) {
+      o.blueprint = i;
+      updateBlueprintButton();
+    });
+  });
+  updateBlueprintButton();
+
+
+  flex = addControl(0.7);
+  makeCheckbox(flex, o.enable_fruit, 'Enable auto-fruit', function(state) {
+    o.enable_fruit = state;
+  }, 'Enable auto-fruit');
+
+
+  flex = addControl();
+  styleButton(flex.div);
+  centerText2(flex.div);
+  var updateFruitButton = bind(function(flex, index) {
+    var f = state.fruit_stored[o.fruit];
+
+    var text = 'Chosen fruit slot: ' + o.fruit;
+
+    if(f) {
+      text += '. "' + f.toString() + '"';
+    }
+    flex.div.textEl.innerText = text;
+  }, flex, index);
+  addButtonAction(flex.div, function() {
+    createSelectFruitSlotDialog(function(i) {
+      o.fruit = i;
+      updateFruitButton();
+    }, MAXFRUITARROWS, 'Select fruit to automatically swap to when triggering this automaton action. This selects the fruit slot, not the fruit: if you move fruits around in the fruit tab, the original slot position, not the moved fruit, is used. In the fruit tab, the selected slot will show a small gear icon as a reminder. Only slots from the topmost row can be selected.');
+  });
+  updateFruitButton();
+}
+
+function showConfigureAutoBlueprintDialog() {
   // temporary disable automaton_autoblueprint so it doesn't trigger while cycling through the button values
   var temp = state.automaton_autoblueprint;
   state.automaton_autoblueprint = 0;
@@ -424,8 +656,8 @@ function showConfigureAutoBlueprintDialog(subject) {
       state.automaton_autoblueprint = temp;
     },
     scrollable:true,
-    title:'Configure auto blueprint override',
-    help:('Auto-blueprint lets the automaton override the field with another blueprint at a chosen tree level. ' + autoBlueprintHelp)
+    title:'Configure auto action',
+    help:('Auto-action lets the automaton perform actions after a certain trigger condition is met, such as overriding the field with another blueprint at a chosen tree level. You must configure both a trigger (when will the action be performed) and an action (what does it perform, it can do multiple things at once)<br><br>' + autoBlueprintHelp)
   });
   var scrollFlex = dialog.content;
 
@@ -440,9 +672,10 @@ function showConfigureAutoBlueprintDialog(subject) {
   flex.div.innerText = 'Choose at which tree level to override with which blueprint';
   y += texth;
 
-  var addControl = function() {
+  var addControl = function(opt_width) {
     var h = 0.08;
-    var flex  = new Flex(scrollFlex, 0.01, y, 0.6, y + h);
+    var w = opt_width || 0.6;
+    var flex  = new Flex(scrollFlex, 0.01, y, w, y + h);
     y += h * 1.2;
     return flex;
   };
@@ -471,16 +704,51 @@ function showConfigureAutoBlueprintDialog(subject) {
 
   var num = autoBlueprintsUnlocked();
 
-  var levelflexes = [];
+  var infoflexes = [];
 
   for(var j = 0; j < num; j++) {
+    var b = state.automaton_autoblueprints[j];
+
     // toggle button disabled if num is 1, since there's only one auto-override action for now, the global enable/disable already does this
     if(num > 1) {
       flex = addControl();
-      flex.div.innerHTML = '<br>Auto-blueprint ' + (j + 1) + ':';
+      flex.div.innerHTML = '<br>Auto-action ' + (j + 1) + ':';
       flex.div.style.vAlign = 'bottom';
+    }
 
-      flex = addControl();
+    flex = addControl(1);
+    flex.div.innerHTML = getBluePrintActionDescription(b);
+    infoflexes.push(flex);
+    var updateInfoFlex = function(j) {
+      var flex = infoflexes[j];
+      var b = state.automaton_autoblueprints[j];
+      flex.div.innerHTML = getBluePrintActionDescription(b);
+    };
+
+    flex = new Flex(scrollFlex, 0.0, y, 0.32, y + 0.07);
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Edit trigger';
+    addButtonAction(flex.div, bind(function(j) {
+      showConfigureAutoBlueprintTriggerDialog(j, function() {
+        updateInfoFlex(j);
+      });
+    }, j));
+
+
+    flex = new Flex(scrollFlex, 0.34, y, 0.65, y + 0.07);
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Edit action';
+    addButtonAction(flex.div, bind(function(j) {
+      showConfigureAutoBlueprintActionDialog(j, function() {
+        updateInfoFlex(j);
+      });
+    }, j));
+
+    // toggle button disabled if num is 1, since there's only one auto-override action for now, the global enable/disable already does this
+    if(num > 1) {
+      flex = new Flex(scrollFlex, 0.67, y, 1, y + 0.07);
       styleButton0(flex.div);
       centerText2(flex.div);
       flex.div.textEl.innerText = 'toggle';
@@ -491,80 +759,7 @@ function showConfigureAutoBlueprintDialog(subject) {
       updateToggleButton(flex, state.automaton_autoblueprints[j].enabled);
     }
 
-    flex = addControl();
-    styleButton(flex.div);
-    centerText2(flex.div);
-    var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop'];
-    var current = state.automaton_autoblueprints[j].type;
-    makeDropdown(flex, 'Trigger by', current, typenames, bind(function(j, i) {
-      state.automaton_autoblueprints[j].type = i;
-      updateLevelButton(j);
-    }, j), true);
-    //flex.div.className = 'efAutomatonAuto';
-
-
-    flex = addControl();
-    styleButton(flex.div);
-    centerText2(flex.div);
-    levelflexes.push(flex);
-    var updateLevelButton = function(j) {
-      var flex = levelflexes[j];
-      var b = state.automaton_autoblueprints[j];
-      if(b.type == 0) {
-        flex.div.textEl.innerText = 'At tree level: ' + b.level;
-      } else if(b.type >= 1 && b.type <= 3) {
-        var c = crops[b.crop - 1];
-        var p = b.prestige;
-        var cropname = c ? c.name : 'none';
-        if(c && p) cropname += ' (prestiged)';
-        if(b.type == 1) flex.div.textEl.innerText = 'At unlocked crop: ' + cropname;
-        if(b.type == 2) flex.div.textEl.innerText = 'At planted crop: ' + cropname;
-        if(b.type == 3) flex.div.textEl.innerText = 'At fullgrown crop: ' + cropname;
-      }
-      //updateToggleButton(flex, true);
-    };
-    addButtonAction(flex.div, bind(function(j) {
-      var b = state.automaton_autoblueprints[j];
-      if(b.type == 0) {
-        makeTextInput('Tree level', 'Enter tree level at which to perform blueprint override', function(text) {
-          var i = parseInt(text);
-          if(!(i >= 0 && i < 1000000)) i = 0;
-          state.automaton_autoblueprints[j].level = i;
-          updateLevelButton(j);
-          //makePlantDialog();
-        }, '' + state.automaton_autoblueprints[j].level);
-      } else {
-        makePlantSelectDialog(b.crop, b.prestige, function(cropid, prestiged) {
-          b.crop = cropid + 1;
-          b.prestige = prestiged;
-          updateLevelButton(j);
-        });
-      }
-    }, j));
-    updateLevelButton(j);
-
-
-    flex = addControl();
-    styleButton(flex.div);
-    centerText2(flex.div);
-    var updateBlueprintButton = bind(function(flex, j) {
-      //updateToggleButton(flex, true);
-      var i = state.automaton_autoblueprints[j].blueprint;
-      if(i == 0) {
-        flex.div.textEl.innerText = 'Chosen blueprint: none';
-      } else {
-        var b = state.blueprints[i - 1];
-        var empty = !b || (b.data.length == 0);
-        flex.div.textEl.innerText = 'Chosen blueprint: [' + i + '] ' + (empty ? '[empty]' : b.name);
-      }
-    }, flex, j);
-    addButtonAction(flex.div, bind(function(flex, j, updateBlueprintButton) {
-      createBlueprintsDialog(undefined, undefined, undefined, function(index) {
-        state.automaton_autoblueprints[j].blueprint = index + 1;
-        updateBlueprintButton();
-      });
-    }, flex, j, updateBlueprintButton));
-    updateBlueprintButton();
+    y += h * 1.2;
   }
 }
 
@@ -807,7 +1002,7 @@ function updateAutomatonUI() {
   } else if(!autoUnlockUnlocked()) {
     text = 'Reach ethereal tree level 3 and beat the blackberry challenge to unlock auto-unlock of next-tier plants';
   } else if(!autoBlueprintUnlocked()) {
-    text = 'Reach ethereal tree level 5 and beat the wither challenge to unlock auto-blueprint override';
+    text = 'Reach ethereal tree level 5 and beat the wither challenge to unlock auto-action';
   }
   if(text != undefined) {
     flex = new Flex(automatonFlex, 0.5, y0 + texth, 0.9, y0 + texth * 3);
@@ -1048,18 +1243,18 @@ function updateAutomatonUI() {
 
     texth = 0.07;
     flex  = new Flex(automatonFlex, 0.01, y, 1, y + 0.07);
-    flex.div.innerText = 'Auto-blueprint override at condition:';
-    registerTooltip(flex.div, 'Allows to override blueprint (overplant the field with a different chosen blueprint) at a configurable condition (tree level reached).');
+    flex.div.innerText = 'Automaton auto-action:';
+    registerTooltip(flex.div, 'Allows to perform an action, such as override blueprint (overplant the field with a different chosen blueprint) at a configurable trigger condition (such as tree level reached).');
     y += texth;
 
 
-    var updateOverrideButton = function(flex) {
+    var updateAutoActionButton = function(flex) {
       var div = flex.div.textEl;
       if(state.automaton_autoblueprint) {
-        div.innerText = 'Auto blueprint override on';
+        div.innerText = 'Auto-action on';
         flex.enabledStyle = 1;
       } else {
-        div.innerText = 'Auto blueprint override off';
+        div.innerText = 'Auto-action off';
         flex.enabledStyle = 0;
       }
       setButtonIndicationStyle(flex);
@@ -1068,16 +1263,16 @@ function updateAutomatonUI() {
     flex = addButton();
     styleButton0(flex.div);
     centerText2(flex.div);
-    updateOverrideButton(flex);
+    updateAutoActionButton(flex);
     addButtonAction(flex.div, bind(function(flex) {
       var automaton_autoblueprint_before = state.automaton_autoblueprint;
       if(state.paused) {
         state.automaton_autoblueprint = state.automaton_autoblueprint ? 0 : 1;
-        updateOverrideButton(flex);
+        updateAutoActionButton(flex);
         updateRightPane();
       } else {
         addAction({type:ACTION_TOGGLE_AUTOMATON, what:5, on:(state.automaton_autoblueprint ? 0 : 1), fun:function() {
-          updateOverrideButton(flex);
+          updateAutoActionButton(flex);
         }});
         update();
       }
@@ -1085,7 +1280,8 @@ function updateAutomatonUI() {
         var ok = false;
         for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
           var v = state.automaton_autoblueprints[i];
-          if(v.blueprint > 0) {
+          // the > 0 checks are essentially a check that player has already enabled this in the past, but 0 are also valid values, so this is a bit of a heuristic to check if this is first time ever
+          if(v.enable_blueprint || v.blueprint > 0 || v.enable_fruit || v.fruit > 0 || v.time > 0) {
             ok = true;
             break;
           }

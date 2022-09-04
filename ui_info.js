@@ -32,6 +32,7 @@ var gain_hyp = Res();
 var gain_hyp_pos = Res();
 var gain_hyp_neg = Res();
 
+var gain_expected = Res();
 
 var resourceDivs;
 var lastRenderedInfoSeasonBackground = -1;
@@ -299,6 +300,10 @@ function getResourceDetails(i, special, index) {
         text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s <br/>';
       }
       text += '<br/>';
+    }
+    if(gain_expected.atIndex(index).neqr(0)) {
+      text += 'expected (when all fullgrown): ' + gain_expected.atIndex(index).toString() + '/s';
+      text += '<br>';
     }
   }
 

@@ -369,7 +369,13 @@ function createChallengeDialog(opt_from_challenge) {
     // The '/' means: "new stage available with target level: " but that's too long for the button
     else if(isnotfull) text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
     else if(c.cycling > 1) {
-      if(!c.allCyclesCompleted(true)) text += ' (New cycle!)';
+      if(!c.allCyclesCompleted(true)) {
+        text += ' (New cycle!)';
+      } else {
+        text += ' (';
+        for(var j = 0; j < c.cycling; j++) text += (j > 0 ? ', ' : '') + c2.maxlevels[j];
+        text += ')';
+      }
     }
     else text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ')';
     button.div.textEl.innerText = text;

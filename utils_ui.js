@@ -20,10 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // element and allows changing the text at any time without updating this,
 // but it only supports single-line text. The div must already have its final
 // height and shouldn't change.
-function centerText(div, opt_clientHeight) {
+function centerText(div, opt_clientHeight, opt_vertical_only) {
   var divheight = opt_clientHeight || div.clientHeight;
   // the next 3 properties are to center text horizontally and vertically
-  div.style.textAlign = 'center';
+  if(!opt_vertical_only) div.style.textAlign = 'center';
   div.style.verticalAlign = 'middle';
   div.style.lineHeight = divheight + 'px';
 
@@ -1519,4 +1519,29 @@ function sanitizeName(name) {
   name = name.replace(/>/g, '');
   name = name.replace(/&/g, '');
   return name;
+}
+
+// makes a checkbox using the given flex
+// fun will be called with true or false depending on the checkbox state
+// state is the initial state, true or false
+function makeCheckbox(flex, state, title, fun, opt_description) {
+  var flex0 = new Flex(flex, 0, 0, [0, 1], 1);
+  var flex1 = new Flex(flex, [0, 1.2], 0, 1, 1);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', flex0.div);
+  var update = function() {
+    renderImage(state ? image_checkbox_on : image_checkbox_off, canvas);
+    var desc = opt_description || title;
+    setAriaLabel(flex0.div, desc + (state ? (' (checked)') : (' (unchecked)')));
+  };
+  styleButton0(flex0.div);
+  centerText(flex1.div, undefined, true);
+  flex1.div.textEl.innerText = title;
+  var clickfun = function() {
+    state = !state;
+    update();
+    fun(state);
+  };
+  addButtonAction(flex0.div, clickfun);
+  flex1.div.onclick = clickfun;
+  update();
 }
