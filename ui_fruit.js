@@ -1125,9 +1125,9 @@ function updateFruitUI() {
 
   // the ones that are used in auto-actions, so they get an indicator symbol
   var for_automaton = [];
-  if(autoBlueprintsUnlocked()) {
-    for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
-      var o = state.automaton_autoblueprints[i];
+  if(autoActionUnlocked()) {
+    for(var i = 0; i < state.automaton_autoactions.length; i++) {
+      var o = state.automaton_autoactions[i];
       if(o.enable_fruit) for_automaton[o.fruit] = true;
     }
   }

@@ -150,19 +150,13 @@ function createNumberFormatDialog() {
   y2 += h2 + 0.02;
 
   h2 = 0.08;
-  var descriptionFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
+  var descriptionFlex = new Flex(dialog.content, 0.1, y2, 0.8, y2 + h2);
   var descriptionDiv = descriptionFlex.div;
   //descriptionFlex.div.style.border = '1px solid blue';
-  y2 += h2;
-
-  h2 = 0.05;
-  var infoFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
-  var infoDiv = infoFlex.div;
-  //infoFlex.div.style.border = '1px solid blue';
-  y2 += h2 + 0.02;
+  y2 += h2 * 1.2;
 
   h2 = 0.25;
-  var examplesFlex = new Flex(dialog.content, 0, y2, 1, y2 + h2);
+  var examplesFlex = new Flex(dialog.content, 0.1, y2, 0.8, y2 + h2);
   var examplesDiv = examplesFlex.div;
   //examplesFlex.div.style.border = '1px solid blue';
   y2 += h2;
@@ -215,20 +209,21 @@ function createNumberFormatDialog() {
 
   var fill = function(changed) {
     var tableText = '';
+    var paddingstyle = '"padding-left:8px; padding-right:8px; padding-top:3px; padding-bottom:3px;"';
     tableText += '<table border="1" style="border-collapse:collapse">';
-    tableText += '<tr><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td><td width="10%" style="border:none"></td><td style="padding:8px"><b>Example</b></td><td style="padding:8px"><b>Notation</b></td></tr>';
+    tableText += '<tr><td style=' + paddingstyle + '><b>Example</b></td><td style=' + paddingstyle + '><b>Notation</b></td><td width="10%" style="border:none"></td><td style=' + paddingstyle + '><b>Example</b></td><td style=' + paddingstyle + '><b>Notation</b></td></tr>';
     for(var i = 0; i * 2 < examples.length; i++) {
       tableText += '<tr>';
-      tableText += '<td style="padding:8px;">';
+      tableText += '<td style=' + paddingstyle + '>';
       tableText += examples[i].valueOf();
-      tableText += '</td><td style="padding:8px">'
+      tableText += '</td><td style=' + paddingstyle + '>'
       tableText += Num(examples[i]).toString(precision, notation);
       tableText += '</td>';
       var j = i + Math.floor(examples.length / 2);
       tableText += '<td style="border:none"> </td>';
-      tableText += '<td style="padding:8px;">';
+      tableText += '<td style=' + paddingstyle + '>';
       tableText += examples[j].valueOf();
-      tableText += '</td><td style="padding:8px">'
+      tableText += '</td><td style=' + paddingstyle + '>'
       tableText += Num(examples[j]).toString(precision, notation);
       tableText += '</td>';
       tableText += '</tr>';

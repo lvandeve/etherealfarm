@@ -314,8 +314,10 @@ function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
 }
 
-
-function refreshWatercress(opt_clear, opt_all) {
+// opt_clear = delete all existing brasssica, rather than planting or refreshing any
+// opt_all = plant brasssica in every single free spot, rather than only were existing brasssica or remainders are
+// opt_by_automaton = mark the action as done by automaton, and also don't call update() since automaton actions are already done from within the update function.
+function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
   if(opt_clear && opt_all) return;
   var replanted = false;
   var refreshed = false;
@@ -332,33 +334,33 @@ function refreshWatercress(opt_clear, opt_all) {
       var c = f.getCrop();
       if(f.index == FIELD_REMAINDER) {
         if(opt_clear) {
-          addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
+          addAction({type:ACTION_DELETE, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
           remcleared = true;
         } else if(can_afford) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
           replanted = true;
         }
       } else if(c && c.type == CROPTYPE_BRASSICA && (can_afford || opt_clear)) {
-        addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
+        addAction({type:ACTION_DELETE, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
         }
         refreshed = true;
       } else if((f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) && can_afford) {
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
           refreshed = true;
         }
       } else if(opt_all) {
         if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost)) {
           if(f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) {
-            addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
+            addAction({type:ACTION_DELETE, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
           }
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
           fullyplanted = true;
         }
       }
@@ -370,8 +372,49 @@ function refreshWatercress(opt_clear, opt_all) {
   else if(remcleared) showMessage('cleared brassica remainders');
   else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing brassica or remainders of brassica, and requires enough resources available to plant the brassica');
   else showMessage('nothing done: only refreshes existing brassica or remainders of brassica');
-  update();
+  if(!opt_by_automaton) update();
 }
+
+// for choosing weather for automaton auto-weather
+// calls the callback fun with 0 for sun, 1 for mist, 2 for rainbow
+function createSelectWeatherDialog(fun, opt_help) {
+  var dialog = createDialog({title:'Choose weather', size:DIALOG_SMALL, help:opt_help, cancelname:'cancel'});
+
+  var flex0 = new Flex(dialog.content, 0.05, 0.3, 0.3, [0.3, 0.25]);
+  var canvas0 = createCanvas('0%', '0%', '100%', '100%', flex0.div);
+  renderImage(image_sun, canvas0);
+  styleButton0(flex0.div);
+  addButtonAction(flex0.div, function() {
+    fun(0);
+    closeTopDialog();
+  }, 'Sun');
+  flex0.div.title = 'Sun';
+
+
+  var flex1 = new Flex(dialog.content, 0.35, 0.3, 0.6, [0.3, 0.25]);
+  var canvas1 = createCanvas('0%', '0%', '100%', '100%', flex1.div);
+  renderImage(image_mist, canvas1);
+  styleButton0(flex1.div);
+  addButtonAction(flex1.div, function() {
+    fun(1);
+    closeTopDialog();
+  }, 'Mist');
+  flex1.div.title = 'Mist';
+
+  var flex2 = new Flex(dialog.content, 0.7, 0.3, 0.95, [0.3, 0.25]);
+  var canvas2 = createCanvas('0%', '0%', '100%', '100%', flex2.div);
+  renderImage(image_rainbow, canvas2);
+  styleButton0(flex2.div);
+  addButtonAction(flex2.div, function() {
+    fun(2);
+    closeTopDialog();
+  }, 'Rainbow');
+  flex2.div.title = 'Rainbow';
+
+}
+
+
+
 
 
 // get keyboard keys in slightly different format: as object containing key, code, shift and ctrl

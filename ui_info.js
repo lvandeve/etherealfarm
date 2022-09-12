@@ -32,7 +32,8 @@ var gain_hyp = Res();
 var gain_hyp_pos = Res();
 var gain_hyp_neg = Res();
 
-var gain_expected = Res();
+var gain_expected = Res(); // only used for UI display, not for gameplay computation
+var gain_expected_hyp = Res();
 
 var resourceDivs;
 var lastRenderedInfoSeasonBackground = -1;
@@ -68,6 +69,11 @@ function prodBreakdown(index) {
   return result;
 }
 
+
+// do this update less regularly because it's a relatively expensive computation
+var lastExpectedGainUpdateTime = -1;
+var lastExpectedGainNumGrowing = -1;
+
 // a global breakdown into hypothetical, actual, positive and negative production/consumption
 function prodBreakdown2() {
   // even though update() computes gain, re-compute it here now, because it may be slightly different if watercress just disappeared
@@ -92,6 +98,22 @@ function prodBreakdown2() {
         gain_hyp_neg.addInPlace(p.prod0b.getNegative());
       }
     }
+  }
+
+  if((util.getTime() - lastExpectedGainUpdateTime > 5 && state.numgrowing > 0) || state.numgrowing != lastExpectedGainNumGrowing) {
+    // Computed for UI display only: the expected gain if all crops would be fullgrown
+    gain_expected_hyp = new Res();
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        var f = state.field[y][x];
+        var c = f.getCrop();
+        if(!c) continue;
+        gain_expected_hyp.addInPlace(c.getProd(f, 2));
+      }
+    }
+    gain_expected = computeFernGain();
+    lastExpectedGainUpdateTime = util.getTime();
+    lastExpectedGainNumGrowing = state.numgrowing;
   }
 }
 
@@ -274,9 +296,9 @@ function getResourceDetails(i, special, index) {
     if(index == 0) { // seeds
       if(res_gain.neq(res_gain_pos)) {
         text += 'Production (' + name + '/s):<br/>';
-        text += '• Total: ' + res_gain_pos.toString() + '/s (= excluding mushroom consumption)<br/>';
         text += '• To stacks: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
         text += '• To consumers: ' + (res_gain_pos.sub(res_gain)).toString() + '/s (= going to neighboring mushrooms)<br/>';
+        text += '• Total: ' + res_gain_pos.toString() + '/s (= what goes to stacks plus what goes to mushroom)<br/>';
         text += '<br/>';
       } else {
         text += '• Production: ' + res_gain.toString() + '/s<br/>';
@@ -285,9 +307,8 @@ function getResourceDetails(i, special, index) {
       }
 
       if(hyp_neq) {
-        text += 'Potential production (' + name + '/s):<br/>';
-        text += '• Total: ' + res_gain_hyp_pos.toString() + '/s (= excluding mushroom consumption)<br/>';
-        text += '• To stacks: ' + res_gain_hyp.toString() + '/s (= if mushrooms could over-consume)<br/>';
+        text += 'Hypothetical production if mushrooms could over-consume and give their full potential spores production:<br/>';
+        text += '• To stacks: ' + res_gain_hyp.toString() + '/s (= what would be leftover for stacks if mushrooms could consume all they want, could be negative if mushrooms over-consume)<br/>';
         text += '• To consumers: ' + (res_gain_hyp_pos.sub(res_gain_hyp)).toString() + '/s (= what mushrooms want to consume if enough seed production available)<br/>';
         text += '<br/><br/>';
       }
@@ -295,15 +316,23 @@ function getResourceDetails(i, special, index) {
       if(res_gain.neq(res_gain_pos)) {
         text += 'Production (' + name + '/s):<br/>';
         text += '• Actual: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
-        text += '• Potential: ' + res_gain_pos.toString() + '/s (= what mushrooms can produce if given enough seed income from neighboring berries)<br/>';
+        text += '• Potential: ' + res_gain_pos.toString() + '/s (= what mushrooms can produce if given enough seed income from neighboring berries or they could over-consume)<br/>';
       } else {
         text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s <br/>';
       }
       text += '<br/>';
     }
-    if(gain_expected.atIndex(index).neqr(0)) {
-      text += 'expected (when all fullgrown): ' + gain_expected.atIndex(index).toString() + '/s';
-      text += '<br>';
+    if(state.numgrowing > 0 && gain_expected_hyp.atIndex(index).neqr(0)) {
+      var res_expected = gain_expected.atIndex(index);
+      var res_expected_hyp = gain_expected_hyp.atIndex(index);
+      text += 'Expected when all fullgrown: ';
+      if(res_expected.neq(res_expected_hyp)) {
+        if(index == 0) text += res_expected.toString() + '/s (hypothetical if mushrooms could over-consume: ' + res_expected_hyp.toString() + '/s)';
+        else text += res_expected.toString() + '/s (potential: ' + res_expected_hyp.toString() + '/s)';
+      } else {
+        text += res_expected.toString() + '/s';
+      }
+      text += '<br/>';
     }
   }
 

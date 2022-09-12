@@ -20,6 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.6.4 (2022-09-12):';
+  text += '<br/>• Auto-action can now also activate weather, refresh brassica and take fern. This must be unlocked first with a new stage of the wither challenge.';
+  text += '<br/>• Added a third auto-action slot as reward for another new stage of the wither challenge.';
+  text += '<br/>• There\'s now an auto-action toggle in the side panel.';
+  text += '<br/>• UI tweaks.'; // e.g. added non-potential/hypothetical income to the "expected when fullgrown" resources tooltip, and better naming/info about hypothetical production in the seeds tooltip
+  text += '<br/><br/>';
+
   text += '0.6.3 (2022-09-04):';
   text += '<br/>• Automaton auto-action (formerly named auto-blueprint) can now also automatically choose a fruit to switch to.';
   text += '<br/>• Automaton auto-action can now also use time since start of run as a possible action trigger.';

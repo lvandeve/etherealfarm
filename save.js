@@ -651,11 +651,11 @@ function encState(state, opt_raw_only) {
   processUint(state.automaton_autochoice);
   processNum(state.automaton_autounlock_max_cost);
   processUint(state.automaton_autoprestige);
-  processUint(state.automaton_autoblueprint);
+  processUint(state.automaton_autoaction);
 
   processStructArrayBegin();
-  for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
-    var o = state.automaton_autoblueprints[i];
+  for(var i = 0; i < state.automaton_autoactions.length; i++) {
+    var o = state.automaton_autoactions[i];
     processStructBegin();
     processBool(o.enabled);
     processBool(o.done);
@@ -669,6 +669,10 @@ function encState(state, opt_raw_only) {
     processTime(o.time);
     processBool(o.enable_fruit);
     processUint(o.fruit);
+    processBool(o.enable_weather);
+    processUint(o.weather);
+    processBool(o.enable_brassica);
+    processBool(o.enable_fern);
     processStructEnd();
   }
   processStructArrayEnd();
@@ -1905,7 +1909,7 @@ function decState(s) {
     state.automaton_autoprestige = processUint();
   }
   if(save_version >= 262144*2+64*5+0) {
-    state.automaton_autoblueprint = processUint();
+    state.automaton_autoaction = processUint();
   }
   if(error) return err(4);
 
@@ -1926,14 +1930,14 @@ function decState(s) {
 
   var blueprint_overrides_count = state.challenges[challenge_wither].completed;
   if(blueprint_overrides_count >= 2) blueprint_overrides_count--; // second challenge_wither completion does something else
-  state.automaton_autoblueprints = [];
-  state.updateAutoBlueprintAmount(blueprint_overrides_count);
+  state.automaton_autoactions = [];
+  state.updateAutoActionAmount(blueprint_overrides_count);
 
   if(save_version >= 262144*2+64*5+0) {
     var count = processStructArrayBegin(); // expected to be same as blueprint_overrides_count, but due to version changes / situation before unlocking this, some lenience is allowed
     for(var i = 0; i < count; i++) {
-      var o = i < blueprint_overrides_count ? state.automaton_autoblueprints[i] : {};
-      state.automaton_autoblueprints[i] = o;
+      var o = i < blueprint_overrides_count ? state.automaton_autoactions[i] : {};
+      state.automaton_autoactions[i] = o;
       processStructBegin();
       o.enabled = processBool();
       o.done = processBool();
@@ -1952,6 +1956,11 @@ function decState(s) {
       if(save_version >= 262144*2+64*6+3) o.time = processTime();
       if(save_version >= 262144*2+64*6+3) o.enable_fruit = processBool();
       if(save_version >= 262144*2+64*6+3) o.fruit = processUint();
+      if(save_version >= 262144*2+64*6+4) o.enable_weather = processBool();
+      if(save_version >= 262144*2+64*6+4) o.weather = processUint();
+      if(save_version >= 262144*2+64*6+4) o.enable_brassica = processBool();
+      if(save_version >= 262144*2+64*6+4) o.enable_fern = processBool();
+
       processStructEnd();
     }
     processStructArrayEnd();
@@ -2459,6 +2468,8 @@ var presave = function(state) {
 var postload = function(new_state) {
   state = new_state;
   updateAllPrestigeData();
+
+  // do these computations once here, in case update() is not called such as when the save is paused
   computeDerived(state);
   precomputeField();
 

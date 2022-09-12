@@ -958,7 +958,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // leech (brassica-copying), only computed for the pretend cases, non-pretend leech: brassica copying's actual gameplay computation is done in precomputeField() intead
-  // this computation is only used for UI/tooltips/dialogs. It is not guaranteed to be correct, but tries to be as much as possible since it's for UI that tells what the production will look like after all crops are fullgrown (gain_expected)
+  // this computation is only used for UI/tooltips/dialogs. It is not guaranteed to be correct, but tries to be as much as possible since it's for UI that tells what the production will look like after all crops are fullgrown (for gain_expected and gain_expected_hyp)
   if(pretend == 2 && this.type == CROPTYPE_BRASSICA && f) {
     var p = prefield[f.y][f.x];
     var leech = this.getLeech(f, null, p.getBrassicaBreakdownCroptype());
@@ -3793,7 +3793,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [50, 70, 90], Num(0.075),
+var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130], Num(0.075),
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -3804,15 +3804,19 @@ During this challenge, crops wither and must be replanted.
 • Cannot delete crops, they'll disappear over time instead, but you can replace crops immediately by more expensive crops of the same type.<br>
 • Cannot use blueprints. However, one of the later target levels of this challenge unlocks the ability to use them in this challenge too.<br>
 `,
-['unlock the auto-action ability of the automaton', 'allow using blueprints during future wither challenge runs' ,'unlock a second automaton auto-action'],
+['unlock the auto-action ability of the automaton',
+ 'allow using blueprints during future wither challenge runs',
+ 'unlock a second automaton auto-action',
+ 'auto-action can now also automate weather, fern and brassica refresh',
+ 'unlock a third automaton auto-action'],
 'reaching ethereal tree level 5 and having automaton with auto-unlock plants',
 function() {
   return state.treelevel2 >= 5 && haveAutomaton() && autoUnlockUnlocked();
 },
 [
 function() {
-  state.updateAutoBlueprintAmount(1);
-  state.automaton_autoblueprints[0].enabled = true;
+  state.updateAutoActionAmount(1);
+  state.automaton_autoactions[0].enabled = true;
   showMessage('Automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
   showRegisteredHelpDialog(40);
 },
@@ -3820,8 +3824,14 @@ function() {
   showMessage('From now on, you can use blueprints during the wither challenge!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
-  state.updateAutoBlueprintAmount(2);
-  //showRegisteredHelpDialog(32); // auto-plant fine-tuning help dialog?
+  state.updateAutoActionAmount(2);
+  showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+},
+function() {
+  showMessage('From now on, auto-actions can also be configured to activate weather, refresh brassica or pick up a fern!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+},
+function() {
+  state.updateAutoActionAmount(3);
   showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);

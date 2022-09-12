@@ -715,8 +715,8 @@ function beginNextRun(opt_challenge) {
 
   state.just_evolution = false;
 
-  for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
-    state.automaton_autoblueprints[i].done = false;
+  for(var i = 0; i < state.automaton_autoactions.length; i++) {
+    state.automaton_autoactions[i].done = false;
   }
 
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
@@ -762,7 +762,7 @@ var ACTION_PLANT2 = action_index++;
 var ACTION_DELETE2 = action_index++;
 var ACTION_REPLACE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
-var ACTION_ABILITY = action_index++;
+var ACTION_ABILITY = action_index++; // action_weather
 var ACTION_TRANSCEND = action_index++; // also includes starting a challenge
 var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot
 var ACTION_FRUIT_ACTIVE = action_index++; // select active fruit
@@ -1746,8 +1746,6 @@ function precomputeField() {
   precomputeField_(prefield, false);
 }
 
-
-
 // xor two 48-bit numbers, given that javascript can only up to 31-bit numbers (plus sign) normally
 function xor48(x, y) {
   var lowx = x % 16777216;
@@ -1999,13 +1997,13 @@ function doNextAutoChoice() {
 
 
 
-function doAutoBlueprint() {
+function doAutoAction() {
   // this is also something that can be wrong when importing old savegames... such as one with wither already completed but not yet the second blueprints unlocked stage
-  if(autoBlueprintsUnlocked() == 1 && !state.automaton_autoblueprints[0].enabled) state.automaton_autoblueprints[0].enabled = true;
+  if(numAutoActionsUnlocked() == 1 && !state.automaton_autoactions[0].enabled) state.automaton_autoactions[0].enabled = true;
 
   var did_something = false;
-  for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
-    var o = state.automaton_autoblueprints[i];
+  for(var i = 0; i < state.automaton_autoactions.length; i++) {
+    var o = state.automaton_autoactions[i];
     if(o.done) continue;
     if(!o.enabled) continue;
     var triggered = false;
@@ -2032,6 +2030,11 @@ function doAutoBlueprint() {
     }
     if(triggered) {
       o.done = true;
+      // refresh brassica is done before blueprint, otherwise the refreshWatercress may add actions that override watercress on top of actions to turn it into other crops added for blueprint override. Blueprint override must give the final state here.
+      if(o.enable_brassica && autoActionExtraUnlocked()) {
+        refreshWatercress(false, false, true);
+        did_something = true;
+      }
       if(o.enable_blueprint) {
         var b = state.blueprints[o.blueprint];
         if(b) {
@@ -2041,6 +2044,17 @@ function doAutoBlueprint() {
       }
       if(o.enable_fruit) {
         addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit});
+        did_something = true;
+      }
+      if(o.enable_weather && autoActionExtraUnlocked()) {
+        addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:true});
+        did_something = true;
+      }
+      if(o.enable_fern && autoActionExtraUnlocked()) {
+        if(state.fern) {
+          addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:true});
+        }
+        did_something = true;
       }
       if(did_something) break;
     }
@@ -2516,9 +2530,9 @@ function nextEventTime() {
     addtime(Math.max(0, lightningTime - (state.time - state.lastLightningTime)));
   }
 
-  if(autoBlueprintEnabled()) {
-    for(var i = 0; i < state.automaton_autoblueprints.length; i++) {
-      var o = state.automaton_autoblueprints[i];
+  if(autoActionEnabled()) {
+    for(var i = 0; i < state.automaton_autoactions.length; i++) {
+      var o = state.automaton_autoactions[i];
       if(!o.enabled) continue;
       if(o.done) continue;
       if(o.type == 4) {
@@ -2757,8 +2771,8 @@ var update = function(opt_ignorePause) {
       if(!did_autoplant && !did_autounlock) autoUpgrade(autores);
     }
 
-    if(autoBlueprintEnabled()) {
-      doAutoBlueprint();
+    if(autoActionEnabled()) {
+      doAutoAction();
     }
 
     // this function is simple and light enough that it can just be called every time. It can depend on changes mid-game hence needs to be updated regularly.
@@ -2864,7 +2878,8 @@ var update = function(opt_ignorePause) {
     var upgrades_done = false;
     var upgrades2_done = false;
 
-    // whether the game is fast forwarding a long AFK, and thus doesn't do active actions like weather, picking fern or refreshing watercress
+    // whether the game is fast forwarding a long AFK, and thus doesn't do active actions like weather, picking fern or refreshing watercress, when player tries to perform those while the game computations are still speeding along
+    // this will not fast-forward actions marked as by_automaton, that is, automaton can do those actions at any time including during sped-up computations
     var fast_forwarding = (nexttime - state.time > 1);
 
     // action
@@ -3104,6 +3119,7 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_EVOLUTION3) {
+        if(fast_forwarding) continue;
         performEvolution3();
         store_undo = true;
       } else if(type == ACTION_AMBER) {
@@ -3582,7 +3598,7 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_FERN) {
-        if(fast_forwarding) continue;
+        if(fast_forwarding && !action.by_automaton) continue;
 
         if(state.fern && state.fernx == action.x && state.ferny == action.y) {
           clickedfern = true;
@@ -3602,7 +3618,7 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
-        if(fast_forwarding) continue;
+        if(fast_forwarding && !action.by_automaton) continue;
 
         var a = action.ability;
         var mistd = state.time - state.misttime;
@@ -3907,7 +3923,7 @@ var update = function(opt_ignorePause) {
           state.automaton_autounlock = action.on;
         }
         if(action.what == 5) {
-          state.automaton_autoblueprint = action.on;
+          state.automaton_autoaction = action.on;
         }
         if(action.fun) action.fun();
         store_undo = true;
@@ -4821,17 +4837,6 @@ var update = function(opt_ignorePause) {
     global_tree_levelups = 0;
     large_time_delta_res = Res(state.res);
     large_time_delta_time = 0;
-  }
-
-  // Computed for UI display only: the expected gain if all crops would be fullgrown
-  gain_expected = new Res();
-  for(var y = 0; y < state.numh; y++) {
-    for(var x = 0; x < state.numw; x++) {
-      var f = state.field[y][x];
-      var c = f.getCrop();
-      if(!c) continue;
-      gain_expected.addInPlace(c.getProd(f, 2));
-    }
   }
 
   updateUI2();

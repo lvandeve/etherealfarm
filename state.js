@@ -344,6 +344,13 @@ function AutoBlueprintState() {
 
   this.enable_fruit = false;
   this.fruit = 0; // fruit slot for enable_fruit
+
+  this.enable_weather = false;
+  this.weather = 0; // 0=sun, 1=mist, 2=rainbow
+
+  this.enable_brassica = false; // brassica refresh
+
+  this.enable_fern = false; // fern pickup
 }
 
 
@@ -623,9 +630,9 @@ function State() {
   0: auto override globally disabled
   1: auto override enabled
   */
-  this.automaton_autoblueprint = 0;
+  this.automaton_autoaction = 0;
 
-  this.automaton_autoblueprints = []; // array of AutoBlueprintState. TODO: rename to automaton_autoactions
+  this.automaton_autoactions = []; // array of AutoBlueprintState. TODO: rename to automaton_autoactions
 
   // challenges
   this.challenge = 0;
@@ -842,6 +849,9 @@ function State() {
   this.crop2count = [];
   this.croptypecount = []; // excludes templates
 
+  // num crops growing (not fullgrown) in main field of any type (excludes brassica, and is 0 during the wither challenge)
+  this.numgrowing = 0;
+
   // derived stat, not to be saved
   this.templatecount = 0;
   this.ghostcount = 0;
@@ -851,7 +861,7 @@ function State() {
   // does not include partially growing ones, nor templates
   // derived stat, not to be saved
   this.fullgrowncropcount = [];
-  this.growingcropcount = [];
+  this.growingcropcount = []; // fractional count: fullgrown crops count as 1, half-grown ones as 0.5, etc...
   this.fullgrowncrop2count = [];
   this.fullgrowncroptypecount = [];
   this.growingcroptypecount = [];
@@ -979,15 +989,15 @@ State.prototype.initStages3 = function() {
   for(var i = 0; i < images_squirrel.length; i++) regenerateImageCanvas(image_squirrel_evolution, images_squirrel[i]);
 };
 
-State.prototype.updateAutoBlueprintAmount = function(amount) {
-  if(amount == this.automaton_autoblueprints.length) return;
+State.prototype.updateAutoActionAmount = function(amount) {
+  if(amount == this.automaton_autoactions.length) return;
 
-  if(amount < this.automaton_autoblueprints.length) {
-    this.automaton_autoblueprints.length = amount;
+  if(amount < this.automaton_autoactions.length) {
+    this.automaton_autoactions.length = amount;
     return;
   }
 
-  while(this.automaton_autoblueprints.length < amount) this.automaton_autoblueprints.push(new AutoBlueprintState());
+  while(this.automaton_autoactions.length < amount) this.automaton_autoactions.push(new AutoBlueprintState());
 }
 
 function lastTreeLevelUpTime(state) {
@@ -1162,6 +1172,7 @@ function computeDerived(state) {
   state.templatecount = 0;
   state.ghostcount = 0;
   state.ghostcount2 = 0;
+  state.numgrowing = 0;
   for(var i = 0; i < registered_crops.length; i++) {
     state.cropcount[registered_crops[i]] = 0;
     state.fullgrowncropcount[registered_crops[i]] = 0;
@@ -1181,6 +1192,8 @@ function computeDerived(state) {
         state.cropcount[c.index]++;
         if(f.isFullGrown()) {
           state.fullgrowncropcount[c.index]++;
+        } else {
+          if(c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) state.numgrowing++;
         }
         state.growingcropcount[c.index] += Math.min(Math.max(0, f.growth), 1);
         if(f.hasRealCrop()) {
@@ -1860,33 +1873,37 @@ function autoUnlockEnabled() {
   return !!state.automaton_autounlock;
 }
 
-// TODO: rename these to auto-action/autoAction/...
-// auto-blueprint override
-function autoBlueprintUnlocked() {
+function autoActionUnlocked() {
   if(!automatonUnlocked()) return false;
   if(!state.challenges[challenge_wither].completed) return false;
   if(state.treelevel2 < 5) return false; // normally this check is not needed, but wither challenge changed to become the challenge unlocking this and became a higher level challenge, do not yet unlock the new feature if wither was finished earlier at the now too early ethereal tree level
   return true;
 }
 
-// returns amount of auto-blueprint overrides that are unlocked
-function autoBlueprintsUnlocked() {
-  if(!autoBlueprintUnlocked()) return 0;
-  if(state.challenges[challenge_wither].completed >= 3) return 2; // the second completion does something else
+// returns amount of auto-actions that are unlocked
+function numAutoActionsUnlocked() {
+  if(!autoActionUnlocked()) return 0;
+  // stages of the wither challenge that give extra auto-actions
+  if(state.challenges[challenge_wither].completed >= 5) return 3;
+  if(state.challenges[challenge_wither].completed >= 3) return 2;
   return 1;
 }
 
-// auto-blueprint override
-function autoBlueprintEnabled() {
+function autoActionEnabled() {
   if(!automatonEnabled()) return false;
-  if(!autoBlueprintUnlocked()) return false;
-  return !!state.automaton_autoblueprint;
+  if(!autoActionUnlocked()) return false;
+  return !!state.automaton_autoaction;
 }
 
 function autoPrestigeUnlocked() {
   if(!automatonUnlocked()) return false;
   if(!state.challenges[challenge_truly_basic].completed) return false;
   return true;
+}
+
+// whether the extra auto-actions, that is weather, refresh brassica and fern, are unlocked
+function autoActionExtraUnlocked() {
+  return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 4;
 }
 
 function autoPrestigeEnabled() {

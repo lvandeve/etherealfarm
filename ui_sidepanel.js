@@ -45,7 +45,7 @@ function updateRightPane() {
 
   topRightFlex.clear();
 
-  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (autoUpgradesUnlocked() ? 8 : 0) | (autoPlantUnlocked() ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0);
+  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (autoUpgradesUnlocked() ? 8 : 0) | (autoPlantUnlocked() ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0) | (autoActionEnabled() ? 128 : 0);
   var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
   rightPanelPrevAutomationState = automatonState;
 
@@ -77,16 +77,25 @@ function updateRightPane() {
     for(i = 0; i <= unlocked.length; i++) {
       if(i >= maxnum) break;
 
-      var chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.01, (0.03 + i) / maxnum, 0.99, (i + 1) / maxnum);
+      var chip;
+      if(i == 0) {
+        chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.01, (-0.1 + i) / maxnum, 0.99, (i + 1) / maxnum);
+      } else if(i + 1 == maxnum && unlocked.length + 1 >= maxnum) {
+        chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.01, (0.03 + i + 0.1) / maxnum, 0.99, (i + 1) / maxnum);
+      } else {
+        chip = bottomrightSidePanelFlexCache[i] || new Flex(bottomRightFlex, 0.01, (0.03 + i + 0.1) / maxnum, 0.99, (i + 1 + 0.1) / maxnum);
+      }
       bottomrightSidePanelFlexCache[i] = chip;
 
       if(i == 0) {
         if(automatonStateChanged) {
           chip.clear();
           var text = 'Upgrades';
-          if(automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked())) {
-            var chip0 = autoPlantUnlocked() ? new Flex(chip, 0, 0, 1, 0.5) : undefined;
-            var chip1 = autoUpgradesUnlocked() ? new Flex(chip, 0, 0.5, 1, 1) : undefined;
+          if(automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked())) {
+            var h = autoActionUnlocked() ? 0.33 : 0.5;
+            var chip0 = autoPlantUnlocked() ? new Flex(chip, 0, 0 * h, 1, 1 * h) : undefined;
+            var chip1 = autoUpgradesUnlocked() ? new Flex(chip, 0, 1 * h, 1, 2 * h) : undefined;
+            var chip2 = autoActionUnlocked() ? new Flex(chip, 0, 2 * h, 1, 3 * h) : undefined;
             if(chip0) addButtonAction(chip0.div, function() {
               if(!automatonEnabled()) return;
               if(state.paused) {
@@ -115,10 +124,25 @@ function updateRightPane() {
                 update();
               }
             });
+            if(chip2) addButtonAction(chip2.div, function() {
+              if(!automatonEnabled()) return;
+              if(state.paused) {
+                state.automaton_autoaction = (1 - state.automaton_autoaction);
+                updateAutomatonUI();
+                updateRightPane();
+              } else {
+                addAction({type:ACTION_TOGGLE_AUTOMATON, what:5, on:(1 - state.automaton_autoaction), fun:function() {
+                  updateAutomatonUI();
+                  updateRightPane();
+                }});
+                update();
+              }
+            });
             var autoUnlockUnlockedButDisabled = autoUnlockUnlocked() && !autoUnlockEnabled();
             var autoPrestigeUnlockedButDisabled = autoPrestigeUnlocked() && !autoPrestigeEnabled();
             var text0 = 'Plant: ' + (autoPlantEnabled() ? ((autoUnlockUnlockedButDisabled || autoPrestigeUnlockedButDisabled) ? '<font color="#bb0">auto</font>' : '<font color="#0b0">auto</font>') : '<font color="#b00">manual</font>');
             var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
+            var text2 = 'Auto-action: ' + (autoActionEnabled() ? '<font color="#0b0">on</font>' : '<font color="#b00">off</font>');
             if(chip0) {
               styleButton0(chip0.div);
               centerText2(chip0.div);
@@ -136,6 +160,12 @@ function updateRightPane() {
               centerText2(chip1.div);
               chip1.div.title = 'quick toggle auto-upgrades';
               chip1.div.textEl.innerHTML = text1;
+            }
+            if(chip2) {
+              styleButton0(chip2.div);
+              centerText2(chip2.div);
+              chip2.div.title = 'quick toggle auto-action';
+              chip2.div.textEl.innerHTML = text2;
             }
             setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
           } else if(unlocked.length) {
