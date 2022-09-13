@@ -617,9 +617,9 @@ function showConfigureAutoBlueprintActionDialog(index, closefun) {
 
 
   flex = addControl(0.7);
-  makeCheckbox(flex, o.enable_blueprint, 'Enable auto-action', function(state) {
+  makeCheckbox(flex, o.enable_blueprint, 'Enable auto-blueprint', function(state) {
     o.enable_blueprint = state;
-  }, 'Enable auto-action');
+  }, 'Enable auto-blueprint');
 
 
   flex = addControl();
