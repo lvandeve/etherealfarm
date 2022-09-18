@@ -73,7 +73,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_STINGING: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects orthogonally neighboring berries and flowers, so avoid touching those with this plant';
     case CROPTYPE_BRASSICA: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those. Unlike other crops, has limited lifetime.';
     case CROPTYPE_MISTLETOE: return 'Produces twigs (which you receive on transcend) when tree levels up, when orthogonally next to the tree only. Having more than one increases level up spores requirement and slightly decreases resin gain.';
-    case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers. Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
+    case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers (in spring also diagonally). Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
     case CROPTYPE_NUT: return 'Produces nuts. Can have only max 1 nut plant in the field. Neighboring watercress can copy its production, but less effectively than it copies berries. Receives a limited fixed boost from flowers of high enough tier. Not boosted by other standard berry and mushroom production boosts.';
@@ -473,13 +473,20 @@ Crop.prototype.computeNettleMalusReceived_ = function(f, pretend) {
   return malus;
 };
 
+// in spring, bees can work diagonally too. Except during the rockier challenge
+function haveDiagonalBees() {
+  if(state.challenge == challenge_rockier) return false;
+  return getSeason() == 0;
+}
+
 Crop.prototype.computeBeehiveBoostReceived_ = function(f, pretend) {
+  var numbeedirs = haveDiagonalBees() ? 8 : 4;
   // this computation must match what precomputeField does for beeboostboost_received
   var bonus = new Num(0);
   if(!f) return bonus;
-  for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-    var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-    var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+  for(var dir = 0; dir < numbeedirs; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+    var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+    var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
     if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
     var n = state.field[y2][x2];
     if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_BEE) {
@@ -2890,6 +2897,7 @@ var medals_order = []; // display order of the medals, contains the indexes in m
 var medal_register_id = -1;
 
 // where = index of medal to put this one behind in display order
+// medal "index" will be displayed right after medal "where"
 function changeMedalDisplayOrder(index, where) {
   if(where > index) throw 'can only move order backward for now';
   var a = medals[where];
@@ -2899,6 +2907,7 @@ function changeMedalDisplayOrder(index, where) {
   var to = b.order;
   for(var i = to; i > from; i--) {
     medals_order[i] = medals_order[i - 1];
+    medals[medals_order[i]].order = i;
   }
   medals_order[from] = index;
   b.order = from;
@@ -3296,11 +3305,9 @@ registerMedal('withering', 'completed the wither challenge', undefined, function
   return state.challenges[challenge_wither].completed >= 1;
 }, Num(0.35));
 
-registerMedal('withered', 'completed the wither challenge stage 2', undefined, function() {
+var medal_wither2 = registerMedal('withered', 'completed the wither challenge stage 2', undefined, function() {
   return state.challenges[challenge_wither].completed >= 2;
 }, Num(0.7));
-
-// TODO: medal for wither stage 3 (but can't squeeze its ID between these two here unfortunately)
 
 registerMedal('berried', 'completed the blackberry challenge', blackberry[4], function() {
   return state.challenges[challenge_blackberry].completed >= 1;
@@ -3547,6 +3554,22 @@ registerMedal('squirrel evolution', 'evolve the squirrel', image_squirrel_evolut
   return state.evolution3 >= 1;
 }, Num(100));
 
+var medal_challenge_thistle_stingy = registerMedal('rather stingy', 'plant the entire field full of stinging crops during the thistle challenge', images_thistle[4], function() {
+  return state.challenge == challenge_thistle && state.fullgrowncroptypecount[CROPTYPE_STINGING] >= (state.numw * state.numh - 2);
+}, Num(4));
+changeMedalDisplayOrder(medal_challenge_thistle_stingy, medal_challenge_thistle);
+
+medal_register_id = 3040;
+
+var medal_wither3 = registerMedal('withered III', 'completed the wither challenge stage 3', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 3;
+}, Num(2));
+changeMedalDisplayOrder(medal_wither3, medal_wither2);
+
+var medal_wither4 = registerMedal('withered IV', 'completed the wither challenge stage 4', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 4;
+}, Num(4));
+changeMedalDisplayOrder(medal_wither4, medal_wither3);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3874,6 +3897,7 @@ var rockier_text = 'A harder version of the rocks challenge. The field has a dif
 var rockier_text_long = `
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are unremovable rocks on the field, blocking the planting of crops<br>
+• Bees can't diagonally reach flowers even in spring, due to the heavy amount of rocks<br>
 • The rock pattern is predetermined, every time you beat the challenge it cycles to a next, harder, pattern<br>
 • There are 5 patterns in total, each gives an achievement<br>
 `;

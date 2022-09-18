@@ -478,8 +478,19 @@ function getBluePrintActionDescription(o) {
 
 
 function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
+  var o = state.automaton_autoactions[index];
+
+  o.done = o.done2 = true; // don't trigger while editing, it can be unexpected
+
   var dialog = createDialog({
-    onclose:closefun,
+    onclose:function() {
+      // possibly re-enable the auto-action, if it's set in the future, or disable it if it's set in the past (so it won't trigger right now that you configured it while it applied to the past, intended for a next run)
+      // e.g. if re-configuring an auto-action to be after 3 hours of run, then re-enable if current runtime is 2 hours, but don't if current runtime is 4 hours
+      var done = autoActionTriggerConditionReached(o);
+      o.done = o.done2 = done;
+      o.time2 = 0;
+      closefun();
+    },
     scrollable:true,
     title:('Configure automaton action trigger ' + (index + 1)),
     help:'Here you can configure the conditions at which this automaton action will trigger, e.g. after some tree level is reached, some crops are unlocked or after a certain time'
@@ -504,7 +515,6 @@ function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
       flex.div.className = flex.enabledStyle == 0 ? 'efAutomatonManual' : (flex.enabledStyle == 1 ? 'efAutomatonAuto2' : 'efAutomatonAuto');
     }
   };
-  var o = state.automaton_autoactions[index];
 
   var flex;
 
@@ -526,9 +536,8 @@ function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
   styleButton(flex.div);
   centerText2(flex.div);
   var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop', 'run time'];
-  var current = state.automaton_autoactions[index].type;
-  makeDropdown(flex, 'Trigger by', current, typenames, function(i) {
-    state.automaton_autoactions[index].type = i;
+  makeDropdown(flex, 'Trigger by', o.type, typenames, function(i) {
+    o.type = i;
     updateLevelButton(index);
   }, true);
   //flex.div.className = 'efAutomatonAuto';
@@ -555,14 +564,13 @@ function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
       levelflex.div.textEl.innerText = text;
   };
   addButtonAction(levelflex.div, function() {
-    var o = state.automaton_autoactions[index];
     if(o.type == 0) {
       makeTextInput('Tree level', 'Enter tree level at which to perform action', function(text) {
         var i = parseInt(text);
         if(!(i >= 0 && i < 1000000)) i = 0;
-        state.automaton_autoactions[index].level = i;
+        o.level = i;
         updateLevelButton(index);
-      }, '' + state.automaton_autoactions[index].level);
+      }, '' + o.level);
     } else if(o.type >= 1 && o.type <= 3) {
       makePlantSelectDialog(o.crop, o.prestige, function(cropid, prestiged) {
         o.crop = cropid + 1;
@@ -570,11 +578,19 @@ function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
         updateLevelButton();
       });
     } else if(o.type == 4) {
-      var current = state.automaton_autoactions[index].time / 60;
-      makeTextInput('Run time', 'Enter total time since start of run in minutes (e.g. enter 180 for 3 hours) after which to perform action', function(text) {
-        var i = parseFloat(text);
-        if(!(i >= 0)) i = 0;
-        state.automaton_autoactions[index].time = i * 60;
+      var current_hours = '' + Math.floor(o.time / 3600);
+      var current_minutes = '' + ((o.time % 3600) / 60);
+      if(current_minutes.length == 1) current_minutes = '0' + current_minutes;
+      var current = current_hours + ':' + current_minutes;
+      makeTextInput('Run time', 'Enter time since start of run in the format hh:mm, or in hours. E.g. use 1:30 or 1.5 to trigger one and a half hours into the run', function(text) {
+        var parts = text.split(':');
+        var hours = parseFloat(parts[0]);
+        var minutes = parts.length > 1 ? parseFloat(parts[1]) : 0;
+        var seconds = parts.length > 2 ? parseFloat(parts[2]) : 0; // seconds are not mentioned in the documentation to not make it too crowded, but possible
+        if(!(hours >= 0)) hours = 0;
+        if(!(minutes >= 0)) minutes = 0;
+        if(!(seconds >= 0)) seconds = 0;
+        o.time = hours * 3600 + minutes * 60 + seconds;
         updateLevelButton(index);
       }, '' + current);
     }

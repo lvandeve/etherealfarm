@@ -504,6 +504,9 @@ function openTimeInfoDialog() {
     var s = getSeason();
     if(s == 0) {
       result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
+      if(state.challenges[challenge_bees].completed) {
+        result += '• Bees can reach flowers diagonally too, so they can have 8 neighbors<br>';
+      }
       if(state.upgrades2[upgrade2_season2[s]].count && !basicChallenge()) {
         result += '• Crops grow ' + Num(upgrade2_spring_growspeed_bonus).toPercentString() + ' faster (ethereal upgrade)<br>';
         //result += '• Resin bonus: ' + getAlternateResinBonus(s).subr(1).toPercentString() + ' (squirrel upgrade)<br>';

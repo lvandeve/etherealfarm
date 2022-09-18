@@ -321,10 +321,12 @@ BluePrint.copy = function(b) {
 
 // actual auto-action now (can also do other actions than blueprint)
 // TODO: rename to AutoActionState
-function AutoBlueprintState() {
+function AutoActionState() {
   this.enabled = false; // if false, this one is individually disabled
 
   this.done = false; // already done this action this round
+  this.done2 = false; // done second part of this action: auto-fern (and a few other actions with it) happen only a few seconds later to give automaton time to plant the blueprint
+  this.time2 = 0; // the time at which second part must be done. Only used while done is true and done2 is false
 
   this.type = 0; // what triggers this action: 0 = based on tree level, 1/2/3 = based on unlocked/growing/fullgrown crop type, 4 = based on run time
 
@@ -632,7 +634,7 @@ function State() {
   */
   this.automaton_autoaction = 0;
 
-  this.automaton_autoactions = []; // array of AutoBlueprintState. TODO: rename to automaton_autoactions
+  this.automaton_autoactions = []; // array of AutoActionState. TODO: rename to automaton_autoactions
 
   // challenges
   this.challenge = 0;
@@ -997,7 +999,7 @@ State.prototype.updateAutoActionAmount = function(amount) {
     return;
   }
 
-  while(this.automaton_autoactions.length < amount) this.automaton_autoactions.push(new AutoBlueprintState());
+  while(this.automaton_autoactions.length < amount) this.automaton_autoactions.push(new AutoActionState());
 }
 
 function lastTreeLevelUpTime(state) {
@@ -1805,8 +1807,10 @@ var toRomanUpTo = function(v) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-function automatonUnlocked() {
-  return state.crops2[automaton2_0].unlocked;
+// opt_state: if given, uses this state instead of the global state
+function automatonUnlocked(opt_state) {
+  var s = opt_state || state;
+  return s.crops2[automaton2_0].unlocked;
 }
 
 // have the automaton planted in the ethereal field (irrespective of unlocks, ...)
@@ -1873,19 +1877,23 @@ function autoUnlockEnabled() {
   return !!state.automaton_autounlock;
 }
 
-function autoActionUnlocked() {
-  if(!automatonUnlocked()) return false;
-  if(!state.challenges[challenge_wither].completed) return false;
-  if(state.treelevel2 < 5) return false; // normally this check is not needed, but wither challenge changed to become the challenge unlocking this and became a higher level challenge, do not yet unlock the new feature if wither was finished earlier at the now too early ethereal tree level
+// opt_state: if given, uses this state instead of the global state
+function autoActionUnlocked(opt_state) {
+  var s = opt_state || state;
+  if(!automatonUnlocked(opt_state)) return false;
+  if(!s.challenges[challenge_wither].completed) return false;
+  if(s.treelevel2 < 5) return false; // normally this check is not needed, but wither challenge changed to become the challenge unlocking this and became a higher level challenge, do not yet unlock the new feature if wither was finished earlier at the now too early ethereal tree level
   return true;
 }
 
 // returns amount of auto-actions that are unlocked
-function numAutoActionsUnlocked() {
-  if(!autoActionUnlocked()) return 0;
+// opt_state: if given, uses this state instead of the global state
+function numAutoActionsUnlocked(opt_state) {
+  var s = opt_state || state;
+  if(!autoActionUnlocked(opt_state)) return 0;
   // stages of the wither challenge that give extra auto-actions
-  if(state.challenges[challenge_wither].completed >= 5) return 3;
-  if(state.challenges[challenge_wither].completed >= 3) return 2;
+  if(s.challenges[challenge_wither].completed >= 5) return 3;
+  if(s.challenges[challenge_wither].completed >= 3) return 2;
   return 1;
 }
 

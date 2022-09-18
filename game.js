@@ -679,9 +679,11 @@ function beginNextRun(opt_challenge) {
   state.rainbowtime = 0;
   //state.lasttreeleveluptime = state.time; // commented out: this is preserved across runs now for amber computation
 
-  state.crops = [];
   for(var i = 0; i < registered_crops.length; i++) {
-    state.crops[registered_crops[i]] = new CropState();
+    if(!state.crops[registered_crops[i]]) state.crops[registered_crops[i]] = new CropState();
+    var c2 = state.crops[registered_crops[i]];
+    c2.unlocked = false;
+    c2.prestige = 0;
   }
   state.crops[brassica_0].unlocked = true;
   updateAllPrestigeData();
@@ -717,6 +719,8 @@ function beginNextRun(opt_challenge) {
 
   for(var i = 0; i < state.automaton_autoactions.length; i++) {
     state.automaton_autoactions[i].done = false;
+    state.automaton_autoactions[i].done2 = false;
+    state.automaton_autoactions[i].time2 = 0;
   }
 
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
@@ -1241,6 +1245,8 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
     }
   }
 
+  var numbeedirs = haveDiagonalBees() ? 8 : 4;
+
   // nettles and beehives
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
@@ -1291,9 +1297,9 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       if(c) {
         var p = prefield[y][x];
         if(c.type == CROPTYPE_FLOWER) {
-          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+          for(var dir = 0; dir < numbeedirs; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+            var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+            var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
@@ -1995,7 +2001,32 @@ function doNextAutoChoice() {
   return did_something;
 }
 
-
+// returns true if the action is triggered, that is, its condition is satisfied
+// also returns true if condition is more than satisfied if possible (e.g. tree level higher than the given level, or runtime higher than the given level)
+function autoActionTriggerConditionReached(o) {
+  if(o.type == 0 && state.treelevel >= o.level) {
+    return true;
+  }
+  if(o.type >= 1 && o.type <= 3) {
+    if(o.crop == 0) return false;
+    var c = crops[o.crop - 1];
+    var c2 = state.crops[o.crop - 1];
+    if(!c || !c2) return false;
+    var unlocked = c2.unlocked && c2.prestige >= o.prestige;
+    if(!unlocked) return false; // can also not have it planted or fullgrown in this case
+    if(o.type == 1 && unlocked) return true;
+    if(o.type == 2 && state.cropcount[c.index] > 0) return true;
+    if(o.type == 3 && state.fullgrowncropcount[c.index] > 0) return true;
+    if(!c.type == CROPTYPE_BERRY && o.type >= 2) {
+      var next_unlocked = state.highestoftypeunlocked[c.type] > c.tier;
+      if(next_unlocked) return true; // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a hier tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
+    }
+  }
+  if(o.type == 4 && state.c_runtime >= o.time) {
+    return true;
+  }
+  return false;
+}
 
 function doAutoAction() {
   // this is also something that can be wrong when importing old savegames... such as one with wither already completed but not yet the second blueprints unlocked stage
@@ -2004,32 +2035,16 @@ function doAutoAction() {
   var did_something = false;
   for(var i = 0; i < state.automaton_autoactions.length; i++) {
     var o = state.automaton_autoactions[i];
-    if(o.done) continue;
+    if(o.done && o.done2) continue;
     if(!o.enabled) continue;
-    var triggered = false;
-    if(o.type == 0 && state.treelevel >= o.level) {
-      triggered = true;
-    }
-    if(o.type >= 1 && o.type <= 3) {
-      if(o.crop == 0) continue;
-      var c = crops[o.crop - 1];
-      var c2 = state.crops[o.crop - 1];
-      if(!c || !c2) continue;
-      var unlocked = c2.unlocked && c2.prestige >= o.prestige;
-      if(!unlocked) continue; // can also not have it planted or fullgrown in this case
-      if(o.type == 1 && unlocked) triggered = true;
-      if(o.type == 2 && state.cropcount[c.index] > 0) triggered = true;
-      if(o.type == 3 && state.fullgrowncropcount[c.index] > 0) triggered = true;
-      if(!triggered && c.type == CROPTYPE_BERRY && o.type >= 2) {
-        var next_unlocked = state.highestoftypeunlocked[c.type] > c.tier;
-        if(next_unlocked) triggered = true; // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a hier tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
-      }
-    }
-    if(o.type == 4 && state.c_runtime >= o.time) {
-      triggered = true;
-    }
-    if(triggered) {
+    var triggered = autoActionTriggerConditionReached(o);
+    var triggered2 = o.done && !o.done2 && state.c_runtime >= o.time2;
+    if(triggered && !o.enable_blueprint) triggered2 = true; // no need to wait for planting blueprint if there's none built
+    if(!o.done && triggered) {
       o.done = true;
+      o.done2 = false;
+      o.time2 = state.c_runtime + 5;
+
       // refresh brassica is done before blueprint, otherwise the refreshWatercress may add actions that override watercress on top of actions to turn it into other crops added for blueprint override. Blueprint override must give the final state here.
       if(o.enable_brassica && autoActionExtraUnlocked()) {
         refreshWatercress(false, false, true);
@@ -2046,6 +2061,10 @@ function doAutoAction() {
         addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit});
         did_something = true;
       }
+    }
+    if(!o.done2 && triggered2) {
+      o.done2 = true;
+      o.time2 = 0; // no big reason to do this other than make it smaller in the savegame file format
       if(o.enable_weather && autoActionExtraUnlocked()) {
         addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:true});
         did_something = true;
@@ -2056,8 +2075,8 @@ function doAutoAction() {
         }
         did_something = true;
       }
-      if(did_something) break;
     }
+    if(did_something) break;
   }
 
   return did_something;
@@ -2430,7 +2449,7 @@ function autoPrestige(res) {
 function nextEventTime() {
   // next season
   var time = timeTilNextSeasonUnShifted();
-  var name = 'season';
+  var name = 'season'; // for debugging
 
   var addtime = function(time2, opt_name) {
     if(isNaN(time2)) return;
@@ -2440,9 +2459,9 @@ function nextEventTime() {
   };
 
   // ability times
-  if((state.time - state.misttime) < getMistDuration()) addtime(getMistDuration() - state.time + state.misttime);
-  if((state.time - state.suntime) < getSunDuration()) addtime(getSunDuration() - state.time + state.suntime);
-  if((state.time - state.rainbowtime) < getRainbowDuration()) addtime(getRainbowDuration() - state.time + state.rainbowtime);
+  if((state.time - state.misttime) < getMistDuration()) addtime(getMistDuration() - state.time + state.misttime, 'mist');
+  if((state.time - state.suntime) < getSunDuration()) addtime(getSunDuration() - state.time + state.suntime, 'sun');
+  if((state.time - state.rainbowtime) < getRainbowDuration()) addtime(getRainbowDuration() - state.time + state.rainbowtime, 'rainbow');
 
   // plants growing / disappearing
   for(var y = 0; y < state.numh; y++) {
@@ -2454,16 +2473,16 @@ function nextEventTime() {
         if(c.type == CROPTYPE_BRASSICA) {
           // watercress needs regular updates, but don't do that when it's a end-of-life wasabi, since once it has that state it doesn't change any further, and stays forever, that'd make long game updates very slow
           var infinitelifetime = c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0;
-          if(!(infinitelifetime && f.growth == 0)) addtime(c.getPlantTime() * (f.growth));
+          if(!(infinitelifetime && f.growth == 0)) addtime(c.getPlantTime() * (f.growth), 'brassica');
         } else if(state.challenge == challenge_wither) {
-          //addtime(witherDuration() * (f.growth));
+          //addtime(witherDuration() * (f.growth), 'wither');
           // since the income value of the crop changes over time as it withers, return a short time interval so the computation happens correctly during the few minutes the withering happens.
           // also return, no need to calculate the rest, short time intervals like this are precise enough for anything
-          addtime(2);
+          addtime(2, 'wither');
           return time;
         } else if(f.growth < 1) {
-          //addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
-          addtime(2); // since v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
+          //addtime(c.getPlantTime() * (1 - f.growth), 'wither'); // time remaining for this plant to become full grown
+          addtime(2, 'growth'); // since v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
         }
       }
     }
@@ -2476,7 +2495,7 @@ function nextEventTime() {
       var c = f.getCrop();
       if(c) {
         if(f.growth < 1) {
-          addtime(c.getPlantTime() * (1 - f.growth)); // time remaining for this plant to become full grown
+          addtime(c.getPlantTime() * (1 - f.growth), 'growing2'); // time remaining for this plant to become full grown
         }
       }
     }
@@ -2489,45 +2508,45 @@ function nextEventTime() {
 
   // auto-upgrades
   if(autoUpgradesEnabled() && !!next_auto_upgrade) {
-    addtime(next_auto_upgrade.time);
+    addtime(next_auto_upgrade.time, 'auto-upgrade');
   }
 
   // auto-plant
   if(autoPlantEnabled() && !!next_auto_plant) {
-    addtime(next_auto_plant.time);
+    addtime(next_auto_plant.time, 'auto-plant');
   }
 
   // auto-unlock
   if(autoUnlockEnabled() && !!next_auto_unlock) {
-    addtime(next_auto_unlock.time);
+    addtime(next_auto_unlock.time, 'auto-unlock');
   }
 
   // auto-prestige
   if(autoPrestigeEnabled() && !!next_auto_prestige) {
-    addtime(next_auto_prestige.time);
+    addtime(next_auto_prestige.time, 'auto-prestige');
   }
 
   if(state.upgrades3[upgrade3_leveltime].count) {
     var treetime = timeAtTreeLevel(state);
     // take into account the changing bonus over time, until the max time is reached (but not too aften to not let this use too much CPU ticks)
-    if(treetime < upgrade3_leveltime_maxtime) addtime(120);
+    if(treetime < upgrade3_leveltime_maxtime) addtime(120, 'time at tree level');
   }
 
   // fern
   if(state.fern == 0) {
     var t = state.lastFernTime - state.time + getFernWaitTime();
-    addtime(t);
+    addtime(t, 'fern');
   }
   if(state.fern == 1 && state.upgrades[fern_choice0].count == 1) {
     var t0 = state.lastReFernTime - state.time + getReFernWaitTime();
     var t1 = state.lastFernTime - state.time + getReFernWaitTime() * 3;
     var t = Math.max(t0, t1);
-    addtime(t);
+    addtime(t, 'fern2');
   }
 
   // lightning
   if(state.challenge == challenge_stormy && state.numcropfields_lightning > 0) {
-    addtime(Math.max(0, lightningTime - (state.time - state.lastLightningTime)));
+    addtime(Math.max(0, lightningTime - (state.time - state.lastLightningTime)), 'storm');
   }
 
   if(autoActionEnabled()) {
@@ -2537,10 +2556,17 @@ function nextEventTime() {
       if(o.done) continue;
       if(o.type == 4) {
         if(o.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
-        addtime(o.time - state.c_runtime);
+        addtime(o.time - state.c_runtime, 'auto-action');
+      }
+      if(o.done && !o.done2) {
+        if(o.time2 - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
+        addtime(o.time2 - state.c_runtime, 'auto-action2');
       }
     }
   }
+
+
+  //console.log('next event time: ' + time + ', ' + name);
 
   // protect against possible bugs
   if(time < 0 || isNaN(time)) return 0;
@@ -2637,8 +2663,6 @@ var global_tree_levelups = 0;
 var update_prev_paused = false;
 var update_prev_state_ctor_count = -1;
 
-var inner_loop_count = 0;
-
 var actually_updated = false; // called update. This is for UI initialization
 
 // opt_ignorePause should be used for debugging only, as it can make time intervals nonsensical
@@ -2724,12 +2748,13 @@ var update = function(opt_ignorePause) {
 
   var do_transcend = undefined;
 
+  // done is for whether the end of the time delta is reached, in case of long time deltas.
   var done = false;
   var numloops = 0;
-  for(;;) { ////////////////////////////////////////////////////////////////////
+
+  for(;;) { // begin of loop for long ticks ////////////////////////////////////
     if(done) break;
     if(numloops++ > 500) break;
-    inner_loop_count++;
 
     /*
     During an update, there's a time interval in which we operate.
@@ -2812,16 +2837,18 @@ var update = function(opt_ignorePause) {
 
     var next = 0;
 
-    var d0 = d;
     state.time = state.prevtime; // the computations happen with the state (getSeason() etc...) at start of interval. the end of interval is when things (season, ...) may change, but that is not during this but during next update computation
 
     if(is_long) {
       next = nextEventTime() + 1; // for numerical reasons, ensure it's not exactly at the border of the event
-      // ensure there is at least some progress.
+      // ensure there is at least some progress
       if(numloops > 20 && next < 2) next = 2; // speed up computation if a lot is happening, at the cost of some precision
       if(numloops > 50 && next < 5) next = 5; // speed up computation if a lot is happening, at the cost of some precision
       if(numloops > 200 && next < 10) next = 10; // speed up computation if a lot is happening, at the cost of some precision
     }
+
+    // if the automaton is doing actions during long forward, do much more fine grained computations, e.g. to ensure picking up fern a few seconds after auto-action that plants blueprint (and requires automaton to replace all templates first) will happen correctly (fern gets benefit of all planted crops)
+    if(is_long && actions.length > 0 && next > 0.1) next = 0.1;
 
     if(d > next && is_long) {
       // reduce the time delta to only be up to the next event
@@ -3627,7 +3654,11 @@ var update = function(opt_ignorePause) {
         var havePerma = havePermaWeather();
         if(a == 0) {
           if(!state.upgrades[upgrade_sununlock].count) {
-            // not possible, ignore
+            // weather not yet unlocked so not yet possible to activate.
+            // however, when done by automaton auto-action (e.g. at start of run), it can set the permanent lasting weather
+            if(action.by_automaton) {
+              state.lastWeather = a;
+            }
           } else if(sund < getSunWait()) {
             if(havePerma) {
               showMessage('Sun selected.');
@@ -4748,7 +4779,7 @@ var update = function(opt_ignorePause) {
 
     computeDerived(state);
   } // end of loop for long ticks //////////////////////////////////////////////
-
+  //if(numloops > 1) console.log('numloops: ' + numloops);
 
   /*if(state.g_numticks == 0) {
     showMessage('You need to gather some resources. Click a fern to get some.', C_HELP, 5646478);

@@ -20,6 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.6.5 (2022-09-18):';
+  text += '<br/>• In spring, bees can now diagonally reach flowers (but not in the rockier challenge).';
+  text += '<br/>• Fixed auto-action taking fern before all blueprint templates planted by automaton: it now waits a few seconds before picking up fern.';
+  text += '<br/>• Fixed auto-action select crop dialog not showing already-known crops from previous runs';
+  text += '<br/>• Auto-action triggers can now be re-used if edited and given a condition in the future, e.g. if an auto-action recently triggered 1 hour into the run and you now set it to trigger after 2 hours, it will trigger again at that time.';
+  text += '<br/>• Editing auto-actions to give them a condition in the past (for the current run) will no longer trigger them while or after editing them.';
+  text += '<br/>• Added missing wither challenge stage completion medals (and another new achievement).';
+  text += '<br/>• When having the stormy challenge reward, if auto-action activates weather at start of run, when the weather is not yet unlocked, it\'ll still be setup as the permanent weather.';
+  text += '<br/>• Auto-action time-based trigger can now be entered in the format hours:minutes or hours, rather than minutes (so you can e.g. type 3 or 3:00, instead of 180, for 3 hours).';
+  text += '<br/><br/>';
+
   text += '0.6.4 (2022-09-12):';
   text += '<br/>• Auto-action can now also activate weather, refresh brassica and take fern. This must be unlocked first with a new stage of the wither challenge.';
   text += '<br/>• Added a third auto-action slot as reward for another new stage of the wither challenge.';

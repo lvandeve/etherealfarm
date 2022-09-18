@@ -673,6 +673,8 @@ function encState(state, opt_raw_only) {
     processUint(o.weather);
     processBool(o.enable_brassica);
     processBool(o.enable_fern);
+    processBool(o.done2);
+    processTime(o.time2);
     processStructEnd();
   }
   processStructArrayEnd();
@@ -1928,15 +1930,12 @@ function decState(s) {
     }
   }
 
-  var blueprint_overrides_count = state.challenges[challenge_wither].completed;
-  if(blueprint_overrides_count >= 2) blueprint_overrides_count--; // second challenge_wither completion does something else
-  state.automaton_autoactions = [];
-  state.updateAutoActionAmount(blueprint_overrides_count);
-
   if(save_version >= 262144*2+64*5+0) {
-    var count = processStructArrayBegin(); // expected to be same as blueprint_overrides_count, but due to version changes / situation before unlocking this, some lenience is allowed
+    var count = processStructArrayBegin();
+    state.automaton_autoactions = [];
+    state.updateAutoActionAmount(count);
     for(var i = 0; i < count; i++) {
-      var o = i < blueprint_overrides_count ? state.automaton_autoactions[i] : {};
+      var o = state.automaton_autoactions[i];
       state.automaton_autoactions[i] = o;
       processStructBegin();
       o.enabled = processBool();
@@ -1960,6 +1959,8 @@ function decState(s) {
       if(save_version >= 262144*2+64*6+4) o.weather = processUint();
       if(save_version >= 262144*2+64*6+4) o.enable_brassica = processBool();
       if(save_version >= 262144*2+64*6+4) o.enable_fern = processBool();
+      if(save_version >= 262144*2+64*6+5) o.done2 = processBool();
+      if(save_version >= 262144*2+64*6+5) o.time2 = processTime();
 
       processStructEnd();
     }
@@ -2256,6 +2257,10 @@ function decState(s) {
   // End of sections, post-processing
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
+
+  // the amount may have changed, if e.g. a new/changed challenge has a different reward for it, ...
+  var autoaction_count = numAutoActionsUnlocked(state);
+  state.updateAutoActionAmount(autoaction_count);
 
   if(save_version <= 4096*1+73) {
     state.res.nuts = Num(0);
