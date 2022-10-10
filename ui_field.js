@@ -63,7 +63,9 @@ function formatBreakdown(breakdown, percent, title) {
 function getCropInfoHTMLBreakdown(f, c) {
   var result = '';
 
-  var bdname = f.isSemiFullGrown() ? 'Breakdown' : 'Preliminary breakdown';
+  if(f.index == FIELD_MULTIPART) f = f.getMainMultiPiece();
+
+  var bdname = f.isSemiFullGrown(true) ? 'Breakdown' : 'Preliminary breakdown';
 
   var p = prefield[f.y][f.x];
   var breakdown_watercress = p.getBreakdownWatercress();
@@ -71,7 +73,7 @@ function getCropInfoHTMLBreakdown(f, c) {
     result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
   }
   var prod = c.getProd(f);
-  if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_NUT) {
+  if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_NUT) {
     var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, false, bdname + ' (production/s)');
   }
@@ -219,7 +221,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     prod3 = p.prod3_wasabi_challenge;
     prod0 = p.prod0_wasabi_challenge;
   }
-  if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY) {
+  if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
     if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
       result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
     } else if(!growing) {
@@ -467,15 +469,6 @@ function makeTreeDialog() {
       }
       text += '<br>';
 
-      if(haveMultiplicity(CROPTYPE_BERRY)) {
-        text += '<br/>';
-        text += 'Multiplicity (berry and mushroom): +' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
-      }
-      if(haveMultiplicity(CROPTYPE_FLOWER)) {
-        text += '<br/>';
-        text += 'Multiplicity (flower): +' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
-      }
-
       if(getSeason() == 3) {
         text += '<br/>';
         text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats and no negative winter effect for any crop next to the tree<br>';
@@ -500,6 +493,21 @@ function makeTreeDialog() {
 
       if(twigs_breakdown && twigs_breakdown.length >= 1) {
         text += formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
+      }
+
+      if(haveMultiplicity(CROPTYPE_BERRY)) text += '<br>Multiplicities:<br>';
+
+      if(haveMultiplicity(CROPTYPE_BERRY)) {
+        text += '• Berry and mushroom: +' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
+      }
+      if(haveMultiplicity(CROPTYPE_FLOWER)) {
+        text += '• Flower: +' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
+      }
+      if(haveMultiplicity(CROPTYPE_BEE)) {
+        text += '• Bee: +' + (getMultiplicityBonusBase(CROPTYPE_BEE)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
+      }
+      if(haveMultiplicity(CROPTYPE_STINGING)) {
+        text += '• Stinging: +' + (getMultiplicityBonusBase(CROPTYPE_STINGING)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
       }
     }
 
@@ -638,7 +646,7 @@ function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
   if(!state.field[y]) return null;
   var f = state.field[y][x];
   if(!f) return;
-  var c = f.getCrop();
+  var c = f.getCrop(true);
   if(!c) return;
 
   if(c.type == CROPTYPE_CHALLENGE) return null;
@@ -684,8 +692,8 @@ function makeUpgradeCropAction(x, y, opt_silent) {
       if(too_expensive[1]) {
         showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
-      } else if(!(x >= 0 && x < state.numw && y >= 0 && y < state.numh) || state.field[y][x].index < CROPINDEX) {
-        showMessage('No crop to tier up here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+      } else if(!(x >= 0 && x < state.numw && y >= 0 && y < state.numh) || !(state.field[y][x].hasCrop(true))) {
+        showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
       } else if(state.field[y][x].index != 0) {
         if(state.field[y][x].hasCrop() && state.field[y][x].getCrop().istemplate && !state.upgrades[berryunlock_0].count) {
           showMessage('Crop not replaced, no higher tier unlocked or available. Must plant watercress first to unlock blackberry.', C_INVALID);
@@ -703,8 +711,8 @@ function makeFieldDialog(x, y) {
   var fd = fieldDivs[y][x];
 
 
-  if(f.hasCrop()) {
-    var c = f.getCrop();
+  if(f.hasCrop(true)) {
+    var c = f.getCrop(true);
     var div;
 
     var dialog = createDialog({
@@ -715,6 +723,7 @@ function makeFieldDialog(x, y) {
 
     var buttonshift = 0;
     if(c.type == CROPTYPE_BRASSICA) buttonshift += 0.17; // the watercress has a long explanation that makes the text go behind the buttons... TODO: have some better system where button is placed after whatever the textsize is
+    if(c.type == CROPTYPE_PUMPKIN) buttonshift += 0.15; // idem
 
     var flex0 = new Flex(dialog.content, 0, [0, 0, 0.01], 1, 0.5 + buttonshift);
     var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.5 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.565 + buttonshift).div;
@@ -726,7 +735,7 @@ function makeFieldDialog(x, y) {
     makeScrollable(flex0);
 
     styleButton(button0);
-    button0.textEl.innerText = 'Tier up';
+    button0.textEl.innerText = 'Upgrade tier';
     registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
       if(makeUpgradeCropAction(x, y)) {
@@ -849,8 +858,7 @@ function initFieldUI() {
       }, x, y));
 
       registerTooltip(div, bind(function(x, y, div) {
-        var f = state.field[y][x];
-        var fd = fieldDivs[y][x];
+        var f = state.field[y][x].getMainMultiPiece();
 
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
@@ -952,43 +960,51 @@ function initFieldUI() {
           } else if(!fern && !present) {
             makeFieldDialog(x, y);
           }
-        } else if(f.hasCrop()) {
+        } else if(f.hasCrop(true)) {
+          var xm = x;
+          var ym = y;
+          var fm = f;
+          if(f.index == FIELD_MULTIPART) {
+            fm = f.getMainMultiPiece();
+            xm = fm.x;
+            ym = fm.y;
+          }
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
           if(shift && ctrl) {
             // experimental feature for now, most convenient behavior needs to be found
             // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
             // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
-            var c2 = f.getCrop();
+            var c2 = fm.getCrop();
             var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
             if(!c3 || !state.crops[c3.index].unlocked) c3 = c2;
             if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
             state.lastPlanted = c3.index;
             if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
             if(c3.tier > c2.tier) {
-              addAction({type:ACTION_REPLACE, x:x, y:y, crop:c3, shiftPlanted:true});
+              addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c3, shiftPlanted:true});
               update();
             }
           } else if(shift && !ctrl) {
             if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
               var c2 = f.getCrop();
-              if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate() || f.isGhost())) {
+              if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !fm.isFullGrown()) || fm.isTemplate() || fm.isGhost())) {
                 // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
                 // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
                 // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-                addAction({type:ACTION_DELETE, x:x, y:y});
+                addAction({type:ACTION_DELETE, x:xm, y:ym});
               } else {
-                addAction({type:ACTION_REPLACE, x:x, y:y, crop:c, shiftPlanted:true});
+                addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c, shiftPlanted:true});
               }
               update();
             }
           } else if(ctrl && !shift) {
             var brassica = getHighestBrassica();
-            if(f.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
-              addAction({type:ACTION_REPLACE, x:x, y:y, crop:crops[brassica], ctrlPlanted:true});
+            if(fm.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
+              addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:crops[brassica], ctrlPlanted:true});
             } else {
-              addAction({type:ACTION_DELETE, x:x, y:y});
+              addAction({type:ACTION_DELETE, x:xm, y:ym});
               update();
             }
           } else if(!fern && !present) {
@@ -1093,14 +1109,21 @@ function updateFieldCellUI(x, y) {
 
   var automatonplant = (x == state.automatonx && y == state.automatony && (state.time - state.automatontime < 0.5));
   var growing = f.growth < 1;
+  var multindex = f.getMainMultiPiece().index; // for 2x2 crops when the main piece changes (e.g. part of pumpkin blueprint becoming regular pumpkin)
 
-  if(fd.index != f.index || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
+  if(automatonplant) {
+    var ugly = f.hasCrop(true) && f.getCrop(true).quad; // automaton on top of pumpkin doesn't look good because it looks like 3 quarters of pumpkin with automaton on the bite out of it, because the automaton image isn't overlaid but instead
+    if(ugly) automatonplant = false;
+  }
+
+  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
     if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
     renderImage(field_image, fd.bgcanvas);
     fd.index = f.index;
+    fd.multindex = f.multindex;
     fd.growing = growing;
     fd.growstage = growstage;
     fd.season = season;
@@ -1114,17 +1137,20 @@ function updateFieldCellUI(x, y) {
 
     if(automatonplant) {
       renderImage(images_automaton[4], fd.canvas);
-    } else if(f.hasCrop()) {
-      var c = f.getCrop();
+    } else if(f.hasCrop(true)) {
+      var c = f.getCrop(true);
       var cropimg;
       if(growstage == -1) {
         cropimg = c.image_post;
       } else {
         cropimg = c.image[growstage];
       }
+      if(c.quad && growstage != -1 && !!c.images_quad) {
+        cropimg = c.images_quad[getQuadPos(x, y)][growstage];
+      }
       renderImage(cropimg, fd.canvas);
-      if(f.growth >= 1) {
-        // fullgrown, so hide progress bar
+      if(f.growth >= 1 || f.index < CROPINDEX) {
+        // fullgrown (or not a crop at all, or non-main part of multipart crop), so hide progress bar
         setProgressBar(fd.progress, -1, undefined);
       }
       label = c.name + '. ' + label;

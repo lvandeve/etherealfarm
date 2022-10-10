@@ -519,7 +519,7 @@ document.addEventListener('keydown', function(e) {
   }
 
   if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field) {
-    // tier up
+    // upgrade tier
     var did_something = false;
     did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
     var upgraded = did_something;
@@ -586,9 +586,9 @@ document.addEventListener('keydown', function(e) {
     if(state.field2[shiftCrop2FlexY]) {
       var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
       if(f) {
-        if(f.hasCrop()) {
+        if(f.hasCrop(true)) {
           // pick
-          state.lastPlanted2 = f.getCrop().index;
+          state.lastPlanted2 = f.getCrop(true).index;
         } else {
           // plant
           if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
@@ -610,7 +610,7 @@ document.addEventListener('keydown', function(e) {
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f) {
-        if(f.hasCrop()) {
+        if(f.hasCrop(true)) {
           // delete crop
           addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
           did_something = true;

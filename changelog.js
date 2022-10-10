@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.6.6 (2022-10-10):';
+  text += '<br/>• Added a halloween event, which unlocks a pumpkin crop that takes 2x2 field spaces, requiring new layouts to use it well. This event will last 1 month.';
+  text += '<br/>• Added a page 2 to the blueprint dialog, doubling the amount of available blueprints. The "p" key is a shortcut to switch pages.';
+  text += '<br/>• Bugfixes.'; // mostly infernal challenge season related
+  text += '<br/><br/>';
+
   text += '0.6.5 (2022-09-18):';
   text += '<br/>• In spring, bees can now diagonally reach flowers (but not in the rockier challenge).';
   text += '<br/>• Fixed auto-action taking fern before all blueprint templates planted by automaton: it now waits a few seconds before picking up fern.';

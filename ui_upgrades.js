@@ -114,8 +114,8 @@ function rerenderUpgradeChip(u, chip, completed, opt_ui_location) {
   return chip;
 }
 
-
-var getUpgradeInfoText = function(u, completed) {
+// opt_detailed: for dialog. Also adds text about crop itself, if it's an unlock upgrade.
+var getUpgradeInfoText = function(u, completed, opt_detailed) {
   var cost = u.getCost(completed ? -1 : 0);
   var infoText = '';
 
@@ -164,6 +164,11 @@ var getUpgradeInfoText = function(u, completed) {
     infoText += '<br>';
     infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
     if(c2.prestige) infoText += 'Prestiged: ' + c2.prestige + 'x<br>';
+
+    if(opt_detailed) {
+      var c = crops[u.cropid];
+      if(c) infoText += '<br>' + c.tagline;
+    }
   }
   return infoText;
 };
@@ -177,7 +182,7 @@ function renderUpgradeDialog(chip, completed) {
       addAction({type:ACTION_UPGRADE, u:u.index, shift:false});
       if(u.maxcount == 1) closeAllDialogs();
       update();
-      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed);
+      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
       return true;
     };
     okname = u.maxcount == 1 ? 'buy' : 'buy one';
@@ -189,7 +194,7 @@ function renderUpgradeDialog(chip, completed) {
       addAction({type:ACTION_UPGRADE, u:u.index, shift:true});
       //closeAllDialogs();
       update();
-      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed);
+      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
       return true;
     };
     extraname = 'buy many';
@@ -203,7 +208,7 @@ function renderUpgradeDialog(chip, completed) {
     title:upper(u.name),
     iconmargin:0.1
   });
-  dialog.content.div.innerHTML = getUpgradeInfoText(u, completed);
+  dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
   renderUpgraceIcon(dialog.icon, u);
 
 }

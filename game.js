@@ -155,6 +155,7 @@ function resetGlobalStateVars(opt_state) {
   savegame_recovery_situation = false;
   prefield = [];
   prev_season = undefined;
+  prev_season2 = undefined;
   large_time_delta = false;
   heavy_computing = false;
   large_time_delta_time = 0;
@@ -225,6 +226,8 @@ function unlockTemplates() {
     }
 
     if(!no_nuts_challenge) state.crops[nut_template].unlocked = haveSquirrel();
+
+    state.crops[pumpkin_template].unlocked = pumpkinUnlocked();
   } else {
     // templates disabled in bee challenge because: no templates available for some challenge-specific crops, could be confusing. note also that the beehive template is not for the bee challenge's special beehive.
     // templates disabled in nodelete challenge because: not a strong reason actually and the code to allow deleting templates in nodelete challenge is even implemented, but by default templates cause automaton to upgrade them, and that would cause nodelete challenge to fail early since the cropss ey cannot be upgraded to a better type
@@ -237,6 +240,7 @@ function unlockTemplates() {
     state.crops[bee_template].unlocked = false;
     state.crops[mistletoe_template].unlocked = false;
     state.crops[nut_template].unlocked = false;
+    state.crops[pumpkin_template].unlocked = false;
   }
 
   if(state.crops2[automaton2_0].unlocked) {
@@ -842,7 +846,7 @@ function loadUndo() {
 function getRandomPreferablyEmptyFieldSpot() {
   var num = 0;
   num = state.numemptyfields;
-  var minemptyspots = holidayEventActive() ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
+  var minemptyspots = (holidayEventActive(0) || holidayEventActive(1)) ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
   if(num < minemptyspots) {
     var x = Math.floor(Math.random() * state.numw);
     var y = Math.floor(Math.random() * state.numh);
@@ -920,14 +924,13 @@ function getSeasonTime(time) {
   return  time - state.g_starttime - state.g_pausetime - state.seasonshift;
 }
 
-// for state.seasonshifted, not state.seasonshift
+// for state.seasonshifted, not state.seasonshift. This is a correction for when adding 1h to season when it's at end of the 4*24h cycle.
 function getSeasonShifted() {
   return state.seasonshifted ? (24 * 3600) : 0;
 }
 
-function getSeasonAtUnshifted(time) {
-  if(state.challenge == challenge_infernal) return 5;
-
+// the underlying season, only returns 4 possible seasons, does not take challenge with alternative seasons (like infernal) into account
+function getPureSeasonAtUnshifted(time) {
   var t = getSeasonTime(time);
   if(isNaN(t) || t == Infinity || t == -Infinity) return 0;
   t /= (24 * 3600);
@@ -936,8 +939,14 @@ function getSeasonAtUnshifted(time) {
   return result;
 }
 
+function getPureSeasonAt(time) {
+  return getPureSeasonAtUnshifted(time + getSeasonShifted());
+}
+
 function getSeasonAt(time) {
-  return getSeasonAtUnshifted(time + getSeasonShifted());
+  if(state.challenge == challenge_infernal) return 5;
+
+  return getPureSeasonAt(time);
 }
 
 /*
@@ -1156,6 +1165,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
   for(var y = 0; y < h; y++) {
     if(!prefield[y]) prefield[y] = [];
     for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
       if(prefield[y][x]) {
         prefield[y][x].reset();
       } else {
@@ -1167,7 +1177,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
   state.mistletoes = 0;
   state.workerbeeboost = Num(0);
 
-  // pass 0: precompute several types of boost to avoid too many recursive calls when computing regular boosts: bee challenge, nettle and beehive
+  // pass 0: precompute several types of boost to avoid too many recursive calls when computing regular boosts: bee challenge, nettle, beehive
 
   // bee challenge
   if(state.challenge == challenge_bees) {
@@ -1233,7 +1243,13 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
           var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
           if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+          if(dir >= 4 && !diagConnected(x, y, x2, y2, state.field)) continue;
           var f2 = state.field[y2][x2];
+          if(f2.index == FIELD_MULTIPART) {
+            f2 = f2.getMainMultiPiece();
+            x2 = f2.x;
+            y2 = f2.y;
+          }
           var c = f2.getCrop();
           if(!c) continue;
           var diagonal = (c.type == CROPTYPE_MISTLETOE) ? !!state.upgrades2[upgrade2_diagonal_mistletoes].count : haveDiagonalTreeWarmth();
@@ -1248,6 +1264,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
   var numbeedirs = haveDiagonalBees() ? 8 : 4;
 
   // nettles and beehives
+  var have_pumpkin = false; // optimization for further below
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1262,6 +1279,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           p.boost = c.getBoostBoost(f, pretend);
           p.hasbreakdown_boostboost = true;
         }
+        if(c.type == CROPTYPE_PUMPKIN) have_pumpkin = true;
       }
     }
   }
@@ -1271,10 +1289,11 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
-        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BERRY) {
-          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
+          var dirs = f.getNeighborDirsFrom(false);
+          for(var dir = 0; dir < dirs.length; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + dirs[dir][0];
+            var y2 = y + dirs[dir][1];
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
@@ -1301,6 +1320,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
             var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            if(dir >= 4 && !diagConnected(x, y, x2, y, state.field)) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_BEE) {
@@ -1353,12 +1373,18 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
             var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            if(dir >= 4 && !diagConnected(x, y, x2, y2, state.field)) continue;
+            var f2 = state.field[y2][x2];
+            if(f2.index == FIELD_MULTIPART) {
+              f2 = f2.getMainMultiPiece();
+              x2 = f2.x;
+              y2 = f2.y;
+            }
             var p2 = prefield[y2][x2];
             p2.leech.addInPlace(leech);
-            var f2 = state.field[y2][x2];
             var c2 = f2.getCrop(); // 'brassicaneighbors' is used for display purposes only (for which breakdown to show), so include templates and ghosts in this. Do change this to f2.getRealCrop() if this is ever used for a non-display purpose...
             if(c2) {
-              if(c2.type == CROPTYPE_BERRY) p.brassicaneighbors |= 1;
+              if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) p.brassicaneighbors |= 1;
               if(c2.type == CROPTYPE_MUSH) p.brassicaneighbors |= 2;
               if(c2.type == CROPTYPE_NUT) p.brassicaneighbors |= 4;
             }
@@ -1372,6 +1398,27 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
 
   // pass 3: compute basic production/consumption of each cell, without taking input/output connections (berries to mushrooms) into account, just the full value
   // production without leech, consumption with leech (if watercress leeches from mushroom, adds that to its consumption, but not the leeched spores production, that's added in a later step)
+  if(have_pumpkin) {
+    // compute the base income for pumpkin, which is based on best berry without taking their neighbor boosts into acocunt
+    state.bestberryforpumpkin = Res();
+    state.bestberryforpumpkin_expected = Res();
+    state.bestberryforpumpkin_prestige = false;
+    for(var y = 0; y < h; y++) {
+      for(var x = 0; x < w; x++) {
+        var f = state.field[y][x];
+        var c = f.getRealCrop();
+        if(c && c.type == CROPTYPE_BERRY) {
+          var current = c.getProd(f, 3, undefined);
+          if(current.seeds.gt(state.bestberryforpumpkin.seeds)) {
+            state.bestberryforpumpkin = current;
+            state.bestberryforpumpkin_prestige = state.crops[c.index].prestige;
+          }
+          var current2 = c.getProd(f, 4, undefined);
+          if(current2.seeds.gt(state.bestberryforpumpkin_expected.seeds)) state.bestberryforpumpkin_expected = current2;
+        }
+      }
+    }
+  }
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1403,20 +1450,26 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       var f = state.field[y][x];
       var c = f.getRealCrop();
       if(c) {
-        if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
+        if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_MUSH) {
           var p = prefield[y][x];
-          for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-            var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-            var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+          var dirs = f.getNeighborDirsFrom(false);
+          for(var dir = 0; dir < dirs.length; dir++) { // get the neighbors N,E,S,W
+            var x2 = x + dirs[dir][0];
+            var y2 = y + dirs[dir][1];
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
+            if(f2.index == FIELD_MULTIPART) {
+              f2 = f2.getMainMultiPiece();
+              x2 = f2.x;
+              y2 = f2.y;
+            }
             var c2 = f2.getRealCrop();
             if(c2) {
               var p2 = prefield[y2][x2];
-              if(c.type == CROPTYPE_BERRY && c2.type == CROPTYPE_MUSH) {
+              if((c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) && c2.type == CROPTYPE_MUSH) {
                 p.consumers.push(p2);
               }
-              if(c.type == CROPTYPE_MUSH && c2.type == CROPTYPE_BERRY) {
+              if(c.type == CROPTYPE_MUSH && (c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN)) {
                 p.producers.push(p2);
               }
             }
@@ -1553,13 +1606,19 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
             var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+            if(dir >= 4 && !diagConnected(x, y, x2, y2, state.field)) continue;
             var f2 = state.field[y2][x2];
+            if(f2.index == FIELD_MULTIPART) {
+              f2 = f2.getMainMultiPiece();
+              x2 = f2.x;
+              y2 = f2.y;
+            }
             var c2 = f2.getRealCrop();
             if(c2) {
               var p2 = prefield[y2][x2];
-              if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
+              if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
                 // leech ratio that applies here
-                var leech = (c2.type == CROPTYPE_NUT) ? leech_nuts : (c2.type == CROPTYPE_BERRY ? leech_berry : leech_mush);
+                var leech = (c2.type == CROPTYPE_NUT) ? leech_nuts : ((c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) ? leech_berry : leech_mush);
                 // leeched resources
                 var leech2 = p2.prod2.mul(leech);
                 // leeched resources for UI only with possibly negative consumption (see description of prod3, is used for the hypothetical display)
@@ -1625,7 +1684,13 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
         var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
         if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+        if(dir >= 4 && !diagConnected(x, y, x2, y2, state.field)) continue;
         var f2 = state.field[y2][x2];
+        if(f2.index == FIELD_MULTIPART) {
+          f2 = f2.getMainMultiPiece();
+          x2 = f2.x;
+          y2 = f2.y;
+        }
         var c2 = f2.getCrop();
         if(!c2) continue;
         if(score_ignore_templates && !c2.isReal()) continue;
@@ -1656,7 +1721,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       }
     }
   }
-  // a next pass to add add berry bonus to flowers
+  // a next pass in the automaton heuristics to add add berry bonus to flowers
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1674,6 +1739,11 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
         if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
         var f2 = state.field[y2][x2];
+        if(f2.index == FIELD_MULTIPART) {
+          f2 = f2.getMainMultiPiece();
+          x2 = f2.x;
+          y2 = f2.y;
+        }
         var c2 = f2.getCrop();
         if(!c2) continue;
         var p2 = prefield[y2][x2];
@@ -1682,13 +1752,13 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           if(c2.type == CROPTYPE_BEE) score_mul++;
           if(c2.type == CROPTYPE_STINGING) score_malus *= 0.5;
           // these 3 values and their multipliers are tweaked to make sensible choices for relative value of berries, mushrooms and nuts and likely intended preference
-          if(c2.type == CROPTYPE_BERRY) score_num += p2.score;
+          if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) score_num += p2.score;
           if(c2.type == CROPTYPE_MUSH) score_num += p2.score * 0.5;
           if(c2.type == CROPTYPE_NUT) score_num += 0.65;
         }
         if(c.type == CROPTYPE_STINGING) {
           if(c2.type == CROPTYPE_MUSH) score_num++;
-          if(c2.type == CROPTYPE_BERRY) score_num--;
+          if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) score_num--;
           if(c2.type == CROPTYPE_NUT) score_num--;
           if(c2.type == CROPTYPE_FLOWER) score_num--;
         }
@@ -2218,7 +2288,7 @@ function computeNextAutoPlant() {
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
   // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
-  var types = [CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_STINGING, CROPTYPE_NUT];
+  var types = [CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_STINGING, CROPTYPE_NUT, CROPTYPE_PUMPKIN];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
@@ -2234,6 +2304,8 @@ function computeNextAutoPlant() {
       var crop = getCheapestNextOfCropType(type, state.highestoftypeplanted[type]);
       if(!crop) continue;
     }
+
+    if(type == CROPTYPE_PUMPKIN && state.cropcount[pumpkin_0]) continue;
 
 
     // how much resources willing to spend
@@ -2342,7 +2414,9 @@ function computeNextAutoUnlock() {
     if(!u.iscropunlock) continue;
     if(!u2.unlocked) continue;
     if(u2.count) continue;
-    if(u.cropid == undefined) continue
+    if(u.cropid == undefined) continue;
+    var c = crops[u.cropid];
+    if(c.type == CROPTYPE_PUMPKIN && !state.anycroptypecount[CROPTYPE_PUMPKIN]) continue; // don't auto-unlock pumpkin unless there's at least a pumpkin template on the field: this crop only appears during halloween, so make it visible to the user that it exists at all, by not having automaton immediately make the only upgrade with its icon invisible
 
     var cost = u.getCost();
     if(state.automaton_autounlock_max_cost.gtr(0) && cost.seeds.gtr(state.automaton_autounlock_max_cost)) continue;
@@ -2350,7 +2424,7 @@ function computeNextAutoUnlock() {
     // how much resources willing to spend. This uses the same fractions as autoplant does.
     var advanced = autoFinetuningUnlocked();
     var fraction_array = state.automaton_autounlock_copy_plant_fraction ? state.automaton_autoplant_fraction : state.automaton_autounlock_fraction;
-    var fraction = getAutoFraction(advanced, fraction_array, crops[u.cropid].type);
+    var fraction = getAutoFraction(advanced, fraction_array, c.type);
 
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
@@ -2647,6 +2721,7 @@ function registerUpdateListener(updatefun) {
 
 var prev_season = undefined;
 var prev_season_gain = undefined;
+var prev_season2 = undefined;
 
 var last_fullgrown_sound_time0 = 0;
 var last_fullgrown_sound_time1 = 0;
@@ -2742,6 +2817,7 @@ var update = function(opt_ignorePause) {
   var negative_time_used = false;
 
   var num_season_changes = 0; // num season changes during this loop of update(), as oppoosed to global_season_changes which can span multiple long-tick updates
+  var num_season_changes2 = 0; // similar as num_season_changes but for the underlying 4 seasons only, e.g. does not count doing infernal challenge with its special season as a season change
 
   var oldres = Res(state.res);
   var oldtime = state.prevtime; // time before even multiple updates from the loop below happened
@@ -2885,7 +2961,13 @@ var update = function(opt_ignorePause) {
       global_season_changes++;
     }
 
-    if(state.seasonshifted && (getSeasonAtUnshifted(state.time) != getSeasonAtUnshifted(state.prevtime) || season_will_change)) state.seasonshifted = 0;
+    var current_season2 = getPureSeasonAt(state.time);
+    var season_will_change2 = current_season2 != getPureSeasonAt(nexttime);
+    if(current_season2 != prev_season2 && prev_season2 != undefined) num_season_changes2++;
+    prev_season2 = current_season2;
+
+    if(state.seasonshifted && (getPureSeasonAtUnshifted(state.time) != getPureSeasonAtUnshifted(state.prevtime) || season_will_change2)) state.seasonshifted = 0;
+
 
     state.g_runtime += d;
     state.c_runtime += d;
@@ -3235,6 +3317,12 @@ var update = function(opt_ignorePause) {
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field[action.y][action.x];
 
+        if(f.index == FIELD_MULTIPART) {
+          f = f.getMainMultiPiece();
+          action.x = f.x;
+          action.y = f.y;
+        }
+
         var orig_growth = f.growth;
         var orig_brassica = f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA;
 
@@ -3336,6 +3424,31 @@ var update = function(opt_ignorePause) {
           } else if(c.type == CROPTYPE_NUT && c.isReal() && tooManyNutsPlants(type == ACTION_REPLACE && f.hasRealCrop() && f.getCrop().type == CROPTYPE_NUT)) {
             showMessage('you can only plant max 1 nut plant in the field', C_INVALID, 0, 0);
             ok = false;
+          } else if(c.index == pumpkin_0 && state.cropcount[pumpkin_0]) {
+            showMessage('already have a pumpkin, cannot place more', C_INVALID, 0, 0);
+            ok = false;
+          }
+
+          if(c.quad) {
+            // NOTE: this also requires empty tiles when using "replace crop", instead of "plant crop" because checking for the delete conditions of the other 3 not implemented
+            // the tile at x,y itself is not checked since that's handled the regular way
+            var fits = true;
+            var x = action.x;
+            var y = action.y;
+            if(x + 1 >= state.numw || y + 1 >= state.numh) {
+              fits = false;
+            } else {
+              var f01 = state.field[y][x + 1];
+              var f10 = state.field[y + 1][x];
+              var f11 = state.field[y + 1][x + 1];
+              if(!(f01.isEmpty() || f01.getMainMultiPiece() == f) || !(f10.isEmpty() || f10.getMainMultiPiece() == f) || !(f11.isEmpty() || f11.getMainMultiPiece() == f)) {
+                fits = false;
+              }
+            }
+            if(!fits) {
+              showMessage('the pumpkin requires a 2x2 open field plot to plant. The pumpkin is planted with the top left corner where you click, and requires a free space to the right, bottom and bottom-right.', C_INVALID, 0, 0);
+              ok = false;
+            }
           }
         }
 
@@ -3355,6 +3468,15 @@ var update = function(opt_ignorePause) {
                   state.c_numautodelete++;
                   state.g_numautodelete++;
                 }
+              }
+            }
+            if(c.quad) {
+              // the from tile is the main tile of the pumpkin (the top left one), so delete the 3 tiles right/bottom/bottom-right
+              var coords = [[0, 1], [1, 0], [1, 1]];
+              for(var cc = 0; cc < coords.length; cc++) {
+                var coord = coords[cc];
+                state.field[action.y + coord[1]][action.x + coord[0]].index = 0;
+                state.field[action.y + coord[1]][action.x + coord[0]].growth = 0;
               }
             }
             f.index = 0;
@@ -3393,6 +3515,14 @@ var update = function(opt_ignorePause) {
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
           f.growth = 0;
+          if(c.quad) {
+            var coords = [[0, 1], [1, 0], [1, 1]];
+            for(var cc = 0; cc < coords.length; cc++) {
+              var coord = coords[cc];
+              state.field[action.y + coord[1]][action.x + coord[0]].index = FIELD_MULTIPART;
+              state.field[action.y + coord[1]][action.x + coord[0]].growth = 0;
+            }
+          }
           if(c.type == CROPTYPE_BRASSICA) {
             var automated = (type == ACTION_REPLACE && action.by_automaton && orig_brassica);
             if(automated) f.growth = orig_growth;
@@ -3637,7 +3767,7 @@ var update = function(opt_ignorePause) {
         }
       } else if(type == ACTION_PRESENT) {
         if(fast_forwarding) continue;
-        if(!holidayEventActive()) continue;
+        if(!holidayEventActive(0) && !holidayEventActive(1)) continue;
 
         if(state.present_effect && state.presentx == action.x && state.presenty == action.y) {
           clickedpresent = true;
@@ -3954,6 +4084,8 @@ var update = function(opt_ignorePause) {
           state.automaton_autounlock = action.on;
         }
         if(action.what == 5) {
+          // if player enables auto action at some later point, don't trigger all earlier conditions at once now, that is most likely not intended. And if it is intended, this still would not work well since it may try to trigger multiple actions at once
+          if(action.on) markTriggeredAutoActionsAsDone();
           state.automaton_autoaction = action.on;
         }
         if(action.fun) action.fun();
@@ -4256,7 +4388,7 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    if(!holidayEventActive()) {
+    if(!holidayEventActive(0) && !holidayEventActive(1)) {
       state.present_effect = 0;
     } else {
       // presents are now actually eggs (spring 2022)
@@ -4851,7 +4983,7 @@ var update = function(opt_ignorePause) {
   }
 
 
-  if(num_season_changes > 0) {
+  if(num_season_changes2 > 0) {
     state.amberseason = false;
   }
 

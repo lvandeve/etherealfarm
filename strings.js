@@ -46,7 +46,7 @@ var leechInfo = 'Copy ability: if this plant has orthogonal (non-diagonal) berry
 var altChallengeBonusInfo = 'This challenge uses the alternate bonus pool, it is part of a separate multiplier and so has more effect than regular challenges';
 var pausedMessage = 'game paused';
 var unpausedMessage = 'game resumed from pause';
-var etherealDeleteExtraInfo = 'You can re-arrange the ethereal field (deleting crops) only at the start of a run, once more at any time later during the run, and after that once every two hours. Planting, tier up, or if you have no automaton or squirrel replacing 1 crop by it, is always possible.';
+var etherealDeleteExtraInfo = 'You can re-arrange the ethereal field (deleting crops) only at the start of a run, once more at any time later during the run, and after that once every two hours. Planting, upgrade tier, or if you have no automaton or squirrel replacing 1 crop by it, is always possible.';
 var squirrelEvolutionHelp = `
 This will reset all squirrel upgrades and remove their effects (including layout effects such as diagonal brassica), set your nuts to zero, and keep them zero until transcension.
 <br><br>

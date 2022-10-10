@@ -709,3 +709,63 @@ function blendImages(a, b) {
   }
   return [r, w, h];
 }
+
+// downscales image given as text string
+// if the amount of lines (after stripping) is odd, the first is assumed to be a header line
+function downscale2x2(text) {
+  text = text.trim();
+  var lines = text.split('\n');
+  var header = '';
+  if(lines.length & 1) {
+    header = lines[0] + '\n';
+    lines.shift();
+  }
+  var result = header;
+  var w2 = lines[0].length;
+  var h2 = lines.length;
+  var w = w2 >> 1;
+  var h = h2 >> 1;
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var x2 = x * 2;
+      var y2 = y * 2;
+      var c = lines[y2][x2];
+      if(c == ' ' || c == '.') c = lines[y2][x2 + 1];
+      if(c == ' ' || c == '.') c = lines[y2 + 1][x2];
+      if(c == ' ' || c == '.') c = lines[y2 + 1][x2 + 1];
+      result += c;
+    }
+    result += '\n';
+  }
+  return result;
+}
+
+
+// turns image given as text into 4 images that subdivide it in 2x2 quarts
+// if the amount of lines (after stripping) is odd, the first is assumed to be a header line
+function extract2x2(text) {
+  text = text.trim();
+  var lines = text.split('\n');
+  var header = '';
+  if(lines.length & 1) {
+    header = lines[0] + '\n';
+    lines.shift();
+  }
+  var result = [];
+  var w2 = lines[0].length;
+  var h2 = lines.length;
+  var w = w2 >> 1;
+  var h = h2 >> 1;
+  for(var y2 = 0; y2 < 2; y2++) {
+    for(var x2 = 0; x2 < 2; x2++) {
+      result[y2 * 2 + x2] = header;
+      for(var y = 0; y < h; y++) {
+        for(var x = 0; x < w; x++) {
+          result[y2 * 2 + x2] += lines[y2 * h + y][x2 * w + x];
+        }
+        result[y2 * 2 + x2] += '\n';
+      }
+    }
+  }
+  return result;
+}

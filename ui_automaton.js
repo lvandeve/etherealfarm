@@ -68,7 +68,7 @@ function showConfigureAutoResourcesDialog(subject) {
       // auto-plant and auto-unlock
       typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe', 'brassica'];
       order = [3, 4, 5, 6, 7, 8, 2]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
-      if(subject == 1 || state.challenges[challenge_wasabi].completed) {
+      if(subject == 1) {
         statefraction = state.automaton_autoplant_fraction;
       } else {
         statefraction = state.automaton_autounlock_fraction;
@@ -477,7 +477,16 @@ function getBluePrintActionDescription(o) {
 }
 
 
-function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
+function markTriggeredAutoActionsAsDone() {
+  var num = numAutoActionsUnlocked();
+  for(var j = 0; j < num; j++) {
+    var b = state.automaton_autoactions[j];
+    b.done = autoActionTriggerConditionReached(b);
+  }
+}
+
+
+function showConfigureAutoActionTriggerDialog(index, closefun) {
   var o = state.automaton_autoactions[index];
 
   o.done = o.done2 = true; // don't trigger while editing, it can be unexpected
@@ -599,7 +608,7 @@ function showConfigureAutoBlueprintTriggerDialog(index, closefun) {
 }
 
 
-function showConfigureAutoBlueprintActionDialog(index, closefun) {
+function showConfigureAutoActionEffectDialog(index, closefun) {
   var dialog = createDialog({
     onclose:closefun,
     scrollable:true,
@@ -800,7 +809,7 @@ function showConfigureAutoBlueprintDialog() {
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Edit trigger';
     addButtonAction(flex.div, bind(function(j) {
-      showConfigureAutoBlueprintTriggerDialog(j, function() {
+      showConfigureAutoActionTriggerDialog(j, function() {
         updateInfoFlex(j);
       });
     }, j));
@@ -811,7 +820,7 @@ function showConfigureAutoBlueprintDialog() {
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Edit action';
     addButtonAction(flex.div, bind(function(j) {
-      showConfigureAutoBlueprintActionDialog(j, function() {
+      showConfigureAutoActionEffectDialog(j, function() {
         updateInfoFlex(j);
       });
     }, j));

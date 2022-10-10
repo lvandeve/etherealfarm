@@ -232,7 +232,7 @@ function makeUpgradeCrop2Action(x, y, opt_silent) {
         showMessage('not enough resources for next crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString(), C_INVALID, 0, 0);
       } else if(!(x >= 0 && x < state.numw2 && y >= 0 && y < state.numh2) || state.field2[y][x].index < CROPINDEX) {
-        showMessage('No crop to tier up here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+        showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
       } else {
         showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
       }
@@ -565,7 +565,7 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
     var last0 = undefined;
 
     styleButton(button0);
-    button0.textEl.innerText = 'Tier up';
+    button0.textEl.innerText = 'Upgrade tier';
     registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
       if(makeUpgradeCrop2Action(x, y)) {
@@ -575,7 +575,7 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Tier down';
+    button1.textEl.innerText = 'Downgrade tier';
     if(!canEtherealDelete() && !freeDelete2(x, y)) button1.textEl.style.color = '#888';
     registerTooltip(button1, 'Downgrade crop to 1 tier lower (refunding the resin cost difference), if it already is at the lowest tier it will be turned into a blueprint template. Only works if deleitng in ethereal field is currently possible. ' + etherealDeleteExtraInfo);
     addButtonAction(button1, function() {

@@ -130,6 +130,18 @@ function getCropOrder() {
 
   var highest;
 
+  // most expensive pumpkin
+  highest = undefined;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    var c = crops[unlocked[i]];
+    if(c.type == CROPTYPE_PUMPKIN && (!highest || c.cost.gt(highest.cost))) highest = c;
+  }
+  if(highest) {
+    result.push(highest.index);
+    added[highest.index] = true;
+  }
+
   // most expensive berry
   highest = undefined;
   for(var i = 0; i < unlocked.length; i++) {
@@ -236,7 +248,7 @@ function getCropOrder() {
     var ac = crops[a].cost.seeds;
     var bc = crops[b].cost.seeds;
     if(ac.eqr(0) || bc.eqr(0)) {
-      // for nuts taht cost spores instead of seeds
+      // for nuts that cost spores instead of seeds
       ac = Num(crops[a].tier);
       bc = Num(crops[b].tier);
     }
@@ -277,7 +289,7 @@ function showPlantingHelp() {
   text += '<br><br>';
   text += 'To replace a crop to the highest unlocked tier of its type that you can afford:';
   text += '<br>';
-  text += '• Click the crop on the field, then the "Tier up" button';
+  text += '• Click the crop on the field, then the "Upgrade tier" button';
   text += '<br>';
   text += '• OR: Hover mouse over the crop in the field, then press the "u" key';
   text += '<br>';

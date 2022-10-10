@@ -35,6 +35,7 @@ var CROPTYPE_CHALLENGE = croptype_index++; // only exists for challenges
 var CROPTYPE_FERN2 = croptype_index++; // ethereal fern, giving starter money
 var CROPTYPE_SQUIRREL = croptype_index++;
 var CROPTYPE_NUT = croptype_index++;
+var CROPTYPE_PUMPKIN = croptype_index++; // halloween pumpkin
 var NUM_CROPTYPES = croptype_index;
 
 // for prestige
@@ -61,6 +62,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_FERN2) return 'fern';
   if(type == CROPTYPE_SQUIRREL) return 'squirrel';
   if(type == CROPTYPE_NUT) return 'nuts';
+  if(type == CROPTYPE_PUMPKIN) return 'pumpkin';
   return 'unknown';
 }
 
@@ -77,6 +79,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
     case CROPTYPE_NUT: return 'Produces nuts. Can have only max 1 nut plant in the field. Neighboring watercress can copy its production, but less effectively than it copies berries. Receives a limited fixed boost from flowers of high enough tier. Not boosted by other standard berry and mushroom production boosts.';
+    case CROPTYPE_PUMPKIN: return 'A crop for the halloween holiday event. It will be no longer available when the event is over.';
   }
   return undefined;
 }
@@ -218,6 +221,9 @@ function Crop() {
   this.isghost = false; // if true, is a ghost. This is a remainder of a plant, currently only used for the undeletable challenge when a crop is prestiged: the ghost of the unprestiged versions remains, to ensure it still cannot be deleted
 
   this.cached_prestige_ = 0; // for recomputing crop stats data if prestige changed: the cost, prod, ... fields of this crop are overwritten for prestige
+
+  this.quad = false; // if true, takes up 2x2 field spaces
+  this.images_quad = undefined; // if quad is true, must be array of 4 images
 };
 
 var sameTypeCostMultiplier = 1.5;
@@ -378,7 +384,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
-  if(season == 1 && this.type == CROPTYPE_BERRY) {
+  if(season == 1 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = getSummerBerryBonus();
     result.mulInPlace(bonus);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
@@ -398,15 +404,15 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
   }
 
   // with ethereal upgrades, autumn also benefits mushrooms a bit, to catch up with other seasons ethereal upgrades
-  if(season == 2 && this.type == CROPTYPE_BERRY) {
+  if(season == 2 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = getAutumnBerryBonus();
     result.posmulInPlace(bonus);
     if(breakdown && bonus.neqr(1)) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
-  if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER || this.type == CROPTYPE_BEE || this.type == CROPTYPE_NUT) && f) {
+  if(season == 3 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_FLOWER || this.type == CROPTYPE_BEE || this.type == CROPTYPE_NUT) && f) {
     var weather_ignore = false;
-    if(this.type == CROPTYPE_BERRY && sunActive()) weather_ignore = true;
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) && sunActive()) weather_ignore = true;
     if(this.type == CROPTYPE_MUSH && mistActive()) weather_ignore = true;
     if(this.type == CROPTYPE_FLOWER && rainbowActive()) weather_ignore = true;
 
@@ -420,8 +426,13 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     }
 
     // winter tree warmth
-    if(p.treeneighbor && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+    if(p.treeneighbor && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN || this.type == CROPTYPE_MUSH)) {
       var bonus = getWinterTreeWarmth();
+      if(this.quad) {
+        // quad crop is overpowered in winter if it gets the full winter warmth, instead take into account it only partially touches the tree since it's so big
+        // NOTE: even better would be to do it percentage wise for amount of pieces touching the tree. However, that will always either be 25% or 50%, and 50% if well placed, so simplifying it to always 50% is ok
+        bonus = bonus.subr(1).mulr(0.5).addr(1);
+      }
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['winter tree warmth', true, bonus, result.clone()]);
     }
@@ -437,7 +448,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
   if(state.challenge == challenge_infernal && season == 5 && this.tier >= 0) {
     var tier_effective = -1;
     var upgrade_base = undefined;
-    if(this.type == CROPTYPE_BERRY) {
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
       tier_effective = this.tier;
       upgrade_base = infernal_berry_upgrade_base;
     }
@@ -488,6 +499,7 @@ Crop.prototype.computeBeehiveBoostReceived_ = function(f, pretend) {
     var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
     var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
     if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+    if(dir >= 4 && !diagConnected(f.x, f.y, x2, y2, state.field)) continue;
     var n = state.field[y2][x2];
     if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_BEE) {
       var boostboost = n.getCrop().getBoostBoost(n, pretend);
@@ -505,15 +517,19 @@ var flower_nut_boost = Num(0.25);
 // prefield must already have been computed for flowers, bees and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called, unless pretent is non-0
 // pretend: if anything else than 0, pretents crops are fullgrown, and cannot use the prefield computations so is slower to compute
 //  0: normal
-//  1: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI
-//  2: same as 1, but for tooltips/dialogs/..., so will also include brassica copying, but normally precomputefield handles this instead
+//  1: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI, ...
+//  2: same as 1, but for tooltips/dialogs/expected hypothetical gain display/..., so will also include brassica copying, but normally precomputefield handles this instead
+//  3: compute the value for best berry for the pumpkin income. Must include all berry specific bonuses and its growth, but not the pumpkin bonuses. The max of all berries from this must be stored in state.bestberryforpumpkin, and then if the crop type is CROPTYPE_PUMPKIN it uses this value as base
+//  4: same as 3, but assuming the crop is fullgrown
 Crop.prototype.getProd = function(f, pretend, breakdown) {
-
-  //if(state.challenge == challenge_wasabi) return new Res(); // commented out: this is not handled here since this computation is still needed for brassica itself
-
   var basic = basicChallenge();
 
   var result = new Res(this.prod);
+  if(this.type == CROPTYPE_PUMPKIN) {
+    var best = state.bestberryforpumpkin;
+    if(pretend == 1 || pretend == 2 || pretend == 4) best = state.bestberryforpumpkin_expected;
+    result = new Res(best);
+  }
   if(breakdown) {
     if(state.crops[this.index].prestige > 0) {
       breakdown.push(['base', true, Num(0), this.prod0.clone()]);
@@ -523,15 +539,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       breakdown.push(['base', true, Num(0), result.clone()]);
     }
   }
-
-  if(!basic) {
-    // squirrel evolution
-    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
-      if(state.evolution3 > 0) {
-        result.mulInPlace(squirrel_epoch_prod_bonus);
-        if(breakdown) breakdown.push(['squirrel evolution', true, squirrel_epoch_prod_bonus, result.clone()]);
-      }
-    }
+  if(this.type == CROPTYPE_PUMPKIN) {
+    result.mulInPlace(pumpkin_multiplier);
+    if(breakdown) breakdown.push(['pumpkin', true, pumpkin_multiplier, result.clone()]);
   }
 
   if(this.type == CROPTYPE_NUT && state.just_evolution) {
@@ -539,8 +549,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['squirrel evolution in progress', true, Num(0), result.clone()]);
     return result;
   }
+  if(this.quad && f && getQuadPos(f.x, f.y) != 0) {
+    result.mulrInPlace(0);
+    if(breakdown) breakdown.push(['not the main 2x2 crop piece', true, Num(0), result.clone()]);
+    return result;
+  }
 
-  if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
+  if((!pretend || pretend == 3) && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     if(state.challenge == challenge_wither) {
       // wither challenge
       var t = Num(witherCurve(f.growth) * f.growth);
@@ -578,8 +593,23 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
   }
 
+  if(pretend == 3 || pretend == 4) {
+    // don't apply any other mode for this bonus: this is highest base berry production for pumpkin, from itself and its upgrades, all other effects apply to the pumpkin itself
+    return result;
+  }
 
-  if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+
+  if(!basic) {
+    // squirrel evolution
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
+      if(state.evolution3 > 0) {
+        result.mulInPlace(squirrel_epoch_prod_bonus);
+        if(breakdown) breakdown.push(['squirrel evolution', true, squirrel_epoch_prod_bonus, result.clone()]);
+      }
+    }
+  }
+
+  if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
     if(state.upgrades[resin_choice0].count == 2) {
       var mul = Num(resin_choice0_production_bonus + 1);
       result.mulInPlace(mul);
@@ -596,7 +626,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     // amber
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
       if(state.amberprod) {
         var bonus = Num(2);
         result.mulInPlace(bonus);
@@ -609,7 +639,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // fruit
   if(basic != 2) {
-    if(this.type == CROPTYPE_BERRY) {
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
       var level = getFruitAbility(FRUIT_BERRYBOOST, true);
       if(level > 0) {
         var mul = getFruitBoost(FRUIT_BERRYBOOST, level, getFruitTier(true)).addr(1);
@@ -639,7 +669,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_NUTBOOST), true, mul, result.clone()]);
       }
     }
-    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
       var level = getFruitAbility(FRUIT_SEED_OVERLOAD, true);
       if(level > 0) {
         var mul = getFruitBoost(FRUIT_SEED_OVERLOAD, level, getFruitTier(true)).addr(1);
@@ -652,7 +682,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(!basic) {
     // ethereal crops bonus to basic crops
     var ethereal_prodmul = Res.resOne();
-    if(this.type == CROPTYPE_BERRY) {
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
       ethereal_prodmul.seeds = state.ethereal_berry_bonus.addr(1);
     }
     if(this.type == CROPTYPE_MUSH) {
@@ -678,7 +708,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     // tree's gesture ethereal upgrade
-    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
       var gesture = treeGestureBonus();
       if(gesture.neqr(1)) {
         result.seeds.mulInPlace(gesture);
@@ -688,15 +718,19 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     if(haveSquirrel()) {
-      if(this.type == CROPTYPE_BERRY) {
+      if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
         if(state.upgrades3[upgrade3_berry].count) {
           var bonus = upgrade3_berry_bonus.mulr(state.upgrades3[upgrade3_berry].count).addr(1);
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
         }
-        if(state.crops[this.index].prestige && state.upgrades3[upgrade3_prestiged_berry].count) {
+        var this_prestige = state.crops[this.index].prestige;
+        if(this.type == CROPTYPE_PUMPKIN) {
+          this_prestige = state.bestberryforpumpkin_prestige;
+        }
+        if(this_prestige && state.upgrades3[upgrade3_prestiged_berry].count) {
           var bonus = upgrade3_prestiged_berry_bonus.mulr(state.upgrades3[upgrade3_prestiged_berry].count).addr(1);
-          bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
+          bonus = bonus.powr(this_prestige); // applies multiple times for multiple prestiges
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
         }
@@ -728,7 +762,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(breakdown) breakdown.push(['unused resin', true, resin_bonus, result.clone()]);
     }
 
-    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) {
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
       if(haveEtherealMistletoeUpgrade(mistle_upgrade_prod)) {
         var mul = getEtherealMistletoeBonus(mistle_upgrade_prod).addr(1);
         result.mulInPlace(mul);
@@ -736,7 +770,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       }
     }
 
-    if(this.type == CROPTYPE_BERRY) {
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
       if(haveEtherealMistletoeUpgrade(mistle_upgrade_berry)) {
         var mul = getEtherealMistletoeBonus(mistle_upgrade_berry).addr(1);
         result.mulInPlace(mul);
@@ -757,14 +791,16 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   var season = getSeason();
 
   // flower boost
-  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var mul_boost = Num(1);
     var num = 0;
     var x = f.x, y = f.y, w = state.numw, h = state.numh;
 
-    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-      var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-      var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+    var dirs = f.getNeighborDirsFrom(false);
+
+    for(var dir = 0; dir < dirs.length; dir++) {
+      var x2 = x + dirs[dir][0];
+      var y2 = y + dirs[dir][1];
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
       if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_FLOWER) {
@@ -807,7 +843,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // nettle malus
-  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT)) {
+  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT || this.type == CROPTYPE_PUMPKIN)) {
     var p = prefield[f.y][f.x];
     var num = p.num_nettle;
     var malus;
@@ -852,7 +888,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   if(!basic) {
     // multiplicity
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && haveMultiplicity(this.type)) {
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && haveMultiplicity(this.type)) {
       var num = getMultiplicityNum(this);
       if(num > 0) {
         var boost = getMultiplicityBonusBase(this.type).mulr(num).addr(1);
@@ -878,14 +914,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   this.addSeasonBonus_(result, season, f, breakdown);
 
-  if(state.challenge == challenge_stormy && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+  if(state.challenge == challenge_stormy && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var malus = Num(0.5);
     result.mulInPlace(malus);
     if(breakdown) breakdown.push(['stormy', true, malus, result.clone()]);
   }
 
   // sun
-  if(this.type == CROPTYPE_BERRY) {
+  if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
     if(sunActive()) {
       var bonus_sun = getSunSeedsBoost();
       bonus_sun.addrInPlace(1);
@@ -920,13 +956,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   if(!basic) {
     // challenges
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.challenge_bonus.neqr(0)) {
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.challenge_bonus.neqr(0)) {
       var challenge_bonus = state.challenge_bonus.addr(1);
       result.mulInPlace(challenge_bonus);
       if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, result.clone()]);
     }
 
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.upgrades3[upgrade3_highest_level].count && state.g_treelevel > upgrade3_highest_level_min) {
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.upgrades3[upgrade3_highest_level].count && state.g_treelevel > upgrade3_highest_level_min) {
       //var bonus = Num(upgrade3_highest_level_base).pow(Num(state.g_treelevel - upgrade3_highest_level_min));
       var diff = state.g_treelevel - upgrade3_highest_level_min;
       var bonus = Num(diff * upgrade3_highest_level_param1 + 1).powr(upgrade3_highest_level_param2);
@@ -934,7 +970,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(breakdown) breakdown.push(['highest tree level ever ' + state.g_treelevel + ' (squirrel upgrade)', true, bonus, result.clone()]);
     }
 
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.upgrades3[upgrade3_leveltime].count) {
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.upgrades3[upgrade3_leveltime].count) {
       var origtime = weightedTimeAtLevel(state);
       var time = Math.floor(origtime / 60) * 60; // rounded at certain intervals, going stepwise so that e.g. production time prediction timers aren't continuously changing
       if(time > upgrade3_leveltime_maxtime) time = upgrade3_leveltime_maxtime;
@@ -949,7 +985,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     // bee challenge
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH) && state.challenge == challenge_bees) {
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.challenge == challenge_bees) {
       var bonus_bees = getWorkerBeeBonus().addr(1);
       result.posmulInPlace(bonus_bees);
       if(breakdown) breakdown.push(['worker bees (challenge)', true, bonus_bees, result.clone()]);
@@ -957,7 +993,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // present/egg
-  if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH)) {
+  if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = new Num(1.25);
     result.posmulInPlace(bonus);
     //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
@@ -980,10 +1016,15 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
       var f2 = state.field[y2][x2];
+      if(f2.index == FIELD_MULTIPART) {
+        f2 = f2.getMainMultiPiece();
+        x2 = f2.x;
+        y2 = f2.y;
+      }
       var c2 = f2.getCrop();
       if(c2) {
         var p2 = prefield[y2][x2];
-        if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
+        if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT || c2.type == CROPTYPE_PUMPKIN) {
           //total.addInPlace(p2.prod0); // TODO: this is not correct if crops are growing, since precompute is done taking growing into account while pretend does not. To be correct, instead recursively getProd of those neighbors should be called here. However this additional complexity is not super important to implement because pretend == 2 is for display purposes only
           total.addInPlace(c2.getProd(f2, pretend));
           num++;
@@ -1374,6 +1415,7 @@ Crop.prototype.isPostLife = function(f) {
 // croptype: which croptype we're leeching from (CROPTYPE_BERRY, CROPTYPE_MUSH or CROPTYPE_NUTS)
 // aka getCopy
 Crop.prototype.getLeech = function(f, breakdown, croptype) {
+  if(croptype == CROPTYPE_PUMPKIN) croptype = CROPTYPE_BERRY; // pumpkin acts as berry for this
   if(this.type != CROPTYPE_BRASSICA) {
     var result = Num(0);
     if(breakdown) breakdown.push(['none', true, Num(0), result.clone()]);
@@ -1637,6 +1679,13 @@ function registerChallengeCrop(name, tier, cost, planttime, image, opt_tagline) 
   return index;
 }
 
+function registerPumpkinCrop(name, tier, cost, planttime, image, opt_tagline) {
+  var index = registerCrop(name, cost, Res({}), Num(0), planttime, image, opt_tagline, CROPTYPE_PUMPKIN, tier);
+  //var crop = crops[index];
+  return index;
+}
+
+
 // should return 1 for i=0
 function getBerryBase(i) {
   return Num.rpow(2000, Num(i));
@@ -1847,6 +1896,7 @@ var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0
 crops[challengeflower_0].type = CROPTYPE_FLOWER;
 crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+selecting" display work. Since the anemone and aster (both tier 0) are never available at the same time, no confusion is possible.
 
+
 // templates
 
 var templates_for_type = [];
@@ -1867,6 +1917,9 @@ var nettle_template = makeTemplate(registerNettle('stinging template', -1, Num(0
 var bee_template = makeTemplate(registerBeehive('bee template', -1, Num(0), 0, images_beetemplate));
 var mistletoe_template = makeTemplate(registerMistletoe('mistletoe template', -1, 0, images_mistletoetemplate));
 var nut_template = makeTemplate(registerNut('nuts template', -1, 0, images_nutstemplate));
+var pumpkin_template = makeTemplate(registerPumpkinCrop('pumpkin template (2x2)', -1, Num(0), 0, images_pumpkintemplate_small));
+crops[pumpkin_template].quad = true;
+crops[pumpkin_template].images_quad = [images_pumpkintemplate00, images_pumpkintemplate01, images_pumpkintemplate10, images_pumpkintemplate11];
 
 var ghosts_for_type = [];
 
@@ -1886,6 +1939,47 @@ var nettle_ghost = makeGhost(registerNettle('stinging ghost', -1, Num(0), 0, ima
 var bee_ghost = makeGhost(registerBeehive('bee ghost', -1, Num(0), 0, images_beeghost));
 var mistletoe_ghost = makeGhost(registerMistletoe('mistletoe ghost', -1, 0, images_mistletoeghost));
 var nut_ghost = makeGhost(registerNut('nuts ghost', -1, 0, images_nutsghost));
+var pumpkin_ghost = makeGhost(registerPumpkinCrop('pumpkin ghost', -1, Num(0), 0, images_pumpkinghost_small));
+crops[pumpkin_ghost].quad = true;
+crops[pumpkin_ghost].images_quad = [images_pumpkinghost00, images_pumpkinghost01, images_pumpkinghost10, images_pumpkinghost11];
+
+
+
+crop_register_id = 2000;
+
+var halloween_pumpkin_price = Res({seeds:666000000});
+
+// multiplier of the best berry amount for pumpkin
+// if set to 1, the pumpkin crop that takes 4x as much space as berry, produces only as much as a 1x1 berry
+// if set to 4, the pumpkin produces 4x as much as the best berry, so each individual cell of it is worth a full berry
+// however, since the pumpkin has advantages from its size (more neighbors), it already produces more than a similar layout that can be made with berries if this value is set to 1
+// conservatively, 1 would be a good value, but for early gameplay with 5x5 field that would put the pumpkin at a disadvantage, so use a bit more.
+var pumpkin_multiplier = Num(2);
+
+
+/*
+The rules of the pumpkin are as folows:
+-its base income is the same as that of the best planted berry's base income
+-base income here means the income before most bonuses (flower neighbors, squirrel, ...) are applied
+-but what *is* included in base income of the berry is: regular upgrades, growth in the field, and prestige
+-all other berry bonuses apply to pumpkin too, so those things that are not included in base income, apply to the pumpkin anyway and show up in its detailed breakdown.
+-the pumpkin acts as berry: it produces seeds, gets boosted by flowers, the fruit/squirrel/ethereal/... berry upgrades apply to the pumpkin, etc...
+-the pumpkin can have more neighbors because it's bigger, so more flowers can apply to a single crop. This is emost advanteous when using watercress copy on the pumpkin.
+-the winter tree warmth only applies 50% to the pumpkin. This is because otherwise it was too overpowered in winter. Only max 2 of the 4 tiles of the pumpkin can be next to the tree in the first place, so this also makes sense
+-the pumpkin requires 2x2 open spaces to plant it in the field, and is planted using its top left corner. If there are crops in the way, it displays an error message (it doesn't auto delete the other crops)
+-the pumpkin is not available in the very first new game playthrough, but is starting from the second transencion. This to not introduce this crop when still learning the regular game for the first time.
+-you can have max 1 pumpkin planted. You can have more blueprint templates of it though, but that doesn't help anything
+-the pumpkin's unlock upgrade becomes visible once any berry was unlocked
+-the automaton can auto-unlock and plant the pumpkin just like other crops, but will only do so if there's a pumpkin template on the field. The reason is that the pumpkin has no upgrade, only an unlock, so it's not visible in the right side normally. This ensures the event is visible.
+-it's not available during challenges. In a next release it will be made available in some (but not all) challenges, but first it must be tested to ensure it's not broken without affecting challenges
+-the pumpkin also counts as berry for multiplicity, and counts as 4 of them
+*/
+var pumpkin_0 = registerPumpkinCrop('pumpkin (2x2)', 0, halloween_pumpkin_price, 10, images_pumpkin_small, 'Happy halloween! This crop takes up 2x2 field spaces. Its base seed production is ' + pumpkin_multiplier.toPercentString() + ' of the best planted berry anywhere in the field, so some regular berry must be planted somewhere. The pumpkin is bigger so can have more flower and other neighbors, which is a significant layout advantage. It gets the full bonus from most neighbors, but only half the bonus for winter tree warmth. It otherwise acts as a berry and gets the same bonuses and neighbor interactions. You can only have max 1 pumpkin.');
+crops[pumpkin_0].quad = true;
+crops[pumpkin_0].images_quad = [images_pumpkin00, images_pumpkin01, images_pumpkin10, images_pumpkin11];
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -2846,6 +2940,38 @@ upgrades[resin_choice0].istreebasedupgrade = true;
 registered_upgrades = registered_upgrades.sort(function(a, b) {
   return a - b;
 });
+
+
+function pumpkinUnlocked() {
+  if(state.challenge) return false; // disable challenges at all in first release, in case it turns out much too strong
+
+  if(!holidayEventActive(2)) return false;
+  if(basicChallenge()) return false;
+  if(!state.g_numresets) return false; // don't introduce the pumpkin on first playtrough yet
+  if(!state.upgrades[berryunlock_0].count) return false; // must have unlocked at least the first berry
+
+  var challenge_ok = false;
+  if(state.challenge == 0) challenge_ok = true;
+  if(state.challenge == challenge_rocks || state.challenge == challenge_thistle) challenge_ok = true; // unlikely the pumpkin fits but it might
+  if(state.challenge == challenge_infernal) challenge_ok = true;
+  if(state.challenge == challenge_stormy) challenge_ok = true;
+  if(state.challenge == challenge_noupgrades) challenge_ok = true;
+  if(state.challenge == challenge_wither) challenge_ok = true;
+  if(state.challenge == challenge_wasabi) challenge_ok = true;
+  // rockier not: the pumpkin doesn't fit there anyway
+  // bees and blackberry not: only has specific crops
+  // nodelete not: is about planting crops only once which gradually fills up whole field, no place for pumpkin there
+  // basic challenges not: no benefits for them
+  if(!challenge_ok) return false;
+  return true;
+}
+
+upgrade_register_id = 2000;
+var eventcropunlock_0 = registerCropUnlock(pumpkin_0, halloween_pumpkin_price, undefined, function(){
+  return pumpkinUnlocked();
+});
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4212,6 +4338,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
       var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
       if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
+      if(dir >= 4 && !diagConnected(f.x, f.y, x2, y2, state.field2)) continue;
       var n = state.field2[y2][x2];
       if(n.hasCrop() && n.isFullGrown()) {
         if(n.cropIndex() == automaton2_0) {
@@ -4225,7 +4352,6 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
         }
       }
       if((dir < 4 || state.upgrades3[upgrade3_ethtree_diag].count) && (n.index == FIELD_TREE_TOP || n.index == FIELD_TREE_BOTTOM)) {
-        // this can be 2 when diagonally touching two parts of the tree, but the multiplier is applied only once below.
         num_tree++;
       }
     }
@@ -6567,6 +6693,7 @@ function getWinterTreeResinBonus() {
 // resin bonus for other seasons, if they have their respective ethereal upgrade bonus unlocked
 // this is intended for summer and autumn, spring has the grow speed increase instead
 function getAlternateResinBonus(season) {
+  if(!(season >= 0 && season <= 3)) return Num(1); // e.g. infernal challenge has its own special season
   if(!state.upgrades2[upgrade2_season2[season]].count) return Num(1);
 
   var result = Num(1.25);
@@ -6694,7 +6821,7 @@ function getReFernWaitTime() {
 function haveMultiplicity(opt_croptype) {
   if(basicChallenge()) return false;
 
-  if(opt_croptype == undefined || opt_croptype == CROPTYPE_BERRY || opt_croptype == CROPTYPE_MUSH) return state.challenges[challenge_rockier].completed;
+  if(opt_croptype == undefined || opt_croptype == CROPTYPE_BERRY || opt_croptype == CROPTYPE_PUMPKIN || opt_croptype == CROPTYPE_MUSH) return state.challenges[challenge_rockier].completed;
 
   if(opt_croptype == CROPTYPE_FLOWER) return state.challenges[challenge_rockier].completed && state.upgrades3[upgrade3_flower_multiplicity].count;
 
@@ -6707,7 +6834,7 @@ function haveMultiplicity(opt_croptype) {
 
 // the result must be multiplied by getMultiplicityNum, to get the actual intended resulting bonus
 function getMultiplicityBonusBase(croptype) {
-  if(croptype == CROPTYPE_BERRY) {
+  if(croptype == CROPTYPE_BERRY || croptype == CROPTYPE_PUMPKIN) {
     var result = Num(0.25);
     if(state.upgrades3[upgrade3_berry_multiplicity_boost].count) {
       result.addInPlace(upgrade3_berry_multiplicity_boost_bonus.mulr(state.upgrades3[upgrade3_berry_multiplicity_boost].count));
@@ -6740,7 +6867,13 @@ function getMultiplicityNum(crop) {
   // if only crops from exact same tier (so exact same crop) affect it, then growing a higher tier crop will be bad instead of good, and growing higher tier crops should be encouraged
   // benefitting from +1/-1 tier is just right: normally you have one tier active, and are growing 1 new next tier, so they can benefit each other.
 
+
   var croptype = crop.type;
+  if(croptype == CROPTYPE_PUMPKIN) {
+    var b = state.highestcropoftypeplanted[CROPTYPE_BERRY];
+    if(b == undefined) return 0;
+    return getMultiplicityNum(crops[b]);
+  }
   var tier = crop.tier;
 
   var below = undefined;
@@ -6756,6 +6889,8 @@ function getMultiplicityNum(crop) {
   var num = state.cropcount[crop.index];
   if(below) num += state.cropcount[below.index];
   if(above) num += state.cropcount[above.index];
+
+  if(croptype == CROPTYPE_BERRY) num += state.cropcount[pumpkin_0] * 4; // this assumes pumpkin_0 is the only existing CROPTYPE_PUMPKIN crop, as it is for halloween 2022
 
 
   num -= 1; // the current plant self is not counted (even if partial, growing, still counts as full 1)
@@ -7532,10 +7667,17 @@ function etherealMistletoeNextEvolutionUnlockLevel() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function holidayEventActive() {
+// holiday: 0=presents, 1=eggs, 2=pumpkins
+function holidayEventActive(holiday) {
+  if(holiday != 2) return false;
+
   var time = util.getTime();
-  var date_20220501 = 1651363200;
-  return time < date_20220501;
+
+  //var date_20220501 = 1651363200;
+  //return time < date_20220501;
+
+  var date_20221111 = 1668124800;
+  return time <= date_20221111;
 }
 
 

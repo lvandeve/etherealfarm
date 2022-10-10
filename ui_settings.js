@@ -869,9 +869,14 @@ function createChangelogDialog() {
   showing_changelog = true;
 
   var icon = images_fern[1];
-  if(holidayEventActive()) {
-    //icon = holiday_images[Math.floor(Math.random() * 4)]
+  if(holidayEventActive(0)) {
+    icon = holiday_images[Math.floor(Math.random() * 4)]
+  }
+  if(holidayEventActive(1)) {
     icon = bunny_image;
+  }
+  if(holidayEventActive(2)) {
+    icon = images_pumpkin_small[0];
   }
 
   var dialog = createDialog({title:'About', icon:icon, onclose:function(cancel) {
@@ -1185,9 +1190,12 @@ function initSettingsUI() {
   // changelog / about button
   var aboutbutton = addTopBarFlex(10, 11).div;
   canvas = createCanvas('0%', '0%', '100%', '100%', aboutbutton);
-  if(holidayEventActive()) {
-    //renderImage(holiday_images[Math.floor(Math.random() * 4)], canvas);
+  if(holidayEventActive(0)) {
+    renderImage(holiday_images[Math.floor(Math.random() * 4)], canvas);
+  } else if(holidayEventActive(1)) {
     renderImage(bunny_image, canvas);
+  } else if(holidayEventActive(2)) {
+    renderImage(images_pumpkin_small[0], canvas);
   } else {
     renderImage(images_fern[1], canvas);
   }

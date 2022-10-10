@@ -21,6 +21,7 @@ var FIELD_TREE_TOP = 1;
 var FIELD_TREE_BOTTOM = 2;
 var FIELD_REMAINDER = 3; // remainder debris of temporary plant. Counts as empty field (same as index == 0) for all purposes. Purely a visual effect, to remember that this is the spot you're using for watercress (and not accidently put a flower there or so)
 var FIELD_ROCK = 4; // for challenges with rocks
+var FIELD_MULTIPART = 5; // a field tile used by a multi-cell crop (2x2 pumpkin) but which isn't the main cell of the crop
 
 // field cell
 function Cell(x, y, is_ethereal) {
@@ -58,24 +59,29 @@ Cell.prototype.isSemiFullGrown = function() {
   }
   return false;
 };
-Cell.prototype.hasCrop = function() {
+
+Cell.prototype.hasCrop = function(opt_multipart) {
+  if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().hasCrop(false);
   return this.index >= CROPINDEX;
 };
 
 // a crop that actually produces or does something, excluding templates or ghosts
-Cell.prototype.hasRealCrop = function() {
+Cell.prototype.hasRealCrop = function(opt_multipart) {
+  if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().hasRealCrop(false);
   return this.index >= CROPINDEX && !this.getCrop().istemplate && !this.getCrop().isghost;
 };
 
 // only valid if hasCrop()
-Cell.prototype.cropIndex = function() {
+Cell.prototype.cropIndex = function(opt_multipart) {
+  if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().cropIndex(false);
   return this.index - CROPINDEX;
 };
 
 // Only valid for the basic field, not for the ethereal field.
 // returns crops object if the field has a crop, undefined otherwise
 // TODO: make a class Cell2 for ethereal field instead
-Cell.prototype.getCrop = function() {
+Cell.prototype.getCrop = function(opt_multipart) {
+  if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().getCrop(false);
   if(this.index < CROPINDEX) return undefined;
   if(this.is_ethereal) return crops2[this.index - CROPINDEX];
   return crops[this.index - CROPINDEX];
@@ -83,10 +89,81 @@ Cell.prototype.getCrop = function() {
 
 
 // non-template
-Cell.prototype.getRealCrop = function() {
+Cell.prototype.getRealCrop = function(opt_multipart) {
+  if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().getRealCrop(false);
   var result = this.getCrop();
   if(result && (result.istemplate || result.isghost)) return undefined;
   return result;
+};
+
+// if the crop is a 2x2 crop, returns the quadrant this x, y part is in: 0 for top left, 1 for top right, 2 for bottom left, 3 for bottom right
+// this assumes the crop is valid, that is, it's part of a 2x2 region
+// does not support multiple of this type touching
+function getQuadPos(x, y) {
+  if(state.field[y][x].index != FIELD_MULTIPART) return 0;
+
+  var n = (y > 0) && state.field[y - 1][x].index == FIELD_MULTIPART;
+  var e = (x + 1 < state.numw) && state.field[y][x + 1].index == FIELD_MULTIPART;
+  var s = (y + 1 < state.numh) && state.field[y + 1][x].index == FIELD_MULTIPART;
+  var w = (x > 0) && state.field[y][x - 1].index == FIELD_MULTIPART;
+  //var es = (x + 1 < state.numw && y + 1 < state.numh) && state.field[y][x + 1].index == FIELD_MULTIPART && state.field[y + 1][x].index == FIELD_MULTIPART;
+
+  if(s && !w) return 1;
+  if(e && !n) return 2;
+  //if(e && s && !es) return 3;
+  if(n && w) return 3;
+  return 0;
+}
+
+// returns the main field cell for this 2x2 crop (or 1x2 for tree), given any piece of it
+// returns self if this is already the main cell, or if this is not a multi-part crop at all
+Cell.prototype.getMainMultiPiece = function() {
+  if(this.index == FIELD_TREE_TOP) return this;
+  if(this.index == FIELD_TREE_BOTTOM && this.y > 0) return state.field[this.y - 1][this.x];
+  if(this.index == FIELD_MULTIPART) {
+    var q = getQuadPos(this.x, this.y);
+    if(q == 1) return state.field[this.y][this.x - 1];
+    if(q == 2) return state.field[this.y - 1][this.x];
+    if(q == 3) return state.field[this.y - 1][this.x - 1];
+  }
+  return this;
+};
+
+// function to check if two neighbors are legitimately diagonlly connected. In case of 2x2 crops or tree, something isn't diagonally connected if it's already orthogonally connected to it, to avoid double counting.
+// this is for the main field, not the ethereal field
+// field parameter: state.field for basic field, state.field2 for ethereal field
+function diagConnected(x0, y0, x1, y1, field) {
+  var f0 = field[y0][x0];
+  var f1 = field[y1][x1];
+  var c0 = f0.getCrop();
+  var c1 = f1.getCrop();
+  var simple0 = f0.index != FIELD_TREE_BOTTOM && f0.index != FIELD_TREE_TOP && f0.index != FIELD_MULTIPART && !(c0 && c0.quad);
+  var simple1 = f1.index != FIELD_TREE_BOTTOM && f1.index != FIELD_TREE_TOP && f1.index != FIELD_MULTIPART && !(c1 && c1.quad);
+  if(simple0 && simple1) return true;
+  // the two orthogonally-connected pieces
+  var f2 = field[y0][x1];
+  var f3 = field[y1][x0];
+  var m0 = f0.getMainMultiPiece();
+  var m1 = f1.getMainMultiPiece();
+  var m2 = f2.getMainMultiPiece();
+  var m3 = f3.getMainMultiPiece();
+  // if one of the orthogonally in-between cells is already part of the same crop, then don't connect it diagonally since it's already orthogonally connected
+  return !(m2 == m0 || m2 == m1 || m3 == m0 || m3 == m1);
+}
+
+var neighbors_1x1 = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+var neighbors_1x1_diag = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+var neighbors_2x2 = [[0, -1], [1, -1], [-1, 0], [2, 0], [-1, 1], [2, 1], [0, 2], [1, 2]];
+var neighbors_2x2_diag = [[-1, -1], [0, -1], [1, -1], [2, -1], [-1, 0], [2, 0], [-1, 1], [2, 1], [-1, 2], [0, 2], [1, 2], [2, 2]];
+
+// returns list of neighbors from this crop, based on its shape (1x1 or 2x2). Does not filter out out-of-bounds cells, returns fixed possible arrays of relative coordinates.
+// must still bound-check, and possibly use diagConnected, when iterating through those relative coordinates
+Cell.prototype.getNeighborDirsFrom = function(include_diag) {
+  var c = this.getCrop(false);
+  if(c && c.quad) {
+    return include_diag ? neighbors_2x2_diag : neighbors_2x2;
+  }
+  return include_diag ? neighbors_1x1_diag : neighbors_1x1;
 };
 
 // is empty so that you can plant on it (rocks do not count for this)
@@ -193,6 +270,8 @@ function BluePrint() {
   33: s: squirrel
   34: l: lotus
   35: e: fern
+  special/event:
+  60: pumpkin
   */
   this.data = [];
 
@@ -213,6 +292,7 @@ BluePrint.toCrop = function(i) {
   if(i == 7) return bee_template;
   if(i == 8) return mistletoe_template;
   if(i == 9) return nut_template;
+  if(i == 60) return pumpkin_template;
   return -1;
 }
 
@@ -259,6 +339,7 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_SQUIRREL) return 33;
   if(c.type == CROPTYPE_LOTUS) return 34;
   if(c.type == CROPTYPE_FERN2) return 35;
+  if(c.type == CROPTYPE_PUMPKIN) return 60;
   return 0;
 }
 
@@ -276,6 +357,7 @@ BluePrint.toChar = function(i) {
   if(i == 33) return 'Q'; // squirrel
   if(i == 34) return 'L'; // lotus
   if(i == 35) return 'E'; // fern
+  if(i == 60) return 'U'; // pumpkin
   return -1;
 }
 
@@ -294,7 +376,7 @@ BluePrint.fromChar = function(c) {
   if(c == 'Q') return 33;
   if(c == 'L') return 34;
   if(c == 'E') return 35;
-  //if(c == 'S') return 10;
+  if(c == 'U') return 60;
   return 0;
 }
 
@@ -792,6 +874,9 @@ function State() {
   // array of BluePrint objects
   this.blueprints = [];
   this.blueprints2 = [];
+  // TODO: persist remembering the blueprint dialog page
+  //this.blueprint_page = 0;
+  //this.blueprint_page2 = 0;
 
   // effects for this run
   this.amberprod = false;
@@ -867,6 +952,8 @@ function State() {
   this.fullgrowncrop2count = [];
   this.fullgrowncroptypecount = [];
   this.growingcroptypecount = [];
+  // any crops of that type, including growing, templates, fullgrown, ...
+  this.anycroptypecount = [];
 
   // count of non-crop fields, such as fern
   this.specialfieldcount = [];
@@ -962,6 +1049,11 @@ function State() {
   this.lowestoftypeplanted = []; // excludes ghosts (NOTE: if for some reason this must be changed to include ghosts, then getCheapestNextOfCropType must be fixed to take lowest tier of -2 into account, or automaton won't do crop upgrades at all if a ghost of the same type is present)
   this.lowestcropoftypeunlocked = []; // this is for in case plants are prestiged: the lowest tier of this plant that exists, e.g. normally this is 0, but if blackberry and blueberry have been prestiged, this is 2. Does not include the templates (tier -1)
 
+  // same as highestoftypeplanted but has crop index instead of tier values. undefined if none is planted of this type
+  // NOTE: uses index of the crop rather than the crop directly, because there are some occurences of util.clone(state), and those should not clone the images of crops
+  // derived stat, not to be saved
+  this.highestcropoftypeplanted = [];
+
   // higest tier unlocked by research for this croptype
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
@@ -976,6 +1068,13 @@ function State() {
 
   // derived stat, not to be saved.
   this.etherealmistletoenexttotree = false;
+
+  // derived stat, not to be saved. Computed in precomputeField. Only used for halloween pumpkin.
+  this.bestberryforpumpkin = undefined;
+  // same but assuming all berries fullgrown
+  this.bestberryforpumpkin_expected = undefined;
+  // amount of prestige levels of the best pumpkin berry
+  this.bestberryforpumpkin_prestige = false;
 }
 
 // this.evolution3 must already be set to the intended evolution
@@ -1163,7 +1262,9 @@ function computeDerived(state) {
     state.fullgrowncroptypecount[i] = 0;
     state.growingcroptypecount[i] = 0;
     state.croptypecount[i] = 0;
+    state.anycroptypecount[i] = 0;
     state.highestoftypeplanted[i] = -Infinity;
+    state.highestcropoftypeplanted[i] = undefined;
     state.highestoftypefullgrown[i] = -Infinity;
     state.lowestoftypeplanted[i] = Infinity;
     state.lowestcropoftypeunlocked[i] = Infinity;
@@ -1192,6 +1293,9 @@ function computeDerived(state) {
       if(f.hasCrop()) {
         var c = f.getCrop();
         state.cropcount[c.index]++;
+        if(c) {
+          state.anycroptypecount[c.type]++;
+        }
         if(f.isFullGrown()) {
           state.fullgrowncropcount[c.index]++;
         } else {
@@ -1210,6 +1314,7 @@ function computeDerived(state) {
           }
           state.growingcroptypecount[c.type] += Math.min(Math.max(0, f.growth), 1);
         }
+        if((c.tier || 0) > state.highestoftypeplanted[c.type]) state.highestcropoftypeplanted[c.type] = c.index;
         state.highestoftypeplanted[c.type] = Math.max(c.tier || 0, state.highestoftypeplanted[c.type]);
         if(f.growth >= 1) state.highestoftypefullgrown[c.type] = Math.max(c.tier || 0, state.highestoftypefullgrown[c.type]);
         if(!c.isghost) state.lowestoftypeplanted[c.type] = Math.min(c.tier || 0, state.lowestoftypeplanted[c.type]);
@@ -1220,6 +1325,9 @@ function computeDerived(state) {
         state.specialfieldcount[f.index]++;
         state.numemptyfields++;
         if(f.index == FIELD_REMAINDER) state.ghostcount2++;
+      } else if(f.index == FIELD_MULTIPART) {
+        state.specialfieldcount[f.index]++;
+        state.numcropfields++;
       } else {
         state.specialfieldcount[f.index]++;
       }
@@ -2047,7 +2155,7 @@ function presentGrowSpeedTimeRemaining() {
 }
 
 function presentGrowSpeedActive() {
-  if(!holidayEventActive()) return false;
+  if(!holidayEventActive(0) && !holidayEventActive(1)) return false;
   if(basicChallenge()) return false;
   return presentGrowSpeedTimeRemaining() > 0;
 }
@@ -2057,7 +2165,7 @@ function presentProductionBoostTimeRemaining() {
 }
 
 function presentProductionBoostActive() {
-  if(!holidayEventActive()) return false;
+  if(!holidayEventActive(0) && !holidayEventActive(1)) return false;
   if(basicChallenge()) return false;
   return presentProductionBoostTimeRemaining() > 0;
 }

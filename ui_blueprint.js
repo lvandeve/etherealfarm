@@ -31,6 +31,8 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
 
   var images = [];
 
+  var quad_images = [];
+
   for(var y = 0; y < h; y++) {
     images[y] = [];
     for(var x = 0; x < w; x++) {
@@ -47,6 +49,21 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
         //var canvas = createCanvas('0%', '0%', '100%', '100%', cell.div);
         //renderImage(c.image[4], canvas);
         images[y][x] = c.image[4];
+        if(c.quad) {
+          if(w == 1 && h == 1) {
+            images[y][x] = image_pumpkin_large_blueprintified;
+          } else {
+            var index = y * w + x;
+            if(quad_images[index]) {
+              images[y][x] = c.images_quad[quad_images[index]][4];
+            } else {
+              images[y][x] = c.images_quad[0][4];
+              quad_images[index + 1] = 1;
+              quad_images[index + w] = 2;
+              quad_images[index + w + 1] = 3;
+            }
+          }
+        }
       } else {
         images[y][x] = undefined; // still fill in the array, to give it the correct width for renderImages
       }
@@ -139,6 +156,7 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
     h = state.numh;
     single = true; // special case: 1x1 blueprint fills entire field
   }
+  var quad_skip = [];
   var did_something = false;
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
@@ -155,8 +173,22 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
         f = state.field[fy][fx];
         d = b.data[y][x];
       }
+      var index = fy * state.numw + fx;
+      if(quad_skip[index]) continue;
       var c = crops[BluePrint.toCrop(d)];
       if(!c) continue;
+      if(c.quad) {
+        // The blueprint will contain 4 'U' symbols for the 2x2 pumpkin (or may have other symbols there, which will not work), but only the top left one must be planted
+        quad_skip[index + 1] = quad_skip[index + state.numw] = quad_skip[index + state.numw + 1] = true;
+        if(allow_override) {
+          var f01 = state.field[fy][fx + 1];
+          var f10 = state.field[fy + 1][fx];
+          var f11 = state.field[fy + 1][fx + 1];
+          if(f01.hasCrop(true) && f01.getMainMultiPiece() != f) addAction({type:ACTION_DELETE, x:(fx + 1), y:fy, silent:true, by_automaton:!!opt_by_automaton});
+          if(f10.hasCrop(true) && f10.getMainMultiPiece() != f) addAction({type:ACTION_DELETE, x:fx, y:(fy + 1), silent:true, by_automaton:!!opt_by_automaton});
+          if(f11.hasCrop(true) && f11.getMainMultiPiece() != f) addAction({type:ACTION_DELETE, x:(fx + 1), y:(fy + 1), silent:true, by_automaton:!!opt_by_automaton});
+        }
+      }
       var c2 = f.getCrop();
       if(c2 && c2.type == CROPTYPE_BRASSICA && c.type == CROPTYPE_BRASSICA) {
         // refresh brassica
@@ -164,10 +196,12 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
         else if(f.growth > 0.25) continue; // extremely rare case where can't really afford brassica, and it's still young, then don't replace it with blueprint
       } else if(allow_override) {
         if(f.index != 0 && f.index != FIELD_REMAINDER) {
-          c2 = f.getCrop();
-          if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
-          if(c2.index == c.index) continue;
-          if(c2.type == c.type && !c2.isghost) continue; // keep same types
+          c2 = f.getCrop(true);
+          if(f.index != FIELD_MULTIPART) {
+            if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
+            if(c2.index == c.index) continue;
+            if(c2.type == c.type && !c2.isghost) continue; // keep same types
+          }
         }
       } else {
         // don't overwrite anything that already exists on the field
@@ -176,6 +210,10 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
         if(f.index != 0 && f.index != FIELD_REMAINDER && !(c2 && c2.isghost && c2.type == c.type)) continue;
       }
       if(!state.crops[c.index].unlocked) continue;
+      if(!!c2 && f.index == FIELD_MULTIPART) {
+        addAction({type:ACTION_DELETE, x:fx, y:fy, silent:true, by_automaton:!!opt_by_automaton});
+        c2 = undefined; // cannot use ACTION_REPLACE if f was MULTIPART: the replacement crop would go to its top left main part instead of this intended location, so using delete followed by plant instead.
+      }
       var action_type = !!c2 ? ACTION_REPLACE : ACTION_PLANT;
       addAction({type:action_type, x:fx, y:fy, crop:c, shiftPlanted:false, silent:true, by_automaton:!!opt_by_automaton});
       did_something = true;
@@ -382,7 +420,7 @@ function blueprintFromField(b) {
     b.data[y] = [];
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      b.data[y][x] = BluePrint.fromCrop(f.getCrop());
+      b.data[y][x] = BluePrint.fromCrop(f.getCrop(true));
     }
   }
   sanitizeBluePrint(b);
@@ -848,12 +886,18 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custo
 
 var blueprintdialogopen = false;
 
+// TODO: persist these in the state
+var blueprintpage1 = 0;
+var blueprintpage2 = 0;
+
 // opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
 // opt_challenge: if opt_transcend is true and this has a challenge index, will transcent with blueprint with that challenge
 // opt_ethereal: show blueprints for ethereal field instead
 // opt_custom_fun: if defined, then opt_transcend and opt_challenge are ignored, no built-in action will be taken and instead opt_custom_fun will be executed with the blueprint index
 function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun) {
   if(!automatonUnlocked()) return;
+
+  var blueprintpage = opt_ethereal ? blueprintpage2 : blueprintpage1;
 
   var flexes = [];
 
@@ -871,6 +915,18 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     var keys = getEventKeys(e);
 
     var key = keys.key;
+    if(key == 'p' /*|| key == '0'*/) {
+      if(opt_ethereal) {
+        blueprintpage2 = !blueprintpage2;
+        blueprintpage = blueprintpage2;
+      } else {
+        blueprintpage1 = !blueprintpage1;
+        blueprintpage = blueprintpage1;
+      }
+      closeTopDialog();
+      createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun);
+    }
+
     var index = -1;
     if(key == '1') index = 1;
     if(key == '2') index = 2;
@@ -883,6 +939,7 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     if(key == '9') index = 9;
     if(index < 0) return;
     index--; // make 0-index based
+    if(blueprintpage) index += 9;
     blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes[index], e);
   };
 
@@ -899,12 +956,23 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
 
   blueprintdialogopen = true;
   var dialog = createDialog({
-    functions:challenge_button_fun,
-    names:challenge_button_name,
     cancelname:(opt_custom_fun ? 'cancel' : 'back'),
     title:title,
     shortcutfun:shortcutfun,
     help:showBluePrintHelp,
+    functions:[function() {
+      if(opt_ethereal) {
+        blueprintpage2 = !blueprintpage2;
+        blueprintpage = blueprintpage2;
+      } else {
+        blueprintpage1 = !blueprintpage1;
+        blueprintpage = blueprintpage1;
+      }
+      closeTopDialog();
+      createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun);
+      return true; // indicate "keep", otherwise it tries to close itself once more as button functions do by default
+    }, challenge_button_fun],
+    names:[(blueprintpage ? 'page 1' : 'page 2'), challenge_button_name],
     onclose:function() {
       blueprintdialogopen = false;
     }});
@@ -917,15 +985,17 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
   var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
 
   for(var i = 0; i < 9; i++) {
+    var j = i;
+    if(blueprintpage) j += 9;
     var x = i % 3;
     var y = Math.floor(i / 3);
     var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
     flexes[i] = flex;
-    renderBlueprint(blueprints[i], opt_ethereal, flex, i, opt_transcend, opt_challenge, true);
+    renderBlueprint(blueprints[j], opt_ethereal, flex, j, opt_transcend, opt_challenge, true);
     styleButton0(flex.div, true);
     addButtonAction(flex.div, bind(function(index, flex, e) {
       return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, e);
-    }, i, flex));
+    }, j, flex));
   }
 
   bflex.attachTo(dialog.content);

@@ -510,7 +510,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"d"</b>: delete crop under mouse cursor (no mouse click required)';
   text += '<br/>';
-  text += ' • <b>"u"</b>: tier up: replace crop or template under mouse cursor with highest available tier of the same type that you can afford (no mouse click required)';
+  text += ' • <b>"u"</b>: upgrade tier: replace crop or template under mouse cursor with highest available tier of the same type that you can afford (no mouse click required)';
   text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted or unlocked crop type.';
   text += '<br/>';
@@ -520,7 +520,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>shift + click non-empty field</b>: replace crop.';
   text += '<br/>';
-  text += ' • <b>ctrl + shift + click field</b>: tier up: replace crop or template with highest unlocked tier (if enabled in preferences), pick this crop type as last planted, and on empty field, plant highest tier of picked crop type you can afford.';
+  text += ' • <b>ctrl + shift + click field</b>: upgrade tier: replace crop or template with highest unlocked tier (if enabled in preferences), pick this crop type as last planted, and on empty field, plant highest tier of picked crop type you can afford.';
   text += '<br/>';
   text += ' • <b>"w"</b>: replant watercress on all field tiles that have a watercress remainder, and refresh existing ones. Such a remainder appears for watercress that have been copying from multiple plants, that is, a good copying spot. Copying has diminishing returns if there are multiple watercress anywhere on the map, 1 or 2 is effective (check the seeds/s income to view the effect).';
   text += '<br/>';
@@ -564,6 +564,8 @@ function createKeyboardHelpDialog() {
     text += ' • <b>number keys "1-9" in blueprint selection dialog</b>: open or use this blueprint';
     text += '<br/>';
     text += ' • <b>"shift" + number keys "1-9" in blueprint selection dialog</b>: plant this blueprint (overriding)';
+    text += '<br/>';
+    text += ' • <b>"p" in blueprint selection dialog</b>: toggle page 1 / page 2';
     text += '<br/>';
     text += ' • <b>shift + click blueprint</b>: immediately plant this blueprint, rather than opening its edit screen.';
     text += '<br/>';

@@ -5727,6 +5727,93 @@ var image_squirrel2 = image_squirrel2_base;
 
 
 
+
+
+
+
+var images_pumpkin_base = `
+X:#f80 O:#b60 o:#840 x:#630
+.................hhh............
+...............hh||||...........
+..............hh|||||...........
+.............hh||||.............
+.............hhh||..........hhh.
+............hh|||||........hh||h
+.........OOOhhh||||........h|..|
+.......OOoXOhh||||||oXXo...hh|..
+......OooXOOohh||||oooXXox..h|..
+.....OooXXOooX||||OOoooXXox..h|.
+....OooXXOooXXOooXXOoooXXoox.h|.
+...OooXXXoooXXOoooXOOooXXXox.h|.
+...OooXXOoooXXXOooXXOOooXXox.h|.
+..OooXXXoooXXXXOoXXXXOooXXooxh|.
+..OooXXOooXXXXXOoXXXXOooXXooxh|.
+..OoXXXOooXXXXXOoXXXOOooXXooxh|.
+.OooXXXOooXXXXXOoXXXOooXXXoox|..
+.OooXXXOooXXXXXOoXXXOooXXXoox...
+.OooXXXOooXXXXXOoXXXOooXXXoox...
+.OooXXXOooXXXXXOooXXOooXXooox...
+..OoXXOoooXXXXOooXXOOooXXoox....
+..hOoXOoooXXXXOooXXOoooXoox.....
+.hh|OoXOooXXXXOooXXOoOOOOx.h|...
+.h|...OOoooOXXOooXXOO.....h|....
+hh|......h|............XOOhooo..
+hh|.....hh|...........XX0XXX0Oo.
+hhh|...hh||..........XX000X000o.
+..h|..h|||....hhhhh..XXOOXXXXOo.
+..h|..hh|||..hh|||hhhXXO0X0X0Oo.
+.hh|....hhhhh|||..|||XXXO0X0XOo.
+.|||..................XXOXXXOo..
+.......................XOOXOo...
+`;
+
+var images_pumpkin_base_4 = extract2x2(images_pumpkin_base);
+var images_pumpkin_small_base = downscale2x2(images_pumpkin_base);
+
+
+var images_pumpkin00 = createPlantImages2(
+  images_pumpkin_base_4[0],
+  images_pumpkin_base_4[0],
+  images_pumpkin_base_4[0],
+  images_pumpkin_base_4[0],
+  images_pumpkin_base_4[0]
+);
+
+var images_pumpkin01 = createPlantImages2(
+  images_pumpkin_base_4[1],
+  images_pumpkin_base_4[1],
+  images_pumpkin_base_4[1],
+  images_pumpkin_base_4[1],
+  images_pumpkin_base_4[1]
+);
+
+var images_pumpkin10 = createPlantImages2(
+  images_pumpkin_base_4[2],
+  images_pumpkin_base_4[2],
+  images_pumpkin_base_4[2],
+  images_pumpkin_base_4[2],
+  images_pumpkin_base_4[2]
+);
+
+var images_pumpkin11 = createPlantImages2(
+  images_pumpkin_base_4[3],
+  images_pumpkin_base_4[3],
+  images_pumpkin_base_4[3],
+  images_pumpkin_base_4[3],
+  images_pumpkin_base_4[3]
+);
+
+var images_pumpkin_small = createPlantImages2(
+  images_pumpkin_small_base,
+  images_pumpkin_small_base,
+  images_pumpkin_small_base,
+  images_pumpkin_small_base,
+  images_pumpkin_small_base
+);
+
+
+
+
 function blueprintifyImage(im) {
   var w = im[1];
   var h = im[2];
@@ -5774,6 +5861,9 @@ function ghostifyImage(im) {
   }
   return [res, w, h];
 }
+
+
+var image_pumpkin_large_blueprintified = createCanvasImageFor(blueprintifyImage(generateImage(images_pumpkin_base)));
 
 var image_watercresstemplate = createCanvasImageFor(blueprintifyImage(images_watercress[4][4]));
 var images_watercresstemplate = [image_watercresstemplate, image_watercresstemplate, image_watercresstemplate, image_watercresstemplate, image_watercresstemplate];
@@ -5837,4 +5927,28 @@ var images_nutstemplate = [image_nutstemplate, image_nutstemplate, image_nutstem
 var image_nutsghost = createCanvasImageFor(ghostifyImage(images_acorn[4][4]));
 var images_nutsghost = [image_nutsghost, image_nutsghost, image_nutsghost, image_nutsghost, image_nutsghost];
 
+var image_pumpkintemplate_small = createCanvasImageFor(blueprintifyImage(images_pumpkin_small[4][4]));
+var images_pumpkintemplate_small = [image_pumpkintemplate_small, image_pumpkintemplate_small, image_pumpkintemplate_small, image_pumpkintemplate_small, image_pumpkintemplate_small];
+var image_pumpkinghost_small = createCanvasImageFor(ghostifyImage(images_pumpkin_small[4][4]));
+var images_pumpkinghost_small = [image_pumpkinghost_small, image_pumpkinghost_small, image_pumpkinghost_small, image_pumpkinghost_small, image_pumpkinghost_small];
+
+var image_pumpkintemplate00 = createCanvasImageFor(blueprintifyImage(images_pumpkin00[4][4]));
+var images_pumpkintemplate00 = [image_pumpkintemplate00, image_pumpkintemplate00, image_pumpkintemplate00, image_pumpkintemplate00, image_pumpkintemplate00];
+var image_pumpkinghost00 = createCanvasImageFor(ghostifyImage(images_pumpkin00[4][4]));
+var images_pumpkinghost00 = [image_pumpkinghost00, image_pumpkinghost00, image_pumpkinghost00, image_pumpkinghost00, image_pumpkinghost00];
+
+var image_pumpkintemplate01 = createCanvasImageFor(blueprintifyImage(images_pumpkin01[4][4]));
+var images_pumpkintemplate01 = [image_pumpkintemplate01, image_pumpkintemplate01, image_pumpkintemplate01, image_pumpkintemplate01, image_pumpkintemplate01];
+var image_pumpkinghost01 = createCanvasImageFor(ghostifyImage(images_pumpkin01[4][4]));
+var images_pumpkinghost01 = [image_pumpkinghost01, image_pumpkinghost01, image_pumpkinghost01, image_pumpkinghost01, image_pumpkinghost01];
+
+var image_pumpkintemplate10 = createCanvasImageFor(blueprintifyImage(images_pumpkin10[4][4]));
+var images_pumpkintemplate10 = [image_pumpkintemplate10, image_pumpkintemplate10, image_pumpkintemplate10, image_pumpkintemplate10, image_pumpkintemplate10];
+var image_pumpkinghost10 = createCanvasImageFor(ghostifyImage(images_pumpkin10[4][4]));
+var images_pumpkinghost10 = [image_pumpkinghost10, image_pumpkinghost10, image_pumpkinghost10, image_pumpkinghost10, image_pumpkinghost10];
+
+var image_pumpkintemplate11 = createCanvasImageFor(blueprintifyImage(images_pumpkin11[4][4]));
+var images_pumpkintemplate11 = [image_pumpkintemplate11, image_pumpkintemplate11, image_pumpkintemplate11, image_pumpkintemplate11, image_pumpkintemplate11];
+var image_pumpkinghost11 = createCanvasImageFor(ghostifyImage(images_pumpkin11[4][4]));
+var images_pumpkinghost11 = [image_pumpkinghost11, image_pumpkinghost11, image_pumpkinghost11, image_pumpkinghost11, image_pumpkinghost11];
 
