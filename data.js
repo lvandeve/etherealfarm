@@ -1973,6 +1973,8 @@ The rules of the pumpkin are as folows:
 -the automaton can auto-unlock and plant the pumpkin just like other crops, but will only do so if there's a pumpkin template on the field. The reason is that the pumpkin has no upgrade, only an unlock, so it's not visible in the right side normally. This ensures the event is visible.
 -it's not available during challenges. In a next release it will be made available in some (but not all) challenges, but first it must be tested to ensure it's not broken without affecting challenges
 -the pumpkin also counts as berry for multiplicity, and counts as 4 of them
+-pumpkin produces as much as 2x a berry. Not 4x. See the pumpkin_multiplier
+-all this means, if you have 1 berry and 1 pumpkin in the field, and nothing else, pumpkin will produce eactly same as twice that berry does. If you give both of them the same flower, pumpkin again produces exaactly twice as much, and so on. If you plant a flower to only the berry but not the pumpkin, the berry will now produce more than the pumpkin since only it benefits from that flower.
 */
 var pumpkin_0 = registerPumpkinCrop('pumpkin (2x2)', 0, halloween_pumpkin_price, 10, images_pumpkin_small, 'Happy halloween! This crop takes up 2x2 field spaces. Its base seed production is ' + pumpkin_multiplier.toPercentString() + ' of the best planted berry anywhere in the field, so some regular berry must be planted somewhere. The pumpkin is bigger so can have more flower and other neighbors, which is a significant layout advantage. It gets the full bonus from most neighbors, but only half the bonus for winter tree warmth. It otherwise acts as a berry and gets the same bonuses and neighbor interactions. You can only have max 1 pumpkin.');
 crops[pumpkin_0].quad = true;
@@ -6871,7 +6873,7 @@ function getMultiplicityNum(crop) {
   var croptype = crop.type;
   if(croptype == CROPTYPE_PUMPKIN) {
     var b = state.highestcropoftypeplanted[CROPTYPE_BERRY];
-    if(b == undefined) return 0;
+    if(b == undefined || crops[b].istemplate) return state.cropcount[pumpkin_0] * 4 - 1; // still return the multiplicity for pumpkin itself, for clarity: so multiplicity will show up in it detailed breakdown. But, with no berries pumpkin produces 0 so it doesn't affect production.
     return getMultiplicityNum(crops[b]);
   }
   var tier = crop.tier;

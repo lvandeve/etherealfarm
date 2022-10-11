@@ -316,6 +316,18 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
   }
 
+  // for debugging
+  /*result += '<br><br>';
+  result += 'prod0: ' + p.prod0.toString() + '<br>';
+  result += 'prod0b: ' + p.prod0b.toString() + '<br>';
+  result += 'prod1: ' + p.prod1.toString() + '<br>';
+  result += 'wanted: ' + p.wanted.toString() + '<br>';
+  result += 'gotten: ' + p.gotten.toString() + '<br>';
+  result += 'gotten2: ' + p.gotten2.toString() + '<br>';
+  result += 'prod2: ' + p.prod2.toString() + '<br>';
+  result += 'prod3: ' + p.prod3.toString() + '<br>';
+  result += 'prod3b: ' + p.prod3b.toString() + '<br>';*/
+
   return result;
 }
 

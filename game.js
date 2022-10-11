@@ -1283,6 +1283,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       }
     }
   }
+  // compute stinging hurting berries and flowers
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1309,6 +1310,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       }
     }
   }
+  // compute bees boosting flowers
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1419,6 +1421,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       }
     }
   }
+  // the actual production/consumption computation
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1548,6 +1551,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
               }
               var amount = Num.min(want, have);
               if(want.gtr(0)) p.gotten2.seeds.addInPlace(have); // only count it if we still want seeds. this is to avoid an overestimation by double counting, when the mushroom is fully satisfied, the same "have" will be here multiple iterations because only "want" was subtracted from it. so it only adds it the first iteration. This is still only an approximation, it doesn't take into account the case when a mushroom gets everything from a berry when another mushroom was already fully satisfied from a private berry, but this value is only used as an approximate indication in the UI anyway to see roughly how much headroom for upgrading mushrooms there is
+              if(amount.gt(p2.prod1.seeds) && amount.lt(p2.prod1.seeds.mulr(1.01))) amount = p2.prod1.seeds; // fix numerical issues with the subtraction below. Normally it should not be larger, but the division and subtraction above and below can cause this. Only do this in a narrow interval, so that if the difference is much bigger due to some other bug, it'll still show up (as negative seed income)
               if(amount.gter(0)) {
                 did_something = true;
                 p.gotten.seeds.addInPlace(amount);
@@ -1707,7 +1711,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
           if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 4) ? 1.25 : 2) * (have_brassica_fruit ? 3 : 1);
           if(c2.type == CROPTYPE_STINGING) score_mul++;
-          if(c2.type == CROPTYPE_BERRY) score_num++;
+          if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) score_num++;
         }
       }
 
