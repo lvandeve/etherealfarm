@@ -747,8 +747,8 @@ function createStatsDialog() {
   if(haveMultiplicity(CROPTYPE_STINGING)) {
     text += '• stinging multiplicity: ' + open + '+' + (getMultiplicityBonusBase(CROPTYPE_STINGING)).toPercentString() + ' per other of same type of max 1 tier difference' + close + '<br>';
   }
-  if(state.evolution3 > 0) {
-    text += '• squirrel evolutions: ' + open + state.evolution3 + close + '<br>';
+  if(state.squirrel_evolution > 0) {
+    text += '• squirrel evolutions: ' + open + state.squirrel_evolution + close + '<br>';
   }
   if(etherealMistletoeUnlocked()) {
     text += '• ethereal mistletoe upgrades completed: ' + open + state.g_nummistletoeupgradesdone + close + '<br>';

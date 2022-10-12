@@ -97,7 +97,7 @@ function setTab(i, opt_temp) {
     updateSquirrelUI();
   }
   if(oldtab == tabindex_squirrel) {
-    if(state.allupgrade3bought2) state.seen_evolution = true;
+    if(state.allsquirrelupgradebought2) state.seen_evolution = true;
     if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
   }
 
@@ -322,7 +322,7 @@ function updateTabButtons2() {
     if(!haveSquirrel()) {
       text += '<br>(absent)';
       text = '<font color="#c00">' + text + '</font>';
-    } else if(!state.allupgrade3bought && !(state.allupgrade3bought2 && state.seen_evolution) && getNextUpgrade3Cost().lte(state.res.nuts)) {
+    } else if(!state.allsquirrelupgradebought && !(state.allsquirrelupgradebought2 && state.seen_evolution) && getNextSquirrelUpgradeCost().lte(state.res.nuts)) {
       text = '<b><font color="red">' + text + '</font></b>';
       if(!squirrel_red) updateSquirrelUI(); // some gray colored prices become black now, if the tab is currently open
       squirrel_red = true;

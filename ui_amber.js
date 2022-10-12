@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 // amber effect action indices
-var AMBER_RESPEC3 = 0;
+var AMBER_SQUIRREL_RESPEC = 0;
 var AMBER_PROD = 1;
 var AMBER_LENGTHEN = 2; // lengthen current season
 var AMBER_SHORTEN = 3; // shorten current season
@@ -77,11 +77,11 @@ function updateAmberUI() {
   else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
 
   if(squirrelUnlocked()) {
-    button = makeAmberButton('Squirrel respec token (15 amber)', AMBER_RESPEC3);
+    button = makeAmberButton('Squirrel respec token (15 amber)', AMBER_SQUIRREL_RESPEC);
     registerTooltip(button, 'Get an additional respec token for resetting squirrel upgrades. Note that you already got some for free, no need to buy this if you still have some left.');
     button.id = 'amber_respec';
   }
-  if(state.res.amber.lt(ambercost_respec3)) button.className = 'efButtonCantAfford';
+  if(state.res.amber.lt(ambercost_squirrel_respec)) button.className = 'efButtonCantAfford';
 
   pos += h * 0.5;
 

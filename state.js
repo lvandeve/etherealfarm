@@ -212,10 +212,10 @@ function Upgrade2State() {
 }
 
 // squirrel upgrades
-function Upgrade3State() {
+function SquirrelUpgradeState() {
   this.count = 0;
 }
-function Stage3State() {
+function SquirrelStageState() {
   this.num = [0, 0, 0]; // how far in each branch
   this.seen = [0, 0, 0]; // how far ever bought in this branch. seen here means bought the upgrade ever before, so won't show as '???' after respec. However, seeing it due to having been the next one after a bought one before, does not count.
 }
@@ -580,19 +580,19 @@ function State() {
     this.upgrades2[registered_upgrades2[i]] = new Upgrade2State();
   }
 
-  this.evolution3 = 0;
-  this.stages3 = []; // must be inited with initStages3 at appropriate times
-  this.upgrades3_spent = Num(0); // nuts spent on upgrades3, can be given back on respec
+  this.squirrel_evolution = 0;
+  this.squirrel_stages = []; // must be inited with initSquirrelStages at appropriate times
+  this.squirrel_upgrades_spent = Num(0); // nuts spent on squirrel_upgrades, can be given back on respec
   this.nuts_before = Num(0); // nuts before evolution change
   this.just_evolution = false; // if true, did squirrel evolution during this run so no nuts are produced
   this.seen_evolution = false; // to no longer color tab red if only upgrade is evolution
 
 
   // squirrel upgrades
-  // NOT saved, stages3 is saved instead. But does give the info of upgrades from stages, including "count" if an upgrade appears multiple times in various stages. This one is kept in sync, not computed by computeDerived.
-  this.upgrades3 = [];
-  for(var i = 0; i < registered_upgrades3.length; i++) {
-    this.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
+  // NOT saved, squirrel_stages is saved instead. But does give the info of upgrades from stages, including "count" if an upgrade appears multiple times in various stages. This one is kept in sync, not computed by computeDerived.
+  this.squirrel_upgrades = [];
+  for(var i = 0; i < registered_squirrel_upgrades.length; i++) {
+    this.squirrel_upgrades[registered_squirrel_upgrades[i]] = new SquirrelUpgradeState();
   }
 
 
@@ -608,7 +608,7 @@ function State() {
 
   // misc
   this.delete2tokens = 4; // obsolete but for now still present in case the tokens need to come back
-  this.respec3tokens = respec3initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
+  this.squirrel_respec_tokens = squirrel_respec_initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
   this.paused = false;
   this.lastEtherealDeleteTime = 0;
   this.lastEtherealPlantTime = 0;
@@ -748,8 +748,8 @@ function State() {
   this.g_numresets_challenge_0 = 0; // amount of challenges quit immediately, before tree leveled even to level 1, so these do not count for stats, not even num runs of a challenge
   this.g_numresets_challenge_10 = 0; // amount of soft resets done after a challenge where at least level 10 was reached, so that it can be counted as at least as good as a regular g_numresets value
   this.g_p_treelevel = 0; // max tree level of any run, but not including the current run
-  this.g_numupgrades3 = 0;
-  this.g_numrespec3 = 0;
+  this.g_num_squirrel_upgrades = 0;
+  this.g_num_squirrel_respec = 0;
   this.g_amberdrops = 0;
   this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
   this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
@@ -978,7 +978,7 @@ function State() {
   this.upgrades2_new = 0;
 
   // derived stat, not to be saved
-  this.upgrades3_count = 0;
+  this.squirrel_upgrades_count = 0;
 
   // derived stat, not to be saved
   this.highest_gated_index = 0; // e.g. 0 if in no squirrel upgrade gated upgrades bought yet, 1 if in the stages after the first such gate, etc...
@@ -986,9 +986,9 @@ function State() {
 
   // whether all squirrel upgrades (all stages) bought
   // derived stat, not to be saved
-  this.allupgrade3bought = false;
+  this.allsquirrelupgradebought = false;
   // similar, but ignores squirrel evolution once seen
-  this.allupgrade3bought2 = false;
+  this.allsquirrelupgradebought2 = false;
 
   // derived stat, not to be saved
   this.medals_earned = 0;
@@ -1077,16 +1077,16 @@ function State() {
   this.bestberryforpumpkin_prestige = false;
 }
 
-// this.evolution3 must already be set to the intended evolution
-// must be called for new state, after loading save, or after evolution3 changes
-State.prototype.initStages3 = function() {
-  this.stages3 = [];
-  var stages3e = stages3[this.evolution3];
-  for(var i = 0; i < stages3e.length; i++) {
-    this.stages3[i] = new Stage3State();
+// this.squirrel_evolution must already be set to the intended evolution
+// must be called for new state, after loading save, or after squirrel_evolution changes
+State.prototype.initSquirrelStages = function() {
+  this.squirrel_stages = [];
+  var stages = squirrel_stages[this.squirrel_evolution];
+  for(var i = 0; i < stages.length; i++) {
+    this.squirrel_stages[i] = new SquirrelStageState();
   }
 
-  var image_squirrel_evolution = (this.evolution3 == 0) ? image_squirrel : image_squirrel2;
+  var image_squirrel_evolution = (this.squirrel_evolution == 0) ? image_squirrel : image_squirrel2;
   for(var i = 0; i < images_squirrel.length; i++) regenerateImageCanvas(image_squirrel_evolution, images_squirrel[i]);
 };
 
@@ -1224,7 +1224,7 @@ function createInitialState() {
   state.fern_seed = Math.floor(Math.random() * 281474976710656);
   state.present_seed = Math.floor(Math.random() * 281474976710656);
 
-  state.initStages3();
+  state.initSquirrelStages();
 
   return state;
 }
@@ -1443,42 +1443,42 @@ function computeDerived(state) {
     }
   }
 
-  state.upgrades3_count = 0;
-  for(var i = 0; i < registered_upgrades3.length; i++) {
-    // var u = upgrades3[registered_upgrades3[i]];
-    var u2 = state.upgrades3[registered_upgrades3[i]];
-    state.upgrades3_count += u2.count;
+  state.squirrel_upgrades_count = 0;
+  for(var i = 0; i < registered_squirrel_upgrades.length; i++) {
+    // var u = squirrel_upgrades[registered_squirrel_upgrades[i]];
+    var u2 = state.squirrel_upgrades[registered_squirrel_upgrades[i]];
+    state.squirrel_upgrades_count += u2.count;
   }
 
-  var stages3e = stages3[state.evolution3];
+  var stages = squirrel_stages[state.squirrel_evolution];
 
   state.highest_gated_index = 0;
   state.highest_gated_index2 = 0;
-  for(var i = 0; i < stages3e.length; i++) {
-    if(i >= state.stages3.length) break;
+  for(var i = 0; i < stages.length; i++) {
+    if(i >= state.squirrel_stages.length) break;
     var bought = false;
-    if(state.stages3[i].num[0] > 0 && state.stages3[i].num[0] >= stages3e[i].upgrades0.length) bought = true;
-    if(state.stages3[i].num[1] > 0 && state.stages3[i].num[1] >= stages3e[i].upgrades1.length) bought = true;
-    if(state.stages3[i].num[2] > 0 && state.stages3[i].num[2] >= stages3e[i].upgrades2.length) bought = true;
+    if(state.squirrel_stages[i].num[0] > 0 && state.squirrel_stages[i].num[0] >= stages[i].upgrades0.length) bought = true;
+    if(state.squirrel_stages[i].num[1] > 0 && state.squirrel_stages[i].num[1] >= stages[i].upgrades1.length) bought = true;
+    if(state.squirrel_stages[i].num[2] > 0 && state.squirrel_stages[i].num[2] >= stages[i].upgrades2.length) bought = true;
     if(bought) {
-      state.highest_gated_index = Math.max(state.highest_gated_index, stages3e[i].gated_index);
-      state.highest_gated_index2 = Math.max(state.highest_gated_index2, stages3e[i].gated_index2);
+      state.highest_gated_index = Math.max(state.highest_gated_index, stages[i].gated_index);
+      state.highest_gated_index2 = Math.max(state.highest_gated_index2, stages[i].gated_index2);
     }
   }
 
-  state.allupgrade3bought = true;
-  for(var i = 0; i < stages3e.length; i++) {
-    if(i >= state.stages3.length) {
-      state.allupgrade3bought = false;
+  state.allsquirrelupgradebought = true;
+  for(var i = 0; i < stages.length; i++) {
+    if(i >= state.squirrel_stages.length) {
+      state.allsquirrelupgradebought = false;
       break;
     }
-    if(state.stages3[i].num[0] < stages3e[i].upgrades0.length) state.allupgrade3bought = false;
-    if(state.stages3[i].num[1] < stages3e[i].upgrades1.length) state.allupgrade3bought = false;
-    if(state.stages3[i].num[2] < stages3e[i].upgrades2.length) state.allupgrade3bought = false;
-    if(!state.allupgrade3bought) break;
+    if(state.squirrel_stages[i].num[0] < stages[i].upgrades0.length) state.allsquirrelupgradebought = false;
+    if(state.squirrel_stages[i].num[1] < stages[i].upgrades1.length) state.allsquirrelupgradebought = false;
+    if(state.squirrel_stages[i].num[2] < stages[i].upgrades2.length) state.allsquirrelupgradebought = false;
+    if(!state.allsquirrelupgradebought) break;
   }
-  state.allupgrade3bought2 = state.allupgrade3bought;
-  if(state.evolution3 == 0 && state.upgrades3_count == 33) state.allupgrade3bought2 = true;
+  state.allsquirrelupgradebought2 = state.allsquirrelupgradebought;
+  if(state.squirrel_evolution == 0 && state.squirrel_upgrades_count == 33) state.allsquirrelupgradebought2 = true;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1791,8 +1791,8 @@ function getUpcomingFruitEssence(breakdown) {
   for(var j = 0; j < state.fruit_sacr.length; j++) res.addInPlace(getFruitSacrifice(state.fruit_sacr[j]));
   if(breakdown) breakdown.push(['sacrificial fruits', true, Num(0), res.clone()]);
 
-  if(state.upgrades3[upgrade3_essence].count) {
-    var bonus = upgrade3_essence_bonus.addr(1);
+  if(state.squirrel_upgrades[upgradesq_essence].count) {
+    var bonus = upgradesq_essence_bonus.addr(1);
     res.mulInPlace(bonus);
     if(breakdown) breakdown.push(['squirrel upgrade', true, bonus, res.clone()]);
   }
@@ -2032,8 +2032,8 @@ function autoPrestigeEnabled() {
 
 function getEtherealAutomatonNeighborBoost() {
   var result = Num(automatonboost);
-  result.addInPlace(upgrade3_automaton_boost.mulr(state.upgrades3[upgrade3_automaton].count));
-  result.addInPlace(upgrade3_automaton_boost2.mulr(state.upgrades3[upgrade3_automaton2].count));
+  result.addInPlace(upgradesq_automaton_boost.mulr(state.squirrel_upgrades[upgradesq_automaton].count));
+  result.addInPlace(upgradesq_automaton_boost2.mulr(state.squirrel_upgrades[upgradesq_automaton2].count));
   return result;
 }
 
@@ -2059,8 +2059,8 @@ function tooManyNutsPlants(opt_replacing) {
 
 function getEtherealSquirrelNeighborBoost() {
   var result = Num(squirrelboost);
-  result.addInPlace(upgrade3_squirrel_boost.mulr(state.upgrades3[upgrade3_squirrel].count));
-  result.addInPlace(upgrade3_squirrel_boost2.mulr(state.upgrades3[upgrade3_squirrel2].count));
+  result.addInPlace(upgradesq_squirrel_boost.mulr(state.squirrel_upgrades[upgradesq_squirrel].count));
+  result.addInPlace(upgradesq_squirrel_boost2.mulr(state.squirrel_upgrades[upgradesq_squirrel2].count));
   return result;
 }
 
@@ -2078,16 +2078,16 @@ b = branch
 d = depth in branch
 */
 function squirrelUpgradeBuyable(si, b, d) {
-  var stages3e = stages3[state.evolution3];
-  var s = stages3e[si]; // the stage, as Stage3 object
-  var s2 = state.stages3[si]; // Stage3State object
+  var stages = squirrel_stages[state.squirrel_evolution];
+  var s = stages[si]; // the stage, as SquirrelStage object
+  var s2 = state.squirrel_stages[si]; // SquirrelStageState object
   // how many non-bought ones in the center branch of the previous stages, when going up one by one until we reach the bought one or the root (capped at 3)
   var above = 0;
   var u = s.index - 1;
   for(;;) {
     if(u < 0) break;
-    var p = stages3e[u];
-    var p2 = state.stages3[u];
+    var p = stages[u];
+    var p2 = state.squirrel_stages[u];
     var numfree = p.upgrades1.length - p2.num[1];
     above += numfree;
     if(above >= 3) {
@@ -2105,7 +2105,7 @@ function squirrelUpgradeBuyable(si, b, d) {
   if(avail && d == s2.num[b]) {
     // buyable, unless gated
     if(s.gated) {
-      if(state.upgrades3_count < s.num_above) return 2; // gated
+      if(state.squirrel_upgrades_count < s.num_above) return 2; // gated
     }
     return 1; // buyable
   }

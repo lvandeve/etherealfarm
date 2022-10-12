@@ -778,9 +778,9 @@ var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
 var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
 var ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND = action_index++; // normally you can use the plantBlueprint function directly (since that one also merely adds more actions), but for transcend it needs to be delayed and that's done through having it as an action
-var ACTION_UPGRADE3 = action_index++; // squirrel upgrade
-var ACTION_RESPEC3 = action_index++; // respec squirrel upgrades
-var ACTION_EVOLUTION3 = action_index++; // reset squirrel evolution
+var ACTION_SQUIRREL_UPGRADE = action_index++; // squirrel upgrade
+var ACTION_SQUIRREL_RESPEC = action_index++; // respec squirrel upgrades
+var ACTION_SQUIRREL_EVOLUTION = action_index++; // reset squirrel evolution
 var ACTION_AMBER = action_index++; // amber effects
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 var ACTION_MISTLE_UPGRADE = action_index++; // begin an ethereal mistletoe upgrade
@@ -1396,7 +1396,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
     }
   }
 
-  var soup = !basicChallenge() && state.upgrades3[upgrade3_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushrooms not cost seeds
+  var soup = !basicChallenge() && state.squirrel_upgrades[upgradesq_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushrooms not cost seeds
 
   // pass 3: compute basic production/consumption of each cell, without taking input/output connections (berries to mushrooms) into account, just the full value
   // production without leech, consumption with leech (if watercress leeches from mushroom, adds that to its consumption, but not the leeched spores production, that's added in a later step)
@@ -1917,7 +1917,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     var roll_abilities = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
     var roll_abilities_level = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
 
-    var tier = getNewFruitTier(roll_tier, treelevel, state.upgrades3[upgrade3_fruittierprob].count || state.upgrades3[upgrade3_fruittierprob2].count);
+    var tier = getNewFruitTier(roll_tier, treelevel, state.squirrel_upgrades[upgradesq_fruittierprob].count || state.squirrel_upgrades[upgradesq_fruittierprob2].count);
 
     var fruit = new Fruit();
     fruit.tier = tier;
@@ -1951,7 +1951,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
 
     if(state.g_numfruits >= 4) {
       var prob = 0.75;
-      if(state.upgrades3[upgrade3_seasonfruitprob].count || state.upgrades3[upgrade3_seasonfruitprob2].count) prob = 0.666; // from 1/4th to 1/3th probability
+      if(state.squirrel_upgrades[upgradesq_seasonfruitprob].count || state.squirrel_upgrades[upgradesq_seasonfruitprob2].count) prob = 0.666; // from 1/4th to 1/3th probability
       if(roll_season > prob) {
         var season = getSeason();
         if(season >= 0 && season <= 3) {
@@ -2021,9 +2021,9 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     fruits.push(fruit);
 
     var double_prob = 0;
-    if(state.upgrades3[upgrade3_doublefruitprob].count) double_prob = upgrade3_doublefruitprob_prob;
-    if(state.upgrades3[upgrade3_fruittierprob2].count) double_prob += upgrade3_doublefruitprob_prob_half;
-    if(state.upgrades3[upgrade3_seasonfruitprob2].count) double_prob += upgrade3_doublefruitprob_prob_half;
+    if(state.squirrel_upgrades[upgradesq_doublefruitprob].count) double_prob = upgradesq_doublefruitprob_prob;
+    if(state.squirrel_upgrades[upgradesq_fruittierprob2].count) double_prob += upgradesq_doublefruitprob_prob_half;
+    if(state.squirrel_upgrades[upgradesq_seasonfruitprob2].count) double_prob += upgradesq_doublefruitprob_prob_half;
 
     if(double_prob && !opt_nodouble && fruits.length == 1 && roll_double < double_prob) {
       // probability of a second fruit
@@ -2604,10 +2604,10 @@ function nextEventTime() {
     addtime(next_auto_prestige.time, 'auto-prestige');
   }
 
-  if(state.upgrades3[upgrade3_leveltime].count) {
+  if(state.squirrel_upgrades[upgradesq_leveltime].count) {
     var treetime = timeAtTreeLevel(state);
     // take into account the changing bonus over time, until the max time is reached (but not too aften to not let this use too much CPU ticks)
-    if(treetime < upgrade3_leveltime_maxtime) addtime(120, 'time at tree level');
+    if(treetime < upgradesq_leveltime_maxtime) addtime(120, 'time at tree level');
   }
 
   // fern
@@ -3115,11 +3115,11 @@ var update = function(opt_ignorePause) {
           state.g_numupgrades2++;
         }
         upgrades2_done = true;
-      } else if(type == ACTION_UPGRADE3) {
+      } else if(type == ACTION_SQUIRREL_UPGRADE) {
         if(fast_forwarding) continue;
 
-        var s = stages3[state.evolution3][action.s];
-        var s2 = state.stages3[action.s];
+        var s = squirrel_stages[state.squirrel_evolution][action.s];
+        var s2 = state.squirrel_stages[action.s];
         var b = action.b; // which branch (left: 0, middle: 1, right: 2)
         var d = action.d; // depth in the branch
         var ok = true;
@@ -3155,7 +3155,7 @@ var update = function(opt_ignorePause) {
           ok = false;
         }
 
-        var nuts = getNextUpgrade3Cost();
+        var nuts = getNextSquirrelUpgradeCost();
         if(ok) {
           if(state.res.nuts.lt(nuts)) {
             ok = false;
@@ -3168,8 +3168,8 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok) {
-          var u = upgrades3[us[d]];
-          var u2 = state.upgrades3[us[d]];
+          var u = squirrel_upgrades[us[d]];
+          var u2 = state.squirrel_upgrades[us[d]];
 
           var cancel = false;
           if(u.fun) {
@@ -3182,58 +3182,58 @@ var update = function(opt_ignorePause) {
             s2.num[b]++;
             s2.seen[b] = Math.max(s2.seen[b], s2.num[b]);
             state.res.nuts.subInPlace(nuts);
-            state.upgrades3_spent.addInPlace(nuts);
-            state.g_numupgrades3++;
-            state.upgrades3_count++; // this is a derived state computed in computeDerived, but update it now here as well so that if there are multiple upgrade3 action in a row, the gated checks work correctly
-            showMessage('Purchased squirrel upgrade: ' + u.name + '. Next costs: ' + getUpgrade3Cost(state.upgrades3_count).toString() + ' nuts');
+            state.squirrel_upgrades_spent.addInPlace(nuts);
+            state.g_num_squirrel_upgrades++;
+            state.squirrel_upgrades_count++; // this is a derived state computed in computeDerived, but update it now here as well so that if there are multiple squirrel_upgrade action in a row, the gated checks work correctly
+            showMessage('Purchased squirrel upgrade: ' + u.name + '. Next costs: ' + getSquirrelUpgradeCost(state.squirrel_upgrades_count).toString() + ' nuts');
 
 
-            if(u.index == upgrade3_fruitmix || u.index == upgrade3_fruitmix2 || u.index == upgrade3_fruitmix3) showRegisteredHelpDialog(37);
+            if(u.index == upgradesq_fruitmix || u.index == upgradesq_fruitmix2 || u.index == upgradesq_fruitmix3) showRegisteredHelpDialog(37);
 
             store_undo = true;
           }
         }
-      } else if(type == ACTION_RESPEC3) {
+      } else if(type == ACTION_SQUIRREL_RESPEC) {
         if(fast_forwarding) continue;
 
         var ok = true;
         if(!haveSquirrel()) {
           ok = false;
-        } else if(state.respec3tokens < 1) {
+        } else if(state.squirrel_respec_tokens < 1) {
           showMessage('Cannot respec, no respec token available. It\'s possible to get one in the amber tab.',
                       C_INVALID, 0, 0);
           ok = false;
         }
 
         if(ok) {
-          state.upgrades3 = [];
-          for(var i = 0; i < registered_upgrades3.length; i++) {
-            state.upgrades3[registered_upgrades3[i]] = new Upgrade3State();
+          state.squirrel_upgrades = [];
+          for(var i = 0; i < registered_squirrel_upgrades.length; i++) {
+            state.squirrel_upgrades[registered_squirrel_upgrades[i]] = new SquirrelUpgradeState();
           }
-          var new_stages3 = [];
-          for(var i = 0; i < stages3[state.evolution3].length; i++) {
-            new_stages3[i] = new Stage3State();
-            if(state.stages3[i]) {
-              for(var j = 0; j < new_stages3[i].seen.length; j++) new_stages3[i].seen[j] = state.stages3[i].seen[j];
+          var new_squirrel_stages = [];
+          for(var i = 0; i < squirrel_stages[state.squirrel_evolution].length; i++) {
+            new_squirrel_stages[i] = new SquirrelStageState();
+            if(state.squirrel_stages[i]) {
+              for(var j = 0; j < new_squirrel_stages[i].seen.length; j++) new_squirrel_stages[i].seen[j] = state.squirrel_stages[i].seen[j];
             }
           }
-          state.stages3 = new_stages3;
+          state.squirrel_stages = new_squirrel_stages;
 
-          state.g_numrespec3++;
-          state.res.nuts.addInPlace(state.upgrades3_spent);
-          state.upgrades3_spent = Num(0);
-          state.respec3tokens--;
+          state.g_num_squirrel_respec++;
+          state.res.nuts.addInPlace(state.squirrel_upgrades_spent);
+          state.squirrel_upgrades_spent = Num(0);
+          state.squirrel_respec_tokens--;
 
-          for(var i = 0; i < state.upgrades3.length; i++) {
-            state.upgrades3[i] = new Upgrade3State();
+          for(var i = 0; i < state.squirrel_upgrades.length; i++) {
+            state.squirrel_upgrades[i] = new SquirrelUpgradeState();
           }
           showMessage('Reset all squirrel upgrades and gave all nuts back. Consumed 1 squirrel respec token.');
 
           store_undo = true;
         }
-      } else if(type == ACTION_EVOLUTION3) {
+      } else if(type == ACTION_SQUIRREL_EVOLUTION) {
         if(fast_forwarding) continue;
-        performEvolution3();
+        performSquirrelEvolution();
         store_undo = true;
       } else if(type == ACTION_AMBER) {
         if(fast_forwarding) continue;
@@ -3241,8 +3241,8 @@ var update = function(opt_ignorePause) {
         var ok = true;
 
         var cost = Num(0);
-        if(action.effect == AMBER_RESPEC3) {
-          cost = ambercost_respec3;
+        if(action.effect == AMBER_SQUIRREL_RESPEC) {
+          cost = ambercost_squirrel_respec;
         }
         if(action.effect == AMBER_PROD) {
           if(state.amberprod) {
@@ -3283,9 +3283,9 @@ var update = function(opt_ignorePause) {
         }
 
         if (ok) {
-          if(action.effect == AMBER_RESPEC3) {
-            state.respec3tokens++;
-            showMessage('One squirrel respec token added, now have: ' + state.respec3tokens, C_AMBER, 2215651, 1);
+          if(action.effect == AMBER_SQUIRREL_RESPEC) {
+            state.squirrel_respec_tokens++;
+            showMessage('One squirrel respec token added, now have: ' + state.squirrel_respec_tokens, C_AMBER, 2215651, 1);
           }
           if(action.effect == AMBER_PROD) {
             state.amberprod = true;
@@ -4453,7 +4453,7 @@ var update = function(opt_ignorePause) {
           showMessage('This egg boosts production for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
         } else if(effect == 4) {
           // nuts
-          var min_nuts = getNextUpgrade3Cost().mulr(0.0004).mulr(1 + getRandomPresentRoll());
+          var min_nuts = getNextSquirrelUpgradeCost().mulr(0.0004).mulr(1 + getRandomPresentRoll());
           var g = computeFernGain().mulr(60 * 5);
           if(g.nuts.lt(min_nuts)) g.nuts = min_nuts;
           var presentres = new Res({nuts:g.nuts});

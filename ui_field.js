@@ -200,7 +200,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         result += text0 + '. Time left: ' + util.formatDuration(growthremaining * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
         if(state.upgrades[berryunlock_0].count || state.g_numresets > 0) {
           result += '<br/><span class="efWatercressHighlight">Copies neighbors: Duplicates full production of long-lived berry and mushroom neighbors for free, but copies less if there are more brassica on the whole field, so try to get a few well-placed brassica instead.';
-          if(basicChallenge() || !state.upgrades3[upgrade3_watercress_mush].count) result += ' (note: mushroom copy also consumes more seeds)';
+          if(basicChallenge() || !state.squirrel_upgrades[upgradesq_watercress_mush].count) result += ' (note: mushroom copy also consumes more seeds)';
           result += '</span><br/>';
         }
       }

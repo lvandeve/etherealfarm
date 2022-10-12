@@ -343,8 +343,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_p_treelevel);
   processUint(state.g_numresets_challenge_0);
   processUint(state.g_numresets_challenge_10);
-  processUint(state.g_numupgrades3);
-  processUint(state.g_numrespec3);
+  processUint(state.g_num_squirrel_upgrades);
+  processUint(state.g_num_squirrel_respec);
   processUint(state.g_amberdrops);
   processUintArray(state.g_amberbuy);
   processRes(state.g_max_res_earned);
@@ -485,7 +485,7 @@ function encState(state, opt_raw_only) {
   processTime(state.lasttree2leveluptime);
   processTime(state.lastambertime);
   processBool(state.paused);
-  processUint(state.respec3tokens);
+  processUint(state.squirrel_respec_tokens);
   processTime(state.resinfruittime);
   processTime(state.twigsfruittime);
   processTimeArray(state.prevleveltime);
@@ -709,10 +709,10 @@ function encState(state, opt_raw_only) {
   array0 = [];
   array1 = [];
 
-  processNum(state.upgrades3_spent);
+  processNum(state.squirrel_upgrades_spent);
 
-  for(var i = 0; i < state.stages3.length; i++) {
-    var s = state.stages3[i];
+  for(var i = 0; i < state.squirrel_stages.length; i++) {
+    var s = state.squirrel_stages[i];
     array0.push(s.num[0]);
     array0.push(s.num[1]);
     array0.push(s.num[2]);
@@ -723,7 +723,7 @@ function encState(state, opt_raw_only) {
   processUintArray(array0);
   processUintArray(array1);
   id = 3; // indicating id of below one extra clearly, because it was added later but is read as the first value in decoding
-  processUint(state.evolution3);
+  processUint(state.squirrel_evolution);
   processNum(state.nuts_before);
   processBool(state.just_evolution);
   processBool(state.seen_evolution);
@@ -1397,8 +1397,8 @@ function decState(s) {
     state.g_numresets_challenge_10 = processUint();
   }
   if(save_version >= 4096*1+74) {
-    state.g_numupgrades3 = processUint();
-    state.g_numrespec3 = processUint();
+    state.g_num_squirrel_upgrades = processUint();
+    state.g_num_squirrel_respec = processUint();
     state.g_amberdrops = processUint();
     var amberbuy = processUintArray();
     for(var i = 0; i < amberbuy.length; i++) state.g_amberbuy[i] = amberbuy[i];
@@ -1582,7 +1582,7 @@ function decState(s) {
   if(save_version >= 4096*1+71) state.lasttree2leveluptime = processTime();
   if(save_version >= 4096*1+71) state.lastambertime = processTime();
   if(save_version >= 4096*1+72) state.paused = processBool();
-  if(save_version >= 4096*1+74) state.respec3tokens = processUint();
+  if(save_version >= 4096*1+74) state.squirrel_respec_tokens = processUint();
   if(save_version >= 4096*1+83) state.resinfruittime = processTime();
   if(save_version >= 4096*1+83) state.twigsfruittime = processTime();
   if(save_version >= 4096*1+103) {
@@ -2014,15 +2014,15 @@ function decState(s) {
 
   if(save_version >= 262144*2+64*4+0) {
     id = 3; // this one is further in the savegame, but read it first since it's needed for the below
-    state.evolution3 = processUint();
+    state.squirrel_evolution = processUint();
     id = 0; // reset it back
   }
-  state.initStages3();
+  state.initSquirrelStages();
 
   if(save_version >= 4096*1+74) {
-    var stages3e = stages3[state.evolution3];
+    var stages = squirrel_stages[state.squirrel_evolution];
 
-    state.upgrades3_spent = processNum();
+    state.squirrel_upgrades_spent = processNum();
     array0 = processUintArray();
     array1 = [];
     if(save_version >= 4096*1+78) {
@@ -2031,7 +2031,7 @@ function decState(s) {
     } else {
       for(var i = 0; i < array0.length; i++) array1[i] = array0[i];
     }
-    id = 4; // skip state.evolution3 which was already read above
+    id = 4; // skip state.squirrel_evolution which was already read above
     if(save_version >= 262144*2+64*4+0) {
       state.nuts_before = processNum();
       state.just_evolution = processBool();
@@ -2049,11 +2049,11 @@ function decState(s) {
     index0 = 0;
     index1 = 0;
     if(array0.length % 3 != 0) return err(4);
-    if(array0.length > stages3e.length * 3) return err(4);
+    if(array0.length > stages.length * 3) return err(4);
 
     var num = Math.floor(array0.length / 3);
     for(var i = 0; i < num; i++) {
-      var s3 = state.stages3[i];
+      var s3 = state.squirrel_stages[i];
       s3.num[0] = array0[index0++];
       s3.num[1] = array0[index0++];
       s3.num[2] = array0[index0++];
@@ -2065,25 +2065,25 @@ function decState(s) {
         s3.num[1] = 0;
         s3.seen[1] = false;
       }
-      if(s3.num[0] > stages3e[i].upgrades0.length) return err(4);
-      if(s3.num[1] > stages3e[i].upgrades1.length) return err(4);
-      if(s3.num[2] > stages3e[i].upgrades2.length) return err(4);
-      for(var j = 0; j < s3.num[0]; j++) state.upgrades3[stages3e[i].upgrades0[j]].count++;
-      for(var j = 0; j < s3.num[1]; j++) state.upgrades3[stages3e[i].upgrades1[j]].count++;
-      for(var j = 0; j < s3.num[2]; j++) state.upgrades3[stages3e[i].upgrades2[j]].count++;
-      if(s3.seen[0] > stages3e[i].upgrades0.length) return err(4);
-      if(s3.seen[1] > stages3e[i].upgrades1.length) return err(4);
-      if(s3.seen[2] > stages3e[i].upgrades2.length) return err(4);
+      if(s3.num[0] > stages[i].upgrades0.length) return err(4);
+      if(s3.num[1] > stages[i].upgrades1.length) return err(4);
+      if(s3.num[2] > stages[i].upgrades2.length) return err(4);
+      for(var j = 0; j < s3.num[0]; j++) state.squirrel_upgrades[stages[i].upgrades0[j]].count++;
+      for(var j = 0; j < s3.num[1]; j++) state.squirrel_upgrades[stages[i].upgrades1[j]].count++;
+      for(var j = 0; j < s3.num[2]; j++) state.squirrel_upgrades[stages[i].upgrades2[j]].count++;
+      if(s3.seen[0] > stages[i].upgrades0.length) return err(4);
+      if(s3.seen[1] > stages[i].upgrades1.length) return err(4);
+      if(s3.seen[2] > stages[i].upgrades2.length) return err(4);
     }
   }
   if(error) return err(4);
 
   if(squirrel_undo_refunds > 0) {
     showMessage('Due to an update some squirrel updates changed, and ' + squirrel_undo_refunds + ' of your squirrel upgrade(s) got refunded. Check the squirrel tab to re-buy them.', C_META, 0, 0, false, true);
-    getUpgrade3Cost(i);
+    getSquirrelUpgradeCost(i);
     var count = 0;
-    for(var i = 0; i < registered_upgrades3.length; i++) {
-      var u2 = state.upgrades3[registered_upgrades3[i]];
+    for(var i = 0; i < registered_squirrel_upgrades.length; i++) {
+      var u2 = state.squirrel_upgrades[registered_squirrel_upgrades[i]];
       count += u2.count;
     }
     count += squirrel_undo_refunds;
@@ -2091,7 +2091,7 @@ function decState(s) {
     while(squirrel_undo_refunds > 0) {
       squirrel_undo_refunds--;
       count--;
-      refund.addInPlace(getUpgrade3Cost(count));
+      refund.addInPlace(getSquirrelUpgradeCost(count));
     }
     state.res.nuts.addInPlace(refund);
   }
@@ -2378,9 +2378,9 @@ function decState(s) {
 
   if(save_version < 4096*1+78 && state.upgrades2[upgrade2_squirrel].count) {
     // the changes are only in the fourth stage
-    if(state.stages3[3].num[1] > 0) {
+    if(state.squirrel_stages[3].num[1] > 0) {
       showMessage('One free squirrel respec token given due to squirrel upgrade changes');
-      state.respec3tokens++; // free respec token due to upgrade change
+      state.squirrel_respec_tokens++; // free respec token due to upgrade change
     }
   }
 
