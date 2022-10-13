@@ -1322,7 +1322,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
             var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
-            if(dir >= 4 && !diagConnected(x, y, x2, y, state.field)) continue;
+            if(dir >= 4 && !diagConnected(x, y, x2, y2, state.field)) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_BEE) {
