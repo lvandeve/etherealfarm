@@ -22,9 +22,11 @@ var FIELD_TREE_BOTTOM = 2;
 var FIELD_REMAINDER = 3; // remainder debris of temporary plant. Counts as empty field (same as index == 0) for all purposes. Purely a visual effect, to remember that this is the spot you're using for watercress (and not accidently put a flower there or so)
 var FIELD_ROCK = 4; // for challenges with rocks
 var FIELD_MULTIPART = 5; // a field tile used by a multi-cell crop (2x2 pumpkin) but which isn't the main cell of the crop
+var FIELD_POND = 6; // center of infinity field
 
 // field cell
-function Cell(x, y, is_ethereal) {
+// fieldtype: 1=basic, 2=ethereal, 3=infinity
+function Cell(x, y, fieldttype) {
   // index of crop, but with different numerical values:
   // 0 = empty
   // 1..(CROPINDEX-1): special: 1=tree top, 2=tree bottom, ...
@@ -39,7 +41,7 @@ function Cell(x, y, is_ethereal) {
   this.justplanted = false; // planted during this run (this transcension), in the past this meant couldn't be deleted until next run. Currently unused, maybe needed for ethereal ferns.
   this.justreplaced = false; // has been replaced, so if it's growing now it doesn't count as a free ethereal delete
 
-  this.is_ethereal = is_ethereal;
+  this.fieldttype = fieldttype;
 }
 
 Cell.prototype.isFullGrown = function() {
@@ -60,6 +62,7 @@ Cell.prototype.isSemiFullGrown = function() {
   return false;
 };
 
+// opt_multipart: also returns true if it's the non-main part of a multipart crop
 Cell.prototype.hasCrop = function(opt_multipart) {
   if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().hasCrop(false);
   return this.index >= CROPINDEX;
@@ -83,7 +86,8 @@ Cell.prototype.cropIndex = function(opt_multipart) {
 Cell.prototype.getCrop = function(opt_multipart) {
   if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().getCrop(false);
   if(this.index < CROPINDEX) return undefined;
-  if(this.is_ethereal) return crops2[this.index - CROPINDEX];
+  if(this.fieldttype == 2) return crops2[this.index - CROPINDEX];
+  if(this.fieldttype == 3) return crops3[this.index - CROPINDEX];
   return crops[this.index - CROPINDEX];
 };
 
@@ -194,6 +198,11 @@ function CropState() {
 
 function Crop2State() {
   this.unlocked = false;
+}
+
+function Crop3State() {
+  this.unlocked = false;
+  this.had = false; // becomes true if you have a fullgrown version of this crop
 }
 
 function UpgradeState() {
@@ -489,6 +498,7 @@ function State() {
   this.numTabs = 0; // amount of visible tabs
   this.lastPlanted = -1; // for shift+plant
   this.lastPlanted2 = -1; // for shift+plant on field2
+  this.lastPlanted3 = -1; // for shift+plant on field3
 
   // resources
   this.res = undefined;
@@ -579,6 +589,17 @@ function State() {
   for(var i = 0; i < registered_upgrades2.length; i++) {
     this.upgrades2[registered_upgrades2[i]] = new Upgrade2State();
   }
+
+  // infinity field and crops
+  this.numw3 = 5;
+  this.numh3 = 5;
+  this.field3 = [];
+  this.crops3 = [];
+  for(var i = 0; i < registered_crops3.length; i++) {
+    this.crops3[registered_crops3[i]] = new Crop3State();
+  }
+
+
 
   this.squirrel_evolution = 0;
   this.squirrel_stages = []; // must be inited with initSquirrelStages at appropriate times
@@ -760,6 +781,10 @@ function State() {
   this.g_nummistletoecancels = 0;
   this.g_mistletoeidletime = 0;
   this.g_mistletoeupgradetime = 0; // this is the effective upgrade time, that is, idle time that was used for upgrades is also counted (e.g. if a single 1 day worth upgrade is done in total, the value of this will be exactly 1d)
+  this.g_numplanted3 = 0;
+  this.g_numunplanted3 = 0;
+  this.g_numfullgrown3 = 0;
+  this.g_numwither3 = 0;
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -906,16 +931,18 @@ function State() {
   this.automatony = 0;
   this.automatonfieldtime = 0; // for the visual planting effect
 
-  // amount of fields with nothing on them (index 0)
+  // amount of fields with nothing on them (index 0, or FIELD_REMAINDER)
   // derived stat, not to be saved
   this.numemptyfields = 0;
   this.numemptyfields2 = 0;
+  this.numemptyfields3 = 0;
 
   // amount of fields with a crop on them (hasRealCrop(), special types 1<=index<CROPINDEX are not counted)
   // includes growing ones, excludes templates
   // derived stat, not to be saved
   this.numcropfields = 0;
   this.numcropfields2 = 0;
+  this.numcropfields3 = 0;
   // same as numcropfields but only counts crops that can be struck by lightning during the stormy challenge
   this.numcropfields_lightning = 0;
   // same as numcropfields but excludes brassica
@@ -925,6 +952,7 @@ function State() {
   // derived stat, not to be saved
   this.numfullgrowncropfields = 0;
   this.numfullgrowncropfields2 = 0;
+  this.numfullgrowncropfields3 = 0;
 
   // like numfullgrowncropfields but excluding short lived crops
   // derived stat, not to be saved
@@ -934,6 +962,7 @@ function State() {
   // derived stat, not to be saved
   this.cropcount = [];
   this.crop2count = [];
+  this.crop3count = [];
   this.croptypecount = []; // excludes templates
 
   // num crops growing (not fullgrown) in main field of any type (excludes brassica, and is 0 during the wither challenge)
@@ -950,6 +979,7 @@ function State() {
   this.fullgrowncropcount = [];
   this.growingcropcount = []; // fractional count: fullgrown crops count as 1, half-grown ones as 0.5, etc...
   this.fullgrowncrop2count = [];
+  this.fullgrowncrop3count = [];
   this.fullgrowncroptypecount = [];
   this.growingcroptypecount = [];
   // any crops of that type, including growing, templates, fullgrown, ...
@@ -958,6 +988,7 @@ function State() {
   // count of non-crop fields, such as fern
   this.specialfieldcount = [];
   this.specialfield2count = [];
+  this.specialfield3count = [];
 
   // amount of upgrades ever had available (whether upgraded/exhausted or not doesn't matter, it's about being visible, available for research, at all)
   // derived stat, not to be saved
@@ -1075,6 +1106,10 @@ function State() {
   this.bestberryforpumpkin_expected = undefined;
   // amount of prestige levels of the best pumpkin berry
   this.bestberryforpumpkin_prestige = false;
+
+  // Boost to basic field from infinity field crops
+  // derived stat, not to be saved.
+  this.infinityboost = Num(0);
 }
 
 // this.squirrel_evolution must already be set to the intended evolution
@@ -1115,7 +1150,7 @@ function clearField(state) {
   for(var y = 0; y < state.numh; y++) {
     state.field[y] = [];
     for(var x = 0; x < state.numw; x++) {
-      state.field[y][x] = new Cell(x, y, false);
+      state.field[y][x] = new Cell(x, y, 1);
     }
   }
   var treex = Math.floor((state.numw - 1) / 2); // for even field size, tree will be shifted to the left, not the right.
@@ -1129,13 +1164,26 @@ function clearField2(state) {
   for(var y = 0; y < state.numh2; y++) {
     state.field2[y] = [];
     for(var x = 0; x < state.numw2; x++) {
-      state.field2[y][x] = new Cell(x, y, true);
+      state.field2[y][x] = new Cell(x, y, 2);
     }
   }
   var treex2 = Math.floor((state.numw2 - 1) / 2); // for even field size, tree will be shifted to the left, not the right.
   var treey2 = Math.floor(state.numh2 / 2);
   state.field2[treey2][treex2].index = FIELD_TREE_BOTTOM;
   state.field2[treey2 - 1][treex2].index = FIELD_TREE_TOP;
+}
+
+function clearField3(state) {
+  state.field3 = [];
+  for(var y = 0; y < state.numh3; y++) {
+    state.field3[y] = [];
+    for(var x = 0; x < state.numw3; x++) {
+      state.field3[y][x] = new Cell(x, y, 3);
+    }
+  }
+  var pondx3 = Math.floor((state.numw3 - 1) / 2); // for even field size, pond will be shifted to the left, not the right.
+  var pondy3 = Math.floor(state.numh3 / 2);
+  state.field3[pondx3][pondy3].index = FIELD_POND;
 }
 
 function changeFieldSize(state, w, h) {
@@ -1161,7 +1209,7 @@ function changeFieldSize(state, w, h) {
         field[y][x].x = x;
         field[y][x].y = y;
       } else {
-        field[y][x] = new Cell(x, y, false);
+        field[y][x] = new Cell(x, y, 1);
         field[y][x].index = content;
       }
     }
@@ -1187,7 +1235,7 @@ function changeField2Size(state, w, h) {
     for(var x = 0; x < w; x++) {
       var x2 = x + xs;
       var y2 = y + ys;
-      field[y][x] = (x2 >= 0 && x2 < state.numw2 && y2 >= 0 && y2 < state.numh2) ? state.field2[y2][x2] : new Cell(x, y, true);
+      field[y][x] = (x2 >= 0 && x2 < state.numw2 && y2 >= 0 && y2 < state.numh2) ? state.field2[y2][x2] : new Cell(x, y, 2);
       field[y][x].x = x;
       field[y][x].y = y;
     }
@@ -1195,6 +1243,29 @@ function changeField2Size(state, w, h) {
   state.field2 = field;
   state.numw2 = w;
   state.numh2 = h;
+}
+
+function changeField3Size(state, w, h) {
+  // this shift is designed such that the center tile of the old field will stay in the center, and in case of
+  // even sizes will be at floor((w-1) / 2) horizontally, floor(h/2) vertically.
+  // w and h should be larger than state.numw and state.numh respectively
+  // the center tile is the tile with the tree bottom half
+  var xs = (((state.numw3 + 1) >> 1) - ((w + 1) >> 1));
+  var ys = ((state.numh3 >> 1) - (h >> 1));
+  var field = [];
+  for(var y = 0; y < h; y++) {
+    field[y] = [];
+    for(var x = 0; x < w; x++) {
+      var x2 = x + xs;
+      var y2 = y + ys;
+      field[y][x] = (x2 >= 0 && x2 < state.numw3 && y2 >= 0 && y2 < state.numh3) ? state.field3[y2][x2] : new Cell(x, y, 3);
+      field[y][x].x = x;
+      field[y][x].y = y;
+    }
+  }
+  state.field3 = field;
+  state.numw3 = w;
+  state.numh3 = h;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1209,6 +1280,7 @@ function createInitialState() {
 
   clearField(state);
   clearField2(state);
+  clearField3(state);
 
   state.crops[brassica_0].unlocked = true;
 
@@ -1424,6 +1496,41 @@ function computeDerived(state) {
       if(!u.isExhausted()) {
         state.upgrades2_upgradable++; // same as u2.canUpgrade()
         if(u.getCost().le(state.res)) state.upgrades2_affordable++;
+      }
+    }
+  }
+
+  // field3
+  state.numemptyfields3 = 0;
+  state.numcropfields3 = 0;
+  state.numfullgrowncropfields3 = 0;
+  state.infinityboost = Num(0);
+  for(var i = 0; i < registered_crops3.length; i++) {
+    state.crop3count[registered_crops3[i]] = 0;
+    state.fullgrowncrop3count[registered_crops3[i]] = 0;
+  }
+  for(var i = 0; i < CROPINDEX; i++) {
+    state.specialfield3count[i] = 0;
+  }
+  for(var y = 0; y < state.numh3; y++) {
+    for(var x = 0; x < state.numw3; x++) {
+      var f = state.field3[y][x];
+      if(f.hasCrop()) {
+        var c = crops3[f.cropIndex()];
+        state.crop3count[c.index]++;
+        if(f.hasRealCrop()) {
+          state.numcropfields3++;
+          if(f.growth >= 1) {
+            state.fullgrowncrop3count[c.index]++;
+            state.numfullgrowncropfields3++;
+          }
+        }
+        state.infinityboost.addInPlace(c.getBasicBoost());
+      } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
+        state.specialfield3count[f.index]++;
+        state.numemptyfields3++;
+      } else {
+        state.specialfield3count[f.index]++;
       }
     }
   }

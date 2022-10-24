@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // The game data: definition of upgrades, crops, ...
 
 var seasonNames = ['spring', 'summer', 'autumn', 'winter',
-                   'ethereal', 'infernal'];
+                   'ethereal', 'infernal', 'infinity'];
 
 var croptype_index = 0;
 var CROPTYPE_BERRY = croptype_index++;
@@ -235,12 +235,6 @@ function getCropRecoup() {
   return 0.33;
 }
 
-
-// ethereal version
-var sameTypeCostMultiplier2 = 1.5;
-var sameTypeCostMultiplier_Lotus2 = 2;
-var sameTypeCostMultiplier_Fern2 = 1.5;
-var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 var squirrel_respec_initial = 2; // how many squirrel upgrade respecs received at game start
 
@@ -998,6 +992,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     result.posmulInPlace(bonus);
     //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
     if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
+  }
+
+  // Infinity field
+  if(state.infinityboost.neqr(0) && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
+    var bonus = state.infinityboost.addr(1);
+    result.posmulInPlace(bonus);
+    //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
+    if(breakdown) breakdown.push(['infinity field', true, bonus, result.clone()]);
   }
 
   // leech (brassica-copying), only computed for the pretend cases, non-pretend leech: brassica copying's actual gameplay computation is done in precomputeField() intead
@@ -3704,6 +3706,39 @@ var medal_wither5 = registerMedal('withered V', 'completed the wither challenge 
 }, Num(5));
 changeMedalDisplayOrder(medal_wither5, medal_wither4);
 
+
+
+// infinity field related medals
+medal_register_id = 4000;
+
+// The doubling of these achievements is because each next time you plant the first brassica tier, you can plant twice as much as before
+
+registerMedal('One infinity', 'Have one crop on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 1;
+}, Num(10));
+
+registerMedal('Two infinities', 'Have two crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 2;
+}, Num(20));
+
+registerMedal('Four infinities', 'Have four crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 4;
+}, Num(40));
+
+registerMedal('Eight infinities', 'Have eight crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 8;
+}, Num(80));
+
+registerMedal('Sixtien infinities', 'Have sixteen crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 16;
+}, Num(160));
+
+registerMedal('Infinite infinities', 'Filled the entire infinity field with crops', image_infinity, function() {
+  return state.numemptyfields3 == 0;
+}, Num(250));
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4265,6 +4300,13 @@ function Crop2() {
   this.istemplate = false; // if true, is a placeholder template
   this.isghost = false; // if true, is a ghost (currently unused for Crop2, but here for consistency with Crop
 };
+
+
+
+var sameTypeCostMultiplier2 = 1.5;
+var sameTypeCostMultiplier_Lotus2 = 2;
+var sameTypeCostMultiplier_Fern2 = 1.5;
+var cropRecoup2 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 Crop2.prototype.isReal = function() {
   return !this.istemplate && !this.isghost;
@@ -5205,6 +5247,19 @@ var upgrade2_field2_8x8 = registerUpgrade2('ethereal field 8x8', LEVEL2, Res({re
   changeField2Size(state, numw, numh);
   initField2UI();
 }, function(){return state.numw2 >= 7 && state.numh2 >= 8}, 1, 'increase ethereal field size to 8x8 tiles', undefined, undefined, field_ethereal[0]);
+
+///////////////////////////
+LEVEL2 = 19;
+upgrade2_register_id = 1400;
+
+///////////////////////////
+LEVEL2 = 20;
+upgrade2_register_id = 1500;
+
+// cheap cost because having it as an upgrade is more there to get its help dialog than to be a cost barrier. In the value 8B. the 8 and the B are supposed to look like the infinity symbol
+var upgrade2_infinity_field = registerUpgrade2('unlock infinity field', LEVEL2, Res({resin:8e9}), 2, function() {
+  showRegisteredHelpDialog(42);
+}, function(){return true;}, 1, 'unlocks the infinity field. This is a new field with its own crops producing its own resources. The crops give a small bonus to the basic field, but unlike the ethereal field the infinity field is more focused on growing itself than boosting the basic field.', undefined, undefined, image_pond);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -7671,6 +7726,132 @@ function etherealMistletoeNextEvolutionUnlockLevel() {
   }
   return result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+function Crop3() {
+  this.name = 'a';
+  this.cost = Res();
+  this.prod = Res(); // production to infinity field
+  this.index = 0;
+  this.planttime = 0;
+  this.basicboost = Num(0); // to basic field
+  this.tagline = '';
+  this.image = undefined;
+};
+
+
+
+var sameTypeCostMultiplier3 = 1.5;
+var sameTypeCostMultiplier_Lotus3 = 2;
+var sameTypeCostMultiplier_Fern3 = 1.5;
+var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
+
+// opt_force_count, if not undefined, overrides anything, including opt_adjust_count
+Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
+  if(this.type == CROPTYPE_BRASSICA) return this.cost;
+
+  var mul = sameTypeCostMultiplier3;
+  var count = state.crop3count[this.index] + (opt_adjust_count || 0);
+  if(opt_force_count != undefined) count = opt_force_count;
+  var countfactor = Math.pow(mul, count);
+  return this.cost.mulr(countfactor);
+};
+
+
+Crop3.prototype.getRecoup = function() {
+  return this.getCost(-1).mulr(cropRecoup3);
+};
+
+
+Crop3.prototype.getPlantTime = function() {
+  return this.planttime;
+};
+
+
+Crop3.prototype.getProd = function(f, breakdown) {
+  var result = this.prod.clone();
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  return result;
+}
+
+Crop3.prototype.getBasicBoost = function(f, breakdown) {
+  var result = this.basicboost.clone();
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  return result;
+};
+
+
+
+
+
+var registered_crops3 = []; // indexed consecutively, gives the index to crops3
+var crops3 = []; // indexed by crop index
+
+
+var croptype3_tiers = [];
+
+// 16-bit ID, auto incremented with registerCrop3, but you can also set it to a value yourself, to ensure consistent IDs for various crops3 (between savegames) in case of future upgrades
+var crop3_register_id = -1;
+
+// prod = for infinity field
+// basicboost = to basic field
+function registerCrop3(name, croptype, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
+  if(!image) image = missingplant;
+  if(crops3[crop3_register_id] || crop3_register_id < 0 || crop3_register_id > 65535) throw 'crop3 id already exists or is invalid!';
+  var crop = new Crop3();
+  crop.index = crop3_register_id++;
+  crops3[crop.index] = crop;
+  registered_crops3.push(crop.index);
+
+  crop.name = name;
+  crop.type = croptype;
+  crop.tier = tier;
+  crop.cost = cost;
+  crop.prod = prod;
+  crop.basicboost = basicboost;
+  crop.planttime = planttime;
+  crop.image = image;
+  crop.tagline = opt_tagline || '';
+
+
+  if(croptype != undefined && tier != undefined) {
+    if(!croptype3_tiers[croptype]) croptype3_tiers[croptype] = [];
+    croptype3_tiers[croptype][tier] = crop;
+  }
+
+  return crop.index;
+}
+
+function registerBrassica3(name, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_BRASSICA, tier, cost, prod, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  return index;
+}
+
+function registerBerry3(name, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_BERRY, tier, cost, prod, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  return index;
+}
+
+
+crop3_register_id = 0;
+var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Res({infseeds:20.01 / (24 * 3600)}), Num(0.05), 24 * 3600, metalifyPlantImages(images_watercress, metalheader0));
+
+//crop3_register_id = 144;
+//var berry3_0 = registerBerry3('testberry', 0, Res({infseeds:10}), Res({infseeds:0.01}), 5, blackberry);
+
+function haveInfinityField() {
+  return state.upgrades2[upgrade2_infinity_field].count;
+  //return true;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 

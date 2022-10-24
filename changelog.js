@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.7.0 (2022-10-24):';
+  text += '<br/>• Added the infinity field, a third field tab in the game. This requires ethereal tree 20 to unlock. For this first release, the infinity field has only a single crop, as an initial test of this new feature (which also means it could change). Later more crops will be released.';
+  text += '<br/>• Small tweaks and fixes.'; // update nuts value in squirrel tab when nuts change while it's open, and small cosmetic ui/text changes
+  text += '<br/><br/>';
+
   text += '0.6.6 (2022-10-10):';
   text += '<br/>• Added a halloween event, which unlocks a pumpkin crop that takes 2x2 field spaces, requiring new layouts to use it well. This event will last 1 month.';
   text += '<br/>• Added a page 2 to the blueprint dialog, doubling the amount of available blueprints. The "p" key is a shortcut to switch pages.';

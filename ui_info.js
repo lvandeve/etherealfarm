@@ -76,8 +76,9 @@ var lastExpectedGainNumGrowing = -1;
 
 // a global breakdown into hypothetical, actual, positive and negative production/consumption
 function prodBreakdown2() {
-  // even though update() computes gain, re-compute it here now, because it may be slightly different if watercress just disappeared
+  // even though update() computes gain, re-compute it here now (for resources from basic field at least), because it may be slightly different if watercress just disappeared
   // that matters, because if it's out of sync with gain_hyp, it may be displaying the gray parenthesis different one while it's unneeded
+  var origgain = gain.clone();
   gain = Res();
   gain_pos = Res();
   gain_neg = Res();
@@ -99,6 +100,8 @@ function prodBreakdown2() {
       }
     }
   }
+
+  gain.infseeds = origgain.infseeds;
 
   if((util.getTime() - lastExpectedGainUpdateTime > 5 && state.numgrowing > 0) || state.numgrowing != lastExpectedGainNumGrowing) {
     // Computed for UI display only: the expected gain if all crops would be fullgrown
@@ -312,7 +315,7 @@ function getResourceDetails(i, special, index) {
         text += '• To consumers: ' + (res_gain_hyp_pos.sub(res_gain_hyp)).toString() + '/s (= what mushrooms want to consume if enough seed production available)<br/>';
         text += '<br/><br/>';
       }
-    } else {
+    } else if(index == 1) { // spores
       if(res_gain.neq(res_gain_pos)) {
         text += 'Production (' + name + '/s):<br/>';
         text += '• Actual: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
@@ -320,6 +323,9 @@ function getResourceDetails(i, special, index) {
       } else {
         text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s <br/>';
       }
+      text += '<br/>';
+    } else { // other non-special (= with continuous preoduction/s) resource
+      text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s <br/>';
       text += '<br/>';
     }
     if(state.numgrowing > 0 && gain_expected_hyp.atIndex(index).neqr(0)) {
@@ -377,7 +383,7 @@ function showResource(i, special, index) {
       label = name + ' ' + res.toString() + ' (+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
     } else {
       text = name + '<br>' + res.toString();
-      if(upcoming) text += '<br>(→ +' + upcoming.toString() + ')';
+      if(upcoming) text += '<br>(+' + upcoming.toString() + ')';
       label = name + ' ' + res.toString();
     }
   } else {
@@ -437,7 +443,8 @@ function showResource(i, special, index) {
         var text = getResourceDetails(i, special, index);
         if(text != last) {
           var html = text;
-          if(!special) {
+          if(!special && index != 5) {
+            // TODO: support this also for index 5 (infinity seeds)
             html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
           }
 
@@ -657,7 +664,8 @@ function updateResourceUI() {
   if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, true, 3);
   if(state.g_max_res.essence.neqr(0)) showResource(i++, true, 7);
   if(state.g_max_res.nuts.neqr(0)) showResource(i++, false, 4);
-  if(state.g_max_res.amber.neqr(0)) showResource(i++, true, 6);
+  if(haveInfinityField()) showResource(i++, false, 5);
+  else if(state.g_max_res.amber.neqr(0)) showResource(i++, true, 6);
 }
 
 function initInfoUI() {

@@ -32,6 +32,7 @@ var leaves_autumn_header = 'q:#f30 g:#f70 G:#fa0 Q:#fe0';
 var leaves_winter_header = 'q:#77f g:#99f G:#bbf Q:#eef';
 var leaves_ethereal_header = 'q:#bb8 g:#dda G:#ffa Q:#ffe';
 var leaves_infernal_header = 'q:#b00 g:#d00 G:#f00 Q:#f55';
+var leaves_infinity_header = 'q:#666 g:#888 G:#aaa Q:#fff';
 
 var stem_metal_header0 = 'ho:#999'; // zinc
 var stem_metal_header1 = 'ho:#f80'; // bronze
@@ -63,13 +64,15 @@ function createTreeImages(name, top, bottom, opt_stem_header, opt_no_lights) {
     a4 = createCanvasImageFor(blendImages(generateImage(leaves_ethereal_header + s + top.trim()), generateImage(image_tree_lights)));
   }*/
   var a5 = generateImageCanvas(leaves_infernal_header + s + top.trim());
+  var a6 = generateImageCanvas(leaves_infinity_header + s + top.trim());
   var b0 = generateImageCanvas(leaves_spring_header + s + bottom.trim());
   var b1 = generateImageCanvas(leaves_summer_header + s + bottom.trim());
   var b2 = generateImageCanvas(leaves_autumn_header + s + bottom.trim());
   var b3 = generateImageCanvas(leaves_winter_header + s + bottom.trim());
   var b4 = generateImageCanvas(leaves_ethereal_header + s + bottom.trim());
   var b5 = generateImageCanvas(leaves_infernal_header + s + bottom.trim());
-  return [name, [a0, a1, a2, a3, a4, a5], [b0, b1, b2, b3, b4, b5]];
+  var b6 = generateImageCanvas(leaves_infinity_header + s + bottom.trim());
+  return [name, [a0, a1, a2, a3, a4, a5, a6], [b0, b1, b2, b3, b4, b5, b6]];
 }
 
 var image_tree_lights = `
@@ -1014,3 +1017,23 @@ Ggqoooooxxx.....
 
 
 
+var image_pond = generateImageCanvas(`
+........000.....
+.......0aaa00...
+..00000aAaAaa...
+..0aaaaAaAaaaa..
+00aaaaaaaaaaaA..
+0aAaAaaaaaaaAa..
+0AaAaaaAaAaaaa..
+0aaaaaAaAaAaa...
+.aaaaaaAaAaaa0..
+.aaaaaaaaaaaaA..
+0aaAaAaaaaaaAa0.
+0aAaAaaaAaAaaaa.
+.aaaaaaAaAaaaa..
+.....aaaa.......
+.....0aa........
+................
+`);
+
+var image_pond_on_field = createCanvasImageFor(blendImages(field_infinity[0][4], image_pond[4]));

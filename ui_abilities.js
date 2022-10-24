@@ -301,7 +301,11 @@ function updateAbilitiesUI() {
       renderImage(image, canvas);
 
       addButtonAction(watercressbutton.div, function(e) {
-        refreshWatercress(util.eventHasCtrlKey(e), e.shiftKey);
+        if(state.currentTab == tabindex_field3) {
+          refreshWatercress3(util.eventHasCtrlKey(e), e.shiftKey);
+        } else {
+          refreshWatercress(util.eventHasCtrlKey(e), e.shiftKey);
+        }
       }, 'refresh ' + name + '. with shift: deletes all ' + name);
       watercressbutton.div.id = 'watercress_button';
     }
@@ -371,7 +375,72 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
   else if(refreshed) showMessage(opt_clear ? 'deleting brassica' : 'refreshing brassica');
   else if(remcleared) showMessage('cleared brassica remainders');
   else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing brassica or remainders of brassica, and requires enough resources available to plant the brassica');
-  else showMessage('nothing done: only refreshes existing brassica or remainders of brassica');
+  else showMessage('nothing done: only refreshes existing brassica or remainders of brassica. A second click can fill up the rest of the field with brassica, when having enough resources.');
+  if(!opt_by_automaton) update();
+}
+
+// opt_clear = delete all existing brasssica, rather than planting or refreshing any
+// opt_all = plant brasssica in every single free spot, rather than only were existing brasssica or remainders are
+// opt_by_automaton = mark the action as done by automaton, and also don't call update() since automaton actions are already done from within the update function.
+function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
+  if(opt_clear && opt_all) return;
+  var replanted = false;
+  var refreshed = false;
+  var remcleared = false;
+  var fullyplanted = false;
+  var cresscost = crops3[brassica3_0].cost.seeds; // taking only cheapest one for this computation is ok, when unlocking next tiers its cost is extremely low compared to seeds you have
+  var cropindex = brassica3_0;
+  if(cropindex < 0) return;
+  var seeds_available = Num(state.res.infseeds);
+  var numplanted = 0;
+  for(var y = 0; y < state.numh3; y++) {
+    for(var x = 0; x < state.numw3; x++) {
+      var can_afford = seeds_available.ge(cresscost);
+      var f = state.field3[y][x];
+      var c = f.getCrop();
+      if(f.index == FIELD_REMAINDER) {
+        if(opt_clear) {
+          addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
+          remcleared = true;
+        } else if(can_afford) {
+          seeds_available.subInPlace(cresscost);
+          addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+          replanted = true;
+          numplanted++;
+        }
+      } else if(c && c.type == CROPTYPE_BRASSICA && (can_afford || opt_clear)) {
+        addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
+        if(!opt_clear) {
+          seeds_available.subInPlace(cresscost);
+          addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+          // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
+          // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
+          if(f.growth < 0.999) numplanted++;
+        }
+        refreshed = true;
+      } else if(opt_all) {
+        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost)) {
+          seeds_available.subInPlace(cresscost);
+          addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+          numplanted++;
+          fullyplanted = true;
+        }
+      }
+    }
+  }
+
+  if(numplanted == 0 && !opt_all && !opt_clear && !opt_by_automaton) {
+    // if nothing was done (e.g. there were no watercress remainders), and it's a standard (non shift, non ctrl) click, plant watercress in every free spot anyway, to have some easy way to fill up the whole field anyway even if there are no remainders
+    refreshWatercress3(false, true, false);
+    return;
+  }
+
+  if(fullyplanted) showMessage('planting infinity brassica');
+  else if(replanted) showMessage('replanting infinity brassica');
+  else if(refreshed) showMessage(opt_clear ? 'deleting infinity brassica' : 'refreshing infinity brassica');
+  else if(remcleared) showMessage('cleared infinity brassica remainders');
+  else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing infinity brassica or remainders of infinity brassica, and requires enough resources available to plant the infinity brassica');
+  else showMessage('nothing done: only refreshes existing infinity brassica or remainders of infinity brassica');
   if(!opt_by_automaton) update();
 }
 
@@ -510,7 +579,11 @@ document.addEventListener('keydown', function(e) {
 
   if(key == 'w' && !ctrl) {
     // NOTE: ctrl for this shortcut (for deleting watercress) doesn't work, since ctrl+w closes browser tab.
-    refreshWatercress(false, /*opt_all=*/shift);
+    if(state.currentTab == tabindex_field3) {
+      refreshWatercress3(false, /*opt_all=*/shift);
+    } else {
+      refreshWatercress(false, /*opt_all=*/shift);
+    }
   }
 
   if(key == 'b' && !shift && !ctrl) {
@@ -600,6 +673,24 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
+  if(key == 'p' && !shift && !ctrl && state.currentTab == tabindex_field3) {
+    if(state.field3[shiftCrop3FlexY]) {
+      var f = state.field3[shiftCrop3FlexY][shiftCrop3FlexX];
+      if(f) {
+        if(f.hasCrop(true)) {
+          // pick
+          state.lastPlanted3 = f.getCrop(true).index;
+        } else {
+          // plant
+          if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
+            addAction({type:ACTION_PLANT3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[state.lastPlanted3], shiftPlanted:true});
+            update();
+          }
+        }
+      }
+    }
+  }
+
   if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field) {
     // delete crop
     var did_something = false;
@@ -610,7 +701,7 @@ document.addEventListener('keydown', function(e) {
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f) {
-        if(f.hasCrop(true)) {
+        if(f.hasCrop(true) || f.index == FIELD_REMAINDER) {
           // delete crop
           addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
           did_something = true;
@@ -629,6 +720,19 @@ document.addEventListener('keydown', function(e) {
         if(f.hasCrop()) {
           // delete crop
           addAction({type:ACTION_DELETE2, x:shiftCrop2FlexX, y:shiftCrop2FlexY});
+          update();
+        }
+      }
+    }
+  }
+
+  if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field3) {
+    if(state.field3[shiftCrop3FlexY]) {
+      var f = state.field3[shiftCrop3FlexY][shiftCrop3FlexX];
+      if(f) {
+        if(f.hasCrop() || f.index == FIELD_REMAINDER) {
+          // delete crop
+          addAction({type:ACTION_DELETE3, x:shiftCrop3FlexX, y:shiftCrop3FlexY});
           update();
         }
       }

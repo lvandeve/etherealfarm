@@ -314,6 +314,9 @@ var fieldheader_autumn = '+:#d3be9c -:#cea78b';
 var fieldheader_winter = '+:#fff -:#eef';
 var fieldheader_ethereal = '+:#9df -:#aaa';
 var fieldheader_infernal = '+:#c42 -:#f63';
+//var fieldheader_infinity = '+:#ab9 -:#ded';
+//var fieldheader_infinity = '+:#efd -:#fdd';
+var fieldheader_infinity = '+:#efd -:#ddf';
 
 var field0 = `
 ++++++++++++++++
@@ -462,6 +465,14 @@ generateImageCanvas(fieldheader_infernal + field3),
 generateImageCanvas(fieldheader_infernal + field_empty),
 ];
 
+var field_infinity = [
+generateImageCanvas(fieldheader_infinity + field0),
+generateImageCanvas(fieldheader_infinity + field1),
+generateImageCanvas(fieldheader_infinity + field2),
+generateImageCanvas(fieldheader_infinity + field3),
+generateImageCanvas(fieldheader_infinity + field_empty),
+];
+
 var images_field = [
   field_spring,
   field_summer,
@@ -469,8 +480,8 @@ var images_field = [
   field_winter,
   field_ethereal,
   field_infernal,
+  field_infinity,
 ];
-
 
 
 var empty = generateImageCanvas(`
@@ -751,19 +762,19 @@ a@@@@@@@@@@@@@@a
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// the metal colors for images. There is also tierColors, tierColors_BG and medalheader[0..11] in images_medals.js, and stem_metal_header[0..11] in images_tree.js.
-var metalheader0 = ' hm:#999';
-var metalheader1 = ' hm:#c70';
-var metalheader2 = ' N:#eee M:#bbb m:#888 n:#555';
-var metalheader3 = ' hm:#cfa';
-var metalheader4 = ' hm:#fe0';
-var metalheader5 = ' N:#fff M:#eee m:#ddd n:#ccc';
-var metalheader6 = ' N:#fee M:#ecc m:#dbb n:#caa';
-var metalheader7 = ' N:#c8f M:#b7e m:#86d n:#75b';
-var metalheader8 = ' hm:#00f';
-var metalheader9 = ' hm:#0f0';
-var metalheader10 = ' hm:#f00';
-var metalheader11 = ' N:#fff M:#eee m:#ddd n:#ccc';
+// the metal colors for images. There is also tierNames, tierColors, tierColors_BG and medalheader[0..11] in images_medals.js, and stem_metal_header[0..11] in images_tree.js.
+var metalheader0 = ' hm:#999'; // zinc
+var metalheader1 = ' hm:#c70'; // bronze
+var metalheader2 = ' N:#eee M:#bbb m:#888 n:#555'; // silver
+var metalheader3 = ' hm:#cfa'; // electrum
+var metalheader4 = ' hm:#fe0'; // gold
+var metalheader5 = ' N:#fff M:#eee m:#ddd n:#ccc'; // platinum
+var metalheader6 = ' N:#fee M:#ecc m:#dbb n:#caa'; // rhodium
+var metalheader7 = ' N:#c8f M:#b7e m:#86d n:#75b'; // amethyst
+var metalheader8 = ' hm:#00f'; // sapphire
+var metalheader9 = ' hm:#0f0'; // emerald
+var metalheader10 = ' hm:#f00'; // ruby
+var metalheader11 = ' N:#fff M:#eee m:#ddd n:#ccc'; // diamond
 
 var image_apple = `
 ................
@@ -1520,4 +1531,24 @@ aA@..XXooooAa@A.
 .....aaaaaaaa...
 `);
 
+
+
+var image_infinity = generateImageCanvas(`
+................
+................
+................
+................
+................
+....22...22.....
+...2111.2111....
+..21..111..10...
+..21...1...10...
+..21..111..10...
+...1110.1110....
+....00...00.....
+................
+................
+................
+................
+`);
 

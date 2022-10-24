@@ -1020,6 +1020,10 @@ function getSuffixAbc(e) {
 Num.notationSci = function(v, precision, eng, opt_base) {
   precision--; // this is because there's also one digit in front of the point
 
+  if(v.gtr(1e-6) && v.ltr(1)) {
+    return Num.smallValueNotation(v, precision);
+  }
+
   if(eng) eng = (eng < 3 ? 3 : (eng > 8 ? 8 : eng));
   var base = opt_base || 10;
   var l = (base == 10) ? log2_log10 : (0.6931471805599453 / Math.log(base));
@@ -1094,6 +1098,17 @@ Num.notationSci = function(v, precision, eng, opt_base) {
   return result;
 };
 
+// intended for values in range 1e-6 to 1, to avoid showing something like 200e-6, instead show 0.0002
+Num.smallValueNotation = function(v, precision) {
+  var result = v.valueOf().toString();
+
+  var e = v.e * log2_log10;
+  var e2 = -Math.floor(v.abs().log10());
+
+  //return result.substr(0, Math.max(precision + 2, 7));
+  return result.substr(0, e2 + 1 + precision);
+}
+
 // abbreviations like K, M, ..., and also engineering notation after that
 // also less strict: for small enough numbers (or large enough if between 0 and 1), uses regular notation, no suffixes at all
 // so this notation is more human-like and only becomes engineering notation when necessary
@@ -1105,6 +1120,10 @@ Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
   if(isNaN(v.b)) return 'NaN';
   if(v.b == Infinity) return 'Inf';
   if(v.b == 0) return '0';
+
+  if(v.gtr(1e-6) && v.ltr(1)) {
+    return Num.smallValueNotation(v, precision);
+  }
 
   var e = v.e * log2_log10;
   var e2 = v.abs().log10();

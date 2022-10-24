@@ -29,6 +29,7 @@ var upgrades2ButtonLastText = '';
 var medalsButtonLastText = '';
 var fieldButtonLastText = '';
 var field2ButtonLastText = '';
+var field3ButtonLastText = '';
 var automatonButtonLastText = '';
 var squirrelButtonLastText = '';
 var amberButtonLastText = '';
@@ -295,6 +296,20 @@ function updateTabButtons2() {
     }
   }
 
+  tabnum = tabindex_field3;
+  if(tabbuttons[tabnum]) {
+    var text = 'infinity field';
+    if(state.numcropfields3 == 0) {
+      text = '<b><font color="red">' + text + '</font></b>';
+    }
+
+    if(text != field3ButtonLastText) {
+      tabbuttons[tabnum].style.lineHeight = '';  // button sets that to center text, but with 2-line text that hurts the graphics instead
+      tabbuttons[tabnum].textEl.innerHTML  = text;
+      field3ButtonLastText = text;
+    }
+  }
+
   tabnum = tabindex_automaton;
   if(tabbuttons[tabnum]) {
     var text = 'automaton';
@@ -374,6 +389,7 @@ function updateTabButtons() {
   wanted[tabindex_fruit] = state.g_numfruits > 0;
   wanted[tabindex_field2] = state.g_numresets > 0;
   wanted[tabindex_upgrades2] = state.upgrades2_unlocked > 0;
+  wanted[tabindex_field3] = haveInfinityField();
   wanted[tabindex_automaton] = automatonUnlocked();
   wanted[tabindex_medals] = state.medals_earned > 0;
   wanted[tabindex_squirrel] = squirrelUnlocked();
@@ -506,6 +522,24 @@ function updateTabButtons() {
     tabbuttons[tabnum].id = 'ethereal_upgrades_tab';
     tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
     upgrades2ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
+    tabNumbers[index] = tabnum;
+    tabNumbersInv[tabnum] = index;
+    index++;
+  }
+
+  tabnum = tabindex_field3;
+  if(wanted[tabnum]) {
+    var index2 = split ? ((index < half0) ? index : (index - half0)) : index;
+    var num2 = split ? ((index < half0) ? half0 : half1) : num;
+    var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
+    var y1 = split ? '50%' : '100%';
+    tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
+    styleButton(tabbuttons[tabnum]);
+    addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: infinity field tab', true);
+    tabbuttons[tabnum].textEl.innerText = 'infinity field';
+    tabbuttons[tabnum].id = 'infinity_field_tab';
+    tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
+    field3ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     tabNumbers[index] = tabnum;
     tabNumbersInv[tabnum] = index;
     index++;

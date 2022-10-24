@@ -22,6 +22,7 @@ var upgradeFlex;
 var fruitFlex;
 var medalDiv;
 var field2Flex;
+var field3Flex;
 var upgrade2Flex;
 var automatonFlex;
 var squirrelFlex;
@@ -125,6 +126,7 @@ var tabindex_upgrades;
 var tabindex_fruit;
 var tabindex_field2;
 var tabindex_upgrades2;
+var tabindex_field3;
 var tabindex_automaton;
 var tabindex_squirrel;
 var tabindex_amber;
@@ -162,6 +164,7 @@ function initUI() {
   tabindex_fruit = tabnum++;
   tabindex_field2 = tabnum++;
   tabindex_upgrades2 = tabnum++;
+  tabindex_field3 = tabnum++;
   tabindex_medals = tabnum++;
   tabindex_automaton = tabnum++;
   tabindex_squirrel = tabnum++;
@@ -177,6 +180,8 @@ function initUI() {
   field2Flex = tabs[tabindex_field2];
   field2Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   upgrade2Flex = tabs[tabindex_upgrades2];
+  field3Flex = tabs[tabindex_field3];
+  field3Flex.div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
   automatonFlex = tabs[tabindex_automaton];
   squirrelFlex = tabs[tabindex_squirrel];
   amberFlex = tabs[tabindex_amber];
@@ -186,6 +191,7 @@ function initUI() {
   initFieldUI();
   initInfoUI();
   initField2UI();
+  initField3UI();
 
   updatePausedUI();
 
@@ -250,6 +256,7 @@ function updateUI() {
 function updateUI2() {
   renderField();
   renderField2();
+  renderField3();
   updateResourceUI();
   updateUpgradeUIIfNeeded();
   updateUpgrade2UIIfNeeded();
@@ -257,6 +264,7 @@ function updateUI2() {
   updateAbilitiesUI();
   updateRightPane();
   updatePausedUI();
+  if(squirrelUINeedsFastUpdate()) updateSquirrelUI(true);
   if(updatetooltipfun) {
     updatetooltipfun();
   }

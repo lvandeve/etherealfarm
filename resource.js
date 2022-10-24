@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-var resource_names = ['seeds', 'spores', 'resin', 'twigs', 'nuts', 'mycelia', 'amber', 'essence'];
+var resource_names = ['seeds', 'spores', 'resin', 'twigs', 'nuts', 'infinity seeds', 'amber', 'essence'];
 
 // Resources.
 // o is object with optional fields with the same names as the resource fields of Res (and may have regular JS numbers or Num), or can be a Res itself
@@ -36,7 +36,7 @@ function Res(o) {
     this.resin = new Num(o.resin || 0);
     this.twigs = new Num(o.twigs || 0);
     this.nuts = new Num(o.nuts || 0);
-    this.spores2 = new Num(o.spores2 || 0);
+    this.infseeds = new Num(o.infseeds || 0); // infinity seeds
     this.amber = new Num(o.amber || 0);
     this.essence = new Num(o.essence || 0); // fruit essence
   } else {
@@ -45,7 +45,7 @@ function Res(o) {
     this.resin = new Num();
     this.twigs = new Num();
     this.nuts = new Num();
-    this.spores2 = new Num();
+    this.infseeds = new Num();
     this.amber = new Num();
     this.essence = new Num(); // fruit essence
   }
@@ -61,7 +61,7 @@ Res.resOne = function() {
 // returns the resources as an array. The order is consistent, but do not rely on which index is which named resource. Only converting back to Resource with fromArray brings back the names.
 // does not make copies of the Num values, so do not change them in place if the original resources should not be modified
 Res.prototype.toArray = function() {
-  return [this.seeds, this.spores, this.resin, this.twigs, this.nuts, this.spores2, this.amber, this.essence];
+  return [this.seeds, this.spores, this.resin, this.twigs, this.nuts, this.infseeds, this.amber, this.essence];
 };
 Res.toArray = function(v) { return v.toArray(); }
 
@@ -77,7 +77,7 @@ Res.prototype.fromArray = function(a) {
   this.resin = a[2] || new Num(0);
   this.twigs = a[3] || new Num(0);
   this.nuts = a[4] || new Num(0);
-  this.spores2 = a[5] || new Num(0);
+  this.infseeds = a[5] || new Num(0);
   this.amber = a[6] || new Num(0);
   this.essence = a[7] || new Num(0);
 };
@@ -95,7 +95,7 @@ Res.prototype.reset = function() {
   this.resin.reset();
   this.twigs.reset();
   this.nuts.reset();
-  this.spores2.reset();
+  this.infseeds.reset();
   this.amber.reset();
   this.essence.reset();
 };
@@ -106,7 +106,7 @@ Res.prototype.atIndex = function(index) {
   if(index == 2) return this.resin;
   if(index == 3) return this.twigs;
   if(index == 4) return this.nuts;
-  if(index == 5) return this.spores2;
+  if(index == 5) return this.infseeds;
   if(index == 6) return this.amber;
   if(index == 7) return this.essence;
   return Num(0);
@@ -118,7 +118,7 @@ Res.prototype.addInPlace = function(b) {
   this.resin.addInPlace(b.resin);
   this.twigs.addInPlace(b.twigs);
   this.nuts.addInPlace(b.nuts);
-  this.spores2.addInPlace(b.spores2);
+  this.infseeds.addInPlace(b.infseeds);
   this.amber.addInPlace(b.amber);
   this.essence.addInPlace(b.essence);
   return this;
@@ -139,7 +139,7 @@ Res.prototype.addrInPlace = function(v) {
   this.resin.addInPlace(v);
   this.twigs.addInPlace(v);
   this.nuts.addInPlace(v);
-  this.spores2.addInPlace(v);
+  this.infseeds.addInPlace(v);
   this.amber.addInPlace(v);
   this.essence.addInPlace(v);
   return this;
@@ -157,7 +157,7 @@ Res.prototype.subInPlace = function(b) {
   this.resin.subInPlace(b.resin);
   this.twigs.subInPlace(b.twigs);
   this.nuts.subInPlace(b.nuts);
-  this.spores2.subInPlace(b.spores2);
+  this.infseeds.subInPlace(b.infseeds);
   this.amber.subInPlace(b.amber);
   this.essence.subInPlace(b.essence);
   return this;
@@ -175,7 +175,7 @@ Res.prototype.negInPlace = function() {
   this.resin.negInPlace();
   this.twigs.negInPlace();
   this.nuts.negInPlace();
-  this.spores2.negInPlace();
+  this.infseeds.negInPlace();
   this.amber.negInPlace();
   this.essence.negInPlace();
   return this;
@@ -195,7 +195,7 @@ Res.prototype.mulInPlace = function(v) {
   this.resin.mulInPlace(v);
   this.twigs.mulInPlace(v);
   this.nuts.mulInPlace(v);
-  this.spores2.mulInPlace(v);
+  this.infseeds.mulInPlace(v);
   this.amber.mulInPlace(v);
   this.essence.mulInPlace(v);
   return this;
@@ -223,7 +223,7 @@ Res.prototype.divInPlace = function(v) {
   this.resin.divInPlace(v);
   this.twigs.divInPlace(v);
   this.nuts.divInPlace(v);
-  this.spores2.divInPlace(v);
+  this.infseeds.divInPlace(v);
   this.amber.divInPlace(v);
   this.essence.divInPlace(v);
   return this;
@@ -272,7 +272,7 @@ Res.prototype.elmulInPlace = function(r) {
   this.resin.mulInPlace(r.resin);
   this.twigs.mulInPlace(r.twigs);
   this.nuts.mulInPlace(r.nuts);
-  this.spores2.mulInPlace(r.spores2);
+  this.infseeds.mulInPlace(r.infseeds);
   this.amber.mulInPlace(r.amber);
   this.essence.mulInPlace(r.essence);
   return this;
@@ -292,7 +292,7 @@ Res.prototype.posmulInPlace = function(v) {
   if(this.resin.ger(0)) this.resin.mulInPlace(v);
   if(this.twigs.ger(0)) this.twigs.mulInPlace(v);
   if(this.nuts.ger(0)) this.nuts.mulInPlace(v);
-  if(this.spores2.ger(0)) this.spores2.mulInPlace(v);
+  if(this.infseeds.ger(0)) this.infseeds.mulInPlace(v);
   if(this.amber.ger(0)) this.amber.mulInPlace(v);
   if(this.essence.ger(0)) this.essence.mulInPlace(v);
 };
@@ -317,7 +317,7 @@ Res.prototype.negmulInPlace = function(v) {
   if(this.resin.ler(0)) this.resin.mulInPlace(v);
   if(this.twigs.ler(0)) this.twigs.mulInPlace(v);
   if(this.nuts.ler(0)) this.nuts.mulInPlace(v);
-  if(this.spores2.ler(0)) this.spores2.mulInPlace(v);
+  if(this.infseeds.ler(0)) this.infseeds.mulInPlace(v);
   if(this.amber.ler(0)) this.amber.mulInPlace(v);
   if(this.essence.ler(0)) this.essence.mulInPlace(v);
 };
@@ -341,7 +341,7 @@ Res.prototype.eq = function(b) {
   if(!this.resin.eq(b.resin)) return false;
   if(!this.twigs.eq(b.twigs)) return false;
   if(!this.nuts.eq(b.nuts)) return false;
-  if(!this.spores2.eq(b.spores2)) return false;
+  if(!this.infseeds.eq(b.infseeds)) return false;
   if(!this.amber.eq(b.amber)) return false;
   if(!this.essence.eq(b.essence)) return false;
   return true;
@@ -367,7 +367,7 @@ Res.prototype.ge = function(b) {
   if(!this.resin.ge(b.resin)) return false;
   if(!this.twigs.ge(b.twigs)) return false;
   if(!this.nuts.ge(b.nuts)) return false;
-  if(!this.spores2.ge(b.spores2)) return false;
+  if(!this.infseeds.ge(b.infseeds)) return false;
   if(!this.amber.ge(b.amber)) return false;
   if(!this.essence.ge(b.essence)) return false;
   return true;
@@ -381,7 +381,7 @@ Res.prototype.le = function(b) {
   if(!this.resin.le(b.resin)) return false;
   if(!this.twigs.le(b.twigs)) return false;
   if(!this.nuts.le(b.nuts)) return false;
-  if(!this.spores2.le(b.spores2)) return false;
+  if(!this.infseeds.le(b.infseeds)) return false;
   if(!this.amber.le(b.amber)) return false;
   if(!this.essence.le(b.essence)) return false;
   return true;
@@ -417,7 +417,7 @@ Res.prototype.can_afford = function(cost) {
   if(cost.resin.neqr(0) && !this.resin.ge(cost.resin)) return false;
   if(cost.twigs.neqr(0) && !this.twigs.ge(cost.twigs)) return false;
   if(cost.nuts.neqr(0) && !this.nuts.ge(cost.nuts)) return false;
-  if(cost.spores2.neqr(0) && !this.spores2.ge(cost.spores2)) return false;
+  if(cost.infseeds.neqr(0) && !this.infseeds.ge(cost.infseeds)) return false;
   if(cost.amber.neqr(0) && !this.amber.ge(cost.amber)) return false;
   if(cost.essence.neqr(0) && !this.essence.ge(cost.essence)) return false;
   return true;
@@ -437,7 +437,7 @@ Res.prototype.empty = function() {
   if(this.resin.neqr(0)) return false;
   if(this.twigs.neqr(0)) return false;
   if(this.nuts.neqr(0)) return false;
-  if(this.spores2.neqr(0)) return false;
+  if(this.infseeds.neqr(0)) return false;
   if(this.amber.neqr(0)) return false;
   if(this.essence.neqr(0)) return false;
   return true;
@@ -459,7 +459,7 @@ Res.prototype.hasNaNOrInfinity = function() {
   if(this.resin.isNaNOrInfinity()) return true;
   if(this.twigs.isNaNOrInfinity()) return true;
   if(this.nuts.isNaNOrInfinity()) return true;
-  if(this.spores2.isNaNOrInfinity()) return true;
+  if(this.infseeds.isNaNOrInfinity()) return true;
   if(this.amber.isNaNOrInfinity()) return true;
   if(this.essence.isNaNOrInfinity()) return true;
   return false;
@@ -482,7 +482,7 @@ Res.prototype.hasNeg = function() {
   if(this.resin.ltr(0)) return true;
   if(this.twigs.ltr(0)) return true;
   if(this.nuts.ltr(0)) return true;
-  if(this.spores2.ltr(0)) return true;
+  if(this.infseeds.ltr(0)) return true;
   if(this.amber.ltr(0)) return true;
   if(this.essence.ltr(0)) return true;
   return false;

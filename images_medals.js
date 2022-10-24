@@ -49,18 +49,18 @@ var medalimageheader = 'l0:#c22 l1:#d44 l2:#e66 l3:#f88';
 var hiddenmedalimageheader = 'l0:#8558 l1:#a778 l2:#c998 l3:#fcc8';
 
 // there are also metalheader[0..11] in images.js
-var medalheader0 = ' hm:#999';
-var medalheader1 = ' hm:#c70';
-var medalheader2 = ' hm:#fff';
-var medalheader3 = ' hm:#dfb';
-var medalheader4 = ' hm:#ff0';
-var medalheader5 = ' N:#fff M:#eee m:#ddd n:#ccc';
-var medalheader6 = ' N:#fee M:#ecc m:#dbb n:#caa';
-var medalheader7 = ' hm:#95f';
-var medalheader8 = ' hm:#00f';
-var medalheader9 = ' hm:#0f0';
-var medalheader10 = ' hm:#f00';
-var medalheader11 = ' N:#fff M:#eee m:#ddd n:#ccc';
+var medalheader0 = ' hm:#999'; // zinc
+var medalheader1 = ' hm:#c70'; // bronze
+var medalheader2 = ' hm:#fff'; // silver
+var medalheader3 = ' hm:#dfb'; // electrum
+var medalheader4 = ' hm:#ff0'; // gold
+var medalheader5 = ' N:#fff M:#eee m:#ddd n:#ccc'; // platinum
+var medalheader6 = ' N:#fee M:#ecc m:#dbb n:#caa'; // rhodium
+var medalheader7 = ' hm:#95f'; // amethyst
+var medalheader8 = ' hm:#00f'; // sapphire
+var medalheader9 = ' hm:#0f0'; // emerald
+var medalheader10 = ' hm:#f00'; // ruby
+var medalheader11 = ' N:#fff M:#eee m:#ddd n:#ccc'; // diamond
 
 
 var medalgenericmetal = `

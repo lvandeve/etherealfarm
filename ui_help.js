@@ -170,7 +170,8 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
         var x1 = 0.3 * ((x + 1) / w - 0.5);
         var y1 = 0.3 * ((y + 1) / h - 0.5);
         var canvasflex = new Flex(dialog.content, [0.25, 0, x0], [0.85, 0, y0], [0.25, 0, x1], [0.85, 0, y1]);
-        var canvas = createCanvas('0%', '0%', '100%', '100%', canvasflex.div);
+        // 101% instead of 100% so that there can't be line gaps between full images that tile together
+        var canvas = createCanvas('0%', '0%', '101%', '101%', canvasflex.div);
         renderImage(images[y][x], canvas);
       }
     }
@@ -487,6 +488,23 @@ registerHelpDialog(41, 'Ethereal mistletoe', 'You got the ethereal mistletoe!',
     undefined,
   [[tree_images[treeLevelIndex(15)][1][4],images_mistletoe[4]],
    [tree_images[treeLevelIndex(15)][2][4],undefined]]);
+
+registerHelpDialog(42, 'Infinity field', 'You unlocked the infinity field!',
+    `You unlocked the infinity field!
+    <br><br>
+    The infinity field is a new field in a new tab, in which you can plant infinity crops. Infinity crops produce infinity seeds, which allow planting more and better infinity crops.
+    <br><br>
+    The crops in the infinity field can give a small production boost to the basic field, which can add up to a better boost if the whole infinity field is filled.
+    <br><br>
+    Unlike the ethereal field, the infinity field is more focused on growing and improving itself slowly over time with its own resource, rather than merely boosting the basic field.
+    <br><br>
+    The first crop, a brassica, is not a permanent crop (similar to brassica in basic field, but without the copying ability and longer lifespan), and will need to be planted multiple times to collect enough infinity seeds for better crops. Eventually there will be permanent crops too.
+    `,
+    image_pond,
+    undefined,
+  [[field_infinity[0],field_infinity[0],field_infinity[0]],
+   [field_infinity[0],image_pond_on_field,field_infinity[0]],
+   [field_infinity[0],field_infinity[0],field_infinity[0]]]);
 
 
 function createKeyboardHelpDialog() {
@@ -998,7 +1016,7 @@ function showGoalChips() {
   } else if(goal == GOAL_FERN) {
     setGoalText('Collect 10 seeds by clicking ferns.');
   } else if(goal == GOAL_WC5) {
-    setGoalText('Plant 5 watercresss on the field (' + state.c_numplantedbrassica + ' / 5 planted). To plant, click a field cell, then choose the watercress crop. Each costs 10 seeds.');
+    setGoalText('Plant 5 watercress on the field (' + state.c_numplantedbrassica + ' / 5 planted). To plant, click a field cell, then choose the watercress crop. Each costs 10 seeds.');
     var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_watercress') : null;
     if(enableHelpArrows) {
       if(watercress_chip) {
@@ -1028,7 +1046,7 @@ function showGoalChips() {
   } else if(goal == GOAL_WC10) {
     setGoalText('Plant up to 10 watercress on the field to reveal a next upgrade (' + state.c_numplantedbrassica + ' / 10 planted).');
   } else if(goal == GOAL_BLACKBERRY_UNLOCK) {
-    setGoalText('Buy the "Unlock blackberry" upgrade. To get seeds to afford it, plant more watercress first.');
+    setGoalText('Buy the "Unlock blackberry" upgrade, the first permanent (non-withering) crop. To get seeds to afford it, plant more watercress first.');
     if(enableHelpArrows) {
       if(state.currentTab == 1 && upgradeFlexCache[0]) {
         var chip = document.getElementById('help_arrow_unlock_blackberry');

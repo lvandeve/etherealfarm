@@ -785,6 +785,9 @@ var ACTION_AMBER = action_index++; // amber effects
 var ACTION_TOGGLE_AUTOMATON = action_index++; // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
 var ACTION_MISTLE_UPGRADE = action_index++; // begin an ethereal mistletoe upgrade
 var ACTION_CANCEL_MISTLE_UPGRADE = action_index++;
+var ACTION_PLANT3 = action_index++;
+var ACTION_DELETE3 = action_index++;
+var ACTION_REPLACE3 = action_index++;
 
 var lastSaveTime = util.getTime();
 
@@ -2050,6 +2053,16 @@ function unlockEtherealCrop(id) {
   c2.unlocked = true;
 }
 
+// unlocks and shows message, if not already unlocked
+function unlockInfinityCrop(id) {
+  var c3 = state.crops3[id];
+  if(c3.unlocked) return;
+
+  var c = crops3[id];
+  showMessage('Infinity crop available: "' + c.name + '"', C_ETHEREAL, 494369596);
+  c3.unlocked = true;
+}
+
 
 
 
@@ -2579,6 +2592,25 @@ function nextEventTime() {
     }
   }
 
+  // infinity plants growing
+  if(haveInfinityField()) {
+    for(var y = 0; y < state.numh3; y++) {
+      for(var x = 0; x < state.numw3; x++) {
+        var f = state.field3[y][x];
+        var c = f.getRealCrop();
+        if(c) {
+          if(c.type == CROPTYPE_BRASSICA) {
+            if(f.growth != 0) addtime(c.getPlantTime() * (f.growth), 'brassica');
+          } else {
+            if(f.growth < 1) {
+              addtime(c.getPlantTime() * (1 - f.growth), 'growing3'); // time remaining for this plant to become full grown
+            }
+          }
+        }
+      }
+    }
+  }
+
   // tree level up
   var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores); // NOTE: this can be negative if you have more spores while the tree is busy leveling up. addtime protects against negative times to avoid issues with this
   var treetime = treereq.div(gain.spores).valueOf();
@@ -2979,10 +3011,11 @@ var update = function(opt_ignorePause) {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    // gain added to the player's actual resources during this tick (virtualgain is per second, actualgain is per this tick)
+    // gain added to the player's actual resources during this tick (gain is per second, actualgain is per this tick)
     // includes also one-time events like fern
     // excludes costs
     // so best description is: "all resources added this tick"
+    // the difference between this, and the gain variable used here but declared in ui_info.js, is that gain only has the resources produced steadily per second, and is more for display purposes
     var actualgain = new Res();
 
     var clickedfern = false; // if fern just clicked, don't do the next fern computation yet, since #resources is not yet taken into account
@@ -3496,7 +3529,7 @@ var update = function(opt_ignorePause) {
           } else if(f.index == FIELD_REMAINDER) {
             f.index = 0;
             f.growth = 0;
-            if(!action.silent) showMessage('cleared watercress remainder');
+            //if(!action.silent) showMessage('cleared watercress remainder');
           }
         }
 
@@ -3753,6 +3786,111 @@ var update = function(opt_ignorePause) {
 
           if(isplant && !freeDelete2Crop(action.crop)) {
             state.lastEtherealPlantTime = state.time;
+          }
+
+          computeDerived(state); // correctly update derived stats based on changed field state
+          store_undo = true;
+        }
+      } else if(type == ACTION_PLANT3 || type == ACTION_DELETE3 || type == ACTION_REPLACE3) {
+        if(fast_forwarding) continue;
+
+        // These 3 actions are handled together here, to be able to implement replace:
+        // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
+        var f = state.field3[action.y][action.x];
+
+        var recoup = undefined;
+
+
+        var oldcroptype = -1;
+
+        if(type == ACTION_DELETE3 || type == ACTION_REPLACE3) {
+          if(f.hasCrop()) {
+            var c = f.getCrop();
+            recoup = c.getRecoup(); // note that this recoup is always 100% for infinity crops (except for the brassica lifespan below)
+            if(c.type == CROPTYPE_BRASSICA) recoup.mulrInPlace(Math.min(Math.max(0, f.growth), 1));
+          } else {
+            recoup = Res();
+          }
+        }
+
+        var ok = true;
+
+        if(ok && type == ACTION_REPLACE3) {
+          if(action.crop && f.index == CROPINDEX + action.crop.index) {
+            showMessage('Already have this crop here', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE3 || type == ACTION_REPLACE3)) {
+          if(!f.hasCrop() && !(type == ACTION_DELETE3 && f.index == FIELD_REMAINDER)) {
+            showMessage('no crop to delete here', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_PLANT3 || type == ACTION_REPLACE3)) {
+          var c = action.crop;
+          var cost = c.getCost();
+          if(type == ACTION_REPLACE3 && f.hasCrop()) cost = cost.sub(recoup);
+          if(type != ACTION_REPLACE3 && f.hasCrop()) {
+            showMessage('field already has crop', C_INVALID, 0, 0);
+            ok = false;
+          } else if(f.index != 0 && f.index != FIELD_REMAINDER && !f.hasCrop()) {
+            showMessage('field already has something', C_INVALID, 0, 0);
+            ok = false;
+          } else if(!state.crops3[c.index].unlocked) {
+            if(action.shiftPlanted) {
+              state.lastPlanted3 = -1;
+              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+            }
+            ok = false;
+          } else if(state.res.lt(cost)) {
+            showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                        ', need: ' + cost.toString(Math.max(5, Num.precision)), C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE3 || type == ACTION_REPLACE3)) {
+          if(f.hasCrop()) {
+            var c = crops3[f.cropIndex()];
+            if(f.growth < 1) {
+              state.g_numplanted3--;
+            }
+            state.g_numunplanted3++;
+            if(!action.silent) showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString());
+            f.index = 0;
+            f.growth = 0;
+            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
+            state.res.addInPlace(recoup);
+
+            if(isdelete && !freedelete && candelete == 2) {
+              state.lastEtherealDeleteTime = state.time;
+            }
+
+            if(type == ACTION_DELETE3) computeDerived(state); // correctly update derived stats based on changed field state (replace will do it below)
+            store_undo = true;
+          } else if(f.index == FIELD_REMAINDER) {
+            f.index = 0;
+            f.growth = 0;
+            //if(!action.silent) showMessage('cleared watercress remainder');
+          }
+        }
+
+        if(ok && (type == ACTION_PLANT3 || type == ACTION_REPLACE3)) {
+          var c = action.crop;
+          var cost = c.getCost();
+          var finalcost = cost;
+          if(type == ACTION_REPLACE3 && !!recoup) finalcost = cost.sub(recoup);
+          if(!action.silent) showMessage('planted infinity ' + c.name + '. Consumed: ' + finalcost + '. Next costs: ' + c.getCost(1));
+          state.g_numplanted3++;
+          state.res.subInPlace(cost);
+          f.index = c.index + CROPINDEX;
+          if(c.type == CROPTYPE_BRASSICA) {
+            f.growth = 1;
+          } else {
+            f.growth = 0;
           }
 
           computeDerived(state); // correctly update derived stats based on changed field state
@@ -4301,6 +4439,44 @@ var update = function(opt_ignorePause) {
       }
     }
 
+    if(haveInfinityField()) {
+      if(state.res.infseeds.ltr(10.0000000001) && haveInfinityField() && state.numcropfields3 == 0) {
+        actualgain.addInPlace(Res({infseeds:(10.0000000001 - state.res.infseeds)}));
+      }
+      for(var y = 0; y < state.numh3; y++) {
+        for(var x = 0; x < state.numw3; x++) {
+          var f = state.field3[y][x];
+          if(f.hasRealCrop()) {
+            var c = f.getCrop();
+            var prod = c.getProd();
+            if(c.type == CROPTYPE_BRASSICA) {
+              state.crops3[c.index].had = true;
+              var croptime = c.getPlantTime();
+              var g = d / croptime;
+              var growth0 = f.growth;
+              f.growth -= g;
+              if(f.growth <= 0) {
+                f.growth = 0;
+                f.index = FIELD_REMAINDER;
+                state.g_numwither3++;
+              }
+            } else {
+              var g = d / c.getPlantTime();
+              var growth0 = f.growth;
+              f.growth += g;
+              if(f.growth >= 1) {
+                // just fullgrown now
+                f.growth = 1;
+                state.crops3[c.index].had = true;
+                state.g_numfullgrown3++;
+              }
+            }
+            gain.addInPlace(prod);
+            actualgain.addInPlace(prod.mulr(d));
+          }
+        }
+      }
+    }
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -4739,6 +4915,10 @@ var update = function(opt_ignorePause) {
         unlockEtherealCrop(bee2_2);
       }
     }
+    if(haveInfinityField()) {
+      //unlockInfinityCrop(berry3_0);
+      unlockInfinityCrop(brassica3_0);
+    }
 
     // ethereal mistletoe
     if(haveEtherealMistletoe()) {
@@ -5063,7 +5243,7 @@ function showShiftCropChip(crop_id) {
   var y = shiftCropFlexY;
 
   var f;
-  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, false); // fake empty field cell to make it indicate "planting"
+  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, 1); // fake empty field cell to make it indicate "planting"
   else f = state.field[y][x];
 
   var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
@@ -5171,7 +5351,7 @@ function showShiftCrop2Chip(crop_id) {
   var y = shiftCrop2FlexY;
 
   var f;
-  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, true); // fake empty field cell to make it indicate "planting"
+  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, 2); // fake empty field cell to make it indicate "planting"
   else f = state.field2[y][x];
 
   var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
@@ -5243,6 +5423,115 @@ function updateField2MouseClick(x, y) {
   updateField2MouseOver(x, y);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+
+// the "shift+plant" chip at the bottom
+var shiftCrop3Flex = undefined;
+var shiftCrop3FlexId;
+var shiftCrop3FlexX = -1;
+var shiftCrop3FlexY = -1;
+var shiftCrop3FlexShowing;
+
+function removeShiftCrop3Chip() {
+  shiftCrop3FlexShowing = false;
+
+  if(!shiftCrop3Flex) return;
+
+  shiftCrop3Flex.removeSelf(gameFlex);
+  shiftCrop3Flex = undefined;
+}
+
+function showShiftCrop3Chip(crop_id) {
+  removeShiftCrop3Chip();
+  var shift = cropChipShiftDown;
+  var ctrl = cropChipCtrlDown;
+  if(!shift && !ctrl) return;
+
+  var c = crop_id >= 0 ? crops3[crop_id] : undefined;
+
+  shiftCrop3FlexShowing = true; // even when invisible due to not mouse over relevant field tile
+
+  shiftCrop3FlexId = crop_id;
+
+  var x = shiftCrop3FlexX;
+  var y = shiftCrop3FlexY;
+
+  var f;
+  if(x < 0 || y < 0 || x == undefined || y == undefined) f = new Cell(undefined, undefined, 3); // fake empty field cell to make it indicate "planting"
+  else f = state.field3[y][x];
+
+  var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
+  var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
+  var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
+  //if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
+  var upgrading = f.hasCrop() && shift && ctrl && state.allowshiftdelete && f.getCrop().tier < state.highestoftype3unlocked[f.getCrop().type];
+  if(upgrading) c = croptype3_tiers[f.getCrop().type][state.highestoftype3unlocked[f.getCrop().type]];
+  var selecting = f.hasCrop() && shift && ctrl && (!state.allowshiftdelete || f.getCrop().tier >= state.highestoftype3unlocked[f.getCrop().type]);
+  if(selecting) c = f.getCrop();
+
+  if(!planting && !deleting && !replacing && !upgrading && !selecting) return;
+
+  var keyname = (shift ? (ctrl ? 'Shift+ctrl' : 'Shift') : 'Ctrl');
+  var verb = planting ? 'planting' : (deleting ? 'deleting' : (replacing ? 'replacing' : (selecting ? 'selecting' : 'upgrading')));
+
+
+  shiftCrop3Flex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
+  shiftCrop3Flex.div.style.backgroundColor = planting ? '#dfd' : (deleting ? '#fdd' : '#ffd');
+  shiftCrop3Flex.div.style.zIndex = 100; // above medal chip
+
+  var textFlex = new Flex(shiftCrop3Flex, [0, 0, 0.0], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  centerText2(textFlex.div);
+
+  if(deleting) {
+    var recoup = f.getCrop().getCost(-1).mulr(cropRecoup3);
+    textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
+  } else {
+    if(c) {
+      var canvasFlex = new Flex(shiftCrop3Flex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
+      var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+      renderImage(c.image[4], canvas);
+      var updatefun = function() {
+        var recoup = Res(0);
+        if(f.hasCrop()) recoup = f.getCrop().getCost(-1).mulr(cropRecoup3);
+        var cost = c.getCost().sub(recoup);
+        var afford = cost.le(state.res);
+        var text = keyname + '+' + verb + '<br>' + upper(c.name);
+        if(!selecting) text += '<br>' + (afford ? '' : '<font color="#888">') + 'Cost: ' + cost + ' (' + getCostAffordTimer(cost) + ')' + (afford ? '' : '</font>');
+        textFlex.div.textEl.innerHTML = text;
+      };
+      updatefun();
+      registerUpdateListener(function() {
+        if((!cropChipShiftDown && !cropChipCtrlDown) || !shiftCrop3FlexShowing) return false;
+        updatefun();
+        return true;
+      });
+    } else {
+      textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>' + 'none set';
+    }
+  }
+
+  addButtonAction(shiftCrop3Flex.div, removeShiftCrop3Chip);
+}
+
+function updateField3MouseOver(x, y) {
+  shiftCrop3FlexX = x;
+  shiftCrop3FlexY = y;
+  if(shiftCrop3FlexShowing) showShiftCrop3Chip(shiftCrop3FlexId);
+}
+
+function updateField3MouseOut(x, y) {
+  if(x == shiftCrop3FlexX && y == shiftCrop3FlexY) updateField3MouseOver(-1, -1);
+}
+
+function updateField3MouseClick(x, y) {
+  updateField3MouseOver(x, y);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 var cropChipShiftDown = false;
 var cropChipCtrlDown = false;
 
@@ -5256,6 +5545,10 @@ function showCropChips() {
   if(state.currentTab == tabindex_field2 && dialog_level == 0) {
     var plant = state.lastPlanted2;
     showShiftCrop2Chip(plant);
+  }
+  if(state.currentTab == tabindex_field3 && dialog_level == 0) {
+    var plant = state.lastPlanted3;
+    showShiftCrop3Chip(plant);
   }
 }
 
@@ -5276,6 +5569,7 @@ document.addEventListener('keyup', function(e) {
     if(!cropChipShiftDown && !cropChipCtrlDown) {
       removeShiftCropChip();
       removeShiftCrop2Chip();
+      removeShiftCrop3Chip();
     } else {
       showCropChips();
     }
@@ -5289,6 +5583,7 @@ window.addEventListener('blur', function(e) {
 
   removeShiftCropChip();
   removeShiftCrop2Chip();
+  removeShiftCrop3Chip();
 });
 
 

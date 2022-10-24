@@ -294,14 +294,29 @@ function renderStage(scrollflex, stage, y) {
 var squirrel_scrollpos = undefined;
 var squirrel_scrollflex = undefined;
 
-function updateSquirrelUI() {
+var squirrel_tab_titleflex = undefined;
+var squirrel_tab_els = [];
+
+function updateSquirrelUI(opt_partial) {
+  if(!squirrel_tab_titleflex || !squirrel_scrollflex) opt_partial = false;
+  if(!opt_partial) {
+    squirrel_tab_els = [];
+  }
+
   var stages = squirrel_stages[state.squirrel_evolution];
-  squirrelFlex.clear();
-  squirrel_scrollflex = undefined;
-  if(!squirrelUnlocked()) return;
+  if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
+  if(!opt_partial) {
+    squirrelFlex.clear();
+    squirrel_scrollflex = undefined;
+  }
+  if(!squirrelUnlocked()) {
+    return;
+  }
+
+  var titleFlex = opt_partial ? squirrel_tab_titleflex : new Flex(squirrelFlex, 0, 0, 1, 0.1);
+  squirrel_tab_titleflex = titleFlex;
 
   if(!haveSquirrel()) {
-    var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1);
     titleFlex.div.innerText = 'You must have squirrel in ethereal field to use the squirrel upgrades tab, place squirrel there first or replace an existing ethereal crop by a squirrel.';
     return;
   }
@@ -327,7 +342,6 @@ function updateSquirrelUI() {
     }
   };
 
-  var titleFlex = new Flex(squirrelFlex, 0, 0, 1, 0.1);
   centerText2(titleFlex.div);
   var cost = new Res({nuts:getNextSquirrelUpgradeCost()});
   var text =
@@ -340,42 +354,86 @@ function updateSquirrelUI() {
   }
   titleFlex.div.textEl.innerHTML = text;
 
-  var buttonFlex = new Flex(squirrelFlex, 0, 0.1, 1, 0.2);
+  if(!opt_partial) {
+    var buttonFlex = new Flex(squirrelFlex, 0, 0.1, 1, 0.2);
+    var helpButton = new Flex(buttonFlex, 0, 0, 0.24, 0.9);
+    addButtonAction(helpButton.div, function() {
+      showRegisteredHelpDialog(35, true);
+    });
+    styleButton(helpButton.div, 1);
+    helpButton.div.textEl.innerText = 'Help';
 
-  var helpButton = new Flex(buttonFlex, 0, 0, 0.24, 0.9);
-  addButtonAction(helpButton.div, function() {
-    showRegisteredHelpDialog(35, true);
-  });
-  styleButton(helpButton.div, 1);
-  helpButton.div.textEl.innerText = 'Help';
+    var respecButton = new Flex(buttonFlex, 0.26, 0, 0.5, 0.9);
+    addButtonAction(respecButton.div, respecfun);
+    styleButton(respecButton.div, 1);
+    respecButton.div.textEl.innerText = 'Respec\n(Available: ' + state.squirrel_respec_tokens + ')';
+    registerTooltip(respecButton.div, 'Resets and refunds all squirrel upgrades, consumes 1 respec token');
+  }
 
-  var respecButton = new Flex(buttonFlex, 0.26, 0, 0.5, 0.9);
-  addButtonAction(respecButton.div, respecfun);
-  styleButton(respecButton.div, 1);
-  respecButton.div.textEl.innerText = 'Respec\n(Available: ' + state.squirrel_respec_tokens + ')';
-  registerTooltip(respecButton.div, 'Resets and refunds all squirrel upgrades, consumes 1 respec token');
-
-  var scrollFlex = new Flex(squirrelFlex, 0, 0.2, 1, 1);
+  var scrollFlex = opt_partial ? squirrel_scrollflex : new Flex(squirrelFlex, 0, 0.2, 1, 1);
   squirrel_scrollflex = scrollFlex;
 
-  makeScrollable(scrollFlex);
-  // add the scrollbar from the beginning already, it's gauranteed that it'll be there, and when not
-  // adding it from the beginning, it'll appear mid-way while adding all the flexes of the stages,
-  // which causes the width to change due to the scrollbar mid-way, causing a vislble shift at that point
-  scrollFlex.div.style.overflowY = 'scroll';
+  // TODO: also implement some way to update the statuses/colors of the upgrade chips when the ability to buy an upgrade changes
+  if(!opt_partial) {
+    makeScrollable(scrollFlex);
+    // add the scrollbar from the beginning already, it's gauranteed that it'll be there, and when not
+    // adding it from the beginning, it'll appear mid-way while adding all the flexes of the stages,
+    // which causes the width to change due to the scrollbar mid-way, causing a vislble shift at that point
+    scrollFlex.div.style.overflowY = 'scroll';
 
-  var y = 0.15;
+    var y = 0.15;
 
-  for(var i = 0; i < stages.length; i++) {
-    y = renderStage(scrollFlex, stages[i], y);
+    for(var i = 0; i < stages.length; i++) {
+      y = renderStage(scrollFlex, stages[i], y);
+    }
+
+    // only upgrade is squirrel evolution, scroll to it by default
+    if(state.allsquirrelupgradebought2 && !state.allsquirrelupgradebought && (squirrel_scrollpos == undefined || squirrel_scrollpos == 0)) squirrel_scrollpos = scrollFlex.div.scrollHeight;
+
+    if(squirrel_scrollpos) {
+      scrollFlex.div.scrollTop = squirrel_scrollpos;
+    }
+  }
+}
+
+var squirrel_ui_update_last_nuts = undefined;
+var squirrel_ui_update_last_time = undefined;
+
+// whether squirrel UI needs an update while the tab is open
+// a full update of the squirrel UI currently is not performant and disruptive to the user (all UI is deleted and recreated), so for now only used to do update with "opt_partial".
+function squirrelUINeedsFastUpdate() {
+  if(state.currentTab != tabindex_squirrel) return false;
+
+
+  var result = false;
+
+  var d = util.getTime() - squirrel_ui_update_last_time;
+  if(d > 60) result = true;
+
+  if(!squirrel_ui_update_last_nuts) {
+    result = true;
+    squirrel_ui_update_last_nuts = state.res.nuts.clone();
   }
 
-  // only upgrade is squirrel evolution, scroll to it by default
-  if(state.allsquirrelupgradebought2 && !state.allsquirrelupgradebought && (squirrel_scrollpos == undefined || squirrel_scrollpos == 0)) squirrel_scrollpos = scrollFlex.div.scrollHeight;
-
-  if(squirrel_scrollpos) {
-    scrollFlex.div.scrollTop = squirrel_scrollpos;
+  if(squirrel_ui_update_last_nuts) {
+    if(state.res.nuts.gtr(0) && state.res.nuts.gt(squirrel_ui_update_last_nuts.mulr(1.1))) {
+      result = true;
+      squirrel_ui_update_last_nuts = state.res.nuts.clone();
+    }
+    if(state.res.nuts.gter(0) && state.res.nuts.lt(squirrel_ui_update_last_nuts)) {
+      result = true;
+      squirrel_ui_update_last_nuts = state.res.nuts.clone();
+    }
   }
+
+  if(d < 0.5) result = false;
+
+  if(result) {
+    squirrel_ui_update_last_nuts = state.res.nuts.clone();
+    squirrel_ui_update_last_time = util.getTime();
+  }
+
+  return result;
 }
 
 function getSquirrelEvolutionHelp() {

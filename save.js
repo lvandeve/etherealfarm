@@ -130,6 +130,7 @@ function encState(state, opt_raw_only) {
   processInt(state.num_negative_time);
   processRes(state.fernresin);
   processTime(state.lastReFernTime);
+  processInt(state.lastPlanted3);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -356,6 +357,10 @@ function encState(state, opt_raw_only) {
   processUint(state.g_nummistletoecancels);
   processTime(state.g_mistletoeidletime);
   processTime(state.g_mistletoeupgradetime);
+  processUint(state.g_numplanted3);
+  processUint(state.g_numunplanted3);
+  processUint(state.g_numfullgrown3);
+  processUint(state.g_numwither3);
 
 
   section = 11; id = 0; // global run stats
@@ -845,6 +850,45 @@ function encState(state, opt_raw_only) {
 
 
 
+  section = 29; id = 0; // field3
+  processUint(state.numw3);
+  processUint(state.numh3);
+  var w3 = state.numw3;
+  var h3 = state.numh3;
+  array0 = [];
+  array1 = [];
+  for(var y = 0; y < h3; y++) {
+    for(var x = 0; x < w3; x++) {
+      var f = state.field3[y][x];
+      array0.push(f.index);
+      if(f.hasCrop()) {
+        array1.push(f.growth);
+      }
+    }
+  }
+  processIntArray(array0);
+  processFloat2Array(array1);
+
+
+
+  section = 30; id = 0; // crops3
+  unlocked = [];
+  for(var i = 0; i < registered_crops3.length; i++) {
+    if(state.crops3[registered_crops3[i]].unlocked) unlocked.push(registered_crops3[i]);
+  }
+  array0 = [];
+  array1 = [];
+  prev = 0;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(unlocked[i] - prev < 0) throw 'crops must be registered in increasing order';
+    array0.push(unlocked[i] - prev);
+    prev = unlocked[i];
+    array1.push(state.crops3[unlocked[i]].had);
+  }
+  processUintArray(array0);
+  processUintArray(array1);
+
+
   //////////////////////////////////////////////////////////////////////////////
 
   var e = encTokens(tokens);
@@ -1061,6 +1105,7 @@ function decState(s) {
   if(save_version >= 4096*1+62) state.num_negative_time = processInt();
   if(save_version >= 4096*1+86) state.fernresin = processRes();
   if(save_version >= 4096*1+98) state.lastReFernTime = processTime();
+  if(save_version >= 262144*2+64*7+0) state.lastPlanted3 = processInt();
 
 
   section = 1; id = 0; // field
@@ -1079,7 +1124,7 @@ function decState(s) {
   for(var y = 0; y < h; y++) {
     state.field[y] = [];
     for(var x = 0; x < w; x++) {
-      state.field[y][x] = new Cell(x, y, false);
+      state.field[y][x] = new Cell(x, y, 1);
       var f = state.field[y][x];
       f.index = array0[index0++];
       if(f.index >= 50000 + CROPINDEX && save_version <= 4096*1+58) f.index = f.index - 50000 + 300; //accidently wrong id in that version
@@ -1114,7 +1159,7 @@ function decState(s) {
   for(var y = 0; y < h2; y++) {
     state.field2[y] = [];
     for(var x = 0; x < w2; x++) {
-      state.field2[y][x] = new Cell(x, y, true);
+      state.field2[y][x] = new Cell(x, y, 2);
       var f = state.field2[y][x];
       f.index = array0[index0++];
       if(f.hasCrop()) {
@@ -1221,6 +1266,7 @@ function decState(s) {
     for(var i = 0; i < array0.length; i++) array2[i] = 0;
   }
   if(error) return err(4);
+  if(array0.length != array1.length || array0.length != array2.length) return err(4);
   prev = 0;
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
@@ -1424,6 +1470,12 @@ function decState(s) {
     state.g_nummistletoecancels = processUint();
     state.g_mistletoeidletime = processTime();
     state.g_mistletoeupgradetime = processTime();
+  }
+  if(save_version >= 262144*2+64*7+0) {
+    state.g_numplanted3 = processUint();
+    state.g_numunplanted3 = processUint();
+    state.g_numfullgrown3 = processUint();
+    state.g_numwither3 = processUint();
   }
 
   if(error) return err(4);
@@ -2250,6 +2302,59 @@ function decState(s) {
     state.mistletoeidletime = processTime();
   }
   if(error) return err(4);
+
+
+
+
+  section = 29; id = 0; // field3
+  if(save_version >= 262144*2+64*7+0) {
+    state.numw3 = processUint();
+    state.numh3 = processUint();
+    if(error) return err(4);
+    if(state.numw3 > 15 || state.numh3 > 15) return err(4); // that large size is not supported
+    if(state.numw3 < 3 || state.numh3 < 3) return err(4); // that small size is not supported
+    var w3 = state.numw3;
+    var h3 = state.numh3;
+    array0 = processIntArray();
+    array1 = processFloat2Array();
+    index0 = 0;
+    index1 = 0;
+    if(error) return err(4);
+    for(var y = 0; y < h3; y++) {
+      state.field3[y] = [];
+      for(var x = 0; x < w3; x++) {
+        state.field3[y][x] = new Cell(x, y, 3);
+        var f = state.field3[y][x];
+        f.index = array0[index0++];
+        if(f.hasCrop()) {
+          if(save_version >= 4096*1+9) f.growth = array1[index1++];
+        }
+      }
+    }
+    if(index0 > array0.length) return err(4);
+    if(index1 > array1.length) return err(4);
+  } else {
+    clearField3(state);
+  }
+
+
+
+
+  section = 30; id = 0; // crops3
+  if(save_version >= 262144*2+64*7+0) {
+    array0 = processUintArray();
+    array1 = processUintArray(); // had
+    if(error) return err(4);
+    if(array0.length != array1.length) return err(4);
+    prev = 0;
+    for(var i = 0; i < array0.length; i++) {
+      var index = array0[i] + prev;
+      prev = index;
+      if(!crops3[index]) return err(4);
+      state.crops3[index].unlocked = true;
+      state.crops3[index].had = array1[i];
+    }
+  }
 
 
   //////////////////////////////////////////////////////////////////////////////

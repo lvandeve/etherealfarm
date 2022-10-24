@@ -786,8 +786,16 @@ function createStatsDialog() {
       }
       text += close + '<br>';
     }
-    text += '• ethereal planted: ' + open + state.g_numfullgrown2 + close + '<br>';
+    text += '• ethereal crops planted: ' + open + state.g_numfullgrown2 + close + '<br>';
     text += '• ethereal crops deleted: ' + open + state.g_numunplanted2 + close + '<br>';
+    text += '<br>';
+  }
+
+  if(haveInfinityField()) {
+    text += '<b>Infinity</b><br>';
+    text += '• infinity production boost to basic field: ' + open + state.infinityboost.toPercentString() + close + '<br>';
+    text += '• infinity crops planted: ' + open + state.g_numplanted3 + close + '<br>';
+    text += '• infinity crops deleted: ' + open + state.g_numunplanted3 + close + '<br>';
     text += '<br>';
   }
 

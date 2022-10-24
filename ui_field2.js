@@ -678,6 +678,7 @@ function initField2UI() {
       var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
       var div = makeDiv('0', '0', '100%', '100%', celldiv);
       setAriaRole(celldiv, 'cell');
+      div.className = 'efNoOutline';
       div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
       centerText(div);
 
@@ -794,7 +795,6 @@ function initField2UI() {
             }
             update();
           } else if(ctrl && !shift) {
-            var c = crops[state.lastPlanted];
             addAction({type:ACTION_DELETE2, x:x, y:y});
             update();
           } else {

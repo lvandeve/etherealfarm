@@ -5862,6 +5862,47 @@ function ghostifyImage(im) {
   return [res, w, h];
 }
 
+// metalheader = metalheader0 for zinc, etc... They use the colors N,M,m,n (hue range hm) for the metal colors
+function metalify(im, metalheader) {
+  var pal = generatePalette(metalheader);
+  var m = [];
+  m[0] = pal['0']; // black
+  m[1] = pal['N']; // darkest metal
+  m[2] = pal['M']; // dark metal
+  m[3] = pal['m']; // medium metal
+  m[4] = pal['n']; // light metal
+  m[5] = pal['9']; // white
+
+  var w = im[1];
+  var h = im[2];
+  im = im[0];
+  var res = [];
+  for(var y = 0; y < h; y++) {
+    res[y] = [];
+    for(var x = 0; x < w; x++) {
+      var c = im[y][x];
+      var r = c[0];
+      var g = c[1];
+      var b = c[2];
+      var a = c[3];
+      var l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      var i = Math.floor(l * m.length);
+      var i2 = Math.min(m.length - 1, i + 1);
+      res[y][x] = [m[i][0], m[i][1], m[i][2], a];
+    }
+  }
+  return [res, w, h];
+}
+
+function metalifyPlantImages(images, metalheader) {
+  var result = [];
+  for(var i = 0; i < images.length; i++) {
+    var im = images[i];
+    result[i] = createCanvasImageFor(metalify(im[4], metalheader));
+  }
+  return result;
+}
+
 
 var image_pumpkin_large_blueprintified = createCanvasImageFor(blueprintifyImage(generateImage(images_pumpkin_base)));
 
