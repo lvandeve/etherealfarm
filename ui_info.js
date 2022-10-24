@@ -421,8 +421,9 @@ function showResource(i, special, index) {
   // the label is set to e.g. 'info box: seeds', however the info inside it is more important, so set the label that screen readers read to the useful contents instead
   setAriaLabel(div, label);
 
-  if(!div.tooltipadded) {
-    div.tooltipadded = true;
+  // compared with index because it can sometimes change (e.g. from amber to infinity seeds when unlucking infinity field)
+  if(div.tooltipadded != index) {
+    div.tooltipadded = index;
     registerTooltip(div, function() {
       return getResourceDetails(i, special, index);
     }, /*opt_poll=*/true, /*allow_mobile=*/true);
