@@ -96,6 +96,7 @@ function formatAbilityDurationTooltipText(index, name, description, duration, wa
 }
 
 var prev_brassica_index = -1; // for updating the button if the image for brassica changes
+var prev_brassica_tab = -1; // idem, but for basic field vs infinity field tab
 
 function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
@@ -279,22 +280,32 @@ function updateAbilitiesUI() {
 
   // refresh watercress button. this button becomes available once more enough resources to fully replant all watercress
   if(state.g_res.seeds.gtr(1000)) {
-    var brassica_index = getHighestBrassica();
-    if(!watercressbutton || prev_brassica_index != brassica_index) {
+    var infinity_field_tab = (state.currentTab == tabindex_field3);
+    var brassica_index = infinity_field_tab ? brassica3_0 : getHighestBrassica();
+    if(!watercressbutton || prev_brassica_index != brassica_index || prev_brassica_tab != infinity_field_tab) {
       if(watercressbutton) {
         watercressbutton.clear();
         watercressbutton.removeSelf(topFlex);
       }
       prev_brassica_index = brassica_index;
-      var image = images_watercress[4];
-      var name = 'watercress';
-      if(brassica_index >= 0) {
-        image = crops[brassica_index].image[4];
-        name = crops[brassica_index].name;
+      prev_brassica_tab = infinity_field_tab;
+      var image, name;
+      if(infinity_field_tab) {
+        image = crops3[brassica_index].image[4];
+        name = crops3[brassica_index].name;
+      } else {
+        image = images_watercress[4];
+        name = 'watercress';
+        if(brassica_index >= 0) {
+          image = crops[brassica_index].image[4];
+          name = crops[brassica_index].name;
+        }
       }
 
       watercressbutton = addTopBarFlex(9, 10);
-      watercressbutton.div.title = 'Refresh ' + name + ': active ' + name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + name + '. With shift, plants ' + name + ' everywhere it can';
+      var title = 'Refresh ' + name + ': active ' + name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + name + '. With shift, plants ' + name + ' everywhere it can. ';
+      if(infinity_field_tab) title += 'Use carefully: refreshing infinity brassica costs infinity seeds. Deleting a brassica gives a partial refund based on lifespan, so refreshing a just-planted brassica costs nothing, refreshing a brassica with 75% life left costs 25% of its planting cost, etc... If you take into account its new long-term lifespan and production, no infinity seeds are lost (and more are gained eventually), but be careful if you wanted to use the infinity seeds short-term for more crops.';
+      watercressbutton.div.title = title;
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
@@ -388,13 +399,19 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
   var refreshed = false;
   var remcleared = false;
   var fullyplanted = false;
-  var cresscost = crops3[brassica3_0].cost.seeds; // taking only cheapest one for this computation is ok, when unlocking next tiers its cost is extremely low compared to seeds you have
+  var cresscost = crops3[brassica3_0].cost.infseeds;
   var cropindex = brassica3_0;
   if(cropindex < 0) return;
   var seeds_available = Num(state.res.infseeds);
   var numplanted = 0;
+
+  var plantedhere = [];
+
+  // give priority to remainders first: it's better to have more watercress, than that it is to refresh existing ones but not get more of them
   for(var y = 0; y < state.numh3; y++) {
+    plantedhere[y] = [];
     for(var x = 0; x < state.numw3; x++) {
+      plantedhere[y][x] = false;
       var can_afford = seeds_available.ge(cresscost);
       var f = state.field3[y][x];
       var c = f.getCrop();
@@ -408,22 +425,37 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
           replanted = true;
           numplanted++;
         }
-      } else if(c && c.type == CROPTYPE_BRASSICA && (can_afford || opt_clear)) {
+      } else if(c && c.type == CROPTYPE_BRASSICA && opt_clear) {
         addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
-        if(!opt_clear) {
-          seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
-          // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
-          // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
-          if(f.growth < 0.999) numplanted++;
-        }
-        refreshed = true;
+        seeds_available.addInPlace(c.getRecoup(f).infseeds);
       } else if(opt_all) {
-        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER || f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost)) {
+        if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER)) {
           seeds_available.subInPlace(cresscost);
           addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
           numplanted++;
           fullyplanted = true;
+        }
+      }
+    }
+  }
+  // now refresh existing ones if seeds remaining. Also, only if no remainder plants were done already. A second buttonpress can be done to do the refresh then: one may want to refresh remainders but not existing watercress.
+  if(!opt_clear && !numplanted) {
+    for(var y = 0; y < state.numh3; y++) {
+      for(var x = 0; x < state.numw3; x++) {
+        var can_afford = seeds_available.ge(cresscost);
+        var f = state.field3[y][x];
+        var c = f.getCrop();
+        if(c && c.type == CROPTYPE_BRASSICA && can_afford) {
+          addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
+          seeds_available.addInPlace(c.getRecoup(f).infseeds);
+          if(!opt_clear) {
+            seeds_available.subInPlace(cresscost);
+            addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+            // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
+            // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
+            if(f.growth < 0.999) numplanted++;
+          }
+          refreshed = true;
         }
       }
     }
@@ -621,6 +653,24 @@ document.addEventListener('keydown', function(e) {
     // upgrade crop
     var did_something = false;
     did_something |= makeUpgradeCrop2Action(shiftCrop2FlexX, shiftCrop2FlexY);
+    if(did_something) {
+      update();
+    }
+  }
+
+  if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field3) {
+    // for now u only supports refresh brassica in the infinity field
+    if(state.field[shiftCrop3FlexY]) {
+      var f = state.field3[shiftCrop3FlexY][shiftCrop3FlexX];
+      if(f && f.index == FIELD_REMAINDER) {
+        addAction({type:ACTION_PLANT3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[brassica3_0], ctrlPlanted:true});
+        did_something = true;
+      }
+      if(f && f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1) {
+        addAction({type:ACTION_REPLACE3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:f.getCrop(), ctrlPlanted:true, silent:true});
+        did_something = true;
+      }
+    }
     if(did_something) {
       update();
     }

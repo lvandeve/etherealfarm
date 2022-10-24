@@ -7762,8 +7762,13 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
 };
 
 
-Crop3.prototype.getRecoup = function() {
-  return this.getCost(-1).mulr(cropRecoup3);
+// f: optional field cell, if given takes growth into account in case of short-lived crop
+Crop3.prototype.getRecoup = function(f) {
+  var result = this.getCost(-1).mulr(cropRecoup3);
+  if(f && this.type == CROPTYPE_BRASSICA) {
+    result.mulrInPlace(Math.min(Math.max(0, f.growth), 1));
+  }
+  return result;
 };
 
 

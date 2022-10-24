@@ -3806,8 +3806,7 @@ var update = function(opt_ignorePause) {
         if(type == ACTION_DELETE3 || type == ACTION_REPLACE3) {
           if(f.hasCrop()) {
             var c = f.getCrop();
-            recoup = c.getRecoup(); // note that this recoup is always 100% for infinity crops (except for the brassica lifespan below)
-            if(c.type == CROPTYPE_BRASSICA) recoup.mulrInPlace(Math.min(Math.max(0, f.growth), 1));
+            recoup = c.getRecoup(f); // note that this recoup is always 100% for infinity crops, except for the brassica lifespan scaling
           } else {
             recoup = Res();
           }
@@ -3816,7 +3815,8 @@ var update = function(opt_ignorePause) {
         var ok = true;
 
         if(ok && type == ACTION_REPLACE3) {
-          if(action.crop && f.index == CROPINDEX + action.crop.index) {
+          // exception for brassica to allow refreshing it
+          if(action.crop && f.index == CROPINDEX + action.crop.index && f.hasCrop() && f.getCrop().type != CROPTYPE_BRASSICA) {
             showMessage('Already have this crop here', C_INVALID, 0, 0);
             ok = false;
           }

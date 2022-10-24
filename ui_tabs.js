@@ -106,6 +106,7 @@ function setTab(i, opt_temp) {
 
   updateTabButtons();
   showGoalChips(); // some goal chips or help arrows depend on tab
+  updateAbilitiesUI(); // when switching between infinity field and basic field, brassica icon at the top should update, make sure it goes immediately and not after 0.3 seconds with next game update: 0.3 seconds makes it feel sluggish
 }
 
 
