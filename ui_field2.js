@@ -439,6 +439,9 @@ function makeEtherealMistletoeDialog(x, y) {
         //if(next >= 0) tooltiptext += '. Next new upgrade unlocks at evolution level: ' + toRomanUpTo(next) + ' (current level: ' + toRomanUpTo(haveEtherealMistletoeUpgrade(mistle_upgrade_evolve)) + ')';
         if(next >= 0) tooltiptext += '. Next new upgrade unlocks at evolution level: ' + next + ' (current level: ' + haveEtherealMistletoeUpgrade(mistle_upgrade_evolve) + ')';
         else tooltiptext += '. Next new upgrade unlocks at evolution level: N/A';
+        tooltiptext += '. Current evolution bonus: ' + getEtherealMistleToeBonusWithEvoString(m.index);
+      } else {
+        tooltiptext += '. Current bonus: ' + getEtherealMistleToeBonusWithEvoString(m.index);
       }
       return tooltiptext;
     }, i);
@@ -525,10 +528,12 @@ function makeEtherealMistletoeDialog(x, y) {
     //text += '<br>Total time: '  + util.formatDuration(state.g_mistletoeupgradetime, true);
     text += '<br><br>';
     text += '<b>Current bonuses:</b>';
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_prod)) text += '<br>Production: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_prod);
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) text += '<br>Neighbor: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_neighbor);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_prod)) text += '<br>Production (leafy): ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_prod);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) text += '<br>Neighbor (friendly): ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_neighbor);
     if(knowEtherealMistletoeUpgrade(mistle_upgrade_stingy)) text += '<br>Stingy: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_stingy);
     if(knowEtherealMistletoeUpgrade(mistle_upgrade_resin)) text += '<br>Resin: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_resin);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_mush)) text += '<br>Mushrooms: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_mush);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_berry)) text += '<br>Berries: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_berry);
     text += '<br>Twigs: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_twigs);
     if(text != prevtext) textel.div.innerHTML = text;
     prevtext = text;

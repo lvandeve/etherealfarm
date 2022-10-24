@@ -22,7 +22,7 @@ function getChangeLog() {
 
   text += '0.7.0 (2022-10-24):';
   text += '<br/>• Added the infinity field, a third field tab in the game. This requires ethereal tree 20 to unlock. For this first release, the infinity field has only a single crop, as an initial test of this new feature (which also means it could change). Later more crops will be released.';
-  text += '<br/>• Small tweaks and fixes.'; // update nuts value in squirrel tab when nuts change while it's open, and small cosmetic ui/text changes
+  text += '<br/>• Small tweaks and fixes.'; // update nuts value in squirrel tab when nuts change while it's open, and small cosmetic ui/text changes, mistletoe dialog some bonuses not shown fixed and bonuses shown in tooltips
   text += '<br/><br/>';
 
   text += '0.6.6 (2022-10-10):';

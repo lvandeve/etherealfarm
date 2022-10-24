@@ -984,6 +984,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       result.posmulInPlace(bonus_bees);
       if(breakdown) breakdown.push(['worker bees (challenge)', true, bonus_bees, result.clone()]);
     }
+
+    // Infinity field
+    if(state.infinityboost.neqr(0) && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
+      var bonus = state.infinityboost.addr(1);
+      result.posmulInPlace(bonus);
+      //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
+      if(breakdown) breakdown.push(['infinity field', true, bonus, result.clone()]);
+    }
   }
 
   // present/egg
@@ -992,14 +1000,6 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     result.posmulInPlace(bonus);
     //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
     if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
-  }
-
-  // Infinity field
-  if(state.infinityboost.neqr(0) && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
-    var bonus = state.infinityboost.addr(1);
-    result.posmulInPlace(bonus);
-    //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
-    if(breakdown) breakdown.push(['infinity field', true, bonus, result.clone()]);
   }
 
   // leech (brassica-copying), only computed for the pretend cases, non-pretend leech: brassica copying's actual gameplay computation is done in precomputeField() intead
@@ -5256,8 +5256,8 @@ upgrade2_register_id = 1400;
 LEVEL2 = 20;
 upgrade2_register_id = 1500;
 
-// cheap cost because having it as an upgrade is more there to get its help dialog than to be a cost barrier. In the value 8B. the 8 and the B are supposed to look like the infinity symbol
-var upgrade2_infinity_field = registerUpgrade2('unlock infinity field', LEVEL2, Res({resin:8e9}), 2, function() {
+// cheap cost because having it as an upgrade is more there to get its help dialog than to be a cost barrier. The cost is 8 to look like infinity.
+var upgrade2_infinity_field = registerUpgrade2('unlock infinity field', LEVEL2, Res({resin:8}), 2, function() {
   showRegisteredHelpDialog(42);
 }, function(){return true;}, 1, 'unlocks the infinity field. This is a new field with its own crops producing its own resources. The crops give a small bonus to the basic field, but unlike the ethereal field the infinity field is more focused on growing itself than boosting the basic field.', undefined, undefined, image_pond);
 
