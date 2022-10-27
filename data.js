@@ -988,7 +988,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     // Infinity field
     if(state.infinityboost.neqr(0) && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
       var bonus = state.infinityboost.addr(1);
-      result.posmulInPlace(bonus);
+      result.mulInPlace(bonus);
       //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
       if(breakdown) breakdown.push(['infinity field', true, bonus, result.clone()]);
     }
@@ -997,7 +997,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   // present/egg
   if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = new Num(1.25);
-    result.posmulInPlace(bonus);
+    result.mulInPlace(bonus);
     //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
     if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
   }
