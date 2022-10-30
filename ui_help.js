@@ -548,6 +548,8 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"e"</b>: go to the ethereal field tab (if available)';
   text += '<br/>';
+  text += ' • <b>"i"</b>: go to the infinity field tab (if available)';
+  text += '<br/>';
   text += ' • <b>"ctrl + z"</b>: undo / redo';
   text += '<br/>';
   text += ' • <b>], }, ) or ></b>: select next active fruit. Can be changed in the preferences under "controls" to instead select next game tab.';

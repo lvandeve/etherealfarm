@@ -135,6 +135,26 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
         result += '<br><br>Grow time: ' + util.formatDuration(c.planttime);
       }
 
+      var prod = c.getProd();
+      if(!prod.empty()) {
+        result += '<br><br>Production: ' + prod.toString() + '/s';
+        if(prod.infseeds.neqr(0) && prod.infseeds.ltr(0.1) && prod.infseeds.gtr(-0.1)) result += ' (' + prod.infseeds.mulr(3600).toString() + '/h)';
+        if(c.type == CROPTYPE_BRASSICA) {
+          var totalprod = c.getProd().mulr(c.getPlantTime());
+          result += '<br>Total production over full lifetime: ' + totalprod.toString();
+        }
+      }
+
+      var infboost = c.getInfBoost();
+      if(infboost.neqr(0)) {
+        result += '<br><br>Boost to neighbors: ' + infboost.toPercentString();
+      }
+
+      var basicboost = c.getBasicBoost();
+      if(basicboost.neqr(0)) {
+        result += '<br><br>Production boost to basic field: ' + basicboost.toPercentString();
+      }
+
       var f = state.field3[y][x];
 
       return result;

@@ -325,8 +325,9 @@ function getResourceDetails(i, special, index) {
       }
       text += '<br/>';
     } else { // other non-special (= with continuous preoduction/s) resource
-      text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s <br/>';
-      text += '<br/>';
+      text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s';
+      if(res_gain.neqr(0) && res_gain.ltr(0.1) && res_gain.gtr(-0.1)) text += ' (' + res_gain.mulr(3600).toString() + '/h)';
+      text += '<br/><br/>';
     }
     if(state.numgrowing > 0 && gain_expected_hyp.atIndex(index).neqr(0)) {
       var res_expected = gain_expected.atIndex(index);

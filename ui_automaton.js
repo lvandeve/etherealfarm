@@ -588,18 +588,45 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
       });
     } else if(o.type == 4) {
       var current_hours = '' + Math.floor(o.time / 3600);
-      var current_minutes = '' + ((o.time % 3600) / 60);
-      if(current_minutes.length == 1) current_minutes = '0' + current_minutes;
-      var current = current_hours + ':' + current_minutes;
-      makeTextInput('Run time', 'Enter time since start of run in the format hh:mm, or in hours. E.g. use 1:30 or 1.5 to trigger one and a half hours into the run', function(text) {
+      var current_minutes = '' + Math.floor((o.time % 3600) / 60);
+      var current_seconds = '' + (o.time % 60);
+      var current;
+      if(current_seconds == '0') {
+        if(current_minutes.length == 1) current_minutes = '0' + current_minutes;
+        current = current_hours + ':' + current_minutes;
+      } else {
+        current = '';
+        if(current_hours != 0) current += current_hours + 'h ';
+        if(current_minutes != 0) current += current_minutes + 'm ';
+        if(current_seconds != 0) current += current_seconds + 's';
+        current = current.trim();
+      }
+      makeTextInput('Run time', 'Enter time since start of run. Supported formats, e.g. for one and a half hours: 1:30, 1h30m, 1.5h or 1.5', function(text) {
         var parts = text.split(':');
-        var hours = parseFloat(parts[0]);
-        var minutes = parts.length > 1 ? parseFloat(parts[1]) : 0;
-        var seconds = parts.length > 2 ? parseFloat(parts[2]) : 0; // seconds are not mentioned in the documentation to not make it too crowded, but possible
-        if(!(hours >= 0)) hours = 0;
-        if(!(minutes >= 0)) minutes = 0;
-        if(!(seconds >= 0)) seconds = 0;
-        o.time = hours * 3600 + minutes * 60 + seconds;
+        var lastchar = parts.length == 1 ? lower(parts[0].charAt(parts[0].length - 1)) : '';
+        if(lastchar == 'd' || lastchar == 'h' || lastchar == 'm' || lastchar == 's') {
+          // support an alternative notation such as: 5h for 5 hours, 3d for 3 days, 2m for 2 minutes, etc..., and combinations of those. Month and year are not supported, and it's case-insensitive
+          var parts2 = parts[0].split(/([a-zA-Z])/); // split by letter separators such that you get both the numeric values and the separator letters. E.g. 3d 1h becomes "3","d"," 1","h",""
+          o.time = 0;
+          for(var i = 0; i + 1 < parts2.length; i += 2) {
+            var value = parseFloat(parts2[i].trim());
+            var unit = parts2[i + 1];
+            if(unit == 'd') o.time += value * 24 * 3600;
+            else if(unit == 'h') o.time += value * 3600;
+            else if(unit == 'm') o.time += value * 60;
+            else if(unit == 's') o.time += value;
+          }
+        } else {
+          var hours = parseFloat(parts[0]);
+          var minutes = parts.length > 1 ? parseFloat(parts[1]) : 0;
+          var seconds = parts.length > 2 ? parseFloat(parts[2]) : 0; // seconds are not mentioned in the documentation to not make it too crowded, but possible
+          if(!(hours >= 0)) hours = 0;
+          if(!(minutes >= 0)) minutes = 0;
+          if(!(seconds >= 0)) seconds = 0;
+          o.time = hours * 3600 + minutes * 60 + seconds;
+        }
+        if(isNaN(o.time)) o.time = 0;
+
         updateLevelButton(index);
       }, '' + current);
     }

@@ -385,7 +385,7 @@ function makeEtherealMistletoeDialog(x, y) {
 
   var buttonpos = 0;
   var buttonh = 0.07;
-  var buttonextraseparater = 0.01;
+  var buttonextraseparater = 0.015;
 
   var buttons = [];
 
@@ -407,13 +407,13 @@ function makeEtherealMistletoeDialog(x, y) {
 
   for(var i = 0; i < registered_mistles.length; i++) {
     var index = registered_mistles[i];
-    if(index == mistle_upgrade_resin) buttonpos += buttonextraseparater;
+    //if(index == mistle_upgrade_resin) buttonpos += buttonextraseparater;
     if(!knowEtherealMistletoeUpgrade(index)) continue;
     var m = mistletoeupgrades[index];
     var m2 = state.mistletoeupgrades[index];
     var button = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
     buttonpos += buttonh;
-    if(index == mistle_upgrade_evolve) buttonpos += buttonextraseparater;
+    //if(index == mistle_upgrade_evolve) buttonpos += buttonextraseparater;
     styleButton(button);
     addButtonAction(button, bind(function(index) {
       addAction({type:ACTION_MISTLE_UPGRADE, index});
@@ -461,7 +461,10 @@ function makeEtherealMistletoeDialog(x, y) {
       if(res) buttontext += '. Cost: ' + res.toString() + ', ' + util.formatDuration(m.getTime() - m2.time, true);
       else buttontext += '. ' + timetext;
       button.textEl.innerHTML = buttontext;
-      if(state.mistletoeupgrade >= 0) {
+      if(state.mistletoeupgrade == i) {
+        // the currently ongoing upgrade
+        button.textEl.style.color = '#988';
+      } else if(state.mistletoeupgrade >= 0) {
         button.textEl.style.color = '#888';
       } else {
         button.textEl.style.color = '';
@@ -513,7 +516,7 @@ function makeEtherealMistletoeDialog(x, y) {
     if(state.mistletoeupgrade >= 0) {
       var m = mistletoeupgrades[state.mistletoeupgrade];
       var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
-      text += 'Upgrading: ' + m.name + '. ' + upper(m.description);
+      text += 'Upgrading: ' + upper(m.name) + '. ' + upper(m.description);
       text += '<br><br>';
       var timeleft = m.getTime() - m2.time;
       text += 'Time left: ' + util.formatDuration(timeleft, true, 4);

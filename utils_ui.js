@@ -784,6 +784,7 @@ the x/y coordinates may also be an array of 1, 2, 3 or 4 items, then:
 -the second is relative size compared to the opposing dimension (h or w)
 -the third is relative size compared to minimum dimension (w or h)
 -the fourth is a factor used for the opposing dimension in the min(current, opposing) formula above. Default value is 1. Other values allow to use the "minimum dimension" feature from the third value for non-square parent flexes.
+-the fifth is a value directly in pixels
 e.g. the formula for "left" is (with w and h the width and height of parent): x0[0] * w + x0[1] * h + x0[2] * min(w, x0[3] * h)
 example: to have an element take full width if smaller than twice the height, stay at twice height otherwise, use x1 = [0, 0, 1, 0.5]
 example: to have something always be square inside of rectangular parent (which can dynamically be either horizontally or vertically longer), and always centered in there, use: [0.5,0,-0.5], [0.5,0,-0.5], [0.5,0,0.5], [0.5,0,0.5]
@@ -803,44 +804,52 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_centered) {
     this.x0o = x0[1] || 0;
     this.x0b = x0[2] || 0;
     this.x0f = (x0[3] == undefined) ? 1 : x0[3];
+    this.x0p = x0[4] || 0;
   } else {
     this.x0 = x0;
     this.x0o = 0;
     this.x0b = 0;
     this.x0f = 1;
+    this.x0p = 0;
   }
   if(y0.length) {
     this.y0 = y0[0];
     this.y0o = y0[1] || 0;
     this.y0b = y0[2] || 0;
     this.y0f = (y0[3] == undefined) ? 1 : y0[3];
+    this.y0p = y0[4] || 0;
   } else {
     this.y0 = y0;
     this.y0o = 0;
     this.y0b = 0;
     this.y0f = 1;
+    this.y0p = 0;
   }
   if(x1.length) {
     this.x1 = x1[0];
     this.x1o = x1[1] || 0;
     this.x1b = x1[2] || 0;
     this.x1f = (x1[3] == undefined) ? 1 : x1[3];
+    this.x1p = x1[4] || 0;
   } else {
     this.x1 = x1;
     this.x1o = 0;
     this.x1b = 0;
     this.x1f = 1;
+    this.x1p = 0;
   }
   if(y1.length) {
     this.y1 = y1[0];
     this.y1o = y1[1] || 0;
     this.y1b = y1[2] || 0;
     this.y1f = (y1[3] == undefined) ? 1 : y1[3];
+    this.y1p = y1[4] || 0;
   } else {
     this.y1 = y1;
     this.y1o = 0;
     this.y1b = 0;
     this.y1f = 1;
+    this.y1p = 0;
   }
   if(parent) {
     parent.elements.push(this);
@@ -912,10 +921,10 @@ Flex.prototype.updateSelf = function(parentdiv) {
   var w = dim[0];
   var h = dim[1];
 
-  var x0 = w * this.x0 + h * this.x0o + Math.min(w, this.x0f * h) * this.x0b;
-  var y0 = h * this.y0 + w * this.y0o + Math.min(this.y0f * w, h) * this.y0b;
-  var x1 = w * this.x1 + h * this.x1o + Math.min(w, this.x1f * h) * this.x1b;
-  var y1 = h * this.y1 + w * this.y1o + Math.min(this.y1f * w, h) * this.y1b;
+  var x0 = w * this.x0 + h * this.x0o + Math.min(w, this.x0f * h) * this.x0b + this.x0p;
+  var y0 = h * this.y0 + w * this.y0o + Math.min(this.y0f * w, h) * this.y0b + this.y0p;
+  var x1 = w * this.x1 + h * this.x1o + Math.min(w, this.x1f * h) * this.x1b + this.x1p;
+  var y1 = h * this.y1 + w * this.y1o + Math.min(this.y1f * w, h) * this.y1b + this.y1p;
   this.div.style.left = Math.floor(x0) + 'px';
   this.div.style.top = Math.floor(y0) + 'px';
   this.div.style.width = Math.floor(x1 - x0) + 'px';

@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.7.1 (2022-10-30):';
+  text += '<br/>• Added two new infinity field crops.'; // zinc blackberry and zinc anemone
+  text += '<br/>• Added "i" shortcut to go to infinity field tab.';
+  text += '<br/>• UI tweaks: viewing pre-evolution squirrel tree, more notations for entering auto-action time, merged two groups of fruit fusing checkboxes, fruit border color tweaks, ...'; // also typo fixes, added the forgotten production info to infinity field crop dialogs, mistletoe upgrade in progress button highlight color, per hour (instead of per second) production display for low inf seeds income, ...
+  text += '<br/><br/>';
+
   text += '0.7.0 (2022-10-24):';
   text += '<br/>• Added the infinity field, a third field tab in the game. This requires ethereal tree 20 to unlock. For this first release, the infinity field has only a single crop, as an initial test of this new feature (which also means it could change). Later more crops will be released.';
   text += '<br/>• Small tweaks and fixes.'; // update nuts value in squirrel tab when nuts change while it's open, and small cosmetic ui/text changes, mistletoe dialog some bonuses not shown fixed and bonuses shown in tooltips
@@ -125,7 +131,7 @@ function getChangeLog() {
   text += '<br/><br/>';
 
   text += '0.3.2 (2022-06-12):';
-  text += '<br/>• When fusing fruits, you can now choose to keep or discard two-star [**] abilities that get transferred, and also change the priority of which abilities get pushed out by the transfered ones. Scroll down in the fuse dialog to see these new controls, but they are only visible if there\'s a two-star [**] ability in the "from"-fruit.';
+  text += '<br/>• When fusing fruits, you can now choose to keep or discard two-star [**] abilities that get transferred, and also change the priority of which abilities get pushed out by the transferred ones. Scroll down in the fuse dialog to see these new controls, but they are only visible if there\'s a two-star [**] ability in the "from"-fruit.';
   text += '<br/>• Layout and help of the fuse fruit dialog slightly adjusted for clarity.';
   text += '<br/>• Fusing a fruit that\'s worse than the original is no longer prevented: it\'s easier to learn how fusing works when allowed to see all the possible results.';
   text += '<br/>• Minor fixes.'; // includes a few fixes in the challenge display related to cycling bonus and capped bonus level

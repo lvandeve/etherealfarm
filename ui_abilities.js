@@ -360,7 +360,7 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
         addAction({type:ACTION_DELETE, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:c, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
         }
         refreshed = true;
       } else if((f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) && can_afford) {
@@ -393,7 +393,8 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
 // opt_clear = delete all existing brasssica, rather than planting or refreshing any
 // opt_all = plant brasssica in every single free spot, rather than only were existing brasssica or remainders are
 // opt_by_automaton = mark the action as done by automaton, and also don't call update() since automaton actions are already done from within the update function.
-function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
+// opt_recursed is only used to not print a message about the shfit key if this function itself called itself with opt_all without any shift key involved
+function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) {
   if(opt_clear && opt_all) return;
   var replanted = false;
   var refreshed = false;
@@ -404,6 +405,7 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
   if(cropindex < 0) return;
   var seeds_available = Num(state.res.infseeds);
   var numplanted = 0;
+  var numdeleted = 0;
 
   var plantedhere = [];
 
@@ -428,6 +430,7 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
       } else if(c && c.type == CROPTYPE_BRASSICA && opt_clear) {
         addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
         seeds_available.addInPlace(c.getRecoup(f).infseeds);
+        numdeleted++;
       } else if(opt_all) {
         if(can_afford && (f.index == 0 || f.index == FIELD_REMAINDER)) {
           seeds_available.subInPlace(cresscost);
@@ -439,7 +442,8 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
     }
   }
   // now refresh existing ones if seeds remaining. Also, only if no remainder plants were done already. A second buttonpress can be done to do the refresh then: one may want to refresh remainders but not existing watercress.
-  if(!opt_clear && !numplanted) {
+  // reason for not doing this with opt_all: for infinity watercress, you may really want to only add new ones and not spend infinity seeds into the refreshing of existing ones, if shift is pressed (for all), do only adding
+  if(!opt_clear && !opt_all && !numplanted) {
     for(var y = 0; y < state.numh3; y++) {
       for(var x = 0; x < state.numw3; x++) {
         var can_afford = seeds_available.ge(cresscost);
@@ -449,8 +453,9 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
           addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
           seeds_available.addInPlace(c.getRecoup(f).infseeds);
           if(!opt_clear) {
-            seeds_available.subInPlace(cresscost);
-            addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+            //seeds_available.subInPlace(cresscost);
+            seeds_available.subInPlace(c.getCost().infseeds);
+            addAction({type:ACTION_PLANT3, x:x, y:y, crop:c, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
             // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
             // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
             if(f.growth < 0.999) numplanted++;
@@ -463,16 +468,18 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton) {
 
   if(numplanted == 0 && !opt_all && !opt_clear && !opt_by_automaton) {
     // if nothing was done (e.g. there were no watercress remainders), and it's a standard (non shift, non ctrl) click, plant watercress in every free spot anyway, to have some easy way to fill up the whole field anyway even if there are no remainders
-    refreshWatercress3(false, true, false);
+    refreshWatercress3(false, true, false, true);
     return;
   }
 
   if(fullyplanted) showMessage('planting infinity brassica');
   else if(replanted) showMessage('replanting infinity brassica');
-  else if(refreshed) showMessage(opt_clear ? 'deleting infinity brassica' : 'refreshing infinity brassica');
+  else if(numdeleted) showMessage('deleting infinity brassica');
+  else if(refreshed) showMessage('refreshing infinity brassica');
   else if(remcleared) showMessage('cleared infinity brassica remainders');
   else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing infinity brassica or remainders of infinity brassica, and requires enough resources available to plant the infinity brassica');
-  else showMessage('nothing done: only refreshes existing infinity brassica or remainders of infinity brassica');
+  else if(opt_all && !opt_recursed) showMessage('nothing done: with shift, only adds new infinity brassica where possible, doesn\'t refresh existing ones');
+  else showMessage('nothing done: no brassica or brassica remainders available to refresh');
   if(!opt_by_automaton) update();
 }
 
@@ -795,6 +802,10 @@ document.addEventListener('keydown', function(e) {
 
   if(key == 'e' && !shift && !ctrl) {
     if(state.g_numresets > 0) setTab(tabindex_field2);
+  }
+
+  if(key == 'i' && !shift && !ctrl) {
+    if(haveInfinityField() > 0) setTab(tabindex_field3);
   }
 
   if(key == 'z' && !shift && ctrl) {

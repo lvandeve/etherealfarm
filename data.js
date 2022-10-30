@@ -6017,7 +6017,7 @@ function fuseFruitMatchOrder(f, orig) {
 // b: the "from" fruit
 // fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruit, 5: allow forming the dragon fruit
 // transfer_choices: array of bools which, if false, indicate you do NOT want to transfer this **-ability from fruit b into fruit a
-// keep_choices: array of bools which, if true, indicate you don't want this ability pushed out by transfered abilities. This only enforces priority, it doesn't change the amount of abilities being pushed out. If all booleans are true or all booleans are false, fruit a's ability order is used (last ones pushed out first). If there is a mix of true and false, those that are false will be pushed out first.
+// keep_choices: array of bools which, if true, indicate you don't want this ability pushed out by transferred abilities. This only enforces priority, it doesn't change the amount of abilities being pushed out. If all booleans are true or all booleans are false, fruit a's ability order is used (last ones pushed out first). If there is a mix of true and false, those that are false will be pushed out first.
 // opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
 function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) {
   if(!a || !b) return null;
@@ -6145,7 +6145,7 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
     if(ma[b.abilities[i]] != undefined) {
       if(!cloned) keep_choices = util.clone(keep_choices);
       keep_choices[ma[b.abilities[i]][0]] = true; // ability is in both a and b, to enforce keeping it, use "keep_choices" instead
-      continue; // already present in a, so not a newly transfered ability; do not increase num_transfer in this case, or ability duplication is possible
+      continue; // already present in a, so not a newly transferred ability; do not increase num_transfer in this case, or ability duplication is possible
     }
     num_transfer++;
   }
@@ -6169,11 +6169,11 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
     if(arr.length >= n - num_transfer) break;
     if(!keep_choices[i]) arr.push([f.abilities[i], f.charge[i]]);
   }
-  // add transfered abilities of b to the array
+  // add transferred abilities of b to the array
   for(var i = 0; i < nb; i++) {
     if(b.charge[i] != 2) continue;
     if(!transfer_choices[i]) continue;
-    if(ma[b.abilities[i]] != undefined) continue; // already present in a, so not a newly transfered ability
+    if(ma[b.abilities[i]] != undefined) continue; // already present in a, so not a newly transferred ability
     arr.push([b.abilities[i], 2]);
   }
   for(var i = 0; i < arr.length; i++) {
@@ -7739,15 +7739,15 @@ function Crop3() {
   this.index = 0;
   this.planttime = 0;
   this.basicboost = Num(0); // to basic field
+  this.infboost = Num(0); // to infinity field
   this.tagline = '';
   this.image = undefined;
 };
 
 
 
-var sameTypeCostMultiplier3 = 1.5;
-var sameTypeCostMultiplier_Lotus3 = 2;
-var sameTypeCostMultiplier_Fern3 = 1.5;
+var sameTypeCostMultiplier3 = 1.1;
+var sameTypeCostMultiplier3_flower = 1.25;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 // opt_force_count, if not undefined, overrides anything, including opt_adjust_count
@@ -7755,6 +7755,7 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   if(this.type == CROPTYPE_BRASSICA) return this.cost;
 
   var mul = sameTypeCostMultiplier3;
+  if(this.type == CROPTYPE_FLOWER) mul = sameTypeCostMultiplier3_flower;
   var count = state.crop3count[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
   var countfactor = Math.pow(mul, count);
@@ -7781,8 +7782,40 @@ Crop3.prototype.getProd = function(f, breakdown) {
   var result = this.prod.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
+  // flower boost
+  if(f && (this.type == CROPTYPE_BRASSICA || this.type == CROPTYPE_BERRY)) {
+    var flowermul = new Num(1);
+    var num = 0;
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+      var n = state.field3[y2][x2];
+      if(n.hasCrop() && n.isFullGrown() && crops3[n.cropIndex()].type == CROPTYPE_FLOWER) {
+        var boost = crops3[n.cropIndex()].getInfBoost(n);
+        if(boost.neqr(0)) {
+          flowermul.addInPlace(boost);
+          num++;
+        }
+      }
+    }
+    if(num) {
+      result.mulInPlace(flowermul);
+      if(breakdown) breakdown.push(['flowers (' + num + ')', true, flowermul, result.clone()]);
+    }
+  }
+
+
   return result;
 }
+
+Crop3.prototype.getInfBoost = function(f, breakdown) {
+  var result = this.infboost.clone();
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  return result;
+};
 
 Crop3.prototype.getBasicBoost = function(f, breakdown) {
   var result = this.basicboost.clone();
@@ -7806,7 +7839,7 @@ var crop3_register_id = -1;
 
 // prod = for infinity field
 // basicboost = to basic field
-function registerCrop3(name, croptype, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
+function registerCrop3(name, croptype, tier, cost, basicboost, planttime, image, opt_tagline) {
   if(!image) image = missingplant;
   if(crops3[crop3_register_id] || crop3_register_id < 0 || crop3_register_id > 65535) throw 'crop3 id already exists or is invalid!';
   var crop = new Crop3();
@@ -7818,7 +7851,6 @@ function registerCrop3(name, croptype, tier, cost, prod, basicboost, planttime, 
   crop.type = croptype;
   crop.tier = tier;
   crop.cost = cost;
-  crop.prod = prod;
   crop.basicboost = basicboost;
   crop.planttime = planttime;
   crop.image = image;
@@ -7834,14 +7866,23 @@ function registerCrop3(name, croptype, tier, cost, prod, basicboost, planttime, 
 }
 
 function registerBrassica3(name, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
-  var index = registerCrop3(name, CROPTYPE_BRASSICA, tier, cost, prod, basicboost, planttime, image, opt_tagline);
+  var index = registerCrop3(name, CROPTYPE_BRASSICA, tier, cost, basicboost, planttime, image, opt_tagline);
   var crop = crops3[index];
+  crop.prod = prod;
   return index;
 }
 
 function registerBerry3(name, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
-  var index = registerCrop3(name, CROPTYPE_BERRY, tier, cost, prod, basicboost, planttime, image, opt_tagline);
+  var index = registerCrop3(name, CROPTYPE_BERRY, tier, cost, basicboost, planttime, image, opt_tagline);
   var crop = crops3[index];
+  crop.prod = prod;
+  return index;
+}
+
+function registerFlower3(name, tier, cost, infboost, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_FLOWER, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.infboost = infboost;
   return index;
 }
 
@@ -7849,8 +7890,15 @@ function registerBerry3(name, tier, cost, prod, basicboost, planttime, image, op
 crop3_register_id = 0;
 var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Res({infseeds:20.01 / (24 * 3600)}), Num(0.05), 24 * 3600, metalifyPlantImages(images_watercress, metalheader0));
 
-//crop3_register_id = 144;
-//var berry3_0 = registerBerry3('testberry', 0, Res({infseeds:10}), Res({infseeds:0.01}), 5, blackberry);
+crop3_register_id = 300;
+var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), 15, metalifyPlantImages(blackberry, metalheader0));
+
+crop3_register_id = 600;
+// mushrooms? maybe not, but ids reserved for in case
+
+crop3_register_id = 900;
+var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), 15, metalifyPlantImages(images_anemone, metalheader0));
+
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;

@@ -438,8 +438,6 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       y += s * 1.1;
     }
 
-
-
     if(fuse) {
       var h = s * 0.35;
       for(var i = -1; i < fuse.abilities.length; i++) {
@@ -463,7 +461,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       }
       text += '\n';
 
-      var num_transfer = false;
+      var num_transfer = 0;
       for(var i = 0; i < fromfruit.abilities.length; i++) {
         if(fromfruit.charge[i] == 2) {
           num_transfer++;
@@ -472,11 +470,13 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
       if(num_transfer == 0) {
         y += h;
-        addTitle('Transferred abilities: None. The "from" fruit must have two-star [**] abilities to allow transfer. To get [**] abilities, fuse two fruits with the same ability to get [*], then one more fuse to get [**].');
+        addTitle('When the "from" fruit has two-star [**] abilities, you can transfer them to the "to" fruit. To get [**] abilities, fuse two fruits with the same ability to get [*], then one more fuse to get [**].');
       } else {
         y += h;
-        addTitle('Transferred abilities: Two-star [**] abilities that can transfer from the "from" fruit to the "into" fruit. Optionally you can uncheck checkboxes to discard abilities:');
-        y += h;
+        addTitle('Two-star [**] abilities below are transferred from the "from" fruit into the "to" fruit. Optionally you can use the checkboxes below to prevent some abilities from transferring, or to prioritize which original abilities get kept and pushed out:');
+        y += h * 1.1;
+
+        var ability_type_seen = [];
 
         for(var i = 0; i < fromfruit.abilities.length; i++) {
           var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
@@ -486,6 +486,8 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
             var flex1 = new Flex(flex, [0, 1.2], 0, 1, 1);
             var canvas = createCanvas('0%', '0%', '100%', '100%', flex0.div);
             renderImage(transfer_choices[i] ? image_checkbox_on : image_checkbox_off, canvas);
+
+            ability_type_seen[fromfruit.abilities[i]] = true;
 
             styleButton0(flex0.div);
             addButtonAction(flex0.div, bind(function(i) {
@@ -501,11 +503,13 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         }
 
 
-        y += h;
-        addTitle('Original abilities from the "into" fruit. Optionally, using the checkboxes, you can prioritize some abilities, to affect which ones get kept or get pushed out by the transferred abilities:');
-        y += h * 2;
+        // Commented out: internally this works as 2 groups of checkboxes (transfer_choices and keep_choices), but there's no reason to show it as two separate lists in the UI, it can be seen as just a single list of abilities to choose prioritized ones from
+        //y += h;
+        //addTitle('Original abilities from the "into" fruit. Optionally, using the checkboxes, you can prioritize some abilities, to affect which ones get kept or get pushed out by the transferred abilities:');
+        //y += h * 2;
 
         for(var i = 0; i < n; i++) {
+          if(ability_type_seen[intofruit.abilities[i]]) continue;
           var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
           var text = '';
           var flex0 = new Flex(flex, 0, 0, [0, 1], 1);
@@ -923,11 +927,12 @@ function styleFruitChip(flex, f) {
   if(f.mark) {
     var color = fruitmarkcolors[f.mark] || '#fff';
     flex.div.style.border = '3px solid ' + color;
-  } else if(f.name) {
+  } else if(f.name || f.fuses) {
+    //var color = f.name ? '#999' : '#777';
     var color = '#999';
     flex.div.style.border = '3px solid ' + color;
   } else {
-    flex.div.style.border = '1px solid black';
+    //flex.div.style.border = '1px solid black';
   }
   if(lastTouchedFruit == f) {
     flex.div.style.boxShadow = '0px 0px 16px #000';
@@ -936,9 +941,10 @@ function styleFruitChip(flex, f) {
   } else {
     flex.div.style.boxShadow = '';
   }
+  flex.div.style.outline = '1px solid black';
 }
 
-var fruitmarkcolors = ['#000', '#f00a', '#fe0a', '#4c4a', '#66ff', '#fffe', '#f80a'];
+var fruitmarkcolors = ['#000', '#f00', '#fe0', '#4c4', '#66f', '#fff', '#f80'];
 var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue', 'white', 'orange'];
 
 function getFruitAriaLabel(f, opt_fallback_if_empty) {
@@ -987,14 +993,22 @@ function getFruitTooltipText(f, opt_label) {
 
 // slot_type: 0=storage, 1=sacrificial
 function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, opt_label) {
-  var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
+  // these multiple layers are there to support multiple borders, because the colored "mark" border should have itself a small black outline to make it visible against all background colors both of the inner part (fruit bg) and outper part (dark or light UI theme bg)
+  // so the colored border has an outer outline, provided by flex (no css border, but flex being 1 pixel larger), and inner outline provided by the css border on canvas (possibly commented out below if not truly needed)
+  // note that CSS outline is not used here and would have the wrong size if used since it goes outside the box
+  var bg = new Flex(flex, [0,0,0,0,1],[0,0,0,0,1],[1,0,0,0,-1],[1,0,0,0,-1]);
+  var fg = new Flex(bg, 0, 0, 1, 1);
+  flex.div.style.backgroundColor = '#000';
+  bg.div.style.backgroundColor = '#666';
+  var canvas = createCanvas('0%', '0%', '100%', '100%', fg.div);
+  //if(f.mark || f.name || f.fuses) canvas.style.border = '1px solid black';
   renderImage(images_fruittypes[f.type][f.tier], canvas);
 
   var text = getFruitTooltipText(f, opt_label);
 
-  styleFruitChip(flex, f);
+  styleFruitChip(fg, f);
 
-  registerTooltip(flex.div, text);
+  registerTooltip(fg.div, text);
   flex.div.style.userSelect = 'none';
 
   if(!opt_nobuttonaction) {
@@ -1170,7 +1184,7 @@ function updateFruitUI() {
       y += s * 1.2;
     }
 
-    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
+    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s * 0.98], [0, 0, y + s]);
     x += s;
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_stored.length ? state.fruit_stored[i] : undefined;
@@ -1201,7 +1215,7 @@ function updateFruitUI() {
   var num = Math.max(6, state.fruit_sacr.length + 2);
   var x = 0;
   for(var i = 0; i < num; i++) {
-    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
+    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s * 0.98], [0, 0, y + s]);
     x += s;
     if(x + 0.5 * s > s * num_fruits_width) {
       x = 0;

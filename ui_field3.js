@@ -51,12 +51,18 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var prod = c.getProd(f);
   if(!prod.empty()) {
     if(c.type == CROPTYPE_BRASSICA) {
-      var totalprod = c.getProd().mulr(c.getPlantTime());
+      var totalprod = prod.mulr(c.getPlantTime());
       result += 'Total production over full lifetime: ' + totalprod.toString() + '<br>';
     }
 
     result += 'Production per second: ' + prod.toString();
+    if(prod.infseeds.neqr(0) && prod.infseeds.ltr(0.1) && prod.infseeds.gtr(-0.1)) result += ' (' + prod.infseeds.mulr(3600).toString() + '/h)';
     result += '<br/><br/>';
+  }
+
+  var infboost = c.getInfBoost();
+  if(infboost.neqr(0)) {
+    result += 'Boost to neighbors: ' + infboost.toPercentString() + '<br><br>';
   }
 
   var basicboost = c.getBasicBoost();

@@ -4916,8 +4916,9 @@ var update = function(opt_ignorePause) {
       }
     }
     if(haveInfinityField()) {
-      //unlockInfinityCrop(berry3_0);
       unlockInfinityCrop(brassica3_0);
+      if(state.crops3[brassica3_0].had) unlockInfinityCrop(berry3_0);
+      if(state.crops3[berry3_0].had) unlockInfinityCrop(flower3_0);
     }
 
     // ethereal mistletoe

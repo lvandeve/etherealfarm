@@ -96,12 +96,13 @@ function buyAllSquirrelUpgradesUpTo(stage, b, d, opt_final_gated) {
   }
 }
 
-// s2 = stage state, u = the upgrade for this branch and depth in this stage, b = branch in this stage, d = depth of upgrade in this stage
-function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d) {
+// s2 = stage state (can be null if view_only), u = the upgrade for this branch and depth in this stage, b = branch in this stage, d = depth of upgrade in this stage
+// view_only: if true, then it's rendered only for viewing, and all upgrade names are revealed, no actions to buy them are shown and it can render old squirrel trees (from older evolutions) too
+function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
   var stages = squirrel_stages[state.squirrel_evolution];
   // whether the last chip of the previous stage is in state "can buy"
   var prev_canbuy = false;
-  if(stage.index > 0) {
+  if(stage.index > 0 && !view_only) {
     var p = stages[stage.index - 1];
     var p2 = state.squirrel_stages[stage.index - 1];
     if(p2.num[1] + 1 == p.upgrades1.length && p2.num[1] > 0) prev_canbuy = true;
@@ -112,7 +113,7 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d) {
     }
   }
 
-  var buyable = squirrelUpgradeBuyable(stage.index, b, d);
+  var buyable = view_only ? 0 : squirrelUpgradeBuyable(stage.index, b, d);
 
   var bought = buyable == 0;
   var gated = buyable == 2;
@@ -162,11 +163,13 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d) {
   styleButton0(canvasFlex.div);
 
   //if(gated) text += '<br>Locked: buy all above first';
-  if(gated) text += '<br>(Gated)';
-  else if(canbuy) text += '<br>Buy';
-  else if(bought) text += '<br>Bought';
+  if(!view_only) {
+    if(gated) text += '<br>(Gated)';
+    else if(canbuy) text += '<br>Buy';
+    else if(bought) text += '<br>Bought';
+  }
 
-  var showbuy = (canbuy || gated) && !bought;
+  var showbuy = (canbuy || gated) && !bought && !view_only;
 
   var buyfun = undefined;
   if(showbuy || (state.g_num_squirrel_respec > 0 && !unknown && !bought)) {
@@ -222,13 +225,14 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d) {
   }, true);
 }
 
-function renderStage(scrollflex, stage, y) {
-  var s2 = state.squirrel_stages[stage.index];
+// view_only: if true, then it's rendered only for viewing, and all upgrade names are revealed, no actions to buy them are shown and it can render old squirrel trees (from older evolutions) too
+function renderStage(scrollflex, stage, y, view_only) {
+  var s2 = view_only ? null : state.squirrel_stages[stage.index];
   var u3 = [stage.upgrades0, stage.upgrades1, stage.upgrades2];
 
 
   var y0 = y;
-  var h = 0.145;
+  var h = view_only ? 0.1 : 0.145;
   var h2 = h + 0.035;
   // some extra height for beginning of stage if there are connectors from center to left/right
   var ht = 0.03;
@@ -263,7 +267,7 @@ function renderStage(scrollflex, stage, y) {
       if(i == 0 && (u3[0].length || u3[2].length)) y2 += ht;
 
       var flex = new Flex(scrollflex, (b + 0.05) * 0.33, y2, (b + 0.95) * 0.33, y2 + h);
-      renderSquirrelUpgradeChip(flex, stage, s2, u, b, i);
+      renderSquirrelUpgradeChip(flex, stage, s2, u, b, i, view_only);
 
       if(i > 0 || b == 1) {
         //var connector = new Flex(scrollflex, [0.1 + (b + 0.5) * 0.25, -0.05], y2 + h, [0.05 + (b + 0.5) * 0.25, 0.05], y2 + h2);
@@ -368,6 +372,14 @@ function updateSquirrelUI(opt_partial) {
     styleButton(respecButton.div, 1);
     respecButton.div.textEl.innerText = 'Respec\n(Available: ' + state.squirrel_respec_tokens + ')';
     registerTooltip(respecButton.div, 'Resets and refunds all squirrel upgrades, consumes 1 respec token');
+
+    if(state.squirrel_evolution) {
+      var seePrevButton = new Flex(buttonFlex, 0.52, 0, 0.76, 0.9);
+      addButtonAction(seePrevButton.div, showOldSquirrelTreeDialog);
+      styleButton(seePrevButton.div, 1);
+      seePrevButton.div.textEl.innerText = 'See old tree';
+      registerTooltip(seePrevButton.div, 'Shows the old tree from before the squirrel evolution ');
+    }
   }
 
   var scrollFlex = opt_partial ? squirrel_scrollflex : new Flex(squirrelFlex, 0, 0.2, 1, 1);
@@ -384,7 +396,7 @@ function updateSquirrelUI(opt_partial) {
     var y = 0.15;
 
     for(var i = 0; i < stages.length; i++) {
-      y = renderStage(scrollFlex, stages[i], y);
+      y = renderStage(scrollFlex, stages[i], y, false);
     }
 
     // only upgrade is squirrel evolution, scroll to it by default
@@ -393,6 +405,21 @@ function updateSquirrelUI(opt_partial) {
     if(squirrel_scrollpos) {
       scrollFlex.div.scrollTop = squirrel_scrollpos;
     }
+  }
+}
+
+function showOldSquirrelTreeDialog() {
+  if(!(state.squirrel_evolution > 0)) return;
+
+  var dialog = createDialog({title:'View pre-evolution squirrel tree', scrollable:true});
+  var scrollFlex = dialog.content;
+
+  var y = 0;
+
+  var stages = squirrel_stages[0];
+
+  for(var i = 0; i < stages.length; i++) {
+    y = renderStage(scrollFlex, stages[i], y, true);
   }
 }
 
