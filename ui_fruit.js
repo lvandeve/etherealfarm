@@ -927,10 +927,10 @@ function styleFruitChip(flex, f) {
   if(f.mark) {
     var color = fruitmarkcolors[f.mark] || '#fff';
     flex.div.style.border = '3px solid ' + color;
-  } else if(f.name || f.fuses) {
+  } else if(f.name || (f.fuses && f.type <= 4)) {
     //var color = f.name ? '#999' : '#777';
     var color = '#999';
-    flex.div.style.border = '3px solid ' + color;
+    flex.div.style.border = '2px solid ' + color;
   } else {
     //flex.div.style.border = '1px solid black';
   }
@@ -944,7 +944,7 @@ function styleFruitChip(flex, f) {
   flex.div.style.outline = '1px solid black';
 }
 
-var fruitmarkcolors = ['#000', '#f00', '#fe0', '#4c4', '#66f', '#fff', '#f80'];
+var fruitmarkcolors = ['#000', '#f00', '#dc0', '#4c4', '#66f', '#fff', '#f80'];
 var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue', 'white', 'orange'];
 
 function getFruitAriaLabel(f, opt_fallback_if_empty) {
@@ -999,7 +999,7 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
   var bg = new Flex(flex, [0,0,0,0,1],[0,0,0,0,1],[1,0,0,0,-1],[1,0,0,0,-1]);
   var fg = new Flex(bg, 0, 0, 1, 1);
   flex.div.style.backgroundColor = '#000';
-  bg.div.style.backgroundColor = '#666';
+  bg.div.style.backgroundColor = '#aaa';
   var canvas = createCanvas('0%', '0%', '100%', '100%', fg.div);
   //if(f.mark || f.name || f.fuses) canvas.style.border = '1px solid black';
   renderImage(images_fruittypes[f.type][f.tier], canvas);

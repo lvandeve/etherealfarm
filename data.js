@@ -43,6 +43,7 @@ var num_tiers_per_crop_type = [];
 num_tiers_per_crop_type[CROPTYPE_BERRY] = 16;
 num_tiers_per_crop_type[CROPTYPE_MUSH] = 8;
 num_tiers_per_crop_type[CROPTYPE_FLOWER] = 8;
+num_tiers_per_crop_type[CROPTYPE_NUT] = 16;
 
 var etherealDeleteSessionTime = 60; // how long time to delete/replace more ethereal crops after deleting one for this session
 var etherealDeleteStartTime = 600; // how long it's free to delete/replant without being considered a "session" at the start of a run
@@ -2683,6 +2684,9 @@ var flowerprestige_5 = registerCropPrestige(flower_5, getFlowerCost(13), CROPTYP
 var flowerprestige_6 = registerCropPrestige(flower_6, getFlowerCost(14), CROPTYPE_BERRY, 28);
 var flowerprestige_7 = registerCropPrestige(flower_7, getFlowerCost(15), CROPTYPE_BERRY, 30);
 
+// more prestiges are further below due to not fitting in the upgrade_register_id here
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // power increase for crop production (not flower boost) by basic upgrades
@@ -2977,6 +2981,25 @@ var eventcropunlock_0 = registerCropUnlock(pumpkin_0, halloween_pumpkin_price, u
 
 
 
+// more prestiges
+upgrade_register_id = 3000;
+var nutprestige_0 = registerCropPrestige(nut_0, getNutCost(16), CROPTYPE_NUT, 15);
+var nutprestige_1 = registerCropPrestige(nut_1, getNutCost(17), CROPTYPE_NUT, 16);
+var nutprestige_2 = registerCropPrestige(nut_2, getNutCost(18), CROPTYPE_NUT, 17);
+var nutprestige_3 = registerCropPrestige(nut_3, getNutCost(19), CROPTYPE_NUT, 18);
+var nutprestige_4 = registerCropPrestige(nut_4, getNutCost(20), CROPTYPE_NUT, 19);
+var nutprestige_5 = registerCropPrestige(nut_5, getNutCost(21), CROPTYPE_NUT, 20);
+var nutprestige_6 = registerCropPrestige(nut_6, getNutCost(22), CROPTYPE_NUT, 21);
+var nutprestige_7 = registerCropPrestige(nut_7, getNutCost(23), CROPTYPE_NUT, 22);
+var nutprestige_8 = registerCropPrestige(nut_8, getNutCost(24), CROPTYPE_NUT, 23);
+var nutprestige_9 = registerCropPrestige(nut_9, getNutCost(25), CROPTYPE_NUT, 24);
+var nutprestige_10 = registerCropPrestige(nut_10, getNutCost(26), CROPTYPE_NUT, 25);
+var nutprestige_11 = registerCropPrestige(nut_11, getNutCost(27), CROPTYPE_NUT, 26);
+var nutprestige_12 = registerCropPrestige(nut_12, getNutCost(28), CROPTYPE_NUT, 27);
+var nutprestige_13 = registerCropPrestige(nut_13, getNutCost(29), CROPTYPE_NUT, 28);
+var nutprestige_14 = registerCropPrestige(nut_14, getNutCost(30), CROPTYPE_NUT, 29);
+var nutprestige_15 = registerCropPrestige(nut_15, getNutCost(31), CROPTYPE_NUT, 30);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3086,8 +3109,8 @@ registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { 
 var prevmedal;
 
 medal_register_id = 4;
-var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e66, 1e72, 1e78, 1e84, 1e90, 1e96, 1e102, 1e108, 1e114, 1e120];
-var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   4,     5,    6,    7,    8,   10,   12,   15,   30,   50,  100,  200,  300,  400,  500,   600,   700,   800,   900];
+var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e66, 1e72, 1e78, 1e84, 1e90,  1e96, 1e102, 1e108, 1e114, 1e120, 1e126, 1e162, 1e168, 1e174, 1e180];
+var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   5,    10,   20,   30,   50,  100,  200,  300,  400,  500, 1000, 2000, 3000, 5000,  7000, 10000, 20000, 25000, 30000, 40000, 50000, 60000, 70000, 80000];
 for(var i = 0; i < seeds_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
   var num = Num(seeds_achievement_values[i]);
@@ -3122,8 +3145,8 @@ medal_register_id += 20; // a few spares for this one
 // TODO: have more tree level medals here. But decide this when the game is such that those levels are actually reachable to know what are good bonus values
 var level_achievement_values = [[5, 0.025], [10, 0.05], [15, 0.075], [20, 0.1], [25, 0.2],
                                 [30, 0.3],  [35, 0.4],  [40, 0.5],  [45, 0.75],  [50, 1.0],
-                                [60, 1.5],  [70, 2.5],  [80, 5],  [90, 7.5],  [100, 10],
-                                [110, 15],  [120, 20],  [130, 25],  [140, 30],  [150, 40]];
+                                [60, 1.5],  [70, 2.5],  [80, 5],  [90, 10],  [100, 15],
+                                [110, 25],  [120, 50],  [130, 75],  [140, 150],  [150, 200]];
 for(var i = 0; i < level_achievement_values.length; i++) {
   var level = level_achievement_values[i][0];
   var bonus = Num(level_achievement_values[i][1]);
@@ -3194,12 +3217,17 @@ for(var i = 0; i < numreset_achievement_values.length; i++) {
 }
 
 function getPlantTypeMedalBonus(croptype, tier, num) {
+  if(croptype == CROPTYPE_NUT) {
+    // nuts don't follow the same tier system as all the other crops that are based around the berry progression, but are based on tree level (through their spores cost) instead, so needs separate formula
+    //return Math.pow(1.25, tier);
+    return Math.pow(2, (45 + (tier - 1) * 6 - 5) / 10) * 4 / 100;
+  }
   if(croptype == CROPTYPE_MUSH) tier = tier * 2 + 1.5;
   if(croptype == CROPTYPE_FLOWER) tier = tier * 2 + 0.5;
   if(croptype == CROPTYPE_STINGING) tier = tier * 8 + 3;
   if(croptype == CROPTYPE_MISTLETOE) tier = 4;
   if(croptype == CROPTYPE_BEE) tier = tier * 8 + 6.75;
-  if(croptype == CROPTYPE_NUT) tier = tier + 9;
+  //if(croptype == CROPTYPE_NUT) tier = tier + 9;
   var num2 = (Math.floor(num / 10) + 1);
   //var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
   var t = Math.pow(1.7, tier);
@@ -3597,6 +3625,11 @@ for(var i = 0; i < 8; i++) {
 medal_register_id = 2700;
 for(var i = 0; i < 8; i++) {
   registerPrestigeMedal(flower_0 + i);
+}
+
+medal_register_id = 2800;
+for(var i = 0; i < 16; i++) {
+  registerPrestigeMedal(nut_0 + i);
 }
 
 medal_register_id = 2900;
@@ -5747,7 +5780,7 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
   }
 
   // Higher tree levels are not yet implemented for the fruits
-  return 7;
+  return 8;
 }
 
 // how many abilities should a fruit of this tier have (excluding any seasonal ability)
@@ -7412,10 +7445,24 @@ function updatePrestigeData(crop_id) {
     }
     c.planttime = c.planttime0 * (1 + c2.prestige);
   }
+  if(c.type == CROPTYPE_NUT) {
+    if(c.tier < 0) return; // doesn't work for templates
+    var tier = (c.tier & 15);
+    var tier2 = tier + c2.prestige * num_tiers_per_crop_type[c.type];
+    c.cost = getNutCost(tier2);
+    c.prod = getNutProd(tier2);
+    c.tier = tier2;
+
+    if(c.basic_upgrade != null) {
+      var u = upgrades[c.basic_upgrade];
+      var u2 = state.upgrades[c.basic_upgrade];
+      setCropMultiplierCosts(u, c);
+    }
+    c.planttime = c.planttime0 * (1 + c2.prestige);
+  }
   var newtier = c.tier;
   croptype_tiers[c.type][oldtier] = undefined;
   croptype_tiers[c.type][newtier] = crops[crop_id];
-
 }
 
 function updateAllPrestigeData() {
@@ -7427,6 +7474,9 @@ function updateAllPrestigeData() {
   }
   for(var i = 0; i < num_tiers_per_crop_type[CROPTYPE_FLOWER]; i++) {
     updatePrestigeData(flower_0 + i);
+  }
+  for(var i = 0; i < num_tiers_per_crop_type[CROPTYPE_NUT]; i++) {
+    updatePrestigeData(nut_0 + i);
   }
 }
 

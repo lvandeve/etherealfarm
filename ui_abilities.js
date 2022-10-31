@@ -358,9 +358,10 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
         }
       } else if(c && c.type == CROPTYPE_BRASSICA && (can_afford || opt_clear)) {
         addAction({type:ACTION_DELETE, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
+        var c2 = c.isReal() ? c : crops[cropindex];
         if(!opt_clear) {
           seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT, x:x, y:y, crop:c, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+          addAction({type:ACTION_PLANT, x:x, y:y, crop:c2, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
         }
         refreshed = true;
       } else if((f.index == CROPINDEX + watercress_template || f.index == CROPINDEX + watercress_ghost) && can_afford) {
@@ -451,11 +452,12 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
         var c = f.getCrop();
         if(c && c.type == CROPTYPE_BRASSICA && can_afford) {
           addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
-          seeds_available.addInPlace(c.getRecoup(f).infseeds);
+          var c2 = c.isReal() ? c : crops[cropindex];
+          seeds_available.addInPlace(c2.getRecoup(f).infseeds);
           if(!opt_clear) {
             //seeds_available.subInPlace(cresscost);
             seeds_available.subInPlace(c.getCost().infseeds);
-            addAction({type:ACTION_PLANT3, x:x, y:y, crop:c, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+            addAction({type:ACTION_PLANT3, x:x, y:y, crop:c2, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
             // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
             // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
             if(f.growth < 0.999) numplanted++;

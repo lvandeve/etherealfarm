@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.7.2 (2022-10-31):';
+  text += '<br/>• Added nut prestige for all the nut crops.';
+  text += '<br/>• Fixed high tier nut medals giving too much bonus compared to other crop achieves.';
+  text += '<br/>• Increased bonus of seeds amount and tree level achieves, which should make up for the decreased nut achievements bonus.';
+  text += '<br/>• The automatic border for named or fused fruits is now more subtle.';
+  text += '<br/>• Improved fruit background color contrast. Reason for the visible change in 0.7.1 is that since this release fruits have the same background color in both dark and light UI themes, and that change was done because some border colors were hard to see against the light UI backgrounds.';
+  text += '<br/>• Various fixes.'; // includes refresh on watercress templates was broken, and tree level 155+ accidently dropping amethist instead of sapphire fruits
+  text += '<br/><br/>';
+
   text += '0.7.1 (2022-10-30):';
   text += '<br/>• Added two new infinity field crops.'; // zinc blackberry and zinc anemone
   text += '<br/>• Added "i" shortcut to go to infinity field tab.';

@@ -424,6 +424,7 @@ function showOldSquirrelTreeDialog() {
 }
 
 var squirrel_ui_update_last_nuts = undefined;
+var squirrel_ui_update_last_nuts_gain = undefined;
 var squirrel_ui_update_last_time = undefined;
 
 // whether squirrel UI needs an update while the tab is open
@@ -431,27 +432,35 @@ var squirrel_ui_update_last_time = undefined;
 function squirrelUINeedsFastUpdate() {
   if(state.currentTab != tabindex_squirrel) return false;
 
-
   var result = false;
 
   var d = util.getTime() - squirrel_ui_update_last_time;
-  if(d > 60) result = true;
+  if(d > 60) result = true; // also get a precise value regularly, since the below only updates per 10% change
 
-  if(!squirrel_ui_update_last_nuts) {
+  if(!squirrel_ui_update_last_nuts || !squirrel_ui_update_last_nuts_gain) {
+    result = true;
+    squirrel_ui_update_last_nuts = state.res.nuts.clone();
+    squirrel_ui_update_last_nuts_gain = gain.nuts.clone();
+  }
+
+  if(state.res.nuts.gtr(0) && state.res.nuts.gt(squirrel_ui_update_last_nuts.mulr(1.1))) {
     result = true;
     squirrel_ui_update_last_nuts = state.res.nuts.clone();
   }
-
-  if(squirrel_ui_update_last_nuts) {
-    if(state.res.nuts.gtr(0) && state.res.nuts.gt(squirrel_ui_update_last_nuts.mulr(1.1))) {
-      result = true;
-      squirrel_ui_update_last_nuts = state.res.nuts.clone();
-    }
-    if(state.res.nuts.gter(0) && state.res.nuts.lt(squirrel_ui_update_last_nuts)) {
-      result = true;
-      squirrel_ui_update_last_nuts = state.res.nuts.clone();
-    }
+  if(state.res.nuts.gter(0) && state.res.nuts.lt(squirrel_ui_update_last_nuts)) {
+    result = true;
+    squirrel_ui_update_last_nuts = state.res.nuts.clone();
   }
+  if(gain.nuts.gtr(0) && gain.nuts.gt(squirrel_ui_update_last_nuts_gain.mulr(1.1))) {
+    result = true;
+    squirrel_ui_update_last_nuts_gain = gain.nuts.clone();
+  }
+  if(gain.nuts.gter(0) && gain.nuts.lt(squirrel_ui_update_last_nuts_gain)) {
+    result = true;
+    squirrel_ui_update_last_nuts_gain = gain.nuts.clone();
+  }
+
+
 
   if(d < 0.5) result = false;
 
