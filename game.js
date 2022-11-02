@@ -2864,6 +2864,8 @@ var update = function(opt_ignorePause) {
   var done = false;
   var numloops = 0;
 
+  var prev_long = false; // this is used for ensuring an extra short thing in case the nextEventTime() might be updated due to what happened during the current computation, e.g. unlocking of a new upgrade that automaton could do
+
   for(;;) { // begin of loop for long ticks ////////////////////////////////////
     if(done) break;
     if(numloops++ > 500) break;
@@ -2953,10 +2955,28 @@ var update = function(opt_ignorePause) {
 
     if(is_long) {
       next = nextEventTime() + 1; // for numerical reasons, ensure it's not exactly at the border of the event
+
+      // if a long tick is coming up, do one more short tick first now anyway, for in case a new unlock upgrade that can be auto-unlocked by automaton popped up, if e.g. a berry or nut was just fullgrown, or other similar situations (where some changing during the tick would cause a much shorter nextEventTime)
+      // this would not be needed in theory if unlocking of unlock-upgrades happened immediately after crops got fullgrown, but that depends on the order in which things get computed in a single tick, when computeDerived is called on the state, ..., so the extra tick is really needed
+      var next_long = (next > 10);
+      if(next_long && !prev_long) next = 2;
+      prev_long = next_long;
+
+      // alternative to the above: this would do 2 computations for every single long tick, rather than only when it switches from short to long. However, I think the above (which is slightly more efficient) should solve the issue already since the main issue is unlock-upgrades after growing crops, and growing crops cause short ticks.
+      /*var next_long = (next > 10);
+      if(next_long && !prev_long) {
+        next = 2;
+        prev_long = true;
+      } else {
+        prev_long = false;
+      }*/
+
       // ensure there is at least some progress
       if(numloops > 20 && next < 2) next = 2; // speed up computation if a lot is happening, at the cost of some precision
       if(numloops > 50 && next < 5) next = 5; // speed up computation if a lot is happening, at the cost of some precision
       if(numloops > 200 && next < 10) next = 10; // speed up computation if a lot is happening, at the cost of some precision
+    } else {
+      prev_long = false;
     }
 
     // if the automaton is doing actions during long forward, do much more fine grained computations, e.g. to ensure picking up fern a few seconds after auto-action that plants blueprint (and requires automaton to replace all templates first) will happen correctly (fern gets benefit of all planted crops)
