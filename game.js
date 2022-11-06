@@ -4468,7 +4468,7 @@ var update = function(opt_ignorePause) {
           var f = state.field3[y][x];
           if(f.hasRealCrop()) {
             var c = f.getCrop();
-            var prod = c.getProd();
+            var prod = c.getProd(f);
             if(c.type == CROPTYPE_BRASSICA) {
               state.crops3[c.index].had = true;
               var croptime = c.getPlantTime();

@@ -7833,7 +7833,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   // flower boost
-  if(f && (this.type == CROPTYPE_BRASSICA || this.type == CROPTYPE_BERRY)) {
+  if(f && this.type == CROPTYPE_BERRY) {
     var flowermul = new Num(1);
     var num = 0;
 
