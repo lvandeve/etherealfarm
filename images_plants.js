@@ -5862,15 +5862,27 @@ function ghostifyImage(im) {
   return [res, w, h];
 }
 
+// make the color end up more in the palette-colored region, and less in the pure white and pure black endpoints. This reduces contrast, but increases visibility of the intended metal color for very bright or very dark objects
+function metalify_nonlincolor(v) {
+  var d = 1.0 / 12.0;
+  if(v < d) return v * 2;
+  if(v > 1 - d) return 1 - ((1 - v) * 2);
+  v -= d;
+  v /= (1 - d * 2);
+  v *= (1 - d * 4);
+  v += d * 2;
+  return v;
+}
+
 // metalheader = metalheader0 for zinc, etc... They use the colors N,M,m,n (hue range hm) for the metal colors
 function metalify(im, metalheader) {
   var pal = generatePalette(metalheader);
   var m = [];
   m[0] = pal['0']; // black
-  m[1] = pal['N']; // darkest metal
-  m[2] = pal['M']; // dark metal
-  m[3] = pal['m']; // medium metal
-  m[4] = pal['n']; // light metal
+  m[1] = pal['n']; // darkest metal
+  m[2] = pal['m']; // dark metal
+  m[3] = pal['M']; // medium metal
+  m[4] = pal['N']; // light metal
   m[5] = pal['9']; // white
 
   var w = im[1];
@@ -5886,9 +5898,16 @@ function metalify(im, metalheader) {
       var b = c[2];
       var a = c[3];
       var l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      var i = Math.floor(l * m.length);
+      //var l = (0.33 * r + 0.33 * g + 0.33 * b) / 255;
+      l = metalify_nonlincolor(l);
+      var i = Math.min(m.length - 1, Math.floor(l * m.length));
       var i2 = Math.min(m.length - 1, i + 1);
-      res[y][x] = [m[i][0], m[i][1], m[i][2], a];
+      var f1 = l * m.length - i;
+      var f0 = 1 - f1;
+      r = m[i][0] * f0 + m[i2][0] * f1;
+      g = m[i][1] * f0 + m[i2][1] * f1;
+      b = m[i][2] * f0 + m[i2][2] * f1;
+      res[y][x] = [r, g, b, a];
     }
   }
   return [res, w, h];

@@ -112,7 +112,40 @@ function loadFromLocalStorage(onsuccess, onfail) {
   });
 }
 
+// set the state back to normal after state.amberkeepseason. Go to next season and make it take 24 hours, if needed.
+// also refunds amber if needed
+function restoreAmberSeason() {
+  var season = getPureSeason();
+  var used = state.amberkeepseasonused;
+  state.amberkeepseasonused = false;
+  if(!state.amberkeepseason) return;
+  state.amberkeepseason = false;
+  if(!used) {
+    if(!state.amberkeepseasonused) {
+      showMessage('Keep season did not yet activate, refunding amber', C_UNDO, 872341239);
+      state.res.amber = state.res.amber.add(ambercost_keep_season);
+      state.g_numamberkeeprefunds++;
+    }
+    return;
+  }
+  var next_season = (season + 1) & 3;
 
+   // getSeasonTime(time) has following implementation (indirectly): return  time - state.g_starttime - state.g_pausetime - state.seasonshift + getSeasonCorrection();
+   // this is then the part of a 4-day cycle starting at spring (season 0)
+   // so adjust state.seasonshift now such that it has exactly the next season with 24h left
+
+  state.seasoncorrection = 0; // disable the need to care about getSeasonCorrection(), it's not needed when we'll update the season time ourselves
+  var seasontime = getSeasonTime(state.time);
+  var seasontime2 = seasontime + state.seasonshift;
+
+  var rem = seasontime2 % (4 * 24 * 3600);
+  //var shift = 4 * 24 * 3600 - rem;
+  var shift = rem;
+  //var shift = rem;
+  shift -= next_season * 24 * 3600;
+  shift -= 1; // ensure no numerical issues if just at boundary
+  state.seasonshift = shift;
+}
 
 // Why there are so many recovery saves: because different systems may break in different ways, hopefully at least one still has a valid recent enough save but not too recent to have the breakage
 // This mostly protects against loss of progress due to accidental bugs of new game versions that break old saves. This cannot recover anything if local storage was deleted.
@@ -227,7 +260,8 @@ function unlockTemplates() {
 
     if(!no_nuts_challenge) state.crops[nut_template].unlocked = haveSquirrel();
 
-    state.crops[pumpkin_template].unlocked = pumpkinUnlocked();
+    // the pumpkin_0 unlocked check there is so that if the holiday event ends, the blueprint is still available throughout the current run where pumpkin_0 was already unlocked, so auto-blueprints still work. This because unlockTemplates is called every frame so would disable the template otherwise.
+    state.crops[pumpkin_template].unlocked = pumpkinUnlocked() || state.crops[pumpkin_0].unlocked;
   } else {
     // templates disabled in bee challenge because: no templates available for some challenge-specific crops, could be confusing. note also that the beehive template is not for the bee challenge's special beehive.
     // templates disabled in nodelete challenge because: not a strong reason actually and the code to allow deleting templates in nodelete challenge is even implemented, but by default templates cause automaton to upgrade them, and that would cause nodelete challenge to fail early since the cropss ey cannot be upgraded to a better type
@@ -700,6 +734,8 @@ function beginNextRun(opt_challenge) {
     u2.count = 0;
   }
 
+  restoreAmberSeason();
+
   if(opt_challenge) {
     startChallenge(opt_challenge);
   }
@@ -923,18 +959,22 @@ function getStormyCropCell() {
   return result;
 }
 
-function getSeasonTime(time) {
+function getSeasonTimeUncorrected(time) {
   return  time - state.g_starttime - state.g_pausetime - state.seasonshift;
 }
 
-// for state.seasonshifted, not state.seasonshift. This is a correction for when adding 1h to season when it's at end of the 4*24h cycle.
-function getSeasonShifted() {
-  return state.seasonshifted ? (24 * 3600) : 0;
+function getSeasonTime(time) {
+  return  getSeasonTimeUncorrected(time) + getSeasonCorrection();
+}
+
+// This is a correction for when adding 1h to season when it takes longer than 24h to next season
+function getSeasonCorrection() {
+  return state.seasoncorrection ? (24 * 3600) : 0;
 }
 
 // the underlying season, only returns 4 possible seasons, does not take challenge with alternative seasons (like infernal) into account
-function getPureSeasonAtUnshifted(time) {
-  var t = getSeasonTime(time);
+function getPureSeasonAtUncorrected(time) {
+  var t = getSeasonTimeUncorrected(time);
   if(isNaN(t) || t == Infinity || t == -Infinity) return 0;
   t /= (24 * 3600);
   var result = Math.floor(t) % 4;
@@ -943,7 +983,7 @@ function getPureSeasonAtUnshifted(time) {
 }
 
 function getPureSeasonAt(time) {
-  return getPureSeasonAtUnshifted(time + getSeasonShifted());
+  return getPureSeasonAtUncorrected(time + getSeasonCorrection());
 }
 
 function getSeasonAt(time) {
@@ -962,20 +1002,26 @@ result is numeric season value:
 5: infernal (for a challenge)
 */
 function getSeason() {
-  return getSeasonAt(state.time);
+  // state.prevtime is used instead of state.time, normally they're about the same, but prevtime is guaranteed from the last computed tick and will make it render the correct season while updating a long tick
+  return getSeasonAt(state.prevtime);
 }
 
-// Returns time to next season or to next point where state.seasonshifted must be decremented
-function timeTilNextSeasonUnShifted() {
+function getPureSeason() {
+  // state.prevtime is used instead of state.time, normally they're about the same, but prevtime is guaranteed from the last computed tick and will make it render the correct season while updating a long tick
+  return getPureSeasonAt(state.prevtime);
+}
+
+// Returns time to next season or to next point where state.seasoncorrection must be decremented
+function timeTilNextSeasonUncorrected() {
   var daylen = 24 * 3600;
-  var t = getSeasonTime(state.time);
+  var t = getSeasonTimeUncorrected(state.time);
   t /= daylen;
   t -= Math.floor(t);
   return daylen - t * daylen;
 }
 
 function timeTilNextSeason() {
-  return timeTilNextSeasonUnShifted() + getSeasonShifted();
+  return timeTilNextSeasonUncorrected() + getSeasonCorrection();
 }
 
 // field cell with precomputed info
@@ -997,7 +1043,8 @@ function PreCell(x, y) {
 
 
   this.nettlemalus_received = Num(1);
-  this.num_nettle = 0; // num nettle neighbors, if receiving malus
+  this.num_nettle = 0; // num nettle neighbors, if receiving malus or for mushroom heuristics
+
 
 
   this.weights = null; // used during precompute of field: if filled in, array of 4 elements: weights for N, E, S, W neighbors of their share of recource consumption from this. Used for mushrooms taking seeds of neighboring berries.
@@ -1097,9 +1144,14 @@ function PreCell(x, y) {
   // whether worker bee has flower neighbor, for bee challenge only
   this.flowerneighbor = false;
 
-  // set of relevant neighbor types brassica has, as bit flags: 1 = berry, 2 = mushroom, 4 = nuts
+  // how many flower neighbors of highest tier
+  this.bestflowers = 0;
+
+  // set of relevant neighbor types brassica has, set in brassica cells, as bit flags: 1 = berry, 2 = mushroom, 4 = nuts
   // used for display and optimization purposes
   this.brassicaneighbors = 0;
+
+  this.num_brassica = 0; // num brassica neighbors this tile has, for automaton heuristics
 
   // only for brassica
   // which one to show in the breakdown (because showing 3 breakdowns is a bit much). by default, do berry. if it has only mushroom or nut neighbors, show that breakdown instead (with mushroom as priority here)
@@ -1141,7 +1193,9 @@ function PreCell(x, y) {
     this.last_it = -1;
     this.treeneighbor = false;
     this.flowerneighbor = false;
+    this.bestflowers = 0;
     this.brassicaneighbors = 0;
+    this.num_brassica = 0;
   };
 };
 
@@ -1293,7 +1347,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       var c = f.getRealCrop();
       if(c) {
         var p = prefield[y][x];
-        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
+        if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_MUSH) {
           var dirs = f.getNeighborDirsFrom(false);
           for(var dir = 0; dir < dirs.length; dir++) { // get the neighbors N,E,S,W
             var x2 = x + dirs[dir][0];
@@ -1302,10 +1356,12 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             if(c2 && c2.type == CROPTYPE_STINGING) {
-              var p2 = prefield[y2][x2];
-              var boost = p2.boost;
-              // when changing this formula, must also change Crop.prototype.computeNettleMalusReceived_ to match
-              p.nettlemalus_received.divInPlace(boost.addr(1));
+              if(c.type != CROPTYPE_MUSH)  {
+                var p2 = prefield[y2][x2];
+                var boost = p2.boost;
+                // when changing this formula, must also change Crop.prototype.computeNettleMalusReceived_ to match
+                p.nettlemalus_received.divInPlace(boost.addr(1));
+              }
               p.num_nettle++;
             }
           }
@@ -1386,6 +1442,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
               y2 = f2.y;
             }
             var p2 = prefield[y2][x2];
+            p2.num_brassica++;
             p2.leech.addInPlace(leech);
             var c2 = f2.getCrop(); // 'brassicaneighbors' is used for display purposes only (for which breakdown to show), so include templates and ghosts in this. Do change this to f2.getRealCrop() if this is ever used for a non-display purpose...
             if(c2) {
@@ -1671,9 +1728,17 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
   var winter = getSeason() == 3;
   // during the beginning of the basic challenge, adjust the heuristics to ignore flower templates (it takes a long while before they become flowers), and upgrade berries next to mushrooms sooner rather than later (because early tree levels are useful here)
   var score_ignore_templates = !!basicChallenge() && state.highestoftypeunlocked[CROPTYPE_BERRY] < 4;
-  var score_ignore_mushrooms = !score_ignore_templates; // normally these are ignored
+  var score_ignore_mushrooms = !score_ignore_templates; // normally these are ignored. This being false is a softer version of score_want_mushberry. During basic challenge, this may be true, while in non-basic challenge, it's typically false, but score_want_mushberry may make it want them later.
+  // these are to, for some later flowers, prioritize mushrooms instead of just seeds producing berries, in mixed seed/spore layouts
+  var score_want_mush = false; // want to put flower next to mushroom instead of a berry seed producer
+  var score_want_mushberry = false; // want to put flower next to a berry next to a mushroom instead of a berry seed producer
+  var best_flower_tier = state.highestoftypeunlocked[CROPTYPE_FLOWER];
+  var best_flower_count = state.cropcount[flower_0 + best_flower_tier % num_tiers_per_crop_type[CROPTYPE_FLOWER]];
+  if(best_flower_count == 2 || best_flower_count == 6) score_want_mushberry = true;
+  if(best_flower_count == 3 || best_flower_count == 7) score_want_mush = true;
   // if you already have several of the highest unlocked berry type available, then score mushrooms higher in the heuristics score
-  if(state.cropcount[berry_0 + state.highestoftypeunlocked[CROPTYPE_BERRY]] >= 2) score_ignore_mushrooms = false;
+  if(score_want_mushberry) score_ignore_mushrooms = false;
+  // compute heuristics score for berries
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1686,12 +1751,13 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       var score_mul = 1;
       var score_malus = 1;
 
-      var numdir = haveDiagonalBrassica() ? 8 : 4;
-      for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
-        var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
-        var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
+      var mushberry = false;
+
+      var dirs = f.getNeighborDirsFrom(haveDiagonalBrassica());
+      for(var dir = 0; dir < dirs.length; dir++) { // get the neighbors N,E,S,W
+        var x2 = x + dirs[dir][0];
+        var y2 = y + dirs[dir][1];
         if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
-        if(dir >= 4 && !diagConnected(x, y, x2, y2, state.field)) continue;
         var f2 = state.field[y2][x2];
         if(f2.index == FIELD_MULTIPART) {
           f2 = f2.getMainMultiPiece();
@@ -1704,23 +1770,64 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         if(dir >= 4 && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
         var p2 = prefield[y2][x2];
 
-        if(c.type == CROPTYPE_BERRY) {
-          if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
+        if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
+          if(c2.type == CROPTYPE_FLOWER) {
+            score_flower += (1 + p.num_bee - p.num_nettle);
+            if(c2.tier == best_flower_tier) p.bestflowers++;
+          }
           if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 4) ? 1.5 : 2.5) * (have_brassica_fruit ? 3 : 1);
           if(c2.type == CROPTYPE_STINGING) score_malus *= 0.25;
-          if(!score_ignore_mushrooms && c2.type == CROPTYPE_MUSH) score_mul *= 2;
-        }
-        if(c.type == CROPTYPE_MUSH) {
-          if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee - p.num_nettle);
-          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 4) ? 1.25 : 2) * (have_brassica_fruit ? 3 : 1);
-          if(c2.type == CROPTYPE_STINGING) score_mul++;
-          if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) score_num++;
+          if(!score_ignore_mushrooms && c2.type == CROPTYPE_MUSH) {
+            score_mul *= 2;
+            // the num_nettle and num_brassica checks are to prevent accidently considering mushrooms only intended for multiplicity as important
+            if(score_want_mushberry && p2.num_nettle && p2.num_brassica) mushberry = true;
+          }
         }
       }
-
-      if(c.type == CROPTYPE_BERRY) {
+      if(mushberry && !p.bestflowers) {
+        score_mul *= 8;
+      }
+      if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
         p.score = (1 + score_flower) * score_mul * score_malus;
+      }
+    }
+  }
+  // compute heuristics score for mushrooms
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(!c) continue;
+      var p = prefield[y][x];
+
+      var score_flower = 0;
+      var score_num = 0;
+      var score_mul = 1;
+      var score_malus = 1;
+
+      var dirs = f.getNeighborDirsFrom(haveDiagonalBrassica());
+      for(var dir = 0; dir < dirs.length; dir++) { // get the neighbors N,E,S,W
+        var x2 = x + dirs[dir][0];
+        var y2 = y + dirs[dir][1];
+        if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+        var f2 = state.field[y2][x2];
+        if(f2.index == FIELD_MULTIPART) {
+          f2 = f2.getMainMultiPiece();
+          x2 = f2.x;
+          y2 = f2.y;
+        }
+        var c2 = f2.getCrop();
+        if(!c2) continue;
+        if(score_ignore_templates && !c2.isReal()) continue;
+        if(dir >= 4 && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
+        var p2 = prefield[y2][x2];
+        if(c.type == CROPTYPE_MUSH) {
+          if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee);
+          if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 4) ? 1.25 : 2) * (have_brassica_fruit ? 3 : 1);
+          if(c2.type == CROPTYPE_STINGING) score_mul++;
+          if((c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) && p2.bestflowers) score_num++;
+        }
       }
       if(c.type == CROPTYPE_MUSH) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
@@ -1728,7 +1835,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       }
     }
   }
-  // a next pass in the automaton heuristics to add add berry bonus to flowers
+  // a next pass in the automaton heuristics to add berry bonus to flowers
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1759,8 +1866,9 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
           if(c2.type == CROPTYPE_BEE) score_mul++;
           if(c2.type == CROPTYPE_STINGING) score_malus *= 0.5;
           // these 3 values and their multipliers are tweaked to make sensible choices for relative value of berries, mushrooms and nuts and likely intended preference
-          if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) score_num += p2.score;
-          if(c2.type == CROPTYPE_MUSH) score_num += p2.score * 0.5;
+          if(c2.type == CROPTYPE_BERRY) score_num += (score_want_mush ? p2.score * 0.5 : p2.score);
+          if(c2.type == CROPTYPE_PUMPKIN) score_num += (score_want_mush ? p2.score * 0.75 : p2.score * 1.5);
+          if(c2.type == CROPTYPE_MUSH) score_num += (score_want_mush ? p2.score : p2.score * 0.5);
           if(c2.type == CROPTYPE_NUT) score_num += 0.65;
         }
         if(c.type == CROPTYPE_STINGING) {
@@ -2538,9 +2646,8 @@ function autoPrestige(res) {
 // the returned value is amount of seconds before the first next event
 // the value used to determine current time is state.time
 function nextEventTime() {
-  // next season
-  var time = timeTilNextSeasonUnShifted();
-  var name = 'season'; // for debugging
+  var time = Infinity;
+  var name = 'none'; // for debugging
 
   var addtime = function(time2, opt_name) {
     if(isNaN(time2)) return;
@@ -2548,6 +2655,11 @@ function nextEventTime() {
     if(time2 < time) name = opt_name || 'other';
     time = Math.min(time, time2);
   };
+
+  if(!state.amberkeepseasonused) {
+    // next season, or the point where state.seasoncorrection should be updated, or the point when amberkeepseasonused triggers to true
+    addtime(timeTilNextSeasonUncorrected(), 'season');
+  }
 
   // ability times
   if((state.time - state.misttime) < getMistDuration()) addtime(getMistDuration() - state.time + state.misttime, 'mist');
@@ -2815,6 +2927,7 @@ var update = function(opt_ignorePause) {
     state.lastEtherealDeleteTime += d;
     state.lastEtherealPlantTime += d;
     state.lastLightningTime += d;
+    state.infinitystarttime += d;
 
     // this is for e.g. after importing a save while paused
     // TODO: try to do this only when needed rather than every tick while paused
@@ -3010,6 +3123,13 @@ var update = function(opt_ignorePause) {
     */
     var current_season = getSeasonAt(state.time);
     var season_will_change = current_season != getSeasonAt(nexttime);
+
+    if(state.amberkeepseason && season_will_change) {
+      season_will_change = false;
+      state.seasonshift += d;
+      state.amberkeepseasonused = true;
+    }
+
     if(current_season != prev_season && prev_season != undefined) num_season_changes++; // TODO: check if this can't be combined with the "global_season_changes++" case below and if this really needs a different condition than that one
     prev_season = current_season;
 
@@ -3022,7 +3142,7 @@ var update = function(opt_ignorePause) {
     if(current_season2 != prev_season2 && prev_season2 != undefined) num_season_changes2++;
     prev_season2 = current_season2;
 
-    if(state.seasonshifted && (getPureSeasonAtUnshifted(state.time) != getPureSeasonAtUnshifted(state.prevtime) || season_will_change2)) state.seasonshifted = 0;
+    if(state.seasoncorrection && (getPureSeasonAtUncorrected(state.time) != getPureSeasonAtUncorrected(state.prevtime) || season_will_change2)) state.seasoncorrection = 0;
 
 
     state.g_runtime += d;
@@ -3240,7 +3360,6 @@ var update = function(opt_ignorePause) {
             state.squirrel_upgrades_count++; // this is a derived state computed in computeDerived, but update it now here as well so that if there are multiple squirrel_upgrade action in a row, the gated checks work correctly
             showMessage('Purchased squirrel upgrade: ' + u.name + '. Next costs: ' + getSquirrelUpgradeCost(state.squirrel_upgrades_count).toString() + ' nuts');
 
-
             if(u.index == upgradesq_fruitmix || u.index == upgradesq_fruitmix2 || u.index == upgradesq_fruitmix3) showRegisteredHelpDialog(37);
 
             store_undo = true;
@@ -3293,9 +3412,9 @@ var update = function(opt_ignorePause) {
 
         var ok = true;
 
-        var cost = Num(0);
+        var cost = getAmberCost(action.effect);
         if(action.effect == AMBER_SQUIRREL_RESPEC) {
-          cost = ambercost_squirrel_respec;
+          // nothing to check
         }
         if(action.effect == AMBER_PROD) {
           if(state.amberprod) {
@@ -3306,26 +3425,45 @@ var update = function(opt_ignorePause) {
             showMessage('This amber effect cannot be used during the basic challenge.', C_INVALID, 0, 0);
             ok = false;
           }
-          cost = ambercost_prod;
         }
         if(action.effect == AMBER_LENGTHEN) {
           if(state.amberseason) {
             showMessage('Already used this season.', C_INVALID, 0, 0);
             ok = false;
+          } else if(state.amberkeepseason) {
+            showMessage('This doesn\'t work when hold season is active.', C_INVALID, 0, 0);
+            ok = false;
           }
-          if(timeTilNextSeason() / 3600 + 1 >= 24) {
+          /*if(timeTilNextSeason() / 3600 + 1 >= 24) {
             // TODO: support this. This requires remembering more state in the savegame, to distinguish that the season should already be the next one despite being before this 24h interval
             showMessage('Extending season did not work, please wait around an hour and try again, when the next season is less than 23 hours away: the game currently doesn\'t support the next season being more than 24 hours away, and this action adds 1 hour to the current season duration.', C_INVALID, 0, 0);
             ok = false;
-          }
-          cost = ambercost_lengthen;
+          }*/
         }
         if(action.effect == AMBER_SHORTEN) {
           if(state.amberseason) {
             showMessage('Already used this season.', C_INVALID, 0, 0);
             ok = false;
+          } else if(state.amberkeepseason) {
+            showMessage('This doesn\'t work when hold season is active.', C_INVALID, 0, 0);
+            ok = false;
           }
-          cost = ambercost_shorten;
+        }
+        if(action.effect == AMBER_KEEP_SEASON) {
+          if(state.amberkeepseason) {
+            showMessage('Already used this run.', C_INVALID, 0, 0);
+            ok = false;
+          }
+          if(state.challenge == challenge_infernal) {
+            showMessage('This effect doesn\'t work during the infernal challenge.', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+        if(action.effect == AMBER_END_KEEP_SEASON) {
+          if(!state.amberkeepseason) {
+            showMessage('Keep season isn\'t active.', C_INVALID, 0, 0);
+            ok = false;
+          }
         }
         cost = new Res({amber:cost});
 
@@ -3346,7 +3484,7 @@ var update = function(opt_ignorePause) {
           }
           if(action.effect == AMBER_LENGTHEN) {
             if(timeTilNextSeason() / 3600 + 1 >= 24) {
-              state.seasonshifted = 1;
+              state.seasoncorrection = 1;
             }
             state.amberseason = true;
             state.seasonshift += 3600;
@@ -3356,6 +3494,13 @@ var update = function(opt_ignorePause) {
             var sub = Math.min(3600, timeTilNextSeason());
             state.amberseason = true;
             state.seasonshift -= sub;
+          }
+          if(action.effect == AMBER_KEEP_SEASON) {
+            state.amberkeepseason = true;
+          }
+          if(action.effect == AMBER_END_KEEP_SEASON) {
+            restoreAmberSeason();
+            //state.amberkeepseason = false;
           }
           state.res.subInPlace(cost);
 
@@ -3538,7 +3683,6 @@ var update = function(opt_ignorePause) {
             }
             f.index = 0;
             f.growth = 0;
-            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
             if(c.type == CROPTYPE_BRASSICA) {
               if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
             } else {
@@ -3546,6 +3690,7 @@ var update = function(opt_ignorePause) {
               if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
             }
             if(!action.by_automaton) store_undo = true;
+            computeDerived(state); // correctly update derived stats based on changed field state. It's ok that this happens twice for replace (in next if) since this is an intermediate state now
           } else if(f.index == FIELD_REMAINDER) {
             f.index = 0;
             f.growth = 0;
@@ -3586,8 +3731,6 @@ var update = function(opt_ignorePause) {
             else f.growth = 1;
           }
           if(state.challenge == challenge_wither) f.growth = 1;
-          computeDerived(state); // correctly update derived stats based on changed field state
-          if(!action.by_automaton) store_undo = true;
           var nextcost = c.getCost(0);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
           if(state.c_numplanted + state.c_numplantedbrassica <= 1 && c.isReal() && state.g_numresets < 5) {
@@ -3598,6 +3741,8 @@ var update = function(opt_ignorePause) {
             var known = c2.prestige + 1;
             if(c2.known < known) c2.known = known;
           }
+          computeDerived(state);
+          if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
         if(fast_forwarding) continue;
@@ -3743,7 +3888,6 @@ var update = function(opt_ignorePause) {
           if(!action.silent) showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString());
           f.index = 0;
           f.growth = 0;
-          computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
           state.res.addInPlace(recoup);
 
           if(type == ACTION_DELETE2) f.justreplaced = false;
@@ -3752,7 +3896,7 @@ var update = function(opt_ignorePause) {
             state.lastEtherealDeleteTime = state.time;
           }
 
-          if(type == ACTION_DELETE2) computeDerived(state); // correctly update derived stats based on changed field state (replace will do it below)
+          computeDerived(state); // correctly update derived stats based on changed field state. It's ok that this happens twice for replace (in next if) since this is an intermediate state now
           store_undo = true;
         }
 
@@ -3867,7 +4011,7 @@ var update = function(opt_ignorePause) {
             ok = false;
           } else if(state.res.lt(cost)) {
             showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
-                        ', need: ' + cost.toString(Math.max(5, Num.precision)), C_INVALID, 0, 0);
+                        ', need: ' + cost.toString(Math.max(5, Num.precision)) + ' (' + getCostAffordTimer(cost) + ')', C_INVALID, 0, 0);
             ok = false;
           }
         }
@@ -4313,6 +4457,9 @@ var update = function(opt_ignorePause) {
     if(store_undo && undostate) {
       storeUndo(undostate);
     }
+
+    // this ensures up to date income displayed sooner when e.g. doing an ethereal upgrade
+    computeDerived(state);
 
 
     //if(upgrades_done || upgrades2_done) updateUI();
@@ -4939,6 +5086,11 @@ var update = function(opt_ignorePause) {
       unlockInfinityCrop(brassica3_0);
       if(state.crops3[brassica3_0].had) unlockInfinityCrop(berry3_0);
       if(state.crops3[berry3_0].had) unlockInfinityCrop(flower3_0);
+      if(state.crops3[berry3_0].had) unlockInfinityCrop(brassica3_1);
+      if(state.crops3[brassica3_1].had) unlockInfinityCrop(berry3_1);
+      if(state.crops3[berry3_1].had) unlockInfinityCrop(flower3_1);
+
+      if(state.infinityboost.gt(state.g_max_infinityboost)) state.g_max_infinityboost = state.infinityboost.clone();
     }
 
     // ethereal mistletoe

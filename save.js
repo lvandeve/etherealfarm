@@ -361,6 +361,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numunplanted3);
   processUint(state.g_numfullgrown3);
   processUint(state.g_numwither3);
+  processUint(state.g_numamberkeeprefunds);
+  processNum(state.g_max_infinityboost);
 
 
   section = 11; id = 0; // global run stats
@@ -496,6 +498,7 @@ function encState(state, opt_raw_only) {
   processTimeArray(state.prevleveltime);
   processTime(state.lastEtherealDeleteTime);
   processTime(state.lastEtherealPlantTime);
+  processTime(state.infinitystarttime);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -737,7 +740,9 @@ function encState(state, opt_raw_only) {
   processBool(state.amberprod);
   processBool(state.amberseason);
   processFloat(state.seasonshift);
-  processUint6(state.seasonshifted);
+  processUint6(state.seasoncorrection);
+  processBool(state.amberkeepseason);
+  processBool(state.amberkeepseasonused);
 
 
   section = 24; id = 0; // ethereal tree level stats
@@ -1477,6 +1482,9 @@ function decState(s) {
     state.g_numfullgrown3 = processUint();
     state.g_numwither3 = processUint();
   }
+  if(save_version >= 262144*2+64*7+3) state.g_numamberkeeprefunds = processUint();
+  if(save_version >= 262144*2+64*7+3) state.g_max_infinityboost = processNum();
+
 
   if(error) return err(4);
 
@@ -1643,6 +1651,7 @@ function decState(s) {
   }
   if(save_version >= 4096*1+104) state.lastEtherealDeleteTime = processTime();
   if(save_version >= 4096*1+104) state.lastEtherealPlantTime = processTime();
+  if(save_version >= 262144*2+64*7+3) state.infinitystarttime = processTime();
   if(error) return err(4);
 
 
@@ -2154,7 +2163,9 @@ function decState(s) {
   if(save_version >= 4096*1+74) state.amberprod = processBool();
   if(save_version >= 4096*1+77) state.amberseason = processBool();
   if(save_version >= 4096*1+77) state.seasonshift = processFloat();
-  if(save_version >= 4096*1+80) state.seasonshifted = processUint6();
+  if(save_version >= 4096*1+80) state.seasoncorrection = processUint6();
+  if(save_version >= 262144*2+64*7+3) state.amberkeepseason = processBool();
+  if(save_version >= 262144*2+64*7+3) state.amberkeepseasonused = processBool();
   if(error) return err(4);
 
 
@@ -2537,6 +2548,16 @@ function decState(s) {
     if(!isFiniteGE0(state.g_slowestrun2)) state.g_slowestrun2 = 0;
     if(state.res.spores.ltr(0)) state.res.spores = Num(0);
     if(state.res.seeds.ltr(0)) state.res.seeds = Num(0);
+  }
+
+  // the initial infinity versions didn't save the date it got unlocked, restore it as good as approximately possible
+  if(save_version < 262144*2+64*7+3) {
+    state.infinitystarttime = 0;
+    if(state.upgrades2[upgrade2_infinity_field].count) {
+      var releasetime = 1666655999; // end of the day infinity field was released
+      if(state.treelevel2 == 20) state.infinitystarttime = Math.max(releasetime, state.lasttree2leveluptime);
+      else state.infinitystarttime = releasetime; // end of the day infinity field was released
+    }
   }
 
   if(error) return err(4);

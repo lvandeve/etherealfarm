@@ -1350,6 +1350,7 @@ Num.prototype.toString = function(opt_precision, opt_notation) {
 };
 
 Num.prototype.toPercentString = function(opt_precision, opt_notation) {
+  if(this.ltr(0.0001) && this.gtr(-0.0001)) return '0%'; // avoid a very long string such as "0.0000087%"
   return this.mulr(100).toString(opt_precision, opt_notation) + '%';
 };
 

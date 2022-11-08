@@ -90,6 +90,42 @@ function makePlantChip3(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   return flex;
 }
 
+// get the array of unlocked crops in the plant dialog, in order they should be displayed:
+// most expensive ones first, but some of each type represented at the top (the latter is not yet implemented due to not yet needed for any supported crop types)
+function getCrop3Order() {
+  var unlocked = [];
+  for(var i = 0; i < registered_crops3.length; i++) {
+    if(state.crops3[registered_crops3[i]].unlocked) unlocked.push(registered_crops3[i]);
+  }
+
+  var result = [];
+
+  var added = {};
+
+  // everything else
+  var array = [];
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    array.push(unlocked[i]);
+  }
+  array.sort(function(a, b) {
+    var ac = crops3[a].cost.infseeds;
+    var bc = crops3[b].cost.infseeds;
+    if(ac.eqr(0) || bc.eqr(0)) {
+      // for crops that don't use infseeds as cost
+      ac = Num(crops3[a].tier);
+      bc = Num(crops3[b].tier);
+    }
+    return ac.lt(bc) ? 1 : -1;
+  });
+  for(var i = 0; i < array.length; i++) {
+    result.push(array[i]);
+    added[array[i]] = true;
+  }
+
+  return result;
+}
+
 // infinity version
 // TODO: share code with makePlantDialog
 function makePlantDialog3(x, y, opt_replace, opt_recoup) {
@@ -119,10 +155,14 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
   flex = new Flex(contentFlex, 0, 0.1, 1, 1);
   makeScrollable(flex);
 
-  for(var i = 0; i < registered_crops3.length; i++) {
-    if(!state.crops3[registered_crops3[i]].unlocked) continue;
-    var index = registered_crops3[i];
+  var crops_order = getCrop3Order();
+
+  for(var i = 0; i < crops_order.length; i++) {
+    var index = crops_order[i];
     var c = crops3[index];
+    var c2 = state.crops3[index];
+
+    if(!c2.unlocked) continue;
 
     var tooltipfun = bind(function(index) {
       var result = '';

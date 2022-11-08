@@ -539,7 +539,7 @@ function updateTabButtons() {
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: infinity field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'infinity field';
     tabbuttons[tabnum].id = 'infinity_field_tab';
-    tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #ff8';
+    tabbuttons[tabnum].textEl.style.textShadow = '0px 0px 5px #88f';
     field3ButtonLastText = ''; // invalidate the same-text cache, since the button is a new HTML element, the title must be set
     tabNumbers[index] = tabnum;
     tabNumbersInv[tabnum] = index;

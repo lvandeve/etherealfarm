@@ -33,7 +33,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     if(c.type == CROPTYPE_BRASSICA) {
       if(opt_detailed) {
         // the detailed dialog is not dynamically updated, so show the life growth time statically instead.
-        result += 'Short-lived plant. Total lifetime: ' + util.formatTime(c.getPlantTime()) + '<br/><br/>';
+        result += 'Short-lived plant. Total lifetime: ' + util.formatDuration(c.getPlantTime()) + '<br/><br/>';
       } else {
         var text0 = 'Short-lived plant';
         var growthremaining = f.growth;
@@ -77,12 +77,19 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     result += '<br/><br/>';
   }
 
-  result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
   var recoup = c.getRecoup(f);
+  var upgrade_cost = [undefined];
+  var upgrade_crop = getUpgradeCrop3(f.x, f.y, upgrade_cost, true);
+
   if(c.type == CROPTYPE_BRASSICA) {
-    result += ' • Recoup on delete: ' + recoup.toString() + ' (linearly scaled by remaining lifetime)';
+    result += ' • Planting cost: ' + c.getCost().toString() + '<br>';
+    result += ' • Recoup on delete: ' + recoup.toString() + ' (100% but scaled by remaining lifetime)';
   } else {
-    result += ' • Recoup on delete: ' + recoup.toString();
+    result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
+    result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
+  }
+  if(upgrade_crop && upgrade_cost[0]) {
+    result += '<br/> • Next tier cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
   }
 
   return result;
@@ -92,9 +99,87 @@ function getCropInfoHTML3(f, c, opt_detailed) {
 function getCropInfoHTML3Breakdown(f, c) {
   var result = '';
 
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_BRASSICA) {
+    var breakdown = [];
+    var total = c.getProd(f, breakdown);
+    result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
+  }
+
+  if(c.type == CROPTYPE_FLOWER) {
+    var breakdown = [];
+    var total = c.getInfBoost(f, breakdown);
+    result += formatBreakdown(breakdown, true, 'Breakdown (neighbor boost +%)');
+  }
+
+  return result;
+
   return result;
 }
 
+// opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
+function getUpgradeCrop3(x, y, opt_cost) {
+  if(!state.field3[y]) return null;
+  var f = state.field3[y][x];
+  if(!f) return null;
+  var c = f.getCrop();
+  if(!c) return null;
+
+  if(c.type == CROPTYPE_CHALLENGE) return null;
+  var tier = state.highestoftype3unlocked[c.type];
+
+  var recoup = c.getRecoup(f);
+
+  var c2 = null;
+
+  for(;;) {
+    if(tier <= c.tier) break; // not an upgrade
+    if(tier < 0) break;
+
+    var c3 = croptype3_tiers[c.type][tier];
+    if(!c3 || !state.crops3[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
+
+    var cost = c3.getCost().sub(recoup);
+    if(opt_cost != undefined) {
+      opt_cost[0] = cost;
+      c2 = c3;
+    }
+
+    if(cost.le(state.res)) {
+      // found a successful upgrade
+      if(opt_cost != undefined) opt_cost[1] = false;
+      break;
+    } else {
+      if(opt_cost != undefined) opt_cost[1] = true;
+    }
+
+    tier--;
+  }
+
+  return c2;
+}
+
+
+function makeUpgradeCrop3Action(x, y, opt_silent) {
+  var too_expensive = [undefined];
+  var c3 = getUpgradeCrop3(x, y, too_expensive);
+
+  if(c3 && !too_expensive[1]) {
+    addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c3, shiftPlanted:true});
+    return true;
+  } else {
+    if(!opt_silent) {
+      if(too_expensive[1]) {
+        showMessage('not enough resources for next infinity crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
+            ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
+      } else if(!(x >= 0 && x < state.numw3 && y >= 0 && y < state.numh3) || state.field3[y][x].index < CROPINDEX) {
+        showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+      } else {
+        showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
+      }
+    }
+  }
+  return true;
+}
 
 
 function makePond3Dialog() {
@@ -113,6 +198,7 @@ function makePond3Dialog() {
   text += 'Nothing in this pond yet';
   text += '<br><br>';
   text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
+  text += ' (max ever had: ' + state.g_max_infinityboost.toPercentString() + ')';
 
   contentFlex.div.innerHTML = text;
 
@@ -136,26 +222,58 @@ function makeField3Dialog(x, y) {
     var buttonshift = 0;
 
     var flex0 = new Flex(dialog.content, 0, [0, 0, 0.01], 1, 0.17);
-    var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.63 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.695 + buttonshift).div;
-    var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.7 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.765 + buttonshift).div;
+    var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.5 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.565 + buttonshift).div;
+    var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.57 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.635 + buttonshift).div;
+    var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.64 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.705 + buttonshift).div;
+    var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.71 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.775 + buttonshift).div;
     var last0 = undefined;
 
     styleButton(button0);
-    button0.textEl.innerText = 'Replace crop';
-    registerTooltip(button0, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked ethereal crops. If this changes the type of the crop or lowers the tier, then this only works if deleting is currently possible in the ethereal field. ' + etherealDeleteExtraInfo);
+    button0.textEl.innerText = 'Upgrade tier';
+    registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford. This deletes the original crop (which gives refund), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      makePlantDialog3(x, y, true, c.getRecoup(f));
+      if(makeUpgradeCrop3Action(x, y)) {
+        closeAllDialogs();
+        update();
+      }
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Delete crop';
-    button1.textEl.style.color = '#c00';
-    if(c.type == CROPTYPE_BRASSICA) registerTooltip(button1, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back, scaled down by the remaining lifetime.');
-    else registerTooltip(button1, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back.');
+    button1.textEl.innerText = 'Replace crop';
+    registerTooltip(button1, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked ethereal crops. If this changes the type of the crop or lowers the tier, then this only works if deleting is currently possible in the ethereal field. ' + etherealDeleteExtraInfo);
     addButtonAction(button1, function() {
+      makePlantDialog3(x, y, true, c.getRecoup(f));
+    });
+
+    styleButton(button2);
+    button2.textEl.innerText = 'Delete crop';
+    button2.textEl.style.color = '#c00';
+    if(c.type == CROPTYPE_BRASSICA) registerTooltip(button2, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back, scaled down by the remaining lifetime.');
+    else registerTooltip(button2, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back.');
+    addButtonAction(button2, function() {
       addAction({type:ACTION_DELETE3, x:x, y:y});
       closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
+    });
+
+    styleButton(button3);
+    button3.textEl.innerText = 'Detailed stats / bonuses';
+    registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    addButtonAction(button3, function() {
+      var dialog = createDialog({
+        size:DIALOG_LARGE,
+        title:'Detailed crop stats',
+        scrollable:true,
+        icon:c.image[4],
+        bgstyle:'efDialogTranslucent'
+      });
+      var flex = dialog.content;
+      var text = '';
+
+      text += getCropInfoHTML3(f, c, true);
+      text += '<br/>';
+      text += getCropInfoHTML3Breakdown(f, c);
+      dialog.content.div.innerHTML = text;
     });
 
     updatedialogfun = bind(function(f, c, flex) {
@@ -255,7 +373,34 @@ function initField3UI() {
         } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(shift && !ctrl) {
+          if(shift && ctrl) {
+            // experimental feature for now [same as in basic field], most convenient behavior needs to be found
+            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still too expensive and you wait for automaton to upgrade the plant
+            if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
+              var c = crops3[state.lastPlanted3];
+              var tier = state.highestoftype3unlocked[c.type];
+              var c3 = croptype3_tiers[c.type][tier];
+              if(c.type == CROPTYPE_CHALLENGE) c3 = c;
+              if(!c3 || !state.crops3[c3.index].unlocked) c3 = c;
+              if(c3.getCost().gt(state.res) && tier > 0) {
+                tier--;
+                var c4 = croptype3_tiers[c.type][tier];
+                if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
+              }
+              if(c3.getCost().gt(state.res) && tier > 0) {
+                tier--;
+                var c4 = croptype3_tiers[c.type][tier];
+                if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
+              }
+              if(c3.getCost().gt(state.res)) {
+                tier = -1; // template
+                var c4 = croptype3_tiers[c.type][tier];
+                if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
+              }
+              addAction({type:ACTION_PLANT3, x:x, y:y, crop:c3, shiftPlanted:true});
+              update();
+            }
+          } else if(shift && !ctrl) {
             if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
               var c = crops3[state.lastPlanted3];
               addAction({type:ACTION_PLANT3, x:x, y:y, crop:c, shiftPlanted:true});
@@ -264,8 +409,7 @@ function initField3UI() {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
           } else if(ctrl && !shift) {
-            // TODO: choose highest affordable brassica instead of hardcoded brassica3_0 here, once more brassica exist on field3
-            addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[brassica3_0], shiftPlanted:true});
+            addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[getHighestAffordableBrassica3()], shiftPlanted:true});
             update();
           } else {
             makeField3Dialog(x, y);
@@ -273,9 +417,37 @@ function initField3UI() {
         } else if(f.hasCrop()) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(ctrl && !shift) {
+          if(ctrl && shift) {
+            // experimental feature [same as in basic field] for now, most convenient behavior needs to be found
+            // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
+            // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
+            var c2 = f.getCrop();
+            var c3 = croptype3_tiers[c2.type][state.highestoftype3unlocked[c2.type]];
+            if(!c3 || !state.crops3[c3.index].unlocked) c3 = c2;
+            if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
+            state.lastPlanted3 = c3.index;
+            if(c3.getCost().gt(state.res)) state.lastPlanted3 = c2.index;
+            if(c3.tier > c2.tier) {
+              addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c3, shiftPlanted:true});
+              update();
+            }
+          } else if(ctrl && !shift) {
             addAction({type:ACTION_DELETE3, x:x, y:y});
             update();
+          } else if(shift && !ctrl) {
+            if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
+              var c = crops3[state.lastPlanted3];
+              var c2 = f.getCrop();
+              if(c2.index == state.lastPlanted3 && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate() || f.isGhost())) {
+                // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+                // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+                // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+                addAction({type:ACTION_DELETE3, x:x, y:y});
+              } else {
+                addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c, shiftPlanted:true});
+              }
+              update();
+            }
           } else {
             makeField3Dialog(x, y);
           }

@@ -46,7 +46,7 @@ num_tiers_per_crop_type[CROPTYPE_FLOWER] = 8;
 num_tiers_per_crop_type[CROPTYPE_NUT] = 16;
 
 var etherealDeleteSessionTime = 60; // how long time to delete/replace more ethereal crops after deleting one for this session
-var etherealDeleteStartTime = 600; // how long it's free to delete/replant without being considered a "session" at the start of a run
+var etherealDeleteStartTime = 1800; // how long it's free to delete/replant without being considered a "session" at the start of a run
 var etherealDeleteWaitTime = 7200; // how long to wait til next ethereal deletion session once this one is over
 
 function getCropTypeName(type) {
@@ -5291,6 +5291,7 @@ upgrade2_register_id = 1500;
 
 // cheap cost because having it as an upgrade is more there to get its help dialog than to be a cost barrier. The cost is 8 to look like infinity.
 var upgrade2_infinity_field = registerUpgrade2('unlock infinity field', LEVEL2, Res({resin:8}), 2, function() {
+  state.infinitystarttime = state.time;
   showRegisteredHelpDialog(42);
 }, function(){return true;}, 1, 'unlocks the infinity field. This is a new field with its own crops producing its own resources. The crops give a small bonus to the basic field, but unlike the ethereal field the infinity field is more focused on growing itself than boosting the basic field.', undefined, undefined, image_pond);
 
@@ -7354,8 +7355,10 @@ function getNextSquirrelUpgradeCost() {
 
 var ambercost_squirrel_respec = Num(15);
 var ambercost_prod = Num(20);
-var ambercost_lengthen = Num(25);
-var ambercost_shorten = Num(25);
+var ambercost_lengthen = Num(20);
+var ambercost_shorten = Num(20);
+var ambercost_keep_season = Num(30);
+var ambercost_end_keep_season = Num(0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -7800,6 +7803,10 @@ var sameTypeCostMultiplier3 = 1.1;
 var sameTypeCostMultiplier3_flower = 1.25;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
+Crop3.prototype.isReal = function() {
+  return !this.istemplate && !this.isghost;
+};
+
 // opt_force_count, if not undefined, overrides anything, including opt_adjust_count
 Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   if(this.type == CROPTYPE_BRASSICA) return this.cost;
@@ -7814,8 +7821,10 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
 
 
 // f: optional field cell, if given takes growth into account in case of short-lived crop
-Crop3.prototype.getRecoup = function(f) {
-  var result = this.getCost(-1).mulr(cropRecoup3);
+// opt_adjust_count: added to current crop count to compute recoup in case another amount of crops is present
+Crop3.prototype.getRecoup = function(f, opt_adjust_count) {
+  var adjust = opt_adjust_count || 0;
+  var result = this.getCost(adjust - 1).mulr(cropRecoup3);
   if(f && this.type == CROPTYPE_BRASSICA) {
     result.mulrInPlace(Math.min(Math.max(0, f.growth), 1));
   }
@@ -7939,20 +7948,22 @@ function registerFlower3(name, tier, cost, infboost, basicboost, planttime, imag
 
 crop3_register_id = 0;
 var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Res({infseeds:20.01 / (24 * 3600)}), Num(0.05), 24 * 3600, metalifyPlantImages(images_watercress, metalheader0));
+var brassica3_1 = registerBrassica3('bronze watercress', 1, Res({infseeds:25000}), Res({infseeds:50000 / (2 * 24 * 3600)}), Num(0.05), 2 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader1));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), 15, metalifyPlantImages(blackberry, metalheader0));
+var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), 15, metalifyPlantImages(blackberry, metalheader1));
 
 crop3_register_id = 600;
 // mushrooms? maybe not, but ids reserved for in case
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), 15, metalifyPlantImages(images_anemone, metalheader0));
+var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2500000}), Num(1), Num(0.15), 15, metalifyPlantImages(images_anemone, metalheader1));
 
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
-  //return true;
 }
 
 

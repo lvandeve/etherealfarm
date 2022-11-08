@@ -68,6 +68,57 @@ function prodBreakdown(index) {
   }
   return result;
 }
+// breakdown of which crops produce/consume how much of a particular resource type in infinity field
+function prodBreakdown3(index) {
+  if(!haveInfinityField()) return undefined;
+  var o = {};
+  for(var y = 0; y < state.numh3; y++) {
+    for(var x = 0; x < state.numw3; x++) {
+      var f = state.field3[y][x];
+      if(f.hasCrop()) {
+        var c = f.getCrop();
+        var index2 = c.index;
+        if(!o[index2]) o[index2] = Num(0);
+        var p = c.getProd(f);
+        o[index2].addInPlace(p.toArray()[index]);
+      }
+    }
+  }
+  var list = [];
+  for(var k in o) {
+    list.push(k);
+  }
+  list.sort(function(a, b) {
+    return a < b;
+  });
+  var result = '';
+  for(var i = 0; i < list.length; i++) {
+    var k = list[i];
+    if(o[k].eqr(0)) continue;
+    result += '• ' + crops3[k].name + ': ' + o[k].toString() + '/s<br/>';
+  }
+  return result;
+}
+
+// computes how many infinity seeds currently spent in the infinity field, what you'd get back from all recoups
+function computeField3InfinitySeeds() {
+  var result = Num(0);
+  var o = {};
+  for(var y = 0; y < state.numh3; y++) {
+    for(var x = 0; x < state.numw3; x++) {
+      var f = state.field3[y][x];
+      if(f.hasCrop()) {
+        var c = f.getCrop();
+        var index = c.index;
+        if(!o[index]) o[index] = 0;
+        o[index]++;
+        var recoup = c.getRecoup(f, -o[index] + 1);
+        result.addInPlace(recoup.infseeds);
+      }
+    }
+  }
+  return result;
+}
 
 
 // do this update less regularly because it's a relatively expensive computation
@@ -75,7 +126,7 @@ var lastExpectedGainUpdateTime = -1;
 var lastExpectedGainNumGrowing = -1;
 
 // a global breakdown into hypothetical, actual, positive and negative production/consumption
-function prodBreakdown2() {
+function prodBreakdownHypo() {
   // even though update() computes gain, re-compute it here now (for resources from basic field at least), because it may be slightly different if watercress just disappeared
   // that matters, because if it's out of sync with gain_hyp, it may be displaying the gray parenthesis different one while it's unneeded
   var origgain = gain.clone();
@@ -178,7 +229,7 @@ function getResourceDetails(i, special, index) {
   if(special) {
     if(index == 2) {
       // resin
-      var text = '<b>' + upper(name) + '</b><br/><br/>';
+      text += '<b>' + upper(name) + '</b><br/><br/>';
       text += 'Transcend to gain the upcoming resin.';
       text += '<br><br>';
       text += 'Total resin earned ever: ' + state.g_res.resin.toString();
@@ -217,7 +268,7 @@ function getResourceDetails(i, special, index) {
     }
     if(index == 3) {
       // twigs
-      var text = '<b>' + upper(name) + '</b><br/><br/>';
+      text += '<b>' + upper(name) + '</b><br/><br/>';
       text += 'Plant a mistletoe next to the tree in the basic field to gain twigs on transcension.';
       text += '<br><br>';
       text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
@@ -250,7 +301,7 @@ function getResourceDetails(i, special, index) {
     }
     if(index == 7) {
       // fruit essence
-      var text = '<b>Fruit essence</b><br/><br/>';
+      text += '<b>Fruit essence</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
       text += 'Amount from next sacrificed fruits: ' + upcoming.toString() + '<br/><br/>';
       text += 'You can use this to level up the abilities of all fruits: leveling up fruit abilities does not consume global essence, every fruit can use all of it.<br/><br/>';
@@ -260,13 +311,20 @@ function getResourceDetails(i, special, index) {
     }
     if(index == 6) {
       // amber
-      var text = '<b>Amber</b><br/><br/>';
+      text += '<b>Amber</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
       text += 'Amber drops every now and then when the tree levels. You can use it in the \'amber\' tab.<br/><br/>';
     }
   } else {
     var text = '<b>' + upper(name) + '</b><br/><br/>';
-    text += 'Current amount: ' + res.toString() + '<br/><br/>';
+    text += 'Current amount: ' + res.toString() + '<br/>';
+    if(index == 5) {
+      var infield = computeField3InfinitySeeds();
+      text += 'In field: ' + infield.toString() + '<br>';
+      text += 'Total (field + current): ' + infield.add(state.res.infseeds).toString() + '<br>';
+      text += 'Total earned ever: ' + state.g_res.infseeds.toString() + '<br>'; // this can be more than total because some seeds are spent on brassicas that wither
+    }
+    text += '<br/>';
 
     if(index == 0 && tooHighSeedConsumption()) {
       text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops, or remove some mushrooms if stuck without income</b><br/><br/>';
@@ -437,7 +495,7 @@ function showResource(i, special, index) {
       });
       // computed here rather than inside of updatedialogfun to avoid it being too slow
       // NOTE: this means it doesn't get auto-updated though.
-      var breakdown = prodBreakdown(index);
+      var breakdown = (index == 5) ? prodBreakdown3(index) : prodBreakdown(index);
       if(breakdown == '') breakdown = ' • None yet';
       var flex = dialog.content;
       var last = undefined;
@@ -445,11 +503,10 @@ function showResource(i, special, index) {
         var text = getResourceDetails(i, special, index);
         if(text != last) {
           var html = text;
-          if(!special && index != 5) {
-            // TODO: support this also for index 5 (infinity seeds)
+          if(!special) {
             html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
           }
-
+          // for resin and twigs
           var breakdowntext = undefined;
 
           if(index == 2) {
@@ -625,6 +682,9 @@ function updateResourceUI() {
     timedisplay = '<font color="#f80">' + timedisplay + '</font>';
   }
 
+  if(state.amberkeepseason) {
+    seasonName = '<span class="efAmberInfo">' + seasonName +  '</span>';
+  }
   resourceDivs[0].textEl.innerHTML = title + '<br>' + timedisplay + '<br>' + seasonName;
   resourceDivs[0].style.cursor = 'pointer';
   if(!resourceDivs[0].tooltipSet) {
@@ -656,7 +716,7 @@ function updateResourceUI() {
   setAriaLabel(resourceDivs[0], title + ', ' + timedisplay + ', ' + seasonName);
 
 
-  prodBreakdown2();
+  prodBreakdownHypo();
 
 
   var i = 1; // index in resourceDivs

@@ -514,6 +514,7 @@ function State() {
   // for the fruit abilities that increase twigs and resin
   this.resinfruittime = 0;
   this.twigsfruittime = 0;
+  this.infinitystarttime = 0; // when the infinity field was started
 
   this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively
 
@@ -785,6 +786,8 @@ function State() {
   this.g_numunplanted3 = 0;
   this.g_numfullgrown3 = 0;
   this.g_numwither3 = 0;
+  this.g_numamberkeeprefunds = 0;
+  this.g_max_infinityboost = Num(0); // max boost to basic field ever seen from infinity field
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -906,12 +909,14 @@ function State() {
   // effects for this run
   this.amberprod = false;
   this.amberseason = false; // a season duration amber effect was activated during this season
+  this.amberkeepseason = false;
+  this.amberkeepseasonused = false;
   this.seasonshift = 0; // in seconds, for the amber season move effects
   // if 1, then getSeasonAt should return 1 season higher than the current one, and timeTilNextSeason should return 24 hours more.
   // This should be decremented to 0 when a regular season-change boundary is crossed.
   // The purpose of this is for when you extend the duration of the current season by 1 hour, but we're only in the first few minutes of this season:
   // then it is more than 24h til the next season, but without this variable, that's not supported, as the season is computed to cycle every 24h.
-  this.seasonshifted = 0;
+  this.seasoncorrection = 0;
 
 
   // ethereal mistletoe stats
@@ -1090,6 +1095,8 @@ function State() {
   // derived stat, not to be saved.
   this.highestoftypeunlocked = [];
   this.highestoftype2unlocked = [];
+  this.highestoftype3unlocked = [];
+  this.highestoftype3had = [];
 
   // like highestoftypeunlocked, but also includes known next types, because their unlock research is visible (but not yet researched)
   this.highestoftypeknown = [];
@@ -1342,6 +1349,8 @@ function computeDerived(state) {
     state.lowestcropoftypeunlocked[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
     state.highestoftype2unlocked[i] = -Infinity;
+    state.highestoftype3unlocked[i] = -Infinity;
+    state.highestoftype3had[i] = -Infinity;
     state.highestoftypeknown[i] = -Infinity;
   }
   state.templatecount = 0;
@@ -1532,6 +1541,17 @@ function computeDerived(state) {
       } else {
         state.specialfield3count[f.index]++;
       }
+    }
+  }
+
+  for(var i = 0; i < registered_crops3.length; i++) {
+    var c = crops3[registered_crops3[i]];
+    var c2 = state.crops3[registered_crops3[i]];
+    if(c2.unlocked) {
+      state.highestoftype3unlocked[c.type] = Math.max(c.tier || 0, state.highestoftype3unlocked[c.type]);
+    }
+    if(c2.had) {
+      state.highestoftype3had[c.type] = Math.max(c.tier || 0, state.highestoftype3had[c.type]);
     }
   }
 
@@ -2297,5 +2317,30 @@ function getHighestBrassica() {
   var cropindex = brassica_0 + state.highestoftypeunlocked[CROPTYPE_BRASSICA];
   if(!crops[cropindex]) return -1;
   return cropindex;
+}
+
+// returns index of the highest unlocked brassica for infinity field. Always returns a valid, brassica3_0 if nothing else is possible
+function getHighestBrassica3() {
+  if(!state) return brassica3_0;
+  var cropindex = brassica3_0 + state.highestoftype3unlocked[CROPTYPE_BRASSICA];
+  if(!crops3[cropindex]) return brassica3_0;
+  return cropindex;
+}
+
+// highest had, rather than unlocked
+function getHighestBrassica3Had() {
+  if(!state) return brassica3_0;
+  var cropindex = brassica3_0 + state.highestoftype3had[CROPTYPE_BRASSICA];
+  if(!crops3[cropindex]) return brassica3_0;
+  return cropindex;
+}
+
+// returns index of the highest unlocked brassica that you can afford for infinity field. Always returns a valid, brassica3_0 if nothing else is possible, even if this one cannot be afforded
+function getHighestAffordableBrassica3() {
+  var result = getHighestBrassica3();
+  if(result > brassica3_0 && state.res.lt(crops3[result].getCost())) result--;
+  if(result > brassica3_0 && state.res.lt(crops3[result].getCost())) result--;
+  // no need to do this more times, two tiers down of brassica should be negligable
+  return result;
 }
 

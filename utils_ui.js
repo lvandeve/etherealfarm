@@ -1046,6 +1046,13 @@ function getCostAffordTimer(cost) {
     percent = Num.min(percent, p);
   }
 
+  if(cost.infseeds.gtr(0)) {
+    var p = cost.infseeds.div(state.res.infseeds).mulr(100);
+    var t = cost.infseeds.sub(state.res.infseeds).div(gain.infseeds);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
   var result = '';
   if(percent.gtr(100) && !time.eqr(Infinity)) {
     result += util.formatDuration(time.valueOf(), true);

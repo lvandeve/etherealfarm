@@ -22,8 +22,19 @@ var AMBER_SQUIRREL_RESPEC = 0;
 var AMBER_PROD = 1;
 var AMBER_LENGTHEN = 2; // lengthen current season
 var AMBER_SHORTEN = 3; // shorten current season
+var AMBER_KEEP_SEASON = 4; // keep the current season for the entire current run. At end of run, if the current season took longer than 24h, next season will then start and last 24h as usual. Should refund the amber if season was not extended
+var AMBER_END_KEEP_SEASON = 5; // cancel AMBER_KEEP_SEASON
 
-
+// returns the cost in amber as Num
+function getAmberCost(effect) {
+  if(effect == AMBER_SQUIRREL_RESPEC) return ambercost_squirrel_respec;
+  if(effect == AMBER_PROD) return ambercost_prod;
+  if(effect == AMBER_LENGTHEN) return ambercost_lengthen;
+  if(effect == AMBER_SHORTEN) return ambercost_shorten;
+  if(effect == AMBER_KEEP_SEASON) return ambercost_keep_season;
+  if(effect == AMBER_END_KEEP_SEASON) return ambercost_end_keep_season;
+  return Num(999999999);
+}
 
 function updateAmberUI() {
   amberFlex.clear();
@@ -46,6 +57,9 @@ function updateAmberUI() {
     var button = buttonFlex.div;
     styleButton(button, 1);
     pos += h * 1.35;
+    if(effect_index != undefined) {
+      text += ' (' + getAmberCost(effect_index).toString() + ' amber)';
+    }
     button.textEl.innerText = text;
 
     if(effect_index != undefined) addButtonAction(button, function() {
@@ -58,26 +72,41 @@ function updateAmberUI() {
 
   var button;
 
-  button = makeAmberButton('Production boost 100% (20 amber)', AMBER_PROD);
+  button = makeAmberButton('Production boost 100%', AMBER_PROD);
   registerTooltip(button, 'Get a 100% production boost (seeds and spores) during this run. Resets on transcend.');
   button.id = 'amber_prod';
   if(state.amberprod) button.className = 'efButtonAmberActive';
   else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
 
-  button = makeAmberButton('Season +1h (25 amber)', AMBER_LENGTHEN);
+  if(!state.amberkeepseason) {
+    button = makeAmberButton('Season hold this run', AMBER_KEEP_SEASON);
+    registerTooltip(button, 'Keep the current season until transcension, it won\'t change until the run is done. Ending the run will start the next season with 24 hours left. If the run is finished early (current season didn\'t need to be held), it\'ll give a full refund of the amber cost and no seasons are affected.');
+    button.id = 'amber_keep_season';
+    if(state.amberkeepseason) button.className = 'efButtonAmberActive';
+    else if(state.res.amber.lt(ambercost_keep_season)) button.className = 'efButtonCantAfford';
+  } else {
+    button = makeAmberButton('Stop hold season', AMBER_END_KEEP_SEASON);
+    registerTooltip(button, 'Stops the keep season effect. Refunds amber if keep season didn\'t have to extend the season. Otherwise starts the next season, which will last 24 hours.');
+    button.id = 'amber_end_keep_season';
+    if(state.amberkeepseason) button.className = 'efButtonAmberActive';
+    else if(state.res.amber.lt(ambercost_end_keep_season)) button.className = 'efButtonCantAfford';
+  }
+
+  // This one is not shown for now, because hold season already does the same as this but better
+  /*button = makeAmberButton('Season +1h', AMBER_LENGTHEN);
   registerTooltip(button, 'Make the current season 1 hour longer (1-time). Can be used once per season.');
   button.id = 'amber_lengthen';
   if(state.amberseason) button.className = 'efButtonAmberActive';
-  else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
+  else if(state.res.amber.lt(ambercost_lengthen) || state.amberkeepseason) button.className = 'efButtonCantAfford';*/
 
-  button = makeAmberButton('Season -1h (25 amber)', AMBER_SHORTEN);
+  button = makeAmberButton('Season -1h', AMBER_SHORTEN);
   registerTooltip(button, 'Make the current season 1 hour shorter (1-time). If the season has less than 1 hour remaining, then it is only shortened by this remaining time, immediately activating the next season. Can be used once per season.');
   button.id = 'amber_shorten';
   if(state.amberseason) button.className = 'efButtonAmberActive';
-  else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
+  else if(state.res.amber.lt(ambercost_shorten) || state.amberkeepseason) button.className = 'efButtonCantAfford';
 
   if(squirrelUnlocked()) {
-    button = makeAmberButton('Squirrel respec token (15 amber)', AMBER_SQUIRREL_RESPEC);
+    button = makeAmberButton('Squirrel respec token', AMBER_SQUIRREL_RESPEC);
     registerTooltip(button, 'Get an additional respec token for resetting squirrel upgrades. Note that you already got some for free, no need to buy this if you still have some left.');
     button.id = 'amber_respec';
   }

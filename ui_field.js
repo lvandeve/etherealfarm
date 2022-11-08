@@ -70,7 +70,11 @@ function getCropInfoHTMLBreakdown(f, c) {
   var p = prefield[f.y][f.x];
   var breakdown_watercress = p.getBreakdownWatercress();
   if(breakdown_watercress && breakdown_watercress.length > 0) {
-    result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
+    if(p.getBrassicaBreakdownCroptype() == CROPTYPE_NUT) {
+      result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy nuts)');
+    } else {
+      result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
+    }
   }
   var prod = c.getProd(f);
   if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_NUT) {
@@ -930,7 +934,7 @@ function initFieldUI() {
           var ctrl = eventHasCtrlKey(e);
           if(shift && ctrl) {
             // experimental feature for now, most convenient behavior needs to be found
-            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still to expensive and you wait for automaton to upgrade the plant
+            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still too expensive and you wait for automaton to upgrade the plant
             if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
               var c = crops[state.lastPlanted];
               var tier = state.highestoftypeunlocked[c.type];

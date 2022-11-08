@@ -924,6 +924,31 @@ function deleteEtherealField() {
   }, 333);
 }
 
+function deleteInfinityField() {
+  var num_deleted = 0;
+  setTab(tabindex_field3);
+  window.setTimeout(function() {
+    for(var y = 0; y < state.numh3; y++) {
+      for(var x = 0; x < state.numw3; x++) {
+        var f = state.field3[y][x];
+        if(f.hasCrop()) {
+          num_deleted++;
+          var c = f.getCrop();
+          addAction({type:ACTION_DELETE3, x:x, y:y, silent:true});
+        }
+      }
+    }
+    var infseeds_before = Num(state.res.infseeds);
+    update();
+    var infseeds_after = state.res.infseeds;
+    if(!num_deleted) {
+      showMessage('Nothing to delete in infinity field');
+    } else {
+      showMessage('Deleted entire ethereal field.' + ' All infinity seeds refunded: ' + (infseeds_after.sub(infseeds_before).toString()));
+    }
+  }, 333);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 function updateAutomatonUI() {
@@ -933,12 +958,13 @@ function updateAutomatonUI() {
 
   var h = 0.15;
   var y = 0;
+  var x = 0;
 
   var buttons = [];
 
   var addButton = function(opt_dont_manage) {
     var h = 0.08;
-    var flex  = new Flex(automatonFlex, 0.01, y, 0.4, y + h);
+    var flex  = new Flex(automatonFlex, x + 0.01, y, x + 0.4, y + h);
     y += h * 1.2;
     if(!opt_dont_manage) buttons.push(flex);
     return flex;
@@ -1077,6 +1103,8 @@ function updateAutomatonUI() {
   flex.div.innerText = 'Special actions:';
   y += texth;
 
+  var y1 = y;
+
   flex = addButton();
   styleButton(flex.div);
   centerText2(flex.div);
@@ -1094,6 +1122,12 @@ function updateAutomatonUI() {
   }));
   registerTooltip(flex.div, 'Plant a chosen crop in all open spots in the field, as resources allow.');
 
+  if(haveInfinityField()) {
+    // if the clear infinity field button is also added, align this and ethereal one to the right instead of below the basic field related buttons
+    x = 0.41;
+    y = y1;
+  }
+
   flex = addButton();
   styleButton(flex.div);
   centerText2(flex.div);
@@ -1101,6 +1135,17 @@ function updateAutomatonUI() {
   flex.div.style.textShadow = '0px 0px 5px #ff8';
   addButtonAction(flex.div, deleteEtherealField);
   registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
+
+  if(haveInfinityField()) {
+    flex = addButton();
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Clear infinity field';
+    flex.div.style.textShadow = '0px 0px 5px #88f';
+    addButtonAction(flex.div, deleteInfinityField);
+    registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
+    x = 0;
+  }
 
   var text = undefined;
   if(!autoUpgradesUnlocked()) {

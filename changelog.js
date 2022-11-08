@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.7.3 (2022-11-08):';
+  text += '<br/>• Added more infinity crops';
+  text += '<br/>• Added new amber ability, "hold season", which holds the same season the entire run.';
+  text += '<br/>• Slight discount for the season -1h amber ability, and removed the +1h one since "hold season" allows the same but better.';
+  text += '<br/>• Time where freely deleting in ethereal field is possible at start of run increased from 10 to 30 minutes.';
+  text += '<br/>• In mixed seed+spore layouts, automaton heuristics will prioritize some flowers intended for mushrooms too now.';
+  text += '<br/>• More infinity seeds related info shown in dialogs, including detailed breakdowns for infinity crops.';
+  text += '<br/>• Added "clear infinity field" button to automaton.';
+  text += '<br/><br/>';
+
   text += '0.7.2 (2022-10-31):';
   text += '<br/>• Added nut prestige for all the nut crops.';
   text += '<br/>• Fixed high tier nut medals giving too much bonus compared to other crop achieves.';
