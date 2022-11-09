@@ -20,6 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.7.4 (2022-11-09):';
+  text += '<br/>• Fix timing race condition issue that could cause season jumps during hold season.';
+  text += '<br/>• Added back the season +1 hour amber ability';
+  text += '<br/>• Added "Total resin allocation" stat in the resin info dialog.';
+  text += '<br/><br/>';
+
   text += '0.7.3 (2022-11-08):';
   text += '<br/>• Added more infinity crops';
   text += '<br/>• Added new amber ability, "hold season", which holds the same season the entire run.';

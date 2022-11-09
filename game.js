@@ -959,8 +959,9 @@ function getStormyCropCell() {
   return result;
 }
 
-function getSeasonTimeUncorrected(time) {
-  return  time - state.g_starttime - state.g_pausetime - state.seasonshift;
+function getSeasonTimeUncorrected(time, opt_state) {
+  var state2 = opt_state || state;
+  return  time - state2.g_starttime - state2.g_pausetime - state2.seasonshift;
 }
 
 function getSeasonTime(time) {
@@ -968,13 +969,16 @@ function getSeasonTime(time) {
 }
 
 // This is a correction for when adding 1h to season when it takes longer than 24h to next season
-function getSeasonCorrection() {
-  return state.seasoncorrection ? (24 * 3600) : 0;
+function getSeasonCorrection(opt_state) {
+  var state2 = opt_state || state;
+  return state2.seasoncorrection ? (24 * 3600) : 0;
 }
 
 // the underlying season, only returns 4 possible seasons, does not take challenge with alternative seasons (like infernal) into account
-function getPureSeasonAtUncorrected(time) {
-  var t = getSeasonTimeUncorrected(time);
+function getPureSeasonAtUncorrected(time, opt_state) {
+  var state2 = opt_state || state;
+  if(state2.amberkeepseasonused) return state2.amberkeepseason_season;
+  var t = getSeasonTimeUncorrected(time, opt_state);
   if(isNaN(t) || t == Infinity || t == -Infinity) return 0;
   t /= (24 * 3600);
   var result = Math.floor(t) % 4;
@@ -982,8 +986,8 @@ function getPureSeasonAtUncorrected(time) {
   return result;
 }
 
-function getPureSeasonAt(time) {
-  return getPureSeasonAtUncorrected(time + getSeasonCorrection());
+function getPureSeasonAt(time, opt_state) {
+  return getPureSeasonAtUncorrected(time + getSeasonCorrection(opt_state), opt_state);
 }
 
 function getSeasonAt(time) {
@@ -3126,7 +3130,6 @@ var update = function(opt_ignorePause) {
 
     if(state.amberkeepseason && season_will_change) {
       season_will_change = false;
-      state.seasonshift += d;
       state.amberkeepseasonused = true;
     }
 
@@ -3496,6 +3499,7 @@ var update = function(opt_ignorePause) {
             state.seasonshift -= sub;
           }
           if(action.effect == AMBER_KEEP_SEASON) {
+            state.amberkeepseason_season = getSeason();
             state.amberkeepseason = true;
           }
           if(action.effect == AMBER_END_KEEP_SEASON) {

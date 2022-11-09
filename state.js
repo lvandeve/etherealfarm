@@ -911,6 +911,7 @@ function State() {
   this.amberseason = false; // a season duration amber effect was activated during this season
   this.amberkeepseason = false;
   this.amberkeepseasonused = false;
+  this.amberkeepseason_season = 0; // which season is the one being held, set when enabling hold season, read when amberkeepseasonused is true
   this.seasonshift = 0; // in seconds, for the amber season move effects
   // if 1, then getSeasonAt should return 1 season higher than the current one, and timeTilNextSeason should return 24 hours more.
   // This should be decremented to 0 when a regular season-change boundary is crossed.

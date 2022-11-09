@@ -93,11 +93,11 @@ function updateAmberUI() {
   }
 
   // This one is not shown for now, because hold season already does the same as this but better
-  /*button = makeAmberButton('Season +1h', AMBER_LENGTHEN);
+  button = makeAmberButton('Season +1h', AMBER_LENGTHEN);
   registerTooltip(button, 'Make the current season 1 hour longer (1-time). Can be used once per season.');
   button.id = 'amber_lengthen';
   if(state.amberseason) button.className = 'efButtonAmberActive';
-  else if(state.res.amber.lt(ambercost_lengthen) || state.amberkeepseason) button.className = 'efButtonCantAfford';*/
+  else if(state.res.amber.lt(ambercost_lengthen) || state.amberkeepseason) button.className = 'efButtonCantAfford';
 
   button = makeAmberButton('Season -1h', AMBER_SHORTEN);
   registerTooltip(button, 'Make the current season 1 hour shorter (1-time). If the season has less than 1 hour remaining, then it is only shortened by this remaining time, immediately activating the next season. Can be used once per season.');

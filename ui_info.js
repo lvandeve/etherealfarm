@@ -491,7 +491,8 @@ function showResource(i, special, index) {
       var dialog = createDialog({
         size:DIALOG_MEDIUM,
         title:upper(name + ' income'),
-        bgstyle:'efDialogTranslucent'
+        bgstyle:'efDialogTranslucent',
+        scrollable:true
       });
       // computed here rather than inside of updatedialogfun to avoid it being too slow
       // NOTE: this means it doesn't get auto-updated though.
@@ -515,7 +516,7 @@ function showResource(i, special, index) {
             nextTreeLevelResin(resin_breakdown);
             breakdowntext = formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
 
-            breakdowntext += '<br><br>Resin source breakdown:<br>';
+            breakdowntext += '<br>Upcoming resin source breakdown:<br>';
             if(state.resin.gtr(0)) breakdowntext += ' • Tree: ' + state.resin.toString() + '<br>';
             if(state.fernresin.resin.gtr(0)) breakdowntext += ' • Ferns (not included in the /hr stat): ' + state.fernresin.resin.toString() + '<br>';
             if(state.resin.eqr(0) && state.fernresin.resin.eqr(0)) breakdowntext += ' • None yet<br>';
@@ -529,6 +530,17 @@ function showResource(i, special, index) {
 
           if(breakdowntext) {
             html += breakdowntext;
+          }
+
+          if(index == 2) {
+            html += '<br>Total resin allocation:<br>';
+            var resin_stacks = state.res.resin;
+            var resin_field = computeField2Cost().resin; // still usable for other purposes by selling ethereal crops
+            var resin_total = state.g_res.resin; // total earned ever
+            var resin_upgrades = resin_total.sub(resin_stacks).sub(resin_field); // this is resin that you can never reuse for anything else
+            html += '• Stacks: ' + state.res.resin.toString() + '<br>';
+            html += '• Ethereal field: ' + computeField2Cost().toString() + '<br>';
+            html += '• Ethereal upgrades: ' + resin_upgrades.toString() + '<br>';
           }
 
           flex.div.innerHTML = html;

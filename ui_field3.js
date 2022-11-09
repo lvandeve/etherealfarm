@@ -68,7 +68,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
 
   var infboost = c.getInfBoost();
   if(infboost.neqr(0)) {
-    result += 'Boost to neighbors: ' + infboost.toPercentString() + '<br><br>';
+    result += 'Boost to neighboring berries: ' + infboost.toPercentString() + '<br><br>';
   }
 
   var basicboost = c.getBasicBoost();

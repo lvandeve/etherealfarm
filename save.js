@@ -743,7 +743,7 @@ function encState(state, opt_raw_only) {
   processUint6(state.seasoncorrection);
   processBool(state.amberkeepseason);
   processBool(state.amberkeepseasonused);
-
+  processUint6(state.amberkeepseason_season);
 
   section = 24; id = 0; // ethereal tree level stats
   processTimeArray(state.eth_stats_time);
@@ -2166,6 +2166,7 @@ function decState(s) {
   if(save_version >= 4096*1+80) state.seasoncorrection = processUint6();
   if(save_version >= 262144*2+64*7+3) state.amberkeepseason = processBool();
   if(save_version >= 262144*2+64*7+3) state.amberkeepseasonused = processBool();
+  if(save_version >= 262144*2+64*7+4) state.amberkeepseason_season = processUint6();
   if(error) return err(4);
 
 
@@ -2558,6 +2559,12 @@ function decState(s) {
       if(state.treelevel2 == 20) state.infinitystarttime = Math.max(releasetime, state.lasttree2leveluptime);
       else state.infinitystarttime = releasetime; // end of the day infinity field was released
     }
+  }
+  if(save_version < 262144*2+64*7+4 && state.amberkeepseason) {
+    var temp = state.amberkeepseasonused;
+    state.amberkeepseasonused = false;
+    state.amberkeepseason_season = getPureSeasonAt(state.prevtime, state);
+    state.amberkeepseasonused = temp;
   }
 
   if(error) return err(4);
