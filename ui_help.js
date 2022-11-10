@@ -498,7 +498,7 @@ registerHelpDialog(42, 'Infinity field', 'You unlocked the infinity field!',
     <br><br>
     Unlike the ethereal field, the infinity field is more focused on growing and improving itself slowly over time with its own resource, rather than merely boosting the basic field.
     <br><br>
-    The first crop, a brassica, is not a permanent crop (similar to brassica in basic field, but without the copying ability and longer lifespan), and will need to be planted multiple times to collect enough infinity seeds for better crops. Eventually there will be permanent crops too.
+    The first crop, a brassica, is not a permanent crop (similar to brassica in basic field, but without the copying ability and longer lifespan), and will need to be planted multiple times to collect enough infinity seeds for better crops. After that, permanent crops will unlock too.
     `,
     image_pond,
     undefined,

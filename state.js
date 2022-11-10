@@ -155,13 +155,14 @@ function diagConnected(x0, y0, x1, y1, field) {
   return !(m2 == m0 || m2 == m1 || m3 == m0 || m3 == m1);
 }
 
-var neighbors_1x1 = [[0, -1], [1, 0], [0, 1], [-1, 0]];
-var neighbors_1x1_diag = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
-var neighbors_2x2 = [[0, -1], [1, -1], [-1, 0], [2, 0], [-1, 1], [2, 1], [0, 2], [1, 2]];
-var neighbors_2x2_diag = [[-1, -1], [0, -1], [1, -1], [2, -1], [-1, 0], [2, 0], [-1, 1], [2, 1], [-1, 2], [0, 2], [1, 2], [2, 2]];
+var neighbors_1x1 = [[0, -1, false], [1, 0, false], [0, 1, false], [-1, 0, false]];
+var neighbors_1x1_diag = [[-1, -1, true], [0, -1, false], [1, -1, true], [-1, 0, false], [1, 0, false], [-1, 1, true], [0, 1, false], [1, 1, true]];
+var neighbors_2x2 = [[0, -1, false], [1, -1, false], [-1, 0, false], [2, 0, false], [-1, 1, false], [2, 1, false], [0, 2, false], [1, 2, false]];
+var neighbors_2x2_diag = [[-1, -1, true], [0, -1, false], [1, -1, false], [2, -1, true], [-1, 0, false], [2, 0, false], [-1, 1, false], [2, 1, false], [-1, 2, true], [0, 2, false], [1, 2, false], [2, 2, true]];
 
 // returns list of neighbors from this crop, based on its shape (1x1 or 2x2). Does not filter out out-of-bounds cells, returns fixed possible arrays of relative coordinates.
 // must still bound-check, and possibly use diagConnected, when iterating through those relative coordinates
+// each returned direction has a third value, a boolean indicating whether it represents a diagonal direction. When include_diag is true, some of the values will have this true
 Cell.prototype.getNeighborDirsFrom = function(include_diag) {
   var c = this.getCrop(false);
   if(c && c.quad) {

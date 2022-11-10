@@ -1761,6 +1761,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       for(var dir = 0; dir < dirs.length; dir++) { // get the neighbors N,E,S,W
         var x2 = x + dirs[dir][0];
         var y2 = y + dirs[dir][1];
+        var diag = dirs[dir][2];
         if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
         var f2 = state.field[y2][x2];
         if(f2.index == FIELD_MULTIPART) {
@@ -1771,7 +1772,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         var c2 = f2.getCrop();
         if(!c2) continue;
         if(score_ignore_templates && !c2.isReal()) continue;
-        if(dir >= 4 && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
+        if(diag && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
         var p2 = prefield[y2][x2];
 
         if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
@@ -1814,6 +1815,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
       for(var dir = 0; dir < dirs.length; dir++) { // get the neighbors N,E,S,W
         var x2 = x + dirs[dir][0];
         var y2 = y + dirs[dir][1];
+        var diag = dirs[dir][2];
         if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
         var f2 = state.field[y2][x2];
         if(f2.index == FIELD_MULTIPART) {
@@ -1824,7 +1826,7 @@ function precomputeField_(prefield, opt_pretend_fullgrown) {
         var c2 = f2.getCrop();
         if(!c2) continue;
         if(score_ignore_templates && !c2.isReal()) continue;
-        if(dir >= 4 && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
+        if(diag && c2.type != CROPTYPE_BRASSICA) continue; // diagonal directions are currently only for diagonal brassica
         var p2 = prefield[y2][x2];
         if(c.type == CROPTYPE_MUSH) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee);
@@ -4027,15 +4029,11 @@ var update = function(opt_ignorePause) {
               state.g_numplanted3--;
             }
             state.g_numunplanted3++;
-            if(!action.silent) showMessage('deleted ethereal ' + c.name + ', got back ' + recoup.toString());
+            if(!action.silent) showMessage('deleted infinity ' + c.name + ', got back ' + recoup.toString());
             f.index = 0;
             f.growth = 0;
             computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
             state.res.addInPlace(recoup);
-
-            if(isdelete && !freedelete && candelete == 2) {
-              state.lastEtherealDeleteTime = state.time;
-            }
 
             if(type == ACTION_DELETE3) computeDerived(state); // correctly update derived stats based on changed field state (replace will do it below)
             store_undo = true;

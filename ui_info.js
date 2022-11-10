@@ -101,8 +101,10 @@ function prodBreakdown3(index) {
 }
 
 // computes how many infinity seeds currently spent in the infinity field, what you'd get back from all recoups
+// returns array of 2 values: total amount in the field, and amount in finite-lifespan crops (watercress)
 function computeField3InfinitySeeds() {
-  var result = Num(0);
+  var total = Num(0);
+  var watercress = Num(0);
   var o = {};
   for(var y = 0; y < state.numh3; y++) {
     for(var x = 0; x < state.numw3; x++) {
@@ -113,11 +115,12 @@ function computeField3InfinitySeeds() {
         if(!o[index]) o[index] = 0;
         o[index]++;
         var recoup = c.getRecoup(f, -o[index] + 1);
-        result.addInPlace(recoup.infseeds);
+        total.addInPlace(recoup.infseeds);
+        if(c.type == CROPTYPE_BRASSICA) watercress.addInPlace(recoup.infseeds);
       }
     }
   }
-  return result;
+  return [total, watercress];
 }
 
 
@@ -320,8 +323,8 @@ function getResourceDetails(i, special, index) {
     text += 'Current amount: ' + res.toString() + '<br/>';
     if(index == 5) {
       var infield = computeField3InfinitySeeds();
-      text += 'In field: ' + infield.toString() + '<br>';
-      text += 'Total (field + current): ' + infield.add(state.res.infseeds).toString() + '<br>';
+      text += 'In field: ' + infield[0].toString() + ' (brassica: ' + infield[1].toString() + ')<br>';
+      text += 'Total (field + current): ' + infield[0].add(state.res.infseeds).toString() + '<br>';
       text += 'Total earned ever: ' + state.g_res.infseeds.toString() + '<br>'; // this can be more than total because some seeds are spent on brassicas that wither
     }
     text += '<br/>';

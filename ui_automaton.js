@@ -1143,7 +1143,7 @@ function updateAutomatonUI() {
     flex.div.textEl.innerText = 'Clear infinity field';
     flex.div.style.textShadow = '0px 0px 5px #88f';
     addButtonAction(flex.div, deleteInfinityField);
-    registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
+    registerTooltip(flex.div, 'Immediately delete all crops from the infinity field. All infinity seeds will be refunded as usual.');
     x = 0;
   }
 

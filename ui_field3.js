@@ -56,12 +56,12 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     }
 
     result += 'Production per second: ' + prod.toString();
-    if(prod.infseeds.neqr(0) && prod.infseeds.ltr(0.1) && prod.infseeds.gtr(-0.1)) result += ' (' + prod.infseeds.mulr(3600).toString() + '/h)';
+    /*if(prod.infseeds.neqr(0) && prod.infseeds.ltr(0.1) && prod.infseeds.gtr(-0.1))*/ result += ' (' + prod.infseeds.mulr(3600).toString() + '/h)';
     var baseprod = c.getProd(undefined);
     if(baseprod.infseeds.neq(prod.infseeds)) {
       result += '<br/>';
       result += 'Base production/s: ' + baseprod.toString();
-      if(baseprod.infseeds.neqr(0) && baseprod.infseeds.ltr(0.1) && baseprod.infseeds.gtr(-0.1)) result += ' (' + baseprod.infseeds.mulr(3600).toString() + '/h)';
+      /*if(baseprod.infseeds.neqr(0) && baseprod.infseeds.ltr(0.1) && baseprod.infseeds.gtr(-0.1))*/ result += ' (' + baseprod.infseeds.mulr(3600).toString() + '/h)';
     }
     result += '<br/><br/>';
   }

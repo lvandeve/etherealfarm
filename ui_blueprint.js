@@ -140,6 +140,8 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
   if(!b || b.numw == 0 || b.numh == 0) return;
   if(!canUseBluePrintsDuringChallenge(state.challenge, true)) return false;
 
+  var has_unplantable_pumpkin = false;
+
   // match up corners such that standard tree position overlap, in case field sizes are different
   // treex and treey are coordinates of the stem
   var treex0 = Math.floor((state.numw - 1) / 2);
@@ -189,6 +191,7 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
           if(f11.hasCrop(true) && f11.getMainMultiPiece() != f) addAction({type:ACTION_DELETE, x:(fx + 1), y:(fy + 1), silent:true, by_automaton:!!opt_by_automaton});
         }
       }
+      if(c.type == CROPTYPE_PUMPKIN && !state.crops[pumpkin_template].unlocked) has_unplantable_pumpkin = true;
       var c2 = f.getCrop();
       if(c2 && c2.type == CROPTYPE_BRASSICA && c.type == CROPTYPE_BRASSICA) {
         // refresh brassica
@@ -222,6 +225,10 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
 
   if(did_something) showMessage('Planted blueprint');
   else showMessage('This blueprint had no effect on the current field');
+
+  if(has_unplantable_pumpkin && !holidayEventActive(2)) {
+    showMessage('Pumpkins can no longer be planted, the event finished', C_INVALID);
+  }
 }
 
 // turns index into x,y coordinates of a rectangular spiral, counterclockwise around origin.
