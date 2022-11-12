@@ -820,6 +820,7 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
+  // delete in field2
   if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field2) {
     if(state.field2[shiftCrop2FlexY]) {
       var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
@@ -827,6 +828,19 @@ document.addEventListener('keydown', function(e) {
         if(f.hasCrop()) {
           // delete crop
           addAction({type:ACTION_DELETE2, x:shiftCrop2FlexX, y:shiftCrop2FlexY});
+          update();
+        }
+      }
+    }
+  }
+
+  // downgrade in field2
+  if(key == 'd' && shift && !ctrl && state.currentTab == tabindex_field2) {
+    if(state.field2[shiftCrop2FlexY]) {
+      var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          makeDowngradeCrop2Action(shiftCrop2FlexX, shiftCrop2FlexY);
           update();
         }
       }

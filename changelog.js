@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
+
   text += '0.7.4 (2022-11-09):';
   text += '<br/>• Fix timing race condition issue that could cause season jumps during hold season.';
   text += '<br/>• Added back the season +1 hour amber ability';

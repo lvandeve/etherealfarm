@@ -530,6 +530,8 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>"u"</b>: upgrade tier: replace crop or template under mouse cursor with highest available tier of the same type that you can afford (no mouse click required)';
   text += '<br/>';
+  text += ' • <b>"shift+d"</b>: downgrade tier, in ethereal field';
+  text += '<br/>';
   text += ' • <b>shift + click empty field</b>: plant last planted or unlocked crop type.';
   text += '<br/>';
   text += ' • <b>ctrl + click empty field</b>: plant a watercress (does not affect last planted type for shift key).';

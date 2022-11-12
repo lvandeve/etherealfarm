@@ -5539,6 +5539,7 @@ function showShiftCrop2Chip(crop_id) {
   if(selecting) c = f.getCrop();
 
   if(!planting && !deleting && !replacing && !upgrading && !selecting) return;
+  if(planting && !deleting && !replacing && !upgrading && !selecting && crop_id == undefined) return;
 
   var keyname = (shift ? (ctrl ? 'Shift+ctrl' : 'Shift') : 'Ctrl');
   var verb = planting ? 'planting' : (deleting ? 'deleting' : (replacing ? 'replacing' : (selecting ? 'selecting' : 'upgrading')));
@@ -5718,11 +5719,11 @@ function showCropChips() {
     showShiftCropChip(plant);
   }
   if(state.currentTab == tabindex_field2 && dialog_level == 0) {
-    var plant = state.lastPlanted2;
+    var plant = cropChipShiftDown ? state.lastPlanted2 : undefined;
     showShiftCrop2Chip(plant);
   }
   if(state.currentTab == tabindex_field3 && dialog_level == 0) {
-    var plant = state.lastPlanted3;
+    var plant = cropChipShiftDown ? state.lastPlanted3 : getHighestAffordableBrassica3();
     showShiftCrop3Chip(plant);
   }
 }

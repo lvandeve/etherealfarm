@@ -246,13 +246,7 @@ function updateRightPane() {
       if(time.gtr(0)) text += ' (' + util.formatDuration(time.valueOf(), true) + ')';
       text += '<br>';
     }
-    if(state.amberkeepseason && state.amberkeepseasonused) {
-      text += '• Season change: At end of run';
-    } else if(state.amberkeepseason && !state.amberkeepseasonused) {
-      text += '• Season change: At end of run (' + util.formatDuration(timeTilNextSeason(), true) + ')';
-    } else {
-      text += '• Season change in: ' + util.formatDuration(timeTilNextSeason(), true);
-    }
+    text += '• Season change in: ' + getSeasonChangeInValueText();
     text += '<br>';
     var f_active = getActiveFruit();
     if(f_active) {

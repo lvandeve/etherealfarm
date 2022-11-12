@@ -631,7 +631,7 @@ function openTimeInfoDialog() {
     }
     result += '<br>';
     if(s <= 3) {
-      result += '<b>Season change in:</b> ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
+      result += '<b>Season change in:</b> ' + getSeasonChangeInValueText() + '.<br>';
       result += '<br>';
     }
 
@@ -652,6 +652,16 @@ function openTimeInfoDialog() {
   };
 }
 
+
+function getSeasonChangeInValueText() {
+  if(state.amberkeepseason && state.amberkeepseasonused) {
+    return 'At end of run';
+  } else if(state.amberkeepseason && !state.amberkeepseasonused) {
+    return 'At end of run (' + util.formatDuration(timeTilNextSeason(), true) + ')';
+  } else {
+    return util.formatDuration(timeTilNextSeason(), true);
+  }
+}
 
 function updateResourceUI() {
   var infoDiv = infoFlex.div;
@@ -709,7 +719,7 @@ function updateResourceUI() {
     }, 'info box: time and level');
     registerTooltip(resourceDivs[0], function() {
       var text = '';
-      text += 'Season change in: ' + util.formatDuration(timeTilNextSeason(), true) + '.<br>';
+      text += 'Season change in: ' + getSeasonChangeInValueText() + '.<br>';
       if(state.treelevel >= 1) {
         var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
         text += '<br>Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
