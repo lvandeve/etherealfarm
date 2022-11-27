@@ -66,9 +66,13 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     result += '<br/><br/>';
   }
 
-  var infboost = c.getInfBoost();
+  var infboost = c.getInfBoost(f);
   if(infboost.neqr(0)) {
-    result += 'Boost to neighboring berries: ' + infboost.toPercentString() + '<br><br>';
+    if(c.type == CROPTYPE_BEE) {
+      result += 'Boost to neighboring flowers: ' + infboost.toPercentString() + '<br><br>';
+    } else {
+      result += 'Boost to neighboring berries: ' + infboost.toPercentString() + '<br><br>';
+    }
   }
 
   var basicboost = c.getBasicBoost();
@@ -81,11 +85,13 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop3(f.x, f.y, upgrade_cost, true);
 
+  var cost = c.getCost();
   if(c.type == CROPTYPE_BRASSICA) {
-    result += ' • Planting cost: ' + c.getCost().toString() + '<br>';
+    result += ' • Planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
     result += ' • Recoup on delete: ' + recoup.toString() + ' (100% but scaled by remaining lifetime)';
   } else {
-    result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
+    result += ' • Base cost: ' + c.cost.toString() + '<br>';
+    result += ' • Next planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
     result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
   }
   if(upgrade_crop && upgrade_cost[0]) {
@@ -158,6 +164,41 @@ function getUpgradeCrop3(x, y, opt_cost) {
   return c2;
 }
 
+function getDowngradeCrop3(x, y, opt_cost) {
+  if(!state.field3[y]) return null;
+  var f = state.field3[y][x];
+  if(!f) return null;
+  var c = f.getCrop();
+  if(!c) return null;
+
+  if(c.type == CROPTYPE_CHALLENGE) return null;
+  var tier = c.tier - 1;
+
+  var recoup = c.getRecoup();
+
+  var c2 = null;
+
+  if(tier < -1) return null;
+
+  var c3 = croptype3_tiers[c.type][tier];
+  if(!c3 || !state.crops3[c3.index].unlocked) return null;
+
+  var cost = c3.getCost().sub(recoup);
+  if(opt_cost != undefined) {
+    opt_cost[0] = cost;
+    c2 = c3;
+  }
+
+  // a downgrade may be more expensive if you have way more of that crop so it scaled up a lot
+  if(cost.le(state.res)) {
+    if(opt_cost != undefined) opt_cost[1] = false;
+  } else {
+    if(opt_cost != undefined) opt_cost[1] = true;
+  }
+
+  return c2;
+}
+
 
 function makeUpgradeCrop3Action(x, y, opt_silent) {
   var too_expensive = [undefined];
@@ -177,6 +218,21 @@ function makeUpgradeCrop3Action(x, y, opt_silent) {
         showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
       }
     }
+  }
+  return true;
+}
+
+function makeDowngradeCrop3Action(x, y, opt_silent) {
+  var too_expensive = [undefined];
+  var c2 = getDowngradeCrop3(x, y, too_expensive);
+
+  if(c2 && !too_expensive[1]) {
+    addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c2, shiftPlanted:true});
+  } else if(c2 && too_expensive[1]) {
+    // TODO: instead go to an even lower tier?
+    showMessage('not enough resources for lower crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() + ', need ' + too_expensive[0].toString() + '. This can happen if you have a lot of the lower tier crop planted.', C_INVALID, 0, 0);
+  } else if(!c2) {
+    showMessage('Crop not replaced, no lower tier available', C_INVALID);
   }
   return true;
 }
@@ -201,8 +257,6 @@ function makePond3Dialog() {
   text += ' (max ever had: ' + state.g_max_infinityboost.toPercentString() + ')';
 
   contentFlex.div.innerHTML = text;
-
-
 }
 
 function makeField3Dialog(x, y) {
@@ -219,13 +273,14 @@ function makeField3Dialog(x, y) {
       bgstyle:'efDialogTranslucent'
     });
 
-    var buttonshift = 0;
+    var buttonshift = -0.08;
 
     var flex0 = new Flex(dialog.content, 0, [0, 0, 0.01], 1, 0.17);
-    var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.5 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.565 + buttonshift).div;
-    var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.57 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.635 + buttonshift).div;
-    var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.64 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.705 + buttonshift).div;
-    var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.71 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.775 + buttonshift).div;
+    var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.63 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.695 + buttonshift).div;
+    var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.7 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.765 + buttonshift).div;
+    var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.77 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.835 + buttonshift).div;
+    var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.84 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.905 + buttonshift).div;
+    var button4 = new Flex(dialog.content, [0, 0, 0.2], [0.91 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.975 + buttonshift).div;
     var last0 = undefined;
 
     styleButton(button0);
@@ -239,27 +294,37 @@ function makeField3Dialog(x, y) {
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Replace crop';
-    registerTooltip(button1, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked ethereal crops. If this changes the type of the crop or lowers the tier, then this only works if deleting is currently possible in the ethereal field. ' + etherealDeleteExtraInfo);
+    button1.textEl.innerText = 'Downgrade tier';
+    registerTooltip(button1, 'Replace crop the tier one below, refunding the cost of the current one, then planting the lower tier crop with the lower resource cost.');
     addButtonAction(button1, function() {
-      makePlantDialog3(x, y, true, c.getRecoup(f));
+      if(makeDowngradeCrop3Action(x, y)) {
+        closeAllDialogs();
+        update();
+      }
     });
 
     styleButton(button2);
-    button2.textEl.innerText = 'Delete crop';
-    button2.textEl.style.color = '#c00';
-    if(c.type == CROPTYPE_BRASSICA) registerTooltip(button2, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back, scaled down by the remaining lifetime.');
-    else registerTooltip(button2, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back.');
+    button2.textEl.innerText = 'Replace crop';
+    registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked infinity crops.');
     addButtonAction(button2, function() {
+      makePlantDialog3(x, y, true, c.getRecoup(f));
+    });
+
+    styleButton(button3);
+    button3.textEl.innerText = 'Delete crop';
+    button3.textEl.style.color = '#c00';
+    if(c.type == CROPTYPE_BRASSICA) registerTooltip(button3, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back, scaled down by the remaining lifetime.');
+    else registerTooltip(button3, 'Delete crop, get ' + (cropRecoup3 * 100) + '% of the original cost back.');
+    addButtonAction(button3, function() {
       addAction({type:ACTION_DELETE3, x:x, y:y});
       closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
-    styleButton(button3);
-    button3.textEl.innerText = 'Detailed stats / bonuses';
-    registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
-    addButtonAction(button3, function() {
+    styleButton(button4);
+    button4.textEl.innerText = 'Detailed stats / bonuses';
+    registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    addButtonAction(button4, function() {
       var dialog = createDialog({
         size:DIALOG_LARGE,
         title:'Detailed crop stats',
@@ -358,7 +423,12 @@ function initField3UI() {
         if(f.index == 0) {
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
         } else if(f.index == FIELD_POND) {
-          return 'Infinity pond';
+          var text = 'Infinity pond';
+          if(state.infinityboost.gtr(0)) {
+            text += '<br><br>';
+            text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
+          }
+          return text;
         } else if(f.hasCrop()) {
           var c = crops3[f.cropIndex()];
           result = getCropInfoHTML3(f, c, false);
@@ -500,7 +570,7 @@ function updateField3CellUI(x, y) {
     } else if(f.index == FIELD_POND) {
       renderImage(image_pond, fd.canvas);
     } else if(f.index == FIELD_REMAINDER) {
-      renderImage(image_watercress_remainder, fd.canvas);
+      renderImage(image_watercress_remainder3, fd.canvas);
     } else {
       fd.div.innerText = '';
       unrenderImage(fd.canvas);

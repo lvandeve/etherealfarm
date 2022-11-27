@@ -317,6 +317,7 @@ var fieldheader_infernal = '+:#c42 -:#f63';
 //var fieldheader_infinity = '+:#ab9 -:#ded';
 //var fieldheader_infinity = '+:#efd -:#fdd';
 var fieldheader_infinity = '+:#efd -:#ddf';
+//var fieldheader_infinity = '+:#cdb -:#bbd';
 
 var field0 = `
 ++++++++++++++++

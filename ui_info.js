@@ -539,11 +539,15 @@ function showResource(i, special, index) {
             html += '<br>Total resin allocation:<br>';
             var resin_stacks = state.res.resin;
             var resin_field = computeField2Cost().resin; // still usable for other purposes by selling ethereal crops
+            var resin_mistletoe = mistletoeupgrades[mistle_upgrade_twigs].getResourceCostToReachLevel(state.mistletoeupgrades[mistle_upgrade_twigs].num).resin;
             var resin_total = state.g_res.resin; // total earned ever
-            var resin_upgrades = resin_total.sub(resin_stacks).sub(resin_field); // this is resin that you can never reuse for anything else
+            var resin_upgrades = resin_total.sub(resin_stacks).sub(resin_field).sub(resin_mistletoe); // this is resin that you can never reuse for anything else
             html += '• Stacks: ' + state.res.resin.toString() + '<br>';
             html += '• Ethereal field: ' + computeField2Cost().toString() + '<br>';
             html += '• Ethereal upgrades: ' + resin_upgrades.toString() + '<br>';
+            if(state.mistletoeupgrades[mistle_upgrade_twigs].num) {
+              html += '• Ethereal mistletoe: ' + resin_mistletoe.toString() + '<br>';
+            }
           }
 
           flex.div.innerHTML = html;

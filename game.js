@@ -189,6 +189,7 @@ function resetGlobalStateVars(opt_state) {
   prefield = [];
   prev_season = undefined;
   prev_season2 = undefined;
+  prev_season_gain = undefined;
   large_time_delta = false;
   heavy_computing = false;
   large_time_delta_time = 0;
@@ -199,6 +200,9 @@ function resetGlobalStateVars(opt_state) {
   prevGoal = GOAL_NONE;
   prevGoalSubCode = 0;
   actually_updated = false;
+  gain = Res();
+  showingConfigureAutoActionDialog = false;
+  showingConfigureAutoChoiceDialog = false;
 }
 
 function hardReset() {
@@ -704,6 +708,8 @@ function beginNextRun(opt_challenge) {
 
   state.treelevel = 0;
   state.prevleveltime = [0, 0, 0];
+  state.recentweighedleveltime = [0, 0];
+  state.recentweighedleveltime_time = 0;
 
   state.fernres = new Res();
   state.fern = false;
@@ -824,6 +830,7 @@ var ACTION_CANCEL_MISTLE_UPGRADE = action_index++;
 var ACTION_PLANT3 = action_index++;
 var ACTION_DELETE3 = action_index++;
 var ACTION_REPLACE3 = action_index++;
+var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it.
 
 var lastSaveTime = util.getTime();
 
@@ -1006,8 +1013,7 @@ result is numeric season value:
 5: infernal (for a challenge)
 */
 function getSeason() {
-  // state.prevtime is used instead of state.time, normally they're about the same, but prevtime is guaranteed from the last computed tick and will make it render the correct season while updating a long tick
-  return getSeasonAt(state.prevtime);
+  return getSeasonAt(state.time);
 }
 
 function getPureSeason() {
@@ -1217,9 +1223,10 @@ var prefield = [];
 // - watercress depends on mushroom and berry for the leech, but you could see this the opposite direction, muchroom depends on watercress to precompute how much extra seeds are being consumed for the part copied by the watercress
 // --> watercress leech output is computed after all producing/consuming/bonuses have been done. watercress does not itself give seeds to mushrooms. watercress gets 0 seeds from a berry that has all seeds going to neighboring mushrooms.
 // - watercress depends on overall watercress amount on field for the large-amount penalty.
+// opt_fern: if true, then pretends all crops are fullgrown, and uses possibly better weighted time at level, for fern resources
 // NOTE: if updating formulas here, they must also be updated in the Crop.getProd, Crop.getBoost and similar functions for the pretend != 0 cases implemented in those
-function precomputeField_(prefield, opt_pretend_fullgrown) {
-  var pretend = opt_pretend_fullgrown ? 1 : 0;
+function precomputeField_(prefield, opt_fern) {
+  var pretend = opt_fern ? 1 : 0;
   var w = state.numw;
   var h = state.numh;
 
@@ -2178,9 +2185,98 @@ function unlockInfinityCrop(id) {
 }
 
 
+function maybeUnlockEtherealCrops() {
+  if(state.treelevel2 >= 1) {
+    unlockEtherealCrop(berry2_1);
+  }
+  if(state.treelevel2 >= 2) {
+    unlockEtherealCrop(nettle2_0);
+    unlockEtherealCrop(fern2_1);
+  }
+  if(state.treelevel2 >= 3) {
+    unlockEtherealCrop(mush2_1);
+    unlockEtherealCrop(flower2_1);
+  }
+  if(state.treelevel2 >= 4) {
+    unlockEtherealCrop(berry2_2);
+    unlockEtherealCrop(lotus2_1);
+    unlockEtherealCrop(fern2_2);
+  }
+  if(state.treelevel2 >= 5) {
+    unlockEtherealCrop(mush2_2);
+  }
+  if(state.treelevel2 >= 6) {
+    unlockEtherealCrop(fern2_3);
+    unlockEtherealCrop(flower2_2);
+  }
+  if(state.treelevel2 >= 7) {
+    unlockEtherealCrop(berry2_3);
+    unlockEtherealCrop(mush2_3);
+  }
+  if(state.treelevel2 >= 8) {
+    unlockEtherealCrop(lotus2_2);
+    unlockEtherealCrop(bee2_0);
+    unlockEtherealCrop(fern2_4);
+  }
+  if(state.treelevel2 >= 9) {
+    unlockEtherealCrop(flower2_3);
+  }
+  if(state.treelevel2 >= 10) {
+    unlockEtherealCrop(nettle2_1);
+    unlockEtherealCrop(mush2_4);
+  }
+  if(state.treelevel2 >= 11) {
+    unlockEtherealCrop(berry2_4);
+  }
+  if(state.treelevel2 >= 12) {
+    unlockEtherealCrop(flower2_4);
+    unlockEtherealCrop(lotus2_3);
+  }
+  if(state.treelevel2 >= 13) {
+    unlockEtherealCrop(bee2_1);
+    unlockEtherealCrop(mush2_5);
+  }
+  if(state.treelevel2 >= 14) {
+    unlockEtherealCrop(berry2_5);
+  }
+  if(state.treelevel2 >= 15) {
+    unlockEtherealCrop(flower2_5);
+    //unlockEtherealCrop(mistletoe2_0); // commented out: done by an upgrade instead
+  }
+  if(state.treelevel2 >= 16) {
+    unlockEtherealCrop(lotus2_4);
+  }
+  if(state.treelevel2 >= 17) {
+    unlockEtherealCrop(mush2_6);
+  }
+  if(state.treelevel2 >= 18) {
+    unlockEtherealCrop(berry2_6);
+  }
+  if(state.treelevel2 >= 19) {
+    unlockEtherealCrop(bee2_2);
+  }
+}
+
+function maybeUnlockInfinityCrops() {
+  unlockInfinityCrop(brassica3_0);
+  if(state.crops3[brassica3_0].had) unlockInfinityCrop(berry3_0);
+  if(state.crops3[berry3_0].had) unlockInfinityCrop(flower3_0);
+
+  if(state.crops3[berry3_0].had) unlockInfinityCrop(brassica3_1);
+  if(state.crops3[brassica3_1].had) unlockInfinityCrop(berry3_1);
+  if(state.crops3[berry3_1].had) unlockInfinityCrop(flower3_1);
+
+  if(state.crops3[berry3_1].had) unlockInfinityCrop(brassica3_2);
+  if(state.crops3[brassica3_2].had) unlockInfinityCrop(berry3_2);
+  if(state.crops3[berry3_2].had) unlockInfinityCrop(flower3_2);
+  if(state.crops3[flower3_2].had) unlockInfinityCrop(bee3_2);
+
+  //if(state.crops3[berry3_2].had) unlockInfinityCrop(brassica3_3);
+}
 
 
 function doNextAutoChoice() {
+  if(showingConfigureAutoChoiceDialog) return false; // don't activate anything while the dialog is active, to allow editing without intermediate states triggering
   var did_something = false;
   for(var i = 0; i < choice_upgrades.length; i++) {
     var u = choice_upgrades[i];
@@ -2208,7 +2304,7 @@ function autoActionTriggerConditionReached(o) {
   if(o.type == 0 && state.treelevel >= o.level) {
     return true;
   }
-  if(o.type >= 1 && o.type <= 3) {
+  if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
     if(o.crop == 0) return false;
     var c = crops[o.crop - 1];
     var c2 = state.crops[o.crop - 1];
@@ -2218,9 +2314,12 @@ function autoActionTriggerConditionReached(o) {
     if(o.type == 1 && unlocked) return true;
     if(o.type == 2 && state.cropcount[c.index] > 0) return true;
     if(o.type == 3 && state.fullgrowncropcount[c.index] > 0) return true;
-    if(!c.type == CROPTYPE_BERRY && o.type >= 2) {
+    if(o.type == 5 && c.basic_upgrade && state.upgrades[c.basic_upgrade].count) return true;
+    if(o.type == 2 || o.type == 3 || o.type == 5) {
+      // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a higher tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
+      // in case of non-berry, we also consider it this way
       var next_unlocked = state.highestoftypeunlocked[c.type] > c.tier;
-      if(next_unlocked) return true; // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a hier tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
+      if(next_unlocked) return true;
     }
   }
   if(o.type == 4 && state.c_runtime >= o.time) {
@@ -2229,7 +2328,53 @@ function autoActionTriggerConditionReached(o) {
   return false;
 }
 
-function doAutoAction() {
+var autoActionPart2Time = 5; // how long to wait before auto-action does the second part
+
+// part: 1 for the first part, 2 for the second part that is done a bit later
+function doAutoAction(index, part) {
+  var o = state.automaton_autoactions[index];
+  var did_something = false;
+
+  if(part == 1) {
+    addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:index});
+
+    // refresh brassica is done before blueprint, otherwise the refreshWatercress may add actions that override watercress on top of actions to turn it into other crops added for blueprint override. Blueprint override must give the final state here.
+    if(o.enable_brassica && autoActionExtraUnlocked()) {
+      refreshWatercress(false, false, true);
+      did_something = true;
+    }
+    if(o.enable_blueprint) {
+      var b = state.blueprints[o.blueprint];
+      if(b) {
+        plantBluePrint(b, true, true);
+        did_something = true;
+      }
+    }
+    if(o.enable_fruit) {
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit});
+      did_something = true;
+    }
+    // arguably this could also go in part 2, but for the manual toggling of auto-actions it's more clear what's going on if it's executed immediately in part 1
+    if(o.enable_weather && autoActionExtraUnlocked()) {
+      addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:true});
+      did_something = true;
+    }
+  }
+
+  if(part == 2) {
+    if(o.enable_fern && autoActionExtraUnlocked()) {
+      if(state.fern) {
+        addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:true});
+      }
+      did_something = true;
+    }
+  }
+  return did_something;
+}
+
+function doAutoActions() {
+  if(showingConfigureAutoActionDialog) return false; // don't activate anything while the dialog is active, to allow editing the actions without intermediate states triggering
+
   // this is also something that can be wrong when importing old savegames... such as one with wither already completed but not yet the second blueprints unlocked stage
   if(numAutoActionsUnlocked() == 1 && !state.automaton_autoactions[0].enabled) state.automaton_autoactions[0].enabled = true;
 
@@ -2242,40 +2387,17 @@ function doAutoAction() {
     var triggered2 = o.done && !o.done2 && state.c_runtime >= o.time2;
     if(triggered && !o.enable_blueprint) triggered2 = true; // no need to wait for planting blueprint if there's none built
     if(!o.done && triggered) {
+      addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:i});
       o.done = true;
       o.done2 = false;
-      o.time2 = state.c_runtime + 5;
+      o.time2 = state.c_runtime + autoActionPart2Time;
 
-      // refresh brassica is done before blueprint, otherwise the refreshWatercress may add actions that override watercress on top of actions to turn it into other crops added for blueprint override. Blueprint override must give the final state here.
-      if(o.enable_brassica && autoActionExtraUnlocked()) {
-        refreshWatercress(false, false, true);
-        did_something = true;
-      }
-      if(o.enable_blueprint) {
-        var b = state.blueprints[o.blueprint];
-        if(b) {
-          plantBluePrint(b, true, true);
-          did_something = true;
-        }
-      }
-      if(o.enable_fruit) {
-        addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit});
-        did_something = true;
-      }
+      did_something |= doAutoAction(i, 1);
     }
     if(!o.done2 && triggered2) {
       o.done2 = true;
       o.time2 = 0; // no big reason to do this other than make it smaller in the savegame file format
-      if(o.enable_weather && autoActionExtraUnlocked()) {
-        addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:true});
-        did_something = true;
-      }
-      if(o.enable_fern && autoActionExtraUnlocked()) {
-        if(state.fern) {
-          addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:true});
-        }
-        did_something = true;
-      }
+      did_something |= doAutoAction(i, 2);
     }
     if(did_something) break;
   }
@@ -2283,6 +2405,22 @@ function doAutoAction() {
   return did_something;
 }
 
+function doAutoActionManually(index) {
+  if(!autoActionUnlocked()) return;
+  if(basicChallenge() == 2) {
+    showMessage('Auto actions are disabled during the truly basic challenge.', C_INVALID, 0, 0);
+    return;
+  }
+  var did_something = doAutoAction(index, 1);
+  if(!did_something) {
+    doAutoAction(index, 2);
+  } else {
+    window.setTimeout(function() {
+      doAutoAction(index, 2);
+    }, autoActionPart2Time * 1000);
+  }
+  update();
+}
 
 // next chosen auto upgrade, if applicable.
 // type: either undefined, or object {index:upgrade id, time:time until reached given current resource gain}
@@ -2915,12 +3053,17 @@ var update = function(opt_ignorePause) {
     state.prevtime = state.time = util.getTime();
 
     // more things must get adjusted during pause
-    // NOTE: due to pause, there are two distinct flows of time going on: the real-time clock, and the in-game clock
-    // however, we only save one of them. For things that have in-game effect, that's the in-game clock
-    // for some events that what is being adjusted here are things that are stored as game-time rather than real-time
-    // there are also in fact two different types of game-time: time from this run, and time since start of game
-    // something ethereal like ethereal tree level up uses the since-start gametime, things like misttime use the this-run gametime instead.
-    // some other things are stored as real time, e.g. state.c_starttime. To get the in-game time of that one, subtract state.c_pausetime from it.
+    // There are multiple distinct flows of time going on:
+    // - the real-time clock
+    // - in-game clock: either based on current run, or since start of game (throughout runs, e.g. ethereal effects)
+    // - in-game clock, time since start of the game
+    // different time related state variables may each use a different one of those options
+    // remarks for each type:
+    // - real-time clock: not affected by pause, so must not be touched here. For e.g. the state.c_starttime stat (to get the in-game time of that one, subtract state.c_pausetime from it).
+    // - in-game time: is affected by pause. This is e.g. for weather cooldown, time at tree level, ...
+    // SO:
+    // What exactly must be incremented by d here: anything that is an in-game time stored as a timestamp (so not a duration, but a point in time, date+time, unix timestamp).
+    // What must not be touched here: stats based on real-time, and, in-game related times that are stored as a duration rather than a timestamp
     state.misttime += d;
     state.suntime += d;
     state.rainbowtime += d;
@@ -2934,6 +3077,7 @@ var update = function(opt_ignorePause) {
     state.lastEtherealPlantTime += d;
     state.lastLightningTime += d;
     state.infinitystarttime += d;
+    state.recentweighedleveltime_time += d;
 
     // this is for e.g. after importing a save while paused
     // TODO: try to do this only when needed rather than every tick while paused
@@ -3030,7 +3174,7 @@ var update = function(opt_ignorePause) {
     }
 
     if(autoActionEnabled()) {
-      doAutoAction();
+      doAutoActions();
     }
 
     // this function is simple and light enough that it can just be called every time. It can depend on changes mid-game hence needs to be updated regularly.
@@ -3069,8 +3213,6 @@ var update = function(opt_ignorePause) {
     var is_long = d > 2;
 
     var next = 0;
-
-    state.time = state.prevtime; // the computations happen with the state (getSeason() etc...) at start of interval. the end of interval is when things (season, ...) may change, but that is not during this but during next update computation
 
     if(is_long) {
       next = nextEventTime() + 1; // for numerical reasons, ensure it's not exactly at the border of the event
@@ -3178,7 +3320,14 @@ var update = function(opt_ignorePause) {
       var action = actions[0];
       actions.shift();
       var type = action.type;
-      if(type == ACTION_UPGRADE) {
+      if(type == ACTION_STORE_UNDO_BEFORE_AUTO_ACTION) {
+        store_undo = true;
+        undostate = util.clone(state);
+        // mark the auto action as done in this undo state, so it won't be repeated
+        var o = undostate.automaton_autoactions[action.action_index];
+        o.done = true;
+        o.done2 = true;
+      } else if(type == ACTION_UPGRADE) {
         if(fast_forwarding && !action.by_automaton) continue;
 
         if(state.upgrades_new) {
@@ -3737,7 +3886,7 @@ var update = function(opt_ignorePause) {
             else f.growth = 1;
           }
           if(state.challenge == challenge_wither) f.growth = 1;
-          var nextcost = c.getCost(0);
+          var nextcost = c.getCost(1);
           if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
           if(state.c_numplanted + state.c_numplantedbrassica <= 1 && c.isReal() && state.g_numresets < 5) {
             showMessage('Keep planting more crops on other field cells to get more income', C_HELP, 28466751);
@@ -3759,10 +3908,9 @@ var update = function(opt_ignorePause) {
 
         var recoup = undefined;
 
-        var candelete = canEtherealDelete();
-        var freedelete = freeDelete2(action.x, action.y); // the crop is free to delete even if candelete is false
         // whether the action counts as delete. This is the case if it's the actual delete action, or it's replace to a different crop type or a lower tier (down-tier). But replacing with higher tier (up-tier) does not count as delete
         var isdelete = (type == ACTION_DELETE2 && f.hasCrop());
+
         if(type == ACTION_REPLACE2 && f.hasCrop()) {
           var c = f.getCrop();
           if(c.type != action.crop.type) {
@@ -3782,15 +3930,9 @@ var update = function(opt_ignorePause) {
           }
         }
 
-        var ishardreplace = !freedelete; // whether this should update f.justreplaced. If true, a the growing crop resulting of this replace cannot be deleted for free.
-        // exception to freedelete: if you have no automaton and ethereal field is full, you can always replace a crop by automaton. Idem for squirrel. But this does not count for ishardreplace.
-        // this can only be done for replace, not delete: if this would allow deleting one cell, it could still be replaced by something else than squirrel/automaton/... afterwards
-        if(type == ACTION_REPLACE2 && !haveAutomaton() && action.crop.index == automaton2_0) freedelete = true;
-        if(type == ACTION_REPLACE2 && !haveSquirrel() && action.crop.index == squirrel2_0) freedelete = true;
-        // this only if in valid location, given that having mistletoe in invalid location also gives a free delete, so it could then be used to freely delete/replace crops anywyere
-        if(type == ACTION_REPLACE2 && !haveEtherealMistletoeAnywhere() && action.crop.index == mistletoe2_0 && isNextToTree2(action.x, action.y, false)) freedelete = true;
-        // always ok to fix a wrongly placed ethereal mistletoe
-        if((type == ACTION_REPLACE2 || type == ACTION_DELETE2) && !state.etherealmistletoenexttotree && f.hasCrop() && f.getCrop().index == mistletoe2_0) freedelete = true;
+
+        // 'freedelete' used to be used for the ethereal delete limitations system together with candelete. Now this is instead a simplified version (still used for some relevant counters too), that exists to keep a few state variables (field2's justreplaced, lastEtherealDeleteTime and lastEtherealPlantTime) still up to date, however they are obsolete so this can be completely removed later if ethereal delete limitations are never coming back
+        var freedelete = isdelete && ((f.hasCrop() && f.getCrop().istemplate) || (f.growth < 1 && !f.justreplaced));
 
         var oldcroptype = -1;
 
@@ -3817,10 +3959,7 @@ var update = function(opt_ignorePause) {
           var remstarter = null; // remove starter resources that were gotten from this fern when deleting it
           if(f.cropIndex() == fern2_0) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_0));
           if(f.cropIndex() == fern2_1) remstarter = getStarterResources().sub(getStarterResources(undefined, fern2_1));
-          if(isdelete && !candelete && !freedelete && f.hasCrop()) {
-            showMessage('cannot delete in ethereal field at this time, must wait ' + util.formatDuration(getEtherealDeleteWaitTime()) + '. ' + etherealDeleteExtraInfo, C_INVALID, 0, 0);
-            ok = false;
-          } else if(f.cropIndex() == fern2_0 && state.res.lt(remstarter)) {
+          if(f.cropIndex() == fern2_0 && state.res.lt(remstarter)) {
             showMessage('cannot delete: must have at least the starter seeds which this crop gave to delete it, they will be forfeited.', C_INVALID, 0, 0);
             ok = false;
           }
@@ -3898,7 +4037,7 @@ var update = function(opt_ignorePause) {
 
           if(type == ACTION_DELETE2) f.justreplaced = false;
 
-          if(isdelete && !freedelete && candelete == 2) {
+          if(isdelete && !freedelete) {
             state.lastEtherealDeleteTime = state.time;
           }
 
@@ -3918,7 +4057,7 @@ var update = function(opt_ignorePause) {
           f.growth = 0;
           if(type == ACTION_REPLACE2) {
             f.justplanted |= (oldcroptype != action.crop.type);
-            f.justreplaced |= ishardreplace;
+            f.justreplaced |= !freedelete;
           } else {
             f.justplanted = true;
             f.justreplaced = false;
@@ -3954,7 +4093,7 @@ var update = function(opt_ignorePause) {
             state.c_res.addInPlace(extrastarter);
           }
 
-          if(isplant && !freeDelete2Crop(action.crop)) {
+          if(isplant && !(action.crop && action.crop.istemplate)) {
             state.lastEtherealPlantTime = state.time;
           }
 
@@ -4981,6 +5120,12 @@ var update = function(opt_ignorePause) {
       }
     }
 
+    if(state.time >= state.recentweighedleveltime_time + 120 && state.res.ge(req)) {
+      state.recentweighedleveltime_time = state.time;
+      for(var i = 1; i < state.recentweighedleveltime.length; i++) state.recentweighedleveltime[state.recentweighedleveltime.length - i] = state.recentweighedleveltime[state.recentweighedleveltime.length - 1 - i];
+      state.recentweighedleveltime[0] = weightedTimeAtLevel(false);
+    }
+
     if(state.g_numresets > 0) {
       var req2 = treeLevel2Req(state.treelevel2 + 1);
       if(state.res.ge(req2)) {
@@ -5014,83 +5159,10 @@ var update = function(opt_ignorePause) {
         state.eth_stats_challenge[state.treelevel2 - 1] = Num(state.challenge_bonus);
         state.eth_stats_medal_bonus[state.treelevel2 - 1] = Num(state.medal_prodmul);
       }
-      if(state.treelevel2 >= 1) {
-        unlockEtherealCrop(berry2_1);
-      }
-      if(state.treelevel2 >= 2) {
-        unlockEtherealCrop(nettle2_0);
-        unlockEtherealCrop(fern2_1);
-      }
-      if(state.treelevel2 >= 3) {
-        unlockEtherealCrop(mush2_1);
-        unlockEtherealCrop(flower2_1);
-      }
-      if(state.treelevel2 >= 4) {
-        unlockEtherealCrop(berry2_2);
-        unlockEtherealCrop(lotus2_1);
-        unlockEtherealCrop(fern2_2);
-      }
-      if(state.treelevel2 >= 5) {
-        unlockEtherealCrop(mush2_2);
-      }
-      if(state.treelevel2 >= 6) {
-        unlockEtherealCrop(fern2_3);
-        unlockEtherealCrop(flower2_2);
-      }
-      if(state.treelevel2 >= 7) {
-        unlockEtherealCrop(berry2_3);
-        unlockEtherealCrop(mush2_3);
-      }
-      if(state.treelevel2 >= 8) {
-        unlockEtherealCrop(lotus2_2);
-        unlockEtherealCrop(bee2_0);
-        unlockEtherealCrop(fern2_4);
-      }
-      if(state.treelevel2 >= 9) {
-        unlockEtherealCrop(flower2_3);
-      }
-      if(state.treelevel2 >= 10) {
-        unlockEtherealCrop(nettle2_1);
-        unlockEtherealCrop(mush2_4);
-      }
-      if(state.treelevel2 >= 11) {
-        unlockEtherealCrop(berry2_4);
-      }
-      if(state.treelevel2 >= 12) {
-        unlockEtherealCrop(flower2_4);
-        unlockEtherealCrop(lotus2_3);
-      }
-      if(state.treelevel2 >= 13) {
-        unlockEtherealCrop(bee2_1);
-        unlockEtherealCrop(mush2_5);
-      }
-      if(state.treelevel2 >= 14) {
-        unlockEtherealCrop(berry2_5);
-      }
-      if(state.treelevel2 >= 15) {
-        unlockEtherealCrop(flower2_5);
-        //unlockEtherealCrop(mistletoe2_0); // commented out: done by an upgrade instead
-      }
-      if(state.treelevel2 >= 16) {
-        unlockEtherealCrop(lotus2_4);
-      }
-      if(state.treelevel2 >= 17) {
-        unlockEtherealCrop(mush2_6);
-      }
-      if(state.treelevel2 >= 18) {
-        unlockEtherealCrop(berry2_6);
-      }
-      if(state.treelevel2 >= 19) {
-        unlockEtherealCrop(bee2_2);
-      }
+      maybeUnlockEtherealCrops();
     }
     if(haveInfinityField()) {
-      unlockInfinityCrop(brassica3_0);
-      if(state.crops3[brassica3_0].had) unlockInfinityCrop(berry3_0);
-      if(state.crops3[berry3_0].had) unlockInfinityCrop(flower3_0);
-      if(state.crops3[berry3_0].had) unlockInfinityCrop(brassica3_1);
-      if(state.crops3[brassica3_1].had) unlockInfinityCrop(berry3_1);
-      if(state.crops3[berry3_1].had) unlockInfinityCrop(flower3_1);
+      maybeUnlockInfinityCrops();
 
       if(state.infinityboost.gt(state.g_max_infinityboost)) state.g_max_infinityboost = state.infinityboost.clone();
     }
@@ -5139,6 +5211,10 @@ var update = function(opt_ignorePause) {
     actualgain.removeNaN();
 
     state.res.addInPlace(actualgain);
+
+    if(season_will_change && global_season_changes == 1) {
+      prev_season_gain = Res(actualgain);
+    }
 
     // check unlocked upgrades
     for(var i = 0; i < registered_upgrades.length; i++) {
@@ -5232,10 +5308,6 @@ var update = function(opt_ignorePause) {
           showchallengeUnlockedChip(c.index);
         }
       }
-    }
-
-    if(season_will_change && global_season_changes == 1) {
-      prev_season_gain = Res(gain);
     }
 
     state.g_res.addInPlace(actualgain);

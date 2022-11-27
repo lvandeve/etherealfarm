@@ -88,7 +88,6 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
     var cost2 = computeBlueprint2Cost(b, 2); // planting without override
     var cost3 = computeBlueprint2Cost(b, 3); // planting with override
     registerTooltip(canvas, function() {
-      var candelete = canEtherealDelete();
       var text = '';
       text += 'Ethereal field resin value: ' + (cost0.empty() ? '0 resin' : cost0.toString());
       text += '<br>';
@@ -100,11 +99,6 @@ function renderBlueprint(b, ethereal, flex, opt_index, opt_transcend, opt_challe
       text += '<br>';
       text += '<br>';
       text += 'Currently have resin: ' + state.res.resin.toString();
-      if(!candelete) {
-        var waittime = getEtherealDeleteWaitTime();
-        text += '<br>';
-        text += 'Ethereal delete wait time: ' +  util.formatDuration(waittime, true);
-      }
       return text;
     });
   }
@@ -321,7 +315,7 @@ function plantBluePrint2(b, allow_override) {
   // if the ethereal field freely allows deleting, then don't use the replace action, instead first delete everything that must be replaced, then plant everything from scratch
   // that is the most cost effective order to do things, it guarantees you get all resin back, before attempting to plant again
   // if candelete is false, then we can't do that and must use replace operations to do as much as possible that's still allowed (up-tiering, and gauranteeing to get squirrel and automaton)
-  var candelete = canEtherealDelete();
+  var candelete = true; // NOTE: ethereal field delete limitations are currently removed, so always can delete now. The other code path still exists for reference, or for in case it comes back.
 
   if(candelete) {
     var newactions_delete = [];
@@ -676,8 +670,6 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     var title = b.name;
     if(!title) title = ethereal ? 'Ethereal blueprint' : 'Blueprint';
     dialog.titleEl.innerText = title;
-    if(ethereal && !canEtherealDelete()) override_button.textEl.style.color = '#888';
-    else override_button.textEl.style.color = '';
 
     if(ethereal) {
       var coststring;

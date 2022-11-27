@@ -558,9 +558,9 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>[, {, ( or <</b>: select previous active fruit. Can be changed in the preferences under "controls" to instead select previous game tab.';
   text += '<br/>';
-  text += ' • <b>number keys "1-9"</b>: by default, select fruit slot (when available). Can be changed in the preferences under "controls" to instead activate weather or change game tabs.';
+  text += ' • <b>number keys "1-9"</b>: by default, select fruit slot (when available). Can be changed in the preferences under "controls" to instead activate weather, change game tabs or do auto-actions.';
   text += '<br/>';
-  text += ' • <b>"shift" + number keys "1-9"</b>: by default, activate weather (1-3). Can be changed in the preferences under "controls" to instead select fruit slots or change game tabs.';
+  text += ' • <b>"shift" + number keys "1-9"</b>: by default, activate weather (1-3). Can be changed in the preferences under "controls" to instead select fruit slots, change game tabs or do auto-actions.';
   text += '<br/>';
   if(state.g_numfruits > 0) {
     text += '<br/><b>Fruits tab:</b>';

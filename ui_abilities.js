@@ -410,7 +410,7 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
   var cropindex = getHighestBrassica3();
   if(cropindex < 0) return;
   var cropindex1 = brassica3_0; // lower tier, if relevant
-  if(cropindex > brassica_0) cropindex1 = cropindex - 1;
+  if(cropindex > brassica3_0) cropindex1 = cropindex - 1;
   var seeds_available = Num(state.res.infseeds);
   var cresscost = crops3[cropindex].cost.infseeds;
   var cresscost1 = crops3[cropindex1].cost.infseeds;
@@ -630,6 +630,11 @@ document.addEventListener('keydown', function(e) {
         addAction({type:ACTION_FRUIT_ACTIVE, slot:(number - 1), silent:true, allow_empty:true});
         update();
       }
+    } else if(numberfun == 4) {
+      number--;
+      if(number >= 0 && number < state.automaton_autoactions.length) {
+        doAutoActionManually(number);
+      }
     }
     if(shift) {
       // these chips appear due to the shift+plant feature, but could be in the way of console messages when using shift+keys for other reasons, so remove them
@@ -717,9 +722,10 @@ document.addEventListener('keydown', function(e) {
     if(!did_something && f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1) {
       // allow also refreshing watercress this way
       var highest = getHighestAffordableBrassica3();
+      var highest2 = getHighestBrassica3();
       if(highest >= f.getCrop().index) {
         addAction({type:ACTION_REPLACE3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[highest], ctrlPlanted:true, silent:true});
-        did_something = true;
+        if(highest2 <= highest || f.growth < 0.9) did_something = true; // in case a higher brassica than the affordable one exists, don't mark did_something, so the message about its price can come from "upgrade tier" below
       }
     }
 
@@ -854,6 +860,19 @@ document.addEventListener('keydown', function(e) {
         if(f.hasCrop() || f.index == FIELD_REMAINDER) {
           // delete crop
           addAction({type:ACTION_DELETE3, x:shiftCrop3FlexX, y:shiftCrop3FlexY});
+          update();
+        }
+      }
+    }
+  }
+
+  // downgrade in field3
+  if(key == 'd' && shift && !ctrl && state.currentTab == tabindex_field3) {
+    if(state.field3[shiftCrop3FlexY]) {
+      var f = state.field3[shiftCrop3FlexY][shiftCrop3FlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          makeDowngradeCrop3Action(shiftCrop3FlexX, shiftCrop3FlexY);
           update();
         }
       }

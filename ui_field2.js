@@ -84,6 +84,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeBonus(mistle_upgrade_neighbor).toPercentString()) + '<br/>';
     }
+    if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
+      result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).toPercentString()) + '<br/>';
+    }
   }
 
 
@@ -137,6 +140,12 @@ function getCropInfoHTML2Breakdown(f, c) {
     var breakdown = [];
     var total = c.getBasicBoost(f, breakdown);
     result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
+  }
+
+  if(c.type == CROPTYPE_LOTUS) {
+    var breakdown = [];
+    var total = c.getEtherealBoost(f, breakdown);
+    result += formatBreakdown(breakdown, true, 'Breakdown (boost to ethereal neighbors)');
   }
 
   return result;
@@ -209,7 +218,7 @@ function getDowngradeCrop2(x, y, opt_cost) {
     c2 = c3;
   }
 
-  // since it's a downgrade it should always be affordable, but this is done for condistency with getUpgradeCrop2
+  // a downgrade may be more expensive if you have way more of that crop so it scaled up a lot, e.g. for lotuses
   if(cost.le(state.res)) {
     if(opt_cost != undefined) opt_cost[1] = false;
   } else {
@@ -395,7 +404,6 @@ function makeEtherealMistletoeDialog(x, y) {
   styleButton(deletebutton);
   deletebutton.textEl.innerText = 'Delete crop';
   deletebutton.textEl.style.color = '#c00';
-  if(!canEtherealDelete() && !freeDelete2(x, y)) deletebutton.textEl.style.color = '#888';
   registerTooltip(deletebutton, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back. Only works if deleting in ethereal field is currently possible. While deleted or not planted next to the tree, the mistletoe upgrades are paused.');
   addButtonAction(deletebutton, function() {
     addAction({type:ACTION_DELETE2, x:x, y:y});
@@ -584,8 +592,7 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
 
     styleButton(button1);
     button1.textEl.innerText = 'Downgrade tier';
-    if(!canEtherealDelete() && !freeDelete2(x, y)) button1.textEl.style.color = '#888';
-    registerTooltip(button1, 'Downgrade crop to 1 tier lower (refunding the resin cost difference), if it already is at the lowest tier it will be turned into a blueprint template. Only works if deleitng in ethereal field is currently possible. ' + etherealDeleteExtraInfo);
+    registerTooltip(button1, 'Downgrade crop to 1 tier lower (refunding the resin cost difference), if it already is at the lowest tier it will be turned into a blueprint template.');
     addButtonAction(button1, function() {
       if(makeDowngradeCrop2Action(x, y)) {
         closeAllDialogs();
@@ -595,7 +602,7 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
 
     styleButton(button2);
     button2.textEl.innerText = 'Replace crop';
-    registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked ethereal crops. If this changes the type of the crop or lowers the tier, then this only works if deleting is currently possible in the ethereal field. ' + etherealDeleteExtraInfo);
+    registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked ethereal crops.');
     addButtonAction(button2, function() {
       makePlantDialog2(x, y, true, c.getRecoup());
     });
@@ -603,8 +610,7 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
     styleButton(button3);
     button3.textEl.innerText = 'Delete crop';
     button3.textEl.style.color = '#c00';
-    if(!canEtherealDelete() && !freeDelete2(x, y)) button3.textEl.style.color = '#888';
-    registerTooltip(button3, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back. Only works if deleting in ethereal field is currently possible. ' + etherealDeleteExtraInfo);
+    registerTooltip(button3, 'Delete crop, get ' + (cropRecoup2 * 100) + '% of the original resin cost back.');
     addButtonAction(button3, function() {
       addAction({type:ACTION_DELETE2, x:x, y:y});
       closeAllDialogs();
@@ -724,6 +730,11 @@ function initField2UI() {
           var twigs_req = treeLevel2Req(state.treelevel2 + 1);
           var nextlevelprogress = state.res.twigs.div(twigs_req.twigs);
           result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' of ' + twigs_req.toString() + ' (have ' + state.res.twigs.toString() + ', ' + nextlevelprogress.toPercentString() + ')';
+          var boost = getEtherealTreeNeighborBoost();
+          if(boost.neqr(0)) {
+            if(state.squirrel_upgrades[upgradesq_ethtree_diag].count) result += '<br><br>Boosting non-lotus neighbors orthogonally and diagonally: ' + boost.toPercentString();
+            else result += '<br><br>Boosting non-lotus neighbors orthogonally but not diagonally: ' + boost.toPercentString();
+          }
         }
         return result;
       }, x, y, div), true);
@@ -917,20 +928,17 @@ function showEtherealTreeLevelDialog(level, opt_later) {
     var twigs_now = treeLevel2Req(level);
     var twigs_next = treeLevel2Req(level + 1);
 
-    text += 'The ethereal tree consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
-
-    text += 'The following new ethereal things got, or will get, unlocked:<br><br>';
-  } else {
-    text += 'The following new ethereal things got, or will get, unlocked at this level:<br><br>';
+    text += 'It consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
   }
 
+  var text2 = '';
 
   var anything = false;
 
   for(var i = 0; i < registered_upgrades2.length; i++) {
     var u = upgrades2[registered_upgrades2[i]];
     if(u.treelevel2 == level) {
-      text += '<b>Upgrade</b>: ' + upper(u.name) + '<br>';
+      text2 += '<b>• Upgrade</b>: ' + upper(u.name) + '<br>';
       anything = true;
     }
   }
@@ -939,7 +947,7 @@ function showEtherealTreeLevelDialog(level, opt_later) {
     var u = crops2[registered_crops2[i]];
     if(!u.isReal()) continue;
     if(u.treelevel2 == level) {
-      text += '<b>Crop</b>: Ethereal ' + u.name + '<br>';
+      text2 += '<b>• Crop</b>: Ethereal ' + u.name + '<br>';
       anything = true;
     }
   }
@@ -948,38 +956,40 @@ function showEtherealTreeLevelDialog(level, opt_later) {
     var u = crops2[registered_crops2[i]];
     if(!u.istemplate) continue;
     if(u.treelevel2 == level) {
-      text += '<b>Template</b>: Ethereal ' + u.name + '<br>';
+      text2 += '<b>• Template</b>: Ethereal ' + u.name + '<br>';
       anything = true;
     }
   }
 
   if(level == 2) {
-    text += '<b>Challenge</b>: No upgrades challenge (requires having automaton to unlock)<br>';
+    text2 += '<b>• Challenge</b>: No upgrades challenge (requires having automaton to unlock)<br>';
     anything = true;
   }
   if(level == 3) {
-    text += '<b>Challenge</b>: Blackberry challenge (requires automaton with auto-upgrades to unlock)<br>';
+    text2 += '<b>• Challenge</b>: Blackberry challenge (requires automaton with auto-upgrades to unlock)<br>';
     anything = true;
   }
   if(level == 5) {
-    text += '<b>Challenge</b>: Wither challenge (requires automaton with auto-unlock crops to unlock)<br>';
+    text2 += '<b>• Challenge</b>: Wither challenge (requires automaton with auto-unlock crops to unlock)<br>';
     anything = true;
   }
   if(level == 7) {
-    text += '<b>Challenge</b>: Wasabi challenge<br>';
+    text2 += '<b>• Challenge</b>: Wasabi challenge<br>';
     anything = true;
   }
 
-  if(!anything) {
-    text += 'Nothing new unlocked. New content for this ethereal tree level may be added in future game updates.';
-  } else {
-    text += '<br>';
-    text += 'These are available in the ethereal field and/or the ethereal upgrades tab.';
-    if(!opt_later) {
-      text += '<br><br>';
-      text += 'You can always see this dialog again through the ethereal tree dialog.';
+  if(!opt_later) {
+    if(anything) {
+      text += 'New ethereal things unlocked! These are available in the ethereal field and/or ethereal upgrades tab:';
+    } else {
+      text += 'No new ethereal upgrades, crops or challenges unlocked. New content for this ethereal tree level may be added in future game updates. You can always see this dialog again later by clicking the ethereal tree using "See previous unlocks".';
     }
+  } else {
+    text += 'The following new ethereal things got, or will get, unlocked at this level:<br><br>';
   }
+
+  text += '<br><br>';
+  text += text2;
 
   dialog.content.div.innerHTML = text;
 }

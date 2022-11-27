@@ -142,7 +142,7 @@ function updateRightPane() {
             var autoPrestigeUnlockedButDisabled = autoPrestigeUnlocked() && !autoPrestigeEnabled();
             var text0 = 'Plant: ' + (autoPlantEnabled() ? ((autoUnlockUnlockedButDisabled || autoPrestigeUnlockedButDisabled) ? '<font color="#bb0">auto</font>' : '<font color="#0b0">auto</font>') : '<font color="#b00">manual</font>');
             var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
-            var text2 = 'Auto-action: ' + (autoActionEnabled() ? '<font color="#0b0">on</font>' : '<font color="#b00">off</font>');
+            var text2 = 'Auto-action: ' + (autoActionEnabled() ? '<font color="#0b0">on</font>' : '<font color="#b00">off</font>') + '&nbsp;&nbsp;';
             if(chip0) {
               styleButton0(chip0.div);
               centerText2(chip0.div);
@@ -166,6 +166,15 @@ function updateRightPane() {
               centerText2(chip2.div);
               chip2.div.title = 'quick toggle auto-action';
               chip2.div.textEl.innerHTML = text2;
+              var miniconfigbutton = document.createElement('span');
+              chip2.div.textEl.appendChild(miniconfigbutton);
+              miniconfigbutton.innerHTML = '&#8201;⚙&#8201;'; // TODO: find a more clean way to make this exactly square
+              miniconfigbutton.className = 'efButton';
+              miniconfigbutton.title = 'quick edit auto-actions';
+              addButtonAction(miniconfigbutton, function(e) {
+                showConfigureAutoActionDialog();
+                e.stopPropagation();
+              });
             }
             setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
           } else if(unlocked.length) {

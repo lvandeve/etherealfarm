@@ -164,12 +164,25 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
 
     if(!c2.unlocked) continue;
 
-    var tooltipfun = bind(function(index) {
+    var tooltipfun = bind(function(index, opt_detailed) {
       var result = '';
       var c = crops3[index];
       var f = state.field3[y][x];
 
-      result += 'Cost: ' + c.getCost().toString();
+      var cost = c.getCost();
+      var replacementcost = cost;
+      if(opt_replace) {
+        replacementcost = cost.sub(opt_recoup);
+        if(f.cropIndex() == c.index) replacementcost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, amount used in cost computation is one less
+      }
+
+      if(opt_detailed) {
+        result += '<br>Base cost: ' + c.cost.toString();
+        result += '<br>Next cost: ' + c.getCost().toString();
+      } else {
+        result += 'Cost: ' + c.getCost().toString();
+      }
+      if(opt_replace) result += '<br>Replacement cost: ' + replacementcost.toString();
       if(c.type == CROPTYPE_BRASSICA) {
         result += '<br><br>Living time: ' + util.formatDuration(c.planttime);
       } else {
@@ -212,7 +225,7 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
     }, index);
 
     var showfun = bind(function(tooltipfun, plantfun, c) {
-        var text = upper(c.name) + '<br><br>' + tooltipfun();
+        var text = upper(c.name) + '<br><br>' + tooltipfun(true);
         var dialog = createDialog({
           size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM),
           title:'Infinity crop info',

@@ -48,7 +48,7 @@ Cell.prototype.isFullGrown = function() {
   if(this.index < CROPINDEX) return false; // not relevant for non-crops
   var c = this.getCrop();
   if(c.type == CROPTYPE_BRASSICA) return this.growth > 0;
-  if(state.challenge == challenge_wither) return this.growth > 0;
+  if(this.fieldttype == 1 && state.challenge == challenge_wither) return this.growth > 0;
   return this.growth >= 1;
 };
 
@@ -74,7 +74,7 @@ Cell.prototype.hasRealCrop = function(opt_multipart) {
   return this.index >= CROPINDEX && !this.getCrop().istemplate && !this.getCrop().isghost;
 };
 
-// only valid if hasCrop()
+// only valid if hasCrop(), else returns an out of bounds value
 Cell.prototype.cropIndex = function(opt_multipart) {
   if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().cropIndex(false);
   return this.index - CROPINDEX;
@@ -133,7 +133,8 @@ Cell.prototype.getMainMultiPiece = function() {
   return this;
 };
 
-// function to check if two neighbors are legitimately diagonlly connected. In case of 2x2 crops or tree, something isn't diagonally connected if it's already orthogonally connected to it, to avoid double counting.
+// function to check if two neighbors are legitimately diagonlly connected, geometrically speaking. In case of 2x2 crops or tree, something isn't diagonally connected if it's already orthogonally connected to it, to avoid double counting.
+// does NOT take into account upgrades (such as the diagonal ethreal tree squirrel upgrade), only the geometry (related to pumpkin, ...), so upgrades must be checked at the call site
 // this is for the main field, not the ethereal field
 // field parameter: state.field for basic field, state.field2 for ethereal field
 function diagConnected(x0, y0, x1, y1, field) {
@@ -420,11 +421,11 @@ function AutoActionState() {
   this.done2 = false; // done second part of this action: auto-fern (and a few other actions with it) happen only a few seconds later to give automaton time to plant the blueprint
   this.time2 = 0; // the time at which second part must be done. Only used while done is true and done2 is false
 
-  this.type = 0; // what triggers this action: 0 = based on tree level, 1/2/3 = based on unlocked/growing/fullgrown crop type, 4 = based on run time
+  this.type = 0; // what triggers this action: 0 = tree level, 1/2/3 = unlocked/growing/fullgrown crop type, 4 = run time, 5 = upgraded crop type
 
   this.level = 10; // tree level, for type 0
 
-  this.crop = 0; // unlocked crop id + 1, or 0 to indicate none, for type 1/2/3
+  this.crop = 0; // unlocked crop id + 1, or 0 to indicate none, for type 1, 2, 3 and 5
   this.prestige = 0; // prestige level required from the crop
 
   this.time = 0; // runtime for the trigger based on runtime, for type 4
@@ -518,6 +519,8 @@ function State() {
   this.infinitystarttime = 0; // when the infinity field was started
 
   this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively
+  this.recentweighedleveltime = [0, 0]; // the weighed level time 2 and 4 minutes ago, this is a snapshot of recent weighted level time for use when taking fern: this allows you to change from seed fruit to spore fruit, which immediately levels up the tree a lot, but still pick up a fern with the production bonus from the previous weighted level time, since you can normally do that anyway by picking up the fern very fast after switching fruit. This is especially helpful for auto-actions that change fruit and take fern
+  this.recentweighedleveltime_time = 0; // when the last snapshot of recentweighedleveltime was taken
 
   this.fern = 0; // 0 = no fern, 1 = standard fern, 2 = lucky fern
   this.fernx = 0;
@@ -633,8 +636,8 @@ function State() {
   this.delete2tokens = 4; // obsolete but for now still present in case the tokens need to come back
   this.squirrel_respec_tokens = squirrel_respec_initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
   this.paused = false;
-  this.lastEtherealDeleteTime = 0;
-  this.lastEtherealPlantTime = 0;
+  this.lastEtherealDeleteTime = 0; // This was used for the ethereal delete limitations, which were removed in november 2022. Not yet removed for now incase the system needs to come back in some form, but may be obsolete
+  this.lastEtherealPlantTime = 0; // idem
 
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits
@@ -927,7 +930,7 @@ function State() {
     this.mistletoeupgrades[registered_mistles[i]] = new MistletoeUpgradeState();
   }
   this.mistletoeupgrade = -1; // if >= 0, index of mistletoeupgrade currently being done
-  this.mistletoeidletime = 0; // time when idle, not upgrading anything. NOTE: if used, should be capped
+  this.mistletoeidletime = 0; // time when idle, not upgrading anything.
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1621,7 +1624,7 @@ function computeDerived(state) {
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
       var c = f.getCrop();
-      if(!!c && f.growth >= 1) {
+      if(!!c /*&& f.isFullGrown()*/) {
         var type = c.type;
         if(type == CROPTYPE_BERRY) {
           state.ethereal_berry_bonus.addInPlace(c.getBasicBoost(f));

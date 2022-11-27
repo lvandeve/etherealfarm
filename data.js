@@ -516,13 +516,14 @@ var flower_nut_boost = Num(0.25);
 //  2: same as 1, but for tooltips/dialogs/expected hypothetical gain display/..., so will also include brassica copying, but normally precomputefield handles this instead
 //  3: compute the value for best berry for the pumpkin income. Must include all berry specific bonuses and its growth, but not the pumpkin bonuses. The max of all berries from this must be stored in state.bestberryforpumpkin, and then if the crop type is CROPTYPE_PUMPKIN it uses this value as base
 //  4: same as 3, but assuming the crop is fullgrown
+//  5: compute for fern. This assumes everything is fullgrown, like 1, and in addition uses modified weighted time at level
 Crop.prototype.getProd = function(f, pretend, breakdown) {
   var basic = basicChallenge();
 
   var result = new Res(this.prod);
   if(this.type == CROPTYPE_PUMPKIN) {
     var best = state.bestberryforpumpkin;
-    if(pretend == 1 || pretend == 2 || pretend == 4) best = state.bestberryforpumpkin_expected;
+    if(pretend == 1 || pretend == 2 || pretend == 4 || pretend == 5) best = state.bestberryforpumpkin_expected;
     result = new Res(best);
   }
   if(breakdown) {
@@ -966,7 +967,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.squirrel_upgrades[upgradesq_leveltime].count) {
-      var origtime = weightedTimeAtLevel(state);
+      var origtime = weightedTimeAtLevel(state, pretend == 5);
       var time = Math.floor(origtime / 60) * 60; // rounded at certain intervals, going stepwise so that e.g. production time prediction timers aren't continuously changing
       if(time > upgradesq_leveltime_maxtime) time = upgradesq_leveltime_maxtime;
       if(origtime > upgradesq_leveltime_maxtime) origtime = upgradesq_leveltime_maxtime;
@@ -4372,6 +4373,29 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
   var result = this.boost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
+  // special neighboor boosts (automaton, squirrel, mistoetoe, tree)
+  if(f) {
+    var num_mistle = 0;
+
+    for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+      var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+      var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
+      if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
+      if(dir >= 4 && !diagConnected(f.x, f.y, x2, y2, state.field2)) continue;
+      var n = state.field2[y2][x2];
+      if(n.hasCrop()) {
+        if(n.cropIndex() == mistletoe2_0) {
+          num_mistle++;
+        }
+      }
+    }
+    if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
+      var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).addr(1);
+      result.mulInPlace(mistlemul);
+      if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
+    }
+  }
+
   return result;
 };
 
@@ -4379,6 +4403,14 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
 // boost to neighbors in ethereal field
 var automatonboost = Num(0.5);
 var squirrelboost = Num(0.5);
+
+function getEtherealTreeNeighborBoost() {
+  var boost = new Num(0);
+  if(state.squirrel_evolution > 0) boost.addInPlace(squirrel_evolution_ethtree_boost);
+  if(state.squirrel_upgrades[upgradesq_ethtree].count) boost.addInPlace(upgradesq_ethtree_boost.mulr(state.squirrel_upgrades[upgradesq_ethtree].count));
+  if(state.squirrel_upgrades[upgradesq_ethtree2].count) boost.addInPlace(upgradesq_ethtree_boost2.mulr(state.squirrel_upgrades[upgradesq_ethtree2].count));
+  return boost;
+}
 
 // boost to basic field
 Crop2.prototype.getBasicBoost = function(f, breakdown) {
@@ -4395,7 +4427,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
       var n = state.field2[y2][x2];
-      if(n.hasCrop() && n.isFullGrown() && crops2[n.cropIndex()].type == CROPTYPE_LOTUS) {
+      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops2[n.cropIndex()].type == CROPTYPE_LOTUS) {
         var boost = crops2[n.cropIndex()].getEtherealBoost(n);
         if(boost.neqr(0)) {
           lotusmul.addInPlace(boost);
@@ -4409,7 +4441,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     }
   }
 
-  // automaton and squirrel
+  // special neighboor boosts (automaton, squirrel, mistoetoe, tree)
   if(f) {
     var num_automaton = 0;
     var num_squirrel = 0;
@@ -4422,7 +4454,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
       if(dir >= 4 && !diagConnected(f.x, f.y, x2, y2, state.field2)) continue;
       var n = state.field2[y2][x2];
-      if(n.hasCrop() && n.isFullGrown()) {
+      if(n.hasCrop() /*&& n.isFullGrown()*/) {
         if(n.cropIndex() == automaton2_0) {
           num_automaton++;
         }
@@ -4453,10 +4485,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
     }
     if(num_tree) {
-      var treemul = new Num(1);
-      if(state.squirrel_evolution > 0) treemul.addInPlace(squirrel_evolution_ethtree_boost);
-      if(state.squirrel_upgrades[upgradesq_ethtree].count) treemul.addInPlace(upgradesq_ethtree_boost.mulr(state.squirrel_upgrades[upgradesq_ethtree].count));
-      if(state.squirrel_upgrades[upgradesq_ethtree2].count) treemul.addInPlace(upgradesq_ethtree_boost2.mulr(state.squirrel_upgrades[upgradesq_ethtree2].count));
+      var treemul = getEtherealTreeNeighborBoost().addr(1);
       if(treemul.neqr(1)) {
         result.mulInPlace(treemul);
         if(breakdown) breakdown.push(['tree neighbor', true, treemul, result.clone()]);
@@ -4842,7 +4871,7 @@ registerDeprecatedUpgrade2(); // old upgrade2_field6x6
 
 upgrade2_register_id = 20;
 
-var upgrade2_season_bonus = [0.25, 0.25, 0.25, 0.25];
+var upgrade2_season_bonus = [0.33, 0.25, 0.25, 0.25];
 
 var upgrade2_season = [];
 
@@ -5115,7 +5144,7 @@ upgrade2_register_id = 200;
 
 
 
-var upgrade2_spring_growspeed_bonus = 0.2; // how much % faster it grows
+var upgrade2_spring_growspeed_bonus = 0.25; // how much % faster it grows
 var upgrade2_winter_flower_bonus = Num(1.5); // multiplier
 
 
@@ -7513,68 +7542,19 @@ function canUseBluePrintsDuringChallenge(challenge, opt_print_message) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // for the "time at level" bonus: is weighted with previous level durations to make a single tree level-up event not wipe the entire bonus
-function weightedTimeAtLevel() {
+// opt_fern: if true, may use state.recentweighedleveltime if better, to allow a recent value before tree just started leveling a lot to still be useful for fern for a few minutes (see state.recentweighedleveltime description)
+function weightedTimeAtLevel(opt_fern) {
   var a = timeAtTreeLevel(state);
   var b = state.prevleveltime[0];
   var c = 0.66 * state.prevleveltime[1];
   var d = 0.33 * state.prevleveltime[2];
-  return Math.max(Math.max(a, b), Math.max(c, d));
-}
+  var result = Math.max(Math.max(a, b), Math.max(c, d));
 
-////////////////////////////////////////////////////////////////////////////////
+  if(opt_fern) {
+    for(var i = 0; i < state.recentweighedleveltime.length; i++) result = Math.max(result, state.recentweighedleveltime[i]);
+  }
 
-// return values:
-// 0: can't do ethereal delete
-// 1: can ethereal delete, lastEtherealDeleteTime should not be updated
-// 2: can ethereal delete, lastEtherealDeleteTime should be updated to current time
-// NOTE: state.lastEtherealDeleteTime should be set to theoretically 0 at start of a run
-function canEtherealDelete() {
-  /*
-  The rules for ethereal deletion (main goal of these rules: allow replacing ethereal fields at key points during runs, but not too often to not require too much activity, prevent corner case abuse, prevent gotcha's, and ensure you can do enough replants in a single run to give no reason to want to do a short run just for a replant followed by a longer run):
-  -in general with the rules below, a replant can be done at start of run, at any time after start of run (e.g. 10 minutes after it), and per any 2 hours after that. For example: one at 0 minutes runtime, one at 10 minutes, one at 2 hours and 10 minutes, one at 4 hours 10 minutes, etc...
-  -at the start of a run, before anything is planted in the basic field (other than templates), any ethereal crop deletions and plants can be done freely, over any timespan
-  -similarly, during the first etherealDeleteStartTime of a run any replanting can be done as well (but this is of limited time duration, but more than enough to plant a blueprint)
-  -when deleting an ethereal crop, a "session" of limited time begins, during which multiple deletes/replants/plants can be done. When using a blueprint, this limited time is of no issue. Some extra time (etherealDeleteSessionTime) is given when not using a session
-  -once a session is over, you must wait etherealDeleteWaitTime (2 hours) before another deletion session can be done. So during a very long run, it's possible to replant ethereal field every 2 hours, not more
-  -the next replant is possible 2 hours after the previous, it's not related to runtime of the transcend, e.g. waiting 24 hours does not grant 12 replants
-  -the start-of-run deleting/replanting does not count as a regular session so does not reset the 2 hour timer (which is initialized at unix epoch 0 at start of a run), so after start of run (e.g. 10 minutes in) you can also do a replant, before the 2h window.
-  -a streak of deletions without planting/replacing in between is allowed to take longer than etherealDeleteSessionTime: this because there's no benefit of it taking longer when not planting in-between, and to allow more time when manually deleting crops one by one (however, using "replace" with a new type of crop will end this). Normally when using blueprints this should not be something to rely on often
-  -the grow time of ethereal berry, mushroom and nettle crops is set to etherealDeleteSessionTime: so it's not allowed to grow e.g. berries, then do weather/berry fern in main field, then quickly grow mushrooms in ethereal field during the same session: the grow times limit 1 type per session
-  -down-tiering of a crop is treated the same as deletion
-  -up-tiering a crop is treated the same a planting and not deletion (up-tiering = replacing with crop of same type but higher tier, not lower tier)
-  -templates can always be deleted and planted freely, they don't participate in the above system at all
-  -planting and up-tiering is always possible, not just during the deletion sessions.
-  -as an exception, using replace crop (but not delete) to replace a crop with a squirrel or automaton, when there is no squirrel or automaton present, is possible. This to prevent stuck situations especially when not having automaton
-  */
-  var d = state.time - state.lastEtherealDeleteTime;
-  if(state.c_numplanted == 0 && state.c_numplantedbrassica == 0) return 1; // nothing planted yet this run, can delete without restrictions
-  if(state.time - state.c_starttime < etherealDeleteStartTime) return 1; // beginning of the run, also can delete without restrictions
-  if(d < etherealDeleteSessionTime) return 1; // deletion shortly after other deletions, is part of the same session
-  if(d > etherealDeleteWaitTime) return 2; // last deletion was long enough ago, new deletion session
-  if(state.lastEtherealDeleteTime > state.lastEtherealPlantTime) return 1; // doing only consecutive deletes, without doing any planting in between, allows to take a longer time to manually do the multiple delete actions (rather than have to try to do it in 60 seconds)
-  return 0;
-}
-
-function getEtherealDeleteWaitTime() {
-  var d = state.time - state.lastEtherealDeleteTime;
-  if(d < etherealDeleteSessionTime) return 0;
-  if(d > etherealDeleteWaitTime) return 0;
-  return etherealDeleteWaitTime - d;
-}
-
-function freeDelete2Crop(crop) {
-  if(!crop) return false;
-  if(crop.istemplate) return true;
-  return false;
-}
-
-// whether the crop in the ethereal field at position x, y can be alwyas deleted, even if canEtherealDelete() is false
-function freeDelete2(x, y) {
-  var f = state.field2[y][x];
-  if(f.growth < 1 && !f.justreplaced) return true;
-  var c = f.getCrop();
-  if(c && freeDelete2Crop(c)) return true;
-  return false;
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -7634,6 +7614,8 @@ function MistletoeUpgrade() {
 
   this.bonus = Num(0.1); // bonus per level
 
+  this.onetime = false; // if true, is a one-time upgrade rather than repeatable
+
   this.getTime = function() {
     var m2 = state.mistletoeupgrades[this.index];
     return this.basetime * (m2.num + 1);
@@ -7645,9 +7627,15 @@ function MistletoeUpgrade() {
     return undefined;
   };
 
-  this.getResourceCost = function(level) {
+  this.getResourceCost = function() {
     var m2 = state.mistletoeupgrades[this.index];
     return this.getResourceCostForLevel_(m2.num + 1);
+  };
+
+  // return the sum of all resource cost up to and including given level, only defined for those where getResourceCost doesn't return undefined
+  // used for display purposes only
+  this.getResourceCostToReachLevel = function(level) {
+    return undefined;
   };
 };
 
@@ -7675,6 +7663,14 @@ function registerMistletoeUpgrade(name, bonus, evo, basetime, description) {
   return mistle.index;
 }
 
+function registerOneTimeMistletoeUpgrade(name, evo, time, description) {
+  var index = registerMistletoeUpgrade(name, Num(0), evo, time, description);
+
+  var mistle = mistletoeupgrades[index];
+  mistle.onetime = true;
+  return index;
+}
+
 // a twigs bonus that's given for having the ethereal mistletoe in the first place, even without any upgrades
 var mistle_main_twigs_bonus = Num(0.15);
 
@@ -7682,7 +7678,7 @@ var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600
 
 var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
 
-var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', Num(0.07), 1, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring ethereal crops, of any type that can receive bonus from lotuses');
+var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', Num(0.07), 1, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring ethereal crops, of any type that can receive bonus from lotuses (but not to lotuses themselves)');
 
 var mistle_upgrade_stingy = registerMistletoeUpgrade('stinginess', Num(0.07), 5, 3600, 'Gives a %BONUS% bonus to stingy crops (for spore production) per level');
 
@@ -7690,6 +7686,7 @@ var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', Num(0.07), 9, 36
 
 var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', Num(0.07), 11, 3600, 'Gives a %BONUS% bonus to berry seed production per level');
 
+var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', Num(0.03), 13, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring lotuses');
 
 
 
@@ -7701,11 +7698,22 @@ var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', Num(0.1), 3, 36
 mistletoeupgrades[mistle_upgrade_resin].getResourceCostForLevel_ = function(level) {
   return Res({twigs:100e15}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
+mistletoeupgrades[mistle_upgrade_resin].getResourceCostToReachLevel = function(level) {
+  var result = this.getResourceCostForLevel_(level + 1);
+  result.twigs.subrInPlace(100e15);
+  return result;
+};
 
 var mistle_upgrade_twigs = registerMistletoeUpgrade('twigginess', Num(0.1), 7, 3600, 'Gives a %BONUS% bonus to twigs production per level');
 mistletoeupgrades[mistle_upgrade_twigs].getResourceCostForLevel_ = function(level) {
   return Res({resin:1e18}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
+mistletoeupgrades[mistle_upgrade_twigs].getResourceCostToReachLevel = function(level) {
+  var result = this.getResourceCostForLevel_(level + 1);
+  result.resin.subrInPlace(1e18);
+  return result;
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -7801,6 +7809,7 @@ function Crop3() {
 
 var sameTypeCostMultiplier3 = 1.1;
 var sameTypeCostMultiplier3_flower = 1.25;
+var sameTypeCostMultiplier3_bee = 2;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 Crop3.prototype.isReal = function() {
@@ -7813,6 +7822,7 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
 
   var mul = sameTypeCostMultiplier3;
   if(this.type == CROPTYPE_FLOWER) mul = sameTypeCostMultiplier3_flower;
+  if(this.type == CROPTYPE_BEE) mul = sameTypeCostMultiplier3_bee;
   var count = state.crop3count[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
   var countfactor = Math.pow(mul, count);
@@ -7872,6 +7882,31 @@ Crop3.prototype.getProd = function(f, breakdown) {
 Crop3.prototype.getInfBoost = function(f, breakdown) {
   var result = this.infboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  // bees boostboost
+  if(f && (this.type == CROPTYPE_FLOWER)) {
+    var p = prefield[f.y][f.x];
+    var num = 0;
+
+    var numbeedirs = 4;
+    var beemul = new Num(1);
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+      var n = state.field3[y2][x2];
+      if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_BEE) {
+        num++;
+        var boostboost = n.getCrop().getInfBoost(n);
+        beemul.addInPlace(boostboost);
+      }
+    }
+
+    if(num > 0) {
+      result.mulInPlace(beemul);
+      if(breakdown) breakdown.push(['bees (' + num + ')', true, beemul, result.clone()]);
+    }
+  }
 
   return result;
 };
@@ -7945,21 +7980,35 @@ function registerFlower3(name, tier, cost, infboost, basicboost, planttime, imag
   return index;
 }
 
+function registerBee3(name, tier, cost, infboost, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_BEE, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.infboost = infboost;
+  return index;
+}
+
 
 crop3_register_id = 0;
 var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Res({infseeds:20.01 / (24 * 3600)}), Num(0.05), 24 * 3600, metalifyPlantImages(images_watercress, metalheader0));
 var brassica3_1 = registerBrassica3('bronze watercress', 1, Res({infseeds:25000}), Res({infseeds:50000 / (2 * 24 * 3600)}), Num(0.05), 2 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader1));
+var brassica3_2 = registerBrassica3('silver watercress', 2, Res({infseeds:5e7}), Res({infseeds:5e7 * 4 / (3 * 24 * 3600)}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader2, 0));
+//var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, 0));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), 15, metalifyPlantImages(blackberry, metalheader0));
 var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), 15, metalifyPlantImages(blackberry, metalheader1));
+var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), 15, metalifyPlantImages(blackberry, metalheader2, 2));
 
 crop3_register_id = 600;
 // mushrooms? maybe not, but ids reserved for in case
 
 crop3_register_id = 900;
-var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), 15, metalifyPlantImages(images_anemone, metalheader0));
-var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2500000}), Num(1), Num(0.15), 15, metalifyPlantImages(images_anemone, metalheader1));
+var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), 15, metalifyPlantImages(images_anemone, metalheader0, 1));
+var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2.5e6}), Num(1), Num(0.15), 15, metalifyPlantImages(images_anemone, metalheader1));
+var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(2), Num(0.2), 15, metalifyPlantImages(images_anemone, metalheader2, 0));
+
+crop3_register_id = 1200;
+var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(3), Num(0.5), 15, metalifyPlantImages(images_beenest, metalheader2, 0));
 
 
 function haveInfinityField() {

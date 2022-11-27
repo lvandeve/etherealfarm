@@ -260,13 +260,13 @@ function showConfigureAutoResourcesDialog(subject) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+var showingConfigureAutoChoiceDialog = false;
+
 function showConfigureAutoChoiceDialog(subject) {
-  // temporary disable automaton_autochoice so it doesn't trigger while cycling through the button values
-  var temp = state.automaton_autochoice;
-  state.automaton_autochoice = 0;
+  showingConfigureAutoChoiceDialog = true;
   var dialog = createDialog({
     onclose:function() {
-      state.automaton_autochoice = temp;
+      showingConfigureAutoChoiceDialog = false;
     },
     scrollable:true,
     title:'Configure auto choices'
@@ -426,7 +426,7 @@ function getBluePrintActionDescription(o) {
   text += 'Trigger: ';
   if(o.type == 0) {
     text += 'tree level: ' + o.level;
-  } else if(o.type >= 1 && o.type <= 3) {
+  } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
     var c = crops[o.crop - 1];
     var p = o.prestige;
     var cropname = c ? c.name : 'none';
@@ -434,6 +434,7 @@ function getBluePrintActionDescription(o) {
     if(o.type == 1) text += 'unlocked crop: ' + cropname;
     if(o.type == 2) text += 'planted crop: ' + cropname;
     if(o.type == 3) text += 'fullgrown crop: ' + cropname;
+    if(o.type == 5) text += 'upgraded crop: ' + cropname;
   } else if(o.type == 4) {
     text += 'run time: ' + util.formatDuration(o.time, true);
   }
@@ -501,7 +502,7 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
       closefun();
     },
     scrollable:true,
-    title:('Configure automaton action trigger ' + (index + 1)),
+    title:('Configure automaton trigger ' + (index + 1)),
     help:'Here you can configure the conditions at which this automaton action will trigger, e.g. after some tree level is reached, some crops are unlocked or after a certain time'
   });
   var scrollFlex = dialog.content;
@@ -544,9 +545,12 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
   flex = addControl();
   styleButton(flex.div);
   centerText2(flex.div);
-  var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop', 'run time'];
-  makeDropdown(flex, 'Trigger by', o.type, typenames, function(i) {
-    o.type = i;
+  var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop', 'upgraded crop', 'run time'];
+  // the order in the dropdown is different than the save state order
+  var typevalues = [0, 1, 2, 3, 5, 4];
+  var invtypevalues = [0, 1, 2, 3, 5, 4];
+  makeDropdown(flex, 'Trigger by', invtypevalues[o.type], typenames, function(i) {
+    o.type = typevalues[i];
     updateLevelButton(index);
   }, true);
   //flex.div.className = 'efAutomatonAuto';
@@ -559,7 +563,7 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
       var text = '';
       if(o.type == 0) {
         text += 'tree level: ' + o.level;
-      } else if(o.type >= 1 && o.type <= 3) {
+      } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
         var c = crops[o.crop - 1];
         var p = o.prestige;
         var cropname = c ? c.name : 'none';
@@ -567,6 +571,7 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
         if(o.type == 1) text += 'unlocked crop: ' + cropname;
         if(o.type == 2) text += 'planted crop: ' + cropname;
         if(o.type == 3) text += 'fullgrown crop: ' + cropname;
+        if(o.type == 5) text += 'upgraded crop: ' + cropname;
       } else if(o.type == 4) {
         text += 'run time: ' + util.formatDuration(o.time, true);
       }
@@ -580,7 +585,7 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
         o.level = i;
         updateLevelButton(index);
       }, '' + o.level);
-    } else if(o.type >= 1 && o.type <= 3) {
+    } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
       makePlantSelectDialog(o.crop, o.prestige, function(cropid, prestiged) {
         o.crop = cropid + 1;
         o.prestige = prestiged;
@@ -753,17 +758,18 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
   }
 }
 
-function showConfigureAutoBlueprintDialog() {
-  // temporary disable automaton_autoaction so it doesn't trigger while cycling through the button values
-  var temp = state.automaton_autoaction;
-  state.automaton_autoaction = 0;
+var showingConfigureAutoActionDialog = false;
+
+function showConfigureAutoActionDialog() {
+  showingConfigureAutoActionDialog = true;
+
   var dialog = createDialog({
     onclose:function() {
-      state.automaton_autoaction = temp;
+      showingConfigureAutoActionDialog = false;
     },
     scrollable:true,
-    title:'Configure auto action',
-    help:('Auto-action lets the automaton perform actions after a certain trigger condition is met, such as overriding the field with another blueprint at a chosen tree level. You must configure both a trigger (when will the action be performed) and an action (what does it perform, it can do multiple things at once)<br><br>' + autoBlueprintHelp)
+    title:'Configure auto actions',
+    help:('Auto-action lets the automaton perform actions after a certain trigger condition is met, such as overriding the field with another blueprint at a chosen tree level. You must configure both a trigger (when will the action be performed) and an action (what does it perform, it can do multiple things at once)<br><br>' + autoBlueprintHelp + '<br><br>It\'s also possible to activate auto-actions manually with the "Do now" button. You can also configure the number keys to do this in the main settings under Controls.')
   });
   var scrollFlex = dialog.content;
 
@@ -799,10 +805,10 @@ function showConfigureAutoBlueprintDialog() {
     var text = '';
     if(state) {
       flex.enabledStyle = 2;
-      text += 'on';
+      text += 'Auto on';
     } else {
       flex.enabledStyle = 0;
-      text += 'off';
+      text += 'Auto off';
     }
     div.innerText = text;
     setButtonIndicationStyle(flex);
@@ -831,7 +837,11 @@ function showConfigureAutoBlueprintDialog() {
       flex.div.innerHTML = getBluePrintActionDescription(b);
     };
 
-    flex = new Flex(scrollFlex, 0.0, y, 0.32, y + 0.07);
+    var x = 0.0;
+    var w0 = 0.24;
+    var w1 = 0.25; // including gap
+
+    flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
     styleButton(flex.div);
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Edit trigger';
@@ -840,9 +850,10 @@ function showConfigureAutoBlueprintDialog() {
         updateInfoFlex(j);
       });
     }, j));
+    x += w1;
 
 
-    flex = new Flex(scrollFlex, 0.34, y, 0.65, y + 0.07);
+    flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
     styleButton(flex.div);
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Edit action';
@@ -851,10 +862,11 @@ function showConfigureAutoBlueprintDialog() {
         updateInfoFlex(j);
       });
     }, j));
+    x += w1;
 
     // toggle button disabled if num is 1, since there's only one auto-override action for now, the global enable/disable already does this
     if(num > 1) {
-      flex = new Flex(scrollFlex, 0.67, y, 1, y + 0.07);
+      flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
       styleButton0(flex.div);
       centerText2(flex.div);
       flex.div.textEl.innerText = 'toggle';
@@ -862,8 +874,20 @@ function showConfigureAutoBlueprintDialog() {
         state.automaton_autoactions[j].enabled = !state.automaton_autoactions[j].enabled;
         updateToggleButton(flex, state.automaton_autoactions[j].enabled);
       }, flex, j));
+      x += w1;
       updateToggleButton(flex, state.automaton_autoactions[j].enabled);
     }
+
+
+    flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Do now';
+    addButtonAction(flex.div, bind(function(j) {
+      doAutoActionManually(j);
+    }, j));
+    registerTooltip(flex.div, 'Do this action manually now. This ignores the action trigger, and does not affect when or whether the automaton will do this action. You can do it manually any time or multiple times indepdendently from the automaton. You can also configure the number keys to do these in the settings.');
+    x += w1;
 
     y += h * 1.2;
   }
@@ -888,7 +912,6 @@ function deleteEntireField() {
 }
 
 function deleteEtherealField() {
-  var candelete = canEtherealDelete();
   var num_tried_delete = 0;
   var num_could_delete = 0;
   setTab(tabindex_field2);
@@ -898,7 +921,6 @@ function deleteEtherealField() {
         var f = state.field2[y][x];
         if(f.hasCrop()) {
           num_tried_delete++;
-          if(!candelete && !freeDelete2(x, y)) continue;
           num_could_delete++;
           var c = f.getCrop();
           //if(c.type == CROPTYPE_AUTOMATON) continue;
@@ -913,11 +935,7 @@ function deleteEtherealField() {
     if(!num_tried_delete) {
       showMessage('Nothing to delete in ethereal field');
     } else if(num_tried_delete != num_could_delete) {
-      if(num_could_delete == 0) {
-        showMessage('Couldn\'t yet clear ethereal field: must wait ' + util.formatDuration(getEtherealDeleteWaitTime()) + '. ' + etherealDeleteExtraInfo, C_INVALID, 0, 0);
-      } else {
-        showMessage('Deleted entire ethereal field, where possible');
-      }
+      showMessage('Deleted entire ethereal field, where possible');
     } else {
       showMessage('Deleted entire ethereal field.' + ' All resin refunded: ' + (resin_after.sub(resin_before).toString()));
     }
@@ -1439,7 +1457,7 @@ function updateAutomatonUI() {
         }
         if(!ok) {
           // if you turn on auto-override, but every auto override is configured to do nothing, show the dialog that is normally only shown by the smaller gear button
-          showConfigureAutoBlueprintDialog();
+          showConfigureAutoActionDialog();
         }
       }
     }, flex));
@@ -1447,7 +1465,7 @@ function updateAutomatonUI() {
 
     flex = addConfigButton();
     addButtonAction(flex.div, function() {
-      showConfigureAutoBlueprintDialog();
+      showConfigureAutoActionDialog();
     });
   }
 

@@ -285,13 +285,14 @@ function createShortcutsDialog() {
     if(state.keys_numbers == 1) action = 'weather';
     else if(state.keys_numbers == 2) action = 'tabs';
     else if(state.keys_numbers == 3) action = 'fruit';
+    else if(state.keys_numbers == 4) action = 'auto-action';
     button.textEl.innerText = 'number keys: ' + action;
   };
   updatebuttontext(button);
   registerTooltip(button, 'Choose what the keyboard number keys do: nothing, activate weather (1-3), switch game tabs, or switch active fruit slot');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.keys_numbers++;
-    if(state.keys_numbers > 3) state.keys_numbers = 0;
+    if(state.keys_numbers > 4) state.keys_numbers = 0;
     updatebuttontext(button);
     setStyle();
   }, button, updatebuttontext));
@@ -303,13 +304,14 @@ function createShortcutsDialog() {
     if(state.keys_numbers_shift == 1) action = 'weather';
     else if(state.keys_numbers_shift == 2) action = 'tabs';
     else if(state.keys_numbers_shift == 3) action = 'fruit';
+    else if(state.keys_numbers_shift == 4) action = 'auto-action';
     button.textEl.innerText = 'shift+number keys: ' + action;
   };
   updatebuttontext(button);
   registerTooltip(button, 'Choose what shift + keyboard number keys does: nothing, activate weather (1-3), switch game tabs, or switch active fruit slot');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.keys_numbers_shift++;
-    if(state.keys_numbers_shift > 3) state.keys_numbers_shift = 0;
+    if(state.keys_numbers_shift > 4) state.keys_numbers_shift = 0;
     updatebuttontext(button);
     setStyle();
   }, button, updatebuttontext));
@@ -321,14 +323,16 @@ function createShortcutsDialog() {
     if(state.keys_brackets == 1) action = 'weather';
     else if(state.keys_brackets == 2) action = 'tabs';
     else if(state.keys_brackets == 3) action = 'fruit';
+    else if(state.keys_brackets == 4) action = 'auto-action';
     button.textEl.innerText = 'bracket keys: ' + action;
   };
   updatebuttontext(button);
   registerTooltip(button, 'Choose what the [], (), {} or <> keys for previous/next do: nothing, switch game tabs, or switch active fruit slot. There is no difference between the four key pair variations, the different bracket/parenthesis types are supported to have at least one convenient available set of brackets on most international keyboard layouts.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.keys_brackets++;
-    if(state.keys_brackets > 3) state.keys_brackets = 0;
+    if(state.keys_brackets > 4) state.keys_brackets = 0;
     if(state.keys_brackets == 1) state.keys_brackets = 2; // weather not supported for this
+    if(state.keys_brackets == 4) state.keys_brackets = 0; // auto-action not supported for this
     updatebuttontext(button);
     setStyle();
   }, button, updatebuttontext));

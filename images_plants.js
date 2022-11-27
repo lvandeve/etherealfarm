@@ -4347,6 +4347,26 @@ Oooo......OOoo..
 ................
 `);
 
+// similar to image_watercress_remainder, but for infinity field, a bit more subtle because the silver watercress otherwise looks too much like this remainder
+var image_watercress_remainder3 = generateImageCanvas(`aa:#fff4
+................
+................
+................
+................
+................
+..OOO..OOOO.....
+.OOoo..Oooo.....
+.Oooo..Xoo.OOO..
+....X..X...OOoo.
+....X..O..XXooo.
+.....XOOOXX.....
+.OOO.XOooX......
+OOooXXX.XXOOOO..
+Oooo......OOoo..
+................
+................
+`);
+
 
 
 var image_watercress_post = generateImageCanvas(brassicaimageheader + ` aa:#f00a
@@ -5875,7 +5895,8 @@ function metalify_nonlincolor(v) {
 }
 
 // metalheader = metalheader0 for zinc, etc... They use the colors N,M,m,n (hue range hm) for the metal colors
-function metalify(im, metalheader) {
+// effect = operation done to make things more distinguishable if needed. 1=darken, 2=brighten, 3=shiny
+function metalify(im, metalheader, opt_effect) {
   var pal = generatePalette(metalheader);
   var m = [];
   m[0] = pal['0']; // black
@@ -5907,17 +5928,39 @@ function metalify(im, metalheader) {
       r = m[i][0] * f0 + m[i2][0] * f1;
       g = m[i][1] * f0 + m[i2][1] * f1;
       b = m[i][2] * f0 + m[i2][2] * f1;
+      if(opt_effect == 1) {
+        r *= 0.5;
+        g *= 0.5;
+        b *= 0.5;
+      }
+      if(opt_effect == 2) {
+        r *= 1.35;
+        g *= 1.35;
+        b *= 1.35;
+      }
+      if(opt_effect == 3) {
+        //l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        var d = 1 - (x + y) / (w + h - 2);
+        //d = Math.sin(d * 16) * 64;
+        d = (d - 0.5) * 255;
+        //d = Math.abs(d - 0.5) * 255;
+        //d *= 64;
+        //if((x + y) & 1) d *= 1.1;
+        r = Math.min(Math.max(0, r + d), 255);
+        g = Math.min(Math.max(0, g + d), 255);
+        b = Math.min(Math.max(0, b + d), 255);
+      }
       res[y][x] = [r, g, b, a];
     }
   }
   return [res, w, h];
 }
 
-function metalifyPlantImages(images, metalheader) {
+function metalifyPlantImages(images, metalheader, opt_effect) {
   var result = [];
   for(var i = 0; i < images.length; i++) {
     var im = images[i];
-    result[i] = createCanvasImageFor(metalify(im[4], metalheader));
+    result[i] = createCanvasImageFor(metalify(im[4], metalheader, opt_effect));
   }
   return result;
 }

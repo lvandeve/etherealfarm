@@ -22,6 +22,17 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.7.5 (2022-11-27):';
+  text += '<br/>• Added 4 new infinity field crops.';
+  text += '<br/>• Added a new ethereal mistletoe upgrade (requires more evolution).';
+  text += '<br/>• Removed all time restrictions for deleting crops in ethereal field, and ethereal crops have their effect immediately rather than after growing. This is a test, some form of rate-limiting the changing of ethereal crops may come back in the future if this creates strategies that require too much activity.';
+  text += '<br/>• Increased the flower effect of the ethereal spring upgrade from 25% to 33%, and the spring grow speed bonus from 20% to 25%';
+  text += '<br/>• Added "upgraded crop" as a possible automaton action trigger';
+  text += '<br/>• Auto-actions can now also be done manually, assigned to number shortcut keys, and the side panel got a small auto-action configuration button';
+  text += '<br/>• When taking a fern when tree has just been leveling up, it now uses the best time at level from the last few minutes for its computation (when time at level production bonus is unlocked). When e.g. just switching from a seeds to a spores fruit, this was already achievable before by clicking fast enough, but now fern works well for auto actions too.';
+  text += '<br/>• UI tweaks and fixes.'; // e.g. ethereal tree tooltip now mentions its neighbor boost, fixed wrong values in before/after season production message and next crop planting cost message, and downgrade tier button for infinity field. Also made auto-actions undoable
+  text += '<br/><br/>';
+
   text += '0.7.4 (2022-11-09):';
   text += '<br/>• Fix timing race condition issue that could cause season jumps during hold season.';
   text += '<br/>• Added back the season +1 hour amber ability';

@@ -499,6 +499,8 @@ function encState(state, opt_raw_only) {
   processTime(state.lastEtherealDeleteTime);
   processTime(state.lastEtherealPlantTime);
   processTime(state.infinitystarttime);
+  processTimeArray(state.recentweighedleveltime);
+  processTime(state.recentweighedleveltime_time);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -1652,6 +1654,11 @@ function decState(s) {
   if(save_version >= 4096*1+104) state.lastEtherealDeleteTime = processTime();
   if(save_version >= 4096*1+104) state.lastEtherealPlantTime = processTime();
   if(save_version >= 262144*2+64*7+3) state.infinitystarttime = processTime();
+  if(save_version >= 262144*2+64*7+5) {
+    state.recentweighedleveltime = processTimeArray();
+    if(error || state.recentweighedleveltime.length != 2) return err(4);
+    state.recentweighedleveltime_time = processTime();
+  }
   if(error) return err(4);
 
 
