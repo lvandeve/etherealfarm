@@ -45,7 +45,8 @@ var C_UNDO = 10;
 var C_AUTOMATON = 11;
 var C_AMBER = 12;
 var C_PRESENT = 13;
-var C_GOAL = 14;
+var C_EGG = 14;
+var C_GOAL = 15;
 
 
 // this system exists to make it possible to have messages to be distinguishable from each other but also have color according to some theme,
@@ -117,7 +118,14 @@ function makeLogColor(type, seed, rarity) {
     } else if(type == C_AMBER) {
       h0 = h1 = 0.1;
     } else if(type == C_PRESENT) {
-      //h0 = h1 = 0; // red
+      h0 = 0.33;
+      s0 = 1;
+      v0 = 0.8;
+      h1 = 0;
+      s1 = 1;
+      v1 = 0.75;
+      rarity = 0;
+    } else if(type == C_EGG) {
       h0 = 0.8;
       h1 = 0.2
       v1 = 1;

@@ -881,13 +881,13 @@ function createChangelogDialog() {
   showing_changelog = true;
 
   var icon = images_fern[1];
-  if(holidayEventActive(0)) {
-    icon = holiday_images[Math.floor(Math.random() * 4)]
-  }
   if(holidayEventActive(1)) {
-    icon = bunny_image;
+    icon = present_images[Math.floor(Math.random() * 4)]
   }
   if(holidayEventActive(2)) {
+    icon = bunny_image;
+  }
+  if(holidayEventActive(3)) {
     icon = images_pumpkin_small[0];
   }
 
@@ -1186,6 +1186,27 @@ function addTopBarFlex(x0, x1, opt_fontsize) {
 }
 
 var pauseButtonCanvas = undefined;
+var aboutButtonCanvas = undefined;
+var aboutButtonCanvas_lastHoliday = undefined;
+
+var aboutButtonCanvas_lastHoliday = -1;
+
+function updateSettingsAboutIcon() {
+  if(!aboutButtonCanvas) return;
+  if(holidayEventActive(1)) {
+    if(aboutButtonCanvas_lastHoliday != 1) renderImage(present_images[Math.floor(Math.random() * 4)], aboutButtonCanvas);
+    aboutButtonCanvas_lastHoliday = 1;
+  } else if(holidayEventActive(2)) {
+    if(aboutButtonCanvas_lastHoliday != 2) renderImage(bunny_image, aboutButtonCanvas);
+    aboutButtonCanvas_lastHoliday = 2;
+  } else if(holidayEventActive(3)) {
+    if(aboutButtonCanvas_lastHoliday != 3) renderImage(images_pumpkin_small[0], aboutButtonCanvas);
+    aboutButtonCanvas_lastHoliday = 3;
+  } else {
+    if(aboutButtonCanvas_lastHoliday != 0) renderImage(images_fern[1], aboutButtonCanvas);
+    aboutButtonCanvas_lastHoliday = 0;
+  }
+}
 
 function initSettingsUI() {
   var gearbutton = addTopBarFlex(0, 1).div;
@@ -1196,26 +1217,20 @@ function initSettingsUI() {
 
   addButtonAction(gearbutton, function() {
     createSettingsDialog();
+    //updateSettingsAboutIcon();
   }, 'settings');
   gearbutton.id = 'settings_button';
 
   // changelog / about button
   var aboutbutton = addTopBarFlex(10, 11).div;
-  canvas = createCanvas('0%', '0%', '100%', '100%', aboutbutton);
-  if(holidayEventActive(0)) {
-    renderImage(holiday_images[Math.floor(Math.random() * 4)], canvas);
-  } else if(holidayEventActive(1)) {
-    renderImage(bunny_image, canvas);
-  } else if(holidayEventActive(2)) {
-    renderImage(images_pumpkin_small[0], canvas);
-  } else {
-    renderImage(images_fern[1], canvas);
-  }
+  aboutButtonCanvas = createCanvas('0%', '0%', '100%', '100%', aboutbutton);
+  updateSettingsAboutIcon();
   styleButton0(aboutbutton, true);
   aboutbutton.title = 'About';
 
   addButtonAction(aboutbutton, function() {
     createChangelogDialog();
+    //updateSettingsAboutIcon();
   }, 'about');
   aboutbutton.id = 'about_button';
 

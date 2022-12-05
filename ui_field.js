@@ -884,8 +884,11 @@ function initFieldUI() {
             return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
           }
         } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-          //return 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
-          return 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
+          if(holidayEventActive(1)) {
+            return 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
+          } else {
+            return 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
+          }
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
@@ -1203,8 +1206,13 @@ function updateFieldCellUI(x, y) {
       blendImage((state.fern == 2 ? images_fern2 : images_fern)[season], fd.canvas);
       label = 'fern. ' + label;
     } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-      blendImage(holiday_images[state.present_image], fd.canvas);
-      label = 'egg. ' + label;
+      if(holidayEventActive(1)) {
+        blendImage(present_images[state.present_image], fd.canvas);
+        label = 'present. ' + label;
+      } else {
+        blendImage(egg_images[state.present_image], fd.canvas);
+        label = 'egg. ' + label;
+      }
     } else if(f.index == 0) {
       label = 'empty ' + label;
     }

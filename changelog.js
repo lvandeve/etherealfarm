@@ -22,6 +22,11 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.7.6 (2022-12-05):';
+  text += '<br/>• Enabled holiday event, it will activate on december 6th (depending on time zone) and last for 1 month. Presents with random effects will drop!';
+  text += '<br/>• Bugfixes.'; // undo in combination with auto-action, season change resource comparison display, time at treelevel weighted better for fern computation accidently applied to everything
+  text += '<br/><br/>';
+
   text += '0.7.5 (2022-11-27):';
   text += '<br/>• Added 4 new infinity field crops.';
   text += '<br/>• Added a new ethereal mistletoe upgrade (requires more evolution).';

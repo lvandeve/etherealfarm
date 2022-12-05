@@ -220,7 +220,7 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
   if(did_something) showMessage('Planted blueprint');
   else showMessage('This blueprint had no effect on the current field');
 
-  if(has_unplantable_pumpkin && !holidayEventActive(2)) {
+  if(has_unplantable_pumpkin && !holidayEventActive(3)) {
     showMessage('Pumpkins can no longer be planted, the event finished', C_INVALID);
   }
 }

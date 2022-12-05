@@ -274,7 +274,7 @@ var egg_images = [
   generateImageCanvas(egg_base_image3),
 ];
 
-var holiday_images = egg_images;
+
 
 var bunny_image = generateImageCanvas(`
 ...0000...0000..

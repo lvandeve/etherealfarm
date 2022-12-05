@@ -168,7 +168,7 @@ function prodBreakdownHypo() {
         gain_expected_hyp.addInPlace(c.getProd(f, 2));
       }
     }
-    gain_expected = computeFernGain();
+    gain_expected = computePretendFullgrownGain();
     lastExpectedGainUpdateTime = util.getTime();
     lastExpectedGainNumGrowing = state.numgrowing;
   }
@@ -732,12 +732,19 @@ function updateResourceUI() {
 
       if(presentGrowSpeedActive()) {
         text += '<br><br>';
-        //text += 'Grow speed effect from present active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
-        text += 'Grow speed effect from egg active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
+        if(holidayEventActive(1)) {
+          text += 'Grow speed effect from present active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
+        } else {
+          text += 'Grow speed effect from egg active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
+        }
       }
       if(presentProductionBoostActive()) {
         text += '<br><br>';
-        text += 'Production boost effect from egg active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
+        if(holidayEventActive(1)) {
+          text += 'Production boost effect from present active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
+        } else {
+          text += 'Production boost effect from egg active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
+        }
       }
       return text;
     }, true);

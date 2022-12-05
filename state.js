@@ -2287,7 +2287,7 @@ function presentGrowSpeedTimeRemaining() {
 }
 
 function presentGrowSpeedActive() {
-  if(!holidayEventActive(0) && !holidayEventActive(1)) return false;
+  if(!holidayEventActive(1) && !holidayEventActive(2)) return false;
   if(basicChallenge()) return false;
   return presentGrowSpeedTimeRemaining() > 0;
 }
@@ -2297,7 +2297,7 @@ function presentProductionBoostTimeRemaining() {
 }
 
 function presentProductionBoostActive() {
-  if(!holidayEventActive(0) && !holidayEventActive(1)) return false;
+  if(!holidayEventActive(1) && !holidayEventActive(2)) return false;
   if(basicChallenge()) return false;
   return presentProductionBoostTimeRemaining() > 0;
 }

@@ -272,6 +272,7 @@ function updateUI2() {
     updatedialogfun();
     if(dialog_level == 0) updatedialogfun = undefined;
   }
+  updateSettingsAboutIcon();
 }
 
 //document.body.style.fontFamily = 'Verdana, Arial, Helvetica, sans-serif';

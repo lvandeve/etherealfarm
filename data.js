@@ -967,7 +967,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.squirrel_upgrades[upgradesq_leveltime].count) {
-      var origtime = weightedTimeAtLevel(state, pretend == 5);
+      var origtime = weightedTimeAtLevel(pretend == 5);
       var time = Math.floor(origtime / 60) * 60; // rounded at certain intervals, going stepwise so that e.g. production time prediction timers aren't continuously changing
       if(time > upgradesq_leveltime_maxtime) time = upgradesq_leveltime_maxtime;
       if(origtime > upgradesq_leveltime_maxtime) origtime = upgradesq_leveltime_maxtime;
@@ -1000,8 +1000,11 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = new Num(1.25);
     result.mulInPlace(bonus);
-    //if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
-    if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
+    if(holidayEventActive(1)) {
+      if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
+    } else {
+      if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
+    }
   }
 
   // leech (brassica-copying), only computed for the pretend cases, non-pretend leech: brassica copying's actual gameplay computation is done in precomputeField() intead
@@ -2954,7 +2957,7 @@ registered_upgrades = registered_upgrades.sort(function(a, b) {
 function pumpkinUnlocked() {
   if(state.challenge) return false; // disable challenges at all in first release, in case it turns out much too strong
 
-  if(!holidayEventActive(2)) return false;
+  if(!holidayEventActive(3)) return false;
   if(basicChallenge()) return false;
   if(!state.g_numresets) return false; // don't introduce the pumpkin on first playtrough yet
   if(!state.upgrades[berryunlock_0].count) return false; // must have unlocked at least the first berry
@@ -8018,17 +8021,26 @@ function haveInfinityField() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// holiday: 0=presents, 1=eggs, 2=pumpkins
-function holidayEventActive(holiday) {
-  if(holiday != 2) return false;
 
+// holiday: 1=presents, 2=eggs, 3=pumpkins
+// TODO: make this return the value instead of taking it as input
+function holidayEventActive(holiday) {
+  //if(holiday==1) return true;
   var time = util.getTime();
 
   //var date_20220501 = 1651363200;
   //return time < date_20220501;
 
-  var date_20221111 = 1668124800;
-  return time <= date_20221111;
+  //var date_20221111 = 1668124800;
+  //return time <= date_20221111;
+
+  if(holiday == 1) {
+    var date_20221206_begin = 1670284800;
+    var date_20230106_end = 1673049599;
+    return time >= date_20221206_begin && time <= date_20230106_end;
+  }
+
+  return false;
 }
 
 

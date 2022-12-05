@@ -203,6 +203,7 @@ function resetGlobalStateVars(opt_state) {
   gain = Res();
   showingConfigureAutoActionDialog = false;
   showingConfigureAutoChoiceDialog = false;
+  aboutButtonCanvas_lastHoliday = -1;
 }
 
 function hardReset() {
@@ -803,7 +804,7 @@ var actions = [];
 
 var action_index = 0;
 var ACTION_FERN = action_index++;
-var ACTION_PRESENT = action_index++; // e.g. holiday event present
+var ACTION_PRESENT = action_index++; // holiday event present or egg
 var ACTION_PLANT = action_index++;
 var ACTION_DELETE = action_index++; //un-plant
 var ACTION_REPLACE = action_index++; //same as delete+plant, in one go (prevents hving situation where plant gets deleted but then not having enough resources to plant the other one)
@@ -831,6 +832,7 @@ var ACTION_PLANT3 = action_index++;
 var ACTION_DELETE3 = action_index++;
 var ACTION_REPLACE3 = action_index++;
 var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it.
+var ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION = action_index++; // forces no undo to be saved for the second (several seconds later) part of auto-action
 
 var lastSaveTime = util.getTime();
 
@@ -857,6 +859,7 @@ function storeUndo(state) {
 }
 
 function loadUndo() {
+  auto_action_manual_window_timeout_enabled = false;
   if(lastUndoSaveTime != 0 && state.time - lastUndoSaveTime > maxUndoTime) {
     // prevent undoing something from super long ago, even though it may seem like a cool feature, it can be confusing and even damaging. Use export save to do long term things.
     clearUndo();
@@ -892,7 +895,7 @@ function loadUndo() {
 function getRandomPreferablyEmptyFieldSpot() {
   var num = 0;
   num = state.numemptyfields;
-  var minemptyspots = (holidayEventActive(0) || holidayEventActive(1)) ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
+  var minemptyspots = (holidayEventActive(1) || holidayEventActive(2)) ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
   if(num < minemptyspots) {
     var x = Math.floor(Math.random() * state.numw);
     var y = Math.floor(Math.random() * state.numh);
@@ -1223,10 +1226,13 @@ var prefield = [];
 // - watercress depends on mushroom and berry for the leech, but you could see this the opposite direction, muchroom depends on watercress to precompute how much extra seeds are being consumed for the part copied by the watercress
 // --> watercress leech output is computed after all producing/consuming/bonuses have been done. watercress does not itself give seeds to mushrooms. watercress gets 0 seeds from a berry that has all seeds going to neighboring mushrooms.
 // - watercress depends on overall watercress amount on field for the large-amount penalty.
-// opt_fern: if true, then pretends all crops are fullgrown, and uses possibly better weighted time at level, for fern resources
+// opt_pretend:
+// --for actual game production: use 0 or falsy
+// --for computing potential gain: use 1, then pretends all crops are fullgrown
+// --for fern: use 5, then pretends all crops are fullgrown, and uses possibly better weighted time at level, for fern resources
 // NOTE: if updating formulas here, they must also be updated in the Crop.getProd, Crop.getBoost and similar functions for the pretend != 0 cases implemented in those
-function precomputeField_(prefield, opt_fern) {
-  var pretend = opt_fern ? 1 : 0;
+function precomputeField_(prefield, opt_pretend) {
+  var pretend = opt_pretend || 0;
   var w = state.numw;
   var h = state.numh;
 
@@ -1947,7 +1953,7 @@ function precomputeField() {
   var w = state.numw;
   var h = state.numh;
   if(!prefield || !prefield[0] || prefield.length != h || prefield[0].length != w) prefield = [];
-  precomputeField_(prefield, false);
+  precomputeField_(prefield, 0);
 }
 
 // xor two 48-bit numbers, given that javascript can only up to 31-bit numbers (plus sign) normally
@@ -2336,8 +2342,6 @@ function doAutoAction(index, part) {
   var did_something = false;
 
   if(part == 1) {
-    addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:index});
-
     // refresh brassica is done before blueprint, otherwise the refreshWatercress may add actions that override watercress on top of actions to turn it into other crops added for blueprint override. Blueprint override must give the final state here.
     if(o.enable_brassica && autoActionExtraUnlocked()) {
       refreshWatercress(false, false, true);
@@ -2395,6 +2399,7 @@ function doAutoActions() {
       did_something |= doAutoAction(i, 1);
     }
     if(!o.done2 && triggered2) {
+      addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
       o.done2 = true;
       o.time2 = 0; // no big reason to do this other than make it smaller in the savegame file format
       did_something |= doAutoAction(i, 2);
@@ -2404,6 +2409,8 @@ function doAutoActions() {
 
   return did_something;
 }
+
+var auto_action_manual_window_timeout_enabled = true;
 
 function doAutoActionManually(index) {
   if(!autoActionUnlocked()) return;
@@ -2415,7 +2422,11 @@ function doAutoActionManually(index) {
   if(!did_something) {
     doAutoAction(index, 2);
   } else {
+    // TODO: don't use window.setTimeout for this, but a flag in the state, so that this works more correctly and less hacky with undo. The current system doesn't work when doing undo followed by redo for example (won't do second part then)
+    auto_action_manual_window_timeout_enabled = true; // set to false by doing undo so that if you undo immediately after doing it, it won't do that second part a few seconds later
     window.setTimeout(function() {
+      if(!auto_action_manual_window_timeout_enabled) return;
+      addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
       doAutoAction(index, 2);
     }, autoActionPart2Time * 1000);
   }
@@ -2983,11 +2994,11 @@ function maybeDropAmber() {
   return amber;
 }
 
-// computes the field gain, but then pretending all crops are fullgrown
-// this computation includes nuts, even though ferns don't give it (only relevant resources should be copied there), the nuts computation can be used e.g. for holiday events
-function computeFernGain() {
+
+// pretend: 1 for computing fullgrown field for UI, 5 for computing fern gain
+function computePretendFullgrownGain_(pretend) {
   var prefield2 = [];
-  precomputeField_(prefield2, true);
+  precomputeField_(prefield2, pretend);
   var gain2 = Res();
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
@@ -3001,6 +3012,19 @@ function computeFernGain() {
     }
   }
   return gain2;
+}
+
+// computes the field gain, but then pretending all crops are fullgrown
+function computePretendFullgrownGain() {
+  return computePretendFullgrownGain_(1);
+}
+
+
+
+// similar to computePretendFullgrownGain, but for ferns including the possibly better weighted time at level value
+// this computation includes nuts, even though ferns don't give it (only relevant resources should be copied there), the nuts computation can be used e.g. for holiday events
+function computeFernGain() {
+  return computePretendFullgrownGain_(5);
 }
 
 // for misc things in UI that update themselves
@@ -3097,6 +3121,7 @@ var update = function(opt_ignorePause) {
     undostate = util.clone(state);
   }
   var store_undo = false;
+  var force_no_store_undo = false;
 
   if(state.prevtime == 0) {
     state.prevtime = util.getTime();
@@ -3321,12 +3346,16 @@ var update = function(opt_ignorePause) {
       actions.shift();
       var type = action.type;
       if(type == ACTION_STORE_UNDO_BEFORE_AUTO_ACTION) {
-        store_undo = true;
-        undostate = util.clone(state);
-        // mark the auto action as done in this undo state, so it won't be repeated
-        var o = undostate.automaton_autoactions[action.action_index];
-        o.done = true;
-        o.done2 = true;
+        if(state.c_runtime > 10) { // don't do this when just starting a new run: then if you press undo, you'd want to undo the transcension, instead of having it be overwritten with this undo from just after transcension
+          store_undo = true;
+          if(!undostate) undostate = util.clone(state);
+          // mark the auto action as done in this undo state, so it won't be repeated
+          var o = undostate.automaton_autoactions[action.action_index];
+          o.done = true;
+          o.done2 = true;
+        }
+      } else if(type == ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION) {
+        force_no_store_undo = true;
       } else if(type == ACTION_UPGRADE) {
         if(fast_forwarding && !action.by_automaton) continue;
 
@@ -4214,7 +4243,7 @@ var update = function(opt_ignorePause) {
         }
       } else if(type == ACTION_PRESENT) {
         if(fast_forwarding) continue;
-        if(!holidayEventActive(0) && !holidayEventActive(1)) continue;
+        if(!holidayEventActive(1) && !holidayEventActive(2)) continue;
 
         if(state.present_effect && state.presentx == action.x && state.presenty == action.y) {
           clickedpresent = true;
@@ -4595,7 +4624,7 @@ var update = function(opt_ignorePause) {
       }
     }
 
-    if(store_undo && undostate) {
+    if(store_undo && undostate && !force_no_store_undo) {
       storeUndo(undostate);
     }
 
@@ -4876,12 +4905,12 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    if(!holidayEventActive(0) && !holidayEventActive(1)) {
+    if(!holidayEventActive(1) && !holidayEventActive(2)) {
       state.present_effect = 0;
     } else {
-      // presents are now actually eggs (spring 2022)
+      // presents, or eggs, depending on the holiday event
       if(clickedpresent) {
-        state.presentwait = (20 * 60) * (1 +  getRandomPresentRoll());
+        state.presentwait = (25 * 60) * (1 +  getRandomPresentRoll());
 
         var effect = state.present_effect;
 
@@ -4905,7 +4934,7 @@ var update = function(opt_ignorePause) {
 
         var basic = basicChallenge();
 
-        // during basic challenge, effects are reduced
+        // during basic challenge, effects are reduced (but not disabled: basic challenge can take a long time and so some part of the holiday event should be available)
         if(basic) {
           if(effect == 3) effect = 1; // no production boost during basic challenge
           if(effect == 5) effect = (state.res.spores.ler(0) ? 1 : 2); // no grow speed boost during basic challenge
@@ -4918,53 +4947,76 @@ var update = function(opt_ignorePause) {
           if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds);
           if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
           var presentres = new Res({seeds:g.seeds});
-          if(basic) presentres = presentres.mulr(0.25);
-          //showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
-          showMessage('That egg contained ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          if(basic) presentres = presentres.mulr(0.2);
+          if(holidayEventActive(1)) {
+            showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          } else {
+            showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
+          }
           actualgain.addInPlace(presentres);
         } else if(effect == 2) {
           // spores
           var g = computeFernGain().mulr(60 * 5);
           if(g.spores.ltr(1)) g.spores = Num.max(g.spores, Num(1));
           var presentres = new Res({spores:g.spores});
-          if(basic) presentres = presentres.mulr(0.25);
-          //showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
-          showMessage('That egg contained ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          if(basic) presentres = presentres.mulr(0.2);
+          if(holidayEventActive(1)) {
+            showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          } else {
+            showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
+          }
           actualgain.addInPlace(presentres);
         } else if(effect == 3) {
           // production boost
           state.present_production_boost_time = state.time;
-          showMessage('This egg boosts production for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+          if(holidayEventActive(1)) {
+            showMessage('This present boosts production for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+          } else {
+            showMessage('This egg boosts production for 15 minutes!', C_EGG, 38753631, 0.8, true);
+          }
         } else if(effect == 4) {
           // nuts
           var min_nuts = getNextSquirrelUpgradeCost().mulr(0.0004).mulr(1 + getRandomPresentRoll());
           var g = computeFernGain().mulr(60 * 5);
           if(g.nuts.lt(min_nuts)) g.nuts = min_nuts;
           var presentres = new Res({nuts:g.nuts});
-          //showMessage('That present contained a nutcracker! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
-          showMessage('That egg was nut flavored! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          if(holidayEventActive(1)) {
+            showMessage('That present contained a nutcracker! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
+          } else {
+            showMessage('That egg was nut flavored! It gave ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
+          }
           actualgain.addInPlace(presentres);
         } else if(effect == 5) {
           // grow speed
           state.present_grow_speed_time = state.time;
-          //showMessage('This present doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
-          showMessage('This egg doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+          if(holidayEventActive(1)) {
+            showMessage('This present doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
+          } else {
+            showMessage('This egg doubles crop grow speed for 15 minutes!', C_EGG, 38753631, 0.8, true);
+          }
         } else if(effect == 6) {
           // fruit
-          //showMessage('This present contained fruit!', C_PRESENT, 38753631, 0.8, true);
-          showMessage('This egg contained fruit!', C_PRESENT, 38753631, 0.8, true);
+          if(holidayEventActive(1)) {
+            showMessage('This present contained fruit!', C_PRESENT, 38753631, 0.8, true);
+          } else {
+            showMessage('This egg contained fruit!', C_EGG, 38753631, 0.8, true);
+          }
           var fruits = addRandomFruitForLevel(Math.max(5, state.g_treelevel - 2), true);
           if(fruits) {
+            var messagestyle = holidayEventActive(1) ? C_PRESENT : C_EGG;
             for(var i = 0; i < fruits.length; i++) {
-              if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_PRESENT, 38753631, 0.8);
+              if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), messagestyle, 38753631, 0.8);
             }
           }
         } else if(effect == 7) {
           // amber
-          var amber = Num(Math.floor(getRandomPresentRoll() * 3) + 2);
+          var amber = Num(Math.floor(getRandomPresentRoll() * 2) + 2);
           actualgain.amber.addInPlace(amber);
-          //showMessage('That present contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
-          showMessage('That egg contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
+          if(holidayEventActive(1)) {
+            showMessage('That present contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
+          } else {
+            showMessage('That egg contained ' + amber.toString() + ' amber!', C_EGG, 38753631, 0.8, true);
+          }
         } else {
          // nothing (invalid)
         }
@@ -4982,8 +5034,11 @@ var update = function(opt_ignorePause) {
             state.presentx = s[0];
             state.presenty = s[1];
             // the coordinates are invisible but are for screenreaders
-            //showMessage('A present appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
-            showMessage('An egg appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
+            if(holidayEventActive(1)) {
+              showMessage('A present appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
+            } else {
+              showMessage('An egg appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_EGG, 5, 0.8);
+            }
           }
 
           state.lastPresentTime = 0;
@@ -5210,10 +5265,10 @@ var update = function(opt_ignorePause) {
     gain.removeNaN();
     actualgain.removeNaN();
 
-    state.res.addInPlace(actualgain);
+    state.res.addInPlace(actualgain); // gain gotten during this entire tick (not /s)
 
     if(season_will_change && global_season_changes == 1) {
-      prev_season_gain = Res(actualgain);
+      prev_season_gain = Res(gain);
     }
 
     // check unlocked upgrades
@@ -5407,7 +5462,9 @@ var update = function(opt_ignorePause) {
   if(num_season_changes == 1 && global_season_changes <= 1) {
     var gainchangemessage = '';
     if(prev_season_gain) {
-      gainchangemessage = '. Income before: ' + prev_season_gain.toString() + '. Income now: ' + gain.toString();
+      var prev_season_gain_without_inf = Res({seeds:prev_season_gain.seeds, spores:prev_season_gain.spores});
+      var gain_without_inf = Res({seeds:gain.seeds, spores:gain.spores});
+      gainchangemessage = '. Income before: ' + prev_season_gain_without_inf.toString() + '. Income now: ' + gain_without_inf.toString();
       prev_season_gain = undefined;
     }
     showMessage('The season changed to ' + seasonNames[getSeason()] + gainchangemessage, C_NATURE, 17843969, 0.75);
