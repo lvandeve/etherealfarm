@@ -938,8 +938,9 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     if(key == '9') index = 9;
     if(index < 0) return;
     index--; // make 0-index based
+    var ui_index = index;
     if(blueprintpage) index += 9;
-    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes[index], e);
+    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes[ui_index], e);
   };
 
   var title;

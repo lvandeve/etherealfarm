@@ -120,10 +120,10 @@ function makeLogColor(type, seed, rarity) {
     } else if(type == C_PRESENT) {
       h0 = 0.33;
       s0 = 1;
-      v0 = 0.8;
+      v0 = 0.9;
       h1 = 0;
       s1 = 1;
-      v1 = 0.75;
+      v1 = 0.5;
       rarity = 0;
     } else if(type == C_EGG) {
       h0 = 0.8;
