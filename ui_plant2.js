@@ -80,6 +80,42 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   return flex;
 }
 
+
+// get the array of unlocked crops in the plant dialog, in order they should be displayed:
+function getCrop2Order() {
+  var unlocked = [];
+  for(var i = 0; i < registered_crops2.length; i++) {
+    if(state.crops2[registered_crops2[i]].unlocked) unlocked.push(registered_crops2[i]);
+  }
+
+  var result = [];
+
+  var added = {};
+
+  // everything else
+  var array = [];
+  for(var i = 0; i < unlocked.length; i++) {
+    if(added[unlocked[i]]) continue;
+    array.push(unlocked[i]);
+  }
+  array.sort(function(a, b) {
+    var ac = crops2[a].cost.resin;
+    var bc = crops2[b].cost.resin;
+    if(ac.eqr(0) || bc.eqr(0)) {
+      // for crops that don't use infseeds as cost
+      ac = Num(crops2[a].tier);
+      bc = Num(crops2[b].tier);
+    }
+    return ac.lt(bc) ? 1 : -1;
+  });
+  for(var i = 0; i < array.length; i++) {
+    result.push(array[i]);
+    added[array[i]] = true;
+  }
+
+  return result;
+}
+
 // Ethereal version
 // TODO: share code with makePlantDialog
 function makePlantDialog2(x, y, opt_replace, opt_recoup) {
@@ -109,9 +145,10 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
   flex = new Flex(contentFlex, 0, 0.1, 1, 1);
   makeScrollable(flex);
 
-  for(var i = 0; i < registered_crops2.length; i++) {
-    if(!state.crops2[registered_crops2[i]].unlocked) continue;
-    var index = registered_crops2[i];
+  var crops_order = getCrop2Order();
+
+  for(var i = 0; i < crops_order.length; i++) {
+    var index = crops_order[i];
     var c = crops2[index];
 
     var tooltipfun = bind(function(index) {

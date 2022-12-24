@@ -882,6 +882,15 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custo
   }
 }
 
+function swapBlueprintPages(opt_ethereal) {
+  var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
+  for(var i = 0; i < 9; i++) {
+    var b = blueprints[i];
+    blueprints[i] = blueprints[i + 9];
+    blueprints[i + 9] = b;
+  }
+}
+
 
 var blueprintdialogopen = false;
 
@@ -902,12 +911,28 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
 
   var challenge_button_name = undefined;
   var challenge_button_fun = undefined;
+  var swap_button_name = undefined;
+  var swap_button_fun = undefined;
+  var swap_button_tooltip = undefined;
   if(opt_transcend && !opt_challenge) {
     challenge_button_name = 'challenges';
     if(state.untriedchallenges) challenge_button_name = 'challenges\n(new!)';
     challenge_button_fun = function(){
       createChallengeDialog();
     };
+  }
+
+  // don't have both challenge and swap pages buttons: there's not enough space below the dialog for that many
+  if(!challenge_button_name) {
+    swap_button_name = 'swap pages';
+    swap_button_fun = function() {
+      swapBlueprintPages(opt_ethereal);
+
+      closeTopDialog();
+      createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun);
+      return true; // don't close dialog from this function, it's recreated (to re-render) using the above instead
+    };
+    swap_button_tooltip = 'Swaps the contents of the two blueprint pages. This affects automaton configuration referring to blueprints, since it refers to blueprints by number.';
   }
 
   var shortcutfun = function(e) {
@@ -971,8 +996,9 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
       closeTopDialog();
       createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun);
       return true; // indicate "keep", otherwise it tries to close itself once more as button functions do by default
-    }, challenge_button_fun],
-    names:[(blueprintpage ? 'page 1' : 'page 2'), challenge_button_name],
+    }, challenge_button_fun || swap_button_fun],
+    names:[(blueprintpage ? 'page 1' : 'page 2'), challenge_button_name || swap_button_name],
+    tooltips:[undefined, challenge_button_fun ? undefined : swap_button_tooltip],
     onclose:function() {
       blueprintdialogopen = false;
     }});

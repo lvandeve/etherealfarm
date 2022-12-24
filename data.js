@@ -36,6 +36,7 @@ var CROPTYPE_FERN2 = croptype_index++; // ethereal fern, giving starter money
 var CROPTYPE_SQUIRREL = croptype_index++;
 var CROPTYPE_NUT = croptype_index++;
 var CROPTYPE_PUMPKIN = croptype_index++; // halloween pumpkin
+var CROPTYPE_RUNESTONE = croptype_index++;
 var NUM_CROPTYPES = croptype_index;
 
 // for prestige
@@ -64,6 +65,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_SQUIRREL) return 'squirrel';
   if(type == CROPTYPE_NUT) return 'nuts';
   if(type == CROPTYPE_PUMPKIN) return 'pumpkin';
+  if(type == CROPTYPE_RUNESTONE) return 'runestone';
   return 'unknown';
 }
 
@@ -81,6 +83,26 @@ function getCropTypeHelp(type, opt_no_nettles) {
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
     case CROPTYPE_NUT: return 'Produces nuts. Can have only max 1 nut plant in the field. Neighboring watercress can copy its production, but less effectively than it copies berries. Receives a limited fixed boost from flowers of high enough tier. Not boosted by other standard berry and mushroom production boosts.';
     case CROPTYPE_PUMPKIN: return 'A crop for the halloween holiday event. It will be no longer available when the event is over.';
+    case CROPTYPE_RUNESTONE: return '';
+  }
+  return undefined;
+}
+
+// similar to getCropTypeHelp, but for field3 (infinity field)
+function getCropTypeHelp3(type) {
+  switch(type) {
+    case CROPTYPE_BERRY: return 'Produces infinity seeds. Boosted by flowers.';
+    case CROPTYPE_MUSH: return '';
+    case CROPTYPE_FLOWER: return 'Boosts neighboring berries.';
+    case CROPTYPE_STINGING: return '';
+    case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
+    case CROPTYPE_MISTLETOE: return '';
+    case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers.';
+    case CROPTYPE_CHALLENGE: return '';
+    case CROPTYPE_FERN2: return '';
+    case CROPTYPE_NUT: return '';
+    case CROPTYPE_PUMPKIN: return '';
+    case CROPTYPE_RUNESTONE: return 'Boosts the basic field production boost of any neighboring crops in the infinity field. WARNING: The runestone, and any non-brassica crops it touches, cannot be deleted for 23 hours after placing the runestone, and this time resets when planting crops next to it later on.';
   }
   return undefined;
 }
@@ -1420,7 +1442,7 @@ Crop.prototype.isPostLife = function(f) {
 // This returns the leech ratio of this plant, not the actual resource amount leeched
 // Only correct for already planted leeching plants (for the penalty of multiple planted ones computation)
 // croptype: which croptype we're leeching from (CROPTYPE_BERRY, CROPTYPE_MUSH or CROPTYPE_NUTS)
-// aka getCopy
+// aka Crop.prototype.getCopy
 Crop.prototype.getLeech = function(f, breakdown, croptype) {
   if(croptype == CROPTYPE_PUMPKIN) croptype = CROPTYPE_BERRY; // pumpkin acts as berry for this
   if(this.type != CROPTYPE_BRASSICA) {
@@ -1546,6 +1568,11 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
       if(winter_weakness) {
         result.mulInPlace(winter_malus);
         if(breakdown) breakdown.push(['winterfruit effect weakness', true, winter_malus, result.clone()]);
+      }
+      var ethereal_boost = state.ethereal_brassica_bonus.addr(1);
+      if(ethereal_boost.neqr(1)) {
+        result.mulInPlace(ethereal_boost);
+        if(breakdown) breakdown.push(['ethereal crops', true, ethereal_boost, result.clone()]);
       }
     }
   }
@@ -3012,777 +3039,6 @@ var nutprestige_15 = registerCropPrestige(nut_15, getNutCost(31), CROPTYPE_NUT, 
 
 
 // @constructor
-// aka achievement
-function Medal() {
-  this.name = 'a';
-  this.conditionfun = undefined;
-
-  // production multiplier given by this medal, additively added to the global medal-multiplier, e.g. 0.01 for 1%
-  this.prodmul = Num(0);
-
-  this.hint = undefined; // if the medal with id hint is unlocked, then reveals the existance of this medal in the UI (but does not unlock it)
-
-  this.icon = undefined;
-
-  this.index = 0; // its index in registered_medals
-  this.order = 0; // its index in medals_order
-
-  this.deprecated = false; // no longer existing medal from earlier game version
-};
-
-// Tier for achievement images if no specific one given, maps to zinc, copper, silver, electrum, gold, etc..., see images_medals.js
-Medal.prototype.getTier = function() {
-  var percent = this.prodmul.mulr(100);
-  if(percent.ltr(1)) return 0;
-  if(percent.ltr(5)) return 1;
-  if(percent.ltr(20)) return 2;
-  if(percent.ltr(100)) return 3;
-  if(percent.ltr(500)) return 4;
-  if(percent.ltr(2000)) return 5;
-  if(percent.ltr(10000)) return 6;
-  if(percent.ltr(50000)) return 7;
-  if(percent.ltr(200000)) return 8;
-  if(percent.ltr(1000000)) return 9;
-  if(percent.ltr(5000000)) return 10;
-  return 11;
-};
-
-var registered_medals = []; // indexed consecutively, gives the index to medal
-var medals = []; // indexed by medal index (not necessarily consectuive)
-var medals_order = []; // display order of the medals, contains the indexes in medals array
-
-var medal_register_id = -1;
-
-// where = index of medal to put this one behind in display order
-// medal "index" will be displayed right after medal "where"
-function changeMedalDisplayOrder(index, where) {
-  if(where > index) throw 'can only move order backward for now';
-  var a = medals[where];
-  var b = medals[index];
-
-  var from = a.order + 1;
-  var to = b.order;
-  for(var i = to; i > from; i--) {
-    medals_order[i] = medals_order[i - 1];
-    medals[medals_order[i]].order = i;
-  }
-  medals_order[from] = index;
-  b.order = from;
-}
-
-function registerMedal(name, description, icon, conditionfun, prodmul) {
-  if(medals[medal_register_id] || medal_register_id < 0 || medal_register_id > 65535) throw 'medal id already exists or is invalid!';
-
-  var medal = new Medal();
-  medal.index = medal_register_id++;
-  medals[medal.index] = medal;
-  registered_medals.push(medal.index);
-
-  medal.name = name;
-  medal.description = description;
-  medal.icon = icon;
-  medal.conditionfun = conditionfun;
-  medal.prodmul = prodmul;
-
-  medal.order = medals_order.length;
-  medals_order[medal.order] = medal.index;
-
-  if(!icon) medal.icon = medalgeneric[medal.getTier()];
-
-  return medal.index;
-}
-
-function registerDeprecatedMedal() {
-  var id = registerMedal('deprecated', 'deprecated', genericicon, function() { return false; }, Num(0));
-  medals[id].deprecated = true;
-}
-
-var genericicon = undefined; // use default generic medal icon. value is undefined, just given a name here.
-
-medal_register_id = 0;
-var medal_crowded_id = registerMedal('crowded', 'planted something on every single field cell. Time to delete crops when more room is needed!', genericicon, function() {
-  if(state.numemptyfields != 0) return false;
-  // why - 4: 2 are for the tree. And the other 3: allow having two temporary crops and yet still be valid for getting this achievement. The "numemptyfields" check above ensures there's at least something present on those two remaining non-full-permanent-plant spots.
-  // why allowing 3 short-lived crops: this achievement is supposed to come somewhat early and has a tutorial function (explain delete), so ensure it doesn't accidently come way too late when someone is using short-lived crops for their boost continuously.
-  return state.numfullpermanentcropfields >= state.numw * state.numh - 5;
-}, Num(0.02));
-registerMedal('fern 100', 'clicked 100 ferns', images_fern[0], function() { return state.g_numferns >= 100; }, Num(0.01));
-registerMedal('fern 1000', 'clicked 1000 ferns', images_fern[0], function() { return state.g_numferns >= 1000; }, Num(0.1));
-registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { return state.g_numferns >= 10000; }, Num(1));
-
-var prevmedal;
-
-medal_register_id = 4;
-var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e66, 1e72, 1e78, 1e84, 1e90,  1e96, 1e102, 1e108, 1e114, 1e120, 1e126, 1e162, 1e168, 1e174, 1e180];
-var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   5,    10,   20,   30,   50,  100,  200,  300,  400,  500, 1000, 2000, 3000, 5000,  7000, 10000, 20000, 25000, 30000, 40000, 50000, 60000, 70000, 80000];
-for(var i = 0; i < seeds_achievement_values.length; i++) {
-  // have a good spread of this medal, more than exponential growth for its requirement
-  var num = Num(seeds_achievement_values[i]);
-  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
-  var s0 = num.toString(3, Num.N_LATIN);
-  var s1 = num.toString(3, Num.N_SCI);
-  var name = full + ' seeds';
-  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
-      bind(function(num) { return state.res.seeds.gt(num); }, num),
-      Num(seeds_achievement_bonuses_percent[i]).mulr(0.01));
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-
-
-medal_register_id = 39;
-var planted_achievement_values =  [   5,   50,  100,  200,  500,  1000,  1500, 2000, 5000];
-var planted_achievement_bonuses = [0.01, 0.01, 0.02, 0.02, 0.05,  0.05,   0.1,  0.1,  0.2];
-for(var i = 0; i < planted_achievement_values.length; i++) {
-  var a = planted_achievement_values[i];
-  var b = planted_achievement_bonuses[i];
-  var name = 'planted ' + a;
-  //if(i > 0) medals[prevmedal].description += '. Next achievement in this series, ' + name + ', unlocks at ' + a + ' planted.';
-  var id = registerMedal(name, 'Planted ' + a + ' or more permanent plants over the course of the game', blackberry[0],
-      bind(function(a) { return state.g_numfullgrown >= a; }, a),
-      Num(b));
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-medal_register_id += 20; // a few spares for this one
-
-// TODO: have more tree level medals here. But decide this when the game is such that those levels are actually reachable to know what are good bonus values
-var level_achievement_values = [[5, 0.025], [10, 0.05], [15, 0.075], [20, 0.1], [25, 0.2],
-                                [30, 0.3],  [35, 0.4],  [40, 0.5],  [45, 0.75],  [50, 1.0],
-                                [60, 1.5],  [70, 2.5],  [80, 5],  [90, 10],  [100, 15],
-                                [110, 25],  [120, 50],  [130, 75],  [140, 150],  [150, 200]];
-for(var i = 0; i < level_achievement_values.length; i++) {
-  var level = level_achievement_values[i][0];
-  var bonus = Num(level_achievement_values[i][1]);
-  var s = Num(level).toString(5, Num.N_FULL);
-  var name = 'tree level ' + s;
-  //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + s + '.';
-  var id = registerMedal(name, 'Reached tree level ' + s, tree_images[treeLevelIndex(level)][1][1],
-      bind(function(level) { return level <= state.g_treelevel; }, level),
-      bonus);
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-
-// TODO: from now on, clearly define the value of a new medal series right before it, rather than the "+= 20" system from above, to prevent no accidental changing of all achievement IDs
-medal_register_id = 104;
-var season_medal = registerMedal('four seasons', 'reached winter and seen all seasons', field_winter[0], function() { return getSeason() == 3; }, Num(0.05));
-
-medal_register_id = 110;
-registerMedal('watercress', 'plant the entire field full of watercress', images_watercress[4], function() {
-  return state.croptypecount[CROPTYPE_BRASSICA] == state.numw * state.numh - 2;
-}, Num(0.01));
-registerMedal('berries', 'plant the entire field full of berries', blackberry[4], function() {
-  return state.fullgrowncroptypecount[CROPTYPE_BERRY] == state.numw * state.numh - 2;
-}, Num(0.01));
-registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at least that\'s something', images_clover[4], function() {
-  return state.fullgrowncroptypecount[CROPTYPE_FLOWER] == state.numw * state.numh - 2;
-}, Num(0.01));
-registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one, respect our new fungus overlords.', champignon[4], function() {
-  return state.fullgrowncroptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
-}, Num(0.01));
-registerMedal('stingy situation', 'plant the entire field full of nettles', images_nettle[4], function() {
-  return state.fullgrowncroptypecount[CROPTYPE_STINGING] == state.numw * state.numh - 2;
-}, Num(0.01));
-registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', images_mistletoe[4], function() {
-  return state.fullgrowncroptypecount[CROPTYPE_MISTLETOE] == state.numw * state.numh - 2;
-}, Num(0.05));
-registerMedal('not the bees', 'build the entire field full of bees.', images_beenest[0], function() {
-  return state.fullgrowncroptypecount[CROPTYPE_BEE] == state.numw * state.numh - 2;
-}, Num(0.1));
-registerMedal('unbeelievable', 'fill the entire field (5x5) with bees during the bee challenge.', images_workerbee[4], function() {
-  var num = state.fullgrowncropcount[challengecrop_0] + state.fullgrowncropcount[challengecrop_1] + state.fullgrowncropcount[challengecrop_2];
-  return num >= 5 * 5 - 2;
-}, Num(0.2));
-registerMedal('buzzy', 'fill the entire field (5x5) with worker bees during the bees challenge.', images_workerbee[4], function() {
-  return state.fullgrowncropcount[challengecrop_0] >= 5 * 5 - 2;
-}, Num(0.3));
-registerMedal('unbeetable', 'fill the entire field (5x5) with drones during the bees challenge.', images_dronebee[4], function() {
-  return state.fullgrowncropcount[challengecrop_1] >= 5 * 5 - 2;
-}, Num(0.4));
-registerMedal('royal buzz', 'fill the entire field (5x5) with queen bees during the bees challenge.', images_queenbee[4], function() {
-  return state.fullgrowncropcount[challengecrop_2] >= 5 * 5 - 2;
-}, Num(0.5));
-
-
-medal_register_id = 125;
-var numreset_achievement_values =   [   1,    5,   10,   20,   50,  100,  200,  500, 1000];
-var numreset_achievement_bonuses =  [ 0.1,  0.2,  0.25,  0.3,  0.5,   1,    2,    3,    4];
-for(var i = 0; i < numreset_achievement_values.length; i++) {
-  var level = numreset_achievement_values[i];
-  var bonus = Num(numreset_achievement_bonuses[i]);
-  var name = 'transcend ' + level;
-  //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + level + '.';
-  var id = registerMedal(name, 'Transcended ' + level + ' times', image_medaltranscend,
-      bind(function(level) { return state.g_numresets >= level; }, level),
-      bonus);
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-
-function getPlantTypeMedalBonus(croptype, tier, num) {
-  if(croptype == CROPTYPE_NUT) {
-    // nuts don't follow the same tier system as all the other crops that are based around the berry progression, but are based on tree level (through their spores cost) instead, so needs separate formula
-    //return Math.pow(1.25, tier);
-    return Math.pow(2, (45 + (tier - 1) * 6 - 5) / 10) * 4 / 100;
-  }
-  if(croptype == CROPTYPE_MUSH) tier = tier * 2 + 1.5;
-  if(croptype == CROPTYPE_FLOWER) tier = tier * 2 + 0.5;
-  if(croptype == CROPTYPE_STINGING) tier = tier * 8 + 3;
-  if(croptype == CROPTYPE_MISTLETOE) tier = 4;
-  if(croptype == CROPTYPE_BEE) tier = tier * 8 + 6.75;
-  //if(croptype == CROPTYPE_NUT) tier = tier + 9;
-  var num2 = (Math.floor(num / 10) + 1);
-  //var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
-  var t = Math.pow(1.7, tier);
-  var mul = t * num2 / 100 * 0.25;
-  return mul;
-}
-
-function registerPlantTypeMedal(cropid, num) {
-  var c = crops[cropid];
-  var mul = getPlantTypeMedalBonus(c.type, c.tier, num);
-  return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
-    if(state.challenge == challenge_thistle && cropid == nettle_1) return false;
-    return state.fullgrowncropcount[cropid] >= num;
-  }, Num(mul));
-};
-
-// crop count achievements
-function registerPlantTypeMedals(cropid, opt_start_at_30) {
-  var id0 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 1);
-  var id1 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 10); // easy to get for most crops, harder for flowers due to multiplier
-  var id2 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 20);
-  var id3 = registerPlantTypeMedal(cropid, 30); // requires bigger field
-  var id4 = registerPlantTypeMedal(cropid, 40);
-  var id5 = registerPlantTypeMedal(cropid, 50);
-  // room for 60 and 70 or 75. An 80 is most likely never needed, it's unlikely field size above 9x9 is supported (cells would get too small), which with 81 cells of which 2 taken by tree is not enough for an 80 medal.
-  medal_register_id++;
-  medal_register_id++;
-
-  // can only plant 1 nut, so could never get those next ones currently, so don't hint for them, even though they're registered they effectively do not exist
-  if(crops[cropid].type != CROPTYPE_NUT) {
-    if(medals[id0] && medals[id1]) medals[id1].hint = id0;
-    if(medals[id1] && medals[id2]) medals[id2].hint = id1;
-    if(medals[id2] && medals[id3]) medals[id3].hint = id2;
-    if(medals[id3] && medals[id4]) medals[id4].hint = id3;
-    if(medals[id4] && medals[id5]) medals[id5].hint = id4;
-  }
-
-  return id0;
-};
-medal_register_id = 160;
-registerPlantTypeMedals(berry_0);
-registerPlantTypeMedals(berry_1);
-registerPlantTypeMedals(berry_2);
-registerPlantTypeMedals(berry_3);
-registerPlantTypeMedals(berry_4);
-registerPlantTypeMedals(berry_5);
-registerPlantTypeMedals(berry_6);
-registerPlantTypeMedals(berry_7);
-registerPlantTypeMedals(berry_8);
-registerPlantTypeMedals(berry_9);
-registerPlantTypeMedals(berry_10);
-registerPlantTypeMedals(berry_11);
-registerPlantTypeMedals(berry_12);
-registerPlantTypeMedals(berry_13);
-registerPlantTypeMedals(berry_14);
-registerPlantTypeMedals(berry_15);
-medal_register_id = 320;
-registerPlantTypeMedals(mush_0);
-registerPlantTypeMedals(mush_1);
-registerPlantTypeMedals(mush_2);
-registerPlantTypeMedals(mush_3);
-registerPlantTypeMedals(mush_4);
-registerPlantTypeMedals(mush_5);
-registerPlantTypeMedals(mush_6);
-registerPlantTypeMedals(mush_7);
-medal_register_id = 400;
-registerPlantTypeMedals(flower_0);
-registerPlantTypeMedals(flower_1);
-registerPlantTypeMedals(flower_2);
-registerPlantTypeMedals(flower_3);
-registerPlantTypeMedals(flower_4);
-registerPlantTypeMedals(flower_5);
-registerPlantTypeMedals(flower_6);
-registerPlantTypeMedals(flower_7);
-medal_register_id = 480;
-registerPlantTypeMedals(nettle_0);
-registerPlantTypeMedals(nettle_1);
-medal_register_id = 560;
-var planttypemedals_bee0 = registerPlantTypeMedals(bee_0);
-var planttypemedals_bee1 = registerPlantTypeMedals(bee_1);
-medal_register_id = 640;
-// for the watercress, only start this at 30: the ones for 1, 10, 20 are not added because a medal for 1 watercress is too soon, and for 20 there's already the full field full of watercress medal
-// idem for the wasabi since planting a few is trivial
-registerPlantTypeMedals(brassica_0, true);
-registerPlantTypeMedals(brassica_1, true);
-medal_register_id = 720;
-registerPlantTypeMedals(mistletoe_0);
-medal_register_id = 960;
-registerPlantTypeMedal(nut_0, 1);
-registerPlantTypeMedal(nut_1, 1);
-registerPlantTypeMedal(nut_2, 1);
-registerPlantTypeMedal(nut_3, 1);
-registerPlantTypeMedal(nut_4, 1);
-registerPlantTypeMedal(nut_5, 1);
-registerPlantTypeMedal(nut_6, 1);
-registerPlantTypeMedal(nut_7, 1);
-registerPlantTypeMedal(nut_8, 1);
-registerPlantTypeMedal(nut_9, 1);
-registerPlantTypeMedal(nut_10, 1);
-registerPlantTypeMedal(nut_11, 1);
-registerPlantTypeMedal(nut_12, 1);
-registerPlantTypeMedal(nut_13, 1);
-registerPlantTypeMedal(nut_14, 1);
-registerPlantTypeMedal(nut_15, 1);
-
-// was: 600
-medal_register_id = 1000;
-registerMedal('5 ethereal crops', 'Have 5 ethereal crops', undefined, function() {
-  return state.numfullgrowncropfields2 >= 5;
-}, Num(0.02));
-registerMedal('10 ethereal crops', 'Have 10 ethereal crops', undefined, function() {
-  return state.numfullgrowncropfields2 >= 10;
-}, Num(0.05));
-registerMedal('20 ethereal crops', 'Have 20 ethereal crops', undefined, function() {
-  return state.numfullgrowncropfields2 >= 20;
-}, Num(0.1));
-
-medal_register_id = 1100;
-var fruit_achievement_values =   [   5,   10,   20,   50,  100,  200,  500, 1000, 2000, 5000, 10000];
-var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     2];
-var fruit_achievement_images =   [   0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10];
-for(var i = 0; i < fruit_achievement_values.length; i++) {
-  var num = fruit_achievement_values[i];
-  var bonus = Num(fruit_achievement_bonuses[i]);
-  var name = 'fruits ' + num;
-  var id = registerMedal(name, 'Found ' + num + ' fruits', images_apple[fruit_achievement_images[i]],
-      bind(function(num) { return state.g_numfruits >= num; }, num),
-      bonus);
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-
-medal_register_id = 1200;
-
-// those higher values like 500 are probably never reachable unless something fundamental is changed to the game design in the future, but that's ok,
-// not all medals that are in the code must be reachable.
-var level2_achievement_values =  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-for(var i = 0; i < level_achievement_values.length; i++) {
-  var level = level2_achievement_values[i];
-  var bonus = Num((level * level) / 20);
-  var s = level;
-  var name = 'ethereal tree level ' + s;
-  var id = registerMedal(name, 'Reached ethereal tree level ' + s, tree_images[treeLevelIndex(level)][1][4],
-      bind(function(level) { return level <= state.treelevel2; }, level), bonus);
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-
-medal_register_id = 1300;
-
-var resin_achievement_values =           [10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e12,1e15,1e18,1e21,1e24,1e27];
-var resin_achievement_bonuses_percent =  [ 1,  2,  5, 10, 15, 20, 35, 50,100, 250, 500,1000,2000,3000,4000];
-for(var i = 0; i < resin_achievement_values.length; i++) {
-  // have a good spread of this medal, more than exponential growth for its requirement
-  var num = Num(resin_achievement_values[i]);
-  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
-  var s0 = num.toString(3, Num.N_LATIN);
-  var s1 = num.toString(3, Num.N_SCI);
-  var name = full + ' resin ';
-  var name2 = (num.ltr(900)) ? (s0) : (s0 + ' (' + s1 + ')');
-  var id = registerMedal(name, 'earned over ' + name2 + ' resin in total', image_resin,
-      bind(function(num) { return state.g_res.resin.gt(num); }, num),
-      Num(resin_achievement_bonuses_percent[i]).mulr(0.01));
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-
-// was: 1000
-medal_register_id = 2000;
-
-registerMedal('help', 'viewed the main help dialog', image_help, function() {
-  return showing_help == true;
-}, Num(0.01));
-
-registerMedal('changelog', 'viewed the changelog', images_fern[0], function() {
-  return showing_changelog == true;
-}, Num(0.01));
-
-registerMedal('stats', 'viewed the player stats', image_stats, function() {
-  return showing_stats == true;
-}, Num(0.01));
-
-medal_register_id = 2010;
-
-var gametime_achievement_values =           [1,  7, 30];
-var gametime_achievement_bonuses_percent =  [1, 5, 10];
-for(var i = 0; i < gametime_achievement_values.length; i++) {
-  // have a good spread of this medal, more than exponential growth for its requirement
-  var days = gametime_achievement_values[i];
-  var name = days + ' ' + (days == 1 ? 'day' : 'days');
-  var id = registerMedal(name, 'played for ' + days + ' days', undefined,
-      bind(function(days) {
-        var play = (state.time - state.g_starttime) / (24 * 3600);
-        return play >= days;
-      }, days),
-      Num(gametime_achievement_bonuses_percent[i]).mulr(0.01));
-}
-
-medal_register_id = 2020;
-
-registerMedal('higher transcension', 'performed transcension at exactly twice the initial transcenscion level', undefined, function() {
-  // This is a bit of a hacky way to check this, but the goal is that you get the medal when
-  // you transcended (so tree level is definitely smaller than 20) and have had at least the
-  // tree level 20 to do so. Since this medal was only added to the game at a later point in time,
-  // this method of checking also allows players who did transcenscion II in the past but not
-  // during the current run to receive it
-  return state.g_treelevel >= 20 && state.treelevel < 20;
-}, Num(0.1));
-
-medal_register_id = 2100;
-
-registerMedal('the bees knees', 'completed the bees challenge', images_queenbee[4], function() {
-  return !!state.challenges[challenge_bees].completed;
-}, Num(0.1));
-
-var medal_rock0 = registerMedal('on the rocks', 'completed the rocks challenge', images_rock[1], function() {
-  return !!state.challenges[challenge_rocks].completed;
-}, Num(0.05));
-
-registerMedal('undeleted', 'completed the undeletable challenge', undefined, function() {
-  return !!state.challenges[challenge_nodelete].completed;
-}, Num(0.25));
-
-registerMedal('upgraded', 'completed the no upgrades challenge', upgrade_arrow, function() {
-  return state.challenges[challenge_noupgrades].completed >= 1;
-}, Num(0.25));
-
-registerMedal('upgradeder', 'completed the no upgrades challenge stage 2', upgrade_arrow, function() {
-  return state.challenges[challenge_noupgrades].completed >= 2;
-}, Num(0.5));
-
-registerMedal('withering', 'completed the wither challenge', undefined, function() {
-  return state.challenges[challenge_wither].completed >= 1;
-}, Num(0.35));
-
-var medal_wither2 = registerMedal('withered', 'completed the wither challenge stage 2', undefined, function() {
-  return state.challenges[challenge_wither].completed >= 2;
-}, Num(0.7));
-
-registerMedal('berried', 'completed the blackberry challenge', blackberry[4], function() {
-  return state.challenges[challenge_blackberry].completed >= 1;
-}, Num(1.0));
-
-registerMedal('B', 'place a bee nest during the blackberry challenge', images_beenest[4], function() {
-  return state.challenge == challenge_blackberry && state.fullgrowncropcount[bee_0] > 0;
-}, Num(1.5));
-
-var medal_rock1 = registerMedal('rock lobster', 'completed the rocks challenge stage 2', images_rock[2], function() {
-  return state.challenges[challenge_rocks].completed >= 2;
-}, Num(0.15));
-changeMedalDisplayOrder(medal_rock1, medal_rock0);
-
-var medal_rock2 = registerMedal('this rocks!', 'completed the rocks challenge stage 3', images_rock[3], function() {
-  return state.challenges[challenge_rocks].completed >= 3;
-}, Num(0.45));
-changeMedalDisplayOrder(medal_rock2, medal_rock1);
-
-var medal_rock3 = registerMedal('rock star', 'completed the rocks challenge stage 4', images_rock[0], function() {
-  return state.challenges[challenge_rocks].completed >= 4;
-}, Num(2));
-changeMedalDisplayOrder(medal_rock3, medal_rock2);
-
-var medal_rock4 = registerMedal('rocking on', 'completed the rocks challenge stage 5', images_rock[1], function() {
-  return state.challenges[challenge_rocks].completed >= 5;
-}, Num(5));
-changeMedalDisplayOrder(medal_rock4, medal_rock3);
-
-medal_register_id = 2120;
-
-registerMedal('rock solid', 'completed the rockier challenge', images_rock[0], function() {
-  return state.challenges[challenge_rockier].completed;
-}, Num(2));
-
-registerMedal('rock solid II', 'completed the rockier challenge map 2', images_rock[0], function() {
-  return state.challenges[challenge_rockier].num_completed >= 2;
-}, Num(2.5));
-medals[medal_register_id - 1].hint = medal_register_id - 2;
-
-registerMedal('rock solid III', 'completed the rockier challenge map 3', images_rock[0], function() {
-  return state.challenges[challenge_rockier].num_completed >= 3;
-}, Num(3));
-medals[medal_register_id - 1].hint = medal_register_id - 2;
-
-registerMedal('rock solid IV', 'completed the rockier challenge map 4', images_rock[0], function() {
-  return state.challenges[challenge_rockier].num_completed >= 4;
-}, Num(3.5));
-medals[medal_register_id - 1].hint = medal_register_id - 2;
-
-registerMedal('rock solid V', 'completed the rockier challenge map 5 (final)', images_rock[0], function() {
-  return state.challenges[challenge_rockier].num_completed >= 5;
-}, Num(4));
-medals[medal_register_id - 1].hint = medal_register_id - 2;
-
-medal_register_id = 2130;
-
-var medal_challenge_thistle = registerMedal('prickly predicament', 'completed the thistle challenge', images_thistle[4], function() {
-  return state.challenges[challenge_thistle].completed;
-}, Num(3));
-
-var medal_challenge_wasabi = registerMedal('wasaaaa, B', 'completed the wasabi challenge', images_wasabi[4], function() {
-  return state.challenges[challenge_wasabi].completed;
-}, Num(4));
-
-var medal_challenge_basic = registerMedal('the basics', 'ran the basic challenge', genericicon, function() {
-  return state.challenges[challenge_basic].completed;
-}, Num(1));
-
-// NOTE: this achievement is quasy-unobtainable, since in testing it took over 60 days to get it with 7x7 field and platinum fruit
-registerMedal('beesic', 'get a bee nest during the basic challenge', images_beenest[4], function() {
-  return state.challenge == challenge_basic && state.fullgrowncropcount[bee_0] > 0;
-}, Num(2));
-
-medal_register_id = 2135;
-
-registerMedal('basic 15', 'reach level 15 in the basic challenge', genericicon, function() {
-  return state.challenge == challenge_basic && state.treelevel >= 15;
-}, Num(2));
-
-registerMedal('basic 20', 'reach level 20 in the basic challenge', genericicon, function() {
-  return state.challenge == challenge_basic && state.treelevel >= 20;
-}, Num(2));
-
-registerMedal('basic 25', 'reach level 25 in the basic challenge', genericicon, function() {
-  return state.challenge == challenge_basic && state.treelevel >= 25;
-}, Num(2.5));
-
-// this takes almost a month to reach
-registerMedal('basic 30', 'this is the final achievement for the basic challenge. Higher levels are capped and won\'t give additional challenge bonus.', genericicon, function() {
-  return state.challenge == challenge_basic && state.treelevel >= 30;
-}, Num(3));
-
-registerDeprecatedMedal(); // was reserved for basic 35, but doing this takes too long and the game now caps it at 30 to avoid incentivizing this
-registerDeprecatedMedal(); // was reserved for basic 40, but doing this takes too long and the game now caps it at 30 to avoid incentivizing this
-
-medal_register_id = 2150;
-
-var medal_challenge_truly_basic = registerMedal('master of basic', 'completed the truly basic challenge', genericicon, function() {
-  return state.challenges[challenge_truly_basic].completed;
-}, Num(5));
-
-medal_register_id = 2155;
-
-registerMedal('truly basic 15', 'reach level 15 in the truly basic challenge', genericicon, function() {
-  return state.challenge == challenge_truly_basic && state.treelevel >= 15;
-}, Num(2));
-
-registerMedal('truly basic 20', 'reach level 20 in the truly basic challenge', genericicon, function() {
-  return state.challenge == challenge_truly_basic && state.treelevel >= 20;
-}, Num(2.5));
-
-// this medal may require more than a month of truly basic to reach
-registerMedal('truly basic 25', 'this is the final achievement for the truly basic challenge. Higher levels are capped and won\'t give additional challenge bonus.', genericicon, function() {
-  return state.challenge == challenge_truly_basic && state.treelevel >= 25;
-}, Num(3));
-
-registerDeprecatedMedal(); // was reserved for truly basic 30, but doing this takes too long and the game now caps it at 25 to avoid incentivizing this
-
-medal_register_id = 2170;
-
-var medal_challenge_stormy = registerMedal('stormy', 'completed the stormy challenge', image_storm, function() {
-  return state.challenges[challenge_stormy].completed;
-}, Num(1));
-
-var medal_challenge_infernal = registerMedal('infernal', 'completed the infernal challenge', field_infernal[2], function() {
-  return state.challenges[challenge_infernal].completed;
-}, Num(1.5));
-
-registerMedal('infernal bees', 'have bees during the infernal challenge', images_beenest[4], function() {
-  return state.challenge == challenge_infernal && state.fullgrowncropcount[bee_0] > 0;
-}, Num(2));
-
-registerMedal('infernal prestige', 'prestige a crop during infernal challenge', field_infernal[3], function() {
-  return state.challenge == challenge_infernal && state.crops[berry_0].prestige >= 1;
-}, Num(3));
-
-medal_register_id = 2500;
-
-function registerPrestigeMedal(cropid) {
-  var crop = crops[cropid];
-  var name = crop.name + ' prestige';
-  var desc = 'prestiged the ' + crop.name;
-  registerMedal(name, desc, crop.image[4], function() {
-    return state.crops[cropid].prestige >= 1;
-  }, Num(2 * getPlantTypeMedalBonus(crop.type, crop.tier + num_tiers_per_crop_type[crop.type], 1)));
-}
-for(var i = 0; i < 16; i++) {
-  registerPrestigeMedal(berry_0 + i);
-}
-
-medal_register_id = 2600;
-for(var i = 0; i < 8; i++) {
-  registerPrestigeMedal(mush_0 + i);
-}
-
-medal_register_id = 2700;
-for(var i = 0; i < 8; i++) {
-  registerPrestigeMedal(flower_0 + i);
-}
-
-medal_register_id = 2800;
-for(var i = 0; i < 16; i++) {
-  registerPrestigeMedal(nut_0 + i);
-}
-
-medal_register_id = 2900;
-var nuts_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33, 1e36, 1e39, 1e42, 1e45, 1e48, 1e51, 1e54, 1e57, 1e60, 1e63, 1e66, 1e69, 1e72, 1e75, 1e78, 1e81, 1e84, 1e87, 1e90, 1e93, 1e96, 1e99];
-var nuts_achievement_bonuses_percent =   [  1,   3,   5,   10,   20,   30,   40,   50,   60,   70,   80,  100,  150,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000];
-for(var i = 0; i < nuts_achievement_values.length; i++) {
-  // have a good spread of this medal, more than exponential growth for its requirement
-  var num = Num(nuts_achievement_values[i]);
-  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
-  var s0 = num.toString(3, Num.N_LATIN);
-  var s1 = num.toString(3, Num.N_SCI);
-  var name = full + ' nuts';
-  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') nuts', image_nuts,
-      bind(function(num) { return state.res.nuts.gt(num); }, num),
-      Num(nuts_achievement_bonuses_percent[i]).mulr(0.01));
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
-
-
-medal_register_id = 3000;
-// various misc medals here
-
-// ghost crops can happen when prestiging during the undeletable challenge, or during the stormy challenge
-registerMedal('ghost in the field', 'have a ghost-crop', image_berryghost, function() {
-  return state.ghostcount > 0;
-}, Num(1));
-
-registerMedal('ghost town', 'have 10 ghost crops in the field', image_mushghost, function() {
-  return state.ghostcount >= 10;
-}, Num(1.5));
-
-registerMedal('who you gonna call?', 'have the whole field full of ghost crops', image_flowerghost, function() {
-  if(state.ghostcount == 0) return false;
-  var numfield = state.numw * state.numh - 2; // subtract tree
-  if(state.ghostcount >= numfield) return true;
-  if(state.ghostcount2 >= numfield) {
-    var dead_brassica = state.ghostcount2 - state.ghostcount;
-    if(dead_brassica <= 4) return true; // allow up to 4 dead brassica instead of true ghosts: so that someone with a layout with brassica who leaves it overnight during the stormy challenge, still has a chance to get this achieve
-  }
-  return false;
-}, Num(2));
-
-// this is equivalent to prestiging during the undeletable challenge
-registerMedal('undeletable ghost', 'get a ghost-crop during the undeletable challenge', image_berryghost, function() {
-  return state.ghostcount > 0 && state.challenge == challenge_nodelete;
-}, Num(1));
-
-var medal_tb_speed_0 = registerMedal('truly basic speed 2.5h', 'reach level 10 in the truly basic challenge in 2.5 hours or less', image_hourglass, function() {
-  var runtime = 9000;
-  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
-  return false;
-}, Num(1));
-
-
-var medal_tb_speed_1 = registerMedal('truly basic speed 2h', 'reach level 10 in the truly basic challenge in 2 hours or less', image_hourglass, function() {
-  var runtime = 7200;
-  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
-  return false;
-}, Num(2));
-medals[medal_tb_speed_1].hint = medal_tb_speed_0;
-
-var medal_tb_speed_2 = registerMedal('truly basic speed 1.5h', 'reach level 10 in the truly basic challenge in 1.5 hours or less', image_hourglass, function() {
-  var runtime = 5400;
-  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
-  return false;
-}, Num(3));
-medals[medal_tb_speed_2].hint = medal_tb_speed_1;
-
-var medal_tb_speed_3 = registerMedal('truly basic speed 1h', 'reach level 10 in the truly basic challenge in 1 hour or less', image_hourglass, function() {
-  var runtime = 3600;
-  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
-  return false;
-}, Num(4));
-medals[medal_tb_speed_3].hint = medal_tb_speed_2;
-
-
-medal_register_id = 3020;
-
-registerMedal('squirrel evolution', 'evolve the squirrel', image_squirrel_evolution, function() {
-  return state.squirrel_evolution >= 1;
-}, Num(100));
-
-var medal_challenge_thistle_stingy = registerMedal('rather stingy', 'plant the entire field full of stinging crops during the thistle challenge', images_thistle[4], function() {
-  return state.challenge == challenge_thistle && state.fullgrowncroptypecount[CROPTYPE_STINGING] >= (state.numw * state.numh - 2);
-}, Num(4));
-changeMedalDisplayOrder(medal_challenge_thistle_stingy, medal_challenge_thistle);
-
-medal_register_id = 3040;
-
-var medal_wither3 = registerMedal('withered III', 'completed the wither challenge stage 3', undefined, function() {
-  return state.challenges[challenge_wither].completed >= 3;
-}, Num(2));
-changeMedalDisplayOrder(medal_wither3, medal_wither2);
-
-var medal_wither4 = registerMedal('withered IV', 'completed the wither challenge stage 4', undefined, function() {
-  return state.challenges[challenge_wither].completed >= 4;
-}, Num(4));
-changeMedalDisplayOrder(medal_wither4, medal_wither3);
-
-var medal_wither5 = registerMedal('withered V', 'completed the wither challenge stage 5', undefined, function() {
-  return state.challenges[challenge_wither].completed >= 5;
-}, Num(5));
-changeMedalDisplayOrder(medal_wither5, medal_wither4);
-
-
-
-// infinity field related medals
-medal_register_id = 4000;
-
-// The doubling of these achievements is because each next time you plant the first brassica tier, you can plant twice as much as before
-
-registerMedal('One infinity', 'Have one crop on the infinity field', image_infinity, function() {
-  return state.numcropfields3 >= 1;
-}, Num(10));
-
-registerMedal('Two infinities', 'Have two crops on the infinity field', image_infinity, function() {
-  return state.numcropfields3 >= 2;
-}, Num(20));
-
-registerMedal('Four infinities', 'Have four crops on the infinity field', image_infinity, function() {
-  return state.numcropfields3 >= 4;
-}, Num(40));
-
-registerMedal('Eight infinities', 'Have eight crops on the infinity field', image_infinity, function() {
-  return state.numcropfields3 >= 8;
-}, Num(80));
-
-registerMedal('Sixtien infinities', 'Have sixteen crops on the infinity field', image_infinity, function() {
-  return state.numcropfields3 >= 16;
-}, Num(160));
-
-registerMedal('Infinite infinities', 'Filled the entire infinity field with crops', image_infinity, function() {
-  return state.numemptyfields3 == 0;
-}, Num(250));
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-
-// @constructor
 function Challenge() {
   this.name = 'a';
   this.description = 'a';
@@ -4619,6 +3875,13 @@ function registerNettle2(name, treelevel2, tier, cost, boost, planttime, effect,
   return index;
 }
 
+function registerBrassica2(name, treelevel2, tier, cost, boost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_BRASSICA, tier);
+  var crop = crops2[index];
+  crop.effect = effect;
+  return index;
+}
+
 function registerLotus2(name, treelevel2, tier, cost, boost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(boost), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_LOTUS, tier);
   var crop = crops2[index];
@@ -4680,6 +3943,7 @@ var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), etherealDelete
 var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), etherealDeleteSessionTime, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
 var berry2_5 = registerBerry2('gooseberry', 14, 5, Res({resin:2e15}), etherealDeleteSessionTime, Num(256), undefined, 'boosts berries in the basic field (additive)', gooseberry);
 var berry2_6 = registerBerry2('grape', 18, 6, Res({resin:3e19}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts berries in the basic field (additive)', grape);
+//var berry2_7 = registerBerry2('honeyberry', 22, 6, Res({resin:1e24}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts berries in the basic field (additive)', grape);
 
 // mushrooms2
 crop2_register_id = 50;
@@ -4690,6 +3954,7 @@ var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), etherealDel
 var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), etherealDeleteSessionTime, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
 var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), etherealDeleteSessionTime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
 var mush2_6 = registerMushroom2('shiitake', 17, 6, Res({resin:3e18}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', shiitake);
+//var mush2_7 = registerMushroom2('truffle', 22, 7, Res({resin:1e24}), etherealDeleteSessionTime, Num(4096), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', shiitake);
 
 
 // flowers2
@@ -4700,17 +3965,27 @@ var flower2_2 = registerFlower2('cornflower', 6, 2, Res({resin:5e6}), default_et
 var flower2_3 = registerFlower2('daisy', 9, 3, Res({resin:10e9}), default_ethereal_growtime, Num(16), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_daisy);
 var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), default_ethereal_growtime, Num(64), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_dandelion);
 var flower2_5 = registerFlower2('iris', 15, 5, Res({resin:50e15}), default_ethereal_growtime, Num(256), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
+var flower2_6 = registerFlower2('lavender', 19, 6, Res({resin:500e18}), default_ethereal_growtime, Num(1024), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_lavender);
+//var flower2_7 = registerFlower2('orchid', 23, 7, Res({resin:10e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
 
 crop2_register_id = 100;
 var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, etherealDeleteSessionTime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
 var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, etherealDeleteSessionTime, Num(1.4), undefined, 'boosts stinging plants in the basic field (additive).', images_thistle);
 
+crop2_register_id = 125;
+// similar to bee2_0: very low boost value here, but given that you can immediately increase the boost tremendously with gold lotuses means it's a lot in practice
+var brassica2_0 = registerBrassica2('watercress', 21, 0, Res({resin:100e21}), 0.25, default_ethereal_growtime, Num(0.0001), undefined, 'boosts brassica in the basic field (additive).', images_watercress);
+//var brassica2_1 = registerBrassica2('wasabi', 25, 1, Res({resin:100e9}), 0.25, default_ethereal_growtime, Num(0.0004), undefined, 'boosts brassica in the basic field (additive).', images_wasabi);
+
 crop2_register_id = 150;
-var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
-var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
-var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
-var lotus2_3 = registerLotus2('black lotus', 12, 3, Res({resin:200e12}), 256, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_blacklotus);
-var lotus2_4 = registerLotus2('gold lotus', 16, 4, Res({resin:500e15}), 2048, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of type berry, mushroom, flower and nettle. No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_goldlotus);
+var lotus2_0 = registerLotus2('white lotus', 0, 0, Res({resin:50}), 0.5, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_whitelotus);
+var lotus2_1 = registerLotus2('pink lotus', 4, 1, Res({resin:250000}), 4, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_pinklotus);
+var lotus2_2 = registerLotus2('blue lotus', 8, 2, Res({resin:1e9}), 32, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_bluelotus);
+var lotus2_3 = registerLotus2('black lotus', 12, 3, Res({resin:200e12}), 256, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_blacklotus);
+var lotus2_4 = registerLotus2('gold lotus', 16, 4, Res({resin:500e15}), 2048, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_goldlotus);
+// following the above pattern, next boost here should be 4x higher, however given that watercress boost will also be added between this and previous lotus, having a factor of 8x is too strong, so reduced to 4x from now on (remember that lotus boost boosts multiple multipliers at once, at least 6 types with a chain of 5 types for spores, so this is n^5 scaling, not just linear)
+var lotus2_5 = registerLotus2('green lotus', 20, 5, Res({resin:10e21}), 8192, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_greenlotus);
+//var lotus2_6 = registerLotus2('???? lotus', 24, 6, Res({resin:100e24}), 32768, default_ethereal_growtime, undefined, 'boosts the bonus effect of ethereal neighbors of types that boost basic field (such as berry, mushroom, but not fern). No effect if no appropriate neighbors. This crop boosts neighboring plants in the ethereal field, rather than boosting the basic field directly.', images_greenlotus);
 
 crop2_register_id = 200;
 // the first beehive has only 1% boost, however by the time you unlock this beehive you can get a massive boost from blue lotuses next to a beehive, one blue lotus next to a beehive turns this boost into 33%, and you can have more than 1 blue lotus next to it. For that reason it starts so low, because if this has a base boost of e.g. 25% this would be a way too huge jump in gameplay boost by just unlocking this new ethereal crop type at a time when you already have many lotuses
@@ -4741,6 +4016,7 @@ var automaton2_template = makeTemplate2(registerAutomaton2('automaton template',
 var squirrel2_template = makeTemplate2(registerSquirrel2('squirrel template', 5, -1, Res(), 0, undefined, '', images_squirreltemplate));
 var bee2_template = makeTemplate2(registerBeehive2('bee template', 8, -1, Res(), 0, Num(0), undefined, '', images_beetemplate));
 var mistletoe2_template = makeTemplate2(registerMistletoe2('mistletoe template', 15, -1, Res(), 0, Num(0), undefined, '', images_mistletoetemplate));
+var brassica2_template = makeTemplate2(registerBrassica2('brassica template', 2, -1, Res(), 0, 0, Num(0), undefined, '', images_watercresstemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -7685,7 +6961,7 @@ var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', Num(0.07)
 
 var mistle_upgrade_stingy = registerMistletoeUpgrade('stinginess', Num(0.07), 5, 3600, 'Gives a %BONUS% bonus to stingy crops (for spore production) per level');
 
-var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', Num(0.07), 9, 3600, 'Gives a %BONUS% bonus to mushrooms (both produciton and consumption) per level');
+var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', Num(0.07), 9, 3600, 'Gives a %BONUS% bonus to mushrooms (both production and consumption) per level');
 
 var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', Num(0.07), 11, 3600, 'Gives a %BONUS% bonus to berry seed production per level');
 
@@ -7813,6 +7089,7 @@ function Crop3() {
 var sameTypeCostMultiplier3 = 1.1;
 var sameTypeCostMultiplier3_flower = 1.25;
 var sameTypeCostMultiplier3_bee = 2;
+var sameTypeCostMultiplier3_runestone = 1000;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 Crop3.prototype.isReal = function() {
@@ -7826,6 +7103,7 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   var mul = sameTypeCostMultiplier3;
   if(this.type == CROPTYPE_FLOWER) mul = sameTypeCostMultiplier3_flower;
   if(this.type == CROPTYPE_BEE) mul = sameTypeCostMultiplier3_bee;
+  if(this.type == CROPTYPE_RUNESTONE) mul = sameTypeCostMultiplier3_runestone;
   var count = state.crop3count[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
   var countfactor = Math.pow(mul, count);
@@ -7864,7 +7142,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
       var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
       var n = state.field3[y2][x2];
-      if(n.hasCrop() && n.isFullGrown() && crops3[n.cropIndex()].type == CROPTYPE_FLOWER) {
+      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_FLOWER) {
         var boost = crops3[n.cropIndex()].getInfBoost(n);
         if(boost.neqr(0)) {
           flowermul.addInPlace(boost);
@@ -7882,6 +7160,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   return result;
 }
 
+// boost from inf field to inf field (flowers to berries, and flowers themselves compute their boost from infinity bees here)
 Crop3.prototype.getInfBoost = function(f, breakdown) {
   var result = this.infboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
@@ -7914,9 +7193,34 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
   return result;
 };
 
+// boost from infinity field to basic field
 Crop3.prototype.getBasicBoost = function(f, breakdown) {
   var result = this.basicboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+
+  if(f) {
+    var mul = new Num(1);
+    var num = 0;
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+      var n = state.field3[y2][x2];
+      if(n.hasCrop() && crops3[n.cropIndex()].type == CROPTYPE_RUNESTONE) {
+        var boost = crops3[n.cropIndex()].getInfBoost(n);
+        if(boost.neqr(0)) {
+          mul.addInPlace(boost);
+          num++;
+        }
+      }
+    }
+    if(num) {
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['runestones (' + num + ')', true, mul, result.clone()]);
+    }
+  }
 
   return result;
 };
@@ -7990,17 +7294,27 @@ function registerBee3(name, tier, cost, infboost, basicboost, planttime, image, 
   return index;
 }
 
+function registerRunestone3(name, tier, cost, infboost, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_RUNESTONE, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.infboost = infboost;
+  return index;
+}
+
 
 crop3_register_id = 0;
 var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Res({infseeds:20.01 / (24 * 3600)}), Num(0.05), 24 * 3600, metalifyPlantImages(images_watercress, metalheader0));
 var brassica3_1 = registerBrassica3('bronze watercress', 1, Res({infseeds:25000}), Res({infseeds:50000 / (2 * 24 * 3600)}), Num(0.05), 2 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader1));
 var brassica3_2 = registerBrassica3('silver watercress', 2, Res({infseeds:5e7}), Res({infseeds:5e7 * 4 / (3 * 24 * 3600)}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader2, 0));
-//var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, 0));
+var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, 4));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), 15, metalifyPlantImages(blackberry, metalheader0));
 var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), 15, metalifyPlantImages(blackberry, metalheader1));
+// some division done in the production, since we take into account they're now well boosted by flowers and eventually beehives
 var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), 15, metalifyPlantImages(blackberry, metalheader2, 2));
+// more division since better flowers and beehives now
+var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), Res({infseeds:(100e12 / 32 / (24 * 3600))}), Num(0.2), 15, metalifyPlantImages(blackberry, metalheader3, 4, 2));
 
 crop3_register_id = 600;
 // mushrooms? maybe not, but ids reserved for in case
@@ -8008,17 +7322,853 @@ crop3_register_id = 600;
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), 15, metalifyPlantImages(images_anemone, metalheader0, 1));
 var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2.5e6}), Num(1), Num(0.15), 15, metalifyPlantImages(images_anemone, metalheader1));
-var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(2), Num(0.2), 15, metalifyPlantImages(images_anemone, metalheader2, 0));
+var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), 15, metalifyPlantImages(images_anemone, metalheader2, 0));
+var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(9), Num(0.3), 15, metalifyPlantImages(images_anemone, metalheader3, 4));
 
 crop3_register_id = 1200;
-var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(3), Num(0.5), 15, metalifyPlantImages(images_beenest, metalheader2, 0));
+var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), 15, metalifyPlantImages(images_beenest, metalheader2, 0));
+var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(12), Num(0.75), 15, metalifyPlantImages(images_beenest, metalheader3, 4));
 
+crop3_register_id = 1500;
+var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+// @constructor
+// aka achievement
+function Medal() {
+  this.name = 'a';
+  this.conditionfun = undefined;
+
+  // production multiplier given by this medal, additively added to the global medal-multiplier, e.g. 0.01 for 1%
+  this.prodmul = Num(0);
+
+  this.hint = undefined; // if the medal with id hint is unlocked, then reveals the existance of this medal in the UI (but does not unlock it)
+
+  this.icon = undefined;
+
+  this.index = 0; // its index in registered_medals
+  this.order = 0; // its index in medals_order
+
+  this.deprecated = false; // no longer existing medal from earlier game version
+};
+
+// Tier for achievement images if no specific one given, maps to zinc, copper, silver, electrum, gold, etc..., see images_medals.js
+Medal.prototype.getTier = function() {
+  var percent = this.prodmul.mulr(100);
+  if(percent.ltr(1)) return 0;
+  if(percent.ltr(5)) return 1;
+  if(percent.ltr(20)) return 2;
+  if(percent.ltr(100)) return 3;
+  if(percent.ltr(500)) return 4;
+  if(percent.ltr(2000)) return 5;
+  if(percent.ltr(10000)) return 6;
+  if(percent.ltr(50000)) return 7;
+  if(percent.ltr(200000)) return 8;
+  if(percent.ltr(1000000)) return 9;
+  if(percent.ltr(5000000)) return 10;
+  return 11;
+};
+
+var registered_medals = []; // indexed consecutively, gives the index to medal
+var medals = []; // indexed by medal index (not necessarily consectuive)
+var medals_order = []; // display order of the medals, contains the indexes in medals array
+
+var medal_register_id = -1;
+
+// where = index of medal to put this one behind in display order
+// medal "index" will be displayed right after medal "where"
+function changeMedalDisplayOrder(index, where) {
+  if(where > index) throw 'can only move order backward for now';
+  var a = medals[where];
+  var b = medals[index];
+
+  var from = a.order + 1;
+  var to = b.order;
+  for(var i = to; i > from; i--) {
+    medals_order[i] = medals_order[i - 1];
+    medals[medals_order[i]].order = i;
+  }
+  medals_order[from] = index;
+  b.order = from;
+}
+
+function registerMedal(name, description, icon, conditionfun, prodmul) {
+  if(medals[medal_register_id] || medal_register_id < 0 || medal_register_id > 65535) throw 'medal id already exists or is invalid!';
+
+  var medal = new Medal();
+  medal.index = medal_register_id++;
+  medals[medal.index] = medal;
+  registered_medals.push(medal.index);
+
+  medal.name = name;
+  medal.description = description;
+  medal.icon = icon;
+  medal.conditionfun = conditionfun;
+  medal.prodmul = prodmul;
+
+  medal.order = medals_order.length;
+  medals_order[medal.order] = medal.index;
+
+  if(!icon) medal.icon = medalgeneric[medal.getTier()];
+
+  return medal.index;
+}
+
+function registerDeprecatedMedal() {
+  var id = registerMedal('deprecated', 'deprecated', genericicon, function() { return false; }, Num(0));
+  medals[id].deprecated = true;
+}
+
+var genericicon = undefined; // use default generic medal icon. value is undefined, just given a name here.
+
+medal_register_id = 0;
+var medal_crowded_id = registerMedal('crowded', 'planted something on every single field cell. Time to delete crops when more room is needed!', genericicon, function() {
+  if(state.numemptyfields != 0) return false;
+  // why - 4: 2 are for the tree. And the other 3: allow having two temporary crops and yet still be valid for getting this achievement. The "numemptyfields" check above ensures there's at least something present on those two remaining non-full-permanent-plant spots.
+  // why allowing 3 short-lived crops: this achievement is supposed to come somewhat early and has a tutorial function (explain delete), so ensure it doesn't accidently come way too late when someone is using short-lived crops for their boost continuously.
+  return state.numfullpermanentcropfields >= state.numw * state.numh - 5;
+}, Num(0.02));
+registerMedal('fern 100', 'clicked 100 ferns', images_fern[0], function() { return state.g_numferns >= 100; }, Num(0.01));
+registerMedal('fern 1000', 'clicked 1000 ferns', images_fern[0], function() { return state.g_numferns >= 1000; }, Num(0.1));
+registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { return state.g_numferns >= 10000; }, Num(1));
+
+var prevmedal;
+
+medal_register_id = 4;
+var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e66, 1e72, 1e78, 1e84, 1e90,  1e96, 1e102, 1e108, 1e114, 1e120, 1e126, 1e162, 1e168, 1e174, 1e180];
+var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   5,    10,   20,   30,   50,  100,  200,  300,  400,  500, 1000, 2000, 3000, 5000,  7000, 10000, 20000, 25000, 30000, 40000, 50000, 60000, 70000, 80000];
+for(var i = 0; i < seeds_achievement_values.length; i++) {
+  // have a good spread of this medal, more than exponential growth for its requirement
+  var num = Num(seeds_achievement_values[i]);
+  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  var s0 = num.toString(3, Num.N_LATIN);
+  var s1 = num.toString(3, Num.N_SCI);
+  var name = full + ' seeds';
+  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
+      bind(function(num) { return state.res.seeds.gt(num); }, num),
+      Num(seeds_achievement_bonuses_percent[i]).mulr(0.01));
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
+
+medal_register_id = 39;
+var planted_achievement_values =  [   5,   50,  100,  200,  500,  1000,  1500, 2000, 5000];
+var planted_achievement_bonuses = [0.01, 0.01, 0.02, 0.02, 0.05,  0.05,   0.1,  0.1,  0.2];
+for(var i = 0; i < planted_achievement_values.length; i++) {
+  var a = planted_achievement_values[i];
+  var b = planted_achievement_bonuses[i];
+  var name = 'planted ' + a;
+  //if(i > 0) medals[prevmedal].description += '. Next achievement in this series, ' + name + ', unlocks at ' + a + ' planted.';
+  var id = registerMedal(name, 'Planted ' + a + ' or more permanent plants over the course of the game', blackberry[0],
+      bind(function(a) { return state.g_numfullgrown >= a; }, a),
+      Num(b));
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+medal_register_id += 20; // a few spares for this one
+
+// TODO: have more tree level medals here. But decide this when the game is such that those levels are actually reachable to know what are good bonus values
+var level_achievement_values = [[5, 0.025], [10, 0.05], [15, 0.075], [20, 0.1], [25, 0.2],
+                                [30, 0.3],  [35, 0.4],  [40, 0.5],  [45, 0.75],  [50, 1.0],
+                                [60, 1.5],  [70, 2.5],  [80, 5],  [90, 10],  [100, 15],
+                                [110, 25],  [120, 50],  [130, 75],  [140, 150],  [150, 200]];
+for(var i = 0; i < level_achievement_values.length; i++) {
+  var level = level_achievement_values[i][0];
+  var bonus = Num(level_achievement_values[i][1]);
+  var s = Num(level).toString(5, Num.N_FULL);
+  var name = 'tree level ' + s;
+  //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + s + '.';
+  var id = registerMedal(name, 'Reached tree level ' + s, tree_images[treeLevelIndex(level)][1][1],
+      bind(function(level) { return level <= state.g_treelevel; }, level),
+      bonus);
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
+// TODO: from now on, clearly define the value of a new medal series right before it, rather than the "+= 20" system from above, to prevent no accidental changing of all achievement IDs
+medal_register_id = 104;
+var season_medal = registerMedal('four seasons', 'reached winter and seen all seasons', field_winter[0], function() { return getSeason() == 3; }, Num(0.05));
+
+medal_register_id = 110;
+registerMedal('watercress', 'plant the entire field full of watercress', images_watercress[4], function() {
+  return state.croptypecount[CROPTYPE_BRASSICA] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('berries', 'plant the entire field full of berries', blackberry[4], function() {
+  return state.fullgrowncroptypecount[CROPTYPE_BERRY] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('flowers', 'plant the entire field full of flowers. Pretty, at least that\'s something', images_clover[4], function() {
+  return state.fullgrowncroptypecount[CROPTYPE_FLOWER] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('mushrooms', 'plant the entire field full of mushrooms. I, for one, respect our new fungus overlords.', champignon[4], function() {
+  return state.fullgrowncroptypecount[CROPTYPE_MUSH] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('stingy situation', 'plant the entire field full of nettles', images_nettle[4], function() {
+  return state.fullgrowncroptypecount[CROPTYPE_STINGING] == state.numw * state.numh - 2;
+}, Num(0.01));
+registerMedal('mistletoes', 'plant the entire field full of mistletoes. You know they only work next to the tree, right?', images_mistletoe[4], function() {
+  return state.fullgrowncroptypecount[CROPTYPE_MISTLETOE] == state.numw * state.numh - 2;
+}, Num(0.05));
+registerMedal('not the bees', 'build the entire field full of bees.', images_beenest[0], function() {
+  return state.fullgrowncroptypecount[CROPTYPE_BEE] == state.numw * state.numh - 2;
+}, Num(0.1));
+registerMedal('unbeelievable', 'fill the entire field (5x5) with bees during the bee challenge.', images_workerbee[4], function() {
+  var num = state.fullgrowncropcount[challengecrop_0] + state.fullgrowncropcount[challengecrop_1] + state.fullgrowncropcount[challengecrop_2];
+  return num >= 5 * 5 - 2;
+}, Num(0.2));
+registerMedal('buzzy', 'fill the entire field (5x5) with worker bees during the bees challenge.', images_workerbee[4], function() {
+  return state.fullgrowncropcount[challengecrop_0] >= 5 * 5 - 2;
+}, Num(0.3));
+registerMedal('unbeetable', 'fill the entire field (5x5) with drones during the bees challenge.', images_dronebee[4], function() {
+  return state.fullgrowncropcount[challengecrop_1] >= 5 * 5 - 2;
+}, Num(0.4));
+registerMedal('royal buzz', 'fill the entire field (5x5) with queen bees during the bees challenge.', images_queenbee[4], function() {
+  return state.fullgrowncropcount[challengecrop_2] >= 5 * 5 - 2;
+}, Num(0.5));
+
+
+medal_register_id = 125;
+var numreset_achievement_values =   [   1,    5,   10,   20,   50,  100,  200,  500, 1000];
+var numreset_achievement_bonuses =  [ 0.1,  0.2,  0.25,  0.3,  0.5,   1,    2,    3,    4];
+for(var i = 0; i < numreset_achievement_values.length; i++) {
+  var level = numreset_achievement_values[i];
+  var bonus = Num(numreset_achievement_bonuses[i]);
+  var name = 'transcend ' + level;
+  //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + level + '.';
+  var id = registerMedal(name, 'Transcended ' + level + ' times', image_medaltranscend,
+      bind(function(level) { return state.g_numresets >= level; }, level),
+      bonus);
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
+function getPlantTypeMedalBonus(croptype, tier, num) {
+  if(croptype == CROPTYPE_NUT) {
+    // nuts don't follow the same tier system as all the other crops that are based around the berry progression, but are based on tree level (through their spores cost) instead, so needs separate formula
+    //return Math.pow(1.25, tier);
+    return Math.pow(2, (45 + (tier - 1) * 6 - 5) / 10) * 4 / 100;
+  }
+  if(croptype == CROPTYPE_MUSH) tier = tier * 2 + 1.5;
+  if(croptype == CROPTYPE_FLOWER) tier = tier * 2 + 0.5;
+  if(croptype == CROPTYPE_STINGING) tier = tier * 8 + 3;
+  if(croptype == CROPTYPE_MISTLETOE) tier = 4;
+  if(croptype == CROPTYPE_BEE) tier = tier * 8 + 6.75;
+  //if(croptype == CROPTYPE_NUT) tier = tier + 9;
+  var num2 = (Math.floor(num / 10) + 1);
+  //var t = Math.ceil((tier + 1) * Math.log(tier + 1.5));
+  var t = Math.pow(1.7, tier);
+  var mul = t * num2 / 100 * 0.25;
+  return mul;
+}
+
+function registerPlantTypeMedal(cropid, num) {
+  var c = crops[cropid];
+  var mul = getPlantTypeMedalBonus(c.type, c.tier, num);
+  return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
+    if(state.challenge == challenge_thistle && cropid == nettle_1) return false;
+    return state.fullgrowncropcount[cropid] >= num;
+  }, Num(mul));
+};
+
+// crop count achievements
+function registerPlantTypeMedals(cropid, opt_start_at_30) {
+  var id0 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 1);
+  var id1 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 10); // easy to get for most crops, harder for flowers due to multiplier
+  var id2 = opt_start_at_30 ? medal_register_id++ : registerPlantTypeMedal(cropid, 20);
+  var id3 = registerPlantTypeMedal(cropid, 30); // requires bigger field
+  var id4 = registerPlantTypeMedal(cropid, 40);
+  var id5 = registerPlantTypeMedal(cropid, 50);
+  // room for 60 and 70 or 75. An 80 is most likely never needed, it's unlikely field size above 9x9 is supported (cells would get too small), which with 81 cells of which 2 taken by tree is not enough for an 80 medal.
+  medal_register_id++;
+  medal_register_id++;
+
+  // can only plant 1 nut, so could never get those next ones currently, so don't hint for them, even though they're registered they effectively do not exist
+  if(crops[cropid].type != CROPTYPE_NUT) {
+    if(medals[id0] && medals[id1]) medals[id1].hint = id0;
+    if(medals[id1] && medals[id2]) medals[id2].hint = id1;
+    if(medals[id2] && medals[id3]) medals[id3].hint = id2;
+    if(medals[id3] && medals[id4]) medals[id4].hint = id3;
+    if(medals[id4] && medals[id5]) medals[id5].hint = id4;
+  }
+
+  return id0;
+};
+medal_register_id = 160;
+registerPlantTypeMedals(berry_0);
+registerPlantTypeMedals(berry_1);
+registerPlantTypeMedals(berry_2);
+registerPlantTypeMedals(berry_3);
+registerPlantTypeMedals(berry_4);
+registerPlantTypeMedals(berry_5);
+registerPlantTypeMedals(berry_6);
+registerPlantTypeMedals(berry_7);
+registerPlantTypeMedals(berry_8);
+registerPlantTypeMedals(berry_9);
+registerPlantTypeMedals(berry_10);
+registerPlantTypeMedals(berry_11);
+registerPlantTypeMedals(berry_12);
+registerPlantTypeMedals(berry_13);
+registerPlantTypeMedals(berry_14);
+registerPlantTypeMedals(berry_15);
+medal_register_id = 320;
+registerPlantTypeMedals(mush_0);
+registerPlantTypeMedals(mush_1);
+registerPlantTypeMedals(mush_2);
+registerPlantTypeMedals(mush_3);
+registerPlantTypeMedals(mush_4);
+registerPlantTypeMedals(mush_5);
+registerPlantTypeMedals(mush_6);
+registerPlantTypeMedals(mush_7);
+medal_register_id = 400;
+registerPlantTypeMedals(flower_0);
+registerPlantTypeMedals(flower_1);
+registerPlantTypeMedals(flower_2);
+registerPlantTypeMedals(flower_3);
+registerPlantTypeMedals(flower_4);
+registerPlantTypeMedals(flower_5);
+registerPlantTypeMedals(flower_6);
+registerPlantTypeMedals(flower_7);
+medal_register_id = 480;
+registerPlantTypeMedals(nettle_0);
+registerPlantTypeMedals(nettle_1);
+medal_register_id = 560;
+var planttypemedals_bee0 = registerPlantTypeMedals(bee_0);
+var planttypemedals_bee1 = registerPlantTypeMedals(bee_1);
+medal_register_id = 640;
+// for the watercress, only start this at 30: the ones for 1, 10, 20 are not added because a medal for 1 watercress is too soon, and for 20 there's already the full field full of watercress medal
+// idem for the wasabi since planting a few is trivial
+registerPlantTypeMedals(brassica_0, true);
+registerPlantTypeMedals(brassica_1, true);
+medal_register_id = 720;
+registerPlantTypeMedals(mistletoe_0);
+medal_register_id = 960;
+registerPlantTypeMedal(nut_0, 1);
+registerPlantTypeMedal(nut_1, 1);
+registerPlantTypeMedal(nut_2, 1);
+registerPlantTypeMedal(nut_3, 1);
+registerPlantTypeMedal(nut_4, 1);
+registerPlantTypeMedal(nut_5, 1);
+registerPlantTypeMedal(nut_6, 1);
+registerPlantTypeMedal(nut_7, 1);
+registerPlantTypeMedal(nut_8, 1);
+registerPlantTypeMedal(nut_9, 1);
+registerPlantTypeMedal(nut_10, 1);
+registerPlantTypeMedal(nut_11, 1);
+registerPlantTypeMedal(nut_12, 1);
+registerPlantTypeMedal(nut_13, 1);
+registerPlantTypeMedal(nut_14, 1);
+registerPlantTypeMedal(nut_15, 1);
+
+// was: 600
+medal_register_id = 1000;
+registerMedal('5 ethereal crops', 'Have 5 ethereal crops', undefined, function() {
+  return state.numfullgrowncropfields2 >= 5;
+}, Num(0.02));
+registerMedal('10 ethereal crops', 'Have 10 ethereal crops', undefined, function() {
+  return state.numfullgrowncropfields2 >= 10;
+}, Num(0.05));
+registerMedal('20 ethereal crops', 'Have 20 ethereal crops', undefined, function() {
+  return state.numfullgrowncropfields2 >= 20;
+}, Num(0.1));
+
+medal_register_id = 1100;
+var fruit_achievement_values =   [   5,   10,   20,   50,  100,  200,  500, 1000, 2000, 5000, 10000];
+var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     2];
+var fruit_achievement_images =   [   0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10];
+for(var i = 0; i < fruit_achievement_values.length; i++) {
+  var num = fruit_achievement_values[i];
+  var bonus = Num(fruit_achievement_bonuses[i]);
+  var name = 'fruits ' + num;
+  var id = registerMedal(name, 'Found ' + num + ' fruits', images_apple[fruit_achievement_images[i]],
+      bind(function(num) { return state.g_numfruits >= num; }, num),
+      bonus);
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
+medal_register_id = 1200;
+
+// those higher values like 500 are probably never reachable unless something fundamental is changed to the game design in the future, but that's ok,
+// not all medals that are in the code must be reachable.
+var level2_achievement_values =  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+for(var i = 0; i < level_achievement_values.length; i++) {
+  var level = level2_achievement_values[i];
+  var bonus = Num((level * level) / 20);
+  var s = level;
+  var name = 'ethereal tree level ' + s;
+  var id = registerMedal(name, 'Reached ethereal tree level ' + s, tree_images[treeLevelIndex(level)][1][4],
+      bind(function(level) { return level <= state.treelevel2; }, level), bonus);
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
+medal_register_id = 1300;
+
+var resin_achievement_values =           [10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e12,1e15,1e18,1e21,1e24,1e27];
+var resin_achievement_bonuses_percent =  [ 1,  2,  5, 10, 15, 20, 35, 50,100, 250, 500,1000,2000,3000,4000];
+for(var i = 0; i < resin_achievement_values.length; i++) {
+  // have a good spread of this medal, more than exponential growth for its requirement
+  var num = Num(resin_achievement_values[i]);
+  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  var s0 = num.toString(3, Num.N_LATIN);
+  var s1 = num.toString(3, Num.N_SCI);
+  var name = full + ' resin ';
+  var name2 = (num.ltr(900)) ? (s0) : (s0 + ' (' + s1 + ')');
+  var id = registerMedal(name, 'earned over ' + name2 + ' resin in total', image_resin,
+      bind(function(num) { return state.g_res.resin.gt(num); }, num),
+      Num(resin_achievement_bonuses_percent[i]).mulr(0.01));
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
+// was: 1000
+medal_register_id = 2000;
+
+registerMedal('help', 'viewed the main help dialog', image_help, function() {
+  return showing_help == true;
+}, Num(0.01));
+
+registerMedal('changelog', 'viewed the changelog', images_fern[0], function() {
+  return showing_changelog == true;
+}, Num(0.01));
+
+registerMedal('stats', 'viewed the player stats', image_stats, function() {
+  return showing_stats == true;
+}, Num(0.01));
+
+medal_register_id = 2010;
+
+var gametime_achievement_values =           [1,  7, 30];
+var gametime_achievement_bonuses_percent =  [1, 5, 10];
+for(var i = 0; i < gametime_achievement_values.length; i++) {
+  // have a good spread of this medal, more than exponential growth for its requirement
+  var days = gametime_achievement_values[i];
+  var name = days + ' ' + (days == 1 ? 'day' : 'days');
+  var id = registerMedal(name, 'played for ' + days + ' days', undefined,
+      bind(function(days) {
+        var play = (state.time - state.g_starttime) / (24 * 3600);
+        return play >= days;
+      }, days),
+      Num(gametime_achievement_bonuses_percent[i]).mulr(0.01));
+}
+
+medal_register_id = 2020;
+
+registerMedal('higher transcension', 'performed transcension at exactly twice the initial transcenscion level', undefined, function() {
+  // This is a bit of a hacky way to check this, but the goal is that you get the medal when
+  // you transcended (so tree level is definitely smaller than 20) and have had at least the
+  // tree level 20 to do so. Since this medal was only added to the game at a later point in time,
+  // this method of checking also allows players who did transcenscion II in the past but not
+  // during the current run to receive it
+  return state.g_treelevel >= 20 && state.treelevel < 20;
+}, Num(0.1));
+
+medal_register_id = 2100;
+
+registerMedal('the bees knees', 'completed the bees challenge', images_queenbee[4], function() {
+  return !!state.challenges[challenge_bees].completed;
+}, Num(0.1));
+
+var medal_rock0 = registerMedal('on the rocks', 'completed the rocks challenge', images_rock[1], function() {
+  return !!state.challenges[challenge_rocks].completed;
+}, Num(0.05));
+
+registerMedal('undeleted', 'completed the undeletable challenge', undefined, function() {
+  return !!state.challenges[challenge_nodelete].completed;
+}, Num(0.25));
+
+registerMedal('upgraded', 'completed the no upgrades challenge', upgrade_arrow, function() {
+  return state.challenges[challenge_noupgrades].completed >= 1;
+}, Num(0.25));
+
+registerMedal('upgradeder', 'completed the no upgrades challenge stage 2', upgrade_arrow, function() {
+  return state.challenges[challenge_noupgrades].completed >= 2;
+}, Num(0.5));
+
+registerMedal('withering', 'completed the wither challenge', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 1;
+}, Num(0.35));
+
+var medal_wither2 = registerMedal('withered', 'completed the wither challenge stage 2', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 2;
+}, Num(0.7));
+
+registerMedal('berried', 'completed the blackberry challenge', blackberry[4], function() {
+  return state.challenges[challenge_blackberry].completed >= 1;
+}, Num(1.0));
+
+registerMedal('B', 'place a bee nest during the blackberry challenge', images_beenest[4], function() {
+  return state.challenge == challenge_blackberry && state.fullgrowncropcount[bee_0] > 0;
+}, Num(1.5));
+
+var medal_rock1 = registerMedal('rock lobster', 'completed the rocks challenge stage 2', images_rock[2], function() {
+  return state.challenges[challenge_rocks].completed >= 2;
+}, Num(0.15));
+changeMedalDisplayOrder(medal_rock1, medal_rock0);
+
+var medal_rock2 = registerMedal('this rocks!', 'completed the rocks challenge stage 3', images_rock[3], function() {
+  return state.challenges[challenge_rocks].completed >= 3;
+}, Num(0.45));
+changeMedalDisplayOrder(medal_rock2, medal_rock1);
+
+var medal_rock3 = registerMedal('rock star', 'completed the rocks challenge stage 4', images_rock[0], function() {
+  return state.challenges[challenge_rocks].completed >= 4;
+}, Num(2));
+changeMedalDisplayOrder(medal_rock3, medal_rock2);
+
+var medal_rock4 = registerMedal('rocking on', 'completed the rocks challenge stage 5', images_rock[1], function() {
+  return state.challenges[challenge_rocks].completed >= 5;
+}, Num(5));
+changeMedalDisplayOrder(medal_rock4, medal_rock3);
+
+medal_register_id = 2120;
+
+registerMedal('rock solid', 'completed the rockier challenge', images_rock[0], function() {
+  return state.challenges[challenge_rockier].completed;
+}, Num(2));
+
+registerMedal('rock solid II', 'completed the rockier challenge map 2', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 2;
+}, Num(2.5));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+registerMedal('rock solid III', 'completed the rockier challenge map 3', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 3;
+}, Num(3));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+registerMedal('rock solid IV', 'completed the rockier challenge map 4', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 4;
+}, Num(3.5));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+registerMedal('rock solid V', 'completed the rockier challenge map 5 (final)', images_rock[0], function() {
+  return state.challenges[challenge_rockier].num_completed >= 5;
+}, Num(4));
+medals[medal_register_id - 1].hint = medal_register_id - 2;
+
+medal_register_id = 2130;
+
+var medal_challenge_thistle = registerMedal('prickly predicament', 'completed the thistle challenge', images_thistle[4], function() {
+  return state.challenges[challenge_thistle].completed;
+}, Num(3));
+
+var medal_challenge_wasabi = registerMedal('wasaaaa, B', 'completed the wasabi challenge', images_wasabi[4], function() {
+  return state.challenges[challenge_wasabi].completed;
+}, Num(4));
+
+var medal_challenge_basic = registerMedal('the basics', 'ran the basic challenge', genericicon, function() {
+  return state.challenges[challenge_basic].completed;
+}, Num(1));
+
+// NOTE: this achievement is quasy-unobtainable, since in testing it took over 60 days to get it with 7x7 field and platinum fruit
+registerMedal('beesic', 'get a bee nest during the basic challenge', images_beenest[4], function() {
+  return state.challenge == challenge_basic && state.fullgrowncropcount[bee_0] > 0;
+}, Num(2));
+
+medal_register_id = 2135;
+
+registerMedal('basic 15', 'reach level 15 in the basic challenge', genericicon, function() {
+  return state.challenge == challenge_basic && state.treelevel >= 15;
+}, Num(2));
+
+registerMedal('basic 20', 'reach level 20 in the basic challenge', genericicon, function() {
+  return state.challenge == challenge_basic && state.treelevel >= 20;
+}, Num(2));
+
+registerMedal('basic 25', 'reach level 25 in the basic challenge', genericicon, function() {
+  return state.challenge == challenge_basic && state.treelevel >= 25;
+}, Num(2.5));
+
+// this takes almost a month to reach
+registerMedal('basic 30', 'this is the final achievement for the basic challenge. Higher levels are capped and won\'t give additional challenge bonus.', genericicon, function() {
+  return state.challenge == challenge_basic && state.treelevel >= 30;
+}, Num(3));
+
+registerDeprecatedMedal(); // was reserved for basic 35, but doing this takes too long and the game now caps it at 30 to avoid incentivizing this
+registerDeprecatedMedal(); // was reserved for basic 40, but doing this takes too long and the game now caps it at 30 to avoid incentivizing this
+
+medal_register_id = 2150;
+
+var medal_challenge_truly_basic = registerMedal('master of basic', 'completed the truly basic challenge', genericicon, function() {
+  return state.challenges[challenge_truly_basic].completed;
+}, Num(5));
+
+medal_register_id = 2155;
+
+registerMedal('truly basic 15', 'reach level 15 in the truly basic challenge', genericicon, function() {
+  return state.challenge == challenge_truly_basic && state.treelevel >= 15;
+}, Num(2));
+
+registerMedal('truly basic 20', 'reach level 20 in the truly basic challenge', genericicon, function() {
+  return state.challenge == challenge_truly_basic && state.treelevel >= 20;
+}, Num(2.5));
+
+// this medal may require more than a month of truly basic to reach
+registerMedal('truly basic 25', 'this is the final achievement for the truly basic challenge. Higher levels are capped and won\'t give additional challenge bonus.', genericicon, function() {
+  return state.challenge == challenge_truly_basic && state.treelevel >= 25;
+}, Num(3));
+
+registerDeprecatedMedal(); // was reserved for truly basic 30, but doing this takes too long and the game now caps it at 25 to avoid incentivizing this
+
+medal_register_id = 2170;
+
+var medal_challenge_stormy = registerMedal('stormy', 'completed the stormy challenge', image_storm, function() {
+  return state.challenges[challenge_stormy].completed;
+}, Num(1));
+
+var medal_challenge_infernal = registerMedal('infernal', 'completed the infernal challenge', field_infernal[2], function() {
+  return state.challenges[challenge_infernal].completed;
+}, Num(1.5));
+
+registerMedal('infernal bees', 'have bees during the infernal challenge', images_beenest[4], function() {
+  return state.challenge == challenge_infernal && state.fullgrowncropcount[bee_0] > 0;
+}, Num(2));
+
+registerMedal('infernal prestige', 'prestige a crop during infernal challenge', field_infernal[3], function() {
+  return state.challenge == challenge_infernal && state.crops[berry_0].prestige >= 1;
+}, Num(3));
+
+medal_register_id = 2500;
+
+function registerPrestigeMedal(cropid) {
+  var crop = crops[cropid];
+  var name = crop.name + ' prestige';
+  var desc = 'prestiged the ' + crop.name;
+  registerMedal(name, desc, crop.image[4], function() {
+    return state.crops[cropid].prestige >= 1;
+  }, Num(2 * getPlantTypeMedalBonus(crop.type, crop.tier + num_tiers_per_crop_type[crop.type], 1)));
+}
+for(var i = 0; i < 16; i++) {
+  registerPrestigeMedal(berry_0 + i);
+}
+
+medal_register_id = 2600;
+for(var i = 0; i < 8; i++) {
+  registerPrestigeMedal(mush_0 + i);
+}
+
+medal_register_id = 2700;
+for(var i = 0; i < 8; i++) {
+  registerPrestigeMedal(flower_0 + i);
+}
+
+medal_register_id = 2800;
+for(var i = 0; i < 16; i++) {
+  registerPrestigeMedal(nut_0 + i);
+}
+
+medal_register_id = 2900;
+var nuts_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33, 1e36, 1e39, 1e42, 1e45, 1e48, 1e51, 1e54, 1e57, 1e60, 1e63, 1e66, 1e69, 1e72, 1e75, 1e78, 1e81, 1e84, 1e87, 1e90, 1e93, 1e96, 1e99];
+var nuts_achievement_bonuses_percent =   [  1,   3,   5,   10,   20,   30,   40,   50,   60,   70,   80,  100,  150,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000];
+for(var i = 0; i < nuts_achievement_values.length; i++) {
+  // have a good spread of this medal, more than exponential growth for its requirement
+  var num = Num(nuts_achievement_values[i]);
+  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  var s0 = num.toString(3, Num.N_LATIN);
+  var s1 = num.toString(3, Num.N_SCI);
+  var name = full + ' nuts';
+  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') nuts', image_nuts,
+      bind(function(num) { return state.res.nuts.gt(num); }, num),
+      Num(nuts_achievement_bonuses_percent[i]).mulr(0.01));
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+
+
+medal_register_id = 3000;
+// various misc medals here
+
+// ghost crops can happen when prestiging during the undeletable challenge, or during the stormy challenge
+registerMedal('ghost in the field', 'have a ghost-crop', image_berryghost, function() {
+  return state.ghostcount > 0;
+}, Num(1));
+
+registerMedal('ghost town', 'have 10 ghost crops in the field', image_mushghost, function() {
+  return state.ghostcount >= 10;
+}, Num(1.5));
+
+registerMedal('who you gonna call?', 'have the whole field full of ghost crops', image_flowerghost, function() {
+  if(state.ghostcount == 0) return false;
+  var numfield = state.numw * state.numh - 2; // subtract tree
+  if(state.ghostcount >= numfield) return true;
+  if(state.ghostcount2 >= numfield) {
+    var dead_brassica = state.ghostcount2 - state.ghostcount;
+    if(dead_brassica <= 4) return true; // allow up to 4 dead brassica instead of true ghosts: so that someone with a layout with brassica who leaves it overnight during the stormy challenge, still has a chance to get this achieve
+  }
+  return false;
+}, Num(2));
+
+// this is equivalent to prestiging during the undeletable challenge
+registerMedal('undeletable ghost', 'get a ghost-crop during the undeletable challenge', image_berryghost, function() {
+  return state.ghostcount > 0 && state.challenge == challenge_nodelete;
+}, Num(1));
+
+var medal_tb_speed_0 = registerMedal('truly basic speed 2.5h', 'reach level 10 in the truly basic challenge in 2.5 hours or less', image_hourglass, function() {
+  var runtime = 9000;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(1));
+
+
+var medal_tb_speed_1 = registerMedal('truly basic speed 2h', 'reach level 10 in the truly basic challenge in 2 hours or less', image_hourglass, function() {
+  var runtime = 7200;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(2));
+medals[medal_tb_speed_1].hint = medal_tb_speed_0;
+
+var medal_tb_speed_2 = registerMedal('truly basic speed 1.5h', 'reach level 10 in the truly basic challenge in 1.5 hours or less', image_hourglass, function() {
+  var runtime = 5400;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(3));
+medals[medal_tb_speed_2].hint = medal_tb_speed_1;
+
+var medal_tb_speed_3 = registerMedal('truly basic speed 1h', 'reach level 10 in the truly basic challenge in 1 hour or less', image_hourglass, function() {
+  var runtime = 3600;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(4));
+medals[medal_tb_speed_3].hint = medal_tb_speed_2;
+
+
+medal_register_id = 3020;
+
+registerMedal('squirrel evolution', 'evolve the squirrel', image_squirrel_evolution, function() {
+  return state.squirrel_evolution >= 1;
+}, Num(100));
+
+var medal_challenge_thistle_stingy = registerMedal('rather stingy', 'plant the entire field full of stinging crops during the thistle challenge', images_thistle[4], function() {
+  return state.challenge == challenge_thistle && state.fullgrowncroptypecount[CROPTYPE_STINGING] >= (state.numw * state.numh - 2);
+}, Num(4));
+changeMedalDisplayOrder(medal_challenge_thistle_stingy, medal_challenge_thistle);
+
+medal_register_id = 3040;
+
+var medal_wither3 = registerMedal('withered III', 'completed the wither challenge stage 3', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 3;
+}, Num(2));
+changeMedalDisplayOrder(medal_wither3, medal_wither2);
+
+var medal_wither4 = registerMedal('withered IV', 'completed the wither challenge stage 4', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 4;
+}, Num(4));
+changeMedalDisplayOrder(medal_wither4, medal_wither3);
+
+var medal_wither5 = registerMedal('withered V', 'completed the wither challenge stage 5', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 5;
+}, Num(5));
+changeMedalDisplayOrder(medal_wither5, medal_wither4);
+
+
+
+// infinity field related medals
+medal_register_id = 4000;
+
+// The doubling of these achievements is because each next time you plant the first brassica tier, you can plant twice as much as before
+
+registerMedal('One infinity', 'Have one crop on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 1;
+}, Num(10));
+
+registerMedal('Two infinities', 'Have two crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 2;
+}, Num(20));
+
+registerMedal('Four infinities', 'Have four crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 4;
+}, Num(40));
+
+registerMedal('Eight infinities', 'Have eight crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 8;
+}, Num(80));
+
+registerMedal('Sixtien infinities', 'Have sixteen crops on the infinity field', image_infinity, function() {
+  return state.numcropfields3 >= 16;
+}, Num(160));
+
+registerMedal('Infinite infinities', 'Filled the entire infinity field with crops', image_infinity, function() {
+  return state.numemptyfields3 == 0;
+}, Num(250));
+
+// Specific achievements for infinity runestones, because of how much their cost scales
+
+registerMedal('One runestone', 'Have one runestone on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 1;
+}, Num(100));
+
+registerMedal('Two runestones', 'Have two runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 2;
+}, Num(200));
+
+registerMedal('Four runestones', 'Have four runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 4;
+}, Num(400));
+
+registerMedal('Eight runestones', 'Have eight runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 8;
+}, Num(800));
+
+registerMedal('Sixtien runestones', 'Have sixteen runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 16;
+}, Num(1600));
+
+// TODO: maybe more here, e.g. 32 if infinity field would get bigger
+
+// individual infinity crop achievements
+medal_register_id = 4200;
+
+function getPlantTypeMedalBonus3(cropid) {
+  var c = crops3[cropid];
+  var l = Num.log(c.cost.infseeds);
+  return l * 2;
+}
+
+function registerPlantTypeMedal3(cropid) {
+  var c = crops3[cropid];
+  var mul = getPlantTypeMedalBonus3(cropid);
+  return registerMedal('Infinity ' + lower(c.name), 'Have a ' + c.name + ' on the infinity field', c.image[4], function() {
+    return state.crop3count[cropid] >= 1;
+  }, Num(mul));
+};
+
+registerPlantTypeMedal3(brassica3_0);
+registerPlantTypeMedal3(berry3_0);
+registerPlantTypeMedal3(flower3_0);
+registerPlantTypeMedal3(brassica3_1);
+registerPlantTypeMedal3(berry3_1);
+registerPlantTypeMedal3(flower3_1);
+registerPlantTypeMedal3(brassica3_2);
+registerPlantTypeMedal3(berry3_2);
+registerPlantTypeMedal3(flower3_2);
+registerPlantTypeMedal3(bee3_2);
+registerPlantTypeMedal3(brassica3_3);
+registerPlantTypeMedal3(berry3_3);
+registerPlantTypeMedal3(flower3_3);
+registerPlantTypeMedal3(bee3_3);
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 

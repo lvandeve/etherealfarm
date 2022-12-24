@@ -27,15 +27,19 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var result = upper(c.name);
   result += '<br/>';
   result += 'Crop type: Infinity ' + getCropTypeName(c.type) + ((c.tier && c.isReal()) ? (' (tier ' + (c.tier + 1) + ')') : '');
+  var help = getCropTypeHelp3(c.type);
+  if(help) {
+    result += '<br/>' + help;
+  }
   result += '<br/><br/>';
 
   if(f.growth < 1) {
     if(c.type == CROPTYPE_BRASSICA) {
       if(opt_detailed) {
         // the detailed dialog is not dynamically updated, so show the life growth time statically instead.
-        result += 'Short-lived plant. Total lifetime: ' + util.formatDuration(c.getPlantTime()) + '<br/><br/>';
+        result += 'Finite lifetime: ' + util.formatDuration(c.getPlantTime()) + '<br/><br/>';
       } else {
-        var text0 = 'Short-lived plant';
+        var text0 = 'Finite lifetime';
         var growthremaining = f.growth;
         result += text0 + '. Time left: ' + util.formatDuration(growthremaining * c.getPlantTime(), true, 4, true) + ' of ' + util.formatDuration(c.getPlantTime(), true, 4, true) + '<br/>';
       }
@@ -44,6 +48,16 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     } else {
       result += 'Grow time: ' + util.formatDuration(c.getPlantTime());
       if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+      result += '<br/><br/>';
+    }
+  }
+
+  if(f.runetime > 0) {
+    if(c.type == CROPTYPE_RUNESTONE) {
+      result += 'Can only be deleted in ' + util.formatDuration(f.runetime);
+      result += '<br/><br/>';
+    } else {
+      result += 'Due to runestone, can only be deleted in ' + util.formatDuration(f.runetime);
       result += '<br/><br/>';
     }
   }
@@ -68,16 +82,20 @@ function getCropInfoHTML3(f, c, opt_detailed) {
 
   var infboost = c.getInfBoost(f);
   if(infboost.neqr(0)) {
-    if(c.type == CROPTYPE_BEE) {
+    if(c.type == CROPTYPE_RUNESTONE) {
+      result += 'Boost to neighboring crops basic field boost: ' + infboost.toPercentString() + '<br><br>';
+    } else if(c.type == CROPTYPE_BEE) {
       result += 'Boost to neighboring flowers: ' + infboost.toPercentString() + '<br><br>';
     } else {
       result += 'Boost to neighboring berries: ' + infboost.toPercentString() + '<br><br>';
     }
   }
 
-  var basicboost = c.getBasicBoost();
+  var basicboost = c.getBasicBoost(f);
   if(basicboost.neqr(0)) {
+    var base = c.basicboost;
     result += 'Production boost to basic field: ' + basicboost.toPercentString();
+    if(base.neq(basicboost)) result += ' (base: ' + base.toPercentString() + ')';
     result += '<br/><br/>';
   }
 

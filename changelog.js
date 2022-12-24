@@ -22,6 +22,17 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.7.7 (2022-12-24):';
+  text += '<br/>• Added 3 new ethereal crops (for levels 19 and up).';
+  text += '<br/>• Added 5 new infinity crops.';
+  text += '<br/>• Slightly buffed silver infinity flower and bee.';
+  text += '<br/>• Added an achievement for each infinity crop type.';
+  text += '<br/>• Presents containing seeds or spores now reveal this in the tooltip.'; // this is because you may want to activate weather before those (so one could use undo anyway to re-take it). Others don't require knowledge beforehand so remain a surprise.
+  text += '<br/>• Added button to swap the contents of the two pages in the blueprint dialog. This affects auto-actions, since they refer to blueprints by number.';
+  text += '<br/>• Added the accidently forgotten hat to automaton and squirrel in ethereal field.';
+  text += '<br/>• Various tweaks and bugfixes.'; // e.g. infinity flowers work immediately (like other crops already did), ethereal plant dialog has crops sorted by price, ...
+  text += '<br/><br/>';
+
   text += '0.7.6 (2022-12-05):';
   text += '<br/>• Enabled holiday event, it will activate on december 6th (depending on time zone) and last for 1 month. Presents with random effects will drop!';
   text += '<br/>• Bugfixes.'; // undo in combination with auto-action, season change resource comparison display, time at treelevel weighted better for fern computation accidently applied to everything
@@ -693,7 +704,7 @@ function getChangeLog() {
 
   text += '0.1.47 (2021-03-16):';
   text += '<br/>• Challenge production bonus now also applies to mushrooms, significantly boosting spores output';
-  // this is because otherwise the mushroom/berry produciton/consumption balance will get lost with higher level ethereal fields
+  // this is because otherwise the mushroom/berry production/consumption balance will get lost with higher level ethereal fields
   text += '<br/>• Ethereal mushroom boost also boosts consumption now, ethereal nettles buffed a bit to compensate';
   text += '<br/>• Season effect rebalancing to fix the winter imbalance: before, winter scaled quadratically while other seasons only linearly with ethereal upgrades. After, all scale by n^1.25 instead.';
   text += '<br/>• Winter warmth now only boosts berries and mushrooms (since boosting flowers too is what made it quadratic)';

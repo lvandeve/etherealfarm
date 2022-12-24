@@ -141,6 +141,7 @@ function showHelpDialog(id, text_short, text, image, opt_text2, images, opt_forc
     functions:okfun,
     names:oktext,
     cancelname:'ok',
+    invbold:true,
     onclose:function() {
       numhelpdialogs--;
       if(helpDialogQueue.length) {

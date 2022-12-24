@@ -204,6 +204,7 @@ var NOCANCELBUTTON = 'nocancel';
 params is object with following named parameters, all optional:
 params.functions: function, or array of functions, for the ok/action buttons
 params.names: button names for the functions. This and functions must be either arrays of same size, or function and string (or undefined for default 'ok') if there should be exactly one non-cancel button, or both undefined for none at all
+params.tooltips: optional tooltips for some buttons
 params.onclose: function that is always called when the dialog closes, no matter how (whether through an action, the cancel button, or some other means like global close or escape key). It receives a boolean argument 'cancel' that's true if it was closed by any other means than a non-cancel button (so, true if it was canceled)
 params.oncancel: similar to onclose, but only called in case of cancel actions (the cancel button, esc key, ...), not when one of the buttons from params.functions/params.names got pressed
 params.cancelname: name for the cancel button, gets a default name if not given
@@ -220,6 +221,8 @@ params.shortcutfun: a function handling shortcuts that are active while this dia
 params.nobgclose: boolean, don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 params.swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
 params.bgstyle: className of alternative background CSS style, e.g. 'efDialogEthereal'
+params.invbold: make the cancel button instead of ok button bold
+params.allbold: make all buttons bold, cancel and action buttons
 
 Return object contains (amongst other fields):
 dialog.content: flex where the main content can be put
@@ -230,10 +233,11 @@ function createDialog(params) {
   if(!params) params = {};
   var functions = params.functions;
   var names = params.names;
+  var tooltips = params.tooltips;
 
-  if(!Array.isArray(names)) names = (functions ? [names || 'ok'] : []);
   if(!Array.isArray(functions)) functions = (functions ? [functions] : []);
-
+  if(!Array.isArray(names)) names = (functions ? [names || 'ok'] : []);
+  if(!Array.isArray(tooltips)) tooltips = (tooltips ? [tooltips] : []);
 
   var dialog = {};
 
@@ -419,7 +423,7 @@ function createDialog(params) {
   if(functions) {
     for(var i = 0; i < functions.length; i++) {
       button = makeButton(false);
-      button.style.fontWeight = 'bold';
+      if(!params.invbold || params.allbold) button.style.fontWeight = 'bold';
       styleButton(button);
       button.textEl.innerText = names[i];
       var fun = functions[i];
@@ -427,12 +431,16 @@ function createDialog(params) {
         var keep = fun(e);
         if(!keep) dialog.closeFun(false);
       }, fun), names[i] + ': dialog button');
+      if(tooltips[i]) {
+        registerTooltip(button, tooltips[i]);
+      }
     }
   }
 
 
   if(!params.nocancel) {
     button = makeButton(true);
+    if(params.invbold || params.allbold) button.style.fontWeight = 'bold';
     styleButton(button);
     var cancelname = params.cancelname || (functions.length > 0 ? 'cancel' : 'back');
     button.textEl.innerText = cancelname;
@@ -1257,6 +1265,27 @@ function makeTextInput(title, description, fun, opt_value) {
   }
   area.style.fontSize = '100%';
   area.focus();
+}
+
+
+// yesfun is called on pressing yes, never called when pressing no (give an opt_nofun to get called on no or closing the dialog)
+function makeYesNoQuestion(title, description, yesfun, opt_nofun) {
+  var dialog = createDialog({
+    size:DIALOG_TINY,
+    functions:function() {
+      yesfun();
+    },
+    names:'yes',
+    title:title,
+    cancelname:'no',
+    oncancel:opt_nofun,
+    allbold:true
+  });
+
+  if(description) {
+    var descriptionFlex = new Flex(dialog.content, 0.1, 0.2, 0.9, 0.3);
+    descriptionFlex.div.innerText = description;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

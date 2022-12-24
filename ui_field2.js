@@ -60,7 +60,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     }
   }
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE || c.type == CROPTYPE_BRASSICA) {
     var total = c.getBasicBoost(f);
     result += '<br/>';
     result += 'Boost amount: ' + total.toPercentString();
@@ -136,7 +136,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 function getCropInfoHTML2Breakdown(f, c) {
   var result = '';
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE || c.type == CROPTYPE_BRASSICA) {
     var breakdown = [];
     var total = c.getBasicBoost(f, breakdown);
     result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
@@ -539,8 +539,9 @@ function makeEtherealMistletoeDialog(x, y) {
     //text += '<br>Total time: '  + util.formatDuration(state.g_mistletoeupgradetime, true);
     text += '<br><br>';
     text += '<b>Current bonuses:</b>';
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_prod)) text += '<br>Production (leafy): ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_prod);
-    if(knowEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) text += '<br>Neighbor (friendly): ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_neighbor);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_prod)) text += '<br>Production (leafiness): ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_prod);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) text += '<br>Neighbor (friendliness): ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_neighbor);
+    if(knowEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) text += '<br>Neighbor (lotus): ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_lotus_neighbor);
     if(knowEtherealMistletoeUpgrade(mistle_upgrade_stingy)) text += '<br>Stingy: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_stingy);
     if(knowEtherealMistletoeUpgrade(mistle_upgrade_resin)) text += '<br>Resin: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_resin);
     if(knowEtherealMistletoeUpgrade(mistle_upgrade_mush)) text += '<br>Mushrooms: ' + getEtherealMistleToeBonusWithEvoString(mistle_upgrade_mush);

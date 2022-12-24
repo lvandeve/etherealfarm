@@ -885,10 +885,15 @@ function initFieldUI() {
           }
         } else if(state.present_effect && x == state.presentx && y == state.presenty) {
           if(holidayEventActive(1)) {
-            return 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
+            result = 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
           } else {
-            return 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
+            result = 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
           }
+          // show the effect of the present in the tooltip, but only if it has seeds or spores, because you may want to activate a weather for those
+          // other effects are not shown, to keep it a surprise like an actual present is supposed to be
+          var effect = computePresentEffect();
+          if(effect == 1) result += '<br>(this one feels like it contains seeds)';
+          if(effect == 2) result += '<br>(this one feels like it contains spores)';
         } else if(f.index == 0) {
           //return 'Empty field, click to plant';
           return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there

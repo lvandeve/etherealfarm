@@ -33,6 +33,7 @@ function Cell(x, y, fieldttype) {
   // >= CROPINDEX: crop with crop index = this.index - CROPINDEX.
   this.index = 0;
   this.growth = 0; // 0.0-1.0: percentage completed, or 1 if fullgrown
+  this.runetime = 0; // used for runestone and crops next to runestone in infinity field. Starts at 23 hours, and then drops down to 0 over time (only used if runestone is involved, always 0 otherwise)
 
   this.x = x;
   this.y = y;
@@ -309,7 +310,7 @@ BluePrint.toCrop = function(i) {
 
 function toCrop2Base(i) {
   if(i == 0) return -1;
-  //if(i == 2) return watercress2_template;
+  if(i == 2) return brassica2_template;
   if(i == 3) return berry2_template;
   if(i == 4) return mush2_template;
   if(i == 5) return flower2_template;
@@ -475,7 +476,7 @@ function State() {
   when moving from B to A, this should in theory punish by taking away 2 hours of production bonus. However, this should not be punished: there are legit situations where this can occur.
   So the mechanism will work as follows:
   when moving from B to A, then when loading savegame you see a savegame time in the future. This time difference is added to negative_time.
-  when moving from A to B, then when loading savegame, you see that more than 2 hours have passed. But, before applying the 2 hour produciton bonus, first any negative_time is subtracted from that (only partially if negative_time is even greater than this 2h)
+  when moving from A to B, then when loading savegame, you see that more than 2 hours have passed. But, before applying the 2 hour production bonus, first any negative_time is subtracted from that (only partially if negative_time is even greater than this 2h)
 
   Side note: other things that must be done when going from B to A (going to the past, negative time delta):
   -adjust last fern time, such that it won't take hours before a fern appears
@@ -1049,6 +1050,7 @@ function State() {
   this.ethereal_flower_bonus = Num(0);
   this.ethereal_nettle_bonus = Num(0);
   this.ethereal_bee_bonus = Num(0);
+  this.ethereal_brassica_bonus = Num(0);
 
   // derived stat, not to be saved.
   this.challenges_unlocked = 0;
@@ -1539,7 +1541,7 @@ function computeDerived(state) {
             state.numfullgrowncropfields3++;
           }
         }
-        state.infinityboost.addInPlace(c.getBasicBoost());
+        state.infinityboost.addInPlace(c.getBasicBoost(f));
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.specialfield3count[f.index]++;
         state.numemptyfields3++;
@@ -1619,6 +1621,7 @@ function computeDerived(state) {
   state.ethereal_flower_bonus = Num(0);
   state.ethereal_nettle_bonus = Num(0);
   state.ethereal_bee_bonus = Num(0);
+  state.ethereal_brassica_bonus = Num(0);
 
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
@@ -1640,6 +1643,9 @@ function computeDerived(state) {
         }
         if(type == CROPTYPE_BEE) {
           state.ethereal_bee_bonus.addInPlace(c.getBasicBoost(f));
+        }
+        if(type == CROPTYPE_BRASSICA) {
+          state.ethereal_brassica_bonus.addInPlace(c.getBasicBoost(f));
         }
       }
     }

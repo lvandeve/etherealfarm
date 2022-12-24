@@ -114,6 +114,7 @@ function loadFromLocalStorage(onsuccess, onfail) {
 
 // set the state back to normal after state.amberkeepseason. Go to next season and make it take 24 hours, if needed.
 // also refunds amber if needed
+// returns true if season changed, false if it stayed the same
 function restoreAmberSeason() {
   var season = getPureSeason();
   var used = state.amberkeepseasonused;
@@ -126,7 +127,7 @@ function restoreAmberSeason() {
       state.res.amber = state.res.amber.add(ambercost_keep_season);
       state.g_numamberkeeprefunds++;
     }
-    return;
+    return false;
   }
   var next_season = (season + 1) & 3;
 
@@ -145,6 +146,8 @@ function restoreAmberSeason() {
   shift -= next_season * 24 * 3600;
   shift -= 1; // ensure no numerical issues if just at boundary
   state.seasonshift = shift;
+
+  return true;
 }
 
 // Why there are so many recovery saves: because different systems may break in different ways, hopefully at least one still has a valid recent enough save but not too recent to have the breakage
@@ -293,6 +296,7 @@ function unlockTemplates() {
     state.crops2[squirrel2_template].unlocked = (state.crops2[squirrel2_0].unlocked);
     state.crops2[bee2_template].unlocked = (state.crops2[bee2_0].unlocked);
     state.crops2[mistletoe2_template].unlocked = (state.crops2[mistletoe2_0].unlocked);
+    state.crops2[brassica2_template].unlocked = (state.crops2[brassica2_0].unlocked);
   } else {
     state.crops2[berry2_template].unlocked = false;
     state.crops2[mush2_template].unlocked = false;
@@ -304,6 +308,7 @@ function unlockTemplates() {
     state.crops2[squirrel2_template].unlocked = false;
     state.crops2[bee2_template].unlocked = false;
     state.crops2[mistletoe2_template].unlocked = false;
+    state.crops2[brassica2_template].unlocked = false;
   }
 }
 
@@ -2259,7 +2264,14 @@ function maybeUnlockEtherealCrops() {
     unlockEtherealCrop(berry2_6);
   }
   if(state.treelevel2 >= 19) {
+    unlockEtherealCrop(flower2_6);
     unlockEtherealCrop(bee2_2);
+  }
+  if(state.treelevel2 >= 20) {
+    unlockEtherealCrop(lotus2_5);
+  }
+  if(state.treelevel2 >= 21) {
+    unlockEtherealCrop(brassica2_0);
   }
 }
 
@@ -2276,8 +2288,12 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[brassica3_2].had) unlockInfinityCrop(berry3_2);
   if(state.crops3[berry3_2].had) unlockInfinityCrop(flower3_2);
   if(state.crops3[flower3_2].had) unlockInfinityCrop(bee3_2);
+  if(state.crops3[berry3_2].had) unlockInfinityCrop(runestone3_0);
 
-  //if(state.crops3[berry3_2].had) unlockInfinityCrop(brassica3_3);
+  if(state.crops3[berry3_2].had) unlockInfinityCrop(brassica3_3);
+  if(state.crops3[brassica3_3].had) unlockInfinityCrop(berry3_3);
+  if(state.crops3[berry3_3].had) unlockInfinityCrop(flower3_3);
+  if(state.crops3[flower3_3].had) unlockInfinityCrop(bee3_3);
 }
 
 
@@ -3019,13 +3035,59 @@ function computePretendFullgrownGain() {
   return computePretendFullgrownGain_(1);
 }
 
-
-
 // similar to computePretendFullgrownGain, but for ferns including the possibly better weighted time at level value
 // this computation includes nuts, even though ferns don't give it (only relevant resources should be copied there), the nuts computation can be used e.g. for holiday events
 function computeFernGain() {
   return computePretendFullgrownGain_(5);
 }
+
+// for presents, or eggs, depending on the holiday event
+// this computes the effect based on state.present_effect:
+// state.present_effect is predetermined, but may be altered once actually used based on current challenge, game progress, ..., and so the final actual intended effect is computed here
+function computePresentEffect() {
+  var effect = state.present_effect;
+
+  // alternatives for things that aren't unlocked yet
+  if(effect == 2 && state.res.spores.ler(0)) {
+    // don't have spores yet, so no spores production, give seeds instead
+    effect = 1;
+  }
+  if(effect == 4 && state.g_res.nuts.ler(0)) {
+    // don't have nuts yet, give seeds instead
+    effect = 1;
+  }
+  if(effect == 6 && state.g_numfruits <= 0) {
+    // don't have fruits yet, give production boost instead
+    effect = 3;
+  }
+  if(effect == 7 && state.g_res.amber.ler(0)) {
+    // don't have amber yet, give seeds instead
+    effect = 1;
+  }
+
+  var basic = basicChallenge();
+
+  // during basic challenge, effects are reduced (but not disabled: basic challenge can take a long time and so some part of the holiday event should be available)
+  if(basic) {
+    if(effect == 3) effect = 1; // no production boost during basic challenge
+    if(effect == 5) effect = (state.res.spores.ler(0) ? 1 : 2); // no grow speed boost during basic challenge
+  }
+
+  return effect;
+}
+/*
+// for present or eggs
+function getPresentEffectName(effect) {
+  if(effect == 1) return 'seeds';
+  else if(effect == 2) return 'spores';
+  else if(effect == 3) return 'production boost';
+  else if(effect == 4) return 'nuts';
+  else if(effect == 5) return 'grow speed';
+  else if(effect == 6) return 'fruit';
+  else if(effect == 7) return 'amber';
+  else return 'unknown';
+}*/
+
 
 // for misc things in UI that update themselves
 // updatefun must return true if the listener must stay, false if the listener must be removed
@@ -3304,10 +3366,6 @@ var update = function(opt_ignorePause) {
 
     if(current_season != prev_season && prev_season != undefined) num_season_changes++; // TODO: check if this can't be combined with the "global_season_changes++" case below and if this really needs a different condition than that one
     prev_season = current_season;
-
-    if(season_will_change) {
-      global_season_changes++;
-    }
 
     var current_season2 = getPureSeasonAt(state.time);
     var season_will_change2 = current_season2 != getPureSeasonAt(nexttime);
@@ -3683,7 +3741,10 @@ var update = function(opt_ignorePause) {
             state.amberkeepseason = true;
           }
           if(action.effect == AMBER_END_KEEP_SEASON) {
-            restoreAmberSeason();
+            if(restoreAmberSeason()) {
+              season_will_change = true;
+              prev_season_gain = Res(gain); // compute this here since the regular method that computes this prepares it only for the next update tick
+            }
             //state.amberkeepseason = false;
           }
           state.res.subInPlace(cost);
@@ -4138,9 +4199,6 @@ var update = function(opt_ignorePause) {
 
         var recoup = undefined;
 
-
-        var oldcroptype = -1;
-
         if(type == ACTION_DELETE3 || type == ACTION_REPLACE3) {
           if(f.hasCrop()) {
             var c = f.getCrop();
@@ -4165,6 +4223,26 @@ var update = function(opt_ignorePause) {
             showMessage('no crop to delete here', C_INVALID, 0, 0);
             ok = false;
           }
+          if(f.hasCrop() && f.runetime > 0 && f.getCrop().type != CROPTYPE_BRASSICA) {
+            if(f.getCrop().type == CROPTYPE_RUNESTONE) {
+              showMessage('cannot yet delete this runestone, must wait 23 hours after planting, or again after planting crops next to it. Time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
+              ok = false;
+            } else {
+              var sametypebuthigher = action.crop && action.crop.type == c.type && action.crop.tier >= c.tier;
+              if(!sametypebuthigher) {
+                ok = false;
+                showMessage('cannot yet delete this crop due to recently placed next to runestone, must wait 23 hours after placing next to runestone, time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
+              }
+            }
+          }
+        }
+
+        if(type != ACTION_DELETE3 && !action.confirmedyes && action.crop && action.crop.index == runestone3_0 && !state.crops3[action.crop.index].had) {
+          makeYesNoQuestion('Planting runestone', 'Are you sure you want to place the runestone? It, and any crops it touches, cannot be deleted for 23 hours after placing it. Any crops you plant next to it later on, also cannot be deleted for 23 hours and reset the runestone time to 23 hours. The runestone does not give any infinity seeds income, so ensure you\'re willing to miss this income for at least 23 hours.', function() {
+            action.confirmedyes = true;
+            addAction(action);
+          });
+          ok = false;
         }
 
         if(ok && (type == ACTION_PLANT3 || type == ACTION_REPLACE3)) {
@@ -4210,6 +4288,7 @@ var update = function(opt_ignorePause) {
             f.growth = 0;
             //if(!action.silent) showMessage('cleared watercress remainder');
           }
+          f.runetime = 0;
         }
 
         if(ok && (type == ACTION_PLANT3 || type == ACTION_REPLACE3)) {
@@ -4225,6 +4304,35 @@ var update = function(opt_ignorePause) {
             f.growth = 1;
           } else {
             f.growth = 0;
+          }
+          // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
+          // the reason for 23 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
+          var initialrunetime = 23 * 3600;
+          f.runetime = 0;
+          if(c.type == CROPTYPE_RUNESTONE) {
+            f.runetime = initialrunetime;
+            for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+              var x2 = action.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+              var y2 = action.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+              if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+              var f2 = state.field3[y2][x2];
+              var c2 = f2.getRealCrop();
+              if(c2 && c2.type != CROPTYPE_RUNESTONE && c2.type != CROPTYPE_BRASSICA) {
+                f2.runetime = initialrunetime;
+              }
+            }
+          } else if(c.type != CROPTYPE_BRASSICA) {
+            for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+              var x2 = action.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+              var y2 = action.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+              if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+              var f2 = state.field3[y2][x2];
+              var c2 = f2.getRealCrop();
+              if(c2 && c2.type == CROPTYPE_RUNESTONE) {
+                f.runetime = initialrunetime; // the crop itself is planted next to runestone, so gets the deletion time penalty
+                f2.runetime = initialrunetime; // in addition, also reset the time of the runestone itself to become undeletable
+              }
+            }
           }
 
           computeDerived(state); // correctly update derived stats based on changed field state
@@ -4628,9 +4736,12 @@ var update = function(opt_ignorePause) {
       storeUndo(undostate);
     }
 
+    if(season_will_change) {
+      global_season_changes++;
+    }
+
     // this ensures up to date income displayed sooner when e.g. doing an ethereal upgrade
     computeDerived(state);
-
 
     //if(upgrades_done || upgrades2_done) updateUI();
 
@@ -4808,8 +4919,14 @@ var update = function(opt_ignorePause) {
                 state.g_numfullgrown3++;
               }
             }
+            if(f.runetime) {
+              f.runetime -= d;
+              if(f.runetime < 0) f.runetime = 0;
+            }
             gain.addInPlace(prod);
             actualgain.addInPlace(prod.mulr(d));
+          } else {
+            f.runetime = 0;
           }
         }
       }
@@ -4912,33 +5029,9 @@ var update = function(opt_ignorePause) {
       if(clickedpresent) {
         state.presentwait = (25 * 60) * (1 +  getRandomPresentRoll());
 
-        var effect = state.present_effect;
-
-        // alternatives for things that aren't unlocked yet
-        if(effect == 2 && state.res.spores.ler(0)) {
-          // don't have spores yet, so no spores production, give seeds instead
-          effect = 1;
-        }
-        if(effect == 4 && state.g_res.nuts.ler(0)) {
-          // don't have nuts yet, give seeds instead
-          effect = 1;
-        }
-        if(effect == 6 && state.g_numfruits <= 0) {
-          // don't have fruits yet, give production boost instead
-          effect = 3;
-        }
-        if(effect == 7 && state.g_res.amber.ler(0)) {
-          // don't have amber yet, give seeds instead
-          effect = 1;
-        }
+        var effect = computePresentEffect();
 
         var basic = basicChallenge();
-
-        // during basic challenge, effects are reduced (but not disabled: basic challenge can take a long time and so some part of the holiday event should be available)
-        if(basic) {
-          if(effect == 3) effect = 1; // no production boost during basic challenge
-          if(effect == 5) effect = (state.res.spores.ler(0) ? 1 : 2); // no grow speed boost during basic challenge
-        }
 
         if(effect == 1) {
           // seeds
@@ -5267,7 +5360,8 @@ var update = function(opt_ignorePause) {
 
     state.res.addInPlace(actualgain); // gain gotten during this entire tick (not /s)
 
-    if(season_will_change && global_season_changes == 1) {
+    if(season_will_change && global_season_changes == 1 && !prev_season_gain) {
+      // this stores the prev_season_gain now for display in the *next* update tick
       prev_season_gain = Res(gain);
     }
 
@@ -5452,7 +5546,6 @@ var update = function(opt_ignorePause) {
 
     var t_total = large_time_delta_time;
     var totalgain = state.res.sub(large_time_delta_res);
-
 
     showMessage('Large time delta: ' + util.formatDuration(t_total, true, 4, true) + ', gained at once: ' + totalgain.toString() + season_message + tree_message, C_UNIMPORTANT, 0, 0);
   }

@@ -170,16 +170,22 @@ function updateMedalUI() {
   var numshown = i;
 
   if(changed) {
+    // repeat the infoText below the medals once more as well, so you can conveniently see it when scrolled to the bottom too
+    var repeatInfoText = state.medals_earned > 100;
     if(medalTierKeys) {
       for(var i = 0; i < medalTierKeys.length; i++) medalTierKeys[i].removeSelf(medalGrid);
     }
     medalTierKeys = [];
     var xpos = 0;
-    var ypos = Math.floor(numshown / numx) + 2;
+    var ypos = Math.floor(numshown / numx) + (repeatInfoText ? 1.5 : 2);
 
     var flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + numx - 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005]);
     medalTierKeys.push(flex);
-    flex.div.innerText = 'Key: tiers from lowest to highest:';
+    if(repeatInfoText) {
+      flex.div.innerHTML = infoText + '<br><br>Key: tiers from lowest to highest:';
+    } else {
+        flex.div.innerText = 'Key: tiers from lowest to highest:';
+    }
 
     var numx2 = numx; // 6
 

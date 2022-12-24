@@ -411,9 +411,12 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
   if(cropindex < 0) return;
   var cropindex1 = brassica3_0; // lower tier, if relevant
   if(cropindex > brassica3_0) cropindex1 = cropindex - 1;
+  var cropindex2 = brassica3_0; // even lower tier, if relevant
+  if(cropindex1 > brassica3_0) cropindex2 = cropindex1 - 1;
   var seeds_available = Num(state.res.infseeds);
   var cresscost = crops3[cropindex].cost.infseeds;
   var cresscost1 = crops3[cropindex1].cost.infseeds;
+  var cresscost2 = crops3[cropindex2].cost.infseeds;
   var numplanted = 0;
   var numdeleted = 0;
 
@@ -426,15 +429,16 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
       plantedhere[y][x] = false;
       var can_afford = seeds_available.ge(cresscost);
       var can_afford1 = seeds_available.ge(cresscost1);
+      var can_afford2 = seeds_available.ge(cresscost2);
       var f = state.field3[y][x];
       var c = f.getCrop();
       if(f.index == FIELD_REMAINDER) {
         if(opt_clear) {
           addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
           remcleared = true;
-        } else if(can_afford || can_afford1) {
-          var c2 = (can_afford ? crops3[cropindex] : crops3[cropindex1]);
-          var cost = (can_afford ? cresscost : cresscost1);
+        } else if(can_afford || can_afford1 || can_afford2) {
+          var c2 = (can_afford ? crops3[cropindex] : (can_afford1 ? crops3[cropindex1] : crops3[cropindex2]));
+          var cost = (can_afford ? cresscost : (can_afford1 ? cresscost1 : cresscost2));
           seeds_available.subInPlace(cost);
           addAction({type:ACTION_PLANT3, x:x, y:y, crop:c2, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
           replanted = true;
@@ -445,9 +449,9 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
         seeds_available.addInPlace(c.getRecoup(f).infseeds);
         numdeleted++;
       } else if(opt_all && f.index == 0) {
-        if((can_afford || can_afford1) && (f.index == 0 || f.index == FIELD_REMAINDER)) {
-          var c2 = (can_afford ? crops3[cropindex] : crops3[cropindex1]);
-          var cost = (can_afford ? cresscost : cresscost1);
+        if((can_afford || can_afford1 || can_afford2) && (f.index == 0 || f.index == FIELD_REMAINDER)) {
+          var c2 = (can_afford ? crops3[cropindex] : (can_afford1 ? crops3[cropindex1] : crops3[cropindex2]));
+          var cost = (can_afford ? cresscost : (can_afford1 ? cresscost1 : cresscost2));
           seeds_available.subInPlace(cost);
           addAction({type:ACTION_PLANT3, x:x, y:y, crop:c2, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
           numplanted++;
@@ -457,11 +461,15 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
         // also turn lower tier brassica into higher tier
         var recoup = c.getRecoup(f);
         var can_afford = seeds_available.ge(cresscost.sub(recoup.infseeds));
-        if(can_afford) {
+        var can_afford1 = seeds_available.ge(cresscost1.sub(recoup.infseeds));
+        var can_afford2 = seeds_available.ge(cresscost2.sub(recoup.infseeds));
+        if(can_afford || can_afford1 || can_afford2) {
+          var c2 = (can_afford ? crops3[cropindex] : (can_afford1 ? crops3[cropindex1] : crops3[cropindex2]));
+          var cost = (can_afford ? cresscost : (can_afford1 ? cresscost1 : cresscost2));
           seeds_available.addInPlace(recoup.infseeds);
           addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
-          seeds_available.subInPlace(cresscost);
-          addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[cropindex], ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+          seeds_available.subInPlace(cost);
+          addAction({type:ACTION_PLANT3, x:x, y:y, crop:c2, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
           // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
           // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
           if(f.growth < 0.999) numplanted++;

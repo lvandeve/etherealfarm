@@ -902,7 +902,7 @@ function deleteEntireField() {
       for(var x = 0; x < state.numw; x++) {
         var f;
         f = state.field[y][x];
-        if(f.hasCrop()) {
+        if(f.hasCrop() || f.index == FIELD_REMAINDER) {
           addAction({type:ACTION_DELETE, x:x, y:y, silent:true});
         }
       }
@@ -949,7 +949,7 @@ function deleteInfinityField() {
     for(var y = 0; y < state.numh3; y++) {
       for(var x = 0; x < state.numw3; x++) {
         var f = state.field3[y][x];
-        if(f.hasCrop()) {
+        if(f.hasCrop() || f.index == FIELD_REMAINDER) {
           num_deleted++;
           var c = f.getCrop();
           addAction({type:ACTION_DELETE3, x:x, y:y, silent:true});

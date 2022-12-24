@@ -169,6 +169,13 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       var c = crops3[index];
       var f = state.field3[y][x];
 
+      result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
+      var help = getCropTypeHelp3(c.type);
+      if(help) {
+        result += help;
+        result += '<br><br>';
+      }
+
       var cost = c.getCost();
       var replacementcost = cost;
       if(opt_replace) {
@@ -184,7 +191,7 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       }
       if(opt_replace) result += '<br>Replacement cost: ' + replacementcost.toString();
       if(c.type == CROPTYPE_BRASSICA) {
-        result += '<br><br>Living time: ' + util.formatDuration(c.planttime);
+        result += '<br><br>Finite lifetime: ' + util.formatDuration(c.planttime);
       } else {
         result += '<br><br>Grow time: ' + util.formatDuration(c.planttime);
       }
@@ -192,6 +199,7 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       var prod = c.getProd(f);
       if(!prod.empty()) {
         result += '<br><br>Production: ' + prod.toString() + '/s';
+        if(c.type == CROPTYPE_BERRY) result += ' (boostable)'; // added for clarity, since at higher tiers, like electrum, the base production starts getting lower than that of watercress and it may be misleading to see that, whey they can be boosted 10K times as high with flowers/bees
         if(prod.infseeds.neqr(0) && prod.infseeds.ltr(0.1) && prod.infseeds.gtr(-0.1)) result += ' (' + prod.infseeds.mulr(3600).toString() + '/h)';
         if(c.type == CROPTYPE_BRASSICA) {
           var totalprod = prod.mulr(c.getPlantTime());

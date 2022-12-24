@@ -864,17 +864,20 @@ function encState(state, opt_raw_only) {
   var h3 = state.numh3;
   array0 = [];
   array1 = [];
+  array2 = [];
   for(var y = 0; y < h3; y++) {
     for(var x = 0; x < w3; x++) {
       var f = state.field3[y][x];
       array0.push(f.index);
       if(f.hasCrop()) {
         array1.push(f.growth);
+        array2.push(f.runetime);
       }
     }
   }
   processIntArray(array0);
   processFloat2Array(array1);
+  processTimeArray(array2);
 
 
 
@@ -928,6 +931,7 @@ function isFiniteGE0(v) {
 }
 
 function decState(s) {
+  var orig = s;
   if(!isBase64(s)) return err(2);
   if(s.length < 22) return err(1);  // too small for save version, ticks code and checksum
   if(s[0] != 'E' || s[1] != 'F') return err(3); // invalid signature "Ethereal Farm"
@@ -2336,8 +2340,15 @@ function decState(s) {
     var h3 = state.numh3;
     array0 = processIntArray();
     array1 = processFloat2Array();
+    if(save_version >= 262144*2+64*7+7) {
+      array2 = processTimeArray();
+    } else {
+      array2 = [];
+      for(var i = 0; i < array1.length; i++) array2[i] = 0;
+    }
     index0 = 0;
     index1 = 0;
+    index2 = 0;
     if(error) return err(4);
     for(var y = 0; y < h3; y++) {
       state.field3[y] = [];
@@ -2346,16 +2357,17 @@ function decState(s) {
         var f = state.field3[y][x];
         f.index = array0[index0++];
         if(f.hasCrop()) {
-          if(save_version >= 4096*1+9) f.growth = array1[index1++];
+          f.growth = array1[index1++];
+          f.runetime = array2[index2++];
         }
       }
     }
     if(index0 > array0.length) return err(4);
     if(index1 > array1.length) return err(4);
+    if(index2 > array2.length) return err(4);
   } else {
     clearField3(state);
   }
-
 
 
 
