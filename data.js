@@ -1569,6 +1569,8 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
         result.mulInPlace(winter_malus);
         if(breakdown) breakdown.push(['winterfruit effect weakness', true, winter_malus, result.clone()]);
       }
+    }
+    if(!basic) {
       var ethereal_boost = state.ethereal_brassica_bonus.addr(1);
       if(ethereal_boost.neqr(1)) {
         result.mulInPlace(ethereal_boost);
@@ -1576,7 +1578,6 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
       }
     }
   }
-
 
   if(croptype == CROPTYPE_NUT) {
     var mul = Num(0.5);
@@ -7310,7 +7311,7 @@ var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), 15, metalifyPlantImages(blackberry, metalheader0));
-var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), 15, metalifyPlantImages(blackberry, metalheader1));
+var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), 15, metalifyPlantImages(blackberry, metalheader1, 2));
 // some division done in the production, since we take into account they're now well boosted by flowers and eventually beehives
 var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), 15, metalifyPlantImages(blackberry, metalheader2, 2));
 // more division since better flowers and beehives now
