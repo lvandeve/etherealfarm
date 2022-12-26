@@ -513,13 +513,20 @@ function createKeyboardHelpDialog() {
 
   var text = '';
 
-  text += '<b>List of keyboard shortcuts:</b>';
+  text += '<b>List of keyboard/mobile shortcuts:</b>';
   text += '<br/><br/>';
   if(!haveAutomaton()) {
     text += 'More shortcuts will appear in this list later as you progress through the game.';
     text += '<br/><br/>';
   }
-  text += 'Note: on mac, ctrl means command instead.';
+  text += '<b>General notes:</b>';
+  text += '<br/><br/>';
+  text += ' • on mac, ctrl means command instead.';
+  text += '<br/>';
+  text += ' • on mobile/touch devices, you can long-press some icons/buttons to access the shift and ctrl variants (e.g. the pause button and refresh watercress button).';
+  text += '<br/>';
+
+  text += '<br/><b>Main shortcuts:</b>';
   text += '<br/><br/>';
   text += ' • <b>esc</b>: close current dialog. If no dialogs are open, shows main menu.';
   text += '<br/>';

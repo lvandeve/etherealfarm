@@ -84,6 +84,7 @@ function setAriaRole(div, role) {
 // opt_label is an optional textual name for image-icon-buttons
 // opt_immediate = make the button respond immediately on mousedown, rather than only on mouseup
 // opt_noenterkey = do not make it activate on enter key (e.g. for the close button of dialogs, which is selected by default normally but shouldn't make the dialog close on pressing enter)
+// TODO: work in progress refactoring: use registerAction for everything
 function addButtonAction(div, fun, opt_label, opt_immediate, opt_noenterkey) {
   //var div = makeDiv('0', '0', '100%', '100%', div);
   if(opt_immediate && !isTouchDevice()) {
@@ -103,6 +104,204 @@ function addButtonAction(div, fun, opt_label, opt_immediate, opt_noenterkey) {
   //div.setAttribute('aria-pressed', 'false'); // TODO: is this needed? maybe it's only for toggle buttons? which addButtonAction is not.
   if(opt_label) setAriaLabel(div, opt_label);
 }
+
+/*
+registers click action(s), or tooltip, or both.
+this replaces (and deprecates) addAction
+this can support getting tooltips and shift+click or ctrl+click on mobile UI's too, which is why it has to be all together
+div: the div to add the actions and/or tooltip to
+fun: function called for actions, receives 2 parameters: shift, and ctrl (does not receive the JS event). Or give undefined to use this e.g. for tooltip only.
+label: aria/mobile label for the action (must be short enough to fit a button in long-press context menu), or undefined if fun is undefined
+params: optional, object with following named parameters, all optional:
+params.label_shift: label for the action when shift is pressed. In addition, this also implies a shift action is available and should be displayed in mobile UI
+params.label_ctrl: label for the action when shift is pressed. In addition, this also implies a ctrl action is available and should be displayed in mobile UI
+params.label_ctrl_shift: label for the action when shift and ctrl are pressed. In addition, this also implies a ctrl action is available and should be displayed in mobile UI
+params.tooltip: function or string for tooltip. If it's text, it's shown as-is. If function, the function should return text (for tooltips with dynamic content)
+params.tooltip_poll: if true, will make the tooltip dynamically update by calling fun again
+params.immediate: make the button respond immediately on mousedown, rather than only on mouseup. Not compatible with mobile.
+params.noenterkey: do not make it activate on enter key (e.g. for the close button of dialogs, which is selected by default normally but shouldn't make the dialog close on pressing enter)
+
+*/
+function registerAction(div, fun, label, params) {
+  if(!params) params = {};
+  // can also give undefined for e
+  var fun2 = function(e) {
+    var shift = e && eventHasShiftKey(e);
+    var ctrl = e && eventHasCtrlKey(e);
+    fun(shift, ctrl);
+  };
+  if(params.immediate && !isTouchDevice()) {
+    // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
+    div.onmousedown = fun2;
+  } else {
+    div.onclick = fun2;
+  }
+  if(!params.noenterkey) {
+    div.onkeypress = function(e) {
+      if(e.key == 'Enter') fun2(undefined);
+      e.preventDefault();
+    };
+  }
+  div.tabIndex = 0;
+  setAriaRole(div, 'button');
+  //div.setAttribute('aria-pressed', 'false'); // TODO: is this needed? maybe it's only for toggle buttons? which addButtonAction is not.
+  if(label) setAriaLabel(div, label);
+
+  if(params.tooltip) {
+    registerTooltip(div, params.tooltip, params.tooltip_poll, !params.fun);
+  }
+
+  if(params.tooltip || params.label_shift || params.label_ctrl) {
+    var alsoTestOnNonTouchDevice = true;
+    if(isTouchDevice() || alsoTestOnNonTouchDevice) {
+      addLongTouchEvent(div, function(e) {
+        makeLongTouchContextDialog(div, fun, label, params);
+      });
+    }
+  }
+}
+
+// gets the same params as registerAction
+function makeLongTouchContextDialog(div, fun, label, params) {
+  var dialog = createDialog({
+    title:'Long press context menu'
+  });
+  var content = dialog.content;
+
+  var texth = 0.05;
+  var y = 0;
+
+  var addButton = function() {
+    var h = 0.1;
+    var flex  = new Flex(content, 0.01, y, 0.99, y + h);
+    y += h * 1.2;
+    flex.div.className = 'efButton';
+    styleButton0(flex.div);
+    centerText2(flex.div);
+    return flex;
+  };
+
+  var flex = new Flex(content, 0.01, y, 0.99, y + texth);
+  flex.div.innerText = 'Allows using shift/ctrl key actions and tooltips on touch interfaces.';
+  y += 0.05;
+
+  y += 0.05;
+  if(fun) {
+    var button = addButton();
+    registerAction(button.div, function() {
+      closeTopDialog(); // close this context menu
+      fun(false, false);
+    }, label, {});
+    button.div.textEl.innerText = 'main: ' + upper(label);
+  }
+
+  if(params.label_shift) {
+    var button = addButton();
+    registerAction(button.div, function() {
+      closeTopDialog(); // close this context menu
+      fun(true, false);
+    }, label, {});
+    button.div.textEl.innerText = 'shift: ' + upper(params.label_shift);
+  }
+
+  if(params.label_ctrl) {
+    var button = addButton();
+    registerAction(button.div, function() {
+      closeTopDialog(); // close this context menu
+      fun(false, true);
+    }, label, {});
+    button.div.textEl.innerText = 'ctrl: ' + upper(params.label_ctrl);
+  }
+
+  if(params.label_ctrl_shift) {
+    var button = addButton();
+    registerAction(button.div, function() {
+      closeTopDialog(); // close this context menu
+      fun(true, true);
+    }, label, {});
+    button.div.textEl.innerText = 'shift+ctrl: ' + upper(params.label_ctrl_shift);
+  }
+
+  y += 0.05;
+
+  if(params.tooltip) {
+    flex = new Flex(content, 0.01, y, 0.99, y + texth);
+    var text = 'Tooltip:<br><br>';
+    text += (typeof params.tooltip == 'string') ? params.tooltip : params.tooltip()
+    flex.div.innerHTML = text;
+  }
+}
+
+// because touch events have their x and y position inside touches or targetTouches
+function getEventXY(e) {
+  var x = e.clientX;
+  var y = e.clientY;
+  if(!x && e.targetTouches && e.targetTouches[0]) {
+    x = e.targetTouches[0].clientX;
+    y = e.targetTouches[0].clientY;
+  }
+  return [x, y];
+}
+
+function addLongTouchEvent(div, fun) {
+  var longtouchtime = 0.7;
+  var timer;
+  var x0 = 0;
+  var y0 = 0;
+
+  var cancelClick = function(e) {
+    div.removeEventListener('click', cancelClick, true);
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  };
+
+  var startEvent = isTouchDevice() ? 'touchstart' : 'mousedown';
+  var endEvent = isTouchDevice() ? 'touchend' : 'mouseup';
+  var moveEvent = isTouchDevice() ? 'touchmove' : 'mousemove';
+
+  div.addEventListener(startEvent, function(e) {
+    // don't prevent *next* click (for touch case, where preventing regular click below is in fact possibly not executed, but some other things use onclick)
+    div.removeEventListener('click', cancelClick, true);
+    var pos = getEventXY(e);
+    x0 = pos[0];
+    y0 = pos[1];
+    if(timer) clearTimeout(timer);
+    timer = window.setTimeout(function() {
+      timer = undefined;
+      fun();
+      // prevent the regular click event
+      div.addEventListener('click', cancelClick, true);
+    }, longtouchtime * 1000);
+  }, true);
+
+  div.addEventListener(endEvent, function() {
+    if(!timer) return;
+    clearTimeout(timer);
+    timer = undefined;
+  }, true);
+
+  div.addEventListener(moveEvent, function(e) {
+    if(!timer) return;
+    var pos = getEventXY(e);
+    // allow some slack in the movement for touch position
+    if(Math.abs(x0 - pos[0]) >= 12 || Math.abs(y0 - pos[1]) >= 12) {
+      clearTimeout(timer);
+      timer = undefined;
+    }
+  }, true);
+
+  // this stops mobile context menu from appearing on long press, since we have our own context menu
+  div.oncontextmenu = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  };
+}
+
+
 
 // styles only a few of the essential properties for button
 // does not do centering (can be used for other text position), or colors/borders/....
@@ -204,6 +403,9 @@ var NOCANCELBUTTON = 'nocancel';
 params is object with following named parameters, all optional:
 params.functions: function, or array of functions, for the ok/action buttons
 params.names: button names for the functions. This and functions must be either arrays of same size, or function and string (or undefined for default 'ok') if there should be exactly one non-cancel button, or both undefined for none at all
+params.names_shift: button names for shift/ctrl variants of functions. Optional. Allows the mobile long-press context menu on dialog buttons.
+params.names_ctrl: idem for CTRL key
+params.names_ctrl_shift: idem vor SHIFT+CTRL key
 params.tooltips: optional tooltips for some buttons
 params.onclose: function that is always called when the dialog closes, no matter how (whether through an action, the cancel button, or some other means like global close or escape key). It receives a boolean argument 'cancel' that's true if it was closed by any other means than a non-cancel button (so, true if it was canceled)
 params.oncancel: similar to onclose, but only called in case of cancel actions (the cancel button, esc key, ...), not when one of the buttons from params.functions/params.names got pressed
@@ -234,10 +436,16 @@ function createDialog(params) {
   var functions = params.functions;
   var names = params.names;
   var tooltips = params.tooltips;
+  var names_shift = params.names_shift;
+  var names_ctrl = params.names_ctrl;
+  var names_ctrl_shift = params.names_ctrl_shift;
 
   if(!Array.isArray(functions)) functions = (functions ? [functions] : []);
   if(!Array.isArray(names)) names = (functions ? [names || 'ok'] : []);
   if(!Array.isArray(tooltips)) tooltips = (tooltips ? [tooltips] : []);
+  if(!Array.isArray(names_shift)) names_shift = (names_shift ? [names_shift] : []);
+  if(!Array.isArray(names_ctrl)) names_ctrl = (names_ctrl ? [names_ctrl] : []);
+  if(!Array.isArray(names_ctrl_shift)) names_ctrl_shift = (names_ctrl_shift ? [names_ctrl_shift] : []);
 
   var dialog = {};
 
@@ -427,13 +635,15 @@ function createDialog(params) {
       styleButton(button);
       button.textEl.innerText = names[i];
       var fun = functions[i];
-      addButtonAction(button, bind(function(fun, e) {
+      registerAction(button, bind(function(fun, e) {
         var keep = fun(e);
         if(!keep) dialog.closeFun(false);
-      }, fun), names[i] + ': dialog button');
-      if(tooltips[i]) {
-        registerTooltip(button, tooltips[i]);
-      }
+      }, fun), names[i] + ' (dialog button)', {
+        tooltip:tooltips[i],
+        label_shift:(names_shift[i]),
+        label_ctrl:(names_ctrl[i]),
+        label_ctrl_shift:(names_ctrl_shift[i]),
+      });
     }
   }
 

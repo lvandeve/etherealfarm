@@ -1009,9 +1009,7 @@ function showExportTextDialog(title, description, text, filename, opt_close_on_c
 }
 
 
-function importSaveFromDialog(e, enc, messageFlex) {
-  var shift = util.eventHasShiftKey(e);
-  var ctrl = util.eventHasCtrlKey(e);
+function importSaveFromDialog(shift, ctrl, enc, messageFlex) {
   enc = enc.trim();
   if(enc == '') return;
   load(enc, function(state) {
@@ -1096,8 +1094,10 @@ function createSettingsDialog() {
     var w = 500, h = 500;
     var dialog = createDialog({
       size:DIALOG_SMALL,
-      functions: function(e) { importSaveFromDialog(e, area.value, textFlex); return true; },
+      functions: function(shift, ctrl) { importSaveFromDialog(shift, ctrl, area.value, textFlex); return true; },
       names:'import',
+      names_shift:'import paused',
+      names_ctrl:'import unpaused',
       cancelname:'cancel',
       title:'Import savegame'
     });
@@ -1256,9 +1256,9 @@ function initSettingsUI() {
   var undobutton = addTopBarFlex(2, 4, FONT_DIALOG_BUTTON);
   styleButton(undobutton.div);
   undobutton.div.textEl.innerText = 'Undo';
-  addButtonAction(undobutton.div, function(e) {
+  registerAction(undobutton.div, function(shift, ctrl) {
     //if(state.paused) return; // undo is broken with current pause implementation, gives black screen and risk of wrong times
-    if(e.shiftKey) {
+    if(shift) {
       showMessage('held shift key while pressing undo button, so saving undo instead.');
       storeUndo(state);
     } else {
@@ -1266,12 +1266,14 @@ function initSettingsUI() {
       update();
     }
     removeAllTooltips();
-  }, 'undo');
+  }, 'undo', {
+    tooltip:function() {
+      return 'Undo your last action(s). Press again to redo.<br><br>' +
+        'Undo is saved when doing an action, but with at least ' + util.formatDuration(minUndoTime) + ' of time in-between, so multiple actions in quick succession may all be undone.<br><br>' +
+        'Undo save time duration is limited to ' + util.formatDuration(maxUndoTime) + '. If you undo a long time duration, you\'ll still get the correct amount of resources gained during that time.' +
+        '';
+    },
+    label_shift:'store undo now'
+  });
   undobutton.div.id = 'undo_button';
-  registerTooltip(undobutton.div, function() {
-    return 'Undo your last action(s). Press again to redo.<br><br>' +
-      'Undo is saved when doing an action, but with at least ' + util.formatDuration(minUndoTime) + ' of time in-between, so multiple actions in quick succession may all be undone.<br><br>' +
-      'Undo save time duration is limited to ' + util.formatDuration(maxUndoTime) + '. If you undo a long time duration, you\'ll still get the correct amount of resources gained during that time.' +
-      '';
-    });
 }

@@ -303,26 +303,37 @@ function updateAbilitiesUI() {
       }
 
       watercressbutton = addTopBarFlex(9, 10);
-      var title;
+      var tooltip;
+      var label = 'refresh ' + name;
+      var label_shift;
+      var label_ctrl;
       if(infinity_field_tab) {
-        title = 'Refresh brassica: replants brassica remainders, upgrades to next tier if possible, and else refreshes partially used up ones. Hotkey: w. With ctrl, deletes all brassica. With shift, plants the highest possible brassica everywhere it can. If it did nothing without shift, will act like shift was pressed. ';
-        title += 'Use carefully: while you don\'t lose any infinity seeds from refreshing because brassica give a refund based on their remaining lifespan, it is more efficient for income to have multiple halfway brassica than a single fully refreshed one, unless you\'re away for a while.';
+        tooltip = 'Refresh brassica: replants brassica remainders, upgrades to next tier if possible, and else refreshes partially used up ones. Hotkey: w. With ctrl, deletes all brassica. With shift, plants the highest possible brassica everywhere it can. If it did nothing without shift, will act like shift was pressed. ';
+        tooltip += 'Use carefully: while you don\'t lose any infinity seeds from refreshing because brassica give a refund based on their remaining lifespan, it is more efficient for income to have multiple halfway brassica than a single fully refreshed one, unless you\'re away for a while.';
+        label_shift = 'plant brassica everywhere';
+        label_ctrl = 'delete all brassica';
       } else {
-        title = 'Refresh ' + name + ': active ' + name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + name + '. With shift, plants ' + name + ' everywhere it can.';
+        tooltip = 'Refresh ' + name + ': active ' + name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + name + '. With shift, plants ' + name + ' everywhere it can.';
+        label_shift = 'plant brassica everywhere';
+        label_ctrl = 'delete all brassica';
       }
-      watercressbutton.div.title = title;
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);
       var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
       renderImage(image, canvas);
 
-      addButtonAction(watercressbutton.div, function(e) {
-        if(state.currentTab == tabindex_field3) {
-          refreshWatercress3(util.eventHasCtrlKey(e), e.shiftKey);
-        } else {
-          refreshWatercress(util.eventHasCtrlKey(e), e.shiftKey);
-        }
-      }, 'refresh ' + name + '. with shift: deletes all ' + name);
+      registerAction(watercressbutton.div, function(shift, ctrl) {
+          if(state.currentTab == tabindex_field3) {
+            refreshWatercress3(ctrl, shift);
+          } else {
+            refreshWatercress(ctrl, shift);
+          }
+        }, 'refresh ' + name, {
+          label_shift:label_shift,
+          label_ctrl:label_ctrl,
+          tooltip:tooltip
+        });
+
       watercressbutton.div.id = 'watercress_button';
     }
   } else if(watercressbutton) {

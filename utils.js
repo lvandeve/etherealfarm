@@ -724,6 +724,7 @@ var Utils = (function() {
   };
   result.eventHasShiftKey = eventHasShiftKey;
 
+  // returns if the event has the ctrl key, or on macs instead this is the cmd key since ctrl does something else on those
   var eventHasCtrlKey = function(e) {
     return e.ctrlKey || e.metaKey; // metakey is for macs where ctrl doesn't work and meta represents cmd key instead which is basically what one normally uses as ctrl there
   };
