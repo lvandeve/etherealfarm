@@ -299,6 +299,10 @@ function addLongTouchEvent(div, fun) {
     e.stopImmediatePropagation();
     return false;
   };
+
+  // this stops mobile context callouts from appearing on long press on ios
+  div.style.webkitTouchCallout = 'none';
+  div.style.webkitUserSelect = 'none';
 }
 
 

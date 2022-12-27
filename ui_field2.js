@@ -322,9 +322,9 @@ function makeTree2Dialog() {
   text += '• berry boost: ' + state.ethereal_berry_bonus.toPercentString() + '<br>';
   text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
   text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
-  if(state.ethereal_nettle_bonus.neqr(0)) text += '• stinging boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
-  if(state.ethereal_bee_bonus.neqr(0)) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
-  if(state.ethereal_brassica_bonus.neqr(0)) text += '• brassica boost: ' + state.ethereal_brassica_bonus.toPercentString() + '<br>';
+  if(state.crops2[nettle2_0].unlocked) text += '• stinging boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
+  if(state.crops2[bee2_0].unlocked) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
+  if(state.crops2[brassica2_0].unlocked) text += '• brassica boost: ' + state.ethereal_brassica_bonus.toPercentString() + '<br>';
   text += '<br><br>';
 
   f0.div.innerHTML = text;
