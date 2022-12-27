@@ -257,11 +257,13 @@ function addLongTouchEvent(div, fun) {
     return false;
   };
 
-  var startEvent = isTouchDevice() ? 'touchstart' : 'mousedown';
-  var endEvent = isTouchDevice() ? 'touchend' : 'mouseup';
-  var moveEvent = isTouchDevice() ? 'touchmove' : 'mousemove';
+  var touch = isTouchDevice();
+  var startEvent = touch ? 'touchstart' : 'mousedown';
+  var endEvent = touch ? 'touchend' : 'mouseup';
+  var moveEvent = touch ? 'touchmove' : 'mousemove';
 
   div.addEventListener(startEvent, function(e) {
+    if(!touch && e.which == 3) return; // don't prevent right click menu in regular browsers
     // don't prevent *next* click (for touch case, where preventing regular click below is in fact possibly not executed, but some other things use onclick)
     div.removeEventListener('click', cancelClick, true);
     var pos = getEventXY(e);
@@ -294,6 +296,7 @@ function addLongTouchEvent(div, fun) {
 
   // this stops mobile context menu from appearing on long press, since we have our own context menu
   div.oncontextmenu = function(e) {
+    if(!touch && e.which == 3) return; // don't prevent right click menu in regular browsers
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();

@@ -168,6 +168,7 @@ generateImageCanvas(hiddenmedalimageheader + medalheader7 + medalhiddengem),
 generateImageCanvas(hiddenmedalimageheader + medalheader8 + medalhiddengem),
 generateImageCanvas(hiddenmedalimageheader + medalheader9 + medalhiddengem),
 generateImageCanvas(hiddenmedalimageheader + medalheader10 + medalhiddengem),
+generateImageCanvas(hiddenmedalimageheader + medalheader11 + medalhiddengem),
 ];
 
 

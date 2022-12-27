@@ -7485,7 +7485,8 @@ medal_register_id += 20; // a few spares for this one
 var level_achievement_values = [[5, 0.025], [10, 0.05], [15, 0.075], [20, 0.1], [25, 0.2],
                                 [30, 0.3],  [35, 0.4],  [40, 0.5],  [45, 0.75],  [50, 1.0],
                                 [60, 1.5],  [70, 2.5],  [80, 5],  [90, 10],  [100, 15],
-                                [110, 25],  [120, 50],  [130, 75],  [140, 150],  [150, 200]];
+                                [110, 25],  [120, 50],  [130, 75],  [140, 150],  [150, 200],
+                                [160, 300],  [170, 400],  [180, 500],  [190, 600],  [200, 700]];
 for(var i = 0; i < level_achievement_values.length; i++) {
   var level = level_achievement_values[i][0];
   var bonus = Num(level_achievement_values[i][1]);
@@ -7703,8 +7704,8 @@ medal_register_id = 1200;
 
 // those higher values like 500 are probably never reachable unless something fundamental is changed to the game design in the future, but that's ok,
 // not all medals that are in the code must be reachable.
-var level2_achievement_values =  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-for(var i = 0; i < level_achievement_values.length; i++) {
+var level2_achievement_values =  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+for(var i = 0; i < level2_achievement_values.length; i++) {
   var level = level2_achievement_values[i];
   var bonus = Num((level * level) / 20);
   var s = level;
