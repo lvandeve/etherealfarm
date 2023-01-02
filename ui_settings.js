@@ -540,11 +540,11 @@ function createAdvancedSettingsDialog() {
   addSettingsSpacer();
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'save when refreshing tab: ' + (state.saveonexit ? 'yes' : 'no'); };
+  updatebuttontext = function(button) { button.textEl.innerText = 'save after each action: ' + (state.saveonaction ? 'yes' : 'no'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Whether to auto-save when closing or refreshing the browser tab. May not work for closing the entire browser or shutting down computer, do a manual "save now" before those to guarantee keeping the latest state. If off, then the game still auto-saves every few minutes. Toggling this setting will also immediately cause a save.');
+  registerTooltip(button, 'Whether to auto-save after each action (and also when refreshing browser tab). If this is on, actions are saved reliably even when closing the web browser soon after. If this is off, the game will still auto-save every few minutes anyway, but the last minutes of gameplay may get lost when closing browser tab. Remember it\'s also recommended to export saves manually regularly since web browsers can lose all data easily.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
-    state.saveonexit = !state.saveonexit;
+    state.saveonaction = !state.saveonaction;
     updatebuttontext(button);
     saveNow(); // save immediately now: otherwise if you refresh after toggling this setting, it'll reset back exactly due to not saving...
   }, button, updatebuttontext));

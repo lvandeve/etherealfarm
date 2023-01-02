@@ -25,8 +25,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // -sub: 0..any: does not change the numeric version code. if non-0, adds 'b', 'c'. ... to the version name. Should not affect savegame format. Cosmetic changes only. Version name including this part is appended to CSS URL query part to ensure no stale cached CSS file is used.
 var version_major = 0; // 0..61
 var version_minor = 7; // 0..4095
-var version_patch = 7; // 0..63
-var version_sub = 4; // 0=no suffix, 1=b, 2=c, ...
+var version_patch = 8; // 0..63
+var version_sub = 0; // 0=no suffix, 1=b, 2=c, ...
 
 var version = 262144 * (version_major + 2) + 64 * version_minor + version_patch;
 
@@ -79,7 +79,7 @@ var window_unloading = false;
 // this only works reliably for closing tabs, not for closing browser or shutting down computer
 window.onbeforeunload = function() {
   window_unloading = true;
-  if(!state.saveonexit) return;
+  if(!state.saveonaction) return;
   // ensure to call the onclose function of some dialogs, for example configure automaton autochoice temporarily changes the state and only its onclose function restores it, ensure that's done before saving
   for(var i = 0; i < created_dialogs.length; i++) {
     if(created_dialogs[i].onclose) created_dialogs[i].onclose();

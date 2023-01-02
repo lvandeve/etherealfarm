@@ -654,7 +654,7 @@ function State() {
   this.precision = 3; // precision of the numeric notation
   this.roman = 1; // use roman numbers in various places (upgrade levels, ...). 1: all roman, 0: roman up to 12, 2: no roman
   this.mobilemode = false;
-  this.saveonexit = true; // save with the window unload event (this is different than the interval based autosave)
+  this.saveonaction = true; // save when doing player actions, and with the window unload event (this is different than the interval based autosave)
   this.tooltipstyle = 1;
   this.disableHelp = false; // disable all popup help dialogs
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark, 3=darkest

@@ -22,6 +22,14 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.7.8 (2023-01-02):';
+  text += '<br/>• Mainly bugfixes, no gameplay changes for now.'; // includes fixing undo of player action after auto-action happened during sped up computation
+  text += '<br/>• During stormy challenge a lightning can be briefly seen now when a crops is hit.';
+  text += '<br/>• The game auto-saves more often after doing player actions now, decreasing chance of lost actions when closing browser. Also repurposed the "save when refreshing tab" setting to "save after each action" for this. The setting should be on (the default) to get the new extra extra auto-saves.';
+  text += '<br/>• Some buttons (undo, refresh brassica and import save) reveal extra functions when long pressing them, to access these features on mobile. These features were already accessible using the shift/ctrl key on other devices and are listed in the shortcuts help dialog. (this feature was already released a few days before this patch note but is now actually listed)';
+  text += '<br/>• Fixed issue with undo after auto-action happened during sped-up time';
+  text += '<br/><br/>';
+
   text += '0.7.7 (2022-12-24):';
   text += '<br/>• Added 3 new ethereal crops (for levels 19 and up).';
   text += '<br/>• Added 5 new infinity crops.';

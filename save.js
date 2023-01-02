@@ -300,7 +300,7 @@ function encState(state, opt_raw_only) {
   section = 9; id = 0; // settings
   processUint16(state.notation);
   processUint16(state.precision);
-  processBool(state.saveonexit);
+  processBool(state.saveonaction);
   id++; // was 'allowshiftdelete'
   processUint16(state.tooltipstyle);
   processBool(state.disableHelp);
@@ -1381,7 +1381,7 @@ function decState(s) {
   section = 9; id = 0; // settings
   state.notation = processUint16();
   state.precision = processUint16();
-  state.saveonexit = processBool();
+  state.saveonaction = processBool();
   id++; // was 'allowshiftdelete'
   state.tooltipstyle = processUint16();
   if(save_version >= 4096*1+20) state.disableHelp = processBool();

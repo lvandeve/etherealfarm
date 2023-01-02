@@ -444,6 +444,7 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
       var f = state.field3[y][x];
       var c = f.getCrop();
       if(f.index == FIELD_REMAINDER) {
+        // re-planting one on a remainder spot
         if(opt_clear) {
           addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
           remcleared = true;
@@ -456,10 +457,12 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
           numplanted++;
         }
       } else if(c && c.type == CROPTYPE_BRASSICA && opt_clear) {
+        // deleting an existing one when using clear
         addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
         seeds_available.addInPlace(c.getRecoup(f).infseeds);
         numdeleted++;
       } else if(opt_all && f.index == 0) {
+        // planting one on empty cell in case of all
         if((can_afford || can_afford1 || can_afford2) && (f.index == 0 || f.index == FIELD_REMAINDER)) {
           var c2 = (can_afford ? crops3[cropindex] : (can_afford1 ? crops3[cropindex1] : crops3[cropindex2]));
           var cost = (can_afford ? cresscost : (can_afford1 ? cresscost1 : cresscost2));
@@ -477,14 +480,16 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
         if(can_afford || can_afford1 || can_afford2) {
           var c2 = (can_afford ? crops3[cropindex] : (can_afford1 ? crops3[cropindex1] : crops3[cropindex2]));
           var cost = (can_afford ? cresscost : (can_afford1 ? cresscost1 : cresscost2));
-          seeds_available.addInPlace(recoup.infseeds);
-          addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
-          seeds_available.subInPlace(cost);
-          addAction({type:ACTION_PLANT3, x:x, y:y, crop:c2, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
-          // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
-          // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
-          if(f.growth < 0.999) numplanted++;
-          refreshed = true;
+          if(c2.tier > c.tier) {
+            seeds_available.addInPlace(recoup.infseeds);
+            addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
+            seeds_available.subInPlace(cost);
+            addAction({type:ACTION_PLANT3, x:x, y:y, crop:c2, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+            // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
+            // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
+            if(f.growth < 0.999) numplanted++;
+            refreshed = true;
+          }
         }
       }
     }

@@ -232,6 +232,7 @@ function hardReset() {
 
   undoSave = '';
   lastUndoSaveTime = 0;
+  prev_store_undo = false;
 
   resetGlobalStateVars();
 
@@ -846,6 +847,7 @@ var lastnonpausetime = 0;
 
 var undoSave = '';
 var lastUndoSaveTime = 0;
+var prev_store_undo = false; // this variable is only used for auto-save after actions and is not directly related to undo
 
 function clearUndo() {
   undoSave = '';
@@ -853,7 +855,8 @@ function clearUndo() {
 }
 
 function storeUndo(state) {
-  lastUndoSaveTime = util.getTime();
+  // use state.time, not util.getTime() here: auto-actions are an exceptional case where undo is saved automatically without player-action, and so can happen during fast-forward time. so if it uses the real time, it sets the lastUndoSaveTime wrongly (to a too recent time, namely right now), so if player then does a manual action now, undo for the player action won't be saved but the saved undo from right before the auto-action, even if it was long ago in actuality, will be kept.
+  lastUndoSaveTime = state.time; //util.getTime();
   save(state, function(s) {
     //console.log('undo saved');
     undoSave = s;
@@ -4764,6 +4767,8 @@ var update = function(opt_ignorePause) {
         f.growth = 1;
         state.c_lightnings++;
         state.g_lightnings++;
+        lightning_field_image_x = f.x;
+        lightning_field_image_y = f.y;
       }
       state.lastLightningTime = state.time;
     }
@@ -5520,6 +5525,14 @@ var update = function(opt_ignorePause) {
       lastSaveTime = time;
     }
   }
+  // a different kind of autosave: auto save shortly after any player actions, so there's less chance of actions lost when closing browser right after doing one
+  // there is of course the auto-save on closing tab, but that JS event is not reliable and does not happen when closing entire browser
+  // the 'store_undo' boolean is here instead used because it indicates a player action was done, automaton actions usually don't cause store_undo. There's no need to auto-save this way if no player actions is done.
+  // it's using prev_store_undo instead of store_undo to ensure the save is done one tick after so the state is well updated for sure
+  if(autoSaveOk() && state.saveonaction && prev_store_undo) {
+    saveNow();
+  }
+  prev_store_undo = store_undo;
 
   var d_total = state.prevtime - oldtime;
   // if negative time was used, this message won't make sense, it may say 'none', which is indeed what you got when compensating for negative time. But the message might then be misleading.

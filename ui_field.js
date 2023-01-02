@@ -1099,6 +1099,9 @@ function renderLevel(canvas, level, x, y, progresspixel, opt_color_off, opt_colo
   }
 }
 
+var lightning_field_image_x = 0;
+var lightning_field_image_y = 0;
+
 function updateFieldCellUI(x, y) {
   if(state.numh != fieldDivs.length || state.numw != fieldDivs[0].length) initFieldUI();
 
@@ -1140,7 +1143,9 @@ function updateFieldCellUI(x, y) {
     if(ugly) automatonplant = false;
   }
 
-  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant) {
+  var lightningimage = (x == lightning_field_image_x && y == lightning_field_image_y && state.time - state.lastLightningTime < 0.5);
+
+  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage) {
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
@@ -1156,11 +1161,15 @@ function updateFieldCellUI(x, y) {
     fd.presentcode = presentcode;
     fd.progresspixel = progresspixel;
     fd.automatonplant = automatonplant;
+    fd.lightningimage = lightningimage;
 
     var label = 'field tile ' + x + ', ' + y;
 
     if(automatonplant) {
       renderImage(images_automaton[4], fd.canvas);
+    } else if(lightningimage) {
+      renderImage(image_lightning, fd.canvas); // short lightning strike image, only stays for half a second, you can only really see this if you're there while it happens
+      setProgressBar(fd.progress, -1, undefined);
     } else if(f.hasCrop(true)) {
       var c = f.getCrop(true);
       var cropimg;
