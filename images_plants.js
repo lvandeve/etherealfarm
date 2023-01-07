@@ -5740,15 +5740,14 @@ var image_automaton_hat = `
 ....664..664....
 `;
 
-//var image_automaton = image_automaton_base;
-var image_automaton = image_automaton_hat;
+var image_automaton = image_automaton_base;
 
 var images_automaton = createPlantImages2(
-  image_automaton,
-  image_automaton,
-  image_automaton,
-  image_automaton,
-  image_automaton
+  image_automaton_base,
+  image_automaton_base,
+  image_automaton_base,
+  image_automaton_base,
+  image_automaton_base
 );
 
 var image_squirrel_base = `
@@ -5789,16 +5788,13 @@ var image_squirrel_hat = `
 ................
 `;
 
-//var image_squirrel = image_squirrel_base;
-var image_squirrel = image_squirrel_hat;
-
-
+// State.prototype.manageHatImages may replace these with other squirrel evolutions or hat images
 var images_squirrel = createPlantImages2(
-  image_squirrel,
-  image_squirrel,
-  image_squirrel,
-  image_squirrel,
-  image_squirrel
+  image_squirrel_base,
+  image_squirrel_base,
+  image_squirrel_base,
+  image_squirrel_base,
+  image_squirrel_base
 );
 
 var image_squirrel2_base = `
@@ -5839,10 +5835,6 @@ var image_squirrel2_hat = `
 ....ssss........
 ................
 `;
-
-
-//var image_squirrel2 = image_squirrel2_base;
-var image_squirrel2 = image_squirrel2_hat;
 
 
 var images_pumpkin_base = `

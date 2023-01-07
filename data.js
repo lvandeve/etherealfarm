@@ -304,7 +304,7 @@ Crop.prototype.getPlantTime = function() {
     }
 
     if(!basic) {
-      if(state.squirrel_upgrades[upgradesq_watercresstime].count) {
+      if(state.squirrel_upgrades[upgradesq_watercresstime].count || state.squirrel_upgrades[upgradesq_watercresstime2].count) {
         result *= 1.5;
       }
     }
@@ -1022,7 +1022,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = new Num(1.25);
     result.mulInPlace(bonus);
-    if(holidayEventActive(1)) {
+    if(holidayEventActive() == 1) {
       if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
     } else {
       if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
@@ -1575,6 +1575,12 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
       if(ethereal_boost.neqr(1)) {
         result.mulInPlace(ethereal_boost);
         if(breakdown) breakdown.push(['ethereal crops', true, ethereal_boost, result.clone()]);
+      }
+
+      if(state.squirrel_upgrades[upgradesq_watercresstime2].count) {
+        var mul = Num(1.5);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['squirrel: brassica space-time', true, mul, result.clone()]);
       }
     }
   }
@@ -2985,7 +2991,7 @@ registered_upgrades = registered_upgrades.sort(function(a, b) {
 function pumpkinUnlocked() {
   if(state.challenge) return false; // disable challenges at all in first release, in case it turns out much too strong
 
-  if(!holidayEventActive(3)) return false;
+  if(holidayEventActive() != 4) return false;
   if(basicChallenge()) return false;
   if(!state.g_numresets) return false; // don't introduce the pumpkin on first playtrough yet
   if(!state.upgrades[berryunlock_0].count) return false; // must have unlocked at least the first berry
@@ -4034,7 +4040,7 @@ var upgrade2_register_id = -1;
 // @constructor
 function Upgrade2() {
   this.name = 'a';
-  this.description = undefined; // longer description than the name, with details, shown if not undefined
+  this.description = undefined; // longer description than the name, with details, shown if not undefined. Is also allowed to be a function instead, for dynamic description
 
   // function that applies the upgrade
   this.fun = undefined;
@@ -4087,6 +4093,11 @@ function Upgrade2() {
 Upgrade2.prototype.getCost = function(opt_adjust_count) {
   var countfactor = Num.powr(this.cost_increase, state.upgrades2[this.index].count + (opt_adjust_count || 0));
   return this.cost.mul(countfactor);
+};
+
+Upgrade2.prototype.getDescription = function() {
+  if(typeof(this.description) == 'function') return this.description();
+  return this.description;
 };
 
 // maxcount should be 1 for an upgrade that can only be done once (e.g. an unlock), or 0 for infinity
@@ -4410,11 +4421,19 @@ var upgrade2_highest_level_bonus = Num(0.005);
 var upgrade2_highest_level_bonus2 = Num(0.001);
 var upgrade2_highest_level = registerUpgrade2('tree\'s gesture', LEVEL2, Res({resin:2e6}), 5, function() {
       // nothing to do, upgrade count causes the effect elsewhere
-    }, function(){return true;}, 95,
-    'gain ' + upgrade2_highest_level_bonus.toPercentString() +
-    ' bonus to seeds, spores, resin and twigs income per highest tree level ever reached (multiplicative). For each next upgrade, gain an additional ' +
-    upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = (' +
-    upgrade2_highest_level_bonus.addr(1).toString(5) + ' + ' + upgrade2_highest_level_bonus2.toString(5) + ' * (upgrade_levels - 1)) ^ max_tree_level_ever', undefined, undefined, tree_images[20][1][1]);
+    }, function(){return true;}, 95, function() {
+      return 'Highest tree level ever bonus: gain ' + upgrade2_highest_level_bonus.toPercentString() +
+             ' bonus to seeds, spores, resin and twigs income per highest tree level ever reached (multiplicative). For each next upgrade, gain an additional ' +
+             upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = (' +
+             upgrade2_highest_level_bonus.addr(1).toString(5) + ' + ' + upgrade2_highest_level_bonus2.toString(5) + ' * (upgrade_levels - 1)) ^ max_tree_level_ever'
+             + '<br><br>'
+             + 'current bonus: ' + treeGestureBonus(0).subr(1).toPercentString()
+             + '<br>'
+             + 'next upgrade bonus: ' + treeGestureBonus(1).subr(1).toPercentString()
+             + '<br>'
+             + 'next tree level bonus: ' + treeGestureBonus(0, 1).subr(1).toPercentString()
+             ;
+    }, undefined, undefined, tree_images[20][1][1]);
 
 
 
@@ -6431,6 +6450,7 @@ var upgradesq_doublefruitprob = registerSquirrelUpgrade('double fruit drop chanc
 var upgradesq_growspeed = registerSquirrelUpgrade('grow speed', undefined, 'crops grow ' + Num(upgradesq_growspeed_bonus).toPercentString() + ' faster', blackberry[0]);
 var upgradesq_watercress_mush = registerSquirrelUpgrade('watercress and mushroom soup', undefined, 'when watercress copies from mushroom, it no longer increases seed consumption, it copies the spores entirely for free. Also works for other brassica.', images_watercress[4]);
 var upgradesq_watercresstime = registerSquirrelUpgrade('brassica time', undefined, 'adds 50% to the lifetime of brassica, such as watercress', images_watercress[1]);
+var upgradesq_watercresstime2 = registerSquirrelUpgrade('brassica space-time', undefined, 'adds 50% to the lifetime and copying ability of brassica, such as watercress', images_watercress[1]);
 
 var upgradesq_squirrel_boost = Num(0.25);
 var upgradesq_squirrel = registerSquirrelUpgrade('ethereal squirrel boost', undefined, 'adds an additional ' + upgradesq_squirrel_boost.toPercentString() + ' to the neighbor boost (which is originally 50%) of the ethereal squirrel', images_squirrel[4]);
@@ -6618,7 +6638,7 @@ registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_ethtree, upgradesq_et
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_resin], undefined, [upgradesq_twigs]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_automaton2], undefined, true);
 
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_diagonal_brassica], [upgradesq_mushroom_multiplicity_boost], [upgradesq_watercresstime]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_diagonal_brassica], [upgradesq_mushroom_multiplicity_boost], [upgradesq_watercresstime2]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_flower], [upgradesq_ethtree2], [upgradesq_flower_multiplicity]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_mushroom], [upgradesq_squirrel], [upgradesq_berry]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_bee], [upgradesq_weather_duration], [upgradesq_nettle]);
@@ -6668,6 +6688,7 @@ var ambercost_lengthen = Num(20);
 var ambercost_shorten = Num(20);
 var ambercost_keep_season = Num(30);
 var ambercost_end_keep_season = Num(0);
+var ambercost_reset_choices = Num(15);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -6864,6 +6885,7 @@ function performSquirrelEvolution() {
   state.squirrel_upgrades_spent = Num(0);
 
   state.initSquirrelStages();
+  state.initEvolutionAndHatImages();
 
   for(var i = 0; i < registered_squirrel_upgrades.length; i++) {
     state.squirrel_upgrades[registered_squirrel_upgrades[i]] = new SquirrelUpgradeState();
@@ -7302,6 +7324,8 @@ function registerRunestone3(name, tier, cost, infboost, basicboost, planttime, i
   return index;
 }
 
+var default_crop3_growtime = 5; // in seconds
+
 
 crop3_register_id = 0;
 var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Res({infseeds:20.01 / (24 * 3600)}), Num(0.05), 24 * 3600, metalifyPlantImages(images_watercress, metalheader0));
@@ -7310,25 +7334,25 @@ var brassica3_2 = registerBrassica3('silver watercress', 2, Res({infseeds:5e7}),
 var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, 4));
 
 crop3_register_id = 300;
-var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), 15, metalifyPlantImages(blackberry, metalheader0));
-var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), 15, metalifyPlantImages(blackberry, metalheader1, 2));
+var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
+var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader1, 2));
 // some division done in the production, since we take into account they're now well boosted by flowers and eventually beehives
-var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), 15, metalifyPlantImages(blackberry, metalheader2, 2));
+var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader2, 2));
 // more division since better flowers and beehives now
-var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), Res({infseeds:(100e12 / 32 / (24 * 3600))}), Num(0.2), 15, metalifyPlantImages(blackberry, metalheader3, 4, 2));
+var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), Res({infseeds:(100e12 / 32 / (24 * 3600))}), Num(0.2), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader3, 4, 2));
 
 crop3_register_id = 600;
 // mushrooms? maybe not, but ids reserved for in case
 
 crop3_register_id = 900;
-var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), 15, metalifyPlantImages(images_anemone, metalheader0, 1));
-var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2.5e6}), Num(1), Num(0.15), 15, metalifyPlantImages(images_anemone, metalheader1));
-var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), 15, metalifyPlantImages(images_anemone, metalheader2, 0));
-var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(9), Num(0.3), 15, metalifyPlantImages(images_anemone, metalheader3, 4));
+var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, 1));
+var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2.5e6}), Num(1), Num(0.15), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader1));
+var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader2, 0));
+var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(9), Num(0.3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader3, 4));
 
 crop3_register_id = 1200;
-var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), 15, metalifyPlantImages(images_beenest, metalheader2, 0));
-var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(12), Num(0.75), 15, metalifyPlantImages(images_beenest, metalheader3, 4));
+var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader2, 0));
+var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(12), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, 4));
 
 crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
@@ -8147,7 +8171,7 @@ function registerPlantTypeMedal3(cropid) {
   var c = crops3[cropid];
   var mul = getPlantTypeMedalBonus3(cropid);
   return registerMedal('Infinity ' + lower(c.name), 'Have a ' + c.name + ' on the infinity field', c.image[4], function() {
-    return state.crop3count[cropid] >= 1;
+    return state.fullgrowncrop3count[cropid] >= 1; // alternatives: fullgrowncrop3count to require it to grow fully, crop3count to get it immediately when planting. Make sure this matches how .had is set, to avoid that you can get medal early, but next crop unlocks only later, which is confusing
   }, Num(mul));
 };
 
@@ -8173,26 +8197,18 @@ registerPlantTypeMedal3(bee3_3);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-
-// holiday: 1=presents, 2=eggs, 3=pumpkins
-// TODO: make this return the value instead of taking it as input
-function holidayEventActive(holiday) {
-  //if(holiday==1) return true;
+// holiday events: 0=none, 1=presents, 2=eggs, 4=pumpkins
+// it's in theory possible to use bit masks to filter the return value, e.g. (holidayEventActive() & 3) for presents or eggs, but the return value will always contain exactly 1 holiday (1 bit set)
+function holidayEventActive() {
   var time = util.getTime();
 
-  //var date_20220501 = 1651363200;
-  //return time < date_20220501;
-
-  //var date_20221111 = 1668124800;
-  //return time <= date_20221111;
-
-  if(holiday == 1) {
-    var date_20221206_begin = 1670284800;
-    var date_20230106_end = 1673049599;
-    return time >= date_20221206_begin && time <= date_20230106_end;
+  var date_20221206_begin = 1670284800;
+  var date_20230106_end = 1673049599;
+  if(time >= date_20221206_begin && time <= date_20230106_end) {
+    return 1;
   }
 
-  return false;
+  return 0;
 }
 
 

@@ -746,6 +746,7 @@ function encState(state, opt_raw_only) {
   processBool(state.amberkeepseason);
   processBool(state.amberkeepseasonused);
   processUint6(state.amberkeepseason_season);
+  processBool(state.amber_reset_choices);
 
   section = 24; id = 0; // ethereal tree level stats
   processTimeArray(state.eth_stats_time);
@@ -2090,6 +2091,7 @@ function decState(s) {
     id = 0; // reset it back
   }
   state.initSquirrelStages();
+  state.initEvolutionAndHatImages();
 
   if(save_version >= 4096*1+74) {
     var stages = squirrel_stages[state.squirrel_evolution];
@@ -2178,6 +2180,7 @@ function decState(s) {
   if(save_version >= 262144*2+64*7+3) state.amberkeepseason = processBool();
   if(save_version >= 262144*2+64*7+3) state.amberkeepseasonused = processBool();
   if(save_version >= 262144*2+64*7+4) state.amberkeepseason_season = processUint6();
+  if(save_version >= 262144*2+64*7+9) state.amber_reset_choices = processBool();
   if(error) return err(4);
 
 

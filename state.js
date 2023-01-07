@@ -923,6 +923,8 @@ function State() {
   // The purpose of this is for when you extend the duration of the current season by 1 hour, but we're only in the first few minutes of this season:
   // then it is more than 24h til the next season, but without this variable, that's not supported, as the season is computed to cycle every 24h.
   this.seasoncorrection = 0;
+  // whether auto choices have been reset with amber this run
+  this.amber_reset_choices = false;
 
 
   // ethereal mistletoe stats
@@ -1134,9 +1136,22 @@ State.prototype.initSquirrelStages = function() {
   for(var i = 0; i < stages.length; i++) {
     this.squirrel_stages[i] = new SquirrelStageState();
   }
+};
 
-  var image_squirrel_evolution = (this.squirrel_evolution == 0) ? image_squirrel : image_squirrel2;
+// chooses the correct squirrel evolution image
+// in addition, set the holiday hat images for squirrel and automaton if applicable
+State.prototype.initEvolutionAndHatImages = function() {
+  var image_squirrel_evolution;
+  var image_automaton;
+  if(holidayEventActive() == 1) {
+    image_squirrel_evolution = (this.squirrel_evolution == 0) ? image_squirrel_hat : image_squirrel2_hat;
+    image_automaton = image_automaton_hat;
+  } else {
+    image_squirrel_evolution = (this.squirrel_evolution == 0) ? image_squirrel_base : image_squirrel2_base;
+    image_automaton = image_automaton_base;
+  }
   for(var i = 0; i < images_squirrel.length; i++) regenerateImageCanvas(image_squirrel_evolution, images_squirrel[i]);
+  for(var i = 0; i < images_automaton.length; i++) regenerateImageCanvas(image_automaton, images_automaton[i]);
 };
 
 State.prototype.updateAutoActionAmount = function(amount) {
@@ -1311,6 +1326,7 @@ function createInitialState() {
   state.present_seed = Math.floor(Math.random() * 281474976710656);
 
   state.initSquirrelStages();
+  state.initEvolutionAndHatImages();
 
   return state;
 }
@@ -2293,7 +2309,7 @@ function presentGrowSpeedTimeRemaining() {
 }
 
 function presentGrowSpeedActive() {
-  if(!holidayEventActive(1) && !holidayEventActive(2)) return false;
+  if(!(holidayEventActive() & 3)) return false;
   if(basicChallenge()) return false;
   return presentGrowSpeedTimeRemaining() > 0;
 }
@@ -2303,7 +2319,7 @@ function presentProductionBoostTimeRemaining() {
 }
 
 function presentProductionBoostActive() {
-  if(!holidayEventActive(1) && !holidayEventActive(2)) return false;
+  if(!(holidayEventActive() & 3)) return false;
   if(basicChallenge()) return false;
   return presentProductionBoostTimeRemaining() > 0;
 }
@@ -2311,12 +2327,18 @@ function presentProductionBoostActive() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-function treeGestureBonus() {
+function treeGestureBonus(opt_adjust_upgrade, opt_adjust_tree) {
   var num = state.upgrades2[upgrade2_highest_level].count;
+
+  if(opt_adjust_upgrade) num += opt_adjust_upgrade;
 
   if(!num) return new Num(1);
 
-  return upgrade2_highest_level_bonus.add(upgrade2_highest_level_bonus2.mulr(num - 1)).addr(1).powr(state.g_treelevel);
+  var level = state.g_treelevel;
+
+  if(opt_adjust_tree) level += opt_adjust_tree;
+
+  return upgrade2_highest_level_bonus.add(upgrade2_highest_level_bonus2.mulr(num - 1)).addr(1).powr(level);
 }
 
 

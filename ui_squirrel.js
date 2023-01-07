@@ -192,7 +192,13 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
   } else if(state.g_num_squirrel_respec && !unknown && !!buyfun) {
     // buy all function, but a bit hidden because normally it's done through the icon
     textFlex.div.onclick = function(e) {
-      /*if(e.shiftKey)*/ buyfun(e);
+      // the buy all function will not activate if you only have enough nuts for 1 upgrade:
+      // the use case of buy all is, after respec, that you can quickly populate all older upgrades by clicking on a later one
+      // however, if you instead didn't respec, are late in the tree, but accidently click a gray looking upgrade, it can be confusing that it then buys the one upgrade before it
+      // so incluclusion, only buy all if you have clearly enough nuts to buy multiple upgrades, such as after respec
+      // the shiftkey c heck used to be the only check, was then turned into always working without shift, now re-purposing the shift key as an override for the high cost check
+      var high_cost_ok = state.res.nuts.gt(getSquirrelUpgradeCost(state.squirrel_upgrades_count + 2));
+      if(high_cost_ok || e.shiftKey) buyfun(e);
     };
   }
 

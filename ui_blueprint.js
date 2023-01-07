@@ -220,7 +220,7 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
   if(did_something) showMessage('Planted blueprint');
   else showMessage('This blueprint had no effect on the current field');
 
-  if(has_unplantable_pumpkin && !holidayEventActive(3)) {
+  if(has_unplantable_pumpkin && holidayEventActive() != 4) {
     showMessage('Pumpkins can no longer be planted, the event finished', C_INVALID);
   }
 }
@@ -818,7 +818,7 @@ function showBluePrintHelp() {
 }
 
 
-function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, e) {
+function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl) {
   if(opt_custom_fun) {
     opt_custom_fun(index);
     closeTopDialog(); // the blueprint dialog
@@ -830,8 +830,6 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custo
   for(var i = 0; i <= index; i++) {
     if(!blueprints[i]) blueprints[i] = new BluePrint();
   }
-  var shift = util.eventHasShiftKey(e);
-  var ctrl = util.eventHasCtrlKey(e);
   var filled = blueprints[index] && blueprints[index].numw && blueprints[index].numh;
   if(opt_transcend) {
     if(state.treelevel < min_transcension_level && state.treelevel != 0 && !state.challenge) {
@@ -965,7 +963,9 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     index--; // make 0-index based
     var ui_index = index;
     if(blueprintpage) index += 9;
-    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes[ui_index], e);
+    var shift = util.eventHasShiftKey(e);
+    var ctrl = util.eventHasCtrlKey(e);
+    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes[ui_index], shift, ctrl);
   };
 
   var title;
@@ -1019,9 +1019,14 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     flexes[i] = flex;
     renderBlueprint(blueprints[j], opt_ethereal, flex, j, opt_transcend, opt_challenge, true);
     styleButton0(flex.div, true);
-    addButtonAction(flex.div, bind(function(index, flex, e) {
-      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, e);
-    }, j, flex));
+    /*addButtonAction(flex.div, bind(function(index, flex, e) {
+      var shift = util.eventHasShiftKey(e);
+      var ctrl = util.eventHasCtrlKey(e);
+      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
+    }, j, flex));*/
+    registerAction(flex.div, bind(function(index, flex, shift, ctrl) {
+      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
+    }, j, flex), 'edit blueprint ' + (j + 1), {label_shift:'override field now'});
   }
 
   bflex.attachTo(dialog.content);

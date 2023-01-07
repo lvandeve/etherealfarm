@@ -113,7 +113,9 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
   }
   if(upgrade_crop && upgrade_cost[0]) {
-    result += '<br/> • Next tier cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+    var tier_diff = upgrade_crop.tier - c.tier;
+    var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+    result += '<br/> • Upgrade tier' + tier_diff_text + ' cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
   }
 
   return result;

@@ -732,7 +732,7 @@ function updateResourceUI() {
 
       if(presentGrowSpeedActive()) {
         text += '<br><br>';
-        if(holidayEventActive(1)) {
+        if(holidayEventActive() == 1) {
           text += 'Grow speed effect from present active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
         } else {
           text += 'Grow speed effect from egg active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
@@ -740,7 +740,7 @@ function updateResourceUI() {
       }
       if(presentProductionBoostActive()) {
         text += '<br><br>';
-        if(holidayEventActive(1)) {
+        if(holidayEventActive() == 1) {
           text += 'Production boost effect from present active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
         } else {
           text += 'Production boost effect from egg active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);

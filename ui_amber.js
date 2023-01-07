@@ -24,6 +24,7 @@ var AMBER_LENGTHEN = 2; // lengthen current season
 var AMBER_SHORTEN = 3; // shorten current season
 var AMBER_KEEP_SEASON = 4; // keep the current season for the entire current run. At end of run, if the current season took longer than 24h, next season will then start and last 24h as usual. Should refund the amber if season was not extended
 var AMBER_END_KEEP_SEASON = 5; // cancel AMBER_KEEP_SEASON
+var AMBER_RESET_CHOICE = 6; // reset choice upgrades
 
 // returns the cost in amber as Num
 function getAmberCost(effect) {
@@ -33,6 +34,7 @@ function getAmberCost(effect) {
   if(effect == AMBER_SHORTEN) return ambercost_shorten;
   if(effect == AMBER_KEEP_SEASON) return ambercost_keep_season;
   if(effect == AMBER_END_KEEP_SEASON) return ambercost_end_keep_season;
+  if(effect == AMBER_RESET_CHOICE) return ambercost_reset_choices;
   return Num(999999999);
 }
 
@@ -104,6 +106,12 @@ function updateAmberUI() {
   button.id = 'amber_shorten';
   if(state.amberseason) button.className = 'efButtonAmberActive';
   else if(state.res.amber.lt(ambercost_shorten) || state.amberkeepseason) button.className = 'efButtonCantAfford';
+
+  button = makeAmberButton('Reset choice upgrades', AMBER_RESET_CHOICE);
+  registerTooltip(button, 'Resets all choice upgrades, and prevents the automaton from doing them for the rest of this run.');
+  button.id = 'amber_reset_choice';
+  if(state.amber_reset_choices) button.className = 'efButtonAmberActive';
+  else if(state.res.amber.lt(ambercost_reset_choices) || state.amberkeepseason) button.className = 'efButtonCantAfford';
 
   if(squirrelUnlocked()) {
     button = makeAmberButton('Squirrel respec token', AMBER_SQUIRREL_RESPEC);

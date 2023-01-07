@@ -107,11 +107,13 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += '<br/>• Next planting cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
     result += '<br/>• Recoup on delete (d): ' + c.getCost(-1).mulr(cropRecoup2).toString() + ' (' + refund_text + ')';
     if(upgrade_crop && upgrade_cost[0]) {
-      var temp = '<br/>• Next tier cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+      var tier_diff = upgrade_crop.tier - c.tier;
+      var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+      var temp = '<br/>• Upgrade tier' + tier_diff_text + ' cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
       if(!upgrade_cost[1]) temp = '<b>' + temp + '</b>';
       result += temp;
     } else {
-      result += '<br/>• Next tier cost (u): ?';
+      result += '<br/>• Upgrade tier cost (u): ?';
     }
   } else {
     result += '<br/>Cost: ';
@@ -120,9 +122,11 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += '<br/>• Last planting cost: ' + c.getCost(-1).toString();
     result += '<br/>• Recoup on delete: ' + c.getCost(-1).mulr(cropRecoup2).toString() + ' (' + refund_text + ')';
     if(upgrade_crop && upgrade_cost[0]) {
-      result += '<br/>• Next tier cost:' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+      var tier_diff = upgrade_crop.tier - c.tier;
+      var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+      result += '<br/>• Upgrade tier' + tier_diff_text + ' cost:' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
     } else {
-      result += '<br/>• Next tier cost: ?';
+      result += '<br/>• Upgrade tier cost: ?';
     }
   }
 
@@ -849,9 +853,7 @@ function updateField2CellUI(x, y) {
     progresspixel = Math.round(nextlevelprogress * 5);
   }
 
-  var ferncode = 0;
-
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || ferncode != fd.ferncode || progresspixel != fd.progresspixel) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active) {
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
@@ -859,8 +861,8 @@ function updateField2CellUI(x, y) {
     renderImage(field_image, fd.bgcanvas);
     fd.season = season;
     fd.treelevel2 = state.treelevel2;
-    fd.ferncode = ferncode;
     fd.progresspixel = progresspixel;
+    fd.holiday_hats_active = holiday_hats_active;
 
     var label = 'ethereal field tile ' + x + ', ' + y;
 

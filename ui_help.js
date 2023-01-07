@@ -419,9 +419,17 @@ registerHelpDialog(36, 'Amber', 'The tree dropped amber!',
     <br><br>
     Effects:
     <br>
-    • Production boost: gives a boost to berries and mushrooms for the entire run, this lasts until next transcension.
+    • Production boost 100%: gives a 100% boost to berries and mushrooms for the entire run, this lasts until next transcension.
     <br>
-    • Other effects may unlock later.
+    • Season hold this run: Keep the current season until transcension, it won\'t change until the run is done. Ending the run will start the next season with 24 hours left. If the run is finished early (current season didn\'t need to be held), it\'ll give a full refund of the amber cost and no seasons are affected.
+    <br>
+    • Season +1h: Make the current season 1 hour longer (1-time). Can be used once per season.
+    <br>
+    • Season -1h: Make the current season 1 hour shorter (1-time). If the season has less than 1 hour remaining, then it is only shortened by this remaining time, immediately activating the next season. Can be used once per season.
+    <br>
+    • Reset choice upgrades: Resets all choice upgrades, this can be used once per run and allows choosing each one again manually.
+    <br>
+    • More unlock later
     `,
     undefined,
     undefined,
@@ -524,6 +532,7 @@ function createKeyboardHelpDialog() {
   text += ' • on mac, ctrl means command instead.';
   text += '<br/>';
   text += ' • on mobile/touch devices, you can long-press some icons/buttons to access the shift and ctrl variants (e.g. the pause button and refresh watercress button).';
+  text += ' • on mobile/touch devices, you can also long-press to see tooltips, e.g on most buttons in the setting dialogs.';
   text += '<br/>';
 
   text += '<br/><b>Main shortcuts:</b>';

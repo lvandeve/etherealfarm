@@ -238,6 +238,8 @@ function updatePausedUI() {
   }
 }
 
+var holiday_hats_active = 0; // used here but also for ui_field2 caching
+
 // some parts of the UI are updated more often than just in initUI, their functions, even for initial creation, are called 'update' instead of 'init'
 // this one is not called per frame, only for some more rare actions that have high likelyhood of invalidating the UI (e.g. loading a save, or undo)
 function updateUI() {
@@ -273,6 +275,11 @@ function updateUI2() {
     if(dialog_level == 0) updatedialogfun = undefined;
   }
   updateSettingsAboutIcon();
+  if(holidayEventActive() != holiday_hats_active) {
+    holiday_hats_active = holidayEventActive();
+    state.initEvolutionAndHatImages();
+    updateUI();
+  }
 }
 
 //document.body.style.fontFamily = 'Verdana, Arial, Helvetica, sans-serif';

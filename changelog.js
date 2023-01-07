@@ -22,6 +22,13 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.7.9 (2023-01-07):';
+  text += '<br/>• Added "reset choice upgrades" amber effect.';
+  text += '<br/>• The brassica time upgrade in squirrel evolution II now also adds 50% copying.';
+  text += '<br/>• Tree\'s gesture upgrade tooltip is now dynamic, showing current and next values.';
+  text += '<br/>• Further extending the long-press touch device support: most buttons now can show their tooltip by long-pressing them, e.g. most settings-dialog buttons and the amber buttons.';
+  text += '<br/><br/>';
+
   text += '0.7.8 (2023-01-02):';
   text += '<br/>• Mainly bugfixes, no gameplay changes for now.'; // includes fixing undo of player action after auto-action happened during sped up computation
   text += '<br/>• During stormy challenge a lightning can be briefly seen now when a crops is hit.';

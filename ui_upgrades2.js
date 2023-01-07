@@ -57,11 +57,11 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
   infoText += '<br><br>' + 'have of this upgrade: ' + state.upgrades2[u.index].count;
 
   if(u.description) {
-    infoText += '<br><br>' + u.description;
+    infoText += '<br><br>' + u.getDescription();
   }
   infoText += '<br><br>' + 'This ethereal upgrade is non-refundable and permanent. Lasts through transcensions.';
   if(u.treelevel2 > 0 || state.treelevel2 > 0) {
-    infoText += '<br><br>' + 'Ethereal tree level: ' + u.treelevel2;
+    infoText += '<br><br>' + 'Unlocked at ethereal tree level: ' + u.treelevel2;
   }
 
   text += '<br>';

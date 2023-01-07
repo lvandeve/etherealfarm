@@ -881,13 +881,13 @@ function createChangelogDialog() {
   showing_changelog = true;
 
   var icon = images_fern[1];
-  if(holidayEventActive(1)) {
+  if(holidayEventActive() == 1) {
     icon = present_images[Math.floor(Math.random() * 4)]
   }
-  if(holidayEventActive(2)) {
+  if(holidayEventActive() == 2) {
     icon = bunny_image;
   }
-  if(holidayEventActive(3)) {
+  if(holidayEventActive() == 4) {
     icon = images_pumpkin_small[0];
   }
 
@@ -1193,18 +1193,13 @@ var aboutButtonCanvas_lastHoliday = -1;
 
 function updateSettingsAboutIcon() {
   if(!aboutButtonCanvas) return;
-  if(holidayEventActive(1)) {
-    if(aboutButtonCanvas_lastHoliday != 1) renderImage(present_images[Math.floor(Math.random() * 4)], aboutButtonCanvas);
-    aboutButtonCanvas_lastHoliday = 1;
-  } else if(holidayEventActive(2)) {
-    if(aboutButtonCanvas_lastHoliday != 2) renderImage(bunny_image, aboutButtonCanvas);
-    aboutButtonCanvas_lastHoliday = 2;
-  } else if(holidayEventActive(3)) {
-    if(aboutButtonCanvas_lastHoliday != 3) renderImage(images_pumpkin_small[0], aboutButtonCanvas);
-    aboutButtonCanvas_lastHoliday = 3;
-  } else {
-    if(aboutButtonCanvas_lastHoliday != 0) renderImage(images_fern[1], aboutButtonCanvas);
-    aboutButtonCanvas_lastHoliday = 0;
+  var holiday = holidayEventActive();
+  if(holiday != aboutButtonCanvas_lastHoliday) {
+    if(holiday == 1) renderImage(present_images[Math.floor(Math.random() * 4)], aboutButtonCanvas);
+    else if(holiday == 2) renderImage(bunny_image, aboutButtonCanvas);
+    else if(holiday == 4) renderImage(images_pumpkin_small[0], aboutButtonCanvas);
+    else renderImage(images_fern[1], aboutButtonCanvas);
+    aboutButtonCanvas_lastHoliday = holiday;
   }
 }
 

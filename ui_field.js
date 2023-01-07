@@ -310,13 +310,17 @@ function getCropInfoHTML(f, c, opt_detailed) {
     if(c.type != CROPTYPE_NUT) result += ' • Next planting cost: ' + c.getCost().toString() + '<br>';
     result += ' • Recoup on delete: ' + recoup.toString();
     if(upgrade_crop && upgrade_cost[0]) {
-      result += '<br/> • Next tier cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+      var tier_diff = upgrade_crop.tier - c.tier;
+      var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+      result += '<br/> • Upgrade tier' + tier_diff_text + ' cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
     }
   } else {
     if(c.type != CROPTYPE_NUT) result += ' • Next planting cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')<br>';
     result += ' • Recoup on delete (d): ' + recoup.toString();
     if(upgrade_crop && upgrade_cost[0]) {
-      result += '<br/> • Next tier cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+      var tier_diff = upgrade_crop.tier - c.tier;
+      var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+      result += '<br/> • Upgrade tier' + tier_diff_text + ' cost (u): ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
     }
   }
 
@@ -884,7 +888,7 @@ function initFieldUI() {
             return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
           }
         } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             result = 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
           } else {
             result = 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
@@ -1145,14 +1149,14 @@ function updateFieldCellUI(x, y) {
 
   var lightningimage = (x == lightning_field_image_x && y == lightning_field_image_y && state.time - state.lastLightningTime < 0.5);
 
-  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage) {
+  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active) {
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
     if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
     renderImage(field_image, fd.bgcanvas);
     fd.index = f.index;
-    fd.multindex = f.multindex;
+    fd.multindex = multindex;
     fd.growing = growing;
     fd.growstage = growstage;
     fd.season = season;
@@ -1162,6 +1166,7 @@ function updateFieldCellUI(x, y) {
     fd.progresspixel = progresspixel;
     fd.automatonplant = automatonplant;
     fd.lightningimage = lightningimage;
+    fd.holiday_hats_active = holiday_hats_active; // this one is actually not used for the hats but the disctinctino between present and egg image
 
     var label = 'field tile ' + x + ', ' + y;
 
@@ -1220,7 +1225,7 @@ function updateFieldCellUI(x, y) {
       blendImage((state.fern == 2 ? images_fern2 : images_fern)[season], fd.canvas);
       label = 'fern. ' + label;
     } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-      if(holidayEventActive(1)) {
+      if(holidayEventActive() == 1) {
         blendImage(present_images[state.present_image], fd.canvas);
         label = 'present. ' + label;
       } else {

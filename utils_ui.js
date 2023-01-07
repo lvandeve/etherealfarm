@@ -124,31 +124,33 @@ params.noenterkey: do not make it activate on enter key (e.g. for the close butt
 */
 function registerAction(div, fun, label, params) {
   if(!params) params = {};
-  // can also give undefined for e
-  var fun2 = function(e) {
-    var shift = e && eventHasShiftKey(e);
-    var ctrl = e && eventHasCtrlKey(e);
-    fun(shift, ctrl);
-  };
-  if(params.immediate && !isTouchDevice()) {
-    // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
-    div.onmousedown = fun2;
-  } else {
-    div.onclick = fun2;
-  }
-  if(!params.noenterkey) {
-    div.onkeypress = function(e) {
-      if(e.key == 'Enter') fun2(undefined);
-      e.preventDefault();
+  if(fun) {
+    // can also give undefined for e
+    var fun2 = function(e) {
+      var shift = e && eventHasShiftKey(e);
+      var ctrl = e && eventHasCtrlKey(e);
+      fun(shift, ctrl);
     };
+    if(params.immediate && !isTouchDevice()) {
+      // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
+      div.onmousedown = fun2;
+    } else {
+      div.onclick = fun2;
+    }
+    if(!params.noenterkey) {
+      div.onkeypress = function(e) {
+        if(e.key == 'Enter') fun2(undefined);
+        e.preventDefault();
+      };
+    }
+    div.tabIndex = 0;
+    setAriaRole(div, 'button');
+    //div.setAttribute('aria-pressed', 'false'); // TODO: is this needed? maybe it's only for toggle buttons? which addButtonAction is not.
+    if(label) setAriaLabel(div, label);
   }
-  div.tabIndex = 0;
-  setAriaRole(div, 'button');
-  //div.setAttribute('aria-pressed', 'false'); // TODO: is this needed? maybe it's only for toggle buttons? which addButtonAction is not.
-  if(label) setAriaLabel(div, label);
 
   if(params.tooltip) {
-    registerTooltip(div, params.tooltip, params.tooltip_poll, !params.fun);
+    registerTooltip_(div, params.tooltip, params.tooltip_poll, !params.fun);
   }
 
   if(params.tooltip || params.label_shift || params.label_ctrl) {
@@ -182,7 +184,7 @@ function makeLongTouchContextDialog(div, fun, label, params) {
   };
 
   var flex = new Flex(content, 0.01, y, 0.99, y + texth);
-  flex.div.innerText = 'Allows using shift/ctrl key actions and tooltips on touch interfaces.';
+  flex.div.innerText = 'Long click allows using shift/ctrl key actions and tooltips on touch interfaces.';
   y += 0.05;
 
   y += 0.05;
@@ -795,7 +797,7 @@ fun is function that gets the tooltip text, or text directly, or undefined to re
 opt_poll, if true, will make the tooltip dynamically update by calling fun again
 opt_allowmobile, if true, then the tooltip will show when clicking the item. It will likely be too tiny though. Do not use if clicking the item already has some other action.
 */
-function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
+function registerTooltip_(el, fun, opt_poll, opt_allowmobile) {
   var istext = (typeof fun == 'string');
   if((typeof fun == 'string') || !fun) fun = bind(function(text) { return text; }, fun);
   // can't set this if opt_poll, fun() then most likely returns something incorrect now (e.g. on the field tiles)
@@ -952,6 +954,10 @@ function registerTooltip(el, fun, opt_poll, opt_allowmobile) {
 
 
   init();
+}
+
+function registerTooltip(el, fun, opt_poll) {
+  registerAction(el, undefined, undefined, {tooltip:fun, tooltip_poll:opt_poll});
 }
 
 // removes any stray remaining tooltip (it can't be plural in theory)

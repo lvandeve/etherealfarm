@@ -262,6 +262,15 @@ function showConfigureAutoResourcesDialog(subject) {
 
 var showingConfigureAutoChoiceDialog = false;
 
+// Function to get the list of choice upgrades, for automaton and amber UI/gameplay. Must be kept manually up to date when adding new choice upgrades
+function getChoiceUpgrades() {
+  return [fern_choice0, active_choice0, watercress_choice0, resin_choice0];
+}
+// must match the levels of the upgrades returned by getChoiceUpgrades()
+function getChoiceUpgradeLevels() {
+  return [3, 8, 14, 22];
+}
+
 function showConfigureAutoChoiceDialog(subject) {
   showingConfigureAutoChoiceDialog = true;
   var dialog = createDialog({

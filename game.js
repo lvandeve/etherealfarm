@@ -644,6 +644,7 @@ function beginNextRun(opt_challenge) {
   state.challenge = opt_challenge || 0;
 
   state.amberprod = false;
+  state.amber_reset_choices = false;
 
   state.lastEtherealDeleteTime = 0;
   state.lastEtherealPlantTime = 0;
@@ -903,7 +904,7 @@ function loadUndo() {
 function getRandomPreferablyEmptyFieldSpot() {
   var num = 0;
   num = state.numemptyfields;
-  var minemptyspots = (holidayEventActive(1) || holidayEventActive(2)) ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
+  var minemptyspots = (holidayEventActive() & 3) ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
   if(num < minemptyspots) {
     var x = Math.floor(Math.random() * state.numw);
     var y = Math.floor(Math.random() * state.numh);
@@ -2302,6 +2303,7 @@ function maybeUnlockInfinityCrops() {
 
 function doNextAutoChoice() {
   if(showingConfigureAutoChoiceDialog) return false; // don't activate anything while the dialog is active, to allow editing without intermediate states triggering
+  if(state.amber_reset_choices) return false; // used the amber ability to reset the choice upgrades, now allow choosing them manually, so automaton shouldn't do them
   var did_something = false;
   for(var i = 0; i < choice_upgrades.length; i++) {
     var u = choice_upgrades[i];
@@ -3709,6 +3711,12 @@ var update = function(opt_ignorePause) {
             ok = false;
           }
         }
+        if(action.effect == AMBER_RESET_CHOICE) {
+          if(state.amber_reset_choices) {
+            showMessage('Already used reset choices this run', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
         cost = new Res({amber:cost});
 
         if(ok && state.res.lt(cost)) {
@@ -3749,6 +3757,14 @@ var update = function(opt_ignorePause) {
               prev_season_gain = Res(gain); // compute this here since the regular method that computes this prepares it only for the next update tick
             }
             //state.amberkeepseason = false;
+          }
+          if(action.effect == AMBER_RESET_CHOICE) {
+            state.amber_reset_choices = true;
+            showMessage('Reset all choice upgrades, you can now choose them manually', C_AMBER, 23987254, 1);
+            var choice_upgrades = getChoiceUpgrades();
+            for(var i = 0; i < choice_upgrades.length; i++) {
+              state.upgrades[choice_upgrades[i]].count = 0;
+            }
           }
           state.res.subInPlace(cost);
 
@@ -4354,7 +4370,7 @@ var update = function(opt_ignorePause) {
         }
       } else if(type == ACTION_PRESENT) {
         if(fast_forwarding) continue;
-        if(!holidayEventActive(1) && !holidayEventActive(2)) continue;
+        if(!(holidayEventActive() & 3)) continue;
 
         if(state.present_effect && state.presentx == action.x && state.presenty == action.y) {
           clickedpresent = true;
@@ -5027,7 +5043,7 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    if(!holidayEventActive(1) && !holidayEventActive(2)) {
+    if(!(holidayEventActive() & 3)) {
       state.present_effect = 0;
     } else {
       // presents, or eggs, depending on the holiday event
@@ -5046,7 +5062,7 @@ var update = function(opt_ignorePause) {
           if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
           var presentres = new Res({seeds:g.seeds});
           if(basic) presentres = presentres.mulr(0.2);
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
@@ -5058,7 +5074,7 @@ var update = function(opt_ignorePause) {
           if(g.spores.ltr(1)) g.spores = Num.max(g.spores, Num(1));
           var presentres = new Res({spores:g.spores});
           if(basic) presentres = presentres.mulr(0.2);
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
@@ -5067,7 +5083,7 @@ var update = function(opt_ignorePause) {
         } else if(effect == 3) {
           // production boost
           state.present_production_boost_time = state.time;
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             showMessage('This present boosts production for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('This egg boosts production for 15 minutes!', C_EGG, 38753631, 0.8, true);
@@ -5078,7 +5094,7 @@ var update = function(opt_ignorePause) {
           var g = computeFernGain().mulr(60 * 5);
           if(g.nuts.lt(min_nuts)) g.nuts = min_nuts;
           var presentres = new Res({nuts:g.nuts});
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             showMessage('That present contained a nutcracker! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg was nut flavored! It gave ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
@@ -5087,21 +5103,21 @@ var update = function(opt_ignorePause) {
         } else if(effect == 5) {
           // grow speed
           state.present_grow_speed_time = state.time;
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             showMessage('This present doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('This egg doubles crop grow speed for 15 minutes!', C_EGG, 38753631, 0.8, true);
           }
         } else if(effect == 6) {
           // fruit
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             showMessage('This present contained fruit!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('This egg contained fruit!', C_EGG, 38753631, 0.8, true);
           }
           var fruits = addRandomFruitForLevel(Math.max(5, state.g_treelevel - 2), true);
           if(fruits) {
-            var messagestyle = holidayEventActive(1) ? C_PRESENT : C_EGG;
+            var messagestyle = (holidayEventActive() == 1) ? C_PRESENT : C_EGG;
             for(var i = 0; i < fruits.length; i++) {
               if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), messagestyle, 38753631, 0.8);
             }
@@ -5110,7 +5126,7 @@ var update = function(opt_ignorePause) {
           // amber
           var amber = Num(Math.floor(getRandomPresentRoll() * 2) + 2);
           actualgain.amber.addInPlace(amber);
-          if(holidayEventActive(1)) {
+          if(holidayEventActive() == 1) {
             showMessage('That present contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg contained ' + amber.toString() + ' amber!', C_EGG, 38753631, 0.8, true);
@@ -5132,7 +5148,7 @@ var update = function(opt_ignorePause) {
             state.presentx = s[0];
             state.presenty = s[1];
             // the coordinates are invisible but are for screenreaders
-            if(holidayEventActive(1)) {
+            if(holidayEventActive() == 1) {
               showMessage('A present appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
             } else {
               showMessage('An egg appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_EGG, 5, 0.8);
