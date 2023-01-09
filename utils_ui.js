@@ -120,7 +120,7 @@ params.tooltip: function or string for tooltip. If it's text, it's shown as-is. 
 params.tooltip_poll: if true, will make the tooltip dynamically update by calling fun again
 params.immediate: make the button respond immediately on mousedown, rather than only on mouseup. Not compatible with mobile.
 params.noenterkey: do not make it activate on enter key (e.g. for the close button of dialogs, which is selected by default normally but shouldn't make the dialog close on pressing enter)
-
+params.isdraggable: indicate there is some dragging action available from the div, that works on PC but not on mobile. Therefore, disable the long touch event on non-touch devices here since it may interfere with the dragging.
 */
 function registerAction(div, fun, label, params) {
   if(!params) params = {};
@@ -154,8 +154,8 @@ function registerAction(div, fun, label, params) {
   }
 
   if(params.tooltip || params.label_shift || params.label_ctrl) {
-    var alsoTestOnNonTouchDevice = true;
-    if(isTouchDevice() || alsoTestOnNonTouchDevice) {
+    // even though it's intended for mobile, enable the long touch also on desktop for testing it or trying it out. But don't do that for draggable things like the fruits since the long touch interferes too much with it
+    if(isTouchDevice() || !params.isdraggable) {
       addLongTouchEvent(div, function(e) {
         makeLongTouchContextDialog(div, fun, label, params);
       });
@@ -290,10 +290,17 @@ function addLongTouchEvent(div, fun) {
     if(!timer) return;
     var pos = getEventXY(e);
     // allow some slack in the movement for touch position
-    if(Math.abs(x0 - pos[0]) >= 12 || Math.abs(y0 - pos[1]) >= 12) {
+    if(Math.abs(x0 - pos[0]) >= 10 || Math.abs(y0 - pos[1]) >= 10) {
       clearTimeout(timer);
       timer = undefined;
     }
+  }, true);
+
+  // this event shouldn't appear on touch devices, but should stop the timer if present since it prevents moveEvents from detecting that the long prss menu shouldn't appear
+  div.addEventListener('dragstart', function(e) {
+    if(!timer) return;
+    clearTimeout(timer);
+    timer = undefined;
   }, true);
 
   // this stops mobile context menu from appearing on long press, since we have our own context menu

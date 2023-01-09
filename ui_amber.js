@@ -111,7 +111,7 @@ function updateAmberUI() {
   registerTooltip(button, 'Resets all choice upgrades, and prevents the automaton from doing them for the rest of this run.');
   button.id = 'amber_reset_choice';
   if(state.amber_reset_choices) button.className = 'efButtonAmberActive';
-  else if(state.res.amber.lt(ambercost_reset_choices) || state.amberkeepseason) button.className = 'efButtonCantAfford';
+  else if(state.res.amber.lt(ambercost_reset_choices)) button.className = 'efButtonCantAfford';
 
   if(squirrelUnlocked()) {
     button = makeAmberButton('Squirrel respec token', AMBER_SQUIRREL_RESPEC);

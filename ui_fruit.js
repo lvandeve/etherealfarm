@@ -991,6 +991,7 @@ function getFruitTooltipText(f, opt_label) {
   return text;
 }
 
+// f = tue fruit
 // slot_type: 0=storage, 1=sacrificial
 function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, opt_label) {
   // these multiple layers are there to support multiple borders, because the colored "mark" border should have itself a small black outline to make it visible against all background colors both of the inner part (fruit bg) and outper part (dark or light UI theme bg)
@@ -1004,24 +1005,27 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
   //if(f.mark || f.name || f.fuses) canvas.style.border = '1px solid black';
   renderImage(images_fruittypes[f.type][f.tier], canvas);
 
-  var text = getFruitTooltipText(f, opt_label);
+  var tooltip = getFruitTooltipText(f, opt_label);
 
   styleFruitChip(fg, f);
 
-  registerTooltip(fg.div, text);
   flex.div.style.userSelect = 'none';
+
+  var fun = undefined;
+  var label = undefined;
+  var label_shift = undefined;
 
   if(!opt_nobuttonaction) {
     var typename = slot_type == 0 ? 'storage' : 'sacrificial';
-    var label;
     if(opt_slot_index == undefined) {
       label = typename + ' slot: ' + getFruitAriaLabel(f);
     } else {
       label = typename + ' slot ' + opt_slot_index + ': ' + getFruitAriaLabel(f);
     }
+    label_shift = (f.slot >= 100) ? 'move fruit up' : 'move fruit down';
     styleButton0(flex.div);
-    addButtonAction(flex.div, function(e) {
-      if(e.shiftKey || eventHasCtrlKey(e)) {
+    fun = function(shift, ctrl) {
+      if(shift || ctrl) {
         if(f.slot >= 100) {
           // move the fruit upwards
           var full = state.fruit_stored.length >= state.fruit_slots;
@@ -1036,8 +1040,10 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
       } else {
         createFruitDialog(f);
       }
-    }, label);
+    };
   }
+
+  registerAction(flex.div, fun, label, {tooltip:tooltip, isdraggable:true});
 }
 
 var dragslot = -1; // used instead of e.dataTransfer.setData since v0.1.64 because e.dataTransfer.setData still caused firefox to sometimes open things as URL despite e.preventDefault()
@@ -1192,13 +1198,12 @@ function updateFruitUI() {
       makeFruitChip(canvasFlex, f, 0, i);
     } else {
       canvasFlex.div.style.backgroundColor = '#ccc';
-      registerTooltip(canvasFlex.div, 'No stored fruit present in this slot. ' + help);
 
-      addButtonAction(canvasFlex.div, bind(function(help) {
+      registerAction(canvasFlex.div, bind(function(help) {
         lastTouchedFruit = null;
         updateFruitUI();
         showMessage('No stored fruit present in this slot. ' + help, C_INVALID, 0, 0);
-      }, help), 'empty storage fruit slot');
+      }, help), 'empty storage fruit slot', {tooltip:('No stored fruit present in this slot. ' + help)});
     }
     setupFruitDrag(canvasFlex, i, f);
   }
