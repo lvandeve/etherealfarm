@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -259,8 +259,6 @@ function makeDowngradeCrop3Action(x, y, opt_silent) {
 
 
 function makePond3Dialog() {
-  var div;
-
   var dialog = createDialog({
     scrollable:true,
     title:'Infinity pond',

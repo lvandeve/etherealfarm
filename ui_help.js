@@ -1067,7 +1067,7 @@ function showGoalChips() {
   } else if(goal == GOAL_WC10) {
     setGoalText('Plant up to 10 watercress on the field to reveal a next upgrade (' + state.c_numplantedbrassica + ' / 10 planted).');
   } else if(goal == GOAL_BLACKBERRY_UNLOCK) {
-    setGoalText('Buy the "Unlock blackberry" upgrade, the first permanent (non-withering) crop. To get seeds to afford it, plant more watercress first.');
+    setGoalText('Buy the "Unlock blackberry" upgrade, the first permanent (non-withering) crop.');
     if(enableHelpArrows) {
       if(state.currentTab == 1 && upgradeFlexCache[0]) {
         var chip = document.getElementById('help_arrow_unlock_blackberry');
@@ -1080,7 +1080,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_BLACKBERRY_PLANT) {
-    setGoalText('Plant a blackberry and wait for it to grow. To get seeds to afford it, plant more watercress first. If the field is full of watercress, you can use "replace crop" to delete it and plant blackberry there.');
+    setGoalText('Plant a blackberry and wait for it to grow. If the field is full of watercress, you can click one and use "replace crop" to delete it and plant blackberry there.');
     if(enableHelpArrows) {
       if(!state.numcropfields_permanent && state.res.seeds.ger(1000)) {
         var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;
@@ -1097,7 +1097,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_FLOWER_UNLOCK) {
-    setGoalText('Unlock the anemone flower. To get more seed production to afford it, plant more blackberries and watercress first.');
+    setGoalText('Unlock the anemone flower. To get more seeds, remember to combine a watercress with berries for the copying effect.');
     if(enableHelpArrows) {
       if(state.currentTab == 1 && upgradeFlexCache[0]) {
         var chip = document.getElementById('help_arrow_unlock_anemone');
@@ -1109,7 +1109,7 @@ function showGoalChips() {
   } else if(goal == GOAL_FLOWER_PLANT) {
     setGoalText('Plant an anemone flower. Plant it orthogonally next to a berry to boost the berry (a flower on its own doesn\'t produce anything). Keep planting more watercress, berries and flowers for more income.');
   } else if(goal == GOAL_BLUEBERRY_UNLOCK) {
-    setGoalText('Unlock blueberry. To afford this, if needed plant more blackberries boosted by flowers and watercress copying, or use upgrades.');
+    setGoalText('Unlock blueberry. Remember to boost berries with flowers, and have a watercress copying from a good berry, to speed up income.');
     if(enableHelpArrows) {
       if(state.currentTab == 1 && upgradeFlexCache[0]) {
         var chip = document.getElementById('help_arrow_unlock_blueberry');

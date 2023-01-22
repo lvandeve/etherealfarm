@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1126,9 +1126,14 @@ function updateFruitUI() {
   if(state.fruit_active == -1) active_fruit_name = '<font color="red">none, click arrow above a fruit to select one</font>';
   var f_active = getActiveFruit();
   if(f_active) active_fruit_name = f_active.toString() + ': ' + f_active.abilitiesToString(true, true);
-  titleFlex.div.innerHTML = 'Fruit collection. Active fruit: ' + active_fruit_name;
+  //titleFlex.div.innerHTML = 'Fruit collection. Active fruit: ' + active_fruit_name + '. Fruit essence: ' + state.res.essence.toString();
+  titleFlex.div.innerHTML = 'Fruit essence: ' + state.res.essence.toString() + '. Active fruit: ' + active_fruit_name;
   help = 'The chosen active fruit. Active fruit requires a fruit in storage, and the arrow above it lit. You can choose it using the arrow buttons below.';
+  styleButton0(titleFlex.div);
   registerTooltip(titleFlex.div, help);
+  addButtonAction(titleFlex.div, function() {
+    showResourceDialog(7);
+  });
 
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t]);
@@ -1136,7 +1141,6 @@ function updateFruitUI() {
   titleFlex.div.innerText = 'Stored fruits (' + state.fruit_stored.length + ' / ' + state.fruit_slots + ')';
   help = 'Fruits in storage slots are kept after transcension, unlike those in the sacrificial pool. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to storage, or drag and drop it here.';
   registerTooltip(titleFlex.div, help);
-
 
   var numarrows = getNumFruitArrows();
 

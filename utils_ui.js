@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -166,7 +166,8 @@ function registerAction(div, fun, label, params) {
 // gets the same params as registerAction
 function makeLongTouchContextDialog(div, fun, label, params) {
   var dialog = createDialog({
-    title:'Long press context menu'
+    title:'Long press context menu',
+    bgstyle:'efDialogLongPress'
   });
   var content = dialog.content;
 
@@ -246,7 +247,7 @@ function getEventXY(e) {
 }
 
 function addLongTouchEvent(div, fun) {
-  var longtouchtime = 0.7;
+  var longtouchtime = 0.8;
   var timer;
   var x0 = 0;
   var y0 = 0;

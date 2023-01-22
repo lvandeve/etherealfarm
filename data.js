@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -102,7 +102,7 @@ function getCropTypeHelp3(type) {
     case CROPTYPE_FERN2: return '';
     case CROPTYPE_NUT: return '';
     case CROPTYPE_PUMPKIN: return '';
-    case CROPTYPE_RUNESTONE: return 'Boosts the basic field production boost of any neighboring crops in the infinity field. WARNING: The runestone, and any non-brassica crops it touches, cannot be deleted for 23 hours after placing the runestone, and this time resets when planting crops next to it later on.';
+    case CROPTYPE_RUNESTONE: return 'Boosts the basic field production boost of any neighboring crops in the infinity field. WARNING: The runestone, and any non-brassica crops it touches, cannot be deleted for ' + initialrunehours + ' hours after placing the runestone, and this time resets when planting crops next to it later on.';
   }
   return undefined;
 }
@@ -4623,6 +4623,17 @@ var upgrade2_infinity_field = registerUpgrade2('unlock infinity field', LEVEL2, 
   showRegisteredHelpDialog(42);
 }, function(){return true;}, 1, 'unlocks the infinity field. This is a new field with its own crops producing its own resources. The crops give a small bonus to the basic field, but unlike the ethereal field the infinity field is more focused on growing itself than boosting the basic field.', undefined, undefined, image_pond);
 
+///////////////////////////
+LEVEL2 = 21;
+upgrade2_register_id = 1600;
+
+// also update getNewFieldSize for this type of upgrade!!
+var upgrade2_field9x8 = registerUpgrade2('larger field 9x8', LEVEL2, Res({resin:200e21}), 1, function() {
+  var numw = Math.max(9, state.numw);
+  var numh = Math.max(8, state.numh);
+  if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
+}, function(){return state.numw >= 8 && state.numh >= 8}, 1, 'increase basic field size to 9x8 tiles', undefined, undefined, field_summer[0]);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 registered_upgrades2.sort(function(a, b) {
@@ -7109,9 +7120,13 @@ function Crop3() {
 
 
 
+// the _b versions start at the gold tier and are a more significant cost increase, amongst other reasons, because you only need 4 or so berries for a good layout with flowers/bees so having a small cost scaling is too insignificant
 var sameTypeCostMultiplier3 = 1.1;
+var sameTypeCostMultiplier3_b = 4;
 var sameTypeCostMultiplier3_flower = 1.25;
+var sameTypeCostMultiplier3_flower_b = 2;
 var sameTypeCostMultiplier3_bee = 2;
+var sameTypeCostMultiplier3_bee_b = 2;
 var sameTypeCostMultiplier3_runestone = 1000;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
@@ -7123,12 +7138,24 @@ Crop3.prototype.isReal = function() {
 Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   if(this.type == CROPTYPE_BRASSICA) return this.cost;
 
-  var mul = sameTypeCostMultiplier3;
-  if(this.type == CROPTYPE_FLOWER) mul = sameTypeCostMultiplier3_flower;
-  if(this.type == CROPTYPE_BEE) mul = sameTypeCostMultiplier3_bee;
-  if(this.type == CROPTYPE_RUNESTONE) mul = sameTypeCostMultiplier3_runestone;
   var count = state.crop3count[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
+
+  if(this.type == CROPTYPE_RUNESTONE) {
+    // the cost progression here is:
+    // 1: base
+    // 2: base * 1e3
+    // 3: base * 1e9
+    // 4: base * 1e18
+    // 5: base * 1e30
+    // etc... (so first it goes x1000, then x1 million, then x1 billion, etc...)
+    var t = (count * (count + 1)) >> 1;
+    return this.cost.mul(Num.rpowr(sameTypeCostMultiplier3_runestone, t));
+  }
+
+  var mul = (this.tier < 4) ? sameTypeCostMultiplier3 : sameTypeCostMultiplier3_b;
+  if(this.type == CROPTYPE_FLOWER) mul = (this.tier < 4) ? sameTypeCostMultiplier3_flower : sameTypeCostMultiplier3_flower_b;
+  if(this.type == CROPTYPE_BEE) mul = (this.tier < 4) ? sameTypeCostMultiplier3_bee : sameTypeCostMultiplier3_bee_b;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -7332,6 +7359,7 @@ var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Re
 var brassica3_1 = registerBrassica3('bronze watercress', 1, Res({infseeds:25000}), Res({infseeds:50000 / (2 * 24 * 3600)}), Num(0.05), 2 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader1));
 var brassica3_2 = registerBrassica3('silver watercress', 2, Res({infseeds:5e7}), Res({infseeds:5e7 * 4 / (3 * 24 * 3600)}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader2, 0));
 var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, 4));
+var brassica3_4 = registerBrassica3('gold watercress', 4, Res({infseeds:100e15}), Res({infseeds:500e9}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader4, 0));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
@@ -7340,6 +7368,7 @@ var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Re
 var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader2, 2));
 // more division since better flowers and beehives now
 var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), Res({infseeds:(100e12 / 32 / (24 * 3600))}), Num(0.2), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader3, 4, 2));
+var berry3_4 = registerBerry3('gold blackberry', 4, Res({infseeds:5e18}), Res({infseeds:50e9}), Num(0.4), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader4, 2));
 
 crop3_register_id = 600;
 // mushrooms? maybe not, but ids reserved for in case
@@ -7348,11 +7377,17 @@ crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, 1));
 var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2.5e6}), Num(1), Num(0.15), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader1));
 var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader2, 0));
-var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(9), Num(0.3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader3, 4));
+var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(12), Num(0.3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader3, 4));
+var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(200), Num(0.6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader4, 0));
 
 crop3_register_id = 1200;
 var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader2, 0));
-var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(12), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, 4));
+var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, 4));
+
+// Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
+// the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
+var initialrunehours = 20;
+var initialrunetime = initialrunehours * 3600;
 
 crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
@@ -8164,7 +8199,7 @@ medal_register_id = 4200;
 function getPlantTypeMedalBonus3(cropid) {
   var c = crops3[cropid];
   var l = Num.log(c.cost.infseeds);
-  return l * 2;
+  return Math.pow(l * 2, 1.15);
 }
 
 function registerPlantTypeMedal3(cropid) {
@@ -8189,6 +8224,9 @@ registerPlantTypeMedal3(brassica3_3);
 registerPlantTypeMedal3(berry3_3);
 registerPlantTypeMedal3(flower3_3);
 registerPlantTypeMedal3(bee3_3);
+registerPlantTypeMedal3(brassica3_4);
+registerPlantTypeMedal3(berry3_4);
+registerPlantTypeMedal3(flower3_4);
 
 
 

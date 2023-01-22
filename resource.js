@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-var resource_names = ['seeds', 'spores', 'resin', 'twigs', 'nuts', 'infinity seeds', 'amber', 'essence'];
+var resource_names = ['seeds', 'spores', 'resin', 'twigs', 'nuts', 'infinity seeds', 'amber', 'essence', 'infinity spores'];
 
 // Resources.
 // o is object with optional fields with the same names as the resource fields of Res (and may have regular JS numbers or Num), or can be a Res itself
@@ -39,6 +39,7 @@ function Res(o) {
     this.infseeds = new Num(o.infseeds || 0); // infinity seeds
     this.amber = new Num(o.amber || 0);
     this.essence = new Num(o.essence || 0); // fruit essence
+    this.infspores = new Num(o.infspores || 0); // infinity spores
   } else {
     this.seeds = new Num();
     this.spores = new Num();
@@ -47,7 +48,8 @@ function Res(o) {
     this.nuts = new Num();
     this.infseeds = new Num();
     this.amber = new Num();
-    this.essence = new Num(); // fruit essence
+    this.essence = new Num();
+    this.infspores = new Num();
   }
 };
 
@@ -61,7 +63,7 @@ Res.resOne = function() {
 // returns the resources as an array. The order is consistent, but do not rely on which index is which named resource. Only converting back to Resource with fromArray brings back the names.
 // does not make copies of the Num values, so do not change them in place if the original resources should not be modified
 Res.prototype.toArray = function() {
-  return [this.seeds, this.spores, this.resin, this.twigs, this.nuts, this.infseeds, this.amber, this.essence];
+  return [this.seeds, this.spores, this.resin, this.twigs, this.nuts, this.infseeds, this.amber, this.essence, this.infspores];
 };
 Res.toArray = function(v) { return v.toArray(); }
 
@@ -80,6 +82,7 @@ Res.prototype.fromArray = function(a) {
   this.infseeds = a[5] || new Num(0);
   this.amber = a[6] || new Num(0);
   this.essence = a[7] || new Num(0);
+  this.infspores = a[8] || new Num(0);
 };
 // not in-place
 Res.fromArray = function(a) {
@@ -98,6 +101,7 @@ Res.prototype.reset = function() {
   this.infseeds.reset();
   this.amber.reset();
   this.essence.reset();
+  this.infspores.reset();
 };
 
 Res.prototype.atIndex = function(index) {
@@ -109,6 +113,7 @@ Res.prototype.atIndex = function(index) {
   if(index == 5) return this.infseeds;
   if(index == 6) return this.amber;
   if(index == 7) return this.essence;
+  if(index == 8) return this.infspores;
   return Num(0);
 };
 
@@ -121,6 +126,7 @@ Res.prototype.addInPlace = function(b) {
   this.infseeds.addInPlace(b.infseeds);
   this.amber.addInPlace(b.amber);
   this.essence.addInPlace(b.essence);
+  this.infspores.addInPlace(b.infspores);
   return this;
 };
 Res.prototype.add = function(b) {
@@ -142,6 +148,7 @@ Res.prototype.addrInPlace = function(v) {
   this.infseeds.addInPlace(v);
   this.amber.addInPlace(v);
   this.essence.addInPlace(v);
+  this.infspores.addInPlace(v);
   return this;
 };
 Res.prototype.addr = function(v) {
@@ -160,6 +167,7 @@ Res.prototype.subInPlace = function(b) {
   this.infseeds.subInPlace(b.infseeds);
   this.amber.subInPlace(b.amber);
   this.essence.subInPlace(b.essence);
+  this.infspores.subInPlace(b.infspores);
   return this;
 };
 Res.prototype.sub = function(b) {
@@ -178,6 +186,7 @@ Res.prototype.negInPlace = function() {
   this.infseeds.negInPlace();
   this.amber.negInPlace();
   this.essence.negInPlace();
+  this.infspores.negInPlace();
   return this;
 };
 Res.prototype.neg = function() {
@@ -198,6 +207,7 @@ Res.prototype.mulInPlace = function(v) {
   this.infseeds.mulInPlace(v);
   this.amber.mulInPlace(v);
   this.essence.mulInPlace(v);
+  this.infspores.mulInPlace(v);
   return this;
 };
 Res.prototype.mul = function(v) {
@@ -226,6 +236,7 @@ Res.prototype.divInPlace = function(v) {
   this.infseeds.divInPlace(v);
   this.amber.divInPlace(v);
   this.essence.divInPlace(v);
+  this.infspores.divInPlace(v);
   return this;
 };
 Res.prototype.div = function(v) {
@@ -275,6 +286,7 @@ Res.prototype.elmulInPlace = function(r) {
   this.infseeds.mulInPlace(r.infseeds);
   this.amber.mulInPlace(r.amber);
   this.essence.mulInPlace(r.essence);
+  this.infspores.mulInPlace(r.infspores);
   return this;
 };
 Res.prototype.elmul = function(r) {
@@ -295,6 +307,7 @@ Res.prototype.posmulInPlace = function(v) {
   if(this.infseeds.ger(0)) this.infseeds.mulInPlace(v);
   if(this.amber.ger(0)) this.amber.mulInPlace(v);
   if(this.essence.ger(0)) this.essence.mulInPlace(v);
+  if(this.infspores.ger(0)) this.infspores.mulInPlace(v);
 };
 Res.prototype.posmul = function(v) {
   var res = Res(this);
@@ -320,6 +333,7 @@ Res.prototype.negmulInPlace = function(v) {
   if(this.infseeds.ler(0)) this.infseeds.mulInPlace(v);
   if(this.amber.ler(0)) this.amber.mulInPlace(v);
   if(this.essence.ler(0)) this.essence.mulInPlace(v);
+  if(this.infspores.ler(0)) this.infspores.mulInPlace(v);
 };
 Res.prototype.negmul = function(v) {
   var res = Res(this);
@@ -344,6 +358,7 @@ Res.prototype.eq = function(b) {
   if(!this.infseeds.eq(b.infseeds)) return false;
   if(!this.amber.eq(b.amber)) return false;
   if(!this.essence.eq(b.essence)) return false;
+  if(!this.infspores.eq(b.infspores)) return false;
   return true;
 };
 Res.eq = function(a, b) { return a.eq(b); };
@@ -352,8 +367,8 @@ Res.eq = function(a, b) { return a.eq(b); };
 Beware: ge, le, gt and lt have gotcha's, since ordering rules of single numbers don't apply to multi-valued objects like the resources
 ge is implemented as: all individual resources ge, so means "all resources are greater than or equal"
 le is implemented as: all individual resources le, so means "all resources are lesser than or equal"
-gt is implmemeted as !le, so means "any resource is strictly greater than"
-lt is implmemeted as !ge, so means "any resource is strictly lesser than"
+gt is implemented as !le, so means "any resource is strictly greater than"
+lt is implemented as !ge, so means "any resource is strictly lesser than"
 Reason why lt and gt are different than ge and le: an lt or gt for all (rather than any) resources would almost always return false since there'll always be some irrelevant resource type that's 0 on both sides.
 For cost computations (including treating NaN in have as can't afford), use the following, where the can_afford function treats negatives better (see further)
 for can_afford: have.ge(cost), cost.le(have) or have.can_afford(cost)
@@ -370,6 +385,7 @@ Res.prototype.ge = function(b) {
   if(!this.infseeds.ge(b.infseeds)) return false;
   if(!this.amber.ge(b.amber)) return false;
   if(!this.essence.ge(b.essence)) return false;
+  if(!this.infspores.ge(b.infspores)) return false;
   return true;
 };
 Res.ge = function(a, b) { return a.ge(b); };
@@ -384,6 +400,7 @@ Res.prototype.le = function(b) {
   if(!this.infseeds.le(b.infseeds)) return false;
   if(!this.amber.le(b.amber)) return false;
   if(!this.essence.le(b.essence)) return false;
+  if(!this.infspores.le(b.infspores)) return false;
   return true;
 };
 Res.le = function(a, b) { return a.le(b); };
@@ -420,6 +437,7 @@ Res.prototype.can_afford = function(cost) {
   if(cost.infseeds.neqr(0) && !this.infseeds.ge(cost.infseeds)) return false;
   if(cost.amber.neqr(0) && !this.amber.ge(cost.amber)) return false;
   if(cost.essence.neqr(0) && !this.essence.ge(cost.essence)) return false;
+  if(cost.infspores.neqr(0) && !this.infspores.ge(cost.infspores)) return false;
   return true;
 };
 
@@ -440,6 +458,7 @@ Res.prototype.empty = function() {
   if(this.infseeds.neqr(0)) return false;
   if(this.amber.neqr(0)) return false;
   if(this.essence.neqr(0)) return false;
+  if(this.infspores.neqr(0)) return false;
   return true;
 };
 Res.empty = function(a) { return a.empty(); };
@@ -462,6 +481,7 @@ Res.prototype.hasNaNOrInfinity = function() {
   if(this.infseeds.isNaNOrInfinity()) return true;
   if(this.amber.isNaNOrInfinity()) return true;
   if(this.essence.isNaNOrInfinity()) return true;
+  if(this.infspores.isNaNOrInfinity()) return true;
   return false;
 };
 Res.hasNaNOrInfinity = function(a) { return a.hasNaNOrInfinity(); };
@@ -485,6 +505,7 @@ Res.prototype.hasNeg = function() {
   if(this.infseeds.ltr(0)) return true;
   if(this.amber.ltr(0)) return true;
   if(this.essence.ltr(0)) return true;
+  if(this.infspores.ltr(0)) return true;
   return false;
 };
 Res.hasNeg = function(a) { return a.hasNeg(); };

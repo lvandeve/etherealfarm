@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,6 +22,15 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.7.10 (2023-01-22):';
+  text += '<br/>• Added 9x8 field size upgrade at ethereal tree level 21.';
+  text += '<br/>• Partially added gold infinity tier. This tier progresses slower than previous tiers.';
+  text += '<br/>• Buffed the electrum infinity flower and beehive.';
+  text += '<br/>• Third and higher runestones are now much more expensive, they were cheaper than intended compared to the seed income of next infinity crop tiers. Existing ones above two (not reachable now but theoretically later) will be removed and refunded.';
+  text += '<br/>• Runestone non-deletion time changed from 23 hours to 20 hours.';
+  text += '<br/>• Increased higher infinity crop achievement bonus scaling.';
+  text += '<br/><br/>';
+
   text += '0.7.9 (2023-01-07):';
   text += '<br/>• Added "reset choice upgrades" amber effect.';
   text += '<br/>• The brassica time upgrade in squirrel evolution II now also adds 50% copying.';
@@ -39,7 +48,7 @@ function getChangeLog() {
 
   text += '0.7.7 (2022-12-24):';
   text += '<br/>• Added 3 new ethereal crops (for levels 19 and up).';
-  text += '<br/>• Added 5 new infinity crops.';
+  text += '<br/>• Added electrum infinity tier, with 5 new infinity crops.';
   text += '<br/>• Slightly buffed silver infinity flower and bee.';
   text += '<br/>• Added an achievement for each infinity crop type.';
   text += '<br/>• Presents containing seeds or spores now reveal this in the tooltip.'; // this is because you may want to activate weather before those (so one could use undo anyway to re-take it). Others don't require knowledge beforehand so remain a surprise.

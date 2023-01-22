@@ -58,6 +58,12 @@ body {
   color: #bbb;
 }
 
+.efDialogLongPress {
+  background-color: #343e;
+  border: 1px solid #bbb;
+  color: #aaa;
+}
+
 .efButton {
   background-color: #666;
   border: 1px solid #000;

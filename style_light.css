@@ -33,6 +33,12 @@ a:visited {
   color: #000;
 }
 
+.efDialogLongPress {
+  background-color: #9a9e;
+  border: 1px solid #bbb;
+  color: #000;
+}
+
 .efButton {
   background-color: #ddd;
   border: 1px solid black;

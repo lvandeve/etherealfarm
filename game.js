@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -426,7 +426,9 @@ function startChallenge(challenge_id) {
 // get the field size to have after a reset
 function getNewFieldSize() {
   if(basicChallenge() == 2) return [5, 5];
-  if(state.upgrades2[upgrade2_field8x8].count) {
+  if(state.upgrades2[upgrade2_field9x8].count) {
+    return [9, 8];
+  } else if(state.upgrades2[upgrade2_field8x8].count) {
     return [8, 8];
   } else if(state.upgrades2[upgrade2_field7x8].count) {
     return [7, 8];
@@ -2298,6 +2300,10 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[brassica3_3].had) unlockInfinityCrop(berry3_3);
   if(state.crops3[berry3_3].had) unlockInfinityCrop(flower3_3);
   if(state.crops3[flower3_3].had) unlockInfinityCrop(bee3_3);
+
+  if(state.crops3[berry3_3].had) unlockInfinityCrop(brassica3_4);
+  if(state.crops3[brassica3_4].had) unlockInfinityCrop(berry3_4);
+  if(state.crops3[berry3_4].had) unlockInfinityCrop(flower3_4);
 }
 
 
@@ -3682,7 +3688,7 @@ var update = function(opt_ignorePause) {
           }
           /*if(timeTilNextSeason() / 3600 + 1 >= 24) {
             // TODO: support this. This requires remembering more state in the savegame, to distinguish that the season should already be the next one despite being before this 24h interval
-            showMessage('Extending season did not work, please wait around an hour and try again, when the next season is less than 23 hours away: the game currently doesn\'t support the next season being more than 24 hours away, and this action adds 1 hour to the current season duration.', C_INVALID, 0, 0);
+            showMessage('Extending season did not work, please wait around an hour and try again, when the next season is less than ' + initialrunehours + ' hours away: the game currently doesn\'t support the next season being more than 24 hours away, and this action adds 1 hour to the current season duration.', C_INVALID, 0, 0);
             ok = false;
           }*/
         }
@@ -4242,22 +4248,22 @@ var update = function(opt_ignorePause) {
             showMessage('no crop to delete here', C_INVALID, 0, 0);
             ok = false;
           }
-          if(f.hasCrop() && f.runetime > 0 && f.getCrop().type != CROPTYPE_BRASSICA) {
+          if(f.hasCrop() && f.runetime > 0 /*&& f.growth >= 1*/ && f.getCrop().type != CROPTYPE_BRASSICA) {
             if(f.getCrop().type == CROPTYPE_RUNESTONE) {
-              showMessage('cannot yet delete this runestone, must wait 23 hours after planting, or again after planting crops next to it. Time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
+              showMessage('cannot yet delete this runestone, must wait ' + initialrunehours + ' hours after planting, or again after planting crops next to it. Time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
               ok = false;
             } else {
               var sametypebuthigher = action.crop && action.crop.type == c.type && action.crop.tier >= c.tier;
               if(!sametypebuthigher) {
                 ok = false;
-                showMessage('cannot yet delete this crop due to recently placed next to runestone, must wait 23 hours after placing next to runestone, time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
+                showMessage('cannot yet delete this crop due to recently placed next to runestone, must wait ' + initialrunehours + ' hours after placing next to runestone, time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
               }
             }
           }
         }
 
         if(type != ACTION_DELETE3 && !action.confirmedyes && action.crop && action.crop.index == runestone3_0 && !state.crops3[action.crop.index].had) {
-          makeYesNoQuestion('Planting runestone', 'Are you sure you want to place the runestone? It, and any crops it touches, cannot be deleted for 23 hours after placing it. Any crops you plant next to it later on, also cannot be deleted for 23 hours and reset the runestone time to 23 hours. The runestone does not give any infinity seeds income, so ensure you\'re willing to miss this income for at least 23 hours.', function() {
+          makeYesNoQuestion('Planting runestone', 'Are you sure you want to place the runestone? It, and any crops it touches, cannot be deleted for ' + initialrunehours + ' hours after placing it. Any crops you plant next to it later on, also cannot be deleted for ' + initialrunehours + ' hours and reset the runestone time to ' + initialrunehours + ' hours. The runestone does not give any infinity seeds income, so ensure you\'re willing to miss this income for at least ' + initialrunehours + ' hours.', function() {
             action.confirmedyes = true;
             addAction(action);
           });
@@ -4324,9 +4330,6 @@ var update = function(opt_ignorePause) {
           } else {
             f.growth = 0;
           }
-          // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
-          // the reason for 23 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
-          var initialrunetime = 23 * 3600;
           f.runetime = 0;
           if(c.type == CROPTYPE_RUNESTONE) {
             f.runetime = initialrunetime;

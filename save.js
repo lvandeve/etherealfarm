@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -2589,6 +2589,21 @@ function decState(s) {
     state.amberkeepseasonused = temp;
   }
 
+  if(save_version <= 262144*2+64*7+9 && state.g_res.infseeds.gtr(400e15)) {
+    // runestones got more expensive for the third and up, remove+refund third one or you get way too many infinity seeds when manually removing it
+    var num_runestone = 0;
+    var refund = Num(0);
+    for(var y = 0; y < state.numh3; y++) {
+      for(var x = 0; x < state.numw3; x++) {
+        if(state.field3[y][x].index == CROPINDEX + runestone3_0) {
+          num_runestone++;
+          if(num_runestone > 2) state.field3[y][x].index = 0;
+        }
+      }
+    }
+    if(num_runestone > 2) state.res.infseeds.addInPlace(Num(500e9).mul(Num.rpowr(1000, num_runestone - 1))); // refund the highest one with the old price
+  }
+
   if(error) return err(4);
   state.g_numloads++;
   return state;
@@ -2675,7 +2690,7 @@ function encRes(res) {
 function decRes(reader) {
   var arr = new decResArray(reader);
   if(arr == null || arr == undefined) return null;
-  if(arr.length > 8) { reader.error = true; return null; } // maybe it's a future version that has more resource types
+  if(arr.length > 9) { reader.error = true; return null; } // maybe it's a future version that has more resource types
   var res = new Res();
   res.fromArray(arr);
   return res;

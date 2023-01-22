@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -783,7 +783,7 @@ function decTime(reader) {
 
 
 
-// encode resources
+// encode the array of a single resources object
 function encResArray(arr) {
   var result = '';
   var first = 0, last = -1;
@@ -815,6 +815,7 @@ function encResArray(arr) {
   return result;
 }
 
+// decode the array of a single resources object
 function decResArray(reader) {
   var arr = [];
   var code = decUint6(reader);

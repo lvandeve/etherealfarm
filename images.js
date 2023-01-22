@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -308,7 +308,7 @@ var subtleplantimageheader = 'l0:#600 l1:#822 l2:#a55 l3:#faa';
 // for watercress etc
 var brassicaimageheader = 'l0:#600 l1:#822 l2:#a55 l3:#faa hl:#af0 hh:#4f0';
 
-var fieldheader_spring = '+:#dbecc8 -:#b5d571';
+var fieldheader_spring = '+:#dbecc8 -:#c5e591';
 var fieldheader_summer = '+:#bda -:#ba5';
 var fieldheader_autumn = '+:#d3be9c -:#cea78b';
 var fieldheader_winter = '+:#fff -:#eef';

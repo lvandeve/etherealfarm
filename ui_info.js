@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -188,25 +188,24 @@ function tooLowMushroomSeeds() {
 
 
 // for tooltip and dialog, only compute if needed for those
-function getResourceDetails(i, special, index) {
+function getResourceDetails(index) {
   var name = resource_names[index];
   var res = state.res.atIndex(index);
   var upcoming;
   var upcoming_breakdown;
-  if(special) {
-    if(index == 2) {
-      // resin
-      upcoming = getUpcomingResinIncludingFerns();
-    }
-    if(index == 3) {
-      // twigs
-      upcoming = getUpcomingTwigs();
-    }
-    if(index == 7) {
-      // essence
-      upcoming_breakdown = [];
-      upcoming = getUpcomingFruitEssence(upcoming_breakdown).essence;
-    }
+  var special = (index == 2 || index == 3 || index == 7); // if true, is resource that doesn't have income/s stat
+  if(index == 2) {
+    // resin
+    upcoming = getUpcomingResinIncludingFerns();
+  }
+  if(index == 3) {
+    // twigs
+    upcoming = getUpcomingTwigs();
+  }
+  if(index == 7) {
+    // essence
+    upcoming_breakdown = [];
+    upcoming = getUpcomingFruitEssence(upcoming_breakdown).essence;
   }
 
   var div = resourceDivs[i];
@@ -217,9 +216,7 @@ function getResourceDetails(i, special, index) {
   var res_gain_hyp_pos;
   var hyp_neq = false; // res_gain_hyp.neq(res_gain) but allowing some numerical tolerance
 
-  if(special) {
-    // nothing to do, matching the code flow structure in showResource.
-  } else {
+  if(!special) {
     res_gain = gain.atIndex(index); // actual
     res_gain_pos = gain_pos.atIndex(index); // actual, without consumption
     res_gain_hyp = gain_hyp.atIndex(index); // hypothetical aka potential (if mushrooms were allowed to consume all seeds, making total or neighbor seed production negative)
@@ -316,7 +313,7 @@ function getResourceDetails(i, special, index) {
       // amber
       text += '<b>Amber</b><br/><br/>';
       text += 'Current amount: ' + res.toString() + '<br/><br/>';
-      text += 'Amber drops every now and then when the tree levels. You can use it in the \'amber\' tab.<br/><br/>';
+      text += 'Amber drops every now and then when the tree levels up. You can use it in the \'amber\' tab.<br/><br/>';
     }
   } else {
     var text = '<b>' + upper(name) + '</b><br/><br/>';
@@ -407,24 +404,91 @@ function getResourceDetails(i, special, index) {
   return text;
 }
 
+function showResourceDialog(index) {
+  var name = resource_names[index];
+  var dialog = createDialog({
+    size:DIALOG_MEDIUM,
+    title:upper(name + ' income'),
+    bgstyle:'efDialogTranslucent',
+    scrollable:true
+  });
+  var special = (index == 2 || index == 3 || index == 7); // if true, is resource that doesn't have income/s stat
+  // computed here rather than inside of updatedialogfun to avoid it being too slow
+  // NOTE: this means it doesn't get auto-updated though.
+  var breakdown = (index == 5) ? prodBreakdown3(index) : prodBreakdown(index);
+  if(breakdown == '') breakdown = ' • None yet';
+  var flex = dialog.content;
+  var last = undefined;
+  updatedialogfun = function() {
+    var text = getResourceDetails(index);
+    if(text != last) {
+      var html = text;
+      if(!special) {
+        html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
+      }
+      // for resin and twigs
+      var breakdowntext = undefined;
+
+      if(index == 2) {
+        // resin
+        var resin_breakdown = [];
+        nextTreeLevelResin(resin_breakdown);
+        breakdowntext = formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
+
+        breakdowntext += '<br>Upcoming resin source breakdown:<br>';
+        if(state.resin.gtr(0)) breakdowntext += ' • Tree: ' + state.resin.toString() + '<br>';
+        if(state.fernresin.resin.gtr(0)) breakdowntext += ' • Ferns (not included in the /hr stat): ' + state.fernresin.resin.toString() + '<br>';
+        if(state.resin.eqr(0) && state.fernresin.resin.eqr(0)) breakdowntext += ' • None yet<br>';
+      }
+      if(index == 3) {
+        // twigs
+        var twigs_breakdown = [];
+        nextTwigs(twigs_breakdown)
+        breakdowntext = formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
+      }
+
+      if(breakdowntext) {
+        html += breakdowntext;
+      }
+
+      if(index == 2) {
+        html += '<br>Total resin allocation:<br>';
+        var resin_stacks = state.res.resin;
+        var resin_field = computeField2Cost().resin; // still usable for other purposes by selling ethereal crops
+        var resin_mistletoe = mistletoeupgrades[mistle_upgrade_twigs].getResourceCostToReachLevel(state.mistletoeupgrades[mistle_upgrade_twigs].num).resin;
+        var resin_total = state.g_res.resin; // total earned ever
+        var resin_upgrades = resin_total.sub(resin_stacks).sub(resin_field).sub(resin_mistletoe); // this is resin that you can never reuse for anything else
+        html += '• Stacks: ' + state.res.resin.toString() + '<br>';
+        html += '• Ethereal field: ' + computeField2Cost().toString() + '<br>';
+        html += '• Ethereal upgrades: ' + resin_upgrades.toString() + '<br>';
+        if(state.mistletoeupgrades[mistle_upgrade_twigs].num) {
+          html += '• Ethereal mistletoe: ' + resin_mistletoe.toString() + '<br>';
+        }
+      }
+
+      flex.div.innerHTML = html;
+      last = text;
+    }
+  };
+  updatedialogfun();
+}
+
 // i = index of div, index = index of resource
-function showResource(i, special, index) {
+function showResource(i, index) {
   var name = resource_names[index];
   var res = state.res.atIndex(index);
   var upcoming;
-  if(special) {
-    if(index == 2) {
-      // resin
-      upcoming = getUpcomingResinIncludingFerns();
-    }
-    if(index == 3) {
-      // twigs
-      upcoming = getUpcomingTwigs();
-    }
-    if(index == 7) {
-      // essence
-      upcoming = getUpcomingFruitEssence().essence;
-    }
+  if(index == 2) {
+    // resin
+    upcoming = getUpcomingResinIncludingFerns();
+  }
+  if(index == 3) {
+    // twigs
+    upcoming = getUpcomingTwigs();
+  }
+  if(index == 7) {
+    // essence
+    upcoming = getUpcomingFruitEssence().essence;
   }
 
   var div = resourceDivs[i];
@@ -437,17 +501,16 @@ function showResource(i, special, index) {
 
   var text = '';
   var label = '';
-  if(special) {
-    if(index == 2 || index == 3) {
-      // 2=resin, 3=twigs
-      var hr = (index == 2) ? getResinHour() : getTwigsHour();
-      text = name + '<br>' + res.toString() + '<br>(+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
-      label = name + ' ' + res.toString() + ' (+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
-    } else {
-      text = name + '<br>' + res.toString();
-      if(upcoming) text += '<br>(+' + upcoming.toString() + ')';
-      label = name + ' ' + res.toString();
-    }
+  if(index == 2 || index == 3) {
+    // 2=resin, 3=twigs
+    var hr = (index == 2) ? getResinHour() : getTwigsHour();
+    text = name + '<br>' + res.toString() + '<br>(+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
+    label = name + ' ' + res.toString() + ' (+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
+  } else if(index == 7) {
+    // 7=essence
+    text = name + '<br>' + res.toString();
+    if(upcoming) text += '<br>(+' + upcoming.toString() + ')';
+    label = name + ' ' + res.toString();
   } else {
     res_gain = gain.atIndex(index); // actual
     if(res_gain.gtr(-1e-9) && res_gain.ltr(1e-9)) res_gain = Num(0); // avoid numerical display problem when mushrooms consume all seeds, where it may show something like -227e-15 instead of 0
@@ -487,74 +550,11 @@ function showResource(i, special, index) {
   if(div.tooltipadded != index) {
     div.tooltipadded = index;
     registerTooltip(div, function() {
-      return getResourceDetails(i, special, index);
+      return getResourceDetails(index);
     }, /*opt_poll=*/true, /*allow_mobile=*/true);
     div.style.cursor = 'pointer';
     addButtonAction(div, function() {
-      var dialog = createDialog({
-        size:DIALOG_MEDIUM,
-        title:upper(name + ' income'),
-        bgstyle:'efDialogTranslucent',
-        scrollable:true
-      });
-      // computed here rather than inside of updatedialogfun to avoid it being too slow
-      // NOTE: this means it doesn't get auto-updated though.
-      var breakdown = (index == 5) ? prodBreakdown3(index) : prodBreakdown(index);
-      if(breakdown == '') breakdown = ' • None yet';
-      var flex = dialog.content;
-      var last = undefined;
-      updatedialogfun = bind(function(div, flex) {
-        var text = getResourceDetails(i, special, index);
-        if(text != last) {
-          var html = text;
-          if(!special) {
-            html += 'Breakdown per crop type (as potential production/s): <br/>' + breakdown;
-          }
-          // for resin and twigs
-          var breakdowntext = undefined;
-
-          if(index == 2) {
-            // resin
-            var resin_breakdown = [];
-            nextTreeLevelResin(resin_breakdown);
-            breakdowntext = formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
-
-            breakdowntext += '<br>Upcoming resin source breakdown:<br>';
-            if(state.resin.gtr(0)) breakdowntext += ' • Tree: ' + state.resin.toString() + '<br>';
-            if(state.fernresin.resin.gtr(0)) breakdowntext += ' • Ferns (not included in the /hr stat): ' + state.fernresin.resin.toString() + '<br>';
-            if(state.resin.eqr(0) && state.fernresin.resin.eqr(0)) breakdowntext += ' • None yet<br>';
-          }
-          if(index == 3) {
-            // twigs
-            var twigs_breakdown = [];
-            nextTwigs(twigs_breakdown)
-            breakdowntext = formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
-          }
-
-          if(breakdowntext) {
-            html += breakdowntext;
-          }
-
-          if(index == 2) {
-            html += '<br>Total resin allocation:<br>';
-            var resin_stacks = state.res.resin;
-            var resin_field = computeField2Cost().resin; // still usable for other purposes by selling ethereal crops
-            var resin_mistletoe = mistletoeupgrades[mistle_upgrade_twigs].getResourceCostToReachLevel(state.mistletoeupgrades[mistle_upgrade_twigs].num).resin;
-            var resin_total = state.g_res.resin; // total earned ever
-            var resin_upgrades = resin_total.sub(resin_stacks).sub(resin_field).sub(resin_mistletoe); // this is resin that you can never reuse for anything else
-            html += '• Stacks: ' + state.res.resin.toString() + '<br>';
-            html += '• Ethereal field: ' + computeField2Cost().toString() + '<br>';
-            html += '• Ethereal upgrades: ' + resin_upgrades.toString() + '<br>';
-            if(state.mistletoeupgrades[mistle_upgrade_twigs].num) {
-              html += '• Ethereal mistletoe: ' + resin_mistletoe.toString() + '<br>';
-            }
-          }
-
-          flex.div.innerHTML = html;
-          last = text;
-        }
-      }, div, flex);
-      updatedialogfun();
+      showResourceDialog(index);
     }, 'info box: ' + name + ' resource');
   }
 };
@@ -754,16 +754,20 @@ function updateResourceUI() {
 
   prodBreakdownHypo();
 
+  var show_infseeds = haveInfinityField();
+  var show_infspores = haveInfinityField() && state.res.infspores.gtr(0);
+
 
   var i = 1; // index in resourceDivs
-  if(state.g_max_res.seeds.neqr(0)) showResource(i++, false, 0);
-  if(state.g_max_res.spores.neqr(0))showResource(i++, false, 1);
-  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, true, 2);
-  if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, true, 3);
-  if(state.g_max_res.essence.neqr(0)) showResource(i++, true, 7);
-  if(state.g_max_res.nuts.neqr(0)) showResource(i++, false, 4);
-  if(haveInfinityField()) showResource(i++, false, 5);
-  else if(state.g_max_res.amber.neqr(0)) showResource(i++, true, 6);
+  if(state.g_max_res.seeds.neqr(0)) showResource(i++, 0);
+  if(state.g_max_res.spores.neqr(0))showResource(i++, 1);
+  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, 2);
+  if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, 3);
+  if(!show_infspores) if(state.g_max_res.essence.neqr(0)) showResource(i++, 7);
+  if(state.g_max_res.nuts.neqr(0)) showResource(i++, 4);
+  if(show_infseeds) showResource(i++, 5);
+  else if(state.g_max_res.amber.neqr(0)) showResource(i++, 6);
+  if(show_infspores) showResource(i++, 8);
 }
 
 function initInfoUI() {

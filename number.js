@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -463,6 +463,7 @@ Num.prototype.powr = function(r) {
   return res;
 };
 Num.powr = function(a, r) { return a.powr(r); };
+Num.rpowr = function(a, b) { return Num(a).powr(b); };
 
 // r ** this (aka r ^ this); r is regular JS number.
 // Negative r is not supported
