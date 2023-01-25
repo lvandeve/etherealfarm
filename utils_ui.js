@@ -263,10 +263,12 @@ function addLongTouchEvent(div, fun) {
   var touch = isTouchDevice();
   var startEvent = touch ? 'touchstart' : 'mousedown';
   var endEvent = touch ? 'touchend' : 'mouseup';
+  var leaveEvent = touch ? undefined : 'mouseleave';
   var moveEvent = touch ? 'touchmove' : 'mousemove';
 
   div.addEventListener(startEvent, function(e) {
     if(!touch && e.which == 3) return; // don't prevent right click menu in regular browsers
+    if(eventHasCtrlKey(e) || eventHasShiftKey(e)) return; // if user is using shift/ctrl, the long click is definitely not needed.
     // don't prevent *next* click (for touch case, where preventing regular click below is in fact possibly not executed, but some other things use onclick)
     div.removeEventListener('click', cancelClick, true);
     var pos = getEventXY(e);
@@ -282,6 +284,13 @@ function addLongTouchEvent(div, fun) {
   }, true);
 
   div.addEventListener(endEvent, function() {
+    if(!timer) return;
+    clearTimeout(timer);
+    timer = undefined;
+  }, true);
+
+  if(leaveEvent) div.addEventListener(leaveEvent, function() {
+    // leave event is not there for touch devices, but on PC's it can trigger, and we clear timeout because when mouse leaves element, the mouseup event will not trigger anymore so it would think we held down mouse forever and will show the long-click menu when it shouldn't if mouse accidently moves a few pixels outside while short clicking the element
     if(!timer) return;
     clearTimeout(timer);
     timer = undefined;
