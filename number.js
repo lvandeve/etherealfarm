@@ -1046,7 +1046,7 @@ Num.notationSci = function(v, precision, eng, opt_base) {
     return Num.smallValueNotation(v, orig_precision);
   }
 
-  if(v.ltr(100000) && orig_precision >= 3) {
+  if(v.ltr(10000) && orig_precision >= 3) {
     return Num.smallValueNotation(v, orig_precision);
   }
 
