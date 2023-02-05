@@ -22,6 +22,12 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.8.0 (2023-02-05):';
+  text += '<br/>• Added emerald fruit tier, dropping starting from tree level 160. Changes compared to sapphire fruits: one more ability slot, a new ability type added, bee and weather ability types removed';
+  text += '<br/>• Fruit growth speed values slightly tweaked for more spread across tiers.';
+  text += '<br/>• Added "neighbor boost to here" stat in ethereal field crop popup, which allows to more easily identify which field spot has which total boost from lotuses, automaton, etc...';
+  text += '<br/><br/>';
+
   text += '0.7.10 (2023-01-22):';
   text += '<br/>• Added 9x8 field size upgrade at ethereal tree level 21.';
   text += '<br/>• Partially added gold infinity tier. This tier progresses slower than previous tiers.';

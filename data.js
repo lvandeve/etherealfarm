@@ -527,6 +527,7 @@ Crop.prototype.computeBeehiveBoostReceived_ = function(f, pretend) {
 };
 
 var flower_nut_boost = Num(0.25);
+var spores_overload_penalty = Num(4);
 
 //var seed_consumption_mul = 1.0; // for testing only
 
@@ -688,11 +689,36 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       }
     }
     if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
+      // also applied to mushroom because overload increases mushroom's seed consumption equally
       var level = getFruitAbility(FRUIT_SEED_OVERLOAD, true);
       if(level > 0) {
         var mul = getFruitBoost(FRUIT_SEED_OVERLOAD, level, getFruitTier(true)).addr(1);
         result.seeds.mulInPlace(mul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_SEED_OVERLOAD), true, mul, result.clone()]);
+      }
+    }
+    if(this.type == CROPTYPE_MUSH) {
+      var level = getFruitAbility(FRUIT_SPORES_OVERLOAD, true);
+      if(level > 0) {
+        var mul = getFruitBoost(FRUIT_SPORES_OVERLOAD, level, getFruitTier(true)).addr(1);
+        var seedmul = spores_overload_penalty;
+        if(mul.ltr(1000)) {
+          /*
+          seedmul is the seed penalty due to spores overload
+          without spores overload, the penalty is 1 (multiply with 1 = no penalty)
+          with only spores overload, the penalty is 4 (= value of spores_overload_penalty, if this value was tuned to something else, this example still uses 4)
+          but the original non-overloaded spores production should not be penalized, so overall the penalty will be slightly smaller
+          e.g. if mul is 10, then 10% (0.1) is produced with 1x penalty, 90% (0.9) is produced with 4x penalty, so overall penalty is:
+          1 * 0.1 + 4 * 0.9 = 3.7
+          This is only done for small mul, for the typical muls over 1000 normally gotten at emerald fruits this is a rounding error and not computed, but it can matter during basic challenge
+          */
+          var a = mul.rdiv(1); // 1 / mul, e.g. the 0.1 in the example above
+          var b = a.rsub(1); // e.g the 0.9 in the example above
+          var seedmul = Num(1).mul(a).add(spores_overload_penalty.mul(b));
+          result.mulInPlace(mul);
+          result.seeds.mulInPlace(seedmul);
+        }
+        if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_SPORES_OVERLOAD), true, mul, result.clone()]);
       }
     }
   }
@@ -4681,6 +4707,7 @@ var FRUIT_BEEBOOST = fruit_index++;
 var FRUIT_MIX = fruit_index++; // nettle/brassica/bee mix
 var FRUIT_TREELEVEL = fruit_index++; // treelevel production bonus
 var FRUIT_SEED_OVERLOAD = fruit_index++; // increase seed production but also mushrooms's seed consumption
+var FRUIT_SPORES_OVERLOAD = fruit_index++; // increase spore production but at the cost of even more seed consumption. This ability is introduced for emerald fruits, the first fruit with 6 slots. This ability is only useable if seeds boost is also slotted in the fruit, without it the mushroom for sure won't get enough seeds. It's also not useable to have this ability and the regular FRUIT_MUSHBOOST at the same time, there won't be enough seed production to support both multiplier at the same time. Instead, it's like this: if there are enough seeds, FRUIT_SPORES_OVERLOAD is best. If there are not enough seeds, then instead FRUIT_MUSHBOOST is better because the seeds are cheaper now, even though FRUIT_MUSHBOOST can't reach an as high spores amount as FRUIT_SPORES_OVERLOAD.
 
 // These seasonal abilities only exist for the appropriate seasonal fruit and do not take up a regular slot
 fruit_index = 20; // leave a few available spots for non-seasonal abilities above
@@ -4703,7 +4730,7 @@ var FRUIT_ALL_SEASON2 = fruit_index++; // dragon fruit
 // returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
 // opt_basic: if true, adjusts some abilities if basic challenge active. Doesn't adjust ability or level, as the getFruitTier and getFruitAbility already take an opt_basic parameter for that
 function getFruitBoost(ability, level, tier, opt_basic) {
-  var base = Math.pow(getFruitTierCost(tier), 0.75) * 0.05;
+  var base = Math.pow(getFruitTierStrength(tier), 0.75) * 0.05;
 
   if(ability == FRUIT_BERRYBOOST) {
     return Num(base * 1.0 * level);
@@ -4734,8 +4761,7 @@ function getFruitBoost(ability, level, tier, opt_basic) {
   }
   if(ability == FRUIT_GROWSPEED) {
     var amount = towards1(level, 5);
-    //var max = 0.3 * (1 + 0.6 * tier / 11);
-    var max = 0.25 * (1 + 1.75 * tier / 12);
+    var max = 0.2 * (1 + 3 * tier / 12);
     return Num(max * amount);
   }
   if(ability == FRUIT_WEATHER) {
@@ -4823,11 +4849,14 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     }
   }
   if(ability == FRUIT_TREELEVEL) {
-    // same multiplier as for bee, but another multiplier in treeLevelFruitBoost will make it worse or better than bee depending on tree level
-    return Num(base * level * 0.5);
+    // this one depends on current tree level, and uses the treeLevelFruitBoost implementation, which itself is based on the bee boost but with a tree-level dependent multiplier
+    return treeLevelFruitBoost(tier, level, state.treelevel);
   }
   if(ability == FRUIT_SEED_OVERLOAD) {
     return Num(base * 1.1 * level);
+  }
+  if(ability == FRUIT_SPORES_OVERLOAD) {
+    return Num(base * 4 * level); // a much higher multiplier than FRUIT_MUSHBOOST, but this is only reachable if more than enough seeds are available
   }
 
   return Num(0.1);
@@ -4879,6 +4908,7 @@ function getFruitAbilityCost(ability, level, tier) {
   return Res({essence:result});
 }
 
+// how much essence this fruit gives on sacrifice
 function getFruitSacrifice(f) {
   var result = getFruitTierCost(f.tier) * 10;
 
@@ -4887,7 +4917,7 @@ function getFruitSacrifice(f) {
   return Res({essence:result});
 }
 
-// This function determines not only the cost, but also the effect strength of abilities
+// This function determines the cost of fruit tier abilities, but also the amount of essence the fruit gives when sacrificed
 function getFruitTierCost(tier) {
   // a manually chosen exponential-ish progression
   switch(tier) {
@@ -4900,11 +4930,34 @@ function getFruitTierCost(tier) {
     case 6: return 500;
     case 7: return 1500;
     case 8: return 4000;
+    case 9: return 25000;
     // TODO: these numbers must be tuned once those fruits are introduced
-    case 9: return 10000;
-    case 10: return 20000;
+    case 10: return 40000;
+    case 11: return 100000;
   }
-  return tier < 0 ? 0 : 20000;
+  return tier < 0 ? 0 : 100000;
+}
+
+// This determines how strong standard fruit abilities such as flower boost and berry boost are at this tier
+// It's only a base value, and tuned together with the getFruitTierCost value, its usage at getFruitBoost applies additional formulas to this
+function getFruitTierStrength(tier) {
+  // a manually chosen exponential-ish progression
+  switch(tier) {
+    case 0: return 1;
+    case 1: return 4;
+    case 2: return 12;
+    case 3: return 30;
+    case 4: return 45;
+    case 5: return 100;
+    case 6: return 500;
+    case 7: return 1500;
+    case 8: return 4000;
+    case 9: return 10000; // a smaller growth than in getFruitTierCost, because this fruit already adds an extras lot which is already a very strong thing on its own
+    // TODO: these numbers must be tuned once those fruits are introduced
+    case 10: return 20000;
+    case 11: return 50000;
+  }
+  return tier < 0 ? 0 : 50000;
 }
 
 // if due to a game update the costs of certain abilities of fruits changes, this recomputes the correct amount of essence spent
@@ -4951,12 +5004,14 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
 
   // roll: higher is better
   // these prob requirements: lower is better
+  var prob10 = 0.1;
   var prob20 = 0.2;
   var prob25 = 0.25;
   var prob50 = 0.5;
   var prob75 = 0.75;
 
   if(improved_probability) {
+    prob10 = 0.05;
     prob20 = 0.1;
     prob25 = 0.15;
     prob50 = 0.35;
@@ -5119,8 +5174,38 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return (roll > prob20) ? 8 : 7;
   }
 
+  // level 155
+  if(treelevel >= 155 && treelevel <= 159) {
+    return (roll > prob10) ? 8 : 7;
+  }
+
+  // level 160: emerald introduced - NOTE: this is 25 levels after the previous fruit, instead of per 20 levels as it was before
+  if(treelevel >= 160 && treelevel <= 165) {
+    return (roll > prob75) ? 9 : 8;
+  }
+
+  // level 165
+  if(treelevel >= 165 && treelevel <= 170) {
+    return (roll > prob50) ? 9 : 8;
+  }
+
+  // level 170
+  if(treelevel >= 170 && treelevel <= 175) {
+    return (roll > prob25) ? 9 : 8;
+  }
+
+  // level 175
+  if(treelevel >= 175 && treelevel <= 180) {
+    return (roll > prob20) ? 9 : 8;
+  }
+
+  // level 180
+  if(treelevel >= 180 && treelevel <= 185) {
+    return (roll > prob10) ? 9 : 8;
+  }
+
   // Higher tree levels are not yet implemented for the fruits
-  return 8;
+  return 9;
 }
 
 // how many abilities should a fruit of this tier have (excluding any seasonal ability)
@@ -5130,8 +5215,7 @@ function getNumFruitAbilities(tier) {
   if(tier >= 3) num_abilities = 3;
   if(tier >= 5) num_abilities = 4;
   if(tier >= 7) num_abilities = 5;
-  // These are not yet supported
-  //if(tier >= 9) num_abilities = 6;
+  if(tier >= 9) num_abilities = 6;
   return num_abilities;
 }
 
@@ -5599,7 +5683,7 @@ function getTreeBoost() {
     // fruit ability
     var level = getFruitAbility(FRUIT_TREELEVEL, true);
     if(level > 0) {
-      var mul = treeLevelFruitBoost(getFruitTier(true), level, state.treelevel).addr(1);
+      var mul = getFruitBoost(FRUIT_TREELEVEL, level, getFruitTier(true)).addr(1);
       result.mulInPlace(mul);
     }
   }
@@ -5608,10 +5692,11 @@ function getTreeBoost() {
 }
 
 // this is tuned so that from fruit_drop_level to fruit_drop_level + 20 (115 to 135 for sapphire fruit), a scaling where it's worse than FRUIT_BEEBOOST to getting significantly better than FRUIT_BEEBOOST occurs, with it being equal somewhere before the mid point
-function treeLevelFruitBoostCurve(tree_level, fruit_drop_level) {
+function treeLevelFruitBoostCurve(tree_level, fruit_drop_level, next_fruit_drop_level) {
   var level0 = fruit_drop_level;
-  var level1 = level0 + 7; // level at which it's made to match bee
-  var level2 = fruit_drop_level + 20; // a new fruit range spans 20 levels
+  var level_diff = next_fruit_drop_level - fruit_drop_level;
+  var level1 = level0 + Math.floor(level_diff * 0.37); // level at which it's made to match bee
+  var level2 = next_fruit_drop_level; // soft-capped end of the range
   var t = (tree_level - level1) / (level2 - level0);
   var s = towards1(t, 0.5) + 1;
   return s;
@@ -5620,13 +5705,29 @@ function treeLevelFruitBoostCurve(tree_level, fruit_drop_level) {
 // returns the boost given by the FRUIT_TREELEVEL fruit
 function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
   // for amethist fruit (which drops as highest tier from 115 to 135) fruit_drop_level should be 115, for sapphire it should be 135, etc...
-  var fruit_drop_level = 115;
-  if(fruit_tier > 7) fruit_drop_level += 20 * (fruit_tier - 7);
-  var boost = getFruitBoost(FRUIT_TREELEVEL, ability_level, fruit_tier);
+  var fruit_drop_level;
+  var next_fruit_drop_level;
+  // this must match tree levels where this fruit tier gets introduced in getNewFruitTier, starting from tier 7 (amethist)
+  if(fruit_tier <= 7) {
+    fruit_drop_level = 115;
+    next_fruit_drop_level = 135;
+  } if(fruit_tier == 8) {
+    fruit_drop_level = 135;
+    next_fruit_drop_level = 160;
+  } else if(fruit_tier == 9)  {
+    fruit_drop_level = 160;
+    next_fruit_drop_level = 190; // TODO: update to correct value when actual ruby fruit drop level was decided
+  } else {
+    // TODO: update as the fruits get actually designed and their levels chosen
+    fruit_drop_level = 160 + (fruit_tier - 9) * 30;
+    next_fruit_drop_level = fruit_drop_level + 30;
+  }
+  // the tree level boost uses the bee boost's value as basis
+  var boost = getFruitBoost(FRUIT_BEEBOOST, ability_level, fruit_tier);
   // For amethist fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
   // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
   // TODO: also support lower fruit tier, for e.g. basic challenge
-  var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level);
+  var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level, next_fruit_drop_level);
   return boost.mulr(s);
 }
 

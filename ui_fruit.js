@@ -48,6 +48,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_MIX: return 'X';
       case FRUIT_TREELEVEL: return 'T';
       case FRUIT_SEED_OVERLOAD: return 'O';
+      case FRUIT_SPORES_OVERLOAD: return 'MO'; // mo = mushroom overload
     }
     return '?';
   }
@@ -78,6 +79,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_MIX: return 'mix nettle/brass/bee';
     case FRUIT_TREELEVEL: return 'treelevel prod boost';
     case FRUIT_SEED_OVERLOAD: return 'seeds overload';
+    case FRUIT_SPORES_OVERLOAD: return 'spores overload';
   }
   return 'unknown';
 }
@@ -110,6 +112,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_MIX: return 'divides given boost over nettle, brassica and bee, balanced differently for spores and seeds, but only additively if corresponding non-mix abilities are present';
     case FRUIT_TREELEVEL: return 'boosts the production boost that is given by the tree level, the listed multiplier is reached for high enough tree level'; // that is, targeted to get close at tree levels 20 levels above where this tier of fruit drops
     case FRUIT_SEED_OVERLOAD: return 'boosts seeds, but increases mushroom seed consumption by the same amount';
+    case FRUIT_SPORES_OVERLOAD: return 'boosts spores, but the additional spores require much higher seeds consumption';
   }
   return 'unknown';
 }

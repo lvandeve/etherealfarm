@@ -411,7 +411,22 @@ Num.prototype.divr = function(r) {
   res.divrInPlace(r);
   return res;
 };
-Num.div = function(a, r) { return a.div(r); };
+Num.divr = function(a, r) { return a.divr(r); };
+
+// rdiv: returns r / this, where r is a regular JS number
+Num.prototype.rdivInPlace = function(r) {
+  var res = Num(r);
+  res.divInPlace(this);
+  this.b = res.b;
+  this.e = res.e;
+  return this;
+};
+Num.prototype.rdiv = function(r) {
+  var res = new Num(this);
+  res.rdivInPlace(r);
+  return res;
+};
+Num.rdiv = function(a, r) { return a.rdiv(r); };
 
 
 Num.prototype.absInPlace = function() {
@@ -1013,26 +1028,31 @@ function getSuffixAbc(e) {
 }
 
 /**
- * strict scientific notation (exponent always shows).
+ * scientific notation (exponent for any power of 10).
  * eng instead forces exponent to be multiple of 3 and will, unlike scientific, not show exponent if it's 0
  * eng can be boolean (false, true) or a value like 3, 4. for pure scientific, set to 0 or false.
  * @param {number=} opt_base optional base other than 10
  */
 Num.notationSci = function(v, precision, eng, opt_base) {
+  var orig_precision = precision;
   precision--; // this is because there's also one digit in front of the point
-
-  if(v.gtr(1e-6) && v.ltr(1)) {
-    return Num.smallValueNotation(v, precision);
-  }
-
-  if(eng) eng = (eng < 3 ? 3 : (eng > 8 ? 8 : eng));
-  var base = opt_base || 10;
-  var l = (base == 10) ? log2_log10 : (0.6931471805599453 / Math.log(base));
 
   if(v.b < 0) return '-' + Num.notationSci(v.neg(), precision, eng, opt_base);
   if(isNaN(v.b)) return 'NaN';
   if(v.b == Infinity) return 'Inf';
   if(v.b == 0) return '0';
+
+  if(v.gtr(1e-6) && v.ltr(1)) {
+    return Num.smallValueNotation(v, orig_precision);
+  }
+
+  if(v.ltr(100000) && orig_precision >= 3) {
+    return Num.smallValueNotation(v, orig_precision);
+  }
+
+  if(eng) eng = (eng < 3 ? 3 : (eng > 8 ? 8 : eng));
+  var base = opt_base || 10;
+  var l = (base == 10) ? log2_log10 : (0.6931471805599453 / Math.log(base));
 
   var e_orig = v.e * l;
 
@@ -1100,14 +1120,24 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 };
 
 // intended for values in range 1e-6 to 1, to avoid showing something like 200e-6, instead show 0.0002
+// can also be used for values below 10000, e.g. to display 3500 instead of 3.5e3, but still take precision into account in a more limited way than scientific notation does
 Num.smallValueNotation = function(v, precision) {
   var result = v.valueOf().toString();
 
-  var e = v.e * log2_log10;
-  var e2 = -Math.floor(v.abs().log10());
-
-  //return result.substr(0, Math.max(precision + 2, 7));
-  return result.substr(0, e2 + 1 + precision);
+  if(result[0] == '0') {
+    var e = v.e * log2_log10;
+    var e2 = -Math.floor(v.abs().log10());
+    //return result.substr(0, Math.max(precision + 2, 7));
+    result = result.substr(0, e2 + 1 + precision);
+  } else if(result.length >= precision) {
+    var dotpos = result.indexOf('.');
+    if(dotpos >= 0) {
+      var keep = Math.max(dotpos, precision + 1);
+      if(keep == dotpos + 1) keep--;
+      result = result.substr(0, keep);
+    }
+  }
+  return result;
 }
 
 // abbreviations like K, M, ..., and also engineering notation after that
@@ -1123,6 +1153,10 @@ Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
   if(v.b == 0) return '0';
 
   if(v.gtr(1e-6) && v.ltr(1)) {
+    return Num.smallValueNotation(v, precision);
+  }
+
+  if(v.ltr(10000) && precision >= 3) {
     return Num.smallValueNotation(v, precision);
   }
 

@@ -60,11 +60,16 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     }
   }
 
+  var boostFromNeighbors = undefined;
+
   if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_STINGING || c.type == CROPTYPE_BEE || c.type == CROPTYPE_BRASSICA) {
-    var total = c.getBasicBoost(f);
+    var basicBoost = c.getBasicBoost(f);
     result += '<br/>';
-    result += 'Boost amount: ' + total.toPercentString();
+    result += 'Boost to basic field: ' + basicBoost.toPercentString();
     result += '<br/>';
+
+    var temp = c.getBasicBoost(); // boost without passing field f, so what you'd get without taking the neighbors into account
+    boostFromNeighbors = basicBoost.div(temp).subr(1);
   }
 
   var automaton = c.index == automaton2_0;
@@ -73,7 +78,10 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
   if(f.growth >= 1) {
     if(c.boost.neqr(0)) {
-      result += '<br/>Boosting neighbors: ' + (c.getEtherealBoost(f).toPercentString()) + '<br/>';
+      var etherealBoost = c.getEtherealBoost(f);
+      result += '<br/>Boosting neighbors: ' + etherealBoost.toPercentString() + '<br/>';
+      var temp = c.getEtherealBoost(); // boost without passing field f, so what you'd get without taking the neighbors into account
+      boostFromNeighbors = etherealBoost.div(temp).subr(1); // this one can be from upgraded ethereal mistletoe boosting lotuses
     }
     if(automaton) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonNeighborBoost().toPercentString()) + '<br/>';
@@ -87,6 +95,12 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
       result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).toPercentString()) + '<br/>';
     }
+  }
+
+  if(boostFromNeighbors && boostFromNeighbors.gtr(0)) {
+    // boost from location-based field neighbors such as lotus, ethereal tree, automaton, squirrel and mistletoe. This shows how valuable this field spot location is.
+    result += 'Neighbor boost to here: ' + boostFromNeighbors.toPercentString();
+    result += '<br/>';
   }
 
 
@@ -129,7 +143,6 @@ function getCropInfoHTML2(f, c, opt_detailed) {
       result += '<br/>• Upgrade tier cost: ?';
     }
   }
-
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
 

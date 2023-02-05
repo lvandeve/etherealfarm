@@ -246,6 +246,15 @@ function getEventXY(e) {
   return [x, y];
 }
 
+/*
+Add an action for long-touching (or long-pressing if with mouse) a button. This is useful for mobile since shift+click, ctrl+click and right click are missing there, so long press at least adds some alternative form of click.
+Things that make this tricky:
+-JS doesn't have anything for long-touch events built-in, so there's no well-supported guaranteed to work on all platforms method to do it
+-Mobile browsers may have their own long-touch behavior (which may differe per platform, e.g. callout, context menu, ...) that could override our intended one
+-JS fires different events on mobile and desktop devices (e.g. touchstart vs mousedown), but can also trigger mouse ones on mobile as well
+-Mouse or finger may move while holding the long press, we need to distinguish if it's still intended to be a long touch, or dragging an element instead
+-There are many other mouse/touch related events that must not be forgotten and might also interact with this, some of which may behave differently per browser, or only added in future JS versions (e.g. in addition to regular mouse events there are also drag-related events)
+*/
 function addLongTouchEvent(div, fun) {
   var longtouchtime = 0.8;
   var timer;

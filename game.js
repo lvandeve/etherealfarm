@@ -2055,8 +2055,8 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     var roll_double = getRandomFruitRoll();
     var roll_tier = getRandomFruitRoll();
     var roll_season = getRandomFruitRoll();
-    var roll_abilities = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
-    var roll_abilities_level = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
+    var roll_abilities = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
+    var roll_abilities_level = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
 
     var tier = getNewFruitTier(roll_tier, treelevel, state.squirrel_upgrades[upgradesq_fruittierprob].count || state.squirrel_upgrades[upgradesq_fruittierprob2].count);
 
@@ -2077,6 +2077,16 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       abilities.push(FRUIT_MIX);
       abilities.push(FRUIT_TREELEVEL);
       abilities.push(FRUIT_SEED_OVERLOAD);
+    }
+    if(tier >= 9) {
+      // the bee and weather abilities is removed from emerald fruits, to require more variability in how to use its 6 slots
+      // the reason is that there are 5 abilities that all do the same thing, which is to boost both seeds and spores:
+      // flower boost, brassica boost, bee boost, treelevel boost, weather boost (because due to the permanent weather it's also perma-active with large multiplier)
+      // so now the 6 fruits slots won't have to be filled up with 5x the same thing
+      abilities.splice(abilities.indexOf(FRUIT_BEEBOOST), 1);
+      abilities.splice(abilities.indexOf(FRUIT_WEATHER), 1);
+      // note that mix also does something somewhat similar, but to a lesser extent so that one remains
+      abilities.push(FRUIT_SPORES_OVERLOAD);
     }
 
     for(var i = 0; i < num_abilities; i++) {
