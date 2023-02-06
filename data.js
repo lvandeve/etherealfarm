@@ -715,9 +715,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
           var a = mul.rdiv(1); // 1 / mul, e.g. the 0.1 in the example above
           var b = a.rsub(1); // e.g the 0.9 in the example above
           var seedmul = Num(1).mul(a).add(spores_overload_penalty.mul(b));
-          result.mulInPlace(mul);
-          result.seeds.mulInPlace(seedmul);
         }
+        result.mulInPlace(mul);
+        result.seeds.mulInPlace(seedmul);
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_SPORES_OVERLOAD), true, mul, result.clone()]);
       }
     }

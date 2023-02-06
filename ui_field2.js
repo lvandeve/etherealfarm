@@ -95,6 +95,12 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
       result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).toPercentString()) + '<br/>';
     }
+    /*if(!boostFromNeighbors) {
+      var fakecrop = crops2[berry2_0];
+      var fakebasicBoost = fakecrop.getBasicBoost(f);
+      var temp = fakecrop.getBasicBoost(); // boost without passing field f, so what you'd get without taking the neighbors into account
+      boostFromNeighbors = fakebasicBoost.div(temp).subr(1);
+    }*/
   }
 
   if(boostFromNeighbors && boostFromNeighbors.gtr(0)) {
