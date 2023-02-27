@@ -429,32 +429,42 @@ function showAutomatonFeatureSourceDialog() {
 }
 
 
-function getBluePrintActionDescription(o) {
+function getBluePrintActionDescription(index, o) {
+  var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
   var text = '';
 
-  text += 'Trigger: ';
-  if(o.type == 0) {
-    text += 'tree level: ' + o.level;
-  } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
-    var c = crops[o.crop - 1];
-    var p = o.prestige;
-    var cropname = c ? c.name : 'none';
-    if(c && p) cropname += ' (prestiged)';
-    if(o.type == 1) text += 'unlocked crop: ' + cropname;
-    if(o.type == 2) text += 'planted crop: ' + cropname;
-    if(o.type == 3) text += 'fullgrown crop: ' + cropname;
-    if(o.type == 5) text += 'upgraded crop: ' + cropname;
-  } else if(o.type == 4) {
-    text += 'run time: ' + util.formatDuration(o.time, true);
+  text += 'Trigger ' + visual_index + ': ';
+  if(index == 0 && haveBeginOfRunAutoAction()) {
+    text += 'This special limited auto-action can only be used to set up start-of-run.';
+  } else {
+    if(o.type == 0) {
+      text += 'tree level: ' + o.level;
+    } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
+      var c = crops[o.crop - 1];
+      var p = o.prestige;
+      var cropname = c ? c.name : 'none';
+      if(c && p) cropname += ' (prestiged)';
+      if(o.type == 1) text += 'unlocked crop: ' + cropname;
+      if(o.type == 2) text += 'planted crop: ' + cropname;
+      if(o.type == 3) text += 'fullgrown crop: ' + cropname;
+      if(o.type == 5) text += 'upgraded crop: ' + cropname;
+    } else if(o.type == 4) {
+      text += 'run time: ' + util.formatDuration(o.time, true);
+    }
   }
 
   text += '<br>';
-  text += 'Action: ';
+  text += 'Action ' + visual_index + ': ';
   var actiontext = '';
   if(o.enable_blueprint) {
     var b = state.blueprints[o.blueprint];
     var empty = !b || (b.data.length == 0);
     actiontext += 'Override blueprint ' + (o.blueprint + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;
+  }
+  if(o.enable_blueprint2) {
+    var b = state.blueprints2[o.blueprint2];
+    var empty = !b || (b.data.length == 0);
+    actiontext += 'Ethereal blueprint ' + (o.blueprint2 + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;
   }
   if(o.enable_fruit) {
     if(actiontext != '') actiontext += '. ';
@@ -491,12 +501,13 @@ function markTriggeredAutoActionsAsDone() {
   var num = numAutoActionsUnlocked();
   for(var j = 0; j < num; j++) {
     var b = state.automaton_autoactions[j];
-    b.done = autoActionTriggerConditionReached(b);
+    b.done = autoActionTriggerConditionReached(j, b);
   }
 }
 
 
 function showConfigureAutoActionTriggerDialog(index, closefun) {
+  var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
   var o = state.automaton_autoactions[index];
 
   o.done = o.done2 = true; // don't trigger while editing, it can be unexpected
@@ -505,13 +516,13 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
     onclose:function() {
       // possibly re-enable the auto-action, if it's set in the future, or disable it if it's set in the past (so it won't trigger right now that you configured it while it applied to the past, intended for a next run)
       // e.g. if re-configuring an auto-action to be after 3 hours of run, then re-enable if current runtime is 2 hours, but don't if current runtime is 4 hours
-      var done = autoActionTriggerConditionReached(o);
+      var done = autoActionTriggerConditionReached(index, o);
       o.done = o.done2 = done;
       o.time2 = 0;
       closefun();
     },
     scrollable:true,
-    title:('Configure automaton trigger ' + (index + 1)),
+    title:('Configure automaton trigger ' + visual_index),
     help:'Here you can configure the conditions at which this automaton action will trigger, e.g. after some tree level is reached, some crops are unlocked or after a certain time'
   });
   var scrollFlex = dialog.content;
@@ -650,10 +661,11 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
 
 
 function showConfigureAutoActionEffectDialog(index, closefun) {
+  var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
   var dialog = createDialog({
     onclose:closefun,
     scrollable:true,
-    title:('Configure automaton action ' + (index + 1)),
+    title:('Configure automaton action ' + visual_index),
     help:'Here you can select one or more automaton actions that occur when the condition is triggered'
   });
   var scrollFlex = dialog.content;
@@ -687,7 +699,6 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
     o.enable_blueprint = state;
   }, 'Enable auto-blueprint');
 
-
   flex = addControl();
   styleButton(flex.div);
   centerText2(flex.div);
@@ -699,13 +710,38 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
     flex.div.textEl.innerText = 'Chosen blueprint: [' + (i + 1) + '] ' + (empty ? '[empty]' : b.name);
   }, flex, index);
   addButtonAction(flex.div, function() {
-    createBlueprintsDialog(undefined, undefined, undefined, function(i) {
+    createBlueprintsDialog(undefined, undefined, false, function(i) {
       o.blueprint = i;
       updateBlueprintButton();
     });
   });
   updateBlueprintButton();
 
+
+  if(autoActionExtra2Unlocked()) {
+    flex = addControl(0.7);
+    makeCheckbox(flex, o.enable_blueprint2, 'Enable ethereal blueprint', function(state) {
+      o.enable_blueprint2 = state;
+    }, 'Enable ethereal blueprint');
+
+    flex = addControl();
+    styleButton(flex.div);
+    centerText2(flex.div);
+    var updateBlueprintButton2 = bind(function(flex, index) {
+      //updateToggleButton(flex, true);
+      var i = o.blueprint2;
+      var b = state.blueprints2[i];
+      var empty = !b || (b.data.length == 0);
+      flex.div.textEl.innerText = 'Ethereal blueprint: [' + (i + 1) + '] ' + (empty ? '[empty]' : b.name);
+    }, flex, index);
+    addButtonAction(flex.div, function() {
+      createBlueprintsDialog(undefined, undefined, true, function(i) {
+        o.blueprint2 = i;
+        updateBlueprintButton2();
+      });
+    });
+    updateBlueprintButton2();
+  }
 
   flex = addControl(0.7);
   makeCheckbox(flex, o.enable_fruit, 'Enable auto-fruit', function(state) {
@@ -791,12 +827,12 @@ function showConfigureAutoActionDialog() {
   texth = 0.05;
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Choose at which tree level to override with which blueprint';
-  y += texth;
+  y += texth * 1.5;
 
-  var addControl = function(opt_width) {
+  var addControl = function(opt_width, opt_align) {
     var h = 0.08;
     var w = opt_width || 0.6;
-    var flex  = new Flex(scrollFlex, 0.01, y, w, y + h);
+    var flex  = new Flex(scrollFlex, 0.01, y, w, y + h, undefined, opt_align);
     y += h * 1.2;
     return flex;
   };
@@ -830,35 +866,37 @@ function showConfigureAutoActionDialog() {
   for(var j = 0; j < num; j++) {
     var b = state.automaton_autoactions[j];
 
-    // toggle button disabled if num is 1, since there's only one auto-override action for now, the global enable/disable already does this
-    if(num > 1) {
-      flex = addControl();
-      flex.div.innerHTML = '<br>Auto-action ' + (j + 1) + ':';
-      flex.div.style.vAlign = 'bottom';
-    }
-
-    flex = addControl(1);
-    flex.div.innerHTML = getBluePrintActionDescription(b);
+    flex = addControl(1, 6);
+    flex.div.innerHTML = getBluePrintActionDescription(j, b);
     infoflexes.push(flex);
     var updateInfoFlex = function(j) {
       var flex = infoflexes[j];
       var b = state.automaton_autoactions[j];
-      flex.div.innerHTML = getBluePrintActionDescription(b);
+      flex.div.innerHTML = getBluePrintActionDescription(j, b);
     };
+
 
     var x = 0.0;
     var w0 = 0.24;
     var w1 = 0.25; // including gap
 
-    flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
-    styleButton(flex.div);
-    centerText2(flex.div);
-    flex.div.textEl.innerText = 'Edit trigger';
-    addButtonAction(flex.div, bind(function(j) {
-      showConfigureAutoActionTriggerDialog(j, function() {
-        updateInfoFlex(j);
-      });
-    }, j));
+    if(haveBeginOfRunAutoAction() && j == 0) {
+      flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
+      styleButton(flex.div);
+      centerText2(flex.div);
+      flex.div.className = 'efButtonCantAfford';
+      flex.div.textEl.innerText = '(Start of run only)';
+    } else {
+      flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
+      styleButton(flex.div);
+      centerText2(flex.div);
+      flex.div.textEl.innerText = 'Edit trigger';
+      addButtonAction(flex.div, bind(function(j) {
+        showConfigureAutoActionTriggerDialog(j, function() {
+          updateInfoFlex(j);
+        });
+      }, j));
+    }
     x += w1;
 
 
@@ -898,7 +936,7 @@ function showConfigureAutoActionDialog() {
     registerTooltip(flex.div, 'Do this action manually now. This ignores the action trigger, and does not affect when or whether the automaton will do this action. You can do it manually any time or multiple times indepdendently from the automaton. You can also configure the number keys to do these in the settings.');
     x += w1;
 
-    y += h * 1.2;
+    y += h * 1.8;
   }
 }
 

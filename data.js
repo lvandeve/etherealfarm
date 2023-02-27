@@ -3170,7 +3170,7 @@ var challenges = []; // indexed by medal index (not necessarily consectuive
 var challenge_register_id = 1;
 
 // prefun = precondition to unlock the challenge
-// rewardfun = for completing the challenge the first time. This function may be ran only once.
+// rewardfun = for completing the challenge the first time. This function may be ran only once, and should be called after all other challenge-related completions stats (such as num_completion variables in the state) are already updated
 // allowflags: 1=resin, 2=fruits, 4=twigs, 8=beyond highest level, 16=nuts
 // rulesdescription must be a list of bullet points
 // bonus = basic value for the challenge bonus, or 0 if it gives no bonus
@@ -3310,7 +3310,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130], Num(0.075),
+var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170], Num(0.075),
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -3325,14 +3325,16 @@ During this challenge, crops wither and must be replanted.
  'allow using blueprints during future wither challenge runs',
  'unlock a second automaton auto-action',
  'auto-action can now also automate weather, fern and brassica refresh',
- 'unlock a third automaton auto-action'],
+ 'unlock a third automaton auto-action',
+ 'auto-action can now also automate ethereal blueprints',
+ 'unlock a limited  kind of automaton auto-action, this one can only be configured to trigger at start of run (to set up correct starting fruit, ...)'],
 'reaching ethereal tree level 5 and having automaton with auto-unlock plants',
 function() {
   return state.treelevel2 >= 5 && haveAutomaton() && autoUnlockUnlocked();
 },
 [
 function() {
-  state.updateAutoActionAmount(1);
+  state.updateAutoActionAmount(numAutoActionsUnlocked());
   state.automaton_autoactions[0].enabled = true;
   showMessage('Automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
   showRegisteredHelpDialog(40);
@@ -3341,15 +3343,22 @@ function() {
   showMessage('From now on, you can use blueprints during the wither challenge!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
-  state.updateAutoActionAmount(2);
+  state.updateAutoActionAmount(numAutoActionsUnlocked());
   showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
   showMessage('From now on, auto-actions can also be configured to activate weather, refresh brassica or pick up a fern!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
-  state.updateAutoActionAmount(3);
+  state.updateAutoActionAmount(numAutoActionsUnlocked());
   showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+},
+function() {
+  showMessage('From now on, auto-actions can also be configured to plant ethereal blueprints!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+},
+function() {
+  state.updateAutoActionAmount(numAutoActionsUnlocked(), true);
+  showMessage('An new limited kind of automaton auto-action unlocked, this one can only be configured to trigger at start of run (to set up correct starting fruit, ...).', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);
 
@@ -5730,6 +5739,9 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
   var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level, next_fruit_drop_level);
   return boost.mulr(s);
 }
+
+// in case of more spores than tree level requires, wait at least this time at that level anyway
+var tree_min_leveltime = 1;
 
 // outputs the minimum spores required for the tree to go to the given level
 function treeLevelReqBase(level) {

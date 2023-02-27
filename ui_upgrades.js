@@ -559,7 +559,7 @@ function updateUpgradeUI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
 
 
-    var chip = new Flex(scrollFlex, 0 * w + 0.01, [0.15, 0, y * h + 0.01, 0.27], (0 + 1) * w - 0.01, [0.15, 0, (y + 1) * h - 0.01, 0.27], undefined, true);
+    var chip = new Flex(scrollFlex, 0 * w + 0.01, [0.15, 0, y * h + 0.01, 0.27], (0 + 1) * w - 0.01, [0.15, 0, (y + 1) * h - 0.01, 0.27], undefined, /*align=*/4);
     upgradeFlexCache[i] = chip;
 
     styleButton(chip.div);

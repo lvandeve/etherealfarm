@@ -454,6 +454,7 @@ function endPreviousRun() {
     }
     if(state.treelevel >= c.targetlevel[0]) {
       var i = c2.completed;
+      c2.num_completed++;
       // whether a next stage of the challenge completed. Note, you can only complete one stage at the time, even if you immediately reach the target level of the highest stage, you only get 1 stage for now
       if(i < c.targetlevel.length && state.treelevel >= c.targetlevel[i]) {
         if(c.targetlevel.length > 1) {
@@ -461,10 +462,9 @@ function endPreviousRun() {
         } else {
           showMessage('Completed the challenge and got reward: ' + c.rewarddescription[i], C_UNLOCK, 38658833);
         }
-        c.rewardfun[i]();
         c2.completed++;
+        c.rewardfun[i]();
       }
-      c2.num_completed++;
     }
     if(c.targetlevel.length > 1 && c2.completed >= c.targetlevel.length) {
       c2.num_completed2++;
@@ -770,6 +770,9 @@ function beginNextRun(opt_challenge) {
 
   state.resinfruittime = 0;
   state.twigsfruittime = 0;
+  state.prevresinfruitratio = 0;
+  state.prevtwigsfruitratio = 0;
+  state.overlevel = false;
 
   state.just_evolution = false;
 
@@ -2343,7 +2346,13 @@ function doNextAutoChoice() {
 
 // returns true if the action is triggered, that is, its condition is satisfied
 // also returns true if condition is more than satisfied if possible (e.g. tree level higher than the given level, or runtime higher than the given level)
-function autoActionTriggerConditionReached(o) {
+function autoActionTriggerConditionReached(index, o) {
+  if(index == 0 && haveBeginOfRunAutoAction()) {
+    // this is the one that can only trigger at start of run
+    // despite the "also returns true if condition is more than satisfied" comment above, this one will only return true at the start, no other time
+    // this because for this one it should be prevented to trigger it if you edit it in the UI and enable it for the first time, since one would edit it for starting conditions of the game that don't match the current situation
+    return state.c_runtime < 10;
+  }
   if(o.type == 0 && state.treelevel >= o.level) {
     return true;
   }
@@ -2391,6 +2400,13 @@ function doAutoAction(index, part) {
         did_something = true;
       }
     }
+    if(o.enable_blueprint2) {
+      var b = state.blueprints2[o.blueprint2];
+      if(b) {
+        plantBluePrint2(b, true, true);
+        did_something = true;
+      }
+    }
     if(o.enable_fruit) {
       addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit});
       did_something = true;
@@ -2424,7 +2440,7 @@ function doAutoActions() {
     var o = state.automaton_autoactions[i];
     if(o.done && o.done2) continue;
     if(!o.enabled) continue;
-    var triggered = autoActionTriggerConditionReached(o);
+    var triggered = autoActionTriggerConditionReached(i, o);
     var triggered2 = o.done && !o.done2 && state.c_runtime >= o.time2;
     if(triggered && !o.enable_blueprint) triggered2 = true; // no need to wait for planting blueprint if there's none built
     if(!o.done && triggered) {
@@ -4781,8 +4797,13 @@ var update = function(opt_ignorePause) {
 
     var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
     var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
-    if(resin_fruit_level) state.resinfruittime += d;
-    if(twigs_fruit_level) state.twigsfruittime += d;
+    var enough_spores_for_next_level = (d < 5) && state.res.ge(treeLevelReq(state.treelevel + 1));
+    if(resin_fruit_level && !enough_spores_for_next_level) {
+      state.resinfruittime += d;
+    }
+    if(twigs_fruit_level && !enough_spores_for_next_level) {
+      state.twigsfruittime += d;
+    }
 
     ////////////////////////////////////////////////////////////////////////////
 
@@ -5176,9 +5197,22 @@ var update = function(opt_ignorePause) {
     ////////////////////////////////////////////////////////////////////////////
 
     var req = treeLevelReq(state.treelevel + 1);
-    if(state.time > state.lasttreeleveluptime + 1 && state.res.ge(req)) {
+    if(state.time > state.lasttreeleveluptime + tree_min_leveltime && state.res.ge(req)) {
+      // tree level up
       var resin = Num(0);
       var twigs = Num(0);
+
+      var treeleveltime = state.time - state.lasttreeleveluptime;
+
+      if(state.overlevel) {
+        // virtually set resinfruittime and twigsfruittime to that from earlier leveling, since swapping to a resin/twigs fruit while using over-leveled spores that were gained without the fruit does not count
+        // these state values are used in the currentTreeLevelResin and nextTwigs computations below
+        state.resinfruittime = treeleveltime * state.prevresinfruitratio;
+        state.twigsfruittime = treeleveltime * state.prevtwigsfruitratio;
+      } else {
+        state.prevresinfruitratio = state.resinfruittime / treeleveltime;
+        state.prevtwigsfruitratio = state.twigsfruittime / treeleveltime;
+      }
 
       var do_twigs = true;
       if(state.challenge && !challenges[state.challenge].allowstwigs) do_twigs = false;
@@ -5207,10 +5241,13 @@ var update = function(opt_ignorePause) {
 
       // this must happen after do_resin above, so that the state.lasttreeleveluptime is still used in the currentTreeLevelResin computation
       for(var i = 1; i < state.prevleveltime.length; i++) state.prevleveltime[state.prevleveltime.length - i] = state.prevleveltime[state.prevleveltime.length - 1 - i];
-      state.prevleveltime[0] = timeAtTreeLevel(state);;
-      state.lasttreeleveluptime = state.time;
+      state.prevleveltime[0] = timeAtTreeLevel(state);
       state.resinfruittime = 0;
       state.twigsfruittime = 0;
+
+      state.overlevel = state.res.ge(treeLevelReq(state.treelevel + 1));
+
+      state.lasttreeleveluptime = state.time;
 
       var showtreemessages = state.messagelogenabled[1] || state.treelevel >= state.g_treelevel;
 
@@ -5300,7 +5337,7 @@ var update = function(opt_ignorePause) {
           if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_NATURE, 1284767498);
         }
       }
-    }
+    } // end of tree levelup
 
     if(state.time >= state.recentweighedleveltime_time + 120 && state.res.ge(req)) {
       state.recentweighedleveltime_time = state.time;

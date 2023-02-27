@@ -207,7 +207,7 @@ function updateUpgrade2UI() {
     var y = ((unlocked.length + 1) >> 1) + 0.33;
     var w = 0.45;
 
-    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.25, 0, y * w + 0.01, 0.27], (0 + 1) * w - 0.01, [0.25, 0, (y + 1) * w - 0.01, 0.27], undefined, true);
+    var flex = new Flex(scrollFlex, 0 * w + 0.01, [0.25, 0, y * w + 0.01, 0.27], (0 + 1) * w - 0.01, [0.25, 0, (y + 1) * w - 0.01, 0.27], undefined, /*align=*/4);
     styleButton(flex.div);
     flex.div.innerText = 'See Completed Upgrades';
 

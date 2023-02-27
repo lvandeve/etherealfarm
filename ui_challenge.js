@@ -660,7 +660,9 @@ function showChallengeChip(challenge) {
   var c = challenges[challenge];
   var c2 = state.challenges[challenge];
 
-  challengeChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
+  var reward = c.rewarddescription[c2.completed];
+
+  challengeChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, reward ? 0.98 : 0.95);
   challengeChipFlex.div.style.backgroundColor = '#fcce';
   challengeChipFlex.div.style.zIndex = 15;
 
@@ -668,12 +670,17 @@ function showChallengeChip(challenge) {
   //textFlex.div.style.color = '#fff';
   textFlex.div.style.color = '#000';
   centerText2(textFlex.div);
-  var text = 'Challenge Completed!';
+  var text = 'Challenge \"' + upper(c.name) + '\" Completed!';
   if(c.targetlevel.length > 1) {
     if(c2.completed > 0 && c2.completed + 1 < c.targetlevel.length) text = 'Next challenge stage completed!';
     else if(c2.completed + 1 >= c.targetlevel.length) text = 'Final challenge stage completed!';
   }
-  textFlex.div.textEl.innerHTML = text + '<br><br>\"' + upper(c.name) + '\"';
+
+  if(reward) {
+    text += '<br><br>Reward: ' + upper(reward) + '';
+  }
+
+  textFlex.div.textEl.innerHTML = text;
 
   addButtonAction(challengeChipFlex.div, removeChallengeChip);
 }

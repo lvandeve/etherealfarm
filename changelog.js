@@ -22,6 +22,13 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.8.2 (2023-02-27):';
+  text += '<br/>• Added two more wither challenge reward levels for auto-actions';
+  text += '<br/> - Ethereal auto-blueprints. Note: if you use this feature, ensure to keep your ethereal blueprints up to date to not make it plant outdated ones!';
+  text += '<br/> - Another auto-action slot, but this one is limited and only works at start-of-run. It cat automatically set the correct fruit, weather, ... at start of runs. It can also be activated with the 0-key if number keys are configured for auto-actions.';
+  text += '<br/>• Tweaks and fixes';
+  text += '<br/><br/>';
+
   text += '0.8.0 (2023-02-05):';
   text += '<br/>• Added emerald fruit tier, dropping starting from tree level 160. Changes compared to sapphire fruits: one more ability slot, a new ability type added, bee and weather ability types removed';
   text += '<br/>• Fruit growth speed values slightly tweaked for more spread across tiers.';

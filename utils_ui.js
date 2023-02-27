@@ -1049,10 +1049,10 @@ example: same as previous example but not square but rectangle that must keep co
 example: button in bottom right corner with always a width/height ratio (of butotn itself) of 2/1 (here 0.3/0.15): [1.0, 0, -0.3], [1.0, 0, -0.15], [1.0, 0, -0.01], [1.0, 0, -0.01]
 The fontSize lets the Flex also manage font size. This value does not support the 3-element array, just single number, and will be based on min(w*10, h) of the current element's computed size.
 */
-function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_centered) {
+function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
   this.fontSize = opt_fontSize;
 
-  this.center = !!opt_centered;
+  this.align = opt_align; // 0: top/left, 1: hcenter, 2: right, 3: vcenter, 6: bottom. Add h and v values for combinations: 4 for fully centered, 8 for bottom right, ...
 
   this.isroot = !parent || (parent.div == document.body);
 
@@ -1115,9 +1115,28 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_centered) {
 
   //var parentdiv = parent ? parent.div : document.body;
   var parentdiv = parent ? parent.div : Utils.doNotAddToParent;
-  this.div = makeDiv(0, 0, 0, 0, parentdiv);
-  this.div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
+  this.div_ = makeDiv(0, 0, 0, 0, parentdiv);
+  this.div_.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
+  this.div = this.div_; // publically visible div, usually same as div_, not if it has to use shenanigans to support vertical alignment
   this.elements = [];
+
+  if(this.align > 0) {
+    var h = this.align % 3;
+    var v = Math.floor(this.align / 3);
+    if(v != 0) {
+      // vertical align requires some really difficult treatment in CSS
+      this.div_.style.display = 'table';
+      this.div_.style.width = '100%';
+      this.div_.style.height = '100%';
+      this.div = util.makeElement('div', this.div_);
+      this.div.style.display = 'table-cell';
+      this.div.style.verticalAlign = (v == 0) ? 'top' : ((v == 1) ? 'middle' : 'bottom');
+      this.div.style.textAlign = (h == 0) ? 'left' : ((h == 1) ? 'center' : 'right');
+    } else {
+      // horizontal align isn't as demanding
+      this.div_.style.textAlign = (h == 0) ? 'left' : ((h == 1) ? 'center' : 'right');
+    }
+  }
 
   this.updateSelf(parentdiv);
 }
@@ -1136,11 +1155,11 @@ Flex.prototype.attachTo = function(parent) {
     this.isroot = true;
     parentdiv = parent;
   }
-  /*if(this.div.parentElement != parentdiv) {
-    util.removeElement(this.div);
-    parentdiv.appendChild(this.div)
+  /*if(this.div_.parentElement != parentdiv) {
+    util.removeElement(this.div_);
+    parentdiv.appendChild(this.div_)
   }*/
-  parentdiv.appendChild(this.div)
+  parentdiv.appendChild(this.div_)
   //this.updateSelf(parentdiv);
   this.update(parentdiv);
 };
@@ -1151,7 +1170,7 @@ var Flex_prevParent_clientWidth = undefined;
 var Flex_prevParent_clientHeight = undefined;
 
 Flex.prototype.getDim_ = function(parentdiv) {
-  if(this.div == Flex_prevParent) Flex_prevParent = undefined;
+  if(this.div_ == Flex_prevParent) Flex_prevParent = undefined;
   var w, h;
   if(this.isroot || !parentdiv) {
     w = window.innerWidth;
@@ -1173,7 +1192,7 @@ Flex.prototype.getDim_ = function(parentdiv) {
 }
 
 Flex.prototype.updateSelf = function(parentdiv) {
-  //if(!parentdiv) parentdiv = this.div.parentElement;
+  //if(!parentdiv) parentdiv = this.div_.parentElement;
   var dim = this.getDim_(parentdiv);
   var w = dim[0];
   var h = dim[1];
@@ -1182,36 +1201,26 @@ Flex.prototype.updateSelf = function(parentdiv) {
   var y0 = h * this.y0 + w * this.y0o + Math.min(this.y0f * w, h) * this.y0b + this.y0p;
   var x1 = w * this.x1 + h * this.x1o + Math.min(w, this.x1f * h) * this.x1b + this.x1p;
   var y1 = h * this.y1 + w * this.y1o + Math.min(this.y1f * w, h) * this.y1b + this.y1p;
-  this.div.style.left = Math.floor(x0) + 'px';
-  this.div.style.top = Math.floor(y0) + 'px';
-  this.div.style.width = Math.floor(x1 - x0) + 'px';
-  this.div.style.height = Math.floor(y1 - y0) + 'px';
+  this.div_.style.left = Math.floor(x0) + 'px';
+  this.div_.style.top = Math.floor(y0) + 'px';
+  this.div_.style.width = Math.floor(x1 - x0) + 'px';
+  this.div_.style.height = Math.floor(y1 - y0) + 'px';
   if(this.fontSize) {
-    //this.div.style.fontSize = Math.floor(Math.min(x1 - x0, y1 - y0) * this.fontSize) + 'px';
-    //this.div.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * this.fontSize) + 'px';
-    //this.div.style.fontSize = '26px';
-    //this.div.style.fontSize = '100%';
+    //this.div_.style.fontSize = Math.floor(Math.min(x1 - x0, y1 - y0) * this.fontSize) + 'px';
+    //this.div_.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * this.fontSize) + 'px';
+    //this.div_.style.fontSize = '26px';
+    //this.div_.style.fontSize = '100%';
   }
 
   if(this.fontSize == FONT_FULL) {
-    this.div.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * 2) + 'px';
+    this.div_.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * 2) + 'px';
   } else {
     var multiplier = 1.0;
     if(this.fontSize == FONT_BIG_BUTTON) multiplier = 1.4;
     else if(this.fontSize == FONT_DIALOG_BUTTON) multiplier = 1.25;
     else if(this.fontSize == FONT_SMALL) multiplier = 0.9;
     else if(this.fontSize == FONT_TITLE) multiplier = 1.5;
-    this.div.style.fontSize = Math.floor(getGlobalFontSize() * multiplier) + 'px';
-  }
-
-
-
-  if(this.center) {
-    var divheight = this.div.clientHeight;
-    // the next 3 properties are to center text horizontally and vertically
-    this.div.style.textAlign = 'center';
-    this.div.style.verticalAlign = 'middle';
-    this.div.style.lineHeight = divheight + 'px';
+    this.div_.style.fontSize = Math.floor(getGlobalFontSize() * multiplier) + 'px';
   }
 };
 
@@ -1224,15 +1233,15 @@ Flex.prototype.update = function(opt_parentdiv) {
   }
 
   for(var i = 0; i < this.elements.length; i++) {
-    this.elements[i].update(this.div);
+    this.elements[i].update(this.div_);
   }
 }
 
 // remove self from parent, from both Flex and DOM
 // parent must be given, Flex does not keep a reference to its own parent, only children
 Flex.prototype.removeSelf = function(parent) {
-  if(this.div == Flex_prevParent) Flex_prevParent = undefined;
-  util.removeElement(this.div);
+  if(this.div_ == Flex_prevParent) Flex_prevParent = undefined;
+  util.removeElement(this.div_);
   if(parent) {
     var e = parent.elements;
     for(var i = 0; i < e.length; i++) {
@@ -1246,13 +1255,13 @@ Flex.prototype.removeSelf = function(parent) {
 
 // removes all children and inner HTML (but not style) of own div as well, but keeps self existing
 Flex.prototype.clear = function() {
-  if(this.div == Flex_prevParent) Flex_prevParent = undefined;
+  if(this.div_ == Flex_prevParent) Flex_prevParent = undefined;
   for(var i = 0; i < this.elements.length; i++) {
     if(this.elements[i].div == Flex_prevParent) Flex_prevParent = undefined;
     util.removeElement(this.elements[i].div);
   }
   this.elements = [];
-  this.div.innerHTML = '';
+  this.div_.innerHTML = '';
 }
 
 ////////////////////////////////////////////////////////////////////////////////

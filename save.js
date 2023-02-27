@@ -501,6 +501,9 @@ function encState(state, opt_raw_only) {
   processTime(state.infinitystarttime);
   processTimeArray(state.recentweighedleveltime);
   processTime(state.recentweighedleveltime_time);
+  processFloat2(state.prevresinfruitratio);
+  processFloat2(state.prevtwigsfruitratio);
+  processBool(state.overlevel);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -671,7 +674,7 @@ function encState(state, opt_raw_only) {
     processBool(o.done);
     processUint6(o.type);
     processUint(o.blueprint);
-    processBool(o.ethereal);
+    processBool(o.enable_blueprint2);
     processUint(o.level);
     processUint(o.crop);
     processUint(o.prestige);
@@ -685,6 +688,7 @@ function encState(state, opt_raw_only) {
     processBool(o.enable_fern);
     processBool(o.done2);
     processTime(o.time2);
+    processUint(o.blueprint2);
     processStructEnd();
   }
   processStructArrayEnd();
@@ -1664,6 +1668,9 @@ function decState(s) {
     if(error || state.recentweighedleveltime.length != 2) return err(4);
     state.recentweighedleveltime_time = processTime();
   }
+  if(save_version >= 262144*2+64*8+2) state.prevresinfruitratio = processFloat2();
+  if(save_version >= 262144*2+64*8+2) state.prevtwigsfruitratio = processFloat2();
+  if(save_version >= 262144*2+64*8+2) state.overlevel = processBool();
   if(error) return err(4);
 
 
@@ -2015,7 +2022,7 @@ function decState(s) {
       o.done = processBool();
       o.type = processUint6();
       o.blueprint = processUint();
-      o.ethereal = processBool();
+      o.enable_blueprint2 = processBool();
       o.level = processUint();
       if(save_version >= 262144*2+64*6+0) o.crop = processUint();
       if(save_version >= 262144*2+64*6+0) o.prestige = processUint();
@@ -2034,6 +2041,7 @@ function decState(s) {
       if(save_version >= 262144*2+64*6+4) o.enable_fern = processBool();
       if(save_version >= 262144*2+64*6+5) o.done2 = processBool();
       if(save_version >= 262144*2+64*6+5) o.time2 = processTime();
+      if(save_version >= 262144*2+64*8+2) o.blueprint2 = processUint();
 
       processStructEnd();
     }

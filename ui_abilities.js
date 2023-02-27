@@ -630,7 +630,6 @@ document.addEventListener('keydown', function(e) {
     if(numberfun == 0) return;
 
     var number = key - '0';
-    if(number == '0') number = 10; // keyboard has the 0 after the 9 instead of before the 1
 
     if(numberfun == 1) {
       if(key == '1') {
@@ -646,8 +645,10 @@ document.addEventListener('keydown', function(e) {
         update();
       }
     } else if(numberfun == 2) {
+      if(number == '0') number = 10; // keyboard has the 0 after the 9 instead of before the 1
       setTabNumber(number - 1);
     } else if(numberfun == 3) {
+      if(number == '0') number = 10; // keyboard has the 0 after the 9 instead of before the 1
       var index = number - 1;
       // even though it's possible and allowed to select a slot with no fruit in it, allow keyboard shortcuts only to select actual fruits, to avoid accidental keypresses setting the fruit to nothing and silently making a run harder
       if(index < state.fruit_stored.length && index < getNumFruitArrows()) {
@@ -655,7 +656,8 @@ document.addEventListener('keydown', function(e) {
         update();
       }
     } else if(numberfun == 4) {
-      number--;
+      // unlike for fruits, for this one 0 truly means 0 instead of 10, for the start-only auto-action
+      if(!haveBeginOfRunAutoAction()) number--; // when having the start-only auto-action, that one has visual index 0. The regular ones start at 1.
       if(number >= 0 && number < state.automaton_autoactions.length) {
         doAutoActionManually(number);
       }

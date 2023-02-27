@@ -434,9 +434,8 @@ function AutoActionState() {
   this.enable_blueprint = false;
   this.blueprint = 0; // index of blueprint to use + 1, or 0 if not yet configured
 
-  // TODO: rename to enable_ethereal_blueprint once supported
-  this.ethereal = false; // if true, replaces ethereal blueprint instead (not yet supported)
-  this.ethereal_blueprint = 0; // index of ethereal blueprint to use + 1, or 0 if not yet configured (not yet supported)
+  this.enable_blueprint2 = false; // if true, replaces ethereal blueprint instead
+  this.blueprint2 = 0; // index of ethereal blueprint to use + 1, or 0 if not yet configured
 
   this.enable_fruit = false;
   this.fruit = 0; // fruit slot for enable_fruit
@@ -517,6 +516,10 @@ function State() {
   // for the fruit abilities that increase twigs and resin
   this.resinfruittime = 0;
   this.twigsfruittime = 0;
+  this.prevresinfruitratio = 0;
+  this.prevtwigsfruitratio = 0;
+  this.overlevel = false; // when this tree level was reached with spores from the previous level
+
   this.infinitystarttime = 0; // when the infinity field was started
 
   this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively
@@ -743,7 +746,7 @@ function State() {
   */
   this.automaton_autoaction = 0;
 
-  this.automaton_autoactions = []; // array of AutoActionState. TODO: rename to automaton_autoactions
+  this.automaton_autoactions = []; // array of AutoActionState. The first one (index 0) is special: that one is always activated at start of a run (time 0), so has no configurable trigger condition
 
   // challenges
   this.challenge = 0;
@@ -1154,7 +1157,8 @@ State.prototype.initEvolutionAndHatImages = function() {
   for(var i = 0; i < images_automaton.length; i++) regenerateImageCanvas(image_automaton, images_automaton[i]);
 };
 
-State.prototype.updateAutoActionAmount = function(amount) {
+// opt_insert_at_front: set to true to insert new ones at the front. This should be used for when the start-only auto-action is unlocked, since that one is from then on always at index 0.
+State.prototype.updateAutoActionAmount = function(amount, opt_insert_at_front) {
   if(amount == this.automaton_autoactions.length) return;
 
   if(amount < this.automaton_autoactions.length) {
@@ -1162,7 +1166,11 @@ State.prototype.updateAutoActionAmount = function(amount) {
     return;
   }
 
-  while(this.automaton_autoactions.length < amount) this.automaton_autoactions.push(new AutoActionState());
+  if(opt_insert_at_front) {
+    while(this.automaton_autoactions.length < amount) this.automaton_autoactions.unshift(new AutoActionState());
+  } else {
+    while(this.automaton_autoactions.length < amount) this.automaton_autoactions.push(new AutoActionState());
+  }
 }
 
 function lastTreeLevelUpTime(state) {
@@ -2148,15 +2156,21 @@ function autoActionUnlocked(opt_state) {
   return true;
 }
 
-// returns amount of auto-actions that are unlocked
+// returns amount of auto-actions that are unlocked, including the begin-of-run-only one if that one is unlocked
 // opt_state: if given, uses this state instead of the global state
 function numAutoActionsUnlocked(opt_state) {
   var s = opt_state || state;
   if(!autoActionUnlocked(opt_state)) return 0;
   // stages of the wither challenge that give extra auto-actions
+  if(s.challenges[challenge_wither].completed >= 7) return 4; // this is the one that can only be used at start of run, not a full fledged one
   if(s.challenges[challenge_wither].completed >= 5) return 3;
   if(s.challenges[challenge_wither].completed >= 3) return 2;
   return 1;
+}
+
+function haveBeginOfRunAutoAction(opt_state) {
+  var s = opt_state || state;
+  return s.challenges[challenge_wither].completed >= 7;
 }
 
 function autoActionEnabled() {
@@ -2174,6 +2188,11 @@ function autoPrestigeUnlocked() {
 // whether the extra auto-actions, that is weather, refresh brassica and fern, are unlocked
 function autoActionExtraUnlocked() {
   return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 4;
+}
+
+// whether more extra auto-actions, that is ethereal blueprint, are unlocked
+function autoActionExtra2Unlocked() {
+  return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 6;
 }
 
 function autoPrestigeEnabled() {
