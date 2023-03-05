@@ -3236,16 +3236,19 @@ function() {
 }, 0);
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135], Num(0.05),
+var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135, 165, 195, 225], Num(0.05),
 `The field has rocks on which you can't plant. The rock pattern is randomly generated at the start of the challenge, but will always be the same within the same when starting in the same 3-hour time interval (based on global UTC time)`,
 `
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are randomized unremovable rocks on the field, blocking the planting of crops<br>
 `,
-['one extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits'],
+['one extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits'],
 'reaching tree level 15',
 function() { return state.treelevel >= 15; },
 [
+function() { state.fruit_slots++; },
+function() { state.fruit_slots++; },
+function() { state.fruit_slots++; },
 function() { state.fruit_slots++; },
 function() { state.fruit_slots++; },
 function() { state.fruit_slots++; },
@@ -4616,6 +4619,10 @@ upgrade2_register_id = 800;
 LEVEL2 = 14;
 upgrade2_register_id = 900;
 
+var upgrade2_extra_fruit_slot6 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:1e15,essence:2e6}), 2, function() {
+  state.fruit_slots++;
+}, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[6]);
+
 ///////////////////////////
 LEVEL2 = 15;
 upgrade2_register_id = 1000;
@@ -4655,6 +4662,10 @@ var upgrade2_field2_8x8 = registerUpgrade2('ethereal field 8x8', LEVEL2, Res({re
 ///////////////////////////
 LEVEL2 = 19;
 upgrade2_register_id = 1400;
+
+var upgrade2_extra_fruit_slot7 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:20e19,essence:10e6}), 2, function() {
+  state.fruit_slots++;
+}, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[7]);
 
 ///////////////////////////
 LEVEL2 = 20;
@@ -5392,6 +5403,12 @@ function fruitSeasonMix(a, b, fruitmix) {
   else if(b == 8) b2 = 9;
   else if(b == 9 || b == 10) b2 = 15;
 
+  // allow to keep 2-season fruits when fused with a contained 1-season fruit
+  if((a2 == 3 || b2 == 3) && ((a2 | b2) == 3) && ((a2 & b2) != 0)) return 5; // mango
+  if((a2 == 6 || b2 == 6) && ((a2 | b2) == 6) && ((a2 & b2) != 0)) return 6; // plum
+  if((a2 == 12 || b2 == 12) && ((a2 | b2) == 12) && ((a2 & b2) != 0)) return 7; // quince
+  if((a2 == 9 || b2 == 9) && ((a2 | b2) == 9) && ((a2 & b2) != 0)) return 8; // kumquat
+
   // the type when going down: still keeps for example winter if both a and b support winter (e.g. star fruit + quince, or quince + medlar)
   var c2 = a2 & b2;
 
@@ -5875,14 +5892,13 @@ function treeLevelResin(level, breakdown) {
     if(breakdown) breakdown.push(['mistletoe malus (' + count + ')', true, malus, resin.clone()]);
   }
 
-  var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
-  if(resin_fruit_level > 0) {
-    var resin_fruit_bonus = Num(0);
+  if(state.resinfruitspores.gtr(0)) {
     var ratio = state.resinfruitspores.div(state.fruitspores_total);
-    if(!(ratio.gter(0) && ratio.lter(1))) ratio = Num(1); // normally doesn't happen, but prevent bad issues with NaN resources if a bug would happen
-    resin_fruit_bonus = getFruitBoost(FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(true)).mul(ratio).addr(1);
-    resin.mulInPlace(resin_fruit_bonus);
-    if(breakdown) breakdown.push(['fruit resin boost', true, resin_fruit_bonus, resin.clone()]);
+    if(!ratio.isNaNOrInfinity() && ratio.gter(0)) {
+      var mul = ratio.addr(1);
+      resin.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit resin boost', true, mul, resin.clone()]);
+    }
   }
 
   return resin;
@@ -5967,16 +5983,14 @@ function treeLevelTwigs(level, breakdown) {
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_bonus, res.clone()]);
   }
 
-  var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
-  if(twigs_fruit_level > 0) {
-    var twigs_fruit_bonus = Num(0);
+  if(state.twigsfruitspores.gtr(0)) {
     var ratio = state.twigsfruitspores.div(state.fruitspores_total);
-    if(!(ratio.gter(0) && ratio.lter(1))) ratio = Num(1); // normally doesn't happen, but prevent bad issues with NaN resources if a bug would happen
-    twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true)).mul(ratio).addr(1);
-    res.twigs.mulInPlace(twigs_fruit_bonus);
-    if(breakdown) breakdown.push(['fruit twigs boost', true, twigs_fruit_bonus, res.twigs.clone()]);
+    if(!ratio.isNaNOrInfinity() && ratio.gter(0)) {
+      var mul = ratio.addr(1);
+      res.twigs.mulInPlace(mul);
+      if(breakdown) breakdown.push(['fruit twigs boost', true, mul, res.twigs.clone()]);
+    }
   }
-
 
   return res;
 }
@@ -8030,6 +8044,21 @@ var medal_rock4 = registerMedal('rocking on', 'completed the rocks challenge sta
   return state.challenges[challenge_rocks].completed >= 5;
 }, Num(5));
 changeMedalDisplayOrder(medal_rock4, medal_rock3);
+
+var medal_rock5 = registerMedal('rock pun VI', 'completed the rocks challenge stage 6', images_rock[2], function() {
+  return state.challenges[challenge_rocks].completed >= 6;
+}, Num(10));
+changeMedalDisplayOrder(medal_rock5, medal_rock4);
+
+var medal_rock6 = registerMedal('rock pun VII', 'completed the rocks challenge stage 7', images_rock[3], function() {
+  return state.challenges[challenge_rocks].completed >= 7;
+}, Num(20));
+changeMedalDisplayOrder(medal_rock6, medal_rock5);
+
+var medal_rock7 = registerMedal('rock pun VIII', 'completed the rocks challenge stage 8', images_rock[4], function() {
+  return state.challenges[challenge_rocks].completed >= 8;
+}, Num(50));
+changeMedalDisplayOrder(medal_rock7, medal_rock6);
 
 medal_register_id = 2120;
 

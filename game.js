@@ -768,11 +768,6 @@ function beginNextRun(opt_challenge) {
     state.lastPlanted = brassica_0;
   }
 
-  /*state.resinfruittime = 0;
-  state.twigsfruittime = 0;
-  state.prevresinfruitratio = 0;
-  state.prevtwigsfruitratio = 0;
-  state.overlevel = false;*/
   state.resinfruitspores = Num(0);
   state.twigsfruitspores = Num(0);
 
@@ -5191,10 +5186,14 @@ var update = function(opt_ignorePause) {
 
 
     state.fruitspores_total = state.c_res.spores.add(actualgain.spores);
-    if(getFruitAbility(FRUIT_RESINBOOST, true)) {
-      state.resinfruitspores.addInPlace(actualgain.spores);
+    var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
+    if(resin_fruit_level) {
+      var resin_fruit_bonus = getFruitBoost(FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(true));
+      state.resinfruitspores.addInPlace(actualgain.spores.mul(resin_fruit_bonus));
     }
-    if(getFruitAbility(FRUIT_TWIGSBOOST, true)) {
+    var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
+    if(twigs_fruit_level) {
+      var twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true));
       state.twigsfruitspores.addInPlace(actualgain.spores);
     }
 

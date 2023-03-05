@@ -22,6 +22,13 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.8.4 (2023-03-05):';
+  text += '<br/>• Resin/twigs fruit bonus now also works when they aren\'t active but have given some spores buildup before.';
+  text += '<br/>• Added more rocks challenge reward stages.';
+  text += '<br/>• Added more ethereal upgrades for fruit slots.';
+  text += '<br/>• 2-season fruit fusing bugfix.';
+  text += '<br/><br/>';
+
   text += '0.8.3 (2023-03-05):';
   text += '<br/>• Rebalanced the resin and twigs fruits to be about as good as before the "fern trick" for high level fruits, but without needing the trick. The resin/twigs given are now based on spore production with any resin/twigs active instead of time, they now give an additional small production bonus, and the resin/twigs bonus itself is increased.';
   text += '<br/>• Unused twigs now also give a little bit of production bonus, but much less than resin does.';
