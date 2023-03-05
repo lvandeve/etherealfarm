@@ -22,10 +22,21 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.8.3 (2023-03-05):';
+  text += '<br/>• Rebalanced the resin and twigs fruits to be about as good as before the "fern trick" for high level fruits, but without needing the trick. The resin/twigs given are now based on spore production with any resin/twigs active instead of time, they now give an additional small production bonus, and the resin/twigs bonus itself is increased.';
+  text += '<br/>• Unused twigs now also give a little bit of production bonus, but much less than resin does.';
+  text += '<br/>• "Final form" restriction of fruit fusing obsoleted: dragon fruits and star fruits can now be mixed with anything, but the result is the lowest fruit type.';
+  text += '<br/>• New fruits now show up at the beginning, rather than at the end, of the sacrificial pool, so the higher ones will be visible at the front instead of at the back';
+  text += '<br/>• Using the shortcuts p, u or d on crops of the field no longer picks up ferns.';
+  text += '<br/>• Added shortcut shift+p to overplant crop (reminder: without shift, p picks (=remembers) a crop, and plants it on empty field).';
+  text += '<br/>• Small fixes';
+  text += '<br/><br/>';
+
   text += '0.8.2 (2023-02-27):';
   text += '<br/>• Added two more wither challenge reward levels for auto-actions';
   text += '<br/> - Ethereal auto-blueprints. Note: if you use this feature, ensure to keep your ethereal blueprints up to date to not make it plant outdated ones!';
-  text += '<br/> - Another auto-action slot, but this one is limited and only works at start-of-run. It cat automatically set the correct fruit, weather, ... at start of runs. It can also be activated with the 0-key if number keys are configured for auto-actions.';
+  text += '<br/> - Another auto-action slot, but this one is limited and only works at start-of-run. It can automatically set the correct fruit, weather, ... at start of runs. It can also be activated with the 0-key if number keys are configured for auto-actions.';
+  text += '<br/>• Removed "fern trick" with resin/twigs fruits'; // unintended trick with resin/twigs fruits: equipping it after clicking fern that produces lots of spores with regular spore fruit when tree is over-leveled
   text += '<br/>• Tweaks and fixes';
   text += '<br/><br/>';
 

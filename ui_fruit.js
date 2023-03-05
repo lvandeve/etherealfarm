@@ -105,8 +105,9 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_WINTER_SPRING: return 'boosts the winter tree warmth effect and the spring flower boost, only during the respective seasons';
     case FRUIT_ALL_SEASON: return 'boosts the special effect of each of the 4 seasons, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
     case FRUIT_ALL_SEASON2: return 'boosts the special effect of each of the 4 seasons, even more for dragon fruit, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
-    case FRUIT_RESINBOOST: return 'boost resin income (with a soft cap), taking into account the time this fruit was active';
-    case FRUIT_TWIGSBOOST: return 'boost twigs income (with a soft cap), taking into account the time this fruit was active';
+    // "taking into account the time this fruit was active" now means: it takes into account how many spores were produced while any fruit with resin boost (respectively twigs boost) was active, vs while other fruits were active. The more spores produced while such fruit active, the more of the boost is given.
+    case FRUIT_RESINBOOST: return 'boost resin income (with a soft cap), taking into account the time this fruit was active. In addition slightly boosts the unspent resin production bonus.';
+    case FRUIT_TWIGSBOOST: return 'boost twigs income (with a soft cap), taking into account the time this fruit was active. In addition slightly boosts the unspent twigs production bonus.';
     case FRUIT_NUTBOOST: return 'boosts nuts production (with a soft cap)';
     case FRUIT_BEEBOOST: return 'boosts the beehive bonus';
     case FRUIT_MIX: return 'divides given boost over nettle, brassica and bee, balanced differently for spores and seeds, but only additively if corresponding non-mix abilities are present';

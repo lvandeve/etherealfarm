@@ -273,6 +273,8 @@ function getResourceDetails(index) {
       text += '<br><br>';
       text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
       text += '<br><br>';
+      text += 'Production boost for unspent twigs: ' + getUnusedTwigsBonus().subr(1).toPercentString();
+      text += '<br><br>';
       text += 'Collected upcoming twigs: ' + upcoming.toString()
       if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.twigs.toString() + ' at level ' + state.p_treelevel + ')';
       text += '<br>';

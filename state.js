@@ -514,11 +514,14 @@ function State() {
   this.lasttree2leveluptime = 0;
   this.lastambertime = 0;
   // for the fruit abilities that increase twigs and resin
-  this.resinfruittime = 0;
+  /*this.resinfruittime = 0;
   this.twigsfruittime = 0;
   this.prevresinfruitratio = 0;
   this.prevtwigsfruitratio = 0;
-  this.overlevel = false; // when this tree level was reached with spores from the previous level
+  this.overlevel = false; // when this tree level was reached with spores from the previous level*/
+  this.resinfruitspores = Num(0); // spores gained while any resin-ability fruit was active
+  this.twigsfruitspores = Num(0); // spores gained while any twigs-ability fruit was active
+  this.fruitspores_total = Num(0); // not saved, computed during update() as a more-frequently-updated version of c_res.spores due to intermediate computations involving resinfruitspores and twigsfruitspores before the final c_res update
 
   this.infinitystarttime = 0; // when the infinity field was started
 
@@ -863,7 +866,7 @@ function State() {
   this.c_starttime = 0; // starttime of current run
   this.c_runtime = 0;
   this.c_numticks = 0;
-  this.c_res = Res();
+  this.c_res = Res(); // resources gained this run, all income this run without subtracting costs, including both production and one-time income
   this.c_max_res = Res();
   this.c_max_prod = Res();
   this.c_numferns = 0;
@@ -1904,7 +1907,9 @@ function getFruit(slot) {
 
 // set f to something falsy to unset the fruit
 // will shift/resize arrays to fit the updated collection
-function insertFruit(slot, f) {
+// does not support inserting a fruit in the middle, use insertFruit for that
+// TODO: use insertFruit for everything that currently uses this
+function setOrAppendFruit(slot, f) {
   if(slot < 100) {
     var j = slot;
     if(f) {
@@ -1922,6 +1927,48 @@ function insertFruit(slot, f) {
     var j = slot - 100;
     if(f) {
       if(j > state.fruit_sacr.length) j = state.fruit_sacr.length;
+      state.fruit_sacr[j] = f;
+      f.slot = j + 100;
+    } else {
+      for(var i = j; i + 1 < state.fruit_sacr.length; i++) {
+        state.fruit_sacr[i] = state.fruit_sacr[i + 1];
+        state.fruit_sacr[i].slot = i + 100;
+      }
+      state.fruit_sacr.length = state.fruit_sacr.length - 1;
+    }
+  }
+}
+
+function insertFruit(slot, f) {
+  if(slot < 100) {
+    var j = slot;
+    if(f) {
+      if(j > state.fruit_stored.length) j = state.fruit_stored.length;
+      if(j < state.fruit_stored.length) {
+        for(var i = state.fruit_stored.length; i > j; i--) {
+          state.fruit_stored[i] = state.fruit_stored[i - 1];
+          state.fruit_stored[i].slot = i;
+        }
+      }
+      state.fruit_stored[j] = f;
+      f.slot = j;
+    } else {
+      for(var i = j; i + 1 < state.fruit_stored.length; i++) {
+        state.fruit_stored[i] = state.fruit_stored[i + 1];
+        state.fruit_stored[i].slot = i;
+      }
+      state.fruit_stored.length = state.fruit_stored.length - 1;
+    }
+  } else {
+    var j = slot - 100;
+    if(f) {
+      if(j > state.fruit_sacr.length) j = state.fruit_sacr.length;
+      if(j < state.fruit_sacr.length) {
+        for(var i = state.fruit_sacr.length; i > j; i--) {
+          state.fruit_sacr[i] = state.fruit_sacr[i - 1];
+          state.fruit_sacr[i].slot = i + 100;
+        }
+      }
       state.fruit_sacr[j] = f;
       f.slot = j + 100;
     } else {

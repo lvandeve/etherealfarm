@@ -700,6 +700,41 @@ function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
   return c2;
 }
 
+function getDowngradeCrop(x, y, opt_cost) {
+  if(!state.field[y]) return null;
+  var f = state.field[y][x];
+  if(!f) return null;
+  var c = f.getCrop();
+  if(!c) return null;
+
+  if(c.type == CROPTYPE_CHALLENGE) return null;
+  var tier = c.tier - 1;
+
+  var recoup = c.getRecoup();
+
+  var c2 = null;
+
+  if(tier < -1) return null;
+
+  var c3 = croptype_tiers[c.type][tier];
+  if(!c3 || !state.crops[c3.index].unlocked) return null;
+
+  var cost = c3.getCost().sub(recoup);
+  if(opt_cost != undefined) {
+    opt_cost[0] = cost;
+    c2 = c3;
+  }
+
+  // a downgrade may be more expensive if you have way more of that crop so it scaled up a lot, e.g. for lotuses
+  if(cost.le(state.res)) {
+    if(opt_cost != undefined) opt_cost[1] = false;
+  } else {
+    if(opt_cost != undefined) opt_cost[1] = true;
+  }
+
+  return c2;
+}
+
 function makeUpgradeCropAction(x, y, opt_silent) {
   var too_expensive = [undefined];
   var c2 = getUpgradeCrop(x, y, too_expensive);
@@ -724,6 +759,21 @@ function makeUpgradeCropAction(x, y, opt_silent) {
     }
   }
   return false;
+}
+
+function makeDowngradeCropAction(x, y, opt_silent) {
+  var too_expensive = [undefined];
+  var c2 = getDowngradeCrop(x, y, too_expensive);
+
+  if(c2 && !too_expensive[1]) {
+    addAction({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
+  } else if(c2 && too_expensive[1]) {
+    // TODO: instead go to an even lower tier?
+    showMessage('not enough resources for lower crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() + ', need ' + too_expensive[0].toString() + '. This can happen if you have a lot of the lower tier crop planted.', C_INVALID, 0, 0);
+  } else if(!c2) {
+    showMessage('Crop not replaced, no lower tier available', C_INVALID);
+  }
+  return true;
 }
 
 function makeFieldDialog(x, y) {

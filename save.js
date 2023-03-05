@@ -493,17 +493,19 @@ function encState(state, opt_raw_only) {
   processTime(state.lastambertime);
   processBool(state.paused);
   processUint(state.squirrel_respec_tokens);
-  processTime(state.resinfruittime);
-  processTime(state.twigsfruittime);
+  //processTime(state.resinfruittime);
+  //processTime(state.twigsfruittime);
+  processNum(state.resinfruitspores);
+  processNum(state.twigsfruitspores);
   processTimeArray(state.prevleveltime);
   processTime(state.lastEtherealDeleteTime);
   processTime(state.lastEtherealPlantTime);
   processTime(state.infinitystarttime);
   processTimeArray(state.recentweighedleveltime);
   processTime(state.recentweighedleveltime_time);
-  processFloat2(state.prevresinfruitratio);
-  processFloat2(state.prevtwigsfruitratio);
-  processBool(state.overlevel);
+  //processFloat2(state.prevresinfruitratio);
+  //processFloat2(state.prevtwigsfruitratio);
+  //processBool(state.overlevel);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -1654,8 +1656,10 @@ function decState(s) {
   if(save_version >= 4096*1+71) state.lastambertime = processTime();
   if(save_version >= 4096*1+72) state.paused = processBool();
   if(save_version >= 4096*1+74) state.squirrel_respec_tokens = processUint();
-  if(save_version >= 4096*1+83) state.resinfruittime = processTime();
-  if(save_version >= 4096*1+83) state.twigsfruittime = processTime();
+  //if(save_version >= 4096*1+83) state.resinfruittime = processTime();
+  //if(save_version >= 4096*1+83) state.twigsfruittime = processTime();
+  if(save_version >= 262144*2+64*8+3) state.resinfruitspores = processNum(); else id++; // used to be resinfruittime in older versions
+  if(save_version >= 262144*2+64*8+3) state.twigsfruitspores = processNum(); else id++; // used to be twigsfruittime in older versions
   if(save_version >= 4096*1+103) {
     state.prevleveltime = processTimeArray();
     if(error || state.prevleveltime.length != 3) return err(4);
@@ -1668,9 +1672,9 @@ function decState(s) {
     if(error || state.recentweighedleveltime.length != 2) return err(4);
     state.recentweighedleveltime_time = processTime();
   }
-  if(save_version >= 262144*2+64*8+2) state.prevresinfruitratio = processFloat2();
+  /*if(save_version >= 262144*2+64*8+2) state.prevresinfruitratio = processFloat2();
   if(save_version >= 262144*2+64*8+2) state.prevtwigsfruitratio = processFloat2();
-  if(save_version >= 262144*2+64*8+2) state.overlevel = processBool();
+  if(save_version >= 262144*2+64*8+2) state.overlevel = processBool();*/
   if(error) return err(4);
 
 

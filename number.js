@@ -1042,12 +1042,13 @@ Num.notationSci = function(v, precision, eng, opt_base) {
   if(v.b == Infinity) return 'Inf';
   if(v.b == 0) return '0';
 
-  if(v.gtr(1e-6) && v.ltr(1)) {
-    return Num.smallValueNotation(v, orig_precision);
-  }
-
-  if(v.ltr(10000) && orig_precision >= 3) {
-    return Num.smallValueNotation(v, orig_precision);
+  if(v.gtr(1e-6)) { // smallValueNotation doesn't support smaller than that either
+    if(v.ltr(1)) {
+      return Num.smallValueNotation(v, orig_precision);
+    }
+    if(v.ltr(10000) && orig_precision >= 3) {
+      return Num.smallValueNotation(v, orig_precision);
+    }
   }
 
   if(eng) eng = (eng < 3 ? 3 : (eng > 8 ? 8 : eng));
@@ -1152,12 +1153,13 @@ Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
   if(v.b == Infinity) return 'Inf';
   if(v.b == 0) return '0';
 
-  if(v.gtr(1e-6) && v.ltr(1)) {
-    return Num.smallValueNotation(v, precision);
-  }
-
-  if(v.ltr(10000) && precision >= 3) {
-    return Num.smallValueNotation(v, precision);
+  if(v.gtr(1e-6)) { // smallValueNotation doesn't support smaller than that either
+    if(v.ltr(1)) {
+      return Num.smallValueNotation(v, precision);
+    }
+    if(v.ltr(10000) && precision >= 3) {
+      return Num.smallValueNotation(v, precision);
+    }
   }
 
   var e = v.e * log2_log10;

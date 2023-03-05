@@ -768,11 +768,13 @@ function beginNextRun(opt_challenge) {
     state.lastPlanted = brassica_0;
   }
 
-  state.resinfruittime = 0;
+  /*state.resinfruittime = 0;
   state.twigsfruittime = 0;
   state.prevresinfruitratio = 0;
   state.prevtwigsfruitratio = 0;
-  state.overlevel = false;
+  state.overlevel = false;*/
+  state.resinfruitspores = Num(0);
+  state.twigsfruitspores = Num(0);
 
   state.just_evolution = false;
 
@@ -2051,6 +2053,7 @@ function getRandomFruitRoll() {
 }
 
 
+// aka addFruit, dropFruit
 function addRandomFruitForLevel(treelevel, opt_nodouble) {
   var fruits = [];
   for(;;) {
@@ -2156,17 +2159,17 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     var no_fruit_intended = !getActiveFruit(); // if there is no active fruit selected in purpose, assume that is intended and keep it that way, don't let a random fruit drop that due to heuristics ends up in stored slots rather than sacrificial pool override that choice
 
     if(state.fruit_stored.length == 0 /*|| (state.g_numresets == 0 && state.fruit_stored.length < state.fruit_slots)*/) {
-      insertFruit(state.fruit_stored.length, fruit);
+      setOrAppendFruit(state.fruit_stored.length, fruit);
     } else if(state.keepinterestingfruit && interesting && state.fruit_stored.length < state.fruit_slots && !(no_fruit_intended && state.fruit_stored.length + 1 == state.fruit_slots)) {
       // if it's an interesting fruit, such as highest tier ever, add it to the stored fruits if possible
-      insertFruit(state.fruit_stored.length, fruit);
+      setOrAppendFruit(state.fruit_stored.length, fruit);
       if(no_fruit_intended) {
         state.fruit_active++;
         if(state.fruit_active >= getNumFruitArrows()) state.fruit_active = -1;
       }
     } else {
       // add fruit to sacrificial pool, player is responsible for choosing to move fruits to storage or active lots
-      insertFruit(100 + state.fruit_sacr.length, fruit);
+      insertFruit(100 /*+ state.fruit_sacr.length*/, fruit);
     }
 
     state.c_numfruits++;
@@ -4546,13 +4549,13 @@ var update = function(opt_ignorePause) {
               showMessage('stored slots already full', C_INVALID, 0, 0);
             } else {
               var slot = state.fruit_stored.length;
-              insertFruit(f.slot, undefined);
-              insertFruit(slot, f);
+              setOrAppendFruit(f.slot, undefined);
+              setOrAppendFruit(slot, f);
             }
           } else if(slottype == 1) {
             var slot = 100 + state.fruit_sacr.length;
-            insertFruit(f.slot, undefined);
-            insertFruit(slot, f);
+            setOrAppendFruit(f.slot, undefined);
+            setOrAppendFruit(slot, f);
           }
           store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
         }
@@ -4670,9 +4673,9 @@ var update = function(opt_ignorePause) {
           var fslot = f.slot;
           var aslot = a.slot;
           var bslot = b.slot;
-          if(fslot != bslot && bslot > aslot) insertFruit(b.slot, null);
-          if(fslot != aslot) insertFruit(a.slot, null);
-          if(fslot != bslot && bslot < aslot) insertFruit(b.slot, null);
+          if(fslot != bslot && bslot > aslot) setOrAppendFruit(b.slot, null);
+          if(fslot != aslot) setOrAppendFruit(a.slot, null);
+          if(fslot != bslot && bslot < aslot) setOrAppendFruit(b.slot, null);
 
           var season_before = state.seen_seasonal_fruit;
           if(f.type > 4) state.seen_seasonal_fruit |= (1 << (f.type - 1));
@@ -4795,18 +4798,6 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
-    var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
-    var enough_spores_for_next_level = (d < 5) && state.res.ge(treeLevelReq(state.treelevel + 1));
-    if(resin_fruit_level && !enough_spores_for_next_level) {
-      state.resinfruittime += d;
-    }
-    if(twigs_fruit_level && !enough_spores_for_next_level) {
-      state.twigsfruittime += d;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-
 
     if(state.challenge == challenge_stormy && state.numcropfields_lightning > 0 && state.time >= state.lastLightningTime + lightningTime) {
       var f = getStormyCropCell();
@@ -4826,6 +4817,8 @@ var update = function(opt_ignorePause) {
     ////////////////////////////////////////////////////////////////////////////
 
     precomputeField();
+
+    state.fruitspores_total = Num(state.c_res.spores);
 
     gain = Res();
 
@@ -5196,6 +5189,17 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
+
+    state.fruitspores_total = state.c_res.spores.add(actualgain.spores);
+    if(getFruitAbility(FRUIT_RESINBOOST, true)) {
+      state.resinfruitspores.addInPlace(actualgain.spores);
+    }
+    if(getFruitAbility(FRUIT_TWIGSBOOST, true)) {
+      state.twigsfruitspores.addInPlace(actualgain.spores);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
     var req = treeLevelReq(state.treelevel + 1);
     if(state.time > state.lasttreeleveluptime + tree_min_leveltime && state.res.ge(req)) {
       // tree level up
@@ -5203,16 +5207,6 @@ var update = function(opt_ignorePause) {
       var twigs = Num(0);
 
       var treeleveltime = state.time - state.lasttreeleveluptime;
-
-      if(state.overlevel) {
-        // virtually set resinfruittime and twigsfruittime to that from earlier leveling, since swapping to a resin/twigs fruit while using over-leveled spores that were gained without the fruit does not count
-        // these state values are used in the currentTreeLevelResin and nextTwigs computations below
-        state.resinfruittime = treeleveltime * state.prevresinfruitratio;
-        state.twigsfruittime = treeleveltime * state.prevtwigsfruitratio;
-      } else {
-        state.prevresinfruitratio = state.resinfruittime / treeleveltime;
-        state.prevtwigsfruitratio = state.twigsfruittime / treeleveltime;
-      }
 
       var do_twigs = true;
       if(state.challenge && !challenges[state.challenge].allowstwigs) do_twigs = false;
@@ -5242,10 +5236,6 @@ var update = function(opt_ignorePause) {
       // this must happen after do_resin above, so that the state.lasttreeleveluptime is still used in the currentTreeLevelResin computation
       for(var i = 1; i < state.prevleveltime.length; i++) state.prevleveltime[state.prevleveltime.length - i] = state.prevleveltime[state.prevleveltime.length - 1 - i];
       state.prevleveltime[0] = timeAtTreeLevel(state);
-      state.resinfruittime = 0;
-      state.twigsfruittime = 0;
-
-      state.overlevel = state.res.ge(treeLevelReq(state.treelevel + 1));
 
       state.lasttreeleveluptime = state.time;
 

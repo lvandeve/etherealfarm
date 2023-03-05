@@ -806,6 +806,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(breakdown) breakdown.push(['unused resin', true, resin_bonus, result.clone()]);
     }
 
+    if(this.type != CROPTYPE_NUT) {
+      var twigs_bonus = getUnusedTwigsBonus();
+      if(twigs_bonus.neqr(1)) {
+        result.mulInPlace(twigs_bonus);
+        if(breakdown) breakdown.push(['unused twigs', true, twigs_bonus, result.clone()]);
+      }
+    }
+
     if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
       if(haveEtherealMistletoeUpgrade(mistle_upgrade_prod)) {
         var mul = getEtherealMistletoeBonus(mistle_upgrade_prod).addr(1);
@@ -4736,9 +4744,10 @@ var FRUIT_ALL_SEASON2 = fruit_index++; // dragon fruit
 // NOT TODO: one affecting ferns: same issue: causes too much manual work during active playing and counting on fern spawn times
 // NOT TODO: one decreasing cost: would cause an annoying technique where you have to swap fruits all the time before planting anything
 
-// returns the amount of boost of the ability, when relevant, for a given ability level in the fruit and the fruit tier
+// returns the amount of boost (add 1 to get multiplier) of the ability, when relevant, for a given ability level in the fruit and the fruit tier
 // opt_basic: if true, adjusts some abilities if basic challenge active. Doesn't adjust ability or level, as the getFruitTier and getFruitAbility already take an opt_basic parameter for that
-function getFruitBoost(ability, level, tier, opt_basic) {
+// opt_sub_part: optional sub-part, for some abilities that have multiple independent effects, e.g. FRUIT_RESINBOOST and FRUIT_TWIGSBOOST
+function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
   var base = Math.pow(getFruitTierStrength(tier), 0.75) * 0.05;
 
   if(ability == FRUIT_BERRYBOOST) {
@@ -4812,18 +4821,30 @@ function getFruitBoost(ability, level, tier, opt_basic) {
     return Num(1.0); // not upgradeable
   }
   if(ability == FRUIT_RESINBOOST) {
-    var amount = towards1(level, 5);
-    var t = tier - 4; // only starts at tier 5
-    if(t < 0) t = 0;
-    var max = 0.2 + 0.5 * t / 6;
-    return Num(max * amount);
+    if(opt_sub_part == 1) {
+      // boost to the unused resin production bonus, but only partially in a similar way to the partial abilities of the mix ability
+      return Num(base * 1.0 * level).powr(0.25);
+    } else {
+      var amount = towards1(level, 5);
+      var t = tier - 4; // only starts at tier 5
+      if(t < 0) t = 0;
+      var max = 0.2 + 0.5 * t / 6;
+      var tweak = 3.5;
+      return Num(tweak * max * amount);
+    }
   }
   if(ability == FRUIT_TWIGSBOOST) {
-    var amount = towards1(level, 5);
-    var t = tier - 4; // only starts at tier 5
-    if(t < 0) t = 0;
-    var max = 0.2 + 0.5 * t / 6;
-    return Num(max * amount);
+    if(opt_sub_part == 1) {
+      // boost to the unused twigs production bonus, but only partially in a similar way to the partial abilities of the mix ability
+      return Num(base * 1.0 * level).powr(0.25);
+    } else {
+      var amount = towards1(level, 5);
+      var t = tier - 4; // only starts at tier 5
+      if(t < 0) t = 0;
+      var max = 0.2 + 0.5 * t / 6;
+      var tweak = 3.5;
+      return Num(tweak * max * amount);
+    }
   }
   if(ability == FRUIT_NUTBOOST) {
     var amount = towards1(level, 5);
@@ -4853,6 +4874,8 @@ function getFruitBoost(ability, level, tier, opt_basic) {
       by design, combining this ability with another ability that is nettle, brassica or bee, severely harms this one: the fact that it's then additive (and so on the order of only 2x or so boost then), and the fact that fruit abilities are supposed to give boosts of thousands of percents at this point, makes this ability then much less useful.
 
       A base multiplier of slightly higher than 1 is applied here, because even if perfectly balanced, without increasing its power a little bit its stats often fall short of a pure bee or brassica fruit
+
+      NOTE: this result is not used directly, a cube-root-ish power is used with mix_pow_bee at the locations where used
       */
       return Num(base * level * 1.2);
     }
@@ -5325,6 +5348,17 @@ function fruitContainsSeasonalType(fruit, type) {
 function fruitSeasonMix(a, b, fruitmix) {
   if(a == b) return a;
 
+  /*
+  Mixing rules, assuming fruitmix = 5 (for lower fruit mix, depending on how low, dragon fruit, star fruit (4-season), or 2-season fruits can't be formed and become apple or other lower fruit instead. The other rules stay the same)
+  same types stay the same (apple+apple gives apple, summer+summer gives summer, dragon+dragon gives dragon, etc...)
+  1-season fruit with 1-season fruit can give 2-season fruit if from neighboring season, apple otherwise (summer+winter or autumn+spring give apple due to not being neighboring seasons)
+  2-season fruit with 1-season fruit will keep 2-season fruit if the 1-season fruit is part of it, or drop down to apple if they are disjoint
+  2-season fruit with 2-season fruit gives star fruit (4-seaon fruit) if all 4 seasons are included in the two 2-season fruits, the one common 1-season fruit otherwise. NOTE: requires all abilities the same to get the star fruit, that restriction is enforced elsewhere
+  star fruit with apple gives dragon fruit. NOTE: requires all abilities the same to get the dragon fruit, that restriction is enforced elsewhere
+  mixing star fruit with other fruits results in the lowest fruit type of the two
+  mixing dragon fruit with other fruits results in the lowest fruit type of the two
+  */
+
   if(fruitmix >= 2) {
     if((a == 1 && b == 2) || (a == 2 && b == 1)) return 5; // mango
     if((a == 2 && b == 3) || (a == 3 && b == 2)) return 6; // plum
@@ -5339,6 +5373,13 @@ function fruitSeasonMix(a, b, fruitmix) {
     if((a == 0 && b == 9) || (a == 9 && b == 0)) return 10; // dragon fruit
   }
 
+  var highest = Math.max(a, b); // could become up to 9 (star fruit) or 10 (dragon fruit)
+
+  if(highest == 9 || highest == 10) {
+    // dragon fruit or star fruit
+    return Math.min(a, b);
+  }
+
   var a2 = 0; // flags: 1=spring, 2=summer, 4=autumn, 8=winter
   if(a >= 1 && a <= 4) a2 = (1 << (a - 1));
   else if(a >= 5 && a <= 7) a2 = (3 << (a - 5));
@@ -5351,33 +5392,8 @@ function fruitSeasonMix(a, b, fruitmix) {
   else if(b == 8) b2 = 9;
   else if(b == 9 || b == 10) b2 = 15;
 
-  // the type when going down (mixing disabled): still keeps for example winter if both a and b support winter (e.g. star fruit + quince, or quince + medlar)
+  // the type when going down: still keeps for example winter if both a and b support winter (e.g. star fruit + quince, or quince + medlar)
   var c2 = a2 & b2;
-
-  var highest = Math.max(a, b); // could become up to 9 (star fruit) or 10 (dragon fruit)
-
-  // This code makes it allow keeping a multi-season fruit if mixed with a matching single-season fruit
-  // This makes the combining slightly easier, however not actually that much easier:
-  // Without this feature, it's still easy to create any multi-season fruit you want given a single-season fruit with the desired abilities, by mixing it with a dummy (don't care abilities) other-seasonal fruit, which is easy enough to get since there the abilities don't matter. Same for creating a star fruit with a dummy second 2-seasonal fruit.
-  var allow_keep_multi = true;
-  if(allow_keep_multi) {
-    if(fruitmix >= 5) {
-      if(highest == 10) return 10; // dragon fruit can stay even if with apple. But due to other checks elsewhere that forbid fusing dragon fruits as final form, this never has actual effect
-      if((a2 == 15 || b2 == 15) && c2 != 0) return highest; // stay as is
-      if((a2 == 15 || b2 == 15) && c2 == 0) return 10; // star fruit with apple can become dragon fruit. Checks elsewhere will ensure that you can only fuse fruits with same abilities for this
-    }
-    if(fruitmix >= 4) {
-      // also allow to keep 4-season fruits, so long as at least not mixed with an apple
-      if((a2 == 15 || b2 == 15) && c2 != 0) return 9; // star fruit
-    }
-    if(fruitmix >= 2) {
-      // also allow to keep 2-season fruits when fused with a contained 1-season fruit
-      if((a2 == 3 || b2 == 3) && ((a2 | b2) == 3) && ((a2 & b2) != 0)) return 5; // mango
-      if((a2 == 6 || b2 == 6) && ((a2 | b2) == 6) && ((a2 & b2) != 0)) return 6; // plum
-      if((a2 == 12 || b2 == 12) && ((a2 | b2) == 12) && ((a2 & b2) != 0)) return 7; // quince
-      if((a2 == 9 || b2 == 9) && ((a2 | b2) == 9) && ((a2 & b2) != 0)) return 8; // kumquat
-    }
-  }
 
   // some of these are only allowed if fruitmix large enough, but those checks are elsewhere
   if(c2 == 15) return highest; // star fruit or dragon fruit
@@ -5392,12 +5408,6 @@ function fruitSeasonMix(a, b, fruitmix) {
 
   return 0;
 }
-
-
-
-// when this is false, then once you have a good 2-seasonal fruit, it's trivial to make a star fruit out of it. If this is true, you need to get two perfect 2-seasonal fruits to make the star fruit, which makes the 2-seasonal fruits a bit more relevant during a certain period of the game (per fruit tier).
-// this also extends to higher fruits like the dragon fruit
-var harder_starfruit_fusing = true;
 
 function fruitsHaveSameAbilities(a, b) {
   var na = a.abilities.length;
@@ -5495,46 +5505,32 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
   var nb = b.abilities.length;
 
   var seasonmix_result = fruitSeasonMix(a.type, b.type, fruitmix);
-  if(harder_starfruit_fusing) {
-    if(a.type == 10 || b.type == 10) {
-      if(opt_message) opt_message[0] = 'dragon fruits are the final form and cannot be fused, their abilities cannot be changed';
+
+  if((a.type == 9) != (b.type == 9)) { // exactly one is a star fruit
+    var with_apple = a.type == 0 || b.type == 0;
+    if(with_apple && fruitmix < 5) {
+      if(opt_message) opt_message[0] = 'You need another squirrel upgrade before you can fuse star fruit with apple, and the apple must have the same set of abilities.';
       return null;
     }
-    if(a.type == 9 || b.type == 9) {
-      if(fruitmix < 5) {
-        if(a.type == b.type) {
-          if(opt_message) opt_message[0] = 'Star fruits cannot be fused with each other. Star fruits are an almost-final form and their abilities cannot be changed.';
-        } else if(!(a.type == 0 || b.type == 0)) {
-          if(opt_message) opt_message[0] = 'Star fruits cannot be fused with this fruit type. Star fruits are an almost-final form and its abilities cannot be changed.';
-        } else {
-          if(opt_message) opt_message[0] = 'You need another squirrel upgrade before you can perform a fuse like this.';
-        }
-        return null;
-      }
-      if(!(a.type == 0 || b.type == 0)) {
-        if(opt_message) opt_message[0] = 'Star fruits can only be fused with an apple with the same abilities, to get a dragon fruit';
-        return null;
-      }
+  }
+  if(seasonmix_result == 10 && a.type < 10 && b.type < 10) { // made dragon fruit from lower fruit types (star fruit + apple)
+    var sameabilities = fruitsHaveSameAbilities(a, b);
+    if(!sameabilities) {
+      seasonmix_result = 0;
+      if(opt_message) opt_message[0] = 'You could get a legendary dragon fruit out of these fruit types, but only if they have the same abilities. Fuse a star fruit with an apple with the same set of abilities to get a dragon fruit.';
+      return null;
+    } else {
+      if(opt_message) opt_message[0] = 'You fused a legendary dragon fruit! Beware, dragon fruits can only be fused with other dragon fruits, not with any other fruit types.';
     }
-    if(seasonmix_result == 10) {
-      var sameabilities = fruitsHaveSameAbilities(a, b);
-      if(!sameabilities) {
-        seasonmix_result = 0;
-        if(opt_message) opt_message[0] = 'You could get a legendary dragon fruit out of these fruit types, but only if they have the same abilities. Fuse a star fruit with an apple with the same set of abilities to get a dragon fruit.';
-        return null;
-      } else {
-        if(opt_message) opt_message[0] = 'You fused a legendary dragon fruit! This is its final form, you cannot fuse a dragon fruit with anything else, but it\'s stronger than the original star fruit!';
-      }
-    }
-    if(seasonmix_result == 9) {
-      var sameabilities = fruitsHaveSameAbilities(a, b);
-      if(!sameabilities) {
-        seasonmix_result = 0;
-        if(opt_message) opt_message[0] = 'You could get a 4-season star fruit out of these fruit types, but only if they have the same abilities. Fuse two complementing two-seasonal fruits with the same set of abilities to get a star fruit.';
-        return null;
-      } else {
-        if(opt_message) opt_message[0] = 'You fused a 4-season star fruit! Beware, this is an almost-final form, you cannot fuse a star fruit with anything that changes its abilities anymore. Ensure that this is what you want to spend the two input fruits on.';
-      }
+  }
+  if(seasonmix_result == 9 && a.type < 9 && b.type < 9) { // made star fruit from lower fruit types (two 2-seasonals)
+    var sameabilities = fruitsHaveSameAbilities(a, b);
+    if(!sameabilities) {
+      seasonmix_result = 0;
+      if(opt_message) opt_message[0] = 'You could get a 4-season star fruit out of these fruit types, but only if they have the same abilities. Fuse two complementing two-seasonal fruits with the same set of abilities to get a star fruit.';
+      return null;
+    } else {
+      if(opt_message) opt_message[0] = 'You fused a 4-season star fruit! Beware, star fruits can only be fused with other star fruits, or, after you have a certain squirrel ability, with apples.';
     }
   }
 
@@ -5881,15 +5877,12 @@ function treeLevelResin(level, breakdown) {
 
   var resin_fruit_level = getFruitAbility(FRUIT_RESINBOOST, true);
   if(resin_fruit_level > 0) {
-    if(state.resinfruittime > 0) {
-      var resin_fruit_bonus = Num(0);
-      var treeleveltime = state.time - state.lasttreeleveluptime;
-      var ratio = state.resinfruittime / treeleveltime;
-      if(!(ratio >= 0 && ratio <= 1)) ratio = 1; // normally doesn't happen, except after just leveling tree and there were some extra time tick parts transferred over (TODO: check if that makes sense)
-      resin_fruit_bonus = getFruitBoost(FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(true)).mulr(ratio).addr(1);
-      resin.mulInPlace(resin_fruit_bonus);
-      if(breakdown) breakdown.push(['fruit resin boost', true, resin_fruit_bonus, resin.clone()]);
-    }
+    var resin_fruit_bonus = Num(0);
+    var ratio = state.resinfruitspores.div(state.fruitspores_total);
+    if(!(ratio.gter(0) && ratio.lter(1))) ratio = Num(1); // normally doesn't happen, but prevent bad issues with NaN resources if a bug would happen
+    resin_fruit_bonus = getFruitBoost(FRUIT_RESINBOOST, resin_fruit_level, getFruitTier(true)).mul(ratio).addr(1);
+    resin.mulInPlace(resin_fruit_bonus);
+    if(breakdown) breakdown.push(['fruit resin boost', true, resin_fruit_bonus, resin.clone()]);
   }
 
   return resin;
@@ -5977,14 +5970,11 @@ function treeLevelTwigs(level, breakdown) {
   var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
   if(twigs_fruit_level > 0) {
     var twigs_fruit_bonus = Num(0);
-    var treeleveltime = state.time - state.lasttreeleveluptime;
-    if(state.twigsfruittime > 0) {
-      var ratio = state.twigsfruittime / treeleveltime;
-      if(ratio > 1) ratio = 1; // normally doesn't happen, but ...
-      twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true)).mulr(ratio).addr(1);
-      res.twigs.mulInPlace(twigs_fruit_bonus);
-      if(breakdown) breakdown.push(['fruit twigs boost', true, twigs_fruit_bonus, res.twigs.clone()]);
-    }
+    var ratio = state.twigsfruitspores.div(state.fruitspores_total);
+    if(!(ratio.gter(0) && ratio.lter(1))) ratio = Num(1); // normally doesn't happen, but prevent bad issues with NaN resources if a bug would happen
+    twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true)).mul(ratio).addr(1);
+    res.twigs.mulInPlace(twigs_fruit_bonus);
+    if(breakdown) breakdown.push(['fruit twigs boost', true, twigs_fruit_bonus, res.twigs.clone()]);
   }
 
 
@@ -6062,12 +6052,46 @@ function getStarterResources(opt_add_type, opt_sub_type) {
   return res;
 }
 
-function getUnusedResinBonusFor(resin){
-  return Num(Num.log10(resin.addr(1))).mulr(0.1).addr(1);
+////////////////////////////////////////////////////////////////////////////////
+
+// returned as multiplier
+function getUnusedResinBonusFor(resin) {
+  var result = Num(Num.log10(resin.addr(1))).mulr(0.1).addr(1);
+
+  var level = getFruitAbility(FRUIT_RESINBOOST, true);
+  if(level > 0) {
+    var mul = getFruitBoost(FRUIT_RESINBOOST, level, getFruitTier(true), false, 1).addr(1);
+    result = result.mul(mul);
+  }
+
+  return result;
 }
 
+// returned as multiplier
 function getUnusedResinBonus() {
   return getUnusedResinBonusFor(state.res.resin);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+// returned as multiplier
+function getUnusedTwigsBonusFor(twigs) {
+  //var result = Num(1); // twigs bonus doesn't actually exist without the fruit that gives it
+  var result = Num(Num.log10(twigs.addr(1))).mulr(0.01).addr(1);
+
+  var level = getFruitAbility(FRUIT_TWIGSBOOST, true);
+  if(level > 0) {
+    var mul = getFruitBoost(FRUIT_TWIGSBOOST, level, getFruitTier(true), false, 1).addr(1);
+    result = result.mul(mul);
+  }
+
+  return result;
+}
+
+// returned as multiplier
+function getUnusedTwigsBonus() {
+  return getUnusedTwigsBonusFor(state.res.twigs);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -6586,8 +6610,8 @@ var upgradesq_ethtree_boost = Num(0.2);
 var upgradesq_ethtree = registerSquirrelUpgrade('ethereal tree neighbor boost', undefined, 'ethereal tree boosts non-lotus neighbors (non-diagonal) by ' + upgradesq_ethtree_boost.toPercentString(), tree_images[6][1][4]);
 
 var upgradesq_fruitmix = registerSquirrelUpgrade('seasonal fruit mixing', undefined, 'Allows fusing mixed seasonal fruits, to get new multi-season fruit types that give the season bonus in 2 seasons:<br> • apricot + pineapple = mango (spring + summer),<br> • pineapple + pear = plum (summer + autumn),<br> • pear + medlar = quince (autumn + winter),<br> • medlar + apricot = kumquat (winter + spring).<br>Other fruit fusing rules work as usual. If this upgrade is removed due to respec, the multi-season fruits temporarily lose their season boost until getting this upgrade again. A later squirrel upgrade will extend the ability of this upgrade.', images_mango[4]);
-var upgradesq_fruitmix2 = registerSquirrelUpgrade('seasonal fruit mixing II', undefined, 'A next level of fruit mixing: allows creating the 4-season star fruit! Fuse mango+quince, or alternatively plum+kumquat, but only if they have the same abilities, to get the star fruit. The star fruit is an almost-final form and cannot be fused with anything that changes its abilities anymore. If this squirrel upgrade or its predecessor is removed due to respec, star fruits temporarily lose their season boost until getting this upgrade again.', images_starfruit[4]);
-var upgradesq_fruitmix3 = registerSquirrelUpgrade('seasonal fruit mixing III', undefined, 'The next level of fruit mixing: allows creating the legendary dragon fruit! Fuse star fruit + apple, but only if they have the same abilities, to get the dragon fruit, which is a version of the star fruit with more season bonus. The dragon fruit itself is the final form, it cannot be fused and its abilities cannot be changed. If this squirrel upgrade is removed due to respec, dragon fruits temporarily act like star fruit, or lose the season boost entirely if the star fruit squirrel upgrade is also not active, until getting this upgrade again.', images_dragonfruit[4]);
+var upgradesq_fruitmix2 = registerSquirrelUpgrade('seasonal fruit mixing II', undefined, 'A next level of fruit mixing: allows creating the 4-season star fruit! Fuse mango+quince, or alternatively plum+kumquat, but only if they have the same abilities, to get the star fruit. If this squirrel upgrade or its predecessor is removed due to respec, star fruits temporarily lose their season boost until getting this upgrade again.', images_starfruit[4]);
+var upgradesq_fruitmix3 = registerSquirrelUpgrade('seasonal fruit mixing III', undefined, 'The next level of fruit mixing: allows creating the legendary dragon fruit! Fuse star fruit + apple, but only if they have the same abilities, to get the dragon fruit, which is a version of the star fruit with more season bonus. If this squirrel upgrade is removed due to respec, dragon fruits temporarily act like star fruit, or lose the season boost entirely if the star fruit squirrel upgrade is also not active, until getting this upgrade again.', images_dragonfruit[4]);
 
 var upgradesq_resin_bonus = Num(0.25);
 var upgradesq_resin = registerSquirrelUpgrade('resin bonus', undefined, 'increases resin gain by ' + Num(upgradesq_resin_bonus).toPercentString(), image_resin);
@@ -8250,6 +8274,16 @@ var medal_wither5 = registerMedal('withered V', 'completed the wither challenge 
   return state.challenges[challenge_wither].completed >= 5;
 }, Num(5));
 changeMedalDisplayOrder(medal_wither5, medal_wither4);
+
+var medal_wither6 = registerMedal('withered VI', 'completed the wither challenge stage 6', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 6;
+}, Num(10));
+changeMedalDisplayOrder(medal_wither6, medal_wither5);
+
+var medal_wither7 = registerMedal('withered VII', 'completed the wither challenge stage 7', undefined, function() {
+  return state.challenges[challenge_wither].completed >= 7;
+}, Num(100));
+changeMedalDisplayOrder(medal_wither7, medal_wither6);
 
 
 

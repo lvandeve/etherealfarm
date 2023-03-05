@@ -601,6 +601,9 @@ function getEventKeys(e, opt_end_number) {
   return {key:key, code:code, shift:shift, ctrl:ctrl};
 }
 
+// while sometimes practical to do this at same time, ferns are too important to pick up at any time and can be in the way of a crop you actually want to delete/upgrade/plant
+var keyboard_shortcuts_pick_up_ferns = false;
+
 document.addEventListener('keydown', function(e) {
   //if(e.target.matches('textarea')) return; // typing in a textarea, don't do global game shortcuts then
   if(dialog_level > 0) {
@@ -707,7 +710,7 @@ document.addEventListener('keydown', function(e) {
       did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
     }
     var upgraded = did_something;
-    if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+    if(keyboard_shortcuts_pick_up_ferns && state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
       addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
       did_something = true;
     }
@@ -765,23 +768,24 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(key == 'p' && !shift && !ctrl && state.currentTab == tabindex_field) {
+  if(key == 'p' && !ctrl && state.currentTab == tabindex_field) {
     // pick or plant crop
     var did_something = false;
-    if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+    if(keyboard_shortcuts_pick_up_ferns && state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
       addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
       did_something = true;
     }
     if(state.field[shiftCropFlexY]) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f) {
-        if(f.hasCrop()) {
+        if(!shift && f.hasCrop()) {
           // pick
           state.lastPlanted = f.getCrop().index;
         } else {
           // plant
           if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
-            addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[state.lastPlanted], shiftPlanted:true});
+            var actiontype = f.hasCrop() ? ACTION_REPLACE : ACTION_PLANT;
+            addAction({type:actiontype, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[state.lastPlanted], shiftPlanted:true});
             did_something = true;
           }
         }
@@ -794,17 +798,18 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(key == 'p' && !shift && !ctrl && state.currentTab == tabindex_field2) {
+  if(key == 'p' && !ctrl && state.currentTab == tabindex_field2) {
     if(state.field2[shiftCrop2FlexY]) {
       var f = state.field2[shiftCrop2FlexY][shiftCrop2FlexX];
       if(f) {
-        if(f.hasCrop(true)) {
+        if(!shift && f.hasCrop(true)) {
           // pick
           state.lastPlanted2 = f.getCrop(true).index;
         } else {
           // plant
           if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
-            addAction({type:ACTION_PLANT2, x:shiftCrop2FlexX, y:shiftCrop2FlexY, crop:crops2[state.lastPlanted2], shiftPlanted:true});
+            var actiontype = f.hasCrop() ? ACTION_REPLACE2 : ACTION_PLANT2;
+            addAction({type:actiontype, x:shiftCrop2FlexX, y:shiftCrop2FlexY, crop:crops2[state.lastPlanted2], shiftPlanted:true});
             update();
           }
         }
@@ -812,17 +817,18 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(key == 'p' && !shift && !ctrl && state.currentTab == tabindex_field3) {
+  if(key == 'p' && !ctrl && state.currentTab == tabindex_field3) {
     if(state.field3[shiftCrop3FlexY]) {
       var f = state.field3[shiftCrop3FlexY][shiftCrop3FlexX];
       if(f) {
-        if(f.hasCrop(true)) {
+        if(!shift && f.hasCrop(true)) {
           // pick
           state.lastPlanted3 = f.getCrop(true).index;
         } else {
           // plant
           if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
-            addAction({type:ACTION_PLANT3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[state.lastPlanted3], shiftPlanted:true});
+            var actiontype = f.hasCrop() ? ACTION_REPLACE3 : ACTION_PLANT3;
+            addAction({type:actiontype, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[state.lastPlanted3], shiftPlanted:true});
             update();
           }
         }
@@ -833,7 +839,7 @@ document.addEventListener('keydown', function(e) {
   if(key == 'd' && !shift && !ctrl && state.currentTab == tabindex_field) {
     // delete crop
     var did_something = false;
-    if(state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+    if(keyboard_shortcuts_pick_up_ferns && state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
       addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
       did_something = true;
     }
@@ -843,6 +849,28 @@ document.addEventListener('keydown', function(e) {
         if(f.hasCrop(true) || f.index == FIELD_REMAINDER) {
           // delete crop
           addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
+          did_something = true;
+        }
+      }
+    }
+    if(did_something) {
+      update();
+    }
+  }
+
+  // downgrade in basic field
+  // even though this shortcut is only rarely useful in the basic field (plus, automaton will upgrade the crop again unless turned off), supporting the shortcut is consistent with the ethereal and infinity field and prevents thinking the shortcut doesn't exist in those other fields, where it is useful
+  if(key == 'd' && shift && !ctrl && state.currentTab == tabindex_field) {
+    var did_something = false;
+    if(keyboard_shortcuts_pick_up_ferns && state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+      addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
+      did_something = true;
+    }
+    if(state.field[shiftCropFlexY]) {
+      var f = state.field[shiftCropFlexY][shiftCropFlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          makeDowngradeCropAction(shiftCropFlexX, shiftCropFlexY);
           did_something = true;
         }
       }
