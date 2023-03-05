@@ -4829,7 +4829,7 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
       var t = tier - 4; // only starts at tier 5
       if(t < 0) t = 0;
       var max = 0.2 + 0.5 * t / 6;
-      var tweak = 3.5;
+      var tweak = 2.5;
       return Num(tweak * max * amount);
     }
   }
@@ -4842,7 +4842,7 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
       var t = tier - 4; // only starts at tier 5
       if(t < 0) t = 0;
       var max = 0.2 + 0.5 * t / 6;
-      var tweak = 3.5;
+      var tweak = 2.5;
       return Num(tweak * max * amount);
     }
   }
