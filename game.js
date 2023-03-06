@@ -824,7 +824,7 @@ var ACTION_REPLACE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++; // action_weather
 var ACTION_TRANSCEND = action_index++; // also includes starting a challenge
-var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot
+var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot. Variables inside: f:fruit object, slottype:0=stored,1=sacrificial, precise_slot:exact destination slot number (only one of slottype, precise_slot must be given)
 var ACTION_FRUIT_ACTIVE = action_index++; // select active fruit
 var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
@@ -4535,7 +4535,7 @@ var update = function(opt_ignorePause) {
             store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
           }
         } else {
-          var slottype = action.slot; // 0:stored, 1:sacrificial
+          var slottype = action.slottype; // 0:stored, 1:sacrificial
           var currenttype = (f.slot < 100) ? 0 : 1;
           if(slottype == currenttype) {
             // nothing to do

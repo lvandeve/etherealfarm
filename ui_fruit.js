@@ -764,7 +764,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     moveButton1.textEl.innerText = 'to storage slot';
     if(state.fruit_stored.length >= state.fruit_slots) moveButton1.className = 'efButtonCantAfford';
     addButtonAction(moveButton1, function() {
-      addAction({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+      addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:0});
       update();
       //recreate();
       closeAllDialogs();
@@ -777,7 +777,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
     styleButton(moveButton2);
     moveButton2.textEl.innerText = 'to sacrificial pool';
     addButtonAction(moveButton2, function() {
-      addAction({type:ACTION_FRUIT_SLOT, f:f, slot:1});
+      addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:1});
       update();
       //recreate();
       closeAllDialogs();
@@ -1034,11 +1034,11 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
           // move the fruit upwards
           var full = state.fruit_stored.length >= state.fruit_slots;
           if(!full) {
-            addAction({type:ACTION_FRUIT_SLOT, f:f, slot:0});
+            addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:0});
             update();
           }
         } else { // move the fruit downwards
-          addAction({type:ACTION_FRUIT_SLOT, f:f, slot:1});
+          addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:1});
           update();
         }
       } else {

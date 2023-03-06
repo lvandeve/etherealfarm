@@ -755,7 +755,7 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
   var updateFruitButton = bind(function(flex, index) {
     var f = state.fruit_stored[o.fruit];
 
-    var text = 'Chosen fruit slot: ' + o.fruit;
+    var text = 'Chosen fruit slot: ' + (o.fruit + 1);
 
     if(f) {
       text += '. "' + f.toString() + '"';
