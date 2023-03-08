@@ -760,6 +760,9 @@ function createStatsDialog() {
     text += '• ethereal mistletoe unspent idle time: ' + open + util.formatDuration(state.mistletoeidletime, true) + close + '<br>';
     text += '• ethereal mistletoe total idle time: ' + open + util.formatDuration(state.g_mistletoeidletime, true) + close + '<br>';
   }
+  if(state.g_fruits_recovered > 0) {
+    text += '• fruits recovered: ' + open + state.g_fruits_recovered + close + '<br>';
+  }
   text += '<br>';
 
   if(state.g_numresets > 0) {

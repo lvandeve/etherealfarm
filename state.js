@@ -654,6 +654,7 @@ function State() {
   this.fruit_slots = 3; // amount of slots for fruit_stored
   this.fruit_sacr = []; // fruits outside of storage that will be sacrificed on transcension
   this.seen_seasonal_fruit = 0; // bit flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit, and so on for higher fruit types. For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
+  this.fruit_recover = []; // fruits from previous run that can be recovered
 
   // settings / preferences
   this.notation = Num.N_LATIN; // number notation
@@ -799,6 +800,7 @@ function State() {
   this.g_numwither3 = 0;
   this.g_numamberkeeprefunds = 0;
   this.g_max_infinityboost = Num(0); // max boost to basic field ever seen from infinity field
+  this.g_fruits_recovered = 0;
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -1775,6 +1777,8 @@ function Fruit() {
   // override standard name like 'electrum apple' with custom name
   this.name = '';
 
+  this.justdropped = true; // if true, the fruit was just dropped this run. Set to false for all existing fruits when transcending
+
   this.typeName = function() {
     return ['apple', 'apricot (spring)', 'pineapple (summer)', 'pear (autumn)', 'medlar (winter)',
             'mango (spring+summer)', 'plum (summer+autumn)', 'quince (autumn+winter)', 'kumquat (winter+spring)',
@@ -1995,6 +1999,21 @@ function swapFruit(slot0, slot1) {
   setFruit(slot1, f0);
 }
 
+// implementation must be kept in sync with getUpcomingFruitEssence w.r.t bonuses (like squirrel) as these functions do not call each other
+// this one is for a single fruit, used for when recovering a fruit to subtract the resin again
+function getUpcomingFruitEssenceFor(f) {
+  var res = getFruitSacrifice(f);
+
+  if(state.squirrel_upgrades[upgradesq_essence].count) {
+    var bonus = upgradesq_essence_bonus.addr(1);
+    res.mulInPlace(bonus);
+  }
+
+  return res;
+}
+
+// implementation must be kept in sync with getUpcomingFruitEssenceFor w.r.t bonuses (like squirrel) as these functions do not call each other
+// this one is for all fruits on transcend
 function getUpcomingFruitEssence(breakdown) {
   var res = Res();
   for(var j = 0; j < state.fruit_sacr.length; j++) res.addInPlace(getFruitSacrifice(state.fruit_sacr[j]));

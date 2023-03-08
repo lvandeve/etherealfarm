@@ -462,6 +462,7 @@ function getBluePrintActionDescription(index, o) {
     actiontext += 'Override blueprint ' + (o.blueprint + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;
   }
   if(o.enable_blueprint2) {
+    if(actiontext != '') actiontext += '. ';
     var b = state.blueprints2[o.blueprint2];
     var empty = !b || (b.data.length == 0);
     actiontext += 'Ethereal blueprint ' + (o.blueprint2 + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;

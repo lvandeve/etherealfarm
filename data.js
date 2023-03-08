@@ -8355,19 +8355,31 @@ registerMedal('Two runestones', 'Have two runestones on the infinity field', ima
   return state.crop3count[runestone3_0] >= 2;
 }, Num(200));
 
+registerMedal('Three runestones', 'Have three runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 3;
+}, Num(400));
+
 registerMedal('Four runestones', 'Have four runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 4;
-}, Num(400));
+}, Num(800));
+
+registerMedal('Five runestones', 'Have five runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 5;
+}, Num(1600));
+
+registerMedal('Six runestones', 'Have six runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 6;
+}, Num(3200));
+
+registerMedal('Seven runestones', 'Have seven runestones on the infinity field', images_runestone[4], function() {
+  return state.crop3count[runestone3_0] >= 7;
+}, Num(6400));
 
 registerMedal('Eight runestones', 'Have eight runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 8;
-}, Num(800));
+}, Num(12800));
 
-registerMedal('Sixtien runestones', 'Have sixteen runestones on the infinity field', images_runestone[4], function() {
-  return state.crop3count[runestone3_0] >= 16;
-}, Num(1600));
-
-// TODO: maybe more here, e.g. 32 if infinity field would get bigger
+// TODO: more runestone medals if needed
 
 // individual infinity crop achievements
 medal_register_id = 4200;

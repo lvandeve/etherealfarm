@@ -22,6 +22,11 @@ function getChangeLog() {
 
   // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
 
+  text += '0.8.5 (2023-03-08):';
+  text += '<br/>• It\'s now possible to recover sacrificed fruits that were dropped by the tree last run. This is for in case some fruits were forgotten, it is not usable as permanent storage.';
+  text += '<br/>• Added more infinity runestone achievements.';
+  text += '<br/><br/>';
+
   text += '0.8.4 (2023-03-05):';
   text += '<br/>• Resin/twigs fruit bonus now also works when they aren\'t active but have given some spores buildup before.';
   text += '<br/>• Added more rocks challenge reward stages.';

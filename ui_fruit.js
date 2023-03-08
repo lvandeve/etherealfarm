@@ -995,9 +995,10 @@ function getFruitTooltipText(f, opt_label) {
   return text;
 }
 
-// f = tue fruit
+// f = the fruit
 // slot_type: 0=storage, 1=sacrificial
-function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, opt_label) {
+// opt_not_draggable: if true, the fruit chip is not enabled for being draggable and thus can have the long click tooltip
+function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, opt_label, opt_not_draggable) {
   // these multiple layers are there to support multiple borders, because the colored "mark" border should have itself a small black outline to make it visible against all background colors both of the inner part (fruit bg) and outper part (dark or light UI theme bg)
   // so the colored border has an outer outline, provided by flex (no css border, but flex being 1 pixel larger), and inner outline provided by the css border on canvas (possibly commented out below if not truly needed)
   // note that CSS outline is not used here and would have the wrong size if used since it goes outside the box
@@ -1047,7 +1048,7 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
     };
   }
 
-  registerAction(flex.div, fun, label, {tooltip:tooltip, isdraggable:true});
+  registerAction(flex.div, fun, label, {tooltip:tooltip, isdraggable:!opt_not_draggable});
 }
 
 var dragslot = -1; // used instead of e.dataTransfer.setData since v0.1.64 because e.dataTransfer.setData still caused firefox to sometimes open things as URL despite e.preventDefault()
@@ -1230,7 +1231,7 @@ function updateFruitUI() {
   for(var i = 0; i < num; i++) {
     var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s * 0.98], [0, 0, y + s]);
     x += s;
-    if(x + 0.5 * s > s * num_fruits_width) {
+    if(x + 0.5 * s > s * num_fruits_width && i + 1 < num) {
       x = 0;
       y += s;
     }
@@ -1271,6 +1272,20 @@ function updateFruitUI() {
     setupFruitDrag(canvasFlex, i + 100, f);
   }
   y += s;
+
+
+  if(state.fruit_recover.length > 0) {
+    y += s / 4;
+    //var flex = new Flex(scrollFlex, 0.01, y, 0.3, y + 0.08);
+    var flex = new Flex(scrollFlex, 0.01, [0, 0, y], 0.35, [0, 0, y + s * 0.8]);
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Recover sacrificed fruit';
+    addButtonAction(flex.div, function() {
+      createRecoverFruitDialog();
+    }, 'Recover sacrificed fruit');
+    y += s * 0.6;
+  }
 
   var upcoming = getUpcomingFruitEssence();
   if(!upcoming.empty()) {
@@ -1418,6 +1433,41 @@ function createSelectFruitSlotDialog(fun, opt_maxnum, opt_help) {
     addButtonAction(flex.div, bind(function(i) {
       fun(i);
       closeTopDialog();
+    }, i), arialabel);
+  }
+}
+function createRecoverFruitDialog() {
+  var dialog = createDialog({undefined,
+    scrollable:true,
+    title:'Select sacrificed fruit to recover',
+    help:'This allows to recover fruits that were sacrificed the previous run. This allows recovering fruit if it was forgotten before transcend, but this cannot be used as additional storage: only fruits that were dropped by the tree the previous run are available in here, and on a next transcend they will be gone.<br><br>Any essence gained from sacrificing the fruit, will be taken back.'
+  });
+
+  var scrollFlex = dialog.content;
+
+  var s = 0.1; // relative width and height of a chip
+  var x = 0;
+  var y = 0.03;
+
+  for(var i = 0; i < state.fruit_recover.length; i++) {
+    if(x > s * 9.5) {
+      x = 0;
+      y += s;
+    }
+
+    var f = state.fruit_recover[i];
+    var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
+    x += s * 1.01;
+    makeFruitChip(flex, f, 0, undefined, true, undefined, true);
+    styleButton0(flex.div);
+    var arialabel = 'select fruit slot ' + i;
+    if(f) arialabel += '. "' + getFruitAriaLabel(f) + '"';
+    addButtonAction(flex.div, bind(function(i) {
+      addAction({type:ACTION_FRUIT_RECOVER, r_index:i});
+      closeTopDialog();
+      update();
+      lastTouchedFruit = state.fruit_sacr[0]; // it's inserted at this position, indicate it
+      updateFruitUI();
     }, i), arialabel);
   }
 }

@@ -539,14 +539,25 @@ function endPreviousRun() {
   state.c_res.twigs.addInPlace(twigs);
   state.twigs = Num(0);
 
+  state.fruit_recover = [];
+
   // fruits
   if(do_fruit) {
     state.res.addInPlace(essence);
     state.g_res.addInPlace(essence);
     state.c_res.addInPlace(essence);
+    // TODO: maybe only keep the best fruits to avoid irrelevant ones in there
+    for(var i = 0; i < state.fruit_sacr.length; i++) {
+      var f = state.fruit_sacr[i];
+      if(f.justdropped) state.fruit_recover.push(f);
+    }
     state.fruit_sacr = [];
     state.fruit_seen = true; // any new fruits are likely sacrificed now, no need to indicate fruit tab in red anymore
   }
+
+  for(var i = 0; i < state.fruit_sacr.length; i++) state.fruit_sacr[i].justdropped = false;
+  for(var i = 0; i < state.fruit_stored.length; i++) state.fruit_stored[i].justdropped = false;
+  for(var i = 0; i < state.fruit_recover.length; i++) state.fruit_recover[i].justdropped = false;
 
   // this one should not include the resin from ferns
   var res_no_fernresin = new Res(state.c_res);
@@ -829,6 +840,7 @@ var ACTION_FRUIT_ACTIVE = action_index++; // select active fruit
 var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
 var ACTION_FRUIT_FUSE = action_index++; // fuse two fruits together
+var ACTION_FRUIT_RECOVER = action_index++;
 var ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND = action_index++; // normally you can use the plantBlueprint function directly (since that one also merely adds more actions), but for transcend it needs to be delayed and that's done through having it as an action
 var ACTION_SQUIRREL_UPGRADE = action_index++; // squirrel upgrade
 var ACTION_SQUIRREL_RESPEC = action_index++; // respec squirrel upgrades
@@ -2381,11 +2393,17 @@ function autoActionTriggerConditionReached(index, o) {
 var autoActionPart2Time = 5; // how long to wait before auto-action does the second part
 
 // part: 1 for the first part, 2 for the second part that is done a bit later
-function doAutoAction(index, part) {
+function doAutoAction(index, part, opt_manually) {
   var o = state.automaton_autoactions[index];
   var did_something = false;
 
   if(part == 1) {
+    var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
+    if(opt_manually) {
+      showMessage('Manually activating auto-action ' + visual_index);
+    } else {
+      showMessage('Activating auto-action ' + visual_index);
+    }
     // refresh brassica is done before blueprint, otherwise the refreshWatercress may add actions that override watercress on top of actions to turn it into other crops added for blueprint override. Blueprint override must give the final state here.
     if(o.enable_brassica && autoActionExtraUnlocked()) {
       refreshWatercress(false, false, true);
@@ -2469,16 +2487,16 @@ function doAutoActionManually(index) {
     showMessage('Auto actions are disabled during the truly basic challenge.', C_INVALID, 0, 0);
     return;
   }
-  var did_something = doAutoAction(index, 1);
+  var did_something = doAutoAction(index, 1, true);
   if(!did_something) {
-    doAutoAction(index, 2);
+    doAutoAction(index, 2, true);
   } else {
     // TODO: don't use window.setTimeout for this, but a flag in the state, so that this works more correctly and less hacky with undo. The current system doesn't work when doing undo followed by redo for example (won't do second part then)
     auto_action_manual_window_timeout_enabled = true; // set to false by doing undo so that if you undo immediately after doing it, it won't do that second part a few seconds later
     window.setTimeout(function() {
       if(!auto_action_manual_window_timeout_enabled) return;
       addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
-      doAutoAction(index, 2);
+      doAutoAction(index, 2, true);
     }, autoActionPart2Time * 1000);
   }
   update();
@@ -4693,6 +4711,24 @@ var update = function(opt_ignorePause) {
           store_undo = true;
           lastTouchedFruit = f;
           updateFruitUI();
+        }
+      } else if(type == ACTION_FRUIT_RECOVER) {
+        var f = state.fruit_recover[action.r_index];
+        var ok = true;
+        if(ok && !f) {
+          ok = false;
+        }
+        var ess = getUpcomingFruitEssenceFor(f);
+        if(ok && state.res.lt(ess)) {
+          // this is only very rare to happen since almost nothing costs essence (so it almost never decreases), and it was gotten from this fruit on transcend
+          showMessage('Not enough essence to recover fruit', C_INVALID, 0, 0);
+          ok = false;
+        }
+        if(ok) {
+          state.fruit_recover.splice(action.r_index, 1);
+          insertFruit(100 + state.fruit_sacr.length, f);
+          state.res.subInPlace(ess);
+          state.g_fruits_recovered++;
         }
       } else if(type == ACTION_TOGGLE_AUTOMATON) {
         if(fast_forwarding) continue;

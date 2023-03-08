@@ -92,7 +92,7 @@ function encState(state, opt_raw_only) {
   // you must set the id variable back to e.g. the next one after the processStructArrayBegin call after calling this
   var processStructArrayEnd = function() { };
 
-  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10, array11;
 
   section = 0; id = 0; // main/misc
   processTime(state.prevtime);
@@ -363,6 +363,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numwither3);
   processUint(state.g_numamberkeeprefunds);
   processNum(state.g_max_infinityboost);
+  processUint(state.g_fruits_recovered);
 
 
   section = 11; id = 0; // global run stats
@@ -514,6 +515,7 @@ function encState(state, opt_raw_only) {
   processInt(state.fruit_active);
   processUint(state.fruit_stored.length);
   processUint(state.fruit_sacr.length);
+  processUint(state.fruit_recover.length);
 
   id = 8;
   array0 = [];
@@ -527,6 +529,7 @@ function encState(state, opt_raw_only) {
   array8 = [];
   array9 = [];
   array10 = [];
+  array11 = [];
   var appendfruit = function(f) {
     array0.push(f.type);
     array1.push(f.tier);
@@ -541,12 +544,16 @@ function encState(state, opt_raw_only) {
     array6.push(f.mark);
     array7.push(f.name);
     array9.push(f.fuses);
+    array11.push(f.justdropped);
   };
   for(var i = 0; i < state.fruit_stored.length; i++) {
     appendfruit(state.fruit_stored[i]);
   }
   for(var i = 0; i < state.fruit_sacr.length; i++) {
     appendfruit(state.fruit_sacr[i]);
+  }
+  for(var i = 0; i < state.fruit_recover.length; i++) {
+    appendfruit(state.fruit_recover[i]);
   }
   processUintArray(array0);
   processUintArray(array1);
@@ -559,6 +566,7 @@ function encState(state, opt_raw_only) {
   processUintArray(array8);
   processUintArray(array9);
   processUintArray(array10);
+  processBoolArray(array11);
 
   id = 20; // a few spares for the above
   processUint(state.seen_seasonal_fruit);
@@ -1056,8 +1064,8 @@ function decState(s) {
     parent_stack.pop();
   };
 
-  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10;
-  var index, index0, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10;
+  var array, array0, array1, array2, array3, array4, array5, array6, array7, array8, array9, array10, array11;
+  var index, index0, index1, index2, index3, index4, index5, index6, index7, index8, index9, index10, index11;
 
 
   section = 0; id = 0; // main/misc
@@ -1497,6 +1505,7 @@ function decState(s) {
   }
   if(save_version >= 262144*2+64*7+3) state.g_numamberkeeprefunds = processUint();
   if(save_version >= 262144*2+64*7+3) state.g_max_infinityboost = processNum();
+  if(save_version >= 262144*2+64*8+5) state.g_fruits_recovered = processUint();
 
 
   if(error) return err(4);
@@ -1695,6 +1704,7 @@ function decState(s) {
     }
     state.fruit_stored.length = processUint(0);
     state.fruit_sacr.length = processUint(0);
+    if(save_version >= 262144*2+64*8+5) state.fruit_recover.length = processUint(0);
     if(state.fruit_stored.length > state.fruit_slots) return err(4);
 
     id = 8;
@@ -1725,6 +1735,11 @@ function decState(s) {
     } else {
       array10 = [];
     }
+    if(save_version >= 262144*2+64*8+5) {
+      array11 = processBoolArray();
+    } else {
+      array11 = [];
+    }
     if(error) return err(4);
     index0 = 0;
     index1 = 0;
@@ -1737,6 +1752,7 @@ function decState(s) {
     index8 = 0;
     index9 = 0;
     index10 = 0;
+    index11 = 0;
     var decfruit = function() {
       var f = new Fruit();
       f.type = array0[index0++];
@@ -1747,6 +1763,7 @@ function decState(s) {
       f.mark = array6[index6++];
       f.name = array7[index7++];
       f.fuses = array9[index9++];
+      if(save_version >= 262144*2+64*8+5) f.justdropped = array11[index11++]; else f.justdropped = (index0 > state.fruit_stored.length);
       for(var i = 0; i < f.abilities.length; i++) {
         f.abilities[i] = array3[index3++];
         f.levels[i] = array4[index4++];
@@ -1787,6 +1804,13 @@ function decState(s) {
       if(!f) return err(4);
       state.fruit_sacr[i] = f;
     }
+    if(save_version >= 262144*2+64*8+5) {
+      for(var i = 0; i < state.fruit_recover.length; i++) {
+        var f = decfruit();
+        if(!f) return err(4);
+        state.fruit_recover[i] = f;
+      }
+    }
     if(index0 != array0.length) return err(4);
     if(index1 != array1.length) return err(4);
     if(index2 != array2.length) return err(4);
@@ -1798,6 +1822,7 @@ function decState(s) {
     if(index8 != array8.length) return err(4);
     if(index9 != array9.length) return err(4);
     if(index10 != array10.length) return err(4);
+    if(index11 != array11.length) return err(4);
   }
 
   if(save_version >= 4096*1+39) {

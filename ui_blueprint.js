@@ -217,8 +217,11 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
     }
   }
 
-  if(did_something) showMessage('Planted blueprint');
-  else showMessage('This blueprint had no effect on the current field');
+  if(did_something) {
+    showMessage('Planted blueprint' + (b.name ? (' "' + b.name + '"') : ''));
+  } else {
+    showMessage('This blueprint had no effect on the current field');
+  }
 
   if(has_unplantable_pumpkin && holidayEventActive() != 4) {
     showMessage('Pumpkins can no longer be planted, the event finished', C_INVALID);
@@ -406,7 +409,7 @@ function plantBluePrint2(b, allow_override) {
     for(var i = 0; i < newactions.length; i++) {
       addAction(newactions[i]);
     }
-    showMessage('Planted ethereal blueprint');
+    showMessage('Planted ethereal blueprint' + (b.name ? (' "' + b.name + '"') : ''));
   }
   else showMessage('This ethereal blueprint had no effect on the current field');
 }
