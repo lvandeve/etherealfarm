@@ -25,7 +25,7 @@ var FIELD_MULTIPART = 5; // a field tile used by a multi-cell crop (2x2 pumpkin)
 var FIELD_POND = 6; // center of infinity field
 
 // field cell
-// fieldtype: 1=basic, 2=ethereal, 3=infinity
+// fieldtype: 1=basic, 2=ethereal, 3=infinity, 10=pond (fishes)
 function Cell(x, y, fieldttype) {
   // index of crop, but with different numerical values:
   // 0 = empty
@@ -89,6 +89,7 @@ Cell.prototype.getCrop = function(opt_multipart) {
   if(this.index < CROPINDEX) return undefined;
   if(this.fieldttype == 2) return crops2[this.index - CROPINDEX];
   if(this.fieldttype == 3) return crops3[this.index - CROPINDEX];
+  if(this.fieldttype == 10) return fishes[this.index - CROPINDEX];
   return crops[this.index - CROPINDEX];
 };
 
@@ -201,11 +202,17 @@ function CropState() {
 
 function Crop2State() {
   this.unlocked = false;
+  this.had = false; // becomes true if you have a fullgrown version of this crop
 }
 
 function Crop3State() {
   this.unlocked = false;
   this.had = false; // becomes true if you have a fullgrown version of this crop
+}
+
+function FishState() {
+  this.unlocked = false;
+  this.had = false; // becomes true if you ever had this fish
 }
 
 function UpgradeState() {
@@ -501,6 +508,7 @@ function State() {
   this.lastPlanted = -1; // for shift+plant
   this.lastPlanted2 = -1; // for shift+plant on field2
   this.lastPlanted3 = -1; // for shift+plant on field3
+  this.lastPlantedFish = -1; // for shift+plant on pond
 
   // resources
   this.res = undefined;
@@ -609,6 +617,15 @@ function State() {
   this.crops3 = [];
   for(var i = 0; i < registered_crops3.length; i++) {
     this.crops3[registered_crops3[i]] = new Crop3State();
+  }
+
+  // pond grid
+  this.pondw = 5;
+  this.pondh = 5;
+  this.pond = []; // equivalent to field
+  this.fishes = []; // equivalent to crops
+  for(var i = 0; i < registered_fishes.length; i++) {
+    this.fishes[registered_fishes[i]] = new FishState();
   }
 
 
@@ -801,6 +818,8 @@ function State() {
   this.g_numamberkeeprefunds = 0;
   this.g_max_infinityboost = Num(0); // max boost to basic field ever seen from infinity field
   this.g_fruits_recovered = 0;
+  this.g_numplanted_fish = 0;
+  this.g_numunplanted_fish = 0;
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -984,6 +1003,8 @@ function State() {
   this.cropcount = [];
   this.crop2count = [];
   this.crop3count = [];
+  this.fishcount = [];
+
   this.croptypecount = []; // excludes templates
 
   // num crops growing (not fullgrown) in main field of any type (excludes brassica, and is 0 during the wither challenge)
@@ -1097,6 +1118,7 @@ function State() {
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
   this.highestoftypeplanted = [];
+  this.highestoftype2planted = [];
   // same but only fullgrown
   this.highestoftypefullgrown = [];
   this.lowestoftypeplanted = []; // excludes ghosts (NOTE: if for some reason this must be changed to include ghosts, then getCheapestNextOfCropType must be fixed to take lowest tier of -2 into account, or automaton won't do crop upgrades at all if a ghost of the same type is present)
@@ -1114,6 +1136,9 @@ function State() {
   this.highestoftype2unlocked = [];
   this.highestoftype3unlocked = [];
   this.highestoftype3had = [];
+
+  // same as highestoftype2unlocked but has crop index instead of tier values. undefined if none is unlocked of this type
+  this.highestcropoftype2unlocked = [];
 
   // like highestoftypeunlocked, but also includes known next types, because their unlock research is visible (but not yet researched)
   this.highestoftypeknown = [];
@@ -1228,6 +1253,16 @@ function clearField3(state) {
   state.field3[pondx3][pondy3].index = FIELD_POND;
 }
 
+function clearPond(state) {
+  state.pond = [];
+  for(var y = 0; y < state.pondh; y++) {
+    state.pond[y] = [];
+    for(var x = 0; x < state.pondw; x++) {
+      state.pond[y][x] = new Cell(x, y, 10);
+    }
+  }
+}
+
 function changeFieldSize(state, w, h) {
   var content = 0; // what to fill the new field cells with, depending on challenge
   if(state.challenge == challenge_rocks) content = FIELD_ROCK;
@@ -1323,6 +1358,7 @@ function createInitialState() {
   clearField(state);
   clearField2(state);
   clearField3(state);
+  clearPond(state);
 
   state.crops[brassica_0].unlocked = true;
 
@@ -1379,12 +1415,14 @@ function computeDerived(state) {
     state.croptypecount[i] = 0;
     state.anycroptypecount[i] = 0;
     state.highestoftypeplanted[i] = -Infinity;
+    state.highestoftype2planted[i] = -Infinity;
     state.highestcropoftypeplanted[i] = undefined;
     state.highestoftypefullgrown[i] = -Infinity;
     state.lowestoftypeplanted[i] = Infinity;
     state.lowestcropoftypeunlocked[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
     state.highestoftype2unlocked[i] = -Infinity;
+    state.highestcropoftype2unlocked[i] = -Infinity;
     state.highestoftype3unlocked[i] = -Infinity;
     state.highestoftype3had[i] = -Infinity;
     state.highestoftypeknown[i] = -Infinity;
@@ -1481,6 +1519,7 @@ function computeDerived(state) {
             state.etherealmistletoenexttotree = true;
           }
         }
+        state.highestoftype2planted[c.type] = Math.max(c.tier || 0, state.highestoftype2planted[c.type]);
       } else if(f.index == 0) {
         state.numemptyfields2++;
       } else {
@@ -1528,6 +1567,7 @@ function computeDerived(state) {
     var c = crops2[registered_crops2[i]];
     var c2 = state.crops2[registered_crops2[i]];
     if(c2.unlocked) {
+      if((c.tier || 0) > state.highestoftype2unlocked[c.type]) state.highestcropoftype2unlocked[c.type] = c.index;
       state.highestoftype2unlocked[c.type] = Math.max(c.tier || 0, state.highestoftype2unlocked[c.type]);
     }
   }
@@ -1590,6 +1630,22 @@ function computeDerived(state) {
       state.highestoftype3had[c.type] = Math.max(c.tier || 0, state.highestoftype3had[c.type]);
     }
   }
+
+  // pond
+  for(var i = 0; i < registered_fishes.length; i++) {
+    state.fishcount[registered_fishes[i]] = 0;
+  }
+  for(var y = 0; y < state.pondh; y++) {
+    for(var x = 0; x < state.pondw; x++) {
+      var f = state.pond[y][x];
+      if(f.hasCrop()) {
+        var c = fishes[f.cropIndex()];
+        state.fishcount[c.index]++;
+      }
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
 
   state.medals_earned = 0;
   state.medals_new = 0;

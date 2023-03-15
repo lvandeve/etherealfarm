@@ -1200,11 +1200,6 @@ function updateFieldCellUI(x, y) {
   var lightningimage = (x == lightning_field_image_x && y == lightning_field_image_y && state.time - state.lastLightningTime < 0.5);
 
   if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active) {
-    var r = util.pseudoRandom2D(x, y, 77777777);
-    var fieldim = images_field[season];
-    var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
-    if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
-    renderImage(field_image, fd.bgcanvas);
     fd.index = f.index;
     fd.multindex = multindex;
     fd.growing = growing;
@@ -1217,6 +1212,12 @@ function updateFieldCellUI(x, y) {
     fd.automatonplant = automatonplant;
     fd.lightningimage = lightningimage;
     fd.holiday_hats_active = holiday_hats_active; // this one is actually not used for the hats but the disctinctino between present and egg image
+
+    var r = util.pseudoRandom2D(x, y, 77777777);
+    var fieldim = images_field[season];
+    var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
+    if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
+    renderImage(field_image, fd.bgcanvas);
 
     var label = 'field tile ' + x + ', ' + y;
 

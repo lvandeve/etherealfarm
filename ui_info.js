@@ -156,6 +156,7 @@ function prodBreakdownHypo() {
   }
 
   gain.infseeds = origgain.infseeds;
+  gain.infspores = origgain.infspores;
 
   if((util.getTime() - lastExpectedGainUpdateTime > 5 && state.numgrowing > 0) || state.numgrowing != lastExpectedGainNumGrowing) {
     // Computed for UI display only: the expected gain if all crops would be fullgrown

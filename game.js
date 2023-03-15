@@ -852,6 +852,9 @@ var ACTION_CANCEL_MISTLE_UPGRADE = action_index++;
 var ACTION_PLANT3 = action_index++;
 var ACTION_DELETE3 = action_index++;
 var ACTION_REPLACE3 = action_index++;
+var ACTION_PLANT_FISH = action_index++;
+var ACTION_DELETE_FISH = action_index++;
+var ACTION_REPLACE_FISH = action_index++;
 var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it.
 var ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION = action_index++; // forces no undo to be saved for the second (several seconds later) part of auto-action
 
@@ -2210,18 +2213,28 @@ function unlockEtherealCrop(id) {
   if(c2.unlocked) return;
 
   var c = crops2[id];
-  showMessage('Ethereal crop available: "' + c.name + '"', C_ETHEREAL, 494369596);
+  showMessage('Ethereal crop unlocked: "' + c.name + '"', C_ETHEREAL, 494369596);
   c2.unlocked = true;
 }
 
 // unlocks and shows message, if not already unlocked
 function unlockInfinityCrop(id) {
-  var c3 = state.crops3[id];
-  if(c3.unlocked) return;
+  var c2 = state.crops3[id];
+  if(c2.unlocked) return;
 
   var c = crops3[id];
-  showMessage('Infinity crop available: "' + c.name + '"', C_ETHEREAL, 494369596);
-  c3.unlocked = true;
+  showMessage('Infinity crop unlocked: "' + c.name + '"', C_ETHEREAL, 494369596);
+  c2.unlocked = true;
+}
+
+// unlocks and shows message, if not already unlocked
+function unlockFish(id) {
+  var c2 = state.fishes[id];
+  if(c2.unlocked) return;
+
+  var c = fishes[id];
+  showMessage('Fish unlocked: "' + c.name + '"', C_ETHEREAL, 494369596);
+  c2.unlocked = true;
 }
 
 
@@ -2302,6 +2315,10 @@ function maybeUnlockEtherealCrops() {
   if(state.treelevel2 >= 21) {
     unlockEtherealCrop(brassica2_0);
   }
+  if(state.treelevel2 >= 22) {
+    unlockEtherealCrop(berry2_7);
+    unlockEtherealCrop(mush2_7);
+  }
 }
 
 function maybeUnlockInfinityCrops() {
@@ -2327,8 +2344,16 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_3].had) unlockInfinityCrop(brassica3_4);
   if(state.crops3[brassica3_4].had) unlockInfinityCrop(berry3_4);
   if(state.crops3[berry3_4].had) unlockInfinityCrop(flower3_4);
+  if(state.crops3[flower3_4].had) unlockInfinityCrop(bee3_4);
+  //if(ENABLE_POND_UPDATE) if(state.crops3[berry3_4].had) unlockInfinityCrop(mush3_4);
 }
 
+
+function maybeUnlockFishes() {
+  if(!ENABLE_POND_UPDATE) return;
+  //unlockFish(goldfish_0);
+  //unlockFish(koi_0);
+}
 
 function doNextAutoChoice() {
   if(showingConfigureAutoChoiceDialog) return false; // don't activate anything while the dialog is active, to allow editing without intermediate states triggering
@@ -4402,6 +4427,97 @@ var update = function(opt_ignorePause) {
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
+      } else if(type == ACTION_PLANT_FISH || type == ACTION_DELETE_FISH || type == ACTION_REPLACE_FISH) {
+        if(fast_forwarding) continue;
+
+        // These 3 actions are handled together here, to be able to implement replace:
+        // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
+        var f = state.pond[action.y][action.x];
+
+        var recoup = undefined;
+
+        if(type == ACTION_DELETE_FISH || type == ACTION_REPLACE_FISH) {
+          if(f.hasCrop()) {
+            var c = f.getCrop();
+            recoup = c.getRecoup(f); // note that this recoup is always 100% for fishes
+          } else {
+            recoup = Res();
+          }
+        }
+
+        var ok = true;
+
+        if(ok && type == ACTION_REPLACE_FISH) {
+          // exception for brassica to allow refreshing it
+          if(action.fish && f.index == CROPINDEX + action.fish.index && f.hasCrop()) {
+            showMessage('Already have this fish here', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE_FISH || type == ACTION_REPLACE_FISH)) {
+          if(!f.hasCrop() && !(type == ACTION_DELETE_FISH && f.index == FIELD_REMAINDER)) {
+            showMessage('no fish to delete here', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_PLANT_FISH || type == ACTION_REPLACE_FISH)) {
+          var c = action.fish;
+          var cost = c.getCost();
+          if(type == ACTION_REPLACE_FISH && f.hasCrop()) cost = cost.sub(recoup);
+          if(type != ACTION_REPLACE_FISH && f.hasCrop()) {
+            showMessage('there already is a fish here', C_INVALID, 0, 0);
+            ok = false;
+          } else if(f.index != 0 && f.index != FIELD_REMAINDER && !f.hasCrop()) {
+            showMessage('there already is something here', C_INVALID, 0, 0);
+            ok = false;
+          } else if(!state.fishes[c.index].unlocked) {
+            if(action.shiftPlanted) {
+              state.lastPlanted3 = -1;
+              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+            }
+            ok = false;
+          } else if(state.res.lt(cost)) {
+            showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                        ', need: ' + cost.toString(Math.max(5, Num.precision)) + ' (' + getCostAffordTimer(cost) + ')', C_INVALID, 0, 0);
+            ok = false;
+          }
+        }
+
+        if(ok && (type == ACTION_DELETE_FISH || type == ACTION_REPLACE_FISH)) {
+          if(f.hasCrop()) {
+            var c = fishes[f.cropIndex()];
+            state.g_numunplanted_fish++;
+            if(!action.silent) showMessage('deleted ' + c.name + ', got back ' + recoup.toString());
+            f.index = 0;
+            f.growth = 0;
+            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
+            state.res.addInPlace(recoup);
+
+            if(type == ACTION_DELETE_FISH) computeDerived(state); // correctly update derived stats based on changed field state (replace will do it below)
+            store_undo = true;
+          } else if(f.index == FIELD_REMAINDER) {
+            f.index = 0;
+            f.growth = 0;
+            //if(!action.silent) showMessage('cleared watercress remainder');
+          }
+          f.runetime = 0;
+        }
+
+        if(ok && (type == ACTION_PLANT_FISH || type == ACTION_REPLACE_FISH)) {
+          var c = action.fish;
+          var cost = c.getCost();
+          var finalcost = cost;
+          if(type == ACTION_REPLACE_FISH && !!recoup) finalcost = cost.sub(recoup);
+          if(!action.silent) showMessage('placed fish ' + c.name + '. Consumed: ' + finalcost);
+          state.g_numplanted_fish++;
+          state.res.subInPlace(cost);
+          f.index = c.index + CROPINDEX;
+          state.fishes[c.index].had = true;
+          computeDerived(state); // correctly update derived stats based on changed field state
+          store_undo = true;
+        }
       } else if(type == ACTION_FERN) {
         if(fast_forwarding && !action.by_automaton) continue;
 
@@ -4729,6 +4845,7 @@ var update = function(opt_ignorePause) {
           insertFruit(100 + state.fruit_sacr.length, f);
           state.res.subInPlace(ess);
           state.g_fruits_recovered++;
+          store_undo = true;
         }
       } else if(type == ACTION_TOGGLE_AUTOMATON) {
         if(fast_forwarding) continue;
@@ -4960,7 +5077,8 @@ var update = function(opt_ignorePause) {
               }
             }
           } else {
-            // nothing to do, ethereal plants currently don't produce resources
+            state.crops2[c.index].had = true;
+            // nothing more to do, ethereal plants currently don't produce resources
           }
         }
       }
@@ -4987,7 +5105,7 @@ var update = function(opt_ignorePause) {
                 f.index = FIELD_REMAINDER;
                 state.g_numwither3++;
               }
-            } else {
+            } else if(f.growth < 1) {
               var g = d / c.getPlantTime();
               var growth0 = f.growth;
               f.growth += g;
@@ -5407,7 +5525,7 @@ var update = function(opt_ignorePause) {
     }
     if(haveInfinityField()) {
       maybeUnlockInfinityCrops();
-
+      if(state.g_res.infspores.gtr(0)) maybeUnlockFishes();
       if(state.infinityboost.gt(state.g_max_infinityboost)) state.g_max_infinityboost = state.infinityboost.clone();
     }
 

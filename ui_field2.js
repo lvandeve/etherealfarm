@@ -865,6 +865,7 @@ function updateField2CellUI(x, y) {
   var fd = field2Divs[y][x];
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   var season = 4; // the ethereal season
+  var c = f.getCrop();
 
   var progresspixel = -1;
   if(f.index == FIELD_TREE_BOTTOM && (state.treelevel2 > 0 || state.res.twigs.gtr(0))) {
@@ -872,24 +873,28 @@ function updateField2CellUI(x, y) {
     progresspixel = Math.round(nextlevelprogress * 5);
   }
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active) {
-    var r = util.pseudoRandom2D(x, y, 55555);
-    var fieldim = images_field[season];
-    var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
-    if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
-    renderImage(field_image, fd.bgcanvas);
+  var largeravailable = c && c.tier >= 0 && state.highestoftype2unlocked[c.type] > state.highestoftype2planted[c.type] && state.res.resin.gt(crops2[state.highestcropoftype2unlocked[c.type]].cost.resin);
+
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active || f.largeravailable != largeravailable) {
+    fd.index = f.index;
+    fd.growstage = growstage;
     fd.season = season;
     fd.treelevel2 = state.treelevel2;
     fd.progresspixel = progresspixel;
     fd.holiday_hats_active = holiday_hats_active;
 
+    var r = util.pseudoRandom2D(x, y, 55555);
+    var fieldim = images_field[season];
+    var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
+    if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
+    renderImage(field_image, fd.bgcanvas);
+
     var label = 'ethereal field tile ' + x + ', ' + y;
 
-    fd.index = f.index;
-    fd.growstage = growstage;
     if(f.hasCrop()) {
       var c = crops2[f.cropIndex()];
       renderImage(c.image[growstage], fd.canvas);
+      if(largeravailable) blendImage(upgrade_arrow_small, fd.canvas);
       if(f.growth >= 1) {
         // fullgrown, so hide progress bar
         setProgressBar(fd.progress, -1, undefined);

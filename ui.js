@@ -259,6 +259,7 @@ function updateUI2() {
   renderField();
   renderField2();
   renderField3();
+  renderPond();
   updateResourceUI();
   updateUpgradeUIIfNeeded();
   updateUpgrade2UIIfNeeded();

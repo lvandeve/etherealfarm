@@ -131,6 +131,7 @@ function encState(state, opt_raw_only) {
   processRes(state.fernresin);
   processTime(state.lastReFernTime);
   processInt(state.lastPlanted3);
+  processInt(state.lastPlantedFish);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -262,13 +263,16 @@ function encState(state, opt_raw_only) {
     if(state.crops2[registered_crops2[i]].unlocked) unlocked.push(registered_crops2[i]);
   }
   array0 = [];
+  array1 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'crops2 must be registered in increasing order';
     array0.push(unlocked[i] - prev);
     prev = unlocked[i];
+    array1.push(state.crops2[unlocked[i]].had);
   }
   processUintArray(array0);
+  processBoolArray(array1);
 
 
   section = 7; id = 0; // medals
@@ -364,6 +368,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numamberkeeprefunds);
   processNum(state.g_max_infinityboost);
   processUint(state.g_fruits_recovered);
+  processUint(state.g_numplanted_fish);
+  processUint(state.g_numunplanted_fish);
 
 
   section = 11; id = 0; // global run stats
@@ -914,6 +920,38 @@ function encState(state, opt_raw_only) {
   processUintArray(array1);
 
 
+  section = 31; id = 0; // pond
+  processUint(state.pondw);
+  processUint(state.pondh);
+  var w = state.pondw;
+  var h = state.pondh;
+  array0 = [];
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.pond[y][x];
+      array0.push(f.index);
+    }
+  }
+  processIntArray(array0);
+
+
+  section = 32; id = 0; // fishes
+  unlocked = [];
+  for(var i = 0; i < registered_fishes.length; i++) {
+    if(state.fishes[registered_fishes[i]].unlocked) unlocked.push(registered_fishes[i]);
+  }
+  array0 = [];
+  array1 = [];
+  prev = 0;
+  for(var i = 0; i < unlocked.length; i++) {
+    if(unlocked[i] - prev < 0) throw 'fishes must be registered in increasing order';
+    array0.push(unlocked[i] - prev);
+    prev = unlocked[i];
+    array1.push(state.fishes[unlocked[i]].had);
+  }
+  processUintArray(array0);
+  processUintArray(array1);
+
   //////////////////////////////////////////////////////////////////////////////
 
   var e = encTokens(tokens);
@@ -1132,6 +1170,7 @@ function decState(s) {
   if(save_version >= 4096*1+86) state.fernresin = processRes();
   if(save_version >= 4096*1+98) state.lastReFernTime = processTime();
   if(save_version >= 262144*2+64*7+0) state.lastPlanted3 = processInt();
+  if(save_version >= 262144*2+64*9+0) state.lastPlantedFish = processInt();
 
 
   section = 1; id = 0; // field
@@ -1329,12 +1368,17 @@ function decState(s) {
   section = 6; id = 0; // crops2
   array0 = processUintArray();
   if(error) return err(4);
+  if(save_version >= 262144*2+64*8+6) {
+    array1 = processBoolArray();
+    if(error || array0.length != array1.length) return err(4);
+  }
   prev = 0;
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
     prev = index;
     if(!crops2[index]) return err(4);
     state.crops2[index].unlocked = true;
+    state.crops2[index].had = (index < array1.length) ? array1[index] : false;
   }
 
 
@@ -1502,10 +1546,15 @@ function decState(s) {
     state.g_numunplanted3 = processUint();
     state.g_numfullgrown3 = processUint();
     state.g_numwither3 = processUint();
+    if(save_version < 262144*2+64*8+6) state.g_numfullgrown3 = state.g_numplanted3; // this stat was broken before 0.8.6, so approximate it this way
   }
   if(save_version >= 262144*2+64*7+3) state.g_numamberkeeprefunds = processUint();
   if(save_version >= 262144*2+64*7+3) state.g_max_infinityboost = processNum();
   if(save_version >= 262144*2+64*8+5) state.g_fruits_recovered = processUint();
+  if(save_version >= 262144*2+64*9+0) {
+    state.g_numplanted_fish = processUint();
+    state.g_numunplanted_fish = processUint();
+  }
 
 
   if(error) return err(4);
@@ -2424,6 +2473,49 @@ function decState(s) {
       if(!crops3[index]) return err(4);
       state.crops3[index].unlocked = true;
       state.crops3[index].had = array1[i];
+    }
+  }
+
+
+
+  section = 31; id = 0; // pond
+  if(save_version >= 262144*2+64*9+0) {
+    state.pondw = processUint();
+    state.pondh = processUint();
+    if(error) return err(4);
+    if(state.pondw > 15 || state.pondh > 15) return err(4); // that large size is not supported
+    if(state.pondw < 3 || state.pondh < 3) return err(4); // that small size is not supported
+    var w = state.pondw;
+    var h = state.pondh;
+    array0 = processIntArray();
+    index0 = 0;
+    if(error) return err(4);
+    for(var y = 0; y < h; y++) {
+      state.pond[y] = [];
+      for(var x = 0; x < w; x++) {
+        state.pond[y][x] = new Cell(x, y, 10);
+        var f = state.pond[y][x];
+        f.index = array0[index0++];
+      }
+    }
+    if(index0 > array0.length) return err(4);
+  } else {
+    clearPond(state);
+  }
+
+  section = 32; id = 0; // fishes
+  if(save_version >= 262144*2+64*9+0) {
+    array0 = processUintArray();
+    array1 = processUintArray(); // had
+    if(error) return err(4);
+    if(array0.length != array1.length) return err(4);
+    prev = 0;
+    for(var i = 0; i < array0.length; i++) {
+      var index = array0[i] + prev;
+      prev = index;
+      if(!fishes[index]) return err(4);
+      state.fishes[index].unlocked = true;
+      state.fishes[index].had = array1[i];
     }
   }
 

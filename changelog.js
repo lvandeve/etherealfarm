@@ -20,7 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
-  // new feature not yet listed: shift+d in ethereal field as downgrade-tier shortcut
+  text += '0.8.6 (2023-03-15):';
+  text += '<br/>• Eggs event configured to start on March 20th! Eggs with random rewards will drop every now and then. The event will run until April 20th.';
+  text += '<br/>• Added two new crops and 1 new upgrade for ethereal tree level 22.';
+  text += '<br/>• Added one more infinity crop (more coming soon).';
+  text += '<br/>• Made berry boost, mushroom boost and spores overload stronger on emerald fruits.';
+  text += '<br/>• Ethereal field crops now show an upgrade arrow icon if a higher tier is unlocked and affordable but not yet bought. These icons only serve as a reminder when a new tier is unlocked, and will not show up once a single crop of this tier is present anywhere on the field.';
+  text += '<br/>• Other tweaks and fixes.';
+  text += '<br/><br/>';
 
   text += '0.8.5 (2023-03-08):';
   text += '<br/>• It\'s now possible to recover sacrificed fruits that were dropped by the tree last run. This is for in case some fruits were forgotten, it is not usable as permanent storage.';

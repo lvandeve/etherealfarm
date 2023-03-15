@@ -70,7 +70,8 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     }
 
     result += 'Production per second: ' + prod.toString();
-    /*if(prod.infseeds.neqr(0) && prod.infseeds.ltr(0.1) && prod.infseeds.gtr(-0.1))*/ result += ' (' + prod.infseeds.mulr(3600).toString() + '/h)';
+    var perhour = prod.infspores.eqr(0) ? prod.infseeds.mulr(3600) : prod.infspores.mulr(3600);
+    result += ' (' + perhour.toString() + '/h)';
     var baseprod = c.getProd(undefined);
     if(baseprod.infseeds.neq(prod.infseeds)) {
       result += '<br/>';
@@ -125,7 +126,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
 function getCropInfoHTML3Breakdown(f, c) {
   var result = '';
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_BRASSICA) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BRASSICA) {
     var breakdown = [];
     var total = c.getProd(f, breakdown);
     result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
@@ -136,8 +137,6 @@ function getCropInfoHTML3Breakdown(f, c) {
     var total = c.getInfBoost(f, breakdown);
     result += formatBreakdown(breakdown, true, 'Breakdown (neighbor boost +%)');
   }
-
-  return result;
 
   return result;
 }
@@ -257,25 +256,6 @@ function makeDowngradeCrop3Action(x, y, opt_silent) {
   return true;
 }
 
-
-function makePond3Dialog() {
-  var dialog = createDialog({
-    scrollable:true,
-    title:'Infinity pond',
-    bgstyle:'efDialogTranslucent',
-    icon:image_pond
-  });
-  var contentFlex = dialog.content;
-
-  var text = '';
-
-  text += 'Nothing in this pond yet';
-  text += '<br><br>';
-  text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
-  text += ' (max ever had: ' + state.g_max_infinityboost.toPercentString() + ')';
-
-  contentFlex.div.innerHTML = text;
-}
 
 function makeField3Dialog(x, y) {
   var f = state.field3[y][x];
@@ -568,19 +548,20 @@ function updateField3CellUI(x, y) {
   var ferncode = 0;
 
   if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel) {
+    fd.index = f.index;
+    fd.growstage = growstage;
+    fd.season = season;
+    fd.ferncode = ferncode;
+    fd.progresspixel = progresspixel;
+
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
     if(f.index == FIELD_POND) field_image = fieldim[4];
     renderImage(field_image, fd.bgcanvas);
-    fd.season = season;
-    fd.ferncode = ferncode;
-    fd.progresspixel = progresspixel;
 
     var label = 'infinity field tile ' + x + ', ' + y;
 
-    fd.index = f.index;
-    fd.growstage = growstage;
     if(f.hasCrop()) {
       var c = crops3[f.cropIndex()];
       renderImage(c.image[growstage], fd.canvas);

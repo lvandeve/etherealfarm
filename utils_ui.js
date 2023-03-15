@@ -761,6 +761,13 @@ function closeTopDialog(opt_cancel) {
   }
 }
 
+// close all dialogs up to that level. E.g. if level is 1, 1 dialog will remain.
+function closeDialogsUpTo(level) {
+  while(created_dialogs.length > level) {
+    closeTopDialog();
+  }
+}
+
 function makeAriaHidden(div, hidden) {
   // the goal is to make all elements, recursively, of this element hidden, even any focusable elements inside, but have it be still visual (no "display none")
   // this is for the background behind modal dialogs.

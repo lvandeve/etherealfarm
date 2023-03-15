@@ -484,6 +484,32 @@ var images_field = [
   field_infinity,
 ];
 
+var pond0 = `
+AAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAA
+AAA@@AAAAAA@@AAA
+AA@AA@@@AA@@@@@A
+AAAAAAAAAA@AAAAA
+AAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAA
+AAAAA@AAAAAAAAAA
+AAAA@@@@A@AAAAAA
+AAAAAAA@@AAAAAAA
+AAAAAAAAAAAAAAAA
+AA@@AAAAAAA@@AAA
+A@AA@A@AA@@A@@@A
+A@AAA@AAA@AAAAAA
+AAAAAAAAAAAAAAAA
+`;
+
+var images_pond = [
+generateImageCanvas(pond0),
+generateImageCanvas(pond0),
+generateImageCanvas(pond0),
+generateImageCanvas(pond0),
+];
+
 
 var empty = generateImageCanvas(`
 ................
@@ -567,6 +593,25 @@ var upgrade_arrow = generateImageCanvas(`
 ................
 `);
 
+
+var upgrade_arrow_small = generateImageCanvas(`
+............0...
+...........0Z0..
+..........0ZZZ0.
+.........000Z000
+...........0Z0..
+...........0Z0..
+...........000..
+................
+................
+................
+................
+................
+................
+................
+................
+................
+`);
 
 
 var image_seed = generateImageCanvas(`

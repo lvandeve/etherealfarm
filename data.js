@@ -21,6 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var seasonNames = ['spring', 'summer', 'autumn', 'winter',
                    'ethereal', 'infernal', 'infinity'];
 
+var ENABLE_POND_UPDATE = false; // in-development and not yet working
+
 var croptype_index = 0;
 var CROPTYPE_BERRY = croptype_index++;
 var CROPTYPE_MUSH = croptype_index++;
@@ -46,9 +48,9 @@ num_tiers_per_crop_type[CROPTYPE_MUSH] = 8;
 num_tiers_per_crop_type[CROPTYPE_FLOWER] = 8;
 num_tiers_per_crop_type[CROPTYPE_NUT] = 16;
 
-var etherealDeleteSessionTime = 60; // how long time to delete/replace more ethereal crops after deleting one for this session
-var etherealDeleteStartTime = 1800; // how long it's free to delete/replant without being considered a "session" at the start of a run
-var etherealDeleteWaitTime = 7200; // how long to wait til next ethereal deletion session once this one is over
+//var etherealDeleteSessionTime = 60; // how long time to delete/replace more ethereal crops after deleting one for this session
+//var etherealDeleteStartTime = 1800; // how long it's free to delete/replant without being considered a "session" at the start of a run
+//var etherealDeleteWaitTime = 7200; // how long to wait til next ethereal deletion session once this one is over
 
 function getCropTypeName(type) {
   if(type == CROPTYPE_BERRY) return 'berry';
@@ -92,7 +94,7 @@ function getCropTypeHelp(type, opt_no_nettles) {
 function getCropTypeHelp3(type) {
   switch(type) {
     case CROPTYPE_BERRY: return 'Produces infinity seeds. Boosted by flowers.';
-    case CROPTYPE_MUSH: return '';
+    case CROPTYPE_MUSH: return 'Produces infinity spores. Does not require berry neighbors. Boosted by flower tiers, but not as much as berries are.';
     case CROPTYPE_FLOWER: return 'Boosts neighboring berries.';
     case CROPTYPE_STINGING: return '';
     case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
@@ -3639,6 +3641,10 @@ function Crop2() {
   this.index = 0;
   this.planttime = 0;
   this.boost = Num(0);
+
+  this.type = undefined;
+  this.tier = 0;
+
   this.tagline = '';
   this.image = undefined;
   this.treelevel2 = 0; // minimum treelevel2 to unlock this crop, this is for display purposes
@@ -3989,25 +3995,25 @@ var squirrel2_0 = registerSquirrel2('squirrel', 5, 0, Res({resin:10}), 1.5, 'Aut
 
 // berries2
 crop2_register_id = 25;
-var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), etherealDeleteSessionTime, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
-var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), etherealDeleteSessionTime, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
-var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), etherealDeleteSessionTime, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
-var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), etherealDeleteSessionTime, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
-var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), etherealDeleteSessionTime, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
-var berry2_5 = registerBerry2('gooseberry', 14, 5, Res({resin:2e15}), etherealDeleteSessionTime, Num(256), undefined, 'boosts berries in the basic field (additive)', gooseberry);
-var berry2_6 = registerBerry2('grape', 18, 6, Res({resin:3e19}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts berries in the basic field (additive)', grape);
-//var berry2_7 = registerBerry2('honeyberry', 22, 6, Res({resin:1e24}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts berries in the basic field (additive)', grape);
+var berry2_0 = registerBerry2('blackberry', 0, 0, Res({resin:10}), default_ethereal_growtime, Num(0.25), undefined, 'boosts berries in the basic field (additive)', blackberry);
+var berry2_1 = registerBerry2('blueberry', 1, 1, Res({resin:100}), default_ethereal_growtime, Num(1), undefined, 'boosts berries in the basic field (additive)', blueberry);
+var berry2_2 = registerBerry2('cranberry', 4, 2, Res({resin:100000}), default_ethereal_growtime, Num(4), undefined, 'boosts berries in the basic field (additive)', cranberry);
+var berry2_3 = registerBerry2('currant', 7, 3, Res({resin:75e6}), default_ethereal_growtime, Num(16), undefined, 'boosts berries in the basic field (additive)', currant);
+var berry2_4 = registerBerry2('goji', 11, 4, Res({resin:2e12}), default_ethereal_growtime, Num(64), undefined, 'boosts berries in the basic field (additive)', goji);
+var berry2_5 = registerBerry2('gooseberry', 14, 5, Res({resin:2e15}), default_ethereal_growtime, Num(256), undefined, 'boosts berries in the basic field (additive)', gooseberry);
+var berry2_6 = registerBerry2('grape', 18, 6, Res({resin:3e19}), default_ethereal_growtime, Num(1024), undefined, 'boosts berries in the basic field (additive)', grape);
+var berry2_7 = registerBerry2('honeyberry', 22, 7, Res({resin:1e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts berries in the basic field (additive)', honeyberry);
 
 // mushrooms2
 crop2_register_id = 50;
-var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), etherealDeleteSessionTime, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
-var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), etherealDeleteSessionTime, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
-var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), etherealDeleteSessionTime, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
-var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), etherealDeleteSessionTime, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
-var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), etherealDeleteSessionTime, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
-var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), etherealDeleteSessionTime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
-var mush2_6 = registerMushroom2('shiitake', 17, 6, Res({resin:3e18}), etherealDeleteSessionTime, Num(1024), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', shiitake);
-//var mush2_7 = registerMushroom2('truffle', 22, 7, Res({resin:1e24}), etherealDeleteSessionTime, Num(4096), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', shiitake);
+var mush2_0 = registerMushroom2('champignon', 0, 0, Res({resin:20}), default_ethereal_growtime, Num(0.25), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
+var mush2_1 = registerMushroom2('matsutake', 3, 1, Res({resin:20000}), default_ethereal_growtime, Num(1), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', matsutake);
+var mush2_2 = registerMushroom2('morel', 5, 2, Res({resin:500e3}), default_ethereal_growtime, Num(4), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', morel);
+var mush2_3 = registerMushroom2('muscaria', 7, 3, Res({resin:50e6}), default_ethereal_growtime, Num(16), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', amanita);
+var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), default_ethereal_growtime, Num(64), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', images_oyster);
+var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), default_ethereal_growtime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
+var mush2_6 = registerMushroom2('shiitake', 17, 6, Res({resin:3e18}), default_ethereal_growtime, Num(1024), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', shiitake);
+var mush2_7 = registerMushroom2('truffle', 22, 7, Res({resin:1e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', truffle);
 
 
 // flowers2
@@ -4019,11 +4025,11 @@ var flower2_3 = registerFlower2('daisy', 9, 3, Res({resin:10e9}), default_ethere
 var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), default_ethereal_growtime, Num(64), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_dandelion);
 var flower2_5 = registerFlower2('iris', 15, 5, Res({resin:50e15}), default_ethereal_growtime, Num(256), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
 var flower2_6 = registerFlower2('lavender', 19, 6, Res({resin:500e18}), default_ethereal_growtime, Num(1024), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_lavender);
-//var flower2_7 = registerFlower2('orchid', 23, 7, Res({resin:10e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
+//var flower2_7 = registerFlower2('orchid', 23, 7, Res({resin:10e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_orchid);
 
 crop2_register_id = 100;
-var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, etherealDeleteSessionTime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
-var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, etherealDeleteSessionTime, Num(1.4), undefined, 'boosts stinging plants in the basic field (additive).', images_thistle);
+var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
+var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, default_ethereal_growtime, Num(1.4), undefined, 'boosts stinging plants in the basic field (additive).', images_thistle);
 
 crop2_register_id = 125;
 // similar to bee2_0: very low boost value here, but given that you can immediately increase the boost tremendously with gold lotuses means it's a lot in practice
@@ -4688,6 +4694,17 @@ var upgrade2_field9x8 = registerUpgrade2('larger field 9x8', LEVEL2, Res({resin:
   if(changingFieldSizeNowOk()) changeFieldSize(state, numw, numh);
 }, function(){return state.numw >= 8 && state.numh >= 8}, 1, 'increase basic field size to 9x8 tiles', undefined, undefined, field_summer[0]);
 
+///////////////////////////
+LEVEL2 = 22;
+upgrade2_register_id = 1700;
+
+var upgrade2_field2_9x8 = registerUpgrade2('ethereal field 9x8', LEVEL2, Res({resin:10e24}), 1, function() {
+  var numw = Math.max(9, state.numw2);
+  var numh = Math.max(8, state.numh2);
+  changeField2Size(state, numw, numh);
+  initField2UI();
+}, function(){return state.numw2 >= 8 && state.numh2 >= 8}, 1, 'increase ethereal field size to 9x8 tiles', undefined, undefined, field_ethereal[0]);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 registered_upgrades2.sort(function(a, b) {
@@ -4762,11 +4779,17 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
   var base = Math.pow(getFruitTierStrength(tier), 0.75) * 0.05;
 
   if(ability == FRUIT_BERRYBOOST) {
-    return Num(base * 1.0 * level);
+    if(tier >= 9) {
+      return Num(base * 1.5 * level).powr(1.1);
+    } else {
+      return Num(base * 1.0 * level);
+    }
   }
   if(ability == FRUIT_MUSHBOOST) {
-    if(tier >= 8) {
-      return Num(base * 2 * level);
+    if(tier >= 9) {
+      return Num(base * 2.5 * level).powr(1.1);
+    } else if(tier >= 8) {
+      return Num(base * 2.0 * level);
     } else {
       // FRUIT_MUSHBOOST is in theory mostly only useful in combination with FRUIT_BERRYBOOST (due to needing more seeds too), and since the combination of both then takes up 2 slots (while flower takes up only 1 slot), this one can get a bit higher multiplier to compensate
       // note that this doesn't help that much, given that for high level fruits, multipliers per slot are in the thousands
@@ -4899,7 +4922,7 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
     return Num(base * 1.1 * level);
   }
   if(ability == FRUIT_SPORES_OVERLOAD) {
-    return Num(base * 4 * level); // a much higher multiplier than FRUIT_MUSHBOOST, but this is only reachable if more than enough seeds are available
+    return Num(base * 2.5 * level).powr(1.1).mulr(2.5); // same as FRUIT_MUSHBOOST but a much higher multiplier, but this is only reachable if more than enough seeds are available
   }
 
   return Num(0.1);
@@ -7265,6 +7288,10 @@ function Crop3() {
   this.planttime = 0;
   this.basicboost = Num(0); // to basic field
   this.infboost = Num(0); // to infinity field
+
+  this.type = undefined;
+  this.tier = 0;
+
   this.tagline = '';
   this.image = undefined;
 };
@@ -7333,7 +7360,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   var result = this.prod.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-  // flower boost
+  // flower boost for berry
   if(f && this.type == CROPTYPE_BERRY) {
     var flowermul = new Num(1);
     var num = 0;
@@ -7354,6 +7381,35 @@ Crop3.prototype.getProd = function(f, breakdown) {
     if(num) {
       result.mulInPlace(flowermul);
       if(breakdown) breakdown.push(['flowers (' + num + ')', true, flowermul, result.clone()]);
+    }
+  }
+
+  // flower boost for mushroom: does not use getInfBoost, but depends on relative tier
+  if(f && this.type == CROPTYPE_MUSH) {
+    var flowermul = new Num(1);
+    var num = 0;
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+      var n = state.field3[y2][x2];
+      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_FLOWER) {
+        var c2 = crops3[n.cropIndex()];
+        if(c2.tier >= this.tier - 1) {
+          var boost = Num(1);
+          if(c2.tier <= this.tier - 1) boost = Num(0.5);
+          if(c2.tier >= this.tier + 1) boost = Num(1.5);
+          if(boost.neqr(0)) {
+            flowermul.addInPlace(boost);
+            num++;
+          }
+        }
+      }
+    }
+    if(num) {
+      result.mulInPlace(flowermul);
+      if(breakdown) breakdown.push(['flower tiers (' + num + ')', true, flowermul, result.clone()]);
     }
   }
 
@@ -7481,6 +7537,13 @@ function registerBerry3(name, tier, cost, prod, basicboost, planttime, image, op
   return index;
 }
 
+function registerMushroom3(name, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_MUSH, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.prod = prod;
+  return index;
+}
+
 function registerFlower3(name, tier, cost, infboost, basicboost, planttime, image, opt_tagline) {
   var index = registerCrop3(name, CROPTYPE_FLOWER, tier, cost, basicboost, planttime, image, opt_tagline);
   var crop = crops3[index];
@@ -7522,7 +7585,7 @@ var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), 
 var berry3_4 = registerBerry3('gold blackberry', 4, Res({infseeds:5e18}), Res({infseeds:50e9}), Num(0.4), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader4, 2));
 
 crop3_register_id = 600;
-// mushrooms? maybe not, but ids reserved for in case
+var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, 2));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, 1));
@@ -7534,6 +7597,7 @@ var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(2
 crop3_register_id = 1200;
 var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader2, 0));
 var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, 4));
+var bee3_4 = registerBee3('gold bee nest', 4, Res({infseeds:5e21}), Num(256), Num(1.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader4, 0));
 
 // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
 // the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
@@ -7547,6 +7611,110 @@ function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+var fishtype_index = 0;
+var FISHTYPE_GOLDFISH = fishtype_index++; // infinity field production bonus
+var FISHTYPE_KOI = fishtype_index++; // infinity field to basic field bonus
+
+function getFishTypeName(type) {
+  if(type == FISHTYPE_GOLDFISH) return 'Goldfish';
+  if(type == FISHTYPE_KOI) return 'Koi';
+  return 'unknown';
+}
+
+// opt_crop is cropid for specific crop in case it has a slightly different description
+function getFishTypeHelp(type, opt_no_nettles) {
+  switch(type) {
+    case FISHTYPE_GOLDFISH: return 'Improves infinity field production.';
+    case FISHTYPE_KOI: return 'Improves infinity to basic field bonus.';
+  }
+  return undefined;
+}
+
+function Fish() {
+  this.name = 'a';
+  this.cost = Res();
+  this.index = 0;
+
+  this.type = undefined;
+  this.tier = 0;
+
+  this.tagline = '';
+  this.image = undefined;
+};
+
+Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
+  var count = state.fishcount[this.index] + (opt_adjust_count || 0);
+  if(opt_force_count != undefined) count = opt_force_count;
+
+  var mul = 2;
+  var countfactor = Math.pow(mul, count);
+  return this.cost.mulr(countfactor);
+};
+
+var FISHRECOUP = 1.0;
+
+Fish.prototype.getRecoup = function(f, opt_adjust_count) {
+  var adjust = opt_adjust_count || 0;
+  var result = this.getCost(adjust - 1).mulr(FISHRECOUP);
+  return result;
+};
+
+var registered_fishes = []; // indexed consecutively, gives the index to crops3
+var fishes = []; // indexed by fish index
+
+
+var fish_tiers = [];
+
+// 16-bit ID, auto incremented with registerFish, but you can also set it to a value yourself, to ensure consistent IDs for various fishes (between savegames) in case of future upgrades
+var fish_register_id = -1;
+
+// prod = for infinity field
+// basicboost = to basic field
+function registerFish(name, fishtype, tier, cost, image, opt_tagline) {
+  if(!image) image = image_missingfish;
+  if(fishes[fish_register_id] || fish_register_id < 0 || fish_register_id > 65535) throw 'fish id already exists or is invalid!';
+  var fish = new Fish();
+  fish.index = fish_register_id++;
+  fishes[fish.index] = fish;
+  registered_fishes.push(fish.index);
+
+  fish.name = name;
+  fish.type = fishtype;
+  fish.tier = tier;
+  fish.cost = cost;
+  fish.image = image;
+  fish.tagline = opt_tagline || '';
+
+  if(fishtype != undefined && tier != undefined) {
+    if(!fish_tiers[fishtype]) fish_tiers[fishtype] = [];
+    fish_tiers[fishtype][tier] = fish;
+  }
+
+  return fish.index;
+}
+
+function registerGoldfish(name, tier, cost, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_GOLDFISH, tier, cost, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
+function registerKoi(name, tier, cost, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_KOI, tier, cost, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
+fish_register_id = 0;
+var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:10}));
+
+fish_register_id = 200;
+var koi_0 = registerKoi('koi', 0, Res({infspores:10}));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -8415,6 +8583,7 @@ registerPlantTypeMedal3(bee3_3);
 registerPlantTypeMedal3(brassica3_4);
 registerPlantTypeMedal3(berry3_4);
 registerPlantTypeMedal3(flower3_4);
+registerPlantTypeMedal3(bee3_4);
 
 
 
@@ -8428,10 +8597,16 @@ registerPlantTypeMedal3(flower3_4);
 function holidayEventActive() {
   var time = util.getTime();
 
-  var date_20221206_begin = 1670284800;
+  /*var date_20221206_begin = 1670284800;
   var date_20230106_end = 1673049599;
   if(time >= date_20221206_begin && time <= date_20230106_end) {
     return 1;
+  }*/
+
+  var date_20230320_begin = 1679270400;
+  var date_20230420_end = 1682035200;
+  if(time >= date_20230320_begin && time <= date_20230420_end) {
+    return 2;
   }
 
   return 0;
