@@ -4082,7 +4082,7 @@ var update = function(opt_ignorePause) {
           if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
-        if(fast_forwarding) continue;
+        if(fast_forwarding && !action.by_automaton) continue;
 
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way

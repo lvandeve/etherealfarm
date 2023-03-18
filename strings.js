@@ -64,3 +64,4 @@ The automatic blueprint is useful to get a different layout later in the run tha
 <br><br>
 During some challenges you may want this disabled, toggle it off in the automaton tab in this case.
 `;
+var boostableCrop2Hint = 'Boosted by lotuses and other special ethereal neighbors';

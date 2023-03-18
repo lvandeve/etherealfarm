@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.8.6b (2023-03-18):';
+  text += '<br/>• Fixed bug: auto-planting of ethereal blueprints was sometimes not working.';
+  text += '<br/>• UI tweaks, including better sorting order for planting ethereal crops.';
+  text += '<br/><br/>';
+
   text += '0.8.6 (2023-03-15):';
   text += '<br/>• Eggs event configured to start on March 20th! Eggs with random rewards will drop every now and then. The event will run until April 20th.';
   text += '<br/>• Added two new crops and 1 new upgrade for ethereal tree level 22.';

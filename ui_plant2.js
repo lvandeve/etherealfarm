@@ -80,6 +80,16 @@ function makePlantChip2(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   return flex;
 }
 
+function crop2sortfun(a, b) {
+  var ac = crops2[a].cost.resin;
+  var bc = crops2[b].cost.resin;
+  if(ac.eqr(0) || bc.eqr(0)) {
+    // for crops that don't use resin as cost
+    ac = Num(crops2[a].tier);
+    bc = Num(crops2[b].tier);
+  }
+  return ac.lt(bc) ? 1 : -1;
+}
 
 // get the array of unlocked crops in the plant dialog, in order they should be displayed:
 function getCrop2Order() {
@@ -87,10 +97,24 @@ function getCrop2Order() {
   for(var i = 0; i < registered_crops2.length; i++) {
     if(state.crops2[registered_crops2[i]].unlocked) unlocked.push(registered_crops2[i]);
   }
-
   var result = [];
-
   var added = {};
+
+  var types = [CROPTYPE_LOTUS, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_STINGING, CROPTYPE_FERN2, CROPTYPE_MISTLETOE, CROPTYPE_AUTOMATON, CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA];
+
+  for(var j = 0; j < types.length; j++) {
+    var highest = undefined;
+    for(var i = 0; i < unlocked.length; i++) {
+      if(added[unlocked[i]]) continue;
+      var c = crops2[unlocked[i]];
+      if(c.type == types[j] && (!highest || c.cost.gt(highest.cost))) highest = c;
+    }
+    if(highest) {
+      result.push(highest.index);
+      added[highest.index] = true;
+    }
+  }
+  result.sort(crop2sortfun);
 
   // everything else
   var array = [];
@@ -98,16 +122,7 @@ function getCrop2Order() {
     if(added[unlocked[i]]) continue;
     array.push(unlocked[i]);
   }
-  array.sort(function(a, b) {
-    var ac = crops2[a].cost.resin;
-    var bc = crops2[b].cost.resin;
-    if(ac.eqr(0) || bc.eqr(0)) {
-      // for crops that don't use infseeds as cost
-      ac = Num(crops2[a].tier);
-      bc = Num(crops2[b].tier);
-    }
-    return ac.lt(bc) ? 1 : -1;
-  });
+  array.sort(crop2sortfun);
   for(var i = 0; i < array.length; i++) {
     result.push(array[i]);
     added[array[i]] = true;

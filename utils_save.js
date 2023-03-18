@@ -1126,7 +1126,7 @@ function encToken(token, prev_id) {
   }
   return result;
 
-  if(type == TYPE_ARRAY_STRUCT) {
+  /*if(type == TYPE_ARRAY_STRUCT) {
     result += encArrayStruct(token.value);
   } else if(type < 12) {
     result += encTokenValue(token.value, type);
@@ -1146,7 +1146,7 @@ function encToken(token, prev_id) {
       }
     }
   }
-  return result;
+  return result;*/
 }
 
 function decArrayStruct(reader, token) {

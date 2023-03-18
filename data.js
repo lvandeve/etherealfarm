@@ -3907,6 +3907,7 @@ function registerCrop2(name, treelevel2, cost, prod, boost, planttime, effect_de
 }
 
 function registerBerry2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  if(effect_description_long) effect_description_long += '. ' + boostableCrop2Hint;
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_BERRY, tier);
   var crop = crops2[index];
   crop.effect = effect;
@@ -3914,6 +3915,7 @@ function registerBerry2(name, treelevel2, tier, cost, planttime, effect, effect_
 }
 
 function registerMushroom2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  if(effect_description_long) effect_description_long += '. ' + boostableCrop2Hint;
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_MUSH, tier);
   var crop = crops2[index];
   crop.effect = effect;
@@ -3921,6 +3923,7 @@ function registerMushroom2(name, treelevel2, tier, cost, planttime, effect, effe
 }
 
 function registerFlower2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  if(effect_description_long) effect_description_long += '. ' + boostableCrop2Hint;
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_FLOWER, tier);
   var crop = crops2[index];
   crop.effect = effect;
@@ -3928,6 +3931,7 @@ function registerFlower2(name, treelevel2, tier, cost, planttime, effect, effect
 }
 
 function registerNettle2(name, treelevel2, tier, cost, boost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  if(effect_description_long) effect_description_long += '. ' + boostableCrop2Hint;
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_STINGING, tier);
   var crop = crops2[index];
   crop.effect = effect;
@@ -3935,6 +3939,7 @@ function registerNettle2(name, treelevel2, tier, cost, boost, planttime, effect,
 }
 
 function registerBrassica2(name, treelevel2, tier, cost, boost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  if(effect_description_long) effect_description_long += '. ' + boostableCrop2Hint;
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_BRASSICA, tier);
   var crop = crops2[index];
   crop.effect = effect;
@@ -3966,6 +3971,7 @@ function registerFern2(name, treelevel2, tier, cost, planttime, effect_descripti
 }
 
 function registerBeehive2(name, treelevel2, tier, cost, planttime, effect, effect_description_short, effect_description_long, image, opt_tagline) {
+  if(effect_description_long) effect_description_long += '. ' + boostableCrop2Hint;
   var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_BEE, tier);
   var crop = crops2[index];
   crop.effect = effect;

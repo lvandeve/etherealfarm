@@ -299,7 +299,8 @@ function getSpiralXY(x, y, w, h) {
 // for ethereal field
 // if allow_override is true, overrides all non-matching crops, but keeps matching ones there
 // if allow_override is false, will not replace any existing crop on the field
-function plantBluePrint2(b, allow_override) {
+// opt_by_automaton: indicate the plant actions as by_automaton, to circumvent fast_forwarding in game.js
+function plantBluePrint2(b, allow_override, opt_by_automaton) {
   if(!b || b.numw == 0 || b.numh == 0) return 0;
 
   // match up corners such that standard tree position overlap, in case field sizes are different
@@ -346,16 +347,16 @@ function plantBluePrint2(b, allow_override) {
           }
           if(c.type == c2.type) {
             if(c2.tier < c.tier) {
-              newactions_delete.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+              newactions_delete.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
             } else {
-              newactions_plant.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+              newactions_plant.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
             }
           } else {
-            newactions_delete.push({type:ACTION_DELETE2, x:fx, y:fy, shiftPlanted:false, silent:true});
-            newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+            newactions_delete.push({type:ACTION_DELETE2, x:fx, y:fy, shiftPlanted:false, silent:true, by_automaton:!!opt_by_automaton});
+            newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
           }
         } else {
-          newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+          newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
         }
       }
     }
@@ -397,7 +398,7 @@ function plantBluePrint2(b, allow_override) {
         }
         var action_type = c ? ACTION_REPLACE2 : ACTION_PLANT2;
         var array = squirrel_automaton ? newactions_automaton_squirrel : newactions_plant_replace;
-        array.push({type:action_type, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true});
+        array.push({type:action_type, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
       }
       for(var i = 0; i < newactions_plant_replace.length; i++) newactions.push(newactions_plant_replace[i]);
       for(var i = 0; i < newactions_automaton_squirrel.length; i++) newactions.push(newactions_automaton_squirrel[i]);
