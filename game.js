@@ -2345,14 +2345,17 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[brassica3_4].had) unlockInfinityCrop(berry3_4);
   if(state.crops3[berry3_4].had) unlockInfinityCrop(flower3_4);
   if(state.crops3[flower3_4].had) unlockInfinityCrop(bee3_4);
-  //if(ENABLE_POND_UPDATE) if(state.crops3[berry3_4].had) unlockInfinityCrop(mush3_4);
+  if(state.crops3[berry3_4].had) unlockInfinityCrop(mush3_4);
 }
 
-
+// may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
 function maybeUnlockFishes() {
-  if(!ENABLE_POND_UPDATE) return;
-  //unlockFish(goldfish_0);
-  //unlockFish(koi_0);
+  var first_fish_unlocked = state.fishes[goldfish_0].unlocked;
+  unlockFish(goldfish_0);
+  unlockFish(koi_0);
+
+  var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
+  if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
 }
 
 function doNextAutoChoice() {
@@ -2437,24 +2440,24 @@ function doAutoAction(index, part, opt_manually) {
     if(o.enable_blueprint) {
       var b = state.blueprints[o.blueprint];
       if(b) {
-        plantBluePrint(b, true, true);
+        plantBluePrint(b, true, !opt_manually);
         did_something = true;
       }
     }
     if(o.enable_blueprint2) {
       var b = state.blueprints2[o.blueprint2];
       if(b) {
-        plantBluePrint2(b, true, true);
+        plantBluePrint2(b, true, !opt_manually);
         did_something = true;
       }
     }
     if(o.enable_fruit) {
-      addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit});
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit, by_automaton:!opt_manually});
       did_something = true;
     }
     // arguably this could also go in part 2, but for the manual toggling of auto-actions it's more clear what's going on if it's executed immediately in part 1
     if(o.enable_weather && autoActionExtraUnlocked()) {
-      addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:true});
+      addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:!opt_manually});
       did_something = true;
     }
   }
@@ -2462,7 +2465,7 @@ function doAutoAction(index, part, opt_manually) {
   if(part == 2) {
     if(o.enable_fern && autoActionExtraUnlocked()) {
       if(state.fern) {
-        addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:true});
+        addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:!opt_manually});
       }
       did_something = true;
     }
@@ -2485,7 +2488,7 @@ function doAutoActions() {
     var triggered2 = o.done && !o.done2 && state.c_runtime >= o.time2;
     if(triggered && !o.enable_blueprint) triggered2 = true; // no need to wait for planting blueprint if there's none built
     if(!o.done && triggered) {
-      addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:i});
+      addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:i, by_automaton:true});
       o.done = true;
       o.done2 = false;
       o.time2 = state.c_runtime + autoActionPart2Time;
@@ -2493,7 +2496,7 @@ function doAutoActions() {
       did_something |= doAutoAction(i, 1);
     }
     if(!o.done2 && triggered2) {
-      addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
+      addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION, by_automaton:true});
       o.done2 = true;
       o.time2 = 0; // no big reason to do this other than make it smaller in the savegame file format
       did_something |= doAutoAction(i, 2);
@@ -3210,8 +3213,14 @@ var update = function(opt_ignorePause) {
     if(!paused_ || update_ui_paused) precomputeField(); // do this even before the paused check, because some UI elements use prefield
   }
 
+  var total_d = util.getTime() - state.prevtime;
+
+  // whether the game is fast forwarding a long AFK, and thus doesn't do active actions like weather, picking fern or refreshing watercress, when player tries to perform those while the game computations are still speeding along
+  // this will not fast-forward actions marked as by_automaton, that is, automaton can do those actions at any time including during sped-up computations
+  var fast_forwarding = total_d > 2;
+
   if(paused_) {
-    var d = util.getTime() - state.prevtime;
+    var d = total_d;
     state.c_pausetime += d;
     state.g_pausetime += d;
     state.prevtime = state.time = util.getTime();
@@ -3472,14 +3481,11 @@ var update = function(opt_ignorePause) {
     var upgrades_done = false;
     var upgrades2_done = false;
 
-    // whether the game is fast forwarding a long AFK, and thus doesn't do active actions like weather, picking fern or refreshing watercress, when player tries to perform those while the game computations are still speeding along
-    // this will not fast-forward actions marked as by_automaton, that is, automaton can do those actions at any time including during sped-up computations
-    var fast_forwarding = (nexttime - state.time > 1);
-
     // action
     while(actions.length) {
       var action = actions[0];
       actions.shift();
+      if(fast_forwarding && !action.by_automaton) continue;
       var type = action.type;
       if(type == ACTION_STORE_UNDO_BEFORE_AUTO_ACTION) {
         if(state.c_runtime > 10) { // don't do this when just starting a new run: then if you press undo, you'd want to undo the transcension, instead of having it be overwritten with this undo from just after transcension
@@ -3493,8 +3499,6 @@ var update = function(opt_ignorePause) {
       } else if(type == ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION) {
         force_no_store_undo = true;
       } else if(type == ACTION_UPGRADE) {
-        if(fast_forwarding && !action.by_automaton) continue;
-
         if(state.upgrades_new) {
           // applied upgrade, must have been from side panel, do not show upgrade tab in red anymore
           for(var j = 0; j < registered_upgrades.length; j++) {
@@ -3590,8 +3594,6 @@ var update = function(opt_ignorePause) {
           }
         }
       } else if(type == ACTION_UPGRADE2) {
-        if(fast_forwarding) continue;
-
         var u = upgrades2[action.u];
         var cost = u.getCost();
         if(state.res.lt(cost)) {
@@ -3608,8 +3610,6 @@ var update = function(opt_ignorePause) {
         }
         upgrades2_done = true;
       } else if(type == ACTION_SQUIRREL_UPGRADE) {
-        if(fast_forwarding) continue;
-
         var s = squirrel_stages[state.squirrel_evolution][action.s];
         var s2 = state.squirrel_stages[action.s];
         var b = action.b; // which branch (left: 0, middle: 1, right: 2)
@@ -3685,8 +3685,6 @@ var update = function(opt_ignorePause) {
           }
         }
       } else if(type == ACTION_SQUIRREL_RESPEC) {
-        if(fast_forwarding) continue;
-
         var ok = true;
         if(!haveSquirrel()) {
           ok = false;
@@ -3723,12 +3721,9 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_SQUIRREL_EVOLUTION) {
-        if(fast_forwarding) continue;
         performSquirrelEvolution();
         store_undo = true;
       } else if(type == ACTION_AMBER) {
-        if(fast_forwarding) continue;
-
         var ok = true;
 
         var cost = getAmberCost(action.effect);
@@ -3846,12 +3841,8 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND) {
-        if(fast_forwarding) continue;
-
         plantBluePrint(action.blueprint, false);
       } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
-        if(fast_forwarding && !action.by_automaton) continue;
-
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field[action.y][action.x];
@@ -4082,8 +4073,6 @@ var update = function(opt_ignorePause) {
           if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
-        if(fast_forwarding && !action.by_automaton) continue;
-
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field2[action.y][action.x];
@@ -4224,7 +4213,7 @@ var update = function(opt_ignorePause) {
           }
 
           computeDerived(state); // correctly update derived stats based on changed field state. It's ok that this happens twice for replace (in next if) since this is an intermediate state now
-          store_undo = true;
+          if(!action.by_automaton) store_undo = true;
         }
 
         if(ok && (type == ACTION_PLANT2 || type == ACTION_REPLACE2)) {
@@ -4280,11 +4269,9 @@ var update = function(opt_ignorePause) {
           }
 
           computeDerived(state); // correctly update derived stats based on changed field state
-          store_undo = true;
+          if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PLANT3 || type == ACTION_DELETE3 || type == ACTION_REPLACE3) {
-        if(fast_forwarding) continue;
-
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field3[action.y][action.x];
@@ -4428,8 +4415,6 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PLANT_FISH || type == ACTION_DELETE_FISH || type == ACTION_REPLACE_FISH) {
-        if(fast_forwarding) continue;
-
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.pond[action.y][action.x];
@@ -4519,8 +4504,6 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_FERN) {
-        if(fast_forwarding && !action.by_automaton) continue;
-
         if(state.fern && state.fernx == action.x && state.ferny == action.y) {
           clickedfern = true;
           // actual giving of resources done further below when clickedfern == true
@@ -4530,7 +4513,6 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PRESENT) {
-        if(fast_forwarding) continue;
         if(!(holidayEventActive() & 3)) continue;
 
         if(state.present_effect && state.presentx == action.x && state.presenty == action.y) {
@@ -4539,8 +4521,6 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
-        if(fast_forwarding && !action.by_automaton) continue;
-
         var a = action.ability;
         var mistd = state.time - state.misttime;
         var sund = state.time - state.suntime;
@@ -4613,8 +4593,6 @@ var update = function(opt_ignorePause) {
         }
         if(havePerma) state.lastWeather = a;
       } else if(type == ACTION_FRUIT_SLOT) {
-        if(fast_forwarding) continue;
-
         var f = action.f;
         if(action.precise_slot != undefined) {
           var to = action.precise_slot;
@@ -4747,8 +4725,6 @@ var update = function(opt_ignorePause) {
         }
         //updateFruitUI();
       } else if(type == ACTION_FRUIT_REORDER) {
-        if(fast_forwarding) continue;
-
         var f = action.f;
         var a = action.index;
         var up = action.up;
@@ -4848,8 +4824,6 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_TOGGLE_AUTOMATON) {
-        if(fast_forwarding) continue;
-
         // action object is {toggle:what, on:boolean or int, fun:optional function to call after switching}, and what is: 0: entire automaton, 1: auto upgrades, 2: auto planting
         if(action.what == 0) {
           state.automaton_enabled = action.on;
@@ -5525,7 +5499,7 @@ var update = function(opt_ignorePause) {
     }
     if(haveInfinityField()) {
       maybeUnlockInfinityCrops();
-      if(state.g_res.infspores.gtr(0)) maybeUnlockFishes();
+      if(haveFishes()) maybeUnlockFishes();
       if(state.infinityboost.gt(state.g_max_infinityboost)) state.g_max_infinityboost = state.infinityboost.clone();
     }
 

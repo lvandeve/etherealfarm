@@ -1133,8 +1133,9 @@ Num.smallValueNotation = function(v, precision) {
   } else if(result.length >= precision) {
     var dotpos = result.indexOf('.');
     if(dotpos >= 0) {
-      var keep = Math.max(dotpos, precision + 1);
-      if(keep == dotpos + 1) keep--;
+      var keep = Math.max(dotpos, precision + 1); // keep up to requested precision
+      while(keep > dotpos && result[keep - 1] == '0') keep--; // don't keep trailing zeros
+      if(keep == dotpos + 1) keep--; // remove dot itself if nothing after dot kept
       result = result.substr(0, keep);
     }
   }

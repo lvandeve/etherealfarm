@@ -803,6 +803,10 @@ function createStatsDialog() {
     text += '• infinity production boost to basic field: ' + open + state.infinityboost.toPercentString() + close + '<br>';
     text += '• infinity crops planted: ' + open + state.g_numplanted3 + close + '<br>';
     text += '• infinity crops deleted: ' + open + state.g_numunplanted3 + close + '<br>';
+    if(haveFishes()) {
+      text += '• fishes placed: ' + open + state.g_numplanted_fish + close + '<br>';
+      text += '• fishes deleted: ' + open + state.g_numunplanted_fish + close + '<br>';
+    }
     text += '<br>';
   }
 

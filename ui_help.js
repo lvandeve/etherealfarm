@@ -515,6 +515,19 @@ registerHelpDialog(42, 'Infinity field', 'You unlocked the infinity field!',
    [field_infinity[0],image_pond_on_field,field_infinity[0]],
    [field_infinity[0],field_infinity[0],field_infinity[0]]]);
 
+registerHelpDialog(43, 'Infinity pond fishes', 'You unlocked fishes in the infinity pond!',
+    `You unlocked fishes in the infinity pond!
+    <br><br>
+    Fishes cost infinity spores to place. They can be accessed by clicking the pond in the infinity field, then placing fishes on cells of the pond.
+    <br><br>
+    Fishes upgrade the infinity field in various ways. The location of fishes in the pond does not matter.
+    `,
+    image_goldfish0,
+    undefined,
+  [[images_pond[0],images_pond[1],images_pond[0]],
+   [images_pond[1],images_pond[2],blendImages(images_pond[3], image_goldfish0)],
+   [blendImages(images_pond[3], image_koi0),images_pond[1],images_pond[0]]]);
+
 
 function createKeyboardHelpDialog() {
   var dialog = createDialog({scrollable:true, title:'Shortcuts'});

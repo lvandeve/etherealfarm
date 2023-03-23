@@ -454,7 +454,7 @@ params.size: DIALOG_TINY, DIALOG_SMALL, DIALOG_MEDIUM or DIALOG_LARGE
 parrams.narrow: content will be more narrow, the width of the top icon / close button will be removed from each side, allows making a taller icon
 params.scrollable: whether to make the content flex scrollable with scrollbar if the content is too large
 params.scrollable_canchange: like scrollable, but with more event listeners to adapt to changing content
-params.shortcutfun: a function handling shortcuts that are active while this dialog is open
+params.shortcutfun: a function handling shortcuts that are active while this dialog is open. Takes JS event e as a parameter
 params.nobgclose: boolean, don't close by clicking background or pressing esc, for e.g. savegame recovery dialog
 params.swapbuttons: swap the order of the buttons. This order can also be swapped by the state.cancelbuttonright setting. This swaps them in addition to what that does
 params.bgstyle: className of alternative background CSS style, e.g. 'efDialogEthereal'
@@ -491,7 +491,6 @@ function createDialog(params) {
   dialog_level++;
   updateDialogLevel();
   dialogshortcutfun = params.shortcutfun; // may be undefined
-
   removeAllTooltips(); // this is because often clicking some button with a tooltip that opens a dialog, then causes that tooltip to stick around which is annoying
   removeAllDropdownElements();
 
@@ -708,7 +707,7 @@ function createOverlay(zIndex) {
   var overlay = makeDiv(0, 0, window.innerWidth, window.innerHeight);
   overlay.style.width = '100%';
   overlay.style.height = '100%';
-  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.35)';
   overlay.style.position = 'fixed';
   overlay.style.zIndex = '' + zIndex;
   return overlay;
@@ -1322,6 +1321,13 @@ function getCostAffordTimer(cost) {
   if(cost.infseeds.gtr(0)) {
     var p = cost.infseeds.div(state.res.infseeds).mulr(100);
     var t = cost.infseeds.sub(state.res.infseeds).div(gain.infseeds);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.infspores.gtr(0)) {
+    var p = cost.infspores.div(state.res.infspores).mulr(100);
+    var t = cost.infspores.sub(state.res.infspores).div(gain.infspores);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }

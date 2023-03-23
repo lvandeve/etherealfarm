@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.9.0 (2023-03-23):';
+  text += '<br/>• New infinity crop: golden mushroom.';
+  text += '<br/>• Added ability to place fishes in the infinity pond, available once you have infinity mushrooms. Only a few fish types added in this first version of it.';
+  text += '<br/><br/>';
+
   text += '0.8.6b (2023-03-18):';
   text += '<br/>• Fixed bug: auto-planting of ethereal blueprints was sometimes not working.';
   text += '<br/>• UI tweaks, including better sorting order for planting ethereal crops.';

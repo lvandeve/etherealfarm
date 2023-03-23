@@ -21,8 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var seasonNames = ['spring', 'summer', 'autumn', 'winter',
                    'ethereal', 'infernal', 'infinity'];
 
-var ENABLE_POND_UPDATE = false; // in-development and not yet working
-
 var croptype_index = 0;
 var CROPTYPE_BERRY = croptype_index++;
 var CROPTYPE_MUSH = croptype_index++;
@@ -91,11 +89,11 @@ function getCropTypeHelp(type, opt_no_nettles) {
 }
 
 // similar to getCropTypeHelp, but for field3 (infinity field)
-function getCropTypeHelp3(type) {
+function getCropTypeHelp3(type, opt_have_fishes) {
   switch(type) {
     case CROPTYPE_BERRY: return 'Produces infinity seeds. Boosted by flowers.';
-    case CROPTYPE_MUSH: return 'Produces infinity spores. Does not require berry neighbors. Boosted by flower tiers, but not as much as berries are.';
-    case CROPTYPE_FLOWER: return 'Boosts neighboring berries.';
+    case CROPTYPE_MUSH: return 'Produces infinity spores. Does not require berry neighbors. Boosted by flower tiers, but not as much as berries are and depends on relative tier difference.';
+    case CROPTYPE_FLOWER: return opt_have_fishes ? 'Boosts neighboring berries. Also boosts mushrooms but with a smaller boost depending on relative tier.' : 'Boosts neighboring berries.';
     case CROPTYPE_STINGING: return '';
     case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
     case CROPTYPE_MISTLETOE: return '';
@@ -7312,6 +7310,7 @@ var sameTypeCostMultiplier3_flower_b = 2;
 var sameTypeCostMultiplier3_bee = 2;
 var sameTypeCostMultiplier3_bee_b = 2;
 var sameTypeCostMultiplier3_runestone = 1000;
+var sameTypeCostMultiplier3_mushroom = 10;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 Crop3.prototype.isReal = function() {
@@ -7340,6 +7339,7 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   var mul = (this.tier < 4) ? sameTypeCostMultiplier3 : sameTypeCostMultiplier3_b;
   if(this.type == CROPTYPE_FLOWER) mul = (this.tier < 4) ? sameTypeCostMultiplier3_flower : sameTypeCostMultiplier3_flower_b;
   if(this.type == CROPTYPE_BEE) mul = (this.tier < 4) ? sameTypeCostMultiplier3_bee : sameTypeCostMultiplier3_bee_b;
+  if(this.type == CROPTYPE_MUSH) mul = sameTypeCostMultiplier3_mushroom;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -7388,6 +7388,14 @@ Crop3.prototype.getProd = function(f, breakdown) {
       result.mulInPlace(flowermul);
       if(breakdown) breakdown.push(['flowers (' + num + ')', true, flowermul, result.clone()]);
     }
+  }
+
+  // goldfish
+  if(this.type == CROPTYPE_BERRY && state.fishcount[goldfish_0]) {
+    var num = state.fishcount[goldfish_0];
+    var mul = new Num(1 + goldfish_0_bonus * num);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['goldfish', true, mul, result.clone()]);
   }
 
   // flower boost for mushroom: does not use getInfBoost, but depends on relative tier
@@ -7451,6 +7459,14 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
       result.mulInPlace(beemul);
       if(breakdown) breakdown.push(['bees (' + num + ')', true, beemul, result.clone()]);
     }
+  }
+
+  // koi to runestone
+  if(this.type == CROPTYPE_RUNESTONE && state.fishcount[koi_0]) {
+    var num = state.fishcount[koi_0];
+    var mul = Num(1 + koi_0_bonus * num);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['kois', true, mul, result.clone()]);
   }
 
   return result;
@@ -7632,15 +7648,6 @@ function getFishTypeName(type) {
   return 'unknown';
 }
 
-// opt_crop is cropid for specific crop in case it has a slightly different description
-function getFishTypeHelp(type, opt_no_nettles) {
-  switch(type) {
-    case FISHTYPE_GOLDFISH: return 'Improves infinity field production.';
-    case FISHTYPE_KOI: return 'Improves infinity to basic field bonus.';
-  }
-  return undefined;
-}
-
 function Fish() {
   this.name = 'a';
   this.cost = Res();
@@ -7649,6 +7656,7 @@ function Fish() {
   this.type = undefined;
   this.tier = 0;
 
+  this.effect_description = '';
   this.tagline = '';
   this.image = undefined;
 };
@@ -7657,7 +7665,7 @@ Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   var count = state.fishcount[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
 
-  var mul = 2;
+  var mul = 20;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -7681,7 +7689,7 @@ var fish_register_id = -1;
 
 // prod = for infinity field
 // basicboost = to basic field
-function registerFish(name, fishtype, tier, cost, image, opt_tagline) {
+function registerFish(name, fishtype, tier, cost, effect_description, image, opt_tagline) {
   if(!image) image = image_missingfish;
   if(fishes[fish_register_id] || fish_register_id < 0 || fish_register_id > 65535) throw 'fish id already exists or is invalid!';
   var fish = new Fish();
@@ -7693,6 +7701,7 @@ function registerFish(name, fishtype, tier, cost, image, opt_tagline) {
   fish.type = fishtype;
   fish.tier = tier;
   fish.cost = cost;
+  fish.effect_description = effect_description;
   fish.image = image;
   fish.tagline = opt_tagline || '';
 
@@ -7704,23 +7713,25 @@ function registerFish(name, fishtype, tier, cost, image, opt_tagline) {
   return fish.index;
 }
 
-function registerGoldfish(name, tier, cost, image, opt_tagline) {
-  var index = registerFish(name, FISHTYPE_GOLDFISH, tier, cost, image, opt_tagline);
+function registerGoldfish(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_GOLDFISH, tier, cost, effect_description, image, opt_tagline);
   //var fish = fishes[index];
   return index;
 }
 
-function registerKoi(name, tier, cost, image, opt_tagline) {
-  var index = registerFish(name, FISHTYPE_KOI, tier, cost, image, opt_tagline);
+function registerKoi(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_KOI, tier, cost, effect_description, image, opt_tagline);
   //var fish = fishes[index];
   return index;
 }
 
-fish_register_id = 0;
-var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:10}));
+fish_register_id = 100;
+var goldfish_0_bonus = 0.1;
+var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
 
 fish_register_id = 200;
-var koi_0 = registerKoi('koi', 0, Res({infspores:10}));
+var koi_0_bonus = 0.2;
+var koi_0 = registerKoi('koi', 0, Res({infspores:20000}), 'Improves runestone bonus by ' + Num(koi_0_bonus).toPercentString(), image_koi0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

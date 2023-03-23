@@ -27,7 +27,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var result = upper(c.name);
   result += '<br/>';
   result += 'Crop type: Infinity ' + getCropTypeName(c.type) + ((c.tier && c.isReal()) ? (' (tier ' + (c.tier + 1) + ')') : '');
-  var help = getCropTypeHelp3(c.type);
+  var help = getCropTypeHelp3(c.type, haveFishes());
   if(help) {
     result += '<br/>' + help;
   }
@@ -136,6 +136,18 @@ function getCropInfoHTML3Breakdown(f, c) {
     var breakdown = [];
     var total = c.getInfBoost(f, breakdown);
     result += formatBreakdown(breakdown, true, 'Breakdown (neighbor boost +%)');
+  }
+
+  if(c.type == CROPTYPE_RUNESTONE) {
+    var breakdown = [];
+    var total = c.getInfBoost(f, breakdown);
+    result += formatBreakdown(breakdown, true, 'Breakdown (neighbor basic boost +%)');
+  }
+
+  var breakdown = [];
+  var total = c.getBasicBoost(f, breakdown);
+  if(total.neqr(0) || breakdown.length > 1) {
+    result += formatBreakdown(breakdown, true, 'Breakdown (boost to basic field)');
   }
 
   return result;
@@ -425,6 +437,7 @@ function initField3UI() {
           if(state.infinityboost.gtr(0)) {
             text += '<br><br>';
             text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
+            if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
           }
           return text;
         } else if(f.hasCrop()) {

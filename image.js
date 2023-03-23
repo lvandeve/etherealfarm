@@ -685,29 +685,36 @@ function unrenderImage(canvas) {
 
 // alpha-blends image b on top of image a, with the images given as RGBA 0-255 colors
 function blendImages(a, b) {
-  var aw = a[1];
-  var ah = a[2];
-  a = a[0];
-  var bw = b[1];
-  var bh = b[2];
-  b = b[0];
-  var w = Math.max(aw, bw);
-  var h = Math.max(ah, bh);
-  var r = [];
-  for(var y = 0; y < h; y++) {
-    r[y] = [];
-    for(var x = 0; x < w; x++) {
-      var ca = (y < ah && x < aw) ? a[y][x] : [0, 0, 0, 0];
-      var cb = (y < bh && x < bw) ? b[y][x] : [0, 0, 0, 0];
-      var v = cb[3] / 255;
-      var red = ca[0] * (1 - v) + cb[0] * v;
-      var green = ca[1] * (1 - v) + cb[1] * v;
-      var blue = ca[2] * (1 - v) + cb[2] * v;
-      var alpha = Math.max(ca[3], cb[3]); // TODO this needs a slightly different formula
-      r[y][x] = [Math.floor(red), Math.floor(green), Math.floor(blue), Math.floor(alpha)];
+  if(a.length == 3) {
+    // for the data type where a and b are array of (2D classic array data, width, height)
+    var aw = a[1];
+    var ah = a[2];
+    a = a[0];
+    var bw = b[1];
+    var bh = b[2];
+    b = b[0];
+    var w = Math.max(aw, bw);
+    var h = Math.max(ah, bh);
+    var r = [];
+    for(var y = 0; y < h; y++) {
+      r[y] = [];
+      for(var x = 0; x < w; x++) {
+        var ca = (y < ah && x < aw) ? a[y][x] : [0, 0, 0, 0];
+        var cb = (y < bh && x < bw) ? b[y][x] : [0, 0, 0, 0];
+        var v = cb[3] / 255;
+        var red = ca[0] * (1 - v) + cb[0] * v;
+        var green = ca[1] * (1 - v) + cb[1] * v;
+        var blue = ca[2] * (1 - v) + cb[2] * v;
+        var alpha = Math.max(ca[3], cb[3]); // TODO this needs a slightly different formula
+        r[y][x] = [Math.floor(red), Math.floor(green), Math.floor(blue), Math.floor(alpha)];
+      }
     }
+    return [r, w, h];
+  } else {
+    // for the data type where a and b are array of (ImageData, width, height, canvas, the 3-element array described above)
+    var blended = blendImages(a[4], b[4]);
+    return createCanvasImageFor(blended);
   }
-  return [r, w, h];
 }
 
 // downscales image given as text string

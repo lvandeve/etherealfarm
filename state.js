@@ -987,6 +987,7 @@ function State() {
   this.numcropfields_lightning = 0;
   // same as numcropfields but excludes brassica
   this.numcropfields_permanent = 0;
+  this.numfishes = 0; // total number of all fishes of any type in the pond
 
   // fullgrown only, not growing, any type >= CROPINDEX. Includes shoft-lived plants.
   // derived stat, not to be saved
@@ -1632,6 +1633,7 @@ function computeDerived(state) {
   }
 
   // pond
+  state.numfishes = 0;
   for(var i = 0; i < registered_fishes.length; i++) {
     state.fishcount[registered_fishes[i]] = 0;
   }
@@ -1641,6 +1643,7 @@ function computeDerived(state) {
       if(f.hasCrop()) {
         var c = fishes[f.cropIndex()];
         state.fishcount[c.index]++;
+        state.numfishes++;
       }
     }
   }
@@ -2440,6 +2443,14 @@ function haveEtherealMistletoe() {
 
 function amberUnlocked() {
   return state.g_res.amber.neqr(0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// whether the fishes feature is unlocked (once having infinity spores)
+function haveFishes() {
+  return state.g_res.infspores.neqr(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

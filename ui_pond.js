@@ -20,34 +20,102 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var pondDivs;
 var pondRows;
 var pondDialogFlex = undefined;
+var abovePondTextFlex = undefined;
 
 
-//function makePond3DialogOLD() {
-function makePond3Dialog() {
-  var dialog = createDialog({
-    scrollable:true,
-    title:'Infinity pond',
-    bgstyle:'efDialogTranslucent',
-    icon:image_pond
-  });
-  var contentFlex = dialog.content;
+
+var shiftFishFlexY = -1;
+var shiftFishFlexX = -1;
+
+function updatePondMouseOver(x, y) {
+  shiftFishFlexX = x;
+  shiftFishFlexY = y;
+  //if(shiftFishFlexShowing) showshiftFishChip(shiftFishFlexId);
+}
+
+function updatePondMouseOut(x, y) {
+  if(x == shiftFishFlexX && y == shiftFishFlexY) updatePondMouseOver(-1, -1);
+}
+
+function updatePondMouseClick(x, y) {
+  updatePondMouseOver(x, y);
+}
+
+var pondDialogShortcutFun = function(e) {
+  var keys = getEventKeys(e);
+
+  var key = keys.key;
+  var code = keys.code;
+  var shift = keys.shift;
+  var ctrl = keys.ctrl;
+
+  if(key == 'd' && !shift && !ctrl) {
+    if(state.pond[shiftFishFlexY]) {
+      var f = state.pond[shiftFishFlexY][shiftFishFlexX];
+      if(f) {
+        if(f.hasCrop()) {
+          // delete crop
+          addAction({type:ACTION_DELETE_FISH, x:shiftFishFlexX, y:shiftFishFlexY});
+          update();
+        }
+      }
+    }
+  }
+
+  if(key == 'p' && !ctrl) {
+    // pick or plant fish
+    var did_something = false;
+    if(state.pond[shiftFishFlexY]) {
+      var f = state.pond[shiftFishFlexY][shiftFishFlexX];
+      if(f) {
+        if(!shift && f.hasCrop()) {
+          // pick
+          state.lastPlantedFish = f.getCrop().index;
+        } else {
+          // plant
+          if(state.lastPlantedFish >= 0 && crops[state.lastPlantedFish]) {
+            var actiontype = f.hasCrop() ? ACTION_REPLACE_FISH : ACTION_PLANT_FISH;
+            addAction({type:actiontype, x:shiftFishFlexX, y:shiftFishFlexY, fish:fishes[state.lastPlantedFish], shiftPlanted:true});
+            did_something = true;
+          }
+        }
+      }
+    }
+    if(did_something) {
+      update();
+    }
+  }
+};
+
+function updatePondDialogText() {
+  if(!abovePondTextFlex) return;
 
   var text = '';
 
-  text += 'Nothing in this pond yet';
-  text += '<br><br>';
   text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
   text += ' (max ever had: ' + state.g_max_infinityboost.toPercentString() + ')';
 
-  contentFlex.div.innerHTML = text;
+  if(!haveFishes()) {
+    text += '<br><br>';
+    text += 'Nothing in this pond yet';
+    abovePondTextFlex.div.innerHTML = text;
+    return;
+  } else {
+    text += '<br><br>';
+    text += 'Click the pond below to place fishes, at the cost of infinity spores.';
+    text += '<br><br>';
+    text += 'Infinity spores: ' + state.res.infspores.toString();
+  }
+
+  abovePondTextFlex.div.innerHTML = text;
 }
 
-/*
+// makes the main dialog for the pond
 function makePond3Dialog() {
-  if(!ENABLE_POND_UPDATE) {
-    makePond3DialogOLD();
-    return;
-  }
+  var helpfun = haveFishes() ? function() {
+    showRegisteredHelpDialog(43, true);
+  } : undefined;
+
   var dialog = createDialog({
     scrollable:true,
     title:'Infinity pond',
@@ -55,17 +123,18 @@ function makePond3Dialog() {
     icon:image_pond,
     closeFun:function() {
       pondDialogFlex = undefined;
-    }
+      abovePondTextFlex = undefined;
+    },
+    shortcutfun:(haveFishes() ? pondDialogShortcutFun : undefined),
+    help:helpfun
   });
 
   var textFlex = new Flex(dialog.content, 0, 0, 1, 0.2);
+  abovePondTextFlex = textFlex;
 
-  var text = '';
+  updatePondDialogText();
 
-  text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
-  text += ' (max ever had: ' + state.g_max_infinityboost.toPercentString() + ')';
-
-  textFlex.div.innerHTML = text;
+  if(!haveFishes()) return;
 
   var fieldFlex = new Flex(dialog.content, 0, 0.25, 1, 1);
 
@@ -76,13 +145,13 @@ function makePond3Dialog() {
   var pondh = 3;
   var ratio = pondw / pondh;
   var fieldGrid = new Flex(fieldFlex, [0.5,0,-0.5,ratio], [0.5,0,-0.5,1/ratio], [0.5,0,0.5,ratio], [0.5,0,0.5,1/ratio]);
-  fieldGrid.div.style.border = '1px solid green';
+  //fieldGrid.div.style.border = '1px solid green';
 
   pondDialogFlex = fieldGrid;
   initPondUI(fieldGrid);
   renderPond();
 }
-*/
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,6 +166,10 @@ function makePond3Dialog() {
 // get fish info in HTML
 function getFishInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
+  if(c.effect_description) result += '<br>' + c.effect_description;
+  result += '<br>';
+  result += '<br/>• Next placing cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
+  result += '<br/>• Recoup on delete (d): ' + c.getRecoup().toString();
   return result;
 }
 
@@ -148,7 +221,7 @@ function makePondDialog(x, y, opt_override_mistletoe) {
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
-    styleButton(button2);
+    /*styleButton(button2);
     button2.textEl.innerText = 'Detailed stats / bonuses';
     registerTooltip(button2, 'Show breakdown of multipliers and bonuses and other detailed stats.');
     addButtonAction(button2, function() {
@@ -166,7 +239,7 @@ function makePondDialog(x, y, opt_override_mistletoe) {
       text += '<br/>';
       text += getFishInfoHTMLBreakdown(f, c);
       dialog.content.div.innerHTML = text;
-    });
+    });*/
 
     updatedialogfun = bind(function(f, c, flex) {
       var html0 = getFishInfoHTML(f, c, false);
@@ -229,10 +302,30 @@ function initPondUI(flex) {
       pondDivs[y][x].canvas = canvas;
       pondDivs[y][x].bgcanvas = bgcanvas;
 
+      util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
+        updatePondMouseOver(x, y);
+      }, x, y));
+      util.setEvent(div, 'mouseout', 'fieldout', bind(function(x, y) {
+        updatePondMouseOut(x, y);
+      }, x, y));
+      // on mouse up and with timeout so that the state is fully updated after the action that the click caused
+      util.setEvent(div, 'mouseup', 'fieldclick', bind(function(x, y) {
+        window.setTimeout(function(){updatePondMouseClick(x, y)});
+      }, x, y));
+
       registerTooltip(div, bind(function(x, y, div) {
         var f = state.pond[y][x];
         var fd = pondDivs[y][x];
-        var result = 'TODO pond tooltip | ' + f.index;
+        var c = f.getCrop();
+        if(!c) return undefined;
+        var result = upper(c.name);
+        if(c.effect_description) result += '<br>' + c.effect_description;
+        result += '<br><br>';
+        var recoup = c.getRecoup(f);
+        var cost = c.getCost();
+        result += ' • Base cost: ' + c.cost.toString() + '<br>';
+        result += ' • Next planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
+        result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
         return result;
       }, x, y, div), true);
 
@@ -292,6 +385,7 @@ function updatePondCellUI(x, y) {
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var field_image = r < 0.25 ? images_pond[0] : (r < 0.5 ? images_pond[1] : (r < 0.75 ? images_pond[2] : images_pond[3]));
+    if(x == (state.pondw >> 1) && y == (state.pondh >> 1)) field_image = images_pond[4];
     renderImage(field_image, fd.bgcanvas);
 
     var label = 'pond tile ' + x + ', ' + y;
@@ -320,6 +414,8 @@ function renderPond() {
       updatePondCellUI(x, y);
     }
   }
+
+  updatePondDialogText();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -480,9 +576,8 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
 
       result += 'Fish type: ' + getFishTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
 
-      var help = getFishTypeHelp(c.type, state.challenge == challenge_bees);
-      if(help) {
-        result += '.<br>' + help;
+      if(c.effect_description) {
+        result += '.<br>' + c.effect_description;
       }
       if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
 

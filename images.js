@@ -485,29 +485,107 @@ var images_field = [
 ];
 
 var pond0 = `
-AAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAA
-AAA@@AAAAAA@@AAA
-AA@AA@@@AA@@@@@A
-AAAAAAAAAA@AAAAA
-AAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAA
-AAAAA@AAAAAAAAAA
-AAAA@@@@A@AAAAAA
-AAAAAAA@@AAAAAAA
-AAAAAAAAAAAAAAAA
-AA@@AAAAAAA@@AAA
-A@AA@A@AA@@A@@@A
-A@AAA@AAA@AAAAAA
-AAAAAAAAAAAAAAAA
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaAaaaa
+aaaAAaaaaaAaAaAA
+aaAaaAAAaaaaaAaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaaAaaa
+aaaaaAaaaaaaaAAa
+aaaaAaAaaAaaaaaa
+aaaaaaaAAaaaaaaa
+aaaaaaaaaaaaaaaa
+aaAAaaaaaaaAAaaa
+aAaaAaAaaaAaaAAa
+aaaaaAaaaAaaaaaa
+aaaaaaaaaaaaaaaa
+`;
+
+var pond1 = `
+aaaaaaaaaaaaaaaa
+aaaaAAaAaaaaaaaa
+aaaAaaAaaaAaaaaa
+aaaaaaaaaAaAaaAa
+aaaaaaaaaaaaAAaa
+aaAAaaaaaaaaaaaa
+aAaaAaAAaaaaaaaa
+aaaaaAaaaaaaAaaA
+aaaaaaaaaaaAaAAa
+aaaaaaaaaaaaaaaa
+aaaaaaAAaaaaaaaa
+aaaAaAaaAaaaaaaa
+aaaaAaaaaaaAaaaa
+aaaaaaaaaAAaAaAa
+aAAaAaaaaaaaaAaa
+AaaAaaaaaaaaaaaa
+`;
+
+var pond2 = `
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaAAaaa
+aaaaaAaaaaaaaAaA
+aaAaAaAaaaaaaaAa
+aAaAaaaaaaaaaaaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaAaaaaa
+aaaaaaaaaAaAaAaa
+aaAAaAaaaaaaAaaa
+aaaaAaAaaaaaaaaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaAaaAaaa
+aaaaaaaaAaAAaAaa
+aAAaAaaaaaaaaaaa
+aaaAaaaaaaaaaaaa
+aaaaaaaaaaaaaaaa
+`;
+
+var pond3 = `
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaAAAaAa
+aaaaaaaaaaaaaAaa
+aaaAAaaaaaaaaaaa
+aaAaaAaAaaaaaaaa
+aaaaaaAaaaaaAaAa
+aaaaaaaaaaaAaAaa
+aaaaaaaaaaaaaaaa
+aaaaaaaAaAaaaaaa
+aaaaaaAaAaaaaaaa
+aaaaaaaaaaaaaaaa
+aAAaAaaaaaaaaaaa
+AaaAaaaaaaAAaaaa
+aaaaaaaaaAaaAaaa
+aaaaaaaaaaaaaAAa
+aaaaaaaaaaaaaaaa
+`;
+
+// this one has infinity symbol, for the center
+var pond4 = `
+aaaaaaaaAAaaAaaa
+aaaaaaaaaaAAaaaa
+aaAaaaaaaaaaaaaa
+aAaAaAaaaaaAaAaa
+aaaaAaaaaaaaAaAa
+aaaaaaaaaaaaaaaa
+aaaaaaAaAaaaaaaa
+aaaaaAaAaAaaaaaa
+aaaaaaAaAaaaaaaa
+aAAaaaaaaaaAAaAa
+aaaAAaaaaaAaaAaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaAaaaa
+aAAaaaaaaaAaAaAa
+aaaAaAAaaaaaaAaa
+aaaaAaaaaaaaaaaa
 `;
 
 var images_pond = [
 generateImageCanvas(pond0),
-generateImageCanvas(pond0),
-generateImageCanvas(pond0),
-generateImageCanvas(pond0),
+generateImageCanvas(pond1),
+generateImageCanvas(pond2),
+generateImageCanvas(pond3),
+generateImageCanvas(pond4),
 ];
 
 

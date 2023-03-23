@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -345,16 +345,10 @@ function plantBluePrint2(b, allow_override, opt_by_automaton) {
             //if(c.tier >= c2.tier) continue;
             continue; // if the above code to support increasing tier is used, computeBlueprint2Cost must be updated to take this into account. However, the above is disabled, override can already do this and when not using override one may intend to not tier-up crops either since the resin can only be spent on so many higher tier crops
           }
-          if(c.type == c2.type) {
-            if(c2.tier < c.tier) {
-              newactions_delete.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
-            } else {
-              newactions_plant.push({type:ACTION_REPLACE2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
-            }
-          } else {
-            newactions_delete.push({type:ACTION_DELETE2, x:fx, y:fy, shiftPlanted:false, silent:true, by_automaton:!!opt_by_automaton});
-            newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
-          }
+          // use delete and plant separately, not the replace action, to ensure all resources gotten back first.
+          // even within same crop type when going tier down, you can't be sure the tier down isn't more expensive rather than less expensive than the original crop
+          newactions_delete.push({type:ACTION_DELETE2, x:fx, y:fy, shiftPlanted:false, silent:true, by_automaton:!!opt_by_automaton});
+          newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
         } else {
           newactions_plant.push({type:ACTION_PLANT2, x:fx, y:fy, crop:c2, shiftPlanted:false, silent:true, lowerifcantafford:true, by_automaton:!!opt_by_automaton});
         }
@@ -404,7 +398,6 @@ function plantBluePrint2(b, allow_override, opt_by_automaton) {
       for(var i = 0; i < newactions_automaton_squirrel.length; i++) newactions.push(newactions_automaton_squirrel[i]);
     }
   }
-
 
   if(newactions.length) {
     for(var i = 0; i < newactions.length; i++) {
