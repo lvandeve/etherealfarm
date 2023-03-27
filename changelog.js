@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.9.1 (2023-03-27):';
+  text += '<br/>• Added platinum infinity crops.';
+  text += '<br/>• New fish type added.';
+  text += '<br/>• Bees in infinity field now also give a slight boost to infinity mushrooms, through the flowers.';
+  text += '<br/>• Autumn now also makes mushrooms consume less seeds.';
+  text += '<br/>• Reordered how some resources are shown at the top, to line up resin/twigs, seeds/infinity seeds and spores/infinity spores.';
+  text += '<br/>• Various tweaks.'; // includes attempt at fix with mushroom priority heuristics for auto-plant and egg drop tweaks
+  text += '<br/><br/>';
+
   text += '0.9.0 (2023-03-23):';
   text += '<br/>• New infinity crop: golden mushroom.';
   text += '<br/>• Added ability to place fishes in the infinity pond, available once you have infinity mushrooms. Only a few fish types added in this first version of it.';

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -79,6 +79,7 @@ function updateAmberUI() {
   button.id = 'amber_prod';
   if(state.amberprod) button.className = 'efButtonAmberActive';
   else if(state.res.amber.lt(ambercost_prod)) button.className = 'efButtonCantAfford';
+  else if(basicChallenge()) button.className = 'efButtonCantAfford';
 
   if(!state.amberkeepseason) {
     button = makeAmberButton('Season hold this run', AMBER_KEEP_SEASON);

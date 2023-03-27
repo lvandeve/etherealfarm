@@ -1184,6 +1184,7 @@ function PreCell(x, y) {
   this.flowerneighbor = false;
 
   // how many flower neighbors of highest tier
+  // ideally heuristics are tier-independent, however there is a system for alternating whether flowers are upgraded next to berries and mushrooms and that needs to know the tiers
   this.bestflowers = 0;
 
   // set of relevant neighbor types brassica has, set in brassica cells, as bit flags: 1 = berry, 2 = mushroom, 4 = nuts
@@ -1846,7 +1847,8 @@ function precomputeField_(prefield, opt_pretend) {
       var p = prefield[y][x];
 
       var score_flower = 0;
-      var score_num = 0;
+      var score_num = 0; // num berries
+      var score_num_good = 0; // num berries with highest tier flower
       var score_mul = 1;
       var score_malus = 1;
 
@@ -1871,12 +1873,15 @@ function precomputeField_(prefield, opt_pretend) {
           if(c2.type == CROPTYPE_FLOWER) score_flower += (1 + p.num_bee);
           if(c2.type == CROPTYPE_BRASSICA) score_mul *= ((state.cropcount[brassica_0] > 4) ? 1.25 : 2) * (have_brassica_fruit ? 3 : 1);
           if(c2.type == CROPTYPE_STINGING) score_mul++;
-          if((c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) && p2.bestflowers) score_num++;
+          if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) {
+            score_num++;
+            if(p2.bestflowers) score_num_good++;
+          }
         }
       }
       if(c.type == CROPTYPE_MUSH) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
-        p.score = (1 + score_flower) * score_mul * (score_num ? 1 : 0) * score_malus;
+        p.score = (1 + score_flower) * score_mul * (score_num ? 1 : 0) * (score_num_good ? 1.5 : 1) * score_malus;
       }
     }
   }
@@ -2346,6 +2351,12 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_4].had) unlockInfinityCrop(flower3_4);
   if(state.crops3[flower3_4].had) unlockInfinityCrop(bee3_4);
   if(state.crops3[berry3_4].had) unlockInfinityCrop(mush3_4);
+
+  if(state.crops3[berry3_4].had) unlockInfinityCrop(brassica3_5);
+  if(state.crops3[brassica3_5].had) unlockInfinityCrop(berry3_5);
+  if(state.crops3[berry3_5].had) unlockInfinityCrop(flower3_5);
+  if(state.crops3[flower3_5].had) unlockInfinityCrop(bee3_5);
+  if(state.crops3[berry3_5].had) unlockInfinityCrop(mush3_5);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2353,6 +2364,8 @@ function maybeUnlockFishes() {
   var first_fish_unlocked = state.fishes[goldfish_0].unlocked;
   unlockFish(goldfish_0);
   unlockFish(koi_0);
+  //if(state.crops3[koi_0].had) unlockFish(octopus_0);
+  unlockFish(octopus_0);
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
   if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
@@ -5211,7 +5224,7 @@ var update = function(opt_ignorePause) {
           if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds);
           if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
           var presentres = new Res({seeds:g.seeds});
-          if(basic) presentres = presentres.mulr(0.2);
+          if(basic) presentres = presentres.mulr(0.3);
           if(holidayEventActive() == 1) {
             showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {
@@ -5220,10 +5233,12 @@ var update = function(opt_ignorePause) {
           actualgain.addInPlace(presentres);
         } else if(effect == 2) {
           // spores
-          var g = computeFernGain().mulr(60 * 5);
-          if(g.spores.ltr(1)) g.spores = Num.max(g.spores, Num(1));
-          var presentres = new Res({spores:g.spores});
-          if(basic) presentres = presentres.mulr(0.2);
+          var g = computeFernGain().spores.mulr(60 * 5);
+          var g2 = state.c_res.spores.mulr(0.0035); // in case there is no spore production, e.g. no mushrooms, give something based on spores produced so far anyway
+          if(g.lt(g2)) g = g2;
+          if(basic) g = g.mulr(0.3);
+          if(g.ltr(1)) g = Num.max(g, Num(1));
+          var presentres = new Res({spores:g});
           if(holidayEventActive() == 1) {
             showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {

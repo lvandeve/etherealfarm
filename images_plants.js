@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -339,44 +339,62 @@ var image_missingfish = createFishImage(
 ........$$......
 `);
 
+var image_goldfish0 = createFishImage(`
++:#fb8a X:#fb8 O:#d96
+................
+.......+++......
+.......++++.....
+.......+++++....
+......XXO+++...+
+....XZXOXOX+.+++
+...XZ0ZXOXOXO+++
+..XXXZXOXOXOO+..
+..XXOXOXOXOOO...
+...OXOXOXOOOO+..
+....OOOOOO++.++.
+......OOO.++.+++
+......++......++
+......+++.......
+.......++.......
+................
+`);
+
 var image_koi0 = createFishImage(`
 ................
 ................
 ................
 ................
 ................
-......999......9
-..999999$$$9..99
-.909$$999999999.
-9$9$$$99$$$9999.
-9999999$$$$$9.99
-9..99.9........9
-....9..9........
+9......999......
+99..9$$$999999..
+.999999999$$909.
+.9999$$$99$$$9$9
+99.9$$$$$9999999
+9........9.99..9
+........9..9....
 ................
 ................
 ................
 ................
 `);
 
-
-
-var image_goldfish0 = createFishImage(`
-+:#fb8a X:#fb8
-................
-.......+++......
-.......++++.....
-.......+++++....
-......XXX+++...+
-....XZXXXXX+.+++
-...XZ0ZXXXXXX+++
-..XXXZXXXXXXX+..
-..XXXXXXXXXXX...
-...XXXXXXXXXX+..
-....XXXXXX++.++.
-......XXX.++.+++
-......++......++
-......+++.......
-.......++.......
+var image_octopus0 = createFishImage(`
+aa:#d33
+......999N......
+....99NNNNNN....
+...9NNNNNNNNN...
+...9NNNNNNNNN...
+..9NNNNNNNNNNN..
+..NN90NNNN90NM..
+..NN00NNNN00NM..
+..NNNNNNNNNNNM..
+...NNN0NN0NNM...
+...NNNN00NNNM...
+.NNNNNNNNNMMMNN.
+.NM.NNNMMMNN.NM.
+....NM.NN.NM....
+....NM.NM.NM....
+.......NM.......
 ................
 `);
 
@@ -6084,13 +6102,16 @@ function metalify_nonlincolor(v) {
 }
 
 // metalheader = metalheader0 for zinc, etc... They use the colors N,M,m,n (hue range hm) for the metal colors
-// opt_effect and opt_effect2: operation done to make things more distinguishable if needed. Second can be given to apply two of the effects.
+// opt_effect, opt_effect2, opt_effect3: operation done to make things more distinguishable if needed. Second can be given to apply two of the effects.
 // *) 0/undefined: no effect
 // *) 1: darken
 // *) 2: brighten
 // *) 3: shiny
 // *) 4: increase saturation slightly (to make electrum a bit more green)
-function metalify(im, metalheader, opt_effect, opt_effect2) {
+// *) 5: effect specifically for platinum infinity crops on the bright infinity field background, to have some contrast
+// *) 6: subtle bottom right shadow, again to provide contrast for bright crops like the platinum ones against infinity field background
+// opt_param: parameter used for the darken or brighten effect (shared also for opt_effect2 and opt_effect3), if not set a default value is used
+function metalify(im, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param) {
   var pal = generatePalette(metalheader);
   var m = [];
   m[0] = pal['0']; // black
@@ -6122,17 +6143,19 @@ function metalify(im, metalheader, opt_effect, opt_effect2) {
       r = m[i][0] * f0 + m[i2][0] * f1;
       g = m[i][1] * f0 + m[i2][1] * f1;
       b = m[i][2] * f0 + m[i2][2] * f1;
-      if(opt_effect == 1 || opt_effect2 == 1) {
-        r *= 0.5;
-        g *= 0.5;
-        b *= 0.5;
+      if(opt_effect == 1 || opt_effect2 == 1 || opt_effect3 == 1) {
+        var amount = opt_param || 0.5;
+        r *= amount;
+        g *= amount;
+        b *= amount;
       }
-      if(opt_effect == 2 || opt_effect2 == 2) {
-        r = Math.min(r * 1.35, 255);
-        g = Math.min(g * 1.35, 255);
-        b = Math.min(b * 1.35, 255);
+      if(opt_effect == 2 || opt_effect2 == 2 || opt_effect3 == 2) {
+        var amount = opt_param || 1.35;
+        r = Math.min(r * amount, 255);
+        g = Math.min(g * amount, 255);
+        b = Math.min(b * amount, 255);
       }
-      if(opt_effect == 3 || opt_effect2 == 3) {
+      if(opt_effect == 3 || opt_effect2 == 3 || opt_effect3 == 3) {
         //l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
         var d = 1 - (x + y) / (w + h - 2);
         //d = Math.sin(d * 16) * 64;
@@ -6144,7 +6167,7 @@ function metalify(im, metalheader, opt_effect, opt_effect2) {
         g = Math.min(Math.max(0, g + d), 255);
         b = Math.min(Math.max(0, b + d), 255);
       }
-      if(opt_effect == 4 || opt_effect2 == 4) {
+      if(opt_effect == 4 || opt_effect2 == 4 || opt_effect3 == 4) {
         var hsv = RGBtoHSV([r, g, b]);
         hsv[1] = Math.min(hsv[1] * 2, 255);
         var rgb = HSVtoRGB(hsv);
@@ -6152,17 +6175,42 @@ function metalify(im, metalheader, opt_effect, opt_effect2) {
         g = rgb[1];
         b = rgb[2];
       }
+      if(opt_effect == 5 || opt_effect2 == 5 || opt_effect3 == 5) {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+        r = r * r * r + 0.05;
+        g = g * g * g + 0.05;
+        b = b * b * b + 0.05;
+        r = Math.min(Math.max(0, r * 255), 255);
+        g = Math.min(Math.max(0, g * 255), 255);
+        b = Math.min(Math.max(0, b * 255), 255);
+      }
+      if(opt_effect == 6 || opt_effect2 == 6 || opt_effect3 == 6) {
+        if(a == 255) {
+          var touching_transparent = false;
+          //if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
+          //if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
+          if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
+          if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
+          if(touching_transparent) {
+            r *= 0.85;
+            g *= 0.85;
+            b *= 0.85;
+          }
+        }
+      }
       res[y][x] = [r, g, b, a];
     }
   }
   return [res, w, h];
 }
 
-function metalifyPlantImages(images, metalheader, opt_effect, opt_effect2) {
+function metalifyPlantImages(images, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param) {
   var result = [];
   for(var i = 0; i < images.length; i++) {
     var im = images[i];
-    result[i] = createCanvasImageFor(metalify(im[4], metalheader, opt_effect, opt_effect2));
+    result[i] = createCanvasImageFor(metalify(im[4], metalheader, opt_effect, opt_effect2, opt_effect3, opt_param));
   }
   return result;
 }

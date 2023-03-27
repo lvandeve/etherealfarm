@@ -303,3 +303,10 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 .efNoOutline:focus {
   outline: unset;
 }
+
+.efHighlightResource {
+  /*border: 2px solid #5555;*/
+  text-shadow: 0 0 0.1em #fbb, 0 0 0.1em #fbb, 0 0 0.1em #fbb, 0 0 0.1em #fbb;
+  border-color: #fbb !important;
+  border-width: 3px !important;
+}

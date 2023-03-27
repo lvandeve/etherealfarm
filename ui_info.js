@@ -418,7 +418,7 @@ function showResourceDialog(index) {
   var special = (index == 2 || index == 3 || index == 7); // if true, is resource that doesn't have income/s stat
   // computed here rather than inside of updatedialogfun to avoid it being too slow
   // NOTE: this means it doesn't get auto-updated though.
-  var breakdown = (index == 5) ? prodBreakdown3(index) : prodBreakdown(index);
+  var breakdown = (index == 5 || index == 8) ? prodBreakdown3(index) : prodBreakdown(index);
   if(breakdown == '') breakdown = ' • None yet';
   var flex = dialog.content;
   var last = undefined;
@@ -477,7 +477,7 @@ function showResourceDialog(index) {
 }
 
 // i = index of div, index = index of resource
-function showResource(i, index) {
+function showResource(i, index, highlight) {
   var name = resource_names[index];
   var res = state.res.atIndex(index);
   var upcoming;
@@ -495,6 +495,14 @@ function showResource(i, index) {
   }
 
   var div = resourceDivs[i];
+
+  if(highlight && !div.highlightClassAdded) {
+    div.classList.add('efHighlightResource');
+    div.highlightClassAdded = true;
+  } else if(!highlight && div.highlightClassAdded) {
+    div.classList.remove('efHighlightResource');
+    div.highlightClassAdded = false;
+  }
 
   var res_gain;
   var res_gain_pos;
@@ -610,7 +618,7 @@ function openTimeInfoDialog() {
       }
     }
     if(s == 2) {
-      result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, without increasing consumption<br>';
+      result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, ' + getAutumnMushroomConsumptionReduction().toPercentString() + ' less seed consumption<br>';
       if(getAutumnBerryBonus().neqr(1)) {
         result += '• +' + getAutumnBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
       }
@@ -690,7 +698,9 @@ function updateResourceUI() {
   if(getSeason() != lastRenderedInfoSeasonBackground) {
     lastRenderedInfoSeasonBackground = getSeason();
     for(var i = 0; i < resourceDivs.length; i++) {
-      resourceDivs[i].className = 'efInfo ' + season_styles[getSeason()];;
+      var div = resourceDivs[i];
+      resourceDivs[i].className = 'efInfo ' + season_styles[getSeason()];
+      if(div.highlightClassAdded) div.highlightClassAdded = false;
     }
   }
 
@@ -760,17 +770,37 @@ function updateResourceUI() {
   var show_infseeds = haveInfinityField();
   var show_infspores = haveInfinityField() && state.res.infspores.gtr(0);
 
+  // when a new resource is added but not at the end of the resource info chips, highlight it so the fact that there's a new resource is more visible. Stop highlighting after a while, measured by having earned an amount worth a couple of hours to a day of gameplay
+  var highlight_nuts = !show_infseeds && state.g_res.nuts.gtr(0) && state.g_res.nuts.ltr(5000);
+  var highlight_infseeds = !show_infspores && show_infseeds && state.g_res.infseeds.ltr(50);
+  var highlight_infspores = show_infspores && state.g_res.infspores.ltr(100000);
 
-  var i = 1; // index in resourceDivs
-  if(state.g_max_res.seeds.neqr(0)) showResource(i++, 0);
-  if(state.g_max_res.spores.neqr(0))showResource(i++, 1);
-  if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, 2);
-  if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, 3);
-  if(!show_infspores) if(state.g_max_res.essence.neqr(0)) showResource(i++, 7);
-  if(state.g_max_res.nuts.neqr(0)) showResource(i++, 4);
-  if(show_infseeds) showResource(i++, 5);
-  else if(state.g_max_res.amber.neqr(0)) showResource(i++, 6);
-  if(show_infspores) showResource(i++, 8);
+  var i = 1; // index in resourceDivs. 0 is the time.
+  if(!show_infseeds && !show_infspores) {
+    if(state.g_max_res.seeds.neqr(0)) showResource(i++, 0);
+    if(state.g_max_res.spores.neqr(0))showResource(i++, 1);
+    if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, 2);
+    if(state.g_max_res.nuts.neqr(0)) showResource(i++, 4, highlight_nuts);
+    if(state.g_max_res.amber.neqr(0)) showResource(i++, 6);
+    if(state.g_max_res.essence.neqr(0)) showResource(i++, 7);
+    if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, 3);
+  } else if(show_infseeds && !show_infspores) {
+    if(state.g_max_res.seeds.neqr(0)) showResource(i++, 0);
+    if(state.g_max_res.spores.neqr(0))showResource(i++, 1);
+    if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, 2);
+    if(state.g_max_res.nuts.neqr(0)) showResource(i++, 4, highlight_nuts);
+    showResource(i++, 5, highlight_infseeds); // infinity seeds
+    if(state.g_max_res.essence.neqr(0)) showResource(i++, 7);
+    if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, 3);
+  } else { // show infseeds and infspores
+    if(state.g_max_res.seeds.neqr(0)) showResource(i++, 0);
+    if(state.g_max_res.spores.neqr(0))showResource(i++, 1);
+    if(state.g_max_res.resin.neqr(0) || state.resin.neqr(0)) showResource(i++, 2);
+    if(state.g_max_res.nuts.neqr(0)) showResource(i++, 4, highlight_nuts);
+    showResource(i++, 5, highlight_infseeds); // infinity seeds
+    showResource(i++, 8, highlight_infspores); // infinity spores
+    if(state.g_max_res.twigs.neqr(0) || state.twigs.neqr(0) || state.upgrades2[upgrade2_mistletoe].count) showResource(i++, 3);
+  }
 }
 
 function initInfoUI() {

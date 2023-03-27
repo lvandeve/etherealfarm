@@ -97,7 +97,7 @@ function getCropTypeHelp3(type, opt_have_fishes) {
     case CROPTYPE_STINGING: return '';
     case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
     case CROPTYPE_MISTLETOE: return '';
-    case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers.';
+    case CROPTYPE_BEE: return opt_have_fishes ? 'Boosts neighboring flowers. For the flower boost to mushrooms, also has a small effect based on tier.' : 'Boosts neighboring flowers.';
     case CROPTYPE_CHALLENGE: return '';
     case CROPTYPE_FERN2: return '';
     case CROPTYPE_NUT: return '';
@@ -388,7 +388,7 @@ var infernal_mush_upgrade_base = Num.pow(Num(infernal_mush_tier_mul), Num(1.0 / 
 
 // used for multiple possible aspects, such as production, boost if this is a flower, etc...
 // f is field, similar to in Crop.prototype.getProd
-// result is change in-place and may be either Num or Res. Nothing is returned.
+// result is changed in-place and may be either Num or Res. Nothing is returned.
 Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
   // posmul is used:
   // Unlike other multipliers, this one does not affect negative production. This is a good thing in the crop's good season, but extra harsh in a bad season (e.g. winter)
@@ -417,10 +417,12 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
   if(season == 2 && this.type == CROPTYPE_MUSH) {
     var bonus = getAutumnMushroomBonus();
     result.posmulInPlace(bonus);
+    var reduction = Num(1).sub(getAutumnMushroomConsumptionReduction());
+    result.negmulInPlace(reduction);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
-  // with ethereal upgrades, autumn also benefits mushrooms a bit, to catch up with other seasons ethereal upgrades
+  // with ethereal upgrades, autumn also benefits berries a bit, to catch up with other seasons ethereal upgrades
   if(season == 2 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = getAutumnBerryBonus();
     result.posmulInPlace(bonus);
@@ -2998,8 +3000,8 @@ var watercress_choice0 = registerChoiceUpgrade('brassica choice',
 upgrades[watercress_choice0].istreebasedupgrade = true;
 
 
-var resin_choice0_resin_bonus = 0.2;
-var resin_choice0_production_bonus = 0.2;
+var resin_choice0_resin_bonus = 0.25;
+var resin_choice0_production_bonus = 0.25;
 
 var resin_choice0 = registerChoiceUpgrade('resin choice',
   function() {
@@ -6248,6 +6250,11 @@ function getAutumnMushroomBonus() {
   return bonus;
 }
 
+// returns percentage to subtract, e.g. if this returns 0.3, then the consumption is 70% of the original consumption
+function getAutumnMushroomConsumptionReduction() {
+  return new Num(0.5);
+}
+
 function getAutumnBerryBonus() {
   return getAutumnMushroomBonus().subr(bonus_season_autumn_mushroom).mulr(bonus_season_autumn_berry).addr(1);
 }
@@ -7398,10 +7405,20 @@ Crop3.prototype.getProd = function(f, breakdown) {
     if(breakdown) breakdown.push(['goldfish', true, mul, result.clone()]);
   }
 
+  // octopus
+  if(this.type == CROPTYPE_MUSH && state.fishcount[octopus_0]) {
+    var num = state.fishcount[octopus_0];
+    var mul = new Num(1 + octopus_0_bonus * num);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['octopus', true, mul, result.clone()]);
+  }
+
   // flower boost for mushroom: does not use getInfBoost, but depends on relative tier
   if(f && this.type == CROPTYPE_MUSH) {
-    var flowermul = new Num(1);
-    var num = 0;
+    var floweronlymul = new Num(1);
+    var flowerbeemul = new Num(1);
+    var num = 0; // flowers
+    var num2 = 0; // bees through flowers
 
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
       var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -7411,19 +7428,50 @@ Crop3.prototype.getProd = function(f, breakdown) {
       if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_FLOWER) {
         var c2 = crops3[n.cropIndex()];
         if(c2.tier >= this.tier - 1) {
-          var boost = Num(1);
-          if(c2.tier <= this.tier - 1) boost = Num(0.5);
-          if(c2.tier >= this.tier + 1) boost = Num(1.5);
+          var boost = new Num(1);
+          if(c2.tier <= this.tier - 1) boost = new Num(0.5);
+          if(c2.tier >= this.tier + 1) boost = new Num(1.5);
           if(boost.neqr(0)) {
-            flowermul.addInPlace(boost);
+            floweronlymul.addInPlace(boost);
             num++;
-          }
+
+            var beeboost = new Num(1);
+            // bees neighboring the flower add another, albeit small, boost
+            for(var dir2 = 0; dir2 < 4; dir2++) { // get the neighbors N,E,S,W
+              var x3 = x2 + (dir2 == 1 ? 1 : (dir2 == 3 ? -1 : 0));
+              var y3 = y2 + (dir2 == 2 ? 1 : (dir2 == 0 ? -1 : 0));
+              if(x3 < 0 || x3 >= state.numw3 || y3 < 0 || y3 >= state.numh3) continue;
+              var n2 = state.field3[y3][x3];
+              if(n2.hasCrop() /*&& n.isFullGrown()*/ && crops3[n2.cropIndex()].type == CROPTYPE_BEE) {
+                var c3 = crops3[n2.cropIndex()];
+                if(c3.tier >= this.tier - 1) {
+                  var boost2 = new Num(0.5);
+                  if(c3.tier <= this.tier - 1) boost2 = new Num(0.25);
+                  if(c3.tier >= this.tier + 1) boost2 = new Num(0.75);
+                  if(boost2.neqr(0)) {
+                    beeboost.addInPlace(boost2);
+                    num2++;
+                  }
+                }
+              }
+            }
+            boost.mulInPlace(beeboost);
+            flowerbeemul.addInPlace(boost);
+          } // end of 'boost.neqr(0)' for flower
         }
       }
     }
     if(num) {
-      result.mulInPlace(flowermul);
-      if(breakdown) breakdown.push(['flower tiers (' + num + ')', true, flowermul, result.clone()]);
+      // the below is same as doing just flowerbeemul, but, separately show flowers and bees in the breakdown, hence this mechanism
+      // NOTE: to understand the numbers: say there's one flower givin 100% boost (so doing x2), and one beehive giving 50% boost (so doing x1.5),
+      // then the breakdown will show +100% for flowers, +25% for bees (instead of +50%). Reason: bee gives 50% to flower's boost, so flower now gives 150% boost total (doing x2.5).
+      // therefore, you now get x2.5 instead of x2, which is 25% more. That's because all is expressed as bonus percentages to the mushroom, not to the flower.
+      // in case of multiple flowers/bees, this is all aggregated together.
+      var beeonlymul = flowerbeemul.div(floweronlymul);
+      result.mulInPlace(floweronlymul);
+      if(breakdown) breakdown.push(['flower tiers (' + num + ')', true, floweronlymul, result.clone()]);
+      result.mulInPlace(beeonlymul);
+      if(breakdown) breakdown.push(['bee tiers (' + num + ')', true, beeonlymul, result.clone()]);
     }
   }
 
@@ -7596,6 +7644,7 @@ var brassica3_1 = registerBrassica3('bronze watercress', 1, Res({infseeds:25000}
 var brassica3_2 = registerBrassica3('silver watercress', 2, Res({infseeds:5e7}), Res({infseeds:5e7 * 4 / (3 * 24 * 3600)}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader2, 0));
 var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, 4));
 var brassica3_4 = registerBrassica3('gold watercress', 4, Res({infseeds:100e15}), Res({infseeds:500e9}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader4, 0));
+var brassica3_5 = registerBrassica3('platinum watercress', 5, Res({infseeds:25e21}), Res({infseeds:100e15}), Num(0.05), 7 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader5, 5, 6, 1, 1.045));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
@@ -7605,21 +7654,25 @@ var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({
 // more division since better flowers and beehives now
 var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), Res({infseeds:(100e12 / 32 / (24 * 3600))}), Num(0.2), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader3, 4, 2));
 var berry3_4 = registerBerry3('gold blackberry', 4, Res({infseeds:5e18}), Res({infseeds:50e9}), Num(0.4), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader4, 2));
+var berry3_5 = registerBerry3('platinum blackberry', 5, Res({infseeds:500e21}), Res({infseeds:50e12}), Num(0.75), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader5, 5, 1, undefined, 1.1));
 
 crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, 2));
+var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, 6));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, 1));
 var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2.5e6}), Num(1), Num(0.15), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader1));
-var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader2, 0));
+var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader2, 1, undefined, undefined, 0.9));
 var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(12), Num(0.3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader3, 4));
 var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(200), Num(0.6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader4, 0));
+var flower3_5 = registerFlower3('platinum anemone', 5, Res({infseeds:20e24}), Num(2500), Num(1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader5, 5));
 
 crop3_register_id = 1200;
 var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader2, 0));
 var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, 4));
 var bee3_4 = registerBee3('gold bee nest', 4, Res({infseeds:5e21}), Num(256), Num(1.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader4, 0));
+var bee3_5 = registerBee3('platinum bee nest', 5, Res({infseeds:500e24}), Num(2048), Num(4), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader5, 1, 5, 6, 1.05));
 
 // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
 // the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
@@ -7639,12 +7692,14 @@ function haveInfinityField() {
 ////////////////////////////////////////////////////////////////////////////////
 
 var fishtype_index = 0;
-var FISHTYPE_GOLDFISH = fishtype_index++; // infinity field production bonus
-var FISHTYPE_KOI = fishtype_index++; // infinity field to basic field bonus
+var FISHTYPE_GOLDFISH = fishtype_index++; // infinity berry production bonus
+var FISHTYPE_KOI = fishtype_index++; // runestone basic field boost bonus
+var FISHTYPE_OCTOPUS = fishtype_index++; // infinity mushroom production bonus
 
 function getFishTypeName(type) {
-  if(type == FISHTYPE_GOLDFISH) return 'Goldfish';
-  if(type == FISHTYPE_KOI) return 'Koi';
+  if(type == FISHTYPE_GOLDFISH) return 'goldfish';
+  if(type == FISHTYPE_KOI) return 'koi';
+  if(type == FISHTYPE_OCTOPUS) return 'octopus';
   return 'unknown';
 }
 
@@ -7725,13 +7780,23 @@ function registerKoi(name, tier, cost, effect_description, image, opt_tagline) {
   return index;
 }
 
+function registerOctopus(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_OCTOPUS, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
 fish_register_id = 100;
 var goldfish_0_bonus = 0.1;
-var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
+var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity berry production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
 
 fish_register_id = 200;
 var koi_0_bonus = 0.2;
 var koi_0 = registerKoi('koi', 0, Res({infspores:20000}), 'Improves runestone bonus by ' + Num(koi_0_bonus).toPercentString(), image_koi0);
+
+fish_register_id = 300;
+var octopus_0_bonus = 0.25;
+var octopus_0 = registerOctopus('octopus', 0, Res({infspores:100000}), 'Improves infinity mushroom production by ' + Num(octopus_0_bonus).toPercentString(), image_octopus0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -8601,6 +8666,12 @@ registerPlantTypeMedal3(brassica3_4);
 registerPlantTypeMedal3(berry3_4);
 registerPlantTypeMedal3(flower3_4);
 registerPlantTypeMedal3(bee3_4);
+registerPlantTypeMedal3(mush3_4);
+registerPlantTypeMedal3(brassica3_5);
+registerPlantTypeMedal3(berry3_5);
+registerPlantTypeMedal3(flower3_5);
+registerPlantTypeMedal3(bee3_5);
+registerPlantTypeMedal3(mush3_5);
 
 
 
