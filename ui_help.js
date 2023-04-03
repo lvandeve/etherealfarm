@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -337,7 +337,7 @@ registerHelpDialog(26, 'Challenge completed', '',
     undefined);
 
 registerHelpDialog(27, 'Bees', 'You unlocked bees!',
-  'You unlocked bees! Bees boost orthogonally neighboring flowers, while flowers boost berries and mushrooms (so bees are a boost of a boost). This adds a new independent multiplier that can be upgraded to the game.',
+  'You unlocked bees! Bees boost orthogonally neighboring flowers (in spring also diagonally), while flowers boost berries and mushrooms (so bees are a boost of a boost). This adds a new independent multiplier that can be upgraded to the game.',
   images_beenest[4],
   '<br><br>'+
   'The image shows a possible configuration for bees, such that the bees boost flowers, which in turn boost berries and mushrooms. It\'s ensured both the mushroom and the berry it consumes from have a bee-boosted flower.',
@@ -396,7 +396,7 @@ registerHelpDialog(34, 'Multiplicity', 'You unlocked multiplicity! Mushrooms and
 registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nuts crops!',
     `You unlocked the squirrel and the nuts crops! The squirrel gives an entirely new tech tree of ugrades. Place a squirrel in the ethereal field (it\'ll also boost neighbors!). Grow nuts in the main field using the new nuts crops. Use nuts to buy squirrel upgrades, in the new squirrel tab.
     <br><br>
-    Nuts crops unlock at tree level 45, the first one is Almond. You can have max 1 nut crop in the main field, but it can be upgraded and replaced with better types. Nuts crops benefit from flowers, but only in a limited form independent of flower upgrades or bees, nuts crops are not affected by the same boosts as berries or mushrooms, they have their own more limited boosts. Watercress can copy from nuts, but only at half effectiveness and without fruit bonus.
+    Nuts crops unlock at tree level 45, the first one is Almond. You can have max 1 nut crop in the main field, but it can be upgraded and replaced with better types. Nuts crops benefit from flowers, but only in a limited form independent of flower upgrades or bees, nuts crops are not affected by the same boosts as berries or mushrooms, they have their own more limited boosts. Watercress can copy from nuts, but only at half effectiveness and without fruit bonus. Nuts are negatively affected by winter if not next to tree, just like most crops.
     <br><br>
     Buy squirrel upgrades in the squirrel tab. Squirrel upgrades are laid out in a tech tree. Each next squirrel upgrade costs exponentially more than the previous one, no matter what order you do them in. Get higher tree levels and nut crops to get enough nuts for the next one.
     <br><br>

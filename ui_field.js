@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ function getCropInfoHTMLBreakdown(f, c) {
 
   if(f.index == FIELD_MULTIPART) f = f.getMainMultiPiece();
 
-  var bdname = f.isSemiFullGrown(true) ? 'Breakdown' : 'Preliminary breakdown';
+  var bdname = f.isSemiFullGrown() ? 'Breakdown' : 'Preliminary breakdown';
 
   var p = prefield[f.y][f.x];
   var breakdown_watercress = p.getBreakdownWatercress();
@@ -132,7 +132,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   } else {
     result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
   }
-  var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
+  var help = getCropTypeHelp(c.type, state);
   if(help) {
     result += '<br/>' + help;
   }
@@ -808,10 +808,8 @@ function makeFieldDialog(x, y) {
     button0.textEl.innerText = 'Upgrade tier';
     registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      if(makeUpgradeCropAction(x, y)) {
-        closeAllDialogs();
-        update();
-      }
+      if(makeUpgradeCropAction(x, y)) update();
+      closeAllDialogs();
     });
 
     styleButton(button1);
@@ -932,7 +930,18 @@ function initFieldUI() {
 
         var result = undefined;
         if(state.fern && x == state.fernx && y == state.ferny) {
-          if(state.g_numresets > 1 && state.fern == 2) {
+          if(state.g_numresets > 1 && renderIdleFern()) {
+            var result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+            result += '<br><br>';
+            result += 'This fern charged up thanks to long idle time with the "slower ferns" choice upgrade. It gives more resources from the past production, as well as more resources at the current production rate, for some amount of time up to some limit. This time charges up slower than real time. This is in addition to what the fern already gives by default.';
+            result += '<br><br>';
+            result += 'Idle for: ' + util.formatDuration(state.time - state.lastFernTime);
+            result += '<br>';
+            result += 'Past resource time charged up: ' + util.formatDuration(getFernIdlePastCharge());
+            result += '<br>';
+            result += 'Upcoming resource time charged up: ' + util.formatDuration(getFernIdleFutureCharge()) + ' (plus the randomized regular fern default)';
+            return result;
+          } if(state.g_numresets > 1 && state.fern == 2) {
             return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
           } else {
             return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
@@ -1153,6 +1162,10 @@ function renderLevel(canvas, level, x, y, progresspixel, opt_color_off, opt_colo
   }
 }
 
+function renderIdleFern() {
+  return (state.upgrades[fern_choice0].count == 1) && state.fern && state.time - state.lastFernTime > fernIdleTimeBegin;
+}
+
 var lightning_field_image_x = 0;
 var lightning_field_image_y = 0;
 
@@ -1185,7 +1198,8 @@ function updateFieldCellUI(x, y) {
     progresspixel = Math.round(nextlevelprogress * 5);
   }
 
-  var ferncode = ((state.fernx + state.ferny * state.numw) << 3) | state.fern;
+  var fernidleimage = renderIdleFern();
+  var ferncode = ((state.fernx + state.ferny * state.numw) << 4) | (fernidleimage << 3) | state.fern;
   var presentcode = ((state.presentx + state.presenty * state.numw) << 3) | state.present_effect;
 
   var automatonplant = (x == state.automatonx && y == state.automatony && (state.time - state.automatontime < 0.5));
@@ -1273,7 +1287,9 @@ function updateFieldCellUI(x, y) {
       unrenderImage(fd.canvas);
     }
     if(state.fern && x == state.fernx && y == state.ferny) {
-      blendImage((state.fern == 2 ? images_fern2 : images_fern)[season], fd.canvas);
+      var fernbaseimage = (state.fern == 2 ? images_fern2 : images_fern);
+      if(fernidleimage) fernbaseimage = images_fern3;
+      blendImage(fernbaseimage[season], fd.canvas);
       label = 'fern. ' + label;
     } else if(state.present_effect && x == state.presentx && y == state.presenty) {
       if(holidayEventActive() == 1) {

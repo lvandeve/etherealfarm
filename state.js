@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -56,9 +56,9 @@ Cell.prototype.isFullGrown = function() {
 // like fullgrown, but includes end-of-life semi-active wasabi
 Cell.prototype.isSemiFullGrown = function() {
   if(this.isFullGrown()) return true;
-  if(this.cropIndex() == brassica_1) {
-    var sturdy = state.upgrades[watercress_choice0].count == 1;
-    return sturdy;
+  var c = this.getCrop();
+  if(c && hasBrassicaInfiniteLifetime(c)) {
+    return true;
   }
   return false;
 };
@@ -543,6 +543,7 @@ function State() {
   this.fernwait = 0; // how much time the currently active fern took to appear
   this.fern_seed = -1; // random seed for the fern drops
   this.fernresin = new Res(); // amount of resin gotten from ferns. counted separately from state.resin, to not count towards the max ever itself
+  this.fernres = new Res(); // resources player had (totally produced this run) at the moment the fern appeared. only stores spores and seeds. used for idle fern computation
 
   // presents were holiday gifts in january 2022, eggs in spring 2022
   this.present_effect = 0; // 0 = no present, 1+ = various effects
@@ -652,8 +653,7 @@ function State() {
   this.lastWeather = 0; // last clicked weather ability, if multiple are active according to the timer, only the one matching this counts as active
   this.lastLightningTime = 0; // for the stormy challenge
 
-  this.lastFernTime = 0;
-  this.lastReFernTime = 0; // last time fern was checked to perhaps become bushy
+  this.lastFernTime = 0; // if there is a fern: time since it spawned. If there is no fern: time that there was no fern
   this.lastBackupWarningTime = 0;
 
   // misc
@@ -2449,8 +2449,9 @@ function amberUnlocked() {
 ////////////////////////////////////////////////////////////////////////////////
 
 // whether the fishes feature is unlocked (once having infinity spores)
-function haveFishes() {
-  return state.g_res.infspores.neqr(0);
+function haveFishes(opt_state) {
+  if(!opt_state) opt_state = state;
+  return opt_state.g_res.infspores.neqr(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

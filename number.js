@@ -1123,7 +1123,8 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 // intended for values in range 1e-6 to 1, to avoid showing something like 200e-6, instead show 0.0002
 // can also be used for values below 10000, e.g. to display 3500 instead of 3.5e3, but still take precision into account in a more limited way than scientific notation does
 Num.smallValueNotation = function(v, precision) {
-  var result = v.valueOf().toString();
+  // the 1.0000000001 is so that e.g. 0.00999999999 will show up as 0.01 instead. TODO: use better method for this
+  var result = (v.valueOf() * 1.0000000001).toString();
 
   if(result[0] == '0') {
     var e = v.e * log2_log10;

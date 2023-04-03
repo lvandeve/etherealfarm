@@ -123,6 +123,29 @@ function computeField3InfinitySeeds() {
   return [total, watercress];
 }
 
+// computes how many infinity spores currently spent in the infinity pond, what you'd get back from all recoups
+function computePondInfinitySpores() {
+  // for now the below computation is not needed: spores are always fully refunded when deleting fishes so far so g_res works to keep track
+  return state.g_res.infspores.sub(state.res.infspores);
+
+  /*var total = Num(0);
+  var o = {};
+  for(var y = 0; y < state.pondh; y++) {
+    for(var x = 0; x < state.pondw; x++) {
+      var f = state.pond[y][x];
+      if(f.hasCrop()) {
+        var c = f.getCrop();
+        var index = c.index;
+        if(!o[index]) o[index] = 0;
+        o[index]++;
+        var recoup = c.getRecoup(f, -o[index] + 1);
+        total.addInPlace(recoup.infspores);
+      }
+    }
+  }
+  return total;*/
+}
+
 
 // do this update less regularly because it's a relatively expensive computation
 var lastExpectedGainUpdateTime = -1;
@@ -321,11 +344,18 @@ function getResourceDetails(index) {
   } else {
     var text = '<b>' + upper(name) + '</b><br/><br/>';
     text += 'Current amount: ' + res.toString() + '<br/>';
-    if(index == 5) {
+    if(index == 5) { // infinity seeds
       var infield = computeField3InfinitySeeds();
+      var total = infield[0].add(state.res.infseeds);
       text += 'In field: ' + infield[0].toString() + ' (brassica: ' + infield[1].toString() + ')<br>';
-      text += 'Total (field + current): ' + infield[0].add(state.res.infseeds).toString() + '<br>';
+      text += 'Total (field + current): ' + total.toString() + ' (w/o brassica: ' + total.sub(infield[1]).toString() + ')<br>';
       text += 'Total earned ever: ' + state.g_res.infseeds.toString() + '<br>'; // this can be more than total because some seeds are spent on brassicas that wither
+    }
+    if(index == 8) { // infinity spores
+      var inpond = computePondInfinitySpores();
+      text += 'In pond: ' + inpond.toString() + '<br>';
+      text += 'Total (pond + current): ' + inpond.add(state.res.infspores).toString() + '<br>';
+      //text += 'Total earned ever: ' + state.g_res.infspores.toString() + '<br>';
     }
     text += '<br/>';
 

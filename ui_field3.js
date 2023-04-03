@@ -27,7 +27,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var result = upper(c.name);
   result += '<br/>';
   result += 'Crop type: Infinity ' + getCropTypeName(c.type) + ((c.tier && c.isReal()) ? (' (tier ' + (c.tier + 1) + ')') : '');
-  var help = getCropTypeHelp3(c.type, haveFishes());
+  var help = getCropTypeHelp3(c.type, state);
   if(help) {
     result += '<br/>' + help;
   }
@@ -105,14 +105,9 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var upgrade_crop = getUpgradeCrop3(f.x, f.y, upgrade_cost, true);
 
   var cost = c.getCost();
-  if(c.type == CROPTYPE_BRASSICA) {
-    result += ' • Planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
-    result += ' • Recoup on delete: ' + recoup.toString() + ' (100% but scaled by remaining lifetime)';
-  } else {
-    result += ' • Base cost: ' + c.cost.toString() + '<br>';
-    result += ' • Next planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
-    result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
-  }
+  result += ' • Base cost: ' + c.cost.toString() + '<br>';
+  result += ' • Next planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
+  result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
   if(upgrade_crop && upgrade_cost[0]) {
     var tier_diff = upgrade_crop.tier - c.tier;
     var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';

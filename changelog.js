@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.9.2 (2023-04-03):';
+  text += '<br/>• Idle choice upgrade improvements:';
+  text += '<br/> - Watercress also gets infinite lifetime now, like wasabi';
+  text += '<br/> - Ferns get charged with up to a few hours worth of resource production after being idle for a long time. Most are past resources, not current-weather interacting production, but some are.';
+  text += '<br/>• Distinction between brassica fruit and non-brassica fruit multiplier for end-of-life brassica removed.';
+  text += '<br/>• Watercress now gives at least 1 seed/s at start of infernal challenge so it can be bootstrapped without ethereal fern.';
+  text += '<br/>• UI tweaks, including tooltip typo fixes.';
+  text += '<br/><br/>';
+
   text += '0.9.1 (2023-03-27):';
   text += '<br/>• Added platinum infinity crops.';
   text += '<br/>• New fish type added.';

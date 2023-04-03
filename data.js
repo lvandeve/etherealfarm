@@ -70,14 +70,16 @@ function getCropTypeName(type) {
 }
 
 // opt_crop is cropid for specific crop in case it has a slightly different description
-function getCropTypeHelp(type, opt_no_nettles) {
+function getCropTypeHelp(type, opt_state) {
+  var no_nettles = !!opt_state && (opt_state.challenge == challenge_bees);
+  var diagonal_mistletoe = !!opt_state && !!opt_state.upgrades2[upgrade2_diagonal_mistletoes].count;
   switch(type) {
-    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (opt_no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
-    case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers' + (opt_no_nettles ? '' : ' and nettles') + '. Neighboring watercress can copy its production (but also consumption).';
-    case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (opt_no_nettles ? '' : ' Negatively affected by neighboring nettles.');
+    case CROPTYPE_BERRY: return 'Produces seeds. Boosted by flowers. ' + (no_nettles ? '' : 'Negatively affected by nettles. ') + 'Neighboring mushrooms can consume its seeds to produce spores. Neighboring watercress can copy its production.';
+    case CROPTYPE_MUSH: return 'Requires berries as neighbors to consume seeds to produce spores. Boosted by flowers' + (no_nettles ? '' : ' and nettles') + '. Neighboring watercress can copy its production (but also consumption).';
+    case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms, their production but also their consumption.' + (no_nettles ? '' : ' Negatively affected by neighboring nettles.');
     case CROPTYPE_STINGING: return 'Boosts neighboring mushrooms spores production (without increasing seeds consumption), but negatively affects orthogonally neighboring berries and flowers, so avoid touching those with this plant';
     case CROPTYPE_BRASSICA: return 'Produces a small amount of seeds on its own, but can produce much more resources by copying from berry and mushroom neighbors once you have those. Unlike other crops, has limited lifetime.';
-    case CROPTYPE_MISTLETOE: return 'Produces twigs (which you receive on transcend) when tree levels up, when orthogonally next to the tree only. Having more than one increases level up spores requirement and slightly decreases resin gain.';
+    case CROPTYPE_MISTLETOE: return 'Produces twigs (which you receive on transcend) when tree levels up, ' + (diagonal_mistletoe ? 'when orthogonally or diagonally next to the tree' : 'when orthogonally next to the tree only') + '. Having more than one increases level up spores requirement and slightly decreases resin gain.';
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers (in spring also diagonally). Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
     case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
@@ -89,15 +91,16 @@ function getCropTypeHelp(type, opt_no_nettles) {
 }
 
 // similar to getCropTypeHelp, but for field3 (infinity field)
-function getCropTypeHelp3(type, opt_have_fishes) {
+function getCropTypeHelp3(type, opt_state) {
+  var have_fishes = !!opt_state && haveFishes(opt_state);
   switch(type) {
     case CROPTYPE_BERRY: return 'Produces infinity seeds. Boosted by flowers.';
     case CROPTYPE_MUSH: return 'Produces infinity spores. Does not require berry neighbors. Boosted by flower tiers, but not as much as berries are and depends on relative tier difference.';
-    case CROPTYPE_FLOWER: return opt_have_fishes ? 'Boosts neighboring berries. Also boosts mushrooms but with a smaller boost depending on relative tier.' : 'Boosts neighboring berries.';
+    case CROPTYPE_FLOWER: return have_fishes ? 'Boosts neighboring berries. Also boosts mushrooms but with a smaller boost depending on relative tier.' : 'Boosts neighboring berries.';
     case CROPTYPE_STINGING: return '';
     case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
     case CROPTYPE_MISTLETOE: return '';
-    case CROPTYPE_BEE: return opt_have_fishes ? 'Boosts neighboring flowers. For the flower boost to mushrooms, also has a small effect based on tier.' : 'Boosts neighboring flowers.';
+    case CROPTYPE_BEE: return have_fishes ? 'Boosts neighboring flowers. For the flower boost to mushrooms, also has a small effect based on tier.' : 'Boosts neighboring flowers.';
     case CROPTYPE_CHALLENGE: return '';
     case CROPTYPE_FERN2: return '';
     case CROPTYPE_NUT: return '';
@@ -310,7 +313,7 @@ Crop.prototype.getPlantTime = function() {
     }
 
     if(state.upgrades[watercress_choice0].count == 1) {
-      result *= 1.5;
+      result *= (1 + watercress_choice_lifetime_increase);
     }
 
     return result;
@@ -481,6 +484,14 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
       var u = state.upgrades[this.basic_upgrade];
       malus.mulInPlace(Num.powr(Num(upgrade_base), -u.count));
     }
+    if(this.type == CROPTYPE_BRASSICA && result.seeds) {
+      // for brassica, keep the production at least as much as initial game brassica: so that it's possible to play infermal without having fern in ethereal field in theory
+      var minseeds = Num.min(this.prod.seeds, result.seeds);
+      if(result.seeds.mul(malus).lt(minseeds) && result.seeds.neqr(0)) {
+        // the result.seeds.neqr(0) check above is to avoid NaN, production can be 0 if the watercress is end of life (it still copies then, but doesn't produce)
+        malus = minseeds.div(result.seeds);
+      }
+    }
     result.mulInPlace(malus);
     if(breakdown) breakdown.push(['infernal', true, malus, result.clone()]);
   }
@@ -576,6 +587,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     return result;
   }
 
+  // The f.isFullGrown check considers all brassica fullgrown (so brassica aren't affected by this), except those that are end of life from infinite lifetime (so those get 0 production, but still copy). This behavior is not by design (EOL brassica was only implemented later) but is ok and sensible.
   if((!pretend || pretend == 3) && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     if(state.challenge == challenge_wither) {
       // wither challenge
@@ -1465,14 +1477,17 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   return result;
 };
 
-// whether it's a brassica that is post the stage where it normally withers, such as the wasabi
+function hasBrassicaInfiniteLifetime(c) {
+  if(c.type != CROPTYPE_BRASSICA) return false;
+  if(state.upgrades[watercress_choice0].count == 0) return false;
+  return true;
+}
+
+// whether it's a brassica that is post the stage where it normally withers, for the sturdy brassica choice upgrade
 Crop.prototype.isPostLife = function(f) {
   if(!f) return false; // can't determine
   if(f.growth > 0.001) return false; // still full life
-  if(this.type != CROPTYPE_BRASSICA) return false;
-  if(this.tier == 0) return false;
-  if(state.upgrades[watercress_choice0].count == 0) return false;
-  return true;
+  return hasBrassicaInfiniteLifetime(this);
 };
 
 // This returns the leech ratio of this plant, not the actual resource amount leeched
@@ -1492,11 +1507,17 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
   var result = Num(this.leech || 1);
   if(breakdown) breakdown.push(['base', true, Num(1), result.clone()]);
 
+  var result_infernal = undefined; // result with only the negative effects applied, for infernal. Not used for the current infernal challenge, but maybe the next one in this series?
+  //if(state.challenge == challenge_infernal) {
+  //  result_infernal = Num(result);
+  //}
+
   var sturdy = state.upgrades[watercress_choice0].count == 1;
   var highyield = state.upgrades[watercress_choice0].count == 2;
   var end_of_life = this.isPostLife(f);
 
   if(state.upgrades[watercress_choice0].count == 2) {
+    // high-yield brassica: starts with high bonus but gradually drops down (given the long brassica lifetimes late in game, very slowly)
     var v = Math.min(Math.max(0, f.growth), 1);
     if(v > 0.01) {
       if(v < 0.75) {
@@ -1518,9 +1539,10 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
   }
 
   if(end_of_life) {
-    mul = new Num(sturdy ? 0.666666 : 0.333333);
+    mul = new Num(sturdy ? 0.45 : 0.15);
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['end-of-life', true, mul, result.clone()]);
+    if(result_infernal) result_infernal.mulInPlace(mul);
   }
 
   var season = getSeason();
@@ -1535,6 +1557,7 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
     var mul = winter_malus_brassica;
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['winter malus', true, mul, result.clone()]);
+    if(result_infernal) result_infernal.mulInPlace(mul);
   }
 
   if(croptype != CROPTYPE_NUT) {
@@ -1574,14 +1597,8 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
           mul = mul_b.mul(mul_m);
         }
       }
-      var eol_malus = Num(1);
       var winter_malus = Num(1);
 
-     if(end_of_life) {
-        // the malus affects the fruit multipleir, but not the base 100% that it's added to, so it's slightly differnt (very different if fruit is less than +100% bonus)
-        var mul2 = mul.subr(1).mulr(sturdy ? 0.666666 : 0.333333).addr(1);
-        eol_malus = mul2.div(mul);
-      }
       if(winter_weakness) {
         // the winter malus affects the fruit multipleir, but not the base 100% that it's added to, so it's slightly differnt (very different if fruit is less than +100% bonus)
         var mul2 = mul.subr(1).mul(winter_malus_brassica).addr(1);
@@ -1597,10 +1614,6 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
         if(breakdown) breakdown.push(['fruit: ' + getFruitAbilityName(FRUIT_MIX), true, mul_m, result.clone()]);
       }
 
-      if(end_of_life) {
-        result.mulInPlace(eol_malus);
-        if(breakdown) breakdown.push(['end-of-life fruit effect weakness', true, eol_malus, result.clone()]);
-      }
       if(winter_weakness) {
         result.mulInPlace(winter_malus);
         if(breakdown) breakdown.push(['winterfruit effect weakness', true, winter_malus, result.clone()]);
@@ -1625,6 +1638,7 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
     var mul = Num(0.5);
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['copying from nuts', true, mul, result.clone()]);
+    if(result_infernal) result_infernal.mulInPlace(mul);
   }
 
   // add a penalty for the neighbor production copy-ing if there are multiple watercress in the field. The reason for this is:
@@ -1637,7 +1651,18 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
     result.mulrInPlace(penalty);
 
     if(breakdown) breakdown.push(['reduction for multiple', true, Num(penalty), result.clone()]);
+    if(result_infernal) result_infernal.mulrInPlace(penalty);
   }
+
+  /*if(state.challenge == challenge_infernal && season == 5 && this.tier >= 0) {
+    var malus = Num(1e-9);
+    if(this.type == CROPTYPE_BRASSICA && result.mul(malus).lt(result_infernal) && result.neqr(0)) {
+      // for brassica, keep the leech at least as much as initial game brassica: so that it's possible to play infermal without having fern in ethereal field in theory
+      malus = result_infernal.div(result);
+    }
+    result.mulInPlace(malus);
+    if(breakdown) breakdown.push(['infernal', true, malus, result.clone()]);
+  }*/
 
   return result;
 };
@@ -1880,7 +1905,7 @@ var berry_9 = registerBerry('lingonberry', 9, berryplanttime0 * 35, lingonberry)
 var berry_10 = registerBerry('mulberry', 10, berryplanttime0 * 40, mulberry);
 var berry_11 = registerBerry('physalis', 11, berryplanttime0 * 45, physalis);
 var berry_12 = registerBerry('raspberry', 12, berryplanttime0 * 50, raspberry);
-var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'Botanically speaking, not actually not a berry!');
+var berry_13 = registerBerry('strawberry', 13, berryplanttime0 * 55, strawberry, 'Botanically speaking, not actually a berry!');
 var berry_14 = registerBerry('wampee', 14, berryplanttime0 * 60, images_wampee);
 var berry_15 = registerBerry('whitecurrant', 15, berryplanttime0 * 65, whitecurrant);
 
@@ -1916,7 +1941,7 @@ crop_register_id = 105;
 var brassica_0 = registerBrassica('watercress', 0, Res({seeds:1}), Num(1), 60, images_watercress);
 crops[brassica_0].image_remainder = image_watercress_remainder;
 crops[brassica_0].image_post = image_watercress_post;
-var brassica_1 = registerBrassica('wasabi', 1, Res({seeds:10}), Num(1.25), 75, images_wasabi, 'New effect over watercress: with sturdy brassica, at end of life doesn\'t wither but remains active at only 44% efficiency (-33% efficiency, -33% fruit bonus). With high-yield brassica, similar but 1/9th efficiency.');
+var brassica_1 = registerBrassica('wasabi', 1, Res({seeds:10}), Num(1.25), 75, images_wasabi);
 crops[brassica_1].image_remainder = image_wasabi_remainder;
 crops[brassica_1].image_post = image_wasabi_post;
 
@@ -2938,8 +2963,8 @@ var fern_choice0 = registerChoiceUpgrade('fern choice',
   }, function() {
   },
  'Slower ferns', 'Richer ferns',
- 'Ferns take ' + (fern_wait_minutes + fern_choice0_a_minutes) + ' instead of ' + fern_wait_minutes + ' minutes to appear, but contain enough resources to make up the difference exactly. Ferns left for a very long time also have a chance to become bushy. This allows to collect more fern resources during idle play, but has no effect on the overall fern income during active play. This starts taking effect only for the next fern that appears.',
- 'Ferns contain on average ' + (fern_choice0_b_bonus * 100) + '% more resources, but they\'ll appear as often as before so this benefits active play more than idle play. This starts taking effect only for the next fern that appears.',
+ 'Ferns take ' + (fern_wait_minutes + fern_choice0_a_minutes) + ' instead of ' + fern_wait_minutes + ' minutes to appear, but contain enough resources to make up the difference exactly. Ferns left for a very long time will give additional resources, up to a few hours worth. This allows to collect more fern resources during idle play, but has no effect on the overall fern income during active play.',
+ 'Ferns contain on average ' + (fern_choice0_b_bonus * 100) + '% more resources, but they\'ll appear as often as before so this benefits active play more than idle play, and is a disadvantage for e.g. combining ferns with weather effects.',
  '#000', '#fff', images_fern[0], undefined);
 upgrades[fern_choice0].istreebasedupgrade = true;
 
@@ -2979,6 +3004,7 @@ upgrades[active_choice0].istreebasedupgrade = true;
 var active_choice0_b = registerDeprecatedUpgrade();
 
 
+var watercress_choice_lifetime_increase = 0.5;
 
 var watercress_choice0 = registerChoiceUpgrade('brassica choice',
   function() {
@@ -2994,8 +3020,8 @@ var watercress_choice0 = registerChoiceUpgrade('brassica choice',
     }
   },
  'Sturdy brassica', 'High-yield brassica',
- 'Increases brassica (such as watercress) copying effect constantly by 25% and its lifetime by 50%. This benefits idle play more than active play, compared to the other choice. Other effects may apply to higher tier brassica.',
- 'Increases brassica (such as watercress) copying effect by 50% initially, but after a while this bonus gradually disappears over the lifetime of the brassica. Refreshing or replanting the brassica gives back the full bonus. This benefits active play more than idle play, compared to the other choice. Other effects may apply to higher tier brassica.',
+ 'Increases brassica (such as watercress) copying effect constantly by 25% and its lifetime by ' + Num(watercress_choice_lifetime_increase).toPercentString() + '. In addition, the brassica will never fully wither, it will remain with limited production after the end of its lifetime. This benefits idle play more than active play, compared to the other choice.',
+ 'Increases brassica (such as watercress) copying effect by 50% initially, but after a while this bonus gradually reduces to the default production. It will also never wither, but with much less production than the sturdy brassica choice at end of life. This benefits active play more than idle play, compared to the other choice.',
  '#000', '#fff', images_watercress[4], undefined);
 upgrades[watercress_choice0].istreebasedupgrade = true;
 
@@ -6418,6 +6444,14 @@ function getWorkerBeeBonus() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+var fernIdleTimeBegin = 30 * 60;
+// the next two variables are not the full charged up time you get, but the time it takes to charge up. the next two multipliers then determine the actual effective charged up time.
+var fernIdleTimeMaxPast = 6 * 3600; // resources from idle fern representing past gains
+var fernIdleTimeMaxFuture = fernIdleTimeMaxPast; // resources from idle fern representing future gains (based on current production, so actually current gains, but if e.g. weather activated it is those from hypothetical future with this weather all the time active). This is the regular fern behavior.
+var fernIdlePastMul = 0.5;
+var fernIdleFutureMul = 1 / 24;
+
+
 function getFernWaitTime() {
   var progress = state.res.seeds;
   var mintime = fern_wait_minutes * 60;
@@ -6429,11 +6463,26 @@ function getFernWaitTime() {
   return mintime;
 }
 
-// for the fern possibly becoming bushy after sitting for a long time
-function getReFernWaitTime() {
-  // never faster than clicking the fern and waiting for a new one
-  return Math.max(10 * 60, getFernWaitTime() * 1.5);
+
+// amount of past fern time charged up. Amount of resources gotten from this should be:
+// (state.c_res - state.fernres) * getFernIdlePastCharge() / (state.time - state.lastFernTime), but only for spores and seeds
+function getFernIdlePastCharge() {
+  var timediff = state.time - state.lastFernTime;
+  var idletime = timediff - fernIdleTimeBegin;
+  if(idletime <= 0) return 0;
+  if(idletime > fernIdleTimeMaxPast) idletime = fernIdleTimeMaxPast;
+  return idletime * fernIdlePastMul;
 }
+
+// amount of future (= from current moment on) fern time charged up. Amount of resources gotten from this should be this time value multiplied by the production as normally computed for ferns
+function getFernIdleFutureCharge() {
+  var timediff = state.time - state.lastFernTime;
+  var idletime = timediff - fernIdleTimeBegin;
+  if(idletime <= 0) return 0;
+  if(idletime > fernIdleTimeMaxFuture) idletime = fernIdleTimeMaxFuture;
+  return idletime * fernIdleFutureMul;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 

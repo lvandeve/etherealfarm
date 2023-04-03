@@ -44,6 +44,7 @@ var fern_base_image = `
 ................
 `;
 
+// bushy
 var fern_base_image2 = `
 ....$...........
 ...$g$$$........
@@ -61,6 +62,26 @@ $gqqgg$qgggqqg$.
 $gqqgg$$qgggqqg$
 .$gg$$$$q$$ggg$.
 ..$$....$..$$$..
+`;
+
+// idle
+var fern_base_image3 = `
+....]...........
+...]g]]]........
+..]]q]qg]]......
+.]gqqqg]]g].....
+..]]]qgggqg]....
+.]gqqqqqqg].....
+]gqgggqgg]].....
+.]]]]gq]ggg]]...
+.]ggqqqqqqqgg]..
+]gqqgg]qgggqqg].
+.]gg]g]q]g]gg]..
+..]gggqqqqggg]..
+.]ggqq]]qgqqgg].
+]gqqgg]]qgggqqg]
+.]gg]]]]q]]ggg].
+..]]....]..]]]..
 `;
 
 var fern_base_image_ethereal = `
@@ -98,6 +119,15 @@ var images_fern2 = [
   generateImageCanvas(fern_winter_header + fern_base_image2),
   generateImageCanvas(fern_ethereal_header + fern_base_image2),
   generateImageCanvas(fern_infernal_header + fern_base_image2),
+];
+
+var images_fern3 = [
+  generateImageCanvas(fern_spring_header + fern_base_image3),
+  generateImageCanvas(fern_summer_header + fern_base_image3),
+  generateImageCanvas(fern_autumn_header + fern_base_image3),
+  generateImageCanvas(fern_winter_header + fern_base_image3),
+  generateImageCanvas(fern_ethereal_header + fern_base_image3),
+  generateImageCanvas(fern_infernal_header + fern_base_image3),
 ];
 
 var present_header = '0:#000';

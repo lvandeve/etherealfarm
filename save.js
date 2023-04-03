@@ -129,7 +129,7 @@ function encState(state, opt_raw_only) {
   processNum(state.twigs);
   processInt(state.num_negative_time);
   processRes(state.fernresin);
-  processTime(state.lastReFernTime);
+  processRes(state.fernres); // used to be state.lastReFernTime before v0.9.2
   processInt(state.lastPlanted3);
   processInt(state.lastPlantedFish);
 
@@ -1168,7 +1168,13 @@ function decState(s) {
   }
   if(save_version >= 4096*1+62) state.num_negative_time = processInt();
   if(save_version >= 4096*1+86) state.fernresin = processRes();
-  if(save_version >= 4096*1+98) state.lastReFernTime = processTime();
+  if(save_version >= 262144*2+64*9+2) {
+    state.fernres = processRes();
+  } else {
+    id++; // used to be state.lastReFernTime before v0.9.2
+    // don't count fernres since beginning of run when loading save of older version (it could be way too much); reset fern state this way (it can still appear, with a valid fernres, during the sped up time after loading the save)
+    state.fern = 0;
+  }
   if(save_version >= 262144*2+64*7+0) state.lastPlanted3 = processInt();
   if(save_version >= 262144*2+64*9+0) state.lastPlantedFish = processInt();
 

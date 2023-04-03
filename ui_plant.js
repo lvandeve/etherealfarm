@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -356,7 +356,7 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
       } else {
         result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
 
-        var help = getCropTypeHelp(c.type, state.challenge == challenge_bees);
+        var help = getCropTypeHelp(c.type, state);
         if(help) {
           result += '.<br>' + help;
         }

@@ -170,7 +170,7 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       var f = state.field3[y][x];
 
       result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
-      var help = getCropTypeHelp3(c.type, haveFishes());
+      var help = getCropTypeHelp3(c.type, state);
       if(help) {
         result += help;
         result += '<br><br>';

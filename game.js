@@ -735,7 +735,6 @@ function beginNextRun(opt_challenge) {
   state.fernres = new Res();
   state.fern = false;
   state.lastFernTime = state.time;
-  state.lastReFernTime = state.time;
 
   gain = new Res();
 
@@ -2939,9 +2938,12 @@ function nextEventTime() {
       if(c) {
         if(!c.isReal()) continue;
         if(c.type == CROPTYPE_BRASSICA) {
-          // watercress needs regular updates, but don't do that when it's a end-of-life wasabi, since once it has that state it doesn't change any further, and stays forever, that'd make long game updates very slow
-          var infinitelifetime = c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0;
-          if(!(infinitelifetime && f.growth == 0)) addtime(c.getPlantTime() * (f.growth), 'brassica');
+          var infinitelifetime = hasBrassicaInfiniteLifetime(c);
+          if(!(infinitelifetime && f.growth == 0)) {
+            if(state.upgrades[watercress_choice0].count == 2) addtime(10, 'brassica'); // gradual bonus dropdown over time
+            addtime(c.getPlantTime() * (f.growth), 'brassica'); // brassica withers or changes to end of life, or changing to end of life state
+
+          }
         } else if(state.challenge == challenge_wither) {
           //addtime(witherDuration() * (f.growth), 'wither');
           // since the income value of the crop changes over time as it withers, return a short time interval so the computation happens correctly during the few minutes the withering happens.
@@ -3023,12 +3025,6 @@ function nextEventTime() {
   if(state.fern == 0) {
     var t = state.lastFernTime - state.time + getFernWaitTime();
     addtime(t, 'fern');
-  }
-  if(state.fern == 1 && state.upgrades[fern_choice0].count == 1) {
-    var t0 = state.lastReFernTime - state.time + getReFernWaitTime();
-    var t1 = state.lastFernTime - state.time + getReFernWaitTime() * 3;
-    var t = Math.max(t0, t1);
-    addtime(t, 'fern2');
   }
 
   // lightning
@@ -3254,7 +3250,6 @@ var update = function(opt_ignorePause) {
     state.suntime += d;
     state.rainbowtime += d;
     state.lastFernTime += d;
-    state.lastReFernTime += d;
     state.automatontime += d;
     state.lasttreeleveluptime += d;
     state.lasttree2leveluptime += d;
@@ -3290,7 +3285,6 @@ var update = function(opt_ignorePause) {
   } else {
     // compensate for computer clock mismatch issues
     if(state.lastFernTime > state.prevtime) state.lastFernTime = state.prevtime;
-    if(state.lastReFernTime > state.prevtime) state.lastReFernTime = state.prevtime;
     if(state.misttime > state.prevtime) state.misttime = 0;
     if(state.suntime > state.prevtime) state.suntime = 0;
     if(state.rainbowtime > state.prevtime) state.rainbowtime = 0;
@@ -4971,7 +4965,7 @@ var update = function(opt_ignorePause) {
             var growth0 = f.growth;
             f.growth -= g;
             if(f.growth <= 0) {
-              if(c.index == brassica_1 && state.upgrades[watercress_choice0].count != 0 && state.challenge != challenge_wither) {
+              if(hasBrassicaInfiniteLifetime(c) && state.challenge != challenge_wither) {
                 f.growth = 0; // its growth is 0, but it'll have infinite "post-wither" lifetime
               } else {
                 f.growth = 0;
@@ -5127,8 +5121,25 @@ var update = function(opt_ignorePause) {
       var roll = getRandomFernRoll();
       roll = (state.fern == 2) ? (roll * 0.5 + 1) : (roll + 0.5);
       var r = fernTimeWorth * roll;
-      if(state.upgrades[fern_choice0].count == 2) r *= (1 + fern_choice0_b_bonus);
-      var g = computeFernGain().mulr(r);
+      if(state.upgrades[fern_choice0].count == 2) {
+        r *= (1 + fern_choice0_b_bonus);
+      }
+      var fg = computeFernGain();
+      var g = fg.mulr(r);
+      if(state.upgrades[fern_choice0].count == 1) {
+        var timediff = state.time - state.lastFernTime;
+        var idlecharge = getFernIdlePastCharge();
+        if(idlecharge > 0 && timediff > 0) {
+          var seedsdiff = state.c_res.seeds.sub(state.fernres.seeds);
+          var sporesdiff = state.c_res.spores.sub(state.fernres.spores);
+          var reltime = idlecharge / timediff;
+          var idleres = new Res({seeds:seedsdiff, spores:sporesdiff}).mulr(reltime);
+          g.addInPlace(idleres);
+        }
+
+        var idlecharge2 = getFernIdleFutureCharge();
+        if(idlecharge2 > 0) g.addInPlace(fg.mulr(idlecharge2));
+      }
       if(g.seeds.ltr(2)) g.seeds = Num.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
       var starter = getStarterResources();
       if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds.mulr(roll));
@@ -5153,19 +5164,17 @@ var update = function(opt_ignorePause) {
       }
       actualgain.addInPlace(fernres);
       state.lastFernTime = state.time; // in seconds
-      state.lastReFernTime = state.time;
       state.fern = 0;
       if(state.numcropfields == 0 && state.res.add(fernres).seeds.ger(10)) {
         showMessage('You have enough resources to plant. Click an empty field to plant', C_HELP, 64721);
       }
     }
 
-    var grow_fern = false;
+    // possibly randomly spawn new fern
     var fernTimeWorth = 0;
     if(!state.fern && !clickedfern) {
       var mintime = getFernWaitTime();
       if(state.time > state.lastFernTime + mintime) {
-        grow_fern = true;
         state.fernwait = mintime;
 
         var s = getRandomPreferablyEmptyFieldSpot();
@@ -5180,19 +5189,7 @@ var update = function(opt_ignorePause) {
         }
 
         state.lastFernTime = state.time; // in seconds
-        state.lastReFernTime = state.time;
-      }
-    } else if(state.fern == 1 && !clickedfern && state.upgrades[fern_choice0].count == 1) {
-      // maybe upgrade fern to bushy, only if the fern has been there for a long while
-      var mintime = getReFernWaitTime();
-      if(state.time > state.lastReFernTime + mintime && state.time > state.lastFernTime + mintime * 3) {
-        var time_bucket = Math.floor((state.time - state.lastFernTime) / 60);
-        // get random fern roll without affecting the seed for next fern drops
-        if(state.g_numferns > 7 && getRandomFernRoll(time_bucket * 50) < 0.1) {
-          state.fern = 2;
-          //showMessage('The fern turned into a bushy fern!', C_NATURE, 2352600597, 0.5);
-        }
-        state.lastReFernTime = state.time;
+        state.fernres = new Res({seeds:state.c_res.seeds, spores:state.c_res.spores});
       }
     }
 
