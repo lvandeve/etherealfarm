@@ -5228,6 +5228,7 @@ var update = function(opt_ignorePause) {
             showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
           }
           actualgain.addInPlace(presentres);
+          if(state.fern) state.fernres.addInPlace(presentres); // don't add the egg resources to idle fern. TODO: remove once state.c_res_prod is implemented
         } else if(effect == 2) {
           // spores
           var g = computeFernGain().spores.mulr(60 * 5);
@@ -5242,6 +5243,7 @@ var update = function(opt_ignorePause) {
             showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
           }
           actualgain.addInPlace(presentres);
+          if(state.fern) state.fernres.addInPlace(presentres); // don't add the egg resources to idle fern. TODO: remove once state.c_res_prod is implemented
         } else if(effect == 3) {
           // production boost
           state.present_production_boost_time = state.time;
@@ -5334,7 +5336,7 @@ var update = function(opt_ignorePause) {
     var twigs_fruit_level = getFruitAbility(FRUIT_TWIGSBOOST, true);
     if(twigs_fruit_level) {
       var twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true));
-      state.twigsfruitspores.addInPlace(actualgain.spores);
+      state.twigsfruitspores.addInPlace(actualgain.spores.mul(twigs_fruit_bonus));
     }
 
     ////////////////////////////////////////////////////////////////////////////

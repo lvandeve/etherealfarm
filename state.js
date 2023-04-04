@@ -911,6 +911,7 @@ function State() {
   this.c_numprestiges = 0;
   this.c_numpautorestiges = 0;
   this.c_lightnings = 0; // lightnings during the stormy challenge
+  //this.c_res_prod = Res(); // similar to c_res, but only production from crops, not one-time income like ferns, holiday events, ... resin/twigs also not included since they're also not continuous crop production
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // progress stats, most recent stat at the end
