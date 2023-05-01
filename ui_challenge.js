@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -372,8 +372,13 @@ function createChallengeDialog(opt_from_challenge) {
       if(!c.allCyclesCompleted(true)) {
         text += ' (New cycle!)';
       } else {
+        var currentcycle = c.getCurrentCycle();
         text += ' (';
-        for(var j = 0; j < c.cycling; j++) text += (j > 0 ? ', ' : '') + c2.maxlevels[j];
+        for(var j = 0; j < c.cycling; j++) {
+          var maxlevel = c2.maxlevels[j];
+          if(currentlyrunning && j == currentcycle) maxlevel = Math.max(maxlevel, state.treelevel);
+          text += (j > 0 ? ', ' : '') + maxlevel;
+        }
         text += ')';
       }
     }

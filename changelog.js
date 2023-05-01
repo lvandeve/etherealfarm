@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.9.3 (2023-05-01):';
+  text += '<br/>• Added two new fish types to infinity pond.';
+  text += '<br/>• Added two new ethereal mistletoe upgrades.';
+  text += '<br/>• Added one new high level ethereal crop.';
+  text += '<br/>• Goldfish boosts all infinity seeds now, so also brassica.';
+  text += '<br/>• Changed the ethereal mistletoe upgrades UI to combine buttons and effects.';
+  text += '<br/>• Various tweaks and fixes.';
+  text += '<br/><br/>';
+
   text += '0.9.2 (2023-04-03):';
   text += '<br/>• Idle choice upgrade improvements:';
   text += '<br/> - Watercress also gets infinite lifetime now, like wasabi';

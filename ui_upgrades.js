@@ -149,7 +149,9 @@ var getUpgradeInfoText = function(u, completed, opt_detailed) {
     }
     if(c.boost.neqr(0)) {
       infoText += 'Base boost: ' + c.boost.toPercentString() + '<br>';
-      infoText += 'Upgraded boost: ' + (c.type == CROPTYPE_BEE ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
+      var hasboostboost = c.type == CROPTYPE_BEE; // TODO: consolidate getBoostBoost and getBoost into single function to avoid need for this check
+      if(c.type == CROPTYPE_CHALLENGE) hasboostboost = c.index == challengecrop_0 || c.index == challengecrop_1 || c.index == challengecrop_2;
+      infoText += 'Upgraded boost: ' + (hasboostboost ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
     }
 
 

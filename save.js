@@ -218,22 +218,25 @@ function encState(state, opt_raw_only) {
   section = 4; id = 0; // crops
   unlocked = [];
   for(var i = 0; i < registered_crops.length; i++) {
-    if(state.crops[registered_crops[i]].unlocked) unlocked.push(registered_crops[i]);
+    if(state.crops[registered_crops[i]].unlocked || state.crops[registered_crops[i]].known) unlocked.push(registered_crops[i]);
   }
   array0 = [];
   array1 = [];
   array2 = [];
+  array3 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'crops must be registered in increasing order';
     array0.push(unlocked[i] - prev);
     prev = unlocked[i];
-    array1.push(state.crops[unlocked[i]].prestige);
-    array2.push(state.crops[unlocked[i]].known);
+    array1.push(state.crops[unlocked[i]].unlocked);
+    array2.push(state.crops[unlocked[i]].prestige);
+    array3.push(state.crops[unlocked[i]].known);
   }
   processUintArray(array0);
-  processUintArray(array1);
+  processBoolArray(array1);
   processUintArray(array2);
+  processUintArray(array3);
 
 
   section = 5; id = 0; // upgrades2
@@ -1324,20 +1327,28 @@ function decState(s) {
 
   section = 4; id = 0; // crops
   array0 = processUintArray();
-  if(save_version >= 4096*1+94) {
-    array1 = processUintArray(); // prestige
+  if(save_version >= 262144*2+64*9+3) {
+    array1 = processBoolArray(); // unlocked
+    array2 = processUintArray(); // prestige
+    array3 = processUintArray(); // known
   } else {
     array1 = [];
-    for(var i = 0; i < array0.length; i++) array1[i] = 0;
-  }
-  if(save_version >= 262144*2+64*6+0) {
-    array2 = processUintArray(); // crop.known
-  } else {
-    array2 = [];
-    for(var i = 0; i < array0.length; i++) array2[i] = 0;
+    for(var i = 0; i < array0.length; i++) array1[i] = true;
+    if(save_version >= 4096*1+94) {
+      array2 = processUintArray(); // prestige
+    } else {
+      array2 = [];
+      for(var i = 0; i < array0.length; i++) array1[i] = 0;
+    }
+    if(save_version >= 262144*2+64*6+0) {
+      array3 = processUintArray(); // crop.known
+    } else {
+      array3 = [];
+      for(var i = 0; i < array0.length; i++) array2[i] = 0;
+    }
   }
   if(error) return err(4);
-  if(array0.length != array1.length || array0.length != array2.length) return err(4);
+  if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length) return err(4);
   prev = 0;
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
@@ -1347,9 +1358,9 @@ function decState(s) {
     if(!crops[index]) {
       return err(4);
     }
-    state.crops[index].unlocked = true;
-    state.crops[index].prestige = array1[i];
-    state.crops[index].known = array2[i];
+    state.crops[index].unlocked = array1[i];
+    state.crops[index].prestige = array2[i];
+    state.crops[index].known = array3[i];
   }
 
   section = 5; id = 0; // upgrades2

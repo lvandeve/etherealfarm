@@ -326,6 +326,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
   // for debugging
   /*result += '<br><br>';
+  result += 'DEBUG:<br>';
   result += 'prod0: ' + p.prod0.toString() + '<br>';
   result += 'prod0b: ' + p.prod0b.toString() + '<br>';
   result += 'prod1: ' + p.prod1.toString() + '<br>';

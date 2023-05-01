@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -226,7 +226,7 @@ function updateRightPane() {
             //text += '• Max challenge level: ' + newmaxlevel + ' (before: ' + maxlevel + ')';
             text += '• Previous max challenge level: ' + maxlevel + ' (now: ' + newmaxlevel + ')';
           } else {
-            text += '• Max challenge level: ' + maxlevel;
+            text += '• Max challenge level reached: ' + maxlevel;
           }
         } else {
           var goal = c.nextTargetLevel();

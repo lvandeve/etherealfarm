@@ -81,6 +81,14 @@ a:visited {
   background-color: #0001;
 }
 
+.efButtonMistletoeOngoing {
+  color: #a66;
+}
+
+.efButtonMistletoeBusy {
+  color: #666;
+}
+
 .efInfo {
   border: 1px solid black;
 }

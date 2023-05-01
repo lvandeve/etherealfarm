@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,7 +36,9 @@ function makePlantChip3(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   }
   var cost = crop.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
-  if(opt_replace && opt_field && opt_field.cropIndex() == crop.index) cost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, amount used in cost computation is one less
+  if(opt_replace && opt_field && opt_field.cropIndex() == crop.index && crop.type != CROPTYPE_BRASSICA) {
+    cost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, crop amount used in cost computation is one less. Exception: brassica, where it's the opposite situation, crop amount doesn't affect cost, but has variable lifespan based recoup cost
+  }
   text += 'type: ' + getCropTypeName(crop.type) + '<br>';
   text += 'cost: ' + cost.toString();
 
@@ -80,7 +82,7 @@ function makePlantChip3(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
       var cost = crop.getCost();
       if(opt_recoup) cost = cost.sub(opt_recoup);
       if(state.res.gte(cost)) {
-        flex.div.className = 'efPlantChip';
+        flex.div.className = 'efEtherealPlantChip';
         return false;
       }
       return true;
@@ -180,7 +182,9 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       var replacementcost = cost;
       if(opt_replace) {
         replacementcost = cost.sub(opt_recoup);
-        if(f.cropIndex() == c.index) replacementcost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, amount used in cost computation is one less
+        if(f.cropIndex() == c.index && c.type != CROPTYPE_BRASSICA) {
+          replacementcost = Res(); // recoup - crop.getCost() gives wrong value since when planting same, crop amount used in cost computation is one less. Exception: brassica, where it's the opposite situation, crop amount doesn't affect cost, but has variable lifespan based recoup cost
+        }
       }
 
       if(opt_detailed) {

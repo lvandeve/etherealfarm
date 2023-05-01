@@ -793,6 +793,7 @@ function beginNextRun(opt_challenge) {
   if(state.negative_time > 3600) state.negative_time = 3600;
 }
 
+// transcend
 function softReset(opt_challenge) {
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
   savegame_recovery_situation = false;
@@ -1098,7 +1099,7 @@ function PreCell(x, y) {
   this.prod1 = new Res();
   this.wanted = new Res();
   this.gotten = new Res();
-  // for the "satisfied" display of mushroom in the case when it't >= 100% satisfied
+  // for the "satisfied" display of mushroom in the case when it's >= 100% satisfied
   this.gotten2 = new Res();
   // after consumption/production computation, and after leeching, so useable as actual production value, not just temporary
   // useful for UI showing actual production of this plant (however doesn't show consumption as negatives have been zeroed out and subtracted frmo producers instead), and also for the actual computation of resources gained during an update tick
@@ -2323,6 +2324,9 @@ function maybeUnlockEtherealCrops() {
     unlockEtherealCrop(berry2_7);
     unlockEtherealCrop(mush2_7);
   }
+  if(state.treelevel2 >= 23) {
+    unlockEtherealCrop(flower2_7);
+  }
 }
 
 function maybeUnlockInfinityCrops() {
@@ -2363,8 +2367,10 @@ function maybeUnlockFishes() {
   var first_fish_unlocked = state.fishes[goldfish_0].unlocked;
   unlockFish(goldfish_0);
   unlockFish(koi_0);
-  //if(state.crops3[koi_0].had) unlockFish(octopus_0);
+  //if(state.fishes[koi_0].had) unlockFish(octopus_0);
   unlockFish(octopus_0);
+  if(state.fishes[octopus_0].had) unlockFish(shrimp_0);
+  if(state.fishes[shrimp_0].had) unlockFish(anemone_0);
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
   if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
@@ -3246,6 +3252,8 @@ var update = function(opt_ignorePause) {
     // SO:
     // What exactly must be incremented by d here: anything that is an in-game time stored as a timestamp (so not a duration, but a point in time, date+time, unix timestamp).
     // What must not be touched here: stats based on real-time, and, in-game related times that are stored as a duration rather than a timestamp
+    // ALSO NOTE:
+    // see also the code further below commented with "compensate for computer clock mismatch issues" and check if variable must be handled there too
     state.misttime += d;
     state.suntime += d;
     state.rainbowtime += d;
@@ -3290,6 +3298,8 @@ var update = function(opt_ignorePause) {
     if(state.rainbowtime > state.prevtime) state.rainbowtime = 0;
     if(state.lasttreeleveluptime > state.prevtime) state.lasttreeleveluptime = state.prevtime;
     if(state.lastambertime > state.prevtime) state.lastambertime = state.prevtime;
+    if(state.lastLightningTime > state.prevtime) state.lastLightningTime = state.prevtime;
+    if(state.automatontime > state.prevtime) state.automatontime = state.prevtime;
   }
 
   var prevseasongain = undefined;
@@ -5595,6 +5605,7 @@ var update = function(opt_ignorePause) {
             showMessage(text, C_UNLOCK, 193917138);
           }
 
+          // set crop to known even by just seeing its unlock upgrade
           if(u.iscropunlock || u.isprestige) {
             var c2 = state.crops[u.cropid];
             if(c2) {
@@ -5773,9 +5784,11 @@ var update = function(opt_ignorePause) {
     showMessage('The season changed to ' + seasonNames[getSeason()] + gainchangemessage, C_NATURE, 17843969, 0.75);
   }
 
+  var update_amber_ui = false;
 
   if(num_season_changes2 > 0) {
     state.amberseason = false;
+    update_amber_ui = true; // if the amber tab is currently open, the state of some buttons may change
   }
 
   if(do_transcend) {
@@ -5795,6 +5808,7 @@ var update = function(opt_ignorePause) {
 
   updateUI2();
   if(update_fruit_ui) updateFruitUI();
+  if(update_amber_ui) updateAmberUI();
   showGoalChips();
 
   for(var i = 0; i < update_listeners.length; i++) {

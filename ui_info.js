@@ -270,7 +270,7 @@ function getResourceDetails(index) {
       var early_penalty = getEarlyResinPenalty();
       if(early_penalty < 1 && upcoming.gtr(0)) {
         text += '<br>';
-        text += 'Reduction for being very early in run: -' + Num(1 - early_penalty).toPercentString();
+        text += 'Reduction if trancending this early in run now already: -' + Num(1 - early_penalty).toPercentString();
         text += '<br>';
       }
 
@@ -306,7 +306,7 @@ function getResourceDetails(index) {
       var early_penalty = getEarlyResinPenalty();
       if(early_penalty < 1 && upcoming.gtr(0)) {
         text += '<br>';
-        text += 'Reduction for being very early in run: -' + Num(1 - early_penalty).toPercentString();
+        text += 'Reduction if trancending this early in run now already: -' + Num(1 - early_penalty).toPercentString();
         text += '<br>';
       }
 

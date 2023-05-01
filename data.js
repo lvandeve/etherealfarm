@@ -844,6 +844,14 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       }
     }
 
+    if(this.type == CROPTYPE_NUT) {
+      if(haveEtherealMistletoeUpgrade(mistle_upgrade_nuts)) {
+        var mul = getEtherealMistletoeBonus(mistle_upgrade_nuts).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal mistletoe nuttiness', true, mul, result.clone()]);
+      }
+    }
+
     if(this.type == CROPTYPE_MUSH) {
       if(haveEtherealMistletoeUpgrade(mistle_upgrade_mush)) {
         var mul = getEtherealMistletoeBonus(mistle_upgrade_mush).addr(1);
@@ -1631,6 +1639,12 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['squirrel: brassica space-time', true, mul, result.clone()]);
       }
+
+      if(haveEtherealMistletoeUpgrade(mistle_upgrade_brassica)) {
+        var mul = getEtherealMistletoeBonus(mistle_upgrade_brassica).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal mistletoe: brassica', true, mul, result.clone()]);
+      }
     }
   }
 
@@ -2232,6 +2246,7 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
     if(cropid == flower_0 && (state.messagelogenabled[3] || state.g_numresets == 0)) showMessage('You unlocked the first type of flower! Flowers don\'t produce resources directly, but boost neighboring plants.', C_HELP, 456645);
     if(cropid == mushunlock_0 && (state.messagelogenabled[3] || state.g_numresets == 0)) showMessage('You unlocked the first type of mushroom! Mushrooms produce spores rather than seeds, and spores will be used by the tree.', C_HELP, 8932);
     state.crops[crop.index].unlocked = true;
+    //if(!state.crops[crop.index].known) state.crops[crop.index].known = 1; // for prestiged crops, is and remains larger than 1. This is also already set by game.js when this upgrade becomes visible, however not for all crops such upgrade appears (e.g. blackberry with blackberry secret)
   };
 
   var pre = function() {
@@ -4057,7 +4072,7 @@ var flower2_3 = registerFlower2('daisy', 9, 3, Res({resin:10e9}), default_ethere
 var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), default_ethereal_growtime, Num(64), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_dandelion);
 var flower2_5 = registerFlower2('iris', 15, 5, Res({resin:50e15}), default_ethereal_growtime, Num(256), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
 var flower2_6 = registerFlower2('lavender', 19, 6, Res({resin:500e18}), default_ethereal_growtime, Num(1024), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_lavender);
-//var flower2_7 = registerFlower2('orchid', 23, 7, Res({resin:10e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_orchid);
+var flower2_7 = registerFlower2('orchid', 23, 7, Res({resin:25e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_orchid);
 
 crop2_register_id = 100;
 var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
@@ -6946,6 +6961,7 @@ function applyPrestige(crop_id, prestige) {
 
 
   c2.prestige = prestige;
+  //c2.known = Math.max(c2.prestige + 1, c2.known);
   updatePrestigeData(crop_id);
 
   var replacements = templates_for_type;
@@ -7156,6 +7172,7 @@ function MistletoeUpgrade() {
 
   this.name = 'a';
   this.description = '';
+  this.effectname = '';
 
   this.basetime = 3600; // hos much time the first upgrade of this costs. Next upgrades cost a multiple of this.
 
@@ -7192,7 +7209,7 @@ var mistletoeupgrades = [];
 // 16-bit ID, auto incremented with registerMistle, but you can also set it to a value yourself, to ensure consistent IDs for various crops (between savegames) in case of future upgrades
 var mistle_register_id = 0;
 
-function registerMistletoeUpgrade(name, bonus, evo, basetime, description) {
+function registerMistletoeUpgrade(name, effectname, bonus, evo, basetime, description) {
   var mistle = new MistletoeUpgrade();
   mistle.index = mistle_register_id++;
 
@@ -7202,6 +7219,7 @@ function registerMistletoeUpgrade(name, bonus, evo, basetime, description) {
   description = description.replace('%BONUS%', bonus.toPercentString());
 
   mistle.name = name;
+  mistle.effectname = effectname;
   mistle.bonus = bonus;
   mistle.evo = evo;
   mistle.basetime = basetime;
@@ -7221,27 +7239,30 @@ function registerOneTimeMistletoeUpgrade(name, evo, time, description) {
 // a twigs bonus that's given for having the ethereal mistletoe in the first place, even without any upgrades
 var mistle_main_twigs_bonus = Num(0.15);
 
-var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Does not reset anything (existing upgrades stay). At some levels unlocks new types of bonuses. Gives an extra %BONUS% bonus to the other bonuses except those that give resin or twigs (additive with evolution levels)');
+var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', '', Num(0.1), 0, 3600 * 24, 'Evolves the ethereal mistletoe. Does not reset anything (existing upgrades stay). At some levels unlocks new types of bonuses. Gives an extra %BONUS% bonus to the other bonuses except those that give resin or twigs (additive with evolution levels)');
 
-var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
+var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', 'production', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
 
-var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', Num(0.07), 1, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring ethereal crops, of any type that can receive bonus from lotuses (but not to lotuses themselves)');
+var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', 'neighbors', Num(0.07), 1, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring ethereal crops, of any type that can receive bonus from lotuses (but not to lotuses themselves)');
 
-var mistle_upgrade_stingy = registerMistletoeUpgrade('stinginess', Num(0.07), 5, 3600, 'Gives a %BONUS% bonus to stingy crops (for spore production) per level');
+var mistle_upgrade_stingy = registerMistletoeUpgrade('stinginess', 'stingy', Num(0.07), 5, 3600, 'Gives a %BONUS% bonus to stingy crops (for spore production) per level');
 
-var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', Num(0.07), 9, 3600, 'Gives a %BONUS% bonus to mushrooms (both production and consumption) per level');
+var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', 'mushrooms', Num(0.07), 9, 3600, 'Gives a %BONUS% bonus to mushrooms (both production and consumption) per level');
 
-var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', Num(0.07), 11, 3600, 'Gives a %BONUS% bonus to berry seed production per level');
+var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', 'berries', Num(0.07), 11, 3600, 'Gives a %BONUS% bonus to berry seed production per level');
 
-var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', Num(0.03), 13, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring lotuses');
+var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', 'lotuses', Num(0.03), 13, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring lotuses');
 
+var mistle_upgrade_nuts = registerMistletoeUpgrade('nuttiness', 'nuts', Num(0.05), 12, 3600, 'Gives a %BONUS% bonus to nuts per level');
+
+var mistle_upgrade_brassica = registerMistletoeUpgrade('brassica', 'brassica', Num(0.05), 14, 3600, 'Gives a %BONUS% bonus to brassica copying per level');
 
 
 
 // mistletoe upgrades that also cost other resources. Give higher id so they show up more to the bottom in the UI
 mistle_register_id = 50;
 
-var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', Num(0.1), 3, 3600, 'Gives a %BONUS% bonus to resin production per level'); // sappiness as in tree sap
+var mistle_upgrade_resin = registerMistletoeUpgrade('sappiness', 'resin', Num(0.1), 3, 3600, 'Gives a %BONUS% bonus to resin production per level'); // sappiness as in tree sap
 mistletoeupgrades[mistle_upgrade_resin].getResourceCostForLevel_ = function(level) {
   return Res({twigs:100e15}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
@@ -7251,7 +7272,7 @@ mistletoeupgrades[mistle_upgrade_resin].getResourceCostToReachLevel = function(l
   return result;
 };
 
-var mistle_upgrade_twigs = registerMistletoeUpgrade('twigginess', Num(0.1), 7, 3600, 'Gives a %BONUS% bonus to twigs production per level');
+var mistle_upgrade_twigs = registerMistletoeUpgrade('twigginess', 'twigs', Num(0.1), 7, 3600, 'Gives a %BONUS% bonus to twigs production per level');
 mistletoeupgrades[mistle_upgrade_twigs].getResourceCostForLevel_ = function(level) {
   return Res({resin:1e18}).mul(Num.pow(new Num(2), new Num(level - 1)));
 };
@@ -7261,6 +7282,24 @@ mistletoeupgrades[mistle_upgrade_twigs].getResourceCostToReachLevel = function(l
   return result;
 };
 
+////////
+
+// sort order for showing in UI
+var mistle_sort_order = util.clone(registered_mistles); // sort works in-place so must make copy. toSorted can do this in one go but is not supported in firefox 112.
+mistle_sort_order.sort(function(ia, ib) {
+  var a = mistletoeupgrades[ia];
+  var b = mistletoeupgrades[ib];
+  var a_res = (ia == mistle_upgrade_resin || ia == mistle_upgrade_twigs);
+  var b_res = (ib == mistle_upgrade_resin || ib == mistle_upgrade_twigs);
+  if(a_res != b_res) {
+    // the ones that cost extra resources (twigs, resin, ...) are shown at the end of the list, despite their evolution unlock order
+    return a_res - b_res;
+  }
+  if(a.evo != b.evo) {
+    return a.evo - b.evo;
+  }
+  return a.index - b.index;
+});
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -7296,7 +7335,8 @@ function getEtherealMistleToeBonusWithEvoString(index) {
   result += base.toPercentString();
   var evo = getEtherealMistletoeEvolutionBonusFor(index);
   if(evo.neqr(0)) {
-    result += ' with ' + evo.toPercentString() + ' evo = ' + getEtherealMistletoeBonus(index).toPercentString();
+    //result += ' with ' + evo.toPercentString() + ' evo = ' + getEtherealMistletoeBonus(index).toPercentString();
+    result += ', with evo: ' + getEtherealMistletoeBonus(index).toPercentString();
   }
   return result;
 }
@@ -7447,18 +7487,18 @@ Crop3.prototype.getProd = function(f, breakdown) {
   }
 
   // goldfish
-  if(this.type == CROPTYPE_BERRY && state.fishcount[goldfish_0]) {
+  if(result.infseeds.neqr(0) && state.fishcount[goldfish_0]) {
     var num = state.fishcount[goldfish_0];
     var mul = new Num(1 + goldfish_0_bonus * num);
-    result.mulInPlace(mul);
+    result.infseeds.mulInPlace(mul);
     if(breakdown) breakdown.push(['goldfish', true, mul, result.clone()]);
   }
 
   // octopus
-  if(this.type == CROPTYPE_MUSH && state.fishcount[octopus_0]) {
+  if(result.infspores.neqr(0) && state.fishcount[octopus_0]) {
     var num = state.fishcount[octopus_0];
     var mul = new Num(1 + octopus_0_bonus * num);
-    result.mulInPlace(mul);
+    result.infspores.mulInPlace(mul);
     if(breakdown) breakdown.push(['octopus', true, mul, result.clone()]);
   }
 
@@ -7520,8 +7560,23 @@ Crop3.prototype.getProd = function(f, breakdown) {
       result.mulInPlace(floweronlymul);
       if(breakdown) breakdown.push(['flower tiers (' + num + ')', true, floweronlymul, result.clone()]);
       result.mulInPlace(beeonlymul);
-      if(breakdown) breakdown.push(['bee tiers (' + num + ')', true, beeonlymul, result.clone()]);
+      if(breakdown) breakdown.push(['bee tiers (' + num2 + ')', true, beeonlymul, result.clone()]);
+
+      // sea anemone through flower
+      // TODO: indicate (and actually compute too) this in details of flower instead, but this is not same multipliers as flower to seed, so the disctinction has to be made somewhere
+      if(state.fishcount[anemone_0]) {
+        var anemonemul = Num(1 + anemone_0_bonus * state.fishcount[anemone_0]);
+        result.mulInPlace(anemonemul);
+        if(breakdown) breakdown.push(['sea anemones', true, anemonemul, result.clone()]);
+      }
     }
+  }
+
+  // sea anemone to flower
+  if(this.type == CROPTYPE_BRASSICA && state.fishcount[shrimp_0]) {
+    var mul = Num(1 + shrimp_0_bonus * state.fishcount[shrimp_0]);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['shrimp', true, mul, result.clone()]);
   }
 
 
@@ -7535,7 +7590,6 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 
   // bees boostboost
   if(f && (this.type == CROPTYPE_FLOWER)) {
-    var p = prefield[f.y][f.x];
     var num = 0;
 
     var numbeedirs = 4;
@@ -7558,12 +7612,19 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
     }
   }
 
+  // sea anemone to flower
+  if(this.type == CROPTYPE_FLOWER && state.fishcount[anemone_0]) {
+    var anemonemul = Num(1 + anemone_0_bonus * state.fishcount[anemone_0]);
+    result.mulInPlace(anemonemul);
+    if(breakdown) breakdown.push(['sea anemones', true, anemonemul, result.clone()]);
+  }
+
   // koi to runestone
   if(this.type == CROPTYPE_RUNESTONE && state.fishcount[koi_0]) {
     var num = state.fishcount[koi_0];
     var mul = Num(1 + koi_0_bonus * num);
-      result.mulInPlace(mul);
-      if(breakdown) breakdown.push(['kois', true, mul, result.clone()]);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['kois', true, mul, result.clone()]);
   }
 
   return result;
@@ -7741,14 +7802,18 @@ function haveInfinityField() {
 ////////////////////////////////////////////////////////////////////////////////
 
 var fishtype_index = 0;
-var FISHTYPE_GOLDFISH = fishtype_index++; // infinity berry production bonus
+var FISHTYPE_GOLDFISH = fishtype_index++; // infinity seeds production bonus
 var FISHTYPE_KOI = fishtype_index++; // runestone basic field boost bonus
-var FISHTYPE_OCTOPUS = fishtype_index++; // infinity mushroom production bonus
+var FISHTYPE_OCTOPUS = fishtype_index++; // infinity spores production bonus
+var FISHTYPE_SHRIMP = fishtype_index++; // shrimp: boosts infinity watercress
+var FISHTYPE_ANEMONE = fishtype_index++; // sea anemone: boost infinity flowers
 
 function getFishTypeName(type) {
   if(type == FISHTYPE_GOLDFISH) return 'goldfish';
   if(type == FISHTYPE_KOI) return 'koi';
   if(type == FISHTYPE_OCTOPUS) return 'octopus';
+  if(type == FISHTYPE_SHRIMP) return 'shrimp';
+  if(type == FISHTYPE_ANEMONE) return 'sea anemone';
   return 'unknown';
 }
 
@@ -7835,9 +7900,21 @@ function registerOctopus(name, tier, cost, effect_description, image, opt_taglin
   return index;
 }
 
+function registerShrimp(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_SHRIMP, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
+function registerAnemone(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_ANEMONE, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
 fish_register_id = 100;
 var goldfish_0_bonus = 0.1;
-var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity berry production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
+var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
 
 fish_register_id = 200;
 var koi_0_bonus = 0.2;
@@ -7845,7 +7922,15 @@ var koi_0 = registerKoi('koi', 0, Res({infspores:20000}), 'Improves runestone bo
 
 fish_register_id = 300;
 var octopus_0_bonus = 0.25;
-var octopus_0 = registerOctopus('octopus', 0, Res({infspores:100000}), 'Improves infinity mushroom production by ' + Num(octopus_0_bonus).toPercentString(), image_octopus0);
+var octopus_0 = registerOctopus('octopus', 0, Res({infspores:100000}), 'Improves infinity spores production by ' + Num(octopus_0_bonus).toPercentString(), image_octopus0);
+
+fish_register_id = 400;
+var shrimp_0_bonus = 0.2;
+var shrimp_0 = registerShrimp('shrimp', 0, Res({infspores:2500000}), 'Improves infinity watercress ' + Num(shrimp_0_bonus).toPercentString(), image_shrimp0);
+
+fish_register_id = 500;
+var anemone_0_bonus = 0.15;
+var anemone_0 = registerAnemone('anemone', 0, Res({infspores:7500000}), 'Improves infinity flowers ' + Num(anemone_0_bonus).toPercentString(), image_anemone0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -8740,11 +8825,11 @@ function holidayEventActive() {
     return 1;
   }*/
 
-  var date_20230320_begin = 1679270400;
+  /*var date_20230320_begin = 1679270400;
   var date_20230420_end = 1682035200;
   if(time >= date_20230320_begin && time <= date_20230420_end) {
     return 2;
-  }
+  }*/
 
   return 0;
 }

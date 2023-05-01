@@ -106,6 +106,14 @@ body {
   background-color: #0001;
 }
 
+.efButtonMistletoeOngoing {
+  color: #c99;
+}
+
+.efButtonMistletoeBusy {
+  color: #959595;
+}
+
 .efInfo {
   border: 1px solid #888;
 }
