@@ -79,7 +79,7 @@ function updateMedalUI() {
       if(row_has_exclamation_mark && state.medals_earned > 40) {
         if(medal_side_cache[ypos]) {
           if(!medal_side_cache[ypos].visibility_visible) {
-            medal_side_cache[ypos].div.style.visibility = 'visible';
+            medal_side_cache[ypos].div.style.visibility = ''; // use '' here, not 'visible': if should inherit from parent, otherwise it can pop through to other tabs
             medal_side_cache[ypos].visibility_visible = true;
           }
         } else {

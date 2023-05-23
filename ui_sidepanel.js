@@ -169,7 +169,7 @@ function updateRightPane() {
               var miniconfigbutton = document.createElement('span');
               chip2.div.textEl.appendChild(miniconfigbutton);
               miniconfigbutton.innerHTML = '&#8201;⚙&#8201;'; // TODO: find a more clean way to make this exactly square
-              miniconfigbutton.className = 'efButton';
+              miniconfigbutton.className = 'efFlatButton';
               miniconfigbutton.title = 'quick edit auto-actions';
               addButtonAction(miniconfigbutton, function(e) {
                 showConfigureAutoActionDialog();
