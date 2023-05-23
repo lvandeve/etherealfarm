@@ -404,10 +404,19 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
     var c = crops2[f.cropIndex()];
     var div;
 
+    var updatedialogfun = bind(function(f, c, flex) {
+      var html0 = getCropInfoHTML2(f, c, false);
+      if(html0 != last0) {
+        flex0.div.innerHTML = html0;
+        last0 = html0;
+      }
+    }, f, c);
+
     var dialog = createDialog({
       icon:c.image[4],
       title:'Ethereal crop info',
-      bgstyle:'efDialogTranslucent'
+      bgstyle:'efDialogTranslucent',
+      updatedialogfun:updatedialogfun
     });
 
     var buttonshift = 0;
@@ -477,15 +486,7 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
       dialog.content.div.innerHTML = text;
     });
 
-    updatedialogfun = bind(function(f, c, flex) {
-      var html0 = getCropInfoHTML2(f, c, false);
-      if(html0 != last0) {
-        flex0.div.innerHTML = html0;
-        last0 = html0;
-      }
-    }, f, c);
-
-    updatedialogfun(f, c);
+    updatedialogfun();
   } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
     makeTree2Dialog();
   } else {

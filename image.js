@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -315,6 +315,9 @@ function generatePalette(header) {
 
   var all = undefined;
 
+  var hgradient0 = [];
+  var hgradient1 = [];
+
 
   var hueshift0 = 0;
   var hueshift = 0;
@@ -337,6 +340,22 @@ function generatePalette(header) {
       else if(k == 'hs1') hueshift = parseFloat(v); // optional hue shift for each row (0.0-1.0)
       else if(k == 'ts0') tempshift0 = parseFloat(v);
       else if(k == 'ts1') tempshift = parseFloat(v);
+      else if(k[0] == 'h' && k[1] == '0') {
+        for(var j = 0; j < letters.length; j++) {
+          if(k[2] == letters[j][1]) {
+            hgradient0[j] = RGBtoHSV(CSStoRGB(v));
+            break;
+          }
+        }
+      }
+      else if(k[0] == 'h' && k[1] == '1') {
+        for(var j = 0; j < letters.length; j++) {
+          if(k[2] == letters[j][1]) {
+            hgradient1[j] = RGBtoHSV(CSStoRGB(v));
+            break;
+          }
+        }
+      }
       else if(k[0] == 'h') {
         for(var j = 0; j < letters.length; j++) {
           if(k[1] == letters[j][1]) {
@@ -385,31 +404,44 @@ function generatePalette(header) {
   for(var i = 0; i < letters.length; i++) {
     for(var j = 0; j < 4; j++) {
       var c = letters[i][j];
-      var h_rgb = CSStoRGB(hues[i]);
-      var l_rgb = CSStoRGB(lisat[j]);
-      var h_hsv = RGBtoHSV(h_rgb);
-      var h = h_hsv[0];
-      h += ((3 - j) * hueshift0 + j * hueshift) / 3 * 255;
-      while(h > 255) h -= 255;
-      while(h < 0) h += 255;
-      var l = RGBtoHSL(l_rgb);
-      var rgb = HSLtoRGB([h, l[1] * h_hsv[1] / 255, l[2] * h_hsv[2] / 255]);
-      if(tempshift0 || tempshift) {
-        var v = ((3 - j) * tempshift0 + j * tempshift) / 3;
-        var max = 255;//Math.max(Math.max(rgb[0], rgb[1]), rgb[2]);
-        var min = 0;//Math.min(Math.min(rgb[0], rgb[1]), rgb[2]);
-        if(v < 0) {
-          v = -v;
-          rgb[0] = Math.floor(rgb[0] * (1 - v) + v * min);
-          rgb[2] = Math.floor(rgb[2] * (1 - v) + v * max);
-        } else {
-          rgb[0] = Math.floor(rgb[0] * (1 - v) + v * max);
-          rgb[2] = Math.floor(rgb[2] * (1 - v) + v * min);
+      if(hgradient0[i] && hgradient1[i]) {
+        var c0 = hgradient0[i];
+        var c1 = hgradient1[i];
+        var c2 = [];
+        for(var k = 0; k < 4; k++) {
+          var v = j / 3;
+          // TODO: for the case of hue (k=0), go the other way around through the hue circle if the distance is closer in that direction
+          c2[k] = c0[k] * (1 - v) + c1[k] * v;
         }
-
+        var rgb = HSVtoRGB([c2[0], c2[1], c2[2]]);
+        palette[c] = rgb;
+        palette[c][3] = c2[3]; // alpha
+      } else {
+        var h_rgb = CSStoRGB(hues[i]);
+        var l_rgb = CSStoRGB(lisat[j]);
+        var h_hsv = RGBtoHSV(h_rgb);
+        var h = h_hsv[0];
+        h += ((3 - j) * hueshift0 + j * hueshift) / 3 * 255;
+        while(h > 255) h -= 255;
+        while(h < 0) h += 255;
+        var l = RGBtoHSL(l_rgb);
+        var rgb = HSLtoRGB([h, l[1] * h_hsv[1] / 255, l[2] * h_hsv[2] / 255]);
+        if(tempshift0 || tempshift) {
+          var v = ((3 - j) * tempshift0 + j * tempshift) / 3;
+          var max = 255;//Math.max(Math.max(rgb[0], rgb[1]), rgb[2]);
+          var min = 0;//Math.min(Math.min(rgb[0], rgb[1]), rgb[2]);
+          if(v < 0) {
+            v = -v;
+            rgb[0] = Math.floor(rgb[0] * (1 - v) + v * min);
+            rgb[2] = Math.floor(rgb[2] * (1 - v) + v * max);
+          } else {
+            rgb[0] = Math.floor(rgb[0] * (1 - v) + v * max);
+            rgb[2] = Math.floor(rgb[2] * (1 - v) + v * min);
+          }
+        }
+        palette[c] = rgb;
+        palette[c][3] = Math.min(l_rgb[3], h_rgb[3]); // alpha
       }
-      palette[c] = rgb;
-      palette[c][3] = Math.min(l_rgb[3], h_rgb[3]); // alpha
     }
   }
 
@@ -477,7 +509,7 @@ Generates an image from ASCII text as follows:
   -- nmMN: magenta
   -- {fF}: fuchsia (actually crimson)
  - +,-,*,/: these 4 characters can be overridden to any color. The defaults are #f00, #ff0, #0f0, #00f (red, yellow, green, blue)
--header after the # has following fields, all of the form key:value and space separated, and where CSS color values use hex CSS notation of the form #hhh, #hhhh, #hhhhhh or #hhhhhhhh
+-header can have the following fields, all of the form key:value and space separated, and where CSS color values use hex CSS notation of the form #hhh, #hhhh, #hhhhhh or #hhhhhhhh
   -- l0: change lightness, saturation, transparency 0 (first column of hue letters) to that of given CSS color (its hue is ignored)
   -- l1: change lightness, saturation, transparency 1 (second column of hue letters) to that of given CSS color (its hue is ignored)
   -- l2: change lightness, saturation, transparency 2 (third column of hue letters) to that of given CSS color (its hue is ignored)
@@ -487,10 +519,12 @@ Generates an image from ASCII text as follows:
   -- ts0: similar to hs0, but for temperature shift (ts). E.g. use ts0:-0.25, ts1:0.25 for subtle cold shadow to warm glow effect.
   -- ts1: end for ts0
   -- hX: affect hue series X, where X is the second letter of one of the hue series, e.g. r for red: change the hue of that entire series to the hue/saturation/lightness/alpha of the given color (lightness computed using the HSV method), e.g. hf:#802 to change the fuchsia to be more red-ish and also darker
+  -- h0X: affect hue series X, where X is the second letter of one of the hue series, e.g. r for red: change the entire series to be a gradient between this color and the color given bh h1X. The gradient interpolation is done in HSV space.
+  -- h1X: the second color for h0X
   -- g0, g1, ..., g9: set gradient value 0 to 9 to the given CSS color. Initially, g0 is #000 and g9 is #fff and all values in between are undefined, causing a grayscale gradient. Changing any entry sets that entry to that exact value, and will fill in undefined entries with a gradient between the two nearest defined neighbors.
   -- 0-9,a-z,A-Z,... (any known single character): set value directly to the given CSS color (can also have alpha channel), overriding and after any of the above rules
   -- aa: affect all: reduce lightness, saturation and alpha of all based on the lightness, saturation and alpha of the given color value here, this is done after all the above rules, including single characters. NOTE: to keep saturation, don't set it to white. The color #f00f (or variants such as #0fff) keeps everything: max saturation, lightness and alpha.
-  -- example of a header: #l0:#c22 l1:#d44 l2:#e66 l3:#f88
+  -- example of a header: l0:#c22 l1:#d44 l2:#e66 l3:#f88
 */
 function generateImage(text) {
   text = text.trim();

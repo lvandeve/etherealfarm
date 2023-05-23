@@ -42,38 +42,56 @@ body {
 
 .efDialog {
   background-color: #333;
-  border: 1px solid #999;
+  border: 2px solid #999;
   color: #999;
 }
 
 .efDialogTranslucent {
   background-color: #444d;
-  border: 1px solid #bbb;
+  border: 2px solid #bbb;
   color: #bbb;
 }
 
 .efDialogEthereal {
   background-color: #208e;
-  border: 1px solid #bbb;
+  border: 2px solid #bbb;
   color: #bbb;
 }
 
 .efDialogLongPress {
   background-color: #343e;
-  border: 1px solid #bbb;
+  border: 2px solid #bbb;
   color: #aaa;
+}
+
+.efDialogTop {
+  background-color: #fff1;
+}
+
+.efFlatButton {
+  background-color: #666;
+  border: 1px solid #000;
+  color: #000;
+}
+
+.efFlatButtonHighlighted {
+  background-color: #777;
+  border: 1px solid #000;
+  color: #000;
 }
 
 .efButton {
   background-color: #666;
   border: 1px solid #000;
   color: #000;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efButtonCantAfford {
   background-color: #666;
   border: 1px solid #333;
   color: #444;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efTextCantAfford {
@@ -84,6 +102,7 @@ body {
   background-color: #777;
   border: 1px solid #000;
   color: #000;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efButtonTranslucent {

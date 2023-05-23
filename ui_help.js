@@ -667,7 +667,7 @@ function createMainHelpDialog() {
   text += '<br/><br/><br/>';
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';
-  text += 'Copyright (c) 2020-2022 by Lode Vandevenne';
+  text += 'Copyright (c) 2020-2023 by Lode Vandevenne';
 
   dialog.content.div.innerHTML = text;
 

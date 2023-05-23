@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -56,14 +56,7 @@ function setTab(i, opt_temp) {
 
   var oldtab = state.currentTab;
 
-  if(state.currentTab == tabindex_medals && state.currentTab != i && state.medals_new) {
-    // when leaving the achievements tab and there are unseen medals, mark them all as seen now, to not let the player hunt for which
-    // medals to mouseover to remove the red indication
-    for(var j = 0; j < registered_medals.length; j++) {
-      var m2 = state.medals[registered_medals[j]];
-      if(m2.earned) m2.seen = true;
-    }
-  }
+  var markmedalsseen = state.currentTab == tabindex_medals && state.currentTab != i && state.medals_new;
 
   if(!opt_temp) state.currentTab = i;
 
@@ -107,6 +100,15 @@ function setTab(i, opt_temp) {
   updateTabButtons();
   showGoalChips(); // some goal chips or help arrows depend on tab
   updateAbilitiesUI(); // when switching between infinity field and basic field, brassica icon at the top should update, make sure it goes immediately and not after 0.3 seconds with next game update: 0.3 seconds makes it feel sluggish
+
+  if(markmedalsseen) {
+    // when leaving the achievements tab and there are unseen medals, mark them all as seen now, to not let the player hunt for which
+    // medals to mouseover to remove the red indication
+    for(var j = 0; j < registered_medals.length; j++) {
+      var m2 = state.medals[registered_medals[j]];
+      if(m2.earned) m2.seen = true;
+    }
+  }
 }
 
 
@@ -465,7 +467,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'field';
     tabbuttons[tabnum].id = 'field_tab';
@@ -482,7 +484,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'upgrades';
     tabbuttons[tabnum].id = 'upgrades_tab';
@@ -499,7 +501,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal field';
     tabbuttons[tabnum].id = 'ethereal_field_tab';
@@ -517,7 +519,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: ethereal upgrades tab', true);
     tabbuttons[tabnum].textEl.innerText = 'ethereal upgrades';
     tabbuttons[tabnum].id = 'ethereal_upgrades_tab';
@@ -535,7 +537,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: infinity field tab', true);
     tabbuttons[tabnum].textEl.innerText = 'infinity field';
     tabbuttons[tabnum].id = 'infinity_field_tab';
@@ -553,7 +555,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: fruit tab', true);
     tabbuttons[tabnum].textEl.innerText = 'fruit';
     tabbuttons[tabnum].id = 'fruit_tab';
@@ -570,7 +572,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: automaton tab', true);
     tabbuttons[tabnum].textEl.innerText = 'automaton';
     tabbuttons[tabnum].id = 'automaton_tab';
@@ -588,7 +590,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: squirrel tab', true);
     tabbuttons[tabnum].textEl.innerText = 'squirrel';
     tabbuttons[tabnum].id = 'squirrel_tab';
@@ -606,7 +608,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: amber tab', true);
     tabbuttons[tabnum].textEl.innerText = 'amber';
     tabbuttons[tabnum].id = 'amber_tab';
@@ -624,7 +626,7 @@ function updateTabButtons() {
     var y0 = split ? ((index < half0) ? '0%' : '50%') : '0%';
     var y1 = split ? '50%' : '100%';
     tabbuttons[tabnum] = makeDiv((100 / num2 * index2) + '%', y0, (100 / num2) + '%', y1, tabFlex.div);
-    styleButton(tabbuttons[tabnum]);
+    styleButton(tabbuttons[tabnum], undefined, true);
     addButtonAction(tabbuttons[tabnum], bind(function(tabnum) { setTab(tabnum); }, tabnum), 'tab button: achievements tab', true);
     tabbuttons[tabnum].id = 'achievements_tab';
     tabbuttons[tabnum].textEl.innerText = 'achievements';

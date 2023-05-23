@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ var medal_flexes = [];
 var medal_canvases = [];
 var medal_canvases2 = [];
 var medal_cache = [];
+var medal_side_cache = []; // for row indicator on the side for rows that contain an exclamation mark
 var medal_lastparent = undefined;
 var medalGrid;
 var medalText;
@@ -32,6 +33,7 @@ function updateMedalUI() {
     medal_canvases = [];
     medal_canvases2 = [];
     medal_cache = [];
+    medal_side_cache = [];
 
     medalText = new Flex(medalFlex, 0.02, 0.02, 1, 0.05);
     medalGrid = new Flex(medalFlex, 0.02, 0.15, 0.9, 2.0);
@@ -63,10 +65,37 @@ function updateMedalUI() {
 
   var changed = false;
 
+  var row_has_exclamation_mark = false;
+
+  var xpos = -1;
+  var ypos = -1;
+
   var i = -1;
   for(var j = 0; j < num; j++) {
     var m = medals[medals_order[j]];
     var m2 = state.medals[medals_order[j]];
+
+    if((xpos + 1 == numx || j + 1 == num)) {
+      if(row_has_exclamation_mark && state.medals_earned > 40) {
+        if(medal_side_cache[ypos]) {
+          if(!medal_side_cache[ypos].visibility_visible) {
+            medal_side_cache[ypos].div.style.visibility = 'visible';
+            medal_side_cache[ypos].visibility_visible = true;
+          }
+        } else {
+          var flex = new Flex(medalGrid, [0, 0, numx / 10], [0, 0, ypos / 10], (numx + 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005]);
+          var canvas = createCanvas('0%', '20%', '60%', '60%', flex.div);
+          renderImage(image_exclamation_side_arrow, canvas);
+          medal_side_cache[ypos] = flex;
+          medal_side_cache[ypos].visibility_visible = true;
+        }
+      } else {
+        if(medal_side_cache[ypos] && medal_side_cache[ypos].visibility_visible) {
+          medal_side_cache[ypos].div.style.visibility = 'hidden';
+          medal_side_cache[ypos].visibility_visible = false;
+        }
+      }
+    }
 
     var show = false;
     if(m2.earned) show = true;
@@ -88,8 +117,11 @@ function updateMedalUI() {
 
     changed = true;
 
-    var xpos = i % numx;
-    var ypos = Math.floor(i / numx);
+    xpos = i % numx;
+    ypos = Math.floor(i / numx);
+    if(xpos == 0 && row_has_exclamation_mark) {
+      row_has_exclamation_mark = false;
+    }
 
     var flex;
     if(!medal_flexes[i]) {
@@ -129,8 +161,9 @@ function updateMedalUI() {
         canvas2 = createCanvas('0', '0', '25%', '25%', div);
         medal_canvases[i] = canvas;
         medal_canvases2[i] = canvas2;
-        renderImage(exclamation, canvas2);
+        renderImage(image_exclamation, canvas2);
       }
+      row_has_exclamation_mark = true;
     }
 
     if((m2.seen || !m2.earned) && medal_canvases2[i]) {
@@ -138,13 +171,17 @@ function updateMedalUI() {
       medal_canvases2[i] = undefined;
     }
 
-    var seenfun = bind(function(m, m2, div, canvas2, i) {
+    var seenfun = bind(function(m, m2, div, canvas2, i, ypos) {
       if(m2.earned && !m2.seen) {
         m2.seen = true;
         util.removeElement(canvas2);
         medal_canvases2[i] = undefined;
+        if(medal_side_cache[ypos] && medal_side_cache[ypos].visibility_visible) {
+          medal_side_cache[ypos].div.style.visibility = 'hidden';
+          medal_side_cache[ypos].visibility_visible = false;
+        }
       }
-    }, m, m2, div, canvas2, i);
+    }, m, m2, div, canvas2, i, ypos);
 
     var getMedalText = bind(function(m, m2, div, canvas2, i) {
       var tier = m.getTier();
@@ -184,7 +221,7 @@ function updateMedalUI() {
     if(repeatInfoText) {
       flex.div.innerHTML = infoText + '<br><br>Key: tiers from lowest to highest:';
     } else {
-        flex.div.innerText = 'Key: tiers from lowest to highest:';
+      flex.div.innerText = 'Key: tiers from lowest to highest:';
     }
 
     var numx2 = numx; // 6

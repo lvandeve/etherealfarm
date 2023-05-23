@@ -585,6 +585,104 @@ function blueprintFromText(text, b, ethereal) {
   sanitizeBluePrint(b);
 }
 
+// returns the new index of the moved blueprint
+function showMoveBlueprintDialog(index, ethereal) {
+  var dialog = createDialog({
+    title:'Move blueprint',
+    help:'This allows to move the blueprint around in the blueprint dialog grid, to re-organize your blueprints. Any move will swap this blueprint with the blueprint that is in the target slot, so none get overwritten.<br><br>The forward/backward movement move its index within the grid/pages, this may move to the other page if beginning/end of a page is reached.<br><br>Up/down/left/right move in that direction in the grid.<br><br>Move to other page swaps this blueprint between the two blueprint pages.<br><br>For any of the movements, if the beginning/end is reached it wraps around to the other side. E.g. when moving left while the blueprint is on the left side of the 3x3 grid, it will end up on the right side. Or if moving the index backwards of the first blueprint of the first page, it will end up in the last slot of the second page.<br><br>You can also click locations on the small 3x3 grid indicator to swap immediately with that blueprint, just keep in mind that clicking this a lot may cause all your blueprints to shuffle around since each time you move it, it swaps with the other one.',
+  });
+
+  var y = 0.01;
+  var h = 0.055;
+
+  var addButton = function(text, fun, tooltip) {
+    var button = new Flex(dialog.content, 0.25, [0, 0, y], 0.75, [0, 0, y + h]).div;
+    y += h * 1.1;
+    styleButton(button);
+    button.textEl.innerText = text;
+    addButtonAction(button, fun);
+    if(tooltip) registerTooltip(button, tooltip);
+    return button;
+  };
+
+  var update_automaton = autoActionUnlocked();
+
+  var button;
+  button = addButton('Move index backwards', function(e) {
+    index = swapBlueprints(index, (index - 1 + 18) % 18, ethereal, update_automaton);
+    updateIndicator();
+  });
+  button = addButton('Move index forwards', function(e) {
+    index = swapBlueprints(index, (index + 1) % 18, ethereal, update_automaton);
+    updateIndicator();
+  });
+  button = addButton('Move left', function(e) {
+    var row_index = index % 3;
+    var row_start = index - row_index;
+    index = swapBlueprints(index, row_start + (row_index + 2) % 3, ethereal, update_automaton);
+    updateIndicator();
+  });
+  button = addButton('Move right', function(e) {
+    var row_index = index % 3;
+    var row_start = index - row_index;
+    index = swapBlueprints(index, row_start + (row_index + 1) % 3, ethereal, update_automaton);
+    updateIndicator();
+  });
+  button = addButton('Move up', function(e) {
+    var page_index = index % 9;
+    var page_start = index - page_index;
+    index = swapBlueprints(index, page_start + (page_index + 6) % 9, ethereal, update_automaton);
+    updateIndicator();
+  });
+  button = addButton('Move down', function(e) {
+    var page_index = index % 9;
+    var page_start = index - page_index;
+    index = swapBlueprints(index, page_start + (page_index + 3) % 9, ethereal, update_automaton);
+    updateIndicator();
+  });
+  button = addButton('Move to other page', function(e) {
+    index = swapBlueprints(index, (index + 9) % 18, ethereal, update_automaton);
+    updateIndicator();
+  });
+
+  if(autoActionUnlocked()) {
+    var checkbox = new Flex(dialog.content, 0.25, [0, 0, y], 0.75, [0, 0, y + h]);
+    y += h * 1.1;
+    makeCheckbox(checkbox, update_automaton, 'Also update automaton actions', function(state) {
+      update_automaton = state;
+    }, 'If enabled, automaton auto-action numeric references will be updated too, so that they will refer to the same actual blueprint. If disabled, automaton auto-action numeric references will keep referring to the same index, so the actual blueprint they point to can change due to moving them around.');
+  }
+
+  var gridsize = 0.12;
+  y += 0.05;
+  var indicator = new Flex(dialog.content, [0.5, 0, -gridsize / 2], [0, 0, y], [0.5, 0, gridsize / 2], [0, 0, y + gridsize * 4 / 3]);
+
+  var updateIndicator = function() {
+    indicator.clear();
+    var pind = new Flex(indicator, 0, 0, 1, 0.25);
+    pind.div.innerText = 'Page: ' + (1 + Math.floor(index / 9));
+    addButtonAction(pind.div, function() {
+    index = swapBlueprints(index, (index + 9) % 18, ethereal, update_automaton);
+    updateIndicator();
+    });
+    for(var y = 0; y < 3; y++) {
+      for(var x = 0; x < 3; x++) {
+        var ind = new Flex(indicator, x * 0.33, 0.25 + y * 0.25, (x + 1) * 0.33, 0.25 + (y + 1) * 0.25);
+        if((y * 3 + x) == index % 9) ind.div.className = 'efFlatButtonHighlighted';
+        else ind.div.className = 'efFlatButton';
+        // this adds button action to the 3x3 indicator grid itself. However, for now disable this: given that this swaps the blueprint with that location, it may be more confusing than moving it 1 by 1...
+        addButtonAction(ind.div, bind(function(x, y) {
+          index = swapBlueprints(index, (index - index % 9) + y * 3 + x, ethereal, update_automaton);
+          updateIndicator();
+        }, x, y));
+      }
+    }
+  };
+  updateIndicator();
+
+  return index;
+}
+
 // this is an extra layer of undo for the undo button on the blueprint editing dialog. Normally that button only does what you are currently doing while that dialog is open
 // but this extra function here allows to also use it when re-opening the dialog, at least if no other edits were done yet
 var lastpreundoblueprint = undefined;
@@ -736,7 +834,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     exportBluePrint(b, ethereal, ethereal && !e.shiftKey);
   }, 'Export the blueprint to text format, for external storage and sharing');
 
-  addButton('From TXT', function() {
+  addButton('From TXT (edit)', function() {
     importBluePrintDialog(function(text) {
       blueprintFromText(text, b, ethereal);
       update();
@@ -760,6 +858,12 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     update();
     did_edit = true;
   }, 'Delete this blueprint. You can use the cancel button below to undo this.');
+
+  addButton('Move blueprint', function() {
+    if(opt_index != undefined) {
+      opt_index = showMoveBlueprintDialog(opt_index, ethereal);
+    }
+  }, 'Reorganize the order of your blueprints: moves this blueprint\'s location in the blueprint dialog horizontally, vertically or to another page.');
 
   update();
 
@@ -886,12 +990,36 @@ function swapBlueprintPages(opt_ethereal) {
   }
 }
 
+// returns the second index
+function swapBlueprints(a, b, ethereal, update_automaton) {
+  var blueprints = ethereal ? state.blueprints2 : state.blueprints;
+  var t = blueprints[a];
+  blueprints[a] = blueprints[b];
+  blueprints[b] = t;
+  if(redrawBlueprintsDialogFun) redrawBlueprintsDialogFun();
+  if(update_automaton) {
+    for(var i = 0; i < state.automaton_autoactions.length; i++) {
+      var o = state.automaton_autoactions[i];
+      if(ethereal) {
+        if(o.blueprint2 == a) o.blueprint2 = b;
+        else if(o.blueprint2 == b) o.blueprint2 = a;
+      } else {
+        if(o.blueprint == a) o.blueprint = b;
+        else if(o.blueprint == b) o.blueprint = a;
+      }
+    }
+  }
+  return b;
+}
+
 
 var blueprintdialogopen = false;
 
 // TODO: persist these in the state
 var blueprintpage1 = 0;
 var blueprintpage2 = 0;
+
+var redrawBlueprintsDialogFun = undefined;
 
 // opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
 // opt_challenge: if opt_transcend is true and this has a challenge index, will transcent with blueprint with that challenge
@@ -998,6 +1126,7 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     tooltips:[undefined, challenge_button_fun ? undefined : swap_button_tooltip],
     onclose:function() {
       blueprintdialogopen = false;
+      redrawBlueprintsDialogFun = undefined;
     }});
 
 
@@ -1005,26 +1134,32 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
   //var bflex = new Flex(dialog.content, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
   var bflex = new Flex(dialog.content, 0, 0, 1, 1);
 
-  var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
+  redrawBlueprintsDialogFun = function() {
+    var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
 
-  for(var i = 0; i < 9; i++) {
-    var j = i;
-    if(blueprintpage) j += 9;
-    var x = i % 3;
-    var y = Math.floor(i / 3);
-    var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
-    flexes[i] = flex;
-    renderBlueprint(blueprints[j], opt_ethereal, flex, j, opt_transcend, opt_challenge, true);
-    styleButton0(flex.div, true);
-    /*addButtonAction(flex.div, bind(function(index, flex, e) {
-      var shift = util.eventHasShiftKey(e);
-      var ctrl = util.eventHasCtrlKey(e);
-      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
-    }, j, flex));*/
-    registerAction(flex.div, bind(function(index, flex, shift, ctrl) {
-      return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
-    }, j, flex), 'edit blueprint ' + (j + 1), {label_shift:'override field now'});
-  }
+    bflex.clear();
+
+    for(var i = 0; i < 9; i++) {
+      var j = i;
+      if(blueprintpage) j += 9;
+      var x = i % 3;
+      var y = Math.floor(i / 3);
+      var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
+      flexes[i] = flex;
+      renderBlueprint(blueprints[j], opt_ethereal, flex, j, opt_transcend, opt_challenge, true);
+      styleButton0(flex.div, true);
+      /*addButtonAction(flex.div, bind(function(index, flex, e) {
+        var shift = util.eventHasShiftKey(e);
+        var ctrl = util.eventHasCtrlKey(e);
+        return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
+      }, j, flex));*/
+      registerAction(flex.div, bind(function(index, flex, shift, ctrl) {
+        return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
+      }, j, flex), 'edit blueprint ' + (j + 1), {label_shift:'override field now'});
+    }
+  };
+
+  redrawBlueprintsDialogFun();
 
   bflex.attachTo(dialog.content);
 

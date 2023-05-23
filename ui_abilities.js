@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ function getAbilityStatus(index) {
   var d = state.time - time;
 
   if(d > wait) return perma ? 1 : 0;
-  if(d > duration || state.lastWeather != index) return perma ? 3 : 2;
+  if(d > duration || state.lastPermaWeather != index) return perma ? 3 : 2;
   return 4;
 }
 
@@ -127,13 +127,18 @@ function updateAbilitiesUI() {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
     renderImage(image_sun, canvas);
 
-    addButtonAction(sunbutton.div, function() {
-      addAction({type:ACTION_ABILITY, ability:0});
+    registerAction(sunbutton.div, function(shift, ctrl) {
+      if(shift) {
+        state.lastPermaWeather = 0;
+      } else {
+        addAction({type:ACTION_ABILITY, ability:0});
+      }
       update();
-    }, 'sun ability');
+    }, 'sun ability', {
+      label_shift: 'activate passively',
+      tooltip: function() { return formatAbilityDurationTooltipText(0, 'sun ability', 'berries get a +' + getSunSeedsBoost().toPercentString() + ' production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())}
+    });
     sunbutton.div.id = 'sun_button';
-
-    registerTooltip(sunbutton.div, function() { return formatAbilityDurationTooltipText(0, 'sun ability', 'berries get a +' + getSunSeedsBoost().toPercentString() + ' production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())});
   }
 
   if(state.upgrades[upgrade_sununlock].count && sunbutton) {
@@ -148,7 +153,7 @@ function updateAbilitiesUI() {
       suntimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getSunDuration() - d, true);
     }
 
-    if(havePerma && state.lastWeather == 0) sunpermaflex.div.style.visibility = 'visible';
+    if(havePerma && state.lastPermaWeather == 0) sunpermaflex.div.style.visibility = 'visible';
     else sunpermaflex.div.style.visibility = 'hidden';
   }
 
@@ -177,14 +182,18 @@ function updateAbilitiesUI() {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
     renderImage(image_mist, canvas);
 
-    var fun = function() {
-      addAction({type:ACTION_ABILITY, ability:1});
+    registerAction(mistbutton.div, function(shift, ctrl) {
+      if(shift) {
+        state.lastPermaWeather = 1;
+      } else {
+        addAction({type:ACTION_ABILITY, ability:1});
+      }
       update();
-    };
-    addButtonAction(mistbutton.div, fun, 'mist ability');
+    }, 'mist ability', {
+      label_shift: 'activate passively',
+      tooltip: function() { return formatAbilityDurationTooltipText(1, 'mist ability', 'mushrooms produce ' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())}
+    });
     mistbutton.div.id = 'mist_button';
-
-    registerTooltip(mistbutton.div, function() { return formatAbilityDurationTooltipText(1, 'mist ability', 'mushrooms produce ' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())});
   }
 
   if(state.upgrades[upgrade_mistunlock].count && mistbutton) {
@@ -199,7 +208,7 @@ function updateAbilitiesUI() {
       misttimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getMistDuration() - d, true);
     }
 
-    if(havePerma && state.lastWeather == 1) mistpermaflex.div.style.visibility = 'visible';
+    if(havePerma && state.lastPermaWeather == 1) mistpermaflex.div.style.visibility = 'visible';
     else mistpermaflex.div.style.visibility = 'hidden';
   }
 
@@ -229,13 +238,18 @@ function updateAbilitiesUI() {
     var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
     renderImage(image_rainbow, canvas);
 
-    addButtonAction(rainbowbutton.div, function() {
-      addAction({type:ACTION_ABILITY, ability:2});
+    registerAction(rainbowbutton.div, function(shift, ctrl) {
+      if(shift) {
+        state.lastPermaWeather = 2;
+      } else {
+        addAction({type:ACTION_ABILITY, ability:2});
+      }
       update();
-    }, 'rainbow ability');
+    }, 'rainbow ability', {
+      label_shift: 'activate passively',
+      tooltip: function() { return formatAbilityDurationTooltipText(2, 'rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())}
+    });
     rainbowbutton.div.id = 'rainbow_button';
-
-    registerTooltip(rainbowbutton.div, function() { return formatAbilityDurationTooltipText(2, 'rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())});
   }
 
   if(state.upgrades[upgrade_rainbowunlock].count && rainbowbutton) {
@@ -250,7 +264,7 @@ function updateAbilitiesUI() {
       rainbowtimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getRainbowDuration() - d, true);
     }
 
-    if(havePerma && state.lastWeather == 2) rainbowpermaflex.div.style.visibility = 'visible';
+    if(havePerma && state.lastPermaWeather == 2) rainbowpermaflex.div.style.visibility = 'visible';
     else rainbowpermaflex.div.style.visibility = 'hidden';
   }
 

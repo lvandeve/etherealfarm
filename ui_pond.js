@@ -188,10 +188,19 @@ function makePondDialog(x, y, opt_override_mistletoe) {
     var c = fishes[f.cropIndex()];
     var div;
 
+    var updatedialogfun = bind(function(f, c, flex) {
+      var html0 = getFishInfoHTML(f, c, false);
+      if(html0 != last0) {
+        flex0.div.innerHTML = html0;
+        last0 = html0;
+      }
+    }, f, c);
+
     var dialog = createDialog({
       icon:c.image,
       title:'Fish info',
-      bgstyle:'efDialogTranslucent'
+      bgstyle:'efDialogTranslucent',
+      updatedialogfun:updatedialogfun
     });
 
     var buttonshift = 0;
@@ -241,15 +250,7 @@ function makePondDialog(x, y, opt_override_mistletoe) {
       dialog.content.div.innerHTML = text;
     });*/
 
-    updatedialogfun = bind(function(f, c, flex) {
-      var html0 = getFishInfoHTML(f, c, false);
-      if(html0 != last0) {
-        flex0.div.innerHTML = html0;
-        last0 = html0;
-      }
-    }, f, c);
-
-    updatedialogfun(f, c);
+    updatedialogfun();
   } else {
     makePlantFishDialog(x, y);
   }
@@ -546,7 +547,6 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
 
   var dialog = createDialog({
     size:dialogsize,
-    help:showPlantingHelp,
     title:(opt_replace ? 'Replace fish' : 'Place fish'),
     bgstyle:'efDialogTranslucent'
   });

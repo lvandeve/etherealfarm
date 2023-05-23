@@ -302,6 +302,7 @@ function encState(state, opt_raw_only) {
   processTime(state.rainbowtime);
   processUint6(state.lastWeather);
   processTime(state.lastLightningTime);
+  processUint6(state.lastPermaWeather);
 
 
   section = 9; id = 0; // settings
@@ -321,6 +322,7 @@ function encState(state, opt_raw_only) {
   processUint6(state.keys_brackets);
   processBool(state.keepinterestingfruit);
   processUint6(state.roman);
+  processFloat2(state.volume);
 
 
   section = 10; id = 0; // misc global/previous/current stats that don't match the three identical series below
@@ -1344,7 +1346,7 @@ function decState(s) {
       array3 = processUintArray(); // crop.known
     } else {
       array3 = [];
-      for(var i = 0; i < array0.length; i++) array2[i] = 0;
+      for(var i = 0; i < array0.length; i++) array3[i] = 0;
     }
   }
   if(error) return err(4);
@@ -1448,9 +1450,8 @@ function decState(s) {
     if(state.misttime > state.suntime && state.misttime > state.rainbowtime) state.lastWeather = 1;
     if(state.rainbowtime > state.suntime && state.rainbowtime > state.misttime) state.lastWeather = 2;
   }
-  if(save_version >= 4096*1+102) {
-    state.lastLightningTime = processTime();
-  }
+  if(save_version >= 4096*1+102) state.lastLightningTime = processTime();
+  if(save_version >= 262144*2+64*9+4) state.lastPermaWeather = processUint6();
   if(error) return err(4);
 
 
@@ -1482,6 +1483,7 @@ function decState(s) {
   }
   if(save_version >= 4096*1+90) state.keepinterestingfruit = processBool();
   if(save_version >= 262144*2+64*2+1) state.roman = (save_version >= 262144*2+64*4+0) ? processUint6() : processBool();
+  if(save_version >= 262144*2+64*9+4) state.volume = processFloat2();
   if(error) return err(4);
 
 

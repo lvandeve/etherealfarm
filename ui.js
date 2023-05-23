@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -271,9 +271,9 @@ function updateUI2() {
   if(updatetooltipfun) {
     updatetooltipfun();
   }
-  if(updatedialogfun) {
-    updatedialogfun();
-    if(dialog_level == 0) updatedialogfun = undefined;
+  if(globalupdatedialogfun) {
+    globalupdatedialogfun();
+    if(dialog_level == 0) globalupdatedialogfun = undefined;
   }
   updateSettingsAboutIcon();
   if(holidayEventActive() != holiday_hats_active) {

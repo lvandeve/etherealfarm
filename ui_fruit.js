@@ -562,13 +562,16 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
   var topFlex = new Flex(dialog.content, margin, 0.01, 1 - margin, 0.15);
   var text = upper(f.toString());
+  var essence_available = state.res.essence.sub(f.essence);
   text += '<br>';
   text += 'Tier ' + toRomanUpTo(f.tier) + ': ' + tierNames[f.tier] + ', type: ' + f.typeName();
   text += '<br><br>';
-  text += 'Fruit essence available: ' + state.res.essence.sub(f.essence).toString() + ' of ' + state.res.essence.toString();
+  text += 'Fruit essence available: ' + essence_available.toString() + ' of ' + state.res.essence.toString() + ', ' + f.essence.toString() + ' used.';
   text += '<br>';
-  text += 'Fruit essence used: ' + f.essence.toString();
-  text += '<br>';
+  if(essence_available.ltr(0)) {
+    text += 'Note: negative essence: re-earn it to upgrade abilities further.';
+    text += '<br>';
+  }
   text += 'Get on sacrifice: ' + getFruitSacrifice(f).toString();
   if(f.fuses) {
     text += '<br>';

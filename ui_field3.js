@@ -272,10 +272,19 @@ function makeField3Dialog(x, y) {
     var c = crops3[f.cropIndex()];
     var div;
 
+    var updatedialogfun = bind(function(f, c, flex) {
+      var html0 = getCropInfoHTML3(f, c, false);
+      if(html0 != last0) {
+        flex0.div.innerHTML = html0;
+        last0 = html0;
+      }
+    }, f, c);
+
     var dialog = createDialog({
       icon:c.image[4],
       title:'Infinity crop info',
-      bgstyle:'efDialogTranslucent'
+      bgstyle:'efDialogTranslucent',
+      updatedialogfun:updatedialogfun
     });
 
     var buttonshift = -0.08;
@@ -346,15 +355,7 @@ function makeField3Dialog(x, y) {
       dialog.content.div.innerHTML = text;
     });
 
-    updatedialogfun = bind(function(f, c, flex) {
-      var html0 = getCropInfoHTML3(f, c, false);
-      if(html0 != last0) {
-        flex0.div.innerHTML = html0;
-        last0 = html0;
-      }
-    }, f, c);
-
-    updatedialogfun(f, c);
+    updatedialogfun();
   } else if(f.index == FIELD_POND) {
     makePond3Dialog();
   } else {
@@ -555,12 +556,15 @@ function updateField3CellUI(x, y) {
 
   var ferncode = 0;
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel) {
+  var is_undeletable_runestone = f.runetime > 0 && f.hasCrop() && f.getCrop().index == runestone3_0;
+
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || is_undeletable_runestone != fd.is_undeletable_runestone) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
     fd.ferncode = ferncode;
     fd.progresspixel = progresspixel;
+    fd.is_undeletable_runestone = is_undeletable_runestone;
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];
@@ -572,7 +576,11 @@ function updateField3CellUI(x, y) {
 
     if(f.hasCrop()) {
       var c = crops3[f.cropIndex()];
-      renderImage(c.image[growstage], fd.canvas);
+      var image = c.image[growstage];
+      if(is_undeletable_runestone) {
+        image = image_runestone_undeletable;
+      }
+      renderImage(image, fd.canvas);
       label = c.name + '. ' + label;
     } else if(f.index == FIELD_POND) {
       renderImage(image_pond, fd.canvas);

@@ -2360,6 +2360,12 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_5].had) unlockInfinityCrop(flower3_5);
   if(state.crops3[flower3_5].had) unlockInfinityCrop(bee3_5);
   if(state.crops3[berry3_5].had) unlockInfinityCrop(mush3_5);
+
+  if(state.crops3[berry3_5].had) unlockInfinityCrop(brassica3_6);
+  if(state.crops3[brassica3_6].had) unlockInfinityCrop(berry3_6);
+  if(state.crops3[berry3_6].had) unlockInfinityCrop(flower3_6);
+  if(state.crops3[flower3_6].had) unlockInfinityCrop(bee3_6);
+  if(state.crops3[berry3_6].had) unlockInfinityCrop(mush3_6);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2371,6 +2377,9 @@ function maybeUnlockFishes() {
   unlockFish(octopus_0);
   if(state.fishes[octopus_0].had) unlockFish(shrimp_0);
   if(state.fishes[shrimp_0].had) unlockFish(anemone_0);
+  if(state.fishes[anemone_0].had) unlockFish(puffer_0);
+  if(state.fishes[puffer_0].had) unlockFish(eel_0);
+  if(state.fishes[eel_0].had) unlockFish(tang_0);
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
   if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
@@ -4549,12 +4558,14 @@ var update = function(opt_ignorePause) {
             // however, when done by automaton auto-action (e.g. at start of run), it can set the permanent lasting weather
             if(action.by_automaton) {
               state.lastWeather = a;
+              state.lastPermaWeather = a;
             }
           } else if(sund < getSunWait()) {
             if(havePerma) {
               showMessage('Sun selected.');
             } else if(state.lastWeather != a && sund < getSunDuration()) {
               state.lastWeather = a;
+              state.lastPermaWeather = a;
               showMessage('Changed weather into sun. Only one weather effect can be active at the same time.');
             } else {
               showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', C_INVALID, 0, 0);
@@ -4566,6 +4577,7 @@ var update = function(opt_ignorePause) {
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
+            state.lastPermaWeather = a;
           }
         } else if(a == 1) {
           if(!state.upgrades[upgrade_mistunlock].count) {
@@ -4575,6 +4587,7 @@ var update = function(opt_ignorePause) {
               showMessage('Mist selected.');
             } else if(state.lastWeather != a && mistd < getMistDuration()) {
               state.lastWeather = a;
+              state.lastPermaWeather = a;
               showMessage('Changed weather into mist. Only one weather effect can be active at the same time.');
             } else {
               if(!havePerma) showMessage(mistd < getMistDuration() ? 'mist is already active' : 'mist is not ready yet', C_INVALID, 0, 0);
@@ -4586,6 +4599,7 @@ var update = function(opt_ignorePause) {
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
+            state.lastPermaWeather = a;
           }
         } else if(a == 2) {
           if(!state.upgrades[upgrade_rainbowunlock].count) {
@@ -4595,6 +4609,7 @@ var update = function(opt_ignorePause) {
               showMessage('Rainbow selected.');
             } else if(state.lastWeather != a && rainbowd < getRainbowDuration()) {
               state.lastWeather = a;
+              state.lastPermaWeather = a;
               showMessage('Changed weather into rainbow. Only one weather effect can be active at the same time.');
             } else {
               showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', C_INVALID, 0, 0);
@@ -4606,9 +4621,13 @@ var update = function(opt_ignorePause) {
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
+            state.lastPermaWeather = a;
           }
         }
-        if(havePerma) state.lastWeather = a;
+        if(havePerma) {
+          state.lastWeather = a;
+          state.lastPermaWeather = a;
+        }
       } else if(type == ACTION_FRUIT_SLOT) {
         var f = action.f;
         if(action.precise_slot != undefined) {
@@ -5016,17 +5035,17 @@ var update = function(opt_ignorePause) {
                 if(state.notificationsounds[1]) {
                   if(c.type == CROPTYPE_BERRY) {
                     if(util.getTime() > last_fullgrown_sound_time0 + 5) {
-                      playNotificationSound(2000);
+                      playNotificationSound(2000, state.volume);
                       last_fullgrown_sound_time0 = util.getTime();
                     }
                   } else if(c.type == CROPTYPE_MUSH) {
                     if(util.getTime() > last_fullgrown_sound_time1 + 5) {
-                      playNotificationSound(1800);
+                      playNotificationSound(1800, state.volume);
                       last_fullgrown_sound_time1 = util.getTime();
                     }
                   } else {
                     if(util.getTime() > last_fullgrown_sound_time2 + 5) {
-                      playNotificationSound(2200);
+                      playNotificationSound(2200, state.volume);
                       last_fullgrown_sound_time2 = util.getTime();
                     }
                   }
@@ -5193,7 +5212,7 @@ var update = function(opt_ignorePause) {
           state.fernx = s[0];
           state.ferny = s[1];
           if(state.g_numferns == 3 || (basicChallenge() && state.c_numferns == 3) || (state.g_numferns > 7 && getRandomFernRoll() < 0.1)) state.fern = 2; // extra bushy fern
-          if(state.notificationsounds[0]) playNotificationSound(1000);
+          if(state.notificationsounds[0]) playNotificationSound(1000, state.volume);
           // the coordinates are invisible but are for screenreaders
           showMessage('A fern spawned<span style="color:#0000"> at ' + state.fernx + ', ' + state.ferny + '</span>', C_NATURE, 2352600596, 0.5);
         }
@@ -5637,6 +5656,7 @@ var update = function(opt_ignorePause) {
       }
     }
     // check medals
+    var unlocked_any = false;
     for(var i = 0; i < registered_medals.length; i++) {
       var j = registered_medals[i];
       if(state.medals[j].earned) continue;
@@ -5645,7 +5665,7 @@ var update = function(opt_ignorePause) {
         state.medals[j].earned = true;
         //medals_new = true;
         showMessage('Achievement unlocked: ' + upper(medals[j].name) + ' (+' + medals[j].prodmul.toPercentString() + ')', C_UNLOCK, 34776048, 0.75);
-        updateMedalUI();
+        unlocked_any = true;
         showMedalChip(j);
 
         if(j == medal_crowded_id && state.g_numresets == 0) {
@@ -5656,6 +5676,7 @@ var update = function(opt_ignorePause) {
         }
       }
     }
+    if(unlocked_any) updateMedalUI();
 
     // check unlocked challenges
     if(state.g_numresets > 0) { // all challenges require having done at least 1 regular transcension first

@@ -439,20 +439,7 @@ function getResourceDetails(index) {
 
 function showResourceDialog(index) {
   var name = resource_names[index];
-  var dialog = createDialog({
-    size:DIALOG_MEDIUM,
-    title:upper(name + ' income'),
-    bgstyle:'efDialogTranslucent',
-    scrollable:true
-  });
-  var special = (index == 2 || index == 3 || index == 7); // if true, is resource that doesn't have income/s stat
-  // computed here rather than inside of updatedialogfun to avoid it being too slow
-  // NOTE: this means it doesn't get auto-updated though.
-  var breakdown = (index == 5 || index == 8) ? prodBreakdown3(index) : prodBreakdown(index);
-  if(breakdown == '') breakdown = ' • None yet';
-  var flex = dialog.content;
-  var last = undefined;
-  updatedialogfun = function() {
+  var updatedialogfun = function() {
     var text = getResourceDetails(index);
     if(text != last) {
       var html = text;
@@ -503,6 +490,21 @@ function showResourceDialog(index) {
       last = text;
     }
   };
+
+  var dialog = createDialog({
+    size:DIALOG_MEDIUM,
+    title:upper(name + ' income'),
+    bgstyle:'efDialogTranslucent',
+    scrollable:true,
+    updatedialogfun:updatedialogfun
+  });
+  var special = (index == 2 || index == 3 || index == 7); // if true, is resource that doesn't have income/s stat
+  // computed here rather than inside of updatedialogfun to avoid it being too slow
+  // NOTE: this means it doesn't get auto-updated though.
+  var breakdown = (index == 5 || index == 8) ? prodBreakdown3(index) : prodBreakdown(index);
+  if(breakdown == '') breakdown = ' • None yet';
+  var flex = dialog.content;
+  var last = undefined;
   updatedialogfun();
 }
 
@@ -601,7 +603,11 @@ function showResource(i, index, highlight) {
 };
 
 function openTimeInfoDialog() {
-  var dialog = createDialog({size:DIALOG_MEDIUM, title:'Game info'});
+  var updatedialogfun = function() {
+    flex.div.innerHTML = getText();
+  };
+
+  var dialog = createDialog({size:DIALOG_MEDIUM, title:'Game info', updatedialogfun:updatedialogfun});
   var flex = dialog.content;
 
   var nextlevelprogress = Math.min(1, state.res.spores.div(treeLevelReq(state.treelevel + 1).spores).valueOf());
@@ -692,9 +698,6 @@ function openTimeInfoDialog() {
     return result;
   };
   flex.div.innerHTML = getText();
-  updatedialogfun = function() {
-    flex.div.innerHTML = getText();
-  };
 }
 
 

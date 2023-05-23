@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -427,6 +427,8 @@ function showOldSquirrelTreeDialog() {
   for(var i = 0; i < stages.length; i++) {
     y = renderStage(scrollFlex, stages[i], y, true);
   }
+  // update the scrollFlex, without doing this the content will be there but will have a "break-line" at the moment when the scrollbar appeared during rendering
+  scrollFlex.update();
 }
 
 var squirrel_ui_update_last_nuts = undefined;

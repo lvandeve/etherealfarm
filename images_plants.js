@@ -436,6 +436,65 @@ var image_shrimp0 = createFishImage(`
 ................
 `);
 
+var image_puffer0 = createFishImage(`
+......X.........
+......X..X......
+....X.XXXX.X....
+....XXOOOOXX....
+..XXOOOOoOOOXX..
+...XOoOOOOOOX...
+XXXO0OOO0OoOoXXX
+.XXOOOOOOOOooXX.
+88847000OOO66888
+8887770777466888
+...8747476668...
+..887777464688..
+....88476688....
+....8.8888.8....
+......8..8......
+.........8......
+`);
+
+
+var image_eel0 = createFishImage(`
+................
+.........$$$&&&.
+.......$$$a&&900
+.....$$$aa&&000.
+....$$aa&000....
+...$$a&&00......
+...$a&&0........
+...$a&&.........
+...$a&&&........
+....$&&&&.......
+....$$&&&&......
+.....$$&&00.....
+..$$$aa&&00.....
+.$$aa00000......
+.0000...........
+................
+`);
+
+// yellow tang
+var image_tang0 = createFishImage(`h0y:#dc0 h1y:#ff4 h0l:#cd0 h1l:#ef4
+................
+................
+.....KLKKLKK....
+....KLKKLKKLK...
+....ZZZZZZZKK...
+...Z0YYYYYYKL...
+..Z0Y0YYYYYYK..K
+..ZY0YYYYYYYy.LL
+ZZYYYKKYYYYYYyKK
+.ZYYLLLYYYYYyyLL
+ZZYYYKKYYYYyK.KK
+...yYYYYYyyyL..K
+....yyyyyyyKK...
+......KLKKLKK...
+........LKKL....
+................
+`);
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -6068,6 +6127,25 @@ var image_runestone = `
 ................
 `;
 
+var image_runestone_undeletable = generateImageCanvas(`
+.......$$.......
+......$77$......
+......$777$.....
+......$777$.....
+.....$77776$....
+.....$77766$....
+.....$77766$....
+....$77$6$66$...
+....$7$7$6$6$...
+....$77$6$66$...
+...$77766665$...
+...$67666655$...
+....$7666555$...
+....$6666555$...
+.....$$$$$$$....
+................
+`);
+
 
 
 var images_runestone = createPlantImages2(
@@ -6147,12 +6225,13 @@ function metalify_nonlincolor(v) {
 // *) 0/undefined: no effect
 // *) 1: darken
 // *) 2: brighten
-// *) 3: shiny
-// *) 4: increase saturation slightly (to make electrum a bit more green)
-// *) 5: effect specifically for platinum infinity crops on the bright infinity field background, to have some contrast
-// *) 6: subtle bottom right shadow, again to provide contrast for bright crops like the platinum ones against infinity field background
-// opt_param: parameter used for the darken or brighten effect (shared also for opt_effect2 and opt_effect3), if not set a default value is used
-function metalify(im, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param) {
+// *) 3: increase saturation slightly (e.g. to make rhodium a bit less red)
+// *) 4: decrease saturation slightly (e.g. to make electrum a bit more green)
+// *) 5: shiny
+// *) 6: effect specifically for platinum infinity crops on the bright infinity field background, to have some contrast
+// *) 7: subtle bottom right shadow, again to provide contrast for bright crops like the platinum ones against infinity field background
+// opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
+function metalify(im, metalheader, opt_effects, opt_params) {
   var pal = generatePalette(metalheader);
   var m = [];
   m[0] = pal['0']; // black
@@ -6184,60 +6263,77 @@ function metalify(im, metalheader, opt_effect, opt_effect2, opt_effect3, opt_par
       r = m[i][0] * f0 + m[i2][0] * f1;
       g = m[i][1] * f0 + m[i2][1] * f1;
       b = m[i][2] * f0 + m[i2][2] * f1;
-      if(opt_effect == 1 || opt_effect2 == 1 || opt_effect3 == 1) {
-        var amount = opt_param || 0.5;
-        r *= amount;
-        g *= amount;
-        b *= amount;
-      }
-      if(opt_effect == 2 || opt_effect2 == 2 || opt_effect3 == 2) {
-        var amount = opt_param || 1.35;
-        r = Math.min(r * amount, 255);
-        g = Math.min(g * amount, 255);
-        b = Math.min(b * amount, 255);
-      }
-      if(opt_effect == 3 || opt_effect2 == 3 || opt_effect3 == 3) {
-        //l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        var d = 1 - (x + y) / (w + h - 2);
-        //d = Math.sin(d * 16) * 64;
-        d = (d - 0.5) * 255;
-        //d = Math.abs(d - 0.5) * 255;
-        //d *= 64;
-        //if((x + y) & 1) d *= 1.1;
-        r = Math.min(Math.max(0, r + d), 255);
-        g = Math.min(Math.max(0, g + d), 255);
-        b = Math.min(Math.max(0, b + d), 255);
-      }
-      if(opt_effect == 4 || opt_effect2 == 4 || opt_effect3 == 4) {
-        var hsv = RGBtoHSV([r, g, b]);
-        hsv[1] = Math.min(hsv[1] * 2, 255);
-        var rgb = HSVtoRGB(hsv);
-        r = rgb[0];
-        g = rgb[1];
-        b = rgb[2];
-      }
-      if(opt_effect == 5 || opt_effect2 == 5 || opt_effect3 == 5) {
-        r /= 255;
-        g /= 255;
-        b /= 255;
-        r = r * r * r + 0.05;
-        g = g * g * g + 0.05;
-        b = b * b * b + 0.05;
-        r = Math.min(Math.max(0, r * 255), 255);
-        g = Math.min(Math.max(0, g * 255), 255);
-        b = Math.min(Math.max(0, b * 255), 255);
-      }
-      if(opt_effect == 6 || opt_effect2 == 6 || opt_effect3 == 6) {
-        if(a == 255) {
-          var touching_transparent = false;
-          //if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
-          //if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
-          if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
-          if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
-          if(touching_transparent) {
-            r *= 0.85;
-            g *= 0.85;
-            b *= 0.85;
+      if(opt_effects) {
+        for(var i = 0; i < opt_effects.length; i++) {
+          var effect = opt_effects[i];
+          var param = (opt_params && opt_params[i] != undefined) ? opt_params[i] : 1; // if undefined a default is used below
+
+          if(effect == 1) {
+            var amount = 1 / (1 + param); // 0.5 for default param=1
+            r *= amount;
+            g *= amount;
+            b *= amount;
+          }
+          if(effect == 2) {
+            var amount = 1 + param * 0.35;
+            r = Math.min(r * amount, 255);
+            g = Math.min(g * amount, 255);
+            b = Math.min(b * amount, 255);
+          }
+          if(effect == 3) {
+            var hsv = RGBtoHSV([r, g, b]);
+            var mul = 1 / (1 + param); // 0.5 for default param=1
+            hsv[1] *= mul;
+            var rgb = HSVtoRGB(hsv);
+            r = rgb[0];
+            g = rgb[1];
+            b = rgb[2];
+          }
+          if(effect == 4) {
+            var hsv = RGBtoHSV([r, g, b]);
+            var mul = param * 2;
+            hsv[1] = Math.min(hsv[1] * mul, 255);
+            var rgb = HSVtoRGB(hsv);
+            r = rgb[0];
+            g = rgb[1];
+            b = rgb[2];
+          }
+          if(effect == 5) {
+            //l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            var d = 1 - (x + y) / (w + h - 2);
+            //d = Math.sin(d * 16) * 64;
+            d = (d - 0.5) * 255;
+            //d = Math.abs(d - 0.5) * 255;
+            //d *= 64;
+            //if((x + y) & 1) d *= 1.1;
+            r = Math.min(Math.max(0, r + d), 255);
+            g = Math.min(Math.max(0, g + d), 255);
+            b = Math.min(Math.max(0, b + d), 255);
+          }
+          if(effect == 6) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            r = (r * r * r + 0.05) * param + (r * 1 - param);
+            g = (g * g * g + 0.05) * param + (g * 1 - param)
+            b = (b * b * b + 0.05) * param + (b * 1 - param)
+            r = Math.min(Math.max(0, r * 255), 255);
+            g = Math.min(Math.max(0, g * 255), 255);
+            b = Math.min(Math.max(0, b * 255), 255);
+          }
+          if(effect == 7) {
+            if(a == 255) {
+              var touching_transparent = false;
+              //if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
+              //if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
+              if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
+              if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
+              if(touching_transparent) {
+                r *= 0.85;
+                g *= 0.85;
+                b *= 0.85;
+              }
+            }
           }
         }
       }

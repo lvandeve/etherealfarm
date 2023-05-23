@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -271,6 +271,34 @@ function getChoiceUpgradeLevels() {
   return [3, 8, 14, 22];
 }
 
+function getChoiceUpgradeInfoText(u, u2) {
+  var text = '';
+  text += '<b>' + u.choicename_a + ':</b><br>' + u.description_a;
+  text += '<br><br>';
+  text += '<b>' + u.choicename_b + ':</b><br>' + u.description_b;
+  text += '<br><br>';
+  text += '<b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.';
+  text += '<br><br>';
+  text += '<b>Current status: </b>';
+  if(u2.count == 0) text += ' Not bought';
+  else if(u2.count == 1) text += ' Bought: ' + u.choicename_a;
+  else if(u2.count == 2) text += ' Bought: ' + u.choicename_b;
+  else text += ' Unknown?'; // should normally not happen
+
+  // TODO: have this available in the u object instead of hardcoding the levels duplicated here
+  var treelevel = -1;
+  if(u.index == fern_choice0) treelevel = 3;
+  if(u.index == active_choice0) treelevel = 8;
+  if(u.index == watercress_choice0) treelevel = 14;
+  if(u.index == resin_choice0) treelevel = 22;
+
+  if(treelevel != -1) {
+    text += '<br><br>';
+    text += '<b>Unlocked at tree level: </b>' + treelevel;
+  }
+  return text;
+}
+
 function showConfigureAutoChoiceDialog(subject) {
   showingConfigureAutoChoiceDialog = true;
   var dialog = createDialog({
@@ -353,7 +381,11 @@ function showConfigureAutoChoiceDialog(subject) {
       if(state.automaton_choices[i] > 3) state.automaton_choices[i] = 1;
       updateChoicesButton(flex, i);
     }, flex, i));
-    registerTooltip(flex.div, 'Configure automaton for this specific choice upgrade:<br><br><b>' + u.choicename_a + ':</b><br>' + u.description_a + '<br><br><b>' + u.choicename_b + ':</b><br>' + u.description_b + '<br><br><b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.');
+
+    var tooltiptext = 'Configure automaton for this specific choice upgrade:<br><br>'
+    tooltiptext += getChoiceUpgradeInfoText(u, u2);
+
+    registerTooltip(flex.div, tooltiptext);
 
     flex = addSideButton();
     styleButton0(flex.div, true);
@@ -363,7 +395,7 @@ function showConfigureAutoChoiceDialog(subject) {
       var u = upgrades[choiceupgrades[i]];
       var u2 = state.upgrades[choiceupgrades[i]];
       var dialog = createDialog({title:(u.name + ' info')});
-      dialog.content.div.innerHTML = '<b>' + u.choicename_a + ':</b><br>' + u.description_a + '<br><br><b>' + u.choicename_b + ':</b><br>' + u.description_b + '<br><br><b>Manual:</b><br>Handle this upgrade manually instead of through the automaton.';
+      dialog.content.div.innerHTML = getChoiceUpgradeInfoText(u, u2);
     }, i));
   }
 }

@@ -20,6 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.9.4 (2023-05-23):';
+  text += '<br/>• Added rhodium infinity crops.';
+  text += '<br/>• Added 3 new fish types.';
+  text += '<br/>• Added achievements for fishes.';
+  text += '<br/>• You can now shift+click weather to change perma-weather without altering currently active weather.';
+  text += '<br/>• Added "Move blueprint" option to blueprints to reorganize their ordering.';
+  text += '<br/>• Added volume setting to the notification sounds.';
+  text += '<br/>• Undeletable runestones are now rendered with a highlighted border.';
+  text += '<br/>• More info shown in the choice upgrade info dialog in automaton settings: unlock level and current status.';
+  text += '<br/>• Dialog and button style tweaks.';
+  text += '<br/>• Other UI tweaks.';  // e.g. indicates achievement row that has new achievements now
+  text += '<br/>• Bugfixes.';
+  text += '<br/><br/>';
+
   text += '0.9.3 (2023-05-01):';
   text += '<br/>• Added two new fish types to infinity pond.';
   text += '<br/>• Added two new ethereal mistletoe upgrades.';

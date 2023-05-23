@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -383,6 +383,20 @@ function createNotificationSettingsDialog() {
     updatebuttontext(button);
   }, button, updatebuttontext));
   button.id = 'preferences_growsound';
+
+  addSettingsSpacer();
+
+  var sliderTitleFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h * 0.5);
+  pos += h * 0.5;
+  sliderTitleFlex.div.innerText = 'Sound volume:';
+
+  var sliderFlex = new Flex(dialog.content, 0.1, pos, 0.9, pos + h * 0.5);
+  pos += h * 0.6;
+  makeSlider(sliderFlex, state.volume, function(value) {
+    if(!(value >= 0 && value <= 1)) value = 1;
+    state.volume = value;
+    playNotificationSound(1000, state.volume);
+  });
 
   addSettingsSpacer();
 
@@ -1256,7 +1270,7 @@ function initSettingsUI() {
   aboutbutton.id = 'pause_button';
 
   var undobutton = addTopBarFlex(2, 4, FONT_DIALOG_BUTTON);
-  styleButton(undobutton.div);
+  styleButton(undobutton.div, undefined, true);
   undobutton.div.textEl.innerText = 'Undo';
   registerAction(undobutton.div, function(shift, ctrl) {
     //if(state.paused) return; // undo is broken with current pause implementation, gives black screen and risk of wrong times

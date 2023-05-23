@@ -155,6 +155,17 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   }
   text += '<br>';
 
+  var basic = basicChallenge();
+  var basicmaxlevel = (basic == 1) ? 30 : 25; // basic challenge capped at level 30, truly basic at 25
+  var basicfarlevel = 10 + 7; // level considered far enough above the goal of 10, to start showing the note that it's capped
+  var basicfar = basic && (c2.maxlevel >= basicfarlevel || state.treelevel >= basicfarlevel);
+  if(basicfar) {
+    text += '<br>';
+    text += '<b>Note:</b><br>This challenge is capped at level ' + basicmaxlevel + ' and will not give any further bonus or achievements beyond that level';
+    text += '<br>';
+  }
+
+
   text += '<br>';
   text += '<b>Rewards:</b>';
   text += '<br>';

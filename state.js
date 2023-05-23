@@ -651,6 +651,7 @@ function State() {
   this.suntime = 0; // similar
   this.rainbowtime = 0;
   this.lastWeather = 0; // last clicked weather ability, if multiple are active according to the timer, only the one matching this counts as active
+  this.lastPermaWeather = 0; // Indicates which perma weathe ris active. Similar to lastWeather and usually set to the same as it, but can be set to something else to change which perma weather will get activated when the true weather ended.
   this.lastLightningTime = 0; // for the stormy challenge
 
   this.lastFernTime = 0; // if there is a fern: time since it spawned. If there is no fern: time that there was no fern
@@ -684,6 +685,7 @@ function State() {
   this.uistyle = 1; // 0=default (1), 1=light, 2=dark, 3=darkest
   this.sidepanel = 1; // 0=disabled, 1=automatic
   this.notificationsounds = [0, 0]; // index0: fern sound, index1: fullgrown sound
+  this.volume = 1; // for notification sounds
   this.messagelogenabled = [1, 1, 1, 1, 1, 1]; // 0: "game saved" message log messages, 1: tree leveling, 2: upgrades available, 3: abbreviated help, 4: pause/resumed messages, 5: fruit drops
   this.cancelbuttonright = true; // whether cancel buttons in dialogs appear on the leftmost or the rightmost side of a group of buttons (the group of button always starts from the right either way). If on the right side, all cancel or back buttons are in the same right corner of the screen. If false, then the right corner of the screen gets the "do the action" button, and cancel/back buttons are to the left.
   // each of the following keys has the following meanings: 0=nothing, 1=weather (1-3, does not work for brackets), 2=tabs, 3=active fruit

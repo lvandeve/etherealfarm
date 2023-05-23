@@ -48,6 +48,37 @@ function makeEtherealMistletoeDialog(x, y) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
 
+  // uses variables from below, defined here to allow using it at updatedialogfun of the dialog
+  var updatecontent = function() {
+    if(state.mistletoeupgrades[mistle_upgrade_evolve].num != prev_evo) {
+      // amount of visible updates changed, more update of all the HTML dialog needed, recreate it completely
+      closeTopDialog();
+      makeEtherealMistletoeDialog(x, y);
+    }
+    for(var i = 0; i < buttons.length; i++) {
+      buttons[i].updatefun();
+    }
+
+    var text = '';
+    if(state.mistletoeupgrade >= 0) {
+      var m = mistletoeupgrades[state.mistletoeupgrade];
+      var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
+      text += 'Upgrading: ' + upper(m.name);
+      text += '<br>';
+      var timeleft = m.getTime() - m2.time;
+      text += 'Time left: ' + util.formatDuration(timeleft, true, 4);
+    } else {
+      text += 'Not upgrading';
+    }
+    if(state.mistletoeidletime) {
+      text += '<br>Unused time: '  + util.formatDuration(state.mistletoeidletime, true);// + '. Collected when not upgrading. Makes upgrades go twice as fast.';
+    } else {
+      //text += '<br>Unused time: none.';
+    }
+    if(text != prevtext) textel.div.innerHTML = text;
+    prevtext = text;
+  };
+
   var c = crops2[f.cropIndex()];
   var dialog = createDialog({
     icon:c.image[4],
@@ -57,7 +88,8 @@ function makeEtherealMistletoeDialog(x, y) {
     names:['crop info'],
     scrollable:true,
     help:function(){showRegisteredHelpDialog(41, true);},
-    cancelname:'close'
+    cancelname:'close',
+    updatedialogfun:updatecontent
   });
 
   if(!state.etherealmistletoenexttotree) {
@@ -120,7 +152,7 @@ function makeEtherealMistletoeDialog(x, y) {
     var m = mistletoeupgrades[index];
     var m2 = state.mistletoeupgrades[index];
 
-    var infobutton = new Flex(dialog.content, [1, 0, -0.19], [buttonpos, 0, 0.01], [1, buttonh2, -0.19], buttonpos + buttonh2).div;
+    var infobutton = new Flex(dialog.content, [1, 0, -0.19], [buttonpos + buttonh2 / 2, 0, -buttonh2 / 2], [1, 0, -0.19 + buttonh2], [buttonpos + buttonh2 / 2, 0, buttonh2 / 2]).div;
     styleButton0(infobutton, true);
     var infocanvas = createCanvas('0%', '0%', '100%', '100%', infobutton);
     renderImage(image_info, infocanvas);
@@ -148,10 +180,7 @@ function makeEtherealMistletoeDialog(x, y) {
       var index = mistle_sort_order[i];
       return getMistleInfoText(index, false);
     }, i);
-    var tooltiptext = tooltipfun();
-    // if there's a resource cost, the tooltip could change after doing the upgrade and keeping the window open long enough, so make it dynamic function based tooltip text in that case
-    if(m.getResourceCost()) tooltiptext = tooltipfun;
-    registerTooltip(button, tooltiptext);
+    registerTooltip(button, tooltipfun);
     buttons.push(button);
     button.updatefun = bind(function(i, button_index) {
       var index = mistle_sort_order[i];
@@ -183,41 +212,9 @@ function makeEtherealMistletoeDialog(x, y) {
 
   buttonpos += buttonextraseparater;
 
-
   var prevtext = '';
 
   var prev_evo = state.mistletoeupgrades[mistle_upgrade_evolve].num;
 
-  var updatecontent = function() {
-    if(state.mistletoeupgrades[mistle_upgrade_evolve].num != prev_evo) {
-      // amount of visible updates changed, more update of all the HTML dialog needed, recreate it completely
-      closeTopDialog();
-      makeEtherealMistletoeDialog(x, y);
-    }
-    for(var i = 0; i < buttons.length; i++) {
-      buttons[i].updatefun();
-    }
-
-    var text = '';
-    if(state.mistletoeupgrade >= 0) {
-      var m = mistletoeupgrades[state.mistletoeupgrade];
-      var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
-      text += 'Upgrading: ' + upper(m.name);
-      text += '<br>';
-      var timeleft = m.getTime() - m2.time;
-      text += 'Time left: ' + util.formatDuration(timeleft, true, 4);
-    } else {
-      text += 'Not upgrading';
-    }
-    if(state.mistletoeidletime) {
-      text += '<br>Unused time: '  + util.formatDuration(state.mistletoeidletime, true);// + '. Collected when not upgrading. Makes upgrades go twice as fast.';
-    } else {
-      //text += '<br>Unused time: none.';
-    }
-    if(text != prevtext) textel.div.innerHTML = text;
-    prevtext = text;
-  };
-
   updatecontent();
-  updatedialogfun = updatecontent;
 }

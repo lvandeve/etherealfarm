@@ -42,25 +42,45 @@ body {
 
 .efDialog {
   background-color: #444;
-  border: 1px solid #bbb;
+  border: 2px solid #bbb;
   color: #bbb;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efDialogTranslucent {
   background-color: #444d;
-  border: 1px solid #bbb;
+  border: 2px solid #aaa;
   color: #bbb;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efDialogEthereal {
   background-color: #225e;
-  border: 1px solid #bbb;
+  border: 2px solid #bbb;
   color: #bbb;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efDialogLongPress {
   background-color: #565e;
-  border: 1px solid #bbb;
+  border: 2px solid #bbb;
+  color: #ddd;
+  box-shadow: 5px 2px 2px #000;
+}
+
+.efDialogTop {
+  background-color: #fff2;
+}
+
+.efFlatButton {
+  background-color: #555;
+  border: 1px solid #aaa;
+  color: #ccc;
+}
+
+.efFlatButtonHighlighted {
+  background-color: #888;
+  border: 1px solid #ddd;
   color: #ddd;
 }
 
@@ -68,12 +88,14 @@ body {
   background-color: #555;
   border: 1px solid #aaa;
   color: #ccc;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efButtonCantAfford {
   background-color: #555;
   border: 1px solid #666;
   color: #777;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efTextCantAfford {
@@ -84,6 +106,7 @@ body {
   background-color: #888;
   border: 1px solid #ddd;
   color: #ddd;
+  box-shadow: 5px 2px 2px #000;
 }
 
 .efButtonTranslucent {

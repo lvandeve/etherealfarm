@@ -80,7 +80,7 @@ function setAriaRole(div, role) {
   div.setAttribute('role', role);
 }
 
-// use this instead of ".onclick = ..." for more accessible buttons
+// deprecated: use registerAction instead.
 // opt_label is an optional textual name for image-icon-buttons
 // opt_immediate = make the button respond immediately on mousedown, rather than only on mouseup
 // opt_noenterkey = do not make it activate on enter key (e.g. for the close button of dialogs, which is selected by default normally but shouldn't make the dialog close on pressing enter)
@@ -341,7 +341,7 @@ function addLongTouchEvent(div, fun) {
 // styles only a few of the essential properties for button
 // does not do centering (can be used for other text position), or colors/borders/....
 // must be called *after* any styles such as backgroundColor have already been set
-// opt_disallow_hover_filter: diallow the mouse hover filter effect. Normally would be nice to always have, but chrome will make pixelated canvases a blurry mess when applying opacity or filter, so disable it for canvases for now.
+// opt_disallow_hover_filter: disallow the mouse hover filter effect. Normally would be nice to always have, but chrome will make pixelated canvases a blurry mess when applying opacity or filter, so disable it for canvases for now.
 function styleButton0(div, opt_disallow_hover_filter) {
   div.style.cursor = 'pointer';
   div.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
@@ -362,18 +362,21 @@ function styleButton0(div, opt_disallow_hover_filter) {
 
 // somewhat like makeDiv, but gives mouseover/pointer/... styles
 // also sets some fields on the div: hightlight/hover colors, textEl, ...
-function styleButton(div, opt_color) {
-  div.className = 'efButton';
+// opt_flat: use flat style (no shadow, ....), e.g. for tabs and grids
+function styleButton(div, opt_color, opt_flat) {
+  div.className = opt_flat ? 'efFlatButton' : 'efButton';
 
   div.textEl = div; // for consistency with what different centerText varieties do
   centerText2(div);
 
   styleButton0(div);
+
+  div.use_flat_style = !!opt_flat;
 }
 
 function highlightButton(div, highlight) {
-  if(highlight) div.className = 'efButtonHighlighted';
-  else div.className = 'efButton';
+  if(highlight) div.className = div.use_flat_style ? 'efFlatButtonHighlighted' : 'efButtonHighlighted';
+  else div.className = div.use_flat_style ? 'efFlatButton' : 'efButton';
 }
 
 // div must already have the position and size (the arguments are used to compute stuff inside of it)
@@ -411,13 +414,8 @@ function setProgressBar(div, value, color) {
 }
 
 
-// if you wish text of a dialog to be updated dynamically, set this function to something
-// there's only this one available, and it will get cleared whenever dialogs are cleared
-// will be called by update()
-// NOTE: it is a good idea to create your updatedialogfun such that it does nothing if nothing
-// changes, and does something if the content does change, to avoid unnecessary DOM updates for
-// same content.
-var updatedialogfun = undefined;
+// for the updatedialogfun parameter of dialogs. Currently there can be only one global one, so multiple stacked dialogs each having their own updatedialogfun is not yet supported
+var globalupdatedialogfun = undefined;
 
 var dialog_level = 0;
 var created_dialogs = []; // array of objects created by the createDialog function
@@ -460,6 +458,7 @@ params.swapbuttons: swap the order of the buttons. This order can also be swappe
 params.bgstyle: className of alternative background CSS style, e.g. 'efDialogEthereal'
 params.invbold: make the cancel button instead of ok button bold
 params.allbold: make all buttons bold, cancel and action buttons
+params.updatedialogfun: if you wish text of a dialog to be updated dynamically, set this function to something. NOTE: try to make this function efficient and only update DOM if something actually changes, to avoid too many updates every frame: this will be called every update()
 
 Return object contains (amongst other fields):
 dialog.content: flex where the main content can be put
@@ -509,6 +508,8 @@ function createDialog(params) {
   dialog.onclose = params.onclose;
   dialog.oncancel = params.oncancel;
   dialog.shortcutfun = params.shortcutfun;
+  dialog.have_updatedialogfun = !!params.updatedialogfun;
+  if(params.updatedialogfun) globalupdatedialogfun = params.updatedialogfun;
 
   created_dialogs.push(dialog);
 
@@ -524,7 +525,7 @@ function createDialog(params) {
   };
   // function that will be called when the dialog is closed by cancel, ok and extra funs
   dialog.closeFun = function(opt_cancel) {
-    updatedialogfun = undefined;
+    if(dialog.have_updatedialogfun) globalupdatedialogfun = undefined; // only do this if this dialog has one, don't needlessly clear it if it's actually a parent dialog that has this updatedialogfun
     dialogshortcutfun = undefined;
     util.removeElement(overlay);
     for(var i = 0; i < created_dialogs.length; i++) {
@@ -558,6 +559,9 @@ function createDialog(params) {
 
   var title_x0;
   var title_x1;
+
+  var topFlex = new Flex(dialogFlex, 0, 0, 1, [0, topHeight]);
+  topFlex.div.className = 'efDialogTop';
 
   var xbutton = new Flex(dialogFlex, 1 - topHeight, 0, 1, [0, topHeight]);
   var canvas = createCanvas('20%', '20%', '60%', '60%', xbutton.div);
@@ -596,18 +600,17 @@ function createDialog(params) {
   if(params.size == DIALOG_SMALL) contentHeight = 0.8; // ensure content doesn't go over the buttons
   if(nobottombuttons) contentHeight = 1;
 
-
   dialog.flex = dialogFlex;
   dialog.div = dialogFlex.div;
-  var iconmargin = params.iconmargin || 0;
+  var iconmargin = params.iconmargin || 0.05;
   dialog.icon = new Flex(dialogFlex, topHeight * iconmargin, [0, topHeight * iconmargin], topHeight * (1 - iconmargin), [0, topHeight * (1 - iconmargin)]);
 
   if(params.narrow) {
-    dialog.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight * 0.75], FONT_TITLE);
-    dialog.content = new Flex(dialogFlex, topHeight, [0, topHeight * 0.75], 1 - topHeight, contentHeight);
+    dialog.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight], FONT_TITLE);
+    dialog.content = new Flex(dialogFlex, topHeight, [0.01, topHeight], 1 - topHeight, contentHeight);
   } else {
     dialog.title = new Flex(dialogFlex, title_x0, 0, title_x1, [0, topHeight], FONT_TITLE);
-    dialog.content = new Flex(dialogFlex, 0.02, [0, topHeight], 0.98, contentHeight);
+    dialog.content = new Flex(dialogFlex, 0.02, [0.01, topHeight], 0.98, contentHeight);
   }
 
   if(params.scrollable) makeScrollable(dialog.content, false);
@@ -625,8 +628,6 @@ function createDialog(params) {
     canvas = createCanvas('5%', '5%', '90%', '90%', dialog.icon.div);
     renderImage(params.icon, canvas);
   }
-
-
 
   // allow giving undefined at input to set an extra function/name to be disabled, remove this from the array here
   for(var i = 0; i < functions.length; i++) {
@@ -716,7 +717,7 @@ function createOverlay(zIndex) {
 
 
 function closeAllDialogs() {
-  updatedialogfun = undefined;
+  globalupdatedialogfun = undefined;
 
   for(var i = 0; i < created_dialogs.length; i++) {
     created_dialogs[i].removeSelfFun(true);
@@ -1781,15 +1782,23 @@ function removeAllArrows() {
 
 var audioContext;
 var audioContextSource;
+var gainNode;
 
 function ensureAudioContext() {
   var supportsAudio = !!(window.AudioContext || window.webkitAudioContext);
   if(!supportsAudio) return false;
   if(!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
   if(!audioContext) return false;
+
+  gainNode = audioContext.createGain();
+  if(!gainNode) return false;
+  gainNode.gain.value = 1;
+  gainNode.connect(audioContext.destination);
+
   audioContextSource = audioContext.createBufferSource();
   if(!audioContextSource) return false;
-  audioContextSource.connect(audioContext.destination);
+  //audioContextSource.connect(audioContext.destination);
+  audioContextSource.connect(gainNode);
   return true;
 }
 
@@ -1813,19 +1822,25 @@ function createNotificationSound(f) {
 }
 
 
-function playSound(buffer) {
+function playSound(buffer, volume) {
   if(!ensureAudioContext()) return;
+  if(!gainNode) return;
+  gainNode.gain.value = volume;
   audioContextSource.buffer = buffer;
   audioContextSource.start();
 }
 
 var notificationSound = [];
 
-function playNotificationSound(f) {
+// f = frequency (will always play a ding sound for now, but the frequency can be configured)
+// volume must be in range 0..1 with 1 representing the nominal value (higher is possible but could create distortion)
+function playNotificationSound(f, volume) {
   if(!notificationSound[f]) notificationSound[f] = createNotificationSound(f);
   if(!notificationSound[f]) return;
-  playSound(notificationSound[f]);
+  playSound(notificationSound[f], volume);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 function sanitizeName(name) {
   if(!name) return '';
@@ -1844,10 +1859,14 @@ function makeCheckbox(flex, state, title, fun, opt_description) {
   var flex0 = new Flex(flex, 0, 0, [0, 1], 1);
   var flex1 = new Flex(flex, [0, 1.2], 0, 1, 1);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex0.div);
+  if(opt_description) {
+    registerTooltip(flex.div, opt_description);
+  }
   var update = function() {
     renderImage(state ? image_checkbox_on : image_checkbox_off, canvas);
-    var desc = opt_description || title;
-    setAriaLabel(flex0.div, desc + (state ? (' (checked)') : (' (unchecked)')));
+    //var desc = opt_description || title;
+    //setAriaLabel(flex0.div, desc + (state ? (' (checked)') : (' (unchecked)')));
+    setAriaLabel(flex0.div, title + (state ? (' (checked)') : (' (unchecked)')));
   };
   styleButton0(flex0.div);
   centerText(flex1.div, undefined, true);
@@ -1860,4 +1879,16 @@ function makeCheckbox(flex, state, title, fun, opt_description) {
   addButtonAction(flex0.div, clickfun);
   flex1.div.onclick = clickfun;
   update();
+}
+
+// always operates on value in range 0.0-1.0
+function makeSlider(flex, initial_value, fun) {
+  var slider = util.makeAbsElement('input', 0, 0, '100%', '100%', flex.div);
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = '1000';
+  slider.value = '' + Math.floor(initial_value * 1000);
+  slider.onchange = function() {
+    fun(parseInt(slider.value) / 1000.0);
+  };
 }

@@ -408,12 +408,24 @@ function makeTreeDialog() {
       var maxlevel = c2.maxlevel;
       if(c.cycling > 1) maxlevel = c2.maxlevels[c2.num_completed % c.cycling];
       text += '<br>';
+
+      var basic = basicChallenge();
+      var basicmaxlevel = (basic == 1) ? 30 : 25; // basic challenge capped at level 30, truly basic at 25
+      var basicfarlevel = 10 + 7; // level considered far enough above the goal of 10, to start showing the note that it's capped
+      var basiccapped = basic && (maxlevel >= basicmaxlevel || state.treelevel >= basicmaxlevel);
+      var basicfar = basic && (maxlevel >= basicfarlevel || state.treelevel >= basicfarlevel);
+      var addbasicmessage = false;
+
       if(maxlevel > 0) {
         if(state.treelevel > maxlevel) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel + '.';
           text += ' This will bring your total challenge production bonus from ' + state.challenge_bonus.toPercentString() + ' to ' + totalChallengeBonusWith(state.challenge, state.treelevel).toPercentString();
-        } else {
+          if(basicfar) addbasicmessage = true;
+        } else if(!basiccapped) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet reach your previous best of lvl ' + maxlevel + '.';
+          if(basicfar) addbasicmessage = true;
+        } else {
+          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You have capped this challenge, you reached ' + maxlevel + ' and it does not give any more bonus or achievements above ' + basicmaxlevel + '.';
         }
       } else {
         text += '<b>Challenge active</b>: ' + upper(c.name);
@@ -422,8 +434,10 @@ function makeTreeDialog() {
         var bonus_after = totalChallengeBonusWith(state.challenge, state.treelevel);
         if(bonus_before.neq(bonus_after)) {
           text += '. So far, it will bring your total challenge production bonus from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
+          if(basicfar) addbasicmessage = true;
         }
       }
+      if(addbasicmessage) text += '<br><b>Note:</b> this challenge is capped at level ' + basicmaxlevel + ' and will not give any further bonus or achievements beyond that level';
       if(c.targetlevel.length > 1) {
         if(!c.fullyCompleted()) {
           text += '<br>Current challenge target level: <b>' + c.targetlevel[c2.completed] + '</b>';
@@ -786,10 +800,19 @@ function makeFieldDialog(x, y) {
     var c = f.getCrop(true);
     var div;
 
+    var updatedialogfun = bind(function(f, c, flex) {
+      var html0 = getCropInfoHTML(f, c);
+      if(html0 != last0) {
+        flex0.div.innerHTML = html0;
+        last0 = html0;
+      }
+    }, f, c);
+
     var dialog = createDialog({
       icon:c.image[4],
       title:'Crop info',
-      bgstyle:'efDialogTranslucent'
+      bgstyle:'efDialogTranslucent',
+      updatedialogfun:updatedialogfun
     });
 
     var buttonshift = 0;
@@ -849,15 +872,7 @@ function makeFieldDialog(x, y) {
       dialog.content.div.innerHTML = text;
     });
 
-    updatedialogfun = bind(function(f, c, flex) {
-      var html0 = getCropInfoHTML(f, c);
-      if(html0 != last0) {
-        flex0.div.innerHTML = html0;
-        last0 = html0;
-      }
-    }, f, c);
-
-    updatedialogfun(f, c);
+    updatedialogfun();
 
   } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
     makeTreeDialog();

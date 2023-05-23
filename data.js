@@ -1712,7 +1712,10 @@ function registerCrop(name, cost, prod, boost, planttime, image, opt_tagline, op
 
   if(opt_croptype != undefined && opt_tier != undefined) {
     if(!croptype_tiers[opt_croptype]) croptype_tiers[opt_croptype] = [];
-    croptype_tiers[opt_croptype][opt_tier] = crop;
+    // the undefined check makes the first registered crop of this tier win, and this makes templates win from ghosts (which both use tier -1, but for the downgrade crop functionality you want to downgrade to templates)
+    if(croptype_tiers[opt_croptype][opt_tier] == undefined) {
+      croptype_tiers[opt_croptype][opt_tier] = crop;
+    }
   }
 
   crop.prod0 = Res(crop.prod);
@@ -3575,12 +3578,23 @@ var lightningTime = 120;
 var challenge_stormy_mul = 0.25; // multiplier to weather effects of the reward
 
 
+function isWeatherActive(weather) {
+  if(weather == 0) return sunActive();
+  if(weather == 1) return mistActive();
+  if(weather == 2) return rainbowActive();
+  return false;
+}
+
 // have the weaker but permanent after-weather effect reward from the stormy challenge
 function havePermaWeather() {
   return state.challenges[challenge_stormy].completed && !basicChallenge() && state.challenge != challenge_stormy;
 }
 
 function havePermaWeatherFor(ability) {
+  if(!havePermaWeather()) return false;
+
+  if(isWeatherActive(state.lastWeather)) return false; // don't have perma weather active if true weather is currently active
+
   var unlocked = false;
   if(ability == 0) unlocked = !!state.upgrades[upgrade_sununlock].count;
   if(ability == 1) unlocked = !!state.upgrades[upgrade_mistunlock].count;
@@ -3588,7 +3602,7 @@ function havePermaWeatherFor(ability) {
   if(!unlocked) return false;
 
   //return state.challenges[challenge_stormy].completed && !basicChallenge() && state.challenge != challenge_stormy;
-  return havePermaWeather() && state.lastWeather == ability;
+  return state.lastPermaWeather == ability;
 }
 
 // 12
@@ -5948,6 +5962,13 @@ function treeLevelResin(level, breakdown) {
     if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, resin.clone()]);
   }
 
+  // fishes
+  if(state.fishcount[tang_0]) {
+    var mul = Num(1 + tang_0_bonus * state.fishcount[tang_0]);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['fishes', true, mul, resin.clone()]);
+  }
+
   // challenges
   if(state.challenge_bonus.neqr(0)) {
     var challenge_bonus = state.challenge_bonus.divr(100).addr(1);
@@ -7255,7 +7276,7 @@ var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', 
 
 var mistle_upgrade_nuts = registerMistletoeUpgrade('nuttiness', 'nuts', Num(0.05), 12, 3600, 'Gives a %BONUS% bonus to nuts per level');
 
-var mistle_upgrade_brassica = registerMistletoeUpgrade('brassica', 'brassica', Num(0.05), 14, 3600, 'Gives a %BONUS% bonus to brassica copying per level');
+var mistle_upgrade_brassica = registerMistletoeUpgrade('brassiness', 'brassica', Num(0.05), 14, 3600, 'Gives a %BONUS% bonus to brassica copying per level');
 
 
 
@@ -7502,6 +7523,14 @@ Crop3.prototype.getProd = function(f, breakdown) {
     if(breakdown) breakdown.push(['octopus', true, mul, result.clone()]);
   }
 
+  // puffer fish
+  if(this.type == CROPTYPE_BERRY && state.fishcount[puffer_0]) {
+    var num = state.fishcount[puffer_0];
+    var mul = new Num(1 + puffer_0_bonus * num);
+    result.infseeds.mulInPlace(mul);
+    if(breakdown) breakdown.push(['puffer fish', true, mul, result.clone()]);
+  }
+
   // flower boost for mushroom: does not use getInfBoost, but depends on relative tier
   if(f && this.type == CROPTYPE_MUSH) {
     var floweronlymul = new Num(1);
@@ -7572,11 +7601,21 @@ Crop3.prototype.getProd = function(f, breakdown) {
     }
   }
 
-  // sea anemone to flower
   if(this.type == CROPTYPE_BRASSICA && state.fishcount[shrimp_0]) {
     var mul = Num(1 + shrimp_0_bonus * state.fishcount[shrimp_0]);
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['shrimp', true, mul, result.clone()]);
+  }
+
+  // minimum for brassica to at least pay their own cost back
+  // this can happen if brassica is expected to be boosted by fishes, but the fishes aren't there, and then the brassica would cause a loss of infinity seeds over its lifetime which could be a large unintended setback
+  if(this.type == CROPTYPE_BRASSICA && result.infseeds.gtr(0)) {
+    var minimum = this.cost.infseeds.divr(this.planttime).mulr(1.01);
+    if(result.infseeds.lt(minimum)) {
+      var mul = minimum.div(result.infseeds);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['adjustment for self-sustainability', true, mul, result.clone()]);
+    }
   }
 
 
@@ -7751,38 +7790,45 @@ var default_crop3_growtime = 5; // in seconds
 crop3_register_id = 0;
 var brassica3_0 = registerBrassica3('zinc watercress', 0, Res({infseeds:10}), Res({infseeds:20.01 / (24 * 3600)}), Num(0.05), 24 * 3600, metalifyPlantImages(images_watercress, metalheader0));
 var brassica3_1 = registerBrassica3('bronze watercress', 1, Res({infseeds:25000}), Res({infseeds:50000 / (2 * 24 * 3600)}), Num(0.05), 2 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader1));
-var brassica3_2 = registerBrassica3('silver watercress', 2, Res({infseeds:5e7}), Res({infseeds:5e7 * 4 / (3 * 24 * 3600)}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader2, 0));
-var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, 4));
-var brassica3_4 = registerBrassica3('gold watercress', 4, Res({infseeds:100e15}), Res({infseeds:500e9}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader4, 0));
-var brassica3_5 = registerBrassica3('platinum watercress', 5, Res({infseeds:25e21}), Res({infseeds:100e15}), Num(0.05), 7 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader5, 5, 6, 1, 1.045));
+var brassica3_2 = registerBrassica3('silver watercress', 2, Res({infseeds:5e7}), Res({infseeds:5e7 * 4 / (3 * 24 * 3600)}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader2));
+var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12}), Res({infseeds:2e12 * 2 / (24 * 3600)}), Num(0.05), 1 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader3, [4]));
+var brassica3_4 = registerBrassica3('gold watercress', 4, Res({infseeds:100e15}), Res({infseeds:500e9}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader4));
+var brassica3_5 = registerBrassica3('platinum watercress', 5, Res({infseeds:25e21}), Res({infseeds:100e15}), Num(0.05), 7 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader5, [2, 6, 7], [0.15]));
+var brassica3_6 = registerBrassica3('rhodium watercress', 6, Res({infseeds:5e27}), Res({infseeds:20e21}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader6, [3, 6], [0.9]));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
-var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader1, 2));
+var berry3_1 = registerBerry3('bronze blackberry', 1, Res({infseeds:500000}), Res({infseeds:500000 / (24 * 3600)}), Num(0.125), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader1, [2]));
 // some division done in the production, since we take into account they're now well boosted by flowers and eventually beehives
-var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader2, 2));
+var berry3_2 = registerBerry3('silver blackberry', 2, Res({infseeds:2e9}), Res({infseeds:(2e9 / 2 / (24 * 3600))}), Num(0.15), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader2, [2]));
 // more division since better flowers and beehives now
-var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), Res({infseeds:(100e12 / 32 / (24 * 3600))}), Num(0.2), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader3, 4, 2));
-var berry3_4 = registerBerry3('gold blackberry', 4, Res({infseeds:5e18}), Res({infseeds:50e9}), Num(0.4), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader4, 2));
-var berry3_5 = registerBerry3('platinum blackberry', 5, Res({infseeds:500e21}), Res({infseeds:50e12}), Num(0.75), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader5, 5, 1, undefined, 1.1));
+var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), Res({infseeds:(100e12 / 32 / (24 * 3600))}), Num(0.2), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader3, [2, 4]));
+var berry3_4 = registerBerry3('gold blackberry', 4, Res({infseeds:5e18}), Res({infseeds:50e9}), Num(0.4), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader4, [2]));
+var berry3_5 = registerBerry3('platinum blackberry', 5, Res({infseeds:500e21}), Res({infseeds:50e12}), Num(0.75), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader5, [2, 6], [0.3]));
+// this time it's more expensive relative to the watercress, so multiple rounds of having all watercress are needed before this becomes affordable
+var berry3_6 = registerBerry3('rhodium blackberry', 6, Res({infseeds:400e27}), Res({infseeds:100e15}), Num(0.75), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader6, [2, 3, 6], [0.15, 1]));
 
 crop3_register_id = 600;
-var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, 2));
-var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, 6));
+var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
+var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, [7]));
+var mush3_6 = registerMushroom3('rhodium champignon', 5, Res({infseeds:5e30}), Res({infspores:500}), Num(2), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
+
 
 crop3_register_id = 900;
-var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, 1));
+var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
 var flower3_1 = registerFlower3('bronze anemone', 1, Res({infseeds:2.5e6}), Num(1), Num(0.15), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader1));
-var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader2, 1, undefined, undefined, 0.9));
-var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(12), Num(0.3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader3, 4));
-var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(200), Num(0.6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader4, 0));
-var flower3_5 = registerFlower3('platinum anemone', 5, Res({infseeds:20e24}), Num(2500), Num(1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader5, 5));
+var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3), Num(0.2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader2, [1], [0.1]));
+var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(12), Num(0.3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader3, [4]));
+var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(200), Num(0.6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader4));
+var flower3_5 = registerFlower3('platinum anemone', 5, Res({infseeds:20e24}), Num(2500), Num(1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader5, [6]));
+var flower3_6 = registerFlower3('rhodium anemone', 6, Res({infseeds:15e30}), Num(50000), Num(2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader6, [6], [0.7]));
 
 crop3_register_id = 1200;
-var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader2, 0));
-var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, 4));
-var bee3_4 = registerBee3('gold bee nest', 4, Res({infseeds:5e21}), Num(256), Num(1.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader4, 0));
-var bee3_5 = registerBee3('platinum bee nest', 5, Res({infseeds:500e24}), Num(2048), Num(4), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader5, 1, 5, 6, 1.05));
+var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader2));
+var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, [4]));
+var bee3_4 = registerBee3('gold bee nest', 4, Res({infseeds:5e21}), Num(256), Num(1.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader4));
+var bee3_5 = registerBee3('platinum bee nest', 5, Res({infseeds:500e24}), Num(2048), Num(4), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader5, [2, 6, 7], [0.15]));
+var bee3_6 = registerBee3('rhodium bee nest', 6, Res({infseeds:500e30}), Num(16384), Num(8), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader6, [6]));
 
 // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
 // the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
@@ -7807,6 +7853,9 @@ var FISHTYPE_KOI = fishtype_index++; // runestone basic field boost bonus
 var FISHTYPE_OCTOPUS = fishtype_index++; // infinity spores production bonus
 var FISHTYPE_SHRIMP = fishtype_index++; // shrimp: boosts infinity watercress
 var FISHTYPE_ANEMONE = fishtype_index++; // sea anemone: boost infinity flowers
+var FISHTYPE_PUFFER = fishtype_index++; // puffer fish: boosts berries
+var FISHTYPE_EEL = fishtype_index++; // eel: boosts twigs
+var FISHTYPE_TANG = fishtype_index++; // yellow tang: boosts resin
 
 function getFishTypeName(type) {
   if(type == FISHTYPE_GOLDFISH) return 'goldfish';
@@ -7814,6 +7863,9 @@ function getFishTypeName(type) {
   if(type == FISHTYPE_OCTOPUS) return 'octopus';
   if(type == FISHTYPE_SHRIMP) return 'shrimp';
   if(type == FISHTYPE_ANEMONE) return 'sea anemone';
+  if(type == FISHTYPE_PUFFER) return 'puffer fish';
+  if(type == FISHTYPE_EEL) return 'eel';
+  if(type == FISHTYPE_TANG) return 'tang';
   return 'unknown';
 }
 
@@ -7835,6 +7887,9 @@ Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   if(opt_force_count != undefined) count = opt_force_count;
 
   var mul = 20;
+  // vary the multiplier for some types to have some variation in the spread of fish costs
+  if(this.type == FISHTYPE_PUFFER) mul = 17;
+  if(this.type == FISHTYPE_EEL || this.type == FISHTYPE_TANG) mul = 21;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -7912,6 +7967,24 @@ function registerAnemone(name, tier, cost, effect_description, image, opt_taglin
   return index;
 }
 
+function registerPuffer(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_PUFFER, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
+function registerEel(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_EEL, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
+function registerTang(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_TANG, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
 fish_register_id = 100;
 var goldfish_0_bonus = 0.1;
 var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
@@ -7926,11 +7999,23 @@ var octopus_0 = registerOctopus('octopus', 0, Res({infspores:100000}), 'Improves
 
 fish_register_id = 400;
 var shrimp_0_bonus = 0.2;
-var shrimp_0 = registerShrimp('shrimp', 0, Res({infspores:2500000}), 'Improves infinity watercress ' + Num(shrimp_0_bonus).toPercentString(), image_shrimp0);
+var shrimp_0 = registerShrimp('shrimp', 0, Res({infspores:2500000}), 'Improves infinity watercress by ' + Num(shrimp_0_bonus).toPercentString(), image_shrimp0);
 
 fish_register_id = 500;
 var anemone_0_bonus = 0.15;
-var anemone_0 = registerAnemone('anemone', 0, Res({infspores:7500000}), 'Improves infinity flowers ' + Num(anemone_0_bonus).toPercentString(), image_anemone0);
+var anemone_0 = registerAnemone('anemone', 0, Res({infspores:7500000}), 'Improves infinity flowers by ' + Num(anemone_0_bonus).toPercentString(), image_anemone0);
+
+fish_register_id = 600;
+var puffer_0_bonus = 0.2;
+var puffer_0 = registerPuffer('pufferfish', 0, Res({infspores:100000000}), 'Improves infinity berries by ' + Num(puffer_0_bonus).toPercentString(), image_puffer0);
+
+fish_register_id = 700;
+var eel_0_bonus = 0.25;
+var eel_0 = registerEel('eel', 0, Res({infspores:1000000000}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString(), image_eel0);
+
+fish_register_id = 800;
+var tang_0_bonus = 0.25;
+var tang_0 = registerTang('yellow tang', 0, Res({infspores:10000000000}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString(), image_tang0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -8806,6 +8891,39 @@ registerPlantTypeMedal3(berry3_5);
 registerPlantTypeMedal3(flower3_5);
 registerPlantTypeMedal3(bee3_5);
 registerPlantTypeMedal3(mush3_5);
+registerPlantTypeMedal3(brassica3_6);
+registerPlantTypeMedal3(berry3_6);
+registerPlantTypeMedal3(flower3_6);
+registerPlantTypeMedal3(bee3_6);
+registerPlantTypeMedal3(mush3_6);
+
+
+
+// fish crop achievements
+medal_register_id = 4700;
+
+function getFishTypeMedalBonus(fishid) {
+  var c = fishes[fishid];
+  var l = Num.log(c.cost.infspores);
+  return Math.pow(l * 20, 1.15);
+}
+
+function registerFishTypeMedal(fishid) {
+  var c = fishes[fishid];
+  var mul = getFishTypeMedalBonus(fishid);
+  return registerMedal(upper(c.name), 'Have a ' + c.name + ' in the infinity pond', c.image, function() {
+    return state.fishcount[fishid] >= 1;
+  }, Num(mul));
+};
+
+registerFishTypeMedal(goldfish_0);
+registerFishTypeMedal(koi_0);
+registerFishTypeMedal(octopus_0);
+registerFishTypeMedal(shrimp_0);
+registerFishTypeMedal(anemone_0);
+registerFishTypeMedal(puffer_0);
+registerFishTypeMedal(eel_0);
+registerFishTypeMedal(tang_0);
 
 
 
