@@ -533,7 +533,10 @@ function makeTreeDialog() {
       if(haveMultiplicity(CROPTYPE_BERRY)) text += '<br>Multiplicities:<br>';
 
       if(haveMultiplicity(CROPTYPE_BERRY)) {
-        text += '• Berry and mushroom: +' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
+        text += '• Berry: +' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
+      }
+      if(haveMultiplicity(CROPTYPE_MUSH)) {
+        text += '• Mushroom: +' + (getMultiplicityBonusBase(CROPTYPE_MUSH)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
       }
       if(haveMultiplicity(CROPTYPE_FLOWER)) {
         text += '• Flower: +' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference<br>';

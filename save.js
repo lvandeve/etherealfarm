@@ -481,7 +481,7 @@ function encState(state, opt_raw_only) {
   };
   var deltaEncApprox = function(array) {
     var array2 = [];
-    for(var i = 0; i < array.length; i++)  array2[i] = encApproxNum(Num(array[i]));
+    for(var i = 0; i < array.length; i++) array2[i] = encApproxNum(Num(array[i]));
     deltaEnc(array2);
   };
   deltaEnc(state.reset_stats_level);

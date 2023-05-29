@@ -131,11 +131,12 @@ function updateAbilitiesUI() {
       if(shift) {
         state.lastPermaWeather = 0;
       } else {
-        addAction({type:ACTION_ABILITY, ability:0});
+        addAction({type:ACTION_ABILITY, ability:0, change_perma:!ctrl});
       }
       update();
     }, 'sun ability', {
-      label_shift: 'activate passively',
+      label_shift: 'change perma weather only',
+      label_ctrl: 'activate without changing perma',
       tooltip: function() { return formatAbilityDurationTooltipText(0, 'sun ability', 'berries get a +' + getSunSeedsBoost().toPercentString() + ' production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())}
     });
     sunbutton.div.id = 'sun_button';
@@ -186,11 +187,12 @@ function updateAbilitiesUI() {
       if(shift) {
         state.lastPermaWeather = 1;
       } else {
-        addAction({type:ACTION_ABILITY, ability:1});
+        addAction({type:ACTION_ABILITY, ability:1, change_perma:!ctrl});
       }
       update();
     }, 'mist ability', {
-      label_shift: 'activate passively',
+      label_shift: 'change perma weather only',
+      label_ctrl: 'activate without changing perma',
       tooltip: function() { return formatAbilityDurationTooltipText(1, 'mist ability', 'mushrooms produce ' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())}
     });
     mistbutton.div.id = 'mist_button';
@@ -242,11 +244,12 @@ function updateAbilitiesUI() {
       if(shift) {
         state.lastPermaWeather = 2;
       } else {
-        addAction({type:ACTION_ABILITY, ability:2});
+        addAction({type:ACTION_ABILITY, ability:2, change_perma:!ctrl});
       }
       update();
     }, 'rainbow ability', {
-      label_shift: 'activate passively',
+      label_shift: 'change perma weather only',
+      label_ctrl: 'activate without changing perma',
       tooltip: function() { return formatAbilityDurationTooltipText(2, 'rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())}
     });
     rainbowbutton.div.id = 'rainbow_button';
@@ -650,15 +653,15 @@ document.addEventListener('keydown', function(e) {
 
     if(numberfun == 1) {
       if(key == '1') {
-        addAction({type:ACTION_ABILITY, ability:0});
+        addAction({type:ACTION_ABILITY, ability:0, change_perma:true});
         update();
       }
       if(key == '2') {
-        addAction({type:ACTION_ABILITY, ability:1});
+        addAction({type:ACTION_ABILITY, ability:1, change_perma:true});
         update();
       }
       if(key == '3') {
-        addAction({type:ACTION_ABILITY, ability:2});
+        addAction({type:ACTION_ABILITY, ability:2, change_perma:true});
         update();
       }
     } else if(numberfun == 2) {

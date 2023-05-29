@@ -1380,6 +1380,7 @@ function decTokens(reader) {
     }
     var section_length = reader.pos - section_begin;
     //console.log('*** end section ' + section_id + ', num: ' + num + ', length: ' + section_length + ' ***');
+    //console.log('*** section ' + section_id + ' length: ' + section_length + ' ***');
   }
   return result;
 }

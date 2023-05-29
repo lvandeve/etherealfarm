@@ -84,14 +84,14 @@ body {
   background-color: #666;
   border: 1px solid #000;
   color: #000;
-  box-shadow: 5px 2px 2px #000;
+  box-shadow: 3px 1px 1px #000;
 }
 
 .efButtonCantAfford {
   background-color: #666;
   border: 1px solid #333;
   color: #444;
-  box-shadow: 5px 2px 2px #000;
+  box-shadow: 3px 1px 1px #000;
 }
 
 .efTextCantAfford {
@@ -102,7 +102,7 @@ body {
   background-color: #777;
   border: 1px solid #000;
   color: #000;
-  box-shadow: 5px 2px 2px #000;
+  box-shadow: 3px 1px 1px #000;
 }
 
 .efButtonTranslucent {

@@ -2484,7 +2484,7 @@ function doAutoAction(index, part, opt_manually) {
     }
     // arguably this could also go in part 2, but for the manual toggling of auto-actions it's more clear what's going on if it's executed immediately in part 1
     if(o.enable_weather && autoActionExtraUnlocked()) {
-      addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:!opt_manually});
+      addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:!opt_manually, change_perma:true});
       did_something = true;
     }
   }
@@ -4558,14 +4558,14 @@ var update = function(opt_ignorePause) {
             // however, when done by automaton auto-action (e.g. at start of run), it can set the permanent lasting weather
             if(action.by_automaton) {
               state.lastWeather = a;
-              state.lastPermaWeather = a;
+              if(action.change_perma) state.lastPermaWeather = a;
             }
           } else if(sund < getSunWait()) {
             if(havePerma) {
               showMessage('Sun selected.');
             } else if(state.lastWeather != a && sund < getSunDuration()) {
               state.lastWeather = a;
-              state.lastPermaWeather = a;
+              if(action.change_perma) state.lastPermaWeather = a;
               showMessage('Changed weather into sun. Only one weather effect can be active at the same time.');
             } else {
               showMessage(sund < getSunDuration() ? 'sun is already active' : 'sun is not ready yet', C_INVALID, 0, 0);
@@ -4577,7 +4577,7 @@ var update = function(opt_ignorePause) {
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
-            state.lastPermaWeather = a;
+            if(action.change_perma) state.lastPermaWeather = a;
           }
         } else if(a == 1) {
           if(!state.upgrades[upgrade_mistunlock].count) {
@@ -4587,7 +4587,7 @@ var update = function(opt_ignorePause) {
               showMessage('Mist selected.');
             } else if(state.lastWeather != a && mistd < getMistDuration()) {
               state.lastWeather = a;
-              state.lastPermaWeather = a;
+              if(action.change_perma) state.lastPermaWeather = a;
               showMessage('Changed weather into mist. Only one weather effect can be active at the same time.');
             } else {
               if(!havePerma) showMessage(mistd < getMistDuration() ? 'mist is already active' : 'mist is not ready yet', C_INVALID, 0, 0);
@@ -4599,7 +4599,7 @@ var update = function(opt_ignorePause) {
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
-            state.lastPermaWeather = a;
+            if(action.change_perma) state.lastPermaWeather = a;
           }
         } else if(a == 2) {
           if(!state.upgrades[upgrade_rainbowunlock].count) {
@@ -4609,7 +4609,7 @@ var update = function(opt_ignorePause) {
               showMessage('Rainbow selected.');
             } else if(state.lastWeather != a && rainbowd < getRainbowDuration()) {
               state.lastWeather = a;
-              state.lastPermaWeather = a;
+              if(action.change_perma) state.lastPermaWeather = a;
               showMessage('Changed weather into rainbow. Only one weather effect can be active at the same time.');
             } else {
               showMessage(rainbowd < getRainbowDuration() ? 'rainbow is already active' : 'rainbow is not ready yet', C_INVALID, 0, 0);
@@ -4621,12 +4621,12 @@ var update = function(opt_ignorePause) {
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
-            state.lastPermaWeather = a;
+            if(action.change_perma) state.lastPermaWeather = a;
           }
         }
         if(havePerma) {
           state.lastWeather = a;
-          state.lastPermaWeather = a;
+          if(action.change_perma) state.lastPermaWeather = a;
         }
       } else if(type == ACTION_FRUIT_SLOT) {
         var f = action.f;
