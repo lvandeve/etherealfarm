@@ -3394,7 +3394,7 @@ challenges[challenge_rocks].bonus_exponent = Num(0.2);
 
 
 // 3
-var challenge_nodelete = registerChallenge('undeletable challenge', 25, undefined, undefined, Num(0.1), 20, 0.5,
+var challenge_nodelete = registerChallenge('undeletable challenge', 25, undefined, undefined, Num(0.1), 10, 0.5,
 `
 During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops, and plan ahead before planting!
 `,
@@ -3415,7 +3415,7 @@ challenges[challenge_nodelete].bonus_exponent = Num(0.5);
 
 // 4
 // reason why watercress upgrade is still present: otherwise it disappears after a minute, requiring too much manual work when one wants to upkeep the watercress
-var challenge_noupgrades = registerChallenge('no upgrades challenge', [20, 30], undefined, undefined, Num(0.003), 15, 0.5,
+var challenge_noupgrades = registerChallenge('no upgrades challenge', [20, 30], undefined, undefined, Num(0.003), 10, 0.5,
 `
 During this challenge, crops cannot be upgraded.
 `,
@@ -3457,7 +3457,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170], undefined, undefined, Num(0.004), 40, 0.5,
+var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170], undefined, undefined, Num(0.003), 30, 0.5,
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -3524,7 +3524,7 @@ function witherCurve(t) {
 }
 
 // 6
-var challenge_blackberry = registerChallenge('blackberry challenge', [19], undefined, undefined, Num(0.0035), 15, 0.25,
+var challenge_blackberry = registerChallenge('blackberry challenge', [19], undefined, undefined, Num(0.003), 0, 0.25,
 `
 During this challenge, only the first tier of each crop type is available.
 `,
@@ -3563,7 +3563,7 @@ var rockier_layouts = [
 ];
 
 // 7
-var challenge_rockier = registerChallenge('rockier challenge', [40], undefined, undefined, Num(0), 30, 0.2,
+var challenge_rockier = registerChallenge('rockier challenge', [40], undefined, undefined, Num(0), 20, 0.2,
 rockier_text, rockier_text_long, 'multiplicity for berries and mushrooms', rockier_text_unlock_reason,
 function() {
   return state.treelevel >= 45;
@@ -3577,7 +3577,7 @@ challenges[challenge_rockier].bonus_exponent = Num(0.5);
 
 
 // 8
-var challenge_thistle = registerChallenge('thistle challenge', [66], undefined, undefined, Num(0.002), 50, 0,
+var challenge_thistle = registerChallenge('thistle challenge', [66], undefined, undefined, Num(0.002), 33, 0,
 `The field is full of thistles which you cannot remove. The thistle pattern is randomly determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours. The thistles hurt most crops, but benefit mushrooms, they are next-tier nettles.
 `,
 `
@@ -3596,7 +3596,7 @@ function() {
 
 
 // 9
-var challenge_wasabi = registerChallenge('wasabi challenge', [65], undefined, undefined, Num(0.0025), 50, 0,
+var challenge_wasabi = registerChallenge('wasabi challenge', [65], undefined, undefined, Num(0.0025), 40, 0,
 `You only get income from brassica, such as watercress.`,
 `
 • You can only get income from brassica, such as watercress, and their copying effect.<br>
@@ -3698,7 +3698,7 @@ function havePermaWeatherFor(ability) {
 }
 
 // 12
-var challenge_stormy = registerChallenge('stormy challenge', [65], undefined, undefined, Num(0.0025), 60, 0,
+var challenge_stormy = registerChallenge('stormy challenge', [65], undefined, undefined, Num(0.0025), 50, 0,
 `The weather is stormy, other weather doesn't work`,
 `
 • The weather is stormy throughout the challenge, and other weather abilities don't work.<br>
@@ -3747,7 +3747,7 @@ var challenge_poisonivy = registerChallenge('poison ivy challenge', undefined, f
   if(state.crops[mush_2].prestige > 0) return true;
   if(state.crops[berry_6].prestige > 0) return true; // the berry after mush_2 (prestiged), just in case no mushrooms were grown
   return false;
-}, 'prestige the morel', Num(0.01), 150, 0,
+}, 'prestige the morel', Num(0.0075), 130, 0,
 `The field is full of poison ivy in a regular pattern which you cannot remove. The poison ivy hurts most crops, but benefits mushrooms, they are next-tier thistles.
 `,
 `
@@ -6083,9 +6083,11 @@ function treeLevelResin(level, breakdown) {
 
   // fishes
   if(state.fishcount[tang_0]) {
-    var mul = Num(1 + tang_0_bonus * state.fishcount[tang_0]);
+    var mul = fishResin(false);
+    var umul = fishResin(true);
     resin.mulInPlace(mul);
-    if(breakdown) breakdown.push(['fishes (tang)', true, mul, resin.clone()]);
+    // if it says "least tang", it means the least tang that were in pond during this run: to prevent fish-swapping strategies, the tang must be in pond the entire run for the resin effect to work
+    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (tang)' : 'fishes (least tang)', true, mul, resin.clone()]);
   }
 
   // challenges
@@ -6120,6 +6122,28 @@ function currentTreeLevelResin(breakdown) {
 
 function nextTreeLevelResin(breakdown) {
   return treeLevelResin(state.treelevel + 1, breakdown);
+}
+
+function fishResin(opt_underlying) {
+  if(!state.fishcount[tang_0]) return new Num(0);
+  if(opt_underlying) {
+    var mul = Num(1 + tang_0_bonus * state.fishcount[tang_0]);
+    return mul;
+  } else {
+    if(state.min_fish_resinmul.ltr(1)) return new Num(1);
+    return state.min_fish_resinmul;
+  }
+}
+
+function fishTwigs(opt_underlying) {
+  if(!state.fishcount[eel_0]) return new Num(0);
+  if(opt_underlying) {
+    var mul = Num(1 + eel_0_bonus * state.fishcount[eel_0]);
+    return mul;
+  } else {
+    if(state.min_fish_twigsmul.ltr(1)) return new Num(1);
+    return state.min_fish_twigsmul;
+  }
 }
 
 // get twig drop at tree going to this level from mistletoes
@@ -6188,9 +6212,11 @@ function treeLevelTwigs(level, breakdown) {
 
   // fishes
   if(state.fishcount[eel_0]) {
-    var mul = Num(1 + eel_0_bonus * state.fishcount[eel_0]);
+    var mul = fishTwigs(false);
+    var umul = fishTwigs(true);
     res.twigs.mulInPlace(mul);
-    if(breakdown) breakdown.push(['fishes (eel)', true, mul, res.clone()]);
+    // if it says "least eel", it means the least eel that were in pond during this run: to prevent fish-swapping strategies, the eel must be in pond the entire run for the twigs effect to work
+    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (eel)' : 'fishes (least eel)', true, mul, res.clone()]);
   }
 
   // challenges
@@ -8143,11 +8169,11 @@ var puffer_0 = registerPuffer('pufferfish', 0, Res({infspores:100000000}), 'Impr
 
 fish_register_id = 700;
 var eel_0_bonus = 0.25;
-var eel_0 = registerEel('eel', 0, Res({infspores:1000000000}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString(), image_eel0);
+var eel_0 = registerEel('eel', 0, Res({infspores:1000000000}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_eel0);
 
 fish_register_id = 800;
 var tang_0_bonus = 0.25;
-var tang_0 = registerTang('yellow tang', 0, Res({infspores:10000000000}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString(), image_tang0);
+var tang_0 = registerTang('yellow tang', 0, Res({infspores:10000000000}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_tang0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

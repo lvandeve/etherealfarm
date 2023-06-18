@@ -633,6 +633,9 @@ function State() {
     this.fishes[registered_fishes[i]] = new FishState();
   }
 
+  // minimum multiplyer to resin/twigs from fishes seen during this run, which is kept track of and used as actual multiplier to prevent fish-swapping strategies during the game
+  this.min_fish_resinmul = Num(-1);
+  this.min_fish_twigsmul = Num(-1);
 
 
   this.squirrel_evolution = 0;
@@ -1785,6 +1788,17 @@ function computeDerived(state) {
     if(b.numw && b.numh) state.numnonemptyblueprints++;
   }
 
+  // fish effects
+  if(state.min_fish_resinmul.eqr(-1)) {
+    state.min_fish_resinmul = fishResin(true);
+  } else {
+    state.min_fish_resinmul = Num.min(state.min_fish_resinmul, fishResin(true));
+  }
+  if(state.min_fish_twigsmul.eqr(-1)) {
+    state.min_fish_twigsmul = fishTwigs(true);
+  } else {
+    state.min_fish_twigsmul = Num.min(state.min_fish_twigsmul, fishTwigs(true));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

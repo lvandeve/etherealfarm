@@ -20,10 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.10.1 (2023-06-18):';
+  text += '<br/>• Eel and tang now must be in pond during entire run to keep their effect.';
+  text += '<br/>• The new minimum level for bonus requirements of challenges have been lowered so that the production bonus gotten when not managing to complete a challenge is still meaningful.';
+  text += '<br/><br/>';
+
   text += '0.10.0 (2023-06-18):';
   text += '<br/>• Added next-tier stingy crop and a new challenge to unlock it.';
   text += '<br/>• New level 24 ethereal crop.';
   text += '<br/>• Challenge bonuses are now all applied individually rather than additive to each other. The formulas have been tuned down to take this into account. This makes each individual challenge bonus more significant.';
+  text += '<br/>• Several challenges now get a minimum level at which the bonus only begins.';
   text += '<br/>• Fixed missing eel twigs bonus.';
   text += '<br/>• Tweaks and fixes.'; // typo fixes, grayed color for non active permaweather, ...
   text += '<br/><br/>';

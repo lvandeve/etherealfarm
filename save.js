@@ -132,6 +132,8 @@ function encState(state, opt_raw_only) {
   processRes(state.fernres); // used to be state.lastReFernTime before v0.9.2
   processInt(state.lastPlanted3);
   processInt(state.lastPlantedFish);
+  processNum(state.min_fish_resinmul);
+  processNum(state.min_fish_twigsmul);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -1183,6 +1185,8 @@ function decState(s) {
   }
   if(save_version >= 262144*2+64*7+0) state.lastPlanted3 = processInt();
   if(save_version >= 262144*2+64*9+0) state.lastPlantedFish = processInt();
+  if(save_version >= 262144*2+64*10+1) state.min_fish_resinmul = processNum();
+  if(save_version >= 262144*2+64*10+1) state.min_fish_twigsmul = processNum();
 
 
   section = 1; id = 0; // field

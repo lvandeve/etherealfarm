@@ -715,6 +715,9 @@ function beginNextRun(opt_challenge) {
   state.c_numautoprestiges = 0;
   state.c_lightnings = 0;
 
+  state.min_fish_resinmul = Num(-1);
+  state.min_fish_twigsmul = Num(-1);
+
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
 
