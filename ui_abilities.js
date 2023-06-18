@@ -154,8 +154,24 @@ function updateAbilitiesUI() {
       suntimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getSunDuration() - d, true);
     }
 
-    if(havePerma && state.lastPermaWeather == 0) sunpermaflex.div.style.visibility = 'visible';
-    else sunpermaflex.div.style.visibility = 'hidden';
+    if(havePerma && state.lastPermaWeather == 0 && (state.lastWeather == 0 || !isAnyWeatherActive())) {
+      if(sunpermaflex.renderstyle != 3) {
+        sunpermaflex.renderstyle = 3;
+        sunpermaflex.div.className = 'efWeatherPerma';
+        sunpermaflex.div.style.visibility = 'visible';
+      }
+    } else if(havePerma && state.lastPermaWeather == 0) {
+      if(sunpermaflex.renderstyle != 2) {
+        sunpermaflex.renderstyle = 2;
+        sunpermaflex.div.className = 'efWeatherPermaOff';
+        sunpermaflex.div.style.visibility = 'visible';
+      }
+    } else {
+      if(sunpermaflex.renderstyle != 1) {
+        sunpermaflex.renderstyle = 1;
+        sunpermaflex.div.style.visibility = 'hidden';
+      }
+    }
   }
 
 
@@ -210,8 +226,24 @@ function updateAbilitiesUI() {
       misttimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getMistDuration() - d, true);
     }
 
-    if(havePerma && state.lastPermaWeather == 1) mistpermaflex.div.style.visibility = 'visible';
-    else mistpermaflex.div.style.visibility = 'hidden';
+    if(havePerma && state.lastPermaWeather == 1 && (state.lastWeather == 1 || !isAnyWeatherActive())) {
+      if(mistpermaflex.renderstyle != 3) {
+        mistpermaflex.renderstyle = 3;
+        mistpermaflex.div.className = 'efWeatherPerma';
+        mistpermaflex.div.style.visibility = 'visible';
+      }
+    } else if(havePerma && state.lastPermaWeather == 1) {
+      if(mistpermaflex.renderstyle != 2) {
+        mistpermaflex.renderstyle = 2;
+        mistpermaflex.div.className = 'efWeatherPermaOff';
+        mistpermaflex.div.style.visibility = 'visible';
+      }
+    } else {
+      if(mistpermaflex.renderstyle != 1) {
+        mistpermaflex.renderstyle = 1;
+        mistpermaflex.div.style.visibility = 'hidden';
+      }
+    }
   }
 
 
@@ -267,8 +299,24 @@ function updateAbilitiesUI() {
       rainbowtimerflex.div.textEl.innerHTML = '<small>active:</small><br>' + util.formatDuration(getRainbowDuration() - d, true);
     }
 
-    if(havePerma && state.lastPermaWeather == 2) rainbowpermaflex.div.style.visibility = 'visible';
-    else rainbowpermaflex.div.style.visibility = 'hidden';
+    if(havePerma && state.lastPermaWeather == 2 && (state.lastWeather == 2 || !isAnyWeatherActive())) {
+      if(rainbowpermaflex.renderstyle != 3) {
+        rainbowpermaflex.renderstyle = 3;
+        rainbowpermaflex.div.className = 'efWeatherPerma';
+        rainbowpermaflex.div.style.visibility = 'visible';
+      }
+    } else if(havePerma && state.lastPermaWeather == 2) {
+      if(rainbowpermaflex.renderstyle != 2) {
+        rainbowpermaflex.renderstyle = 2;
+        rainbowpermaflex.div.className = 'efWeatherPermaOff';
+        rainbowpermaflex.div.style.visibility = 'visible';
+      }
+    } else {
+      if(rainbowpermaflex.renderstyle != 1) {
+        rainbowpermaflex.renderstyle = 1;
+        rainbowpermaflex.div.style.visibility = 'hidden';
+      }
+    }
   }
 
 

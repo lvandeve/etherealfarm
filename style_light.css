@@ -166,6 +166,10 @@ a:visited {
   background-color: #9448;
 }
 
+.efWeatherPermaOff {
+  background-color: #4448;
+}
+
 .efWatercressHighlight {
   text-shadow: 0 0 0.3em #0f0;
 }

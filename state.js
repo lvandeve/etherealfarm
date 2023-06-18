@@ -246,7 +246,7 @@ function MedalState() {
 
 function ChallengeState() {
   this.unlocked = false;
-  this.completed = 0; // whether the challenge was successfully completed, or higher values if higher versions of the challenge with extra rewards were completed
+  this.completed = 0; // whether the challenge was successfully completed, or higher values if higher versions of the challenge with extra rewards were completed. Not useful to determine if cycles of cycling challenges were completed, use num_completed for that
   this.num = 0; // amount of times started, whether successful or not, excluding the current one
   this.num_completed = 0; // how often, the challenge was successfully completed (excluding currently ongoing challenge, if any)
   this.num_completed2 = 0; // how often, the challenge was successfully completed to final stage, or 0 if this challenge only has 1 stage
@@ -577,7 +577,7 @@ function State() {
     this.medals[registered_medals[i]] = new MedalState();
   }
 
-  this.challenges = [];
+  this.challenges = []; // array of ChallengeState
   for(var i = 0; i < registered_challenges.length; i++) {
     this.challenges[registered_challenges[i]] = new ChallengeState();
     var c = challenges[registered_challenges[i]];
@@ -595,6 +595,10 @@ function State() {
   }
   // also have run stats for no-challenge (index 0)
   this.challenges[0] = new ChallengeState();
+  // whether the challenge was completed (or multiple objective completed for higher values) during this run
+  // this as opposed to challenge.completed which is global across runs
+  // only used for challenge with non-targetlevel based objective, for the targetlevel ones the tree level already indicates this
+  this.challenge_completed = 0;
 
   // ethereal field and crops
   this.numw2 = 5;
@@ -1102,17 +1106,9 @@ function State() {
   // derived stat, not to be saved.
   this.workerbeeboost = Num(0);
 
-  // total production bonus from all challenges
+  // total production bonus from all challenges (multiplicative), as multpilier
   // derived stat, not to be saved.
-  this.challenge_bonus = Num(0);
-
-  // the non-alt challenge bonus part
-  // derived stat, not to be saved.
-  this.challenge_bonus0 = Num(0);
-
-  // the alt challenge bonus, separate multiplier
-  // derived stat, not to be saved.
-  this.challenge_bonus1 = Num(0);
+  this.challenge_multiplier = Num(1);
 
   // how many challenges are unlocked but never attempted
   // derived stat, not to be saved.
@@ -1272,6 +1268,7 @@ function changeFieldSize(state, w, h) {
   if(state.challenge == challenge_rocks) content = FIELD_ROCK;
   if(state.challenge == challenge_rockier) content = FIELD_ROCK;
   if(state.challenge == challenge_thistle) content = CROPINDEX + nettle_1;
+  if(state.challenge == challenge_poisonivy) content = CROPINDEX + nettle_2;
 
   // this shift is designed such that the center tile of the old field will stay in the center, and in case of
   // even sizes will be at floor((w-1) / 2) horizontally, floor(h/2) vertically.
@@ -1752,8 +1749,7 @@ function computeDerived(state) {
   state.challenges_completed = 0;
   state.challenges_completed2 = 0;
   state.challenges_completed3 = 0;
-  state.challenge_bonus0 = Num(0);
-  state.challenge_bonus1 = Num(0);
+  state.challenge_multiplier = Num(1);
   state.untriedchallenges = 0;
   for(var i = 0; i < registered_challenges.length; i++) {
     var index = registered_challenges[i];
@@ -1770,23 +1766,17 @@ function computeDerived(state) {
     }
     if(c2.maxlevel > 0) {
       if(c.cycling) {
+        // within a cycling challenge, the bonuses are additive
+        var multiplier = Num(1);
         for(var j = 0; j < c.cycling; j++) {
-          if(c.alt_bonus) {
-            state.challenge_bonus1.addInPlace(getChallengeBonus(index, c2.maxlevels[j], j));
-          } else {
-            state.challenge_bonus0.addInPlace(getChallengeBonus(index, c2.maxlevels[j], j));
-          }
+          multiplier.addInPlace(getChallengeBonus(index, c2.maxlevels[j], c.cycleCompleted(j, false), j));
         }
+        state.challenge_multiplier.mulInPlace(multiplier);
       } else {
-        if(c.alt_bonus) {
-          state.challenge_bonus1.addInPlace(getChallengeBonus(index, c2.maxlevel));
-        } else {
-          state.challenge_bonus0.addInPlace(getChallengeBonus(index, c2.maxlevel));
-        }
+        state.challenge_multiplier.mulInPlace(getChallengeMultiplier(index, c2.maxlevel, c2.completed));
       }
     }
   }
-  state.challenge_bonus = totalChallengeBonus(state.challenge_bonus0, state.challenge_bonus1);
 
   // blueprints
   state.numnonemptyblueprints = 0;

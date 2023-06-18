@@ -402,7 +402,7 @@ registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nut
     <br><br>
     You can respec the squirrel upgrades if you regret a decision, using a respec token. You get a few for free, more can be gotten for amber in the amber tab.
     <br><br>
-    Once you ever respecced squirrel upgrades, the "buy all to here" option unlocks for upgrades you have seen before: click the upgrade icon of any squirrel upgrade further down in the tree, then use this button to automatically buy this upgrade and all squirrel upgrades required to reach this one (including all of gated stages), if you can afford it. This avoid having to click every individual upgrade again after respec.
+    After you respec squirrel upgrades at least once, the "buy all to here" option unlocks for upgrades you have seen before: click the upgrade icon of any squirrel upgrade further down in the tree, then use this button to automatically buy this upgrade and all squirrel upgrades required to reach this one (including all of gated stages), if you can afford it. This avoid having to click every individual upgrade again after respec.
     <br><br>
     Planting and upgrading nuts crops cost spores instead of seeds. They work with automaton just like most other crops. If the automaton is spending too much spores on nuts upgrades and you want the tree to level up instead, decrease the allowed % setting for nuts upgrades in the automaton settings.
     `,
@@ -540,16 +540,17 @@ function createKeyboardHelpDialog() {
     text += 'More shortcuts will appear in this list later as you progress through the game.';
     text += '<br/><br/>';
   }
-  text += '<b>General notes:</b>';
+  text += '<b>Mobile shortcuts:</b>';
   text += '<br/><br/>';
-  text += ' • on mac, ctrl means command instead.';
+  text += ' • on mobile/touch devices, you can long-press most icons/buttons to access the shift and ctrl variants (e.g. the pause button and refresh watercress button).';
   text += '<br/>';
-  text += ' • on mobile/touch devices, you can long-press some icons/buttons to access the shift and ctrl variants (e.g. the pause button and refresh watercress button).';
   text += ' • on mobile/touch devices, you can also long-press to see tooltips, e.g on most buttons in the setting dialogs.';
   text += '<br/>';
 
   text += '<br/><b>Main shortcuts:</b>';
-  text += '<br/><br/>';
+  text += '<br/>';
+  text += ' • <i>Note</i>: on mac, ctrl means command instead.';
+  text += '<br/>';
   text += ' • <b>esc</b>: close current dialog. If no dialogs are open, shows main menu.';
   text += '<br/>';
   text += ' • <b>"p"</b>: when crop in field under mouse cursor: pick (=remember) this crop for planting. When empty field mouse cursor: plant the remembered crop here (no mouse click required)';
@@ -713,7 +714,7 @@ function createHelpDialog() {
   button = makeButton('Main help');
   addButtonAction(button, createMainHelpDialog);
 
-  button = makeButton('Keyboard shortcuts');
+  button = makeButton('Keyboard & mobile shortcuts');
   addButtonAction(button, createKeyboardHelpDialog);
 
   button = makeButton('Number format help');

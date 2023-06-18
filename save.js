@@ -669,6 +669,7 @@ function encState(state, opt_raw_only) {
   processUintArray(array8);
   processTimeArray(array9);
   processTimeArray(array10);
+  processUint(state.challenge_completed);
 
 
   section = 20; id = 0; // automaton
@@ -1340,7 +1341,7 @@ function decState(s) {
       array2 = processUintArray(); // prestige
     } else {
       array2 = [];
-      for(var i = 0; i < array0.length; i++) array1[i] = 0;
+      for(var i = 0; i < array0.length; i++) array2[i] = 0;
     }
     if(save_version >= 262144*2+64*6+0) {
       array3 = processUintArray(); // crop.known
@@ -1972,6 +1973,7 @@ function decState(s) {
       array9 = [];
       array10 = [];
     }
+    if(save_version >= 262144*2+64*10+0) state.challenge_completed = processUint();
     if(error) return err(4);
     if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length) {
       return err(4);

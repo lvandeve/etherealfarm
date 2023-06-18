@@ -419,7 +419,7 @@ function makeTreeDialog() {
       if(maxlevel > 0) {
         if(state.treelevel > maxlevel) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel + '.';
-          text += ' This will bring your total challenge production bonus from ' + state.challenge_bonus.toPercentString() + ' to ' + totalChallengeBonusWith(state.challenge, state.treelevel).toPercentString();
+          text += ' This will bring your total challenge production bonus from ' + totalChallengeBonus().toPercentString() + ' to ' + totalChallengeBonusWith(state.challenge, state.treelevel).toPercentString();
           if(basicfar) addbasicmessage = true;
         } else if(!basiccapped) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet reach your previous best of lvl ' + maxlevel + '.';
@@ -429,8 +429,7 @@ function makeTreeDialog() {
         }
       } else {
         text += '<b>Challenge active</b>: ' + upper(c.name);
-        //text += state.challenge_bonus.toPercentString();
-        var bonus_before = state.challenge_bonus;
+        var bonus_before = totalChallengeBonus();
         var bonus_after = totalChallengeBonusWith(state.challenge, state.treelevel);
         if(bonus_before.neq(bonus_after)) {
           text += '. So far, it will bring your total challenge production bonus from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
@@ -438,7 +437,11 @@ function makeTreeDialog() {
         }
       }
       if(addbasicmessage) text += '<br><b>Note:</b> this challenge is capped at level ' + basicmaxlevel + ' and will not give any further bonus or achievements beyond that level';
-      if(c.targetlevel.length > 1) {
+      if(c.targetlevel == undefined) {
+        if(!c2.completed) {
+          text += '<br>Challenge goal: <b>' + c.targetdescription + '</b>';
+        }
+      } else if(c.targetlevel.length > 1) {
         if(!c.fullyCompleted()) {
           text += '<br>Current challenge target level: <b>' + c.targetlevel[c2.completed] + '</b>';
         }

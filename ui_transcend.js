@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ function getTranscendValueInfo(opt_from_challenge) {
 
   if(do_fruit) {
     have_item = true;
-    text += '• ' + getUpcomingFruitEssence().essence + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool (see fruit tab)<br/>';
+    text += '• ' + getUpcomingFruitEssence().essence.toString() + ' fruit essence from ' + state.fruit_sacr.length + ' fruits in the sacrificial pool (see fruit tab)<br/>';
     // commented out: only the first fruit automatically goes to storage now, if sacr is empty it's because the player chose to move fruits to storage
     /*if(state.fruit_sacr.length == 0 && state.fruit_stored.length > 0) {
       text += '→ You have fruits in storage, if you would like to sacrifice them for essence, take a look at your fruit tab before transcending<br/>';

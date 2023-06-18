@@ -20,6 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.10.0 (2023-06-18):';
+  text += '<br/>• Added next-tier stingy crop and a new challenge to unlock it.';
+  text += '<br/>• New level 24 ethereal crop.';
+  text += '<br/>• Challenge bonuses are now all applied individually rather than additive to each other. The formulas have been tuned down to take this into account. This makes each individual challenge bonus more significant.';
+  text += '<br/>• Fixed missing eel twigs bonus.';
+  text += '<br/>• Tweaks and fixes.'; // typo fixes, grayed color for non active permaweather, ...
+  text += '<br/><br/>';
+
   text += '0.9.4 (2023-05-23):';
   text += '<br/>• Added rhodium infinity crops.';
   text += '<br/>• Added 3 new fish types.';

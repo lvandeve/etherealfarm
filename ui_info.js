@@ -348,7 +348,9 @@ function getResourceDetails(index) {
       var infield = computeField3InfinitySeeds();
       var total = infield[0].add(state.res.infseeds);
       text += 'In field: ' + infield[0].toString() + ' (brassica: ' + infield[1].toString() + ')<br>';
-      text += 'Total (field + current): ' + total.toString() + ' (w/o brassica: ' + total.sub(infield[1]).toString() + ')<br>';
+      text += 'Total (field + current): ' + total.toString();
+      if(infield[1].neqr(0)) text += ' (w/o brassica: ' + total.sub(infield[1]).toString() + ')';
+      text += '<br>';
       text += 'Total earned ever: ' + state.g_res.infseeds.toString() + '<br>'; // this can be more than total because some seeds are spent on brassicas that wither
     }
     if(index == 8) { // infinity spores
@@ -364,7 +366,9 @@ function getResourceDetails(index) {
     }
 
     if(index == 0 || index == 1) {
-      text += 'Highest had: ' + state.c_max_res.atIndex(index).toString();
+      text += 'Highest had this run: ' + state.c_max_res.atIndex(index).toString();
+      text += '<br>';
+      text += 'Highest ever had: ' + state.g_max_res.atIndex(index).toString();
       text += '<br><br>';
     }
 

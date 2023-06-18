@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2022  Lode Vandevenne
+Copyright (C) 2020-2023  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -43,7 +43,6 @@ var loadedFromLocalImportMessage = 'Imported save';
 var hardresetwarning = 'Performs a hard reset. This removes all savegame data, deletes your entire game and starts a new game from the beginning.\n\nWARNING: This is not a soft reset: nothing is kept, everything will be deleted, including achievements, settings and recovery saves. This starts over with a new, blank, savegame, and cannot be reverted. Are you sure you want to do this?';
 var shiftClickPlantUnset = 'shift+click, or p, repeats last planted plant, but no last plant is set, plant the regular way first';
 var leechInfo = 'Copy ability: if this plant has orthogonal (non-diagonal) berry or mushroom neighbors, the watercress will duplicate all their production (but also consumption), no matter what tier. This has diminishing returns if there are multiple watercress in the field, max 2 watercress makes sense. A badly placed watercress can negatively affect the copying of others. At early game, having many watercress is useful though due to their regular (non-copy) production.';
-var altChallengeBonusInfo = 'This challenge uses the alternate bonus pool, it is part of a separate multiplier and so has more effect than regular challenges';
 var pausedMessage = 'game paused';
 var unpausedMessage = 'game resumed from pause';
 var squirrelEvolutionHelp = `

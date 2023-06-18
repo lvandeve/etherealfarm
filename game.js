@@ -400,6 +400,17 @@ function startChallenge(challenge_id) {
     }
   }
 
+  if(challenge_id == challenge_poisonivy) {
+    for(var y = 0; y < state.numh; y++) {
+      for(var x = 0; x < state.numw; x++) {
+        if(!(x & 1) || !(y & 1)) continue; // the pattern
+        var f = state.field[y][x];
+        if(f.index != 0) continue;
+        f.index = (CROPINDEX + nettle_2);
+      }
+    }
+  }
+
   if(challenge_id == challenge_blackberry) {
     lockAllUpgrades();
 
@@ -452,12 +463,12 @@ function endPreviousRun() {
       var cycle = c.getCurrentCycle();
       c2.maxlevels[cycle] = Math.max(state.treelevel, c2.maxlevels[cycle]);
     }
-    if(state.treelevel >= c.targetlevel[0]) {
+    if(c.stageCompleted(0)) {
       var i = c2.completed;
       c2.num_completed++;
       // whether a next stage of the challenge completed. Note, you can only complete one stage at the time, even if you immediately reach the target level of the highest stage, you only get 1 stage for now
-      if(i < c.targetlevel.length && state.treelevel >= c.targetlevel[i]) {
-        if(c.targetlevel.length > 1) {
+      if(i < c.numStages() && c.stageCompleted(i)) {
+        if(c.numStages() > 1) {
           showMessage('Completed the next stage of the challenge and got reward: ' + c.rewarddescription[i], C_UNLOCK, 38658833);
         } else {
           showMessage('Completed the challenge and got reward: ' + c.rewarddescription[i], C_UNLOCK, 38658833);
@@ -466,7 +477,7 @@ function endPreviousRun() {
         c.rewardfun[i]();
       }
     }
-    if(c.targetlevel.length > 1 && c2.completed >= c.targetlevel.length) {
+    if(c.numStages() > 1 && c2.completed >= c.numStages()) {
       c2.num_completed2++;
     }
     // even for the "attempt" counter, do not count attempts that don't even level up the tree, those are counted as state.g_numresets_challenge_0 instead
@@ -655,6 +666,7 @@ function endPreviousRun() {
 
 function beginNextRun(opt_challenge) {
   state.challenge = opt_challenge || 0;
+  state.challenge_completed = 0;
 
   state.amberprod = false;
   state.amber_reset_choices = false;
@@ -1404,7 +1416,7 @@ function precomputeField_(prefield, opt_pretend) {
                 var p2 = prefield[y2][x2];
                 var boost = p2.boost;
                 // when changing this formula, must also change Crop.prototype.computeNettleMalusReceived_ to match
-                p.nettlemalus_received.divInPlace(boost.addr(1));
+                p.nettlemalus_received.mulInPlace(deriveNettleMalus(boost));
               }
               p.num_nettle++;
             }
@@ -2327,6 +2339,9 @@ function maybeUnlockEtherealCrops() {
   if(state.treelevel2 >= 23) {
     unlockEtherealCrop(flower2_7);
   }
+  if(state.treelevel2 >= 24) {
+    unlockEtherealCrop(lotus2_6);
+  }
 }
 
 function maybeUnlockInfinityCrops() {
@@ -2613,6 +2628,8 @@ function computeNextAutoUpgrade() {
     if(!state.cropcount[u.cropid]) continue; // do any crop, even not fullgrown, because since version 0.1.61, crops already produce a fractional amount while growing
     // TODO: highestoftypeplanted or highestoftypeunlocked? Maybe should be an option, both have pros and cons. a con of using highestoftypeunlocked is that then no progress is made on the field if the game is left to run alone for a long time but the highest plant is not planted yet
     if(crops[u.cropid].tier < state.highestoftypeplanted[crops[u.cropid].type]) continue; // don't upgrade lower types anymore once a higher type of berry/mushroom/... is on the field
+
+    if(state.challenge == challenge_poisonivy && u.cropid == nettle_2) continue; // upgrading this one can really hurt the challenge for seed income, so don't do it automatically
 
     // how much resources willing to spend
     var advanced = autoFinetuningUnlocked();
@@ -3913,6 +3930,15 @@ var update = function(opt_ignorePause) {
         }
         if(ok && state.challenge == challenge_thistle && type == ACTION_PLANT && action.crop.type == nettle_1) {
           showMessage('Cannot plant thistles during the thistle challenge', C_INVALID, 0, 0);
+          ok = false;
+        }
+
+        if(ok && state.challenge == challenge_poisonivy && f.hasCrop() && f.getCrop().index == nettle_2) {
+          showMessage('Cannot remove poison ivy during the poison ivy challenge', C_INVALID, 0, 0);
+          ok = false;
+        }
+        if(ok && state.challenge == challenge_poisonivy && type == ACTION_PLANT && action.crop.type == nettle_2) {
+          showMessage('Cannot plant poison ivy during the poison ivy challenge', C_INVALID, 0, 0);
           ok = false;
         }
 
@@ -5459,35 +5485,38 @@ var update = function(opt_ignorePause) {
       } else if(state.treelevel == min_transcension_level) {
         showRegisteredHelpDialog(7);
       }
-      if(state.challenge && state.treelevel == challenges[state.challenge].targetlevel[0]) {
-        var c = challenges[state.challenge];
-        var c2 = state.challenges[state.challenge];
-        if(c2.besttime == 0 || state.c_runtime < c2.besttime) {
-          c2.besttime = Math.max(0.01, state.c_runtime);
-        }
-        if(c.cycling > 1) {
-          var cycle = c.getCurrentCycle();
-          if(c2.besttimes[cycle] == 0 || state.c_runtime < c2.besttimes[cycle]) {
-            c2.besttimes[cycle] = Math.max(0.01, state.c_runtime);
+      // targetlevel-based challenges
+      if(state.challenge && state.challenge.targetlevel != undefined) {
+        if(state.treelevel == challenges[state.challenge].targetlevel[0]) {
+          var c = challenges[state.challenge];
+          var c2 = state.challenges[state.challenge];
+          if(c2.besttime == 0 || state.c_runtime < c2.besttime) {
+            c2.besttime = Math.max(0.01, state.c_runtime);
+          }
+          if(c.cycling > 1) {
+            var cycle = c.getCurrentCycle();
+            if(c2.besttimes[cycle] == 0 || state.c_runtime < c2.besttimes[cycle]) {
+              c2.besttimes[cycle] = Math.max(0.01, state.c_runtime);
+            }
           }
         }
-      }
-      if(state.challenge && state.treelevel == challenges[state.challenge].nextTargetLevel()) {
-        var c = challenges[state.challenge];
-        var c2 = state.challenges[state.challenge];
-        if(!c.allCyclesCompleted()) {
-          showChallengeChip(state.challenge);
-          showRegisteredHelpDialog(26);
-        } else {
-          showMessage('challenge target level reached');
-        }
-        if(c.targetlevel.length > 1 && state.treelevel >= c.finalTargetLevel()) {
-          if(c2.besttime2 == 0 || state.c_runtime < c2.besttime2) c2.besttime2 = Math.max(0.01, state.c_runtime);
-        }
-        if(c.cycling > 1) {
-          var cycle = c.getCurrentCycle();
-          if(c2.besttimes2[cycle] == 0 || state.c_runtime < c2.besttimes2[cycle]) {
-            c2.besttimes2[cycle] = Math.max(0.01, state.c_runtime);
+        if(state.treelevel == challenges[state.challenge].nextTargetLevel()) {
+          var c = challenges[state.challenge];
+          var c2 = state.challenges[state.challenge];
+          if(!c.allCyclesCompleted()) {
+            showChallengeChip(state.challenge);
+            showRegisteredHelpDialog(26);
+          } else {
+            showMessage('challenge target level reached');
+          }
+          if(c.targetlevel.length > 1 && state.treelevel >= c.finalTargetLevel()) {
+            if(c2.besttime2 == 0 || state.c_runtime < c2.besttime2) c2.besttime2 = Math.max(0.01, state.c_runtime);
+          }
+          if(c.cycling > 1) {
+            var cycle = c.getCurrentCycle();
+            if(c2.besttimes2[cycle] == 0 || state.c_runtime < c2.besttimes2[cycle]) {
+              c2.besttimes2[cycle] = Math.max(0.01, state.c_runtime);
+            }
           }
         }
       }
@@ -5498,6 +5527,23 @@ var update = function(opt_ignorePause) {
         }
       }
     } // end of tree levelup
+
+    //non-targetlevel based challenge
+    if(state.challenge && challenges[state.challenge].targetlevel == undefined && !state.challenge_completed && challenges[state.challenge].targetfun()) {
+      state.challenge_completed = 1;
+      var c = challenges[state.challenge];
+      var c2 = state.challenges[state.challenge];
+
+      if(c2.besttime == 0 || state.c_runtime < c2.besttime) {
+        c2.besttime = Math.max(0.01, state.c_runtime);
+      }
+      if(!c.allCyclesCompleted()) {
+        showChallengeChip(state.challenge);
+        showRegisteredHelpDialog(26);
+      } else {
+        showMessage('challenge goal completed');
+      }
+    }
 
     if(state.time >= state.recentweighedleveltime_time + 120 && state.res.ge(req)) {
       state.recentweighedleveltime_time = state.time;
@@ -5535,7 +5581,7 @@ var update = function(opt_ignorePause) {
         state.eth_stats_res[state.treelevel2 - 1].spores = Num(state.g_max_res.spores);
         state.eth_stats_level[state.treelevel2 - 1] = state.g_treelevel;
         state.eth_stats_numresets[state.treelevel2 - 1] = state.g_numresets;
-        state.eth_stats_challenge[state.treelevel2 - 1] = Num(state.challenge_bonus);
+        state.eth_stats_challenge[state.treelevel2 - 1] = Num(state.challenge_multiplier.subr(1));
         state.eth_stats_medal_bonus[state.treelevel2 - 1] = Num(state.medal_prodmul);
       }
       maybeUnlockEtherealCrops();

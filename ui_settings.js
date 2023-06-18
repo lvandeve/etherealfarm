@@ -838,7 +838,8 @@ function createStatsDialog() {
       text += '• challenge stages completed: ' + open + state.challenges_completed3 + close + '<br>';
       text += '• challenge fully completed: ' + open + state.challenges_completed2 + close + '<br>';
     }
-    text += '• total challenge production bonus: ' + open + state.challenge_bonus.toPercentString() + close + '<br>';
+    text += '• total challenge production bonus: ' + open + totalChallengeBonus().toPercentString() + close + '<br>';
+    text += '• total challenge resin + twigs bonus: ' + open + totalChallengeBonus().divr(100).toPercentString() + close + '<br>';
 
     text += '<br>';
   }
