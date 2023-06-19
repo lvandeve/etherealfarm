@@ -1790,14 +1790,14 @@ function computeDerived(state) {
 
   // fish effects
   if(state.min_fish_resinmul.eqr(-1)) {
-    state.min_fish_resinmul = fishResin(true);
+    state.min_fish_resinmul = fishResin(state, true);
   } else {
-    state.min_fish_resinmul = Num.min(state.min_fish_resinmul, fishResin(true));
+    state.min_fish_resinmul = Num.min(state.min_fish_resinmul, fishResin(state, true));
   }
   if(state.min_fish_twigsmul.eqr(-1)) {
-    state.min_fish_twigsmul = fishTwigs(true);
+    state.min_fish_twigsmul = fishTwigs(state, true);
   } else {
-    state.min_fish_twigsmul = Num.min(state.min_fish_twigsmul, fishTwigs(true));
+    state.min_fish_twigsmul = Num.min(state.min_fish_twigsmul, fishTwigs(state, true));
   }
 }
 

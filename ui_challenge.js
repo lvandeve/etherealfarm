@@ -265,10 +265,9 @@ function getChallengeStatsString(challenge_id, include_current_run) {
     var maxlevel = Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0);
     if(currentlyrunning) {
       text += '• Max level reached before: ' + c2.maxlevel + ', <b>after: ' + maxlevel + '</b><br>';
-      var challenge2 = totalChallengeBonusWith(challenge_id, maxlevel);
+      var challenge2 = totalChallengeBonusIncludingCurrentRun();
       text += '• Production bonus before: ' + getChallengeBonus(c.index, c2.maxlevel, c2.completed).toPercentString() + ', <b>after: ' + getChallengeBonus(c.index, maxlevel, !!c.numCompleted(true)).toPercentString() +
               '</b>. Total (all challenges) before: ' + totalChallengeBonus().toPercentString() + ', <b>after: ' + challenge2.toPercentString() + '</b><br>';
-
     } else {
       text += '• Max level reached: ' + c2.maxlevel + '<br>';
       text += '• Production bonus: ' + getChallengeBonus(c.index, c2.maxlevel, c2.completed).toPercentString() + '<br>';
@@ -488,7 +487,7 @@ function createFinishChallengeDialog() {
   text += 'Production bonus from challenge max reached level' + ((c.cycling > 1) ? ' for this cycle' : '') + ':<br>';
   text += '• Before (level ' + maxlevel + '): ' + getChallengeBonus(state.challenge, maxlevel, c.cycleCompleted(cycle, false), cycle).toPercentString() + ' (' + totalChallengeBonus().toPercentString() + ' total for all challenges)<br>';
   if(state.treelevel > maxlevel) {
-    var new_total = totalChallengeBonusWith(c.index, newmax);
+    var new_total = totalChallengeBonusIncludingCurrentRun();
     text += '• After (level ' + newmax + '): ' + getChallengeBonus(state.challenge, newmax, c.cycleCompleted(cycle, true), cycle).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
     // TODO: if challenge not completed but max level beaten, add text here "you didn't complete the challenge, but at least you gained production bonus", but this taking cycling challenges and multi-level-target challenges into account
   } else {

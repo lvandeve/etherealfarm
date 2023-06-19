@@ -3255,8 +3255,12 @@ function Challenge() {
   // if the challenge is not cycling, then it returns if the one main cycle is completed (and the cycle parameter is ignored so may be undefined if desired)
   // does not look at stages, considers it complete after first stage is reached
   this.cycleCompleted = function(cycle, opt_include_current_run) {
-    if(this.cycling <= 1) return opt_include_current_run ? this.stageCompleted(0) : !!this.completed;
-    var num_completed = state.challenges[this.index].num_completed;
+    var c2 = state.challenges[this.index];
+    if(this.cycling <= 1) {
+      if(c2.completed) return true;
+      return opt_include_current_run ? this.stageCompleted(0) : false;
+    }
+    var num_completed = c2.num_completed;
     if(opt_include_current_run && state.challenge == this.index && this.stageCompleted(0)) num_completed++;
     return num_completed > cycle;
   };
@@ -6083,8 +6087,8 @@ function treeLevelResin(level, breakdown) {
 
   // fishes
   if(state.fishcount[tang_0]) {
-    var mul = fishResin(false);
-    var umul = fishResin(true);
+    var mul = fishResin(state, false);
+    var umul = fishResin(state, true);
     resin.mulInPlace(mul);
     // if it says "least tang", it means the least tang that were in pond during this run: to prevent fish-swapping strategies, the tang must be in pond the entire run for the resin effect to work
     if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (tang)' : 'fishes (least tang)', true, mul, resin.clone()]);
@@ -6124,9 +6128,9 @@ function nextTreeLevelResin(breakdown) {
   return treeLevelResin(state.treelevel + 1, breakdown);
 }
 
-function fishResin(opt_underlying) {
+function fishResin(state, use_underlying) {
   if(!state.fishcount[tang_0]) return new Num(0);
-  if(opt_underlying) {
+  if(use_underlying) {
     var mul = Num(1 + tang_0_bonus * state.fishcount[tang_0]);
     return mul;
   } else {
@@ -6135,9 +6139,9 @@ function fishResin(opt_underlying) {
   }
 }
 
-function fishTwigs(opt_underlying) {
+function fishTwigs(state, use_underlying) {
   if(!state.fishcount[eel_0]) return new Num(0);
-  if(opt_underlying) {
+  if(use_underlying) {
     var mul = Num(1 + eel_0_bonus * state.fishcount[eel_0]);
     return mul;
   } else {
@@ -6212,8 +6216,8 @@ function treeLevelTwigs(level, breakdown) {
 
   // fishes
   if(state.fishcount[eel_0]) {
-    var mul = fishTwigs(false);
-    var umul = fishTwigs(true);
+    var mul = fishTwigs(state, false);
+    var umul = fishTwigs(state, true);
     res.twigs.mulInPlace(mul);
     // if it says "least eel", it means the least eel that were in pond during this run: to prevent fish-swapping strategies, the eel must be in pond the entire run for the twigs effect to work
     if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (eel)' : 'fishes (least eel)', true, mul, res.clone()]);
@@ -6610,20 +6614,23 @@ function totalChallengeBonus() {
 
 // total challenge, but taking into account running challenge (with challenge_id) having the new given maxlevel
 // for cycling challenge, uses the current cycle (= of the current run, or upcoming run if the challenge is not active now).
-function totalChallengeBonusWith(challenge_id, maxlevel) {
-  var c = challenges[challenge_id];
-  var c2 = state.challenges[challenge_id];
+function totalChallengeBonusIncludingCurrentRun() {
+  if(!state.challenge) return totalChallengeBonus();
+
+  var c = challenges[state.challenge];
+  var c2 = state.challenges[state.challenge];
   var cycle = undefined;
-  var maxlevel2 = c2.maxlevel;
+  var maxlevel0 = c2.maxlevel;
+  var maxlevel1 = Math.max(c2.maxlevel, state.treelevel);
   if(c.cycling) {
     cycle = c2.num_completed % c.cycling;
-    maxlevel2 = c2.maxlevels[cycle];
+    maxlevel1 = c2.maxlevels[cycle];
   }
   // it's ok that cycle is given as undefined when the challenge is not cycling.
-  var completed = c.cycleCompleted(cycle, false);
-  var completed2 = c.cycleCompleted(cycle, true);
+  var completed0 = c.cycleCompleted(cycle, false);
+  var completed1 = c.cycleCompleted(cycle, true);
 
-  var ratio = getChallengeMultiplier(c.index, maxlevel, completed, cycle).div(getChallengeMultiplier(c.index, maxlevel2, completed2, cycle));
+  var ratio = getChallengeMultiplier(c.index, maxlevel1, completed1, cycle).div(getChallengeMultiplier(c.index, maxlevel0, completed0, cycle));
   // subr(1) to convert from multiplier to bonus for UI
   return state.challenge_multiplier.mul(ratio).subr(1);
 }
