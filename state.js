@@ -1768,6 +1768,7 @@ function computeDerived(state) {
       state.untriedchallenges++;
     }
     if(c2.maxlevel > 0) {
+      // when updating the code of this challenge bonus computation, also update totalChallengeBonusIncludingCurrentRun to match!
       if(c.cycling) {
         // within a cycling challenge, the bonuses are additive
         var multiplier = Num(1);

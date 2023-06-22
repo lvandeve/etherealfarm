@@ -23,6 +23,7 @@ function getChangeLog() {
   text += '0.10.1 (2023-06-18):';
   text += '<br/>• Eel and tang now must be in pond during entire run to keep their effect.';
   text += '<br/>• The new minimum level for bonus requirements of challenges have been lowered so that the production bonus gotten when not managing to complete a challenge is still meaningful.';
+  text += '<br/>• Added the missing poison ivy achievements.';
   text += '<br/><br/>';
 
   text += '0.10.0 (2023-06-18):';

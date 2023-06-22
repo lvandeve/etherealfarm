@@ -2754,6 +2754,8 @@ function computeNextAutoPlant() {
         if(c.isghost) continue; // at least during stormy challenge, automaton should not upgrade ghosts
         if(c.type != type) continue;
         if(c.tier >= crop.tier) continue;
+        if(c.index == nettle_1 && state.challenge == challenge_thistle) continue;
+        if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
         if(type == CROPTYPE_NUT && tooManyNutsPlants(c.isReal())) continue; // can only have 1 at the same time
         if(next_auto_plant == undefined || time < next_auto_plant.time) next_auto_plant = {index:crop.index, x:x, y:y, time:time};
         x = state.numw;
@@ -2809,6 +2811,8 @@ function autoPlant(res) {
       if(c.isghost) continue; // at least during stormy challenge, automaton should not upgrade ghosts
       if(c.type != oldtype) continue;
       if(c.tier >= crop.tier) continue;
+      if(c.index == nettle_1 && state.challenge == challenge_thistle) continue;
+      if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
       var p2 = prefield[y2][x2];
       if(p2.score > best) {
         best = p2.score;
@@ -3308,7 +3312,7 @@ var update = function(opt_ignorePause) {
   update_prev_paused = paused_;
 
   var prev_large_time_delta = large_time_delta;
-  var autoplanted = false;
+  var autoplanted_fastanim = false;
 
   var undostate = undefined;
   if(actions.length > 0 && (util.getTime() - lastUndoSaveTime > minUndoTime)) {
@@ -3903,10 +3907,14 @@ var update = function(opt_ignorePause) {
         var orig_brassica = f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA;
 
         if(action.by_automaton) {
+          if(action.x != state.automatonx || action.y != state.automatony) {
+            // only do this when the automaton changes position, so that if due to some bug it always tries to overplant the same plant,
+            // it doesn't keep doing fastanim with high CPU usage the whole time
+            autoplanted_fastanim = true;
+          }
           state.automatonx = action.x;
           state.automatony = action.y;
           state.automatontime = state.time;
-          autoplanted = true;
         }
 
         var recoup = undefined;
@@ -5184,6 +5192,7 @@ var update = function(opt_ignorePause) {
       }
       var fg = computeFernGain();
       var g = fg.mulr(r);
+      var has_idlecharge = false;
       if(state.upgrades[fern_choice0].count == 1) {
         var timediff = state.time - state.lastFernTime;
         var idlecharge = getFernIdlePastCharge();
@@ -5193,6 +5202,7 @@ var update = function(opt_ignorePause) {
           var reltime = idlecharge / timediff;
           var idleres = new Res({seeds:seedsdiff, spores:sporesdiff}).mulr(reltime);
           g.addInPlace(idleres);
+          has_idlecharge = true;
         }
 
         var idlecharge2 = getFernIdleFutureCharge();
@@ -5203,9 +5213,9 @@ var update = function(opt_ignorePause) {
       if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds.mulr(roll));
       var fernres = new Res({seeds:g.seeds, spores:g.spores});
 
-      if(state.fern == 1) {
-        showMessage('That fern gave: ' + fernres.toString(), C_NATURE, 989456955, 0.5, true);
-      } else {
+      var bushy = (state.fern == 2) || has_idlecharge;
+
+      if(bushy) {
         fernres = fernres.mulr(1.75);
         fernres.seeds.addrInPlace(5); // bushy ferns are better for early game
         //fernres.nuts.addrInPlace(g.nuts);
@@ -5213,7 +5223,13 @@ var update = function(opt_ignorePause) {
         //if(state.g_res.amber.gtr(1)) fernres.amber.addrInPlace(0.5);
         if(waittime + 1 >= fern_wait_minutes * 60 && state.g_numresets > 1 && (!state.challenge || challenges[state.challenge].allowsresin)) fernres.resin.addInPlace(state.g_max_res_earned.resin.divr(200).mulr(fernTimeRatio));
         //fernres.resin.addInPlace(state.p_res.resin.divr(100).mulr(fernTimeRatio));
-        showMessage('This fern is extra bushy! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
+        if(has_idlecharge) {
+          showMessage('This fern has been here a long time! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
+        } else {
+          showMessage('This fern is extra bushy! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
+        }
+      } else {
+        showMessage('That fern gave: ' + fernres.toString(), C_NATURE, 989456955, 0.5, true);
       }
       state.g_fernres.addInPlace(fernres);
       if(fernres.resin.neqr(0)) {
@@ -5891,7 +5907,7 @@ var update = function(opt_ignorePause) {
   if(do_transcend && actions.length) {
     // when transcending with blueprint, do the next actions immediately to avoid having a momentary empty field visible
     window.setTimeout(update, 0.01);
-  } else if(autoplanted) {
+  } else if(autoplanted_fastanim) {
     // go faster when the automaton is autoplanting one-by-one
     window.setTimeout(update, update_ms * 0.4);
   }

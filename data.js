@@ -2668,7 +2668,7 @@ var nettleunlock_1 = registerCropUnlock(nettle_1, getNettleCost(1), undefined, f
 var nettleunlock_2 = registerCropUnlock(nettle_2, getNettleCost(2), undefined, function() {
   if(basicChallenge() == 2) return false; // not available during truly basic challenge
   if(!state.challenges[challenge_poisonivy].completed) return false;
-  if(state.challenge == challenge_poisonivy) return false; // doesn't unlock during the poison ivy challenge itself, but there are already tons of them around
+  if(state.challenge == challenge_thistle || state.challenge == challenge_poisonivy) return false; // doesn't unlock during the poison ivy challenge itself, but there are already tons of them around. And also not during thistle challenge.
 
   if(state.fullgrowncropcount[mush_2] && state.crops[mush_2].prestige > 0) return true;
   if(state.fullgrowncropcount[berry_6] && state.crops[berry_6].prestige > 0) return true; // the berry after mush_2 (prestiged)
@@ -6612,25 +6612,49 @@ function totalChallengeBonus() {
   return state.challenge_multiplier.subr(1);
 }
 
-// total challenge, but taking into account running challenge (with challenge_id) having the new given maxlevel
+// total challenge bonus, but taking into account running challenge (with challenge_id) having the new given maxlevel
 // for cycling challenge, uses the current cycle (= of the current run, or upcoming run if the challenge is not active now).
 function totalChallengeBonusIncludingCurrentRun() {
-  if(!state.challenge) return totalChallengeBonus();
+  var result = totalChallengeBonus();
+  if(!state.challenge) return result;
+
+  // the full challenge bonus is computed in state.challenge_multiplier by computeDerived.
+  // so don't redo whole computatio here, just compute the modification by the current challenge
 
   var c = challenges[state.challenge];
   var c2 = state.challenges[state.challenge];
-  var cycle = undefined;
-  var maxlevel0 = c2.maxlevel;
-  var maxlevel1 = Math.max(c2.maxlevel, state.treelevel);
-  if(c.cycling) {
-    cycle = c2.num_completed % c.cycling;
-    maxlevel1 = c2.maxlevels[cycle];
-  }
-  // it's ok that cycle is given as undefined when the challenge is not cycling.
-  var completed0 = c.cycleCompleted(cycle, false);
-  var completed1 = c.cycleCompleted(cycle, true);
 
-  var ratio = getChallengeMultiplier(c.index, maxlevel1, completed1, cycle).div(getChallengeMultiplier(c.index, maxlevel0, completed0, cycle));
+  var before;
+  var after;
+
+  if(c.cycling) {
+    var cycle = c2.num_completed % c.cycling;
+    before = Num(1);
+    after = Num(1);
+    // the cycling one is additive
+    for(var j = 0; j < c.cycling; j++) {
+      var maxlevel0 = c2.maxlevels[j];
+      var completed0 = c.cycleCompleted(j, false);
+      var mul0 = getChallengeBonus(c.index, maxlevel0, completed0, j);
+      var mul1 = mul0;
+      if(j == cycle) {
+        var maxlevel1 = Math.max(maxlevel0, state.treelevel);
+        var completed1 = c.cycleCompleted(j, true);
+        mul1 = getChallengeBonus(c.index, maxlevel1, completed1, j);
+      }
+      before.addInPlace(mul0);
+      after.addInPlace(mul1);
+    }
+  } else {
+    var maxlevel0 = c2.maxlevel;
+    var maxlevel1 = Math.max(c2.maxlevel, state.treelevel);
+    var completed0 = c.cycleCompleted(undefined, false);
+    var completed1 = c.cycleCompleted(undefined, true);
+    before = getChallengeMultiplier(c.index, maxlevel0, completed0, undefined);
+    after = getChallengeMultiplier(c.index, maxlevel1, completed1, undefined);
+  }
+
+  var ratio = after.div(before);
   // subr(1) to convert from multiplier to bonus for UI
   return state.challenge_multiplier.mul(ratio).subr(1);
 }
@@ -8490,6 +8514,7 @@ registerPlantTypeMedals(flower_7);
 medal_register_id = 480;
 registerPlantTypeMedals(nettle_0);
 registerPlantTypeMedals(nettle_1);
+registerPlantTypeMedals(nettle_2);
 medal_register_id = 560;
 var planttypemedals_bee0 = registerPlantTypeMedals(bee_0);
 var planttypemedals_bee1 = registerPlantTypeMedals(bee_1);
