@@ -44,12 +44,19 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   }
 
   if(c.effect_description_long) {
-    result += 'Effect: ' + c.effect_description_long + '<br/>';
+    result += 'Effect: ' + c.effect_description_long;
   } else if(c.effect_description_short) {
-    result += 'Effect: ' + c.effect_description_short + '<br/>';
+    result += 'Effect: ' + c.effect_description_short;
   }
 
   if(c.index == mistletoe2_0) {
+    if(haveEtherealMistletoeUpgrade(mistle_upgrade_second_mistletoe)) {
+      result += ' Can have only max two. Their neighbor bonus does not stack to the same neighbor.';
+    } else {
+      result += ' Can have only max one.';
+    }
+
+    result += '<br/>';
     var m = mistletoeupgrades[state.mistletoeupgrade];
     var m2 = state.mistletoeupgrades[state.mistletoeupgrade];
     if(m) {
@@ -59,6 +66,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
       result += '<br/>Not upgrading<br/>';
     }
   }
+  result += '<br/>';
 
   var boostFromNeighbors = undefined;
 
@@ -682,6 +690,10 @@ function updateField2CellUI(x, y) {
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   var season = 4; // the ethereal season
   var c = f.getCrop();
+  if(c && c.index == mistletoe2_0 && !isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal())) {
+    // indicate that it is not placed next to tree (so has no effect) by rendering a lower growstage
+    growstage = Math.max(0, growstage - 2);
+  }
 
   var progresspixel = -1;
   if(f.index == FIELD_TREE_BOTTOM && (state.treelevel2 > 0 || state.res.twigs.gtr(0))) {

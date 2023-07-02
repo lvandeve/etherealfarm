@@ -198,6 +198,10 @@ function CropState() {
   this.unlocked = false;
   this.prestige = 0;
   this.known = 0; // ever seen in any run. If it has an unlock upgrade, having seen the upgrade is enough. Value >= 1 means it was ever seen, value >= 2 means ever seen in prestiged form (e.g. the prestige upgrade visible), etc...
+  // had a fullgrown version of this crop during this run, is an integer to indicate max prestige level had: the value is prestige + 1 (e.g. once a prestige 1 crop is fullgrown, had is set to 2; without any prestige 0 indicates not had, 1 means unprestiged crop had)
+  // this is better to use than state.fullgrowncropcount directly for unlocks caused by the crop (unless a specific amount must be checked) because it stays even if the crop got deleted again (e.g. if automaton overrides blueprint due to trigger based on fullgrown crop)
+  // the way to check if having crop of current prestige level is: c.had > c.prestige.
+  this.had = 0;
 }
 
 function Crop2State() {
@@ -1124,6 +1128,7 @@ function State() {
   this.highestoftype2planted = [];
   // same but only fullgrown
   this.highestoftypefullgrown = [];
+  this.highestoftypehad = []; // very similar to highestoftypefullgrown, and also requires fullgrown crops, but uses the 'had' field of crops so remains set even if the crop was fullgrown once but then deleted from the field
   this.lowestoftypeplanted = []; // excludes ghosts (NOTE: if for some reason this must be changed to include ghosts, then getCheapestNextOfCropType must be fixed to take lowest tier of -2 into account, or automaton won't do crop upgrades at all if a ghost of the same type is present)
   this.lowestcropoftypeunlocked = []; // this is for in case plants are prestiged: the lowest tier of this plant that exists, e.g. normally this is 0, but if blackberry and blueberry have been prestiged, this is 2. Does not include the templates (tier -1)
 
@@ -1422,6 +1427,7 @@ function computeDerived(state) {
     state.highestoftype2planted[i] = -Infinity;
     state.highestcropoftypeplanted[i] = undefined;
     state.highestoftypefullgrown[i] = -Infinity;
+    state.highestoftypehad[i] = -Infinity;
     state.lowestoftypeplanted[i] = Infinity;
     state.lowestcropoftypeunlocked[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
@@ -1519,7 +1525,7 @@ function computeDerived(state) {
           }
         }
         if(c.index == mistletoe2_0) {
-          if(isNextToTree2(x, y, false)) {
+          if(isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal())) {
             state.etherealmistletoenexttotree = true;
           }
         }
@@ -1563,7 +1569,11 @@ function computeDerived(state) {
     var c2 = state.crops[registered_crops[i]];
     if(c2.unlocked) {
       state.highestoftypeunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypeunlocked[c.type]);
-      state.highestoftypeknown[c.type] = Math.max(c.tier || 0, state.highestoftypeknown[c.type]);
+      state.highestoftypeknown[c.type] = Math.max(c.tier || 0, state.highestoftypeknown[c.type]); // also updated in the registered_upgrades loop above
+    }
+    if(c2.had > c2.prestige) {
+      // c.tier is determined by c2.prestige
+      state.highestoftypehad[c.type] = Math.max(c.tier || 0, state.highestoftypehad[c.type]);
     }
   }
 

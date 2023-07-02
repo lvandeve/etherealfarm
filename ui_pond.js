@@ -105,6 +105,9 @@ function updatePondDialogText() {
     text += 'Click the pond below to place fishes, at the cost of infinity spores.';
     text += '<br><br>';
     text += 'Infinity spores: ' + state.res.infspores.toString();
+    var inpond = computePondInfinitySpores();
+    text += '. In pond: ' + inpond.toString();
+    text += '. Total: ' + inpond.add(state.res.infspores).toString();
   }
 
   abovePondTextFlex.div.innerHTML = text;

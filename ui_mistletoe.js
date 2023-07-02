@@ -22,15 +22,21 @@ function getMistleInfoText(index, opt_multiline) {
   var separator = opt_multiline ? '<br><br>' : '. ';
   var m = mistletoeupgrades[index];
   var m2 = state.mistletoeupgrades[index];
+  var done = m.onetime && m2.num;
   var tooltiptext = 'Upgrade: ' + m.name;
-  if(m2.time == 0) tooltiptext += separator + 'Time: ' + util.formatDuration(m.getTime());
-  else tooltiptext += separator + 'Total time: ' + util.formatDuration(m.getTime(), true) + separator + 'Time left: ' + util.formatDuration(m.getTime() - m2.time, true, 4);
-  var res = m.getResourceCost();
-  if(res) {
-    tooltiptext += separator + 'Resource cost: ' + res.toString();
-    tooltiptext += ' (' /* + have: ' + Res.getMatchingResourcesOnly(res, state.res).toString() + ', '*/ + getCostAffordPercentage(res) + ')';
+  if(done) {
+    tooltiptext += separator + 'Upgrade completed (no further levels available)';
+  } else {
+    if(m2.time == 0) tooltiptext += separator + 'Time: ' + util.formatDuration(m.getTime());
+    else tooltiptext += separator + 'Total time: ' + util.formatDuration(m.getTime(), true) + separator + 'Time left: ' + util.formatDuration(m.getTime() - m2.time, true, 4);
+    var res = m.getResourceCost();
+    if(res) {
+      tooltiptext += separator + 'Resource cost: ' + res.toString();
+      tooltiptext += ' (' /* + have: ' + Res.getMatchingResourcesOnly(res, state.res).toString() + ', '*/ + getCostAffordPercentage(res) + ')';
+    }
+    tooltiptext += separator + 'Current level: ' + toRomanUpTo(m2.num);
   }
-  tooltiptext += separator + 'Current level: ' + toRomanUpTo(m2.num) + separator + upper(m.description);
+  tooltiptext += separator + upper(m.description);
   if(m.index != mistle_upgrade_evolve) tooltiptext += separator + 'Unlocked at evolution level ' + toRomanUpTo(m.evo);
   if(m.index == mistle_upgrade_evolve) {
     var next = etherealMistletoeNextEvolutionUnlockLevel();
@@ -38,7 +44,7 @@ function getMistleInfoText(index, opt_multiline) {
     if(next >= 0) tooltiptext += separator + 'Next new upgrade unlocks at evolution level: ' + next + ' (current level: ' + haveEtherealMistletoeUpgrade(mistle_upgrade_evolve) + ')';
     else tooltiptext += separator + 'Next new upgrade unlocks at evolution level: N/A';
     tooltiptext += separator + 'Current evolution bonus: ' + getEtherealMistleToeBonusWithEvoString(m.index);
-  } else {
+  } else if(m.bonus != undefined) {
     tooltiptext += separator + 'Current bonus: ' + getEtherealMistleToeBonusWithEvoString(m.index);
   }
   return tooltiptext;
@@ -50,6 +56,7 @@ function makeEtherealMistletoeDialog(x, y) {
 
   // uses variables from below, defined here to allow using it at updatedialogfun of the dialog
   var updatecontent = function() {
+    if(!state.etherealmistletoenexttotree) return; // buttons etc... not created, so the below code will crash
     if(state.mistletoeupgrades[mistle_upgrade_evolve].num != prev_evo) {
       // amount of visible updates changed, more update of all the HTML dialog needed, recreate it completely
       closeTopDialog();
@@ -74,6 +81,9 @@ function makeEtherealMistletoeDialog(x, y) {
       text += '<br>Unused time: '  + util.formatDuration(state.mistletoeidletime, true);// + '. Collected when not upgrading. Makes upgrades go twice as fast.';
     } else {
       //text += '<br>Unused time: none.';
+    }
+    if(haveEtherealMistletoeUpgrade(mistle_upgrade_second_mistletoe) && state.crop2count[mistletoe2_0] < 2) {
+      text += '<br><b>Note</b>: you can plant a second eth. mistletoe now!';
     }
     if(text != prevtext) textel.div.innerHTML = text;
     prevtext = text;
@@ -141,7 +151,7 @@ function makeEtherealMistletoeDialog(x, y) {
 
   var textel = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], 0.8);
 
-  buttonpos += 0.11;
+  buttonpos += 0.12;
 
   var buttonh2 = 0.08;
 
@@ -188,20 +198,31 @@ function makeEtherealMistletoeDialog(x, y) {
       var m2 = state.mistletoeupgrades[index];
       var button = buttons[button_index];
       var res = m.getResourceCost();
-      var buttontext = '<b>' + upper(m.name) + ' ' + toRomanUpTo(m2.num + 1) + '</b>';
-      var timetext = (m2.time == 0) ? ('Time: ' + util.formatDuration(m.getTime(), true)) : ('Time left: ' + util.formatDuration(m.getTime() - m2.time, true, 4));
-      if(res) buttontext += '. Cost: ' + res.toString() + ', ' + util.formatDuration(m.getTime() - m2.time, true);
-      else buttontext += '. ' + timetext;
+      var buttontext = '<b>' + upper(m.name);
+      if(!m.onetime) buttontext += ' ' + toRomanUpTo(m2.num + 1);
+      buttontext += '</b>';
 
-      var bonusname = 'bonus';
-      if(m.effectname) bonusname = m.effectname;
-      buttontext += '<br>';
-      buttontext += upper(bonusname) + ': ' + getEtherealMistleToeBonusWithEvoString(index);
+      if(!(m.onetime && m2.num)) {
+        var timetext = (m2.time == 0) ? ('Time: ' + util.formatDuration(m.getTime(), true)) : ('Time left: ' + util.formatDuration(m.getTime() - m2.time, true, 4));
+        if(res) buttontext += '. Cost: ' + res.toString() + ', ' + util.formatDuration(m.getTime() - m2.time, true);
+        else buttontext += '. ' + timetext;
+      } else if(m.onetime) {
+        buttontext += ' (done)';
+      }
+
+      if(m.bonus != undefined) {
+        var bonusname = 'bonus';
+        if(m.effectname) bonusname = m.effectname;
+        buttontext += '<br>';
+        buttontext += upper(bonusname) + ': ' + getEtherealMistleToeBonusWithEvoString(index);
+      }
       button.textEl.innerHTML = buttontext;
       if(state.mistletoeupgrade == index) {
         // the currently ongoing upgrade
         button.textEl.className = 'efButtonMistletoeOngoing';
       } else if(state.mistletoeupgrade >= 0) {
+        button.textEl.className = 'efButtonMistletoeBusy';
+      } else if(m.onetime && m2.num) {
         button.textEl.className = 'efButtonMistletoeBusy';
       } else {
         button.textEl.className = '';

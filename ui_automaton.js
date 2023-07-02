@@ -55,7 +55,7 @@ function showConfigureAutoResourcesDialog(subject) {
 
     if(subject == 0) {
       // auto-upgrade
-      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'brassica'];
+      typenames = ['berry', 'mushroom', 'flower', 'stinging', 'beehive', 'brassica'];
       order = [3, 4, 5, 6, 7, 2]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
       if(squirrelUnlocked()) {
         typenames.push('nuts');
@@ -66,7 +66,7 @@ function showConfigureAutoResourcesDialog(subject) {
       statefraction = state.automaton_autoupgrade_fraction;
     } else if(subject == 1 || subject == 2) {
       // auto-plant and auto-unlock
-      typenames = ['berry', 'mushroom', 'flower', 'nettle', 'beehive', 'mistletoe', 'brassica'];
+      typenames = ['berry', 'mushroom', 'flower', 'stinging', 'beehive', 'mistletoe', 'brassica'];
       order = [3, 4, 5, 6, 7, 8, 2]; // translate from typenames index to index in state.automaton_autoupgrade_fraction
       if(subject == 1) {
         statefraction = state.automaton_autoplant_fraction;

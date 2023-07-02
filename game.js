@@ -763,6 +763,7 @@ function beginNextRun(opt_challenge) {
     var c2 = state.crops[registered_crops[i]];
     c2.unlocked = false;
     c2.prestige = 0;
+    c2.had = 0;
   }
   state.crops[brassica_0].unlocked = true;
   updateAllPrestigeData();
@@ -1193,6 +1194,7 @@ function PreCell(x, y) {
   this.last_it = -1;
 
   // for mistletoe, and winter warmth (for non-mistletoe, not computed in non-winter season)
+  // depending on crops and upgrades, includes diagonal direction or not
   this.treeneighbor = false;
 
   // whether worker bee has flower neighbor, for bee challenge only
@@ -2448,7 +2450,7 @@ function autoActionTriggerConditionReached(index, o) {
     if(!unlocked) return false; // can also not have it planted or fullgrown in this case
     if(o.type == 1 && unlocked) return true;
     if(o.type == 2 && state.cropcount[c.index] > 0) return true;
-    if(o.type == 3 && state.fullgrowncropcount[c.index] > 0) return true;
+    if(o.type == 3 && c2.had > c2.prestige) return true;
     if(o.type == 5 && c.basic_upgrade && state.upgrades[c.basic_upgrade].count) return true;
     if(o.type == 2 || o.type == 3 || o.type == 5) {
       // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a higher tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
@@ -2516,6 +2518,45 @@ function doAutoAction(index, part, opt_manually) {
     }
   }
   return did_something;
+}
+
+// computes all automaton actions (auto-plant, etc...)
+function computeAutomatonActions() {
+  var autores = Res(state.res);
+
+  var did_autoplant = false;
+  var did_autounlock = false;
+
+  if(autoUnlockEnabled()) {
+    computeNextAutoUnlock();
+    did_autounlock |= autoUnlock(autores);
+  }
+
+  if(autoPrestigeEnabled()) {
+    computeNextAutoPrestige();
+    did_autounlock |= autoPrestige(autores);
+  }
+
+  if(autoPlantEnabled()) {
+    computeNextAutoPlant();
+    did_autoplant = autoPlant(autores);
+  }
+
+  if(autoChoiceEnabled()) {
+    doNextAutoChoice();
+  }
+
+  if(autoUpgradesEnabled()) {
+    // computeNextAutoUpgrade is used both for autoUpgrade, and for nextEventTime. The autoUpgrade function may do nothing now, but nextEventTime can compute when autoUpgrade will happen given the current income
+    computeNextAutoUpgrade();
+    // don't do this if an autoplant or unlock was done: when just autoplanting, it's more useful if it finishes planting all those crops, before spending seeds trying to upgrade it
+    if(!did_autoplant && !did_autounlock) autoUpgrade(autores);
+  }
+
+  // The trigger-based automatic actions
+  if(autoActionEnabled()) {
+    doAutoActions();
+  }
 }
 
 function doAutoActions() {
@@ -3366,40 +3407,8 @@ var update = function(opt_ignorePause) {
     state.prevtime represents t0. state.time is set to state.prevtime. so state.time and state.prevtime are equal during the update, but time will be used and prevtime may already be set to the next one for state keeping. state.prevtime is the one getting saved and remembered, state.time is the one used for computations such as getSeason(), but during the update loop, they're the same, they're different variables outside of update for bookkeeping.
     */
 
-    var autores = Res(state.res);
 
-    var did_autoplant = false;
-    var did_autounlock = false;
-
-    if(autoUnlockEnabled()) {
-      computeNextAutoUnlock();
-      did_autounlock |= autoUnlock(autores);
-    }
-
-    if(autoPrestigeEnabled()) {
-      computeNextAutoPrestige();
-      did_autounlock |= autoPrestige(autores);
-    }
-
-    if(autoPlantEnabled()) {
-      computeNextAutoPlant();
-      did_autoplant = autoPlant(autores);
-    }
-
-    if(autoChoiceEnabled()) {
-      doNextAutoChoice();
-    }
-
-    if(autoUpgradesEnabled()) {
-      // computeNextAutoUpgrade is used both for autoUpgrade, and for nextEventTime. The autoUpgrade function may do nothing now, but nextEventTime can compute when autoUpgrade will happen given the current income
-      computeNextAutoUpgrade();
-      // don't do this if an autoplant or unlock was done: when just autoplanting, it's more useful if it finishes planting all those crops, before spending seeds trying to upgrade it
-      if(!did_autoplant && !did_autounlock) autoUpgrade(autores);
-    }
-
-    if(autoActionEnabled()) {
-      doAutoActions();
-    }
+    computeAutomatonActions();
 
     // this function is simple and light enough that it can just be called every time. It can depend on changes mid-game hence needs to be updated regularly.
     unlockTemplates();
@@ -4245,8 +4254,12 @@ var update = function(opt_ignorePause) {
           } else if(c.index == squirrel2_0 && state.crop2count[squirrel2_0]) {
             showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
             ok = false;
-          } else if(c.index == mistletoe2_0 && state.crop2count[mistletoe2_0]) {
-            showMessage('already have ethereal mistletoe, cannot place more', C_INVALID, 0, 0);
+          } else if(c.index == mistletoe2_0 && (state.crop2count[mistletoe2_0] > (haveEtherealMistletoeUpgrade(mistle_upgrade_second_mistletoe) ? 1 : 0))) {
+            if(state.crop2count[mistletoe2_0] == 1) {
+              showMessage('already have ethereal mistletoe, cannot place more', C_INVALID, 0, 0);
+            } else {
+              showMessage('already have the max amount of ethereal mistletoes, cannot place more', C_INVALID, 0, 0);
+            }
             ok = false;
           }
         }
@@ -4932,6 +4945,10 @@ var update = function(opt_ignorePause) {
         if(!knowEtherealMistletoeUpgrade(m.index)) {
           ok = false;
         }
+        if(m.onetime && m2.num > 0) {
+          showMessage('This mistletoe upgrade can be performed only once, you already have this upgrade', C_INVALID, 0, 0);
+          ok = false;
+        }
         var cost = m.getResourceCost();
         if(cost) {
           if(!state.res.can_afford(cost)) {
@@ -5099,6 +5116,14 @@ var update = function(opt_ignorePause) {
           actualgain.addInPlace(prod.mulr(d));
         } else if(f.isTemplate() || f.isGhost()) {
           f.growth = 1;
+        }
+        if(f.hasCrop()) {
+          var c = f.getCrop();
+          var fullgrown = f.growth >= 1 || c.type == CROPTYPE_BRASSICA || state.challenge == challenge_wither;
+          if(fullgrown) {
+            var c2 = state.crops[c.index];
+            if(c2.had <= c2.prestige) c2.had = c2.prestige + 1;
+          }
         }
       }
     }
@@ -5505,7 +5530,7 @@ var update = function(opt_ignorePause) {
         showRegisteredHelpDialog(7);
       }
       // targetlevel-based challenges
-      if(state.challenge && state.challenge.targetlevel != undefined) {
+      if(state.challenge && challenges[state.challenge].targetlevel != undefined) {
         if(state.treelevel == challenges[state.challenge].targetlevel[0]) {
           var c = challenges[state.challenge];
           var c2 = state.challenges[state.challenge];

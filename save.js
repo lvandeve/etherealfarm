@@ -226,6 +226,7 @@ function encState(state, opt_raw_only) {
   array1 = [];
   array2 = [];
   array3 = [];
+  array4 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'crops must be registered in increasing order';
@@ -234,11 +235,13 @@ function encState(state, opt_raw_only) {
     array1.push(state.crops[unlocked[i]].unlocked);
     array2.push(state.crops[unlocked[i]].prestige);
     array3.push(state.crops[unlocked[i]].known);
+    array4.push(state.crops[unlocked[i]].had);
   }
   processUintArray(array0);
   processBoolArray(array1);
   processUintArray(array2);
   processUintArray(array3);
+  processUintArray(array4);
 
 
   section = 5; id = 0; // upgrades2
@@ -1354,8 +1357,14 @@ function decState(s) {
       for(var i = 0; i < array0.length; i++) array3[i] = 0;
     }
   }
+  if(save_version >= 262144*2+64*10+2) {
+    array4 = processUintArray(); // had
+  } else {
+    array4 = [];
+    for(var i = 0; i < array0.length; i++) array4[i] = 0;
+  }
   if(error) return err(4);
-  if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length) return err(4);
+  if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length) return err(4);
   prev = 0;
   for(var i = 0; i < array0.length; i++) {
     var index = array0[i] + prev;
@@ -1368,6 +1377,7 @@ function decState(s) {
     state.crops[index].unlocked = array1[i];
     state.crops[index].prestige = array2[i];
     state.crops[index].known = array3[i];
+    state.crops[index].had = array4[i];
   }
 
   section = 5; id = 0; // upgrades2

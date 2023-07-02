@@ -20,6 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.10.2 (2023-07-02):';
+  text += '<br/>• Added a new ethereal mistletoe upgrade that allows placing a second one for more neighbor boost.';
+  text += '<br/>• Rearranged the unlock evolution levels of some ethereal mistletoe upgrades: Nuts at 10 instead of 12, lotus neighbors at 12 instead of 13, the new upgrade is at 13.';
+  text += '<br/>• Ethereal mistletoe that is not planted next to tree now shows a less fullgrown graphic to indicate the problem.';
+  text += '<br/>• Fixed bug with not unlocking next tiers when automaton auto-action overrides fullgrown crop.';
+  text += '<br/>• Fixed bug with truly basic speed achievements.';
+  text += '<br/>• Fixed bug where challenge completion screen would say "abort" despite completion.';
+  text += '<br/><br/>';
+
   text += '0.10.1 (2023-06-18):';
   text += '<br/>• Eel and tang now must be in pond during entire run to keep their effect.';
   text += '<br/>• The new minimum level for bonus requirements of challenges have been lowered so that the production bonus gotten when not managing to complete a challenge is still meaningful.';

@@ -1131,8 +1131,8 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
 
 
 
-  //var bflex = new Flex(dialog.content, [0.01, 0, 0], [0.1, 0, 0], [0.01, 0, 0.98], [0.1, 0, 0.98]);
-  var bflex = new Flex(dialog.content, 0, 0, 1, 1);
+  //var bflex = new Flex(dialog.content, 0, 0, 1, 1);
+  var bflex = new Flex(dialog.content, 0, 0, [0,0,1], [0,0,1]);
 
   redrawBlueprintsDialogFun = function() {
     var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
@@ -1144,6 +1144,7 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
       if(blueprintpage) j += 9;
       var x = i % 3;
       var y = Math.floor(i / 3);
+      //var flex = new Flex(bflex, [0.33 * x, 0, 0.01], [0.33 * y, 0, 0.01], [0.33 * x, 0, 0.32], [0.33 * y, 0, 0.32]);
       var flex = new Flex(bflex, 0.33 * (x + 0.05), 0.33 * (y + 0.05), 0.33 * (x + 0.95), 0.33 * (y + 0.95));
       flexes[i] = flex;
       renderBlueprint(blueprints[j], opt_ethereal, flex, j, opt_transcend, opt_challenge, true);

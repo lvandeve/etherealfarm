@@ -2281,7 +2281,7 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
     var prev_unlock_tier = crops[prev_unlock_crop].tier;
     var prev_unlock_type = crops[prev_unlock_crop].type;
     if(state.highestoftypeunlocked[prev_unlock_type] > prev_unlock_tier) return true; // next berry tier unlocked: counts as better than having some planted of prev berry tier
-    return !!state.fullgrowncropcount[prev_unlock_crop]; // some planted of prev berry tier
+    return !!state.crops[prev_unlock_crop].had; // some fullgrown of prev berry tier
   };
 
   var description = 'Unlocks new crop: ' + crop.name + '.';
@@ -2385,7 +2385,8 @@ function registerCropMultiplier(cropid, multiplier, prev_crop_num, crop_unlock_i
   var pre = function() {
     if(opt_pre_fun && !opt_pre_fun()) return false;
     if(crop_unlock_id == undefined) {
-      return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
+      if((prev_crop_num || 1) == 1) return state.crops[cropid].had > state.crops[cropid].prestige;
+      return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1); // can't use 'had' if multiple must be checked
     } else {
       // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
       return state.upgrades[crop_unlock_id].count;
@@ -2427,7 +2428,7 @@ function registerCropPrestige(cropid, cost, prev_unlock_crop_type, prev_unlock_c
   var pre = function() {
     if(state.highestoftypeunlocked[crop.type] < newtier - 1) return false; // for mushroom and flower: also hard requirement to have unlocked the previous tier (such as previous prestiged tier)
     if(state.highestoftypeunlocked[prev_unlock_crop_type] > prev_unlock_crop_tier) return true; // next berry tier unlocked: counts as better than having some planted of prev berry tier
-    if(state.highestoftypefullgrown[prev_unlock_crop_type] >= prev_unlock_crop_tier) return true;
+    if(state.highestoftypehad[prev_unlock_crop_type] >= prev_unlock_crop_tier) return true;
     return false;
   };
 
@@ -2490,6 +2491,7 @@ function registerBoostMultiplier(cropid, cost, adder, prev_crop_num, crop_unlock
     if(state.challenge == challenge_thistle && cropid == nettle_1) return true;
     if(state.challenge == challenge_poisonivy && cropid == nettle_2) return true;
     if(crop_unlock_id == undefined) {
+      if((prev_crop_num || 1) == 1) return state.crops[cropid].had > state.crops[cropid].prestige;
       return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
     } else {
       // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
@@ -2536,6 +2538,7 @@ function registerBrassicaTimeIncrease(cropid, cost, time_increase, prev_crop_num
   var pre = function() {
     if(opt_pre_fun && opt_pre_fun()) return true; // opt_pre_fun works in a positive rather than negative way here, to let the unlocked watercress upgrade by blackberrysecret work
     if(crop_unlock_id == undefined) {
+      if((prev_crop_num || 1) == 1) return state.crops[cropid].had > state.crops[cropid].prestige;
       return state.fullgrowncropcount[cropid] >= (prev_crop_num || 1);
     } else {
       // for most crops, already unlock this upgrade as soon as it's reaserached, rather than planted, because otherwise it's too easy to forget you already have this crop and should plant it while you're looking at the upgrade panel
@@ -2651,8 +2654,8 @@ var flowerunlock_7 = registerCropUnlock(flower_7, getFlowerCost(7), berry_14, fu
 upgrade_register_id = 100;
 var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, function() {
   // prev_crop is mush_1, but also unlock once higher level berries available, in case player skips placing this mushroom
-  if(state.fullgrowncropcount[mush_1]) return true;
-  if(state.fullgrowncropcount[berry_4]) return true; // the berry after mush_1
+  if(state.crops[mush_1].had) return true;
+  if(state.crops[berry_4].had) return true; // the berry after mush_1
   //if(state.upgrades[berryunlock_4].count) return true; // the berry after mush_1
   return false;
 });
@@ -2661,8 +2664,8 @@ var nettleunlock_1 = registerCropUnlock(nettle_1, getNettleCost(1), undefined, f
   if(!state.challenges[challenge_thistle].completed) return false;
   if(state.challenge == challenge_thistle) return false; // doesn't unlock during the thistle challenge itself, but there are already tons of them around
 
-  if(state.fullgrowncropcount[mush_5]) return true;
-  if(state.fullgrowncropcount[berry_12]) return true; // the berry after mush_5
+  if(state.crops[mush_5].had) return true;
+  if(state.crops[berry_12].had) return true; // the berry after mush_5
   return false;
 });
 var nettleunlock_2 = registerCropUnlock(nettle_2, getNettleCost(2), undefined, function() {
@@ -2670,8 +2673,8 @@ var nettleunlock_2 = registerCropUnlock(nettle_2, getNettleCost(2), undefined, f
   if(!state.challenges[challenge_poisonivy].completed) return false;
   if(state.challenge == challenge_thistle || state.challenge == challenge_poisonivy) return false; // doesn't unlock during the poison ivy challenge itself, but there are already tons of them around. And also not during thistle challenge.
 
-  if(state.fullgrowncropcount[mush_2] && state.crops[mush_2].prestige > 0) return true;
-  if(state.fullgrowncropcount[berry_6] && state.crops[berry_6].prestige > 0) return true; // the berry after mush_2 (prestiged)
+  if(state.crops[mush_2].had > 1) return true; // had > 1 means had a prestiged one
+  if(state.crops[berry_6].had > 1) return true; // the berry after mush_2 (prestiged)
   return false;
 });
 
@@ -2683,7 +2686,7 @@ var mistletoeunlock_0 = registerCropUnlock(mistletoe_0, getFlowerCost(0).mulr(2)
 
   if(!(state.g_numresets > 0 && state.upgrades2[upgrade2_mistletoe].count)) return false;
 
-  if(state.fullgrowncropcount[berry_0]) return true;
+  if(state.crops[berry_0].had) return true;
   if(state.upgrades[berryunlock_1].count) return true;
 
   if(!basicChallenge() && state.upgrades2[upgrade2_blueberrysecret].count) return true; // blueberrysecret also makes mistletoe unlock visible, as if having a fullgrown blackberry
@@ -2697,7 +2700,7 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeeCost(0), undefined, function()
   if(!state.challenges[challenge_bees].completed) return false;
 
   // prev_crop is flower_3, but also unlock once higher level berries available, in case player skips placing this flower
-  if(state.fullgrowncropcount[flower_3]) return true;
+  if(state.crops[flower_3].had) return true;
   if(state.fullgrowncropcount[berry_7]) return true; // the berry after flower_3
 
   return false;
@@ -2708,8 +2711,8 @@ var beeunlock_1 = registerCropUnlock(bee_1, getBeeCost(1), undefined, function()
   if(!state.upgrades[beeunlock_0].count) return false;
 
   // prev_crop is flower_7, but also unlock once higher level berries available, in case player skips placing this flower
-  if(state.fullgrowncropcount[flower_7]) return true;
-  if(state.fullgrowncropcount[berry_15]) return true; // the berry after flower_7
+  if(state.crops[flower_7].had) return true;
+  if(state.crops[berry_15].had) return true; // the berry after flower_7
 
   return false;
 });
@@ -2789,7 +2792,7 @@ upgrade_register_id = 250;
 var brassicaunlock_1 = registerCropUnlock(brassica_1, Res({seeds:100}), undefined, function() {
   if(basicChallenge() == 2) return false; // not available during truly basic challenge
   if(!state.challenges[challenge_wasabi].completed) return false;
-  if(state.fullgrowncropcount[berry_8]) return true;
+  if(state.crops[berry_8].had) return true;
   return false;
 });
 
@@ -3245,9 +3248,9 @@ function Challenge() {
 
   this.nextCompleted = function(opt_include_current_run) {
     if(this.targetlevel == undefined) {
-      return state.treelevel >= this.nextTargetLevel(opt_include_current_run);
-    } else {
       return this.fullyCompleted(opt_include_current_run);
+    } else {
+      return state.treelevel >= this.nextTargetLevel(opt_include_current_run);
     }
   };
 
@@ -3886,6 +3889,7 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
       }
     }
     if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
+      // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
       var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).addr(1);
       result.mulInPlace(mistlemul);
       if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
@@ -3976,6 +3980,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       if(breakdown) breakdown.push(['squirrel neighbor', true, squirrelmul, result.clone()]);
     }
     if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
+      // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
       var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_neighbor).addr(1);
       result.mulInPlace(mistlemul);
       if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
@@ -4238,7 +4243,7 @@ var bee2_1 = registerBeehive2('drone', 13, 1, Res({resin:1e15}), default_etherea
 var bee2_2 = registerBeehive2('queen bee', 19, 2, Res({resin:1e21}), default_ethereal_growtime, Num(0.12), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_queenbee);
 
 crop2_register_id = 250;
-var mistletoe2_0 = registerMistletoe2('mistletoe', 15, 0, Res({resin:10}), 1.5, Num(0.01), undefined, 'Must be planted next to ethereal tree to work. Can have only max one. Gives multiple bonuses, which can be unlocked and upgraded over time.', images_mistletoe);
+var mistletoe2_0 = registerMistletoe2('mistletoe', 15, 0, Res({resin:10}), 1.5, Num(0.01), undefined, 'Must be planted next to ethereal tree to work. Gives multiple bonuses, which can be unlocked and upgraded over time.', images_mistletoe);
 
 // templates
 
@@ -7426,7 +7431,9 @@ function registerMistletoeUpgrade(name, effectname, bonus, evo, basetime, descri
   mistletoeupgrades[mistle.index] = mistle;
   registered_mistles.push(mistle.index);
 
-  description = description.replace('%BONUS%', bonus.toPercentString());
+  if(bonus != undefined) {
+    description = description.replace('%BONUS%', bonus.toPercentString());
+  }
 
   mistle.name = name;
   mistle.effectname = effectname;
@@ -7439,7 +7446,7 @@ function registerMistletoeUpgrade(name, effectname, bonus, evo, basetime, descri
 }
 
 function registerOneTimeMistletoeUpgrade(name, evo, time, description) {
-  var index = registerMistletoeUpgrade(name, Num(0), evo, time, description);
+  var index = registerMistletoeUpgrade(name, undefined, undefined, evo, time, description);
 
   var mistle = mistletoeupgrades[index];
   mistle.onetime = true;
@@ -7461,13 +7468,11 @@ var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', 'mushrooms', Num
 
 var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', 'berries', Num(0.07), 11, 3600, 'Gives a %BONUS% bonus to berry seed production per level');
 
-var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', 'lotuses', Num(0.03), 13, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring lotuses');
+var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', 'lotuses', Num(0.03), 12, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring lotuses');
 
-var mistle_upgrade_nuts = registerMistletoeUpgrade('nuttiness', 'nuts', Num(0.05), 12, 3600, 'Gives a %BONUS% bonus to nuts per level');
+var mistle_upgrade_nuts = registerMistletoeUpgrade('nuttiness', 'nuts', Num(0.05), 10, 3600, 'Gives a %BONUS% bonus to nuts per level');
 
 var mistle_upgrade_brassica = registerMistletoeUpgrade('brassiness', 'brassica', Num(0.05), 14, 3600, 'Gives a %BONUS% bonus to brassica copying per level');
-
-
 
 // mistletoe upgrades that also cost other resources. Give higher id so they show up more to the bottom in the UI
 mistle_register_id = 50;
@@ -7492,7 +7497,13 @@ mistletoeupgrades[mistle_upgrade_twigs].getResourceCostToReachLevel = function(l
   return result;
 };
 
-////////
+//one-time mistletoe upgrades
+mistle_register_id = 100;
+
+var mistle_upgrade_second_mistletoe = registerOneTimeMistletoeUpgrade('second mistletoe', 13, 3 * 24 * 3600, 'You can plant a second mistletoe in the ethereal field. This does not allow doing more upgrades, but allows more ethereal plants (including lotuses) to receive mistletoe neighbor boost. Multiple mistletoe bonuses do not stack to the same neighbor (not even additively), so the mistletoes should be spread out (but still next to tree to work) for best effect.');
+//function registerMistletoeUpgrade(name, effectname, bonus, evo, basetime, description) {
+
+////////////////////////////////////////////////////////////////////////////////
 
 // sort order for showing in UI
 var mistle_sort_order = util.clone(registered_mistles); // sort works in-place so must make copy. toSorted can do this in one go but is not supported in firefox 112.
@@ -7501,6 +7512,10 @@ mistle_sort_order.sort(function(ia, ib) {
   var b = mistletoeupgrades[ib];
   var a_res = (ia == mistle_upgrade_resin || ia == mistle_upgrade_twigs);
   var b_res = (ib == mistle_upgrade_resin || ib == mistle_upgrade_twigs);
+  if(a.onetime != b.onetime) {
+    // the one-time upgrades should show up the very last
+    return a.onetime - b.onetime;
+  }
   if(a_res != b_res) {
     // the ones that cost extra resources (twigs, resin, ...) are shown at the end of the list, despite their evolution unlock order
     return a_res - b_res;
@@ -7557,11 +7572,11 @@ function knowEtherealMistletoeUpgrade(index) {
   return state.mistletoeupgrades[mistle_upgrade_evolve].num >= mistletoeupgrades[index].evo;
 }
 
-// returns how many you have
+// returns how many you have, only if you also have the mistletoe in the ethereal field (with some exceptions)
 // does NOT prevent basic challenge, you must have other checks for that (these bonuses should not work during basic challenge)
 function haveEtherealMistletoeUpgrade(index) {
   if(!knowEtherealMistletoeUpgrade(index)) return 0;
-  if(!haveEtherealMistletoe()) return 0; // this also returns 0 if having it but it's not next to tree
+  if(index != mistle_upgrade_second_mistletoe && !haveEtherealMistletoe()) return 0; // this also returns 0 if having it but it's not next to tree
   return state.mistletoeupgrades[index].num;
 }
 
@@ -7583,6 +7598,12 @@ function etherealMistletoeNextEvolutionUnlockLevel() {
     result = u.evo;
   }
   return result;
+}
+
+// whether the ethereal mistletoe supports being diagonally next to the tree
+function etherealMistletoeSupportsTreeDiagonal() {
+  // currently always false, no upgrade enables this yet. Note that it would be not super powerful to have this ability, but it could be convenient.
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -8912,7 +8933,8 @@ registerMedal('undeletable ghost', 'get a ghost-crop during the undeletable chal
 var medal_tb_speed_0 = registerMedal('truly basic speed 2.5h', 'reach level 10 in the truly basic challenge in 2.5 hours or less', image_hourglass, function() {
   var runtime = 9000;
   if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  var besttime = state.challenges[challenge_truly_basic].besttime;
+  if(state.challenges[challenge_truly_basic].completed && !!besttime && besttime <= runtime) return true; // also apply retroactively
   return false;
 }, Num(1));
 
@@ -8920,7 +8942,8 @@ var medal_tb_speed_0 = registerMedal('truly basic speed 2.5h', 'reach level 10 i
 var medal_tb_speed_1 = registerMedal('truly basic speed 2h', 'reach level 10 in the truly basic challenge in 2 hours or less', image_hourglass, function() {
   var runtime = 7200;
   if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  var besttime = state.challenges[challenge_truly_basic].besttime;
+  if(state.challenges[challenge_truly_basic].completed && !!besttime && besttime <= runtime) return true; // also apply retroactively
   return false;
 }, Num(2));
 medals[medal_tb_speed_1].hint = medal_tb_speed_0;
@@ -8928,7 +8951,8 @@ medals[medal_tb_speed_1].hint = medal_tb_speed_0;
 var medal_tb_speed_2 = registerMedal('truly basic speed 1.5h', 'reach level 10 in the truly basic challenge in 1.5 hours or less', image_hourglass, function() {
   var runtime = 5400;
   if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  var besttime = state.challenges[challenge_truly_basic].besttime;
+  if(state.challenges[challenge_truly_basic].completed && !!besttime && besttime <= runtime) return true; // also apply retroactively
   return false;
 }, Num(3));
 medals[medal_tb_speed_2].hint = medal_tb_speed_1;
@@ -8936,7 +8960,8 @@ medals[medal_tb_speed_2].hint = medal_tb_speed_1;
 var medal_tb_speed_3 = registerMedal('truly basic speed 1h', 'reach level 10 in the truly basic challenge in 1 hour or less', image_hourglass, function() {
   var runtime = 3600;
   if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
-  if(state.challenges[challenge_truly_basic].completed && state.challenges[challenge_truly_basic].besttime <= runtime) return true; // also apply retroactively
+  var besttime = state.challenges[challenge_truly_basic].besttime;
+  if(state.challenges[challenge_truly_basic].completed && !!besttime && besttime <= runtime) return true; // also apply retroactively
   return false;
 }, Num(4));
 medals[medal_tb_speed_3].hint = medal_tb_speed_2;
