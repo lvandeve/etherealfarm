@@ -54,9 +54,11 @@ function makeEtherealMistletoeDialog(x, y) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
 
+  var tree_ok = isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal());
+
   // uses variables from below, defined here to allow using it at updatedialogfun of the dialog
   var updatecontent = function() {
-    if(!state.etherealmistletoenexttotree) return; // buttons etc... not created, so the below code will crash
+    if(!tree_ok) return; // buttons etc... not created, so the below code will crash
     if(state.mistletoeupgrades[mistle_upgrade_evolve].num != prev_evo) {
       // amount of visible updates changed, more update of all the HTML dialog needed, recreate it completely
       closeTopDialog();
@@ -102,17 +104,23 @@ function makeEtherealMistletoeDialog(x, y) {
     updatedialogfun:updatecontent
   });
 
-  if(!state.etherealmistletoenexttotree) {
-    dialog.content.div.innerText = 'The ethereal mistletoe must be planted orthogonally (not diagonally) next to the tree, otherwise it does nothing. Its upgrades are currently paused.';
-    return;
-  }
-
 
   var buttonpos = 0;
   var buttonh = 0.07;
   var buttonextraseparater = 0.015;
 
   var buttons = [];
+
+  if(!tree_ok) {
+    var replacebutton = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
+    buttonpos += buttonh;
+    styleButton(replacebutton);
+    replacebutton.textEl.innerText = 'Replace crop';
+    registerTooltip(replacebutton, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked ethereal crops.');
+    addButtonAction(replacebutton, function() {
+      makePlantDialog2(x, y, true, c.getRecoup());
+    });
+  }
 
   // of all the standard plant buttons, the delete button is also shown in the mistletoe dialog. Others can be accessed through the 'crop info' button at the bottom
   var deletebutton = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
@@ -128,6 +136,16 @@ function makeEtherealMistletoeDialog(x, y) {
   });
 
   buttonpos += buttonextraseparater;
+
+  if(!tree_ok) {
+    var textel = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], 0.8);
+    if(state.etherealmistletoenexttotree) {
+      textel.div.innerText = 'The ethereal mistletoe must be planted orthogonally (not diagonally) next to the tree, otherwise it does nothing and does not boost neighbors.'; // you still have another one next to the tree so upgrades not paused, but at least clearly indicate it still doesn't boost neighbors
+    } else {
+      textel.div.innerText = 'The ethereal mistletoe must be planted orthogonally (not diagonally) next to the tree, otherwise it does nothing. Its upgrades are currently paused.';
+    }
+    return;
+  }
 
   // of all the standard plant buttons, the delete button is also shown in the mistletoe dialog. Others can be accessed through the 'crop info' button at the bottom
   var cancelbutton = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], buttonpos + buttonh).div;
