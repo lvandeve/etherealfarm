@@ -232,8 +232,6 @@ function getResourceDetails(index) {
     upcoming = getUpcomingFruitEssence(upcoming_breakdown).essence;
   }
 
-  var div = resourceDivs[i];
-
   var res_gain;
   var res_gain_pos;
   var res_gain_hyp;
@@ -530,7 +528,7 @@ function showResource(i, index, highlight) {
     upcoming = getUpcomingFruitEssence().essence;
   }
 
-  var div = resourceDivs[i];
+  var div = resourceDivs[i][0];
 
   if(highlight && !div.highlightClassAdded) {
     div.classList.add('efHighlightResource');
@@ -546,18 +544,24 @@ function showResource(i, index, highlight) {
   var res_gain_hyp_pos;
   var hyp_neq = false; // res_gain_hyp.neq(res_gain) but allowing some numerical tolerance
 
-  var text = '';
+  var divs = resourceDivs[i];
+
+  var text1 = '', text2 = '', text3 = '', text4 = '';
   var label = '';
   if(index == 2 || index == 3) {
     // 2=resin, 3=twigs
     var hr = (index == 2) ? getResinHour() : getTwigsHour();
-    text = name + '<br>' + res.toString() + '<br>(+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
-    label = name + ' ' + res.toString() + ' (+' + upcoming.toString() + ', ' + hr.toString() + '/hr)';
+    text1 = name;
+    text2 = res.toString();
+    text3 = '(+' + upcoming.toString() + ')';
+    text4 = hr.toString() + '/hr';
+    label = text1 + ' ' + text2 + ' (' + text3 + ', ' + text4 + ')';
   } else if(index == 7) {
     // 7=essence
-    text = name + '<br>' + res.toString();
-    if(upcoming) text += '<br>(+' + upcoming.toString() + ')';
-    label = name + ' ' + res.toString();
+    text1 = name;
+    text2 = res.toString();
+    if(upcoming) text3 += '+' + upcoming.toString();
+    label = text1 + ' ' + text2;
   } else {
     res_gain = gain.atIndex(index); // actual
     if(res_gain.gtr(-1e-9) && res_gain.ltr(1e-9)) res_gain = Num(0); // avoid numerical display problem when mushrooms consume all seeds, where it may show something like -227e-15 instead of 0
@@ -570,25 +574,31 @@ function showResource(i, index, highlight) {
     // if this problem persists even with larger tolerance, a different measure  must be taken, such as only displaying hyp if at least one of the resources (like spores) has a significant difference
     var hyp_neq = !res_gain.near(res_gain_hyp, 0.002);
 
-    var fontopen = '';
-    var fontclose = '';
+    var highlightamber = false;
     if(state.amberprod && (index == 0 || index == 1)) {
-      //fontopen = '<font color="#ff0">';
-      //fontclose = '</font>';
-      fontopen = '<span class="efAmberInfo">';
-      fontclose = '</span>';
+      highlightamber = true;
     }
 
+    if(highlightamber && !divs[3].highlightClassAdded) {
+      divs[3].classList.add('efInfoAmber');
+      divs[3].highlightClassAdded = true;
+    } else if(!highlightamber && divs[3].highlightClassAdded) {
+      divs[3].classList.remove('efInfoAmber');
+      divs[3].highlightClassAdded = false;
+    }
 
-    text = name;
-    text += '<br>' + res.toString();
-    text += '<br>' + fontopen + res_gain.toString() + '/s' + fontclose;
-    if(index == 0 && tooHighSeedConsumption()) text += ' <font color="#888">(' + res_gain_pos.toString() + '/s)</font>';
-    if(index == 1 && hyp_neq) text += ' <font color="#888">(' + res_gain_hyp.toString() + '/s)</font>';
-    label = name + ' ' + res.toString() + ', ' + res_gain.toString() + '/s';
+    text1 = name;
+    text2 = res.toString();
+    text3 = res_gain.toString() + '/s';
+    if(index == 0 && tooHighSeedConsumption()) text4 = '(' + res_gain_pos.toString() + '/s)';
+    if(index == 1 && hyp_neq) text4 = '(' + res_gain_hyp.toString() + '/s)';
+    label = text1 + ' ' + text2 + ', ' + text3;
   }
-  // TODO: this causes "Parse HTML" and this one for the resource info despite being small shows up highest in profiling with chrome dev tools, find a faster way to do this
-  div.textEl.innerHTML = text;
+
+  divs[1].innerText = text1;
+  divs[2].innerText = text2;
+  divs[3].innerText = text3;
+  divs[4].innerText = text4;
 
   // the label is set to e.g. 'info box: seeds', however the info inside it is more important, so set the label that screen readers read to the useful contents instead
   setAriaLabel(div, label);
@@ -722,21 +732,28 @@ function updateResourceUI() {
     for(var y = 0; y < 2; y++) {
       for(var x = 0; x < 4; x++) {
         var i = y * 4 + x;
-        var div = makeDiv((x * 25) + '%', (y * 50) + '%', '25%', '50%', infoDiv);
+        resourceDivs[i] = [];
+        var flex = new Flex(infoFlex, x * 0.25, y * 0.5, (x + 1) * 0.25, (y + 1) * 0.5);
+        var div = flex.div;
         div.className = 'efInfo';
-        centerText2(div);
         div.style.textOverflow = 'hidden';
         div.style.whiteSpace = 'nowrap';
-        resourceDivs[i] = div;
+        resourceDivs[i][0] = div;
         div.style.lineHeight = '90%';
+        for(var k = 0; k < 4; k++) {
+          var flex2 = new Flex(flex, 0, k * 0.25, 1, (k + 1) * 0.25);
+          resourceDivs[i][k + 1] = flex2.div;
+          centerText(flex2.div);
+          if((i == 1 || i == 2) && k == 3) flex2.div.className = 'efInfoResouceConstrained'; // gray indicator for seeds and spores when overconsumption
+        }
       }
     }
   }
   if(getSeason() != lastRenderedInfoSeasonBackground) {
     lastRenderedInfoSeasonBackground = getSeason();
     for(var i = 0; i < resourceDivs.length; i++) {
-      var div = resourceDivs[i];
-      resourceDivs[i].className = 'efInfo ' + season_styles[getSeason()];
+      var div = resourceDivs[i][0];
+      resourceDivs[i][0].className = 'efInfo ' + season_styles[getSeason()];
       if(div.highlightClassAdded) div.highlightClassAdded = false;
     }
   }
@@ -748,30 +765,38 @@ function updateResourceUI() {
   if(state.treelevel > 0) {
     title += ' (' + Math.floor(nextlevelprogress * 100) + '%)';
   }
+
+  var titleStyle = '';
   if(state.treelevel >= min_transcension_level && state.g_numresets < 5) {
     // special effect to show ability to transcend, but after about 5 resets this is not special anymore
-    title = '<span style="text-shadow:0px 0px 5px #ff0">' + title + '</span>';
+    titleStyle = 'efInfoShadow';
   }
 
   var timedisplay = util.formatDuration(state.c_runtime, true, 4, true);
+  var timedisplayStyle = '';
   if(presentGrowSpeedActive()) {
-    //timedisplay = '<font color="red">' + timedisplay + '</font>';
-    timedisplay = '<font color="#4f8">' + timedisplay + '</font>';
+    timedisplayStyle = 'efInfoPresentGrowSpeed';
   } else if(presentProductionBoostActive()) {
-    timedisplay = '<font color="#f80">' + timedisplay + '</font>';
+    timedisplayStyle = 'efInfoPresentProdBoost';
   }
 
+  var seasonStyle = '';
   if(state.amberkeepseason) {
-    seasonName = '<span class="efAmberInfo">' + seasonName +  '</span>';
+    seasonStyle = 'efInfoAmber';
   }
-  resourceDivs[0].textEl.innerHTML = title + '<br>' + timedisplay + '<br>' + seasonName;
-  resourceDivs[0].style.cursor = 'pointer';
-  if(!resourceDivs[0].tooltipSet) {
-    resourceDivs[0].tooltipSet = true;
-    addButtonAction(resourceDivs[0], function() {
+  resourceDivs[0][1].textEl.innerText = title;
+  resourceDivs[0][1].textEl.className = titleStyle;
+  resourceDivs[0][2].textEl.innerText = timedisplay;
+  resourceDivs[0][2].textEl.className = timedisplayStyle;
+  resourceDivs[0][3].textEl.innerText = seasonName;
+  resourceDivs[0][3].textEl.className = seasonStyle;
+  resourceDivs[0][0].style.cursor = 'pointer';
+  if(!resourceDivs[0][0].tooltipSet) {
+    resourceDivs[0][0].tooltipSet = true;
+    addButtonAction(resourceDivs[0][0], function() {
       openTimeInfoDialog();
     }, 'info box: time and level');
-    registerTooltip(resourceDivs[0], function() {
+    registerTooltip(resourceDivs[0][0], function() {
       var text = '';
       text += 'Season change in: ' + getSeasonChangeInValueText() + '.<br>';
       if(state.treelevel >= 1) {
@@ -799,7 +824,7 @@ function updateResourceUI() {
       return text;
     }, true);
   }
-  setAriaLabel(resourceDivs[0], title + ', ' + timedisplay + ', ' + seasonName);
+  setAriaLabel(resourceDivs[0][0], title + ', ' + timedisplay + ', ' + seasonName);
 
 
   prodBreakdownHypo();

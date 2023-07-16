@@ -97,7 +97,7 @@ function getCropTypeHelp3(type, opt_state) {
     case CROPTYPE_BERRY: return 'Produces infinity seeds. Boosted by flowers.';
     case CROPTYPE_MUSH: return 'Produces infinity spores. Does not require berry neighbors. Boosted by flower tiers, but not as much as berries are and depends on relative tier difference.';
     case CROPTYPE_FLOWER: return have_fishes ? 'Boosts neighboring berries. Also boosts mushrooms but with a smaller boost depending on relative tier.' : 'Boosts neighboring berries.';
-    case CROPTYPE_STINGING: return '';
+    case CROPTYPE_STINGING: return 'Boosts neighboring mushrooms. The boost depends on the tier of the stinging crop relative to the mushroom, and too low tier gives no boost.';
     case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
     case CROPTYPE_MISTLETOE: return '';
     case CROPTYPE_BEE: return have_fishes ? 'Boosts neighboring flowers. For the flower boost to mushrooms, also has a small effect based on tier.' : 'Boosts neighboring flowers.';
@@ -3210,6 +3210,10 @@ function Challenge() {
 
   this.cycling_bonus = undefined; // is array if this challenge is cycling, and then replaces this.bonus.
 
+  // if true, will offer to turn off auto-actions when staring the challenge, for challenges where planting a regular blueprint would make no sense and hamper the challenge. The very first auto-action (if there's one at 0 minutes) will still happen (the player at least sees this one happening so can correct, plus it may do things like select the right fruit)
+  // this is left false for challenges that have more standard rules (including e.g. blackberry challenge) since there the same auto-actions as in a regular run may be appliccable (though they may also not be, e.g. timings are different, but it'll be less damaging to the run)
+  this.autoaction_warning = false;
+
   this.prefun = function() {
     return false;
   };
@@ -3294,6 +3298,11 @@ function Challenge() {
     return this.targetlevel[this.targetlevel.length - 1];
   };
 
+  this.getRulesDescription = function() {
+    if(typeof this.rulesdescription_ == 'string') return this.rulesdescription_;
+    return this.rulesdescription_();
+  };
+
   // actual implementation of the challenge is not here, but depends on currently active state.challenge
 };
 
@@ -3312,7 +3321,7 @@ var challenge_register_id = 1;
 // prefun = precondition to unlock the challenge
 // rewardfun = for completing the challenge the first time. This function may be ran only once, and should be called after all other challenge-related completions stats (such as num_completion variables in the state) are already updated
 // allowflags: 1=resin, 2=fruits, 4=twigs, 8=beyond highest level, 16=nuts
-// rulesdescription must be a list of bullet points
+// rulesdescription must be a list of bullet points; it may be either a string, or a function that returns a string
 // bonus = basic value for the challenge bonus, or 0 if it gives no bonus
 function registerChallenge(name, targetlevel, targetfun, targetdescription, bonus, bonus_min_level, completion_bonus, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
@@ -3331,7 +3340,7 @@ function registerChallenge(name, targetlevel, targetfun, targetdescription, bonu
 
   challenge.name = name;
   challenge.description = description;
-  challenge.rulesdescription = rulesdescription;
+  challenge.rulesdescription_ = rulesdescription;
   challenge.rewarddescription = rewarddescription;
   challenge.unlockdescription = unlockdescription;
   challenge.targetlevel = targetlevel;
@@ -3374,14 +3383,16 @@ function() {
   // nothing here: the reward is unlocked indirectly by having this challenge marked complete
 }, 0);
 challenges[challenge_bees].bonus_exponent = Num(0.25); // such low exponent because before v0.10.0, challenge bonuses were additive with each other, when changing them to multiplicative, earlier challenges needed low exponents but high bases to keep the bonuses similar for contemporary low level vs high level players (the other mechanism that also aids with this is completion_bonus)
+challenges[challenge_bees].autoaction_warning = true;
 
 // 2
 var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135, 165, 195, 225], undefined, undefined, Num(0.2), 0, 0.5,
 `The field has rocks on which you can't plant. The rock pattern is randomly generated at the start of the challenge, but will always be the same within the same when starting in the same 3-hour time interval (based on global UTC time)`,
-`
-• All regular crops, upgrades, ... are available and work as usual<br>
-• There are randomized unremovable rocks on the field, blocking the planting of crops<br>
-`,
+function() {
+  return '• All regular crops, upgrades, ... are available and work as usual<br>' +
+         '• There are randomized unremovable rocks on the field, blocking the planting of crops<br>' +
+         '• Next pattern reset in: ' + util.formatDuration(getRocksChallengeTimeTilNextSeed()) + '<br>';
+},
 ['one extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits','another extra storage slot for fruits'],
 'reaching tree level 15',
 function() { return state.treelevel >= 15; },
@@ -3397,7 +3408,7 @@ function() { state.fruit_slots++; }
 ]
 , 31);
 challenges[challenge_rocks].bonus_exponent = Num(0.2);
-
+challenges[challenge_rocks].autoaction_warning = true;
 
 
 // 3
@@ -3418,6 +3429,7 @@ function() {
 }, 11);
 challenges[challenge_nodelete].bonus_exponent = Num(0.5);
 // idea: a harder version of this challenge that takes place on a fixed size field (5x5)
+challenges[challenge_nodelete].autoaction_warning = true;
 
 
 // 4
@@ -3515,6 +3527,7 @@ function() {
   showMessage('An new limited kind of automaton auto-action unlocked, this one can only be configured to trigger at start of run (to set up correct starting fruit, ...).', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);
+challenges[challenge_wither].autoaction_warning = true;
 
 function witherDuration() {
   return 120;
@@ -3580,6 +3593,7 @@ function() {
 challenges[challenge_rockier].cycling = 5;
 challenges[challenge_rockier].cycling_bonus = [Num(0.02), Num(0.025), Num(0.03), Num(0.035), Num(0.04)];
 challenges[challenge_rockier].bonus_exponent = Num(0.5);
+challenges[challenge_rockier].autoaction_warning = true;
 
 
 
@@ -3600,6 +3614,7 @@ function() {
 }, function() {
   showMessage('Thistle unlocked! Thistle is the next tier of the nettle crop.');
 }, 31);
+challenges[challenge_thistle].autoaction_warning = true;
 
 
 // 9
@@ -3644,6 +3659,7 @@ function() {
 }, 0);
 challenges[challenge_basic].bonus_exponent = Num(0.5);
 challenges[challenge_basic].bonus_max_level = 30;
+//challenges[challenge_basic].autoaction_warning = true;
 
 // 11
 var challenge_truly_basic = registerChallenge('truly basic challenge', [10], undefined, undefined, Num(0.1), 10, 0.35,
@@ -3666,6 +3682,7 @@ function() {
 }, 0);
 challenges[challenge_truly_basic].bonus_exponent = Num(0.5);
 challenges[challenge_truly_basic].bonus_max_level = 25;
+challenges[challenge_truly_basic].autoaction_warning = true;
 
 
 var lightningTime = 120;
@@ -3774,6 +3791,7 @@ function() {
   showMessage('Poison ivy unlocked! Poison ivy is the next tier of the stingy crop, after the thistle.');
 }, 31);
 challenges[challenge_infernal].bonus_exponent = Num(1.1);
+challenges[challenge_infernal].autoaction_warning = true;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -7811,6 +7829,35 @@ Crop3.prototype.getProd = function(f, breakdown) {
     }
   }
 
+  // stinging boost to mushroom: similar to flowers, the boost is affected by the tier
+  if(f && this.type == CROPTYPE_MUSH) {
+    var stingingmul = new Num(1);
+    var num = 0; // stinging
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+      var n = state.field3[y2][x2];
+      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_STINGING) {
+        var c2 = crops3[n.cropIndex()];
+        if(c2.tier >= this.tier - 1) {
+          var boost = c2.infboost;
+          if(c2.tier <= this.tier - 1) boost = boost.mulr(0.5);
+          if(c2.tier >= this.tier + 1) boost = boost.mulr(1.5);
+          if(boost.neqr(0)) {
+            stingingmul.addInPlace(boost);
+            num++;
+          }
+        }
+      }
+    }
+    if(num) {
+      result.mulInPlace(stingingmul);
+      if(breakdown) breakdown.push(['stinging crops tiers (' + num + ')', true, stingingmul, result.clone()]);
+    }
+  }
+
   if(this.type == CROPTYPE_BRASSICA && state.fishcount[shrimp_0]) {
     var mul = Num(1 + shrimp_0_bonus * state.fishcount[shrimp_0]);
     result.mulInPlace(mul);
@@ -7994,6 +8041,13 @@ function registerRunestone3(name, tier, cost, infboost, basicboost, planttime, i
   return index;
 }
 
+function registerStinging3(name, tier, cost, infboost, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_STINGING, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.infboost = infboost;
+  return index;
+}
+
 var default_crop3_growtime = 5; // in seconds
 
 
@@ -8047,6 +8101,9 @@ var initialrunetime = initialrunehours * 3600;
 
 crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
+
+crop3_register_id = 1800;
+var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1), Num(4), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6]));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
@@ -9118,6 +9175,7 @@ registerPlantTypeMedal3(berry3_6);
 registerPlantTypeMedal3(flower3_6);
 registerPlantTypeMedal3(bee3_6);
 registerPlantTypeMedal3(mush3_6);
+registerPlantTypeMedal3(stinging3_6);
 
 
 

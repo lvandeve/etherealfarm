@@ -1525,9 +1525,11 @@ function makeTextInput(title, description, fun, opt_value) {
 
   area.onkeydown = function(e) {
     if((e.keyCode == 13 || e.code == 'Enter') && !e.shiftKey) {
-      e.preventDefault();
       fun(area.value);
       dialog.closeFun();
+      e.preventDefault();
+      e.stopPropagation(); // prevents the enter key from planting the blueprint as well
+      return false;
     }
   };
 

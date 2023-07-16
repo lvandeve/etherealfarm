@@ -774,9 +774,10 @@ function State() {
   this.automaton_autoprestige = 1;
 
   /*
-  auto override = automatically plant a blueprint (with override) at certain programmable points
-  0: auto override globally disabled
-  1: auto override enabled
+  auto action = automatically do auto-actions, such as plant a blueprint, at certain programmable points
+  0: auto action globally disabled
+  1: auto action enabled
+  2: auto action disabled for now, but enable again next run
   */
   this.automaton_autoaction = 0;
 
@@ -784,6 +785,7 @@ function State() {
 
   // challenges
   this.challenge = 0;
+  this.challenge_autoaction_warning = false; // has autoaction_warning already been applied during this challenge run
 
   // saved stats, global across all runs
   this.g_numresets = 0; // amount of soft resets done, non-challenge
@@ -2319,7 +2321,7 @@ function haveBeginOfRunAutoAction(opt_state) {
 function autoActionEnabled() {
   if(!automatonEnabled()) return false;
   if(!autoActionUnlocked()) return false;
-  return !!state.automaton_autoaction;
+  return state.automaton_autoaction == 1;
 }
 
 function autoPrestigeUnlocked() {

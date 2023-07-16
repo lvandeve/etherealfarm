@@ -78,7 +78,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
 
   text += '<b>Challenge rules:</b>';
   text += '<br>';
-  text += c.rulesdescription;
+  text += c.getRulesDescription();
   if(c.allowsresin && c.allowsfruits && c.allowstwigs && c.allowsnuts && c.allowbeyondhighestlevel) {
     if(squirrelUnlocked()) {
       text += '• You can gain resin, twigs, nuts and fruits as usual (but they only become available at at least tree level 10)';
@@ -274,9 +274,9 @@ function getChallengeStatsString(challenge_id, include_current_run) {
     }
   }
   if(currentlyrunning) {
-    text += '• Times ran (excluding the current run): ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
+    text += '• Times run (excluding the current run): ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
   } else {
-    text += '• Times ran: ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
+    text += '• Times run: ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
   }
   if(c.targetlevel != undefined) {
     if(c.targetlevel.length > 1 && c.fullyCompleted(include_current_run)) {

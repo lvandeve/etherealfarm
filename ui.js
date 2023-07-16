@@ -36,6 +36,8 @@ var topFlex;
 var infoFlex;
 var tabFlex;
 var contentFlex;
+var shortcutFlex;
+var logFlexBegin;
 var logFlex;
 var goalFlex;
 
@@ -81,14 +83,18 @@ function makeMainDivs() {
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
-  contentFlex = new Flex(gameFlex, 0, 0.295, 1, 0.8);
+  contentFlex = new Flex(gameFlex, 0, 0.2925, 1, 0.7925);
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
   //contentFlex.div.style.backgroundColor = '#0004';
 
-  logFlex = new Flex(gameFlex, 0, 0.805, 1, 1);
+  shortcutFlex = new Flex(gameFlex, 0, 0.795, 1, 0.825);
+  if(showdebugborders) shortcutFlex.div.style.border = '2px solid gray';
+
+  logFlexBegin = 0.83;
+  logFlex = new Flex(gameFlex, 0, logFlexBegin, 1, 1);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
-  goalFlex = new Flex(gameFlex, 0, 0.805, 1, 0.85);
+  goalFlex = new Flex(gameFlex, 0, 0.795, 1, 0.825);
   if(showdebugborders) goalFlex.div.style.border = '2px solid yellow';
   goalFlex.div.style.visibility = 'hidden';
   goalFlex.div.className = 'efGoal';

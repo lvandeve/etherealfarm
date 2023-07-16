@@ -848,6 +848,7 @@ var GOAL_MISTLETOE_PLANT = GOAL_index++;
 var GOAL_TREELEVEL2_1 = GOAL_index++;
 var GOAL_AUTOMATON_AFFORD = GOAL_index++;
 var GOAL_AUTOMATON_UNLOCK = GOAL_index++;
+var GOAL_AUTOMATON_PLACE = GOAL_index++;
 
 var prevGoal = GOAL_NONE;
 var prevGoalSubCode = 0;
@@ -856,7 +857,7 @@ var prevGoalSubCode = 0;
 // goal is the actual goal from the enum values above, or GOAL_NONE if there is no goal (goals are mostly only active as tutorial in the early game)
 // subcode is a code that represents unique state within that goal, which changes if e.g. arrow must be pointed at something else. If the value remains the same, no UI updates are needed. Its value does not matter, its changes do
 function getGoal_() {
-  if(automatonUnlocked()) {
+  if(state.crops2[automaton2_0].had) {
     // far enough in the game, there are no more goals
     return [GOAL_NONE, 0];
   }
@@ -976,6 +977,10 @@ function getGoal_() {
     if(state.treelevel2 >= 1 && !automatonUnlocked()) {
       return [state.res.resin.ger(100) ? GOAL_AUTOMATON_UNLOCK : GOAL_AUTOMATON_AFFORD, 0];
     }
+
+    if(automatonUnlocked() && !state.crops2[automaton2_0].had) {
+      return [GOAL_AUTOMATON_PLACE, 0];
+    }
   }
 
   return [GOAL_NONE, 0];
@@ -983,16 +988,13 @@ function getGoal_() {
 
 
 function getGoal() {
-  if(automatonUnlocked()) {
-    // far enough in the game, there are no more goals
-    return [GOAL_NONE, 0];
-  }
-
   var goal = getGoal_();
+
+  if(goal[0] == GOAL_NONE) return goal;
 
   // don't enable most of the goals during a challenge, it already has its own different kind of goal to reach
   // however, do show some goals related to the ethereal field
-  if(goal && state.challenge) {
+  if(state.challenge) {
     if(goal[0] == GOAL_ETHEREAL_CROP || goal[0] == GOAL_ETHEREAL_UPGRADE || goal[0] == GOAL_MISTLETOE_UNLOCK || goal[0] == GOAL_AUTOMATON_UNLOCK) return goal;
 
     if(state.challenges_completed == 0) {
@@ -1227,6 +1229,8 @@ function showGoalChips() {
     setGoalText('Unlock the automaton in the ethereal upgrades tab once you have enough resin.', true);
   } else if(goal == GOAL_AUTOMATON_UNLOCK) {
     setGoalText('Unlock the automaton in the ethereal upgrades tab');
+  } else if(goal == GOAL_AUTOMATON_PLACE) {
+    setGoalText('Place the automaton in the ethereal field. After that, the goals here will disappear but the automaton tab will get a few lower paced goals to improve the automaton!');
   } else {
     setGoalText('UNKNOWN GOAL (TODO)');
   }

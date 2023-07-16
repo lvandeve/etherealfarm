@@ -20,6 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.10.3 (2023-07-16):';
+  text += '<br/>• Added infinity nettle (starts at rhodium tier).';
+  text += '<br/>• Changed the way resource info is displayed, on more lines, to reduce amount of layout flickering on mobile.';
+  text += '<br/>• Removed "swap pages" button from blueprint dialog, but this can be done with shift+click on the page button instead now.';
+  text += '<br/>• For some challenges (where an unexpected auto-blueprint would harm the progress), auto-action will be disabled at the start now. It will re-enable again next run unless manually specifically disabled.';
+  text += '<br/>• Automaton toggle buttons moved from side panel to bottom, so also visible on mobile devices now.';
+  text += '<br/>• Time til next rock challenge layout change is now shown in its dialog.';
+  text += '<br/>• Bugfixes.'; // e.g. pressing enter key after blueprint rename, caused the blueprint to get planted, and typo "ran" instead of "run"
+  text += '<br/><br/>';
+
   text += '0.10.2 (2023-07-02):';
   text += '<br/>• Added a new ethereal mistletoe upgrade that allows placing a second one for more neighbor boost.';
   text += '<br/>• Rearranged the unlock evolution levels of some ethereal mistletoe upgrades: Nuts at 10 instead of 12, lotus neighbors at 12 instead of 13, the new upgrade is at 13.';

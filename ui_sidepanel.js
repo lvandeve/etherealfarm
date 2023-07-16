@@ -26,7 +26,122 @@ var bottomrightSidePanelFlexCacheParent = undefined;
 
 var showingSidePanel = false;
 
+// see comment of renderAutomationShortcuts: if false, renders with new method horizontally at bottom, if true renders in side panel like before
+var renderAutomatonShortcutsInSidePanel = false;
+
+// horizontal = for the new method (as of july 2023) of rendering the automaton shortcuts horizontally at the bottom
+// vertical = for the old method of rendering it in a chip in the side panel on the right
+function renderAutomationShortcuts(flex, horizontal) {
+  var chip0, chip1, chip2;
+  if(horizontal) {
+    var w = 0.33;
+    chip0 = autoPlantUnlocked() ? new Flex(flex, 0 * w, 0, 1 * w, 1) : undefined;
+    chip1 = autoUpgradesUnlocked() ? new Flex(flex, 1 * w, 0, 2 * w, 1) : undefined;
+    chip2 = autoActionUnlocked() ? new Flex(flex, 2 * w, 0, 3 * w, 1) : undefined;
+  } else {
+    var h = autoActionUnlocked() ? 0.33 : 0.5;
+    chip0 = autoPlantUnlocked() ? new Flex(flex, 0, 0 * h, 1, 1 * h) : undefined;
+    chip1 = autoUpgradesUnlocked() ? new Flex(flex, 0, 1 * h, 1, 2 * h) : undefined;
+    chip2 = autoActionUnlocked() ? new Flex(flex, 0, 2 * h, 1, 3 * h) : undefined;
+  }
+  if(chip0) addButtonAction(chip0.div, function() {
+    if(!automatonEnabled()) return;
+    if(state.paused) {
+      state.automaton_autoplant = (1 - state.automaton_autoplant);
+      updateAutomatonUI();
+      updateRightPane();
+    } else {
+      addAction({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(1 - state.automaton_autoplant), fun:function() {
+        updateAutomatonUI();
+        updateRightPane();
+      }});
+      update();
+    }
+  });
+  if(chip1) addButtonAction(chip1.div, function() {
+    if(!automatonEnabled()) return;
+    if(state.paused) {
+      state.automaton_autoupgrade = (1 - state.automaton_autoupgrade);
+      updateAutomatonUI();
+      updateRightPane();
+    } else {
+      addAction({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
+        updateAutomatonUI();
+        updateRightPane();
+      }});
+      update();
+    }
+  });
+  if(chip2) addButtonAction(chip2.div, function() {
+    if(!automatonEnabled()) return;
+    if(state.paused) {
+      state.automaton_autoaction = ((state.automaton_autoaction == 1) ? 0 : 1);
+      updateAutomatonUI();
+      updateRightPane();
+    } else {
+      addAction({type:ACTION_TOGGLE_AUTOMATON, what:5, on:((state.automaton_autoaction == 1) ? 0 : 1), fun:function() {
+        updateAutomatonUI();
+        updateRightPane();
+      }});
+      update();
+    }
+  });
+  var autoUnlockUnlockedButDisabled = autoUnlockUnlocked() && !autoUnlockEnabled();
+  var autoPrestigeUnlockedButDisabled = autoPrestigeUnlocked() && !autoPrestigeEnabled();
+  var text0 = 'Plant: ' + (autoPlantEnabled() ? ((autoUnlockUnlockedButDisabled || autoPrestigeUnlockedButDisabled) ? '<font color="#bb0">auto</font>' : '<font color="#0b0">auto</font>') : '<font color="#b00">manual</font>');
+  var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
+  var text2 = 'Auto-action: ' + (autoActionEnabled() ? '<font color="#0b0">on</font>' : (state.automaton_autoaction == 2 ? '<font color="#c60">off</font>' : '<font color="#b00">off</font>')) + '&nbsp;&nbsp;';
+  if(chip0) {
+    styleButton0(chip0.div);
+    centerText2(chip0.div);
+    if(autoUnlockUnlockedButDisabled) {
+      chip0.div.title = 'quick toggle auto-plant (auto unlock is currently disabled and not toggled by this button, use automaton tab to enable)';
+    } else if(autoPrestigeUnlockedButDisabled) {
+      chip0.div.title = 'quick toggle auto-plant (auto prestige is currently disabled and not toggled by this button, use automaton tab under the auto unlock settings to enable)';
+    } else {
+      chip0.div.title = 'quick toggle auto-plant';
+    }
+    chip0.div.textEl.innerHTML = text0;
+  }
+  if(chip1) {
+    styleButton0(chip1.div);
+    centerText2(chip1.div);
+    chip1.div.title = 'quick toggle auto-upgrades';
+    chip1.div.textEl.innerHTML = text1;
+  }
+  if(chip2) {
+    styleButton0(chip2.div);
+    centerText2(chip2.div);
+    chip2.div.title = 'quick toggle auto-action';
+    chip2.div.textEl.innerHTML = text2;
+    var miniconfigbutton = document.createElement('span');
+    chip2.div.textEl.appendChild(miniconfigbutton);
+    miniconfigbutton.innerHTML = '&#8201;⚙&#8201;'; // TODO: find a more clean way to make this exactly square
+    miniconfigbutton.className = 'efFlatButton';
+    miniconfigbutton.title = 'quick edit auto-actions';
+    addButtonAction(miniconfigbutton, function(e) {
+      showConfigureAutoActionDialog();
+      e.stopPropagation();
+    });
+  }
+}
+
 function updateRightPane() {
+  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (autoUpgradesUnlocked() ? 8 : 0) | (autoPlantUnlocked() ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0) | (autoActionEnabled() ? 128 : 0);
+  var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
+  rightPanelPrevAutomationState = automatonState;
+
+  var numberformatStateChanged = rightPanelPrevNumberFormatState != getNumberFormatCode();
+  rightPanelPrevNumberFormatState = getNumberFormatCode();
+
+  // this one is not actually the right pane but here for now since it still shares some code
+  if(automatonStateChanged) {
+    shortcutFlex.clear();
+    if(!renderAutomatonShortcutsInSidePanel && automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked())) {
+      renderAutomationShortcuts(shortcutFlex, true);
+      shortcutFlex.div.style.border = '1px solid gray';
+    }
+  }
   if(!rightFlex) return;
 
   var enableSidePanel = state.sidepanel && (state.g_numnresets > 0 || state.upgrades_unlocked > 0);
@@ -44,13 +159,6 @@ function updateRightPane() {
   }
 
   topRightFlex.clear();
-
-  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (autoUpgradesUnlocked() ? 8 : 0) | (autoPlantUnlocked() ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0) | (autoActionEnabled() ? 128 : 0);
-  var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
-  rightPanelPrevAutomationState = automatonState;
-
-  var numberformatStateChanged = rightPanelPrevNumberFormatState != getNumberFormatCode();
-  rightPanelPrevNumberFormatState = getNumberFormatCode();
 
   if(upgradeUIUpdated || automatonStateChanged || numberformatStateChanged) {
     upgradeUIUpdated = false;
@@ -91,91 +199,8 @@ function updateRightPane() {
         if(automatonStateChanged) {
           chip.clear();
           var text = 'Upgrades';
-          if(automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked())) {
-            var h = autoActionUnlocked() ? 0.33 : 0.5;
-            var chip0 = autoPlantUnlocked() ? new Flex(chip, 0, 0 * h, 1, 1 * h) : undefined;
-            var chip1 = autoUpgradesUnlocked() ? new Flex(chip, 0, 1 * h, 1, 2 * h) : undefined;
-            var chip2 = autoActionUnlocked() ? new Flex(chip, 0, 2 * h, 1, 3 * h) : undefined;
-            if(chip0) addButtonAction(chip0.div, function() {
-              if(!automatonEnabled()) return;
-              if(state.paused) {
-                state.automaton_autoplant = (1 - state.automaton_autoplant);
-                updateAutomatonUI();
-                updateRightPane();
-              } else {
-                addAction({type:ACTION_TOGGLE_AUTOMATON, what:2, on:(1 - state.automaton_autoplant), fun:function() {
-                  updateAutomatonUI();
-                  updateRightPane();
-                }});
-                update();
-              }
-            });
-            if(chip1) addButtonAction(chip1.div, function() {
-              if(!automatonEnabled()) return;
-              if(state.paused) {
-                state.automaton_autoupgrade = (1 - state.automaton_autoupgrade);
-                updateAutomatonUI();
-                updateRightPane();
-              } else {
-                addAction({type:ACTION_TOGGLE_AUTOMATON, what:1, on:(1 - state.automaton_autoupgrade), fun:function() {
-                  updateAutomatonUI();
-                  updateRightPane();
-                }});
-                update();
-              }
-            });
-            if(chip2) addButtonAction(chip2.div, function() {
-              if(!automatonEnabled()) return;
-              if(state.paused) {
-                state.automaton_autoaction = (1 - state.automaton_autoaction);
-                updateAutomatonUI();
-                updateRightPane();
-              } else {
-                addAction({type:ACTION_TOGGLE_AUTOMATON, what:5, on:(1 - state.automaton_autoaction), fun:function() {
-                  updateAutomatonUI();
-                  updateRightPane();
-                }});
-                update();
-              }
-            });
-            var autoUnlockUnlockedButDisabled = autoUnlockUnlocked() && !autoUnlockEnabled();
-            var autoPrestigeUnlockedButDisabled = autoPrestigeUnlocked() && !autoPrestigeEnabled();
-            var text0 = 'Plant: ' + (autoPlantEnabled() ? ((autoUnlockUnlockedButDisabled || autoPrestigeUnlockedButDisabled) ? '<font color="#bb0">auto</font>' : '<font color="#0b0">auto</font>') : '<font color="#b00">manual</font>');
-            var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
-            var text2 = 'Auto-action: ' + (autoActionEnabled() ? '<font color="#0b0">on</font>' : '<font color="#b00">off</font>') + '&nbsp;&nbsp;';
-            if(chip0) {
-              styleButton0(chip0.div);
-              centerText2(chip0.div);
-              if(autoUnlockUnlockedButDisabled) {
-                chip0.div.title = 'quick toggle auto-plant (auto unlock is currently disabled and not toggled by this button, use automaton tab to enable)';
-              } else if(autoPrestigeUnlockedButDisabled) {
-                chip0.div.title = 'quick toggle auto-plant (auto prestige is currently disabled and not toggled by this button, use automaton tab under the auto unlock settings to enable)';
-              } else {
-                chip0.div.title = 'quick toggle auto-plant';
-              }
-              chip0.div.textEl.innerHTML = text0;
-            }
-            if(chip1) {
-              styleButton0(chip1.div);
-              centerText2(chip1.div);
-              chip1.div.title = 'quick toggle auto-upgrades';
-              chip1.div.textEl.innerHTML = text1;
-            }
-            if(chip2) {
-              styleButton0(chip2.div);
-              centerText2(chip2.div);
-              chip2.div.title = 'quick toggle auto-action';
-              chip2.div.textEl.innerHTML = text2;
-              var miniconfigbutton = document.createElement('span');
-              chip2.div.textEl.appendChild(miniconfigbutton);
-              miniconfigbutton.innerHTML = '&#8201;⚙&#8201;'; // TODO: find a more clean way to make this exactly square
-              miniconfigbutton.className = 'efFlatButton';
-              miniconfigbutton.title = 'quick edit auto-actions';
-              addButtonAction(miniconfigbutton, function(e) {
-                showConfigureAutoActionDialog();
-                e.stopPropagation();
-              });
-            }
+          if(renderAutomatonShortcutsInSidePanel && automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked())) {
+            renderAutomationShortcuts(chip, false);
             setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
           } else if(unlocked.length) {
             centerText2(chip.div);

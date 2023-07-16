@@ -313,6 +313,14 @@ function unlockTemplates() {
   }
 }
 
+function getRocksChallengeTimeSeed() {
+  return Math.floor(util.getTime() / (3600 * 3));
+}
+
+function getRocksChallengeTimeTilNextSeed() {
+  return 3600 * 3 - (util.getTime() % (3600 * 3));
+}
+
 // set up everything for a challenge after softreset
 function startChallenge(challenge_id) {
   if(!challenge_id) return; // nothing to do
@@ -339,7 +347,7 @@ function startChallenge(challenge_id) {
     // use a fixed seed for the random, which changes every 3 hours, and is the same for all players (depends only on the time)
     // changing the seed only every 4 hours ensures you can't quickly restart the challenge to find a good pattern
     // making it the same for everyone makes it fair
-    var timeseed = Math.floor(util.getTime() / (3600 * 3));
+    var timeseed = getRocksChallengeTimeSeed();
     var seed;
     if(challenge_id == challenge_rocks) {
       seed = xor48(timeseed, 0x726f636b73); // ascii for "rocks"
@@ -777,9 +785,14 @@ function beginNextRun(opt_challenge) {
   }
 
   restoreAmberSeason();
-
   if(opt_challenge) {
     startChallenge(opt_challenge);
+  }
+
+  state.challenge_autoaction_warning = false;
+  if(state.automaton_autoaction == 2) {
+    // if it was auto-disabled, enable it again next run
+    state.automaton_autoaction = 1;
   }
 
   if(state.upgrades2[upgrade2_blackberrysecret].count) applyBlackberrySecret();
@@ -2386,6 +2399,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_6].had) unlockInfinityCrop(flower3_6);
   if(state.crops3[flower3_6].had) unlockInfinityCrop(bee3_6);
   if(state.crops3[berry3_6].had) unlockInfinityCrop(mush3_6);
+  if(state.crops3[mush3_6].had) unlockInfinityCrop(stinging3_6);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -3407,6 +3421,14 @@ var update = function(opt_ignorePause) {
     state.prevtime represents t0. state.time is set to state.prevtime. so state.time and state.prevtime are equal during the update, but time will be used and prevtime may already be set to the next one for state keeping. state.prevtime is the one getting saved and remembered, state.time is the one used for computations such as getSeason(), but during the update loop, they're the same, they're different variables outside of update for bookkeeping.
     */
 
+
+    if(state.challenge && !state.challenge_autoaction_warning && challenges[state.challenge].autoaction_warning && autoActionUnlocked() /*&& state.c_runtime > 1.0*/) {
+      state.challenge_autoaction_warning = true;
+      if(autoActionEnabled()) {
+        state.automaton_autoaction = 2;
+        showMessage('Auto-action temporarily disabled for this challenge! Check your selected fruit etc... You can simply enable auto-actions again if you want to use them this challenge. ', C_IMPORTANT, 6786965);
+      }
+    }
 
     computeAutomatonActions();
 

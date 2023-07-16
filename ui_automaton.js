@@ -1499,11 +1499,14 @@ function updateAutomatonUI() {
 
     var updateAutoActionButton = function(flex) {
       var div = flex.div.textEl;
-      if(state.automaton_autoaction) {
+      if(state.automaton_autoaction == 0) {
+        div.innerText = 'Auto-action off';
+        flex.enabledStyle = 0;
+      } else if(state.automaton_autoaction == 1) {
         div.innerText = 'Auto-action on';
         flex.enabledStyle = 1;
       } else {
-        div.innerText = 'Auto-action off';
+        div.innerText = 'Auto-action temp off';
         flex.enabledStyle = 0;
       }
       setButtonIndicationStyle(flex);
@@ -1516,11 +1519,11 @@ function updateAutomatonUI() {
     addButtonAction(flex.div, bind(function(flex) {
       var automaton_autoaction_before = state.automaton_autoaction;
       if(state.paused) {
-        state.automaton_autoaction = state.automaton_autoaction ? 0 : 1;
+        state.automaton_autoaction = ((state.automaton_autoaction == 1) ? 0 : 1);
         updateAutoActionButton(flex);
         updateRightPane();
       } else {
-        addAction({type:ACTION_TOGGLE_AUTOMATON, what:5, on:(state.automaton_autoaction ? 0 : 1), fun:function() {
+        addAction({type:ACTION_TOGGLE_AUTOMATON, what:5, on:((state.automaton_autoaction == 1) ? 0 : 1), fun:function() {
           updateAutoActionButton(flex);
         }});
         update();

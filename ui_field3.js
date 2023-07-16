@@ -87,8 +87,12 @@ function getCropInfoHTML3(f, c, opt_detailed) {
       result += 'Boost to neighboring crops basic field boost: ' + infboost.toPercentString() + '<br><br>';
     } else if(c.type == CROPTYPE_BEE) {
       result += 'Boost to neighboring flowers: ' + infboost.toPercentString() + '<br><br>';
-    } else {
+    } else if(c.type == CROPTYPE_FLOWER) {
       result += 'Boost to neighboring berries: ' + infboost.toPercentString() + '<br><br>';
+    } else if(c.type == CROPTYPE_STINGING) {
+      result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString() + '<br><br>';
+    } else {
+      result += 'Boost: ' + infboost.toPercentString() + '<br><br>';
     }
   }
 

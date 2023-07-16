@@ -133,10 +133,6 @@ body {
   color: #959595;
 }
 
-.efInfo {
-  border: 1px solid #888;
-}
-
 .efSeasonBgSpring {
   background-color: #fff1;
   color: #7d3;
@@ -283,10 +279,6 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   border: 1px solid #100;
 }
 
-.efAmberInfo {
-  color: #d80;
-}
-
 .efButtonAmberActive {
   background-color: #666;
   border: 1px solid #d80;
@@ -340,4 +332,28 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
   text-shadow: 0 0 0.1em #fbb, 0 0 0.1em #fbb, 0 0 0.1em #fbb, 0 0 0.1em #fbb;
   border-color: #fbb !important;
   border-width: 3px !important;
+}
+
+.efInfo {
+  border: 1px solid #888;
+}
+
+.efInfoAmber {
+  color: #d80;
+}
+
+.efInfoResouceConstrained {
+  color: #888;
+}
+
+.efInfoShadow {
+  text-shadow: 0px 0px 5px #ff0;
+}
+
+.efInfoPresentGrowSpeed {
+  color: #4f8;
+}
+
+.efInfoPresentProdBoost {
+  color: #f80;
 }

@@ -675,6 +675,7 @@ function encState(state, opt_raw_only) {
   processTimeArray(array9);
   processTimeArray(array10);
   processUint(state.challenge_completed);
+  processBool(state.challenge_autoaction_warning);
 
 
   section = 20; id = 0; // automaton
@@ -1988,6 +1989,7 @@ function decState(s) {
       array10 = [];
     }
     if(save_version >= 262144*2+64*10+0) state.challenge_completed = processUint();
+    if(save_version >= 262144*2+64*10+3) state.challenge_autoaction_warning = processBool();
     if(error) return err(4);
     if(array0.length != array1.length || array0.length != array2.length || array0.length != array3.length || array0.length != array4.length) {
       return err(4);

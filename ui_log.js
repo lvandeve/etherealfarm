@@ -47,6 +47,7 @@ var C_AMBER = 12;
 var C_PRESENT = 13;
 var C_EGG = 14;
 var C_GOAL = 15;
+var C_IMPORTANT = 16;
 
 
 // this system exists to make it possible to have messages to be distinguishable from each other but also have color according to some theme,
@@ -82,6 +83,9 @@ function makeLogColor(type, seed, rarity) {
   } else if(type == C_GOAL) {
     fgcolor = '#f00';
     bgcolor = '#000';
+  } else if(type == C_IMPORTANT) {
+    fgcolor = '#f08';
+    bgcolor = '#004';
   } else {
     // hue is 0-1 based: 0=red, 0.33=green, 0.66=blue
     // h0 = foreground hue, h1 = background hue
@@ -245,7 +249,7 @@ function setGoalText(text, opt_small) {
   lastGoalTextSmall = !!opt_small;
   //goalFlex.div.style.border = '1px solid red';
   if(!text) {
-    logFlex.y0 = goalFlex.y0;
+    logFlex.y0 = logFlexBegin;
     logFlex.updateSelf(gameFlex.div);
     goalFlex.div.style.visibility = 'hidden';
   } else {
