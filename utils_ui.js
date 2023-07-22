@@ -1188,8 +1188,12 @@ Flex.prototype.getDim_ = function(parentdiv) {
       w = Flex_prevParent_clientWidth;
       h = Flex_prevParent_clientHeight;
     } else {
-      w = parentdiv.clientWidth;
-      h = parentdiv.clientHeight;
+      /*w = parentdiv.clientWidth;
+      h = parentdiv.clientHeight;*/
+      w = parentdiv.clientWidthCachedForFlex;
+      h = parentdiv.clientHeightCachedForFlex;
+      if(w == undefined) w = parentdiv.clientWidth; // expensive
+      if(h == undefined) h = parentdiv.clientHeight; // expensive
       Flex_prevParent = parentdiv;
       Flex_prevParent_clientWidth = w;
       Flex_prevParent_clientHeight = h;
@@ -1218,6 +1222,9 @@ Flex.prototype.updateSelf = function(parentdiv) {
     //this.div_.style.fontSize = '26px';
     //this.div_.style.fontSize = '100%';
   }
+
+  this.div_.clientWidthCachedForFlex = Math.floor(x1 - x0);
+  this.div_.clientHeightCachedForFlex = Math.floor(y1 - y0);
 
   if(this.fontSize == FONT_FULL) {
     this.div_.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * 2) + 'px';
@@ -1269,6 +1276,8 @@ Flex.prototype.clear = function() {
   }
   this.elements = [];
   this.div_.innerHTML = '';
+  this.div_.clientWidthCachedForFlex = undefined;
+  this.div_.clientHeightCachedForFlex = undefined;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

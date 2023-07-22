@@ -965,6 +965,7 @@ function showConfigureAutoActionDialog() {
     flex.div.textEl.innerText = 'Do now';
     addButtonAction(flex.div, bind(function(j) {
       doAutoActionManually(j);
+      closeAllDialogs();
     }, j));
     registerTooltip(flex.div, 'Do this action manually now. This ignores the action trigger, and does not affect when or whether the automaton will do this action. You can do it manually any time or multiple times indepdendently from the automaton. You can also configure the number keys to do these in the settings.');
     x += w1;

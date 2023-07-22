@@ -26,12 +26,12 @@ var bottomrightSidePanelFlexCacheParent = undefined;
 
 var showingSidePanel = false;
 
-// see comment of renderAutomationShortcuts: if false, renders with new method horizontally at bottom, if true renders in side panel like before
+// see comment of renderAutomatonShortcuts: if false, renders with new method horizontally at bottom, if true renders in side panel like before
 var renderAutomatonShortcutsInSidePanel = false;
 
 // horizontal = for the new method (as of july 2023) of rendering the automaton shortcuts horizontally at the bottom
 // vertical = for the old method of rendering it in a chip in the side panel on the right
-function renderAutomationShortcuts(flex, horizontal) {
+function renderAutomatonShortcuts(flex, horizontal) {
   var chip0, chip1, chip2;
   if(horizontal) {
     var w = 0.33;
@@ -126,6 +126,10 @@ function renderAutomationShortcuts(flex, horizontal) {
   }
 }
 
+function shouldRenderAutomatonShortcuts() {
+  return automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked());
+}
+
 function updateRightPane() {
   var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (autoUpgradesUnlocked() ? 8 : 0) | (autoPlantUnlocked() ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0) | (autoActionEnabled() ? 128 : 0);
   var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
@@ -137,9 +141,11 @@ function updateRightPane() {
   // this one is not actually the right pane but here for now since it still shares some code
   if(automatonStateChanged) {
     shortcutFlex.clear();
-    if(!renderAutomatonShortcutsInSidePanel && automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked())) {
-      renderAutomationShortcuts(shortcutFlex, true);
+    if(!renderAutomatonShortcutsInSidePanel && shouldRenderAutomatonShortcuts()) {
+      renderAutomatonShortcuts(shortcutFlex, true);
       shortcutFlex.div.style.border = '1px solid gray';
+    } else {
+      shortcutFlex.div.style.border = '';
     }
   }
   if(!rightFlex) return;
@@ -199,8 +205,8 @@ function updateRightPane() {
         if(automatonStateChanged) {
           chip.clear();
           var text = 'Upgrades';
-          if(renderAutomatonShortcutsInSidePanel && automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked())) {
-            renderAutomationShortcuts(chip, false);
+          if(renderAutomatonShortcutsInSidePanel && shouldRenderAutomatonShortcuts()) {
+            renderAutomatonShortcuts(chip, false);
             setAriaLabel(chip.div, 'side panel abbreviated upgrades list');
           } else if(unlocked.length) {
             centerText2(chip.div);

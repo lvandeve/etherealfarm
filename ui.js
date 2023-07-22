@@ -32,11 +32,19 @@ var amberFlex;
 var mainw;
 var mainh;
 
+// The begin and end variables may be used to update positions of some dynamically sized pieces of content, such as in updateTabButtons depending on amount of tab buttons visible
 var topFlex;
 var infoFlex;
+var tabFlexBegin;
+var tabFlexEnd;
 var tabFlex;
-var contentFlex;
+var shortcutFlexBegin;
+var shortcutFlexEnd;
+var shortcutFlexHeight;
 var shortcutFlex;
+var contentFlexBegin;
+var contentFlexEnd;
+var contentFlex;
 var logFlexBegin;
 var logFlex;
 var goalFlex;
@@ -79,22 +87,29 @@ function makeMainDivs() {
   infoFlex = new Flex(gameFlex, 0, 0.05, 1, 0.17);
   if(showdebugborders) infoFlex.div.style.border = '2px solid blue';
 
-  tabFlex = new Flex(gameFlex, 0, 0.171, 1, 0.29);
+  tabFlexBegin = 0.17;
+  tabFlexEnd = 0.29;
+  tabFlex = new Flex(gameFlex, 0, 0.171, 1, tabFlexEnd);
   if(showdebugborders) tabFlex.div.style.border = '2px solid green';
 
+  shortcutFlexBegin = tabFlexEnd + 0.002;
+  shortcutFlexEnd = 0.32;
+  shortcutFlexHeight = shortcutFlexEnd - shortcutFlexBegin;
+  shortcutFlex = new Flex(gameFlex, 0, shortcutFlexBegin, 1, shortcutFlexEnd);
+  if(showdebugborders) shortcutFlex.div.style.border = '2px solid gray';
+
+  contentFlexBegin = shortcutFlexEnd + 0.005;
+  contentFlexEnd = 0.825;
   //contentDiv = makeDiv(0, 0, 0, 0, document.body);
-  contentFlex = new Flex(gameFlex, 0, 0.2925, 1, 0.7925);
+  contentFlex = new Flex(gameFlex, 0, contentFlexBegin, 1, 0.825);
   if(showdebugborders) contentFlex.div.style.border = '2px solid orange';
   //contentFlex.div.style.backgroundColor = '#0004';
 
-  shortcutFlex = new Flex(gameFlex, 0, 0.795, 1, 0.825);
-  if(showdebugborders) shortcutFlex.div.style.border = '2px solid gray';
-
-  logFlexBegin = 0.83;
+  logFlexBegin = contentFlexEnd + 0.005;
   logFlex = new Flex(gameFlex, 0, logFlexBegin, 1, 1);
   if(showdebugborders) logFlex.div.style.border = '2px solid gray';
 
-  goalFlex = new Flex(gameFlex, 0, 0.795, 1, 0.825);
+  goalFlex = new Flex(gameFlex, 0, logFlexBegin, 1, logFlexBegin + 0.05);
   if(showdebugborders) goalFlex.div.style.border = '2px solid yellow';
   goalFlex.div.style.visibility = 'hidden';
   goalFlex.div.className = 'efGoal';
@@ -209,6 +224,45 @@ function initUI() {
   prevGoal = -1; // causes redraw of goal chips, arrows, ... if necessary
 }
 
+function updateMainFlexPositions() {
+  // This does:
+  // -Make the field use up the entire tab space if no tab buttons visible
+  // -Show the shortcuts bar, or not, and if not also make the content take up that space
+  if(shouldRenderAutomatonShortcuts()) {
+    if(numtabs <= 1) {
+      if(contentFlex.y0 != tabFlexBegin + shortcutFlexHeight) {
+        contentFlex.y0 = tabFlexBegin + shortcutFlexHeight;
+        contentFlex.update(gameFlex.div);
+      }
+      if(shortcutFlex.y0 != tabFlexBegin) {
+        shortcutFlex.y0 = tabFlexBegin;
+        shortcutFlex.update(gameFlex.div);
+      }
+    } else {
+      if(contentFlex.y0 != contentFlexBegin) {
+        contentFlex.y0 = contentFlexBegin;
+        contentFlex.update(gameFlex.div);
+      }
+      if(shortcutFlex.y0 != shortcutFlexBegin) {
+        shortcutFlex.y0 = shortcutFlexBegin;
+        shortcutFlex.update(gameFlex.div);
+      }
+    }
+  } else {
+    if(numtabs <= 1) {
+      if(contentFlex.y0 != tabFlexBegin) {
+        contentFlex.y0 = tabFlexBegin;
+        contentFlex.update(gameFlex.div);
+      }
+    } else {
+      if(contentFlex.y0 != shortcutFlexBegin) {
+        contentFlex.y0 = shortcutFlexBegin;
+        contentFlex.update(gameFlex.div);
+      }
+    }
+  }
+}
+
 var pausedflex = undefined;
 var pausedbuttoncanvasstate = -1;
 var pausedflextext = undefined; // because reading .innerText is slow
@@ -258,6 +312,7 @@ function updateUI() {
   updateAmberUI();
   updateSquirrelUI();
   updatePausedUI();
+  updateMainFlexPositions();
 }
 
 // the one for during a game update
@@ -287,6 +342,7 @@ function updateUI2() {
     state.initEvolutionAndHatImages();
     updateUI();
   }
+  updateMainFlexPositions();
 }
 
 //document.body.style.fontFamily = 'Verdana, Arial, Helvetica, sans-serif';
