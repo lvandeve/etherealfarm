@@ -731,8 +731,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   y = y0;
   h = 0.35;
   var bottomflex = new Flex(dialog.content, margin, y, 1 - margin, y + h);
-  bottomflex.div.style.backgroundColor = '#6d6';
-  bottomflex.div.style.border = '1px solid black';
+  bottomflex.div.className = 'efFruitAbilityBox';
   bottomflex.div.style.visibility = 'hidden';
   y += h;
   var textFlex = new Flex(bottomflex, 0.01, 0.0, 0.99, 0.5);

@@ -28,6 +28,7 @@ function getChangeLog() {
   text += '<br/>• Runestone shows up higher in the list of crops in the infinity field so it\'s easier to find when having many more crop tiers unlocked.';
   text += '<br/>• Long clicking a field cell now shows more actions on mobile devices, so affecting a crop under fern without picking up the fern is now possible.';
   text += '<br/>• Fix an issue where mobile browsers would zoom into the "import save" dialog, making the actual import button invisible.';
+  text += '<br/>• Fixed a possible rendering performance issue with ethereal field.';
   text += '<br/>• An internal mechanism to support beta-test versions of the game is implemented, but not yet used for now.';
   text += '<br/>• Various other bugfixes and QoL, especially related to mobile devices and early game.'; // e.g. overflowing text in fuse screen, improved long click on upgrade cells, some contrasts, ...
   text += '<br/><br/>';

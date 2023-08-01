@@ -130,6 +130,17 @@ function shouldRenderAutomatonShortcuts() {
   return automatonEnabled() && (autoUpgradesUnlocked() || autoPlantUnlocked() || autoActionUnlocked());
 }
 
+
+// NOTE: for faster access to this info elsewhere, use the showingSidePanel global variable instead
+function shouldShowSidePanel() {
+  var enableSidePanel = state.sidepanel && (state.g_numnresets > 0 || state.upgrades_unlocked > 0);
+  if(!enableSidePanel) return false;
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  return w / h >= 0.95;
+}
+
+
 function updateRightPane() {
   var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (autoUpgradesUnlocked() ? 8 : 0) | (autoPlantUnlocked() ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0) | (autoActionEnabled() ? 128 : 0);
   var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
@@ -150,18 +161,16 @@ function updateRightPane() {
   }
   if(!rightFlex) return;
 
-  var enableSidePanel = state.sidepanel && (state.g_numnresets > 0 || state.upgrades_unlocked > 0);
-
   var w = window.innerWidth;
   var h = window.innerHeight;
-  if(w / h < 0.95 || !enableSidePanel) {
-    //rightFlex.div.style.display = 'none';
-    rightFlex.div.style.visibility = 'hidden';
-    showingSidePanel = false;
-  } else {
+  if(shouldShowSidePanel()) {
     //rightFlex.div.style.display = 'block';
     rightFlex.div.style.visibility = 'visible';
     showingSidePanel = true;
+  } else {
+    //rightFlex.div.style.display = 'none';
+    rightFlex.div.style.visibility = 'hidden';
+    showingSidePanel = false;
   }
 
   topRightFlex.clear();

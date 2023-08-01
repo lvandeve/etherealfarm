@@ -361,3 +361,8 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 .efInfoPresentProdBoost {
   color: #f80;
 }
+
+.efFruitAbilityBox {
+  background-color: #242;
+  border: 1px solid black;
+}

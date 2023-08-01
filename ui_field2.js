@@ -604,13 +604,14 @@ function updateField2CellUI(x, y) {
 
   var largeravailable = c && c.tier >= 0 && state.highestoftype2unlocked[c.type] > state.highestoftype2planted[c.type] && state.res.resin.gt(crops2[state.highestcropoftype2unlocked[c.type]].cost.resin);
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active || f.largeravailable != largeravailable) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active || fd.largeravailable != largeravailable) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
     fd.treelevel2 = state.treelevel2;
     fd.progresspixel = progresspixel;
     fd.holiday_hats_active = holiday_hats_active;
+    fd.largeravailable = largeravailable;
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];

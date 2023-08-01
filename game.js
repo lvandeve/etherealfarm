@@ -3583,7 +3583,7 @@ var update = function(opt_ignorePause) {
         if(state.upgrades_new) {
           // applied upgrade, must have been from side panel, do not show upgrade tab in red anymore
           for(var j = 0; j < registered_upgrades.length; j++) {
-            if(action.by_automaton && j != action.u) continue; // do not make crop-unlock upgrades seen when you have auto-upgrade (which created this action) but not yet auto-unlock with the automaton, so that upgrade tab will be red guaranteed when new crop unlocks are there
+            if(!showingSidePanel && action.by_automaton && j != action.u) continue; // do not make crop-unlock upgrades seen when you have auto-upgrade (which created this action) but not yet auto-unlock with the automaton, so that upgrade tab will be red guaranteed when new crop unlocks are there
             var u = state.upgrades[registered_upgrades[j]];
             if(u.unlocked && !u.seen) u.seen = true;
           }
