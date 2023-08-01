@@ -60,6 +60,8 @@ function setTab(i, opt_temp) {
 
   if(!opt_temp) state.currentTab = i;
 
+  busyChoosingTargetSlot = undefined; // changing any tab stops this if this was active
+
   for(var j = 0; j < tabs.length; j++) {
     tabs[j].div.style.visibility = (i == j) ? 'visible' : 'hidden';
   }

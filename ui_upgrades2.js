@@ -73,23 +73,23 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     //buyFlex.div.textEl.innerText = buyText;
 
     if(state.res.lt(cost)) titleFlex.div.className = 'efTextCantAfford';
-
-    addButtonAction(buyFlex.div, bind(function(i, e) {
-      addAction({type:ACTION_UPGRADE2, u:u.index});
-      update();
-    }, i), 'buy ' + name);
   }
 
-
-  registerTooltip(buyFlex.div, infoText);
-  registerTooltip(canvasFlex.div, 'Show ' + name + ' info');
+  registerAction(buyFlex.div, completed ? undefined : bind(function(i, shift, ctrl) {
+    addAction({type:ACTION_UPGRADE2, u:u.index});
+    update();
+  }, i), completed ? undefined : 'buy ' + name, {
+    tooltip:infoText
+  });
 
   styleButton0(canvasFlex.div);
 
-  addButtonAction(canvasFlex.div, function() {
+  registerAction(canvasFlex.div, bind(function(i, shift, ctrl) {
     var dialog = createDialog({size:DIALOG_SMALL, title:'Ethereal upgrade info'});
     dialog.content.div.innerHTML = infoText;
-  }, 'info: ' + name);
+  }, i), 'Show upgrade info', {
+    tooltip:('Show ' + name + ' info')
+  });
 
   titleFlex.div.innerHTML = text;
 

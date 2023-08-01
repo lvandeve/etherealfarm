@@ -110,12 +110,13 @@ registers click action(s), or tooltip, or both.
 this replaces (and deprecates) addAction
 this can support getting tooltips and shift+click or ctrl+click on mobile UI's too, which is why it has to be all together
 div: the div to add the actions and/or tooltip to
-fun: function called for actions, receives 2 parameters: shift, and ctrl (does not receive the JS event). Or give undefined to use this e.g. for tooltip only.
+fun: function called for actions, receives 3 boolean parameters: shift, ctrl (does not receive the JS event) and longclick_extra. Or give undefined to use this e.g. for tooltip only.
 label: aria/mobile label for the action (must be short enough to fit a button in long-press context menu), or undefined if fun is undefined
 params: optional, object with following named parameters, all optional:
 params.label_shift: label for the action when shift is pressed. In addition, this also implies a shift action is available and should be displayed in mobile UI
 params.label_ctrl: label for the action when shift is pressed. In addition, this also implies a ctrl action is available and should be displayed in mobile UI
 params.label_ctrl_shift: label for the action when shift and ctrl are pressed. In addition, this also implies a ctrl action is available and should be displayed in mobile UI
+params.label_longclick_extra: label for extra action that only shows up on longclick
 params.tooltip: function or string for tooltip. If it's text, it's shown as-is. If function, the function should return text (for tooltips with dynamic content)
 params.tooltip_poll: if true, will make the tooltip dynamically update by calling fun again
 params.immediate: make the button respond immediately on mousedown, rather than only on mouseup. Not compatible with mobile.
@@ -163,11 +164,18 @@ function registerAction(div, fun, label, params) {
   }
 }
 
+// prevent opening multiple: some scrolling bug on mobile may accidently open tons of them, at least ensure it's only one in that case
+var longTouchContextDialog_open = false;
+
 // gets the same params as registerAction
 function makeLongTouchContextDialog(div, fun, label, params) {
+  if(longTouchContextDialog_open) return;
+  longTouchContextDialog_open = true;
   var dialog = createDialog({
     title:'Long press context menu',
-    bgstyle:'efDialogLongPress'
+    bgstyle:'efDialogLongPress',
+    scrollable:true,
+    onclose: function() { longTouchContextDialog_open = false; }
   });
   var content = dialog.content;
 
@@ -175,7 +183,7 @@ function makeLongTouchContextDialog(div, fun, label, params) {
   var y = 0;
 
   var addButton = function() {
-    var h = 0.1;
+    var h = 0.07;
     var flex  = new Flex(content, 0.01, y, 0.99, y + h);
     y += h * 1.2;
     flex.div.className = 'efButton';
@@ -193,7 +201,7 @@ function makeLongTouchContextDialog(div, fun, label, params) {
     var button = addButton();
     registerAction(button.div, function() {
       closeTopDialog(); // close this context menu
-      fun(false, false);
+      fun(false, false, false);
     }, label, {});
     button.div.textEl.innerText = 'main: ' + upper(label);
   }
@@ -202,7 +210,7 @@ function makeLongTouchContextDialog(div, fun, label, params) {
     var button = addButton();
     registerAction(button.div, function() {
       closeTopDialog(); // close this context menu
-      fun(true, false);
+      fun(true, false, false);
     }, label, {});
     button.div.textEl.innerText = 'shift: ' + upper(params.label_shift);
   }
@@ -211,7 +219,7 @@ function makeLongTouchContextDialog(div, fun, label, params) {
     var button = addButton();
     registerAction(button.div, function() {
       closeTopDialog(); // close this context menu
-      fun(false, true);
+      fun(false, true, false);
     }, label, {});
     button.div.textEl.innerText = 'ctrl: ' + upper(params.label_ctrl);
   }
@@ -220,9 +228,18 @@ function makeLongTouchContextDialog(div, fun, label, params) {
     var button = addButton();
     registerAction(button.div, function() {
       closeTopDialog(); // close this context menu
-      fun(true, true);
+      fun(true, true, false);
     }, label, {});
     button.div.textEl.innerText = 'shift+ctrl: ' + upper(params.label_ctrl_shift);
+  }
+
+  if(params.label_longclick_extra) {
+    var button = addButton();
+    registerAction(button.div, function() {
+      closeTopDialog(); // close this context menu
+      fun(false, false, true);
+    }, label, {});
+    button.div.textEl.innerText = 'other: ' + upper(params.label_longclick_extra);
   }
 
   y += 0.05;
@@ -1055,6 +1072,20 @@ example: to have something always be square inside of rectangular parent (which 
 example: same as previous example but not square but rectangle that must keep constant ratio w/h = r: [0.5,0,-0.5,r], [0.5,0,-0.5,1/r], [0.5,0,0.5,r], [0.5,0,0.5,1/r]
 example: button in bottom right corner with always a width/height ratio (of butotn itself) of 2/1 (here 0.3/0.15): [1.0, 0, -0.3], [1.0, 0, -0.15], [1.0, 0, -0.01], [1.0, 0, -0.01]
 The fontSize lets the Flex also manage font size. This value does not support the 3-element array, just single number, and will be based on min(w*10, h) of the current element's computed size.
+
+the y0 coordinate may alternatively be set to 'a'. Then the element will be inline instead and dynamically positioned.
+A few rules, restrictions and tips about this:
+-only works for vertical direction, x0 or x1 cannot bet set to 'a'.
+-y1 can optionally also be set to 'a', but that does nothing particular, it sets height to 'don't care'. This is only supported in combination with y0 being 'a'.
+-y1 can be given regular values too, then it determines the height relative from where y0 ends up (which is dynamic since it's inline)
+-if you use 'a', you should only use 'a' for all elements in this parent flex. So for a parent flex, either all its children should have 'a', or all its children should not have 'a'. Possibly combining both will do something particular, but likely it means overlapping elements and the behavior is not specified
+-if you use 'a' for the children of a parent element, you must still give the parent element a height that is big enough, if you want to use anything referring to the height of the parent in the positioning of the children at least. The parent flex does not actually know its height so can't compute with it, only the browser knows (and requesting the height is an expensive operation in the browser)
+--> so that means you should provide some good guess of how high it will end up, too big may cause lots of scrollable whitespace below, too small may make it harder to use relative heights compared to parent in children
+-'a' elements are normally the last series of elements in a scrollable area. Because you could never put a non-'a' element below them since the position where they end is unknown (other than by the browser; expensive to query)
+-it is possible to get sub-flexes without 'a' inside of 'a' flexes, but then you must specify a known height for the 'a' flex (so set its y1 to something that isn't 'a', only its y0 is 'a', and if the y1 is based on parent height, ensure the parent has a good height set)
+-if you add multiple 'a' texts above each other, they'll stick to each other. Solutions:
+  - Use '<br>' tags in innerHTML, or '\n' in innerText, to add appropriate amounts of whitespace at the start or end of any text (at end, two <br><br> or \n\n are needed, at the beginning just one, depending on what the next content is).
+  - set some marginTop or marginBottom expressed in 'em' units to the div of this flex
 */
 function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
   this.fontSize = opt_fontSize;
@@ -1076,13 +1107,22 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
     this.x0f = 1;
     this.x0p = 0;
   }
-  if(y0.length) {
+  if(y0 == 'a') {
+    this.y0a = true; // automatic inline positioning, and also automatic vertical size
+    this.y0 = 0;
+    this.y0o = 0;
+    this.y0b = 0;
+    this.y0f = 0;
+    this.y0p = 0;
+  } else if(y0.length) {
+    this.y0a = false;
     this.y0 = y0[0];
     this.y0o = y0[1] || 0;
     this.y0b = y0[2] || 0;
     this.y0f = (y0[3] == undefined) ? 1 : y0[3];
     this.y0p = y0[4] || 0;
   } else {
+    this.y0a = false;
     this.y0 = y0;
     this.y0o = 0;
     this.y0b = 0;
@@ -1102,13 +1142,22 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
     this.x1f = 1;
     this.x1p = 0;
   }
-  if(y1.length) {
+  if(y1 == 'a') {
+    this.y1a = true; // not actually used, y1 can be set to 'a' but it actually doesn't matter what it's set to when y0 is set to 'a'
+    this.y1 = 0;
+    this.y1o = 0;
+    this.y1b = 0;
+    this.y1f = 0;
+    this.y1p = 0;
+  } else if(y1.length) {
+    this.y1a = false;
     this.y1 = y1[0];
     this.y1o = y1[1] || 0;
     this.y1b = y1[2] || 0;
     this.y1f = (y1[3] == undefined) ? 1 : y1[3];
     this.y1p = y1[4] || 0;
   } else {
+    this.y1a = false;
     this.y1 = y1;
     this.y1o = 0;
     this.y1b = 0;
@@ -1127,7 +1176,12 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
   this.div = this.div_; // publically visible div, usually same as div_, not if it has to use shenanigans to support vertical alignment
   this.elements = [];
 
-  if(this.align > 0) {
+  if(this.y0a) {
+    this.div_.style.display = 'inline-block';
+    /*this.div_.style.position = '';
+    this.div = util.makeElement('div', this.div_);*/
+    this.div.style.position = 'relative';
+  } else if(this.align > 0) {
     var h = this.align % 3;
     var v = Math.floor(this.align / 3);
     if(v != 0) {

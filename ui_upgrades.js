@@ -241,56 +241,56 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
   if(!completed) {
     styleButton0(buyFlex.div);
 
-    addButtonAction(buyFlex.div, bind(function(i, e) {
-      var u = upgrades[chip.u];
-      if(u.is_choice) {
-        var dialog;
-        var funa = function() {
-          addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
-          update();
-        };
-        var funb = function() {
-          addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
-          update();
-        };
-        dialog = createDialog({
-          size:DIALOG_MEDIUM,
-          title:upper(u.name),
-          functions:[funa, funb],
-          names:[u.choicename_a, u.choicename_b],
-          iconmargin:0.1
-        });
-        dialog.content.div.innerHTML = u.description;
-        renderUpgraceIcon(dialog.icon, u);
-      } else {
-        addAction({type:ACTION_UPGRADE, u:u.index, shift:e.shiftKey});
-        update();
-      }
-
-      // misclicking with shift on often creates unwanted text selection, fix that here
-      if(window.getSelection) window.getSelection().removeAllRanges();
-      else if(document.selection) document.selection.empty();
-    }, i));
-
     util.setEvent(chip.div, 'mouseover', 'upgradeseen', function() {
       var u = upgrades[chip.u];
       state.upgrades[u.index].seen = true;
     });
   }
 
+  registerAction(buyFlex.div, completed ? undefined : bind(function(i, shift, ctrl) {
+    var u = upgrades[chip.u];
+    if(u.is_choice) {
+      var dialog;
+      var funa = function() {
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
+        update();
+      };
+      var funb = function() {
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
+        update();
+      };
+      dialog = createDialog({
+        size:DIALOG_MEDIUM,
+        title:upper(u.name),
+        functions:[funa, funb],
+        names:[u.choicename_a, u.choicename_b],
+        iconmargin:0.1
+      });
+      dialog.content.div.innerHTML = u.description;
+      renderUpgraceIcon(dialog.icon, u);
+    } else {
+      addAction({type:ACTION_UPGRADE, u:u.index, shift:shift});
+      update();
+    }
 
-  registerTooltip(buyFlex.div, function() {
-    updateInfoText();
-    return infoText;
-  }, true);
-  registerTooltip(canvasFlex.div, function() {
-    return 'Show ' + lower(upgrades[chip.u].name) + ' info';
+    // misclicking with shift on often creates unwanted text selection, fix that here
+    if(window.getSelection) window.getSelection().removeAllRanges();
+    else if(document.selection) document.selection.empty();
+  }, i), completed ? undefined : 'buy one', {
+    label_shift:(completed ? undefined : 'buy many'),
+    tooltip:function() {
+      updateInfoText();
+      return infoText;
+    }
   });
+
 
   styleButton0(canvasFlex.div);
 
-  addButtonAction(canvasFlex.div, function() {
+  registerAction(canvasFlex.div, bind(function(i, shift, ctrl) {
     renderUpgradeDialog(chip);
+  }, i), 'Show upgrade info', {
+    tooltip:('Show ' + lower(upgrades[chip.u].name) + ' info')
   });
 
   chip.updateInfoText = updateInfoText;

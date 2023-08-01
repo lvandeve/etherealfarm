@@ -324,15 +324,18 @@ function showConfigureAutoChoiceDialog(subject) {
 
   var addButton = function() {
     var h = 0.08;
-    var flex  = new Flex(scrollFlex, 0.01, y, 0.4, y + h);
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.55, y + h);
     y += h * 1.2;
     return flex;
   };
 
-  var addSideButton = function() {
+  var addInfoButton = function() {
     var h = 0.08;
-    y -= h * 1.2; // undo height increase from previous button
-    var flex  = new Flex(scrollFlex, 0.45, y, 0.45 + h, y + h);
+    var h2 = h * 1.2;
+    var half = h / 2;
+    var half2 = h2 / 2;
+    y -= h * 1.2; // undo height increase from main button left of this one
+    var flex  = new Flex(scrollFlex, 0.6, [y + half -half2], [0.6, h2], [y + half + half2]);
     y += h * 1.2;
     return flex;
   };
@@ -387,7 +390,7 @@ function showConfigureAutoChoiceDialog(subject) {
 
     registerTooltip(flex.div, tooltiptext);
 
-    flex = addSideButton();
+    flex = addInfoButton();
     styleButton0(flex.div, true);
     var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
     renderImage(image_info, canvas);
@@ -1248,7 +1251,7 @@ function updateAutomatonUI() {
 
   var text = undefined;
   if(!autoUpgradesUnlocked()) {
-    text = 'Reach ethereal tree level 2 and beat the no upgrades challenge to unlock auto-upgrades';
+    text = 'Reach ethereal tree level 2 and beat the no upgrades challenge to unlock auto-upgrades and auto-choice';
   } else if(!autoUnlockUnlocked()) {
     text = 'Reach ethereal tree level 3 and beat the blackberry challenge to unlock auto-unlock of next-tier plants';
   } else if(!autoActionUnlocked()) {

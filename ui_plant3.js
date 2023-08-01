@@ -92,6 +92,17 @@ function makePlantChip3(crop, x, y, w, parent, opt_plantfun, opt_showfun, opt_to
   return flex;
 }
 
+function crop3SortFun(a, b) {
+  var ac = crops3[a].cost.infseeds;
+  var bc = crops3[b].cost.infseeds;
+  if(ac.eqr(0) || bc.eqr(0)) {
+    // for crops that don't use infseeds as cost
+    ac = Num(crops3[a].tier);
+    bc = Num(crops3[b].tier);
+  }
+  return ac.lt(bc) ? 1 : -1;
+}
+
 // get the array of unlocked crops in the plant dialog, in order they should be displayed:
 // most expensive ones first, but some of each type represented at the top (the latter is not yet implemented due to not yet needed for any supported crop types)
 function getCrop3Order() {
@@ -104,22 +115,35 @@ function getCrop3Order() {
 
   var added = {};
 
+  var array;
+
+  // most expensive one of each unlocked type; this makes it so the runestone won't disappear to the bottom as more crops get unlocked
+  array = [];
+  for(var type = 0; type < NUM_CROPTYPES; type++) {
+    var highest = undefined;
+    for(var i = 0; i < unlocked.length; i++) {
+      if(added[unlocked[i]]) continue;
+      var c = crops3[unlocked[i]];
+      if(c.type == type && (!highest || c.cost.gt(highest.cost))) highest = c;
+    }
+    if(highest) {
+      array.push(highest.index);
+    }
+  }
+  array.sort(crop3SortFun);
+  for(var i = 0; i < array.length; i++) {
+    result.push(array[i]);
+    added[array[i]] = true;
+  }
+
+
   // everything else
-  var array = [];
+  array = [];
   for(var i = 0; i < unlocked.length; i++) {
     if(added[unlocked[i]]) continue;
     array.push(unlocked[i]);
   }
-  array.sort(function(a, b) {
-    var ac = crops3[a].cost.infseeds;
-    var bc = crops3[b].cost.infseeds;
-    if(ac.eqr(0) || bc.eqr(0)) {
-      // for crops that don't use infseeds as cost
-      ac = Num(crops3[a].tier);
-      bc = Num(crops3[b].tier);
-    }
-    return ac.lt(bc) ? 1 : -1;
-  });
+  array.sort(crop3SortFun);
   for(var i = 0; i < array.length; i++) {
     result.push(array[i]);
     added[array[i]] = true;

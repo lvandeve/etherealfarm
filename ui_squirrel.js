@@ -202,7 +202,8 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
     };
   }
 
-  addButtonAction(canvasFlex.div, function() {
+
+  registerAction(canvasFlex.div, function(shift, ctrl) {
     var buyfun2 = undefined;
     var buyname = undefined;
     if(showbuy) {
@@ -221,14 +222,16 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
     }
     var dialog = createDialog({size:DIALOG_SMALL, functions:buyfun2, names:buyname, title:'Squirrel upgrade', icon:u.image});
     dialog.content.div.innerHTML = infoText;
+  }, 'show squirrel upgrade info', {
+    tooltip:function() {
+      return getSquirrelUpgradeInfoText(u, gated, is_gate, unknown);
+    }
   });
+
 
   //if(!bought) text += '<br>' + 'Buy';
 
   textFlex.div.textEl.innerHTML = text;
-  registerTooltip(flex.div, function() {
-    return getSquirrelUpgradeInfoText(u, gated, is_gate, unknown);
-  }, true);
 }
 
 // view_only: if true, then it's rendered only for viewing, and all upgrade names are revealed, no actions to buy them are shown and it can render old squirrel trees (from older evolutions) too

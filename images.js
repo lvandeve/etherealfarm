@@ -1744,3 +1744,23 @@ var image_infinity = generateImageCanvas(`
 ................
 `);
 
+
+var image_beta = generateImageCanvas(`
+..PPPPP..PPPPP..
+..PRRRRr.PRrrr..
+..PR..rr.PR.....
+..PRRRr..PRRr...
+..PRRRr..PRrr...
+..PR..Rr.PR.....
+..PRRRrr.PRRRr..
+..rrrrr..rrrrr..
+................
+..PPPPPP.PPPPP..
+..PRRrrr.PRRRr..
+....Rr...PR.Rr..
+....Rr...PRRRr..
+....Rr...PRRRr..
+....Rr...Pr.Rr..
+....rr...rr.rr..
+`);
+

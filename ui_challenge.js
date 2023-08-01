@@ -338,7 +338,7 @@ function createChallengeDialog(opt_from_challenge) {
 
   var contentFlex = dialog.content;
 
-  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.01], [1, 0, -0.01], 0.33);
+  var flex = new Flex(contentFlex, [0, 0, 0.01], [0, 0, 0.001], [1, 0, -0.01], 0.28);
 
   var text = '';
 
@@ -356,10 +356,10 @@ function createChallengeDialog(opt_from_challenge) {
 
   flex.div.innerHTML = text;
 
-  var buttonFlex = new Flex(contentFlex, 0, 0.32, 1, 1);
+  var buttonFlex = new Flex(contentFlex, 0, 0.28, 1, 1);
 
   var pos = 0;
-  var h = 0.075;
+  var h = 0.072;
 
   for(var i = 0; i < challenges_order.length; i++) {
     var c = challenges[challenges_order[i]];

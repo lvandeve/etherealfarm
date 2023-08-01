@@ -912,6 +912,9 @@ function createChangelogDialog() {
   if(holidayEventActive() == 4) {
     icon = images_pumpkin_small[0];
   }
+  if(state.beta) {
+    icon = image_beta;
+  }
 
   var dialog = createDialog({title:'About', icon:icon, onclose:function(cancel) {
     showing_changelog = false;
@@ -1060,6 +1063,7 @@ function importSaveFromDialog(shift, ctrl, enc, messageFlex) {
     if(state && state.error_reason == 6) message += '\n' + loadfailreason_checksum;
     if(state && state.error_reason == 7) message += '\n' + loadfailreason_toonew;
     if(state && state.error_reason == 8) message += '\n' + loadfailreason_tooold;
+    if(state && state.error_reason == 9) message += '\n' + loadfailreason_beta;
     messageFlex.div.innerText = message;
     messageFlex.div.style.color = '';
   });
@@ -1126,8 +1130,14 @@ function createSettingsDialog() {
     var textFlex = new Flex(dialog.content, 0, 0, 1, 0.1);
     textFlex.div.innerHTML = 'Import a savegame backup. You can create a backup with "export save". Paste in here and press "import".<br/><font color="red">Warning: this overwrites your current game!</font>';
     var area = util.makeAbsElement('textarea', '1%', '30%', '98%', '68%', dialog.content.div);
-    area.select();
-    area.focus();
+    if(!isTouchDevice()) {
+      // the select or the focus call may cause mobile browsers to zoom deep into the save text field, but that's wrong because the import save button then becomes invisible (you have to manually zoom out again to see it)
+      // in firefox mobile there's then even a bug where you can't fully zoom out manually after this, unless you double tap
+      // unfortunately both the select and focus function do it
+      // so disable the focusing for touch devices. At least you don't benefit much from focusing the area there anyway, since you have to click it to paste there anyway
+      area.select();
+      area.focus();
+    }
   });
   button.id = 'settings_import';
 
@@ -1217,7 +1227,8 @@ function updateSettingsAboutIcon() {
   if(!aboutButtonCanvas) return;
   var holiday = holidayEventActive();
   if(holiday != aboutButtonCanvas_lastHoliday) {
-    if(holiday == 1) renderImage(present_images[Math.floor(Math.random() * 4)], aboutButtonCanvas);
+    if(window['global_is_beta']) renderImage(image_beta, aboutButtonCanvas);
+    else if(holiday == 1) renderImage(present_images[Math.floor(Math.random() * 4)], aboutButtonCanvas);
     else if(holiday == 2) renderImage(bunny_image, aboutButtonCanvas);
     else if(holiday == 4) renderImage(images_pumpkin_small[0], aboutButtonCanvas);
     else renderImage(images_fern[1], aboutButtonCanvas);

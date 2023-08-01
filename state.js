@@ -507,6 +507,8 @@ function State() {
 
   this.seed0 = -1; // if there's ever a new feature added to the game requiring a new random seed, this can be used to initialize that new seed to ensure the new seed can't be cheesed by refreshing with a savegame that didn't have the new seed yet
 
+  this.beta = 0; // if higher value, it's an alpha/beta/test version of the game
+
   this.currentTab = 0; // currently selected tab
   this.numTabs = 0; // amount of visible tabs
   this.lastPlanted = -1; // for shift+plant
@@ -2022,6 +2024,8 @@ function setOrAppendFruit(slot, f) {
   }
 }
 
+// slot < 100 means in storage pool, >= means sacrificial
+// use insertFruit(100, fruit) to insert it at beginning of sacrificial pool, insertFruit(100 + state.fruit_sacr.length, fruit) to insert it at end
 function insertFruit(slot, f) {
   if(slot < 100) {
     var j = slot;

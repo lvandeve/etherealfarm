@@ -546,6 +546,8 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • on mobile/touch devices, you can also long-press to see tooltips, e.g on most buttons in the setting dialogs.';
   text += '<br/>';
+  text += ' • NOTE: mobile browsers don\'t show scrollbars so you can\'t always see if something is scrollable. The game shows a shadow effect to show scrollable content but this may be subtle. E.g. in the (detailed) stats dialogs of some plants in the field.';
+  text += '<br/>';
 
   text += '<br/><b>Main shortcuts:</b>';
   text += '<br/>';
@@ -1053,7 +1055,7 @@ function showGoalChips() {
   } else if(goal == GOAL_FERN) {
     setGoalText('Collect 10 seeds by clicking ferns.');
   } else if(goal == GOAL_WC5) {
-    setGoalText('Plant 5 watercress on the field (' + state.c_numplantedbrassica + ' / 5 planted). To plant, click a field cell, then choose the watercress crop. Each costs 10 seeds.');
+    setGoalText('Plant 5 watercress on the field (' + state.c_numplantedbrassica + ' / 5 planted). To plant, click a field cell, then choose the watercress crop. Each costs 10 seeds, but will also produce seeds.');
     var watercress_chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_watercress') : null;
     if(enableHelpArrows) {
       if(watercress_chip) {
@@ -1096,7 +1098,7 @@ function showGoalChips() {
       }
     }
   } else if(goal == GOAL_BLACKBERRY_PLANT) {
-    setGoalText('Plant a blackberry and wait for it to grow. If the field is full of watercress, you can click one and use "replace crop" to delete it and plant blackberry there.');
+    setGoalText('Plant a blackberry and wait for it to grow. It produces more seeds. If the field is full of watercress, you can click one and use "replace crop" to delete it and plant blackberry there.');
     if(enableHelpArrows) {
       if(!state.numcropfields_permanent && state.res.seeds.ger(1000)) {
         var chip = dialog_level > 0 ? document.getElementById('help_arrow_plant_blackberry') : null;

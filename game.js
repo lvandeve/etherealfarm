@@ -2214,7 +2214,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       }
     } else {
       // add fruit to sacrificial pool, player is responsible for choosing to move fruits to storage or active lots
-      insertFruit(100 /*+ state.fruit_sacr.length*/, fruit);
+      insertFruit(100 + state.fruit_sacr.length, fruit);
     }
 
     state.c_numfruits++;
@@ -3583,6 +3583,7 @@ var update = function(opt_ignorePause) {
         if(state.upgrades_new) {
           // applied upgrade, must have been from side panel, do not show upgrade tab in red anymore
           for(var j = 0; j < registered_upgrades.length; j++) {
+            if(action.by_automaton && j != action.u) continue; // do not make crop-unlock upgrades seen when you have auto-upgrade (which created this action) but not yet auto-unlock with the automaton, so that upgrade tab will be red guaranteed when new crop unlocks are there
             var u = state.upgrades[registered_upgrades[j]];
             if(u.unlocked && !u.seen) u.seen = true;
           }
@@ -6001,12 +6002,12 @@ function showShiftCropChip(crop_id) {
   else f = state.field[y][x];
 
   var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
-  var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
-  var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
+  var deleting = f.hasCrop() && ctrl && !shift;
+  var replacing = f.hasCrop() && shift && !ctrl;
   //if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
-  var upgrading = f.hasCrop() && shift && ctrl && state.allowshiftdelete && f.getCrop().tier < state.highestoftypeunlocked[f.getCrop().type];
+  var upgrading = f.hasCrop() && shift && ctrl && f.getCrop().tier < state.highestoftypeunlocked[f.getCrop().type];
   if(upgrading) c = croptype_tiers[f.getCrop().type][state.highestoftypeunlocked[f.getCrop().type]];
-  var selecting = f.hasCrop() && shift && ctrl && (!state.allowshiftdelete || f.getCrop().tier >= state.highestoftypeunlocked[f.getCrop().type]);
+  var selecting = f.hasCrop() && shift && ctrl && f.getCrop().tier >= state.highestoftypeunlocked[f.getCrop().type];
   if(selecting) c = f.getCrop();
 
   if(!planting && !deleting && !replacing && !upgrading && !selecting) return;
@@ -6109,12 +6110,12 @@ function showShiftCrop2Chip(crop_id) {
   else f = state.field2[y][x];
 
   var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
-  var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
-  var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
+  var deleting = f.hasCrop() && ctrl && !shift;
+  var replacing = f.hasCrop() && shift && !ctrl;
   //if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
-  var upgrading = f.hasCrop() && shift && ctrl && state.allowshiftdelete && f.getCrop().tier < state.highestoftype2unlocked[f.getCrop().type];
+  var upgrading = f.hasCrop() && shift && ctrl && f.getCrop().tier < state.highestoftype2unlocked[f.getCrop().type];
   if(upgrading) c = croptype2_tiers[f.getCrop().type][state.highestoftype2unlocked[f.getCrop().type]];
-  var selecting = f.hasCrop() && shift && ctrl && (!state.allowshiftdelete || f.getCrop().tier >= state.highestoftype2unlocked[f.getCrop().type]);
+  var selecting = f.hasCrop() && shift && ctrl && f.getCrop().tier >= state.highestoftype2unlocked[f.getCrop().type];
   if(selecting) c = f.getCrop();
 
   if(!planting && !deleting && !replacing && !upgrading && !selecting) return;
@@ -6217,12 +6218,12 @@ function showShiftCrop3Chip(crop_id) {
   else f = state.field3[y][x];
 
   var planting = !f.hasCrop(); // using !f.hasCrop(), rather than f.isEmpty(), to also show the planting chip when mouse is over the tree, rather than showing nothing then, to give the information in more places no matter where the mouse is
-  var deleting = f.hasCrop() && ctrl && !shift && state.allowshiftdelete;
-  var replacing = f.hasCrop() && shift && !ctrl && state.allowshiftdelete;
+  var deleting = f.hasCrop() && ctrl && !shift;
+  var replacing = f.hasCrop() && shift && !ctrl;
   //if(replacing && f.getCrop().index == state.lastPlanted) replacing = false; // replacing does not work if same crop. It could be deleting, or nothing, depending on plant growth, but display as nothing
-  var upgrading = f.hasCrop() && shift && ctrl && state.allowshiftdelete && f.getCrop().tier < state.highestoftype3unlocked[f.getCrop().type];
+  var upgrading = f.hasCrop() && shift && ctrl && f.getCrop().tier < state.highestoftype3unlocked[f.getCrop().type];
   if(upgrading) c = croptype3_tiers[f.getCrop().type][state.highestoftype3unlocked[f.getCrop().type]];
-  var selecting = f.hasCrop() && shift && ctrl && (!state.allowshiftdelete || f.getCrop().tier >= state.highestoftype3unlocked[f.getCrop().type]);
+  var selecting = f.hasCrop() && shift && ctrl && f.getCrop().tier >= state.highestoftype3unlocked[f.getCrop().type];
   if(selecting) c = f.getCrop();
 
   if(!planting && !deleting && !replacing && !upgrading && !selecting) return;

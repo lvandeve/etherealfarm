@@ -367,6 +367,114 @@ function makeField3Dialog(x, y) {
   }
 }
 
+function field3CellTooltipFun(x, y, div) {
+  var f = state.field3[y][x];
+  var fd = field3Divs[y][x];
+
+  var result = undefined;
+  if(f.index == 0) {
+    return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
+  } else if(f.index == FIELD_POND) {
+    var text = 'Infinity pond';
+    if(state.infinityboost.gtr(0)) {
+      text += '<br><br>';
+      text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
+      if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
+    }
+    return text;
+  } else if(f.hasCrop()) {
+    var c = crops3[f.cropIndex()];
+    result = getCropInfoHTML3(f, c, false);
+  }
+  return result;
+}
+
+function field3CellClickFun(x, y, div, shift, ctrl) {
+  var f = state.field3[y][x];
+  if(f.index == FIELD_POND) {
+    makeField3Dialog(x, y);
+  } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
+    if(shift && ctrl) {
+      // experimental feature for now [same as in basic field], most convenient behavior needs to be found
+      // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still too expensive and you wait for automaton to upgrade the plant
+      if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
+        var c = crops3[state.lastPlanted3];
+        var tier = state.highestoftype3unlocked[c.type];
+        var c3 = croptype3_tiers[c.type][tier];
+        if(c.type == CROPTYPE_CHALLENGE) c3 = c;
+        if(!c3 || !state.crops3[c3.index].unlocked) c3 = c;
+        if(c3.getCost().gt(state.res) && tier > 0) {
+          tier--;
+          var c4 = croptype3_tiers[c.type][tier];
+          if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
+        }
+        if(c3.getCost().gt(state.res) && tier > 0) {
+          tier--;
+          var c4 = croptype3_tiers[c.type][tier];
+          if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
+        }
+        if(c3.getCost().gt(state.res)) {
+          tier = -1; // template
+          var c4 = croptype3_tiers[c.type][tier];
+          if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
+        }
+        addAction({type:ACTION_PLANT3, x:x, y:y, crop:c3, shiftPlanted:true});
+        update();
+      }
+    } else if(shift && !ctrl) {
+      if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
+        var c = crops3[state.lastPlanted3];
+        addAction({type:ACTION_PLANT3, x:x, y:y, crop:c, shiftPlanted:true});
+        update();
+      } else {
+        showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+      }
+    } else if(ctrl && !shift) {
+      addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[getHighestAffordableBrassica3()], shiftPlanted:true});
+      update();
+    } else {
+      makeField3Dialog(x, y);
+    }
+  } else if(f.hasCrop()) {
+    if(ctrl && shift) {
+      // experimental feature [same as in basic field] for now, most convenient behavior needs to be found
+      // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
+      // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
+      var c2 = f.getCrop();
+      var c3 = croptype3_tiers[c2.type][state.highestoftype3unlocked[c2.type]];
+      if(!c3 || !state.crops3[c3.index].unlocked) c3 = c2;
+      if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
+      state.lastPlanted3 = c3.index;
+      if(c3.getCost().gt(state.res)) state.lastPlanted3 = c2.index;
+      if(c3.tier > c2.tier) {
+        addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c3, shiftPlanted:true});
+        update();
+      }
+    } else if(ctrl && !shift) {
+      addAction({type:ACTION_DELETE3, x:x, y:y});
+      update();
+    } else if(shift && !ctrl) {
+      if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
+        var c = crops3[state.lastPlanted3];
+        var c2 = f.getCrop();
+        if(c2.index == state.lastPlanted3 && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate() || f.isGhost())) {
+          // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+          // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+          // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+          addAction({type:ACTION_DELETE3, x:x, y:y});
+        } else {
+          addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c, shiftPlanted:true});
+        }
+        update();
+      }
+    } else {
+      makeField3Dialog(x, y);
+    }
+  } else {
+    makeField3Dialog(x, y);
+  }
+}
+
 function initField3UI() {
   field3Flex.clear();
   field3Rows = [];
@@ -425,117 +533,14 @@ function initField3UI() {
         window.setTimeout(function(){updateField3MouseClick(x, y)});
       }, x, y));
 
-      registerTooltip(div, bind(function(x, y, div) {
-        var f = state.field3[y][x];
-        var fd = field3Divs[y][x];
-
-        var result = undefined;
-        if(f.index == 0) {
-          return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
-        } else if(f.index == FIELD_POND) {
-          var text = 'Infinity pond';
-          if(state.infinityboost.gtr(0)) {
-            text += '<br><br>';
-            text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
-            if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
-          }
-          return text;
-        } else if(f.hasCrop()) {
-          var c = crops3[f.cropIndex()];
-          result = getCropInfoHTML3(f, c, false);
-        }
-        return result;
-      }, x, y, div), true);
-
-      addButtonAction(div, bind(function(x, y, div, e) {
-        var f = state.field3[y][x];
-        if(f.index == FIELD_POND) {
-          makeField3Dialog(x, y);
-        } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
-          var shift = e.shiftKey;
-          var ctrl = eventHasCtrlKey(e);
-          if(shift && ctrl) {
-            // experimental feature for now [same as in basic field], most convenient behavior needs to be found
-            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still too expensive and you wait for automaton to upgrade the plant
-            if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
-              var c = crops3[state.lastPlanted3];
-              var tier = state.highestoftype3unlocked[c.type];
-              var c3 = croptype3_tiers[c.type][tier];
-              if(c.type == CROPTYPE_CHALLENGE) c3 = c;
-              if(!c3 || !state.crops3[c3.index].unlocked) c3 = c;
-              if(c3.getCost().gt(state.res) && tier > 0) {
-                tier--;
-                var c4 = croptype3_tiers[c.type][tier];
-                if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
-              }
-              if(c3.getCost().gt(state.res) && tier > 0) {
-                tier--;
-                var c4 = croptype3_tiers[c.type][tier];
-                if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
-              }
-              if(c3.getCost().gt(state.res)) {
-                tier = -1; // template
-                var c4 = croptype3_tiers[c.type][tier];
-                if(c4 && state.crops3[c4.index].unlocked) c3 = c4;
-              }
-              addAction({type:ACTION_PLANT3, x:x, y:y, crop:c3, shiftPlanted:true});
-              update();
-            }
-          } else if(shift && !ctrl) {
-            if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
-              var c = crops3[state.lastPlanted3];
-              addAction({type:ACTION_PLANT3, x:x, y:y, crop:c, shiftPlanted:true});
-              update();
-            } else {
-              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
-            }
-          } else if(ctrl && !shift) {
-            addAction({type:ACTION_PLANT3, x:x, y:y, crop:crops3[getHighestAffordableBrassica3()], shiftPlanted:true});
-            update();
-          } else {
-            makeField3Dialog(x, y);
-          }
-        } else if(f.hasCrop()) {
-          var shift = e.shiftKey;
-          var ctrl = eventHasCtrlKey(e);
-          if(ctrl && shift) {
-            // experimental feature [same as in basic field] for now, most convenient behavior needs to be found
-            // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
-            // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
-            var c2 = f.getCrop();
-            var c3 = croptype3_tiers[c2.type][state.highestoftype3unlocked[c2.type]];
-            if(!c3 || !state.crops3[c3.index].unlocked) c3 = c2;
-            if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
-            state.lastPlanted3 = c3.index;
-            if(c3.getCost().gt(state.res)) state.lastPlanted3 = c2.index;
-            if(c3.tier > c2.tier) {
-              addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c3, shiftPlanted:true});
-              update();
-            }
-          } else if(ctrl && !shift) {
-            addAction({type:ACTION_DELETE3, x:x, y:y});
-            update();
-          } else if(shift && !ctrl) {
-            if(state.lastPlanted3 >= 0 && crops3[state.lastPlanted3]) {
-              var c = crops3[state.lastPlanted3];
-              var c2 = f.getCrop();
-              if(c2.index == state.lastPlanted3 && ((c2.type != CROPTYPE_BRASSICA && !f.isFullGrown()) || f.isTemplate() || f.isGhost())) {
-                // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
-                // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
-                // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-                addAction({type:ACTION_DELETE3, x:x, y:y});
-              } else {
-                addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c, shiftPlanted:true});
-              }
-              update();
-            }
-          } else {
-            makeField3Dialog(x, y);
-          }
-        } else {
-          makeField3Dialog(x, y);
-        }
-      }, x, y, div));
+      div.style.cursor = 'pointer';
+      registerAction(div, bind(field3CellClickFun, x, y, div), 'click field cell', {
+        label_shift:'(over)plant selected crop',
+        label_ctrl:'delete crop or plant brassica',
+        label_ctrl_shift:'select crop or plant highest tier',
+        tooltip:bind(field3CellTooltipFun, x, y, div),
+        tooltip_poll:true
+      });
 
       var pw = tw >> 1;
       var ph = Math.round(th / 16);

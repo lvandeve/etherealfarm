@@ -69,12 +69,12 @@ a:visited {
 .efButtonCantAfford {
   background-color: #ccc;
   border: 1px solid black;
-  color: #777;
+  color: #999;
   box-shadow: 3px 1px 1px #666;
 }
 
 .efTextCantAfford {
-  color: #777;
+  color: #999;
 }
 
 .efButtonHighlighted {
@@ -97,7 +97,7 @@ a:visited {
 .efButtonTranslucentCantAfford {
   background-color: #0000;
   border: 1px solid black;
-  color: #777;
+  color: #999;
 }
 
 .efButtonTranslucentCantAfford:hover {
@@ -180,7 +180,7 @@ There exists a scrollbox concept in CSS that can automatically make the shadows 
 but it doesn't work on translucent background, so cannot use it here. So this must be combined with some JS*/
 .efScrollGradient {
   background:
-  radial-gradient(farthest-side at 50% 0, #0003, #0000), radial-gradient(farthest-side at 50% 100%, #0003, #0000) 0 100%;
+  radial-gradient(farthest-side at 50% 0, #0005, #0000), radial-gradient(farthest-side at 50% 100%, #0005, #0000) 0 100%;
   background-repeat: no-repeat;
 	background-size: 100% 5%, 100% 5%, 100% 5%, 100% 5%;
 }

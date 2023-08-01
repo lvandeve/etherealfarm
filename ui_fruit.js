@@ -18,6 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 var fruitScrollFlex = undefined;
 
+var busyChoosingTargetSlot = undefined; // for "move to slot" button
+
 function getFruitAbilityName(ability, opt_abbreviation) {
   if(opt_abbreviation) {
     switch(ability) {
@@ -232,6 +234,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
   var oldLastTouchedFruit = lastTouchedFruit;
   lastTouchedFruit = null;
   lastTouchedFruit2 = null;
+  busyChoosingTargetSlot = undefined; // just in case this was somehow still active
 
   var selected = undefined;
 
@@ -444,8 +447,10 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
     if(fuse) {
       var h = s * 0.35;
+      var fuseFlex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + 1]);
       for(var i = -1; i < fuse.abilities.length; i++) {
-        var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
+        var flex = new Flex(fuseFlex, 0, 'a', 1, 'a');
+        flex.div.style.marginBottom = '1.4em';
         if(i == -1) {
           flex.div.innerText = upper(fuse.toString()) + ', fused ' + fuse.fuses + ' times';
         } else {
@@ -461,9 +466,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
           }
           flex.div.innerHTML = text;
         }
-        y += h * 1.2;
       }
-      text += '\n';
 
       var num_transfer = 0;
       for(var i = 0; i < fromfruit.abilities.length; i++) {
@@ -474,17 +477,21 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
       if(num_transfer == 0) {
         y += h;
-        addTitle('When the "from" fruit has two-star [**] abilities, you can transfer them to the "to" fruit. To get [**] abilities, fuse two fruits with the same ability to get [*], then one more fuse to get [**].');
+        //addTitle('When the "from" fruit has two-star [**] abilities, you can transfer them to the "to" fruit. To get [**] abilities, fuse two fruits with the same ability to get [*], then one more fuse to get [**].');
+        new Flex(flex, 0, 'a', 1, 'a').div.innerText = '\nWhen the "from" fruit has two-star [**] abilities, you can transfer them to the "to" fruit. To get [**] abilities, fuse two fruits with the same ability to get [*], then one more fuse to get [**].\n\n';
       } else {
         y += h;
-        addTitle('Two-star [**] abilities below are transferred from the "from" fruit into the "to" fruit. Optionally you can use the checkboxes below to prevent some abilities from transferring, or to prioritize which original abilities get kept and pushed out:');
-        y += h * 1.1;
+        //addTitle('Two-star [**] abilities below are transferred from the "from" fruit into the "to" fruit. Optionally you can use the checkboxes below to prevent some abilities from transferring, or to prioritize which original abilities get kept and pushed out:');
+        new Flex(flex, 0, 'a', 1, 'a').div.innerText = '\nTwo-star [**] abilities below are transferred from the "from" fruit into the "to" fruit. Optionally you can use the checkboxes below to prevent some abilities from transferring, or to prioritize which original abilities get kept and pushed out:\n\n';
+        y += h * 5;
 
         var ability_type_seen = [];
 
         for(var i = 0; i < fromfruit.abilities.length; i++) {
-          var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
           if(fromfruit.charge[i] == 2) {
+            //var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
+            var flex = new Flex(fuseFlex, 0, 'a', 1, [0, 0, h]);
+            flex.div.style.marginBottom = '0.1em';
             var text = '';
             var flex0 = new Flex(flex, 0, 0, [0, 1], 1);
             var flex1 = new Flex(flex, [0, 1.2], 0, 1, 1);
@@ -514,7 +521,10 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
 
         for(var i = 0; i < n; i++) {
           if(ability_type_seen[intofruit.abilities[i]]) continue;
-          var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
+          //var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], 1, [0, 0, y + h]);
+          var flex = new Flex(fuseFlex, 0, 'a', 1, [0, 0, h]);
+            flex.div.style.marginBottom = '0.1em';
+          //flex.div.style.border = '1px solid red';
           var text = '';
           var flex0 = new Flex(flex, 0, 0, [0, 1], 1);
           var flex1 = new Flex(flex, [0, 1.2], 0, 1, 1);
@@ -577,13 +587,15 @@ function fillFruitDialog(dialog, f, opt_selected) {
     text += '<br>';
     text += 'Fuses done: ' + f.fuses;
   }
+  text += '<br><br>';
+  text += 'Click ability to view or level up: ';
   topFlex.div.innerHTML = text;
 
-  var selected = (opt_selected == undefined) ? (f.abilities.length > 1 ? -1 : 0) : opt_selected; // the selected ability for details and upgrade button
+  var selected = (opt_selected == undefined) ? -1  : opt_selected; // the selected ability for details and upgrade button
   var flexes = [];
 
-  var y = 0.22;
-  var h = 0.04;
+  var y = 0.26;
+  var h = 0.05;
   for(var i = 0; i < f.abilities.length; i++) {
     var flex = new Flex(dialog.content, margin, y, 1 - margin, y + h);
     y += h * 1.1;
@@ -610,10 +622,118 @@ function fillFruitDialog(dialog, f, opt_selected) {
   }
 
   y += 0.02;
-  h = 0.27;
+  var y0 = y;
+
+  h = 0.05;
+  var margin2 = margin * 1.05;
+  if(f.slot < 100) {
+    var moveButton2 = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+    y += h * 1.1;
+    styleButton(moveButton2);
+    moveButton2.textEl.innerText = 'to sacrificial pool';
+    addButtonAction(moveButton2, function() {
+      addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:1});
+      update();
+      //recreate();
+      closeAllDialogs();
+    });
+  } else {
+    var moveButton1 = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+    y += h * 1.1;
+    styleButton(moveButton1);
+    moveButton1.textEl.innerText = 'to storage slot';
+    if(state.fruit_stored.length >= state.fruit_slots) moveButton1.className = 'efButtonCantAfford';
+    addButtonAction(moveButton1, function() {
+      addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:0});
+      update();
+      //recreate();
+      closeAllDialogs();
+    });
+  }
+
+  var moveToButton = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+  y += h * 1.1;
+  styleButton(moveToButton);
+  moveToButton.textEl.innerText = 'move to slot (click target...)';
+  addButtonAction(moveToButton, function() {
+    showMessage('Click target slot to move this fruit into');
+    busyChoosingTargetSlot = f;
+    closeAllDialogs();
+  });
+
+  if(f.slot < 100) {
+    var moveButton3 = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+    y += h * 1.1;
+    styleButton(moveButton3);
+    moveButton3.textEl.innerText = 'make active';
+    if(f.slot == state.fruit_active) moveButton3.className = 'efButtonCantAfford';
+    addButtonAction(moveButton3, function() {
+      if(f.slot >= MAXFRUITARROWS) {
+        // The UI only allows to make the top 10 (MAXFRUITARROWS) active. So the "make active" button of further ones
+        // must move this one to the top row.
+        // We could instead not have this button at all, but then the issue is that the only way to make this fruit active is to
+        // drag it to a top slot, so if dragging isn't available on the device it couldn't be made active at all.
+        // So swap it with the active one, that even allows choosing its destination spot
+        swapFruit(f.slot, state.fruit_active);
+      }
+      state.fruit_active = f.slot;
+      updateFruitUI();
+      update();
+      //recreate();
+      closeAllDialogs();
+    });
+  }
+
+  // can't do fusing on fruits that only have 1 ability
+  if(f.tier > 0) {
+    var fuseButton = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+    y += h * 1.1;
+    styleButton(fuseButton);
+    fuseButton.textEl.innerText = 'fuse';
+    //if(fruitReachedFuseMax(f)) fuseButton.className = 'efButtonCantAfford';
+    addButtonAction(fuseButton, function() {
+      createFruitFuseDialog(f, recreate);
+    });
+  }
+
+  var renameButton = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+  y += h * 1.1;
+  styleButton(renameButton);
+  renameButton.textEl.innerText = 'rename';
+  addButtonAction(renameButton, function() {
+    makeTextInput('Rename fruit', 'Enter new fruit name, or empty for default', function(name) {
+      f.name = sanitizeName(name);
+      updateFruitUI();
+      if(dialog_level) recreate();
+    }, f.name);
+  });
+
+  var renameButton = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+  y += h * 1.1;
+  styleButton(renameButton);
+  renameButton.textEl.innerText = 'mark border color';
+  addButtonAction(renameButton, function() {
+    f.mark = ((f.mark || 0) + 1) % 7;
+    updateFruitUI();
+    recreate();
+  });
+
+  styleButton0(canvas, true);
+  addButtonAction(canvas, function() {
+    f.mark = ((f.mark || 0) + 1) % 7;
+    updateFruitUI();
+    recreate();
+  }, 'fruit icon: ' + getFruitAriaLabel(f) + '. Click to mark favorite');
+  registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');
+
+
+
+  y = y0;
+  h = 0.35;
   var bottomflex = new Flex(dialog.content, margin, y, 1 - margin, y + h);
-  bottomflex.div.style.backgroundColor = '#0f02';
+  bottomflex.div.style.backgroundColor = '#6d6';
   bottomflex.div.style.border = '1px solid black';
+  bottomflex.div.style.visibility = 'hidden';
   y += h;
   var textFlex = new Flex(bottomflex, 0.01, 0.0, 0.99, 0.5);
 
@@ -628,6 +748,10 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
   var levelButton = new Flex(bottomflex, 0.655, 0.7, 0.99, 0.95).div;
   styleButton(levelButton);
+
+  var closeButton = new Flex(bottomflex, 0.92, [0, 0.01], 0.99, [0, 0.08]).div;
+  renderImage(image_close, createCanvas('0%', '0%', '100%', '100%', closeButton));
+  styleButton0(closeButton);
 
   //bottomflex.div.style.border = '1px solid black';
 
@@ -660,16 +784,10 @@ function fillFruitDialog(dialog, f, opt_selected) {
 
     if(selected < 0 || isInherentAbility(a)) {
       textFlex.div.innerHTML = 'click ability to view or level up';
-      levelButton.style.visibility = 'hidden';
-      levelManyButton.style.visibility = 'hidden';
-      upButton.style.visibility = 'hidden';
-      downButton.style.visibility = 'hidden';
+      bottomflex.div.style.visibility = 'hidden';
       if(selected < 0) return;
     } else {
-      levelButton.style.visibility = '';
-      levelManyButton.style.visibility = '';
-      upButton.style.visibility = '';
-      downButton.style.visibility = '';
+      bottomflex.div.style.visibility = '';
     }
 
     y += h;
@@ -753,95 +871,16 @@ function fillFruitDialog(dialog, f, opt_selected) {
         recreate();
       });
 
+
+      registerTooltip(closeButton, 'Close fruit ability popup');
+      addButtonAction(closeButton, function(e) {
+        selected = -1;
+        recreate();
+      });
+
     }
     textFlex.div.innerHTML = text;
   };
-
-  y += 0.03;
-  var h = 0.05;
-
-  if(f.slot >= 100) {
-    var moveButton1 = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
-    y += h * 1.1;
-    styleButton(moveButton1);
-    moveButton1.textEl.innerText = 'to storage slot';
-    if(state.fruit_stored.length >= state.fruit_slots) moveButton1.className = 'efButtonCantAfford';
-    addButtonAction(moveButton1, function() {
-      addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:0});
-      update();
-      //recreate();
-      closeAllDialogs();
-    });
-  }
-
-  if(f.slot < 100) {
-    var moveButton2 = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
-    y += h * 1.1;
-    styleButton(moveButton2);
-    moveButton2.textEl.innerText = 'to sacrificial pool';
-    addButtonAction(moveButton2, function() {
-      addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:1});
-      update();
-      //recreate();
-      closeAllDialogs();
-    });
-
-    var moveButton3 = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
-    y += h * 1.1;
-    styleButton(moveButton3);
-    moveButton3.textEl.innerText = 'make active';
-    if(f.slot == state.fruit_active) moveButton3.className = 'efButtonCantAfford';
-    addButtonAction(moveButton3, function() {
-      if(f.slot >= MAXFRUITARROWS) {
-        // The UI only allows to make the top 10 (MAXFRUITARROWS) active. So the "make active" button of further ones
-        // must move this one to the top row.
-        // We could instead not have this button at all, but then the issue is that the only way to make this fruit active is to
-        // drag it to a top slot, so if dragging isn't available on the device it couldn't be made active at all.
-        // So swap it with the active one, that even allows choosing its destination spot
-        swapFruit(f.slot, state.fruit_active);
-      }
-      state.fruit_active = f.slot;
-      updateFruitUI();
-      update();
-      //recreate();
-      closeAllDialogs();
-    });
-  }
-
-  // can't do fusing on fruits that only have 1 ability
-  if(f.tier > 0) {
-    var fuseButton = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
-    y += h * 1.1;
-    styleButton(fuseButton);
-    fuseButton.textEl.innerText = 'fuse';
-    //if(fruitReachedFuseMax(f)) fuseButton.className = 'efButtonCantAfford';
-    addButtonAction(fuseButton, function() {
-      createFruitFuseDialog(f, recreate);
-    });
-  }
-
-  var renameButton = new Flex(dialog.content, margin, y, 1 - margin, y + h).div;
-  y += h * 1.1;
-  styleButton(renameButton);
-  renameButton.textEl.innerText = 'rename';
-  addButtonAction(renameButton, function() {
-    makeTextInput('Rename fruit', 'Enter new fruit name, or empty for default', function(name) {
-      f.name = sanitizeName(name);
-      updateFruitUI();
-      if(dialog_level) recreate();
-    }, f.name);
-  });
-
-  styleButton0(canvas, true);
-  addButtonAction(canvas, function() {
-    f.mark = ((f.mark || 0) + 1) % 7;
-    updateFruitUI();
-    recreate();
-  }, 'fruit icon: ' + getFruitAriaLabel(f) + '. Click to mark favorite');
-  registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');
-
-
-
 
   updateSelected();
 }
@@ -854,7 +893,9 @@ function createFruitDialog(f, opt_selected) {
     },
     help:bind(createFruitHelp, false),
     title:'Configure fruit',
-    bgstyle:'efDialogTranslucent'
+    bgstyle:'efDialogTranslucent',
+    /*functions:[''],
+    names:['edit'],*/
   });
 
   fillFruitDialog(dialog, f, opt_selected);
@@ -1046,7 +1087,13 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
           update();
         }
       } else {
-        createFruitDialog(f);
+        if(busyChoosingTargetSlot && opt_slot_index != undefined) {
+          addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:opt_slot_index});
+          busyChoosingTargetSlot = undefined;
+          update();
+        } else {
+          createFruitDialog(f);
+        }
       }
     };
   }
@@ -1103,6 +1150,21 @@ function getNumFruitArrows() {
   return Math.min(MAXFRUITARROWS, state.fruit_slots);
 }
 
+// how many columns of fruits are shown
+function getNumFruitsWidth() {
+  // this 10 is not using MAXFRUITARROWS because if the MAXFRUITARROWS constant is higher than 10 (which it probably isn't), it's still reasonable to have the fruits be a bit bigger in early game when not yet having over 10 slots.
+  return Math.max(10, getNumFruitArrows());
+}
+
+// a few extras for the fade-out effect that indicates there's infinite space in the sacrificial pool
+function numRenderedSacrFruitSlots() {
+  return Math.max(6, state.fruit_sacr.length + 2);
+}
+
+function numRenderedSacrFruitRows() {
+  return Math.ceil(numRenderedSacrFruitSlots() / getNumFruitsWidth());
+}
+
 function updateFruitUI() {
   var scrollPos = 0;
   if(fruitScrollFlex) scrollPos = fruitScrollFlex.div.scrollTop;
@@ -1117,7 +1179,7 @@ function updateFruitUI() {
 
   //titleFlex.div.innerText = 'Fruit collection';
 
-  var num_fruits_width = Math.max(10, getNumFruitArrows()); // amount of fruits rendered at the full width. TODO: this makes it not support 12+ active fruit slots unless they render on newlines (or fruits are made smaller, making them less visible/clickable)
+  var num_fruits_width = getNumFruitsWidth();
   var s = 1 / num_fruits_width; // relative width and height of a chip
   var t = 0.1; // similar to s but for text
   var y = 0;
@@ -1210,12 +1272,17 @@ function updateFruitUI() {
       makeFruitChip(canvasFlex, f, 0, i);
     } else {
       canvasFlex.div.style.backgroundColor = '#ccc';
-
-      registerAction(canvasFlex.div, bind(function(help) {
-        lastTouchedFruit = null;
-        updateFruitUI();
-        showMessage('No stored fruit present in this slot. ' + help, C_INVALID, 0, 0);
-      }, help), 'empty storage fruit slot', {tooltip:('No stored fruit present in this slot. ' + help)});
+      registerAction(canvasFlex.div, bind(function(help, i) {
+        if(busyChoosingTargetSlot) {
+          addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:i});
+          busyChoosingTargetSlot = undefined;
+          update();
+        } else {
+          lastTouchedFruit = null;
+          updateFruitUI();
+          showMessage('No stored fruit present in this slot. ' + help, C_INVALID, 0, 0);
+        }
+      }, help, i), 'empty storage fruit slot', {tooltip:('No stored fruit present in this slot. ' + help)});
     }
     setupFruitDrag(canvasFlex, i, f);
   }
@@ -1226,13 +1293,17 @@ function updateFruitUI() {
   titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.99, [0, 0, y + t]);
   y += s;
   titleFlex.div.innerText = 'Sacrificial fruit pool (' + state.fruit_sacr.length + ' / ∞)';
-  help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool, or drag and drop it here.';
+  help = 'Fruits in here will be turned into fruit essence on the next transcension. To get a fruit in here, click a fruit elsewhere and use its dialog to move it to the sacrificial pool, or drag and drop it here. Note that if the sacrificial pool has multiple rows, the most recent row will be at the top instead of the bottom so the best fruits are shown higher up.';
   registerTooltip(titleFlex.div, help);
 
-  var num = Math.max(6, state.fruit_sacr.length + 2);
+  var num = numRenderedSacrFruitSlots();
+  var numrows = numRenderedSacrFruitRows();
   var x = 0;
+  var y0 = y;
   for(var i = 0; i < num; i++) {
-    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s * 0.98], [0, 0, y + s]);
+    // swap the rows, but not the colums: the goal here is to have the newest fruits be at the top if you have multiple rows, but still go from left to right so that it's not confusing where new fruits appear (the rows swap is still a bit confusing, but at least not if you only have 1 row)
+    var y2 = y0 + numrows * s - (y - y0 + s);
+    var canvasFlex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y2], [0.01, 0, x + s * 0.98], [0, 0, y2 + s]);
     x += s;
     if(x + 0.5 * s > s * num_fruits_width && i + 1 < num) {
       x = 0;

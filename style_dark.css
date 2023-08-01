@@ -209,7 +209,7 @@ There exists a scrollbox concept in CSS that can automatically make the shadows 
 but it doesn't work on translucent background, so cannot use it here. So this must be combined with some JS*/
 .efScrollGradient {
   background:
-  radial-gradient(farthest-side at 50% 0, #fff3, #fff0), radial-gradient(farthest-side at 50% 100%, #fff3, #fff0) 0 100%;
+  radial-gradient(farthest-side at 50% 0, #fff5, #fff0), radial-gradient(farthest-side at 50% 100%, #fff5, #fff0) 0 100%;
   background-repeat: no-repeat;
 	background-size: 100% 5%, 100% 5%, 100% 5%, 100% 5%;
 }

@@ -254,7 +254,7 @@ function setGoalText(text, opt_small) {
     goalFlex.div.style.visibility = 'hidden';
   } else {
     // see makeMainDivs for the basis of these values
-    var goaly1 = logFlexBegin + (opt_small ? 0.03 : 0.06);
+    var goaly1 = logFlexBegin + (opt_small ? 0.035 : 0.065);
     var logy0 = goaly1 + 0.004;
     if(logFlex.y0 != logy0 || goalFlex.y1 != goaly1) {
       logFlex.y0 = logy0;

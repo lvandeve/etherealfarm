@@ -1398,7 +1398,9 @@ reasons: 0: unknown
 5:compression
 6:checksum mismatch
 7:save version newer than game version
-8:save of too old version of the game*/
+8:save of too old version of the game
+9:loading beta save in main game
+*/
 var err = function(reason) {
   if(!reason) reason = 0;
   return {save_error:true, error_reason:reason};

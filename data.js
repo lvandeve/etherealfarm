@@ -3442,7 +3442,7 @@ During this challenge, crops cannot be upgraded.
 • Crops cannot be upgraded, except watercress<br>
 • Ethereal upgrades, achievement boost, etc..., still apply as normal<br>
 `,
-['unlock the auto-upgrade ability of the automaton' ,'add more options to the cost configuration dialogs of the automaton'],
+['unlock the auto-upgrade and auto-choice abilities of the automaton' ,'add more options to the cost configuration dialogs of the automaton'],
 'reaching ethereal tree level 2 and having automaton',
 function() {
   return state.treelevel2 >= 2 && haveAutomaton();
@@ -3563,7 +3563,7 @@ function() {
 },
 ], 15);
 
-var rockier_text = 'A harder version of the rocks challenge. The field has a difficult predetermined rock pattern. Beating the challenge the first time gives a new type of passive bonus. The patterns are very restrictive and don\'t benefit from field size above 5x5. This challenge is not a cakewalk, especially later patterns.';
+var rockier_text = 'A harder version of the rocks challenge. The field has a difficult predetermined rock pattern. Beating the challenge the first time gives a new type of passive bonus (multiplicity). The rock patterns are very restrictive and don\'t benefit from field size above 5x5. This challenge is not a cakewalk, especially later patterns.';
 var rockier_text_long = `
 • All regular crops, upgrades, ... are available and work as usual<br>
 • There are unremovable rocks on the field, blocking the planting of crops<br>
@@ -3599,12 +3599,12 @@ challenges[challenge_rockier].autoaction_warning = true;
 
 // 8
 var challenge_thistle = registerChallenge('thistle challenge', [66], undefined, undefined, Num(0.002), 33, 0,
-`The field is full of thistles which you cannot remove. The thistle pattern is randomly determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours. The thistles hurt most crops, but benefit mushrooms, they are next-tier nettles.
-`,
-`
-• All regular crops, upgrades, ... are available and work as usual<br>
-• There are randomized unremovable thistles on the field, which hurt crops that touch them, but benefit mushrooms, more than nettles<br>
-`,
+`The field is full of thistles which you cannot remove. The thistle pattern is randomly determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours. The thistles hurt most crops, but benefit mushrooms, they are next-tier nettles.`,
+function() {
+  return '• All regular crops, upgrades, ... are available and work as usual<br>' +
+         '• There are randomized unremovable thistles on the field, which hurt crops that touch them, but benefit mushrooms, more than nettles<br>' +
+         '• Next pattern reset in: ' + util.formatDuration(getRocksChallengeTimeTilNextSeed()) + '<br>';
+},
 ['Unlocks the thistle crop, which is the next tier of nettles. Once unlocked, it\'s available in the base game once you have grown a portobello.'],
 //'reaching tree level 70',
 'having grown a portobello',
@@ -3745,6 +3745,7 @@ function cropCanBeHitByLightning(f) {
   return c.type != CROPTYPE_BRASSICA; // brassica are immune, this is because otherwise lighting will always strike those first when a blueprint was just planted, and it should hit a real crop first
 }
 
+
 // 13
 var challenge_infernal = registerChallenge('infernal challenge', [20], undefined, undefined, Num(0.005), 20, 0,
 `A challenge where the season is infernal and everything is difficult.`,
@@ -3779,7 +3780,6 @@ var challenge_poisonivy = registerChallenge('poison ivy challenge', undefined, f
 • There are unremovable poison ivy on the field, which hurt crops that touch them, but benefit mushrooms, more than thistles<br>
 • It's significantly harder to reach prestiged morel with this challenge than without.<br>
 • Automaton will not buy poison ivy upgrades automatically during this challenge. Note that upgrading it makes the challenge even harder, so beware!<br>
-• <font color="red">Hint: either turn off auto-action or use matching blueprints for this challenge</font><br>
 `,
 ['Unlocks the poison ivy crop, which is the next tier of thistles. Once unlocked, it\'s available in the base game after prestiging the morel.'],
 'having prestiged the morel',
@@ -3790,8 +3790,8 @@ function() {
 }, function() {
   showMessage('Poison ivy unlocked! Poison ivy is the next tier of the stingy crop, after the thistle.');
 }, 31);
-challenges[challenge_infernal].bonus_exponent = Num(1.1);
-challenges[challenge_infernal].autoaction_warning = true;
+//challenges[challenge_poisonivy].bonus_exponent = Num(1.1);
+challenges[challenge_poisonivy].autoaction_warning = true;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -4191,10 +4191,10 @@ var default_ethereal_growtime = 10;
 
 crop2_register_id = 0;
 var fern2_0 = registerFern2('fern', 0, 0, Res({resin:10}), default_ethereal_growtime, 'gives 1000 * n^3 starter seeds', 'Gives 1000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000 * n^3 starter seeds, with n the amount of ethereal ferns: first one gives 1000, with two you get 8000, three gives 27000, four gives 64000, and so on.', image_fern_as_crop);
-var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), default_ethereal_growtime, 'gives 10000 * n^3 starter seeds', 'Gives 10000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000, with two you get 80000, three gives 270000, four gives 640000, and so on.', image_fern_as_crop2);
-var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), default_ethereal_growtime, 'gives 100000 * n^3 starter seeds', 'Gives 100000 starter seeds after every transcension and also immediately now. If you have multiple, gives 100000 * n^3 starter, with n the amount of ethereal ferns: first one gives 100000, with two you get 800000, three gives 2700000, four gives 6400000, and so on.', image_fern_as_crop3);
-var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), default_ethereal_growtime, 'gives 1000000 * n^3 starter seeds', 'Gives 1000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 1000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 1000000, with two you get 8000000, three gives 27000000, four gives 64000000, and so on.', image_fern_as_crop4);
-var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal_growtime, 'gives 10000000 * n^3 starter seeds', 'Gives 10000000 starter seeds after every transcension and also immediately now. If you have multiple, gives 10000000 * n^3 starter, with n the amount of ethereal ferns: first one gives 10000000, with two you get 80000000, three gives 270000000, four gives 640000000, and so on.', image_fern_as_crop5);
+var fern2_1 = registerFern2('fern II', 2, 1, Res({resin:200}), default_ethereal_growtime, 'gives 100K * n^3 starter seeds', 'Gives 100K starter seeds after every transcension and also immediately now. If you have multiple, gives 100K * n^3 starter, with n the amount of ethereal ferns: first one gives 100K, with two you get 800K, three gives 2700K, four gives 6400K, and so on.', image_fern_as_crop2);
+var fern2_2 = registerFern2('fern III', 4, 2, Res({resin:50000}), default_ethereal_growtime, 'gives 10M * n^3 starter seeds', 'Gives 10M starter seeds after every transcension and also immediately now. If you have multiple, gives 10M * n^3 starter, with n the amount of ethereal ferns: first one gives 10M, with two you get 80M, three gives 270M, four gives 640M, and so on.', image_fern_as_crop3);
+var fern2_3 = registerFern2('fern IV', 6, 3, Res({resin:1e6}), default_ethereal_growtime, 'gives 1B * n^3 starter seeds', 'Gives 1B starter seeds after every transcension and also immediately now. If you have multiple, gives 1B * n^3 starter, with n the amount of ethereal ferns: first one gives 1B, with two you get 8B, three gives 27B, four gives 64B, and so on.', image_fern_as_crop4);
+var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal_growtime, 'gives 100B * n^3 starter seeds', 'Gives 100B starter seeds after every transcension and also immediately now. If you have multiple, gives 100B * n^3 starter, with n the amount of ethereal ferns: first one gives 100B, with two you get 800B, three gives 2700B, four gives 6400B, and so on.', image_fern_as_crop5);
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
@@ -4282,7 +4282,7 @@ var automaton2_template = makeTemplate2(registerAutomaton2('automaton template',
 var squirrel2_template = makeTemplate2(registerSquirrel2('squirrel template', 5, -1, Res(), 0, undefined, '', images_squirreltemplate));
 var bee2_template = makeTemplate2(registerBeehive2('bee template', 8, -1, Res(), 0, Num(0), undefined, '', images_beetemplate));
 var mistletoe2_template = makeTemplate2(registerMistletoe2('mistletoe template', 15, -1, Res(), 0, Num(0), undefined, '', images_mistletoetemplate));
-var brassica2_template = makeTemplate2(registerBrassica2('brassica template', 2, -1, Res(), 0, 0, Num(0), undefined, '', images_watercresstemplate));
+var brassica2_template = makeTemplate2(registerBrassica2('brassica template', 21, -1, Res(), 0, 0, Num(0), undefined, '', images_watercresstemplate));
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -6308,30 +6308,30 @@ function getStarterResources(opt_add_type, opt_sub_type) {
 
   if(basicChallenge()) return res; // ethereal ferns don't count during a basic challenge
 
-  count = state.fullgrowncrop2count[fern2_0];
+  count = state.crop2count[fern2_0];
   if(opt_add_type == fern2_0) count++;
   if(opt_sub_type == fern2_0) count--;
   res.seeds.addrInPlace(count * count * count * 1000);
 
-  count = state.fullgrowncrop2count[fern2_1];
+  count = state.crop2count[fern2_1];
   if(opt_add_type == fern2_1) count++;
   if(opt_sub_type == fern2_1) count--;
-  res.seeds.addrInPlace(count * count * count * 10000);
-
-  count = state.fullgrowncrop2count[fern2_2];
-  if(opt_add_type == fern2_2) count++;
-  if(opt_sub_type == fern2_2) count--;
   res.seeds.addrInPlace(count * count * count * 100000);
 
-  count = state.fullgrowncrop2count[fern2_3];
+  count = state.crop2count[fern2_2];
+  if(opt_add_type == fern2_2) count++;
+  if(opt_sub_type == fern2_2) count--;
+  res.seeds.addrInPlace(count * count * count * 10000000);
+
+  count = state.crop2count[fern2_3];
   if(opt_add_type == fern2_3) count++;
   if(opt_sub_type == fern2_3) count--;
-  res.seeds.addrInPlace(count * count * count * 1000000);
+  res.seeds.addrInPlace(count * count * count * 1000000000);
 
-  count = state.fullgrowncrop2count[fern2_4];
+  count = state.crop2count[fern2_4];
   if(opt_add_type == fern2_4) count++;
   if(opt_sub_type == fern2_4) count--;
-  res.seeds.addrInPlace(count * count * count * 10000000);
+  res.seeds.addrInPlace(count * count * count * 100000000000);
 
   return res;
 }
@@ -6629,6 +6629,56 @@ function getChallengeBonus(challenge_id, level, completed, opt_cycle) {
 
 function getChallengeMultiplier(challenge_id, level, completed, opt_cycle) {
   return getChallengeBonus(challenge_id, level, completed, opt_cycle).addr(1);
+}
+
+// get the bonus of 1 challenge based on current state without taking current run into account, for UI
+// if it's a cycling challenge, shows it for all cycles combined
+function oneChallengeBonus(challenge_id) {
+  if(challenge_id == 0) return Num(0);
+  var c = challenges[challenge_id];
+  var c2 = state.challenges[challenge_id];
+  if(c.cycling) {
+    var result = new Num(0);
+    // the cycling is additive
+    for(var j = 0; j < c.cycling; j++) {
+      var maxlevel = c2.maxlevels[j];
+      var completed = c.cycleCompleted(j, false);
+      result.addInPlace(getChallengeBonus(c.index, maxlevel, completed, j));
+    }
+    return result.subr(1);
+  } else {
+    var maxlevel = c2.maxlevel;
+    var completed = c.cycleCompleted(undefined, false);
+    return getChallengeMultiplier(c.index, maxlevel, completed, undefined).subr(1);
+  }
+}
+
+// get the bonus of 1 challenge based on current state with taking current run into account, for UI
+// if it's a cycling challenge, shows it for all cycles combined
+function oneChallengeBonusIncludingCurrentRun(challenge_id) {
+  if(challenge_id == 0) return Num(0);
+  if(state.challenge != challenge_id) return oneChallengeBonus(challenge_id);
+  var c = challenges[challenge_id];
+  var c2 = state.challenges[challenge_id];
+  if(c.cycling) {
+    var result = new Num(0);
+    var cycle = c2.num_completed % c.cycling;
+    // the cycling is additive
+    for(var j = 0; j < c.cycling; j++) {
+      var maxlevel = c2.maxlevels[j];
+      var completed = c.cycleCompleted(j, false);
+      if(j == cycle) {
+        var maxlevel = Math.max(maxlevel, state.treelevel);
+        var completed = c.cycleCompleted(j, true);
+      }
+      result.addInPlace(getChallengeBonus(c.index, maxlevel, completed, j));
+    }
+    return result.subr(1);
+  } else {
+    var maxlevel = Math.max(c2.maxlevel, state.treelevel);
+    var completed = c.cycleCompleted(undefined, true);
+    return getChallengeMultiplier(c.index, maxlevel, completed, undefined).subr(1);
+  }
 }
 
 function totalChallengeBonus() {

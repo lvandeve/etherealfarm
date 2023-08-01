@@ -98,13 +98,15 @@ function formatAbilityDurationTooltipText(index, name, description, duration, wa
 var prev_brassica_index = -1; // for updating the button if the image for brassica changes
 var prev_brassica_tab = -1; // idem, but for basic field vs infinity field tab
 
+var last_seen_havePerma = -1; // to update tooltips/action names when this changes
+
 function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
-
-
   var havePerma = havePermaWeather();
+  var havePerma_changed = (havePerma != last_seen_havePerma);
+  last_seen_havePerma = havePerma;
 
-  if(sunbutton && !state.upgrades[upgrade_sununlock].count) {
+  if(sunbutton && (!state.upgrades[upgrade_sununlock].count || havePerma_changed)) {
     sunbutton.removeSelf(topFlex);
     suntimerflex.removeSelf(topFlex);
     sunbutton = undefined;
@@ -135,8 +137,8 @@ function updateAbilitiesUI() {
       }
       update();
     }, 'sun ability', {
-      label_shift: 'change perma weather only',
-      label_ctrl: 'activate without changing perma',
+      label_shift: (havePerma ? 'change perma weather only' : undefined),
+      label_ctrl: (havePerma ? 'activate without changing perma' : undefined),
       tooltip: function() { return formatAbilityDurationTooltipText(0, 'sun ability', 'berries get a +' + getSunSeedsBoost().toPercentString() + ' production bonus and aren\'t negatively affected by winter', getSunDuration(), getSunWait())}
     });
     sunbutton.div.id = 'sun_button';
@@ -177,7 +179,7 @@ function updateAbilitiesUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  if(mistbutton && !state.upgrades[upgrade_mistunlock].count) {
+  if(mistbutton && (!state.upgrades[upgrade_mistunlock].count || havePerma_changed)) {
     mistbutton.removeSelf(topFlex);
     misttimerflex.removeSelf(topFlex);
     mistbutton = undefined;
@@ -207,8 +209,8 @@ function updateAbilitiesUI() {
       }
       update();
     }, 'mist ability', {
-      label_shift: 'change perma weather only',
-      label_ctrl: 'activate without changing perma',
+      label_shift: (havePerma ? 'change perma weather only' : undefined),
+      label_ctrl: (havePerma ? 'activate without changing perma' : undefined),
       tooltip: function() { return formatAbilityDurationTooltipText(1, 'mist ability', 'mushrooms produce ' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter', getMistDuration(), getMistWait())}
     });
     mistbutton.div.id = 'mist_button';
@@ -250,7 +252,7 @@ function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
 
 
-  if(rainbowbutton && !state.upgrades[upgrade_rainbowunlock].count) {
+  if(rainbowbutton && (!state.upgrades[upgrade_rainbowunlock].count || havePerma_changed)) {
     rainbowbutton.removeSelf(topFlex);
     rainbowtimerflex.removeSelf(topFlex);
     rainbowbutton = undefined;
@@ -280,8 +282,8 @@ function updateAbilitiesUI() {
       }
       update();
     }, 'rainbow ability', {
-      label_shift: 'change perma weather only',
-      label_ctrl: 'activate without changing perma',
+      label_shift: (havePerma ? 'change perma weather only' : undefined),
+      label_ctrl: (havePerma ? 'activate without changing perma' : undefined),
       tooltip: function() { return formatAbilityDurationTooltipText(2, 'rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())}
     });
     rainbowbutton.div.id = 'rainbow_button';
@@ -354,10 +356,11 @@ function updateAbilitiesUI() {
       }
       prev_brassica_index = brassica_index;
       prev_brassica_tab = infinity_field_tab;
-      var image, name;
+      var image, name, alltiers_name;
       if(infinity_field_tab) {
         image = crops3[brassica_index].image[4];
         name = crops3[brassica_index].name;
+        alltiers_name = 'watercress';
       } else {
         image = images_watercress[4];
         name = 'watercress';
@@ -365,6 +368,7 @@ function updateAbilitiesUI() {
           image = crops[brassica_index].image[4];
           name = crops[brassica_index].name;
         }
+        alltiers_name = 'brassica';
       }
 
       watercressbutton = addTopBarFlex(9, 10);
@@ -373,14 +377,14 @@ function updateAbilitiesUI() {
       var label_shift;
       var label_ctrl;
       if(infinity_field_tab) {
-        tooltip = 'Refresh brassica: replants brassica remainders, upgrades to next tier if possible, and else refreshes partially used up ones. Hotkey: w. With ctrl, deletes all brassica. With shift, plants the highest possible brassica everywhere it can. If it did nothing without shift, will act like shift was pressed. ';
-        tooltip += 'Use carefully: while you don\'t lose any infinity seeds from refreshing because brassica give a refund based on their remaining lifespan, it is more efficient for income to have multiple halfway brassica than a single fully refreshed one, unless you\'re away for a while.';
-        label_shift = 'plant brassica everywhere';
-        label_ctrl = 'delete all brassica';
+        tooltip = 'Refresh ' + alltiers_name + ': replants ' + alltiers_name + ' remainders, upgrades to next tier if possible, and else refreshes partially used up ones. Hotkey: w. With ctrl, deletes all ' + alltiers_name + '. With shift, plants the highest possible ' + alltiers_name + ' everywhere it can. If it did nothing without shift, will act like shift was pressed. ';
+        tooltip += 'Use carefully: while you don\'t lose any infinity seeds from refreshing because ' + alltiers_name + ' give a refund based on their remaining lifespan, it is more efficient for income to have multiple halfway ' + alltiers_name + ' than a single fully refreshed one, unless you\'re away for a while.';
+        label_shift = 'plant ' + alltiers_name + ' everywhere';
+        label_ctrl = 'delete all ' + alltiers_name;
       } else {
-        tooltip = 'Refresh ' + name + ': active ' + name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + name + '. With shift, plants ' + name + ' everywhere it can.';
-        label_shift = 'plant brassica everywhere';
-        label_ctrl = 'delete all brassica';
+        tooltip = 'Refresh ' + name + ': active ' + alltiers_name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + alltiers_name + '. With shift, plants ' + name + ' everywhere it can.';
+        label_shift = 'plant ' + name + ' everywhere';
+        label_ctrl = 'delete all ' + alltiers_name;
       }
       styleButton0(watercressbutton.div, true);
       var canvasFlex = new Flex(watercressbutton, 0, 0, 1, 1);

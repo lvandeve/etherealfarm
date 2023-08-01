@@ -134,6 +134,8 @@ function encState(state, opt_raw_only) {
   processInt(state.lastPlantedFish);
   processNum(state.min_fish_resinmul);
   processNum(state.min_fish_twigsmul);
+  id = 31;
+  processUint6(state.beta);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -1191,6 +1193,8 @@ function decState(s) {
   if(save_version >= 262144*2+64*9+0) state.lastPlantedFish = processInt();
   if(save_version >= 262144*2+64*10+1) state.min_fish_resinmul = processNum();
   if(save_version >= 262144*2+64*10+1) state.min_fish_twigsmul = processNum();
+  id = 31;
+  if(save_version >= 262144*2+64*10+4) state.beta = processUint6();
 
 
   section = 1; id = 0; // field

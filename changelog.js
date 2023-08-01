@@ -20,6 +20,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  text += '0.10.4 (2023-08-01):';
+  text += '<br/>• Higher tier ethereal ferns give more starter resources, to make a next tier more worth it compared to previous.'; // this doesn't matter much for higher ferns as players immediately get much more seeds from the first berry at that stage. But it does matter slightly for fern II, when unlocking that one starter resources is still a constraint, and a single fern II costs more than 3 fern I's yet the 3 fern I's gave more, this update now should fix this disappointment
+  text += '<br/>• Fruit dialog now has "move to" option to move fruits to a certain slot, so they can be moved more easily on devices where drag and drop doesn\'t work.';
+  text += '<br/>• Marking the fruit border color is now an explicitely visible button (it used to be somewhat hidden by clicking the fruit icon).';
+  text += '<br/>• The fruits in the sacrificial pool now appear from left to right again (less confusing since stored fruits are also left to right), but the rows will still have the newest row at the top (so more visible).';
+  text += '<br/>• Runestone shows up higher in the list of crops in the infinity field so it\'s easier to find when having many more crop tiers unlocked.';
+  text += '<br/>• Long clicking a field cell now shows more actions on mobile devices, so affecting a crop under fern without picking up the fern is now possible.';
+  text += '<br/>• Fix an issue where mobile browsers would zoom into the "import save" dialog, making the actual import button invisible.';
+  text += '<br/>• An internal mechanism to support beta-test versions of the game is implemented, but not yet used for now.';
+  text += '<br/>• Various other bugfixes and QoL, especially related to mobile devices and early game.'; // e.g. overflowing text in fuse screen, improved long click on upgrade cells, some contrasts, ...
+  text += '<br/><br/>';
+
   text += '0.10.3 (2023-07-16):';
   text += '<br/>• Added infinity nettle (starts at rhodium tier).';
   text += '<br/>• Changed the way resource info is displayed, on more lines, to reduce amount of layout flickering on mobile.';

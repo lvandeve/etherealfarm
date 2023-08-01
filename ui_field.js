@@ -340,348 +340,6 @@ function getCropInfoHTML(f, c, opt_detailed) {
   return result;
 }
 
-
-function makeTreeDialog() {
-  var div;
-
-  var have_buttons = state.challenge || automatonUnlocked() || state.challenges_unlocked || state.treelevel >= min_transcension_level;
-
-  var shortcutfun = function(e) {
-    var shift = util.eventHasShiftKey(e);
-    var ctrl = util.eventHasCtrlKey(e);
-    if(automatonUnlocked() && (e.key == 'b' || e.key == 'B') && !ctrl) {
-      if(!blueprintdialogopen) createBlueprintsDialog(false);
-    }
-    if(state.challenges_unlocked && (e.key == 'c' || e.key == 'C') && !ctrl) {
-      if(!challengedialogopen) createChallengeDialog();
-    }
-    if(state.treelevel >= min_transcension_level && (e.key == 't' || e.key == 'T') && !ctrl) {
-      createTranscendDialog();
-    }
-  };
-
-  var treedialogvisible = true;
-
-  var dialog = createDialog({
-    nocancel:have_buttons,
-    shortcutfun:shortcutfun,
-    scrollable:false,
-    onclose:function(){treedialogvisible = false;},
-    narrow:true,
-    title:'Tree',
-    bgstyle:'efDialogTranslucent'
-  });
-
-  var contentFlex = dialog.content;
-
-  var flex = new Flex(dialog.icon, 0, 0, 1, 1);
-  var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-  renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
-  flex = new Flex(dialog.icon, 0, 1, 1, 2);
-  canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-  renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
-
-  var ypos = 0;
-  var ysize = 0.1;
-
-  var f0 = new Flex(contentFlex, 0, 0, 1, 0.65);
-  makeScrollable(f0);
-  var f1 = new Flex(contentFlex, 0, 0.67, 1, 1);
-
-  var createText = function() {
-    var text;
-
-    var show_resin = !state.challenge || challenges[state.challenge].allowsresin;
-    var show_twigs = !state.challenge || challenges[state.challenge].allowstwigs;
-    var resin_breakdown = [];
-    var twigs_breakdown = [];
-
-    text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
-    text += 'Tree level: ' + state.treelevel + '<br/>';
-    if(state.treelevel == 0 && state.res.spores.eqr(0)) {
-      text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
-    }
-
-    if(state.challenge) {
-      var c = challenges[state.challenge];
-      var c2 = state.challenges[state.challenge];
-      var maxlevel = c2.maxlevel;
-      if(c.cycling > 1) maxlevel = c2.maxlevels[c2.num_completed % c.cycling];
-      text += '<br>';
-
-      var basic = basicChallenge();
-      var basicmaxlevel = (basic == 1) ? 30 : 25; // basic challenge capped at level 30, truly basic at 25
-      var basicfarlevel = 10 + 7; // level considered far enough above the goal of 10, to start showing the note that it's capped
-      var basiccapped = basic && (maxlevel >= basicmaxlevel || state.treelevel >= basicmaxlevel);
-      var basicfar = basic && (maxlevel >= basicfarlevel || state.treelevel >= basicfarlevel);
-      var addbasicmessage = false;
-
-      if(maxlevel > 0) {
-        if(state.treelevel > maxlevel) {
-          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel + '.';
-          text += ' This will bring your total challenge production bonus from ' + totalChallengeBonus().toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun().toPercentString();
-          if(basicfar) addbasicmessage = true;
-        } else if(!basiccapped) {
-          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet reach your previous best of lvl ' + maxlevel + '.';
-          if(basicfar) addbasicmessage = true;
-        } else {
-          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You have capped this challenge, you reached ' + maxlevel + ' and it does not give any more bonus or achievements above ' + basicmaxlevel + '.';
-        }
-      } else {
-        text += '<b>Challenge active</b>: ' + upper(c.name);
-        var bonus_before = totalChallengeBonus();
-        var bonus_after = totalChallengeBonusIncludingCurrentRun();
-        if(bonus_before.neq(bonus_after)) {
-          text += '. So far, it will bring your total challenge production bonus from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
-          if(basicfar) addbasicmessage = true;
-        }
-      }
-      if(addbasicmessage) text += '<br><b>Note:</b> this challenge is capped at level ' + basicmaxlevel + ' and will not give any further bonus or achievements beyond that level';
-      if(c.targetlevel == undefined) {
-        if(!c2.completed) {
-          text += '<br>Challenge goal: <b>' + c.targetdescription + '</b>';
-        }
-      } else if(c.targetlevel.length > 1) {
-        if(!c.fullyCompleted()) {
-          text += '<br>Current challenge target level: <b>' + c.targetlevel[c2.completed] + '</b>';
-        }
-      } else {
-        if(!c2.completed) {
-          text += '<br>Challenge target level: <b>' + c.targetlevel[0] + '</b>';
-        }
-      }
-      text += '<br>';
-    }
-
-    if(state.treelevel > 0 || state.res.spores.gtr(0)) {
-      text += '<br/>';
-      var req = treeLevelReq(state.treelevel + 1);
-      var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-      text += 'Next level requires: ' + req.toString() + ' (' + (getCostAffordTimer(req)) + ', ' + nextlevelprogress.toPercentString() + ') ' + '<br/>';
-      if(state.mistletoes > 0) {
-        text += 'This requirement was increased ' + (getMistletoeLeech().subr(1)).toPercentString() + ' by ' + state.mistletoes + ' mistletoes' + '<br/>';
-      }
-      text += 'Time at this level: ' + util.formatDuration(timeAtTreeLevel(state)) + '<br/>';
-
-      text += '<br>';
-
-      if(show_resin) {
-        if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
-          text += 'No further resin gained during this challenge, higher level than max regular level reached';
-        } else {
-          var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-          text += 'Resin added at next tree level: ' + nextTreeLevelResin(resin_breakdown).toString() + ' (getting ' + progress.toPercentString() + ' of this so far)';
-        }
-
-        text += '<br/>';
-        text += 'Total resin ready: ' + getUpcomingResinIncludingFerns().toString();
-        text += '<br/>';
-      } else {
-        text += 'The tree doesn\'t produce resin during this challenge.<br/>';
-      }
-      text += '<br/>';
-
-
-      if(state.mistletoes > 0) {
-        if(show_twigs) {
-          if(state.challenge && state.treelevel > state.g_treelevel && !state.challenge.allowbeyondhighestlevel) {
-            text += 'No further twigs gained during this challenge, higher level than max regular level reached';
-          } else {
-            var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-            text += 'Twigs added at next tree level: ' + nextTwigs(twigs_breakdown).twigs.toString() + ' (getting ' + progress.toPercentString() + ' of this so far)';
-          }
-
-          text += '<br>';
-          text += 'Total twigs ready: ' + getUpcomingTwigs().toString();
-          text += '<br/>';
-        } else {
-          text += 'The tree doesn\'t produce twigs during this challenge.<br/>';
-        }
-        text += '<br/>';
-      }
-
-      text += 'Tree level production boost to crops: ' + (getTreeBoost()).toPercentString();
-      if(getFruitAbility(FRUIT_TREELEVEL, true) > 0) {
-        var mul = treeLevelFruitBoost(getFruitTier(true), getFruitAbility(FRUIT_TREELEVEL, true), state.treelevel).addr(1);
-        text += ' (of which ' + mul.toPercentString() + ' multiplicative from the fruit)';
-      }
-      text += '<br>';
-
-      if(getSeason() == 3) {
-        text += '<br/>';
-        text += 'During winter, the tree provides winter warmth: +' + getWinterTreeWarmth().subr(1).toPercentString() + ' berry / mushroom stats and no negative winter effect for any crop next to the tree<br>';
-      }
-
-      if(state.untriedchallenges) {
-        text += '<br/>';
-        text += '<span class="efWarningOnDialogText">New challenge available!</span><br>';
-      }
-
-      if(state.upgrades[upgrade_mistunlock].unlocked || state.upgrades[upgrade_sununlock].unlocked || state.upgrades[upgrade_rainbowunlock].unlocked) {
-        text += '<br/>';
-        text += 'Abilities discovered:<br>';
-        if(state.upgrades[upgrade_sununlock].unlocked) text += '• Sun: benefits berries when active<br>';
-        if(state.upgrades[upgrade_mistunlock].unlocked) text += '• Mist: benefits mushrooms when active<br>';
-        if(state.upgrades[upgrade_rainbowunlock].unlocked) text += '• Rainbow: benefits flowers when active<br>';
-      }
-
-      if(resin_breakdown && resin_breakdown.length >= 1) {
-        text += formatBreakdown(resin_breakdown, false, 'Resin gain breakdown');
-      }
-
-      if(twigs_breakdown && twigs_breakdown.length >= 1) {
-        text += formatBreakdown(twigs_breakdown, false, 'Twigs gain breakdown');
-      }
-
-      if(haveMultiplicity(CROPTYPE_BERRY)) text += '<br>Multiplicities:<br>';
-
-      if(haveMultiplicity(CROPTYPE_BERRY)) {
-        text += '• Berry: +' + (getMultiplicityBonusBase(CROPTYPE_BERRY)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
-      }
-      if(haveMultiplicity(CROPTYPE_MUSH)) {
-        text += '• Mushroom: +' + (getMultiplicityBonusBase(CROPTYPE_MUSH)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
-      }
-      if(haveMultiplicity(CROPTYPE_FLOWER)) {
-        text += '• Flower: +' + (getMultiplicityBonusBase(CROPTYPE_FLOWER)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
-      }
-      if(haveMultiplicity(CROPTYPE_BEE)) {
-        text += '• Bee: +' + (getMultiplicityBonusBase(CROPTYPE_BEE)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
-      }
-      if(haveMultiplicity(CROPTYPE_STINGING)) {
-        text += '• Stinging: +' + (getMultiplicityBonusBase(CROPTYPE_STINGING)).toPercentString() + ' per other of same type of max 1 tier difference<br>';
-      }
-    }
-
-    return text;
-  };
-
-  var text = createText();
-  f0.div.innerHTML = text;
-
-  var lastseentreelevel = state.treelevel;
-  registerUpdateListener(function() {
-    if(!treedialogvisible) return false;
-    if(lastseentreelevel != state.treelevel) {
-      lastseentreelevel = state.treelevel;
-      var text = createText();
-      f0.div.innerHTML = text;
-    }
-    return true;
-  });
-
-  var y = 0.05;
-  var h = 0.15;
-  // finetune the width of the buttons in flex f1
-  var button0 = 0.15;
-  var button1 = 0.85;
-  var buttonshift = h * 1.15;
-
-  if(state.challenge) {
-    var c = challenges[state.challenge];
-    var c2 = state.challenges[state.challenge];
-
-    var already_completed = c.fullyCompleted();
-    var targetlevel = c.nextTargetLevel();
-    var success = state.treelevel >= targetlevel;
-
-    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = getEndChallengeButtonName(already_completed, success);
-    if(already_completed && success) {
-      // Successfully finish, but it already was completed beforehand, so it's called just "finish", not "complete"
-      registerTooltip(button, 'Finish the challenge. If you broke the max level record, your challenge production bonus will increase.');
-    } else if(already_completed && !success) {
-      // End the challenge early, but it already was completed beforehand, so it's called "end", not "abort"
-      registerTooltip(button, 'End the challenge.');
-    } else if(success) {
-      if(c2.completed) {
-        // This is a completion of a higher stage of the challenge
-        registerTooltip(button, 'Successfully finish the next stage of this challenge.');
-      } else {
-        registerTooltip(button, 'Successfully finish the challenge for the first time.');
-      }
-    } else {
-      // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
-      if(c.targetlevel.length > 1) {
-        registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its next reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');
-      } else {
-        registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its one-time reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');
-      }
-    }
-
-    //button.textEl.style.boxShadow = '0px 0px 5px #f40';
-    button.textEl.style.textShadow = '0px 0px 5px #f40';
-    addButtonAction(button, function() {
-      createFinishChallengeDialog();
-    });
-
-
-    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = 'Current challenge info';
-    registerTooltip(button, 'Description and statistics for the current challenge');
-    addButtonAction(button, function() {
-      createChallengeDescriptionDialog(state.challenge, true, false);
-    });
-  } else if(state.treelevel < min_transcension_level) {
-    //if(state.treelevel >= 1) f1.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
-    if(state.treelevel >= 1) {
-      var temp = new Flex(f1, button0, y, button1, y + h);
-      temp.div.innerText = 'Reach tree level ' + min_transcension_level + ' to unlock transcension';
-      y += buttonshift;
-    }
-  } else {
-    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = 'Transcension';
-    //button.textEl.style.boxShadow = '0px 0px 5px #ff0';
-    button.textEl.style.textShadow = '0px 0px 5px #ff0';
-    registerTooltip(button, 'Show the transcension dialog');
-    addButtonAction(button, function() {
-      createTranscendDialog();
-    });
-
-    if(state.challenges_unlocked) {
-      button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-      y += buttonshift;
-      styleButton(button);
-      button.textEl.innerText = 'Challenges';
-      //button.textEl.style.boxShadow = '0px 0px 5px #f60';
-      button.textEl.style.textShadow = '0px 0px 5px #f60';
-      registerTooltip(button, 'Transcend and start a challenge');
-      addButtonAction(button, function() {
-        createChallengeDialog();
-      });
-    }
-  }
-
-  if(automatonUnlocked()) {
-    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = 'Blueprints';
-    //button.textEl.style.boxShadow = '0px 0px 5px #44f';
-    button.textEl.style.textShadow = '0px 0px 5px #008';
-    addButtonAction(button, function() {
-      //closeAllDialogs();
-      createBlueprintsDialog();
-    });
-  }
-
-  if(have_buttons) {
-    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = 'Back';
-    addButtonAction(button, function() {
-      dialog.cancelFun();
-    });
-  }
-}
-
 // opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
 function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
   if(!state.field[y]) return null;
@@ -887,6 +545,182 @@ function makeFieldDialog(x, y) {
   }
 }
 
+
+function fieldCellTooltipFun(x, y, div) {
+  var f = state.field[y][x].getMainMultiPiece();
+
+  var result = undefined;
+  if(state.fern && x == state.fernx && y == state.ferny) {
+    if(state.g_numresets > 1 && renderIdleFern()) {
+      var result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+      result += '<br><br>';
+      result += 'This fern charged up thanks to long idle time with the "slower ferns" choice upgrade. It gives more resources from the past production, as well as more resources at the current production rate, for some amount of time up to some limit. This time charges up slower than real time. This is in addition to what the fern already gives by default.';
+      result += '<br><br>';
+      result += 'Idle for: ' + util.formatDuration(state.time - state.lastFernTime);
+      result += '<br>';
+      result += 'Past resource time charged up: ' + util.formatDuration(getFernIdlePastCharge());
+      result += '<br>';
+      result += 'Upcoming resource time charged up: ' + util.formatDuration(getFernIdleFutureCharge()) + ' (plus the randomized regular fern default)';
+      return result;
+    } if(state.g_numresets > 1 && state.fern == 2) {
+      return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
+    } else {
+      return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+    }
+  } else if(state.present_effect && x == state.presentx && y == state.presenty) {
+    if(holidayEventActive() == 1) {
+      result = 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
+    } else {
+      result = 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
+    }
+    // show the effect of the present in the tooltip, but only if it has seeds or spores, because you may want to activate a weather for those
+    // other effects are not shown, to keep it a surprise like an actual present is supposed to be
+    var effect = computePresentEffect();
+    if(effect == 1) result += '<br>(this one feels like it contains seeds)';
+    if(effect == 2) result += '<br>(this one feels like it contains spores)';
+  } else if(f.index == 0) {
+    //return 'Empty field, click to plant';
+    return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
+  } else if(f.index == FIELD_REMAINDER) {
+    result = 'Remains of a watercress that was copying from multiple plants. Visual reminder of good copying-spot only, this is an empty field spot and does nothing. Allows replanting this watercress with "w" key or the watercress button in the top bar.';
+  } else if(f.hasCrop()) {
+    var c = f.getCrop();
+    result = getCropInfoHTML(f, c);
+  } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
+    var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+    if(time.ltr(0)) time = Num(0);
+    if(state.treelevel <= 0 && state.res.spores.eqr(0)) {
+      var result = 'a weathered tree';
+      if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+      return result;
+    } else {
+      var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
+      var result = upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
+      result += '<br>Time at this level: ' + util.formatDuration(timeAtTreeLevel(state), true) + '<br/>';
+      return result;
+    }
+  }
+  return result;
+}
+
+function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
+  var f = state.field[y][x];
+  var fern = state.fern && x == state.fernx && y == state.ferny;
+  var present = state.present_effect && x == state.presentx && y == state.presenty;
+
+  if(state.fern && x == state.fernx && y == state.ferny && !longclick_extra) {
+    addAction({type:ACTION_FERN, x:x, y:y});
+    update();
+  }
+
+  if(state.present_effect && x == state.presentx && y == state.presenty && !longclick_extra) {
+    addAction({type:ACTION_PRESENT, x:x, y:y});
+    update();
+  }
+
+  if(longclick_extra) {
+    // opens the dialog without taking fern
+    makeFieldDialog(x, y);
+  } else if(!fern && !present && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
+    makeFieldDialog(x, y);
+  } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
+    if(shift && ctrl) {
+      // experimental feature for now, most convenient behavior needs to be found
+      // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still too expensive and you wait for automaton to upgrade the plant
+      if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
+        var c = crops[state.lastPlanted];
+        var tier = state.highestoftypeunlocked[c.type];
+        var c3 = croptype_tiers[c.type][tier];
+        if(c.type == CROPTYPE_CHALLENGE) c3 = c;
+        if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
+        if(c3.getCost().gt(state.res) && tier > 0) {
+          tier--;
+          var c4 = croptype_tiers[c.type][tier];
+          if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+        }
+        if(c3.getCost().gt(state.res) && tier > 0) {
+          tier--;
+          var c4 = croptype_tiers[c.type][tier];
+          if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+        }
+        if(c3.getCost().gt(state.res)) {
+          tier = -1; // template
+          var c4 = croptype_tiers[c.type][tier];
+          if(c4 && state.crops[c4.index].unlocked) c3 = c4;
+        }
+        addAction({type:ACTION_PLANT, x:x, y:y, crop:c3, shiftPlanted:true});
+        update();
+      }
+    } else if(shift && !ctrl) {
+      if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
+        var c = crops[state.lastPlanted];
+        addAction({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
+        update();
+      } else {
+        showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+      }
+    } else if(ctrl && !shift) {
+      var brassica = getHighestBrassica();
+      if(brassica >= 0) {
+        addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[brassica], ctrlPlanted:true});
+        update();
+      }
+    } else if(!fern && !present) {
+      makeFieldDialog(x, y);
+    }
+  } else if(f.hasCrop(true)) {
+    var xm = x;
+    var ym = y;
+    var fm = f;
+    if(f.index == FIELD_MULTIPART) {
+      fm = f.getMainMultiPiece();
+      xm = fm.x;
+      ym = fm.y;
+    }
+    if(shift && ctrl) {
+      // experimental feature for now, most convenient behavior needs to be found
+      // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
+      // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
+      var c2 = fm.getCrop();
+      var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
+      if(!c3 || !state.crops[c3.index].unlocked) c3 = c2;
+      if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
+      state.lastPlanted = c3.index;
+      if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
+      if(c3.tier > c2.tier) {
+        addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c3, shiftPlanted:true});
+        update();
+      }
+    } else if(shift && !ctrl) {
+      if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
+        var c = crops[state.lastPlanted];
+        var c2 = f.getCrop();
+        if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !fm.isFullGrown()) || fm.isTemplate() || fm.isGhost())) {
+          // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+          // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+          // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+          addAction({type:ACTION_DELETE, x:xm, y:ym});
+        } else {
+          addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c, shiftPlanted:true});
+        }
+        update();
+      }
+    } else if(ctrl && !shift) {
+      var brassica = getHighestBrassica();
+      if(fm.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
+        addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:crops[brassica], ctrlPlanted:true});
+      } else {
+        addAction({type:ACTION_DELETE, x:xm, y:ym});
+        update();
+      }
+    } else if(!fern && !present) {
+      makeFieldDialog(x, y);
+    }
+  }
+}
+
+
+
 function initFieldUI() {
   fieldFlex.clear();
 
@@ -947,180 +781,15 @@ function initFieldUI() {
         window.setTimeout(function(){updateFieldMouseClick(x, y)});
       }, x, y));
 
-      registerTooltip(div, bind(function(x, y, div) {
-        var f = state.field[y][x].getMainMultiPiece();
-
-        var result = undefined;
-        if(state.fern && x == state.fernx && y == state.ferny) {
-          if(state.g_numresets > 1 && renderIdleFern()) {
-            var result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
-            result += '<br><br>';
-            result += 'This fern charged up thanks to long idle time with the "slower ferns" choice upgrade. It gives more resources from the past production, as well as more resources at the current production rate, for some amount of time up to some limit. This time charges up slower than real time. This is in addition to what the fern already gives by default.';
-            result += '<br><br>';
-            result += 'Idle for: ' + util.formatDuration(state.time - state.lastFernTime);
-            result += '<br>';
-            result += 'Past resource time charged up: ' + util.formatDuration(getFernIdlePastCharge());
-            result += '<br>';
-            result += 'Upcoming resource time charged up: ' + util.formatDuration(getFernIdleFutureCharge()) + ' (plus the randomized regular fern default)';
-            return result;
-          } if(state.g_numresets > 1 && state.fern == 2) {
-            return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
-          } else {
-            return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
-          }
-        } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-          if(holidayEventActive() == 1) {
-            result = 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
-          } else {
-            result = 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
-          }
-          // show the effect of the present in the tooltip, but only if it has seeds or spores, because you may want to activate a weather for those
-          // other effects are not shown, to keep it a surprise like an actual present is supposed to be
-          var effect = computePresentEffect();
-          if(effect == 1) result += '<br>(this one feels like it contains seeds)';
-          if(effect == 2) result += '<br>(this one feels like it contains spores)';
-        } else if(f.index == 0) {
-          //return 'Empty field, click to plant';
-          return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
-        } else if(f.index == FIELD_REMAINDER) {
-          result = 'Remains of a watercress that was copying from multiple plants. Visual reminder of good copying-spot only, this is an empty field spot and does nothing. Allows replanting this watercress with "w" key or the watercress button in the top bar.';
-        } else if(f.hasCrop()) {
-          var c = f.getCrop();
-          result = getCropInfoHTML(f, c);
-        } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-          var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-          if(time.ltr(0)) time = Num(0);
-          if(state.treelevel <= 0 && state.res.spores.eqr(0)) {
-            var result = 'a weathered tree';
-            if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
-            return result;
-          } else {
-            var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-            var result = upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
-            result += '<br>Time at this level: ' + util.formatDuration(timeAtTreeLevel(state), true) + '<br/>';
-            return result;
-          }
-        }
-        return result;
-      }, x, y, div), true);
-
       div.style.cursor = 'pointer';
-      addButtonAction(div, bind(function(x, y, div, e) {
-        var f = state.field[y][x];
-        var fern = state.fern && x == state.fernx && y == state.ferny;
-        var present = state.present_effect && x == state.presentx && y == state.presenty;
-
-        if(state.fern && x == state.fernx && y == state.ferny) {
-          addAction({type:ACTION_FERN, x:x, y:y});
-          update();
-        }
-
-        if(state.present_effect && x == state.presentx && y == state.presenty) {
-          addAction({type:ACTION_PRESENT, x:x, y:y});
-          update();
-        }
-
-        if(!fern && !present && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
-          makeFieldDialog(x, y);
-        } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
-          var shift = e.shiftKey;
-          var ctrl = eventHasCtrlKey(e);
-          if(shift && ctrl) {
-            // experimental feature for now, most convenient behavior needs to be found
-            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still too expensive and you wait for automaton to upgrade the plant
-            if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
-              var c = crops[state.lastPlanted];
-              var tier = state.highestoftypeunlocked[c.type];
-              var c3 = croptype_tiers[c.type][tier];
-              if(c.type == CROPTYPE_CHALLENGE) c3 = c;
-              if(!c3 || !state.crops[c3.index].unlocked) c3 = c;
-              if(c3.getCost().gt(state.res) && tier > 0) {
-                tier--;
-                var c4 = croptype_tiers[c.type][tier];
-                if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-              }
-              if(c3.getCost().gt(state.res) && tier > 0) {
-                tier--;
-                var c4 = croptype_tiers[c.type][tier];
-                if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-              }
-              if(c3.getCost().gt(state.res)) {
-                tier = -1; // template
-                var c4 = croptype_tiers[c.type][tier];
-                if(c4 && state.crops[c4.index].unlocked) c3 = c4;
-              }
-              addAction({type:ACTION_PLANT, x:x, y:y, crop:c3, shiftPlanted:true});
-              update();
-            }
-          } else if(shift && !ctrl) {
-            if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
-              var c = crops[state.lastPlanted];
-              addAction({type:ACTION_PLANT, x:x, y:y, crop:c, shiftPlanted:true});
-              update();
-            } else {
-              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
-            }
-          } else if(ctrl && !shift) {
-            var brassica = getHighestBrassica();
-            if(brassica >= 0) {
-              addAction({type:ACTION_PLANT, x:x, y:y, crop:crops[brassica], ctrlPlanted:true});
-              update();
-            }
-          } else if(!fern && !present) {
-            makeFieldDialog(x, y);
-          }
-        } else if(f.hasCrop(true)) {
-          var xm = x;
-          var ym = y;
-          var fm = f;
-          if(f.index == FIELD_MULTIPART) {
-            fm = f.getMainMultiPiece();
-            xm = fm.x;
-            ym = fm.y;
-          }
-          var shift = e.shiftKey;
-          var ctrl = eventHasCtrlKey(e);
-          if(shift && ctrl) {
-            // experimental feature for now, most convenient behavior needs to be found
-            // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
-            // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
-            var c2 = fm.getCrop();
-            var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
-            if(!c3 || !state.crops[c3.index].unlocked) c3 = c2;
-            if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
-            state.lastPlanted = c3.index;
-            if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
-            if(c3.tier > c2.tier) {
-              addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c3, shiftPlanted:true});
-              update();
-            }
-          } else if(shift && !ctrl) {
-            if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
-              var c = crops[state.lastPlanted];
-              var c2 = f.getCrop();
-              if(c2.index == state.lastPlanted && ((c2.type != CROPTYPE_BRASSICA && !fm.isFullGrown()) || fm.isTemplate() || fm.isGhost())) {
-                // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
-                // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
-                // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-                addAction({type:ACTION_DELETE, x:xm, y:ym});
-              } else {
-                addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c, shiftPlanted:true});
-              }
-              update();
-            }
-          } else if(ctrl && !shift) {
-            var brassica = getHighestBrassica();
-            if(fm.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
-              addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:crops[brassica], ctrlPlanted:true});
-            } else {
-              addAction({type:ACTION_DELETE, x:xm, y:ym});
-              update();
-            }
-          } else if(!fern && !present) {
-            makeFieldDialog(x, y);
-          }
-        }
-      }, x, y, div));
+      registerAction(div, bind(fieldCellClickFun, x, y, div), 'click field cell', {
+        label_shift:'(over)plant selected crop',
+        label_ctrl:'delete crop or plant brassica',
+        label_ctrl_shift:'select crop or plant highest tier',
+        label_longclick_extra:'open crop dialog',
+        tooltip:bind(fieldCellTooltipFun, x, y, div),
+        tooltip_poll:true
+      });
 
       var pw = tw >> 1;
       var ph = Math.round(th / 16);

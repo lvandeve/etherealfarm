@@ -296,112 +296,6 @@ function makeDowngradeCrop2Action(x, y, opt_silent) {
   return true;
 }
 
-function makeTree2Dialog() {
-  var div;
-
-  var have_buttons = automatonUnlocked();
-
-  var dialog = createDialog({
-    nocancel:have_buttons,
-    scrollable:false,
-    narrow:true,
-    title:'Tree',
-    bgstyle:'efDialogTranslucent'
-  });
-  var contentFlex = dialog.content;
-
-  var flex = new Flex(dialog.icon, 0, 0, 1, 1);
-  var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-  renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][4], canvas);
-  flex = new Flex(dialog.icon, 0, 1, 1, 2);
-  canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-  renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][4], canvas);
-
-  var ypos = 0;
-  var ysize = 0.1;
-
-  var f0 = new Flex(contentFlex, 0, 0, 1, 0.65);
-  makeScrollable(f0);
-  var f1 = new Flex(contentFlex, 0, 0.67, 1, 1);
-
-  var text = '';
-
-  if(state.treelevel2 > 0) {
-    text += '<b>Ethereal tree level ' + state.treelevel2 + '</b>';
-  } else {
-    text += '<b>Ethereal tree</b>';
-  }
-  text += '<br><br>';
-
-  var twigs_req = treeLevel2Req(state.treelevel2 + 1);
-  text += '<b>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' (total: ' + twigs_req.toString() + ')';
-  if(state.treelevel2 > 0 && state.treelevel2 <= 5 && state.cropcount[mistletoe_0] == 0 && state.challenge == 0) {
-    text += '<br><font color="red">You must plant mistletoe(s) in the basic field to get twigs to level up the ethereal tree and progress the game</font>';
-  }
-  text += '<br><br>';
-
-  if(state.treelevel2 > 0) {
-    text += '<b>Resin production bonus to basic tree: </b>' + treelevel2_resin_bonus.mulr(state.treelevel2).toPercentString();
-    text += '<br><br>';
-  }
-
-  text += '<b>Total resin earned entire game: </b>' + state.g_res.resin.toString();
-  text += '<br/><br/>';
-
-  text += '<b>Ethereal boosts from crops on this field to basic field:</b><br>';
-  text += '• starter resources: ' + getStarterResources().toString() + '<br>';
-  text += '• berry boost: ' + state.ethereal_berry_bonus.toPercentString() + '<br>';
-  text += '• mushroom boost: ' + state.ethereal_mush_bonus.toPercentString() + '<br>';
-  text += '• flower boost: ' + state.ethereal_flower_bonus.toPercentString() + '<br>';
-  if(state.crops2[nettle2_0].unlocked) text += '• stinging boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
-  if(state.crops2[bee2_0].unlocked) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
-  if(state.crops2[brassica2_0].unlocked) text += '• brassica boost: ' + state.ethereal_brassica_bonus.toPercentString() + '<br>';
-  text += '<br><br>';
-
-  f0.div.innerHTML = text;
-
-  var y = 0.05;
-  var h = 0.15;
-  // finetune the width of the buttons in flex f1
-  var button0 = 0.15;
-  var button1 = 0.85;
-  var buttonshift = h * 1.15;
-
-  if(automatonUnlocked()) {
-    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = 'Ethereal blueprints';
-    //button.textEl.style.boxShadow = '0px 0px 5px #44f';
-    button.textEl.style.textShadow = '0px 0px 5px #008';
-    addButtonAction(button, function() {
-      closeAllDialogs();
-      createBlueprintsDialog(undefined, undefined, true);
-    });
-  }
-
-  if(state.treelevel2 > 0) {
-    var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = 'See previous unlocks';
-    addButtonAction(button, function() {
-      showEtherealTreeLevelDialogs();
-    });
-    registerTooltip(button, 'Show the things that got unlocked by reaching previous ethereal tree levels');
-  }
-
-  if(have_buttons) {
-    button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
-    y += buttonshift;
-    styleButton(button);
-    button.textEl.innerText = 'Back';
-    addButtonAction(button, function() {
-      dialog.cancelFun();
-    });
-  }
-}
-
 function makeField2Dialog(x, y, opt_override_mistletoe) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
@@ -502,6 +396,113 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
   }
 }
 
+function field2CellTooltipFun(x, y, div) {
+  var f = state.field2[y][x];
+  var fd = field2Divs[y][x];
+
+  var result = undefined;
+  if(f.index == 0) {
+    return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
+  } else if(f.hasCrop()) {
+    var c = crops2[f.cropIndex()];
+    result = getCropInfoHTML2(f, c, false);
+  } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
+    if(state.treelevel2 > 0) {
+      result = 'Ethereal tree level ' + state.treelevel2;
+    } else {
+      result = 'Ethereal tree';
+    }
+    var twigs_req = treeLevel2Req(state.treelevel2 + 1);
+    var nextlevelprogress = state.res.twigs.div(twigs_req.twigs);
+    result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' of ' + twigs_req.toString() + ' (have ' + state.res.twigs.toString() + ', ' + nextlevelprogress.toPercentString() + ')';
+    var boost = getEtherealTreeNeighborBoost();
+    if(boost.neqr(0)) {
+      if(state.squirrel_upgrades[upgradesq_ethtree_diag].count) result += '<br><br>Boosting non-lotus neighbors orthogonally and diagonally: ' + boost.toPercentString();
+      else result += '<br><br>Boosting non-lotus neighbors orthogonally but not diagonally: ' + boost.toPercentString();
+    }
+  }
+  return result;
+}
+
+function field2CellClickFun(x, y, div, shift, ctrl) {
+  var f = state.field2[y][x];
+  if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
+    makeField2Dialog(x, y);
+  } else if(f.index == 0) {
+    if(shift && ctrl) {
+      // experimental feature for now, most convenient behavior needs to be found
+      // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still to expensive and you wait for automaton to upgrade the plant
+      if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
+        var c = crops2[state.lastPlanted2];
+        var tier = state.highestoftype2unlocked[c.type];
+        var c3 = croptype2_tiers[c.type][tier];
+        if(c.type == CROPTYPE_CHALLENGE) c3 = c;
+        if(!c3 || !state.crops2[c3.index].unlocked) c3 = c;
+        if(c3.getCost().gt(state.res) && tier > 0) {
+          tier--;
+          var c4 = croptype2_tiers[c.type][tier];
+          if(c4 && state.crops2[c4.index].unlocked) c3 = c4;
+        }
+        if(c3.getCost().gt(state.res) && tier > 0) {
+          tier--;
+          var c4 = croptype2_tiers[c.type][tier];
+          if(c4 && state.crops2[c4.index].unlocked) c3 = c4;
+        }
+        if(c3.getCost().gt(state.res)) {
+          tier = -1; // template
+          var c4 = croptype2_tiers[c.type][tier];
+          if(c4 && state.crops2[c4.index].unlocked) c3 = c4;
+        }
+        addAction({type:ACTION_PLANT2, x:x, y:y, crop:c3, shiftPlanted:true});
+        update();
+      }
+    } else if(shift && !ctrl) {
+      if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
+        var c = crops2[state.lastPlanted2];
+        addAction({type:ACTION_PLANT2, x:x, y:y, crop:c, shiftPlanted:true});
+        update();
+      } else {
+        showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
+      }
+    } else {
+      makeField2Dialog(x, y);
+    }
+  } else if(f.hasCrop()) {
+    if(shift && ctrl) {
+      // experimental feature for now, most convenient behavior needs to be found
+      // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
+      // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
+      var c2 = f.getCrop();
+      var c3 = croptype2_tiers[c2.type][state.highestoftype2unlocked[c2.type]];
+      if(!c3 || !state.crops2[c3.index].unlocked) c3 = c2;
+      if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
+      state.lastPlanted2 = c3.index;
+      if(c3.getCost().gt(state.res)) state.lastPlanted2 = c2.index;
+      if(c3.tier > c2.tier) {
+        addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c3, shiftPlanted:true});
+        update();
+      }
+    } else if(shift && !ctrl) {
+      var c = crops2[state.lastPlanted2];
+      var c2 = f.getCrop();
+      if(c2.index == state.lastPlanted2 && !f.isFullGrown()) {
+        // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
+        // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
+        // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
+        addAction({type:ACTION_DELETE2, x:x, y:y});
+      } else {
+        addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c, shiftPlanted:true});
+      }
+      update();
+    } else if(ctrl && !shift) {
+      addAction({type:ACTION_DELETE2, x:x, y:y});
+      update();
+    } else {
+      makeField2Dialog(x, y);
+    }
+  }
+}
+
 function initField2UI() {
   field2Flex.clear();
   field2Rows = [];
@@ -560,116 +561,16 @@ function initField2UI() {
         window.setTimeout(function(){updateField2MouseClick(x, y)});
       }, x, y));
 
-      registerTooltip(div, bind(function(x, y, div) {
-        var f = state.field2[y][x];
-        var fd = field2Divs[y][x];
 
-        var result = undefined;
-        if(f.index == 0) {
-          return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
-        } else if(f.hasCrop()) {
-          var c = crops2[f.cropIndex()];
-          result = getCropInfoHTML2(f, c, false);
-        } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-          if(state.treelevel2 > 0) {
-            result = 'Ethereal tree level ' + state.treelevel2;
-          } else {
-            result = 'Ethereal tree';
-          }
-          var twigs_req = treeLevel2Req(state.treelevel2 + 1);
-          var nextlevelprogress = state.res.twigs.div(twigs_req.twigs);
-          result += '<br><br>Twigs required for next level: </b>' + (twigs_req.twigs.sub(state.res.twigs)).toString() + ' of ' + twigs_req.toString() + ' (have ' + state.res.twigs.toString() + ', ' + nextlevelprogress.toPercentString() + ')';
-          var boost = getEtherealTreeNeighborBoost();
-          if(boost.neqr(0)) {
-            if(state.squirrel_upgrades[upgradesq_ethtree_diag].count) result += '<br><br>Boosting non-lotus neighbors orthogonally and diagonally: ' + boost.toPercentString();
-            else result += '<br><br>Boosting non-lotus neighbors orthogonally but not diagonally: ' + boost.toPercentString();
-          }
-        }
-        return result;
-      }, x, y, div), true);
+      div.style.cursor = 'pointer';
+      registerAction(div, bind(field2CellClickFun, x, y, div), 'click field cell', {
+        label_shift:'(over)plant selected crop',
+        label_ctrl:'delete crop',
+        label_ctrl_shift:'select crop or plant highest tier',
+        tooltip:bind(field2CellTooltipFun, x, y, div),
+        tooltip_poll:true
+      });
 
-      addButtonAction(div, bind(function(x, y, div, e) {
-        var f = state.field2[y][x];
-        if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
-          makeField2Dialog(x, y);
-        } else if(f.index == 0) {
-          var shift = e.shiftKey;
-          var ctrl = eventHasCtrlKey(e);
-          if(shift && ctrl) {
-            // experimental feature for now, most convenient behavior needs to be found
-            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still to expensive and you wait for automaton to upgrade the plant
-            if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
-              var c = crops2[state.lastPlanted2];
-              var tier = state.highestoftype2unlocked[c.type];
-              var c3 = croptype2_tiers[c.type][tier];
-              if(c.type == CROPTYPE_CHALLENGE) c3 = c;
-              if(!c3 || !state.crops2[c3.index].unlocked) c3 = c;
-              if(c3.getCost().gt(state.res) && tier > 0) {
-                tier--;
-                var c4 = croptype2_tiers[c.type][tier];
-                if(c4 && state.crops2[c4.index].unlocked) c3 = c4;
-              }
-              if(c3.getCost().gt(state.res) && tier > 0) {
-                tier--;
-                var c4 = croptype2_tiers[c.type][tier];
-                if(c4 && state.crops2[c4.index].unlocked) c3 = c4;
-              }
-              if(c3.getCost().gt(state.res)) {
-                tier = -1; // template
-                var c4 = croptype2_tiers[c.type][tier];
-                if(c4 && state.crops2[c4.index].unlocked) c3 = c4;
-              }
-              addAction({type:ACTION_PLANT2, x:x, y:y, crop:c3, shiftPlanted:true});
-              update();
-            }
-          } else if(shift && !ctrl) {
-            if(state.lastPlanted2 >= 0 && crops2[state.lastPlanted2]) {
-              var c = crops2[state.lastPlanted2];
-              addAction({type:ACTION_PLANT2, x:x, y:y, crop:c, shiftPlanted:true});
-              update();
-            } else {
-              showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
-            }
-          } else {
-            makeField2Dialog(x, y);
-          }
-        } else if(f.hasCrop()) {
-          var shift = e.shiftKey;
-          var ctrl = eventHasCtrlKey(e);
-          if(shift && ctrl) {
-            // experimental feature for now, most convenient behavior needs to be found
-            // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
-            // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
-            var c2 = f.getCrop();
-            var c3 = croptype2_tiers[c2.type][state.highestoftype2unlocked[c2.type]];
-            if(!c3 || !state.crops2[c3.index].unlocked) c3 = c2;
-            if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
-            state.lastPlanted2 = c3.index;
-            if(c3.getCost().gt(state.res)) state.lastPlanted2 = c2.index;
-            if(c3.tier > c2.tier) {
-              addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c3, shiftPlanted:true});
-              update();
-            }
-          } else if(shift && !ctrl) {
-            var c = crops2[state.lastPlanted2];
-            var c2 = f.getCrop();
-            if(c2.index == state.lastPlanted2 && !f.isFullGrown()) {
-              // one exception for the shift+click to replace: if crop is growing and equals your currently selected crop,
-              // it means you may have just accidently planted it in wrong spot. deleting it is free (other than lost growtime,
-              // but player intended to have it gone anyway by shift+clicking it even when replace was intended)
-              addAction({type:ACTION_DELETE2, x:x, y:y});
-            } else {
-              addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c, shiftPlanted:true});
-            }
-            update();
-          } else if(ctrl && !shift) {
-            addAction({type:ACTION_DELETE2, x:x, y:y});
-            update();
-          } else {
-            makeField2Dialog(x, y);
-          }
-        }
-      }, x, y, div));
 
       var pw = tw >> 1;
       var ph = Math.round(th / 16);
@@ -758,123 +659,6 @@ function renderField2() {
     for(var x = 0; x < state.numw2; x++) {
       updateField2CellUI(x, y);
     }
-  }
-}
-
-// opt_later: when viewing the dialog later, so it shouldn't show messages that indicate the ethereal tree leveled up just now
-function showEtherealTreeLevelDialog(level, opt_later) {
-  var dialog = createDialog({
-    cancelname:'ok',
-    scrollable:true,
-    title:((opt_later ? 'Ethereal tree level ' : 'Reached ethereal tree level ') + level),
-    nobgclose:!opt_later,
-    bgstyle:'efDialogEthereal'
-  });
-
-  var text = '';
-
-  if(!opt_later) {
-    if(level == 1) {
-     text += 'Thanks to twigs, the ethereal tree leveled up! This is the tree in the ethereal field, not the one in the basic field. Leveling up the ethereal tree unlocks new ethereal crops and/or upgrades, depending on the level. Each level also provides a resin production boost to the basic tree.'
-    } else {
-     text += 'The ethereal tree leveled up to level ' + level + '!';
-    }
-    text += '<br><br>';
-
-    var twigs_now = treeLevel2Req(level);
-    var twigs_next = treeLevel2Req(level + 1);
-
-    text += 'It consumed ' + twigs_now.toString() + '. The next level will require ' + twigs_next.toString() + '.<br><br>';
-  }
-
-  var text2 = '';
-
-  var anything = false;
-
-  for(var i = 0; i < registered_upgrades2.length; i++) {
-    var u = upgrades2[registered_upgrades2[i]];
-    if(u.treelevel2 == level) {
-      text2 += '<b>• Upgrade</b>: ' + upper(u.name) + '<br>';
-      anything = true;
-    }
-  }
-
-  for(var i = 0; i < registered_crops2.length; i++) {
-    var u = crops2[registered_crops2[i]];
-    if(!u.isReal()) continue;
-    if(u.treelevel2 == level) {
-      text2 += '<b>• Crop</b>: Ethereal ' + u.name + '<br>';
-      anything = true;
-    }
-  }
-
-  for(var i = 0; i < registered_crops2.length; i++) {
-    var u = crops2[registered_crops2[i]];
-    if(!u.istemplate) continue;
-    if(u.treelevel2 == level) {
-      text2 += '<b>• Template</b>: Ethereal ' + u.name + '<br>';
-      anything = true;
-    }
-  }
-
-  if(level == 2) {
-    text2 += '<b>• Challenge</b>: No upgrades challenge (requires having automaton to unlock)<br>';
-    anything = true;
-  }
-  if(level == 3) {
-    text2 += '<b>• Challenge</b>: Blackberry challenge (requires automaton with auto-upgrades to unlock)<br>';
-    anything = true;
-  }
-  if(level == 5) {
-    text2 += '<b>• Challenge</b>: Wither challenge (requires automaton with auto-unlock crops to unlock)<br>';
-    anything = true;
-  }
-  if(level == 7) {
-    text2 += '<b>• Challenge</b>: Wasabi challenge<br>';
-    anything = true;
-  }
-
-  if(!opt_later) {
-    if(anything) {
-      text += 'New ethereal things unlocked! These are available in the ethereal field and/or ethereal upgrades tab:';
-    } else {
-      text += 'No new ethereal upgrades, crops or challenges unlocked. New content for this ethereal tree level may be added in future game updates. You can always see this dialog again later by clicking the ethereal tree using "See previous unlocks".';
-    }
-  } else {
-    text += 'The following new ethereal things got, or will get, unlocked at this level:<br><br>';
-  }
-
-  text += '<br><br>';
-  text += text2;
-
-  dialog.content.div.innerHTML = text;
-}
-
-function showEtherealTreeLevelDialogs() {
-  var dialog = createDialog({
-    onclose:function() { showing_help = false; },
-    scrollable:true,
-    title:'Previous ethereal tree level unlocks'
-  });
-
-  var pos = 0.05;
-  var buttondiv;
-  var h = 0.06;
-
-  var makeButton = function(text) {
-    //var button = makeDiv('10%', (pos * 100) + '%', '80%', (h * 100) + '%', parent);
-    var buttonFlex = new Flex(dialog.content, 0.08, pos, 0.92, pos + h);
-    var button = buttonFlex.div;
-    styleButton(button, 1);
-    pos += h * 1.1;
-    button.textEl.innerText = text;
-    return button;
-  };
-
-  for(var i = 0; i <= state.treelevel2; i++) {
-    var level = state.treelevel2 - i;
-    var button = makeButton('level ' + level);
-    addButtonAction(button, bind(showEtherealTreeLevelDialog, level, true));
   }
 }
 

@@ -34,6 +34,7 @@ var loadfailreason_toonew = 'Loading fail reason: savegame is from later version
 var loadfailreason_tooold = 'Loading fail reason: savegame is from an early preview version of the game and no longer supported';
 var loadfailreason_format = 'Loading fail reason: parsing format';
 var loadfailreason_decompression = 'Loading fail reason: decompression';
+var loadfailreason_beta = 'Loading fail reason: savegame is from a beta version';
 var programname = 'Ethereal Farm';
 var autoSavedStateMessage = 'Auto-saved state locally';
 var autoSavedStateMessageWithReminder = 'Auto-saved state locally. Reminder: make a manual savegame backup or risk losing everything. Use "export save" under settings.';
