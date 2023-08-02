@@ -281,7 +281,8 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
     tooltip:function() {
       updateInfoText();
       return infoText;
-    }
+    },
+    tooltip_poll:true
   });
 
 
