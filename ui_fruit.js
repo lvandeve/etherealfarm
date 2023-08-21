@@ -954,6 +954,8 @@ function showStorageFruitSourceDialog() {
   if(state.upgrades2[upgrade2_extra_fruit_slot3].count) num_ethereal_upgrades++;
   if(state.upgrades2[upgrade2_extra_fruit_slot4].count) num_ethereal_upgrades++;
   if(state.upgrades2[upgrade2_extra_fruit_slot5].count) num_ethereal_upgrades++;
+  if(state.upgrades2[upgrade2_extra_fruit_slot6].count) num_ethereal_upgrades++;
+  if(state.upgrades2[upgrade2_extra_fruit_slot7].count) num_ethereal_upgrades++;
   if(num_ethereal_upgrades > 0) {
     text += ' • ' + num_ethereal_upgrades + ': ethereal upgrades';
     text += '<br/>';
@@ -1521,15 +1523,17 @@ function createRecoverFruitDialog() {
   var s = 0.1; // relative width and height of a chip
   var x = 0;
   var y = 0.03;
+  var maxy = y + Math.ceil(state.fruit_recover.length / 10) * s;
 
   for(var i = 0; i < state.fruit_recover.length; i++) {
     if(x > s * 9.5) {
       x = 0;
       y += s;
     }
+    var y2 = maxy - y;
 
     var f = state.fruit_recover[i];
-    var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
+    var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y2], [0.01, 0, x + s], [0, 0, y2 + s]);
     x += s * 1.01;
     makeFruitChip(flex, f, 0, undefined, true, undefined, true);
     styleButton0(flex.div);

@@ -32,7 +32,7 @@ var CROPTYPE_LOTUS = croptype_index++; // ethereal field only, this is an ethere
 var CROPTYPE_MISTLETOE = croptype_index++;
 var CROPTYPE_BEE = croptype_index++; // boosts flowers
 var CROPTYPE_CHALLENGE = croptype_index++; // only exists for challenges
-var CROPTYPE_FERN2 = croptype_index++; // ethereal fern, giving starter money
+var CROPTYPE_FERN = croptype_index++; // ethereal fern, giving starter money. in infinity field, copies everything
 var CROPTYPE_SQUIRREL = croptype_index++;
 var CROPTYPE_NUT = croptype_index++;
 var CROPTYPE_PUMPKIN = croptype_index++; // halloween pumpkin
@@ -61,7 +61,7 @@ function getCropTypeName(type) {
   if(type == CROPTYPE_MISTLETOE) return 'mistletoe';
   if(type == CROPTYPE_BEE) return 'bee';
   if(type == CROPTYPE_CHALLENGE) return 'challenge';
-  if(type == CROPTYPE_FERN2) return 'fern';
+  if(type == CROPTYPE_FERN) return 'fern';
   if(type == CROPTYPE_SQUIRREL) return 'squirrel';
   if(type == CROPTYPE_NUT) return 'nuts';
   if(type == CROPTYPE_PUMPKIN) return 'pumpkin';
@@ -82,7 +82,7 @@ function getCropTypeHelp(type, opt_state) {
     case CROPTYPE_MISTLETOE: return 'Produces twigs (which you receive on transcend) when tree levels up, ' + (diagonal_mistletoe ? 'when orthogonally or diagonally next to the tree' : 'when orthogonally next to the tree only') + '. Having more than one increases level up spores requirement and slightly decreases resin gain.';
     case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers (in spring also diagonally). Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
     case CROPTYPE_CHALLENGE: return 'A type of crop specific to a challenge, not available in regular runs.';
-    case CROPTYPE_FERN2: return 'Ethereal fern, giving starter resources';
+    case CROPTYPE_FERN: return 'Ethereal fern, giving starter resources';
     case CROPTYPE_NUT: return 'Produces nuts. Can have only max 1 nut plant in the field. Neighboring watercress can copy its production, but less effectively than it copies berries. Receives a limited fixed boost from flowers of high enough tier. Not boosted by other standard berry and mushroom production boosts.';
     case CROPTYPE_PUMPKIN: return 'A crop for the halloween holiday event. It will be no longer available when the event is over.';
     case CROPTYPE_RUNESTONE: return '';
@@ -102,7 +102,7 @@ function getCropTypeHelp3(type, opt_state) {
     case CROPTYPE_MISTLETOE: return '';
     case CROPTYPE_BEE: return have_fishes ? 'Boosts neighboring flowers. For the flower boost to mushrooms, also has a small effect based on tier.' : 'Boosts neighboring flowers.';
     case CROPTYPE_CHALLENGE: return '';
-    case CROPTYPE_FERN2: return '';
+    case CROPTYPE_FERN: return 'Copies all infinity seed and spores resources of the entire field, for crops of the same tier';
     case CROPTYPE_NUT: return '';
     case CROPTYPE_PUMPKIN: return '';
     case CROPTYPE_RUNESTONE: return 'Boosts the basic field production boost of any neighboring crops in the infinity field. WARNING: The runestone, and any non-brassica crops it touches, cannot be deleted for ' + initialrunehours + ' hours after placing the runestone, and this time resets when planting crops next to it later on.';
@@ -1494,6 +1494,14 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
       if(ethereal_boost.neqr(1)) {
         result.mulInPlace(ethereal_boost);
         if(breakdown) breakdown.push(['ethereal crops', true, ethereal_boost, result.clone()]);
+      }
+    }
+
+    if(this.type == CROPTYPE_BEE) {
+      if(haveEtherealMistletoeUpgrade(mistle_upgrade_bee)) {
+        var mul = getEtherealMistletoeBonus(mistle_upgrade_bee).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, result.clone()]);
       }
     }
   }
@@ -3867,7 +3875,7 @@ Crop2.prototype.isReal = function() {
 Crop2.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   var mul = sameTypeCostMultiplier2;
   if(this.type == CROPTYPE_LOTUS) mul = sameTypeCostMultiplier_Lotus2;
-  if(this.type == CROPTYPE_FERN2) mul = sameTypeCostMultiplier_Fern2;
+  if(this.type == CROPTYPE_FERN) mul = sameTypeCostMultiplier_Fern2;
   var count = state.crop2count[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
   var countfactor = Math.pow(mul, count);
@@ -3906,12 +3914,25 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
         }
       }
     }
-    if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
-      // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
-      var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).addr(1);
-      result.mulInPlace(mistlemul);
-      if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
+
+    if(this.type == CROPTYPE_LOTUS) {
+      if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
+        // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
+        var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).addr(1);
+        result.mulInPlace(mistlemul);
+        if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
+      }
+
+      var u = state.upgrades2[upgrade2_lotus];
+      var u2 = upgrades2[upgrade2_lotus];
+      if(u.count > 0) {
+        //var mul_upgrade = upgrade2_lotus_bonus.mulr(u.count).addr(1);
+        var mul_upgrade = upgrade2_lotus_bonus.mulr(Num(u.count).pow(upgrade2_lotus_bonus_exponent)).addr(1);
+        result.mulInPlace(mul_upgrade);
+        if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+      }
     }
+
   }
 
   return result;
@@ -4166,7 +4187,7 @@ function registerSquirrel2(name, treelevel2,  tier, cost, planttime, effect_desc
 }
 
 function registerFern2(name, treelevel2, tier, cost, planttime, effect_description_short, effect_description_long, image, opt_tagline) {
-  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_FERN2, tier);
+  var index = registerCrop2(name, treelevel2, cost, Res({}), Num(0), planttime, effect_description_short, effect_description_long, image, opt_tagline, CROPTYPE_FERN, tier);
   var crop = crops2[index];
   return index;
 }
@@ -4482,6 +4503,7 @@ var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', LEVEL2, Res
 
 var upgrade2_extra_fruit_slot = registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
   state.fruit_slots++;
+  // NOTE: also update 'showStorageFruitSourceDialog' when adding new fruit slot upgrades
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[1]);
 
 
@@ -4613,6 +4635,7 @@ upgrade2_register_id = 140;
 // NOTE: this upgrade is way too cheap for being at ethereal tree level 2 (and already upped it from 1000 to 5000 in v0.1.65). But too late to fix it since it's already been bought. It could be seen as a nice bonus for reaching ethereal tree level 3.
 var upgrade2_extra_fruit_slot2 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:5000,essence:250}), 2, function() {
   state.fruit_slots++;
+  // NOTE: also update 'showStorageFruitSourceDialog' when adding new fruit slot upgrades
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[2]);
 
 
@@ -4665,6 +4688,7 @@ var upgrade2_field2_7x6 = registerUpgrade2('ethereal field 7x6', LEVEL2, Res({re
 
 var upgrade2_extra_fruit_slot3 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:2e6,essence:10000}), 2, function() {
   state.fruit_slots++;
+  // NOTE: also update 'showStorageFruitSourceDialog' when adding new fruit slot upgrades
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[3]);
 
 
@@ -4744,6 +4768,7 @@ var upgrade2_field7x7 = registerUpgrade2('larger field 7x7', LEVEL2, Res({resin:
 
 var upgrade2_extra_fruit_slot4 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:200e6,essence:100000}), 2, function() {
   state.fruit_slots++;
+  // NOTE: also update 'showStorageFruitSourceDialog' when adding new fruit slot upgrades
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[4]);
 
 ///////////////////////////
@@ -4789,6 +4814,7 @@ undefined, undefined, images_mistletoe[1]);
 
 var upgrade2_extra_fruit_slot5 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:200e9,essence:1000000}), 2, function() {
   state.fruit_slots++;
+  // NOTE: also update 'showStorageFruitSourceDialog' when adding new fruit slot upgrades
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[5]);
 
 //function registerUpgrade2(name, treelevel2, cost, cost_increase, fun, pre, maxcount, description, bgcolor, bordercolor, image0, image1) {
@@ -4834,6 +4860,7 @@ upgrade2_register_id = 900;
 
 var upgrade2_extra_fruit_slot6 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:1e15,essence:2e6}), 2, function() {
   state.fruit_slots++;
+  // NOTE: also update 'showStorageFruitSourceDialog' when adding new fruit slot upgrades
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[6]);
 
 ///////////////////////////
@@ -4878,6 +4905,7 @@ upgrade2_register_id = 1400;
 
 var upgrade2_extra_fruit_slot7 = registerUpgrade2('extra fruit slot', LEVEL2, Res({resin:20e19,essence:10e6}), 2, function() {
   state.fruit_slots++;
+  // NOTE: also update 'showStorageFruitSourceDialog' when adding new fruit slot upgrades
 }, function(){return true;}, 1, 'gain an extra storage slot for fruits', undefined, undefined, images_apple[7]);
 
 ///////////////////////////
@@ -4911,6 +4939,38 @@ var upgrade2_field2_9x8 = registerUpgrade2('ethereal field 9x8', LEVEL2, Res({re
   changeField2Size(state, numw, numh);
   initField2UI();
 }, function(){return state.numw2 >= 8 && state.numh2 >= 8}, 1, 'increase ethereal field size to 9x8 tiles', undefined, undefined, field_ethereal[0]);
+
+///////////////////////////
+LEVEL2 = 23;
+upgrade2_register_id = 1800;
+
+///////////////////////////
+LEVEL2 = 24;
+upgrade2_register_id = 1900;
+
+///////////////////////////
+LEVEL2 = 25;
+upgrade2_register_id = 2000;
+
+var upgrade2_lotus_bonus = Num(0.15);
+var upgrade2_lotus_bonus_exponent = Num(1.025);
+var upgrade2_lotus = registerUpgrade2('ethereal lotuses', LEVEL2, Res({resin:100e27}), 7.5, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 0,
+function() {
+  var result =  'increase bonus of all ethereal lotuses by ' + upgrade2_lotus_bonus.toPercentString() + ' * level ^ ' + upgrade2_lotus_bonus_exponent.toString(4) + '. Since lotuses boost multiple different crops, the actual effect is larger than this.';
+  var u = state.upgrades2[upgrade2_lotus];
+  var before = upgrade2_lotus_bonus.mulr(Num(u.count).pow(upgrade2_lotus_bonus_exponent));
+  var after = upgrade2_lotus_bonus.mulr(Num(u.count + 1).pow(upgrade2_lotus_bonus_exponent));
+  result += '<br>';
+  result += '<b>Currently gives</b>: +' + before.toPercentString();
+  result += '<br>';
+  result += '<b>Next gives</b>: +' + after.toPercentString();
+  //result += '<br>';
+  //result += '<b>Gain</b>: +' + (after.addr(1).div(before.addr(1))).subr(1).toPercentString();
+  return result;
+},
+undefined, undefined, image_lotustemplate, upgrade_arrow);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -6645,7 +6705,7 @@ function oneChallengeBonus(challenge_id) {
       var completed = c.cycleCompleted(j, false);
       result.addInPlace(getChallengeBonus(c.index, maxlevel, completed, j));
     }
-    return result.subr(1);
+    return result;
   } else {
     var maxlevel = c2.maxlevel;
     var completed = c.cycleCompleted(undefined, false);
@@ -6673,7 +6733,7 @@ function oneChallengeBonusIncludingCurrentRun(challenge_id) {
       }
       result.addInPlace(getChallengeBonus(c.index, maxlevel, completed, j));
     }
-    return result.subr(1);
+    return result;
   } else {
     var maxlevel = Math.max(c2.maxlevel, state.treelevel);
     var completed = c.cycleCompleted(undefined, true);
@@ -7542,6 +7602,8 @@ var mistle_upgrade_nuts = registerMistletoeUpgrade('nuttiness', 'nuts', Num(0.05
 
 var mistle_upgrade_brassica = registerMistletoeUpgrade('brassiness', 'brassica', Num(0.05), 14, 3600, 'Gives a %BONUS% bonus to brassica copying per level');
 
+var mistle_upgrade_bee = registerMistletoeUpgrade('buzziness', 'bee', Num(0.05), 15, 3600, 'Gives a %BONUS% bonus to bee bonus per level');
+
 // mistletoe upgrades that also cost other resources. Give higher id so they show up more to the bottom in the UI
 mistle_register_id = 50;
 
@@ -7703,9 +7765,10 @@ var sameTypeCostMultiplier3_b = 4;
 var sameTypeCostMultiplier3_flower = 1.25;
 var sameTypeCostMultiplier3_flower_b = 2;
 var sameTypeCostMultiplier3_bee = 2;
-var sameTypeCostMultiplier3_bee_b = 2;
+var sameTypeCostMultiplier3_bee_b = 4;
 var sameTypeCostMultiplier3_runestone = 1000;
 var sameTypeCostMultiplier3_mushroom = 10;
+var sameTypeCostMultiplier3_fern = 2;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 Crop3.prototype.isReal = function() {
@@ -7733,8 +7796,9 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
 
   var mul = (this.tier < 4) ? sameTypeCostMultiplier3 : sameTypeCostMultiplier3_b;
   if(this.type == CROPTYPE_FLOWER) mul = (this.tier < 4) ? sameTypeCostMultiplier3_flower : sameTypeCostMultiplier3_flower_b;
-  if(this.type == CROPTYPE_BEE) mul = (this.tier < 4) ? sameTypeCostMultiplier3_bee : sameTypeCostMultiplier3_bee_b;
+  if(this.type == CROPTYPE_BEE) mul = (this.tier < 7) ? sameTypeCostMultiplier3_bee : sameTypeCostMultiplier3_bee_b;
   if(this.type == CROPTYPE_MUSH) mul = sameTypeCostMultiplier3_mushroom;
+  if(this.type == CROPTYPE_FERN) mul = sameTypeCostMultiplier3_fern;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -7786,9 +7850,10 @@ Crop3.prototype.getProd = function(f, breakdown) {
   }
 
   // goldfish
-  if(result.infseeds.neqr(0) && state.fishcount[goldfish_0]) {
-    var num = state.fishcount[goldfish_0];
-    var mul = new Num(1 + goldfish_0_bonus * num);
+  if(result.infseeds.neqr(0) && (state.fishcount[goldfish_0] || state.fishcount[goldfish_1])) {
+    var num0 = state.fishcount[goldfish_0];
+    var num1 = state.fishcount[goldfish_1];
+    var mul = new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1);
     result.infseeds.mulInPlace(mul);
     if(breakdown) breakdown.push(['goldfish', true, mul, result.clone()]);
   }
@@ -7871,8 +7936,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
       // sea anemone through flower
       // TODO: indicate (and actually compute too) this in details of flower instead, but this is not same multipliers as flower to seed, so the disctinction has to be made somewhere
-      if(state.fishcount[anemone_0]) {
-        var anemonemul = Num(1 + anemone_0_bonus * state.fishcount[anemone_0]);
+      if(state.fishcount[anemone_0] || state.fishcount[anemone_1]) {
+        var anemonemul = Num(1 + anemone_0_bonus * state.fishcount[anemone_0] + anemone_1_bonus * state.fishcount[anemone_1]);
         result.mulInPlace(anemonemul);
         if(breakdown) breakdown.push(['sea anemones', true, anemonemul, result.clone()]);
       }
@@ -7906,6 +7971,16 @@ Crop3.prototype.getProd = function(f, breakdown) {
       result.mulInPlace(stingingmul);
       if(breakdown) breakdown.push(['stinging crops tiers (' + num + ')', true, stingingmul, result.clone()]);
     }
+  }
+
+  // fern of same tier
+  var ferncrop = fern3_7 + this.tier - 7;
+  if(!!crops3[ferncrop] && state.crop3count[ferncrop]) {
+    var num = state.crop3count[ferncrop];
+    var mul = crops3[ferncrop].infboost.mulr(num).addr(1);
+    result.infseeds.mulInPlace(mul);
+    result.infspores.mulInPlace(mul);
+    if(breakdown) breakdown.push(['fern', true, mul, result.clone()]);
   }
 
   if(this.type == CROPTYPE_BRASSICA && state.fishcount[shrimp_0]) {
@@ -7959,16 +8034,17 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
   }
 
   // sea anemone to flower
-  if(this.type == CROPTYPE_FLOWER && state.fishcount[anemone_0]) {
-    var anemonemul = Num(1 + anemone_0_bonus * state.fishcount[anemone_0]);
+  if(this.type == CROPTYPE_FLOWER && (state.fishcount[anemone_0] || state.fishcount[anemone_1])) {
+    var anemonemul = Num(1 + anemone_0_bonus * state.fishcount[anemone_0] + anemone_1_bonus * state.fishcount[anemone_1]);
     result.mulInPlace(anemonemul);
     if(breakdown) breakdown.push(['sea anemones', true, anemonemul, result.clone()]);
   }
 
   // koi to runestone
-  if(this.type == CROPTYPE_RUNESTONE && state.fishcount[koi_0]) {
-    var num = state.fishcount[koi_0];
-    var mul = Num(1 + koi_0_bonus * num);
+  if(this.type == CROPTYPE_RUNESTONE && (state.fishcount[koi_0] || state.fishcount[koi_1])) {
+    var num0 = state.fishcount[koi_0];
+    var num1 = state.fishcount[koi_1];
+    var mul = Num(1 + koi_0_bonus * num0 + koi_1_bonus * num1);
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['kois', true, mul, result.clone()]);
   }
@@ -8098,6 +8174,13 @@ function registerStinging3(name, tier, cost, infboost, basicboost, planttime, im
   return index;
 }
 
+function registerFern3(name, tier, cost, infboost, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_FERN, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.infboost = infboost;
+  return index;
+}
+
 var default_crop3_growtime = 5; // in seconds
 
 
@@ -8109,6 +8192,7 @@ var brassica3_3 = registerBrassica3('electrum watercress', 3, Res({infseeds:2e12
 var brassica3_4 = registerBrassica3('gold watercress', 4, Res({infseeds:100e15}), Res({infseeds:500e9}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader4));
 var brassica3_5 = registerBrassica3('platinum watercress', 5, Res({infseeds:25e21}), Res({infseeds:100e15}), Num(0.05), 7 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader5, [2, 6, 7], [0.15]));
 var brassica3_6 = registerBrassica3('rhodium watercress', 6, Res({infseeds:5e27}), Res({infseeds:20e21}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader6, [3, 6], [0.9]));
+var brassica3_7 = registerBrassica3('amethyst watercress', 7, Res({infseeds:10e33}), Res({infseeds:16e27}), Num(0.05), 4 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader7));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
@@ -8121,11 +8205,13 @@ var berry3_4 = registerBerry3('gold blackberry', 4, Res({infseeds:5e18}), Res({i
 var berry3_5 = registerBerry3('platinum blackberry', 5, Res({infseeds:500e21}), Res({infseeds:50e12}), Num(0.75), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader5, [2, 6], [0.3]));
 // this time it's more expensive relative to the watercress, so multiple rounds of having all watercress are needed before this becomes affordable
 var berry3_6 = registerBerry3('rhodium blackberry', 6, Res({infseeds:400e27}), Res({infseeds:100e15}), Num(1), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader6, [2, 3, 6], [0.15, 1]));
+var berry3_7 = registerBerry3('amethyst blackberry', 7, Res({infseeds:300e33}), Res({infseeds:100e18}), Num(1.5), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader7));
 
 crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
 var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, [7]));
 var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), Res({infspores:500}), Num(2), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
+var mush3_7 = registerMushroom3('amethist champignon', 7, Res({infseeds:5e36}), Res({infspores:25000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
 
 
 crop3_register_id = 900;
@@ -8136,6 +8222,8 @@ var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num
 var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(200), Num(0.6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader4));
 var flower3_5 = registerFlower3('platinum anemone', 5, Res({infseeds:20e24}), Num(2500), Num(1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader5, [6]));
 var flower3_6 = registerFlower3('rhodium anemone', 6, Res({infseeds:15e30}), Num(50000), Num(2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader6, [6], [0.7]));
+var flower3_7 = registerFlower3('amethist anemone', 7, Res({infseeds:10e36}), Num(1e6), Num(3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader7));
+
 
 crop3_register_id = 1200;
 var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), Num(0.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader2));
@@ -8143,6 +8231,7 @@ var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32)
 var bee3_4 = registerBee3('gold bee nest', 4, Res({infseeds:5e21}), Num(256), Num(1.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader4));
 var bee3_5 = registerBee3('platinum bee nest', 5, Res({infseeds:500e24}), Num(2048), Num(4), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader5, [2, 6, 7], [0.15]));
 var bee3_6 = registerBee3('rhodium bee nest', 6, Res({infseeds:500e30}), Num(16384), Num(8), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader6, [6]));
+var bee3_7 = registerBee3('amethist bee nest', 7, Res({infseeds:2e38}), Num(300e3), Num(16), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader7));
 
 // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
 // the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
@@ -8153,7 +8242,11 @@ crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
 
 crop3_register_id = 1800;
-var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1), Num(4), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6]));
+var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(5), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6]));
+var stinging3_7 = registerStinging3('amethist nettle', 7, Res({infseeds:1e39}), Num(2), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7));
+
+crop3_register_id = 2100;
+var fern3_7 = registerFern3('amethist fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop, metalheader7));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
@@ -8173,6 +8266,7 @@ var FISHTYPE_ANEMONE = fishtype_index++; // sea anemone: boost infinity flowers
 var FISHTYPE_PUFFER = fishtype_index++; // puffer fish: boosts berries
 var FISHTYPE_EEL = fishtype_index++; // eel: boosts twigs
 var FISHTYPE_TANG = fishtype_index++; // yellow tang: boosts resin
+var NUM_FISHTYPES = fishtype_index;
 
 function getFishTypeName(type) {
   if(type == FISHTYPE_GOLDFISH) return 'goldfish';
@@ -8305,10 +8399,14 @@ function registerTang(name, tier, cost, effect_description, image, opt_tagline) 
 fish_register_id = 100;
 var goldfish_0_bonus = 0.1;
 var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
+var goldfish_1_bonus = 1.5;
+var goldfish_1 = registerGoldfish('red goldfish', 1, Res({infspores:50e9}), 'Improves infinity seeds production by ' + Num(goldfish_1_bonus).toPercentString(), image_goldfish1);
 
 fish_register_id = 200;
 var koi_0_bonus = 0.2;
 var koi_0 = registerKoi('koi', 0, Res({infspores:20000}), 'Improves runestone bonus by ' + Num(koi_0_bonus).toPercentString(), image_koi0);
+var koi_1_bonus = 1;
+var koi_1 = registerKoi('red koi', 1, Res({infspores:250e9}), 'Improves runestone bonus by ' + Num(koi_1_bonus).toPercentString(), image_koi1);
 
 fish_register_id = 300;
 var octopus_0_bonus = 0.25;
@@ -8321,18 +8419,20 @@ var shrimp_0 = registerShrimp('shrimp', 0, Res({infspores:2500000}), 'Improves i
 fish_register_id = 500;
 var anemone_0_bonus = 0.15;
 var anemone_0 = registerAnemone('anemone', 0, Res({infspores:7500000}), 'Improves infinity flowers by ' + Num(anemone_0_bonus).toPercentString(), image_anemone0);
+var anemone_1_bonus = 1.5;
+var anemone_1 = registerAnemone('red anemone', 1, Res({infspores:200e9}), 'Improves infinity flowers by ' + Num(anemone_1_bonus).toPercentString(), image_anemone1);
 
 fish_register_id = 600;
 var puffer_0_bonus = 0.2;
-var puffer_0 = registerPuffer('pufferfish', 0, Res({infspores:100000000}), 'Improves infinity berries by ' + Num(puffer_0_bonus).toPercentString(), image_puffer0);
+var puffer_0 = registerPuffer('pufferfish', 0, Res({infspores:1e8}), 'Improves infinity berries by ' + Num(puffer_0_bonus).toPercentString(), image_puffer0);
 
 fish_register_id = 700;
 var eel_0_bonus = 0.25;
-var eel_0 = registerEel('eel', 0, Res({infspores:1000000000}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_eel0);
+var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_eel0);
 
 fish_register_id = 800;
 var tang_0_bonus = 0.25;
-var tang_0 = registerTang('yellow tang', 0, Res({infspores:10000000000}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_tang0);
+var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_tang0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -9226,6 +9326,13 @@ registerPlantTypeMedal3(flower3_6);
 registerPlantTypeMedal3(bee3_6);
 registerPlantTypeMedal3(mush3_6);
 registerPlantTypeMedal3(stinging3_6);
+registerPlantTypeMedal3(brassica3_7);
+registerPlantTypeMedal3(berry3_7);
+registerPlantTypeMedal3(flower3_7);
+registerPlantTypeMedal3(bee3_7);
+registerPlantTypeMedal3(mush3_7);
+registerPlantTypeMedal3(stinging3_7);
+registerPlantTypeMedal3(fern3_7);
 
 
 
@@ -9254,6 +9361,9 @@ registerFishTypeMedal(anemone_0);
 registerFishTypeMedal(puffer_0);
 registerFishTypeMedal(eel_0);
 registerFishTypeMedal(tang_0);
+registerFishTypeMedal(goldfish_1);
+registerFishTypeMedal(anemone_1);
+registerFishTypeMedal(koi_1);
 
 
 

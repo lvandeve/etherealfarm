@@ -20,6 +20,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
+  if(window['global_is_beta'] && window['beta_patchnotes']) {
+    text += 'BETA patch notes (this list is not guaranteed to be fully accurate):';
+    text += window['beta_patchnotes'];
+    text += '<br/><br/>';
+  }
+
+  text += '0.10.5 (2023-08-21):';
+  text += '<br/>• 7 new infinity crops, for new amethist tier. The 7th is a new type.';
+  text += '<br/>• New ethereal upgrade for ethereal tree level 25.';
+  text += '<br/>• 3 new high level fishes.';
+  text += '<br/>• New ethereal mistletoe bonus (requires evolve 15).';
+  text += '<br/>• Buffed the rhodium nettle spores from 100% to 150% bonus, and slightly buffed its basic field bonus.';
+  text += '<br/>• Added "u" shortcut in pond to upgrade fishes to next tier, "shift+d" to downgrade, etc... (similar to the fields).';
+  text += '<br/>• Bugfixes.'; // such as missing fruit slots in 'Fruit storage slot sources' informational dialog, and wrong rockier challenge bonus display in tree in some cases
+  text += '<br/><br/>';
+
   text += '0.10.4 (2023-08-01):';
   text += '<br/>• Higher tier ethereal ferns give more starter resources, to make a next tier more worth it compared to previous.'; // this doesn't matter much for higher ferns as players immediately get much more seeds from the first berry at that stage. But it does matter slightly for fern II, when unlocking that one starter resources is still a constraint, and a single fern II costs more than 3 fern I's yet the 3 fern I's gave more, this update now should fix this disappointment
   text += '<br/>• Fruit dialog now has "move to" option to move fruits to a certain slot, so they can be moved more easily on devices where drag and drop doesn\'t work.';

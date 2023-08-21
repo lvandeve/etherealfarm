@@ -837,6 +837,8 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
+  // NOTE: the one to handle fishes 'u', 'd', etc..., is in pondDialogShortcutFun
+
   if(key == 'p' && !ctrl && state.currentTab == tabindex_field) {
     // pick or plant crop
     var did_something = false;

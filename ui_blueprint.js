@@ -586,8 +586,8 @@ function blueprintFromText(text, b, ethereal) {
   sanitizeBluePrint(b);
 }
 
-// returns the new index of the moved blueprint
-function showMoveBlueprintDialog(index, ethereal) {
+// index_pointer must be an array of an integer, this is used as a pointer and output variable: so that if the blueprint is moved, the new coordinate is known
+function showMoveBlueprintDialog(index_pointer, ethereal) {
   var dialog = createDialog({
     title:'Move blueprint',
     help:'This allows to move the blueprint around in the blueprint dialog grid, to re-organize your blueprints. Any move will swap this blueprint with the blueprint that is in the target slot, so none get overwritten.<br><br>The forward/backward movement move its index within the grid/pages, this may move to the other page if beginning/end of a page is reached.<br><br>Up/down/left/right move in that direction in the grid.<br><br>Move to other page swaps this blueprint between the two blueprint pages.<br><br>For any of the movements, if the beginning/end is reached it wraps around to the other side. E.g. when moving left while the blueprint is on the left side of the 3x3 grid, it will end up on the right side. Or if moving the index backwards of the first blueprint of the first page, it will end up in the last slot of the second page.<br><br>You can also click locations on the small 3x3 grid indicator to swap immediately with that blueprint, just keep in mind that clicking this a lot may cause all your blueprints to shuffle around since each time you move it, it swaps with the other one.',
@@ -610,39 +610,39 @@ function showMoveBlueprintDialog(index, ethereal) {
 
   var button;
   button = addButton('Move index backwards', function(e) {
-    index = swapBlueprints(index, (index - 1 + 18) % 18, ethereal, update_automaton);
+    index_pointer[0] = swapBlueprints(index_pointer[0], (index_pointer[0] - 1 + 18) % 18, ethereal, update_automaton);
     updateIndicator();
   });
   button = addButton('Move index forwards', function(e) {
-    index = swapBlueprints(index, (index + 1) % 18, ethereal, update_automaton);
+    index_pointer[0] = swapBlueprints(index_pointer[0], (index_pointer[0] + 1) % 18, ethereal, update_automaton);
     updateIndicator();
   });
   button = addButton('Move left', function(e) {
-    var row_index = index % 3;
-    var row_start = index - row_index;
-    index = swapBlueprints(index, row_start + (row_index + 2) % 3, ethereal, update_automaton);
+    var row_index = index_pointer[0] % 3;
+    var row_start = index_pointer[0] - row_index;
+    index_pointer[0] = swapBlueprints(index_pointer[0], row_start + (row_index + 2) % 3, ethereal, update_automaton);
     updateIndicator();
   });
   button = addButton('Move right', function(e) {
-    var row_index = index % 3;
-    var row_start = index - row_index;
-    index = swapBlueprints(index, row_start + (row_index + 1) % 3, ethereal, update_automaton);
+    var row_index = index_pointer[0] % 3;
+    var row_start = index_pointer[0] - row_index;
+    index_pointer[0] = swapBlueprints(index_pointer[0], row_start + (row_index + 1) % 3, ethereal, update_automaton);
     updateIndicator();
   });
   button = addButton('Move up', function(e) {
-    var page_index = index % 9;
-    var page_start = index - page_index;
-    index = swapBlueprints(index, page_start + (page_index + 6) % 9, ethereal, update_automaton);
+    var page_index = index_pointer[0] % 9;
+    var page_start = index_pointer[0] - page_index;
+    index_pointer[0] = swapBlueprints(index_pointer[0], page_start + (page_index + 6) % 9, ethereal, update_automaton);
     updateIndicator();
   });
   button = addButton('Move down', function(e) {
-    var page_index = index % 9;
-    var page_start = index - page_index;
-    index = swapBlueprints(index, page_start + (page_index + 3) % 9, ethereal, update_automaton);
+    var page_index = index_pointer[0] % 9;
+    var page_start = index_pointer[0] - page_index;
+    index_pointer[0] = swapBlueprints(index_pointer[0], page_start + (page_index + 3) % 9, ethereal, update_automaton);
     updateIndicator();
   });
   button = addButton('Move to other page', function(e) {
-    index = swapBlueprints(index, (index + 9) % 18, ethereal, update_automaton);
+    index_pointer[0] = swapBlueprints(index_pointer[0], (index_pointer[0] + 9) % 18, ethereal, update_automaton);
     updateIndicator();
   });
 
@@ -661,27 +661,25 @@ function showMoveBlueprintDialog(index, ethereal) {
   var updateIndicator = function() {
     indicator.clear();
     var pind = new Flex(indicator, 0, 0, 1, 0.25);
-    pind.div.innerText = 'Page: ' + (1 + Math.floor(index / 9));
+    pind.div.innerText = 'Page: ' + (1 + Math.floor(index_pointer[0] / 9));
     addButtonAction(pind.div, function() {
-    index = swapBlueprints(index, (index + 9) % 18, ethereal, update_automaton);
+    index_pointer[0] = swapBlueprints(index_pointer[0], (index_pointer[0] + 9) % 18, ethereal, update_automaton);
     updateIndicator();
     });
     for(var y = 0; y < 3; y++) {
       for(var x = 0; x < 3; x++) {
         var ind = new Flex(indicator, x * 0.33, 0.25 + y * 0.25, (x + 1) * 0.33, 0.25 + (y + 1) * 0.25);
-        if((y * 3 + x) == index % 9) ind.div.className = 'efFlatButtonHighlighted';
+        if((y * 3 + x) == index_pointer[0] % 9) ind.div.className = 'efFlatButtonHighlighted';
         else ind.div.className = 'efFlatButton';
         // this adds button action to the 3x3 indicator grid itself. However, for now disable this: given that this swaps the blueprint with that location, it may be more confusing than moving it 1 by 1...
         addButtonAction(ind.div, bind(function(x, y) {
-          index = swapBlueprints(index, (index - index % 9) + y * 3 + x, ethereal, update_automaton);
+          index_pointer[0] = swapBlueprints(index_pointer[0], (index_pointer[0] - index_pointer[0] % 9) + y * 3 + x, ethereal, update_automaton);
           updateIndicator();
         }, x, y));
       }
     }
   };
   updateIndicator();
-
-  return index;
 }
 
 // this is an extra layer of undo for the undo button on the blueprint editing dialog. Normally that button only does what you are currently doing while that dialog is open
@@ -690,7 +688,8 @@ var lastpreundoblueprint = undefined;
 var lastpreundoblueprintindex = -1;
 
 
-function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
+// index_pointer must be an array of an integer, this is used as a pointer and output variable: so that if the blueprint is moved, the new coordinate is known
+function createBlueprintDialog(b, ethereal, index_pointer, opt_onclose) {
   if(!automatonUnlocked()) return;
 
   var did_edit = false;
@@ -702,7 +701,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
     // this actually commits the change of the blueprint. This is the cancel function of the dialog: the only thing that does not commit it, is using undo.
     if(did_edit) {
       lastpreundoblueprint = BluePrint.copy(orig);
-      lastpreundoblueprintindex = opt_index;
+      lastpreundoblueprintindex = index_pointer[0];
       BluePrint.copyTo(b, orig);
     }
   };
@@ -712,7 +711,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
       b = BluePrint.copy(orig);
       update();
       did_edit = false;
-    } else if(!!lastpreundoblueprint && lastpreundoblueprintindex == opt_index) {
+    } else if(!!lastpreundoblueprint && lastpreundoblueprintindex == index_pointer[0]) {
       b = BluePrint.copy(lastpreundoblueprint);
       update();
       did_edit = true;
@@ -755,14 +754,14 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   });
 
   var renderFlex = new Flex(dialog.content, [0, 0, 0.25], 0, [0, 0, 0.75], [0, 0, 0.5]);
-  renderBlueprint(b, ethereal, renderFlex, opt_index, undefined, undefined, undefined, true);
+  renderBlueprint(b, ethereal, renderFlex, index_pointer[0], undefined, undefined, undefined, true);
 
   var plant_button;
   var override_button;
   var value_indicator;
 
   var update = function() {
-    renderBlueprint(b, ethereal, renderFlex, opt_index, undefined, undefined, undefined, true);
+    renderBlueprint(b, ethereal, renderFlex, index_pointer[0], undefined, undefined, undefined, true);
     var title = b.name;
     if(!title) title = ethereal ? 'Ethereal blueprint' : 'Blueprint';
     dialog.titleEl.innerText = title;
@@ -861,9 +860,7 @@ function createBlueprintDialog(b, ethereal, opt_index, opt_onclose) {
   }, 'Delete this blueprint. You can use the cancel button below to undo this.');
 
   addButton('Move blueprint', function() {
-    if(opt_index != undefined) {
-      opt_index = showMoveBlueprintDialog(opt_index, ethereal);
-    }
+    showMoveBlueprintDialog(index_pointer, ethereal);
   }, 'Reorganize the order of your blueprints: moves this blueprint\'s location in the blueprint dialog horizontally, vertically or to another page.');
 
   update();
@@ -920,12 +917,18 @@ function showBluePrintHelp() {
 }
 
 
-function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl) {
+// "flexes" is the grid of 9x9 flexes
+function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes, shift, ctrl) {
   if(opt_custom_fun) {
     opt_custom_fun(index);
     closeTopDialog(); // the blueprint dialog
     return;
   }
+
+  var orig_page = Math.floor(index / 9);
+  var ui_index = index % 9;
+  var flex = flexes[ui_index];
+  var index_pointer = [index];
 
   var blueprints = opt_ethereal ? state.blueprints2 : state.blueprints;
 
@@ -974,10 +977,15 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custo
         update();
       }
     } else {
-      var closefun = bind(function(i, flex) {
-        renderBlueprint(blueprints[i], opt_ethereal, flex, index, opt_transcend, opt_challenge, true);
-      }, index, flex);
-      var subdialog = createBlueprintDialog(blueprints[index], opt_ethereal, index, closefun);
+      var closefun = function() {
+        index = index_pointer[0];
+        ui_index = index % 9;
+        flex = flexes[ui_index];
+        var current_page = Math.floor(index / 9);
+        // the flexes is a 3x3 grid, if the blueprint moved to other page, don't render it since it's not visible on this page
+        if(current_page == orig_page) renderBlueprint(blueprints[index], opt_ethereal, flex, index, opt_transcend, opt_challenge, true);
+      };
+      var subdialog = createBlueprintDialog(blueprints[index], opt_ethereal, index_pointer, closefun);
     }
   }
 }
@@ -1071,11 +1079,10 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     if(key == '9') index = 9;
     if(index < 0) return;
     index--; // make 0-index based
-    var ui_index = index;
     if(blueprintpage) index += 9;
     var shift = util.eventHasShiftKey(e);
     var ctrl = util.eventHasCtrlKey(e);
-    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes[ui_index], shift, ctrl);
+    blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes, shift, ctrl);
   };
 
   var title;
@@ -1141,13 +1148,8 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
       flexes[i] = flex;
       renderBlueprint(blueprints[j], opt_ethereal, flex, j, opt_transcend, opt_challenge, true);
       styleButton0(flex.div, true);
-      /*addButtonAction(flex.div, bind(function(index, flex, e) {
-        var shift = util.eventHasShiftKey(e);
-        var ctrl = util.eventHasCtrlKey(e);
-        return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
-      }, j, flex));*/
       registerAction(flex.div, bind(function(index, flex, shift, ctrl) {
-        return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flex, shift, ctrl);
+        return blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun, index, flexes, shift, ctrl);
       }, j, flex), 'edit blueprint ' + (j + 1), {label_shift:'override field now'});
     }
   };

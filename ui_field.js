@@ -904,13 +904,15 @@ function updateFieldCellUI(x, y) {
 
   var lightningimage = (x == lightning_field_image_x && y == lightning_field_image_y && state.time - state.lastLightningTime < 0.5);
 
-  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || state.treelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active) {
+  var rendertreelevel = (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) ? state.treelevel : 0; // only invalidate cells on tree level change if it's the tree cells themselves, otherwise it will redraw all cells too much while tree levels many levels at start of a run, causing slowness in mobile browsers
+
+  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active) {
     fd.index = f.index;
     fd.multindex = multindex;
     fd.growing = growing;
     fd.growstage = growstage;
     fd.season = season;
-    fd.treelevel = state.treelevel;
+    fd.treelevel = rendertreelevel;
     fd.ferncode = ferncode;
     fd.presentcode = presentcode;
     fd.progresspixel = progresspixel;

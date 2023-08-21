@@ -143,6 +143,12 @@ function getCropInfoHTML3Breakdown(f, c) {
     result += formatBreakdown(breakdown, true, 'Breakdown (neighbor basic boost +%)');
   }
 
+  if(c.type == CROPTYPE_FERN) {
+    var breakdown = [];
+    var total = c.getInfBoost(f, breakdown);
+    result += formatBreakdown(breakdown, true, 'Breakdown (field copy %)');
+  }
+
   var breakdown = [];
   var total = c.getBasicBoost(f, breakdown);
   if(total.neqr(0) || breakdown.length > 1) {
@@ -313,7 +319,7 @@ function makeField3Dialog(x, y) {
 
     styleButton(button1);
     button1.textEl.innerText = 'Downgrade tier';
-    registerTooltip(button1, 'Replace crop the tier one below, refunding the cost of the current one, then planting the lower tier crop with the lower resource cost.');
+    registerTooltip(button1, 'Replace crop with the tier one below, refunding the cost of the current one, then planting the lower tier crop with the lower resource cost.');
     addButtonAction(button1, function() {
       if(makeDowngradeCrop3Action(x, y)) {
         closeAllDialogs();

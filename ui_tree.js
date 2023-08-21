@@ -93,10 +93,16 @@ function makeTreeDialog() {
       var basicfar = basic && (maxlevel >= basicfarlevel || state.treelevel >= basicfarlevel);
       var addbasicmessage = false;
 
+      var bonus_before = oneChallengeBonus(state.challenge)
+      var bonus_after = oneChallengeBonusIncludingCurrentRun(state.challenge);
+      var total_bonus_before = totalChallengeBonus();
+      var total_bonus_after = totalChallengeBonusIncludingCurrentRun();
+
       if(maxlevel > 0) {
         if(state.treelevel > maxlevel) {
-          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel + '.';
-          text += ' This will bring your total challenge production bonus from ' + totalChallengeBonus().toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun().toPercentString();
+          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel;
+          text += '. Thist will bring your bonus for this challenge from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
+          text += ', and your total challenge production bonus from ' + totalChallengeBonus().toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun().toPercentString();
           if(basicfar) addbasicmessage = true;
         } else if(!basiccapped) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet reach your previous best of lvl ' + maxlevel + '.';
@@ -106,10 +112,6 @@ function makeTreeDialog() {
         }
       } else {
         text += '<b>Challenge active</b>: ' + upper(c.name);
-        var bonus_before = oneChallengeBonus(state.challenge)
-        var bonus_after = oneChallengeBonusIncludingCurrentRun(state.challenge);
-        var total_bonus_before = totalChallengeBonus();
-        var total_bonus_after = totalChallengeBonusIncludingCurrentRun();
         if(bonus_before.neq(bonus_after)) {
           text += '. So far, it will bring your bonus for this challenge from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
           text += ', and your total challenge production bonus from ' + total_bonus_before.toPercentString() + ' to ' + total_bonus_after.toPercentString();

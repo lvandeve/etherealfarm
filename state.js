@@ -361,7 +361,7 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_AUTOMATON) return 32;
   if(c.type == CROPTYPE_SQUIRREL) return 33;
   if(c.type == CROPTYPE_LOTUS) return 34;
-  if(c.type == CROPTYPE_FERN2) return 35;
+  if(c.type == CROPTYPE_FERN) return 35;
   if(c.type == CROPTYPE_PUMPKIN) return 60;
   return 0;
 }
@@ -1067,7 +1067,8 @@ function State() {
   // amount of new upgrades of which you haven't yet seen the name in the upgrades tab
   // derived stat, not to be saved
   this.upgrades_new = 0;
-  this.upgrades2_new = 0;
+  this.upgrades_new_b = 0; // a version more fine-tuned for when upgrades tab should be red and when not
+  this.upgrades2_new = 0; // ethereal upgrades
 
   // derived stat, not to be saved
   this.squirrel_upgrades_count = 0;
@@ -1148,6 +1149,8 @@ function State() {
   this.highestoftype2unlocked = [];
   this.highestoftype3unlocked = [];
   this.highestoftype3had = [];
+  this.highestoftypefishunlocked = [];
+  this.highestoftypefishhad = [];
 
   // same as highestoftype2unlocked but has crop index instead of tier values. undefined if none is unlocked of this type
   this.highestcropoftype2unlocked = [];
@@ -1441,6 +1444,10 @@ function computeDerived(state) {
     state.highestoftype3had[i] = -Infinity;
     state.highestoftypeknown[i] = -Infinity;
   }
+  for(var i = 0; i < NUM_FISHTYPES; i++) {
+    state.highestoftypefishunlocked[i] = -Infinity;
+    state.highestoftypefishhad[i] = -Infinity;
+  }
   state.templatecount = 0;
   state.ghostcount = 0;
   state.ghostcount2 = 0;
@@ -1544,6 +1551,7 @@ function computeDerived(state) {
 
   state.upgrades_unlocked = 0;
   state.upgrades_new = 0;
+  state.upgrades_new_b = 0;
   state.upgrades_upgradable = 0;
   state.upgrades_affordable = 0;
   state.upgrades2_unlocked = 0;
@@ -1556,7 +1564,14 @@ function computeDerived(state) {
     var u2 = state.upgrades[registered_upgrades[i]];
     if(u2.unlocked) {
       state.upgrades_unlocked++;
-      if(!u2.seen && !u2.count) state.upgrades_new++;
+      if(!u2.seen && !u2.count) {
+        state.upgrades_new++;
+        var update_b = true;
+        if(u.iscropupgrade && autoUpgradesEnabled()) update_b = false;
+        if(u.iscropunlock && autoUnlockEnabled()) update_b = false;
+        if(u.isprestige && autoPrestigeEnabled()) update_b = false;
+        if(update_b) state.upgrades_new_b++;
+      }
       if(!u.isExhausted()) {
         state.upgrades_upgradable++; // same as u.canUpgrade()
         if(u.getCost().le(state.res)) state.upgrades_affordable++;
@@ -1662,6 +1677,17 @@ function computeDerived(state) {
         state.fishcount[c.index]++;
         state.numfishes++;
       }
+    }
+  }
+
+  for(var i = 0; i < registered_fishes.length; i++) {
+    var c = fishes[registered_fishes[i]];
+    var c2 = state.fishes[registered_fishes[i]];
+    if(c2.unlocked) {
+      state.highestoftypefishunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypefishunlocked[c.type]);
+    }
+    if(c2.had) {
+      state.highestoftypefishhad[c.type] = Math.max(c.tier || 0, state.highestoftypefishhad[c.type]);
     }
   }
 

@@ -636,10 +636,10 @@ function renderImage(image, canvas) {
   // There are two options to draw it: using putImageData, or using drawImageData (which requires clearRect first, since it overdraws when there is alpha channel)
   // It looks like the drawImage solution is faster, the other solution is available commented out in case JS performance changes
 
-  ctx.putImageData(image[0], 0, 0);
+  //ctx.putImageData(image[0], 0, 0);
 
-  //ctx.clearRect(0, 0, iw, ih);
-  //ctx.drawImage(image[3], 0, 0);
+  ctx.clearRect(0, 0, iw, ih);
+  ctx.drawImage(image[3], 0, 0);
 }
 
 // renders grid of images. All images must have the same size, and the grid must be rectangular.

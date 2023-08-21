@@ -925,6 +925,11 @@ function createChangelogDialog() {
   text += programname + ' v' + formatVersion();
   text += '<br/><br/>';
 
+  if(window['global_is_beta']) {
+    text += '<b>This is a beta test version! Saves from a beta version can never be imported into the regular game! But you can import saves from the regular game here for testing.</b>';
+    text += '<br/><br/>';
+  }
+
   text += getAboutHeader();
 
   text += 'Changelog:';

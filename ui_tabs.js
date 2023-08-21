@@ -164,7 +164,7 @@ function updateTabButtons2() {
   tabnum = tabindex_upgrades;
   if(tabbuttons[tabnum]) {
     var text = 'upgrades<br/>(' + state.upgrades_affordable + '/' + state.upgrades_upgradable + ')';
-    if(state.upgrades_new) {
+    if(state.upgrades_new_b) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
 

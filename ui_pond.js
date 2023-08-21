@@ -49,16 +49,34 @@ var pondDialogShortcutFun = function(e) {
   var shift = keys.shift;
   var ctrl = keys.ctrl;
 
+  if(key == 'u' && !shift && !ctrl) {
+    // upgrade fish
+    var did_something = false;
+    did_something |= makeUpgradeFishAction(shiftFishFlexX, shiftFishFlexY);
+    if(did_something) {
+      update();
+    }
+  }
+
   if(key == 'd' && !shift && !ctrl) {
     if(state.pond[shiftFishFlexY]) {
       var f = state.pond[shiftFishFlexY][shiftFishFlexX];
       if(f) {
         if(f.hasCrop()) {
-          // delete crop
+          // delete fish
           addAction({type:ACTION_DELETE_FISH, x:shiftFishFlexX, y:shiftFishFlexY});
           update();
         }
       }
+    }
+  }
+
+  if(key == 'd' && shift && !ctrl) {
+    // downgrade fish
+    var did_something = false;
+    did_something |= makeDowngradeFishAction(shiftFishFlexX, shiftFishFlexY);
+    if(did_something) {
+      update();
     }
   }
 
@@ -112,6 +130,120 @@ function updatePondDialogText() {
 
   abovePondTextFlex.div.innerHTML = text;
 }
+
+
+// opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
+function getUpgradeFish(x, y, opt_cost) {
+  if(!state.pond[y]) return null;
+  var f = state.pond[y][x];
+  if(!f) return null;
+  var c = f.getCrop();
+  if(!c) return null;
+
+  var tier = state.highestoftypefishunlocked[c.type];
+
+  var recoup = c.getRecoup(f);
+
+  var c2 = null;
+
+  for(;;) {
+    if(tier <= c.tier) break; // not an upgrade
+    if(tier < 0) break;
+
+    var c3 = fish_tiers[c.type][tier];
+    if(!c3 || !state.fishes[c3.index].unlocked) break; // normally cannot happen that a lower tier crop is not unlocked
+
+    var cost = c3.getCost().sub(recoup);
+    if(opt_cost != undefined) {
+      opt_cost[0] = cost;
+      c2 = c3;
+    }
+
+    if(cost.le(state.res)) {
+      // found a successful upgrade
+      if(opt_cost != undefined) opt_cost[1] = false;
+      break;
+    } else {
+      if(opt_cost != undefined) opt_cost[1] = true;
+    }
+
+    tier--;
+  }
+
+  return c2;
+}
+
+function getDowngradeFish(x, y, opt_cost) {
+  if(!state.pond[y]) return null;
+  var f = state.pond[y][x];
+  if(!f) return null;
+  var c = f.getCrop();
+  if(!c) return null;
+
+  var tier = c.tier - 1;
+
+  var recoup = c.getRecoup();
+
+  var c2 = null;
+
+  if(tier < -1) return null;
+
+  var c3 = fish_tiers[c.type][tier];
+  if(!c3 || !state.fishes[c3.index].unlocked) return null;
+
+  var cost = c3.getCost().sub(recoup);
+  if(opt_cost != undefined) {
+    opt_cost[0] = cost;
+    c2 = c3;
+  }
+
+  // a downgrade may be more expensive if you have way more of that crop so it scaled up a lot
+  if(cost.le(state.res)) {
+    if(opt_cost != undefined) opt_cost[1] = false;
+  } else {
+    if(opt_cost != undefined) opt_cost[1] = true;
+  }
+
+  return c2;
+}
+
+function makeUpgradeFishAction(x, y, opt_silent) {
+  var too_expensive = [undefined];
+  var c3 = getUpgradeFish(x, y, too_expensive);
+
+  if(c3 && !too_expensive[1]) {
+    addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c3, shiftPlanted:true});
+    return true;
+  } else {
+    if(!opt_silent) {
+      if(too_expensive[1]) {
+        showMessage('not enough resources for next infinity crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
+            ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
+      } else if(!(x >= 0 && x < state.pondw && y >= 0 && y < state.pondh) || state.pond[y][x].index < CROPINDEX) {
+        showMessage('No fish to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+      } else {
+        showMessage('Fish not replaced, no higher tier unlocked or available', C_INVALID);
+      }
+    }
+  }
+  return true;
+}
+
+function makeDowngradeFishAction(x, y, opt_silent) {
+  var too_expensive = [undefined];
+  var c2 = getDowngradeFish(x, y, too_expensive);
+
+  if(c2 && !too_expensive[1]) {
+    addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c2, shiftPlanted:true});
+  } else if(c2 && too_expensive[1]) {
+    // TODO: instead go to an even lower tier?
+    showMessage('not enough resources for lower fish tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() + ', need ' + too_expensive[0].toString() + '. This can happen if you have a lot of the lower tier fish planted.', C_INVALID, 0, 0);
+  } else if(!c2) {
+    showMessage('Fish not replaced, no lower tier available', C_INVALID);
+  }
+  return true;
+}
+
 
 // makes the main dialog for the pond
 function makePond3Dialog() {
@@ -212,22 +344,47 @@ function makePondDialog(x, y, opt_override_mistletoe) {
     var button0 = new Flex(dialog.content, [0, 0, 0.2], [0.63 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.695 + buttonshift).div;
     var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.7 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.765 + buttonshift).div;
     var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.77 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.835 + buttonshift).div;
-    //var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.84 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.905 + buttonshift).div;
+    var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.84 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.905 + buttonshift).div;
     //var button4 = new Flex(dialog.content, [0, 0, 0.2], [0.91 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.975 + buttonshift).div;
     var last0 = undefined;
+    var button;
 
-    styleButton(button0);
-    button0.textEl.innerText = 'Replace fish';
-    registerTooltip(button0, 'Replace the fish with another one you choose, same as delete then place. Shows the list of unlocked fishes.');
-    addButtonAction(button0, function() {
+    button = button0;
+    styleButton(button);
+    button.textEl.innerText = 'Upgrade tier';
+    registerTooltip(button, 'Replace fish with the highest tier of this type you can afford. This deletes the original fish (which gives refund), and then places the new higher tier fish.');
+    addButtonAction(button, function() {
+      if(makeUpgradeFishAction(x, y)) {
+        closeDialogsUpTo(1); // keep pond dialog itself open
+        update();
+      }
+    });
+
+    button = button1;
+    styleButton(button);
+    button.textEl.innerText = 'Downgrade tier';
+    registerTooltip(button, 'Replace fish with the tier one below, refunding the cost of the current one, then placing the lower tier fish with the lower resource cost.');
+    addButtonAction(button, function() {
+      if(makeDowngradeFishAction(x, y)) {
+        closeDialogsUpTo(1); // keep pond dialog itself open
+        update();
+      }
+    });
+
+    button = button2;
+    styleButton(button);
+    button.textEl.innerText = 'Replace fish';
+    registerTooltip(button, 'Replace the fish with another one you choose, same as delete then place. Shows the list of unlocked fishes.');
+    addButtonAction(button, function() {
       makePlantFishDialog(x, y, true, c.getRecoup());
     });
 
-    styleButton(button1);
-    button1.textEl.innerText = 'Delete fish';
-    button1.textEl.style.color = '#c00';
-    registerTooltip(button1, 'Delete fish, get ' + (FISHRECOUP * 100) + '% of the original cost back.');
-    addButtonAction(button1, function() {
+    button = button3;
+    styleButton(button);
+    button.textEl.innerText = 'Delete fish';
+    button.textEl.style.color = '#c00';
+    registerTooltip(button, 'Delete fish, get ' + (FISHRECOUP * 100) + '% of the original cost back.');
+    addButtonAction(button, function() {
       addAction({type:ACTION_DELETE_FISH, x:x, y:y});
       closeDialogsUpTo(1); // keep pond dialog itself open
       update(); // do update immediately rather than wait for tick, for faster feeling response time
@@ -335,10 +492,32 @@ function initPondUI(flex) {
 
       addButtonAction(div, bind(function(x, y, div, e) {
         var f = state.pond[y][x];
-        if(f.index == 0 || f.index == FIELD_REMAINDER) {
+        if(f.index == 0) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(shift && !ctrl) {
+
+          if(shift && ctrl) {
+            // experimental feature for now [same as in basic field], most convenient behavior needs to be found
+            // current behavior: plant crop of same type as lastPlanted, but of highest tier that's unlocked and you can afford. Useful in combination with ctrl+shift picking when highest unlocked one is still too expensive and you wait for automaton to upgrade the plant
+            if(state.lastPlantedFish >= 0 && fishes[state.lastPlantedFish]) {
+              var c = fishes[state.lastPlantedFish];
+              var tier = state.highestoftypefishunlocked[c.type];
+              var c3 = fish_tiers[c.type][tier];
+              if(!c3 || !state.fishes[c3.index].unlocked) c3 = c;
+              if(c3.getCost().gt(state.res) && tier > 0) {
+                tier--;
+                var c4 = fish_tiers[c.type][tier];
+                if(c4 && state.fishes[c4.index].unlocked) c3 = c4;
+              }
+              if(c3.getCost().gt(state.res) && tier > 0) {
+                tier--;
+                var c4 = fish_tiers[c.type][tier];
+                if(c4 && state.fishes[c4.index].unlocked) c3 = c4;
+              }
+              addAction({type:ACTION_PLANT_FISH, x:x, y:y, fish:c3, shiftPlanted:true});
+              update();
+            }
+          } else if(shift && !ctrl) {
             if(state.lastPlantedFish >= 0 && fishes[state.lastPlantedFish]) {
               var c = fishes[state.lastPlantedFish];
               addAction({type:ACTION_PLANT_FISH, x:x, y:y, fish:c, shiftPlanted:true});
@@ -355,7 +534,20 @@ function initPondUI(flex) {
         } else if(f.hasCrop()) {
           var shift = e.shiftKey;
           var ctrl = eventHasCtrlKey(e);
-          if(ctrl && !shift) {
+          if(ctrl && shift) {
+            // experimental feature [same as in basic field] for now, most convenient behavior needs to be found
+            // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
+            // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
+            var c2 = f.getCrop();
+            var c3 = fish_tiers[c2.type][state.highestoftypefishunlocked[c2.type]];
+            if(!c3 || !state.fishes[c3.index].unlocked) c3 = c2;
+            state.lastPlantedFish = c3.index;
+            if(c3.getCost().gt(state.res)) state.lastPlantedFish = c2.index;
+            if(c3.tier > c2.tier) {
+              addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c3, shiftPlanted:true});
+              update();
+            }
+          } else if(ctrl && !shift) {
             addAction({type:ACTION_DELETE_FISH, x:x, y:y});
             update();
           } else if(shift && !ctrl) {
