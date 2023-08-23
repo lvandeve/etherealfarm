@@ -91,7 +91,7 @@ var pondDialogShortcutFun = function(e) {
           state.lastPlantedFish = f.getCrop().index;
         } else {
           // plant
-          if(state.lastPlantedFish >= 0 && crops[state.lastPlantedFish]) {
+          if(state.lastPlantedFish >= 0 && fishes[state.lastPlantedFish]) {
             var actiontype = f.hasCrop() ? ACTION_REPLACE_FISH : ACTION_PLANT_FISH;
             addAction({type:actiontype, x:shiftFishFlexX, y:shiftFishFlexY, fish:fishes[state.lastPlantedFish], shiftPlanted:true});
             did_something = true;

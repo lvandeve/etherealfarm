@@ -3899,7 +3899,7 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   // special neighboor boosts (automaton, squirrel, mistoetoe, tree)
-  if(f) {
+  if(f && this.type == CROPTYPE_LOTUS) {
     var num_mistle = 0;
 
     for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
@@ -3915,24 +3915,23 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
       }
     }
 
-    if(this.type == CROPTYPE_LOTUS) {
-      if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
-        // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
-        var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).addr(1);
-        result.mulInPlace(mistlemul);
-        if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
-      }
-
-      var u = state.upgrades2[upgrade2_lotus];
-      var u2 = upgrades2[upgrade2_lotus];
-      if(u.count > 0) {
-        //var mul_upgrade = upgrade2_lotus_bonus.mulr(u.count).addr(1);
-        var mul_upgrade = upgrade2_lotus_bonus.mulr(Num(u.count).pow(upgrade2_lotus_bonus_exponent)).addr(1);
-        result.mulInPlace(mul_upgrade);
-        if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
-      }
+    if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
+      // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
+      var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).addr(1);
+      result.mulInPlace(mistlemul);
+      if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
     }
+  }
 
+  if(this.type == CROPTYPE_LOTUS) {
+    var u = state.upgrades2[upgrade2_lotus];
+    var u2 = upgrades2[upgrade2_lotus];
+    if(u.count > 0) {
+      //var mul_upgrade = upgrade2_lotus_bonus.mulr(u.count).addr(1);
+      var mul_upgrade = upgrade2_lotus_bonus.mulr(Num(u.count).pow(upgrade2_lotus_bonus_exponent)).addr(1);
+      result.mulInPlace(mul_upgrade);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+    }
   }
 
   return result;
