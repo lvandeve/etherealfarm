@@ -418,6 +418,11 @@ function setProgressBar(div, value, color) {
     return;
   }
   if(value > 1) value = 1;
+  if(div.progressbarvalue_ != undefined) {
+    var diff = Math.abs(value - div.progressbarvalue_);
+    if(diff < 0.01) return;
+  }
+  div.progressbarvalue_ = value;
   var c = div.c;
   if(!div.visible) {
     div.style.display = '';

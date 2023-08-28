@@ -556,7 +556,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   dialog.icon.clear();
   if(lastTouchedFruit != f) {
     lastTouchedFruit = f;
-    updateFruitUI(); // to update lastTouchedFruit style
+    //updateFruitUI(); // to update lastTouchedFruit style --> commented out: this is slow on mobile browsers, and the dialog's onclose also already redraws fruits (which is of course as slow but at least only twice as often)
   }
   var recreate = function(opt_f) {
     if(opt_f) f = opt_f;

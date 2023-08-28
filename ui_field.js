@@ -759,7 +759,7 @@ function initFieldUI() {
       // the widths are made a tiny bit bigger, to avoid some gridding (1-pixel gaps between field tiles) that can occur for some field sizes otherwise
       var extra = 0.1;
       var celldiv = makeDiv((x / state.numw * 100) + '%', '0', (101 / state.numw) + '%', '100%', row);
-      var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
+      //var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
       var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
       var div = makeDiv('0', '0', '100%', '100%', celldiv);
       setAriaRole(celldiv, 'cell');
@@ -768,7 +768,7 @@ function initFieldUI() {
 
       fieldDivs[y][x].div = div;
       fieldDivs[y][x].canvas = canvas;
-      fieldDivs[y][x].bgcanvas = bgcanvas;
+      //fieldDivs[y][x].bgcanvas = bgcanvas;
 
       util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
         updateFieldMouseOver(x, y);
@@ -924,14 +924,15 @@ function updateFieldCellUI(x, y) {
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
     if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
-    renderImage(field_image, fd.bgcanvas);
+    //renderImage(field_image, fd.bgcanvas);
+    renderImage(field_image, fd.canvas);
 
     var label = 'field tile ' + x + ', ' + y;
 
     if(automatonplant) {
-      renderImage(images_automaton[4], fd.canvas);
+      blendImage(images_automaton[4], fd.canvas);
     } else if(lightningimage) {
-      renderImage(image_lightning, fd.canvas); // short lightning strike image, only stays for half a second, you can only really see this if you're there while it happens
+      blendImage(image_lightning, fd.canvas); // short lightning strike image, only stays for half a second, you can only really see this if you're there while it happens
       setProgressBar(fd.progress, -1, undefined);
     } else if(f.hasCrop(true)) {
       var c = f.getCrop(true);
@@ -944,17 +945,17 @@ function updateFieldCellUI(x, y) {
       if(c.quad && growstage != -1 && !!c.images_quad) {
         cropimg = c.images_quad[getQuadPos(x, y)][growstage];
       }
-      renderImage(cropimg, fd.canvas);
+      blendImage(cropimg, fd.canvas);
       if(f.growth >= 1 || f.index < CROPINDEX) {
         // fullgrown (or not a crop at all, or non-main part of multipart crop), so hide progress bar
         setProgressBar(fd.progress, -1, undefined);
       }
       label = c.name + '. ' + label;
     } else if(f.index == FIELD_TREE_TOP) {
-      renderImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
+      blendImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;
     } else if(f.index == FIELD_TREE_BOTTOM) {
-      renderImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
+      blendImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;
       if(state.treelevel > 0 || state.res.spores.gtr(0)) {
         if(state.challenge == challenge_infernal) {
@@ -967,17 +968,17 @@ function updateFieldCellUI(x, y) {
       var highest_brassica = getHighestBrassica();
       if(highest_brassica < 0) highest_brassica = 0;
       var remainder_image = crops[highest_brassica].image_remainder || image_watercress_remainder;
-      renderImage(remainder_image, fd.canvas);
+      blendImage(remainder_image, fd.canvas);
       setProgressBar(fd.progress, -1, undefined);
     } else if(f.index == FIELD_ROCK) {
       var image_index = Math.floor(util.pseudoRandom2D(x, y, 245643) * 4);
-      renderImage(images_rock[image_index], fd.canvas);
+      blendImage(images_rock[image_index], fd.canvas);
       label = 'rock. ' + label;
       setProgressBar(fd.progress, -1, undefined);
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
-      unrenderImage(fd.canvas);
+      //unrenderImage(fd.canvas);
     }
     if(state.fern && x == state.fernx && y == state.ferny) {
       var fernbaseimage = (state.fern == 2 ? images_fern2 : images_fern);

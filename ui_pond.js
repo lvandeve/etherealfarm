@@ -301,10 +301,20 @@ function makePond3Dialog() {
 // get fish info in HTML
 function getFishInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
+
+  var upgrade_cost = [undefined];
+  var upgrade_fish = getUpgradeFish(f.x, f.y, upgrade_cost, true);
+
   if(c.effect_description) result += '<br>' + c.effect_description;
   result += '<br>';
   result += '<br/>• Next placing cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
   result += '<br/>• Recoup on delete (d): ' + c.getRecoup().toString();
+  if(upgrade_fish && upgrade_cost[0]) {
+    var tier_diff = upgrade_fish.tier - c.tier;
+    var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+    result += '<br/> • Upgrade tier' + tier_diff_text + ' cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+  }
+
   return result;
 }
 
@@ -483,10 +493,17 @@ function initPondUI(flex) {
         if(c.effect_description) result += '<br>' + c.effect_description;
         result += '<br><br>';
         var recoup = c.getRecoup(f);
+        var upgrade_cost = [undefined];
+        var upgrade_fish = getUpgradeFish(f.x, f.y, upgrade_cost, true);
         var cost = c.getCost();
         result += ' • Base cost: ' + c.cost.toString() + '<br>';
         result += ' • Next planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
         result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
+        if(upgrade_fish && upgrade_cost[0]) {
+          var tier_diff = upgrade_fish.tier - c.tier;
+          var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
+          result += '<br/> • Upgrade tier' + tier_diff_text + ' cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
+        }
         return result;
       }, x, y, div), true);
 

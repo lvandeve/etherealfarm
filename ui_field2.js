@@ -656,6 +656,7 @@ function updateField2CellUI(x, y) {
 }
 
 function renderField2() {
+  //if(state.currentTab != tabindex_field2) return;
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
       updateField2CellUI(x, y);
