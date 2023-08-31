@@ -1308,12 +1308,28 @@ Flex.prototype.update = function(opt_parentdiv) {
   for(var i = 0; i < this.elements.length; i++) {
     this.elements[i].update(this.div_);
   }
-}
+};
+
+// move canvases to the canvaspool_ in image.js, see comment there for more info (it's for performance)
+Flex.prototype.salvageCanvas = function() {
+  for(var i = 0; i < this.elements.length; i++) {
+    this.elements[i].salvageCanvas();
+  }
+  for(var i = 0; i < this.div_.children.length; i++) {
+    var j = this.div_.children.length - 1 - i;
+    var c = this.div_.children[j];
+    if(upper(c.tagName) == 'CANVAS') {
+      addCanvasToPool_(c);
+      this.div_.removeChild(c);
+    }
+  }
+};
 
 // remove self from parent, from both Flex and DOM
 // parent must be given, Flex does not keep a reference to its own parent, only children
 Flex.prototype.removeSelf = function(parent) {
   if(this.div_ == Flex_prevParent) Flex_prevParent = undefined;
+  this.salvageCanvas();
   util.removeElement(this.div_);
   if(parent) {
     var e = parent.elements;
@@ -1324,12 +1340,13 @@ Flex.prototype.removeSelf = function(parent) {
       }
     }
   }
-}
+};
 
 // removes all children and inner HTML (but not style) of own div as well, but keeps self existing
 Flex.prototype.clear = function() {
   if(this.div_ == Flex_prevParent) Flex_prevParent = undefined;
   for(var i = 0; i < this.elements.length; i++) {
+    this.elements[i].salvageCanvas();
     if(this.elements[i].div == Flex_prevParent) Flex_prevParent = undefined;
     util.removeElement(this.elements[i].div);
   }
@@ -1337,7 +1354,7 @@ Flex.prototype.clear = function() {
   this.div_.innerHTML = '';
   this.div_.clientWidthCachedForFlex = undefined;
   this.div_.clientHeightCachedForFlex = undefined;
-}
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

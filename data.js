@@ -3801,6 +3801,27 @@ function() {
 //challenges[challenge_poisonivy].bonus_exponent = Num(1.1);
 challenges[challenge_poisonivy].autoaction_warning = true;
 
+
+
+// 15
+/*
+var challenge_towerdefense = registerChallenge('tower defense challenge', [75], undefined, undefined, Num(0.005), 75, 0,
+`Tower defense
+`,
+`
+• Tower defense<br>
+• Tower defense<br>
+`,
+['TODO REWARD DESCRIPTION'],
+'TODO UNLOCK REASON TEXT',
+function() {
+  // TODO unlock fun
+  return false;
+}, function() {
+  // TODO reward fun
+}, 31);
+*/
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -1040,6 +1040,32 @@ function getFruitTooltipText(f, opt_label) {
   return text;
 }
 
+
+
+function clickFruitChipFun(f, opt_slot_index, shift, ctrl) {
+  if(shift || ctrl) {
+    if(f.slot >= 100) {
+      // move the fruit upwards
+      var full = state.fruit_stored.length >= state.fruit_slots;
+      if(!full) {
+        addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:0});
+        update();
+      }
+    } else { // move the fruit downwards
+      addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:1});
+      update();
+    }
+  } else {
+    if(busyChoosingTargetSlot && opt_slot_index != undefined) {
+      addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:opt_slot_index});
+      busyChoosingTargetSlot = undefined;
+      update();
+    } else {
+      createFruitDialog(f);
+    }
+  }
+};
+
 // f = the fruit
 // slot_type: 0=storage, 1=sacrificial
 // opt_not_draggable: if true, the fruit chip is not enabled for being draggable and thus can have the long click tooltip
@@ -1053,8 +1079,7 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
   bg.div.style.backgroundColor = '#aaa';
   var canvas = createCanvas('0%', '0%', '100%', '100%', fg.div);
   //if(f.mark || f.name || f.fuses) canvas.style.border = '1px solid black';
-  renderImage(images_fruittypes[f.type][f.tier], canvas);
-
+  renderImage(images_fruittypes[f.type][f.tier], canvas, true);
   var tooltip = getFruitTooltipText(f, opt_label);
 
   styleFruitChip(fg, f);
@@ -1074,29 +1099,7 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
     }
     label_shift = (f.slot >= 100) ? 'move fruit up' : 'move fruit down';
     styleButton0(flex.div);
-    fun = function(shift, ctrl) {
-      if(shift || ctrl) {
-        if(f.slot >= 100) {
-          // move the fruit upwards
-          var full = state.fruit_stored.length >= state.fruit_slots;
-          if(!full) {
-            addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:0});
-            update();
-          }
-        } else { // move the fruit downwards
-          addAction({type:ACTION_FRUIT_SLOT, f:f, slottype:1});
-          update();
-        }
-      } else {
-        if(busyChoosingTargetSlot && opt_slot_index != undefined) {
-          addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:opt_slot_index});
-          busyChoosingTargetSlot = undefined;
-          update();
-        } else {
-          createFruitDialog(f);
-        }
-      }
-    };
+    fun = bind(clickFruitChipFun, f, opt_slot_index);
   }
 
   registerAction(flex.div, fun, label, {tooltip:tooltip, isdraggable:!opt_not_draggable});
@@ -1173,8 +1176,9 @@ function updateFruitUI() {
   fruitFlex.clear();
 
   var scrollFlex = new Flex(fruitFlex, 0, 0.01, 0.98, 1);
-  fruitScrollFlex = scrollFlex;
   makeScrollable(scrollFlex);
+
+  //scrollFlex.div.style.display = 'none';
 
   //var titleFlex = new Flex(scrollFlex, 0.01, 0.02, 0.95, 0.15);
 
@@ -1371,7 +1375,9 @@ function updateFruitUI() {
 
   ////////
 
-  fruitScrollFlex.div.scrollTop = scrollPos;
+  //scrollFlex.div.style.display = 'block';
+
+  scrollFlex.div.scrollTop = scrollPos;
 
 }
 

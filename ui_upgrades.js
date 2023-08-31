@@ -288,10 +288,10 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
 
   styleButton0(canvasFlex.div);
 
-  registerAction(canvasFlex.div, bind(function(i, shift, ctrl) {
+  registerAction(canvasFlex.div, function(shift, ctrl) {
     renderUpgradeDialog(chip);
-  }, i), 'Show upgrade info', {
-    tooltip:('Show ' + lower(upgrades[chip.u].name) + ' info')
+  }, 'Show upgrade info', {
+    tooltip:function() { return 'Show ' + lower(upgrades[chip.u].name) + ' info'; }
   });
 
   chip.updateInfoText = updateInfoText;

@@ -606,13 +606,35 @@ function regenerateImageCanvas(text, object) {
   ctx.putImageData(id, 0, 0);
 }
 
+
+// pool of canvas elements for reuse:
+// the first call to getContext (if followed by doing any action on it) on a new canvas is much slower than later calls.
+// so whenever a canvas element will be destroyed, rather than destroying it, detach it from its parent element and put it in the pool here for later reuse
+// it seems to work well despite having changed parent and possibly size... though almost all images in ethereal farm are 16x16 so the latter isn't verified yet
+// probably whether this slowness exists or not depends on whether hardware acceleration is enabled or not (with hw acceleration making it slower due to longer setup-time), in any case, this definitely improves things in chrome on desktop and android as of 2023
+var canvaspool_ = [];
+
+function getCanvasFromPool_() {
+  if(canvaspool_.length > 0) {
+    var result = canvaspool_[canvaspool_.length - 1];
+    canvaspool_.length--;
+    return result;
+  }
+  return document.createElement('canvas');
+}
+
+function addCanvasToPool_(canvas) {
+  if(canvaspool_.length > 2000) return; // avoid caching TOO much canvases
+  canvaspool_[canvaspool_.length] = canvas;
+}
+
 // creates a new canvas, doesn't delete any. WARNING: If re-using this function on existing div, ensure to clear it first!
 // difference from generateImageCanvas: the canvas from createCanvas is a visible canvas, that of generateImageCanvas is the texture in memory
 // x, y, w and h must have HTML units
 function createCanvas(x, y, w, h, opt_parent) {
   var parent = opt_parent || document.body;
 
-  var canvas = document.createElement('canvas');
+  var canvas = getCanvasFromPool_();//document.createElement('canvas');
   canvas.style.position = 'absolute';
   canvas.style.left = x;
   canvas.style.top = y;
@@ -625,21 +647,25 @@ function createCanvas(x, y, w, h, opt_parent) {
 }
 
 
-function renderImage(image, canvas) {
+// opt_fresh_canvas: if true, does not clearRect, since the canvas is already known to be clear, for a slight performance improvement depending on whether the implementation uses clearRect at all.
+function renderImage(image, canvas, opt_fresh_canvas) {
   var iw = image[1];
   var ih = image[2];
 
   if(canvas.width != iw) canvas.width = iw;
   if(canvas.height != ih) canvas.height = ih;
-  var ctx = canvas.getContext("2d");
+
+  var ctx = canvas.getContext("2d")
+  //var ctx = canvas.ctx_ ? canvas.ctx_ : canvas.getContext("2d");
+  //canvas.ctx_ = ctx;
 
   // There are two options to draw it: using putImageData, or using drawImageData (which requires clearRect first, since it overdraws when there is alpha channel)
-  // It looks like the drawImage solution is faster, the other solution is available commented out in case JS performance changes
+  // It looks like the drawImage solution is faster, though as of aug 2023 putImageData instead seems faster in chrome. The other solution is available commented out in case JS performance changes
 
-  //ctx.putImageData(image[0], 0, 0);
+  ctx.putImageData(image[0], 0, 0);
 
-  ctx.clearRect(0, 0, iw, ih);
-  ctx.drawImage(image[3], 0, 0);
+  //if(!opt_fresh_canvas) ctx.clearRect(0, 0, iw, ih);
+  //ctx.drawImage(image[3], 0, 0);
 }
 
 // renders grid of images. All images must have the same size, and the grid must be rectangular.

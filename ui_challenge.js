@@ -675,7 +675,8 @@ function createAllChallengeStatsDialog() {
       }
       text += '<br>';
     }
-    text += '<br>';
+    text += 'this challenge was unlocked by: ' + c.unlockdescription;
+    text += '<br><br>';
   }
 
   dialog.content.div.innerHTML = text;
