@@ -2125,7 +2125,7 @@ The rules of the pumpkin are as folows:
 -pumpkin produces as much as 2x a berry. Not 4x. See the pumpkin_multiplier
 -all this means, if you have 1 berry and 1 pumpkin in the field, and nothing else, pumpkin will produce eactly same as twice that berry does. If you give both of them the same flower, pumpkin again produces exaactly twice as much, and so on. If you plant a flower to only the berry but not the pumpkin, the berry will now produce more than the pumpkin since only it benefits from that flower.
 */
-var pumpkin_0 = registerPumpkinCrop('pumpkin (2x2)', 0, halloween_pumpkin_price, 10, images_pumpkin_small, 'Happy halloween! This crop takes up 2x2 field spaces. Its base seed production is ' + pumpkin_multiplier.toPercentString() + ' of the best planted berry anywhere in the field, so some regular berry must be planted somewhere. The pumpkin is bigger so can have more flower and other neighbors, which is a significant layout advantage. It gets the full bonus from most neighbors, but only half the bonus for winter tree warmth. It otherwise acts as a berry and gets the same bonuses and neighbor interactions. You can only have max 1 pumpkin.');
+var pumpkin_0 = registerPumpkinCrop('pumpkin (2x2)', 0, halloween_pumpkin_price, 10, images_pumpkin_small, 'Happy halloween! This crop takes up 2x2 field spaces. Its base seed production is ' + pumpkin_multiplier.toPercentString() + ' of the best planted berry anywhere in the field, so some regular berry must be planted somewhere. The pumpkin is bigger so can have more flower and other neighbors, which gives a significant layout advantage. It gets the full bonus from most neighbors, but only half the bonus for winter tree warmth. For the rest it acts as a berry and gets the same bonuses and neighbor interactions. You can only have max 1 pumpkin.');
 crops[pumpkin_0].quad = true;
 crops[pumpkin_0].images_quad = [images_pumpkin00, images_pumpkin01, images_pumpkin10, images_pumpkin11];
 
@@ -3804,23 +3804,47 @@ challenges[challenge_poisonivy].autoaction_warning = true;
 
 
 // 15
-/*
+
 var challenge_towerdefense = registerChallenge('tower defense challenge', [75], undefined, undefined, Num(0.005), 75, 0,
 `Tower defense
 `,
 `
-• Tower defense<br>
-• Tower defense<br>
+• Pests spawn from the top left of the field and will move towards the tree. Pests spawn in increasingly stronger waves, and defeating a wave will increase the tree level by 1.<br>
+• You should build a maze, with plants, to make the path the pests have to take to the tree longer. Plants can never be deleted but can upgraded and replaced (so the maze shape cannot be altered), and it's not possible to block off the maze, there must always be an open path to the tree.<br>
+• When any pest reaches the tree, it's game over, the tree cannot level any further and the only remaining thing to do is to end the challenge<br>
+• Plants serve as the towers in "tower defence": they shoot seeds or spores at the pests to defeat them before they reach the tree.<br>
+• Plants also produce seeds and spores for resources as usual, but note some of the changed behavior in the list below.<br>
+• Plant types:<br>
+  - Berry: shoots seeds at pests. Also produces seeds as a resource as usual.
+  - Mushroom: shoots spores with splash damage at pests, which can hit multiple pests at once. Also produces spores as a resource as usual and requires berry neighbors as usual.
+  - Nut: shoots nuts at pests at very long distance.
+  - Brassica: if it touches one of hte other crops, hurts nearby pests, can hurt multiple at the same time but only if they are 1 tile orthogonally or diagonally next to the brassica. Does not produce any resources, and how strong it is depends on its neighboring berry, mushroom or nut crops.
+  - Flower: does not shoot anything, makes berries, mushrooms and nuts stronger as usual.
+  - Bee: does not shoot anything, makes flowers stronger as usual
+  - Nettle: does not shoot anything, makes mushrooms stronger as usual and nerfs other crops as usual, however the nettle
+• Pest types:<br>
+  - Ant: walks at normal speed and has standard health
+  - Tick: comes in groups, which are more easily defeated by splash damage
+  - Termite: walks at slower speed, but is resistant to splash damage
+  - Several other pest types get unlocked in later waves, they are not all listed here, others will have to be discovered yourself!
+  - Tough and boss variants exist of all pest types, these are stronger relative to their wave number, and bosses move more slowly.
+  - The pests are stronger with each wave (even if they look the same)
+• Brassica and nettle bonuses (such as from fruit and ethereal field) do not work during this challenge. But berry, mushroom, nut, flower and bee bonuses work as usual.
+• The shooting strength of berries, mushrooms, nuts (and of brassica through copying) depends on their regular resource production strength.
+• Tip: it's important to use flowers and bees to boost crops as usual, and do upgrades as usual, since this massively increases both the shooting strength and production.
+• Tip: you can lay out a maze shape with watercress at the beginning since those are cheap and easy to plant. The maze shape can never be changed anymore for the entire rest of the challenge (but the watercress can be changed into other crops). Even the watercress won't wither.
 `,
 ['TODO REWARD DESCRIPTION'],
 'TODO UNLOCK REASON TEXT',
 function() {
   // TODO unlock fun
+  //return state.beta;
   return false;
 }, function() {
   // TODO reward fun
 }, 31);
-*/
+challenges[challenge_towerdefense].autoaction_warning = true;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -3833,7 +3857,7 @@ var challenges_order = [
   challenge_noupgrades, challenge_blackberry, challenge_wither,
   challenge_thistle, challenge_stormy, challenge_wasabi,
   challenge_basic, challenge_infernal, challenge_truly_basic,
-  challenge_poisonivy
+  challenge_poisonivy, challenge_towerdefense
 ];
 
 
@@ -3930,7 +3954,7 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
       if(dir >= 4 && !diagConnected(f.x, f.y, x2, y2, state.field2)) continue;
       var n = state.field2[y2][x2];
       if(n.hasCrop()) {
-        if(n.cropIndex() == mistletoe2_0) {
+        if(n.cropIndex() == mistletoe2_0 && n.nexttotree) {
           num_mistle++;
         }
       }
@@ -3987,6 +4011,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       if(x2 < 0 || x2 >= state.numw2 || y2 < 0 || y2 >= state.numh2) continue;
       var n = state.field2[y2][x2];
       if(n.hasCrop() /*&& n.isFullGrown()*/ && crops2[n.cropIndex()].type == CROPTYPE_LOTUS) {
+        // TODO: precompute this (similar to precompute of field for basic field), getEtherealBoost itself is expensive, and it's called several times for the same lotus
         var boost = crops2[n.cropIndex()].getEtherealBoost(n);
         if(boost.neqr(0)) {
           lotusmul.addInPlace(boost);
@@ -4020,7 +4045,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
         if(n.cropIndex() == squirrel2_0) {
           num_squirrel++;
         }
-        if(n.cropIndex() == mistletoe2_0) {
+        if(n.cropIndex() == mistletoe2_0 && n.nexttotree) {
           num_mistle++;
         }
       }
@@ -5487,7 +5512,7 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
     return (roll > prob20) ? 6 : 5;
   }
 
-  // level 115: amethist introduced
+  // level 115: amethyst introduced
   if(treelevel >= 115 && treelevel <= 119) {
     return (roll > prob75) ? 7 : 6;
   }
@@ -6036,10 +6061,10 @@ function treeLevelFruitBoostCurve(tree_level, fruit_drop_level, next_fruit_drop_
 
 // returns the boost given by the FRUIT_TREELEVEL fruit
 function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
-  // for amethist fruit (which drops as highest tier from 115 to 135) fruit_drop_level should be 115, for sapphire it should be 135, etc...
+  // for amethyst fruit (which drops as highest tier from 115 to 135) fruit_drop_level should be 115, for sapphire it should be 135, etc...
   var fruit_drop_level;
   var next_fruit_drop_level;
-  // this must match tree levels where this fruit tier gets introduced in getNewFruitTier, starting from tier 7 (amethist)
+  // this must match tree levels where this fruit tier gets introduced in getNewFruitTier, starting from tier 7 (amethyst)
   if(fruit_tier <= 7) {
     fruit_drop_level = 115;
     next_fruit_drop_level = 135;
@@ -6056,7 +6081,7 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
   }
   // the tree level boost uses the bee boost's value as basis
   var boost = getFruitBoost(FRUIT_BEEBOOST, ability_level, fruit_tier);
-  // For amethist fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
+  // For amethyst fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
   // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
   // TODO: also support lower fruit tier, for e.g. basic challenge
   var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level, next_fruit_drop_level);
@@ -7461,6 +7486,11 @@ function canUseBluePrintsDuringChallenge(challenge, opt_print_message) {
     return false;
   }
 
+  if(challenge == challenge_towerdefense) {
+    if(opt_print_message) showMessage('blueprints are disabled during the tower defense challenge', C_INVALID);
+    return false;
+  }
+
   return true;
 }
 
@@ -8231,7 +8261,7 @@ crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
 var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, [7]));
 var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), Res({infspores:500}), Num(2), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
-var mush3_7 = registerMushroom3('amethist champignon', 7, Res({infseeds:5e36}), Res({infspores:25000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
+var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:25000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
 
 
 crop3_register_id = 900;
@@ -8242,7 +8272,7 @@ var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num
 var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(200), Num(0.6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader4));
 var flower3_5 = registerFlower3('platinum anemone', 5, Res({infseeds:20e24}), Num(2500), Num(1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader5, [6]));
 var flower3_6 = registerFlower3('rhodium anemone', 6, Res({infseeds:15e30}), Num(50000), Num(2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader6, [6], [0.7]));
-var flower3_7 = registerFlower3('amethist anemone', 7, Res({infseeds:10e36}), Num(1e6), Num(3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader7));
+var flower3_7 = registerFlower3('amethyst anemone', 7, Res({infseeds:10e36}), Num(1e6), Num(3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader7));
 
 
 crop3_register_id = 1200;
@@ -8251,7 +8281,7 @@ var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32)
 var bee3_4 = registerBee3('gold bee nest', 4, Res({infseeds:5e21}), Num(256), Num(1.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader4));
 var bee3_5 = registerBee3('platinum bee nest', 5, Res({infseeds:500e24}), Num(2048), Num(4), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader5, [2, 6, 7], [0.15]));
 var bee3_6 = registerBee3('rhodium bee nest', 6, Res({infseeds:500e30}), Num(16384), Num(8), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader6, [6]));
-var bee3_7 = registerBee3('amethist bee nest', 7, Res({infseeds:2e38}), Num(300e3), Num(16), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader7));
+var bee3_7 = registerBee3('amethyst bee nest', 7, Res({infseeds:2e38}), Num(300e3), Num(16), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader7));
 
 // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
 // the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
@@ -8263,10 +8293,10 @@ var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num
 
 crop3_register_id = 1800;
 var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(5), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6]));
-var stinging3_7 = registerStinging3('amethist nettle', 7, Res({infseeds:1e39}), Num(2), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7));
+var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(2), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7));
 
 crop3_register_id = 2100;
-var fern3_7 = registerFern3('amethist fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop, metalheader7));
+var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop, metalheader7));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
@@ -9408,6 +9438,12 @@ function holidayEventActive() {
   if(time >= date_20230320_begin && time <= date_20230420_end) {
     return 2;
   }*/
+
+  var date_20231010_begin = 1696896000;
+  var date_20231110_end = 1699747200;
+  if(time >= date_20231010_begin && time <= date_20231110_end) {
+    return 4;
+  }
 
   return 0;
 }

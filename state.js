@@ -23,6 +23,7 @@ var FIELD_REMAINDER = 3; // remainder debris of temporary plant. Counts as empty
 var FIELD_ROCK = 4; // for challenges with rocks
 var FIELD_MULTIPART = 5; // a field tile used by a multi-cell crop (2x2 pumpkin) but which isn't the main cell of the crop
 var FIELD_POND = 6; // center of infinity field
+var FIELD_BURROW = 7; // burrow, starting point of pests during the tower defense challenge
 
 // field cell
 // fieldtype: 1=basic, 2=ethereal, 3=infinity, 10=pond (fishes)
@@ -43,6 +44,8 @@ function Cell(x, y, fieldttype) {
   this.justreplaced = false; // has been replaced, so if it's growing now it doesn't count as a free ethereal delete
 
   this.fieldttype = fieldttype;
+
+  this.nexttotree = false; // whether this crop is considered next to tree, with criteria depending on this crop (e.g. whether this is true in case it's diagonal, depends on the crop; and for crops for which this isn't used, this isn't filled in at all; ethereal mistletoe uses it, but basic field mistletoe does not because there that info is stored in prefield instead.)
 }
 
 Cell.prototype.isFullGrown = function() {
@@ -605,6 +608,8 @@ function State() {
   // this as opposed to challenge.completed which is global across runs
   // only used for challenge with non-targetlevel based objective, for the targetlevel ones the tree level already indicates this
   this.challenge_completed = 0;
+
+  this.towerdef = new TowerDefenseState();
 
   // ethereal field and crops
   this.numw2 = 5;
@@ -1525,6 +1530,7 @@ function computeDerived(state) {
   for(var y = 0; y < state.numh2; y++) {
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
+      f.nexttotree = false;
       if(f.hasCrop()) {
         var c = crops2[f.cropIndex()];
         state.crop2count[c.index]++;
@@ -1538,6 +1544,7 @@ function computeDerived(state) {
         if(c.index == mistletoe2_0) {
           if(isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal())) {
             state.etherealmistletoenexttotree = true;
+            f.nexttotree = true;
           }
         }
         state.highestoftype2planted[c.type] = Math.max(c.tier || 0, state.highestoftype2planted[c.type]);

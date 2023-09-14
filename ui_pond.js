@@ -461,7 +461,6 @@ function initPondUI(flex) {
     for(var x = 0; x < state.pondw; x++) {
       var f = state.pond[y][x];
       var celldiv = makeDiv((x / state.pondw * 100) + '%', '0', (101 / state.pondw) + '%', '100%', row);
-      var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
       var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
       var div = makeDiv('0', '0', '100%', '100%', celldiv);
       setAriaRole(celldiv, 'cell');
@@ -471,7 +470,6 @@ function initPondUI(flex) {
 
       pondDivs[y][x].div = div;
       pondDivs[y][x].canvas = canvas;
-      pondDivs[y][x].bgcanvas = bgcanvas;
 
       util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
         updatePondMouseOver(x, y);
@@ -599,17 +597,17 @@ function updatePondCellUI(x, y) {
     var r = util.pseudoRandom2D(x, y, 55555);
     var field_image = r < 0.25 ? images_pond[0] : (r < 0.5 ? images_pond[1] : (r < 0.75 ? images_pond[2] : images_pond[3]));
     if(x == (state.pondw >> 1) && y == (state.pondh >> 1)) field_image = images_pond[4];
-    renderImage(field_image, fd.bgcanvas);
+    renderImage(field_image, fd.canvas);
 
     var label = 'pond tile ' + x + ', ' + y;
 
     if(f.hasCrop()) {
       var c = fishes[f.cropIndex()];
-      renderImage(c.image, fd.canvas);
+      blendImage(c.image, fd.canvas);
       label = c.name + '. ' + label;
     } else {
       fd.div.innerText = '';
-      unrenderImage(fd.canvas);
+      //unrenderImage(fd.canvas);
     }
 
     if(f.index == 0) {

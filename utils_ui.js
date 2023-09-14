@@ -414,6 +414,7 @@ function setProgressBar(div, value, color) {
     if(div.visible) {
       div.style.display = 'none';
       div.visible = false;
+      div.progressbarvalue_ = value;
     }
     return;
   }

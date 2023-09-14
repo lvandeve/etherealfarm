@@ -623,6 +623,10 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
     makeFieldDialog(x, y);
   } else if(!fern && !present && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
     makeFieldDialog(x, y);
+  } else if(f.index == FIELD_BURROW) {
+    var dialog = createDialog({ icon:image_burrow, title:'Burrow' });
+    // TODO: put info about the challenge, waves, etc... here
+    dialog.content.div.innerText = 'Burrow: this is where pests spawn';
   } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
     if(shift && ctrl) {
       // experimental feature for now, most convenient behavior needs to be found
@@ -759,8 +763,7 @@ function initFieldUI() {
       // the widths are made a tiny bit bigger, to avoid some gridding (1-pixel gaps between field tiles) that can occur for some field sizes otherwise
       var extra = 0.1;
       var celldiv = makeDiv((x / state.numw * 100) + '%', '0', (101 / state.numw) + '%', '100%', row);
-      //var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
-      var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
+      var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv);
       var div = makeDiv('0', '0', '100%', '100%', celldiv);
       setAriaRole(celldiv, 'cell');
       div.style.boxSizing = 'border-box'; // have the border not make the total size bigger, have it go inside
@@ -857,6 +860,8 @@ function renderIdleFern() {
   return (state.upgrades[fern_choice0].count == 1) && state.fern && state.time - state.lastFernTime > fernIdleTimeBegin;
 }
 
+var pest_render_info = undefined; // not stored in State, because contains references to ImageData objects, which cannot be cloned
+
 var lightning_field_image_x = 0;
 var lightning_field_image_y = 0;
 
@@ -879,6 +884,13 @@ function updateFieldCellUI(x, y) {
     else if(g < 0.9) growstage = 3;
     else growstage = 4; // already use the final fullgrown image for some time at the end of the growing phase too
     if(state.challenge == challenge_wither) growstage = 4;
+  }
+
+  var p = prefield[y][x];
+
+  if(c && c.type == CROPTYPE_MISTLETOE && !p.treeneighbor) {
+    // indicate that it is not placed next to tree (so has no effect) by rendering a lower growstage
+    growstage = Math.max(0, growstage - 2);
   }
 
   var season = getSeason();
@@ -906,7 +918,10 @@ function updateFieldCellUI(x, y) {
 
   var rendertreelevel = (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) ? state.treelevel : 0; // only invalidate cells on tree level change if it's the tree cells themselves, otherwise it will redraw all cells too much while tree levels many levels at start of a run, causing slowness in mobile browsers
 
-  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active) {
+  var pest_info = pest_render_info ? pest_render_info[y][x] : undefined;
+  var pest_code = pest_info ? pest_info.code : '';
+
+  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active || fd.pest_code != pest_code) {
     fd.index = f.index;
     fd.multindex = multindex;
     fd.growing = growing;
@@ -919,6 +934,7 @@ function updateFieldCellUI(x, y) {
     fd.automatonplant = automatonplant;
     fd.lightningimage = lightningimage;
     fd.holiday_hats_active = holiday_hats_active; // this one is actually not used for the hats but the disctinctino between present and egg image
+    fd.pest_code = pest_code;
 
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
@@ -975,6 +991,8 @@ function updateFieldCellUI(x, y) {
       blendImage(images_rock[image_index], fd.canvas);
       label = 'rock. ' + label;
       setProgressBar(fd.progress, -1, undefined);
+    } else if(f.index == FIELD_BURROW) {
+      blendImage(image_burrow, fd.canvas);
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
@@ -997,6 +1015,12 @@ function updateFieldCellUI(x, y) {
       label = 'empty ' + label;
     }
 
+    if(pest_info) {
+      for(var i = 0; i < pest_info.images.length; i++) {
+        blendImage(pest_info.images[i], fd.canvas);
+      }
+    }
+
     setAriaLabel(fd.div, label);
   }
   if(f.hasCrop() && f.growth < 1) {
@@ -1006,6 +1030,11 @@ function updateFieldCellUI(x, y) {
 }
 
 function renderField() {
+  if(state.challenge == challenge_towerdefense) {
+    pest_render_info = comptePestsRenderInfo(); // TODO: don't do this here
+  } else {
+    pest_render_info = undefined;
+  }
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       updateFieldCellUI(x, y);

@@ -440,6 +440,10 @@ function startChallenge(challenge_id) {
       state.upgrades[beemul_0].unlocked = true;
     }
   }
+
+  if(challenge_id == challenge_towerdefense) {
+    state.field[0][0].index = FIELD_BURROW;
+  }
 }
 
 // get the field size to have after a reset
@@ -3026,6 +3030,13 @@ function nextEventTime() {
     if(time2 < time) name = opt_name || 'other';
     time = Math.min(time, time2);
   };
+
+  if(state.challenge == challenge_towerdefense) {
+    var td = state.towerdef;
+    if(!td.gameover) {
+      addtime(0.5, 'towerdefense');
+    }
+  }
 
   if(!state.amberkeepseasonused) {
     // next season, or the point where state.seasoncorrection should be updated, or the point when amberkeepseasonused triggers to true
@@ -5846,6 +5857,14 @@ var update = function(opt_ignorePause) {
         state.g_res_hr_best.twigs = twigshr;
         state.g_res_hr_at.twigs = Num(state.treelevel);
         state.g_res_hr_at_time.twigs = Num(state.c_runtime);
+      }
+    }
+
+    if(state.challenge == challenge_towerdefense) {
+      var td = state.towerdef;
+      if(!td.gameover) {
+        precomputeTD();
+        movePests();
       }
     }
 

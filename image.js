@@ -558,16 +558,22 @@ function generateImage(text) {
   return [data, w, h];
 };
 
-function fillCanvas(id, data, canvas, w, h) {
+// Copies pixels from the given regular JS data array into the ImageData object.
+function arrayFillImageData(id, data, w, h, offsetx, offsety) {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
-      id.data[(y * w + x) * 4 + 0] = data[y][x][0];
-      id.data[(y * w + x) * 4 + 1] = data[y][x][1];
-      id.data[(y * w + x) * 4 + 2] = data[y][x][2];
-      id.data[(y * w + x) * 4 + 3] = data[y][x][3];
+      var x2 = x + offsetx;
+      var y2 = y + offsety;
+      id.data[(y2 * w + x2) * 4 + 0] = data[y][x][0];
+      id.data[(y2 * w + x2) * 4 + 1] = data[y][x][1];
+      id.data[(y2 * w + x2) * 4 + 2] = data[y][x][2];
+      id.data[(y2 * w + x2) * 4 + 3] = data[y][x][3];
     }
   }
 }
+
+var currentOffscreenCanvas = undefined;
+var currentOffscreenCanvasNum = 0;
 
 // internal canvas (in memory texture)
 function createCanvasImageFor(image) {
@@ -576,22 +582,63 @@ function createCanvasImageFor(image) {
   var w = image[1];
   var h = image[2];
 
-  var canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  var ctx = canvas.getContext("2d");
-  var id = ctx.createImageData(w, h);
+  var canvas;
+  var offsetx = 0;
+  var offsety = 0;
+  if(w == 16 && h == 16) {
+    // combine multiple textures onto a single canvas, because having many small canvases for each individual texture seems to be slow in some browsers (too much overhead if hardware accel enabled if they're all very small?)
+    var n = (currentOffscreenCanvasNum & 63);
+    if(!n) {
+      currentOffscreenCanvas = new OffscreenCanvas(w * 8, h * 8);
+    }
+    canvas = currentOffscreenCanvas;
+    offsetx = w * Math.floor(n / 8);
+    offsety = h * (n & 7);
+    currentOffscreenCanvasNum++;
+  } else {
+    canvas = new OffscreenCanvas(w, h);
+  }
 
-  fillCanvas(id, data, canvas, w, h);
+  var ctx = canvas.getContext('2d');
+  var imagedata = ctx.createImageData(w, h);
 
-  ctx.putImageData(id, 0, 0);
-  return [id, w, h, canvas, image];
+  arrayFillImageData(imagedata, data, w, h, 0, 0);
+
+  ctx.putImageData(imagedata, offsetx, offsety);
+
+  return [imagedata, w, h, canvas, image, offsetx, offsety];
+}
+
+
+function renderImage(image, canvas) {
+  var iw = image[1];
+  var ih = image[2];
+  var offsetx = image[5];
+  var offsety = image[6];
+
+  if(canvas.width != iw) canvas.width = iw;
+  if(canvas.height != ih) canvas.height = ih;
+
+  //var ctx = canvas.getContext("bitmaprenderer");
+  var ctx = canvas.getContext('2d');
+  //ctx.imageSmoothingEnabled = false; // this has no effect to replace the 'pixelated' CSS property when I try it.
+
+  // There are two options to draw it: using putImageData, or using drawImageData (which requires clearRect first, since it overdraws when there is alpha channel)
+  // It looks like the drawImage solution is faster, though as of aug 2023 putImageData instead seems faster in chrome. The other solution is available commented out in case JS performance changes
+  // Probably drawImage really should be the faster one anyway though, since it uses an existing canvas as input so can do whatever is most efficient, rather than be forced to start from the bytes data in image[0]
+
+  //ctx.putImageData(image[0], 0, 0);
+
+  //ctx.transferFromImageBitmap(image[3].transferToImageBitmap());
+
+  ctx.clearRect(0, 0, iw, ih); // this has to be done no matter what, because the canvas could be a reused one from the pool
+  ctx.drawImage(image[3], offsetx, offsety, iw, ih, 0, 0, iw, ih);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// like generateImage, but creates a canvas data for it (not a visible canvas, but one that servers as texture in memory that can be put on visible canvases)
+// like generateImage, but creates a canvas data for it (not a visible canvas, but one that serves as texture in memory that can be put on visible canvases)
 function generateImageCanvas(text) {
   return createCanvasImageFor(generateImage(text));
 }
@@ -601,9 +648,11 @@ function regenerateImageCanvas(text, object) {
   var image = generateImage(text);
   var id = object[0];
   var canvas = object[3];
-  fillCanvas(id, image[0], canvas, image[1], image[2]);
-  var ctx = canvas.getContext("2d");
-  ctx.putImageData(id, 0, 0);
+  var offsetx = object[5];
+  var offsety = object[6];
+  arrayFillImageData(id, image[0], image[1], image[2]);
+  var ctx = canvas.getContext('2d');
+  ctx.putImageData(id, offsetx, offsety);
 }
 
 
@@ -646,28 +695,6 @@ function createCanvas(x, y, w, h, opt_parent) {
   return canvas;
 }
 
-
-// opt_fresh_canvas: if true, does not clearRect, since the canvas is already known to be clear, for a slight performance improvement depending on whether the implementation uses clearRect at all.
-function renderImage(image, canvas, opt_fresh_canvas) {
-  var iw = image[1];
-  var ih = image[2];
-
-  if(canvas.width != iw) canvas.width = iw;
-  if(canvas.height != ih) canvas.height = ih;
-
-  var ctx = canvas.getContext("2d")
-  //var ctx = canvas.ctx_ ? canvas.ctx_ : canvas.getContext("2d");
-  //canvas.ctx_ = ctx;
-
-  // There are two options to draw it: using putImageData, or using drawImageData (which requires clearRect first, since it overdraws when there is alpha channel)
-  // It looks like the drawImage solution is faster, though as of aug 2023 putImageData instead seems faster in chrome. The other solution is available commented out in case JS performance changes
-
-  ctx.putImageData(image[0], 0, 0);
-
-  //if(!opt_fresh_canvas) ctx.clearRect(0, 0, iw, ih);
-  //ctx.drawImage(image[3], 0, 0);
-}
-
 // renders grid of images. All images must have the same size, and the grid must be rectangular.
 // some images may be set to null/undefined to not render one there
 // Using this is faster than using renderImage with individual canvases
@@ -691,7 +718,7 @@ function renderImages(images, canvas) {
 
   if(canvas.width != iw2) canvas.width = iw2;
   if(canvas.height != ih2) canvas.height = ih2;
-  var ctx = canvas.getContext("2d");
+  var ctx = canvas.getContext('2d');
 
   for(var y = 0; y < images.length; y++) {
     for(var x = 0; x < images[y].length; x++) {
@@ -707,29 +734,23 @@ function renderImages(images, canvas) {
   ctx.drawImage(image[3], 0, 0);*/
 }
 
-var blendImageTempCanvas = document.createElement('canvas');
 
-
+// similar to renderImage, but doesn't clear the canvas first, so if the image has transparent pixels, it's drawn with the original canvas content as background
 function blendImage(image, canvas) {
   var data = image[0];
   var iw = image[1];
   var ih = image[2];
+  var offsetx = image[5];
+  var offsety = image[6];
 
   if(canvas.width != iw) canvas.width = iw;
   if(canvas.height != iw) canvas.height = ih;
-  var ctx = canvas.getContext("2d");
-
-
-  blendImageTempCanvas.width = iw;
-  blendImageTempCanvas.height = ih;
-  var ctx2 = blendImageTempCanvas.getContext("2d");
-
-  ctx2.putImageData(data, 0, 0);
-  ctx.drawImage(blendImageTempCanvas, 0, 0);
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(image[3], offsetx, offsety, iw, ih, 0, 0, iw, ih);
 }
 
 function unrenderImage(canvas) {
-  var ctx = canvas.getContext("2d");
+  var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -833,6 +854,30 @@ function extract2x2(text) {
         result[y2 * 2 + x2] += '\n';
       }
     }
+  }
+  return result;
+}
+
+// rotates image given as text 90 degrees clockwise
+function rot90(text) {
+  text = text.trim();
+  var lines = text.split('\n');
+  var header = '';
+  if(lines.length & 1) {
+    header = lines[0] + '\n';
+    lines.shift();
+  }
+  var result = header;
+  var w = lines[0].length;
+  var h = lines.length;
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var x2 = y;
+      var y2 = w - x - 1;
+      var c = lines[y2][x2];
+      result += c;
+    }
+    result += '\n';
   }
   return result;
 }

@@ -538,8 +538,7 @@ function initField2UI() {
     for(var x = 0; x < state.numw2; x++) {
       var f = state.field2[y][x];
       var celldiv = makeDiv((x / state.numw2 * 100) + '%', '0', (101 / state.numw2) + '%', '100%', row);
-      var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
-      var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
+      var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv);
       var div = makeDiv('0', '0', '100%', '100%', celldiv);
       setAriaRole(celldiv, 'cell');
       div.className = 'efNoOutline';
@@ -548,7 +547,6 @@ function initField2UI() {
 
       field2Divs[y][x].div = div;
       field2Divs[y][x].canvas = canvas;
-      field2Divs[y][x].bgcanvas = bgcanvas;
 
       util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
         updateField2MouseOver(x, y);
@@ -591,7 +589,7 @@ function updateField2CellUI(x, y) {
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   var season = 4; // the ethereal season
   var c = f.getCrop();
-  if(c && c.index == mistletoe2_0 && !isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal())) {
+  if(c && c.index == mistletoe2_0 && !f.nexttotree) {
     // indicate that it is not placed next to tree (so has no effect) by rendering a lower growstage
     growstage = Math.max(0, growstage - 2);
   }
@@ -617,13 +615,13 @@ function updateField2CellUI(x, y) {
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
     if(f.index == FIELD_TREE_BOTTOM || f.index == FIELD_TREE_TOP) field_image = fieldim[4];
-    renderImage(field_image, fd.bgcanvas);
+    renderImage(field_image, fd.canvas);
 
     var label = 'ethereal field tile ' + x + ', ' + y;
 
     if(f.hasCrop()) {
       var c = crops2[f.cropIndex()];
-      renderImage(c.image[growstage], fd.canvas);
+      blendImage(c.image[growstage], fd.canvas);
       if(largeravailable) blendImage(upgrade_arrow_small, fd.canvas);
       if(f.growth >= 1) {
         // fullgrown, so hide progress bar
@@ -631,16 +629,16 @@ function updateField2CellUI(x, y) {
       }
       label = c.name + '. ' + label;
     } else if(f.index == FIELD_TREE_TOP) {
-      renderImage(tree_images[treeLevelIndex(state.treelevel2)][1][season], fd.canvas);
+      blendImage(tree_images[treeLevelIndex(state.treelevel2)][1][season], fd.canvas);
       label = 'ethereal tree level ' + state.treelevel2 + '. ' + label;
     } else if(f.index == FIELD_TREE_BOTTOM) {
-      renderImage(tree_images[treeLevelIndex(state.treelevel2)][2][season], fd.canvas);
+      blendImage(tree_images[treeLevelIndex(state.treelevel2)][2][season], fd.canvas);
       if(state.treelevel2 > 0 || state.res.twigs.gtr(0)) renderLevel(fd.canvas, state.treelevel2, 0, 11, progresspixel);
       label = 'ethereal tree level ' + state.treelevel2 + '. ' + label;
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
-      unrenderImage(fd.canvas);
+      //unrenderImage(fd.canvas);
     }
 
     if(f.index == 0) {

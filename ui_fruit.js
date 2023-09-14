@@ -1079,7 +1079,7 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
   bg.div.style.backgroundColor = '#aaa';
   var canvas = createCanvas('0%', '0%', '100%', '100%', fg.div);
   //if(f.mark || f.name || f.fuses) canvas.style.border = '1px solid black';
-  renderImage(images_fruittypes[f.type][f.tier], canvas, true);
+  renderImage(images_fruittypes[f.type][f.tier], canvas);
   var tooltip = getFruitTooltipText(f, opt_label);
 
   styleFruitChip(fg, f);

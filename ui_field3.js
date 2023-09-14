@@ -516,8 +516,7 @@ function initField3UI() {
     for(var x = 0; x < state.numw3; x++) {
       var f = state.field3[y][x];
       var celldiv = makeDiv((x / state.numw3 * 100) + '%', '0', (101 / state.numw3) + '%', '100%', row);
-      var bgcanvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas with the field background image
-      var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv); // canvas for the plant itself
+      var canvas = createCanvas('0%', '0%', '100%', '100%', celldiv);
       var div = makeDiv('0', '0', '100%', '100%', celldiv);
       setAriaRole(celldiv, 'cell');
       div.className = 'efNoOutline';
@@ -526,7 +525,6 @@ function initField3UI() {
 
       field3Divs[y][x].div = div;
       field3Divs[y][x].canvas = canvas;
-      field3Divs[y][x].bgcanvas = bgcanvas;
 
       util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
         updateField3MouseOver(x, y);
@@ -585,7 +583,7 @@ function updateField3CellUI(x, y) {
     var fieldim = images_field[season];
     var field_image = r < 0.25 ? fieldim[0] : (r < 0.5 ? fieldim[1] : (r < 0.75 ? fieldim[2] : fieldim[3]));
     if(f.index == FIELD_POND) field_image = fieldim[4];
-    renderImage(field_image, fd.bgcanvas);
+    renderImage(field_image, fd.canvas);
 
     var label = 'infinity field tile ' + x + ', ' + y;
 
@@ -595,15 +593,15 @@ function updateField3CellUI(x, y) {
       if(is_undeletable_runestone) {
         image = image_runestone_undeletable;
       }
-      renderImage(image, fd.canvas);
+      blendImage(image, fd.canvas);
       label = c.name + '. ' + label;
     } else if(f.index == FIELD_POND) {
-      renderImage(image_pond, fd.canvas);
+      blendImage(image_pond, fd.canvas);
     } else if(f.index == FIELD_REMAINDER) {
-      renderImage(image_watercress_remainder3, fd.canvas);
+      blendImage(image_watercress_remainder3, fd.canvas);
     } else {
       fd.div.innerText = '';
-      unrenderImage(fd.canvas);
+      //unrenderImage(fd.canvas);
     }
     if(f.growth >= 1 || !f.hasCrop()) {
       setProgressBar(fd.progress, -1, undefined);
