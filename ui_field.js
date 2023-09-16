@@ -1030,8 +1030,8 @@ function updateFieldCellUI(x, y) {
 }
 
 function renderField() {
-  if(state.challenge == challenge_towerdefense) {
-    pest_render_info = comptePestsRenderInfo(); // TODO: don't do this here
+  if(state.challenge == challenge_towerdefense && state.towerdef && state.towerdef.path) {
+    pest_render_info = computePestsRenderInfo(); // TODO: don't do this here
   } else {
     pest_render_info = undefined;
   }

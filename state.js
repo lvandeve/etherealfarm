@@ -870,6 +870,9 @@ function State() {
   this.g_numprestiges = 0; // prestiges performed
   this.g_numautoprestiges = 0; // prestiges performed by automaton
   this.g_lightnings = 0; // lightnings during the stormy challenge
+  this.g_td_waves = 0;
+  this.g_td_spawns = 0;
+  this.g_td_kills = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for previous reset (to compare with current one)
@@ -903,6 +906,9 @@ function State() {
   this.p_numprestiges = 0;
   this.p_numautoprestiges = 0;
   this.p_lightnings = 0; // lightnings during the stormy challenge
+  this.p_td_waves = 0; // from previous TD run
+  this.p_td_spawns = 0; // from previous TD run
+  this.p_td_kills = 0; // from previous TD run
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
   // saved stats, for current reset only
@@ -933,6 +939,9 @@ function State() {
   this.c_numprestiges = 0;
   this.c_numpautorestiges = 0;
   this.c_lightnings = 0; // lightnings during the stormy challenge
+  this.c_td_waves = 0;
+  this.c_td_spawns = 0;
+  this.c_td_kills = 0;
   //this.c_res_prod = Res(); // similar to c_res, but only production from crops, not one-time income like ferns, holiday events, ... resin/twigs also not included since they're also not continuous crop production
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 

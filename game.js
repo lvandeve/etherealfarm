@@ -640,6 +640,11 @@ function endPreviousRun() {
   if(state.challenge == challenge_stormy) {
     state.p_lightnings = state.c_lightnings;
   }
+  if(state.challenge == challenge_towerdefense) {
+    state.p_td_waves = state.c_td_waves;
+    state.p_td_spawns = state.c_td_spawns;
+    state.p_td_kills = state.c_td_kills;
+  }
 
   var runtime2 = state.time - state.c_starttime;
 
@@ -726,6 +731,9 @@ function beginNextRun(opt_challenge) {
   state.c_numprestiges = 0;
   state.c_numautoprestiges = 0;
   state.c_lightnings = 0;
+  state.c_td_waves = 0;
+  state.c_td_spawns = 0;
+  state.c_td_kills = 0;
 
   state.min_fish_resinmul = Num(-1);
   state.min_fish_twigsmul = Num(-1);
@@ -3034,7 +3042,9 @@ function nextEventTime() {
   if(state.challenge == challenge_towerdefense) {
     var td = state.towerdef;
     if(!td.gameover) {
-      addtime(0.5, 'towerdefense');
+      if(td.pests.length > 0) {
+        addtime(0.5, 'towerdefense');
+      }
     }
   }
 
@@ -5865,6 +5875,7 @@ var update = function(opt_ignorePause) {
       if(!td.gameover) {
         precomputeTD();
         movePests();
+        attackPests();
       }
     }
 

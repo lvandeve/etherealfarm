@@ -412,6 +412,9 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numprestiges);
   processUint(state.g_numautoprestiges);
   processUint(state.g_lightnings);
+  //processUint(state.g_td_waves);
+  //processUint(state.g_td_spawns);
+  //processUint(state.g_td_kills);
 
 
   section = 12; id = 0; // current run stats
@@ -442,6 +445,9 @@ function encState(state, opt_raw_only) {
   processUint(state.c_numprestiges);
   processUint(state.c_numautoprestiges);
   processUint(state.c_lightnings);
+  //processUint(state.c_td_waves);
+  //processUint(state.c_td_spawns);
+  //processUint(state.c_td_kills);
 
 
   section = 13; id = 0; // previous run stats
@@ -473,6 +479,9 @@ function encState(state, opt_raw_only) {
     processUint(state.p_numprestiges);
     processUint(state.p_numautoprestiges);
     processUint(state.p_lightnings);
+    //processUint(state.p_td_waves);
+    //processUint(state.p_td_spawns);
+    //processUint(state.p_td_kills);
   }
 
 
@@ -1627,6 +1636,9 @@ function decState(s) {
   if(save_version >= 4096*1+94) state.g_numprestiges = processUint();
   if(save_version >= 4096*1+94) state.g_numautoprestiges = processUint();
   if(save_version >= 4096*1+102) state.g_lightnings = processUint();
+  if(save_version >= 262144*2+64*11+0) state.g_td_waves = processUint();
+  if(save_version >= 262144*2+64*11+0) state.g_td_spawns = processUint();
+  if(save_version >= 262144*2+64*11+0) state.g_td_kills = processUint();
   if(error) return err(4);
 
 
@@ -1658,6 +1670,9 @@ function decState(s) {
   if(save_version >= 4096*1+94) state.c_numprestiges = processUint();
   if(save_version >= 4096*1+94) state.c_numautoprestiges = processUint();
   if(save_version >= 4096*1+102) state.c_lightnings = processUint();
+  if(save_version >= 262144*2+64*11+0) state.c_td_waves = processUint();
+  if(save_version >= 262144*2+64*11+0) state.c_td_spawns = processUint();
+  if(save_version >= 262144*2+64*11+0) state.c_td_kills = processUint();
   if(error) return err(4);
 
 
@@ -1692,6 +1707,9 @@ function decState(s) {
     if(save_version >= 4096*1+94) state.p_numprestiges = processUint();
     if(save_version >= 4096*1+94) state.p_numautoprestiges = processUint();
     if(save_version >= 4096*1+102) state.p_lightnings = processUint();
+    if(save_version >= 262144*2+64*11+0) state.p_td_waves = processUint();
+    if(save_version >= 262144*2+64*11+0) state.p_td_spawns = processUint();
+    if(save_version >= 262144*2+64*11+0) state.p_td_kills = processUint();
     if(error) return err(4);
   }
 

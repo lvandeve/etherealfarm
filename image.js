@@ -575,6 +575,18 @@ function arrayFillImageData(id, data, w, h, offsetx, offsety) {
 var currentOffscreenCanvas = undefined;
 var currentOffscreenCanvasNum = 0;
 
+function createOffscreenCanvas(w, h) {
+  if(window.OffscreenCanvas) {
+    return new OffscreenCanvas(w, h);
+  } else {
+    // fallback for browsers without OffscreenCanvas support
+    var canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    return canvas;
+  }
+}
+
 // internal canvas (in memory texture)
 function createCanvasImageFor(image) {
   if(!image) return undefined;
@@ -589,14 +601,14 @@ function createCanvasImageFor(image) {
     // combine multiple textures onto a single canvas, because having many small canvases for each individual texture seems to be slow in some browsers (too much overhead if hardware accel enabled if they're all very small?)
     var n = (currentOffscreenCanvasNum & 63);
     if(!n) {
-      currentOffscreenCanvas = new OffscreenCanvas(w * 8, h * 8);
+      currentOffscreenCanvas = createOffscreenCanvas(w * 8, h * 8);
     }
     canvas = currentOffscreenCanvas;
-    offsetx = w * Math.floor(n / 8);
+    offsetx = w * (n >> 3);
     offsety = h * (n & 7);
     currentOffscreenCanvasNum++;
   } else {
-    canvas = new OffscreenCanvas(w, h);
+    canvas = createOffscreenCanvas(w, h);
   }
 
   var ctx = canvas.getContext('2d');
