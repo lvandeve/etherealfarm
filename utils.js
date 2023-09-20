@@ -719,6 +719,25 @@ var Utils = (function() {
   };
   result.setEvent = setEvent;
 
+  // completely different system than addEvent, setEvent. This is like addEventListener, but also stores the event, and allows removing them all at once (e.g. for canvases reused in the canvas pool, due to chrome being much faster re-using a canvas than creating a context on a new one...)
+  // JS itself does not allow removing event listeners without knowing the exact function that you use as listener, so storing it like this is needed
+  var addEvent2 = function(el, event, fun, useCapture) {
+    if(!el.listeners_2_) el.listeners_2_ = [];
+    if(el.listeners_2_.length > 20) return; // too big, protect against accidently often re-added listener
+    el.listeners_2_.push([event, fun, useCapture]);
+    el.addEventListener(event, fun, useCapture);
+  };
+  result.addEvent2 = addEvent2;
+
+  // removes all events that were added with addEvent2
+  var removeAllEvents2 = function(el) {
+    if(!el.listeners_2_) return;
+    var l = el.listeners_2_;
+    for(var i = 0; i < l.length; i++) el.removeEventListener(l[i][0], l[i][1], l[i][2]);
+    delete el.listeners_2_;
+  };
+  result.removeAllEvents2 = removeAllEvents2;
+
   var eventHasShiftKey = function(e) {
     return e.shiftKey;
   };

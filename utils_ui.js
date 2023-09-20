@@ -292,7 +292,7 @@ function addLongTouchEvent(div, fun) {
   var leaveEvent = touch ? undefined : 'mouseleave';
   var moveEvent = touch ? 'touchmove' : 'mousemove';
 
-  div.addEventListener(startEvent, function(e) {
+  util.addEvent2(div, startEvent, function(e) {
     if(!touch && e.which == 3) return; // don't prevent right click menu in regular browsers
     if(eventHasCtrlKey(e) || eventHasShiftKey(e)) return; // if user is using shift/ctrl, the long click is definitely not needed.
     // don't prevent *next* click (for touch case, where preventing regular click below is in fact possibly not executed, but some other things use onclick)
@@ -305,24 +305,24 @@ function addLongTouchEvent(div, fun) {
       timer = undefined;
       fun();
       // prevent the regular click event
-      div.addEventListener('click', cancelClick, true);
+      util.addEvent2(div, 'click', cancelClick, true);
     }, longtouchtime * 1000);
   }, true);
 
-  div.addEventListener(endEvent, function() {
+  util.addEvent2(div, endEvent, function() {
     if(!timer) return;
     clearTimeout(timer);
     timer = undefined;
   }, true);
 
-  if(leaveEvent) div.addEventListener(leaveEvent, function() {
+  if(leaveEvent) util.addEvent2(div, leaveEvent, function() {
     // leave event is not there for touch devices, but on PC's it can trigger, and we clear timeout because when mouse leaves element, the mouseup event will not trigger anymore so it would think we held down mouse forever and will show the long-click menu when it shouldn't if mouse accidently moves a few pixels outside while short clicking the element
     if(!timer) return;
     clearTimeout(timer);
     timer = undefined;
   }, true);
 
-  div.addEventListener(moveEvent, function(e) {
+  util.addEvent2(div, moveEvent, function(e) {
     if(!timer) return;
     var pos = getEventXY(e);
     // allow some slack in the movement for touch position
@@ -333,7 +333,7 @@ function addLongTouchEvent(div, fun) {
   }, true);
 
   // this event shouldn't appear on touch devices, but should stop the timer if present since it prevents moveEvents from detecting that the long prss menu shouldn't appear
-  div.addEventListener('dragstart', function(e) {
+  util.addEvent2(div, 'dragstart', function(e) {
     if(!timer) return;
     clearTimeout(timer);
     timer = undefined;
@@ -1320,6 +1320,7 @@ Flex.prototype.salvageCanvas = function() {
     var j = this.div_.children.length - 1 - i;
     var c = this.div_.children[j];
     if(upper(c.tagName) == 'CANVAS') {
+      util.removeAllEvents2(c);
       addCanvasToPool_(c);
       this.div_.removeChild(c);
     }

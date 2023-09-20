@@ -565,7 +565,28 @@ var spores_overload_penalty = Num(4);
 Crop.prototype.getProd = function(f, pretend, breakdown) {
   var basic = basicChallenge();
 
-  var result = new Res(this.prod);
+  var baseprod = this.prod;
+  var baseprod0 = this.prod0;
+
+  if(state.challenge == challenge_towerdefense) {
+    if(this.type == CROPTYPE_BERRY) {
+      var mushtier = ((this.tier - 1) >> 1);
+      var reltier = 1 - ((this.tier) & 1);
+      var mushtier0 = ((this.tier0 - 1) >> 1);
+      var reltier0 = 1 - ((this.tier0) & 1);
+      baseprod = getMushroomProd(mushtier);
+      baseprod.seeds = new Num(0);
+      if(reltier) baseprod.mulrInPlace(8);
+      baseprod0 = getMushroomProd(mushtier0);
+      baseprod0.seeds = new Num(0);
+      if(reltier0) baseprod0.mulrInPlace(8);
+    } else {
+      baseprod = new Res({spores:baseprod.spores});
+      baseprod0 = new Res({spores:baseprod0.spores});
+    }
+  }
+
+  var result = new Res(baseprod);
   if(this.type == CROPTYPE_PUMPKIN) {
     var best = state.bestberryforpumpkin;
     if(pretend == 1 || pretend == 2 || pretend == 4 || pretend == 5) best = state.bestberryforpumpkin_expected;
@@ -573,8 +594,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
   if(breakdown) {
     if(state.crops[this.index].prestige > 0) {
-      breakdown.push(['base', true, Num(0), this.prod0.clone()]);
-      var div = Res.findDiv(this.prod, this.prod0);
+      breakdown.push(['base', true, Num(0), baseprod0.clone()]);
+      var div = Res.findDiv(baseprod, baseprod0);
       breakdown.push(['prestige', true, div, result.clone()]);
     } else {
       breakdown.push(['base', true, Num(0), result.clone()]);
@@ -3813,7 +3834,7 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
 • You should build a maze, with plants, to make the path the pests have to take to the tree longer. Plants can never be deleted but can upgraded and replaced (so the maze shape cannot be altered), and it's not possible to block off the maze, there must always be an open path to the tree.<br>
 • When any pest reaches the tree, it's game over, the tree cannot level any further and the only remaining thing to do is to end the challenge<br>
 • Plants serve as the towers in "tower defence": they shoot seeds or spores at the pests to defeat them before they reach the tree.<br>
-• Plants also produce seeds and spores for resources as usual, but note some of the changed behavior in the list below.<br>
+• Seeds are gained by eliminating pests.<br>
 • Plant types:<br>
   - Berry: shoots seeds at pests. Also produces seeds as a resource as usual.
   - Mushroom: shoots spores with splash damage at pests, which can hit multiple pests at once. Also produces spores as a resource as usual and requires berry neighbors as usual.
@@ -3826,12 +3847,13 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
   - Ant: walks at normal speed and has standard health
   - Tick: comes in groups, which are more easily defeated by splash damage
   - Termite: walks at slower speed, but is resistant to splash damage
-  - Several other pest types get unlocked in later waves, they are not all listed here, others will have to be discovered yourself!
+  - Other pest types get unlocked in later waves, these will have to be discovered by yourself!
   - Tough and boss variants exist of all pest types, these are stronger relative to their wave number, and bosses move more slowly.
   - The pests are stronger with each wave (even if they look the same)
-• Brassica and nettle bonuses (such as from fruit and ethereal field) do not work during this challenge. But berry, mushroom, nut, flower and bee bonuses work as usual.
-• The shooting strength of berries, mushrooms, nuts (and of brassica through copying) depends on their regular resource production strength.
-• Tip: it's important to use flowers and bees to boost crops as usual, and do upgrades as usual, since this massively increases both the shooting strength and production.
+• Brassica and nettle bonuses (such as from fruit and ethereal field) do not work during this challenge. But flower and bee bonuses work as usual.
+• Mushrooms don't need to be next to a berry, they can shoot spores even without.
+• The shooting strength of berries, mushrooms, nuts (and of brassica through copying) depends on their resource production strength. For mushrooms, this is similar to the regular game, but berries and nuts have a strength based on the mushroom that unlocks around their tier.
+• Tip: it's important to use flowers and bees to boost crops as usual, and do upgrades as usual, since this massively increases the shooting strength.
 • Tip: you can lay out a maze shape with watercress at the beginning since those are cheap and easy to plant. The maze shape can never be changed anymore for the entire rest of the challenge (but the watercress can be changed into other crops). Even the watercress won't wither.
 `,
 ['TODO REWARD DESCRIPTION'],

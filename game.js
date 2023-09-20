@@ -4086,9 +4086,12 @@ var update = function(opt_ignorePause) {
           } else if(c.index == pumpkin_0 && state.cropcount[pumpkin_0]) {
             showMessage('already have a pumpkin, cannot place more', C_INVALID, 0, 0);
             ok = false;
+          } else if(c.type == CROPTYPE_PUMPKIN && state.challenge == challenge_towerdefense) {
+            showMessage('cannot use pumpking during tower defence', C_INVALID, 0, 0);
+            ok = false;
           }
 
-          if(c.quad) {
+          if(ok && c.quad) {
             // NOTE: this also requires empty tiles when using "replace crop", instead of "plant crop" because checking for the delete conditions of the other 3 not implemented
             // the tile at x,y itself is not checked since that's handled the regular way
             var fits = true;
