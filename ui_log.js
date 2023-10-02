@@ -48,6 +48,7 @@ var C_PRESENT = 13;
 var C_EGG = 14;
 var C_GOAL = 15;
 var C_IMPORTANT = 16;
+var C_TD = 17; // tower defense related
 
 
 // this system exists to make it possible to have messages to be distinguishable from each other but also have color according to some theme,
@@ -134,6 +135,9 @@ function makeLogColor(type, seed, rarity) {
       h1 = 0.2
       v1 = 1;
       rarity = 0;
+    } else if(type == C_TD) {
+      h0 = h1 = 0.08; // orange
+      v1 = 1;
     }
 
     if(rarity > 0 || type == C_RANDOM) {

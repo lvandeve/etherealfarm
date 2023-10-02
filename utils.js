@@ -682,33 +682,19 @@ var Utils = (function() {
   };
   result.lowerCaseFirstWord = lowerCaseFirstWord;
 
-  // adds event listener
-  // event is string of existing JS event function excluding 'on': 'click', 'mouseover', 'mouseout', ...
-  var addEvent = function(el, event, fun) {
-    /*if(!el.util_added_events_) el.util_added_events_ = {};
-    if(!el.util_added_events_[event]) el.util_added_events_[event] = [];
-    if(el.util_added_events_[event].length > 8) {
-      throw 'excessive amount of events added, there may be a bug where something keeps adding the same one';
-    }
-    el.util_added_events_[event].push(fun);
-    el['on' + event] = bind(function(a, e) {
-      for(var i = 0; i < a.length; i++) {
-        a[i](e);
-      };
-    }, el.util_added_events_[event]);*/
-    el.addEventListener(event, fun, false);
+  // This is like addEventListener, but also stores the event, and allows removing them all at once (e.g. for canvases reused in the canvas pool, due to chrome being much faster re-using a canvas than creating a context on a new one...)
+  // JS itself does not allow removing event listeners without knowing the exact function that you use as listener, so storing it like this is needed
+  var addEvent = function(el, event, fun, opt_useCapture) {
+    if(!el.util_event_listeners_) el.util_event_listeners_ = [];
+    if(el.util_event_listeners_.length > 20) return; // too big, protect against accidently often re-added listener
+    el.util_event_listeners_.push([event, fun, opt_useCapture]);
+    el.addEventListener(event, fun, opt_useCapture);
   };
   result.addEvent = addEvent;
 
+  // Similar to addEvent, but allows giving a unique name (idname) to replace events.
+  // Also can be removed all at once with util.removeAllElements
   var setEvent = function(el, event, idname, fun) {
-    /*if(!el.util_set_events_) el.util_set_events_ = {};
-    if(!el.util_set_events_[event]) el.util_set_events_[event] = {};
-    el.util_set_events_[event][idname] = fun;
-    el[event] = bind(function(o, e) {
-      for(var id in o) {
-        if(o.hasOwnProperty(id)) o[id](e);
-      }
-    }, el.util_set_events_[event]);*/
     if(!el.util_set_events_) el.util_set_events_ = {};
     if(!el.util_set_events_[event]) el.util_set_events_[event] = {};
     if(el.util_set_events_[event][idname]) {
@@ -719,24 +705,28 @@ var Utils = (function() {
   };
   result.setEvent = setEvent;
 
-  // completely different system than addEvent, setEvent. This is like addEventListener, but also stores the event, and allows removing them all at once (e.g. for canvases reused in the canvas pool, due to chrome being much faster re-using a canvas than creating a context on a new one...)
-  // JS itself does not allow removing event listeners without knowing the exact function that you use as listener, so storing it like this is needed
-  var addEvent2 = function(el, event, fun, useCapture) {
-    if(!el.listeners_2_) el.listeners_2_ = [];
-    if(el.listeners_2_.length > 20) return; // too big, protect against accidently often re-added listener
-    el.listeners_2_.push([event, fun, useCapture]);
-    el.addEventListener(event, fun, useCapture);
+  // removes all events that were added with addEvent or setEvent
+  var removeAllEvents = function(el) {
+    if(el.util_event_listeners_) {
+      var l = el.util_event_listeners_;
+      for(var i = 0; i < l.length; i++) el.removeEventListener(l[i][0], l[i][1], l[i][2]);
+      delete el.util_event_listeners_;
+    }
+    if(el.util_set_events_) {
+      var l = el.util_set_events_;
+      for(var k in l) {
+        if(!l.hasOwnProperty(k)) continue;
+        var l2 = l[k];
+        for(var k2 in l2) {
+          if(!l2.hasOwnProperty(k2)) continue;
+          var fun = l2[k2];
+          el.removeEventListener(k, fun, false);
+        }
+      }
+      delete el.util_set_events_;
+    }
   };
-  result.addEvent2 = addEvent2;
-
-  // removes all events that were added with addEvent2
-  var removeAllEvents2 = function(el) {
-    if(!el.listeners_2_) return;
-    var l = el.listeners_2_;
-    for(var i = 0; i < l.length; i++) el.removeEventListener(l[i][0], l[i][1], l[i][2]);
-    delete el.listeners_2_;
-  };
-  result.removeAllEvents2 = removeAllEvents2;
+  result.removeAllEvents = removeAllEvents;
 
   var eventHasShiftKey = function(e) {
     return e.shiftKey;
@@ -749,6 +739,17 @@ var Utils = (function() {
   };
   result.eventHasCtrlKey = eventHasCtrlKey;
 
+  // result has the form [x0, y0, x1, y1]
+  var getAbsCoords = function(el) {
+    var rect = el.getBoundingClientRect();
+    var result = [];
+    result[0] = rect.left;
+    result[1] = rect.top;
+    result[2] = rect.right;
+    result[3] = rect.bottom;
+    return result;
+  };
+  result.getAbsCoords = getAbsCoords;
 
   return result;
 }());

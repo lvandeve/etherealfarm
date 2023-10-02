@@ -1188,6 +1188,9 @@ function State() {
   // Boost to basic field from infinity field crops
   // derived stat, not to be saved.
   this.infinityboost = Num(0);
+
+  // derived stat, not to be saved.
+  this.bestflowerfortd = Num(0);
 }
 
 // this.squirrel_evolution must already be set to the intended evolution

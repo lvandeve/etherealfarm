@@ -669,7 +669,7 @@ function regenerateImageCanvas(text, object) {
 
 
 // pool of canvas elements for reuse:
-// the first call to getContext (if followed by doing any action on it) on a new canvas is much slower than later calls.
+// the first call to getContext (if followed by doing any action on it) on a new canvas is much slower than later calls (at least on chrome as of september 2023).
 // so whenever a canvas element will be destroyed, rather than destroying it, detach it from its parent element and put it in the pool here for later reuse
 // it seems to work well despite having changed parent and possibly size... though almost all images in ethereal farm are 16x16 so the latter isn't verified yet
 // probably whether this slowness exists or not depends on whether hardware acceleration is enabled or not (with hw acceleration making it slower due to longer setup-time), in any case, this definitely improves things in chrome on desktop and android as of 2023
@@ -686,6 +686,15 @@ function getCanvasFromPool_() {
 
 function addCanvasToPool_(canvas) {
   if(canvaspool_.length > 2000) return; // avoid caching TOO much canvases
+
+  // reset event listeners, style, attributes, ... set to this HTML element, that could be completely unneeded or different when the canvas is reused elsewhere
+  util.removeAllEvents(canvas);
+  while(canvas.attributes.length) {
+    // these attributes include style, tabindex, aria roles, ...
+    canvas.removeAttribute(canvas.attributes[canvas.attributes.length - 1].name);
+  }
+  canvas.className = '';
+
   canvaspool_[canvaspool_.length] = canvas;
 }
 

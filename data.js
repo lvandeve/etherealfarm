@@ -374,6 +374,7 @@ Crop.prototype.getCost = function(opt_adjust_count) {
 
 
 Crop.prototype.getRecoup = function() {
+  if(state.challenge == challenge_towerdefense) return this.getCost(-1);
   if(this.type == CROPTYPE_BRASSICA) return Res(0);
   if(state.challenge == challenge_wither) return Res(0);
   return this.getCost(-1).mulr(getCropRecoup());
@@ -562,27 +563,33 @@ var spores_overload_penalty = Num(4);
 //  3: compute the value for best berry for the pumpkin income. Must include all berry specific bonuses and its growth, but not the pumpkin bonuses. The max of all berries from this must be stored in state.bestberryforpumpkin, and then if the crop type is CROPTYPE_PUMPKIN it uses this value as base
 //  4: same as 3, but assuming the crop is fullgrown
 //  5: compute for fern. This assumes everything is fullgrown, like 1, and in addition uses modified weighted time at level
+//  6: compute for tower defense damage. This is only for the damage part of TD computations, not the regular production calculation it does during TD
 Crop.prototype.getProd = function(f, pretend, breakdown) {
   var basic = basicChallenge();
+  var tddmg = (pretend == 6); // tower defense damage computation
+  var tdc = !tddmg && (state.challenge == challenge_towerdefense); // tower defense production computation
 
   var baseprod = this.prod;
-  var baseprod0 = this.prod0;
+  var baseprod0 = this.prod0; // production without prestige, only used for display purposes
 
-  if(state.challenge == challenge_towerdefense) {
+  if(tddmg) {
     if(this.type == CROPTYPE_BERRY) {
-      var mushtier = ((this.tier - 1) >> 1);
-      var reltier = 1 - ((this.tier) & 1);
-      var mushtier0 = ((this.tier0 - 1) >> 1);
-      var reltier0 = 1 - ((this.tier0) & 1);
-      baseprod = getMushroomProd(mushtier);
-      baseprod.seeds = new Num(0);
-      if(reltier) baseprod.mulrInPlace(8);
-      baseprod0 = getMushroomProd(mushtier0);
-      baseprod0.seeds = new Num(0);
-      if(reltier0) baseprod0.mulrInPlace(8);
-    } else {
+      baseprod = getTDBerryBaseDamage(this.tier);
+      baseprod0 = baseprod;
+    } else if(this.type == CROPTYPE_BRASSICA) {
+      baseprod = getTDBerryBaseDamage(0).divr(16);
+      baseprod0 = baseprod;
+    } else if(this.type == CROPTYPE_MUSH) {
       baseprod = new Res({spores:baseprod.spores});
       baseprod0 = new Res({spores:baseprod0.spores});
+    } else { // non-handled crop type for TD damage
+      baseprod = new Res();
+      baseprod0 = new Res();
+    }
+  } else if(tdc) {
+    if(this.type == CROPTYPE_MUSH) {
+      // mushrooms don't consume seeds during tower defense, and spores for income are not computed, so don't make this affect the global income calculation
+      return new Res();
     }
   }
 
@@ -947,7 +954,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // nettle malus
-  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT || this.type == CROPTYPE_PUMPKIN)) {
+  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT || this.type == CROPTYPE_PUMPKIN) && !(tddmg || tdc)) {
     var p = prefield[f.y][f.x];
     var num = p.num_nettle;
     var malus;
@@ -965,7 +972,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // nettle boost
-  if(f && (this.type == CROPTYPE_MUSH)) {
+  if(f && (this.type == CROPTYPE_MUSH) && !(tddmg || tdc)) {
     var spore_boost = Num(1);
     var num = 0;
     var x = f.x, y = f.y, w = state.numw, h = state.numh;
@@ -1116,12 +1123,12 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // leech (brassica-copying), only computed for the pretend cases, non-pretend leech: brassica copying's actual gameplay computation is done in precomputeField() intead
   // this computation is only used for UI/tooltips/dialogs. It is not guaranteed to be correct, but tries to be as much as possible since it's for UI that tells what the production will look like after all crops are fullgrown (for gain_expected and gain_expected_hyp)
-  if(pretend == 2 && this.type == CROPTYPE_BRASSICA && f) {
+  if((pretend == 2 || tddmg) && this.type == CROPTYPE_BRASSICA && f) {
     var p = prefield[f.y][f.x];
-    var leech = this.getLeech(f, null, p.getBrassicaBreakdownCroptype());
-    var leech_seeds = this.getLeech(f, null, CROPTYPE_BERRY);
-    var leech_spores = this.getLeech(f, null, CROPTYPE_MUSH);
-    var leech_nuts = this.getLeech(f, null, CROPTYPE_NUT);
+    var leech = this.getLeech(f, pretend, null, p.getBrassicaBreakdownCroptype());
+    var leech_seeds = this.getLeech(f, pretend, null, CROPTYPE_BERRY);
+    var leech_spores = this.getLeech(f, pretend, null, CROPTYPE_MUSH);
+    var leech_nuts = this.getLeech(f, pretend, null, CROPTYPE_NUT);
     var soup = !basic && state.squirrel_upgrades[upgradesq_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var total = Res();
     var num = 0;
@@ -1547,9 +1554,10 @@ Crop.prototype.isPostLife = function(f) {
 
 // This returns the leech ratio of this plant, not the actual resource amount leeched
 // Only correct for already planted leeching plants (for the penalty of multiple planted ones computation)
+// pretend: see explanation of getProd for the meaning and values of this parameter
 // croptype: which croptype we're leeching from (CROPTYPE_BERRY, CROPTYPE_MUSH or CROPTYPE_NUTS)
 // aka Crop.prototype.getCopy
-Crop.prototype.getLeech = function(f, breakdown, croptype) {
+Crop.prototype.getLeech = function(f, pretend, breakdown, croptype) {
   if(croptype == CROPTYPE_PUMPKIN) croptype = CROPTYPE_BERRY; // pumpkin acts as berry for this
   if(this.type != CROPTYPE_BRASSICA) {
     var result = Num(0);
@@ -1558,6 +1566,8 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
   }
 
   var basic = basicChallenge();
+  var tddmg = (pretend == 6); // tower defense damage computation
+  var tdc = !tddmg && (state.challenge == challenge_towerdefense); // tower defense production computation
 
   var result = Num(this.leech || 1);
   if(breakdown) breakdown.push(['base', true, Num(1), result.clone()]);
@@ -1615,7 +1625,7 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
     if(result_infernal) result_infernal.mulInPlace(mul);
   }
 
-  if(croptype != CROPTYPE_NUT) {
+  if(croptype != CROPTYPE_NUT && !tddmg) {
     var level = getFruitAbility(FRUIT_BRASSICA, true);
     var level2 = getFruitAbility(FRUIT_MIX, true);
     if((level > 0 || level2 > 0) && state.challenge != challenge_wasabi) {
@@ -1695,7 +1705,7 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
     }
   }
 
-  if(croptype == CROPTYPE_NUT) {
+  if(croptype == CROPTYPE_NUT && !tddmg) {
     var mul = Num(0.5);
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['copying from nuts', true, mul, result.clone()]);
@@ -1706,7 +1716,7 @@ Crop.prototype.getLeech = function(f, breakdown, croptype) {
   // the watercress neighbor production copying is really powerful, and if every single watercress does this at full power, this would require way too active play, replanting watercresses in the whole field all the time.
   // encouraging to plant one or maybe two (but diminishing returns that make more almost useless) strikes a good balance between doing something useful during active play, but still getting reasonable income from passive play
   var numsame = state.croptypecount[this.type];
-  if(numsame > 1) {
+  if(numsame > 1 && !(tddmg || tdc)) {
     // before v0.1.88, this formula was: 1 / (1 + (numsame - 1) * 0.75). But not it got tweaked to make 2 watercress less punishing, but more than 3 watercress more punishing.
     var penalty = Math.pow(0.66, numsame - 1.5);
     result.mulrInPlace(penalty);
@@ -2118,6 +2128,11 @@ crops[pumpkin_ghost].images_quad = [images_pumpkinghost00, images_pumpkinghost01
 crop_register_id = 2000;
 
 var halloween_pumpkin_price = Res({seeds:666000000});
+
+crop_register_id = 3000;
+// these are only used to compute relative incomes, without ever being prestiged, nor able to be unlocked or planted
+var berry_td_dummy = registerBerry('berry_td_dummy', 0, berryplanttime0 * 1, blackberry);
+//var mush_td_dummy = registerMushroom('mush_td_dummy', 0, mushplanttime0 * 1, champignon);
 
 // multiplier of the best berry amount for pumpkin
 // if set to 1, the pumpkin crop that takes 4x as much space as berry, produces only as much as a 1x1 berry
@@ -3850,9 +3865,13 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
   - Other pest types get unlocked in later waves, these will have to be discovered by yourself!
   - Tough and boss variants exist of all pest types, these are stronger relative to their wave number, and bosses move more slowly.
   - The pests are stronger with each wave (even if they look the same)
-• Brassica and nettle bonuses (such as from fruit and ethereal field) do not work during this challenge. But flower and bee bonuses work as usual.
+• Nettle bonuses (such as from fruit and ethereal field) do not work during this challenge. But flower and bee bonuses work as usual.
+• Brassica bonuses (such as from fruit and ethereal field) work for seeds production, but not for tower damage or spores computations. There's no penalty for having multiple brassica.
 • Mushrooms don't need to be next to a berry, they can shoot spores even without.
 • The shooting strength of berries, mushrooms, nuts (and of brassica through copying) depends on their resource production strength. For mushrooms, this is similar to the regular game, but berries and nuts have a strength based on the mushroom that unlocks around their tier.
+• Ferns don't appear during this challenge.
+• Crops grow fast and brassica don't wither.
+• Crops give 100% of resources back when replaced, rather than only a partial recoup.
 • Tip: it's important to use flowers and bees to boost crops as usual, and do upgrades as usual, since this massively increases the shooting strength.
 • Tip: you can lay out a maze shape with watercress at the beginning since those are cheap and easy to plant. The maze shape can never be changed anymore for the entire rest of the challenge (but the watercress can be changed into other crops). Even the watercress won't wither.
 `,
@@ -3864,7 +3883,7 @@ function() {
   return false;
 }, function() {
   // TODO reward fun
-}, 31);
+}, 0);
 challenges[challenge_towerdefense].autoaction_warning = true;
 
 
@@ -6121,7 +6140,7 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
 // in case of more spores than tree level requires, wait at least this time at that level anyway
 var tree_min_leveltime = 1;
 
-// outputs the minimum spores required for the tree to go to the given level
+// outputs the minimum spores required (sporesreq) for the tree to go to the given level
 function treeLevelReqBase(level) {
   var res = new Res();
   if(level < 150) {

@@ -89,15 +89,15 @@ function addButtonAction(div, fun, opt_label, opt_immediate, opt_noenterkey) {
   //var div = makeDiv('0', '0', '100%', '100%', div);
   if(opt_immediate && !isTouchDevice()) {
     // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
-    div.onmousedown = fun;
+    util.addEvent(div, 'mousedown', fun);
   } else {
-    div.onclick = fun;
+    util.addEvent(div, 'click', fun);
   }
   if(!opt_noenterkey) {
-    div.onkeypress = function(e) {
+    util.addEvent(div, 'keypress', function(e) {
       if(e.key == 'Enter') fun(e);
       e.preventDefault();
-    };
+    });
   }
   div.tabIndex = 0;
   setAriaRole(div, 'button');
@@ -292,7 +292,7 @@ function addLongTouchEvent(div, fun) {
   var leaveEvent = touch ? undefined : 'mouseleave';
   var moveEvent = touch ? 'touchmove' : 'mousemove';
 
-  util.addEvent2(div, startEvent, function(e) {
+  util.addEvent(div, startEvent, function(e) {
     if(!touch && e.which == 3) return; // don't prevent right click menu in regular browsers
     if(eventHasCtrlKey(e) || eventHasShiftKey(e)) return; // if user is using shift/ctrl, the long click is definitely not needed.
     // don't prevent *next* click (for touch case, where preventing regular click below is in fact possibly not executed, but some other things use onclick)
@@ -305,24 +305,24 @@ function addLongTouchEvent(div, fun) {
       timer = undefined;
       fun();
       // prevent the regular click event
-      util.addEvent2(div, 'click', cancelClick, true);
+      util.addEvent(div, 'click', cancelClick, true);
     }, longtouchtime * 1000);
   }, true);
 
-  util.addEvent2(div, endEvent, function() {
+  util.addEvent(div, endEvent, function() {
     if(!timer) return;
     clearTimeout(timer);
     timer = undefined;
   }, true);
 
-  if(leaveEvent) util.addEvent2(div, leaveEvent, function() {
+  if(leaveEvent) util.addEvent(div, leaveEvent, function() {
     // leave event is not there for touch devices, but on PC's it can trigger, and we clear timeout because when mouse leaves element, the mouseup event will not trigger anymore so it would think we held down mouse forever and will show the long-click menu when it shouldn't if mouse accidently moves a few pixels outside while short clicking the element
     if(!timer) return;
     clearTimeout(timer);
     timer = undefined;
   }, true);
 
-  util.addEvent2(div, moveEvent, function(e) {
+  util.addEvent(div, moveEvent, function(e) {
     if(!timer) return;
     var pos = getEventXY(e);
     // allow some slack in the movement for touch position
@@ -333,7 +333,7 @@ function addLongTouchEvent(div, fun) {
   }, true);
 
   // this event shouldn't appear on touch devices, but should stop the timer if present since it prevents moveEvents from detecting that the long prss menu shouldn't appear
-  util.addEvent2(div, 'dragstart', function(e) {
+  util.addEvent(div, 'dragstart', function(e) {
     if(!timer) return;
     clearTimeout(timer);
     timer = undefined;
@@ -1320,7 +1320,6 @@ Flex.prototype.salvageCanvas = function() {
     var j = this.div_.children.length - 1 - i;
     var c = this.div_.children[j];
     if(upper(c.tagName) == 'CANVAS') {
-      util.removeAllEvents2(c);
       addCanvasToPool_(c);
       this.div_.removeChild(c);
     }
@@ -1347,8 +1346,9 @@ Flex.prototype.removeSelf = function(parent) {
 // removes all children and inner HTML (but not style) of own div as well, but keeps self existing
 Flex.prototype.clear = function() {
   if(this.div_ == Flex_prevParent) Flex_prevParent = undefined;
+  this.salvageCanvas(); // this also recursively salvages canvases
+  // TODO: should this recursively call clear instead in case the elements have their own elements etc...? but then do watch out with the already recursive salvageCanvas function.
   for(var i = 0; i < this.elements.length; i++) {
-    this.elements[i].salvageCanvas();
     if(this.elements[i].div == Flex_prevParent) Flex_prevParent = undefined;
     util.removeElement(this.elements[i].div);
   }

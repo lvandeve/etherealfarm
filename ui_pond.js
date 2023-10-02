@@ -656,6 +656,7 @@ function makeFishChip(fish, x, y, w, parent, opt_plantfun, opt_showfun, opt_tool
   }
   var cost = fish.getCost();
   if(opt_recoup) cost = cost.sub(opt_recoup);
+  // if it's the same fish, then getRecoup is not computed correctly, the cost is 0 if changing self
   if(opt_replace && opt_field && opt_field.cropIndex() == fish.index) cost = Res();
   text += 'type: ' + getFishTypeName(fish.type) + '<br>';
   text += 'cost: ' + cost.toString();
@@ -823,7 +824,7 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
       dialog.content.div.innerHTML = text;
     }, tooltipfun, plantfun, c);
 
-    var chip = makeFishChip(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup);
+    var chip = makeFishChip(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.pond[y][x]);
     tx++;
     if(tx >= 3) {
       tx = 0;

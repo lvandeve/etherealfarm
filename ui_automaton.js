@@ -1133,21 +1133,6 @@ function updateAutomatonUI() {
     flex.div.innerHTML = '<br><br>Place automaton in the ethereal field first to unlock the automation features of this tab. You can plant it there like any other ethereal crop.';
     y += 0.2;
 
-    /*flex = addButton();
-    styleButton(flex.div);
-    centerText2(flex.div);
-    flex.div.textEl.innerText = 'Clear entire field';
-    addButtonAction(flex.div, deleteEntireField);
-    registerTooltip(flex.div, 'Immediately delete all crops from the entire field');*/
-
-    /*flex = addButton();
-    styleButton(flex.div);
-    centerText2(flex.div);
-    flex.div.textEl.innerText = 'Clear ethereal field';
-    flex.div.style.textShadow = '0px 0px 5px #ff8';
-    addButtonAction(flex.div, deleteEtherealField);
-    registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');*/
-
     flex = addButton();
     styleButton(flex.div);
     centerText2(flex.div);
@@ -1236,7 +1221,7 @@ function updateAutomatonUI() {
   flex.div.textEl.innerText = 'Clear ethereal field';
   flex.div.style.textShadow = '0px 0px 5px #ff8';
   addButtonAction(flex.div, deleteEtherealField);
-  registerTooltip(flex.div, 'Delete all crops from the ethereal field. Only succeeds if deleting is possible at this time. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place the automaton back.');
+  registerTooltip(flex.div, 'Delete all crops from the ethereal field. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place it back.');
 
   if(haveInfinityField()) {
     flex = addButton();

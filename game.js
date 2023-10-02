@@ -1204,7 +1204,7 @@ function PreCell(x, y) {
       var f = state.field[this.y][this.x];
       var c = f.getRealCrop();
       if(c && this.hasbreakdown_watercress) {
-        c.getLeech(f, this.breakdown_leech, this.getBrassicaBreakdownCroptype());
+        c.getLeech(f, 0, this.breakdown_leech, this.getBrassicaBreakdownCroptype());
       }
     }
     return this.breakdown_leech;
@@ -1484,6 +1484,8 @@ function precomputeField_(prefield, opt_pretend) {
   }
 
   // pass 1: compute boosts of flowers now that nettle and beehive effect is known, and other misc position related features
+  var tdc = state.challenge == challenge_towerdefense;
+  if(tdc && !pretend) state.bestflowerfortd = new Num(0);
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1493,6 +1495,9 @@ function precomputeField_(prefield, opt_pretend) {
         if(c.type == CROPTYPE_FLOWER) {
           p.boost = c.getBoost(f, pretend);
           p.hasbreakdown_boost = true;
+          if(tdc && !pretend && p.boost.gt(state.bestflowerfortd)) {
+            state.bestflowerfortd = Num(p.boost);
+          }
         }
         if(c.type == CROPTYPE_BEE) {
           p.boost = c.getBoostBoost(f, pretend);
@@ -1514,7 +1519,7 @@ function precomputeField_(prefield, opt_pretend) {
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
           // this computation is only used for mushroom seed consumption, so it's ok to not compute the leech value for nuts or mushrooms here.
-          var leech = c.getLeech(f, null, CROPTYPE_BERRY);
+          var leech = c.getLeech(f, pretend, null, CROPTYPE_BERRY);
           var numdir = haveDiagonalBrassica() ? 8 : 4;
           for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
             var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
@@ -1745,9 +1750,9 @@ function precomputeField_(prefield, opt_pretend) {
       var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
-          var leech_berry = (p.brassicaneighbors & 1) ? c.getLeech(f, null, CROPTYPE_BERRY) : Num(0);
-          var leech_mush = (p.brassicaneighbors & 2) ? c.getLeech(f, null, CROPTYPE_MUSH) : Num(0);
-          var leech_nuts = (p.brassicaneighbors & 4) ? c.getLeech(f, null, CROPTYPE_NUT) : Num(0);
+          var leech_berry = (p.brassicaneighbors & 1) ? c.getLeech(f, pretend, null, CROPTYPE_BERRY) : Num(0);
+          var leech_mush = (p.brassicaneighbors & 2) ? c.getLeech(f, pretend, null, CROPTYPE_MUSH) : Num(0);
+          var leech_nuts = (p.brassicaneighbors & 4) ? c.getLeech(f, pretend, null, CROPTYPE_NUT) : Num(0);
           var p = prefield[y][x];
           total.reset();
           var num = 0;
@@ -3042,8 +3047,10 @@ function nextEventTime() {
   if(state.challenge == challenge_towerdefense) {
     var td = state.towerdef;
     if(!td.gameover) {
-      if(td.pests.length > 0) {
+      if(tdWaveActive()) {
         addtime(0.5, 'towerdefense');
+      } else {
+        addtime(tdNextWaveTime() - state.time, 'towerdefense_nextwave');
       }
     }
   }
@@ -3150,7 +3157,7 @@ function nextEventTime() {
   }
 
   // fern
-  if(state.fern == 0) {
+  if(state.fern == 0 && state.challenge != challenge_towerdefense) {
     var t = state.lastFernTime - state.time + getFernWaitTime();
     addtime(t, 'fern');
   }
@@ -5101,7 +5108,17 @@ var update = function(opt_ignorePause) {
           var p = prefield[y][x];
           var c = f.getCrop();
           var prod = Res();
-          if(c.type == CROPTYPE_BRASSICA || state.challenge == challenge_wither) {
+          if(state.challenge == challenge_towerdefense) {
+            // in tower defense challenge, all crops grow very fast, and brassica don't wither
+            var growtime = 0.01;
+            if(f.growth < 1) {
+              var g = d / growtime;
+              f.growth += g;
+            }
+            if(f.growth > 1) f.growth = 1;
+            prod = p.prod2;
+            prod = p.prod2;
+          } else if(c.type == CROPTYPE_BRASSICA || state.challenge == challenge_wither) {
             var brassica = c.type == CROPTYPE_BRASSICA;
             var croptime = brassica ? c.getPlantTime() : witherDuration();
             var g = d / croptime;
@@ -5331,7 +5348,7 @@ var update = function(opt_ignorePause) {
 
     // possibly randomly spawn new fern
     var fernTimeWorth = 0;
-    if(!state.fern && !clickedfern) {
+    if(!state.fern && !clickedfern && state.challenge != challenge_towerdefense) {
       var mintime = getFernWaitTime();
       if(state.time > state.lastFernTime + mintime) {
         state.fernwait = mintime;
@@ -5462,7 +5479,7 @@ var update = function(opt_ignorePause) {
       }
 
       // the state.g_numpresents < 3000 check is a safety guard in case bugs related to present spawning appear. 3000 is the max amount that could spawn in a month (it is at least 15 minutes per present)
-      if(!state.present_effect && !clickedpresent && state.g_numplanted >= 2 && state.g_numpresents[1] < 3000) {
+      if(!state.present_effect && !clickedpresent && state.g_numplanted >= 2 && state.g_numpresents[1] < 3000 && state.challenge != challenge_towerdefense) {
         if(state.time > state.lastPresentTime + state.presentwait) {
           var s = getRandomPreferablyEmptyFieldSpot();
           if(s) {
@@ -5501,7 +5518,9 @@ var update = function(opt_ignorePause) {
     ////////////////////////////////////////////////////////////////////////////
 
     var req = treeLevelReq(state.treelevel + 1);
-    if(state.time > state.lasttreeleveluptime + tree_min_leveltime && state.res.ge(req)) {
+    var actual_tree_min_leveltime = tree_min_leveltime;
+    if(state.challenge == challenge_towerdefense) actual_tree_min_leveltime = 0;
+    if(state.time > state.lasttreeleveluptime + actual_tree_min_leveltime && state.res.ge(req)) {
       // tree level up
       var resin = Num(0);
       var twigs = Num(0);
@@ -5739,7 +5758,9 @@ var update = function(opt_ignorePause) {
     gain.removeNaN();
     actualgain.removeNaN();
 
-    state.res.addInPlace(actualgain); // gain gotten during this entire tick (not /s)
+    if(state.challenge != challenge_towerdefense) {
+      state.res.addInPlace(actualgain); // gain gotten during this entire tick (not /s)
+    }
 
     if(season_will_change && global_season_changes == 1 && !prev_season_gain) {
       // this stores the prev_season_gain now for display in the *next* update tick
@@ -5876,9 +5897,14 @@ var update = function(opt_ignorePause) {
     if(state.challenge == challenge_towerdefense) {
       var td = state.towerdef;
       if(!td.gameover) {
-        precomputeTD();
-        movePests();
-        attackPests();
+        if(!tdWaveActive() && state.time > tdNextWaveTime()) {
+          spawnWave();
+        }
+        if(tdWaveActive()) {
+          precomputeTD();
+          movePests();
+          attackPests();
+        }
       }
     }
 

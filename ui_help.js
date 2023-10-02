@@ -356,7 +356,7 @@ registerHelpDialog(28, 'Automaton & Blueprints', 'You unlocked the automaton!',
     'The automaton initially has the following features unlocked:<br><br>' +
     ' • Blueprints and templates: Templates are translucent blue looking versions of crops that can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint button in the tree.<br>' +
     ' • Auto-plant: the automaton will automatically plant crops according to a blueprint, and plant higher tiers once you unlock those tiers.<br>' +
-    ' • Buttons to delete all crops in the main field or in the ethereal field: these are in the automaton tab and are for convenience. Deleting the ethereal field still uses tokens as usual.<br>' +
+    ' • Buttons to delete all crops in the main field or in the ethereal field: these are in the automaton tab and are for convenience.<br>' +
     ' • Neighbor boost in the ethereal field: the automaton in the ethereal field gives an independent boost to neighbors, similar to lotuses.<br>' +
     '',
     images_automaton[4],

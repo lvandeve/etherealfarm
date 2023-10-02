@@ -93,6 +93,18 @@ function getCropInfoHTMLBreakdown(f, c) {
   return result;
 }
 
+function getPestInfoHTML(f) {
+  var result = '';
+  if(state.challenge == challenge_towerdefense && !!pest_render_info && pest_render_info[f.y]) {
+    var td = state.towerdef;
+    var pest_info = pest_render_info[f.y][f.x];
+    if(pest_info && pest_info.tooltip) {
+      result += 'TD: ' + pest_info.tooltip + '<br/>';
+    }
+  }
+  return result;
+}
+
 // get crop info in HTML
 function getCropInfoHTML(f, c, opt_detailed) {
   var c2 = state.crops[c.index];
@@ -226,7 +238,11 @@ function getCropInfoHTML(f, c, opt_detailed) {
     prod0 = p.prod0_wasabi_challenge;
   }
   if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
-    if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
+    if(state.challenge == challenge_towerdefense) {
+      result += 'Damage: ' + getTDCropDamage(c, f).toString() + '<br/>';
+      //result += 'Production for next wave: ' + getTDCropProd(c, f).toString() + '<br/>';
+      //result += '(Computed production per second: ' + prod3.toString() + ')<br/>';
+    } else if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
       result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
     } else if(!growing) {
       result += 'Production per second: ' + prod3.toString() + '<br/>';
@@ -549,10 +565,10 @@ function makeFieldDialog(x, y) {
 function fieldCellTooltipFun(x, y, div) {
   var f = state.field[y][x].getMainMultiPiece();
 
-  var result = undefined;
+  var result = '';
   if(state.fern && x == state.fernx && y == state.ferny) {
     if(state.g_numresets > 1 && renderIdleFern()) {
-      var result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+      result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
       result += '<br><br>';
       result += 'This fern charged up thanks to long idle time with the "slower ferns" choice upgrade. It gives more resources from the past production, as well as more resources at the current production rate, for some amount of time up to some limit. This time charges up slower than real time. This is in addition to what the fern already gives by default.';
       result += '<br><br>';
@@ -561,11 +577,10 @@ function fieldCellTooltipFun(x, y, div) {
       result += 'Past resource time charged up: ' + util.formatDuration(getFernIdlePastCharge());
       result += '<br>';
       result += 'Upcoming resource time charged up: ' + util.formatDuration(getFernIdleFutureCharge()) + ' (plus the randomized regular fern default)';
-      return result;
     } if(state.g_numresets > 1 && state.fern == 2) {
-      return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
+      result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
     } else {
-      return 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+      result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
     }
   } else if(state.present_effect && x == state.presentx && y == state.presenty) {
     if(holidayEventActive() == 1) {
@@ -579,8 +594,8 @@ function fieldCellTooltipFun(x, y, div) {
     if(effect == 1) result += '<br>(this one feels like it contains seeds)';
     if(effect == 2) result += '<br>(this one feels like it contains spores)';
   } else if(f.index == 0) {
-    //return 'Empty field, click to plant';
-    return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
+    //result = 'Empty field, click to plant';
+    // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
   } else if(f.index == FIELD_REMAINDER) {
     result = 'Remains of a watercress that was copying from multiple plants. Visual reminder of good copying-spot only, this is an empty field spot and does nothing. Allows replanting this watercress with "w" key or the watercress button in the top bar.';
   } else if(f.hasCrop()) {
@@ -590,16 +605,21 @@ function fieldCellTooltipFun(x, y, div) {
     var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
     if(time.ltr(0)) time = Num(0);
     if(state.treelevel <= 0 && state.res.spores.eqr(0)) {
-      var result = 'a weathered tree';
+      result = 'a weathered tree';
       if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
-      return result;
     } else {
       var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-      var result = upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
+      result = upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
       result += '<br>Time at this level: ' + util.formatDuration(timeAtTreeLevel(state), true) + '<br/>';
-      return result;
     }
+  } else if(f.index == FIELD_BURROW) {
+    result = 'Burrow: pests emerge from here and try to make their way to the tree.<br>The burrow partially reduces tower damage for pests that are on the burrow only.<br>';
   }
+  if(state.challenge == challenge_towerdefense && !!pest_render_info && pest_render_info[f.y]) {
+    var tdinfo = getPestInfoHTML(f);
+    if(tdinfo) result += '<br>' + tdinfo;
+  }
+  if(result == '') return undefined;
   return result;
 }
 
@@ -919,7 +939,7 @@ function updateFieldCellUI(x, y) {
   var rendertreelevel = (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) ? state.treelevel : 0; // only invalidate cells on tree level change if it's the tree cells themselves, otherwise it will redraw all cells too much while tree levels many levels at start of a run, causing slowness in mobile browsers
 
   var pest_info = pest_render_info ? pest_render_info[y][x] : undefined;
-  var pest_code = pest_info ? pest_info.code : '';
+  var pest_code = (pest_info && pest_info.images.length) ? pest_info.code : '';
 
   if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active || fd.pest_code != pest_code) {
     fd.index = f.index;
@@ -945,11 +965,13 @@ function updateFieldCellUI(x, y) {
 
     var label = 'field tile ' + x + ', ' + y;
 
+    var have_td_progress_bar = pest_info && pest_info.images.length;
+
     if(automatonplant) {
       blendImage(images_automaton[4], fd.canvas);
     } else if(lightningimage) {
       blendImage(image_lightning, fd.canvas); // short lightning strike image, only stays for half a second, you can only really see this if you're there while it happens
-      setProgressBar(fd.progress, -1, undefined);
+      if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
     } else if(f.hasCrop(true)) {
       var c = f.getCrop(true);
       var cropimg;
@@ -964,12 +986,13 @@ function updateFieldCellUI(x, y) {
       blendImage(cropimg, fd.canvas);
       if(f.growth >= 1 || f.index < CROPINDEX) {
         // fullgrown (or not a crop at all, or non-main part of multipart crop), so hide progress bar
-        setProgressBar(fd.progress, -1, undefined);
+        if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
       }
       label = c.name + '. ' + label;
     } else if(f.index == FIELD_TREE_TOP) {
       blendImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;
+      if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
     } else if(f.index == FIELD_TREE_BOTTOM) {
       blendImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;
@@ -980,21 +1003,23 @@ function updateFieldCellUI(x, y) {
           renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);
         }
       }
+      if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
     } else if(f.index == FIELD_REMAINDER) {
       var highest_brassica = getHighestBrassica();
       if(highest_brassica < 0) highest_brassica = 0;
       var remainder_image = crops[highest_brassica].image_remainder || image_watercress_remainder;
       blendImage(remainder_image, fd.canvas);
-      setProgressBar(fd.progress, -1, undefined);
+      if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
     } else if(f.index == FIELD_ROCK) {
       var image_index = Math.floor(util.pseudoRandom2D(x, y, 245643) * 4);
       blendImage(images_rock[image_index], fd.canvas);
       label = 'rock. ' + label;
-      setProgressBar(fd.progress, -1, undefined);
+      if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
     } else if(f.index == FIELD_BURROW) {
       blendImage(image_burrow, fd.canvas);
+      if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
     } else {
-      setProgressBar(fd.progress, -1, undefined);
+      if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
       //unrenderImage(fd.canvas);
     }
@@ -1015,10 +1040,15 @@ function updateFieldCellUI(x, y) {
       label = 'empty ' + label;
     }
 
-    if(pest_info) {
+    if(pest_info && pest_info.images.length) {
       for(var i = 0; i < pest_info.images.length; i++) {
         blendImage(pest_info.images[i], fd.canvas);
       }
+      var hp = pest_info.rel_hp;
+      var hpcolor = '#0f0';
+      if(hp < 0.5) hpcolor = '#ff0';
+      if(hp < 0.25) hpcolor = '#f00';
+      setProgressBar(fd.progress, pest_info.rel_hp, hpcolor);
     }
 
     setAriaLabel(fd.div, label);
