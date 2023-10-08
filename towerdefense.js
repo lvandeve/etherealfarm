@@ -196,10 +196,15 @@ function PathInfo() {
   this.dir = -1; // direction to walk to get to tree from here. 0=N, 1=E, 2=S, 3=W, -1=unreachable
 }
 
-function computeTDPath(td) {
+// updates state.towerdef with computed tower defense shortest path.
+// returns true if a valid path from burrow to tree was found, false otherwise
+// opt_check: if given, is array of x/y coordinates of a tile to check, to check if planting there would block the maze. If this is given, then state.towerdef is not updated.
+function computeTDPath(td, opt_check) {
   var queue = [];
   var path = [];
   var order = [];
+
+  var found = false;
 
   for(var y = 0; y < state.numh; y++) {
     path[y] = [];
@@ -223,8 +228,10 @@ function computeTDPath(td) {
       var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
       var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+      if(opt_check && x == opt_check[0] && y == opt_check[1]) continue; // new potential crop position to test
       var f = state.field[y2][x2];
       if(f.index != 0 && f.index != FIELD_BURROW) continue;
+      if(f.index == FIELD_BURROW) found = true;
       var dist = path[y][x].dist + 1;
       var dist2 = path[y2][x2].dist;
       if(dist < dist2) {
@@ -234,8 +241,11 @@ function computeTDPath(td) {
       }
     }
   }
-  td.path = path;
-  td.order = order;
+  if(!opt_check) {
+    td.path = path;
+    td.order = order;
+  }
+  return found;
 }
 
 function movePests() {

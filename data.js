@@ -2126,22 +2126,13 @@ crops[pumpkin_ghost].images_quad = [images_pumpkinghost00, images_pumpkinghost01
 
 
 crop_register_id = 2000;
-
 var halloween_pumpkin_price = Res({seeds:666000000});
-
-crop_register_id = 3000;
-// these are only used to compute relative incomes, without ever being prestiged, nor able to be unlocked or planted
-var berry_td_dummy = registerBerry('berry_td_dummy', 0, berryplanttime0 * 1, blackberry);
-//var mush_td_dummy = registerMushroom('mush_td_dummy', 0, mushplanttime0 * 1, champignon);
-
 // multiplier of the best berry amount for pumpkin
 // if set to 1, the pumpkin crop that takes 4x as much space as berry, produces only as much as a 1x1 berry
 // if set to 4, the pumpkin produces 4x as much as the best berry, so each individual cell of it is worth a full berry
 // however, since the pumpkin has advantages from its size (more neighbors), it already produces more than a similar layout that can be made with berries if this value is set to 1
 // conservatively, 1 would be a good value, but for early gameplay with 5x5 field that would put the pumpkin at a disadvantage, so use a bit more.
-var pumpkin_multiplier = Num(2);
-
-
+var pumpkin_multiplier = Num(2)
 /*
 The rules of the pumpkin are as folows:
 -its base income is the same as that of the best planted berry's base income
@@ -2166,6 +2157,12 @@ crops[pumpkin_0].quad = true;
 crops[pumpkin_0].images_quad = [images_pumpkin00, images_pumpkin01, images_pumpkin10, images_pumpkin11];
 
 
+
+
+crop_register_id = 3000;
+// these are only used to compute relative incomes, without ever being prestiged, nor able to be unlocked or planted
+var berry_td_dummy = registerBerry('berry_placeholder', 0, berryplanttime0 * 1, undefined);
+//var mush_td_dummy = registerMushroom('mushroom_placeholder', 0, mushplanttime0 * 1, undefined);
 
 
 ////////////////////////////////////////////////////////////////////////////////

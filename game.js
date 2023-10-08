@@ -4049,6 +4049,20 @@ var update = function(opt_ignorePause) {
           }
         }
 
+        if(ok && state.challenge == challenge_towerdefense) {
+          if(type == ACTION_DELETE) {
+            showMessage('Cannot delete crops during the tower defense challenge. You should build the shape of your maze first, then replace or upgrade crops to change them.', C_INVALID, 0, 0);
+            ok = false;
+          }
+          if(type == ACTION_PLANT) {
+            var path_exists = computeTDPath(state.towerdef, [action.x, action.y]);
+            if(!path_exists) {
+              showMessage('Cannot place crop here: it blocks the way from the burrow to the tree. You can build a maze, but it must always allow reaching the tree.', C_INVALID, 0, 0);
+              ok = false;
+            }
+          }
+        }
+
         if(ok && (type == ACTION_PLANT || type == ACTION_REPLACE)) {
           var c = action.crop;
 

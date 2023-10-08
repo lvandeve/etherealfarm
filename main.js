@@ -26,7 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var version_major = 0; // 0..61
 var version_minor = 10; // 0..4095
 var version_patch = 5; // 0..63
-var version_sub = 7; // 0=no suffix, 1=b, 2=c, ...
+var version_sub = 8; // 0=no suffix, 1=b, 2=c, ...
 
 var version = 262144 * (version_major + 2) + 64 * version_minor + version_patch;
 
