@@ -630,30 +630,41 @@ function openTimeInfoDialog() {
     var result = '';
     if(state.treelevel > 0) {
       result += '<b>Level:</b> ' + state.treelevel;
-
       if(state.treelevel >= min_transcension_level) {
         result += '. Transcension available, click the tree.';
       }
 
-      result += '<br><br>';
-
-      var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-      result += '<b>Next tree level requires:</b> ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')' + '<br><br>';
-
-      result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br><br>';
-
       if(state.g_numresets >= 1) {
+        result += '<br>';
         if(state.g_p_treelevel && (state.treelevel > state.g_p_treelevel)) {
-          result += '<b>Previous max level ever:</b> ' + state.g_p_treelevel + ' (now: ' + state.g_treelevel + ')' + '<br><br>';
+          result += '<b>Previous max level ever:</b> ' + state.g_p_treelevel + ' (now: ' + state.g_treelevel + ')' + '<br>';
+        } else if(state.g_p_treelevel && (state.treelevel == state.g_p_treelevel)) {
+          result += '<b>Max tree level ever:</b> ' + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')<br>';
         } else {
-          result += '<b>Max tree level ever:</b> ' + state.g_treelevel + '<br><br>';
+          result += '<b>Max tree level ever:</b> ' + state.g_treelevel + '<br>';
         }
       }
+
+      result += '<br>';
+
+      var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+      result += '<b>Next tree level requires:</b> ' + treeLevelReq(state.treelevel + 1).toString() + ' (' + util.formatDuration(time.valueOf(), true) + ')' + '<br>';
+
+      result += '<b>Progress to next level:</b> ' + Math.floor(nextlevelprogress * 100).toString() + '%' + '<br>';
+
+
     }
+    result += '<br>';
     result += '<b>Time in this field:</b> ' + util.formatDuration(state.c_runtime, true, 4, true) + '<br><br>';
-    result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
-    result += '<b>' + upper(seasonNames[getSeason()]) + ' effects:</b><br>';
+
     var s = getSeason();
+    if(s <= 3) {
+      result += '<b>Season change in:</b> ' + getSeasonChangeInValueText() + '.<br>';
+    }
+
+    result += '<b>Current season:</b> ' + upper(seasonNames[getSeason()]) + '<br><br>';
+
+    result += '<b>' + upper(seasonNames[getSeason()]) + ' effects:</b><br>';
     if(s == 0) {
       result += '• +' + getSpringFlowerBonus().subr(1).toPercentString() + ' bonus to flower boost<br>';
       if(state.challenges[challenge_bees].completed) {
@@ -701,10 +712,6 @@ function openTimeInfoDialog() {
       result += '• Crops produce less, the higher tier and upgrade level the worse the effect<br>';
     }
     result += '<br>';
-    if(s <= 3) {
-      result += '<b>Season change in:</b> ' + getSeasonChangeInValueText() + '.<br>';
-      result += '<br>';
-    }
 
     var have_sun = !!state.upgrades[upgrade_sununlock].count;
     var have_mist = !!state.upgrades[upgrade_mistunlock].count;
@@ -804,18 +811,24 @@ function updateResourceUI() {
     }, 'info box: time and level');
     registerTooltip(resourceDivs[0][0], function() {
       var text = '';
-      text += 'Season change in: ' + getSeasonChangeInValueText() + '.<br>';
-      if(state.treelevel >= 1) {
-        var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
-        text += '<br>Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
-      }
       if(state.g_numresets >= 1) {
         if(state.g_p_treelevel && (state.treelevel > state.g_p_treelevel)) {
-          text += '<br><br>Previous max tree level ever: ' + state.g_p_treelevel + ' (now: ' + state.g_treelevel + ')';
+          text += 'Previous max tree level ever: ' + state.g_p_treelevel + ' (now: ' + state.g_treelevel + ')';
+        } else if(state.g_p_treelevel && (state.treelevel == state.g_p_treelevel)) {
+          text += 'Max tree level ever: ' + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')';
         } else {
-          text += '<br><br>Max tree level ever: ' + state.g_treelevel;
+          text += 'Max tree level ever: ' + state.g_treelevel;
         }
+        text += '<br><br>';
       }
+
+      if(state.treelevel >= 1) {
+        var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
+        text += 'Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+        text += '<br><br>';
+      }
+
+      text += 'Season change in: ' + getSeasonChangeInValueText() + '.';
 
       if(presentGrowSpeedActive()) {
         text += '<br><br>';

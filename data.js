@@ -2162,7 +2162,7 @@ crops[pumpkin_0].images_quad = [images_pumpkin00, images_pumpkin01, images_pumpk
 crop_register_id = 3000;
 // these are only used to compute relative incomes, without ever being prestiged, nor able to be unlocked or planted
 var berry_td_dummy = registerBerry('berry_placeholder', 0, berryplanttime0 * 1, undefined);
-//var mush_td_dummy = registerMushroom('mushroom_placeholder', 0, mushplanttime0 * 1, undefined);
+var mush_td_dummy = registerMushroom('mushroom_placeholder', 0, mushplanttime0 * 1, undefined);
 
 
 ////////////////////////////////////////////////////////////////////////////////

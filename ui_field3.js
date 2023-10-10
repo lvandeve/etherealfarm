@@ -91,6 +91,8 @@ function getCropInfoHTML3(f, c, opt_detailed) {
       result += 'Boost to neighboring berries: ' + infboost.toPercentString() + '<br><br>';
     } else if(c.type == CROPTYPE_STINGING) {
       result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString() + '<br><br>';
+    } else if(c.type == CROPTYPE_FERN) {
+      result += 'Copy: ' + infboost.toPercentString() + '<br><br>';
     } else {
       result += 'Boost: ' + infboost.toPercentString() + '<br><br>';
     }
