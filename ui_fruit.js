@@ -215,13 +215,13 @@ function createFruitHelp(opt_fusing_only) {
     text += '<br>';
     text += '• Medlar + Apricot = Kumquat (winter + spring)';
     text += '<br/><br/>';
-    text += 'If (and only if) you also have the second fruit mixing upgrade purchased, then in addition you can create the all-season star fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
+    text += 'If you also have the second fruit mixing upgrade purchased, then in addition you can create the all-season star fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
     text += '<br><br>';
     text += '• Mango + Quince = Star Fruit (4 seasons)';
     text += '<br>';
     text += '• Plum + Kumquat = Star Fruit (4 seasons)';
     text += '<br/><br/>';
-    text += 'If (and only if) you also have the second fruit mixing upgrade purchased, then in addition you can create the all-season star fruit. This one is harder to fuse, since the fruits must also have the same set of abilities:';
+    text += 'If you also have the third fruit mixing upgrade purchased, then in addition you can create the dragon fruit. It\'s like the star fruit, but gives more season bonus. It\'s created by fusing star fruit and apple, and they must have the same set of abilities again.';
     text += '<br><br>';
     text += '• Star Fruit + Apple = Dragon Fruit (stronger 4 seasons boost)';
     text += '<br><br>';
@@ -817,12 +817,11 @@ function fillFruitDialog(dialog, f, opt_selected) {
       } else {
         levelButton.className = 'efButton';
       }
-      registerTooltip(levelButton, 'Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits.');
-      addButtonAction(levelButton, function(e) {
+      registerAction(levelButton, function(e) {
         addAction({type:ACTION_FRUIT_LEVEL, f:f, index:selected, shift:false});
         update();
         recreate();
-      });
+      }, 'Buy 1', {tooltip:('Levels up this ability. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits.')});
 
       levelManyButton.textEl.innerText = 'Buy many';
       var available = state.res.essence.sub(f.essence);
@@ -831,12 +830,11 @@ function fillFruitDialog(dialog, f, opt_selected) {
       } else {
         levelManyButton.className = 'efButton';
       }
-      registerTooltip(levelManyButton, 'Levels up this ability multiple times, using up to 25% of the available essence. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits.');
-      addButtonAction(levelManyButton, function(e) {
+      registerAction(levelManyButton, function(e) {
         addAction({type:ACTION_FRUIT_LEVEL, f:f, index:selected, shift:true});
         update();
         recreate();
-      });
+      }, 'Buy many', {tooltip:('Levels up this ability multiple times, using up to 25% of the available essence. Does not permanently use up essence, only for this fruit: all essence can be used in all fruits.')});
 
 
       upButton.textEl.innerText = '^';
@@ -845,14 +843,13 @@ function fillFruitDialog(dialog, f, opt_selected) {
       } else {
         upButton.className = 'efButton';
       }
-      registerTooltip(upButton, 'Moves up this ability in the order. This has no effect on ability strength, but can affect fusing of fruits');
-      addButtonAction(upButton, function(e) {
+      registerAction(upButton, function(e) {
         if(selected <= 0) return;
         addAction({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:true});
         selected--;
         update();
         recreate();
-      });
+      }, 'Move ability up', {tooltip:('Moves up this ability in the order. This has no effect on ability strength, but can affect fusing of fruits')});
 
 
       downButton.textEl.innerText = 'v';
@@ -861,21 +858,18 @@ function fillFruitDialog(dialog, f, opt_selected) {
       } else {
         downButton.className = 'efButton';
       }
-      registerTooltip(downButton, 'Moves down this ability in the order. This has no effect on ability strength, but can affect fusing of fruits');
-      addButtonAction(downButton, function(e) {
+      registerAction(downButton, function(e) {
         if(selected + 1 >= getNumFruitAbilities(f.tier)) return;
         addAction({type:ACTION_FRUIT_REORDER, f:f, index:selected, up:false});
         selected++;
         update();
         recreate();
-      });
+      }, 'Move ability down', {tooltip:('Moves down this ability in the order. This has no effect on ability strength, but can affect fusing of fruits')});
 
-
-      registerTooltip(closeButton, 'Close fruit ability popup');
-      addButtonAction(closeButton, function(e) {
+      registerAction(closeButton, function(e) {
         selected = -1;
         recreate();
-      });
+      }, 'Close fruit ability popup', {tooltip:('Close fruit ability popup')});
 
     }
     textFlex.div.innerHTML = text;

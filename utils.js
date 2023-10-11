@@ -694,7 +694,8 @@ var Utils = (function() {
 
   // Similar to addEvent, but allows giving a unique name (idname) to replace events.
   // Also can be removed all at once with util.removeAllElements
-  var setEvent = function(el, event, idname, fun) {
+  var setEvent = function(el, event, fun, idname) {
+    if(idname == undefined) idname = '';
     if(!el.util_set_events_) el.util_set_events_ = {};
     if(!el.util_set_events_[event]) el.util_set_events_[event] = {};
     if(el.util_set_events_[event][idname]) {

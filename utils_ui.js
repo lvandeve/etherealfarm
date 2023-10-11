@@ -134,15 +134,15 @@ function registerAction(div, fun, label, params) {
     };
     if(params.immediate && !isTouchDevice()) {
       // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
-      div.onmousedown = fun2;
+      util.setEvent(div, 'mousedown', fun2, 'action');
     } else {
-      div.onclick = fun2;
+      util.setEvent(div, 'click', fun2, 'action');
     }
     if(!params.noenterkey) {
-      div.onkeypress = function(e) {
+      util.setEvent(div, 'keypress', function(e) {
         if(e.key == 'Enter') fun2(undefined);
         e.preventDefault();
-      };
+      }, 'action');
     }
     div.tabIndex = 0;
     setAriaRole(div, 'button');
@@ -365,15 +365,15 @@ function styleButton0(div, opt_disallow_hover_filter) {
   if(div.textEl) div.textEl.style.userSelect = 'none'; // prevent unwanted selections when double clicking things
 
   if(opt_disallow_hover_filter == 2) {
-    util.setEvent(div, 'mouseover', 'buttonstyle', function() { div.style.border = '4px solid red';});
-    util.setEvent(div, 'mouseout', 'buttonstyle', function() { div.style.filter = ''; });
+    util.setEvent(div, 'mouseover', function() { div.style.border = '4px solid red';}, 'buttonstyle');
+    util.setEvent(div, 'mouseout', function() { div.style.filter = ''; }, 'buttonstyle');
   } else if(!opt_disallow_hover_filter) {
-    util.setEvent(div, 'mouseover', 'buttonstyle', function() { div.style.filter = 'brightness(0.93)';});
-    util.setEvent(div, 'mouseout', 'buttonstyle', function() { div.style.filter = ''; });
+    util.setEvent(div, 'mouseover', function() { div.style.filter = 'brightness(0.93)';}, 'buttonstyle');
+    util.setEvent(div, 'mouseout', function() { div.style.filter = ''; }, 'buttonstyle');
   } else {
     // as an alternative to the filter, add an invisible border around the canvas, this slightly changes its size, indicating the hover that way
-    util.setEvent(div, 'mouseover', 'buttonstyle', function() { div.style.border = '1px solid #0000';});
-    util.setEvent(div, 'mouseout', 'buttonstyle', function() { div.style.border = ''; });
+    util.setEvent(div, 'mouseover', function() { div.style.border = '1px solid #0000';}, 'buttonstyle');
+    util.setEvent(div, 'mouseout', function() { div.style.border = ''; }, 'buttonstyle');
   }
 }
 
@@ -874,14 +874,14 @@ function registerTooltip_(el, fun, opt_poll, opt_allowmobile) {
     el.tooltipfun = fun;
     if(el.tooltipregistered) return; // prevent keeping adding event listeners, and make sure re-calling registerTooltip is fast (can be done every frame), just update the minimum needed to change the text
     el.tooltipregistered = true;
-    util.setEvent(el, 'mouseover', 'tooltip', function(e) {
+    util.setEvent(el, 'mouseover', function(e) {
       if(e.shiftKey || eventHasCtrlKey(e)) return;
       if(MOBILEMODE && !opt_allowmobile) return;
       maketip(el.tooltipfun(), e, false);
-    });
+    }, 'tooltip');
 
     // NOTE: mouseout unwantedly also triggers when over child elements of el (solved inside) or when over the tooltip itself (solved by making tooltip never overlap el)
-    util.setEvent(el, 'mouseout', 'tooltip', function(e) {
+    util.setEvent(el, 'mouseout', function(e) {
       if(MOBILEMODE && !opt_allowmobile) return;
       // avoid the tooltip triggering many times while hovering over child nodes, which does cause mouseout events
       var e_el = e.toElement || e.relatedTarget;
@@ -892,7 +892,7 @@ function registerTooltip_(el, fun, opt_poll, opt_allowmobile) {
       if(!!e_el && !!e_el.parentNode && !!e_el.parentNode.parentNode && !!e_el.parentNode.parentNode.parentNode && e_el.parentNode.parentNode.parentNode.parentNode == el) return;
       if(e_el == div) return;
       remtip();
-    });
+    }, 'tooltip');
   };
 
   var maketip = function(text, e, mobilemode) {

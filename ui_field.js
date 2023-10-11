@@ -472,7 +472,7 @@ function makeDowngradeCropAction(x, y, opt_silent) {
 }
 
 function makeFieldDialog(x, y) {
-  var f = state.field[y][x];
+  var f = state.field[y][x].getMainMultiPiece();
   var fd = fieldDivs[y][x];
 
 
@@ -793,16 +793,16 @@ function initFieldUI() {
       fieldDivs[y][x].canvas = canvas;
       //fieldDivs[y][x].bgcanvas = bgcanvas;
 
-      util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
+      util.setEvent(div, 'mouseover', bind(function(x, y) {
         updateFieldMouseOver(x, y);
-      }, x, y));
-      util.setEvent(div, 'mouseout', 'fieldout', bind(function(x, y) {
+      }, x, y), 'fieldover');
+      util.setEvent(div, 'mouseout', bind(function(x, y) {
         updateFieldMouseOut(x, y);
-      }, x, y));
+      }, x, y), 'fieldout');
       // on mouse up and with timeout so that the state is fully updated after the action that the click caused
-      util.setEvent(div, 'mouseup', 'fieldclick', bind(function(x, y) {
+      util.setEvent(div, 'mouseup', bind(function(x, y) {
         window.setTimeout(function(){updateFieldMouseClick(x, y)});
-      }, x, y));
+      }, x, y), 'fieldclick');
 
       div.style.cursor = 'pointer';
       registerAction(div, bind(fieldCellClickFun, x, y, div), 'click field cell', {

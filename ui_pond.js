@@ -471,16 +471,16 @@ function initPondUI(flex) {
       pondDivs[y][x].div = div;
       pondDivs[y][x].canvas = canvas;
 
-      util.setEvent(div, 'mouseover', 'fieldover', bind(function(x, y) {
+      util.setEvent(div, 'mouseover', bind(function(x, y) {
         updatePondMouseOver(x, y);
-      }, x, y));
-      util.setEvent(div, 'mouseout', 'fieldout', bind(function(x, y) {
+      }, x, y), 'fieldover');
+      util.setEvent(div, 'mouseout', bind(function(x, y) {
         updatePondMouseOut(x, y);
-      }, x, y));
+      }, x, y), 'fieldout');
       // on mouse up and with timeout so that the state is fully updated after the action that the click caused
-      util.setEvent(div, 'mouseup', 'fieldclick', bind(function(x, y) {
+      util.setEvent(div, 'mouseup', bind(function(x, y) {
         window.setTimeout(function(){updatePondMouseClick(x, y)});
-      }, x, y));
+      }, x, y), 'fieldclick');
 
       registerTooltip(div, bind(function(x, y, div) {
         var f = state.pond[y][x];

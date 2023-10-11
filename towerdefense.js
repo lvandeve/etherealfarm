@@ -24,7 +24,7 @@ function Pest() {
   this.images = images_ant;
   this.speed = 2; // 0 = very slow, 1 = slow, 2 = regular, 3 = fast
   this.hp = 0; // max base hp, measured in multiple of spores required for tree level matching the wave (wave 1 to get tree to level 1, etc...)
-  this.group = 1; // higher than 1 means it represents a group of multiple separate creatures
+  this.group = 1; // higher than 1 means it represents a group of multiple separate creatures. In that case, hp gives the hp of the full group, not that of one individual member. The group size determines the max damage that can be done by a non-splash damage tower at once
 }
 
 var registered_pests = []; // indexed consecutively, gives the index to pests
@@ -33,7 +33,7 @@ var pests = []; // indexed by pest index
 // 16-bit ID, auto incremented with registerPest, but you can also set it to a value yourself, to ensure consistent IDs for various pests (between savegames) in case of future upgrades
 var pest_register_id = -1;
 
-function registerPest(name, images, hp, speed) {
+function registerPest(name, images, hp, speed, groupsize) {
   if(!images) images = images_ant;
   if(pests[pest_register_id] || pest_register_id < 0 || pest_register_id > 65535) throw 'pest id already exists or is invalid!';
   var pest = new Pest();
@@ -45,13 +45,14 @@ function registerPest(name, images, hp, speed) {
   pest.images = images;
   pest.speed = speed;
   pest.hp = hp;
+  pest.group = groupsize;
 
   return pest.index;
 }
 
 pest_register_id = 0;
-var pest_ant = registerPest('ant', images_ant, 0.1, 2);
-var pest_tick = registerPest('tick', images_tick, 0.1, 2);
+var pest_ant = registerPest('ant', images_ant, 0.1, 2, 1);
+var pest_tick = registerPest('tick', images_tick, 0.1, 2, 6);
 
 
 
@@ -59,7 +60,6 @@ function PestState() {
   this.index = pest_ant;
   this.maxhp = Num(10); // starting hp, measured in spores
   this.hp = Num(100); // hp remaining, measured in spores
-  // coordinates in the field
   this.x = 0;
   this.y = 0;
 
@@ -374,7 +374,8 @@ function createBulletAnimation(x0, y0, x1, y1, type) {
 
 // x0, y0 = attack origin
 // x1, y1 = attack target
-function attackPest(td, index, damage, x0, y0, x1, y1) {
+// splash: if true, it's a splash damage tower, so it can hit all members of a group at once
+function attackPest(td, index, damage, x0, y0, x1, y1, splash) {
   if(x0 < 0 || y0 < 0 || x0 >= state.numw || y0 >= state.numh) return;
   if(x1 < 0 || y1 < 0 || x1 >= state.numw || y1 >= state.numh) return;
 
@@ -382,6 +383,14 @@ function attackPest(td, index, damage, x0, y0, x1, y1) {
   // but we do want SOME of that benefit to make early waves go very fast (so all pests can be defeated in a single splash damage or brassica shot there). So allow partial damage, just not all of it.
   if(state.field[y0][x0].index == FIELD_BURROW) damage = damage.mulr(1 / 16);
   var p = td.pests[index];
+  var p2 = pests[p.index];
+
+  if(p2.group > 1 && !splash) {
+    // TODO: actually, if splash damage, then damage should be multiplied by group size, since it hits all at the same time. But a more correct simulation of individual group member healths or remaining group size is then needed, it should be multiplied only by remaining group size.
+    var maxdamage = p.maxhp.divr(p2.group).mulr(1.01); // the 1.01 is to avoid numerical precision issues requiring one more shot
+    if(damage.gt(maxdamage)) damage = maxdamage;
+  }
+
   p.hp = p.hp.sub(damage);
 }
 
@@ -440,7 +449,7 @@ function attackPests() {
           if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
           var cell = td.pestspercell[y2][x2];
           for(var j = 0; j < cell.length; j++) {
-            attackPest(td, cell[j], damage, x, y, x2, y2);
+            attackPest(td, cell[j], damage, x, y, x2, y2, true);
             createBulletAnimation(x, y, x2, y2, 3);
           }
         }
@@ -470,7 +479,7 @@ function attackPests() {
           }
         }
         if(target != undefined) {
-          attackPest(td, target, damage, x, y, targetx, targety);
+          attackPest(td, target, damage, x, y, targetx, targety, c.type == CROPTYPE_MUSH);
           createBulletAnimation(x, y, targetx, targety, c.type == CROPTYPE_BERRY ? 0 : 1);
           if(c.type == CROPTYPE_MUSH) {
             // splash damage
@@ -483,7 +492,7 @@ function attackPests() {
               for(var j = 0; j < cell.length; j++) {
                 var cell = td.pestspercell[y3][x3];
                 for(var j = 0; j < cell.length; j++) {
-                  attackPest(td, cell[j], splashDamage, targetx, targety, x3, y3);
+                  attackPest(td, cell[j], splashDamage, targetx, targety, x3, y3, true);
                 }
               }
               createBulletAnimation(targetx, targety, x3, y3, 2);

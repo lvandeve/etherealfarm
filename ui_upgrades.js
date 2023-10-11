@@ -95,9 +95,9 @@ function rerenderUpgradeChip(u, chip, completed, opt_ui_location) {
     if(cant_afford) titleFlex.div.className = 'efTextCantAfford';
     else titleFlex.div.className = '';
 
-    util.setEvent(chip.div, 'mouseover', 'upgradeseen', function() {
+    util.setEvent(chip.div, 'mouseover', function() {
       state.upgrades[u.index].seen = true;
-    });
+    }, 'upgradeseen');
 
   } else {
     text += '<br>';
@@ -241,10 +241,10 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
   if(!completed) {
     styleButton0(buyFlex.div);
 
-    util.setEvent(chip.div, 'mouseover', 'upgradeseen', function() {
+    util.setEvent(chip.div, 'mouseover', function() {
       var u = upgrades[chip.u];
       state.upgrades[u.index].seen = true;
-    });
+    }, 'upgradeseen');
   }
 
   registerAction(buyFlex.div, completed ? undefined : bind(function(i, shift, ctrl) {
@@ -298,12 +298,12 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
   rerenderUpgradeChip(u, chip, completed, opt_ui_location);
   chip.updateInfoText();
 
-  util.setEvent(chip.div, 'mouseover', 'fieldover', bind(function(x, y) {
+  util.setEvent(chip.div, 'mouseover', bind(function(x, y) {
     mouseOverUpgradeCrop = u.cropid;
-  }, x, y));
-  util.setEvent(chip.div, 'mouseout', 'fieldout', bind(function(x, y) {
+  }, x, y), 'fieldover');
+  util.setEvent(chip.div, 'mouseout', bind(function(x, y) {
     mouseOverUpgradeCrop = null;
-  }, x, y));
+  }, x, y), 'fieldout');
 
   return chip;
 }
