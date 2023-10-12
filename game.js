@@ -4766,7 +4766,7 @@ var update = function(opt_ignorePause) {
           var from = f.slot;
 
           var ok = true;
-          var swap = false;
+          var swap = action.force_swap && getFruit(to);
           if(to < 100 && from >= 100 && state.fruit_stored.length >= state.fruit_slots) {
             //ok = false;
             //showMessage('stored fruits already full, move one out of there to sacrificial pool first to make room', C_INVALID, 0, 0);

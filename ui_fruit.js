@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 var fruitScrollFlex = undefined;
 
 var busyChoosingTargetSlot = undefined; // for "move to slot" button
+var busyChoosingTargetSlot_shift = false;
 
 function getFruitAbilityName(ability, opt_abbreviation) {
   if(opt_abbreviation) {
@@ -551,6 +552,31 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
   make();
 }
 
+function showFruitMarkColorDialog(f, opt_onclose) {
+  //var fruitmarkcolors = ['#000', '#f00', '#dc0', '#4c4', '#66f', '#fff', '#f80', '#840', '#b0f'];
+  //var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue', 'white', 'orange', 'brown', 'purple'];
+  var dialog = createDialog({
+    onclose:opt_onclose,
+    title:'Choose fruit color',
+    bgstyle:'efDialogTranslucent',
+    icon:image_palette
+  });
+
+  var num = fruitmarkcolors.length;
+
+  for(var i = 0; i < num; i++) {
+    var button = new Flex(dialog.content, 0.25, (i + 0.05) / num , 0.8, (i + 0.75) / num).div;
+    styleButton(button);
+    button.textEl.innerText = fruitmarkcolornames[i];
+    button.style.color = util.farthestColor(fruitmarkcolors[i]);
+    button.style.backgroundColor = fruitmarkcolors[i];
+    addButtonAction(button, bind(function(i) {
+      f.mark = i;
+      closeTopDialog();
+    }, i));
+  }
+}
+
 function fillFruitDialog(dialog, f, opt_selected) {
   dialog.content.clear();
   dialog.icon.clear();
@@ -655,10 +681,14 @@ function fillFruitDialog(dialog, f, opt_selected) {
   y += h * 1.1;
   styleButton(moveToButton);
   moveToButton.textEl.innerText = 'move to slot (click target...)';
-  addButtonAction(moveToButton, function() {
-    showMessage('Click target slot to move this fruit into');
-    busyChoosingTargetSlot = f;
-    closeAllDialogs();
+  registerAction(moveToButton, function(shift, ctrl) {
+      showMessage('Click target slot to move this fruit into');
+      busyChoosingTargetSlot = f;
+      busyChoosingTargetSlot_shift = shift;
+      closeAllDialogs();
+    }, 'move fruit to slot (click target...)', {
+    label_shift:'swap fruit with slot (click target...)',
+    tooltip:'after clicking this button, click any fruit slot in the fruit tab to move this fruit to',
   });
 
   if(f.slot < 100) {
@@ -708,19 +738,20 @@ function fillFruitDialog(dialog, f, opt_selected) {
     }, f.name);
   });
 
-  var renameButton = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
+  var markColorButton = new Flex(dialog.content, margin2, y, 1 - margin2, y + h).div;
   y += h * 1.1;
-  styleButton(renameButton);
-  renameButton.textEl.innerText = 'mark border color';
-  addButtonAction(renameButton, function() {
-    f.mark = ((f.mark || 0) + 1) % 7;
-    updateFruitUI();
-    recreate();
+  styleButton(markColorButton);
+  markColorButton.textEl.innerText = 'mark border color';
+  addButtonAction(markColorButton, function() {
+    showFruitMarkColorDialog(f, function() {
+      updateFruitUI();
+      recreate();
+    });
   });
 
   styleButton0(canvas, true);
   addButtonAction(canvas, function() {
-    f.mark = ((f.mark || 0) + 1) % 7;
+    f.mark = ((f.mark || 0) + 1) % 9;
     updateFruitUI();
     recreate();
   }, 'fruit icon: ' + getFruitAriaLabel(f) + '. Click to mark favorite');
@@ -987,8 +1018,8 @@ function styleFruitChip(flex, f) {
   flex.div.style.outline = '1px solid black';
 }
 
-var fruitmarkcolors = ['#000', '#f00', '#dc0', '#4c4', '#66f', '#fff', '#f80'];
-var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue', 'white', 'orange'];
+var fruitmarkcolors = ['#000', '#f00', '#dc0', '#4c4', '#66f', '#fff', '#f80', '#840', '#b0f'];
+var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue', 'white', 'orange', 'brown', 'purple'];
 
 function getFruitAriaLabel(f, opt_fallback_if_empty) {
   if(!f) return opt_fallback_if_empty || 'none';
@@ -1051,7 +1082,7 @@ function clickFruitChipFun(f, opt_slot_index, shift, ctrl) {
     }
   } else {
     if(busyChoosingTargetSlot && opt_slot_index != undefined) {
-      addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:opt_slot_index});
+      addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:opt_slot_index, force_swap:busyChoosingTargetSlot_shift});
       busyChoosingTargetSlot = undefined;
       update();
     } else {
@@ -1273,7 +1304,7 @@ function updateFruitUI() {
       canvasFlex.div.style.backgroundColor = '#ccc';
       registerAction(canvasFlex.div, bind(function(help, i) {
         if(busyChoosingTargetSlot) {
-          addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:i});
+          addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:i, force_swap:busyChoosingTargetSlot_shift});
           busyChoosingTargetSlot = undefined;
           update();
         } else {
@@ -1336,11 +1367,17 @@ function updateFruitUI() {
 
       registerTooltip(canvasFlex.div, 'No fruit present in this sacrificial pool slot. ' + help);
 
-      addButtonAction(canvasFlex.div, bind(function(help) {
-        lastTouchedFruit = null;
-        updateFruitUI();
-        showMessage('No fruit present in this sacrificial pool slot. ' + help, C_INVALID, 0, 0);
-      }, help), 'empty sacrificial fruit slot');
+      addButtonAction(canvasFlex.div, bind(function(help, i) {
+        if(busyChoosingTargetSlot) {
+          addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:(i + 100), force_swap:busyChoosingTargetSlot_shift});
+          busyChoosingTargetSlot = undefined;
+          update();
+        } else {
+          lastTouchedFruit = null;
+          updateFruitUI();
+          showMessage('No fruit present in this sacrificial pool slot. ' + help, C_INVALID, 0, 0);
+        }
+      }, help, i), 'empty sacrificial fruit slot');
     }
     setupFruitDrag(canvasFlex, i + 100, f);
   }

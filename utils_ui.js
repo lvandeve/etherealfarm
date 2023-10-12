@@ -184,7 +184,7 @@ function makeLongTouchContextDialog(div, fun, label, params) {
 
   var addButton = function() {
     var h = 0.07;
-    var flex  = new Flex(content, 0.01, y, 0.99, y + h);
+    var flex  = new Flex(content, 0.05, y, 0.95, y + h);
     y += h * 1.2;
     flex.div.className = 'efButton';
     styleButton0(flex.div);
@@ -192,7 +192,7 @@ function makeLongTouchContextDialog(div, fun, label, params) {
     return flex;
   };
 
-  var flex = new Flex(content, 0.01, y, 0.99, y + texth);
+  var flex = new Flex(content, 0.05, y, 0.95, y + texth);
   flex.div.innerText = 'Long click allows using shift/ctrl key actions and tooltips on touch interfaces.';
   y += 0.05;
 
@@ -243,12 +243,12 @@ function makeLongTouchContextDialog(div, fun, label, params) {
   }
 
   y += 0.05;
-
   if(params.tooltip) {
-    flex = new Flex(content, 0.01, y, 0.99, y + texth);
+    flex = new Flex(content, 0.05, y, 0.95, 'a');
     var text = 'Tooltip:<br><br>';
     text += (typeof params.tooltip == 'string') ? params.tooltip : params.tooltip()
     flex.div.innerHTML = text;
+    applyTooltipStyle(flex.div, state.tooltipstyle);
   }
 }
 
@@ -846,6 +846,26 @@ var MOBILEMODE = false;
 
 var updatetooltipfun = undefined; // must be called by the game update fun if set
 
+function applyTooltipStyle(div, tooltipstyle) {
+  if(tooltipstyle == 0 || tooltipstyle == 1) {
+    div.style.backgroundColor = '#004';
+    div.style.color = '#fff';
+    div.style.border = '2px solid #fff';
+  } else if(tooltipstyle == 2) {
+    div.style.backgroundColor = '#ccce';
+    div.style.color = '#000';
+    div.style.border = '1px solid #000';
+  } else if(tooltipstyle == 4) {
+    div.style.backgroundColor = '#840e';
+    div.style.color = '#fff';
+    div.style.border = '2px solid #fff';
+  } else {
+    div.style.backgroundColor = '#0008';
+    div.style.color = '#fff';
+    div.style.border = '';
+  }
+}
+
 /*
 tooltip for the desktop version. For mobile, may be able to show it through an indirect info button
 el is HTML element to give tooltip
@@ -926,23 +946,7 @@ function registerTooltip_(el, fun, opt_poll, opt_allowmobile) {
       globaltooltip = div;
       // no width or hight set on the div: make it automatically match the size of the text. But the maxWidth ensures it won't get too wide in case of long text without newlines.
       ///div.style.maxWidth = mainFlex.div.clientWidth + 'px';
-      if(state.tooltipstyle == 1) {
-        div.style.backgroundColor = '#004';
-        div.style.color = '#fff';
-        div.style.border = '2px solid #fff';
-      } else if(state.tooltipstyle == 2) {
-        div.style.backgroundColor = '#ccce';
-        div.style.color = '#000';
-        div.style.border = '1px solid #000';
-      } else if(state.tooltipstyle == 4) {
-        div.style.backgroundColor = '#840e';
-        div.style.color = '#fff';
-        div.style.border = '2px solid #fff';
-      } else {
-        div.style.backgroundColor = '#0008';
-        div.style.color = '#fff';
-        div.style.border = '';
-      }
+      applyTooltipStyle(div, state.tooltipstyle);
 
       div.style.padding = '4px';
       div.style.zIndex = '999';
@@ -1080,9 +1084,8 @@ example: button in bottom right corner with always a width/height ratio (of buto
 The fontSize lets the Flex also manage font size. This value does not support the 3-element array, just single number, and will be based on min(w*10, h) of the current element's computed size.
 
 the y0 coordinate may alternatively be set to 'a'. Then the element will be inline instead and dynamically positioned.
-A few rules, restrictions and tips about this:
+A few rules, restrictions and tips about the 'a' feature for y0:
 -only works for vertical direction, x0 or x1 cannot bet set to 'a'.
--y1 can optionally also be set to 'a', but that does nothing particular, it sets height to 'don't care'. This is only supported in combination with y0 being 'a'.
 -y1 can be given regular values too, then it determines the height relative from where y0 ends up (which is dynamic since it's inline)
 -if you use 'a', you should only use 'a' for all elements in this parent flex. So for a parent flex, either all its children should have 'a', or all its children should not have 'a'. Possibly combining both will do something particular, but likely it means overlapping elements and the behavior is not specified
 -if you use 'a' for the children of a parent element, you must still give the parent element a height that is big enough, if you want to use anything referring to the height of the parent in the positioning of the children at least. The parent flex does not actually know its height so can't compute with it, only the browser knows (and requesting the height is an expensive operation in the browser)
@@ -1092,6 +1095,9 @@ A few rules, restrictions and tips about this:
 -if you add multiple 'a' texts above each other, they'll stick to each other. Solutions:
   - Use '<br>' tags in innerHTML, or '\n' in innerText, to add appropriate amounts of whitespace at the start or end of any text (at end, two <br><br> or \n\n are needed, at the beginning just one, depending on what the next content is).
   - set some marginTop or marginBottom expressed in 'em' units to the div of this flex
+
+the y1 coordinate may also be set to 'a'. That makes it height unset, so it takes up the height of all the content automatically.
+
 */
 function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
   this.fontSize = opt_fontSize;
@@ -1149,7 +1155,7 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
     this.x1p = 0;
   }
   if(y1 == 'a') {
-    this.y1a = true; // not actually used, y1 can be set to 'a' but it actually doesn't matter what it's set to when y0 is set to 'a'
+    this.y1a = true;
     this.y1 = 0;
     this.y1o = 0;
     this.y1b = 0;
@@ -1204,6 +1210,8 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
       this.div_.style.textAlign = (h == 0) ? 'left' : ((h == 1) ? 'center' : 'right');
     }
   }
+
+  if(this.y1a) this.div.style.height = '';
 
   this.updateSelf(parentdiv);
 }

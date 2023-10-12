@@ -26,6 +26,13 @@ function getChangeLog() {
     text += '<br/><br/>';
   }
 
+  text += '0.10.6 (2023-10-12):';
+  text += '<br/>• Made the amethyst infinity nettle stronger (this was done by making previous-tier nettle effect less strong but amethyst mushroom stronger to compensate).';
+  text += '<br/>• The fruit border color can now be picked from a dialog, and two more colors added.';
+  text += '<br/>• The halloween event (pumpkin!) automatically started a few days ago, and wil run until November 10th.';
+  text += '<br/>• Many bugfixes and UI improvements done since last patch.'; // e.g. tooltip style applied to the tooltip rendered in the long click dialog for mobile
+  text += '<br/><br/>';
+
   text += '0.10.5 (2023-08-21):';
   text += '<br/>• 7 new infinity crops, for new amethist tier. The 7th is a new type.';
   text += '<br/>• New ethereal upgrade for ethereal tree level 25.';

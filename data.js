@@ -8054,8 +8054,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
         var c2 = crops3[n.cropIndex()];
         if(c2.tier >= this.tier - 1) {
           var boost = c2.infboost;
-          if(c2.tier <= this.tier - 1) boost = boost.mulr(0.5);
-          if(c2.tier >= this.tier + 1) boost = boost.mulr(1.5);
+          if(c2.tier <= this.tier - 1) boost = boost.mulr(0.2);
+          if(c2.tier >= this.tier + 1) boost = boost.mulr(2);
           if(boost.neqr(0)) {
             stingingmul.addInPlace(boost);
             num++;
@@ -8307,8 +8307,7 @@ crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
 var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, [7]));
 var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), Res({infspores:500}), Num(2), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
-var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:25000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
-
+var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:40000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
@@ -8339,7 +8338,7 @@ var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num
 
 crop3_register_id = 1800;
 var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(5), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6]));
-var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(2), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7));
+var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(4), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7));
 
 crop3_register_id = 2100;
 var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop, metalheader7));
