@@ -5823,6 +5823,9 @@ var update = function(opt_ignorePause) {
       }
     }
 
+    // temporary fix for halloween 2023, due to the bug where pumpkin had wrong id, to fix up runs where it was supposed to be unlocked but isn't
+    if(state.upgrades[eventcropunlock_0].count == 1 && !state.crops[pumpkin_0].unlocked) state.crops[pumpkin_0].unlocked = true;
+
     if(state.g_numresets > 0 && state.g_numplanted2 > 0) {
       var is_first = (state.g_numupgrades2_unlocked == 0);
       var num_unlocked = 0;
