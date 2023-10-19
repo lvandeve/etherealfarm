@@ -237,7 +237,20 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
 
       var infboost = c.getInfBoost();
       if(infboost.neqr(0)) {
-        result += '<br><br>Boost to neighbors: ' + infboost.toPercentString();
+        result += '<br><br>';
+        if(c.type == CROPTYPE_RUNESTONE) {
+          result += 'Boost to neighboring crops basic field boost: ' + infboost.toPercentString();
+        } else if(c.type == CROPTYPE_BEE) {
+          result += 'Boost to neighboring flowers: ' + infboost.toPercentString();
+        } else if(c.type == CROPTYPE_FLOWER) {
+          result += 'Boost to neighboring berries: ' + infboost.toPercentString();
+        } else if(c.type == CROPTYPE_STINGING) {
+          result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString();
+        } else if(c.type == CROPTYPE_FERN) {
+          result += 'Copy: ' + infboost.toPercentString();
+        } else {
+          result += 'Boost: ' + infboost.toPercentString();
+        }
       }
 
       var basicboost = c.getBasicBoost();

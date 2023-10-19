@@ -343,6 +343,12 @@ function startChallenge(challenge_id) {
     state.upgrades[brassicamul_0].unlocked = true;
   }
 
+  if(challenge_id == challenge_towerdefense) {
+    state.crops[challengestatue_0].unlocked = true;
+    state.crops[challengestatue_1].unlocked = true;
+    state.crops[challengestatue_2].unlocked = true;
+  }
+
   if(challenge_id == challenge_rocks || challenge_id == challenge_thistle) {
     // use a fixed seed for the random, which changes every 3 hours, and is the same for all players (depends only on the time)
     // changing the seed only every 4 hours ensures you can't quickly restart the challenge to find a good pattern
@@ -443,26 +449,31 @@ function startChallenge(challenge_id) {
 
   if(challenge_id == challenge_towerdefense) {
     state.field[0][0].index = FIELD_BURROW;
+
+    showRegisteredHelpDialog(44);
+    showMessage('Starting tower defense. Build a maze of crops, press the GO button at the top when ready to start the waves', C_TD, 1920341654, undefined, undefined, true);
   }
 }
 
 // get the field size to have after a reset
 function getNewFieldSize() {
   if(basicChallenge() == 2) return [5, 5];
+  var result = [5, 5];
   if(state.upgrades2[upgrade2_field9x8].count) {
-    return [9, 8];
+    result = [9, 8];
   } else if(state.upgrades2[upgrade2_field8x8].count) {
-    return [8, 8];
+    result = [8, 8];
   } else if(state.upgrades2[upgrade2_field7x8].count) {
-    return [7, 8];
+    result = [7, 8];
   } else if(state.upgrades2[upgrade2_field7x7].count) {
-    return [7, 7];
+    result = [7, 7];
   } else if(state.upgrades2[upgrade2_field7x6].count) {
-    return [7, 6];
+    result = [7, 6];
   } else if(state.upgrades2[upgrade2_field6x6].count) {
-    return [6, 6];
+    result = [6, 6];
   }
-  return [5, 5];
+  if(state.challenge == challenge_towerdefense) result = [result[0] + 2, result[1] + 2];
+  return result;
 }
 
 function endPreviousRun() {
@@ -898,6 +909,7 @@ var ACTION_DELETE_FISH = action_index++;
 var ACTION_REPLACE_FISH = action_index++;
 var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it.
 var ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION = action_index++; // forces no undo to be saved for the second (several seconds later) part of auto-action
+var ACTION_TD_GO = action_index++;
 
 var lastSaveTime = util.getTime();
 
@@ -1484,8 +1496,6 @@ function precomputeField_(prefield, opt_pretend) {
   }
 
   // pass 1: compute boosts of flowers now that nettle and beehive effect is known, and other misc position related features
-  var tdc = state.challenge == challenge_towerdefense;
-  if(tdc && !pretend) state.bestflowerfortd = new Num(0);
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -1495,9 +1505,6 @@ function precomputeField_(prefield, opt_pretend) {
         if(c.type == CROPTYPE_FLOWER) {
           p.boost = c.getBoost(f, pretend);
           p.hasbreakdown_boost = true;
-          if(tdc && !pretend && p.boost.gt(state.bestflowerfortd)) {
-            state.bestflowerfortd = Num(p.boost);
-          }
         }
         if(c.type == CROPTYPE_BEE) {
           p.boost = c.getBoostBoost(f, pretend);
@@ -2703,6 +2710,8 @@ function computeFractionTime(cost, fraction) {
 function computeNextAutoUpgrade() {
   next_auto_upgrade = undefined;
 
+  if(state.challenge == challenge_towerdefense && !state.towerdef.started) return; // when setting up the map in towerdefense, you have a fixed limited amount of seeds. Do not auto-spend these on upgrades while building it up.
+
   if(state.res.seeds.ler(3000)) return; // do not do autoupgrades very early on: ensure having enough seeds to plant a first berry first, do not do watercress upgrades yet
 
   for(var i = 0; i < registered_upgrades.length; i++) {
@@ -2724,6 +2733,8 @@ function computeNextAutoUpgrade() {
     var fraction = getAutoFraction(advanced, state.automaton_autoupgrade_fraction, crops[u.cropid].type);
 
     var cost = u.getCost();
+
+    if(state.challenge == challenge_towerdefense && cost.seeds.gt(state.res.seeds.mulr(0.005))) continue;
 
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
@@ -2808,6 +2819,14 @@ function computeNextAutoPlant() {
     var crop = getCheapestNextOfCropType(type);
     if(!crop) continue;
 
+    if(state.challenge == challenge_towerdefense) {
+      //// During tower defense, automaton only goes up to one tier below max unlocked tier
+      //if(crop.tier == state.highestoftypeunlocked[crop.type]) crop = getDowngradeCropForCrop(crop);
+      // During tower defense, automaton never buys with more than 0.5% of resources
+      if(crop.getCost().seeds.gt(state.res.seeds.mulr(0.005))) crop = getDowngradeCropForCrop(crop);
+      if(!crop) continue;
+    }
+
     // special case: if have multiple nuts templates and 1 non-template nut crop, then getCheapestNextOfCropType should be returning what's above the 1 non-template crop.
     if(type == CROPTYPE_NUT && crop.tier == 0 && tooManyNutsPlants()) {
       var crop = getCheapestNextOfCropType(type, state.highestoftypeplanted[type]);
@@ -2873,10 +2892,12 @@ function autoPlant(res) {
   if(cost.gt(maxcost)) return false;
 
   // check if we can't do a better crop
-  var crop2 = getHighestAffordableCropOfType(type, maxcost);
-  if(crop2 && crop2.getCost().le(maxcost)) {
-    crop = crop2;
-    cost = crop.getCost();
+  if(state.challenge != challenge_towerdefense) {
+    var crop2 = getHighestAffordableCropOfType(type, maxcost);
+    if(crop2 && crop2.getCost().le(maxcost)) {
+      crop = crop2;
+      cost = crop.getCost();
+    }
   }
 
 
@@ -3046,9 +3067,9 @@ function nextEventTime() {
 
   if(state.challenge == challenge_towerdefense) {
     var td = state.towerdef;
-    if(!td.gameover) {
+    if(!td.gameover && td.started) {
       if(tdWaveActive()) {
-        addtime(0.5, 'towerdefense');
+        addtime(0.33, 'towerdefense');
       } else {
         addtime(tdNextWaveTime() - state.time, 'towerdefense_nextwave');
       }
@@ -4050,8 +4071,8 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok && state.challenge == challenge_towerdefense) {
-          if(type == ACTION_DELETE) {
-            showMessage('Cannot delete crops during the tower defense challenge. You should build the shape of your maze first, then replace or upgrade crops to change them.', C_INVALID, 0, 0);
+          if(type == ACTION_DELETE && state.towerdef.started) {
+            showMessage('Cannot delete crops during the tower defense challenge. You can still replace them with other types, or upgrade or downgrade crops. But once set, the shape of the blockades for the pests cannot be altered.', C_INVALID, 0, 0);
             ok = false;
           }
           if(type == ACTION_PLANT) {
@@ -5064,6 +5085,11 @@ var update = function(opt_ignorePause) {
         } else if(state.mistletoeupgrade < 0) {
             showMessage('Cannot stop upgrade, no mistletoe upgrade in progress', C_INVALID, 0, 0);
         }
+      } else if(type == ACTION_TD_GO) {
+        if(!state.towerdef.started) {
+          state.towerdef.started = true;
+          store_undo = true;
+        }
       } else if(type == ACTION_TRANSCEND) {
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
           // do nothing, invalid reset attempt
@@ -5124,13 +5150,13 @@ var update = function(opt_ignorePause) {
           var prod = Res();
           if(state.challenge == challenge_towerdefense) {
             // in tower defense challenge, all crops grow very fast, and brassica don't wither
-            var growtime = 0.01;
+            //var growtime = 0.01;
+            var growtime = c.type == CROPTYPE_BRASSICA ? 0.01 : 5;
             if(f.growth < 1) {
               var g = d / growtime;
               f.growth += g;
             }
             if(f.growth > 1) f.growth = 1;
-            prod = p.prod2;
             prod = p.prod2;
           } else if(c.type == CROPTYPE_BRASSICA || state.challenge == challenge_wither) {
             var brassica = c.type == CROPTYPE_BRASSICA;
@@ -5533,8 +5559,8 @@ var update = function(opt_ignorePause) {
 
     var req = treeLevelReq(state.treelevel + 1);
     var actual_tree_min_leveltime = tree_min_leveltime;
-    if(state.challenge == challenge_towerdefense) actual_tree_min_leveltime = 0;
-    if(state.time > state.lasttreeleveluptime + actual_tree_min_leveltime && state.res.ge(req)) {
+    if(state.challenge == challenge_towerdefense) actual_tree_min_leveltime = 0; // for towerdefense, do all tree levels at once, so wave number is immediately visible as the tree level
+    while(state.time >= state.lasttreeleveluptime + actual_tree_min_leveltime && state.res.ge(req)) {
       // tree level up
       var resin = Num(0);
       var twigs = Num(0);
@@ -5663,6 +5689,9 @@ var update = function(opt_ignorePause) {
           if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), C_NATURE, 1284767498);
         }
       }
+
+      req = treeLevelReq(state.treelevel + 1);
+      if(state.challenge != challenge_towerdefense) break;
     } // end of tree levelup
 
     //non-targetlevel based challenge
@@ -5913,14 +5942,13 @@ var update = function(opt_ignorePause) {
 
     if(state.challenge == challenge_towerdefense) {
       var td = state.towerdef;
-      if(!td.gameover) {
+      if(!td.gameover && td.started) {
         if(!tdWaveActive() && state.time > tdNextWaveTime()) {
           spawnWave();
         }
         if(tdWaveActive()) {
           precomputeTD();
-          movePests();
-          attackPests();
+          runTD();
         }
       }
     }

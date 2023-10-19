@@ -361,6 +361,8 @@ function updateAbilitiesUI() {
         image = crops3[brassica_index].image[4];
         name = crops3[brassica_index].name;
         alltiers_name = 'watercress';
+      } else if(state.challenge == challenge_towerdefense) {
+        image = image_go;
       } else {
         image = images_watercress[4];
         name = 'watercress';
@@ -381,6 +383,10 @@ function updateAbilitiesUI() {
         tooltip += 'Use carefully: while you don\'t lose any infinity seeds from refreshing because ' + alltiers_name + ' give a refund based on their remaining lifespan, it is more efficient for income to have multiple halfway ' + alltiers_name + ' than a single fully refreshed one, unless you\'re away for a while.';
         label_shift = 'plant ' + alltiers_name + ' everywhere';
         label_ctrl = 'delete all ' + alltiers_name;
+      } else if(state.challenge == challenge_towerdefense) {
+        tooltip = 'Send the next wave for tower defense';
+        label_shift = 'Tower defense help';
+        label_ctrl = undefined;
       } else {
         tooltip = 'Refresh ' + name + ': active ' + alltiers_name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + alltiers_name + '. With shift, plants ' + name + ' everywhere it can.';
         label_shift = 'plant ' + name + ' everywhere';
@@ -394,6 +400,12 @@ function updateAbilitiesUI() {
       registerAction(watercressbutton.div, function(shift, ctrl) {
           if(state.currentTab == tabindex_field3) {
             refreshWatercress3(ctrl, shift);
+          } else if(state.challenge == challenge_towerdefense) {
+            if(shift) {
+              showRegisteredHelpDialog(44, true);
+            } else {
+              addAction({type:ACTION_TD_GO});
+            }
           } else {
             refreshWatercress(ctrl, shift);
           }
@@ -918,8 +930,11 @@ document.addEventListener('keydown', function(e) {
       var f = state.field[shiftCropFlexY][shiftCropFlexX];
       if(f) {
         if(f.hasCrop(true) || f.index == FIELD_REMAINDER) {
-          // delete crop
-          addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
+          if(state.challenge == challenge_towerdefense && state.towerdef.started) {
+            makeDowngradeCropAction(shiftCropFlexX, shiftCropFlexY);
+          } else {
+            addAction({type:ACTION_DELETE, x:shiftCropFlexX, y:shiftCropFlexY});
+          }
           did_something = true;
         }
       }

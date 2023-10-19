@@ -93,20 +93,9 @@ function getCropInfoHTMLBreakdown(f, c) {
   return result;
 }
 
-function getPestInfoHTML(f) {
-  var result = '';
-  if(state.challenge == challenge_towerdefense && !!pest_render_info && pest_render_info[f.y]) {
-    var td = state.towerdef;
-    var pest_info = pest_render_info[f.y][f.x];
-    if(pest_info && pest_info.tooltip) {
-      result += 'TD: ' + pest_info.tooltip + '<br/>';
-    }
-  }
-  return result;
-}
-
 // get crop info in HTML
 function getCropInfoHTML(f, c, opt_detailed) {
+  var td = (state.challenge == challenge_towerdefense) ? state.towerdef : undefined;
   var c2 = state.crops[c.index];
   var result = upper(c.name);
   if(c.basic_upgrade != null) {
@@ -144,7 +133,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   } else {
     result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
   }
-  var help = getCropTypeHelp(c.type, state);
+  var help = td ? getTDCropTypeHelp(c.type, state) : getCropTypeHelp(c.type, state);
   if(help) {
     result += '<br/>' + help;
   }
@@ -237,12 +226,28 @@ function getCropInfoHTML(f, c, opt_detailed) {
     prod3 = p.prod3_wasabi_challenge;
     prod0 = p.prod0_wasabi_challenge;
   }
+
+  if(state.challenge == challenge_towerdefense && (c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BRASSICA)) {
+    var dmg = getTDCropDamage(c, f);
+    var mods = getTDStatueMods(f.x, f.y);
+    dmg.mulrInPlace(mods[0]);
+    result += 'Damage: ' + dmg.toString();
+    if(mods[0] > 1) result += ' (statues bonus: +' + Num(mods[0] - 1).toPercentString() + ')';
+    if(mods[0] < 1) result += ' (statues malus: -' + Num(1 - mods[0]).toPercentString() + ')';
+    if(mods[2]) result += '<br>Statue effect: splash damage';
+    result += '<br>Range: ' + mods[1];
+
+    result += '<br/>';
+    //result += 'Production for next wave: ' + getTDCropProd(c, f).toString() + '<br/>';
+    //result += '(Computed production per second: ' + prod3.toString() + ')<br/>';
+    var kills = state.towerdef.kills;
+    if(kills[f.y] && kills[f.y][f.x]) result += 'Exterminated: ' + kills[f.y][f.x] + '<br>';
+    result += '<br/>';
+  }
+
+
   if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
-    if(state.challenge == challenge_towerdefense) {
-      result += 'Damage: ' + getTDCropDamage(c, f).toString() + '<br/>';
-      //result += 'Production for next wave: ' + getTDCropProd(c, f).toString() + '<br/>';
-      //result += '(Computed production per second: ' + prod3.toString() + ')<br/>';
-    } else if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
+    if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
       result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
     } else if(!growing) {
       result += 'Production per second: ' + prod3.toString() + '<br/>';
@@ -395,13 +400,7 @@ function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
   return c2;
 }
 
-function getDowngradeCrop(x, y, opt_cost) {
-  if(!state.field[y]) return null;
-  var f = state.field[y][x];
-  if(!f) return null;
-  var c = f.getCrop();
-  if(!c) return null;
-
+function getDowngradeCropForCrop(c, opt_cost) {
   if(c.type == CROPTYPE_CHALLENGE) return null;
   var tier = c.tier - 1;
 
@@ -412,6 +411,11 @@ function getDowngradeCrop(x, y, opt_cost) {
   if(tier < -1) return null;
 
   var c3 = croptype_tiers[c.type][tier];
+  if(!c3 && tier >= 0) {
+    // try the template
+    tier = -1;
+    c3 = croptype_tiers[c.type][tier];
+  }
   if(!c3 || !state.crops[c3.index].unlocked) return null;
 
   var cost = c3.getCost().sub(recoup);
@@ -428,6 +432,16 @@ function getDowngradeCrop(x, y, opt_cost) {
   }
 
   return c2;
+}
+
+function getDowngradeCrop(x, y, opt_cost) {
+  if(!state.field[y]) return null;
+  var f = state.field[y][x];
+  if(!f) return null;
+  var c = f.getCrop();
+  if(!c) return null;
+
+  return getDowngradeCropForCrop(c, opt_cost);
 }
 
 function makeUpgradeCropAction(x, y, opt_silent) {
@@ -504,6 +518,7 @@ function makeFieldDialog(x, y) {
     var button1 = new Flex(dialog.content, [0, 0, 0.2], [0.57 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.635 + buttonshift).div;
     var button2 = new Flex(dialog.content, [0, 0, 0.2], [0.64 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.705 + buttonshift).div;
     var button3 = new Flex(dialog.content, [0, 0, 0.2], [0.71 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.775 + buttonshift).div;
+    var button4 = new Flex(dialog.content, [0, 0, 0.2], [0.78 + buttonshift, 0, 0.01], [1, 0, -0.2], 0.855 + buttonshift).div;
     var last0 = undefined;
 
     makeScrollable(flex0);
@@ -517,26 +532,34 @@ function makeFieldDialog(x, y) {
     });
 
     styleButton(button1);
-    button1.textEl.innerText = 'Replace crop';
-    registerTooltip(button1, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked crops.');
+    button1.textEl.innerText = 'Downgrade tier';
+    registerTooltip(button1, 'Downgrade crop to 1 tier lower, if it already is at the lowest tier it will be turned into a blueprint template.');
     addButtonAction(button1, function() {
-      makePlantDialog(x, y, true, c.getRecoup());
+      if(makeDowngradeCropAction(x, y)) update();
+      closeAllDialogs();
     });
 
     styleButton(button2);
-    button2.textEl.innerText = 'Delete crop';
-    button2.textEl.style.color = '#c00';
-    registerTooltip(button2, 'Delete crop and get some of its cost back.');
+    button2.textEl.innerText = 'Replace crop';
+    registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked crops.');
     addButtonAction(button2, function() {
+      makePlantDialog(x, y, true, c.getRecoup());
+    });
+
+    styleButton(button3);
+    button3.textEl.innerText = 'Delete crop';
+    button3.textEl.style.color = '#c00';
+    registerTooltip(button3, 'Delete crop and get some of its cost back.');
+    addButtonAction(button3, function() {
       addAction({type:ACTION_DELETE, x:x, y:y});
       closeAllDialogs();
       update(); // do update immediately rather than wait for tick, for faster feeling response time
     });
 
-    styleButton(button3);
-    button3.textEl.innerText = 'Detailed stats / bonuses';
-    registerTooltip(button3, 'Show breakdown of multipliers and bonuses and other detailed stats.');
-    addButtonAction(button3, function() {
+    styleButton(button4);
+    button4.textEl.innerText = 'Detailed stats / bonuses';
+    registerTooltip(button4, 'Show breakdown of multipliers and bonuses and other detailed stats.');
+    addButtonAction(button4, function() {
       var dialog = createDialog({
         size:DIALOG_LARGE,
         title:'Detailed crop stats',
@@ -577,7 +600,7 @@ function fieldCellTooltipFun(x, y, div) {
       result += 'Past resource time charged up: ' + util.formatDuration(getFernIdlePastCharge());
       result += '<br>';
       result += 'Upcoming resource time charged up: ' + util.formatDuration(getFernIdleFutureCharge()) + ' (plus the randomized regular fern default)';
-    } if(state.g_numresets > 1 && state.fern == 2) {
+    } else if(state.g_numresets > 1 && state.fern == 2) {
       result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
     } else {
       result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
@@ -730,12 +753,24 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
         update();
       }
     } else if(ctrl && !shift) {
-      var brassica = getHighestBrassica();
-      if(fm.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
-        addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:crops[brassica], ctrlPlanted:true});
+      if(state.challenge == challenge_towerdefense) {
+        var c = fm.getCrop();
+        var ccrop0 = challengestatue_0;
+        var ccrop1 = challengestatue_2;
+        if(c.index >= ccrop0 && c.index <= ccrop1) {
+          var index2 = c.index + 1;
+          if(index2 > ccrop1) index2 = ccrop0;
+          addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:crops[index2], ctrlPlanted:true});
+          update();
+        }
       } else {
-        addAction({type:ACTION_DELETE, x:xm, y:ym});
-        update();
+        var brassica = getHighestBrassica();
+        if(fm.getCrop().index == watercress_template && state.res.seeds.ger(100) && brassica >= 0) {
+          addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:crops[brassica], ctrlPlanted:true});
+        } else {
+          addAction({type:ACTION_DELETE, x:xm, y:ym});
+          update();
+        }
       }
     } else if(!fern && !present) {
       makeFieldDialog(x, y);
@@ -885,6 +920,11 @@ var pest_render_info = undefined; // not stored in State, because contains refer
 var lightning_field_image_x = 0;
 var lightning_field_image_y = 0;
 
+function getNextTierCrop(crop) {
+  return croptype_tiers[crop.type][crop.tier + 1];
+}
+
+
 function updateFieldCellUI(x, y) {
   if(state.numh != fieldDivs.length || state.numw != fieldDivs[0].length) initFieldUI();
 
@@ -941,7 +981,9 @@ function updateFieldCellUI(x, y) {
   var pest_info = pest_render_info ? pest_render_info[y][x] : undefined;
   var pest_code = (pest_info && pest_info.images.length) ? pest_info.code : '';
 
-  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active || fd.pest_code != pest_code) {
+  var largeravailable = (state.challenge == challenge_towerdefense) && c && c.tier >= -1 && state.highestoftypeunlocked[c.type] > c.tier && getNextTierCrop(c) && state.res.seeds.gt(getNextTierCrop(c).getCost().seeds);
+
+  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active || fd.pest_code != pest_code || fd.largeravailable != largeravailable) {
     fd.index = f.index;
     fd.multindex = multindex;
     fd.growing = growing;
@@ -955,6 +997,7 @@ function updateFieldCellUI(x, y) {
     fd.lightningimage = lightningimage;
     fd.holiday_hats_active = holiday_hats_active; // this one is actually not used for the hats but the disctinctino between present and egg image
     fd.pest_code = pest_code;
+    fd.largeravailable = largeravailable;
 
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
@@ -989,6 +1032,7 @@ function updateFieldCellUI(x, y) {
         if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
       }
       label = c.name + '. ' + label;
+      if(largeravailable) blendImage(upgrade_arrow_small, fd.canvas);
     } else if(f.index == FIELD_TREE_TOP) {
       blendImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;

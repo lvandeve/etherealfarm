@@ -1156,7 +1156,7 @@ function State() {
   // derived stat, not to be saved
   this.highestcropoftypeplanted = [];
 
-  // higest tier unlocked by research for this croptype
+  // highest tier unlocked by research for this croptype
   // NOTE: may be -1 (template) or -Infinity (no crop at all), in that case does not refer to a valid crop
   // derived stat, not to be saved.
   this.highestoftypeunlocked = [];
@@ -1166,7 +1166,8 @@ function State() {
   this.highestoftypefishunlocked = [];
   this.highestoftypefishhad = [];
 
-  // same as highestoftype2unlocked but has crop index instead of tier values. undefined if none is unlocked of this type
+  // same as highestoftypeunlocked but has crop index instead of tier values. undefined if none is unlocked of this type
+  this.highestcropoftypeunlocked = [];
   this.highestcropoftype2unlocked = [];
 
   // like highestoftypeunlocked, but also includes known next types, because their unlock research is visible (but not yet researched)
@@ -1188,9 +1189,6 @@ function State() {
   // Boost to basic field from infinity field crops
   // derived stat, not to be saved.
   this.infinityboost = Num(0);
-
-  // derived stat, not to be saved.
-  this.bestflowerfortd = Num(0);
 }
 
 // this.squirrel_evolution must already be set to the intended evolution
@@ -1455,6 +1453,7 @@ function computeDerived(state) {
     state.lowestoftypeplanted[i] = Infinity;
     state.lowestcropoftypeunlocked[i] = Infinity;
     state.highestoftypeunlocked[i] = -Infinity;
+    state.highestcropoftypeunlocked[i] = -Infinity;
     state.highestoftype2unlocked[i] = -Infinity;
     state.highestcropoftype2unlocked[i] = -Infinity;
     state.highestoftype3unlocked[i] = -Infinity;
@@ -1606,6 +1605,7 @@ function computeDerived(state) {
     var c = crops[registered_crops[i]];
     var c2 = state.crops[registered_crops[i]];
     if(c2.unlocked) {
+      if((c.tier || 0) > state.highestoftypeunlocked[c.type]) state.highestcropoftypeunlocked[c.type] = c.index;
       state.highestoftypeunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypeunlocked[c.type]);
       state.highestoftypeknown[c.type] = Math.max(c.tier || 0, state.highestoftypeknown[c.type]); // also updated in the registered_upgrades loop above
     }

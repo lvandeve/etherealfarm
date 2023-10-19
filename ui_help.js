@@ -528,6 +528,47 @@ registerHelpDialog(43, 'Infinity pond fishes', 'You unlocked fishes in the infin
    [images_pond[1],images_pond[2],blendImages(images_pond[3], image_goldfish0)],
    [blendImages(images_pond[3], image_koi0),images_pond[1],images_pond[0]]]);
 
+function makeTDHelpDialogImages() {
+  var bu = blendImages(images_field[0][0], image_burrow);
+  var fi = images_field[0][0];
+  var fl = blendImages(images_field[0][0], images_daisy[4]);
+  var bb = blendImages(images_field[0][0], grape[4]);
+  var mm = blendImages(images_field[0][0], amanita[4]);
+  var wc = blendImages(images_field[0][0], images_watercress[4]);
+  var zz = blendImages(images_field[0][0], images_beenest[4]);
+  var ne = blendImages(images_field[0][0], images_nettle[4]);
+  var an = blendImages(images_field[0][0], images_ant[0]);
+  var as = blendImages(images_field[0][0], images_ant[2]);
+  var ae = blendImages(images_field[0][0], images_ant[1]);
+  var sa = blendImages(images_field[0][0], images_statue_splash[4]);
+  var tt = blendImages(images_field[0][0], tree_images[treeLevelIndex(20)][1][1]);
+  var tb = blendImages(images_field[0][0], tree_images[treeLevelIndex(20)][2][1]);
+
+  return [[bu, wc, zz, fi, fi, ae, fi],
+          [fi, wc, fl, fi, wc, wc, fi],
+          [as, ne, mm, fi, fi, zz, fi],
+          [fi, sa, bb, wc, an, fl, fi],
+          [fi, zz, fl, fi, fi, bb, fi],
+          [fi, wc, wc, fi, fl, mm, tt],
+          [fi, fi, fi, fi, zz, ne, tb]];
+}
+
+registerHelpDialog(44, 'Tower defense', 'You unlocked the tower defense challenge!',
+    `TODO:
+    <br><br>
+    TODO Tower defense help text
+    <br><br>
+    Shortcuts:<br>
+    • With a few exceptions, these shortcuts are the same as in the regular game, and regular game shortcuts not listed here work too.<br>
+    • u: upgrade tower under mouse cursor.<br>
+    • d: downgrade tower under mouse cursor (gives refund), if waves not started yet deletes as usual (in regular game, and before waves started, 'd' deletes, 'shift+d' downgrades).<br>
+    • shift+p: overplant with picked (with 'p') crop type (same shortcut as in regular game, but useful here to quickly change crop/tower types).<br>
+    • ctrl+click a statue: change into different type of statue.<br>
+    `,
+    images_ant[0],
+    undefined,
+    makeTDHelpDialogImages());
+
 
 function createKeyboardHelpDialog() {
   var dialog = createDialog({scrollable:true, title:'Shortcuts'});

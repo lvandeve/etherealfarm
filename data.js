@@ -563,33 +563,16 @@ var spores_overload_penalty = Num(4);
 //  3: compute the value for best berry for the pumpkin income. Must include all berry specific bonuses and its growth, but not the pumpkin bonuses. The max of all berries from this must be stored in state.bestberryforpumpkin, and then if the crop type is CROPTYPE_PUMPKIN it uses this value as base
 //  4: same as 3, but assuming the crop is fullgrown
 //  5: compute for fern. This assumes everything is fullgrown, like 1, and in addition uses modified weighted time at level
-//  6: compute for tower defense damage. This is only for the damage part of TD computations, not the regular production calculation it does during TD
 Crop.prototype.getProd = function(f, pretend, breakdown) {
   var basic = basicChallenge();
-  var tddmg = (pretend == 6); // tower defense damage computation
-  var tdc = !tddmg && (state.challenge == challenge_towerdefense); // tower defense production computation
 
   var baseprod = this.prod;
   var baseprod0 = this.prod0; // production without prestige, only used for display purposes
 
-  if(tddmg) {
-    if(this.type == CROPTYPE_BERRY) {
-      baseprod = getTDBerryBaseDamage(this.tier);
-      baseprod0 = baseprod;
-    } else if(this.type == CROPTYPE_BRASSICA) {
+  if(state.challenge == challenge_towerdefense) {
+    if(this.type == CROPTYPE_BRASSICA) {
       baseprod = getTDBerryBaseDamage(0).divr(16);
       baseprod0 = baseprod;
-    } else if(this.type == CROPTYPE_MUSH) {
-      baseprod = new Res({spores:baseprod.spores});
-      baseprod0 = new Res({spores:baseprod0.spores});
-    } else { // non-handled crop type for TD damage
-      baseprod = new Res();
-      baseprod0 = new Res();
-    }
-  } else if(tdc) {
-    if(this.type == CROPTYPE_MUSH) {
-      // mushrooms don't consume seeds during tower defense, and spores for income are not computed, so don't make this affect the global income calculation
-      return new Res();
     }
   }
 
@@ -611,6 +594,12 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(this.type == CROPTYPE_PUMPKIN) {
     result.mulInPlace(pumpkin_multiplier);
     if(breakdown) breakdown.push(['pumpkin', true, pumpkin_multiplier, result.clone()]);
+  }
+
+  if(state.challenge == challenge_towerdefense && f && f.growth < 1 && this.type == CROPTYPE_MUSH) {
+    result.mulrInPlace(0);
+    if(breakdown) breakdown.push(['tower growing', true, Num(0), result.clone()]);
+    return result;
   }
 
   if(this.type == CROPTYPE_NUT && state.just_evolution) {
@@ -954,7 +943,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // nettle malus
-  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT || this.type == CROPTYPE_PUMPKIN) && !(tddmg || tdc)) {
+  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT || this.type == CROPTYPE_PUMPKIN)) {
     var p = prefield[f.y][f.x];
     var num = p.num_nettle;
     var malus;
@@ -972,7 +961,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
 
   // nettle boost
-  if(f && (this.type == CROPTYPE_MUSH) && !(tddmg || tdc)) {
+  if(f && (this.type == CROPTYPE_MUSH)) {
     var spore_boost = Num(1);
     var num = 0;
     var x = f.x, y = f.y, w = state.numw, h = state.numh;
@@ -983,9 +972,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
       if(n.hasCrop() && n.getCrop().type == CROPTYPE_STINGING) {
-        var bost;
+        var boost;
         if(pretend) boost = n.getCrop().getBoost(n, pretend);
-        else boost = prefield[n.y][n.x].boost; //
+        else boost = prefield[n.y][n.x].boost;
         if(boost.neqr(0)) {
           spore_boost.addInPlace(boost);
           num++;
@@ -993,7 +982,12 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       }
     }
 
-    result.spores.mulInPlace(spore_boost);
+    if(state.challenge == challenge_towerdefense) {
+      // For tower defense, the nettle als increases consumption. This is because the current balancing of the game makes mushrooms almost never do over-consumption anymore, but for the tower defense, to have increased berry tiers still worth it, there must be some limit on what mushrooms can consume from them.
+      result.mulInPlace(spore_boost);
+    } else {
+      result.spores.mulInPlace(spore_boost);
+    }
     if(breakdown && num > 0) breakdown.push(['stingy crops (' + num + ')', true, spore_boost, result.clone()]);
   }
 
@@ -1003,7 +997,11 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var num = getMultiplicityNum(this);
       if(num > 0) {
         var boost = getMultiplicityBonusBase(this.type).mulr(num).addr(1);
-        result.mulInPlace(boost);
+        if(state.challenge == challenge_towerdefense && this.type == CROPTYPE_MUSH) {
+          result.spores.mulInPlace(boost); // during tower defense, multiplicity for mushroom doesn't make it consume more seeds
+        } else {
+          result.mulInPlace(boost);
+        }
         if(breakdown) breakdown.push(['multiplicity (' + ((num == Math.floor(num)) ? num.toString() : num.toPrecision(3)) + ')', true, boost, result.clone()]);
       }
     }
@@ -1123,10 +1121,11 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // leech (brassica-copying), only computed for the pretend cases, non-pretend leech: brassica copying's actual gameplay computation is done in precomputeField() intead
   // this computation is only used for UI/tooltips/dialogs. It is not guaranteed to be correct, but tries to be as much as possible since it's for UI that tells what the production will look like after all crops are fullgrown (for gain_expected and gain_expected_hyp)
-  if((pretend == 2 || tddmg) && this.type == CROPTYPE_BRASSICA && f) {
+  if(pretend == 2 && this.type == CROPTYPE_BRASSICA && f) {
     var p = prefield[f.y][f.x];
     var leech = this.getLeech(f, pretend, null, p.getBrassicaBreakdownCroptype());
     var leech_seeds = this.getLeech(f, pretend, null, CROPTYPE_BERRY);
+    if(state.challenge == challenge_towerdefense) leech_seeds = new Num(0);
     var leech_spores = this.getLeech(f, pretend, null, CROPTYPE_MUSH);
     var leech_nuts = this.getLeech(f, pretend, null, CROPTYPE_NUT);
     var soup = !basic && state.squirrel_upgrades[upgradesq_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
@@ -1566,11 +1565,16 @@ Crop.prototype.getLeech = function(f, pretend, breakdown, croptype) {
   }
 
   var basic = basicChallenge();
-  var tddmg = (pretend == 6); // tower defense damage computation
-  var tdc = !tddmg && (state.challenge == challenge_towerdefense); // tower defense production computation
 
   var result = Num(this.leech || 1);
   if(breakdown) breakdown.push(['base', true, Num(1), result.clone()]);
+
+  if(state.challenge == challenge_towerdefense) {
+    var mul = Num(0.25);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['tower defense', true, mul, result.clone()]);
+    return result;
+  }
 
   var result_infernal = undefined; // result with only the negative effects applied, for infernal. Not used for the current infernal challenge, but maybe the next one in this series?
   //if(state.challenge == challenge_infernal) {
@@ -1625,7 +1629,7 @@ Crop.prototype.getLeech = function(f, pretend, breakdown, croptype) {
     if(result_infernal) result_infernal.mulInPlace(mul);
   }
 
-  if(croptype != CROPTYPE_NUT && !tddmg) {
+  if(croptype != CROPTYPE_NUT && pretend != 6) {
     var level = getFruitAbility(FRUIT_BRASSICA, true);
     var level2 = getFruitAbility(FRUIT_MIX, true);
     if((level > 0 || level2 > 0) && state.challenge != challenge_wasabi) {
@@ -1705,7 +1709,7 @@ Crop.prototype.getLeech = function(f, pretend, breakdown, croptype) {
     }
   }
 
-  if(croptype == CROPTYPE_NUT && !tddmg) {
+  if(croptype == CROPTYPE_NUT && pretend != 6) {
     var mul = Num(0.5);
     result.mulInPlace(mul);
     if(breakdown) breakdown.push(['copying from nuts', true, mul, result.clone()]);
@@ -1716,7 +1720,7 @@ Crop.prototype.getLeech = function(f, pretend, breakdown, croptype) {
   // the watercress neighbor production copying is really powerful, and if every single watercress does this at full power, this would require way too active play, replanting watercresses in the whole field all the time.
   // encouraging to plant one or maybe two (but diminishing returns that make more almost useless) strikes a good balance between doing something useful during active play, but still getting reasonable income from passive play
   var numsame = state.croptypecount[this.type];
-  if(numsame > 1 && !(tddmg || tdc)) {
+  if(numsame > 1 && state.challenge != challenge_towerdefense) {
     // before v0.1.88, this formula was: 1 / (1 + (numsame - 1) * 0.75). But not it got tweaked to make 2 watercress less punishing, but more than 3 watercress more punishing.
     var penalty = Math.pow(0.66, numsame - 1.5);
     result.mulrInPlace(penalty);
@@ -2076,6 +2080,13 @@ var challengeflower_0 = registerCrop('aster', Res({seeds:20000}), Res({}), Num(0
 crops[challengeflower_0].type = CROPTYPE_FLOWER;
 crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+selecting" display work. Since the anemone and aster (both tier 0) are never available at the same time, no confusion is possible.
 
+crop_register_id = 210;
+var challengestatue_0 = registerChallengeCrop('spore statue', 0, Res({seeds:10}), 5, images_statue_spore, 'Spore statue. Makes orthogonally or diagonally connected mushroom slightly stronger.');
+var challengestatue_1 = registerChallengeCrop('splash statue', 0, Res({seeds:10}), 5, images_statue_splash, 'Splash statue. Makes orthogonally or diagonally connected mushroom weaker, but do splash damage, which is good against groups.');
+var challengestatue_2 = registerChallengeCrop('range statue', 0, Res({seeds:10}), 5, images_statue_range, 'Range statue. Makes orthogonally or diagonally connected mushroom weaker, but get farther reach.');
+//var challengestatue_3 = registerChallengeCrop('seed statue', 0, Res({seeds:10}), 5, images_statue_seed, 'Seed statue. Makes orthogonally or diagonally connected mushroom weaker, but gain more seeds income from pests.');
+//var challengestatue_4 = registerChallengeCrop('slow statue', 0, Res({seeds:10}), 5, images_statue_seed, 'Slow statue. Makes orthogonally or diagonally connected mushroom weaker, but slows down pests.');
+
 
 // templates
 
@@ -2322,6 +2333,7 @@ function registerCropUnlock(cropid, cost, prev_unlock_crop, opt_pre_fun_and, opt
     var prev_unlock_tier = crops[prev_unlock_crop].tier;
     var prev_unlock_type = crops[prev_unlock_crop].type;
     if(state.highestoftypeunlocked[prev_unlock_type] > prev_unlock_tier) return true; // next berry tier unlocked: counts as better than having some planted of prev berry tier
+    if(state.challenge == challenge_towerdefense && state.cropcount[prev_unlock_crop]) return true; // in TD, unlock higher towers faster, so that it's not always the few second wait time while they grow
     return !!state.crops[prev_unlock_crop].had; // some fullgrown of prev berry tier
   };
 
@@ -2698,6 +2710,7 @@ var nettleunlock_0 = registerCropUnlock(nettle_0, getNettleCost(0), undefined, f
   if(state.crops[mush_1].had) return true;
   if(state.crops[berry_4].had) return true; // the berry after mush_1
   //if(state.upgrades[berryunlock_4].count) return true; // the berry after mush_1
+  if(state.challenge == challenge_towerdefense && (state.crops[mush_1].unlocked || state.crops[berry_4].unlocked)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
   return false;
 });
 var nettleunlock_1 = registerCropUnlock(nettle_1, getNettleCost(1), undefined, function() {
@@ -2707,6 +2720,7 @@ var nettleunlock_1 = registerCropUnlock(nettle_1, getNettleCost(1), undefined, f
 
   if(state.crops[mush_5].had) return true;
   if(state.crops[berry_12].had) return true; // the berry after mush_5
+  if(state.challenge == challenge_towerdefense && (state.crops[berry_12].unlocked || state.crops[berry_12].unlocked)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
   return false;
 });
 var nettleunlock_2 = registerCropUnlock(nettle_2, getNettleCost(2), undefined, function() {
@@ -2716,6 +2730,7 @@ var nettleunlock_2 = registerCropUnlock(nettle_2, getNettleCost(2), undefined, f
 
   if(state.crops[mush_2].had > 1) return true; // had > 1 means had a prestiged one
   if(state.crops[berry_6].had > 1) return true; // the berry after mush_2 (prestiged)
+  if(state.challenge == challenge_towerdefense && (state.crops[mush_2].unlocked || state.crops[berry_6].unlocked)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
   return false;
 });
 
@@ -2743,6 +2758,7 @@ var beeunlock_0 = registerCropUnlock(bee_0, getBeeCost(0), undefined, function()
   // prev_crop is flower_3, but also unlock once higher level berries available, in case player skips placing this flower
   if(state.crops[flower_3].had) return true;
   if(state.fullgrowncropcount[berry_7]) return true; // the berry after flower_3
+  if(state.challenge == challenge_towerdefense && (state.crops[flower_3].unlocked || state.crops[berry_7].unlocked)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
 
   return false;
 });
@@ -2754,6 +2770,7 @@ var beeunlock_1 = registerCropUnlock(bee_1, getBeeCost(1), undefined, function()
   // prev_crop is flower_7, but also unlock once higher level berries available, in case player skips placing this flower
   if(state.crops[flower_7].had) return true;
   if(state.crops[berry_15].had) return true; // the berry after flower_7
+  if(state.challenge == challenge_towerdefense && (state.crops[flower_7].unlocked || state.crops[berry_15].unlocked)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
 
   return false;
 });
@@ -2834,6 +2851,7 @@ var brassicaunlock_1 = registerCropUnlock(brassica_1, Res({seeds:100}), undefine
   if(basicChallenge() == 2) return false; // not available during truly basic challenge
   if(!state.challenges[challenge_wasabi].completed) return false;
   if(state.crops[berry_8].had) return true;
+  if(state.challenge == challenge_towerdefense && state.crops[berry_8].unlocked) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
   return false;
 });
 
@@ -3844,17 +3862,19 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
 `
 • Pests spawn from the top left of the field and will move towards the tree. Pests spawn in increasingly stronger waves, and defeating a wave will increase the tree level by 1.<br>
 • You should build a maze, with plants, to make the path the pests have to take to the tree longer. Plants can never be deleted but can upgraded and replaced (so the maze shape cannot be altered), and it's not possible to block off the maze, there must always be an open path to the tree.<br>
+• The field size is 2 cells larger than usual in each direction.<br>
 • When any pest reaches the tree, it's game over, the tree cannot level any further and the only remaining thing to do is to end the challenge<br>
-• Plants serve as the towers in "tower defence": they shoot seeds or spores at the pests to defeat them before they reach the tree.<br>
+• Mushrooms and brassica serve as the towers in "tower defence": they shoot spores at the pests to defeat them before they reach the tree.<br>
+• Various types of statues can be placed next to mushrooms to affect their tower damage type.<br>
 • Seeds are gained by eliminating pests.<br>
 • Plant types:<br>
-  - Berry: shoots seeds at pests. Also produces seeds as a resource as usual.
   - Mushroom: shoots spores with splash damage at pests, which can hit multiple pests at once. Also produces spores as a resource as usual and requires berry neighbors as usual.
-  - Nut: shoots nuts at pests at very long distance.
-  - Brassica: if it touches one of hte other crops, hurts nearby pests, can hurt multiple at the same time but only if they are 1 tile orthogonally or diagonally next to the brassica. Does not produce any resources, and how strong it is depends on its neighboring berry, mushroom or nut crops.
-  - Flower: does not shoot anything, makes berries, mushrooms and nuts stronger as usual.
+  - Brassica: hurts nearby pests in 8 directions. Copies damage from mushroom if a mushroom is orthogonally or diagonally next to it. Unlike a regular run, there is no penalty for having multiple brassica, and brassica don't wither. Brassica copy bonus (like brassica fruit or ethereal bonus) don't work during this challenge, it copies a fixed amount.
+  - Statues: when placed orthogonally or diagonally next to a mushroom, affects its type of shot, or damage, in some way, e.g. gives splash damage at the cost of damage amount, or boosts damage.
+  - Berry: does not shoot anything, produces seeds used by neighboring mushrooms (as usual), these seeds do not go to your stacks (you gain seeds from eliminating pests instead). Without a berry next to it, a mushroom cannot attack!
+  - Flower: does not shoot anything, makes berries and mushrooms stronger as usual
   - Bee: does not shoot anything, makes flowers stronger as usual
-  - Nettle: does not shoot anything, makes mushrooms stronger as usual and nerfs other crops as usual, however the nettle
+  - Nettle: does not shoot anything, makes mushrooms stronger, but unlike a regular run, also makes the mushroom consume more seeds!
 • Pest types:<br>
   - Ant: walks at normal speed and has standard health
   - Tick: comes in groups, which are more easily defeated by splash damage
@@ -3862,15 +3882,17 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
   - Other pest types get unlocked in later waves, these will have to be discovered by yourself!
   - Tough and boss variants exist of all pest types, these are stronger relative to their wave number, and bosses move more slowly.
   - The pests are stronger with each wave (even if they look the same)
-• Nettle bonuses (such as from fruit and ethereal field) do not work during this challenge. But flower and bee bonuses work as usual.
-• Brassica bonuses (such as from fruit and ethereal field) work for seeds production, but not for tower damage or spores computations. There's no penalty for having multiple brassica.
-• Mushrooms don't need to be next to a berry, they can shoot spores even without.
-• The shooting strength of berries, mushrooms, nuts (and of brassica through copying) depends on their resource production strength. For mushrooms, this is similar to the regular game, but berries and nuts have a strength based on the mushroom that unlocks around their tier.
+• The shooting damage of mushrooms and brassica depends on their spore production.
+• If any tower hits with extremely high damage compared to the wave's health, it will fast forward to a later wave to speed up the early waves.
 • Ferns don't appear during this challenge.
-• Crops grow fast and brassica don't wither.
-• Crops give 100% of resources back when replaced, rather than only a partial recoup.
+• Crops grow faster than usual, but towers cannot attack during the few seconds of growing time.
+• Crops give 100% of resources back when replaced, rather than only a partial recoup. It's possible to change the location of an expensive tower for free by downgrading one and upgrading another this way.
+• Mushroom multiplicity does not make them consume more seeds.
+• Automaton can only auto-plant crops below the current tier. You must plant the best tier manually, to choose the strategic locations yourself. Arrow icons appear on towers that can be upgraded.
+• Any production/s shown for crops is not added to stacks, but instead used for damage calculations. The only income gotten is from exterminating pests. Production/s is shown to be able to see mushroom seed requirement for spores damage. Actual damage is a number that's derived from mushroom spore production and shown in mushroom info.
 • Tip: it's important to use flowers and bees to boost crops as usual, and do upgrades as usual, since this massively increases the shooting strength.
-• Tip: you can lay out a maze shape with watercress at the beginning since those are cheap and easy to plant. The maze shape can never be changed anymore for the entire rest of the challenge (but the watercress can be changed into other crops). Even the watercress won't wither.
+• Tip: you can lay out a maze shape with watercress at the beginning since those are cheap and easy to plant. The maze shape can never be changed anymore for the entire rest of the challenge (but the watercress can be changed into other crops).
+• Tip: don't just make thin walls for the maze but have some place for larger groups of crops, because mushrooms need many different types of crops around them (berry with its own flower and beehive, flower with beehive, nettle, and possibly statues and watercress)
 `,
 ['TODO REWARD DESCRIPTION'],
 'TODO UNLOCK REASON TEXT',
@@ -6457,6 +6479,8 @@ function getStarterResources(opt_add_type, opt_sub_type) {
   var count;
   res.seeds = Num(initial_starter_seeds);
 
+  if(state.challenge == challenge_towerdefense) res.seeds = Num(Math.max(initial_starter_seeds, 10000000)); // enough to plant some mushrooms to bootstrap in case no ethereal fern
+
   if(basicChallenge()) return res; // ethereal ferns don't count during a basic challenge
 
   count = state.crop2count[fern2_0];
@@ -7176,6 +7200,7 @@ var upgradesq_flower_multiplicity = registerSquirrelUpgrade('flower multiplicity
 var upgradesq_diagonal_brassica = registerSquirrelUpgrade('diagonal brassica', undefined, 'brassica (such as watercress) can also copy diagonally, they can get up to 8 instead of 4 neighbors to copy from', images_watercress[4]);
 
 function haveDiagonalBrassica() {
+  if(state.challenge == challenge_towerdefense) return true;
   return !basicChallenge() && !!state.squirrel_upgrades[upgradesq_diagonal_brassica].count;
 }
 
@@ -8770,6 +8795,7 @@ function registerPlantTypeMedal(cropid, num) {
   var c = crops[cropid];
   var mul = getPlantTypeMedalBonus(c.type, c.tier, num);
   return registerMedal(c.name + ' ' + num, 'have ' + num + ' fullgrown ' + c.name, c.image[4], function() {
+    if(state.challenge == challenge_towerdefense) return false; // field is bigger during tower defense challenge, so don't give the crop count medals there
     if(state.challenge == challenge_thistle && cropid == nettle_1) return false;
     if(state.challenge == challenge_poisonivy && cropid == nettle_2) return false;
     return state.fullgrowncropcount[cropid] >= num;
@@ -8799,6 +8825,8 @@ function registerPlantTypeMedals(cropid, opt_start_at_30) {
 
   return id0;
 };
+
+// cropmedals
 medal_register_id = 160;
 registerPlantTypeMedals(berry_0);
 registerPlantTypeMedals(berry_1);
@@ -9391,6 +9419,7 @@ function registerPlantTypeMedal3(cropid) {
   }, Num(mul));
 };
 
+// cropmedals3
 registerPlantTypeMedal3(brassica3_0);
 registerPlantTypeMedal3(berry3_0);
 registerPlantTypeMedal3(flower3_0);

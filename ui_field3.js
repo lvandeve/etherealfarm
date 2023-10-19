@@ -84,18 +84,19 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var infboost = c.getInfBoost(f);
   if(infboost.neqr(0)) {
     if(c.type == CROPTYPE_RUNESTONE) {
-      result += 'Boost to neighboring crops basic field boost: ' + infboost.toPercentString() + '<br><br>';
+      result += 'Boost to neighboring crops basic field boost: ' + infboost.toPercentString();
     } else if(c.type == CROPTYPE_BEE) {
-      result += 'Boost to neighboring flowers: ' + infboost.toPercentString() + '<br><br>';
+      result += 'Boost to neighboring flowers: ' + infboost.toPercentString();
     } else if(c.type == CROPTYPE_FLOWER) {
-      result += 'Boost to neighboring berries: ' + infboost.toPercentString() + '<br><br>';
+      result += 'Boost to neighboring berries: ' + infboost.toPercentString();
     } else if(c.type == CROPTYPE_STINGING) {
-      result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString() + '<br><br>';
+      result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString();
     } else if(c.type == CROPTYPE_FERN) {
-      result += 'Copy: ' + infboost.toPercentString() + '<br><br>';
+      result += 'Copy: ' + infboost.toPercentString();
     } else {
-      result += 'Boost: ' + infboost.toPercentString() + '<br><br>';
+      result += 'Boost: ' + infboost.toPercentString();
     }
+    result += '<br><br>';
   }
 
   var basicboost = c.getBasicBoost(f);

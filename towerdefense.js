@@ -19,12 +19,44 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // Code for the tower defense challenge
 
 
+// opt_crop is cropid for specific crop in case it has a slightly different description
+function getTDCropTypeHelp(type) {
+  switch(type) {
+    case CROPTYPE_BERRY: return 'Required for mushrooms to get seeds for their spores production for damage.';
+    case CROPTYPE_MUSH: return 'Hits pests with spores. Requires a berry next to it to get seeds production from.';
+    case CROPTYPE_FLOWER: return 'Boosts neighboring berries and mushrooms';
+    case CROPTYPE_STINGING: return 'Boosts neighboring mushrooms, but also increases their seeds consumption';
+    case CROPTYPE_BRASSICA: return 'Hits all pests that are right next to the brassica, but cannot target at a distance. Its damage depends on neighboring mushrooms, but it can also do a small amount of damage on its own.';
+    case CROPTYPE_MISTLETOE: return '';
+    case CROPTYPE_BEE: return 'Boosts orthogonally neighboring flowers (in spring also diagonally). Since this is a boost of a boost, indirectly boosts berries and mushrooms by an entirely new factor.';
+    case CROPTYPE_CHALLENGE: return 'Statues affect mushrooms in various way. They must orthogonally or diagonally touch the mushroom.';
+    case CROPTYPE_FERN: return '';
+    case CROPTYPE_NUT: return '';
+    case CROPTYPE_PUMPKIN: return '';
+    case CROPTYPE_RUNESTONE: return '';
+  }
+  return undefined;
+}
+
 function Pest() {
   this.name = 'unnamed';
   this.images = images_ant;
-  this.speed = 2; // 0 = very slow, 1 = slow, 2 = regular, 3 = fast
+  this.speed = 2; // amount of ticks for 1 movement. 1 = fast, 2 = normal, 3 = slow, 4 = very slow
   this.hp = 0; // max base hp, measured in multiple of spores required for tree level matching the wave (wave 1 to get tree to level 1, etc...)
   this.group = 1; // higher than 1 means it represents a group of multiple separate creatures. In that case, hp gives the hp of the full group, not that of one individual member. The group size determines the max damage that can be done by a non-splash damage tower at once
+  this.splahsresistant = false; // if true, resistant against the splash damage of mushroom, but not against the center hit of mushroom, nor against brassica
+}
+
+function getPestInfoHTML(f) {
+  var result = '';
+  if(state.challenge == challenge_towerdefense && !!pest_render_info && pest_render_info[f.y]) {
+    var td = state.towerdef;
+    var pest_info = pest_render_info[f.y][f.x];
+    if(pest_info && pest_info.tooltip) {
+      result += 'TD: ' + pest_info.tooltip + '<br/>';
+    }
+  }
+  return result;
 }
 
 var registered_pests = []; // indexed consecutively, gives the index to pests
@@ -44,16 +76,20 @@ function registerPest(name, images, hp, speed, groupsize) {
   pest.name = name;
   pest.images = images;
   pest.speed = speed;
-  pest.hp = hp;
+  pest.hp = hp; // this is a multiplier of standard hp for this wave, not total hp
   pest.group = groupsize;
 
   return pest.index;
 }
 
 pest_register_id = 0;
-var pest_ant = registerPest('ant', images_ant, 0.1, 2, 1);
-var pest_tick = registerPest('tick', images_tick, 0.1, 2, 6);
-
+var pest_ant = registerPest('ant', images_ant, 1, 2, 1);
+var pest_fire_ant = registerPest('fire ant', images_fire_ant, 2, 2, 1);
+var pest_beetle = registerPest('beetle', images_beetle, 10, 4, 1);
+var pest_tick = registerPest('tick', images_tick, 0.2, 2, 6);
+var pest_roach = registerPest('roach', images_roach, 0.5, 1, 1);
+var pest_termite = registerPest('termite', images_termite, 1.5, 3, 1);
+pests[pest_termite].splahsresistant = true;
 
 
 function PestState() {
@@ -70,8 +106,10 @@ function PestState() {
 function TowerDefenseState() {
   this.pests = [];
 
-  this.lastTick = 0;
-  this.ticks = 0;
+  this.lastTick = 0; // time of last tick
+  this.ticks = 0; // num ticks done
+
+  this.started = false;
   this.gameover = false;
   this.wave = 0; // 0 = no wave started yet, 1 = first wave spawned, ...
 
@@ -109,11 +147,14 @@ function TowerDefenseState() {
   this.waveendtime = 0;
   // how long the previous wave took in total to defeat. This is waveendtime - wavestarttime at the time of defeat, but of the previous wave, not this one
   this.lastwavetime = 0;
+
+  // pests exterminated for x,y positions on the map
+  this.kills = [];
 }
 
 function tdWaveActive() {
   var td = state.towerdef;
-  if(td.gameover) return false;
+  if(td.gameover || !td.started) return false;
   if(!(state.towerdef.pests.length > 0)) return false;
   return true;
 }
@@ -259,7 +300,10 @@ function movePests() {
     var y = td.order[i][1];
     var cell = td.pestspercell[y][x];
     for(var j = 0; j < cell.length; j++) {
-      pests_order.push(td.pests[cell[j]]);
+      var p = td.pests[cell[j]];
+      var p2 = pests[p.index];
+      if((td.ticks % p2.speed) != 0) continue;
+      pests_order.push(p);
     }
   }
 
@@ -372,10 +416,21 @@ function createBulletAnimation(x0, y0, x1, y1, type) {
   animfun();
 }
 
+function hastenWaves(damage) {
+  var td = state.towerdef;
+  // Quickly end waves if they're completely obliterated
+  while(damage.gt(getTDWaveHealth(td.wave + 1))) {
+    state.res.addInPlace(getTDWaveRes(td.wave));
+    td.wave++;
+    //console.log('Quick defeated wave ' + td.wave);
+  }
+}
+
 // x0, y0 = attack origin
 // x1, y1 = attack target
 // splash: if true, it's a splash damage tower, so it can hit all members of a group at once
-function attackPest(td, index, damage, x0, y0, x1, y1, splash) {
+// splash2: if true, then doesn't hit splahsresistant pests
+function attackPest(td, index, damage, x0, y0, x1, y1, splash, splash2) {
   if(x0 < 0 || y0 < 0 || x0 >= state.numw || y0 >= state.numh) return;
   if(x1 < 0 || y1 < 0 || x1 >= state.numw || y1 >= state.numh) return;
 
@@ -385,13 +440,24 @@ function attackPest(td, index, damage, x0, y0, x1, y1, splash) {
   var p = td.pests[index];
   var p2 = pests[p.index];
 
+  if(splash2 && p2.splahsresistant) return;
+
   if(p2.group > 1 && !splash) {
     // TODO: actually, if splash damage, then damage should be multiplied by group size, since it hits all at the same time. But a more correct simulation of individual group member healths or remaining group size is then needed, it should be multiplied only by remaining group size.
     var maxdamage = p.maxhp.divr(p2.group).mulr(1.01); // the 1.01 is to avoid numerical precision issues requiring one more shot
     if(damage.gt(maxdamage)) damage = maxdamage;
   }
 
+  if(p.hp.gtr(0) && damage.gt(p.hp)) {
+    if(!td.kills[y0]) td.kills[y0] = [];
+    if(!td.kills[y0][x0]) td.kills[y0][x0] = 0;
+    td.kills[y0][x0]++;
+  }
+
   p.hp = p.hp.sub(damage);
+
+  // Quickly end waves if they're completely obliterated
+  if(damage.gt(p.maxhp.mulr(10))) hastenWaves(damage);
 }
 
 
@@ -423,15 +489,71 @@ var td_pattern_3 = [
   [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [3, 0],
   [-2, 1], [-1, 1], [0, 1], [1, 1], [2, 1],
   [-1, 2], [0, 2], [1, 2],
-  [0, 3]
+  [0, 3],
 ];
+
+//    4
+//   434
+//  43234
+// 4321234
+//432101234
+// 4321234
+//  43234
+//   434
+//    4
+var td_pattern_4 = [
+  [0, -4],
+  [-1, -3],[0, -3],[1, -3],
+  [-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2],
+  [-3, -1], [-2, -1], [-1, -1], [0, -1], [1, -1], [2, -1], [3, -1],
+  [-4, 0], [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [3, 0], [4, 0],
+  [-3, 1], [-2, 1], [-1, 1], [0, 1], [1, 1], [2, 1], [3, 1],
+  [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2],
+  [-1, 3],[0, 3],[1, 3],
+  [0, 4],
+];
+
+// assumes that the crop at x, y is a mushroom
+// returns array of [damage mul, dist diff, splash]
+function getTDStatueMods(x, y) {
+  var statue_mul = 1;
+  var statue_dist = 3;
+  var statue_splash = false;
+  for(var dir = 0; dir < 8; dir++) {
+    var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+    var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
+    if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+    var f2 = state.field[y2][x2];
+    var c2 = f2.getCrop();
+    if(c2 && f2.growth >= 1) {
+      if(c2.index == challengestatue_0) {
+        statue_mul *= 1.25;
+      }
+      if(c2.index == challengestatue_1) {
+        if(!statue_splash) {
+          // the splash bad effects don't stack, allow making it touch two splash statues without ill effect
+          statue_mul *= 0.25;
+          statue_dist -= 1;
+        }
+        statue_splash = true;
+      }
+      if(c2.index == challengestatue_2) {
+        statue_mul *= 0.75;
+        statue_dist += 1;
+      }
+    }
+  }
+  if(statue_dist < 2) statue_dist = 2;
+  if(statue_dist > 4) statue_dist = 4;
+  return [statue_mul, statue_dist, statue_splash];
+}
 
 function attackPests() {
   var td = state.towerdef;
   resetBulletAnimationCache();
 
   if(!td.wave_seen) return; // ensure it's rendered for at least one frame, before attacking
-  if(td.gameover) return;
+  if(td.gameover || !td.started) return;
   if(td.pests.length == 0) return; // this wave is already defeated
 
   for(var y = 0; y < state.numh; y++) {
@@ -439,8 +561,10 @@ function attackPests() {
       var f = state.field[y][x];
       var c = f.getCrop();
       if(!c) continue;
+      if(f.growth < 1) continue;
 
       var damage = getTDCropDamage(c, f);
+      if(damage.ler(0)) continue; // e.g. mushroom without berry
 
       if(c.type == CROPTYPE_BRASSICA) {
         for(var dir = 0; dir < 8; dir++) {
@@ -449,18 +573,22 @@ function attackPests() {
           if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
           var cell = td.pestspercell[y2][x2];
           for(var j = 0; j < cell.length; j++) {
-            attackPest(td, cell[j], damage, x, y, x2, y2, true);
+            attackPest(td, cell[j], damage, x, y, x2, y2, true, false);
             createBulletAnimation(x, y, x2, y2, 3);
           }
         }
       }
-      if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH) {
+      if(c.type == CROPTYPE_MUSH) {
+        var mods = getTDStatueMods(x, y);
+        var statue_mul = mods[0];
+        var statue_dist = mods[1];
+        var statue_splash = mods[2];
         var target = undefined;
         var targetx = undefined;
         var targety = undefined;
         //var targethp = Num(0);
         var targetdist = 99999;
-        var pattern = (c.type == CROPTYPE_MUSH) ? td_pattern_2 : td_pattern_3;
+        var pattern = statue_dist >= 4 ? td_pattern_4 : ((statue_dist <= 2) ? td_pattern_2 : td_pattern_3);
         for(var dir = 0; dir < pattern.length; dir++) {
           var x2 = x + pattern[dir][0];
           var y2 = y + pattern[dir][1];
@@ -479,9 +607,9 @@ function attackPests() {
           }
         }
         if(target != undefined) {
-          attackPest(td, target, damage, x, y, targetx, targety, c.type == CROPTYPE_MUSH);
-          createBulletAnimation(x, y, targetx, targety, c.type == CROPTYPE_BERRY ? 0 : 1);
-          if(c.type == CROPTYPE_MUSH) {
+          attackPest(td, target, damage, x, y, targetx, targety, c.type == CROPTYPE_MUSH, false);
+          createBulletAnimation(x, y, targetx, targety, 1);
+          if(statue_splash) {
             // splash damage
             var splashDamage = damage.mulr(0.5);
             for(var dir = 0; dir < td_pattern_2.length; dir++) {
@@ -492,7 +620,7 @@ function attackPests() {
               for(var j = 0; j < cell.length; j++) {
                 var cell = td.pestspercell[y3][x3];
                 for(var j = 0; j < cell.length; j++) {
-                  attackPest(td, cell[j], splashDamage, targetx, targety, x3, y3, true);
+                  attackPest(td, cell[j], splashDamage, targetx, targety, x3, y3, true, true);
                 }
               }
               createBulletAnimation(targetx, targety, x3, y3, 2);
@@ -523,6 +651,7 @@ function attackPests() {
 
 function spawnWave() {
   var td = state.towerdef;
+  if(td.gameover || !td.started) return;
 
   state.g_td_waves++;
   state.c_td_waves++;
@@ -535,7 +664,7 @@ function spawnWave() {
 
   var wavehealth = getTDWaveHealth(wave);
 
-  var num = 10;
+  var num = 20;
 
   td.lastwavetime = (td.waveendtime - td.wavestarttime);
   td.wavestarttime = state.time;
@@ -545,10 +674,11 @@ function spawnWave() {
   td.pests = [];
   for(var i = 0; i < num; i++) {
     var r = getRandomRoll(state.seed0 ^ state.g_td_spawns)[1];
-    var type = r < 0.5 ? pest_ant : pest_tick;
+    var type = [pest_ant, pest_fire_ant, pest_beetle, pest_tick, pest_roach, pest_termite][Math.floor(r * 6)];
     var pest = new PestState();
     pest.index = type;
-    pest.maxhp = wavehealth.divr(num);
+    var p2 = pests[pest.index];
+    pest.maxhp = wavehealth.divr(num).mulr(p2.hp);
     pest.hp = Num(pest.maxhp);
     td.pests.push(pest);
     state.g_td_spawns++;
@@ -557,6 +687,17 @@ function spawnWave() {
 
   td.num = num;
   td.gain = getTDWaveRes(wave);
+}
+
+function runTD() {
+  var td = state.towerdef;
+  if(state.time < td.lastTick + 0.3) return;
+  td.lastTick = state.time;
+
+  td.ticks++;
+
+  movePests();
+  attackPests();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -588,7 +729,8 @@ Waves begin at wave 1, the wave to get to tree level 1 (from tree level 0)
 function sporesForTDWave_(wave) {
   var spores = treeLevelReqBase(wave).spores;
 
-  return spores.mulr(1.1);
+  // give a bit more to avoid numerical issues preventing a tree level
+  return spores.mulr(1.01);
 }
 
 function seedsForTDWave_(wave) {
@@ -608,12 +750,6 @@ function seedsForTDWave_(wave) {
   var eff2 = berry0prod.div(berry0base);
 
   seeds.mulInPlace(eff2);
-
-  // add best flower.
-  // DISABLED: do not do this or it gives way too many seeds, way more than in a regular game: best flower is already implicity factored into the required spores amount used above, since mushrooms are boosted by flowers to output their spores
-  // even with the reduced "lower_wave", this gives way too much
-  //var eff3 = state.bestflowerfortd;
-  //seeds.mulInPlace(eff3);
 
   // protection against wrongly balanced TD seed income: the goal is that during the TD challenge, you work with less seeds than the regular game, not more. If due to mis-tuning of the above formula TD would get way too many seeds, limit here.
   // the way to fix it if this happens is to balance TD differently so that it doesn't give that much seeds, but still plays in a balanced way (ideally with about the same amount of seeds as you get in a regular game, but that's extremely hard to emulate since it's seed drop per wave now)
@@ -648,7 +784,7 @@ function getTDWaveHealth(wave) {
   return modifyTDSPoresForHp(spores);
 }
 
-// returned as Resource object, the actual damage is in the spores value
+// returned as Resource object, the actual damage is in the spores value without modifyTDSPoresForHp applied
 // this returns damage as spores related to tree requirement (and directly comparable to mushroom attack)
 // a separate conversion to convert it to the value used for getTDWaveHealth is done in getTDCropDamage, not here
 function getTDBerryBaseDamage(tier) {
@@ -660,8 +796,13 @@ function getTDBerryBaseDamage(tier) {
   return baseprod;
 }
 
+// does NOT take statues into account
 function getTDCropDamage(crop, f) {
-  return modifyTDSPoresForHp(crop.getProd(f, 6).spores);
+  //var result = crop.getProd(f, 6).spores;
+
+  var p = prefield[f.y][f.x];
+  var result = p.prod2.spores;
+  return modifyTDSPoresForHp(result);
 }
 
 
