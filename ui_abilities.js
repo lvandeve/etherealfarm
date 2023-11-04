@@ -97,6 +97,7 @@ function formatAbilityDurationTooltipText(index, name, description, duration, wa
 
 var prev_brassica_index = -1; // for updating the button if the image for brassica changes
 var prev_brassica_tab = -1; // idem, but for basic field vs infinity field tab
+var prev_td_challenge = -1; // idem, but for 'go' button for tower defense challenge
 
 var last_seen_havePerma = -1; // to update tooltips/action names when this changes
 
@@ -349,13 +350,15 @@ function updateAbilitiesUI() {
   if(state.g_res.seeds.gtr(1000)) {
     var infinity_field_tab = (state.currentTab == tabindex_field3);
     var brassica_index = infinity_field_tab ? getHighestBrassica3Had() : getHighestBrassica();
-    if(!watercressbutton || prev_brassica_index != brassica_index || prev_brassica_tab != infinity_field_tab) {
+    var td_challenge = state.challenge == challenge_towerdefense;
+    if(!watercressbutton || prev_brassica_index != brassica_index || prev_brassica_tab != infinity_field_tab || prev_td_challenge != td_challenge) {
       if(watercressbutton) {
         watercressbutton.clear();
         watercressbutton.removeSelf(topFlex);
       }
       prev_brassica_index = brassica_index;
       prev_brassica_tab = infinity_field_tab;
+      prev_td_challenge = td_challenge;
       var image, name, alltiers_name;
       if(infinity_field_tab) {
         image = crops3[brassica_index].image[4];
@@ -384,7 +387,7 @@ function updateAbilitiesUI() {
         label_shift = 'plant ' + alltiers_name + ' everywhere';
         label_ctrl = 'delete all ' + alltiers_name;
       } else if(state.challenge == challenge_towerdefense) {
-        tooltip = 'Send the next wave for tower defense';
+        tooltip = 'Spawn the next wave for tower defense. With shift key, shows TD help dialog.';
         label_shift = 'Tower defense help';
         label_ctrl = undefined;
       } else {
@@ -766,6 +769,12 @@ document.addEventListener('keydown', function(e) {
     // NOTE: ctrl for this shortcut (for deleting watercress) doesn't work, since ctrl+w closes browser tab.
     if(state.currentTab == tabindex_field3) {
       refreshWatercress3(false, /*opt_all=*/shift);
+    } else if(state.challenge == challenge_towerdefense) {
+      if(shift) {
+        showRegisteredHelpDialog(44, true);
+      } else {
+        addAction({type:ACTION_TD_GO});
+      }
     } else {
       refreshWatercress(false, /*opt_all=*/shift);
     }
@@ -867,9 +876,15 @@ document.addEventListener('keydown', function(e) {
         } else {
           // plant
           if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
-            var actiontype = f.hasCrop() ? ACTION_REPLACE : ACTION_PLANT;
-            addAction({type:actiontype, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[state.lastPlanted], shiftPlanted:true});
-            did_something = true;
+            var crop = crops[state.lastPlanted];
+            if(state.challenge == challenge_towerdefense && crop.getCost().gt(state.res)) {
+              crop = getHighestAffordableCropOfType(crop.type, state.res, true);
+            }
+            if(crop) {
+              var actiontype = f.hasCrop() ? ACTION_REPLACE : ACTION_PLANT;
+              addAction({type:actiontype, x:shiftCropFlexX, y:shiftCropFlexY, crop:crop, shiftPlanted:true});
+              did_something = true;
+            }
           }
         }
       }

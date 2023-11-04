@@ -147,7 +147,6 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
   if(bought) flex.div.className = 'efSquirrelBought';
   else if(canbuy && !can_afford) flex.div.className = 'efSquirrelCantAfford';
   else if(canbuy) flex.div.className = 'efSquirrelBuy';
-  //else if(next) flex.div.className = 'efSquirrelNext';
   else if(gated) flex.div.className = 'efSquirrelGated';
   else flex.div.className = 'efSquirrelUnknown';
 

@@ -319,6 +319,11 @@ BluePrint.toCrop = function(i) {
   if(i == 8) return mistletoe_template;
   if(i == 9) return nut_template;
   if(i == 60) return pumpkin_template;
+  if(i == 100) return challengestatue_0_template;
+  if(i == 101) return challengestatue_1_template;
+  if(i == 102) return challengestatue_2_template;
+  if(i == 103) return challengestatue_3_template;
+  if(i == 104) return challengestatue_4_template;
   return -1;
 }
 
@@ -366,6 +371,11 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_LOTUS) return 34;
   if(c.type == CROPTYPE_FERN) return 35;
   if(c.type == CROPTYPE_PUMPKIN) return 60;
+  if(c.index == challengestatue_0) return 100;
+  if(c.index == challengestatue_1) return 101;
+  if(c.index == challengestatue_2) return 102;
+  if(c.index == challengestatue_3) return 103;
+  if(c.index == challengestatue_4) return 104;
   return 0;
 }
 
@@ -384,6 +394,11 @@ BluePrint.toChar = function(i) {
   if(i == 34) return 'L'; // lotus
   if(i == 35) return 'E'; // fern
   if(i == 60) return 'U'; // pumpkin
+  if(i == 100) return '0'; // challenge statue
+  if(i == 101) return '1'; // challenge statue
+  if(i == 102) return '2'; // challenge statue
+  if(i == 103) return '3'; // challenge statue
+  if(i == 104) return '4'; // challenge statue
   return -1;
 }
 
@@ -403,6 +418,11 @@ BluePrint.fromChar = function(c) {
   if(c == 'L') return 34;
   if(c == 'E') return 35;
   if(c == 'U') return 60;
+  if(c == '0') return 100;
+  if(c == '1') return 101;
+  if(c == '2') return 102;
+  if(c == '3') return 103;
+  if(c == '4') return 104;
   return 0;
 }
 
@@ -966,9 +986,9 @@ function State() {
   // array of BluePrint objects
   this.blueprints = [];
   this.blueprints2 = [];
-  // TODO: persist remembering the blueprint dialog page
-  //this.blueprint_page = 0;
-  //this.blueprint_page2 = 0;
+  // which page is shown in the dialogs
+  this.blueprintpage1 = 0;
+  this.blueprintpage2 = 0;
 
   // effects for this run
   this.amberprod = false;
@@ -1008,6 +1028,7 @@ function State() {
   this.numemptyfields = 0;
   this.numemptyfields2 = 0;
   this.numemptyfields3 = 0;
+  this.numemptypond = 0;
 
   // amount of fields with a crop on them (hasRealCrop(), special types 1<=index<CROPINDEX are not counted)
   // includes growing ones, excludes templates
@@ -1145,6 +1166,7 @@ function State() {
   // derived stat, not to be saved.
   this.highestoftypeplanted = [];
   this.highestoftype2planted = [];
+  this.highestoftypefishplanted = [];
   // same but only fullgrown
   this.highestoftypefullgrown = [];
   this.highestoftypehad = []; // very similar to highestoftypefullgrown, and also requires fullgrown crops, but uses the 'had' field of crops so remains set even if the crop was fullgrown once but then deleted from the field
@@ -1169,6 +1191,7 @@ function State() {
   // same as highestoftypeunlocked but has crop index instead of tier values. undefined if none is unlocked of this type
   this.highestcropoftypeunlocked = [];
   this.highestcropoftype2unlocked = [];
+  this.highestfishoftypeunlocked = [];
 
   // like highestoftypeunlocked, but also includes known next types, because their unlock research is visible (but not yet researched)
   this.highestoftypeknown = [];
@@ -1463,6 +1486,8 @@ function computeDerived(state) {
   for(var i = 0; i < NUM_FISHTYPES; i++) {
     state.highestoftypefishunlocked[i] = -Infinity;
     state.highestoftypefishhad[i] = -Infinity;
+    state.highestoftypefishplanted[i] = -Infinity;
+    state.highestfishoftypeunlocked[i] = -Infinity;
   }
   state.templatecount = 0;
   state.ghostcount = 0;
@@ -1684,6 +1709,7 @@ function computeDerived(state) {
   }
 
   // pond
+  state.numemptypond = 0;
   state.numfishes = 0;
   for(var i = 0; i < registered_fishes.length; i++) {
     state.fishcount[registered_fishes[i]] = 0;
@@ -1695,6 +1721,9 @@ function computeDerived(state) {
         var c = fishes[f.cropIndex()];
         state.fishcount[c.index]++;
         state.numfishes++;
+        state.highestoftypefishplanted[c.type] = Math.max(c.tier || 0, state.highestoftypefishplanted[c.type]);
+      } else {
+        state.numemptypond++;
       }
     }
   }
@@ -1703,6 +1732,7 @@ function computeDerived(state) {
     var c = fishes[registered_fishes[i]];
     var c2 = state.fishes[registered_fishes[i]];
     if(c2.unlocked) {
+      if((c.tier || 0) > state.highestoftypefishunlocked[c.type]) state.highestfishoftypeunlocked[c.type] = c.index;
       state.highestoftypefishunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypefishunlocked[c.type]);
     }
     if(c2.had) {
@@ -2599,3 +2629,12 @@ function getHighestAffordableBrassica3() {
   return result;
 }
 
+function getAvailableNonPlantedFishTypes() {
+  var result = [];
+  for(var t = 0; t < NUM_FISHTYPES; t++) {
+    if(state.highestoftypefishunlocked[t] >= 0 && state.highestoftypefishplanted[t] < 0) {
+      result.push(t);
+    }
+  }
+  return result;
+}

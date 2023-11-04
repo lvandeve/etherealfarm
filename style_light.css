@@ -221,7 +221,7 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 }
 
 .efSquirrelBought {
-  background-color: #4a4;
+  background-color: #4b4;
   color: #000;
   border: 1px solid #990;
 }
@@ -234,17 +234,13 @@ but it doesn't work on translucent background, so cannot use it here. So this mu
 
 .efSquirrelCantAfford {
   background-color: #aa4;
-  color: #666;
+  color: #000;
   border: 1px solid #990;
-}
-
-.efSquirrelNext {
-  background-color: #b44;
-  border: 1px solid #100;
 }
 
 .efSquirrelUnknown {
   background-color: #444;
+  color: #aaa;
   border: 1px solid #100;
 }
 

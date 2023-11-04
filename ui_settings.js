@@ -1058,6 +1058,8 @@ function importSaveFromDialog(shift, ctrl, enc, messageFlex) {
     update();
     util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that a successful import means some good save exists
     savegame_recovery_situation = false;
+
+    saveNow(); // save immediately now: otherwise if e.g. you close browser on mobile device now, it may still load the old save when reloading the browser later
   }, function(state) {
     var message = importfailedmessage;
     if(state && state.error_reason == 1) message += '\n' + loadfailreason_toosmall;

@@ -559,7 +559,10 @@ registerHelpDialog(44, 'Tower defense', 'You unlocked the tower defense challeng
     TODO Tower defense help text
     <br><br>
     Shortcuts:<br>
-    • With a few exceptions, these shortcuts are the same as in the regular game, and regular game shortcuts not listed here work too.<br>
+    Shortcuts:
+    With a few exceptions, these shortcuts are the same as in the regular game, and regular game shortcuts not listed here work too (regular shortcuts are listed in the shortcuts help from the settings dialog).<br>
+    Shortcuts:
+    • w: spawn next save. Same as the 'GO' button. Also required to start the first wave.<br>
     • u: upgrade tower under mouse cursor.<br>
     • d: downgrade tower under mouse cursor (gives refund), if waves not started yet deletes as usual (in regular game, and before waves started, 'd' deletes, 'shift+d' downgrades).<br>
     • shift+p: overplant with picked (with 'p') crop type (same shortcut as in regular game, but useful here to quickly change crop/tower types).<br>

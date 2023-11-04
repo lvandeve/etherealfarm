@@ -119,13 +119,27 @@ function updatePondDialogText() {
     abovePondTextFlex.div.innerHTML = text;
     return;
   } else {
-    text += '<br><br>';
-    text += 'Click the pond below to place fishes, at the cost of infinity spores.';
+    var missing_types = getAvailableNonPlantedFishTypes();
+    var print_missing_types = state.numemptypond < 8 && missing_types.length > 0;
+    if(!print_missing_types && state.numemptypond > 0) {
+      text += '<br><br>';
+      text += 'Click the pond below to place fishes, at the cost of infinity spores.';
+    }
     text += '<br><br>';
     text += 'Infinity spores: ' + state.res.infspores.toString();
     var inpond = computePondInfinitySpores();
     text += '. In pond: ' + inpond.toString();
     text += '. Total: ' + inpond.add(state.res.infspores).toString();
+
+    if(print_missing_types) {
+      text += '<br><br>';
+      text += 'Types avaible but not placed: <b>';
+      for(var i = 0; i < missing_types.length; i++) {
+        if(i > 0) text += ', ';
+        text += getFishTypeName(missing_types[i]);
+      }
+      text += '</b>';
+    }
   }
 
   abovePondTextFlex.div.innerHTML = text;
@@ -590,9 +604,13 @@ function initPondUI(flex) {
 function updatePondCellUI(x, y) {
   var f = state.pond[y][x];
   var fd = pondDivs[y][x];
+  var c = fishes[f.cropIndex()];
 
-  if(fd.index != f.index) {
+  var largeravailable = c && c.tier >= 0 && state.highestoftypefishunlocked[c.type] > state.highestoftypefishplanted[c.type] && state.res.infspores.gt(fishes[state.highestfishoftypeunlocked[c.type]].cost.infspores);
+
+  if(fd.index != f.index || fd.largeravailable != largeravailable) {
     fd.index = f.index;
+    fd.largeravailable = largeravailable;
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var field_image = r < 0.25 ? images_pond[0] : (r < 0.5 ? images_pond[1] : (r < 0.75 ? images_pond[2] : images_pond[3]));
@@ -605,6 +623,7 @@ function updatePondCellUI(x, y) {
       var c = fishes[f.cropIndex()];
       blendImage(c.image, fd.canvas);
       label = c.name + '. ' + label;
+      if(largeravailable) blendImage(upgrade_arrow_small, fd.canvas);
     } else {
       fd.div.innerText = '';
       //unrenderImage(fd.canvas);
@@ -689,7 +708,7 @@ function makeFishChip(fish, x, y, w, parent, opt_plantfun, opt_showfun, opt_tool
     }, true);
   } else {
     if(opt_showfun) registerTooltip(canvasFlex.div, 'Show ' + fish.name + ' info');
-    if(opt_plantfun) registerTooltip(canvasFlex.div, (opt_replace ? 'Replace with infinity ' : 'Plant infinity ') + fish.name);
+    if(opt_plantfun) registerTooltip(canvasFlex.div, (opt_replace ? 'Replace with ' : 'Place ') + fish.name);
   }
 
   infoFlex.div.innerHTML = text;
@@ -817,7 +836,7 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
       var dialog = createDialog({
         size:(text.length < 350 ? DIALOG_SMALL : DIALOG_MEDIUM),
         title:'Fish info',
-        names:'plant',
+        names:'place',
         functions:plantfun,
         icon:c.image
       });

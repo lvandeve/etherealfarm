@@ -232,16 +232,22 @@ function getCropInfoHTML(f, c, opt_detailed) {
     var mods = getTDStatueMods(f.x, f.y);
     dmg.mulrInPlace(mods[0]);
     result += 'Damage: ' + dmg.toString();
+    if(mods[5]) {
+      var mul = getFocusDamageMul(state.towerdef);
+      if(mul != 1) result += ' x' + mul + ': focused';
+    }
     if(mods[0] > 1) result += ' (statues bonus: +' + Num(mods[0] - 1).toPercentString() + ')';
     if(mods[0] < 1) result += ' (statues malus: -' + Num(1 - mods[0]).toPercentString() + ')';
     if(mods[2]) result += '<br>Statue effect: splash damage';
+    if(mods[3]) result += '<br>Statue effect: slow';
+    if(mods[4]) result += '<br>Statue effect: more resources';
     result += '<br>Range: ' + mods[1];
 
     result += '<br/>';
     //result += 'Production for next wave: ' + getTDCropProd(c, f).toString() + '<br/>';
     //result += '(Computed production per second: ' + prod3.toString() + ')<br/>';
-    var kills = state.towerdef.kills;
-    if(kills[f.y] && kills[f.y][f.x]) result += 'Exterminated: ' + kills[f.y][f.x] + '<br>';
+    var towers = state.towerdef.towers;
+    if(towers[f.y] && towers[f.y][f.x]) result += 'Exterminated: ' + towers[f.y][f.x].kills + '<br>';
     result += '<br/>';
   }
 
@@ -369,7 +375,10 @@ function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
   var c = f.getCrop(true);
   if(!c) return;
 
-  if(c.type == CROPTYPE_CHALLENGE) return null;
+  if(c.type == CROPTYPE_CHALLENGE) {
+    if(direct_templates_inv[c.index] != undefined) return crops[direct_templates_inv[c.index]];
+    return null;
+  }
   var tier = opt_include_locked ? state.highestoftypeknown[c.type] : state.highestoftypeunlocked[c.type];
 
   var c2 = null;
@@ -401,7 +410,10 @@ function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
 }
 
 function getDowngradeCropForCrop(c, opt_cost) {
-  if(c.type == CROPTYPE_CHALLENGE) return null;
+  if(c.type == CROPTYPE_CHALLENGE) {
+    if(direct_templates[c.index] != undefined) return crops[direct_templates[c.index]];
+    return null;
+  }
   var tier = c.tier - 1;
 
   var recoup = c.getRecoup();

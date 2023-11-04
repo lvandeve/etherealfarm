@@ -347,6 +347,14 @@ function startChallenge(challenge_id) {
     state.crops[challengestatue_0].unlocked = true;
     state.crops[challengestatue_1].unlocked = true;
     state.crops[challengestatue_2].unlocked = true;
+    state.crops[challengestatue_3].unlocked = true;
+    state.crops[challengestatue_4].unlocked = true;
+    state.crops[challengestatue_0_template].unlocked = true;
+    state.crops[challengestatue_1_template].unlocked = true;
+    state.crops[challengestatue_2_template].unlocked = true;
+    state.crops[challengestatue_3_template].unlocked = true;
+    state.crops[challengestatue_4_template].unlocked = true;
+    resetTD();
   }
 
   if(challenge_id == challenge_rocks || challenge_id == challenge_thistle) {
@@ -840,6 +848,8 @@ function beginNextRun(opt_challenge) {
     state.automaton_autoactions[i].done2 = false;
     state.automaton_autoactions[i].time2 = 0;
   }
+
+  //updateAbilitiesUI();
 
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
   if(state.negative_time > 3600) state.negative_time = 3600;
@@ -2432,6 +2442,14 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[flower3_7].had) unlockInfinityCrop(bee3_7);
   if(state.crops3[flower3_7].had) unlockInfinityCrop(fern3_7);
   if(state.crops3[mush3_7].had) unlockInfinityCrop(stinging3_7);
+
+  if(state.crops3[berry3_7].had) unlockInfinityCrop(brassica3_8);
+  if(state.crops3[brassica3_8].had) unlockInfinityCrop(berry3_8);
+  if(state.crops3[berry3_8].had) unlockInfinityCrop(flower3_8);
+  if(state.crops3[berry3_8].had) unlockInfinityCrop(mush3_8);
+  if(state.crops3[flower3_8].had) unlockInfinityCrop(bee3_8);
+  if(state.crops3[flower3_8].had) unlockInfinityCrop(fern3_8);
+  if(state.crops3[mush3_8].had) unlockInfinityCrop(stinging3_8);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2451,6 +2469,10 @@ function maybeUnlockFishes() {
   if(state.fishes[anemone_0].had) unlockFish(goldfish_1);
   if(state.fishes[goldfish_1].had) unlockFish(koi_1);
   if(state.fishes[goldfish_1].had) unlockFish(anemone_1);
+  if(state.fishes[anemone_1].had) unlockFish(puffer_1);
+
+  if(state.fishes[puffer_1].had) unlockFish(eel_1);
+  if(state.fishes[eel_1].had) unlockFish(tang_1);
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
   if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
@@ -2776,10 +2798,10 @@ function autoUpgrade(res) {
 }
 
 
-function getHighestAffordableCropOfType(type, res) {
+function getHighestAffordableCropOfType(type, res, allow_template) {
   var tier = state.highestoftypeunlocked[type];
   for(;;) {
-    if(tier < 0) return null;
+    if(tier < 0 && !allow_template) return null;
     var crop = croptype_tiers[type][tier];
     if(!crop) return null;
     if(crop.getCost().le(res)) return crop;
@@ -2789,6 +2811,15 @@ function getHighestAffordableCropOfType(type, res) {
 
 // get cheapest unlocked crop you can plant
 function getCheapestNextOfCropType(type, opt_tier) {
+  if(type == CROPTYPE_CHALLENGE) {
+    if(!state.challenge) return null;
+    // this is for the challenge_towerdefense statue templates
+    for(var k in direct_templates_inv) {
+      if(!direct_templates_inv.hasOwnProperty(k)) continue;
+      if(state.cropcount[k]) return crops[direct_templates_inv[k]];
+    }
+    return null;
+  }
   var tier = (opt_tier == undefined) ? (state.lowestoftypeplanted[type] + 1) : (opt_tier + 1);
   if(tier < 0 || tier == Infinity) return null;
   if(tier < state.lowestcropoftypeunlocked[type]) tier = state.lowestcropoftypeunlocked[type];
@@ -2808,7 +2839,7 @@ function computeNextAutoPlant() {
   if(state.challenge == challenge_nodelete) return; // cannot replace crops during the nodelete challenge
 
   // mistletoe is before mushroom on purpose, to ensure it gets chosen before mushroom, to ensure it grows before mushrooms grew and make tree level up
-  var types = [CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_STINGING, CROPTYPE_NUT, CROPTYPE_PUMPKIN];
+  var types = [CROPTYPE_SQUIRREL, CROPTYPE_BRASSICA, CROPTYPE_MISTLETOE, CROPTYPE_BERRY, CROPTYPE_MUSH, CROPTYPE_FLOWER, CROPTYPE_BEE, CROPTYPE_STINGING, CROPTYPE_NUT, CROPTYPE_PUMPKIN, CROPTYPE_CHALLENGE];
 
   for(var i = 0; i < types.length; i++) {
     var type = types[i];
@@ -2861,6 +2892,13 @@ function computeNextAutoPlant() {
         if(c.index == nettle_1 && state.challenge == challenge_thistle) continue;
         if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
         if(type == CROPTYPE_NUT && tooManyNutsPlants(c.isReal())) continue; // can only have 1 at the same time
+        if(state.numgrowing >= 1 && state.challenge == challenge_towerdefense) {
+          var td_ok = false;
+          if(c.istemplate) td_ok = true;
+          if(f.growth < 1) td_ok = true;
+          if(c.type == CROPTYPE_BRASSICA) td_ok = true;
+          if(!td_ok) continue; // during TD, don't grow too many towers at once: because if they all grow at same time, none can shoot and that may cause a loss due to pests just passing by
+        }
         if(next_auto_plant == undefined || time < next_auto_plant.time) next_auto_plant = {index:crop.index, x:x, y:y, time:time};
         x = state.numw;
         y = state.numh;
@@ -2893,7 +2931,7 @@ function autoPlant(res) {
 
   // check if we can't do a better crop
   if(state.challenge != challenge_towerdefense) {
-    var crop2 = getHighestAffordableCropOfType(type, maxcost);
+    var crop2 = getHighestAffordableCropOfType(type, maxcost, false);
     if(crop2 && crop2.getCost().le(maxcost)) {
       crop = crop2;
       cost = crop.getCost();
@@ -3498,6 +3536,8 @@ var update = function(opt_ignorePause) {
     unlockTemplates();
 
     var nexttime = util.getTime(); // in seconds. This is nexttime compared to the current state.time/state.prevtime
+
+    var td_go_now = false;
 
     var d; // time delta
     if(state.prevtime == 0) {
@@ -5086,9 +5126,13 @@ var update = function(opt_ignorePause) {
             showMessage('Cannot stop upgrade, no mistletoe upgrade in progress', C_INVALID, 0, 0);
         }
       } else if(type == ACTION_TD_GO) {
-        if(!state.towerdef.started) {
-          state.towerdef.started = true;
-          store_undo = true;
+        if(state.challenge == challenge_towerdefense && !state.towerdef.gameover) {
+          if(!state.towerdef.started) {
+            state.towerdef.started = true;
+            store_undo = true;
+          } else {
+            td_go_now = true;
+          }
         }
       } else if(type == ACTION_TRANSCEND) {
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
@@ -5943,11 +5987,10 @@ var update = function(opt_ignorePause) {
     if(state.challenge == challenge_towerdefense) {
       var td = state.towerdef;
       if(!td.gameover && td.started) {
-        if(!tdWaveActive() && state.time > tdNextWaveTime()) {
+        if(!tdWaveActive() && (state.time > tdNextWaveTime() || td_go_now)) {
           spawnWave();
         }
         if(tdWaveActive()) {
-          precomputeTD();
           runTD();
         }
       }

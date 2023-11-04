@@ -757,6 +757,7 @@ function encState(state, opt_raw_only) {
   processUintArray(array1);
   processUintArray(array2);
   processStringArray(array3);
+  processUint6(state.blueprintpage1);
 
   section = 22; id = 0; // squirrel upgrades
   array0 = [];
@@ -877,6 +878,7 @@ function encState(state, opt_raw_only) {
   processUintArray(array2);
   processUintArray(array3);
   processStringArray(array4);
+  processUint6(state.blueprintpage2);
 
 
   section = 28; id = 0; // ethereal mistletoe
@@ -2224,6 +2226,9 @@ function decState(s) {
     }
     if(index2 != array2.length) return err(4);
   }
+  if(save_version >= 262144*2+64*10+7) {
+    state.blueprintpage1 = processUint6();
+  }
   if(error) return err(4);
 
   section = 22; id = 0; // squirrel upgrades
@@ -2448,6 +2453,9 @@ function decState(s) {
     }
     if(index2 != array2.length) return err(4);
     if(index3 != array3.length) return err(4);
+  }
+  if(save_version >= 262144*2+64*10+7) {
+    state.blueprintpage2 = processUint6();
   }
   if(error) return err(4);
 

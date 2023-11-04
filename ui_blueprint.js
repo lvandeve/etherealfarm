@@ -1024,10 +1024,6 @@ function swapBlueprints(a, b, ethereal, update_automaton) {
 
 var blueprintdialogopen = false;
 
-// TODO: persist these in the state
-var blueprintpage1 = 0;
-var blueprintpage2 = 0;
-
 var redrawBlueprintsDialogFun = undefined;
 
 // opt_transcend: if true, then creates a blueprint dialog where if you click the blueprint, it transcends and plants that blueprint immediately, but that doesn't allow editing the blueprints
@@ -1037,7 +1033,7 @@ var redrawBlueprintsDialogFun = undefined;
 function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun) {
   if(!automatonUnlocked()) return;
 
-  var blueprintpage = opt_ethereal ? blueprintpage2 : blueprintpage1;
+  var blueprintpage = opt_ethereal ? state.blueprintpage2 : state.blueprintpage1;
 
   var flexes = [];
 
@@ -1057,11 +1053,11 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
     var key = keys.key;
     if(key == 'p' /*|| key == '0'*/) {
       if(opt_ethereal) {
-        blueprintpage2 = !blueprintpage2;
-        blueprintpage = blueprintpage2;
+        state.blueprintpage2 = !state.blueprintpage2;
+        blueprintpage = state.blueprintpage2;
       } else {
-        blueprintpage1 = !blueprintpage1;
-        blueprintpage = blueprintpage1;
+        state.blueprintpage1 = !state.blueprintpage1;
+        blueprintpage = state.blueprintpage1;
       }
       closeTopDialog();
       createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun);
@@ -1110,11 +1106,11 @@ function createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_
         return true; // don't close dialog from this function, it's recreated (to re-render) using the above instead
       }
       if(opt_ethereal) {
-        blueprintpage2 = !blueprintpage2;
-        blueprintpage = blueprintpage2;
+        state.blueprintpage2 = !state.blueprintpage2;
+        blueprintpage = state.blueprintpage2;
       } else {
-        blueprintpage1 = !blueprintpage1;
-        blueprintpage = blueprintpage1;
+        state.blueprintpage1 = !state.blueprintpage1;
+        blueprintpage = state.blueprintpage1;
       }
       closeTopDialog();
       createBlueprintsDialog(opt_transcend, opt_challenge, opt_ethereal, opt_custom_fun);

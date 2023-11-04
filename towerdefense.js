@@ -44,7 +44,8 @@ function Pest() {
   this.speed = 2; // amount of ticks for 1 movement. 1 = fast, 2 = normal, 3 = slow, 4 = very slow
   this.hp = 0; // max base hp, measured in multiple of spores required for tree level matching the wave (wave 1 to get tree to level 1, etc...)
   this.group = 1; // higher than 1 means it represents a group of multiple separate creatures. In that case, hp gives the hp of the full group, not that of one individual member. The group size determines the max damage that can be done by a non-splash damage tower at once
-  this.splahsresistant = false; // if true, resistant against the splash damage of mushroom, but not against the center hit of mushroom, nor against brassica
+  this.splahsresistant = false; // if true, resistant against splash damage mushrooms (but not against brassica)
+  this.slowresistant = false; // if true, resistant against the slow effect of mushrooms (but still receives damage from it)
 }
 
 function getPestInfoHTML(f) {
@@ -85,11 +86,16 @@ function registerPest(name, images, hp, speed, groupsize) {
 pest_register_id = 0;
 var pest_ant = registerPest('ant', images_ant, 1, 2, 1);
 var pest_fire_ant = registerPest('fire ant', images_fire_ant, 2, 2, 1);
+pests[pest_fire_ant].slowresistant = true;
 var pest_beetle = registerPest('beetle', images_beetle, 10, 4, 1);
-var pest_tick = registerPest('tick', images_tick, 0.2, 2, 6);
+var pest_tick = registerPest('tick', images_tick, 1, 2, 8);
 var pest_roach = registerPest('roach', images_roach, 0.5, 1, 1);
 var pest_termite = registerPest('termite', images_termite, 1.5, 3, 1);
 pests[pest_termite].splahsresistant = true;
+pests[pest_termite].slowresistant = true;
+var pest_flea = registerPest('flea', images_flea, 0.75, 1, 6);
+var pest_aphid = registerPest('aphid', images_aphid, 2, 3, 6);
+var pest_locust = registerPest('locust', images_locust, 1, 1, 1);
 
 
 function PestState() {
@@ -99,9 +105,25 @@ function PestState() {
   this.x = 0;
   this.y = 0;
 
+  this.slowtime = 0; // if a positive value, it's an amount of steps for which it is slowed by 1
+  this.slownum = 0;
+  this.moneytime = 0; // if a positive value, it's an amount of steps for which it gives extra seeds
+  this.moneynum = 0;
+
   // not saved, used for rendering: using last move dir looks better than using the computed path dir directly
   this.lookdir = -1;
 }
+
+PestState.prototype.getSpeed = function() {
+  var result = pests[this.index].speed;
+  if(this.slowtime) result += this.slownum;
+  return result;
+}
+
+function TowerState() {
+  this.kills = 0;
+  this.lastattack = 0;
+};
 
 function TowerDefenseState() {
   this.pests = [];
@@ -135,7 +157,7 @@ function TowerDefenseState() {
 
   // gain the full current wave will give
   this.gain = Res();
-  // amount of pests the current wave had in full, used for computing gain per pest
+  // amount of pests the current wave had in full, used for computing gain per pest.
   this.num = 0;
 
   // becomes true if the wave has been rendered for at least a frame, used to make the wave visible before shooting starts
@@ -148,8 +170,12 @@ function TowerDefenseState() {
   // how long the previous wave took in total to defeat. This is waveendtime - wavestarttime at the time of defeat, but of the previous wave, not this one
   this.lastwavetime = 0;
 
-  // pests exterminated for x,y positions on the map
-  this.kills = [];
+  // tower states for x,y positions on the map
+  this.towers = [];
+}
+
+function resetTD() {
+  state.towerdef = new TowerDefenseState();
 }
 
 function tdWaveActive() {
@@ -163,8 +189,8 @@ function tdWaveActive() {
 function tdNextWaveTime() {
   var td = state.towerdef;
   var wait = td.lastwavetime;
-  //if(wait > 20) wait = 20;
-  if(wait > 2) wait = 2;
+  if(wait > 10) wait = 10;
+  //if(wait > 2) wait = 2;
   return td.waveendtime + wait;
 }
 
@@ -212,7 +238,6 @@ function computePestsRenderInfo() {
 
   td.wave_seen = true;
 
-
   for(var i = 0; i < td.pests.length; i++) {
     var p = td.pests[i];
     var p2 = pests[p.index];
@@ -224,10 +249,17 @@ function computePestsRenderInfo() {
       if(p3.dir != -1) dir = p3.dir;
     }
     var imdir = (dir < 0) ? 0 : dir;
+    if(r.images.length > 4 && i + 2 < td.pests.length) imdir = (r.images.length & 3); // on the spawn point a lot of pests can be stacked on top together, so use rotated images to show that there are many there. But ensure the last few are rendered facing the correct direction, so only some below are rotated and the top one looks correct.
     r.images.push(p2.images[imdir]);
     var name = pests[p.index].name;
-    r.tooltip = upper(name) + ', hp: ' + p.hp.toString();
+    r.tooltip += '<br>' + upper(name) + ', hp: ' + p.hp.toString() + ' / ' + p.maxhp.toString() + ', speed: ' + Num(2 / p2.speed).toString();
+    if(p2.group != 1) r.tooltip += '. Group size: ' + p2.group;
+    if(p2.splahsresistant) r.tooltip += '. Splash resist';
+    if(p2.slowresistant) r.tooltip += '. Slow resist';
+    if(p.slowtime) r.tooltip += '. Slowed';
+    if(p.moneytime) r.tooltip += '. Rich';
     r.rel_hp = p.hp.div(p.maxhp);
+    r.code += Math.floor(r.rel_hp * 20) + ';';
   }
   return result;
 }
@@ -302,7 +334,9 @@ function movePests() {
     for(var j = 0; j < cell.length; j++) {
       var p = td.pests[cell[j]];
       var p2 = pests[p.index];
-      if((td.ticks % p2.speed) != 0) continue;
+      if((td.ticks % p.getSpeed()) != 0) continue;
+      if(p.slowtime > 0) p.slowtime--;
+      if(p.moneytime > 0) p.moneytime--;
       pests_order.push(p);
     }
   }
@@ -315,15 +349,16 @@ function movePests() {
     var x2 = p.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
     var y2 = p.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
     if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
+    var speed = p.getSpeed();
     var speeds2 = td.speeds[y2][x2];
-    if(speeds2[p2.speed]) continue;
+    if(speeds2[speed]) continue;
 
     var speeds = td.speeds[p.y][p.x];
     p.x = x2;
     p.y = y2;
     p.lookdir = dir;
-    speeds[p2.speed] = false;
-    speeds2[p2.speed] = true;
+    speeds[speed] = false;
+    speeds2[speed] = true;
 
     var f2 = state.field[y2][x2];
     if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
@@ -419,20 +454,30 @@ function createBulletAnimation(x0, y0, x1, y1, type) {
 function hastenWaves(damage) {
   var td = state.towerdef;
   // Quickly end waves if they're completely obliterated
-  while(damage.gt(getTDWaveHealth(td.wave + 1))) {
+  while(damage.gt(getTDWaveHealth(td.wave + 1).mulr(0.5))) {
     state.res.addInPlace(getTDWaveRes(td.wave));
     td.wave++;
     //console.log('Quick defeated wave ' + td.wave);
   }
 }
 
+function getFocusDamageMul(td) {
+  //var num = td.num;
+  var num = td.pests.length;
+  if(num <= 1) return 4;
+  else if(num <= 2) return 2;
+  else if(num <= 3) return 1.5;
+  else if(num <= 4) return 1.25;
+  return 1;
+}
+
 // x0, y0 = attack origin
 // x1, y1 = attack target
 // splash: if true, it's a splash damage tower, so it can hit all members of a group at once
-// splash2: if true, then doesn't hit splahsresistant pests
-function attackPest(td, index, damage, x0, y0, x1, y1, splash, splash2) {
-  if(x0 < 0 || y0 < 0 || x0 >= state.numw || y0 >= state.numh) return;
-  if(x1 < 0 || y1 < 0 || x1 >= state.numw || y1 >= state.numh) return;
+// returns true if pest exterminated (and not already exterminated from earlier shot beforehand)
+function attackPest(td, index, damage, x0, y0, x1, y1, splash, focus, slow, money) {
+  if(x0 < 0 || y0 < 0 || x0 >= state.numw || y0 >= state.numh) return false;
+  if(x1 < 0 || y1 < 0 || x1 >= state.numw || y1 >= state.numh) return false;
 
   // pests on the burrow spot are partially protected by the burrow itself. The reason for this: they are all on top of each other here, which would give splash damage towers a huge benefit compared to pests on the other tiles.
   // but we do want SOME of that benefit to make early waves go very fast (so all pests can be defeated in a single splash damage or brassica shot there). So allow partial damage, just not all of it.
@@ -440,24 +485,49 @@ function attackPest(td, index, damage, x0, y0, x1, y1, splash, splash2) {
   var p = td.pests[index];
   var p2 = pests[p.index];
 
-  if(splash2 && p2.splahsresistant) return;
 
-  if(p2.group > 1 && !splash) {
-    // TODO: actually, if splash damage, then damage should be multiplied by group size, since it hits all at the same time. But a more correct simulation of individual group member healths or remaining group size is then needed, it should be multiplied only by remaining group size.
-    var maxdamage = p.maxhp.divr(p2.group).mulr(1.01); // the 1.01 is to avoid numerical precision issues requiring one more shot
-    if(damage.gt(maxdamage)) damage = maxdamage;
+  if(slow && !p2.slowresistant) {
+    p.slowtime = 15;
+    p.slownum = slow;
+  }
+  if(money) {
+    p.moneytime = 15;
+    p.moneynum = money;
+  }
+  if(splash && p2.splahsresistant) return false; // resistent to splash damage, but it may still get the slow or money effects above
+
+  if(focus) {
+    console.log('damage before: ' + damage.toString());
+    damage = damage.mulr(getFocusDamageMul(td));
+    console.log('damage after: ' + damage.toString());
   }
 
-  if(p.hp.gtr(0) && damage.gt(p.hp)) {
-    if(!td.kills[y0]) td.kills[y0] = [];
-    if(!td.kills[y0][x0]) td.kills[y0][x0] = 0;
-    td.kills[y0][x0]++;
+  if(p2.group > 1) {
+    if(splash) {
+      // each group member is hit at once with the full damage in case of a splash hit
+      damage = damage.mulr(p2.group);
+    } else {
+      // if not a splash hit, then can maximally kill one group member at the time
+      // NOTE: this is a simulation of what would happen with a group and non-splash damage, but this simulation is not correct if both some splash and non-splash hits occur (e.g. a splash hit brings all of the group to 1% hp, then a non-splash hit would kill all at once). That would requiring storing all individual hp's, but we don't do that
+      var maxdamage = p.maxhp.divr(p2.group).mulr(1.01); // the 1.01 is to avoid numerical precision issues requiring one more shot
+      if(damage.gt(maxdamage)) damage = maxdamage;
+    }
   }
+
+  // count if this tower exterminated the pest, but not if its damage was much higher than maxhp: super easy kills are not counted, to make the stats give a somewhat more useful signal than "was the tower closest to start that exterminated all pests"
+  if(p.hp.gtr(0) && damage.gt(p.hp) && damage.lt(p.maxhp.mulr(2))) {
+    td.towers[y0][x0].kills++;
+  }
+
+  var result = false;
+  if(p.hp.gtr(0) && damage.gt(p.hp)) result = true;
 
   p.hp = p.hp.sub(damage);
 
   // Quickly end waves if they're completely obliterated
   if(damage.gt(p.maxhp.mulr(10))) hastenWaves(damage);
+
+  return result;
 }
 
 
@@ -513,12 +583,45 @@ var td_pattern_4 = [
   [0, 4],
 ];
 
+//     5
+//    545
+//   54345
+//  5432345
+// 543212345
+//54321012345
+// 543212345
+//  5432345
+//   54345
+//    545
+//     5
+var td_pattern_5 = [
+  [0, -5],
+  [-1 -4],[0, -4],[1, -4],
+  [-2, -3],[-1, -3],[0, -3],[1, -3],[2, -3],
+  [-3, -2], [-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2], [3, -2],
+  [-4, -1], [-3, -1], [-2, -1], [-1, -1], [0, -1], [1, -1], [2, -1], [3, -1], [4, -1],
+  [-5, 0], [-4, 0], [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0],
+  [-4, 1], [-3, 1], [-2, 1], [-1, 1], [0, 1], [1, 1], [2, 1], [3, 1], [4, 1],
+  [-3, 2], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [3, 2],
+  [-2, 3],[-1, 3],[0, 3],[1, 3],[2, 3],
+  [-1, 4],[0, 4],[1, 4],
+  [0, 5],
+];
+
 // assumes that the crop at x, y is a mushroom
 // returns array of [damage mul, dist diff, splash]
 function getTDStatueMods(x, y) {
   var statue_mul = 1;
   var statue_dist = 3;
   var statue_splash = false;
+  var statue_slow = 0;
+  var statue_seed = 0;
+  var statue_focus = false;
+  var num_dmg = 0;
+  var num_splash = 0;
+  var num_range = 0;
+  var num_slow = 0;
+  var num_seed = 0;
   for(var dir = 0; dir < 8; dir++) {
     var x2 = x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
     var y2 = y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
@@ -527,29 +630,42 @@ function getTDStatueMods(x, y) {
     var c2 = f2.getCrop();
     if(c2 && f2.growth >= 1) {
       if(c2.index == challengestatue_0) {
-        statue_mul *= 1.25;
+        num_dmg++;
       }
       if(c2.index == challengestatue_1) {
-        if(!statue_splash) {
-          // the splash bad effects don't stack, allow making it touch two splash statues without ill effect
-          statue_mul *= 0.25;
-          statue_dist -= 1;
-        }
-        statue_splash = true;
+        num_splash++;
       }
       if(c2.index == challengestatue_2) {
-        statue_mul *= 0.75;
-        statue_dist += 1;
+        num_range++;
+      }
+      if(c2.index == challengestatue_3) {
+        num_slow++;
+      }
+      if(c2.index == challengestatue_4) {
+        num_seed++;
       }
     }
   }
+  statue_splash = !!num_splash;
+  statue_slow = num_slow;
+  statue_seed = num_seed;
+  statue_dist += num_range;
+  if(num_dmg) statue_dist--; // don't count multiple. Let 1 range statue bring even 2 damage statues have the normal range again.
+  statue_mul *= (1 + num_dmg * 0.75);
+  //if(num_range) statue_mul *= 0.8;
+  if(num_splash) statue_mul *= 0.5;
+  else if(num_slow) statue_mul *= 0.75;
+  else if(num_seed) statue_mul *= 0.75;
   if(statue_dist < 2) statue_dist = 2;
-  if(statue_dist > 4) statue_dist = 4;
-  return [statue_mul, statue_dist, statue_splash];
+  if(statue_dist > 5) statue_dist = 5;
+  //statue_focus = !statue_splash && num_dmg >= 1;
+  statue_focus = num_dmg >= 2;
+  return [statue_mul, statue_dist, statue_splash, statue_slow, statue_seed, statue_focus];
 }
 
 function attackPests() {
   var td = state.towerdef;
+
   resetBulletAnimationCache();
 
   if(!td.wave_seen) return; // ensure it's rendered for at least one frame, before attacking
@@ -557,14 +673,19 @@ function attackPests() {
   if(td.pests.length == 0) return; // this wave is already defeated
 
   for(var y = 0; y < state.numh; y++) {
+    if(!td.towers[y]) td.towers[y] = [];
     for(var x = 0; x < state.numw; x++) {
+      if(!td.towers[y][x]) td.towers[y][x] = new TowerState();
       var f = state.field[y][x];
       var c = f.getCrop();
       if(!c) continue;
       if(f.growth < 1) continue;
 
       var damage = getTDCropDamage(c, f);
-      if(damage.ler(0)) continue; // e.g. mushroom without berry
+      if(damage.ler(0)) continue; // e.g. mushroom without berry, or not an attacking crop at all
+
+      if(td.towers[y][x].lastattack + 1 >= td.ticks ) continue; // towers only attack every two frames, but are not limited to even or odd td.ticks to be able to hit fast ones
+      td.towers[y][x].lastattack = td.ticks;
 
       if(c.type == CROPTYPE_BRASSICA) {
         for(var dir = 0; dir < 8; dir++) {
@@ -573,7 +694,7 @@ function attackPests() {
           if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
           var cell = td.pestspercell[y2][x2];
           for(var j = 0; j < cell.length; j++) {
-            attackPest(td, cell[j], damage, x, y, x2, y2, true, false);
+            attackPest(td, cell[j], damage, x, y, x2, y2, false, false, false, false);
             createBulletAnimation(x, y, x2, y2, 3);
           }
         }
@@ -583,12 +704,16 @@ function attackPests() {
         var statue_mul = mods[0];
         var statue_dist = mods[1];
         var statue_splash = mods[2];
+        var statue_slow = mods[3];
+        var statue_seed = mods[4];
+        var statue_focus = mods[5];
         var target = undefined;
         var targetx = undefined;
         var targety = undefined;
+        damage = damage.mulr(statue_mul);
         //var targethp = Num(0);
         var targetdist = 99999;
-        var pattern = statue_dist >= 4 ? td_pattern_4 : ((statue_dist <= 2) ? td_pattern_2 : td_pattern_3);
+        var pattern = statue_dist >= 5 ? td_pattern_4 : (statue_dist >= 4 ? td_pattern_4 : ((statue_dist <= 2) ? td_pattern_2 : td_pattern_3));
         for(var dir = 0; dir < pattern.length; dir++) {
           var x2 = x + pattern[dir][0];
           var y2 = y + pattern[dir][1];
@@ -607,25 +732,22 @@ function attackPests() {
           }
         }
         if(target != undefined) {
-          attackPest(td, target, damage, x, y, targetx, targety, c.type == CROPTYPE_MUSH, false);
-          createBulletAnimation(x, y, targetx, targety, 1);
           if(statue_splash) {
             // splash damage
-            var splashDamage = damage.mulr(0.5);
             for(var dir = 0; dir < td_pattern_2.length; dir++) {
               var x3 = targetx + td_pattern_2[dir][0];
               var y3 = targety + td_pattern_2[dir][1];
               if(x3 < 0 || x3 >= state.numw || y3 < 0 || y3 >= state.numh) continue;
               var cell = td.pestspercell[y3][x3];
               for(var j = 0; j < cell.length; j++) {
-                var cell = td.pestspercell[y3][x3];
-                for(var j = 0; j < cell.length; j++) {
-                  attackPest(td, cell[j], splashDamage, targetx, targety, x3, y3, true, true);
-                }
+                attackPest(td, cell[j], damage, targetx, targety, x3, y3, statue_splash, statue_focus, statue_slow, statue_seed);
               }
               createBulletAnimation(targetx, targety, x3, y3, 2);
             }
+          } else {
+            attackPest(td, target, damage, x, y, targetx, targety, statue_splash, statue_focus, statue_slow, statue_seed);
           }
+          createBulletAnimation(x, y, targetx, targety, 1);
         }
       }
     }
@@ -633,20 +755,91 @@ function attackPests() {
 
   var pests2 = [];
   for(var i = 0; i < td.pests.length; i++) {
-    if(td.pests[i].hp.ler(0)) {
+    var p = td.pests[i];
+    if(p.hp.ler(0)) {
       var res = td.gain.divr(td.num);
+      if(p.moneytime) res.seeds.mulrInPlace(p.moneynum + 1);
       state.res.addInPlace(res);
     } else {
-      pests2.push(td.pests[i]);
+      pests2.push(p);
     }
   }
   if(pests2.length == 0 && td.pests.length != 0) {
     // wave defeated
     td.waveendtime = state.time;
+    td.lastwavetime = (td.waveendtime - td.wavestarttime);
     showMessage('Wave ' + td.wave + ' done', C_TD, 34005951);
     window.setTimeout(update);
   }
   td.pests = pests2;
+}
+
+function randomTDRoll(wave, what) {
+  var seed = 1000 + wave * 100 + what;
+  return getRandomRoll(seed)[1];
+}
+
+function createRandomWave(td, wave, wavehealth) {
+  var roll;
+
+  var num_pests;
+  roll = randomTDRoll(wave, 0);
+  var shape = roll < 0.2 ? 0 : 1;
+  roll = randomTDRoll(wave, 0);
+  if(shape == 0) {
+    num_pests = 1 + Math.floor(roll * 3);
+  } else {
+    num_pests = 8 + Math.floor(roll * 24);
+  }
+
+  roll = randomTDRoll(wave, 1);
+  var num_types;
+  var all_types = false;
+  if(num_pests > 15 && roll > 0.7) {
+    num_types = registered_pests.length;
+    all_types = true;
+  } else {
+    roll = randomTDRoll(wave, 2);
+    num_types = 2 + Math.floor(roll * 3);
+  }
+
+  var types = [];
+
+  for(var i = 0; i < num_types; i++) {
+    if(all_types) {
+      types[i] = registered_pests[i];
+    } else {
+      roll = randomTDRoll(wave, 3);
+      var num_types = 1 + Math.floor(roll * 2.5);
+      types[i] = registered_pests[Math.floor(roll * registered_pests.length)];
+    }
+  }
+
+  var relhp = 0;
+  var result = [];
+  for(var i = 0; i < num_pests; i++) {
+    roll = randomTDRoll(wave, 4);
+    var type = types[Math.floor(roll * types.length)];
+    var pest = new PestState();
+    pest.index = type;
+    result[i] = pest;
+    var pest2 = pests[registered_pests[pest.index]];
+
+    var count_hp = pest2.hp;
+    // make some of the high health and slow ones rougher, relatively speaker
+    if(pest2.speed >= 4) count_hp /= 1.5;
+    else if(pest2.speed >= 3) count_hp /= 1.25;
+    else if(pest2.speed <= 1) count_hp *= 2;
+
+    relhp += count_hp;
+  }
+  for(var i = 0; i < num_pests; i++) {
+    var pest = result[i];
+    var pest2 = pests[registered_pests[pest.index]];
+    pest.maxhp = wavehealth.divr(relhp).mulr(pest2.hp);
+    pest.hp = new Num(pest.maxhp);
+  }
+  return result;
 }
 
 function spawnWave() {
@@ -664,29 +857,18 @@ function spawnWave() {
 
   var wavehealth = getTDWaveHealth(wave);
 
-  var num = 20;
-
-  td.lastwavetime = (td.waveendtime - td.wavestarttime);
   td.wavestarttime = state.time;
   td.waveendtime = 0;
-    showMessage('Spawning wave ' + td.wave + '. Total HP: ' + wavehealth.toString(), C_TD, 2250454032);
 
-  td.pests = [];
-  for(var i = 0; i < num; i++) {
-    var r = getRandomRoll(state.seed0 ^ state.g_td_spawns)[1];
-    var type = [pest_ant, pest_fire_ant, pest_beetle, pest_tick, pest_roach, pest_termite][Math.floor(r * 6)];
-    var pest = new PestState();
-    pest.index = type;
-    var p2 = pests[pest.index];
-    pest.maxhp = wavehealth.divr(num).mulr(p2.hp);
-    pest.hp = Num(pest.maxhp);
-    td.pests.push(pest);
-    state.g_td_spawns++;
-    state.c_td_spawns++;
-  }
-
-  td.num = num;
+  td.pests = createRandomWave(td, wave, wavehealth);
+  td.num = td.pests.length;
+  state.g_td_spawns += td.num;
+  state.c_td_spawns += td.num;
   td.gain = getTDWaveRes(wave);
+
+  var actual_hp = Num(0);
+  for(var i = 0; i < td.pests.length; i++) actual_hp.addInPlace(td.pests[i].hp);
+  showMessage('Spawning wave ' + td.wave + '. Total HP: ' + actual_hp.toString() + ' / ' + wavehealth.toString() + ', amount: ' + td.num, C_TD, 2250454032);
 }
 
 function runTD() {
@@ -696,6 +878,7 @@ function runTD() {
 
   td.ticks++;
 
+  precomputeTD();
   movePests();
   attackPests();
 }
@@ -802,7 +985,9 @@ function getTDCropDamage(crop, f) {
 
   var p = prefield[f.y][f.x];
   var result = p.prod2.spores;
-  return modifyTDSPoresForHp(result);
+  var result = modifyTDSPoresForHp(result).mulr(0.01);
+  if(crop.type == CROPTYPE_BRASSICA) result.mulrInPlace(0.5);
+  return result;
 }
 
 

@@ -26,6 +26,15 @@ function getChangeLog() {
     text += '<br/><br/>';
   }
 
+  text += '0.10.7 (2023-11-04):';
+  text += '<br/>• Added next infinity crops tier (sapphire).';
+  text += '<br/>• Added 3 new fishes.';
+  text += '<br/>• Buffed the red koi slightly.';
+  text += '<br/>• UI improvements in pond: missing fish types listed, and upgrade arrows for new tiers that can be afforded.';
+  text += '<br/>• Blueprint page in blueprint dialog is now remembered in savegames.';
+  text += '<br/>• Internal changes for the upcoming tower defense challenge (not yet released).';
+  text += '<br/><br/>';
+
   text += '0.10.6 (2023-10-12):';
   text += '<br/>• Made the amethyst infinity nettle stronger (this was done by making previous-tier nettle effect less strong but amethyst mushroom stronger to compensate).';
   text += '<br/>• The fruit border color can now be picked from a dialog, and two more colors added.';

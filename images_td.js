@@ -228,6 +228,46 @@ o...o..o.o.o...o
 `);
 
 
+var images_flea = createPestImages(`
+..........P.R.P.
+....P.R.P..RRR..
+P.R.PRRR..PrrrP.
+.RRR.rrrP..rrr..
+PrrrPrrr...P.P..
+.rrrPP.P..P...P.
+.P.PP...P.......
+P...P...........
+................
+P.R.P....P.P.R.P
+.RRR.P.R.P..RRR.
+PrrrP.RRR..PrrrP
+.rrr.PrrrP..rrr.
+.P.P..rrr...P.P.
+.P..P.P.P..P...P
+......P..P......
+`);
+
+
+var images_aphid = createPestImages(`
+.h.#.h..........
+..###..h.#.h....
+.hHHHh..###h.#.h
+..HHH..hHHH.###.
+..h.h...HHHhHHHh
+.h...h..h.hhHHH.
+.......h...hh.h.
+...........h...h
+................
+h.#.h.h...h..#.h
+.###..h.#.h.###.
+hHHHh..###.hHHHh
+.HHH..hHHHh.HHH.
+.h.h...HHH..h.h.
+h...h..h.h.h..h.
+......h..h......
+`);
+
+
 var images_roach = createPestImages(`
 ...x.......x....
 ....x.....x.....
@@ -268,6 +308,26 @@ var images_termite = createPestImages(`
 `);
 
 
+var images_locust = createPestImages(`
+.....|....|.....
+......|..|......
+......||||......
+...|.|0Hh|0.|...
+...|.00Hh00.|...
+.|..|hHHhh||..|.
+..|||hHHhh||||..
+.....hHHhh|.....
+...||hHHhh|||...
+..|HHhHHhh|HH|..
+.|H||hHHhh|||H|.
+.||..hHHhh|..||.
+.|....hHh|....|.
+..|...hHh|...|..
+...|..hHh|..|...
+...|...h|...|...
+`);
+
+
 var image_statue_spore = `
 ................
 ................
@@ -287,13 +347,11 @@ var image_statue_spore = `
 ................
 `;
 
-var images_statue_spore = createPlantImages2(
-  image_statue_spore,
-  image_statue_spore,
-  image_statue_spore,
-  image_statue_spore,
-  image_statue_spore
-);
+var images_statue_spore = createPlantImages2(image_statue_spore, image_statue_spore, image_statue_spore, image_statue_spore, image_statue_spore);
+
+var image_statue_spore_template = createCanvasImageFor(blueprintifyImage(images_statue_spore[4][4]));
+var images_statue_spore_template = [image_statue_spore_template, image_statue_spore_template, image_statue_spore_template, image_statue_spore_template, image_statue_spore_template];
+
 
 var image_statue_splash = `
 ........22......
@@ -314,17 +372,13 @@ var image_statue_splash = `
 ................
 `;
 
-var images_statue_splash = createPlantImages2(
-  image_statue_splash,
-  image_statue_splash,
-  image_statue_splash,
-  image_statue_splash,
-  image_statue_splash
-);
+var images_statue_splash = createPlantImages2(image_statue_splash, image_statue_splash, image_statue_splash, image_statue_splash, image_statue_splash);
+
+var image_statue_splash_template = createCanvasImageFor(blueprintifyImage(images_statue_splash[4][4]));
+var images_statue_splash_template = [image_statue_splash_template, image_statue_splash_template, image_statue_splash_template, image_statue_splash_template, image_statue_splash_template];
 
 
 var image_statue_range = `
-................
 ..........221...
 ...44444...11...
 ....3...2.1.1...
@@ -340,26 +394,24 @@ var image_statue_range = `
 ...3322222000...
 ..344444433330..
 .33322222220000.
+................
 `;
 
-var images_statue_range = createPlantImages2(
-  image_statue_range,
-  image_statue_range,
-  image_statue_range,
-  image_statue_range,
-  image_statue_range
-);
+var images_statue_range = createPlantImages2(image_statue_range, image_statue_range, image_statue_range, image_statue_range, image_statue_range);
+
+var image_statue_range_template = createCanvasImageFor(blueprintifyImage(images_statue_range[4][4]));
+var images_statue_range_template = [image_statue_range_template, image_statue_range_template, image_statue_range_template, image_statue_range_template, image_statue_range_template];
 
 
 var image_statue_seed = `
-................
-......2222......
-.....243210.....
-....24322110....
-....24322110....
-....24322110....
+.......11.......
+......2321......
+......2321......
+.....233211.....
+.....232211.....
+.....232211.....
 .....232210.....
-.....232210.....
+.....233210.....
 ......2320......
 .......20.......
 .33332222220000.
@@ -370,17 +422,13 @@ var image_statue_seed = `
 ................
 `;
 
-var images_statue_seed = createPlantImages2(
-  image_statue_seed,
-  image_statue_seed,
-  image_statue_seed,
-  image_statue_seed,
-  image_statue_seed
-);
+var images_statue_seed = createPlantImages2(image_statue_seed, image_statue_seed, image_statue_seed, image_statue_seed, image_statue_seed);
+
+var image_statue_seed_template = createCanvasImageFor(blueprintifyImage(images_statue_seed[4][4]));
+var images_statue_seed_template = [image_statue_seed_template, image_statue_seed_template, image_statue_seed_template, image_statue_seed_template, image_statue_seed_template];
 
 
 var image_statue_snail = `
-................
 .............00.
 ...5555......00.
 ..533334....0...
@@ -396,12 +444,11 @@ var image_statue_snail = `
 ...3322222000...
 ..344444433330..
 .33322222220000.
+................
 `;
 
-var images_statue_snail = createPlantImages2(
-  image_statue_snail,
-  image_statue_snail,
-  image_statue_snail,
-  image_statue_snail,
-  image_statue_snail
-);
+var images_statue_snail = createPlantImages2(image_statue_snail, image_statue_snail, image_statue_snail, image_statue_snail, image_statue_snail);
+
+var image_statue_snail_template = createCanvasImageFor(blueprintifyImage(images_statue_snail[4][4]));
+var images_statue_snail_template = [image_statue_snail_template, image_statue_snail_template, image_statue_snail_template, image_statue_snail_template, image_statue_snail_template];
+
