@@ -8407,13 +8407,13 @@ crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
 
 crop3_register_id = 1800;
-var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(5), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6]));
-var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(4), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7));
-var stinging3_8 = registerStinging3('sapphire nettle', 8, Res({infseeds:10e45}), Num(5), Num(25), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader8));
+var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(5), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6, 9]));
+var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(4), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7, [9]));
+var stinging3_8 = registerStinging3('sapphire nettle', 8, Res({infseeds:10e45}), Num(5), Num(25), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader8, [9]));
 
 crop3_register_id = 2100;
-var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop, metalheader7));
-var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop, metalheader8));
+var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
+var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;

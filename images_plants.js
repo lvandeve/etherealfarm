@@ -6143,6 +6143,14 @@ var image_fern_as_crop5 = createPlantImages2(seeds_nettle,
 'hg:#0fff' + fern_base_image_ethereal);
 
 
+// for in infinity field
+
+var image_fern_as_crop_inf = createPlantImages2(seeds_nettle,
+'hg:#f004' + fern_base_image_infinity,
+'hg:#f008' + fern_base_image_infinity,
+'hg:#f00c' + fern_base_image_infinity,
+'hg:#f00f' + fern_base_image_infinity);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -6501,6 +6509,7 @@ function metalify_nonlincolor(v) {
 // *) 6: effect specifically for platinum infinity crops on the bright infinity field background, to have some contrast
 // *) 7: subtle bottom right shadow, again to provide contrast for bright crops like the platinum ones against infinity field background
 // *) 8: hue rotation
+// *) 9: "unlight": make only light parts darker, this is specifically to make the 'flower' part of nettles more visible against the bright background in the infinity field
 // opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
 function metalify(im, metalheader, opt_effects, opt_params) {
   var pal = generatePalette(metalheader);
@@ -6614,6 +6623,15 @@ function metalify(im, metalheader, opt_effects, opt_params) {
             r = rgb[0];
             g = rgb[1];
             b = rgb[2];
+          }
+          if(effect == 9) {
+            var hsv = RGBtoHSV([r, g, b]);
+            if(hsv[2] > 240) {
+              var amount = 1 / (1 + param); // 0.5 for default param=1
+              r *= amount;
+              g *= amount;
+              b *= amount;
+            }
           }
         }
       }
