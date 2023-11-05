@@ -2411,31 +2411,31 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_2].had) unlockInfinityCrop(runestone3_0);
   if(state.crops3[flower3_2].had) unlockInfinityCrop(bee3_2);
 
-  if(state.crops3[berry3_2].had) unlockInfinityCrop(brassica3_3);
+  if(state.crops3[flower3_2].had) unlockInfinityCrop(brassica3_3);
   if(state.crops3[brassica3_3].had) unlockInfinityCrop(berry3_3);
   if(state.crops3[berry3_3].had) unlockInfinityCrop(flower3_3);
   if(state.crops3[flower3_3].had) unlockInfinityCrop(bee3_3);
 
-  if(state.crops3[berry3_3].had) unlockInfinityCrop(brassica3_4);
+  if(state.crops3[flower3_3].had) unlockInfinityCrop(brassica3_4);
   if(state.crops3[brassica3_4].had) unlockInfinityCrop(berry3_4);
   if(state.crops3[berry3_4].had) unlockInfinityCrop(flower3_4);
   if(state.crops3[berry3_4].had) unlockInfinityCrop(mush3_4);
   if(state.crops3[flower3_4].had) unlockInfinityCrop(bee3_4);
 
-  if(state.crops3[berry3_4].had) unlockInfinityCrop(brassica3_5);
+  if(state.crops3[flower3_4].had) unlockInfinityCrop(brassica3_5);
   if(state.crops3[brassica3_5].had) unlockInfinityCrop(berry3_5);
   if(state.crops3[berry3_5].had) unlockInfinityCrop(flower3_5);
   if(state.crops3[berry3_5].had) unlockInfinityCrop(mush3_5);
   if(state.crops3[flower3_5].had) unlockInfinityCrop(bee3_5);
 
-  if(state.crops3[berry3_5].had) unlockInfinityCrop(brassica3_6);
+  if(state.crops3[flower3_5].had) unlockInfinityCrop(brassica3_6);
   if(state.crops3[brassica3_6].had) unlockInfinityCrop(berry3_6);
   if(state.crops3[berry3_6].had) unlockInfinityCrop(flower3_6);
   if(state.crops3[berry3_6].had) unlockInfinityCrop(mush3_6);
   if(state.crops3[flower3_6].had) unlockInfinityCrop(bee3_6);
   if(state.crops3[mush3_6].had) unlockInfinityCrop(stinging3_6);
 
-  if(state.crops3[berry3_6].had) unlockInfinityCrop(brassica3_7);
+  if(state.crops3[flower3_6].had) unlockInfinityCrop(brassica3_7);
   if(state.crops3[brassica3_7].had) unlockInfinityCrop(berry3_7);
   if(state.crops3[berry3_7].had) unlockInfinityCrop(flower3_7);
   if(state.crops3[berry3_7].had) unlockInfinityCrop(mush3_7);
@@ -2443,7 +2443,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[flower3_7].had) unlockInfinityCrop(fern3_7);
   if(state.crops3[mush3_7].had) unlockInfinityCrop(stinging3_7);
 
-  if(state.crops3[berry3_7].had) unlockInfinityCrop(brassica3_8);
+  if(state.crops3[bee3_7].had) unlockInfinityCrop(brassica3_8);
   if(state.crops3[brassica3_8].had) unlockInfinityCrop(berry3_8);
   if(state.crops3[berry3_8].had) unlockInfinityCrop(flower3_8);
   if(state.crops3[berry3_8].had) unlockInfinityCrop(mush3_8);
