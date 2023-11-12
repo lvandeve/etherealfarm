@@ -324,6 +324,7 @@ BluePrint.toCrop = function(i) {
   if(i == 102) return challengestatue_2_template;
   if(i == 103) return challengestatue_3_template;
   if(i == 104) return challengestatue_4_template;
+  if(i == 105) return challengestatue_5_template;
   return -1;
 }
 
@@ -376,6 +377,7 @@ BluePrint.fromCrop = function(c) {
   if(c.index == challengestatue_2) return 102;
   if(c.index == challengestatue_3) return 103;
   if(c.index == challengestatue_4) return 104;
+  if(c.index == challengestatue_5) return 105;
   return 0;
 }
 
@@ -399,6 +401,7 @@ BluePrint.toChar = function(i) {
   if(i == 102) return '2'; // challenge statue
   if(i == 103) return '3'; // challenge statue
   if(i == 104) return '4'; // challenge statue
+  if(i == 105) return '5'; // challenge statue
   return -1;
 }
 

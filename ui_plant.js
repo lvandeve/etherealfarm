@@ -122,7 +122,7 @@ function getCropOrder() {
   for(var i = 0; i < unlocked.length; i++) {
     if(added[unlocked[i]]) continue;
     var c = crops[unlocked[i]];
-    if(c.type == CROPTYPE_CHALLENGE) {
+    if(c.type == CROPTYPE_CHALLENGE && !c.istemplate) {
       result.push(c.index);
       added[c.index] = true;
     }
@@ -347,8 +347,12 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
       var c = crops[index];
 
       if(c.istemplate) {
-        result += 'This template represents all crops of type ' + getCropTypeName(c.type);
-        result += '<br/><br/>It is a placeholder for planning the field layout and does nothing.';
+        if(c.type == CROPTYPE_CHALLENGE) {
+          result += 'This template represents a crop but is non-functional';
+        } else {
+          result += 'This template represents all crops of type ' + getCropTypeName(c.type);
+        }
+        result += '<br><br>It is a placeholder for planning the field layout and does nothing.';
         result += '<br><br>Templates are a feature provided by the automaton.';
         result += '<br><br>Tip: ctrl+shift+click a template, or hover over it and press \'u\', to turn it into a crop of highest available tier of this type.';
       } else if(c.isghost) {

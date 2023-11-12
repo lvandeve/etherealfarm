@@ -2087,8 +2087,9 @@ crop_register_id = 210;
 var challengestatue_0 = registerChallengeCrop('spore statue', 0, Res({seeds:10}), 5, images_statue_spore, 'Spore statue. Makes orthogonally or diagonally connected mushroom stronger, but reduces range. If at least two spores touch a mushroom, makes it focused: more damage to waves with small amount of pests.');
 var challengestatue_1 = registerChallengeCrop('splash statue', 0, Res({seeds:10}), 5, images_statue_splash, 'Splash statue. Makes orthogonally or diagonally connected mushroom weaker, but do splash damage, which is good against groups (but not against splash resistent pests).');
 var challengestatue_2 = registerChallengeCrop('range statue', 0, Res({seeds:10}), 5, images_statue_range, 'Range statue. Increases range of orthogonally or diagonally connected mushroom.');
-var challengestatue_3 = registerChallengeCrop('slow statue', 0, Res({seeds:10}), 5, images_statue_snail, 'Slow statue. Makes orthogonally or diagonally connected mushroom weaker, but slow down pests for a while (unless slow resistent). This effect stacks for a single mushroom, but not multiple.');
-var challengestatue_4 = registerChallengeCrop('seed statue', 0, Res({seeds:10}), 5, images_statue_seed, 'Seed statue. Makes orthogonally or diagonally connected mushroom weaker, but let pests drop more resources when exterminated for a while. This effect stacks for a single mushroom, but not multiple.');
+var challengestatue_3 = registerChallengeCrop('sniper statue', 0, Res({seeds:10}), 5, images_statue_sniper, 'Sniper statue. Makes orthogonally or diagonally connected mushrooms snipers: their range covers the full map, and they hit harder, but they are much slower. Splash damage statues have less effect, the splash only works against 1-cell groups.');
+var challengestatue_4 = registerChallengeCrop('snail statue', 0, Res({seeds:10}), 5, images_statue_snail, 'Snail statue. Makes orthogonally or diagonally connected mushroom weaker, but slow down pests for a while (unless slow resistent). This effect stacks for a single mushroom, but not multiple.');
+var challengestatue_5 = registerChallengeCrop('seed statue', 0, Res({seeds:10}), 5, images_statue_seed, 'Seed statue. Makes orthogonally or diagonally connected mushroom weaker, but let pests drop more resources when exterminated for a while. This effect stacks for a single mushroom, but not multiple.');
 
 
 // templates
@@ -2119,8 +2120,9 @@ crop_register_id = 350;
 var challengestatue_0_template = makeTemplate(registerChallengeCrop('spore statue template', -1, Res({seeds:0}), 0, images_statue_spore_template));
 var challengestatue_1_template = makeTemplate(registerChallengeCrop('splash statue template', -1, Res({seeds:0}), 0, images_statue_splash_template));
 var challengestatue_2_template = makeTemplate(registerChallengeCrop('range statue template', -1, Res({seeds:0}), 0, images_statue_range_template));
-var challengestatue_3_template = makeTemplate(registerChallengeCrop('slow statue template', -1, Res({seeds:0}), 0, images_statue_snail_template));
-var challengestatue_4_template = makeTemplate(registerChallengeCrop('seed statue template', -1, Res({seeds:0}), 0, images_statue_seed_template));
+var challengestatue_3_template = makeTemplate(registerChallengeCrop('sniper statue template', -1, Res({seeds:0}), 0, images_statue_sniper_template));
+var challengestatue_4_template = makeTemplate(registerChallengeCrop('slow statue template', -1, Res({seeds:0}), 0, images_statue_snail_template));
+var challengestatue_5_template = makeTemplate(registerChallengeCrop('seed statue template', -1, Res({seeds:0}), 0, images_statue_seed_template));
 
 // templates that don't represent a croptype, but an individual crop
 var direct_templates = []; // crop to template
@@ -3886,46 +3888,33 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
 `,
 `
 • Pests spawn from the top left of the field and will move towards the tree. Pests spawn in increasingly stronger waves, and defeating a wave will increase the tree level by 1.<br>
-• You should build a maze, with plants, to make the path the pests have to take to the tree longer. Plants can never be deleted but can upgraded and replaced (so the maze shape cannot be altered), and it's not possible to block off the maze, there must always be an open path to the tree.<br>
+• You should build a maze, with crops, to make the path the pests have to take to the tree longer.<br>
+• Crops cannot be deleted (once the waves started), but can upgraded and replaced (so the maze shape cannot be altered, but crop types can be changed)<br>
+• It's not possible to block the maze, there must always be an open path to the tree.<br>
 • The field size is 2 cells larger than usual in each direction.<br>
 • When any pest reaches the tree, it's game over, the tree cannot level any further and the only remaining thing to do is to end the challenge<br>
 • Mushrooms and brassica serve as the towers in "tower defence": they shoot spores at the pests to defeat them before they reach the tree.<br>
 • Various types of statues can be placed next to mushrooms to affect their tower damage type.<br>
 • Seeds are gained by eliminating pests.<br>
-• Plant types:<br>
-  - Mushroom: shoots spores with splash damage at pests, which can hit multiple pests at once. Also produces spores as a resource as usual and requires berry neighbors as usual.
-  - Brassica: hurts nearby pests in 8 directions. Copies damage from mushroom if a mushroom is orthogonally or diagonally next to it. Unlike a regular run, there is no penalty for having multiple brassica, and brassica don't wither. Brassica copy bonus (like brassica fruit or ethereal bonus) don't work during this challenge, it copies a fixed amount.
-  - Statues: when placed orthogonally or diagonally next to a mushroom, affects its type of shot, or damage, in some way, e.g. gives splash damage at the cost of damage amount, or boosts damage.
-  - Berry: does not shoot anything, produces seeds used by neighboring mushrooms (as usual), these seeds do not go to your stacks (you gain seeds from eliminating pests instead). Without a berry next to it, a mushroom cannot attack!
-  - Flower: does not shoot anything, makes berries and mushrooms stronger as usual
-  - Bee: does not shoot anything, makes flowers stronger as usual
-  - Nettle: does not shoot anything, makes mushrooms stronger, but unlike a regular run, also makes the mushroom consume more seeds!
-• Pest types:<br>
-  - Ant: walks at normal speed and has standard health
-  - Tick: comes in groups, which are more easily defeated by splash damage
-  - Termite: walks at slower speed, but is resistant to splash damage
-  - Other pest types get unlocked in later waves, these will have to be discovered by yourself!
-  - Tough and boss variants exist of all pest types, these are stronger relative to their wave number, and bosses move more slowly.
-  - The pests are stronger with each wave (even if they look the same)
-• The shooting damage of mushrooms and brassica depends on their spore production.
-• If any tower hits with extremely high damage compared to the wave's health, it will fast forward to a later wave to speed up the early waves.
-• Ferns don't appear during this challenge.
-• Crops grow faster than usual, but towers cannot attack during the few seconds of growing time.
-• Crops give 100% of resources back when replaced, rather than only a partial recoup. It's possible to change the location of an expensive tower for free by downgrading one and upgrading another this way.
-• Mushroom multiplicity does not make them consume more seeds.
-• Automaton can only auto-plant crops below the current tier. You must plant the best tier manually, to choose the strategic locations yourself. Arrow icons appear on towers that can be upgraded.
-• Any production/s shown for crops is not added to stacks, but instead used for damage calculations. The only income gotten is from exterminating pests. Production/s is shown to be able to see mushroom seed requirement for spores damage. Actual damage is a number that's derived from mushroom spore production and shown in mushroom info.
-• Crop costs for multiple of the same crop type scale higher than in the regular game.
-• Tip: it's important to use flowers and bees to boost crops as usual, and do upgrades as usual, since this massively increases the shooting strength.
-• Tip: you can lay out a maze shape with watercress at the beginning since those are cheap and easy to plant. The maze shape can never be changed anymore for the entire rest of the challenge (but the watercress can be changed into other crops).
-• Tip: don't just make thin walls for the maze but have some place for larger groups of crops, because mushrooms need many different types of crops around them (berry with its own flower and beehive, flower with beehive, nettle, and possibly statues and watercress)
+• The shooting damage of mushrooms and brassica depends on their spore production, which is determined by flowers, nettles and berries as usual.<br>
+• Ferns don't appear during this challenge.<br>
+• Crops grow faster than usual, but towers cannot attack during the few seconds of growing time.<br>
+• Crops give 100% of resources back when replaced, rather than only a partial recoup. It's possible to change the location of an expensive tower for free by downgrading one and upgrading another this way.<br>
+• Mushroom multiplicity does not make them consume more seeds.<br>
+• Brassica can always copy diagonally from mushrooms (no squirrel ability required).<br>
+• There's no penalty to brassica for having multiple brassica, but most brassica copying bonuses (like fruits and ethereal field) don't work.<br>
+• Automaton auto-plant will only work for a small fraction of resources.<br>
+• Any production/s shown for crops is not added to stacks, but instead used for damage calculations. The only income gotten is from exterminating pests. Production/s is shown to be able to see mushroom seed requirement for spores damage. Actual damage is a number that's derived from mushroom spore production and shown in mushroom info.<br>
+• Crop costs for multiple of the same crop type scale higher than in the regular game.<br>
+• If any tower hits with extremely high damage compared to the wave's health, it will fast forward to a later wave to speed up the early waves.<br>
+• See the tower defense help dialog, which can be found under the main menu -> help -> tower defense (down in the list of dynamic help dialogs), or appears when starting tower defense for the first time, for more information on the individual tower and pest types, and tips.<br>
 `,
-['TODO REWARD DESCRIPTION'],
-'TODO UNLOCK REASON TEXT',
+['[REWARD NOT YET IMPLEMENTED FOR BETA]'],
+'[UNLOCK REASON NOT YET IMPLEMENTED FOR BETA]',
 function() {
   // TODO unlock fun
-  //return state.beta;
-  return false;
+  return state.beta;
+  //return false;
 }, function() {
   // TODO reward fun
 }, 0);

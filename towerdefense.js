@@ -464,14 +464,15 @@ function hastenWaves(damage) {
 function getFocusDamageMul(td) {
   //var num = td.num;
   var num = td.pests.length;
-  if(num <= 1) return 4;
+  if(num <= 0) return 1;
+  else if(num <= 1) return 4;
   else if(num <= 2) return 2;
   else if(num <= 3) return 1.5;
   else if(num <= 4) return 1.25;
   return 1;
 }
 
-// x0, y0 = attack origin
+// x0, y0 = attack origin, the location of the tower
 // x1, y1 = attack target
 // splash: if true, it's a splash damage tower, so it can hit all members of a group at once
 // returns true if pest exterminated (and not already exterminated from earlier shot beforehand)
@@ -497,9 +498,9 @@ function attackPest(td, index, damage, x0, y0, x1, y1, splash, focus, slow, mone
   if(splash && p2.splahsresistant) return false; // resistent to splash damage, but it may still get the slow or money effects above
 
   if(focus) {
-    console.log('damage before: ' + damage.toString());
+    //console.log('damage before: ' + damage.toString());
     damage = damage.mulr(getFocusDamageMul(td));
-    console.log('damage after: ' + damage.toString());
+    //console.log('damage after: ' + damage.toString());
   }
 
   if(p2.group > 1) {
@@ -609,7 +610,8 @@ var td_pattern_5 = [
 ];
 
 // assumes that the crop at x, y is a mushroom
-// returns array of [damage mul, dist diff, splash]
+// the "sniper" effect overrides dist, sniper makes it effectively infinite
+// returns array of [damage mul, dist, splash, sniper, slow, seed, focus]
 function getTDStatueMods(x, y) {
   var statue_mul = 1;
   var statue_dist = 3;
@@ -617,6 +619,7 @@ function getTDStatueMods(x, y) {
   var statue_slow = 0;
   var statue_seed = 0;
   var statue_focus = false;
+  var statue_sniper = false;
   var num_dmg = 0;
   var num_splash = 0;
   var num_range = 0;
@@ -639,9 +642,12 @@ function getTDStatueMods(x, y) {
         num_range++;
       }
       if(c2.index == challengestatue_3) {
-        num_slow++;
+        statue_sniper = true;
       }
       if(c2.index == challengestatue_4) {
+        num_slow++;
+      }
+      if(c2.index == challengestatue_5) {
         num_seed++;
       }
     }
@@ -660,7 +666,8 @@ function getTDStatueMods(x, y) {
   if(statue_dist > 5) statue_dist = 5;
   //statue_focus = !statue_splash && num_dmg >= 1;
   statue_focus = num_dmg >= 2;
-  return [statue_mul, statue_dist, statue_splash, statue_slow, statue_seed, statue_focus];
+  if(statue_sniper) statue_mul *= 6;
+  return [statue_mul, statue_dist, statue_splash, statue_sniper, statue_slow, statue_seed, statue_focus];
 }
 
 function attackPests() {
@@ -684,8 +691,7 @@ function attackPests() {
       var damage = getTDCropDamage(c, f);
       if(damage.ler(0)) continue; // e.g. mushroom without berry, or not an attacking crop at all
 
-      if(td.towers[y][x].lastattack + 1 >= td.ticks ) continue; // towers only attack every two frames, but are not limited to even or odd td.ticks to be able to hit fast ones
-      td.towers[y][x].lastattack = td.ticks;
+      if(td.towers[y][x].lastattack + 1 >= td.ticks) continue; // towers only attack every two frames, but are not limited to even or odd td.ticks to be able to hit fast ones
 
       if(c.type == CROPTYPE_BRASSICA) {
         for(var dir = 0; dir < 8; dir++) {
@@ -704,19 +710,31 @@ function attackPests() {
         var statue_mul = mods[0];
         var statue_dist = mods[1];
         var statue_splash = mods[2];
-        var statue_slow = mods[3];
-        var statue_seed = mods[4];
-        var statue_focus = mods[5];
+        var statue_sniper = mods[3];
+        var statue_slow = mods[4]; // slows down pests
+        var statue_seed = mods[5];
+        var statue_focus = mods[6];
         var target = undefined;
         var targetx = undefined;
         var targety = undefined;
+        if(statue_sniper && td.towers[y][x].lastattack + 8 >= td.ticks) continue; // sniper towers attack much slower
         damage = damage.mulr(statue_mul);
         //var targethp = Num(0);
         var targetdist = 99999;
         var pattern = statue_dist >= 5 ? td_pattern_4 : (statue_dist >= 4 ? td_pattern_4 : ((statue_dist <= 2) ? td_pattern_2 : td_pattern_3));
-        for(var dir = 0; dir < pattern.length; dir++) {
-          var x2 = x + pattern[dir][0];
-          var y2 = y + pattern[dir][1];
+        var i = 0;
+        for(;;) {
+          var x2, y2;
+          if(statue_sniper) {
+            if(i >= state.numw * state.numh) break;
+            x2 = i % state.numw;
+            y2 = Math.floor(i / state.numw);
+          } else {
+            if(i >= pattern.length) break;
+            x2 = x + pattern[i][0];
+            y2 = y + pattern[i][1];
+          }
+          i++;
           if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
           var cell = td.pestspercell[y2][x2];
           for(var j = 0; j < cell.length; j++) {
@@ -732,7 +750,7 @@ function attackPests() {
           }
         }
         if(target != undefined) {
-          if(statue_splash) {
+          if(statue_splash && !statue_sniper) {
             // splash damage
             for(var dir = 0; dir < td_pattern_2.length; dir++) {
               var x3 = targetx + td_pattern_2[dir][0];
@@ -740,16 +758,18 @@ function attackPests() {
               if(x3 < 0 || x3 >= state.numw || y3 < 0 || y3 >= state.numh) continue;
               var cell = td.pestspercell[y3][x3];
               for(var j = 0; j < cell.length; j++) {
-                attackPest(td, cell[j], damage, targetx, targety, x3, y3, statue_splash, statue_focus, statue_slow, statue_seed);
+                attackPest(td, cell[j], damage, x, y, x3, y3, statue_splash, statue_focus, statue_slow, statue_seed);
               }
               createBulletAnimation(targetx, targety, x3, y3, 2);
             }
           } else {
+            // splash effect on single-cell group here still possible, for sniper statue
             attackPest(td, target, damage, x, y, targetx, targety, statue_splash, statue_focus, statue_slow, statue_seed);
           }
           createBulletAnimation(x, y, targetx, targety, 1);
         }
       }
+      td.towers[y][x].lastattack = td.ticks;
     }
   }
 
@@ -779,7 +799,7 @@ function randomTDRoll(wave, what) {
   return getRandomRoll(seed)[1];
 }
 
-function createRandomWave(td, wave, wavehealth) {
+function createRandomWave(td, wave, wavehealth, opt_force_num, opt_force_type) {
   var roll;
 
   var num_pests;
@@ -791,6 +811,8 @@ function createRandomWave(td, wave, wavehealth) {
   } else {
     num_pests = 8 + Math.floor(roll * 24);
   }
+
+  if(opt_force_num != undefined) num_pests = opt_force_num;
 
   roll = randomTDRoll(wave, 1);
   var num_types;
@@ -814,6 +836,8 @@ function createRandomWave(td, wave, wavehealth) {
       types[i] = registered_pests[Math.floor(roll * registered_pests.length)];
     }
   }
+
+  if(opt_force_type != undefined) types = [registered_pests[opt_force_type]];
 
   var relhp = 0;
   var result = [];
@@ -842,7 +866,7 @@ function createRandomWave(td, wave, wavehealth) {
   return result;
 }
 
-function spawnWave() {
+function spawnWave(opt_force_num, opt_force_type) {
   var td = state.towerdef;
   if(td.gameover || !td.started) return;
 
@@ -860,7 +884,7 @@ function spawnWave() {
   td.wavestarttime = state.time;
   td.waveendtime = 0;
 
-  td.pests = createRandomWave(td, wave, wavehealth);
+  td.pests = createRandomWave(td, wave, wavehealth, opt_force_num, opt_force_type);
   td.num = td.pests.length;
   state.g_td_spawns += td.num;
   state.c_td_spawns += td.num;

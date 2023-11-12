@@ -105,8 +105,12 @@ function getCropInfoHTML(f, c, opt_detailed) {
   var p = prefield[f.y][f.x];
 
   if(c.istemplate) {
-    result += '<br/><br/>This template represents all crops of type ' + getCropTypeName(c.type);
-    result += '<br/><br/>It is a placeholder for planning the field layout and does nothing.';
+    if(c.type == CROPTYPE_CHALLENGE) {
+      result += '<br><br>This template represents a crop but is non-functional';
+    } else {
+      result += '<br><br>This template represents all crops of type ' + getCropTypeName(c.type);
+    }
+    result += '<br><br>It is a placeholder for planning the field layout and does nothing.';
     result += '<br><br>Templates are a feature provided by the automaton.';
     result += '<br><br>Tip: ctrl+shift+click, or press "u", on a template to turn it into a crop of highest available tier of this type';
 
@@ -229,19 +233,28 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
   if(state.challenge == challenge_towerdefense && (c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BRASSICA)) {
     var dmg = getTDCropDamage(c, f);
-    var mods = getTDStatueMods(f.x, f.y);
-    dmg.mulrInPlace(mods[0]);
-    result += 'Damage: ' + dmg.toString();
-    if(mods[5]) {
-      var mul = getFocusDamageMul(state.towerdef);
-      if(mul != 1) result += ' x' + mul + ': focused';
+    if(c.type == CROPTYPE_MUSH) {
+      var mods = getTDStatueMods(f.x, f.y);
+      dmg.mulrInPlace(mods[0]);
+      result += 'Damage: ' + dmg.toString();
+      if(mods[6]) {
+        var mul = getFocusDamageMul(state.towerdef);
+        if(mul != 1) result += ' x' + mul + ': focused';
+      }
+      if(mods[0] > 1) result += ' (statues bonus: +' + Num(mods[0] - 1).toPercentString() + ')';
+      if(mods[0] < 1) result += ' (statues malus: -' + Num(1 - mods[0]).toPercentString() + ')';
+      if(mods[2]) result += '<br>Statue effect: splash damage';
+      if(mods[3]) result += '<br>Statue effect: sniper (strong & far but slow)';
+      if(mods[4]) result += '<br>Statue effect: slow';
+      if(mods[5]) result += '<br>Statue effect: rich (gives more seeds)';
+      if(mods[6]) result += '<br>Statue effect: focused (+' + Num(getFocusDamageMul(state.towerdef) - 1).toPercentString() + ')';
+
+      if(mods[3]) result += '<br>Range: infinite';
+      else result += '<br>Range: ' + mods[1];
+    } else {
+      result += 'Damage: ' + dmg.toString();
+      result += '<br>Range: 1.';
     }
-    if(mods[0] > 1) result += ' (statues bonus: +' + Num(mods[0] - 1).toPercentString() + ')';
-    if(mods[0] < 1) result += ' (statues malus: -' + Num(1 - mods[0]).toPercentString() + ')';
-    if(mods[2]) result += '<br>Statue effect: splash damage';
-    if(mods[3]) result += '<br>Statue effect: slow';
-    if(mods[4]) result += '<br>Statue effect: more resources';
-    result += '<br>Range: ' + mods[1];
 
     result += '<br/>';
     //result += 'Production for next wave: ' + getTDCropProd(c, f).toString() + '<br/>';
@@ -768,7 +781,7 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
       if(state.challenge == challenge_towerdefense) {
         var c = fm.getCrop();
         var ccrop0 = challengestatue_0;
-        var ccrop1 = challengestatue_2;
+        var ccrop1 = challengestatue_5;
         if(c.index >= ccrop0 && c.index <= ccrop1) {
           var index2 = c.index + 1;
           if(index2 > ccrop1) index2 = ccrop0;

@@ -349,11 +349,13 @@ function startChallenge(challenge_id) {
     state.crops[challengestatue_2].unlocked = true;
     state.crops[challengestatue_3].unlocked = true;
     state.crops[challengestatue_4].unlocked = true;
+    state.crops[challengestatue_5].unlocked = true;
     state.crops[challengestatue_0_template].unlocked = true;
     state.crops[challengestatue_1_template].unlocked = true;
     state.crops[challengestatue_2_template].unlocked = true;
     state.crops[challengestatue_3_template].unlocked = true;
     state.crops[challengestatue_4_template].unlocked = true;
+    state.crops[challengestatue_5_template].unlocked = true;
     resetTD();
   }
 

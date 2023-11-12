@@ -544,30 +544,69 @@ function makeTDHelpDialogImages() {
   var tt = blendImages(images_field[0][0], tree_images[treeLevelIndex(20)][1][1]);
   var tb = blendImages(images_field[0][0], tree_images[treeLevelIndex(20)][2][1]);
 
-  return [[bu, wc, zz, fi, fi, ae, fi],
-          [fi, wc, fl, fi, wc, wc, fi],
+  return [[bu, fl, zz, fi, fi, ae, fi],
+          [fi, wc, fl, fi, mm, bb, fi],
           [as, ne, mm, fi, fi, zz, fi],
           [fi, sa, bb, wc, an, fl, fi],
           [fi, zz, fl, fi, fi, bb, fi],
-          [fi, wc, wc, fi, fl, mm, tt],
+          [fi, mm, bb, fi, fl, mm, tt],
           [fi, fi, fi, fi, zz, ne, tb]];
 }
 
-registerHelpDialog(44, 'Tower defense', 'You unlocked the tower defense challenge!',
-    `TODO:
+registerHelpDialog(44, 'Tower defense', 'You started the tower defense challenge!',
+    `
+    Tower defense plays very different from the regular game, this help summarizes it all.
     <br><br>
-    TODO Tower defense help text
+    During tower defense, waves of pests will spawn from the burrow at the top left of the field, and want to move to the tree. As soon as any pest reaches the tree, it's game over and the challenge must be ended. Two types crops can attack pests: mushrooms and brassica. All other crops are support crops required to make the mushroom and brassica work.
+    <br><br>
+    Crop types:<br>
+    • mushroom: Requires a neighboring berry, and boosted by flower and nettles as usual. Can attack at range.<br>
+    • brassica: Requires neighboring mushroom (diagonal works too) to copy spores from. Can attack directly adjecent pests only, but multiple at the same time.<br>
+    • berry: required to make mushrooms work. Produces seeds for the mushroom. Does not produce seeds for the player (seeds are gained from exterminated pests instead)<br>
+    • flower: boost neighboring mushrooms and berries as usual<br>
+    • bee: boosts neighboring flowers as usual<br>
+    • nettle: boosts neighboring mushrooms as usual<br>
+    • statues: different types exist, affects orthogonally or diagonally adjecent mushrooms with improved damage and special effects, see list further in this help for the types and their effects<br>
+    <br><br>
+    You must exterminate waves of pests to progress to the next level. Pests drop spores and seeds, spores to level up the tree to the next level, seeds to allow building better towers. All crops block the path of pests, so you can build a maze to extend the distance they have to walk to reach the tree. However, it's impossible to close the maze (there must always be some path), and it's impossible to delete crops (but you can change their type).
+    <br><br>
+    Build a maze first, and press the 'GO' button in the top right when ready to spawn the first wave. If you're much stronger than the first wave, it'll skip ahead to later waves. Before starting the first wave, deleting crops is still possible so you can fix mistakes in the shape of the maze until then.
+    <br><br>
+    Tips:<br>
+    • Ensure a mushroom is surrounced by a flower with bee, a berry with flower with bee, a nettle, and possibly statues and brassica. Missing any of these components makes the mushroom much weaker than is possible.<br>
+    • Build a long maze from crops, so that the pests spend a long time to reach it and can be attacked for longer, but also have enough densely packed groups of crops to have mushrooms with all the support crops and multiple statues.<br>
+    • Groups of multiple pests are best defeated with splash damage, while a single pest with a lot of health is better dealt with by a sniper tower or towers with many spore statue boosts.<br>
+    <br><br>
+    Pest types:<br>
+    • ant: standard health, standard speed.<br>
+    • fire ant: more health, standard speed, resistant to snail statues.<br>
+    • beetle: much more health, moves more slowly.<br>
+    • tick: comes in a group within a single cell, splash damage is more effective.<br>
+    • roach: less health, but moves fast.<br>
+    • termite: more health, moves slower, resistant to splash damage and snail statues<br>
+    • flea: comes in a group within a single cell (splash damage is more effective), and moves fast<br>
+    • aphid: comes in a group within a single cell (splash damage is more effective), and has more health but is slower<br>
+    • locust: moves fast<br>
+    <br><br>
+    Statue effects:<br>
+    • spore statue: makes tower stronger. Can be stacked. If two or more statues active, makes the tower focused (extra damage) when there is a small amount of pests on screen.<br>
+    • splash statue: makes tower do splash damage (both within single-cell group pests, and to neighboring pests) but do less single-cell damage.<br>
+    • range statue: makes tower reach one cell further. Can be stacked.<br>
+    • sniper statue: makes tower stronger and reach whole map, but much slower.<br>
+    • snail statue: makes tower cause pests to move slower for a fixed amount of steps. Can be stacked.<br>
+    • seed statue: makes tower cause pests to drop more resources. Can be stacked.<br>
     <br><br>
     Shortcuts:<br>
-    Shortcuts:
-    With a few exceptions, these shortcuts are the same as in the regular game, and regular game shortcuts not listed here work too (regular shortcuts are listed in the shortcuts help from the settings dialog).<br>
-    Shortcuts:
-    • w: spawn next save. Same as the 'GO' button. Also required to start the first wave.<br>
+    • w: spawn next wave. Same as the 'GO' button. Also required to start the first wave.<br>
     • u: upgrade tower under mouse cursor.<br>
     • d: downgrade tower under mouse cursor (gives refund), if waves not started yet deletes as usual (in regular game, and before waves started, 'd' deletes, 'shift+d' downgrades).<br>
     • shift+p: overplant with picked (with 'p') crop type (same shortcut as in regular game, but useful here to quickly change crop/tower types).<br>
     • ctrl+click a statue: change into different type of statue.<br>
-    `,
+    • most other shortcuts of the regular game (like p to plant) work too, the above lists alterd or relevant shortcuts.<br>
+    <br><br>
+    The exact rules of the tower defense challenge:
+    <br><br>
+    ` + challenges[challenge_towerdefense].getRulesDescription(),
     images_ant[0],
     undefined,
     makeTDHelpDialogImages());
