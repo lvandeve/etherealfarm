@@ -201,6 +201,12 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
     };
   }
 
+  if(!bought) {
+    registerTooltip(textFlex.div, 'Buy ' + lower(infoText)); // the infoText starts with 'Squirrel upgrade: ...', so this becomes: 'Buy squirrel upgrade: ...'
+  } else {
+    registerTooltip(textFlex.div, infoText);
+  }
+
 
   registerAction(canvasFlex.div, function(shift, ctrl) {
     var buyfun2 = undefined;
@@ -223,7 +229,7 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
     dialog.content.div.innerHTML = infoText;
   }, 'show squirrel upgrade info', {
     tooltip:function() {
-      return getSquirrelUpgradeInfoText(u, gated, is_gate, unknown);
+      return 'show info for: ' + u.name;
     }
   });
 

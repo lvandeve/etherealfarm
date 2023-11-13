@@ -2131,6 +2131,7 @@ direct_templates[challengestatue_1] = challengestatue_1_template;
 direct_templates[challengestatue_2] = challengestatue_2_template;
 direct_templates[challengestatue_3] = challengestatue_3_template;
 direct_templates[challengestatue_4] = challengestatue_4_template;
+direct_templates[challengestatue_5] = challengestatue_5_template;
 
 var direct_templates_inv = []; // template to crop
 for(var k in direct_templates) {
@@ -2757,7 +2758,7 @@ var nettleunlock_2 = registerCropUnlock(nettle_2, getNettleCost(2), undefined, f
 
   if(state.crops[mush_2].had > 1) return true; // had > 1 means had a prestiged one
   if(state.crops[berry_6].had > 1) return true; // the berry after mush_2 (prestiged)
-  if(state.challenge == challenge_towerdefense && (state.crops[mush_2].unlocked || state.crops[berry_6].unlocked)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
+  if(state.challenge == challenge_towerdefense && (state.crops[mush_2].prestige || state.crops[berry_6].prestige)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
   return false;
 });
 
