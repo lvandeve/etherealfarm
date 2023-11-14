@@ -3897,13 +3897,14 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
 • Mushrooms and brassica serve as the towers in "tower defence": they shoot spores at the pests to defeat them before they reach the tree.<br>
 • Various types of statues can be placed next to mushrooms to affect their tower damage type.<br>
 • Seeds are gained by eliminating pests.<br>
-• The shooting damage of mushrooms and brassica depends on their spore production, which is determined by flowers, nettles and berries as usual.<br>
-• Ferns don't appear during this challenge.<br>
-• Crops grow faster than usual, but towers cannot attack during the few seconds of growing time.<br>
-• Crops give 100% of resources back when replaced, rather than only a partial recoup. It's possible to change the location of an expensive tower for free by downgrading one and upgrading another this way.<br>
+• The shooting damage of mushrooms and brassica depends on their spore production, which is determined by flowers, stingy crops and berries as usual (mostly).<br>
+• Stingy crops boost mushrooms, but unlike normally also increase their seed consumption.<br>
 • Mushroom multiplicity does not make them consume more seeds.<br>
 • Brassica can always copy diagonally from mushrooms (no squirrel ability required).<br>
 • There's no penalty to brassica for having multiple brassica, but most brassica copying bonuses (like fruits and ethereal field) don't work.<br>
+• Ferns don't appear during this challenge.<br>
+• Crops grow faster than usual, but towers cannot attack during the few seconds of growing time.<br>
+• Crops give 100% of resources back when replaced, rather than only a partial recoup. It's possible to change the location of an expensive tower for free by downgrading one and upgrading another this way.<br>
 • Automaton auto-plant will only work for a small fraction of resources.<br>
 • Any production/s shown for crops is not added to stacks, but instead used for damage calculations. The only income gotten is from exterminating pests. Production/s is shown to be able to see mushroom seed requirement for spores damage. Actual damage is a number that's derived from mushroom spore production and shown in mushroom info.<br>
 • Crop costs for multiple of the same crop type scale higher than in the regular game.<br>

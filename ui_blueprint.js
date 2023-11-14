@@ -198,7 +198,11 @@ function plantBluePrint(b, allow_override, opt_by_automaton) {
           if(f.index != FIELD_MULTIPART) {
             if(!c2) continue; // field has something, but not crop (e.g. tree), so continue
             if(c2.index == c.index) continue;
-            if(c2.type == c.type && !c2.isghost) continue; // keep same types
+            var sametype = (c2.type == c.type && !c2.isghost);
+            if(state.challenge == challenge_towerdefense && c.type == CROPTYPE_CHALLENGE) {
+              if(direct_templates_inv.hasOwnProperty(c.index) && direct_templates_inv[c.index] != c2.index) sametype = false;
+            }
+            if(sametype) continue; // keep same types
           }
         }
       } else {
@@ -557,12 +561,12 @@ function blueprintFromText(text, b, ethereal) {
         if(strip_spaces) continue;
       }
       data[y][x] = BluePrint.fromChar(c);
-      // parse potential tier number. This is only used for ethereaal case, but also parsed (and ignored) in non-ethereal case
-      var num = '';
-      while(pos < line.length && line.charCodeAt(pos) >= 48 && line.charCodeAt(pos) <= 57) {
-        num += line[pos++];
-      }
       if(ethereal) {
+        // parse potential tier number. This is only used for ethereal case, in non-ethereal case numbers are used for some challenge crops
+        var num = '';
+        while(pos < line.length && line.charCodeAt(pos) >= 48 && line.charCodeAt(pos) <= 57) {
+          num += line[pos++];
+        }
         var t = num == '' ? -1 : parseInt(num);
         tier[y][x] = t;
       }
@@ -829,12 +833,12 @@ function createBlueprintDialog(b, ethereal, index_pointer, opt_onclose) {
     did_edit = true;
   }, 'Save the current field state into this blueprint. You can use the cancel button below to undo this.');
 
-  addButton('To TXT', function(e) {
+  addButton('Export TXT', function(e) {
     // for now as a hidden feature (until better UI for this is implemented), holding shift exports the ethereal blueprint without the tier numbers
     exportBluePrint(b, ethereal, ethereal && !e.shiftKey);
   }, 'Export the blueprint to text format, for external storage and sharing');
 
-  addButton('From TXT (edit)', function() {
+  addButton('Import TXT (edit)', function() {
     importBluePrintDialog(function(text) {
       blueprintFromText(text, b, ethereal);
       update();

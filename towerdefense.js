@@ -252,7 +252,7 @@ function computePestsRenderInfo() {
     if(r.images.length > 4 && i + 2 < td.pests.length) imdir = (r.images.length & 3); // on the spawn point a lot of pests can be stacked on top together, so use rotated images to show that there are many there. But ensure the last few are rendered facing the correct direction, so only some below are rotated and the top one looks correct.
     r.images.push(p2.images[imdir]);
     var name = pests[p.index].name;
-    r.tooltip += '<br>' + upper(name) + ', hp: ' + p.hp.toString() + ' / ' + p.maxhp.toString() + ', speed: ' + Num(2 / p2.speed).toString();
+    r.tooltip += '<br>' + upper(name) + ', hp: ' + p.hp.toString()/* + ' / ' + p.maxhp.toString()*/ + ', speed: ' + Num(2 / p2.speed).toString();
     if(p2.group != 1) r.tooltip += '. Group size: ' + p2.group;
     if(p2.splahsresistant) r.tooltip += '. Splash resist';
     if(p2.slowresistant) r.tooltip += '. Slow resist';

@@ -565,7 +565,7 @@ registerHelpDialog(44, 'Tower defense', 'You started the tower defense challenge
     • berry: required to make mushrooms work. Produces seeds for the mushroom. Does not produce seeds for the player (seeds are gained from exterminated pests instead)<br>
     • flower: boost neighboring mushrooms and berries as usual<br>
     • bee: boosts neighboring flowers as usual<br>
-    • nettle: boosts neighboring mushrooms as usual<br>
+    • nettle: boosts neighboring mushrooms, but also increases seed consumption, unlike normally<br>
     • statues: different types exist, affects orthogonally or diagonally adjecent mushrooms with improved damage and special effects, see list further in this help for the types and their effects<br>
     <br><br>
     You must exterminate waves of pests to progress to the next level. Pests drop spores and seeds, spores to level up the tree to the next level, seeds to allow building better towers. All crops block the path of pests, so you can build a maze to extend the distance they have to walk to reach the tree. However, it's impossible to close the maze (there must always be some path), and it's impossible to delete crops (but you can change their type).

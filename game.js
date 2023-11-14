@@ -2811,13 +2811,15 @@ function getHighestAffordableCropOfType(type, res, allow_template) {
   }
 }
 
-// get cheapest unlocked crop you can plant
+// get cheapest unlocked crop you can plant for the given type (independent of field location, ...)
 function getCheapestNextOfCropType(type, opt_tier) {
   if(type == CROPTYPE_CHALLENGE) {
     if(!state.challenge) return null;
     // this is for the challenge_towerdefense statue templates
     for(var k in direct_templates_inv) {
       if(!direct_templates_inv.hasOwnProperty(k)) continue;
+      // this is independent of field location, getCheapestNextOfCropType here is used for finding cheapest upgrade anywhere on the field
+      // but it does look at what templates are present on the field, since it needs to know more than just the type for direct templates
       if(state.cropcount[k]) return crops[direct_templates_inv[k]];
     }
     return null;
@@ -2895,13 +2897,20 @@ function computeNextAutoPlant() {
         if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
         if(type == CROPTYPE_NUT && tooManyNutsPlants(c.isReal())) continue; // can only have 1 at the same time
         if(state.numgrowing >= 1 && state.challenge == challenge_towerdefense) {
+          // TD avoid too many at once
           var td_ok = false;
           if(c.istemplate) td_ok = true;
           if(f.growth < 1) td_ok = true;
           if(c.type == CROPTYPE_BRASSICA) td_ok = true;
           if(!td_ok) continue; // during TD, don't grow too many towers at once: because if they all grow at same time, none can shoot and that may cause a loss due to pests just passing by
+
+          // TD match different statue types while they all have same crop type (direct templates)
+          if(crop.type == CROPTYPE_CHALLENGE && direct_templates_inv.hasOwnProperty(c.index)) {
+            if(direct_templates_inv[c.index] != crop.index) continue;
+          }
         }
         if(next_auto_plant == undefined || time < next_auto_plant.time) next_auto_plant = {index:crop.index, x:x, y:y, time:time};
+        // make it break all the nested loops
         x = state.numw;
         y = state.numh;
         break;

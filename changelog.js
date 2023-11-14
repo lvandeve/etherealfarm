@@ -21,8 +21,12 @@ function getChangeLog() {
   var text = '';
 
   if(window['global_is_beta'] && window['beta_patchnotes']) {
-    text += 'BETA patch notes (this list is not guaranteed to be fully accurate):';
+    text += '<hr>';
+    text += 'BETA patch notes:';
     text += window['beta_patchnotes'];
+    text += '<br/><br/>';
+    text += 'End of BETA patch notes';
+    text += '<hr>';
     text += '<br/><br/>';
   }
 
