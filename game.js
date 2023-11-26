@@ -937,6 +937,8 @@ function clearUndo() {
   lastUndoSaveTime = 0;
 }
 
+var next_undo_is_redo = false; // TODO: this works as long as you're in the same session, but when refreshing this may make it say the opposite thing than it should
+
 function storeUndo(state) {
   // use state.time, not util.getTime() here: auto-actions are an exceptional case where undo is saved automatically without player-action, and so can happen during fast-forward time. so if it uses the real time, it sets the lastUndoSaveTime wrongly (to a too recent time, namely right now), so if player then does a manual action now, undo for the player action won't be saved but the saved undo from right before the auto-action, even if it was long ago in actuality, will be kept.
   lastUndoSaveTime = state.time; //util.getTime();
@@ -944,6 +946,7 @@ function storeUndo(state) {
     //console.log('undo saved');
     undoSave = s;
     util.setLocalStorage(undoSave, localstorageName_undo);
+    next_undo_is_redo = false;
   }, function() {
     undoSave = '';
   });
@@ -961,7 +964,8 @@ function loadUndo() {
   }
   save(state, function(redoSave) {
     load(undoSave, function(state) {
-      showMessage('Undone', C_UNDO, 217654408);
+      showMessage(next_undo_is_redo ? 'Redone' : 'Undone', C_UNDO, 217654408);
+      next_undo_is_redo = !next_undo_is_redo;
       initUI();
       update();
       undoSave = redoSave;
@@ -2474,7 +2478,9 @@ function maybeUnlockFishes() {
   if(state.fishes[anemone_1].had) unlockFish(puffer_1);
 
   if(state.fishes[puffer_1].had) unlockFish(eel_1);
+  if(state.fishes[puffer_1].had) unlockFish(leporinus_0);
   if(state.fishes[eel_1].had) unlockFish(tang_1);
+
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
   if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
@@ -2885,6 +2891,8 @@ function computeNextAutoPlant() {
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
 
+    //if(crop.gt(state.res.mulr(fraction))) continue; // similar to the maxcost check in autoPlant, but doesn't have the 'res' variable input available here. But also doing this check here prevents continuously true 'next_auto_unlock' in some edge cases (like tower defense) causing
+
     for(var y = 0; y < state.numh; y++) {
       for(var x = 0; x < state.numw; x++) {
         var f = state.field[y][x];
@@ -3012,6 +3020,8 @@ function computeNextAutoUnlock() {
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
 
+    if(u.getCost().gt(state.res.mulr(fraction))) continue; // similar to the maxcost check in autoUnlock, but doesn't have the 'res' variable input available here. But also doing this check here prevents continuously true 'next_auto_unlock' in some edge cases (like tower defense) causing
+
     if(next_auto_unlock == undefined || time < next_auto_unlock.time) next_auto_unlock = {index:u.index, time:time};
     // prioritize mistletoe if close enough, so that mistletoes grow before mushrooms when player wants them in the blueprint
     if(u.index == mistletoeunlock_0 && time < 2) {
@@ -3070,6 +3080,8 @@ function computeNextAutoPrestige() {
 
     var time = computeFractionTime(cost, fraction);
     if(time == Infinity) continue;
+
+    if(u.getCost().gt(state.res.mulr(fraction))) continue; // similar to the maxcost check in autoPrestige, but doesn't have the 'res' variable input available here. But also doing this check here prevents continuously true 'next_auto_unlock' in some edge cases (like tower defense) causing
 
     if(next_auto_prestige == undefined || time < next_auto_prestige.time) next_auto_prestige = {index:u.index, time:time};
   }
@@ -3142,7 +3154,7 @@ function nextEventTime() {
       var c = f.getCrop();
       if(c) {
         if(!c.isReal()) continue;
-        if(c.type == CROPTYPE_BRASSICA) {
+        if(c.type == CROPTYPE_BRASSICA && state.challenge != challenge_towerdefense) {
           var infinitelifetime = hasBrassicaInfiniteLifetime(c);
           if(!(infinitelifetime && f.growth == 0)) {
             if(state.upgrades[watercress_choice0].count == 2) addtime(10, 'brassica'); // gradual bonus dropdown over time
@@ -3196,9 +3208,11 @@ function nextEventTime() {
   }
 
   // tree level up
-  var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores); // NOTE: this can be negative if you have more spores while the tree is busy leveling up. addtime protects against negative times to avoid issues with this
-  var treetime = treereq.div(gain.spores).valueOf();
-  addtime(treetime, 'tree');
+  if(state.challenge != challenge_towerdefense) {
+    var treereq = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores); // NOTE: this can be negative if you have more spores while the tree is busy leveling up. addtime protects against negative times to avoid issues with this
+    var treetime = treereq.div(gain.spores).valueOf();
+    addtime(treetime, 'tree');
+  }
 
   // auto-upgrades
   if(autoUpgradesEnabled() && !!next_auto_upgrade) {
@@ -4746,7 +4760,8 @@ var update = function(opt_ignorePause) {
 
         if(state.present_effect && state.presentx == action.x && state.presenty == action.y) {
           clickedpresent = true;
-          state.g_numpresents[1]++;
+          var numpresents_index = holidayPresentIndex();
+          state.g_numpresents[numpresents_index] = (state.g_numpresents[numpresents_index] || 0) + 1;
           store_undo = true;
         }
       } else if(type == ACTION_ABILITY) {
@@ -5144,6 +5159,9 @@ var update = function(opt_ignorePause) {
           } else {
             td_go_now = true;
           }
+        }
+        if(state.towerdef.gameover) {
+          showMessage('Can\'t spawn any more waves, it\'s game over', C_TD, 1250454032);
         }
       } else if(type == ACTION_TRANSCEND) {
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
@@ -5574,7 +5592,7 @@ var update = function(opt_ignorePause) {
       }
 
       // the state.g_numpresents < 3000 check is a safety guard in case bugs related to present spawning appear. 3000 is the max amount that could spawn in a month (it is at least 15 minutes per present)
-      if(!state.present_effect && !clickedpresent && state.g_numplanted >= 2 && state.g_numpresents[1] < 3000 && state.challenge != challenge_towerdefense) {
+      if(!state.present_effect && !clickedpresent && state.g_numplanted >= 2 && !(state.g_numpresents[numpresents_index] > 3000) && state.challenge != challenge_towerdefense) {
         if(state.time > state.lastPresentTime + state.presentwait) {
           var s = getRandomPreferablyEmptyFieldSpot();
           if(s) {
@@ -5995,7 +6013,8 @@ var update = function(opt_ignorePause) {
       }
     }
 
-    if(state.challenge == challenge_towerdefense) {
+    // The done check is there because for TD we don't want to run it while fast-running savegames. Only the last instance of the loop here has done=true
+    if(state.challenge == challenge_towerdefense && done) {
       var td = state.towerdef;
       if(!td.gameover && td.started) {
         if(!tdWaveActive() && (state.time > tdNextWaveTime() || td_go_now)) {
@@ -6004,6 +6023,8 @@ var update = function(opt_ignorePause) {
         if(tdWaveActive()) {
           runTD();
         }
+      } else {
+        precomputeTD(); // normally not needed, but it is if this is right after loading a save file
       }
     }
 

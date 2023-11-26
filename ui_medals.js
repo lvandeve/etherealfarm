@@ -124,26 +124,20 @@ function updateMedalUI() {
     }
 
     var flex;
+    var div;
+    var canvas;
     if(!medal_flexes[i]) {
       flex = new Flex(medalGrid, [0, 0, xpos / 10], [0, 0, ypos / 10], (xpos + 1) / 10 - 0.005, [0, 0, (ypos + 1) / 10 - 0.005]);
       medal_flexes[i] = flex;
-    } else {
-      flex = medal_flexes[i];
-    }
-
-    var div = flex.div;
-    var canvas;
-    if(!medal_canvases[i]) {
+      div = flex.div;
       canvas = createCanvas('0%', '0%', '100%', '100%', div);
       medal_canvases[i] = canvas;
     } else {
+      flex = medal_flexes[i];
       canvas = medal_canvases[i];
+      div = flex.div;
+      util.removeAllEvents(div);
     }
-
-    var flex = medal_flexes[i];
-    var canvas = medal_canvases[i];
-
-    var div = flex.div;
 
     renderImage(icon, canvas);
     if(m2.earned) {
@@ -194,6 +188,7 @@ function updateMedalUI() {
     registerTooltip(div, getMedalText);
     util.setEvent(div, 'mouseover', seenfun, 'medalseen');
 
+    styleButton0(div);
     addButtonAction(div, bind(function(getMedalText, seenfun, m) {
       var dialog = createDialog({
         size:DIALOG_SMALL,

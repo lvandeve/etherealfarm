@@ -134,7 +134,7 @@ function getCropInfoHTML3Breakdown(f, c) {
     result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');
   }
 
-  if(c.type == CROPTYPE_FLOWER) {
+  if(c.type == CROPTYPE_FLOWER || c.type == CROPTYPE_BEE || c.type == CROPTYPE_STINGING) {
     var breakdown = [];
     var total = c.getInfBoost(f, breakdown);
     result += formatBreakdown(breakdown, true, 'Breakdown (neighbor boost +%)');
@@ -149,7 +149,7 @@ function getCropInfoHTML3Breakdown(f, c) {
   if(c.type == CROPTYPE_FERN) {
     var breakdown = [];
     var total = c.getInfBoost(f, breakdown);
-    result += formatBreakdown(breakdown, true, 'Breakdown (field copy %)');
+    result += formatBreakdown(breakdown, true, 'Breakdown (same tier field copy %)');
   }
 
   var breakdown = [];

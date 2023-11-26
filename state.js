@@ -850,7 +850,7 @@ function State() {
   this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
   this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
   this.g_fernres = Res(); // total resources gotten from ferns
-  this.g_numpresents = [0, 0]; // order: presents '21-'22, eggs '22
+  this.g_numpresents = [0, 0]; // order: presents '21-'22, eggs '22 + eggs '23 + presents '22-'23. Starting from index 2 with regularity: presents '23-'24, eggs '24, presents '24-'25, eggs '25, etc...
   this.g_nummistletoeupgradesdone = 0;
   this.g_nummistletoeupgrades = 0; // started or continued
   this.g_nummistletoecancels = 0;

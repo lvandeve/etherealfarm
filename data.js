@@ -2510,6 +2510,7 @@ function registerCropPrestige(cropid, cost, prev_unlock_crop_type, prev_unlock_c
     if(state.highestoftypeunlocked[crop.type] < newtier - 1) return false; // for mushroom and flower: also hard requirement to have unlocked the previous tier (such as previous prestiged tier)
     if(state.highestoftypeunlocked[prev_unlock_crop_type] > prev_unlock_crop_tier) return true; // next berry tier unlocked: counts as better than having some planted of prev berry tier
     if(state.highestoftypehad[prev_unlock_crop_type] >= prev_unlock_crop_tier) return true;
+    if(state.challenge == challenge_towerdefense && state.highestoftypeunlocked[prev_unlock_crop_type] >= prev_unlock_crop_tier) return true; // in TD, unlock higher towers faster, so that it's not always the few second wait time while they grow
     return false;
   };
 
@@ -3915,8 +3916,8 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
 '[UNLOCK REASON NOT YET IMPLEMENTED FOR BETA]',
 function() {
   // TODO unlock fun
-  return state.beta;
-  //return false;
+  //return state.beta;
+  return false;
 }, function() {
   // TODO reward fun
 }, 0);
@@ -8024,8 +8025,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
   if(f && this.type == CROPTYPE_MUSH) {
     var floweronlymul = new Num(1);
     var flowerbeemul = new Num(1);
-    var num = 0; // flowers
-    var num2 = 0; // bees through flowers
+    var numflowers = 0; // flowers
+    var numbees = 0; // bees through flowers
 
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
       var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -8040,7 +8041,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
           if(c2.tier >= this.tier + 1) boost = new Num(1.5);
           if(boost.neqr(0)) {
             floweronlymul.addInPlace(boost);
-            num++;
+            numflowers++;
 
             var beeboost = new Num(1);
             // bees neighboring the flower add another, albeit small, boost
@@ -8057,7 +8058,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
                   if(c3.tier >= this.tier + 1) boost2 = new Num(0.75);
                   if(boost2.neqr(0)) {
                     beeboost.addInPlace(boost2);
-                    num2++;
+                    numbees++;
                   }
                 }
               }
@@ -8068,7 +8069,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
         }
       }
     }
-    if(num) {
+    if(numflowers) {
       // the below is same as doing just flowerbeemul, but, separately show flowers and bees in the breakdown, hence this mechanism
       // NOTE: to understand the numbers: say there's one flower givin 100% boost (so doing x2), and one beehive giving 50% boost (so doing x1.5),
       // then the breakdown will show +100% for flowers, +25% for bees (instead of +50%). Reason: bee gives 50% to flower's boost, so flower now gives 150% boost total (doing x2.5).
@@ -8076,16 +8077,35 @@ Crop3.prototype.getProd = function(f, breakdown) {
       // in case of multiple flowers/bees, this is all aggregated together.
       var beeonlymul = flowerbeemul.div(floweronlymul);
       result.mulInPlace(floweronlymul);
-      if(breakdown) breakdown.push(['flower tiers (' + num + ')', true, floweronlymul, result.clone()]);
-      result.mulInPlace(beeonlymul);
-      if(breakdown) breakdown.push(['bee tiers (' + num2 + ')', true, beeonlymul, result.clone()]);
+      if(breakdown) breakdown.push(['flower tiers (' + numflowers + ')', true, floweronlymul, result.clone()]);
 
-      // sea anemone through flower
-      // TODO: indicate (and actually compute too) this in details of flower instead, but this is not same multipliers as flower to seed, so the disctinction has to be made somewhere
-      if(state.fishcount[anemone_0] || state.fishcount[anemone_1]) {
-        var anemonemul = Num(1 + anemone_0_bonus * state.fishcount[anemone_0] + anemone_1_bonus * state.fishcount[anemone_1]);
-        result.mulInPlace(anemonemul);
-        if(breakdown) breakdown.push(['sea anemones', true, anemonemul, result.clone()]);
+      // sea anemone through flower to mushrooms
+      // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
+      if(state.fishes[anemone_0].unlocked) {
+        var num0 = state.fishcount[anemone_0];
+        var num1 = state.fishcount[anemone_1];
+        var have_fish = !!(num0 + num1);
+        var mul = Num(1 + anemone_0_bonus * num0 + anemone_1_bonus * num1);
+        if(have_fish) result.mulInPlace(mul);
+        var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
+        if(breakdown) breakdown.push(['sea anemones' + (give_warning ? ' (have 0, put some in the pond!)' : ' (through flowers)'), true, mul, result.clone()]);
+      }
+
+      result.mulInPlace(beeonlymul);
+      if(breakdown) breakdown.push(['bee tiers (' + numbees + ')', true, beeonlymul, result.clone()]);
+
+      // leporinus through bees to mushrooms
+      // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
+      if(numbees && state.fishes[leporinus_0].unlocked) {
+        var num0 = state.fishcount[leporinus_0];
+        var have_fish = !!(num0);
+        var mul = Num(1 + leporinus_0_bonus * num0);
+        var beemul_before = beeonlymul;
+        var beemul_after = (beeonlymul.subr(1)).mul(mul).addr(1);
+        mul = beemul_after.div(beemul_before);
+        if(have_fish) result.mulInPlace(mul);
+        var give_warning = !have_fish && state.g_res.infspores.gt(fishes[leporinus_0].cost.infspores.mulr(2));
+        if(breakdown) breakdown.push(['leporinus' + (give_warning ? ' (have 0, put some in the pond!)' : ' (fish, through bees)'), true, mul, result.clone()]);
       }
     }
   }
@@ -8191,6 +8211,16 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['sea anemones' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
+  }
+
+  // leporinus to bee
+  if(this.type == CROPTYPE_BEE && state.fishes[leporinus_0].unlocked) {
+    var num0 = state.fishcount[leporinus_0];
+    var have_fish = !!(num0);
+    var mul = Num(1 + leporinus_0_bonus * num0);
+    if(have_fish) result.mulInPlace(mul);
+    var give_warning = !have_fish && state.g_res.infspores.gt(fishes[leporinus_0].cost.infspores.mulr(2));
+    if(breakdown) breakdown.push(['leporinus (fish)' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
   }
 
   // koi to runestone
@@ -8366,7 +8396,7 @@ var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Re
 var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, [7]));
 var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), Res({infspores:500}), Num(2), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
 var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:40000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
-var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}), Res({infspores:20e6}), Num(15), default_crop3_growtime, metalifyPlantImages(champignon, metalheader8, [2], [1.5]));
+var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}), Res({infspores:30e6}), Num(15), default_crop3_growtime, metalifyPlantImages(champignon, metalheader8, [2], [1.5]));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
@@ -8424,6 +8454,7 @@ var FISHTYPE_ANEMONE = fishtype_index++; // sea anemone: boost infinity flowers
 var FISHTYPE_PUFFER = fishtype_index++; // puffer fish: boosts berries
 var FISHTYPE_EEL = fishtype_index++; // eel: boosts twigs
 var FISHTYPE_TANG = fishtype_index++; // yellow tang: boosts resin
+var FISHTYPE_LEPORINUS = fishtype_index++; // fish with yellow and black stripes, boosts infinity bees
 var NUM_FISHTYPES = fishtype_index;
 
 function getFishTypeName(type) {
@@ -8435,6 +8466,7 @@ function getFishTypeName(type) {
   if(type == FISHTYPE_PUFFER) return 'puffer fish';
   if(type == FISHTYPE_EEL) return 'eel';
   if(type == FISHTYPE_TANG) return 'tang';
+  if(type == FISHTYPE_LEPORINUS) return 'leporinus';
   return 'unknown';
 }
 
@@ -8459,6 +8491,7 @@ Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   // vary the multiplier for some types to have some variation in the spread of fish costs
   if(this.type == FISHTYPE_PUFFER) mul = 17;
   if(this.type == FISHTYPE_EEL || this.type == FISHTYPE_TANG) mul = 21;
+  if(this.type == FISHTYPE_LEPORINUS) mul = 25;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -8553,6 +8586,12 @@ function registerTang(name, tier, cost, effect_description, image, opt_tagline) 
   return index;
 }
 
+function registerLeporinus(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_LEPORINUS, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
 fish_register_id = 100;
 var goldfish_0_bonus = 0.1;
 var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
@@ -8596,6 +8635,10 @@ var tang_0_bonus = 0.25;
 var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_tang0);
 var tang_1_bonus = 0.5;
 var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_tang1);
+
+fish_register_id = 900;
+var leporinus_0_bonus = 0.35;
+var leporinus_0 = registerLeporinus('leporinus', 0, Res({infspores:2e15}), 'Improves infinity bees by ' + Num(leporinus_0_bonus).toPercentString() + ' for berries (for mushrooms, has a lesser effect)', image_leporinus0); // the mushroom effect is complicated to describe, depends on the relative-tier-of-bees-through-flowers effect, it's much lower, around 5-10%
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -9541,6 +9584,7 @@ registerFishTypeMedal(koi_1);
 registerFishTypeMedal(puffer_1);
 registerFishTypeMedal(eel_1);
 registerFishTypeMedal(tang_1);
+registerFishTypeMedal(leporinus_0);
 
 
 
@@ -9548,29 +9592,41 @@ registerFishTypeMedal(tang_1);
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+// returns the index to use for state.g_numpresents
+function holidayPresentIndex() {
+  var date = new Date();
+  var year = date.getYear() + 1900;
+  var month = date.getMonth() + 1;
+  if(month >= 12) {
+    year++;
+    month = 1;
+  }
+
+  var index = (year - 2024) * 2 + 2; // winter
+  if(month >= 3) index++; // spring
+
+  if(index < 0) index = 0;
+  if(index > 20) index = 20; // avoid huge array due to wrong date
+
+  return index;
+}
 
 // holiday events: 0=none, 1=presents, 2=eggs, 4=pumpkins
 // it's in theory possible to use bit masks to filter the return value, e.g. (holidayEventActive() & 3) for presents or eggs, but the return value will always contain exactly 1 holiday (1 bit set)
 function holidayEventActive() {
-  var time = util.getTime();
+  var date = new Date();
+  var month = date.getMonth() + 1;
+  var day = date.getDate();
 
-  /*var date_20221206_begin = 1670284800;
-  var date_20230106_end = 1673049599;
-  if(time >= date_20221206_begin && time <= date_20230106_end) {
-    return 1;
-  }*/
+  // Presents: 7 december til 7 january
+  if((month == 12 && day >= 7) || (month == 1 && day <= 7)) return 1;
 
-  /*var date_20230320_begin = 1679270400;
-  var date_20230420_end = 1682035200;
-  if(time >= date_20230320_begin && time <= date_20230420_end) {
-    return 2;
-  }*/
+  // eggs: 25 march til 25 april
+  if((month == 3 && day >= 25) || (month == 4 && day <= 25)) return 2;
 
-  var date_20231010_begin = 1696896000;
-  var date_20231110_end = 1699747200;
-  if(time >= date_20231010_begin && time <= date_20231110_end) {
-    return 4;
-  }
+  // pumpkins: 6 october til 6 november
+  if((month == 10 && day >= 6) || (month == 11 && day <= 6)) return 4;
 
   return 0;
 }

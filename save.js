@@ -977,6 +977,54 @@ function encState(state, opt_raw_only) {
   processUintArray(array0);
   processUintArray(array1);
 
+  section = 33; id = 0; // TD
+  if(state.challenge == challenge_towerdefense) {
+    var td = state.towerdef;
+    processTime(td.lastTick);
+    processUint(td.ticks);
+    processBool(td.started);
+    processBool(td.gameover);
+    processUint(td.wave);
+    processUint(td.highest_wave_ever);
+    processRes(td.gain);
+    processUint(td.num);
+    processTime(td.wavestarttime);
+    processTime(td.waveendtime);
+    processTime(td.lastwavetime);
+
+    id = 20;
+    processStructArrayBegin();
+    for(var i = 0; i < td.pests.length; i++) {
+      processStructBegin();
+
+      var pest = td.pests[i];
+      processUint(pest.index);
+      processNum(pest.maxhp);
+      processNum(pest.hp);
+      processInt(pest.x);
+      processInt(pest.y);
+      processInt(pest.slowtime);
+      processInt(pest.slownum);
+      processInt(pest.moneytime);
+      processInt(pest.moneynum);
+
+      processStructEnd();
+    }
+    processStructArrayEnd();
+
+    processStructArrayBegin();
+    for(var i = 0; i < td.towers.length; i++) {
+      processStructBegin();
+
+      var tower = td.towers[i];
+      processUint(tower.kills);
+      processUint(tower.lastattack);
+
+      processStructEnd();
+    }
+    processStructArrayEnd();
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   var e = encTokens(tokens);
@@ -1578,7 +1626,6 @@ function decState(s) {
   if(save_version >= 4096*1+99) {
     var presents = processUintArray();
     if(error) return err(4);
-    if(presents.length > state.g_numpresents.length) return err(4);
     for(var i = 0; i < presents.length; i++) state.g_numpresents[i] = presents[i];
   } else if(save_version >= 4096*1+93) {
     state.g_numpresents[0] = processUint();
@@ -2524,6 +2571,7 @@ function decState(s) {
   } else {
     clearField3(state);
   }
+  if(error) return err(4);
 
 
 
@@ -2542,7 +2590,7 @@ function decState(s) {
       state.crops3[index].had = array1[i];
     }
   }
-
+  if(error) return err(4);
 
 
   section = 31; id = 0; // pond
@@ -2569,6 +2617,7 @@ function decState(s) {
   } else {
     clearPond(state);
   }
+  if(error) return err(4);
 
   section = 32; id = 0; // fishes
   if(save_version >= 262144*2+64*9+0) {
@@ -2585,6 +2634,64 @@ function decState(s) {
       state.fishes[index].had = array1[i];
     }
   }
+  if(error) return err(4);
+
+  section = 33; id = 0; // TD
+  if(state.challenge == challenge_towerdefense) {
+    var td = state.towerdef;
+    td.lastTick = processTime(-1);
+    // if this is -1, then the value is not present in the savegame, allow this without error during beta testing: to still support TD saves from before the saving of the TD info itself was supported
+    if(td.lastTick >= 0) {
+      td.ticks = processUint();
+      td.started = processBool();
+      td.gameover = processBool();
+      td.wave = processUint();
+      td.highest_wave_ever = processUint();
+      td.gain = processRes();
+      td.num = processUint();
+      td.wavestarttime = processTime();
+      td.waveendtime = processTime();
+      td.lastwavetime = processTime();
+
+      id = 20;
+      td.pests = [];
+      var count = processStructArrayBegin();
+      for(var i = 0; i < count; i++) {
+        processStructBegin();
+
+        td.pests[i] = new PestState();
+        var pest = td.pests[i];
+        pest.index = processUint();
+        pest.maxhp = processNum();
+        pest.hp = processNum();
+        pest.x = processInt();
+        pest.y = processInt();
+        pest.slowtime = processInt();
+        pest.slownum = processInt();
+        pest.moneytime = processInt();
+        pest.moneynum = processInt();
+
+        processStructEnd();
+      }
+      processStructArrayEnd();
+
+
+      td.towers = [];
+      var count = processStructArrayBegin();
+      for(var i = 0; i < count; i++) {
+        processStructBegin();
+
+        td.towers[i] = new TowerState();
+        var tower = td.towers[i];
+        tower.kills = processUint();
+        tower.lastattack = processUint();
+
+        processStructEnd();
+      }
+      processStructArrayEnd();
+    }
+  }
+  if(error) return err(4);
 
 
   //////////////////////////////////////////////////////////////////////////////

@@ -688,12 +688,7 @@ function addCanvasToPool_(canvas) {
   if(canvaspool_.length > 2000) return; // avoid caching TOO much canvases
 
   // reset event listeners, style, attributes, ... set to this HTML element, that could be completely unneeded or different when the canvas is reused elsewhere
-  util.removeAllEvents(canvas);
-  while(canvas.attributes.length) {
-    // these attributes include style, tabindex, aria roles, ...
-    canvas.removeAttribute(canvas.attributes[canvas.attributes.length - 1].name);
-  }
-  canvas.className = '';
+  util.cleanSlateElement(canvas);
 
   canvaspool_[canvaspool_.length] = canvas;
 }

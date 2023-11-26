@@ -21,14 +21,20 @@ function getChangeLog() {
   var text = '';
 
   if(window['global_is_beta'] && window['beta_patchnotes']) {
-    text += '<hr>';
-    text += 'BETA patch notes:';
+    text += '<hr>Beta patch notes:';
     text += window['beta_patchnotes'];
-    text += '<br/><br/>';
-    text += 'End of BETA patch notes';
-    text += '<hr>';
-    text += '<br/><br/>';
+    text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
   }
+
+  text += '0.10.8 (2023-11-26):';
+  text += '<br/>• Added a new infinity fish (leporinus)';
+  text += '<br/>• Buffed infinity sapphire champignon a bit'; // to be more competitive against mushroom of previous tier with infinity ferns
+  text += '<br/>• Holiday events are from now automated with fixed dates every year, each will last for 1 month at the following dates:';
+  text += '<br/>&nbsp;&nbsp;- Presents: December 7th - January 7th';
+  text += '<br/>&nbsp;&nbsp;- Eggs: March 25th - April 25th. Pumpkins: October 6th - November 6th';
+  text += '<br/>&nbsp;&nbsp;- Pumpkins: October 6th - November 6th';
+  text += '<br/>• Fixed bug where achievement dialog could open multiple times.';
+  text += '<br/><br/>';
 
   text += '0.10.7 (2023-11-04):';
   text += '<br/>• Added next infinity crops tier (sapphire).';

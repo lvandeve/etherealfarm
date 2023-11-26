@@ -54,7 +54,7 @@ function getPestInfoHTML(f) {
     var td = state.towerdef;
     var pest_info = pest_render_info[f.y][f.x];
     if(pest_info && pest_info.tooltip) {
-      result += 'TD: ' + pest_info.tooltip + '<br/>';
+      result += pest_info.tooltip + '<br/>';
     }
   }
   return result;
@@ -101,7 +101,7 @@ var pest_locust = registerPest('locust', images_locust, 1, 1, 1);
 function PestState() {
   this.index = pest_ant;
   this.maxhp = Num(10); // starting hp, measured in spores
-  this.hp = Num(100); // hp remaining, measured in spores
+  this.hp = Num(10); // hp remaining, measured in spores
   this.x = 0;
   this.y = 0;
 
@@ -134,6 +134,25 @@ function TowerDefenseState() {
   this.started = false;
   this.gameover = false;
   this.wave = 0; // 0 = no wave started yet, 1 = first wave spawned, ...
+  this.highest_wave_ever = 0; // highest wave ever defeated. Used for skipping easy waves
+
+  // gain the full current wave will give
+  this.gain = Res();
+  // amount of pests the current wave had in full, used for computing gain per pest.
+  this.num = 0;
+
+  // becomes true if the wave has been rendered for at least a frame, used to make the wave visible before shooting starts
+  this.wave_seen = false;
+
+  // when the most recent wave started
+  this.wavestarttime = 0;
+  // when the current wave was defeated, if defeated. if not yet defeated, this value has no meaning
+  this.waveendtime = 0;
+  // how long the previous wave took in total to defeat. This is waveendtime - wavestarttime at the time of defeat, but of the previous wave, not this one
+  this.lastwavetime = 0;
+
+  // tower states for x,y positions on the map
+  this.towers = [];
 
   // per cell, array of speeds, whether that speed is present or not
   // derived stat, not to be saved
@@ -154,24 +173,6 @@ function TowerDefenseState() {
 
   // derived stat, not to be saved
   this.renderinfo = undefined;
-
-  // gain the full current wave will give
-  this.gain = Res();
-  // amount of pests the current wave had in full, used for computing gain per pest.
-  this.num = 0;
-
-  // becomes true if the wave has been rendered for at least a frame, used to make the wave visible before shooting starts
-  this.wave_seen = false;
-
-  // when the most recent wave started
-  this.wavestarttime = 0;
-  // when the current wave was defeated, if defeated. if not yet defeated, this value has no meaning
-  this.waveendtime = 0;
-  // how long the previous wave took in total to defeat. This is waveendtime - wavestarttime at the time of defeat, but of the previous wave, not this one
-  this.lastwavetime = 0;
-
-  // tower states for x,y positions on the map
-  this.towers = [];
 }
 
 function resetTD() {
@@ -181,17 +182,26 @@ function resetTD() {
 function tdWaveActive() {
   var td = state.towerdef;
   if(td.gameover || !td.started) return false;
-  if(!(state.towerdef.pests.length > 0)) return false;
+  if(!(td.pests.length > 0)) return false;
   return true;
 }
+
+// max wait before next wave starts
+//var TDMaxWait = 2;
+var TDMaxWait = 10;
 
 // returns the timestamp when the next wave should start
 function tdNextWaveTime() {
   var td = state.towerdef;
   var wait = td.lastwavetime;
-  if(wait > 10) wait = 10;
-  //if(wait > 2) wait = 2;
+  if(wait > TDMaxWait) wait = TDMaxWait;
   return td.waveendtime + wait;
+}
+
+// returns how much seconds til the next wave starts (only relevant if no wave active now)
+function tdNextWait() {
+  var td = state.towerdef;
+  return tdNextWaveTime() - state.time;
 }
 
 function precomputeTD() {
@@ -252,7 +262,8 @@ function computePestsRenderInfo() {
     if(r.images.length > 4 && i + 2 < td.pests.length) imdir = (r.images.length & 3); // on the spawn point a lot of pests can be stacked on top together, so use rotated images to show that there are many there. But ensure the last few are rendered facing the correct direction, so only some below are rotated and the top one looks correct.
     r.images.push(p2.images[imdir]);
     var name = pests[p.index].name;
-    r.tooltip += '<br>' + upper(name) + ', hp: ' + p.hp.toString()/* + ' / ' + p.maxhp.toString()*/ + ', speed: ' + Num(2 / p2.speed).toString();
+    if(i > 0) r.tooltip += '<br>';
+    r.tooltip += upper(name) + ' level ' + td.wave + ', hp: ' + p.hp.toString()/* + ' / ' + p.maxhp.toString()*/ + ', speed: ' + Num(2 / p2.speed).toString();
     if(p2.group != 1) r.tooltip += '. Group size: ' + p2.group;
     if(p2.splahsresistant) r.tooltip += '. Splash resist';
     if(p2.slowresistant) r.tooltip += '. Slow resist';
@@ -363,6 +374,7 @@ function movePests() {
     var f2 = state.field[y2][x2];
     if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
       td.gameover = true;
+      showMessage('Tower defense: Game over! Last wave exterminated: ' + (td.wave - 1), C_TD, 84683311);
       if(f2.index == FIELD_TREE_BOTTOM) p.y--; // the one remaining pest: don't overlap the tree level number
       td.pests = [p];
     }
@@ -455,6 +467,7 @@ function hastenWaves(damage) {
   var td = state.towerdef;
   // Quickly end waves if they're completely obliterated
   while(damage.gt(getTDWaveHealth(td.wave + 1).mulr(0.5))) {
+    if(td.wave >= td.highest_wave_ever) break; // don't do this when seeing waves for the first time
     state.res.addInPlace(getTDWaveRes(td.wave));
     td.wave++;
     //console.log('Quick defeated wave ' + td.wave);
@@ -525,7 +538,7 @@ function attackPest(td, index, damage, x0, y0, x1, y1, splash, focus, slow, mone
 
   p.hp = p.hp.sub(damage);
 
-  // Quickly end waves if they're completely obliterated
+  // Quickly skip waves if they'd be completely obliterated
   if(damage.gt(p.maxhp.mulr(10))) hastenWaves(damage);
 
   return result;
@@ -870,12 +883,13 @@ function spawnWave(opt_force_num, opt_force_type) {
   var td = state.towerdef;
   if(td.gameover || !td.started) return;
 
+  if(td.wave > td.highest_wave_ever) td.highest_wave_ever = td.wave;
+
   state.g_td_waves++;
   state.c_td_waves++;
   td.wave++;
 
   td.wave_seen = false;
-
 
   var wave = td.wave;
 
@@ -890,10 +904,13 @@ function spawnWave(opt_force_num, opt_force_type) {
   state.c_td_spawns += td.num;
   td.gain = getTDWaveRes(wave);
 
+  // the health the wave should have to represent tree level strength is 'wavehealth', but depending on monsters, some variety resulting in a different actual_hp is possible
   var actual_hp = Num(0);
   for(var i = 0; i < td.pests.length; i++) actual_hp.addInPlace(td.pests[i].hp);
-  showMessage('Spawning wave ' + td.wave + '. Total HP: ' + actual_hp.toString() + ' / ' + wavehealth.toString() + ', amount: ' + td.num, C_TD, 2250454032);
+  showMessage('Spawning wave ' + td.wave + '. Total HP: ' + actual_hp.toString() + ', amount: ' + td.num, C_TD, 1250454032);
 }
+
+
 
 function runTD() {
   var td = state.towerdef;
@@ -905,6 +922,27 @@ function runTD() {
   precomputeTD();
   movePests();
   attackPests();
+}
+
+// text for tooltips and info dialogs about current TD state
+function getTDSummary() {
+  var td = state.towerdef;
+  var result = '';
+
+  result += 'Current wave: ' + td.wave;
+  result += '<br>';
+  result += 'Wave size: ' + td.num;
+  result += '<br>';
+  result += 'Highest wave ever: ' + td.highest_wave_ever;
+
+  if(!td.started) {
+    result += '<br><br>';
+    result += 'Waves not yet started. Press the GO button when ready.';
+  } else if(td.gameover) {
+    result += '<br><br>';
+    result += 'Game over! All that can be done now is to end the challenge.';
+  }
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -833,7 +833,7 @@ function createBlueprintDialog(b, ethereal, index_pointer, opt_onclose) {
     did_edit = true;
   }, 'Save the current field state into this blueprint. You can use the cancel button below to undo this.');
 
-  addButton('Export TXT', function(e) {
+  addButton('Export to TXT', function(e) {
     // for now as a hidden feature (until better UI for this is implemented), holding shift exports the ethereal blueprint without the tier numbers
     exportBluePrint(b, ethereal, ethereal && !e.shiftKey);
   }, 'Export the blueprint to text format, for external storage and sharing');

@@ -67,6 +67,19 @@ var Utils = (function() {
   };
   result.makeDiv = makeDiv;
 
+  // Make the element completely reusable again, as if it was created from scratch, but instead it was an existing element, to which various events/styles/... could have been added, which are removed by this function
+  // What this does NOT do is remove child elements.
+  var cleanSlateElement = function(el) {
+    // reset event listeners, style, attributes, ... set to this HTML element, that could be completely unneeded or different when the canvas is reused elsewhere
+    util.removeAllEvents(el);
+    while(el.attributes.length) {
+      // these attributes include style, tabindex, aria roles, ...
+      el.removeAttribute(el.attributes[el.attributes.length - 1].name);
+    }
+    el.className = '';
+  };
+  result.cleanSlateElement = cleanSlateElement;
+
   //bind a single argument to a function
   var bind = function(f, arg) {
     var args = Array.prototype.slice.call(arguments, 1);

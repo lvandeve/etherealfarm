@@ -662,6 +662,11 @@ function fieldCellTooltipFun(x, y, div) {
     }
   } else if(f.index == FIELD_BURROW) {
     result = 'Burrow: pests emerge from here and try to make their way to the tree.<br>The burrow partially reduces tower damage for pests that are on the burrow only.<br>';
+    if(state.towerdef) {
+      var td = state.towerdef;
+      result += '<br>';
+      result += getTDSummary();
+    }
   }
   if(state.challenge == challenge_towerdefense && !!pest_render_info && pest_render_info[f.y]) {
     var tdinfo = getPestInfoHTML(f);
@@ -692,9 +697,17 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
   } else if(!fern && !present && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
     makeFieldDialog(x, y);
   } else if(f.index == FIELD_BURROW) {
-    var dialog = createDialog({ icon:image_burrow, title:'Burrow' });
+    var dialog = createDialog({
+      icon:image_burrow,
+      title:'Burrow',
+      help:bind(showRegisteredHelpDialog, 44, true),
+    });
+    var td = state.towerdef;
     // TODO: put info about the challenge, waves, etc... here
-    dialog.content.div.innerText = 'Burrow: this is where pests spawn';
+    var info = 'Burrow: this is where pests spawn during tower defense';
+    info += '<br><br>';
+    info += getTDSummary();
+    dialog.content.div.innerHTML = info;
   } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
     if(shift && ctrl) {
       // experimental feature for now, most convenient behavior needs to be found
@@ -1005,10 +1018,19 @@ function updateFieldCellUI(x, y) {
 
   var pest_info = pest_render_info ? pest_render_info[y][x] : undefined;
   var pest_code = (pest_info && pest_info.images.length) ? pest_info.code : '';
+  var tdnextwavetime = -1;
+  if(f.index == FIELD_BURROW && state.challenge == challenge_towerdefense) {
+    var td = state.towerdef;
+    if(!td.gameover && td.started && !tdWaveActive()) {
+      tdnextwavetime = 1 - tdNextWait() / TDMaxWait;
+    }
+  }
 
   var largeravailable = (state.challenge == challenge_towerdefense) && c && c.tier >= -1 && state.highestoftypeunlocked[c.type] > c.tier && getNextTierCrop(c) && state.res.seeds.gt(getNextTierCrop(c).getCost().seeds);
 
-  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode  || presentcode != fd.presentcode || progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active || fd.pest_code != pest_code || fd.largeravailable != largeravailable) {
+  if(fd.index != f.index || fd.multindex != multindex || fd.growing != growing || fd.growstage != growstage || season != fd.season || rendertreelevel != fd.treelevel || ferncode != fd.ferncode || presentcode != fd.presentcode ||
+     progresspixel != fd.progresspixel || automatonplant != fd.automatonplant || lightningimage != fd.lightningimage || fd.holiday_hats_active != holiday_hats_active || fd.pest_code != pest_code || fd.largeravailable != largeravailable ||
+     fd.tdnextwavetime != tdnextwavetime) {
     fd.index = f.index;
     fd.multindex = multindex;
     fd.growing = growing;
@@ -1023,6 +1045,7 @@ function updateFieldCellUI(x, y) {
     fd.holiday_hats_active = holiday_hats_active; // this one is actually not used for the hats but the disctinctino between present and egg image
     fd.pest_code = pest_code;
     fd.largeravailable = largeravailable;
+    fd.tdnextwavetime = tdnextwavetime;
 
     var r = util.pseudoRandom2D(x, y, 77777777);
     var fieldim = images_field[season];
@@ -1118,6 +1141,9 @@ function updateFieldCellUI(x, y) {
       if(hp < 0.5) hpcolor = '#ff0';
       if(hp < 0.25) hpcolor = '#f00';
       setProgressBar(fd.progress, pest_info.rel_hp, hpcolor);
+    }
+    if(f.index == FIELD_BURROW) {
+      setProgressBar(fd.progress, tdnextwavetime, '#000');
     }
 
     setAriaLabel(fd.div, label);
