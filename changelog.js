@@ -30,9 +30,9 @@ function getChangeLog() {
   text += '<br/>• Added a new infinity fish (leporinus)';
   text += '<br/>• Buffed infinity sapphire champignon a bit'; // to be more competitive against mushroom of previous tier with infinity ferns
   text += '<br/>• Holiday events are from now automated with fixed dates every year, each will last for 1 month at the following dates:';
-  text += '<br/>&nbsp;&nbsp;- Presents: December 7th - January 7th';
-  text += '<br/>&nbsp;&nbsp;- Eggs: March 25th - April 25th. Pumpkins: October 6th - November 6th';
-  text += '<br/>&nbsp;&nbsp;- Pumpkins: October 6th - November 6th';
+  text += '<br/>&nbsp;&nbsp;◦ Presents: December 7th - January 7th';
+  text += '<br/>&nbsp;&nbsp;◦ Eggs: March 25th - April 25th';
+  text += '<br/>&nbsp;&nbsp;◦ Pumpkins: October 6th - November 6th';
   text += '<br/>• Fixed bug where achievement dialog could open multiple times.';
   text += '<br/><br/>';
 
