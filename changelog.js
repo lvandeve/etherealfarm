@@ -26,6 +26,11 @@ function getChangeLog() {
     text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
   }
 
+  text += '0.10.9 (2023-11-29):';
+  text += '<br/>• Limited max amount of eels and tangs in the pond';
+  text += '<br/>• Fixed red eel and red tang not working'
+  text += '<br/><br/>';
+
   text += '0.10.8 (2023-11-26):';
   text += '<br/>• Added a new infinity fish (leporinus)';
   text += '<br/>• Buffed infinity sapphire champignon a bit'; // to be more competitive against mushroom of previous tier with infinity ferns

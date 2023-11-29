@@ -6300,7 +6300,7 @@ function treeLevelResin(level, breakdown) {
   }
 
   // fishes
-  if(state.fishcount[tang_0]) {
+  if(state.fishcount[tang_0] || state.fishcount[tang_1]) {
     var mul = fishResin(state, false);
     var umul = fishResin(state, true);
     resin.mulInPlace(mul);
@@ -6343,9 +6343,11 @@ function nextTreeLevelResin(breakdown) {
 }
 
 function fishResin(state, use_underlying) {
-  if(!state.fishcount[tang_0]) return new Num(0);
+  var num0 = state.fishcount[tang_0];
+  var num1 = state.fishcount[tang_1];
+  if(num0 + num1 == 0) return new Num(0);
   if(use_underlying) {
-    var mul = Num(1 + tang_0_bonus * state.fishcount[tang_0]);
+    var mul = Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1);
     return mul;
   } else {
     if(state.min_fish_resinmul.ltr(1)) return new Num(1);
@@ -6354,9 +6356,11 @@ function fishResin(state, use_underlying) {
 }
 
 function fishTwigs(state, use_underlying) {
-  if(!state.fishcount[eel_0]) return new Num(0);
+  var num0 = state.fishcount[eel_0];
+  var num1 = state.fishcount[eel_1];
+  if(num0 + num1 == 0) return new Num(0);
   if(use_underlying) {
-    var mul = Num(1 + eel_0_bonus * state.fishcount[eel_0]);
+    var mul = Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1);
     return mul;
   } else {
     if(state.min_fish_twigsmul.ltr(1)) return new Num(1);
@@ -6429,7 +6433,7 @@ function treeLevelTwigs(level, breakdown) {
   }
 
   // fishes
-  if(state.fishcount[eel_0]) {
+  if(state.fishcount[eel_0] || state.fishcount[eel_1]) {
     var mul = fishTwigs(state, false);
     var umul = fishTwigs(state, true);
     res.twigs.mulInPlace(mul);

@@ -1063,6 +1063,7 @@ function State() {
   this.fishcount = [];
 
   this.croptypecount = []; // excludes templates
+  this.fishtypecount = []; // excludes templates
 
   // num crops growing (not fullgrown) in main field of any type (excludes brassica, and is 0 during the wither challenge)
   this.numgrowing = 0;
@@ -1487,6 +1488,7 @@ function computeDerived(state) {
     state.highestoftypeknown[i] = -Infinity;
   }
   for(var i = 0; i < NUM_FISHTYPES; i++) {
+    state.fishtypecount[i] = 0;
     state.highestoftypefishunlocked[i] = -Infinity;
     state.highestoftypefishhad[i] = -Infinity;
     state.highestoftypefishplanted[i] = -Infinity;
@@ -1724,6 +1726,7 @@ function computeDerived(state) {
         var c = fishes[f.cropIndex()];
         state.fishcount[c.index]++;
         state.numfishes++;
+        state.fishtypecount[c.type]++;
         state.highestoftypefishplanted[c.type] = Math.max(c.tier || 0, state.highestoftypefishplanted[c.type]);
       } else {
         state.numemptypond++;
