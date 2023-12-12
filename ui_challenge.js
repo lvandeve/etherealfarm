@@ -148,6 +148,8 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   text += '<br>';
   if(c.targetlevel == undefined) {
     text += '•  ' + c.targetdescription + '</b> to successfully complete the challenge, or reach high tree levels to increase challenge production bonus.';
+  } else if(c.targetlevel.length == 0) {
+    text += '•  Reach as high level as you can, the higher level ever reached in this challenge, the higher the production bonus.';
   } else if(c.targetlevel.length > 1) {
     text += '• Reach <b>tree level ' + targetlevel + '</b> to successfully complete the next stage of the challenge, or reach any other max level to increase challenge production bonus.';
     text += '<br>';
@@ -173,16 +175,19 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   text += '<br>';
 
 
-
   if(!c.fullyCompleted(include_current_run)) {
     if(c.targetlevel == undefined) {
       text += '• Reward for completing objective: ' + c.rewarddescription[0];
+      text += '<br>';
+    } else if(c.targetlevel.length == 0) {
+      // nothing, it's the bonus below
     } else if(c.targetlevel.length > 1 && c2.completed > 0) {
       text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numCompleted(include_current_run)];
+      text += '<br>';
     } else {
       text += '• Reward (at level ' + targetlevel + '): ' + c.rewarddescription[0];
+      text += '<br>';
     }
-    text += '<br>';
   }
   text += '• Max level reached with this challenge gives <b>(' + getChallengeFormulaString(c, c.cycling ? undefined : c.bonus.toPercentString()) + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
   if(c.cycling) {
@@ -201,6 +206,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     text += '<br>';
   }
   for(var j = 0; j < c2.completed; j++) {
+    if(j >= c.rewarddescription.length) break;
     text += '• Reward gotten: ' + c.rewarddescription[j];
     text += '<br>';
   }
@@ -274,14 +280,20 @@ function getChallengeStatsString(challenge_id, include_current_run) {
     }
   }
   if(currentlyrunning) {
-    text += '• Times run (excluding the current run): ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
+    text += '• Times run (excluding the current run): ' + c2.num;
+    if(c.numStages() > 0) text += ', times successful: ' + c2.num_completed;
+    text += '<br>';
   } else {
-    text += '• Times run: ' + c2.num + ', times successful: ' + c2.num_completed + '<br>';
+    text += '• Times run: ' + c2.num;
+    if(c.numStages() > 0) text += ', times successful: ' + c2.num_completed;
+    text += '<br>';
   }
   if(c.targetlevel != undefined) {
     if(c.targetlevel.length > 1 && c.fullyCompleted(include_current_run)) {
       text += '• Fastest first stage target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';
       text += '• Fastest final stage target level time: ' + (c2.besttime2 ? util.formatDuration(c2.besttime2) : '--') + '<br>';
+    } else if(c.targetlevel.length == 0) {
+      // nothing to add, without target level there's no fastest time to measure
     } else {
       text += '• Fastest target level time: ' + (c2.besttime ? util.formatDuration(c2.besttime) : '--') + '<br>';
     }
@@ -290,6 +302,8 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   var completedtext;
   if(c.numStages() == 1 || !c.numCompleted(include_current_run)) {
     completedtext = (c.numCompleted(include_current_run) ? 'yes' : 'no');
+  } else if(c.numStages() == 0) {
+    completedtext = (c.fullyCompleted(include_current_run) ? 'yes' : 'no');
   } else {
     completedtext = '' + c.numCompleted(include_current_run) + ' of ' + c.numStages();
   }
@@ -333,7 +347,8 @@ function createChallengeDialog(opt_from_challenge) {
   var dialog = createDialog({
     onclose:function() { challengedialogopen = false; },
     title:'Challenge',
-    bgstyle:'efDialogEthereal'
+    bgstyle:'efDialogEthereal',
+    scrollable:true
   });
 
   var contentFlex = dialog.content;
@@ -361,7 +376,8 @@ function createChallengeDialog(opt_from_challenge) {
   var pos = 0;
   var h = 0.072;
 
-  for(var i = 0; i < challenges_order.length; i++) {
+  for(var i0 = 0; i0 < challenges_order.length; i0++) {
+    var i = challenges_order.length - i0 - 1;
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
@@ -374,7 +390,7 @@ function createChallengeDialog(opt_from_challenge) {
     var text = upper(c.name);
     if(isnew) text += ' (New!)';
     // The '/' means: "new stage available with target level: " but that's too long for the button
-    else if(isnotfull && c.targetlevel != undefined) text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
+    else if(isnotfull && c.targetlevel != undefined && c.targetlevel.length > 0) text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
     else if(c.cycling > 1) {
       if(!c.allCyclesCompleted(true)) {
         text += ' (New cycle!)';
@@ -432,7 +448,6 @@ function createFinishChallengeDialog() {
   var c2 = state.challenges[state.challenge];
 
   var already_completed = c.fullyCompleted();
-  var targetlevel = c.nextTargetLevel();
   var success = c.nextCompleted();
 
   var dialog = createDialog({
@@ -527,21 +542,29 @@ function getChallengeFormulaString(c, opt_bonus_string) {
 
   var result = '';
 
-  if(c.bonus_exponent == 1) {
-    if(c.bonus_min_level) {
-      result = bonus_string + ' * max(0, level - ' + (c.bonus_min_level - 1) + ')';
+  if(c.bonus_formula == 0) {
+    if(c.bonus_exponent == 1) {
+      if(c.bonus_min_level) {
+        result = bonus_string + ' * max(0, level - ' + (c.bonus_min_level - 1) + ')';
+      } else {
+        result = bonus_string + ' * level';
+      }
     } else {
-      result = bonus_string + ' * level';
+      if(c.bonus_min_level) {
+        result = bonus_string + ' * max(0, level - ' + (c.bonus_min_level - 1) + ') ^ ' + c.bonus_exponent;
+      } else {
+        result = bonus_string + ' * level ^ ' + c.bonus_exponent;
+      }
     }
-  } else {
-    if(c.bonus_min_level) {
-      result = bonus_string + ' * max(0, level - ' + (c.bonus_min_level - 1) + ') ^ ' + c.bonus_exponent;
-    } else {
-      result = bonus_string + ' * level ^ ' + c.bonus_exponent;
+    if(c.completion_bonus) {
+      result += ' + ' + Num(c.completion_bonus).toPercentString() + ' completion bonus';
     }
-  }
-  if(c.completion_bonus) {
-    result += ' + ' + Num(c.completion_bonus).toPercentString() + ' completion bonus';
+  } else if(c.bonus_formula == 1) {
+    result += bonus_string + ' * ' + c.bonus_exponent_base.toString() + ' every ' + c.bonus_level_b + ' levels';
+    if(c.bonus_level_a) {
+      result += ', starting at level ' + c.bonus_level_a;
+    }
+    result += ' (multiplicative). Partial linear bonus increase between these levels)';
   }
   return result;
 }
@@ -575,7 +598,7 @@ function createAllChallengeStatsDialog() {
     if(!c2.unlocked) continue;
     text += '<b>' + upper(c.name) + '</b>';
     text += '<br>';
-    if(c.numStages() == 1 || !c2.completed) {
+    if(c.numStages() <= 1 || !c2.completed) {
       text += 'completed: ' + (c2.completed ? 'yes' : 'no');
     } else {
       text += 'completed: stage ' + c2.completed + ' of ' + c.numStages();
@@ -583,6 +606,8 @@ function createAllChallengeStatsDialog() {
     text += '<br>';
     if(c.targetlevel == undefined) {
       text += 'goal: ' + c.targetdescription;
+    } else if(c.targetlevel.length == 0) {
+      text += 'no target level, just reach as high as possible';
     } else if(c.targetlevel.length > 1) {
       text += 'multiple target level stages: ';
       for(var j = 0; j < c.targetlevel.length; j++) text += (j ? ', ' : '') + c.targetlevel[j];

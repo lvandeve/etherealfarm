@@ -98,6 +98,7 @@ function formatAbilityDurationTooltipText(index, name, description, duration, wa
 var prev_brassica_index = -1; // for updating the button if the image for brassica changes
 var prev_brassica_tab = -1; // idem, but for basic field vs infinity field tab
 var prev_td_challenge = -1; // idem, but for 'go' button for tower defense challenge
+var prev_td_gameover = -1; // idem, but for 'go' button for tower defense challenge changing into 'game over'
 
 var last_seen_havePerma = -1; // to update tooltips/action names when this changes
 
@@ -351,7 +352,8 @@ function updateAbilitiesUI() {
     var infinity_field_tab = (state.currentTab == tabindex_field3);
     var brassica_index = infinity_field_tab ? getHighestBrassica3Had() : getHighestBrassica();
     var td_challenge = state.challenge == challenge_towerdefense;
-    if(!watercressbutton || prev_brassica_index != brassica_index || prev_brassica_tab != infinity_field_tab || prev_td_challenge != td_challenge) {
+    var td_gameover = state.towerdef.gameover;
+    if(!watercressbutton || prev_brassica_index != brassica_index || prev_brassica_tab != infinity_field_tab || prev_td_challenge != td_challenge || prev_td_gameover != td_gameover) {
       if(watercressbutton) {
         watercressbutton.clear();
         watercressbutton.removeSelf(topFlex);
@@ -359,13 +361,15 @@ function updateAbilitiesUI() {
       prev_brassica_index = brassica_index;
       prev_brassica_tab = infinity_field_tab;
       prev_td_challenge = td_challenge;
+      prev_td_gameover = td_gameover;
       var image, name, alltiers_name;
       if(infinity_field_tab) {
         image = crops3[brassica_index].image[4];
         name = crops3[brassica_index].name;
         alltiers_name = 'watercress';
       } else if(state.challenge == challenge_towerdefense) {
-        image = image_go;
+        var td = state.towerdef;
+        image = td.gameover ? image_gameover : image_go;
       } else {
         image = images_watercress[4];
         name = 'watercress';
@@ -387,7 +391,8 @@ function updateAbilitiesUI() {
         label_shift = 'plant ' + alltiers_name + ' everywhere';
         label_ctrl = 'delete all ' + alltiers_name;
       } else if(state.challenge == challenge_towerdefense) {
-        tooltip = 'Spawn the next wave for tower defense. With shift key, shows TD help dialog.';
+        tooltip = 'Go: spawn the next wave for tower defense. With shift key, shows TD help dialog.';
+        label = 'Go (spawn tower defense wave)';
         label_shift = 'Tower defense help';
         label_ctrl = undefined;
       } else {
@@ -412,7 +417,7 @@ function updateAbilitiesUI() {
           } else {
             refreshWatercress(ctrl, shift);
           }
-        }, 'refresh ' + name, {
+        }, label, {
           label_shift:label_shift,
           label_ctrl:label_ctrl,
           tooltip:tooltip

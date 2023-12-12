@@ -252,38 +252,37 @@ function getResourceDetails(index) {
     if(index == 2) {
       // resin
       text += '<b>' + upper(name) + '</b><br/><br/>';
-      text += 'Transcend to gain the upcoming resin.';
-      text += '<br><br>';
       text += 'Total resin earned ever: ' + state.g_res.resin.toString();
       text += '<br/><br/>';
       text += 'Unspent resin: ' + res.toString() + '<br/>';
       text += '→ Production boost for unspent resin: ' + getUnusedResinBonus().subr(1).toPercentString();
       if(basicChallenge()) text += ' (not active during basic challenge)';
       text += '<br><br>';
-      text += 'Collected upcoming resin: ' + upcoming.toString()
-      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.resin.toString() + ' at level ' + state.p_treelevel + ', ' + util.formatDuration(state.p_runtime, true) + ')';
-      text += '<br>';
-      if(upcoming.neqr(0)) text += '→ Upcoming boost with unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
-
-      var early_penalty = getEarlyResinPenalty();
-      if(early_penalty < 1 && upcoming.gtr(0)) {
-        text += '<br>';
-        text += 'Reduction if trancending this early in run now already: -' + Num(1 - early_penalty).toPercentString();
-        text += '<br>';
-      }
-
-      text += '<br>';
-      text += 'Resin/hour: ' + getResinHour().toString();
-      if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ')';
-      text += '<br>';
-      text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true);
-      if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.resin.toString() + ', lvl ' + state.p_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + ')';
-      text += '<br>';
-
-      text += '<br>';
       if(state.challenge && !challenges[state.challenge].allowsresin) {
         text += 'No resin is gained during the current challenge<br>';
       } else {
+        text += 'Transcend to gain the upcoming resin.';
+        text += '<br><br>';
+        text += 'Collected upcoming resin: ' + upcoming.toString()
+        if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.resin.toString() + ' at level ' + state.p_treelevel + ', ' + util.formatDuration(state.p_runtime, true) + ')';
+        text += '<br>';
+        if(upcoming.neqr(0)) text += '→ Upcoming boost with unspent resin: ' + getUnusedResinBonusFor(upcoming.add(state.res.resin)).subr(1).toPercentString() + '<br>';
+
+        var early_penalty = getEarlyResinPenalty();
+        if(early_penalty < 1 && upcoming.gtr(0)) {
+          text += '<br>';
+          text += 'Reduction if trancending this early in run now already: -' + Num(1 - early_penalty).toPercentString();
+          text += '<br>';
+        }
+
+        text += '<br>';
+        text += 'Resin/hour: ' + getResinHour().toString();
+        if(state.g_numresets > 0) text +=  ' (previous run: ' + getPrevResinHour().toString() + ')';
+        text += '<br>';
+        text += 'Best/hour: ' + state.c_res_hr_best.resin.toString() + ' at level ' + state.c_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.resin.valueOf(), true);
+        if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.resin.toString() + ', lvl ' + state.p_res_hr_at.resin.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.resin.valueOf(), true) + ')';
+        text += '<br>';
+
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
         text += 'Resin added next tree level: ' + nextTreeLevelResin().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
       }
@@ -291,34 +290,37 @@ function getResourceDetails(index) {
     if(index == 3) {
       // twigs
       text += '<b>' + upper(name) + '</b><br/><br/>';
-      text += 'Plant a mistletoe next to the tree in the basic field to gain twigs on transcension.';
-      text += '<br><br>';
       text += 'Total twigs earned entire game: ' + state.g_res.twigs.toString();
       text += '<br><br>';
       text += 'Production boost for unspent twigs: ' + getUnusedTwigsBonus().subr(1).toPercentString();
+      if(basicChallenge()) text += ' (not active during basic challenge)';
       text += '<br><br>';
-      text += 'Collected upcoming twigs: ' + upcoming.toString()
-      if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.twigs.toString() + ' at level ' + state.p_treelevel + ')';
-      text += '<br>';
-
-      var early_penalty = getEarlyResinPenalty();
-      if(early_penalty < 1 && upcoming.gtr(0)) {
-        text += '<br>';
-        text += 'Reduction if trancending this early in run now already: -' + Num(1 - early_penalty).toPercentString();
-        text += '<br>';
-      }
-
-      text += 'Twigs/hour: ' + getTwigsHour().toString();
-      if(state.g_numresets > 0) text += ' (previous run: ' + getPrevTwigsHour().toString() + ', ' + util.formatDuration(state.p_runtime, true) + ')';
-      text += '<br>';
-      text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true);
-      if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.twigs.toString() + ', lvl ' + state.p_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + ')';
-      text += '<br>';
-
-      text += '<br>';
       if(state.challenge && !challenges[state.challenge].allowstwigs) {
         text += 'No twigs are gained during the current challenge<br>';
       } else {
+        text += 'Plant a mistletoe next to the tree in the basic field to gain twigs on transcension.';
+        text += '<br><br>';
+
+        text += 'Collected upcoming twigs: ' + upcoming.toString()
+        if(state.g_numresets >= 1) text += ' (previous run: ' + state.p_res.twigs.toString() + ' at level ' + state.p_treelevel + ')';
+        text += '<br>';
+
+        var early_penalty = getEarlyResinPenalty();
+        if(early_penalty < 1 && upcoming.gtr(0)) {
+          text += '<br>';
+          text += 'Reduction if trancending this early in run now already: -' + Num(1 - early_penalty).toPercentString();
+          text += '<br>';
+        }
+
+        text += 'Twigs/hour: ' + getTwigsHour().toString();
+        if(state.g_numresets > 0) text += ' (previous run: ' + getPrevTwigsHour().toString() + ', ' + util.formatDuration(state.p_runtime, true) + ')';
+        text += '<br>';
+        text += 'Best/hour: ' + state.c_res_hr_best.twigs.toString() + ' at level ' + state.c_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.c_res_hr_at_time.twigs.valueOf(), true);
+        if(state.g_numresets > 0) text += ' (previous run: ' + state.p_res_hr_best.twigs.toString() + ', lvl ' + state.p_res_hr_at.twigs.valueOf() + ', ' + util.formatDuration(state.p_res_hr_at_time.twigs.valueOf(), true) + ')';
+        text += '<br>';
+        text += '<br>';
+
+
         var progress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
         text += 'Twigs added next tree level: ' + nextTwigs().toString() + ' (getting ' + progress.toPercentString() + ' of this so far)' + '<br>';
       }
@@ -359,7 +361,7 @@ function getResourceDetails(index) {
     }
     text += '<br/>';
 
-    if(index == 0 && tooHighSeedConsumption()) {
+    if(index == 0 && tooHighSeedConsumption() && state.challenge != challenge_towerdefense) {
       text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops, or remove some mushrooms if stuck without income</b><br/><br/>';
     }
 
@@ -370,7 +372,7 @@ function getResourceDetails(index) {
       text += '<br><br>';
     }
 
-    if(index == 1 && tooLowMushroomSeeds()) {
+    if(index == 1 && tooLowMushroomSeeds() && state.challenge != challenge_towerdefense) {
       if(tooHighSeedConsumption()) {
         text += '<b>Mushrooms are consuming almost all seeds! Plant some high level berries away from mushrooms to get more seeds for upgrades and better crops, or remove some mushrooms if stuck without income</b><br/><br/>';
       } else {
@@ -390,6 +392,15 @@ function getResourceDetails(index) {
     }
 
     if(index == 0) { // seeds
+      if(state.challenge == challenge_towerdefense) {
+        var td = state.towerdef;
+        text += 'Tower Defense Income:';
+        text += '<br/>';
+        text += '• This wave total income: ' + td.wave_gain.seeds.toString();
+        text += '<br/><br/>';
+        text += 'Production stats below represent the original seeds production of crops, which is consumed by mushroom towers. Those production numbers are not the seed income and don\'t actually go to your stacks however, since seed income is gained by exterminating pests.';
+        text += '<br/><br/>';
+      }
       if(res_gain.neq(res_gain_pos)) {
         text += 'Production (' + name + '/s):<br/>';
         text += '• To stacks: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
@@ -409,6 +420,17 @@ function getResourceDetails(index) {
         text += '<br/><br/>';
       }
     } else if(index == 1) { // spores
+      if(state.challenge == challenge_towerdefense) {
+        var td = state.towerdef;
+        text += 'Tower Defense Income:';
+        text += '<br/>';
+        text += '• This wave total income: ' + td.wave_gain.spores.toString();
+        text += '<br/>';
+        text += '• Damage: ' + td.total_damage.toString();
+        text += '<br/><br/>';
+        text += 'Production stats below represent the original spore production of mushrooms, which is converted to damage using a formula. Those production numbers are not the actual spores income since that is gained by exterminating pests instead, each wave will drop enough spores to gain one tree level.';
+        text += '<br/><br/>';
+      }
       if(res_gain.neq(res_gain_pos)) {
         text += 'Production (' + name + '/s):<br/>';
         text += '• Actual: ' + res_gain.toString() + '/s (= going to your resources)<br/>';
@@ -451,7 +473,7 @@ function showResourceDialog(index) {
       // for resin and twigs
       var breakdowntext = undefined;
 
-      if(index == 2) {
+      if(index == 2 && !(state.challenge && !challenges[state.challenge].allowsresin)) {
         // resin
         var resin_breakdown = [];
         nextTreeLevelResin(resin_breakdown);
@@ -462,7 +484,7 @@ function showResourceDialog(index) {
         if(state.fernresin.resin.gtr(0)) breakdowntext += ' • Ferns (not included in the /hr stat): ' + state.fernresin.resin.toString() + '<br>';
         if(state.resin.eqr(0) && state.fernresin.resin.eqr(0)) breakdowntext += ' • None yet<br>';
       }
-      if(index == 3) {
+      if(index == 3 && !(state.challenge && !challenges[state.challenge].allowstwigs)) {
         // twigs
         var twigs_breakdown = [];
         nextTwigs(twigs_breakdown)
@@ -592,6 +614,17 @@ function showResource(i, index, highlight) {
     text3 = res_gain.toString() + '/s';
     if(index == 0 && tooHighSeedConsumption()) text4 = '(' + res_gain_pos.toString() + '/s)';
     if(index == 1 && hyp_neq) text4 = '(' + res_gain_hyp.toString() + '/s)';
+    if((index == 0 || index == 1) && state.challenge == challenge_towerdefense) {
+      var td = state.towerdef;
+      if(index == 0) {
+        text3 = 'Next: ' + td.wave_gain.seeds.toString();
+        text4 = '';
+      }
+      if(index == 1) {
+        text3 = 'Next: ' + td.wave_gain.spores.toString();
+        text4 = 'Damage: ' + td.total_damage.toString();
+      }
+    }
     label = text1 + ' ' + text2 + ', ' + text3;
   }
 

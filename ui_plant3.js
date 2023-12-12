@@ -213,11 +213,11 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
 
       if(opt_detailed) {
         result += '<br>Base cost: ' + c.cost.toString();
-        result += '<br>Next cost: ' + c.getCost().toString();
+        result += '<br>Next cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
       } else {
-        result += 'Cost: ' + c.getCost().toString();
+        result += 'Cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
       }
-      if(opt_replace) result += '<br>Replacement cost: ' + replacementcost.toString();
+      if(opt_replace) result += '<br>Replacement cost: ' + replacementcost.toString() + ' (' + getCostAffordTimer(replacementcost) + ')';
       if(c.type == CROPTYPE_BRASSICA) {
         result += '<br><br>Finite lifetime: ' + util.formatDuration(c.planttime);
       } else {

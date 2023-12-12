@@ -426,6 +426,7 @@ BluePrint.fromChar = function(c) {
   if(c == '2') return 102;
   if(c == '3') return 103;
   if(c == '4') return 104;
+  if(c == '5') return 105;
   return 0;
 }
 
@@ -578,7 +579,7 @@ function State() {
   this.fernres = new Res(); // resources player had (totally produced this run) at the moment the fern appeared. only stores spores and seeds. used for idle fern computation
 
   // presents were holiday gifts in january 2022, eggs in spring 2022
-  this.present_effect = 0; // 0 = no present, 1+ = various effects
+  this.present_effect = 0; // 0 = no present, 1+ = various effects: 1=seeds, 2=spores, 3=prod boost, 4=nuts, 5=growspeed, 6=fruit, 7=amber. Some effects will be replaced with alternatives during some challenges
   this.present_image = 0;
   this.presentx = 0;
   this.presenty = 0;
@@ -865,6 +866,7 @@ function State() {
   this.g_fruits_recovered = 0;
   this.g_numplanted_fish = 0;
   this.g_numunplanted_fish = 0;
+  this.g_td_highest_wave_ever = 0; // also used for skipping easy waves
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -894,7 +896,9 @@ function State() {
   this.g_numautoprestiges = 0; // prestiges performed by automaton
   this.g_lightnings = 0; // lightnings during the stormy challenge
   this.g_td_waves = 0;
+  this.g_td_waves_skipped = 0; // skipped due to overdamage
   this.g_td_spawns = 0;
+  this.g_td_hits = 0;
   this.g_td_kills = 0;
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
@@ -930,7 +934,9 @@ function State() {
   this.p_numautoprestiges = 0;
   this.p_lightnings = 0; // lightnings during the stormy challenge
   this.p_td_waves = 0; // from previous TD run
+  this.p_td_waves_skipped = 0; // from previous TD run
   this.p_td_spawns = 0; // from previous TD run
+  this.p_td_hits = 0; // from previous TD run
   this.p_td_kills = 0; // from previous TD run
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!
 
@@ -963,7 +969,9 @@ function State() {
   this.c_numpautorestiges = 0;
   this.c_lightnings = 0; // lightnings during the stormy challenge
   this.c_td_waves = 0;
+  this.c_td_waves_skipped = 0;
   this.c_td_spawns = 0;
+  this.c_td_hits = 0;
   this.c_td_kills = 0;
   //this.c_res_prod = Res(); // similar to c_res, but only production from crops, not one-time income like ferns, holiday events, ... resin/twigs also not included since they're also not continuous crop production
   // WHEN ADDING FIELDS HERE, UPDATE THEM ALSO IN softReset()!

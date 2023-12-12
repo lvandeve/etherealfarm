@@ -892,7 +892,11 @@ function registerTooltip_(el, fun, opt_poll, opt_allowmobile) {
 
   var init = function() {
     el.tooltipfun = fun;
-    if(el.tooltipregistered) return; // prevent keeping adding event listeners, and make sure re-calling registerTooltip is fast (can be done every frame), just update the minimum needed to change the text
+    if(el.tooltipregistered && util.hasEvents(el)) {
+      // prevent keeping adding event listeners, and make sure re-calling registerTooltip is fast (can be done every frame), just update the minimum needed to change the text
+      // the reason for also having the "util.hasEvents" check us due to how with caching of elements and usage of util.cleanSlateElement, events may have been removed, but this internal "tooltipregistered" variable here is not known by that
+      return;
+    }
     el.tooltipregistered = true;
     util.setEvent(el, 'mouseover', function(e) {
       if(e.shiftKey || eventHasCtrlKey(e)) return;

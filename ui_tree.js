@@ -105,7 +105,7 @@ function makeTreeDialog() {
           text += ', and your total challenge production bonus from ' + totalChallengeBonus().toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun().toPercentString();
           if(basicfar) addbasicmessage = true;
         } else if(!basiccapped) {
-          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet reach your previous best of lvl ' + maxlevel + '.';
+          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet beat your previous best of lvl ' + maxlevel + '.';
           if(basicfar) addbasicmessage = true;
         } else {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You have capped this challenge, you reached ' + maxlevel + ' and it does not give any more bonus or achievements above ' + basicmaxlevel + '.';
@@ -123,6 +123,8 @@ function makeTreeDialog() {
         if(!c2.completed) {
           text += '<br>Challenge goal: <b>' + c.targetdescription + '</b>';
         }
+      } else if(c.targetlevel.length == 0) {
+          text += '<br>Challenge goal: <b>Increase max level reached for more production bonus</b>';
       } else if(c.targetlevel.length > 1) {
         if(!c.fullyCompleted()) {
           text += '<br>Current challenge target level: <b>' + c.targetlevel[c2.completed] + '</b>';
@@ -262,9 +264,8 @@ function makeTreeDialog() {
     var c = challenges[state.challenge];
     var c2 = state.challenges[state.challenge];
 
-    var already_completed = c.fullyCompleted();
-    var targetlevel = c.nextTargetLevel();
-    var success = state.treelevel >= targetlevel;
+    var already_completed = c.fullyCompleted(false);
+    var success = c.fullyCompleted(true);
 
     var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;
@@ -277,7 +278,9 @@ function makeTreeDialog() {
       // End the challenge early, but it already was completed beforehand, so it's called "end", not "abort"
       registerTooltip(button, 'End the challenge.');
     } else if(success) {
-      if(c2.completed) {
+      if(c.targetlevel != undefined && c.targetlevel.length == 0) {
+        registerTooltip(button, 'Finish the challenge. The higher the level reached, the higher the production bonus will be.');
+      } else if(c2.completed) {
         // This is a completion of a higher stage of the challenge
         registerTooltip(button, 'Successfully finish the next stage of this challenge.');
       } else {

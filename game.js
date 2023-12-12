@@ -461,7 +461,9 @@ function startChallenge(challenge_id) {
     state.field[0][0].index = FIELD_BURROW;
 
     showRegisteredHelpDialog(44);
-    showMessage('Starting tower defense. Build a maze of crops, press the GO button at the top when ready to start the waves', C_TD, 1920341654, undefined, undefined, true);
+    var text = 'Welcome to tower defense! Build a maze of crops, press the GO button at the top when ready to start the waves'
+    showMessage(text, C_TD, 1920341654, undefined, undefined, true);
+    showTdChip(text)
   }
 }
 
@@ -492,11 +494,15 @@ function endPreviousRun() {
   if(state.challenge) {
     var c = challenges[state.challenge];
     c2.maxlevel = Math.max(state.treelevel, c2.maxlevel);
+    // even for the "attempt" counter, do not count attempts that don't even level up the tree, those are counted as state.g_numresets_challenge_0 instead
+    if(state.treelevel) c2.num++;
     if(c.cycling) {
       var cycle = c.getCurrentCycle();
       c2.maxlevels[cycle] = Math.max(state.treelevel, c2.maxlevels[cycle]);
     }
-    if(c.stageCompleted(0)) {
+    if(c.numStages() == 0) {
+      c2.completed = (c2.num > 0); // it has no stages, but at least consider ending it as being completed
+    } else if(c.stageCompleted(0)) {
       var i = c2.completed;
       c2.num_completed++;
       // whether a next stage of the challenge completed. Note, you can only complete one stage at the time, even if you immediately reach the target level of the highest stage, you only get 1 stage for now
@@ -513,8 +519,6 @@ function endPreviousRun() {
     if(c.numStages() > 1 && c2.completed >= c.numStages()) {
       c2.num_completed2++;
     }
-    // even for the "attempt" counter, do not count attempts that don't even level up the tree, those are counted as state.g_numresets_challenge_0 instead
-    if(state.treelevel) c2.num++;
   }
 
   var resin_no_ferns = getUpcomingResin();
@@ -663,7 +667,9 @@ function endPreviousRun() {
   }
   if(state.challenge == challenge_towerdefense) {
     state.p_td_waves = state.c_td_waves;
+    state.p_td_waves_skipped = state.c_td_waves_skipped;
     state.p_td_spawns = state.c_td_spawns;
+    state.p_td_hits = state.c_td_hits;
     state.p_td_kills = state.c_td_kills;
   }
 
@@ -753,7 +759,9 @@ function beginNextRun(opt_challenge) {
   state.c_numautoprestiges = 0;
   state.c_lightnings = 0;
   state.c_td_waves = 0;
+  state.c_td_waves_skipped = 0;
   state.c_td_spawns = 0;
+  state.c_td_hits = 0;
   state.c_td_kills = 0;
 
   state.min_fish_resinmul = Num(-1);
@@ -2860,7 +2868,7 @@ function computeNextAutoPlant() {
     var crop = getCheapestNextOfCropType(type);
     if(!crop) continue;
 
-    if(state.challenge == challenge_towerdefense) {
+    if(state.challenge == challenge_towerdefense && state.towerdef.started) {
       //// During tower defense, automaton only goes up to one tier below max unlocked tier
       //if(crop.tier == state.highestoftypeunlocked[crop.type]) crop = getDowngradeCropForCrop(crop);
       // During tower defense, automaton never buys with more than 0.5% of resources
@@ -2904,13 +2912,15 @@ function computeNextAutoPlant() {
         if(c.index == nettle_1 && state.challenge == challenge_thistle) continue;
         if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
         if(type == CROPTYPE_NUT && tooManyNutsPlants(c.isReal())) continue; // can only have 1 at the same time
-        if(state.numgrowing >= 1 && state.challenge == challenge_towerdefense) {
-          // TD avoid too many at once
-          var td_ok = false;
-          if(c.istemplate) td_ok = true;
-          if(f.growth < 1) td_ok = true;
-          if(c.type == CROPTYPE_BRASSICA) td_ok = true;
-          if(!td_ok) continue; // during TD, don't grow too many towers at once: because if they all grow at same time, none can shoot and that may cause a loss due to pests just passing by
+        if(state.challenge == challenge_towerdefense) {
+          if(state.numgrowing >= 1 && state.towerdef.started) {
+            // TD avoid too many at once
+            var td_ok = false;
+            if(c.istemplate) td_ok = true;
+            if(f.growth < 1) td_ok = true;
+            if(c.type == CROPTYPE_BRASSICA) td_ok = true;
+            if(!td_ok) continue; // during TD, don't grow too many towers at once: because if they all grow at same time, none can shoot and that may cause a loss due to pests just passing by
+          }
 
           // TD match different statue types while they all have same crop type (direct templates)
           if(crop.type == CROPTYPE_CHALLENGE && direct_templates_inv.hasOwnProperty(c.index)) {
@@ -3115,7 +3125,7 @@ function autoPrestige(res) {
 // first one.
 // the returned value is amount of seconds before the first next event
 // the value used to determine current time is state.time
-function nextEventTime() {
+function nextEventTime(opt_remaining_tick_length) {
   var time = Infinity;
   var name = 'none'; // for debugging
 
@@ -3126,7 +3136,7 @@ function nextEventTime() {
     time = Math.min(time, time2);
   };
 
-  if(state.challenge == challenge_towerdefense) {
+  if(state.challenge == challenge_towerdefense && !!opt_remaining_tick_length && opt_remaining_tick_length <= 1) {
     var td = state.towerdef;
     if(!td.gameover && td.started) {
       if(tdWaveActive()) {
@@ -3347,6 +3357,13 @@ function computePretendFullgrownGain() {
 // similar to computePretendFullgrownGain, but for ferns including the possibly better weighted time at level value
 // this computation includes nuts, even though ferns don't give it (only relevant resources should be copied there), the nuts computation can be used e.g. for holiday events
 function computeFernGain() {
+  if(state.challenge == challenge_towerdefense) {
+    var td = state.towerdef;
+    var mul = 0.05;
+    var seeds = Num.max(td.wave_gain.seeds, state.res.seeds).mulr(mul);
+    var spores = Num.max(td.wave_gain.spores, state.res.spores).mulr(mul);
+    return new Res({seeds:seeds, spores:spores}).divr(300); // divided by 5 minutes, because this represents gain per second, but for TD for a present we really don't want more than a fraction of a wave's worth of resources to not break the game
+  }
   return computePretendFullgrownGain_(5);
 }
 
@@ -3380,6 +3397,10 @@ function computePresentEffect() {
   if(basic) {
     if(effect == 3) effect = 1; // no production boost during basic challenge
     if(effect == 5) effect = (state.res.spores.ler(0) ? 1 : 2); // no grow speed boost during basic challenge
+  }
+
+  if(state.challenge == challenge_towerdefense) {
+    if(effect == 2) effect = 1; // spores are carefully controlled during TD to make the tree levels match wave numbers, so don't give them with present
   }
 
   return effect;
@@ -3480,6 +3501,12 @@ var update = function(opt_ignorePause) {
     state.lastLightningTime += d;
     state.infinitystarttime += d;
     state.recentweighedleveltime_time += d;
+    if(state.challenge == challenge_towerdefense) {
+      var td = state.towerdef;
+      td.wavestarttime += d;
+      td.waveendtime += d;
+      td.lastwavetime += d;
+    }
 
     // this is for e.g. after importing a save while paused
     // TODO: try to do this only when needed rather than every tick while paused
@@ -3597,7 +3624,7 @@ var update = function(opt_ignorePause) {
     var next = 0;
 
     if(is_long) {
-      next = nextEventTime() + 1; // for numerical reasons, ensure it's not exactly at the border of the event
+      next = nextEventTime(nexttime - state.prevtime) + 1; // for numerical reasons, ensure it's not exactly at the border of the event
 
       // if a long tick is coming up, do one more short tick first now anyway, for in case a new unlock upgrade that can be auto-unlocked by automaton popped up, if e.g. a berry or nut was just fullgrown, or other similar situations (where some changing during the tick would cause a much shorter nextEventTime)
       // this would not be needed in theory if unlocking of unlock-upgrades happened immediately after crops got fullgrown, but that depends on the order in which things get computed in a single tick, when computeDerived is called on the state, ..., so the extra tick is really needed
@@ -5229,9 +5256,10 @@ var update = function(opt_ignorePause) {
           var c = f.getCrop();
           var prod = Res();
           if(state.challenge == challenge_towerdefense) {
+            var td = state.towerdef;
             // in tower defense challenge, all crops grow very fast, and brassica don't wither
             //var growtime = 0.01;
-            var growtime = c.type == CROPTYPE_BRASSICA ? 0.01 : 5;
+            var growtime = (c.type == CROPTYPE_BRASSICA || !td.started) ? 0.01 : 5;
             if(f.growth < 1) {
               var g = d / growtime;
               f.growth += g;
@@ -5310,7 +5338,9 @@ var update = function(opt_ignorePause) {
             }
           }
           gain.addInPlace(prod);
-          actualgain.addInPlace(prod.mulr(d));
+          if(state.challenge != challenge_towerdefense) {
+            actualgain.addInPlace(prod.mulr(d));
+          }
         } else if(f.isTemplate() || f.isGhost()) {
           f.growth = 1;
         }
@@ -5509,12 +5539,13 @@ var update = function(opt_ignorePause) {
         var effect = computePresentEffect();
 
         var basic = basicChallenge();
+        var istowerdef = state.challenge == challenge_towerdefense;
 
         if(effect == 1) {
           // seeds
           var g = computeFernGain().mulr(60 * 5);
           var starter = getStarterResources();
-          if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds);
+          if(g.seeds.lt(starter.seeds) && !istowerdef) g.seeds = Num.max(g.seeds, starter.seeds);
           if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
           var presentres = new Res({seeds:g.seeds});
           if(basic) presentres = presentres.mulr(0.3);
@@ -5529,7 +5560,7 @@ var update = function(opt_ignorePause) {
           // spores
           var g = computeFernGain().spores.mulr(60 * 5);
           var g2 = state.c_res.spores.mulr(0.0035); // in case there is no spore production, e.g. no mushrooms, give something based on spores produced so far anyway
-          if(g.lt(g2)) g = g2;
+          if(g.lt(g2) && !istowerdef) g = g2;
           if(basic) g = g.mulr(0.3);
           if(g.ltr(1)) g = Num.max(g, Num(1));
           var presentres = new Res({spores:g});
@@ -5877,13 +5908,43 @@ var update = function(opt_ignorePause) {
     }
 
 
+    if(state.challenge == challenge_towerdefense) {
+      var td = state.towerdef;
+      if(is_long) {
+        // tower defense only actually runs during real time ticks, so update its timings
+        td.wavestarttime += d;
+        td.waveendtime += d;
+        td.lastwavetime += d;
+      }
+      // The 'done' check is there because for TD we don't want to run it while fast-running savegames. Only the last instance of the loop here has done=true
+      if(done) {
+        // precomputeTD is always done, even if it may seem to be only needed if a wave is active.
+        // amonst other things, it updates total damage indicator number in the info boxes, and is also needed right after loading a save file
+        precomputeTD();
+
+        // to avoid accidental features that give way too much seeds/spores for TD (since their amounts are very different than standard), clean up actualgain in case it contains too much seeds due to some future implemented feature that gives seeds/spores but forgot to take TD into account (example: presents, but those do it correctly now)
+        if(actualgain.seeds.gt(td.wave_gain.seeds)) actualgain.seeds = new Num(0);
+        if(actualgain.spores.gt(td.wave_gain.spores)) actualgain.spores = new Num(0);
+
+        if(!td.gameover && td.started) {
+          if(!tdWaveActive() && (state.time > tdNextWaveTime() || td_go_now)) {
+            spawnWave();
+          }
+          if(tdWaveActive()) {
+            var td_res = runTD();
+            if(td_res) {
+              actualgain.addInPlace(td_res);
+            }
+          }
+        }
+      }
+    }
+
     // For safety, in case something goes wrong, because NaNs spread once they appear
     gain.removeNaN();
     actualgain.removeNaN();
 
-    if(state.challenge != challenge_towerdefense) {
-      state.res.addInPlace(actualgain); // gain gotten during this entire tick (not /s)
-    }
+    state.res.addInPlace(actualgain); // gain gotten during this entire tick (not /s)
 
     if(season_will_change && global_season_changes == 1 && !prev_season_gain) {
       // this stores the prev_season_gain now for display in the *next* update tick
@@ -6017,21 +6078,6 @@ var update = function(opt_ignorePause) {
         state.g_res_hr_best.twigs = twigshr;
         state.g_res_hr_at.twigs = Num(state.treelevel);
         state.g_res_hr_at_time.twigs = Num(state.c_runtime);
-      }
-    }
-
-    // The done check is there because for TD we don't want to run it while fast-running savegames. Only the last instance of the loop here has done=true
-    if(state.challenge == challenge_towerdefense && done) {
-      var td = state.towerdef;
-      if(!td.gameover && td.started) {
-        if(!tdWaveActive() && (state.time > tdNextWaveTime() || td_go_now)) {
-          spawnWave();
-        }
-        if(tdWaveActive()) {
-          runTD();
-        }
-      } else {
-        precomputeTD(); // normally not needed, but it is if this is right after loading a save file
       }
     }
 

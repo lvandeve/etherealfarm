@@ -296,6 +296,8 @@ Crop.prototype.getPlantTime = function() {
 
   var basic = basicChallenge();
 
+  // NOTE: challenge_towerdefense's sped up grow time is not handled here but in game.js
+
   // This is the opposite for CROPTYPE_BRASSICA, it's not planttime but live time. TODO: make two separate functions for this
   if(this.type == CROPTYPE_BRASSICA) {
     if(this.basic_upgrade != null) {
@@ -965,7 +967,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // nettle boost
   if(f && (this.type == CROPTYPE_MUSH)) {
-    var spore_boost = Num(1);
+    var spore_boost = Num(1); // boost to spores from the nettle
+    var seed_cost = Num(1); // extra seed consumption due to the nettle, normally this is a multiplier of 1 (nettle does not cause extra seed consumption), but during the tower defense challenge it does
     var num = 0;
     var x = f.x, y = f.y, w = state.numw, h = state.numh;
 
@@ -974,22 +977,33 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
-      if(n.hasCrop() && n.getCrop().type == CROPTYPE_STINGING) {
+      var c = n.getCrop();
+      if(n.hasCrop() && c.type == CROPTYPE_STINGING) {
         var boost;
-        if(pretend) boost = n.getCrop().getBoost(n, pretend);
+        if(pretend) boost = c.getBoost(n, pretend);
         else boost = prefield[n.y][n.x].boost;
         if(boost.neqr(0)) {
           spore_boost.addInPlace(boost);
           num++;
+          if(state.challenge == challenge_towerdefense) {
+            var boost2 = new Num(boost);
+            if(c.basic_upgrade != null) {
+              var eff = c.tier;
+              var u = state.upgrades[c.basic_upgrade];
+              eff += towards1(u.count, 50) * 0.75; // give something towards the next tier for nettle upgrades, but not 100% so next tier gives a bump up
+              eff = 1 + eff * 3; // 1 = the base multiplier. multipy eff to give more visible effect of this, the effect on damage of mushroom is much smaller
+              boost.divrInPlace(eff);
+            }
+            seed_cost.addInPlace(boost);
+          }
         }
       }
     }
 
+    result.spores.mulInPlace(spore_boost);
     if(state.challenge == challenge_towerdefense) {
       // For tower defense, the nettle als increases consumption. This is because the current balancing of the game makes mushrooms almost never do over-consumption anymore, but for the tower defense, to have increased berry tiers still worth it, there must be some limit on what mushrooms can consume from them.
-      result.mulInPlace(spore_boost);
-    } else {
-      result.spores.mulInPlace(spore_boost);
+      result.seeds.mulInPlace(seed_cost);
     }
     if(breakdown && num > 0) breakdown.push(['stingy crops (' + num + ')', true, spore_boost, result.clone()]);
   }
@@ -1957,15 +1971,15 @@ function getFlowerBoost(tier) {
   return Num(0.5).mul(Num(16).powr(tier - 1));
 }
 
-function getNettleCost(i) {
-  var mushtier = i * 4 + 1;
-  if(i == 2) mushtier = 10;
+function getNettleCost(tier) {
+  var mushtier = tier * 4 + 1;
+  if(tier == 2) mushtier = 10; // TODO: add formula for tier 3+
   return getMushroomCost(0.05 + mushtier);
 }
 
-function getBeeCost(i) {
+function getBeeCost(tier) {
   // Beehives start at flower_3, next one is at flower_7
-  return getFlowerCost(3 + i * 4 + 0.15);
+  return getFlowerCost(3 + tier * 4 + 0.15);
 }
 
 var berryplanttime0 = 60;
@@ -2084,12 +2098,12 @@ crops[challengeflower_0].type = CROPTYPE_FLOWER;
 crops[challengeflower_0].tier = 0; // this is needed to make the "ctrl+shift+selecting" display work. Since the anemone and aster (both tier 0) are never available at the same time, no confusion is possible.
 
 crop_register_id = 210;
-var challengestatue_0 = registerChallengeCrop('spore statue', 0, Res({seeds:10}), 5, images_statue_spore, 'Spore statue. Makes orthogonally or diagonally connected mushroom stronger, but reduces range. If at least two spores touch a mushroom, makes it focused: more damage to waves with small amount of pests.');
-var challengestatue_1 = registerChallengeCrop('splash statue', 0, Res({seeds:10}), 5, images_statue_splash, 'Splash statue. Makes orthogonally or diagonally connected mushroom weaker, but do splash damage, which is good against groups (but not against splash resistent pests).');
-var challengestatue_2 = registerChallengeCrop('range statue', 0, Res({seeds:10}), 5, images_statue_range, 'Range statue. Increases range of orthogonally or diagonally connected mushroom.');
-var challengestatue_3 = registerChallengeCrop('sniper statue', 0, Res({seeds:10}), 5, images_statue_sniper, 'Sniper statue. Makes orthogonally or diagonally connected mushrooms snipers: their range covers the full map, and they hit harder, but they are much slower. Splash damage statues have less effect, the splash only works against 1-cell groups.');
-var challengestatue_4 = registerChallengeCrop('snail statue', 0, Res({seeds:10}), 5, images_statue_snail, 'Snail statue. Makes orthogonally or diagonally connected mushroom weaker, but slow down pests for a while (unless slow resistent). This effect stacks for a single mushroom, but not multiple.');
-var challengestatue_5 = registerChallengeCrop('seed statue', 0, Res({seeds:10}), 5, images_statue_seed, 'Seed statue. Makes orthogonally or diagonally connected mushroom weaker, but let pests drop more resources when exterminated for a while. This effect stacks for a single mushroom, but not multiple.');
+var challengestatue_0 = registerChallengeCrop('spore statue', 0, Res({seeds:10}), 5, images_statue_spore, 'Spore statue. Makes orthogonally or diagonally connected mushroom stronger, but reduces range. This effect stacks with multiple statues. If at least two spore statues touch a mushroom, adds the "focused" effect: does more damage to waves with small amount of pests.');
+var challengestatue_1 = registerChallengeCrop('splash statue', 0, Res({seeds:10}), 5, images_statue_splash, 'Splash statue. Makes orthogonally or diagonally connected mushroom weaker, but do splash damage, which is good against groups (but not against splash resistent pests). Does not stack (one splash statue is enough)');
+var challengestatue_2 = registerChallengeCrop('range statue', 0, Res({seeds:10}), 5, images_statue_range, 'Range statue. Increases range of orthogonally or diagonally connected mushroom. This effect stacks with multiple statues.');
+var challengestatue_3 = registerChallengeCrop('sniper statue', 0, Res({seeds:10}), 5, images_statue_sniper, 'Sniper statue. Makes orthogonally or diagonally connected mushrooms snipers: their range covers the full map, and they hit harder, but they are much slower. Splash damage statues have less effect, the splash only works within 1-cell groups (like ticks, ...). Does not stack (one sniper statue is enough).');
+var challengestatue_4 = registerChallengeCrop('snail statue', 0, Res({seeds:10}), 5, images_statue_snail, 'Snail statue. Makes orthogonally or diagonally connected mushroom weaker, but slow down pests for a while (unless slow resistent). This effect stacks for multiple statues at a single mushroom, but not from multiple mushrooms.');
+var challengestatue_5 = registerChallengeCrop('seed statue', 0, Res({seeds:10}), 5, images_statue_seed, 'Seed statue. Makes orthogonally or diagonally connected mushroom weaker, but let pests drop more resources when exterminated for a while. This effect stacks for multiple statues at a single mushroom, but not from multiple mushrooms.');
 
 
 // templates
@@ -2749,7 +2763,7 @@ var nettleunlock_1 = registerCropUnlock(nettle_1, getNettleCost(1), undefined, f
 
   if(state.crops[mush_5].had) return true;
   if(state.crops[berry_12].had) return true; // the berry after mush_5
-  if(state.challenge == challenge_towerdefense && (state.crops[berry_12].unlocked || state.crops[berry_12].unlocked)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
+  if(state.challenge == challenge_towerdefense && (state.crops[mush_5].unlocked || state.crops[berry_12].unlocked || state.crops[berry_0].prestige)) return true; // otherwise it may miss this one due to the super fast upgrade unlocks
   return false;
 });
 var nettleunlock_2 = registerCropUnlock(nettle_2, getNettleCost(2), undefined, function() {
@@ -3282,17 +3296,40 @@ function Challenge() {
   this.allowbeyondhighestlevel = false;
 
   // either targetlevel is an array and the others undefined, or targetfun and targetdescription are given (and are not arrays but a function and a string) and targetlevel is undefined
+  // if targetlevel is empty array, there's no target level at all and the challenge's only reward is production bonus from reaching higher levels in it (NOTE: tree level 1 must still be reached at least to count the challenge as a 'run' and thus 'completed' at all)
   this.targetlevel = [0];
   this.targetfun = undefined;
   this.targetdescription = undefined;
 
-  // how much does this challenge contribute to the global challenge bonus pool, per level
-  // e.g. at 0.1, this challenge provides +10% production bonus per tree level reached during this challenge
-  // this is additive for all challenges together.
+  /* which formula is used to compute the bonus overall
+  value 0:
+  system from mid 2023 and some time before that (but this is already a different system than initial game release, which is completely gone here)
+
+  value 1:
+  new system introduced for tower defense end 2023 (and planned to extend to other challenges)
+  at every level of the form A + B * level, an exponential increase is given (e.g. B=100 for every 100 levels such increase)
+  in-between a smaller non-exponential bonus is given, which is more significant again after each of the exponential bumps
+  levels of the form A + B * level are the "key" levels, and in addition level 0 is a key level if A > 0
+  between two key levels K0 and K1, bonus linearly ramps up from K0 to K0 * + (K1 - K0) * p, where p is e.g. 0.5 to go to midway
+  */
+  this.bonus_formula = 0;
+
+
+  // main bonus multiplier
   this.bonus = Num(0);
-  this.bonus_min_level = 0; // if higher than 0, bonus only starts working from that level
-  this.bonus_max_level = 0; // if higher than 0, bonus stops above this level, it's a hard cap
-  this.bonus_exponent = 1; // exponent for the bonus formula. Total formula is: bonus * level^exponent, with level = max(0, level_reached - min_level)
+  // for formula=0. if higher than 0, bonus only starts working from that level
+  this.bonus_min_level = 0;
+  // for formula=0. if higher than 0, bonus stops above this level, it's a hard cap
+  this.bonus_max_level = 0;
+  // for formula=0: exponent for the bonus formula. Total formula is: bonus * level^exponent, with level = max(0, level_reached - min_level)
+  this.bonus_exponent = Num(1);
+  // for formula=1: base of exponent for each key level, e.g. 1.5 to make it a 50% boost for each key milestone reached
+  this.bonus_exponent_base = Num(1);
+  // for formula=1: defines key levels
+  this.bonus_level_a = 0;
+  this.bonus_level_b = 0;
+  // for formula=1: defines progression between key levels
+  this.bonus_p = 0.5;
 
   this.cycling = 0; // if 2 or higher, this challenge cycles between different states, with each their own max level. The current cycle is (state.challenges[id].num_completed % challenges[id].cycling).
 
@@ -3312,6 +3349,8 @@ function Challenge() {
   this.stageCompleted = function(stage) {
     if(this.targetlevel == undefined) {
       return this.targetfun();
+    } else if(this.targetlevel.length == 0) {
+      return false; // there are no stages in this challenge so there's none to complete
     } else {
       return state.treelevel >= this.targetlevel[stage];
     }
@@ -3319,9 +3358,9 @@ function Challenge() {
 
   this.numStages = function() {
     if(this.targetlevel == undefined) {
-      return 1;
+      return 1; // targetfun represents the one stage
     } else {
-      return this.targetlevel.length;
+      return this.targetlevel.length; // this can be 0 if there's no target level at all
     }
   };
 
@@ -3335,11 +3374,17 @@ function Challenge() {
   // use numCompleted to check if any stage at all was completed, or fullyCompleted to check all stages are completed
   // does not take cycles into account (from this.cycling), use allCyclesCompleted for that
   this.fullyCompleted = function(opt_include_current_run) {
+    if(this.numStages() == 0) {
+      // the challenge has no stages or target level at all, but still only consider it completed if at least one run was done
+      return state.challenges[this.index].num > 0 || (opt_include_current_run ? (state.challenge == this.index) : false);
+    }
     return this.numCompleted(opt_include_current_run) >= this.numStages();
   };
 
   this.nextCompleted = function(opt_include_current_run) {
     if(this.targetlevel == undefined) {
+      return this.fullyCompleted(opt_include_current_run);
+    } else if(this.targetlevel.length == 0) {
       return this.fullyCompleted(opt_include_current_run);
     } else {
       return state.treelevel >= this.nextTargetLevel(opt_include_current_run);
@@ -3377,12 +3422,14 @@ function Challenge() {
   // returns either the reward level of the next stage, or if fully completed, that of the last stage
   this.nextTargetLevel = function(opt_include_current_run) {
     if(this.targetlevel == undefined) return 0; // not level based
+    if(this.targetlevel.length == 0) return 0; // not level based
     if(this.fullyCompleted(opt_include_current_run)) return this.targetlevel[this.targetlevel.length - 1];
     return this.targetlevel[this.numCompleted(opt_include_current_run)];
   };
 
   this.finalTargetLevel = function() {
     if(this.targetlevel == undefined) return 0; // not level based
+    if(this.targetlevel.length == 0) return 0; // not level based
     return this.targetlevel[this.targetlevel.length - 1];
   };
 
@@ -3402,6 +3449,7 @@ var challenge_register_id = 1;
 
 // targetlevel = can be one of three things:
 // - a single numeric value: the tree level needed to finish this challenge
+// - an empty array, to indicate the challenge is not target based at all
 // - an array of numeric values: multiple target levels, in case this is a multi-target-challenge
 // - undefined, to use function instead, see next point
 // alternatively to targetlevel, you can give targetfun and targetdescription (not arrays): a function that is a finish condition for the challenge
@@ -3411,6 +3459,8 @@ var challenge_register_id = 1;
 // allowflags: 1=resin, 2=fruits, 4=twigs, 8=beyond highest level, 16=nuts
 // rulesdescription must be a list of bullet points; it may be either a string, or a function that returns a string
 // bonus = basic value for the challenge bonus, or 0 if it gives no bonus
+// bonus_min_level = minimum level where some bonus already starts being given, before reaching the target level
+// completion_bonus = a fixed constant completion bonus
 function registerChallenge(name, targetlevel, targetfun, targetdescription, bonus, bonus_min_level, completion_bonus, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
@@ -3885,7 +3935,7 @@ challenges[challenge_poisonivy].autoaction_warning = true;
 
 // 15
 
-var challenge_towerdefense = registerChallenge('tower defense challenge', [75], undefined, undefined, Num(0.005), 75, 0,
+var challenge_towerdefense = registerChallenge('tower defense challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*bonus=*/Num(1), /*bonus_min_level=*/0, /*completion_bonus=*/0,
 `Tower defense
 `,
 `
@@ -3899,29 +3949,33 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', [75], 
 • Various types of statues can be placed next to mushrooms to affect their tower damage type.<br>
 • Seeds are gained by eliminating pests.<br>
 • The shooting damage of mushrooms and brassica depends on their spore production, which is determined by flowers, stingy crops and berries as usual (mostly).<br>
-• Stingy crops boost mushrooms, but unlike normally also increase their seed consumption.<br>
+• Stingy crops boost mushrooms, but unlike normally also increase their seed consumption (higher tiers give a small seed efficiency bonus only).<br>
 • Mushroom multiplicity does not make them consume more seeds.<br>
 • Brassica can always copy diagonally from mushrooms (no squirrel ability required).<br>
 • There's no penalty to brassica for having multiple brassica, but most brassica copying bonuses (like fruits and ethereal field) don't work.<br>
 • Ferns don't appear during this challenge.<br>
-• Crops grow faster than usual, but towers cannot attack during the few seconds of growing time.<br>
+• Crops grow faster than usual (and even faster before starting the waves), but towers cannot attack during the few seconds of growing time.<br>
 • Crops give 100% of resources back when replaced, rather than only a partial recoup. It's possible to change the location of an expensive tower for free by downgrading one and upgrading another this way.<br>
-• Automaton auto-plant will only work for a small fraction of resources.<br>
+• Automaton auto-plant will only work for a small fraction of resources (it will work normally before the first wave).<br>
 • Any production/s shown for crops is not added to stacks, but instead used for damage calculations. The only income gotten is from exterminating pests. Production/s is shown to be able to see mushroom seed requirement for spores damage. Actual damage is a number that's derived from mushroom spore production and shown in mushroom info.<br>
 • Crop costs for multiple of the same crop type scale higher than in the regular game.<br>
 • If any tower hits with extremely high damage compared to the wave's health, it will fast forward to a later wave to speed up the early waves.<br>
 • See the tower defense help dialog, which can be found under the main menu -> help -> tower defense (down in the list of dynamic help dialogs), or appears when starting tower defense for the first time, for more information on the individual tower and pest types, and tips.<br>
 `,
-['[REWARD NOT YET IMPLEMENTED FOR BETA]'],
-'[UNLOCK REASON NOT YET IMPLEMENTED FOR BETA]',
+['No special reward other than the challenge production bonus itself!'],
+'reaching tree level 75',
 function() {
-  // TODO unlock fun
-  //return state.beta;
-  return false;
+  if(!state.beta) return false;
+  return state.treelevel >= 75;
 }, function() {
   // TODO reward fun
 }, 0);
 challenges[challenge_towerdefense].autoaction_warning = true;
+challenges[challenge_towerdefense].bonus_formula = 1;
+challenges[challenge_towerdefense].bonus_level_a = 75;
+challenges[challenge_towerdefense].bonus_level_b = 100;
+challenges[challenge_towerdefense].bonus_p = 0.75;
+challenges[challenge_towerdefense].bonus_exponent_base = Num(2);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3934,8 +3988,8 @@ var challenges_order = [
   challenge_rocks, challenge_rockier, challenge_bees, challenge_nodelete,
   challenge_noupgrades, challenge_blackberry, challenge_wither,
   challenge_thistle, challenge_stormy, challenge_wasabi,
-  challenge_basic, challenge_infernal, challenge_truly_basic,
-  challenge_poisonivy, challenge_towerdefense
+  challenge_basic, challenge_towerdefense, challenge_infernal, challenge_truly_basic,
+  challenge_poisonivy
 ];
 
 
@@ -4706,7 +4760,10 @@ function applyBlueberrySecret() {
   if(state.challenge == challenge_blackberry) return;
   if(!state.upgrades[berryunlock_1].count) upgrades[berryunlock_1].fun();
   if(!state.upgrades[flowerunlock_0].count) upgrades[flowerunlock_0].fun();
-  if(!state.upgrades[mistletoeunlock_0].count) upgrades[mistletoeunlock_0].fun();
+  if(!state.upgrades[mistletoeunlock_0].count) {
+    var allow_mistletoe = !state.challenge || challenges[state.challenge].allowstwigs;
+    if(allow_mistletoe) upgrades[mistletoeunlock_0].fun();
+  }
 }
 
 upgrade2_register_id = 122; // this upgraded used to be LEVEL2=2 and must keep its old id
@@ -6814,14 +6871,43 @@ function getChallengeBonus(challenge_id, level, completed, opt_cycle) {
   var bonus = c.bonus;
   if(c.cycling && opt_cycle != undefined) bonus = c.cycling_bonus[opt_cycle];
 
-  var level2 = level;
-  if(c.bonus_max_level) level2 = Math.min(c.bonus_max_level, level2);
-  if(c.bonus_min_level) level2 = Math.max(0, level - c.bonus_min_level + 1);
+  if(c.bonus_formula == 0) {
+    var level2 = level;
+    if(c.bonus_max_level) level2 = Math.min(c.bonus_max_level, level2);
+    if(c.bonus_min_level) level2 = Math.max(0, level - c.bonus_min_level + 1);
 
-  var score = Num(level2).powr(c.bonus_exponent);
-  var result = bonus.mulr(score);
-  if(completed) result.addrInPlace(c.completion_bonus);
-  return result;
+    var score = Num(level2).powr(c.bonus_exponent);
+    var result = bonus.mulr(score);
+    if(completed) result.addrInPlace(c.completion_bonus);
+    return result;
+  }
+
+  if(c.bonus_formula == 1) {
+    if(level == 0) return Num(0);
+    var k0; // key level 0, beginning of current range (key level = one of the levels where exponent changes)
+    var k1; // key level 1, end of current range
+    var e; // index of current range (which key-level range reached), for the exponent (0 if in first range)
+    if(!c.bonus_level_a) {
+      e = Math.floor(level / c.bonus_level_b);
+      k0 = e * c.bonus_level_b;
+      k1 = k0 + c.bonus_level_b;
+    } else if(level < c.bonus_level_a) {
+      e = 0;
+      k0 = 0;
+      k1 = c.bonus_level_a;
+    } else {
+      e = Math.floor((level - c.bonus_level_a) / c.bonus_level_b) + 1;
+      k0 = c.bonus_level_a + (e - 1) * c.bonus_level_b;
+      k1 = k0 + c.bonus_level_b;
+    }
+    var mul0 = Num.pow(c.bonus_exponent_base, Num(e));
+    var mul1 = mul0.mul(c.bonus_exponent_base);
+    var progress = (level - k0) / (k1 - k0);
+    var mul = mul0.add(mul1.sub(mul0).mulr(c.bonus_p * progress));
+    return bonus.mul(mul);
+  }
+
+  return bonus; // unknown formula
 }
 
 function getChallengeMultiplier(challenge_id, level, completed, opt_cycle) {

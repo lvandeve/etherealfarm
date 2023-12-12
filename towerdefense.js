@@ -122,9 +122,11 @@ PestState.prototype.getSpeed = function() {
 
 function TowerState() {
   this.kills = 0;
+  this.hits = 0;
   this.lastattack = 0;
 };
 
+// May only contain state relevant for 1 run, state that must be remembered throughout multiple runs should be in the main State, since the tower defense state is only saved while TD is active
 function TowerDefenseState() {
   this.pests = [];
 
@@ -133,13 +135,13 @@ function TowerDefenseState() {
 
   this.started = false;
   this.gameover = false;
-  this.wave = 0; // 0 = no wave started yet, 1 = first wave spawned, ...
-  this.highest_wave_ever = 0; // highest wave ever defeated. Used for skipping easy waves
-
-  // gain the full current wave will give
-  this.gain = Res();
+  // current wave index
+  // 0 = first wave, 1 = second wave, .... This starts at 0, not at 1, so that the currently active wave matches the tree level, otherwise it's very confusing that the number shown at the tree in the center of the map does not match the wave level (and tree starts at 0)
+  this.wave = 0;
   // amount of pests the current wave had in full, used for computing gain per pest.
   this.num = 0;
+
+  this.wave_hp = Num(0); // the initial HP the wave had, stored for display purposes and hasten wave computation
 
   // becomes true if the wave has been rendered for at least a frame, used to make the wave visible before shooting starts
   this.wave_seen = false;
@@ -173,6 +175,18 @@ function TowerDefenseState() {
 
   // derived stat, not to be saved
   this.renderinfo = undefined;
+
+  // damage of all towers on the field summed together
+  // derived stat, not to be saved
+  this.total_damage = new Num(0); // without statues (simpler calculation)
+
+  // total hp the wave initially had
+  // derived stat, not to be saved
+  this.total_hp = new Num(0);
+
+  // gain the full current wave will give
+  // derived stat, not to be saved
+  this.wave_gain = Res();
 }
 
 function resetTD() {
@@ -208,14 +222,25 @@ function precomputeTD() {
   var td = state.towerdef;
   computeTDPath(td);
 
+  // this is reconputed each time because it depends (amongst other things) on which fruit is active, so computing only at start of wave is not accurate
+  td.wave_gain = getTDWaveRes(td.wave);
+
   td.speeds = [];
   td.pestspercell = [];
+  td.total_damage = new Num(0);
+  td.total_hp = new Num(0);
   for(var y = 0; y < state.numh; y++) {
     td.speeds[y] = [];
     td.pestspercell[y] = [];
     for(var x = 0; x < state.numw; x++) {
       td.speeds[y][x] = [];
       td.pestspercell[y][x] = [];
+
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(c) {
+        td.total_damage.addInPlace(getTDCropDamageInclStatues(c, f));
+      }
     }
   }
   for(var i = 0; i < td.pests.length; i++) {
@@ -223,6 +248,7 @@ function precomputeTD() {
     var p2 = pests[p.index];
     td.speeds[p.y][p.x][p2.speed] = true;
     td.pestspercell[p.y][p.x].push(i);
+    td.total_hp.addInPlace(p.hp);
   }
 }
 
@@ -263,7 +289,7 @@ function computePestsRenderInfo() {
     r.images.push(p2.images[imdir]);
     var name = pests[p.index].name;
     if(i > 0) r.tooltip += '<br>';
-    r.tooltip += upper(name) + ' level ' + td.wave + ', hp: ' + p.hp.toString()/* + ' / ' + p.maxhp.toString()*/ + ', speed: ' + Num(2 / p2.speed).toString();
+    r.tooltip += upper(name) + ' level ' + td.wave + ', hp: ' + p.hp.toString() + ' / ' + p.maxhp.toString() + ', speed: ' + Num(2 / p2.speed).toString();
     if(p2.group != 1) r.tooltip += '. Group size: ' + p2.group;
     if(p2.splahsresistant) r.tooltip += '. Splash resist';
     if(p2.slowresistant) r.tooltip += '. Slow resist';
@@ -374,9 +400,11 @@ function movePests() {
     var f2 = state.field[y2][x2];
     if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
       td.gameover = true;
-      showMessage('Tower defense: Game over! Last wave exterminated: ' + (td.wave - 1), C_TD, 84683311);
+      var text = 'Tower defense: game over! A pest reached the tree. Wave reached ' + td.wave + '. All that can be done now is to start a new run.';
+      showMessage(text, C_TD, 84683311);
+      showTdChip(text);
       if(f2.index == FIELD_TREE_BOTTOM) p.y--; // the one remaining pest: don't overlap the tree level number
-      td.pests = [p];
+      //td.pests = [p]; // keep only this one pest that reached the tree
     }
   }
 }
@@ -391,11 +419,9 @@ function resetBulletAnimationCache() {
 
 /*
 type:
-0: berry shot
 1: mushroom shot
 2: mushroom splash damage
 3: watercress hit
-4: nuts shot
 */
 function createBulletAnimation(x0, y0, x1, y1, type) {
   if(x0 < 0 || y0 < 0 || x0 >= state.numw || y0 >= state.numh) return;
@@ -463,15 +489,30 @@ function createBulletAnimation(x0, y0, x1, y1, type) {
   animfun();
 }
 
+// aka skipWaves aka overdamage
+// returns resources gained from the skipped waves
 function hastenWaves(damage) {
+  var res = new Res(0);
   var td = state.towerdef;
   // Quickly end waves if they're completely obliterated
-  while(damage.gt(getTDWaveHealth(td.wave + 1).mulr(0.5))) {
-    if(td.wave >= td.highest_wave_ever) break; // don't do this when seeing waves for the first time
-    state.res.addInPlace(getTDWaveRes(td.wave));
-    td.wave++;
-    //console.log('Quick defeated wave ' + td.wave);
+  var before = td.wave;
+  var after = td.wave;
+  while(damage.gt(getTDWaveHealth(after + 1).mulr(0.5))) {
+    if(after >= state.g_td_highest_wave_ever) break; // don't do this when seeing waves for the first time
+    after++;
   }
+  if(after > before + 5) {
+    for(var i = before; i < after; i++) {
+      td.wave++;
+      res.addInPlace(getTDWaveRes(td.wave)); // added after, not before, the increase because spawnWave will increase it once more
+      state.c_td_waves_skipped++;
+      state.g_td_waves_skipped++;
+    }
+    // td.wave + 1 because the spawnWave function will increase td.wave once more
+    showMessage('Skipped to wave ' + (td.wave + 1) + ' due to large over-damage.', C_TD, 8451402);
+  }
+
+  return res;
 }
 
 function getFocusDamageMul(td) {
@@ -483,65 +524,6 @@ function getFocusDamageMul(td) {
   else if(num <= 3) return 1.5;
   else if(num <= 4) return 1.25;
   return 1;
-}
-
-// x0, y0 = attack origin, the location of the tower
-// x1, y1 = attack target
-// splash: if true, it's a splash damage tower, so it can hit all members of a group at once
-// returns true if pest exterminated (and not already exterminated from earlier shot beforehand)
-function attackPest(td, index, damage, x0, y0, x1, y1, splash, focus, slow, money) {
-  if(x0 < 0 || y0 < 0 || x0 >= state.numw || y0 >= state.numh) return false;
-  if(x1 < 0 || y1 < 0 || x1 >= state.numw || y1 >= state.numh) return false;
-
-  // pests on the burrow spot are partially protected by the burrow itself. The reason for this: they are all on top of each other here, which would give splash damage towers a huge benefit compared to pests on the other tiles.
-  // but we do want SOME of that benefit to make early waves go very fast (so all pests can be defeated in a single splash damage or brassica shot there). So allow partial damage, just not all of it.
-  if(state.field[y0][x0].index == FIELD_BURROW) damage = damage.mulr(1 / 16);
-  var p = td.pests[index];
-  var p2 = pests[p.index];
-
-
-  if(slow && !p2.slowresistant) {
-    p.slowtime = 15;
-    p.slownum = slow;
-  }
-  if(money) {
-    p.moneytime = 15;
-    p.moneynum = money;
-  }
-  if(splash && p2.splahsresistant) return false; // resistent to splash damage, but it may still get the slow or money effects above
-
-  if(focus) {
-    //console.log('damage before: ' + damage.toString());
-    damage = damage.mulr(getFocusDamageMul(td));
-    //console.log('damage after: ' + damage.toString());
-  }
-
-  if(p2.group > 1) {
-    if(splash) {
-      // each group member is hit at once with the full damage in case of a splash hit
-      damage = damage.mulr(p2.group);
-    } else {
-      // if not a splash hit, then can maximally kill one group member at the time
-      // NOTE: this is a simulation of what would happen with a group and non-splash damage, but this simulation is not correct if both some splash and non-splash hits occur (e.g. a splash hit brings all of the group to 1% hp, then a non-splash hit would kill all at once). That would requiring storing all individual hp's, but we don't do that
-      var maxdamage = p.maxhp.divr(p2.group).mulr(1.01); // the 1.01 is to avoid numerical precision issues requiring one more shot
-      if(damage.gt(maxdamage)) damage = maxdamage;
-    }
-  }
-
-  // count if this tower exterminated the pest, but not if its damage was much higher than maxhp: super easy kills are not counted, to make the stats give a somewhat more useful signal than "was the tower closest to start that exterminated all pests"
-  if(p.hp.gtr(0) && damage.gt(p.hp) && damage.lt(p.maxhp.mulr(2))) {
-    td.towers[y0][x0].kills++;
-  }
-
-  var result = false;
-  if(p.hp.gtr(0) && damage.gt(p.hp)) result = true;
-
-  p.hp = p.hp.sub(damage);
-
-  // Quickly skip waves if they'd be completely obliterated
-  if(damage.gt(p.maxhp.mulr(10))) hastenWaves(damage);
-
-  return result;
 }
 
 
@@ -680,7 +662,75 @@ function getTDStatueMods(x, y) {
   //statue_focus = !statue_splash && num_dmg >= 1;
   statue_focus = num_dmg >= 2;
   if(statue_sniper) statue_mul *= 6;
-  return [statue_mul, statue_dist, statue_splash, statue_sniper, statue_slow, statue_seed, statue_focus];
+  var statue_tower_speed = statue_sniper ? 9 : 2; // num ticks between shots (lower number = faster shooting. Lowest possible supported value is 2.)
+  return [statue_mul, statue_dist, statue_splash, statue_sniper, statue_slow, statue_seed, statue_focus, statue_tower_speed];
+}
+
+// x0, y0 = attack origin, the location of the tower
+// x1, y1 = attack target
+// splash: if true, it's a splash damage tower, so it can hit all members of a group at once
+// o_res: output Resource object, partial resources for damaging pests are added (resources are added for every hit, rather than on kill: this makes it fair when the player is switching fruits, any resources gained are from hits during which a single spore or seed focused fruit was active)
+// returns the damage done in the end after various adjustments
+function attackPest(td, index, damage, x0, y0, x1, y1, splash, focus, slow, money, o_res) {
+  if(x0 < 0 || y0 < 0 || x0 >= state.numw || y0 >= state.numh) return new Num(0);
+  if(x1 < 0 || y1 < 0 || x1 >= state.numw || y1 >= state.numh) return new Num(0);
+
+  // pests on the burrow spot are partially protected by the burrow itself. The reason for this: they are all on top of each other here, which would give splash damage towers a huge benefit compared to pests on the other tiles.
+  // but we do want SOME of that benefit to make early waves go very fast (so all pests can be defeated in a single splash damage or brassica shot there). So allow partial damage, just not all of it.
+  if(state.field[y0][x0].index == FIELD_BURROW) damage = damage.mulr(1 / 16);
+  var p = td.pests[index];
+  var p2 = pests[p.index];
+
+
+  if(slow && !p2.slowresistant) {
+    p.slowtime = 15;
+    p.slownum = slow;
+  }
+  if(money) {
+    p.moneytime = 15;
+    p.moneynum = money;
+  }
+  if(splash && p2.splahsresistant) return new Num(0); // resistent to splash damage, but it may still get the slow or money effects above
+
+  if(focus) {
+    //console.log('damage before: ' + damage.toString());
+    damage = damage.mulr(getFocusDamageMul(td));
+    //console.log('damage after: ' + damage.toString());
+  }
+
+  if(p2.group > 1) {
+    if(splash) {
+      // each group member is hit at once with the full damage in case of a splash hit
+      damage = damage.mulr(p2.group);
+    } else {
+      // if not a splash hit, then can maximally kill one group member at the time
+      // NOTE: this is a simulation of what would happen with a group and non-splash damage, but this simulation is not correct if both some splash and non-splash hits occur (e.g. a splash hit brings all of the group to 1% hp, then a non-splash hit would kill all at once). That would requiring storing all individual hp's, but we don't do that
+      var maxdamage = p.maxhp.divr(p2.group).mulr(1.01); // the 1.01 is to avoid numerical precision issues requiring one more shot
+      if(damage.gt(maxdamage)) damage = maxdamage;
+    }
+  }
+
+  // count if this tower exterminated the pest
+  if(p.hp.gtr(0) && damage.gt(p.hp)) {
+    td.towers[y0][x0].kills++;
+    state.g_td_kills++;
+    state.c_td_kills++;
+  }
+  td.towers[y0][x0].hits++;
+  state.g_td_hits++;
+  state.c_td_hits++;
+
+  var actual_damage = Num.min(p.hp, damage);
+  if(actual_damage.gtr(0)) {
+    var rel_damage = actual_damage.div(p.maxhp);
+    var res = td.wave_gain.divr(td.num).mul(rel_damage);
+    if(p.moneytime) res.seeds.mulrInPlace(p.moneynum + 1);
+    o_res.addInPlace(res);
+  }
+
+  p.hp = p.hp.sub(damage);
+
+  return damage;
 }
 
 function attackPests() {
@@ -691,6 +741,9 @@ function attackPests() {
   if(!td.wave_seen) return; // ensure it's rendered for at least one frame, before attacking
   if(td.gameover || !td.started) return;
   if(td.pests.length == 0) return; // this wave is already defeated
+
+  var bestdamage = Num(0);
+  var total_res = new Res(0);
 
   for(var y = 0; y < state.numh; y++) {
     if(!td.towers[y]) td.towers[y] = [];
@@ -713,7 +766,7 @@ function attackPests() {
           if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
           var cell = td.pestspercell[y2][x2];
           for(var j = 0; j < cell.length; j++) {
-            attackPest(td, cell[j], damage, x, y, x2, y2, false, false, false, false);
+            bestdamage = Num.max(bestdamage, attackPest(td, cell[j], damage, x, y, x2, y2, false, false, false, false, total_res));
             createBulletAnimation(x, y, x2, y2, 3);
           }
         }
@@ -727,10 +780,11 @@ function attackPests() {
         var statue_slow = mods[4]; // slows down pests
         var statue_seed = mods[5];
         var statue_focus = mods[6];
+        var statue_tower_speed = mods[7];
         var target = undefined;
         var targetx = undefined;
         var targety = undefined;
-        if(statue_sniper && td.towers[y][x].lastattack + 8 >= td.ticks) continue; // sniper towers attack much slower
+        if(statue_tower_speed > 2 && (td.towers[y][x].lastattack + statue_tower_speed - 1 >= td.ticks)) continue; // sniper towers attack much slower
         damage = damage.mulr(statue_mul);
         //var targethp = Num(0);
         var targetdist = 99999;
@@ -771,13 +825,13 @@ function attackPests() {
               if(x3 < 0 || x3 >= state.numw || y3 < 0 || y3 >= state.numh) continue;
               var cell = td.pestspercell[y3][x3];
               for(var j = 0; j < cell.length; j++) {
-                attackPest(td, cell[j], damage, x, y, x3, y3, statue_splash, statue_focus, statue_slow, statue_seed);
+                bestdamage = Num.max(bestdamage, attackPest(td, cell[j], damage, x, y, x3, y3, statue_splash, statue_focus, statue_slow, statue_seed, total_res));
               }
               createBulletAnimation(targetx, targety, x3, y3, 2);
             }
           } else {
             // splash effect on single-cell group here still possible, for sniper statue
-            attackPest(td, target, damage, x, y, targetx, targety, statue_splash, statue_focus, statue_slow, statue_seed);
+            bestdamage = Num.max(bestdamage, attackPest(td, target, damage, x, y, targetx, targety, statue_splash, statue_focus, statue_slow, statue_seed, total_res));
           }
           createBulletAnimation(x, y, targetx, targety, 1);
         }
@@ -786,14 +840,12 @@ function attackPests() {
     }
   }
 
+
   var pests2 = [];
   for(var i = 0; i < td.pests.length; i++) {
     var p = td.pests[i];
-    if(p.hp.ler(0)) {
-      var res = td.gain.divr(td.num);
-      if(p.moneytime) res.seeds.mulrInPlace(p.moneynum + 1);
-      state.res.addInPlace(res);
-    } else {
+    // keep only alive remaining pests
+    if(p.hp.gtr(0)) {
       pests2.push(p);
     }
   }
@@ -802,9 +854,13 @@ function attackPests() {
     td.waveendtime = state.time;
     td.lastwavetime = (td.waveendtime - td.wavestarttime);
     showMessage('Wave ' + td.wave + ' done', C_TD, 34005951);
+    // Quickly skip waves if they'd be completely obliterated
+    if(bestdamage.gt(td.wave_hp.mulr(0.5))) total_res.addInPlace(hastenWaves(bestdamage));
     window.setTimeout(update);
   }
   td.pests = pests2;
+
+  return total_res;
 }
 
 function randomTDRoll(wave, what) {
@@ -818,7 +874,7 @@ function createRandomWave(td, wave, wavehealth, opt_force_num, opt_force_type) {
   var num_pests;
   roll = randomTDRoll(wave, 0);
   var shape = roll < 0.2 ? 0 : 1;
-  roll = randomTDRoll(wave, 0);
+  roll = randomTDRoll(wave, 1);
   if(shape == 0) {
     num_pests = 1 + Math.floor(roll * 3);
   } else {
@@ -827,27 +883,23 @@ function createRandomWave(td, wave, wavehealth, opt_force_num, opt_force_type) {
 
   if(opt_force_num != undefined) num_pests = opt_force_num;
 
-  roll = randomTDRoll(wave, 1);
+  roll = randomTDRoll(wave, 2);
   var num_types;
-  var all_types = false;
-  if(num_pests > 15 && roll > 0.7) {
-    num_types = registered_pests.length;
-    all_types = true;
+  if(roll < 0.4) {
+    num_types = 1;
+  } else if(roll < 0.7) {
+    num_types = 2;
+  } else if(roll < 0.9) {
+    num_types = 3;
   } else {
-    roll = randomTDRoll(wave, 2);
-    num_types = 2 + Math.floor(roll * 3);
+    num_types = 4;
   }
 
   var types = [];
 
   for(var i = 0; i < num_types; i++) {
-    if(all_types) {
-      types[i] = registered_pests[i];
-    } else {
-      roll = randomTDRoll(wave, 3);
-      var num_types = 1 + Math.floor(roll * 2.5);
-      types[i] = registered_pests[Math.floor(roll * registered_pests.length)];
-    }
+    roll = randomTDRoll(wave, 300 + i);
+    types[i] = registered_pests[Math.floor(roll * registered_pests.length)];
   }
 
   if(opt_force_type != undefined) types = [registered_pests[opt_force_type]];
@@ -855,7 +907,7 @@ function createRandomWave(td, wave, wavehealth, opt_force_num, opt_force_type) {
   var relhp = 0;
   var result = [];
   for(var i = 0; i < num_pests; i++) {
-    roll = randomTDRoll(wave, 4);
+    roll = randomTDRoll(wave, 400 + i);
     var type = types[Math.floor(roll * types.length)];
     var pest = new PestState();
     pest.index = type;
@@ -883,7 +935,7 @@ function spawnWave(opt_force_num, opt_force_type) {
   var td = state.towerdef;
   if(td.gameover || !td.started) return;
 
-  if(td.wave > td.highest_wave_ever) td.highest_wave_ever = td.wave;
+  if(td.wave > state.g_td_highest_wave_ever) state.g_td_highest_wave_ever = td.wave;
 
   state.g_td_waves++;
   state.c_td_waves++;
@@ -902,26 +954,31 @@ function spawnWave(opt_force_num, opt_force_type) {
   td.num = td.pests.length;
   state.g_td_spawns += td.num;
   state.c_td_spawns += td.num;
-  td.gain = getTDWaveRes(wave);
+  td.wave_gain = getTDWaveRes(wave);
 
   // the health the wave should have to represent tree level strength is 'wavehealth', but depending on monsters, some variety resulting in a different actual_hp is possible
   var actual_hp = Num(0);
   for(var i = 0; i < td.pests.length; i++) actual_hp.addInPlace(td.pests[i].hp);
   showMessage('Spawning wave ' + td.wave + '. Total HP: ' + actual_hp.toString() + ', amount: ' + td.num, C_TD, 1250454032);
+
+  td.wave_hp = actual_hp;
 }
 
 
 
+// must call precomputeTD() before this.
+// returns resources gained from pests, or undefined if none
 function runTD() {
   var td = state.towerdef;
-  if(state.time < td.lastTick + 0.3) return;
+  if(state.time < td.lastTick + 0.3) return undefined;
   td.lastTick = state.time;
 
   td.ticks++;
 
-  precomputeTD();
   movePests();
-  attackPests();
+  var res = attackPests();
+
+  return res;
 }
 
 // text for tooltips and info dialogs about current TD state
@@ -931,9 +988,18 @@ function getTDSummary() {
 
   result += 'Current wave: ' + td.wave;
   result += '<br>';
-  result += 'Wave size: ' + td.num;
+  result += 'Wave size: ' + td.pests.length + ' / ' + td.num;
   result += '<br>';
-  result += 'Highest wave ever: ' + td.highest_wave_ever;
+  result += 'Highest wave ever: ' + state.g_td_highest_wave_ever;
+  result += '<br>';
+  result += 'Exterminated: ' + state.c_td_kills;
+  result += '<br>';
+  result += 'Wave HP: ' + td.total_hp.toString() + ' / ' + td.wave_hp.toString();
+  result += '<br>';
+  result += 'Tower Damage:  ' + td.total_damage.toString();
+  result += '<br>';
+  result += '<br>';
+  result += 'Tip: speed up the arrival of the next wave using the "Go" button or the "w" shortcut key';
 
   if(!td.started) {
     result += '<br><br>';
@@ -954,16 +1020,15 @@ function getTDSummary() {
 /*
 Tower damage and monster health is defined in spores.
 The amount of spores needed to defeat a wave of number N scales relative to the spores required for tree level N in regular game
-The amount of spores that monsters give when defeated also scales the same as above. A wave should give enough spores to level the tree 1 level, plus a bit of extras for nuts crops.
+The amount of spores that monsters give when defeated also scales the same as above. A wave should give enough spores to level the tree 1 level, plus a bit of extras as a safety margin
 Mushroom tower's damage is directly its spore production as in the regular game (but no nettle boost for now)
 
-So the above things (mushroom tower damage, monster health, monster spores drop, and nuts crop cost) does not require special conversions, it's similar to the regular game and spores.
+So the above things (mushroom tower damage, monster health, monster spores drop) do not require special conversions, it's similar to the regular game and spores.
 Also brassica copying is simple: it's defined by towers it copies.
 
 But the following things do need conversions and that's defined by the functions in this tuning section:
 -amount of seeds that monsters drop per wave
 -berry's production to damage in spores
--nuts production to damage in spores
 -watercress base (non-copying) damage
 
 The simple spores-only cases above may also still have functions below because there are still some constant factors.
@@ -972,17 +1037,19 @@ Waves begin at wave 1, the wave to get to tree level 1 (from tree level 0)
 */
 
 function sporesForTDWave_(wave) {
-  var spores = treeLevelReqBase(wave).spores;
+  // wave 0 should give the resources to bring tree to level 1, etc..., hence the + 1
+  var spores = treeLevelReqBase(wave + 1).spores;
 
   // give a bit more to avoid numerical issues preventing a tree level
-  return spores.mulr(1.01);
+  // NOTE: nuts crops or anything else that costs spores should never be introduced during TD unless some alternations to this system is done, currently TD depends on getting almost exactly the amount of spores needed for a tree level
+  return spores.mulr(1.001);
 }
 
 function seedsForTDWave_(wave) {
   //return computePretendFullgrownGain().seeds.mulr(getWaveProdTime(wave));
 
   // wave used for seed compensation reduced: otherwise TD may gave way too much seeds compared to what the player has in the regular game, and unlock way higher plants / break seed records
-  var lower_wave = Math.floor(wave * 0.66);
+  var lower_wave = Math.floor((wave + 1) * 0.66);
   var spores = treeLevelReqBase(lower_wave).spores;
 
   var mush0prod = getMushroomProd(0);
@@ -1022,9 +1089,9 @@ function getTDWaveRes(wave) {
 }
 
 function getTDWaveHealth(wave) {
-  var spores = treeLevelReqBase(wave).spores;
+  var spores = treeLevelReqBase(wave + 10).spores;
 
-  if(state.towerdef.wave >= state.g_treelevel) return spores; // as a protection mechanism (normally the TD challenge should not let you get this high to your max tree level), do not reduce HP if due to a bug or unforeseen gameplay issue, this level is reached anyway. Beating highest tree level should be done with conventional game or challenge, not with a completely different mechanism that turns out to have a bug making you go higher than expected
+  if(state.towerdef.wave >= state.g_treelevel - 1) return spores; // as a protection mechanism (normally the TD challenge should not let you get this high to your max tree level), do not reduce HP if due to a bug or unforeseen gameplay issue, this level is reached anyway. Beating highest tree level should be done with conventional game or challenge, not with a completely different mechanism that turns out to have a bug making you go higher than expected
 
   return modifyTDSPoresForHp(spores);
 }
@@ -1052,6 +1119,20 @@ function getTDCropDamage(crop, f) {
   return result;
 }
 
+// Used for display purposes only, takes shooting speed into account if non-standard
+function getTDCropDamageInclStatues(crop, f) {
+  var result = getTDCropDamage(crop, f);
+  if(crop.type == CROPTYPE_MUSH) {
+    var mods = getTDStatueMods(f.x, f.y);
+    var statue_mul = mods[0];
+    var statue_tower_speed = mods[7];
+    var mul = statue_mul;
+    if(statue_tower_speed > 2) mul *= (2 / statue_tower_speed); // this is taken into account because otherwise the sniper tower damage dominates the total damage stat, and they shoot a lot slower indeed (though of course this doesn't take other effects such as distance and splash into account)
+    result = result.mulr(mul);
+  }
+  return result;
+}
+
 
 // End of tuned values
 ////////////////////////////////////////////////////////////////////////////////
@@ -1060,5 +1141,32 @@ function getTDCropDamage(crop, f) {
 ////////////////////////////////////////////////////////////////////////////////
 
 
+
+
+var tdChipFlex = undefined;
+
+function removeTdChip() {
+  if(!tdChipFlex) return;
+
+  tdChipFlex.removeSelf(gameFlex);
+  tdChipFlex = undefined;
+}
+
+function showTdChip(text) {
+  removeTdChip();
+
+  tdChipFlex = new Flex(gameFlex, 0.2, 0.85, 0.8, 0.95);
+  tdChipFlex.div.style.backgroundColor = '#ddde';
+
+  var canvasFlex = new Flex(tdChipFlex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+  renderImage(images_statue_sniper[0], canvas);
+
+  var textFlex = new Flex(tdChipFlex, [0, 0, 0.7], [0.5, 0, -0.35], 0.99, [0.5, 0, 0.35]);
+  textFlex.div.style.color = '#000';
+  textFlex.div.innerHTML = text;
+
+  addButtonAction(tdChipFlex.div, removeTdChip);
+}
 
 

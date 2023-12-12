@@ -601,8 +601,9 @@ registerHelpDialog(44, 'Tower defense', 'You started the tower defense challenge
     • u: upgrade tower under mouse cursor.<br>
     • d: downgrade tower under mouse cursor (gives refund), if waves not started yet deletes as usual (in regular game, and before waves started, 'd' deletes, 'shift+d' downgrades).<br>
     • shift+p: overplant with picked (with 'p') crop type (same shortcut as in regular game, but useful here to quickly change crop/tower types).<br>
-    • ctrl+click a statue: change into different type of statue.<br>
-    • most other shortcuts of the regular game (like p to plant) work too, the above lists alterd or relevant shortcuts.<br>
+    • ctrl+click a statue: change into next type of statue.<br>
+    • ctrl+shift+click a statue: change into previous type of statue.<br>
+    • most other shortcuts of the regular game (like p to plant) work too, the above just lists altered or relevant shortcuts.<br>
     <br><br>
     The exact rules of the tower defense challenge:
     <br><br>

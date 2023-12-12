@@ -260,7 +260,10 @@ function getCropInfoHTML(f, c, opt_detailed) {
     //result += 'Production for next wave: ' + getTDCropProd(c, f).toString() + '<br/>';
     //result += '(Computed production per second: ' + prod3.toString() + ')<br/>';
     var towers = state.towerdef.towers;
-    if(towers[f.y] && towers[f.y][f.x]) result += 'Exterminated: ' + towers[f.y][f.x].kills + '<br>';
+    if(towers[f.y] && towers[f.y][f.x]) {
+      result += 'Hits: ' + towers[f.y][f.x].hits + '<br>';
+      result += 'Exterminated: ' + towers[f.y][f.x].kills + '<br>';
+    }
     result += '<br/>';
   }
 
@@ -284,7 +287,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       if(prod0.neq(prod3)) {
         if(c.type == CROPTYPE_MUSH) {
           result += 'Needs more seeds, requires berries as neighbors.<br>Potential max production: ' + prod0.toString() + '<br/>';
-          result += 'Satisfied: no (' + prod3.seeds.div(prod0.seeds).toPercentString() + ')<br/>';
+          result += 'Satisfied: no (' + prod3.seeds.div(prod0.seeds).toPercentString(undefined, undefined, true) + ')<br/>';
         } else if(c.type == CROPTYPE_BRASSICA) {
           // nothing to print.
         } else {
@@ -691,9 +694,28 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
     update();
   }
 
+  var td = undefined;
+  var pest_info = undefined;
+  if(state.challenge == challenge_towerdefense && !!pest_render_info && pest_render_info[f.y]) {
+    td = state.towerdef;
+    pest_info = pest_render_info[f.y][f.x];
+  }
+
   if(longclick_extra) {
     // opens the dialog without taking fern
     makeFieldDialog(x, y);
+  } else if(pest_info && pest_info.tooltip) {
+    var dialog = createDialog({
+      icon:pest_info.images[0],
+      title:'Pest',
+      help:bind(showRegisteredHelpDialog, 44, true),
+    });
+    var info = getPestInfoHTML(f);
+    info += '<br>';
+    info += '<hr>';
+    info += '<br>';
+    info += getTDSummary();
+    dialog.content.div.innerHTML = info;
   } else if(!fern && !present && (f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM)) {
     makeFieldDialog(x, y);
   } else if(f.index == FIELD_BURROW) {
@@ -702,7 +724,6 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
       title:'Burrow',
       help:bind(showRegisteredHelpDialog, 44, true),
     });
-    var td = state.towerdef;
     // TODO: put info about the challenge, waves, etc... here
     var info = 'Burrow: this is where pests spawn during tower defense';
     info += '<br><br>';
@@ -763,18 +784,31 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
       ym = fm.y;
     }
     if(shift && ctrl) {
-      // experimental feature for now, most convenient behavior needs to be found
-      // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
-      // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
-      var c2 = fm.getCrop();
-      var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
-      if(!c3 || !state.crops[c3.index].unlocked) c3 = c2;
-      if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
-      state.lastPlanted = c3.index;
-      if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
-      if(c3.tier > c2.tier) {
-        addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c3, shiftPlanted:true});
-        update();
+      if(state.challenge == challenge_towerdefense && f.getCrop().type == CROPTYPE_CHALLENGE) {
+        // cycle to previous statue type
+        var c = fm.getCrop();
+        var ccrop0 = challengestatue_0;
+        var ccrop1 = challengestatue_5;
+        if(c.index >= ccrop0 && c.index <= ccrop1) {
+          var index2 = c.index - 1;
+          if(index2 < ccrop0) index2 = ccrop1;
+          addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:crops[index2], ctrlPlanted:true});
+          update();
+        }
+      } else {
+        // experimental feature for now, most convenient behavior needs to be found
+        // behavior implemented here: if safe, "pick" clicked crop type, but then the best unlocked one of its tier. If unsafe permitted, immediately upgrade to highest type, and still pick highest tier too whether or not it changed
+        // other possible behaviors: pick crop type (as is), open the crop replace dialog, ...
+        var c2 = fm.getCrop();
+        var c3 = croptype_tiers[c2.type][state.highestoftypeunlocked[c2.type]];
+        if(!c3 || !state.crops[c3.index].unlocked) c3 = c2;
+        if(c2.type == CROPTYPE_CHALLENGE) c3 = c2;
+        state.lastPlanted = c3.index;
+        if(c3.getCost().gt(state.res)) state.lastPlanted = c2.index;
+        if(c3.tier > c2.tier) {
+          addAction({type:ACTION_REPLACE, x:xm, y:ym, crop:c3, shiftPlanted:true});
+          update();
+        }
       }
     } else if(shift && !ctrl) {
       if(state.lastPlanted >= 0 && crops[state.lastPlanted]) {
@@ -792,6 +826,7 @@ function fieldCellClickFun(x, y, div, shift, ctrl, longclick_extra) {
       }
     } else if(ctrl && !shift) {
       if(state.challenge == challenge_towerdefense) {
+        // cycle to next statue type
         var c = fm.getCrop();
         var ccrop0 = challengestatue_0;
         var ccrop1 = challengestatue_5;
