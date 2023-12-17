@@ -5190,8 +5190,10 @@ var update = function(opt_ignorePause) {
           if(!state.towerdef.started) {
             state.towerdef.started = true;
             store_undo = true;
-          } else {
+            removeTdChip();
+          } else if(!tdWaveActive()) {
             td_go_now = true;
+            store_undo = true;
           }
         }
         if(state.towerdef.gameover) {
@@ -5203,6 +5205,7 @@ var update = function(opt_ignorePause) {
         } else if(state.treelevel >= min_transcension_level || state.challenge) {
           do_transcend = action;
           store_undo = true;
+          removeTdChip();
           // when transcending, break and execute the code below to actually transcend: if there are more actions queued, these should occur after the transcension happened.
           break;
         }
@@ -5259,7 +5262,7 @@ var update = function(opt_ignorePause) {
             var td = state.towerdef;
             // in tower defense challenge, all crops grow very fast, and brassica don't wither
             //var growtime = 0.01;
-            var growtime = (c.type == CROPTYPE_BRASSICA || !td.started) ? 0.01 : 5;
+            var growtime = c.getPlantTime();
             if(f.growth < 1) {
               var g = d / growtime;
               f.growth += g;

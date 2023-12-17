@@ -141,6 +141,12 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     }
   }
 
+  if(c.helpdialogindex != undefined) {
+    text += '<br>';
+    text += 'Click <a style="color:#11f;" id="challengehelp">here</a> for full help of this challenge.';
+    text += '<br>';
+  }
+
   var targetlevel = c.nextTargetLevel(include_current_run);
 
   text += '<br>';
@@ -189,7 +195,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       text += '<br>';
     }
   }
-  text += '• Max level reached with this challenge gives <b>(' + getChallengeFormulaString(c, c.cycling ? undefined : c.bonus.toPercentString()) + ') production bonus</b> per level to the game, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  text += '• Max level reached with this challenge gives <b>(' + getChallengeFormulaString(c, c.cycling ? undefined : c.bonus.toPercentString()) + ')</b> production bonus to the game depending on level reached, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
   if(c.cycling) {
     text += '<br>';
     text += '• <b>bonus</b> value itself depends on cycle, respectively: ';
@@ -222,6 +228,13 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   text += '<b>This challenge was unlocked by:</b> ' + c.unlockdescription;
 
   dialog.content.div.innerHTML = text;
+
+  if(c.helpdialogindex != undefined) {
+    var el = document.getElementById('challengehelp');
+    addButtonAction(el, function() {
+      showRegisteredHelpDialog(c.helpdialogindex, true);
+    });
+  };
 }
 
 

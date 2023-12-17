@@ -626,11 +626,11 @@ function createKeyboardHelpDialog() {
   }
   text += '<b>Mobile shortcuts:</b>';
   text += '<br/><br/>';
-  text += ' • on mobile/touch devices, you can long-press most icons/buttons to access the shift and ctrl variants (e.g. the pause button and refresh watercress button).';
+  text += ' • long-press icons/buttons to access the shift and ctrl variants of any button (e.g. the pause button and refresh watercress button).';
   text += '<br/>';
-  text += ' • on mobile/touch devices, you can also long-press to see tooltips, e.g on most buttons in the setting dialogs.';
+  text += ' • long-press things to see tooltips, e.g on most buttons in the setting dialogs, or crops on the field.';
   text += '<br/>';
-  text += ' • NOTE: mobile browsers don\'t show scrollbars so you can\'t always see if something is scrollable. The game shows a shadow effect to show scrollable content but this may be subtle. E.g. in the (detailed) stats dialogs of some plants in the field.';
+  text += ' • <i>Note</i>: mobile browsers don\'t show scrollbars so you can\'t always see if something is scrollable. The game shows a shadow effect to show scrollable content but this may be subtle. E.g. in the (detailed) stats dialogs of some plants in the field.';
   text += '<br/>';
 
   text += '<br/><b>Main shortcuts:</b>';
@@ -727,6 +727,10 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
   text += ' • <b>ctrl + click save import dialog</b>: import and old savegame, but force non-paused state, even if the savegame was saved while paused, this will cause all time between saving and now to be ran.';
   text += '<br/>';
+
+  text += '<br/><b>Other:</b>';
+  text += '<br/><br/>';
+  text += ' • <b>ctrl + click dialog close (X) button</b>: close all dialogs (if multiple are open).';
 
   text += '<br/><br/>';
 

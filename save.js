@@ -1020,15 +1020,17 @@ function encState(state, opt_raw_only) {
     processStructArrayEnd();
 
     processStructArrayBegin();
-    for(var i = 0; i < td.towers.length; i++) {
-      processStructBegin();
+    for(var y = 0; y < td.towers.length; y++) {
+      for(var x = 0; x < td.towers[y].length; x++) {
+        processStructBegin();
 
-      var tower = td.towers[i];
-      processUint(tower.kills);
-      processUint(tower.hits);
-      processUint(tower.lastattack);
+        var tower = td.towers[y][x];
+        processUint(tower.kills);
+        processUint(tower.hits);
+        processUint(tower.lastattack);
 
-      processStructEnd();
+        processStructEnd();
+      }
     }
     processStructArrayEnd();
   }
@@ -2690,15 +2692,24 @@ function decState(s) {
       processStructArrayEnd();
 
       td.towers = [];
+      td.towers[0] = [];
       var count = processStructArrayBegin();
+      var y = 0;
+      var x = 0;
       for(var i = 0; i < count; i++) {
         processStructBegin();
 
-        td.towers[i] = new TowerState();
-        var tower = td.towers[i];
+        var tower = new TowerState();
+        td.towers[y][x] = tower;
         tower.kills = processUint();
         tower.hits = processUint();
         tower.lastattack = processUint();
+        x++;
+        if(x > state.numw) {
+          x = 0;
+          y++;
+          td.towers[y] = [];
+        }
 
         processStructEnd();
       }

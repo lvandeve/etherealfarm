@@ -291,6 +291,14 @@ function towardsFloorValue(x, lowest, highest, softness) {
 
 // aka getgrowspeed, getgrowtime, getlifetime
 Crop.prototype.getPlantTime = function() {
+  if(state.challenge == challenge_towerdefense) {
+    var td = state.towerdef;
+    if(this.type == CROPTYPE_BRASSICA || !td.started || !tdWaveActive()) {
+      return 0.01;
+    } else {
+      return 5;
+    }
+  }
   var result = this.planttime;
   if(result == 0) return result;
 
@@ -3339,6 +3347,9 @@ function Challenge() {
   // this is left false for challenges that have more standard rules (including e.g. blackberry challenge) since there the same auto-actions as in a regular run may be appliccable (though they may also not be, e.g. timings are different, but it'll be less damaging to the run)
   this.autoaction_warning = false;
 
+  // if set, then will have link to open the help dialog from the challenge info dialog
+  this.helpdialogindex = undefined;
+
   this.prefun = function() {
     return false;
   };
@@ -3365,7 +3376,12 @@ function Challenge() {
   };
 
   // this is different than state state.challenges[this.index].num_completed: that one is about amount of times target level reached, while here it's about amount of different target levels reached, if there are multiple stages
+  // for challenges that have no stages, will return 1 if the challenge was ever run at all
   this.numCompleted = function(opt_include_current_run) {
+    if(this.numStages() == 0) {
+      // the challenge has no stages or target level at all, but still only consider it completed if at least one run was done
+      return (state.challenges[this.index].num > 0 || (opt_include_current_run ? (state.challenge == this.index) : false)) ? 1 : 0;
+    }
     var completed = state.challenges[this.index].completed;
     if(opt_include_current_run && state.challenge == this.index && completed < this.numStages() && this.stageCompleted(completed)) completed++;
     return completed;
@@ -3373,6 +3389,7 @@ function Challenge() {
 
   // use numCompleted to check if any stage at all was completed, or fullyCompleted to check all stages are completed
   // does not take cycles into account (from this.cycling), use allCyclesCompleted for that
+  // for challenges that have no stages, returns true if at least 1 run was done
   this.fullyCompleted = function(opt_include_current_run) {
     if(this.numStages() == 0) {
       // the challenge has no stages or target level at all, but still only consider it completed if at least one run was done
@@ -3973,9 +3990,11 @@ function() {
 challenges[challenge_towerdefense].autoaction_warning = true;
 challenges[challenge_towerdefense].bonus_formula = 1;
 challenges[challenge_towerdefense].bonus_level_a = 75;
-challenges[challenge_towerdefense].bonus_level_b = 100;
-challenges[challenge_towerdefense].bonus_p = 0.75;
+challenges[challenge_towerdefense].bonus_level_b = 75;
+challenges[challenge_towerdefense].bonus_p = 0.66;
 challenges[challenge_towerdefense].bonus_exponent_base = Num(2);
+challenges[challenge_towerdefense].helpdialogindex = 44;
+
 
 
 ////////////////////////////////////////////////////////////////////////////////

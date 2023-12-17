@@ -167,7 +167,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       if(opt_detailed) {
         // the detailed dialog is not dynamically updated, so show the total growth time statically instead.
         result += 'Growing. Total growing time: ' + util.formatDuration(c.getPlantTime());
-        if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+        if(c.getPlantTime() != c.planttime && state.challenge != challenge_towerdefense) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       } else {
         result += 'Growing. Time to grow left: ' + util.formatDuration((1 - f.growth) * c.getPlantTime(), true, 4, true) + ' (of: ' + util.formatDuration(c.getPlantTime(), true, 4, true)  + ')';
       }
@@ -219,7 +219,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
       result += 'Withering. Time left: ' + util.formatDuration(f.growth * witherDuration(), true, 4, true) + '<br/><br/>';
     } else {
       result += 'Grow time: ' + util.formatDuration(c.getPlantTime());
-      if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
+      if(c.getPlantTime() != c.planttime && state.challenge != challenge_towerdefense) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       result += '<br/><br/>';
     }
   }

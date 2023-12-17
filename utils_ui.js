@@ -303,6 +303,7 @@ function addLongTouchEvent(div, fun) {
     if(timer) clearTimeout(timer);
     timer = window.setTimeout(function() {
       timer = undefined;
+      if(!div.isConnected) return; // if the element is gone in the meantime, don't execute this. Example: the close button of dialogs, the close button itself disappears when the dialog closed, but this timer may still have been active (and no mouseup event canceled the timer)
       fun();
       // prevent the regular click event
       util.addEvent(div, 'click', cancelClick, true);
@@ -590,9 +591,15 @@ function createDialog(params) {
   var canvas = createCanvas('20%', '20%', '60%', '60%', xbutton.div);
   renderImage(image_close, canvas);
   styleButton0(xbutton.div);
-  addButtonAction(xbutton.div, dialog.cancelFun, (params.title ? (' close dialog: "' + params.title + '"') : 'dialog close button'), true);
+  registerAction(xbutton.div, function(shift, ctrl) {
+    if(dialog.cancelFun) dialog.cancelFun();
+    if(ctrl) closeAllDialogs();
+  }, (params.title ? (' close dialog: "' + params.title + '"') : 'dialog close button'), {
+    immediate:true,
+    tooltip:'close'
+  });
+
   xbutton.div.className = 'efNoOutline';
-  xbutton.div.title = 'close';
 
   var helpbutton;
   if(params.help) {
