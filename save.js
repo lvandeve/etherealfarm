@@ -2655,66 +2655,63 @@ function decState(s) {
   section = 33; id = 0; // TD
   if(state.challenge == challenge_towerdefense && save_version >= 262144*2+64*11+0) {
     var td = state.towerdef;
-    td.lastTick = processTime(-1);
-    // if this is -1, then the value is not present in the savegame, allow this without error during beta testing: to still support TD saves from before the saving of the TD info itself was supported
-    if(td.lastTick >= 0) {
-      td.ticks = processUint();
-      td.started = processBool();
-      td.gameover = processBool();
-      td.wave = processInt();
-      id++; // used to be td.wave_gain
-      td.num = processUint();
-      td.wave_hp = processNum();
-      td.wavestarttime = processTime();
-      td.waveendtime = processTime();
-      td.lastwavetime = processTime();
+    td.lastTick = processTime();
+    td.ticks = processUint();
+    td.started = processBool();
+    td.gameover = processBool();
+    td.wave = processInt();
+    id++; // used to be td.wave_gain
+    td.num = processUint();
+    td.wave_hp = processNum();
+    td.wavestarttime = processTime();
+    td.waveendtime = processTime();
+    td.lastwavetime = processTime();
 
-      id = 20;
-      td.pests = [];
-      var count = processStructArrayBegin();
-      for(var i = 0; i < count; i++) {
-        processStructBegin();
+    id = 20;
+    td.pests = [];
+    var count = processStructArrayBegin();
+    for(var i = 0; i < count; i++) {
+      processStructBegin();
 
-        td.pests[i] = new PestState();
-        var pest = td.pests[i];
-        pest.index = processUint();
-        pest.maxhp = processNum();
-        pest.hp = processNum();
-        pest.x = processInt();
-        pest.y = processInt();
-        pest.slowtime = processInt();
-        pest.slownum = processInt();
-        pest.moneytime = processInt();
-        pest.moneynum = processInt();
+      td.pests[i] = new PestState();
+      var pest = td.pests[i];
+      pest.index = processUint();
+      pest.maxhp = processNum();
+      pest.hp = processNum();
+      pest.x = processInt();
+      pest.y = processInt();
+      pest.slowtime = processInt();
+      pest.slownum = processInt();
+      pest.moneytime = processInt();
+      pest.moneynum = processInt();
 
-        processStructEnd();
-      }
-      processStructArrayEnd();
-
-      td.towers = [];
-      td.towers[0] = [];
-      var count = processStructArrayBegin();
-      var y = 0;
-      var x = 0;
-      for(var i = 0; i < count; i++) {
-        processStructBegin();
-
-        var tower = new TowerState();
-        td.towers[y][x] = tower;
-        tower.kills = processUint();
-        tower.hits = processUint();
-        tower.lastattack = processUint();
-        x++;
-        if(x > state.numw) {
-          x = 0;
-          y++;
-          td.towers[y] = [];
-        }
-
-        processStructEnd();
-      }
-      processStructArrayEnd();
+      processStructEnd();
     }
+    processStructArrayEnd();
+
+    td.towers = [];
+    td.towers[0] = [];
+    var count = processStructArrayBegin();
+    var y = 0;
+    var x = 0;
+    for(var i = 0; i < count; i++) {
+      processStructBegin();
+
+      var tower = new TowerState();
+      td.towers[y][x] = tower;
+      tower.kills = processUint();
+      tower.hits = processUint();
+      tower.lastattack = processUint();
+      x++;
+      if(x > state.numw) {
+        x = 0;
+        y++;
+        td.towers[y] = [];
+      }
+
+      processStructEnd();
+    }
+    processStructArrayEnd();
   }
   if(error) return err(4);
 

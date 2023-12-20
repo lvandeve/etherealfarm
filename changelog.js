@@ -26,6 +26,13 @@ function getChangeLog() {
     text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
   }
 
+  text += '0.11.0 (2023-12-20) - Tower Defense:';
+  text += '<br/>• Added the tower defense challenge (unlocks at level 75), with a completely different game mechanic.';
+  text += '<br/>• Added new production bonus reward mechanic for this challenge, it gives a multiplicative bonus for every 100 levels reached after 75.'
+  text += '<br/>• Fixed missing time estimates for plant infinity field crop tooltips.'
+  text += '<br/>• Fixed achievement tooltips sometimes not working.'
+  text += '<br/><br/>';
+
   text += '0.10.9 (2023-11-29):';
   text += '<br/>• Limited max amount of eels and tangs in the pond';
   text += '<br/>• Fixed red eel and red tang not working'

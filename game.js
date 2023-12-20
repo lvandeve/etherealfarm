@@ -3505,7 +3505,6 @@ var update = function(opt_ignorePause) {
       var td = state.towerdef;
       td.wavestarttime += d;
       td.waveendtime += d;
-      td.lastwavetime += d;
     }
 
     // this is for e.g. after importing a save while paused
@@ -5917,7 +5916,6 @@ var update = function(opt_ignorePause) {
         // tower defense only actually runs during real time ticks, so update its timings
         td.wavestarttime += d;
         td.waveendtime += d;
-        td.lastwavetime += d;
       }
       // The 'done' check is there because for TD we don't want to run it while fast-running savegames. Only the last instance of the loop here has done=true
       if(done) {
@@ -5931,6 +5929,16 @@ var update = function(opt_ignorePause) {
 
         if(!td.gameover && td.started) {
           if(!tdWaveActive() && (state.time > tdNextWaveTime() || td_go_now)) {
+            if(td_go_now) {
+              var wait = tdNextWait();
+              if(wait > 0) {
+                // advance the weather times. This is because when skipping waves, it would be a disadvantage if this made it take longer before weather recharged. And skipping waves should be just a player time speedup, so there should be no reason to make the player want to wait longer.
+                // but when advancing the weather recharge times, it only makes sense to also advance their run times (changing these times variables both at the same time)
+                state.misttime -= wait;
+                state.suntime -= wait;
+                state.rainbowtime -= wait;
+              }
+            }
             spawnWave();
           }
           if(tdWaveActive()) {

@@ -195,7 +195,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       text += '<br>';
     }
   }
-  text += '• Max level reached with this challenge gives <b>(' + getChallengeFormulaString(c, c.cycling ? undefined : c.bonus.toPercentString()) + ')</b> production bonus to the game depending on level reached, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  text += '• Max level reached with this challenge gives a production bonus of <b>(' + getChallengeFormulaString(c, c.cycling ? undefined : c.bonus.toPercentString()) + ')</b> to the game depending on level reached, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
   if(c.cycling) {
     text += '<br>';
     text += '• <b>bonus</b> value itself depends on cycle, respectively: ';

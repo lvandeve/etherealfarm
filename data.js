@@ -998,8 +998,8 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
             if(c.basic_upgrade != null) {
               var eff = c.tier;
               var u = state.upgrades[c.basic_upgrade];
-              eff += towards1(u.count, 50) * 0.75; // give something towards the next tier for nettle upgrades, but not 100% so next tier gives a bump up
-              eff = 1 + eff * 3; // 1 = the base multiplier. multipy eff to give more visible effect of this, the effect on damage of mushroom is much smaller
+              eff += towards1(u.count, 50) * 0.5; // give something towards the next tier for nettle upgrades, but not 100% so next tier gives a bump up
+              eff = 1 + eff * 4; // 1 = the base multiplier. multipy eff to give more visible effect of this, the effect on damage of mushroom is much smaller
               boost.divrInPlace(eff);
             }
             seed_cost.addInPlace(boost);
@@ -3982,15 +3982,14 @@ var challenge_towerdefense = registerChallenge('tower defense challenge', /*targ
 ['No special reward other than the challenge production bonus itself!'],
 'reaching tree level 75',
 function() {
-  if(!state.beta) return false;
   return state.treelevel >= 75;
 }, function() {
-  // TODO reward fun
+  // no reward fun, only the production bonus
 }, 0);
 challenges[challenge_towerdefense].autoaction_warning = true;
 challenges[challenge_towerdefense].bonus_formula = 1;
 challenges[challenge_towerdefense].bonus_level_a = 75;
-challenges[challenge_towerdefense].bonus_level_b = 75;
+challenges[challenge_towerdefense].bonus_level_b = 100;
 challenges[challenge_towerdefense].bonus_p = 0.66;
 challenges[challenge_towerdefense].bonus_exponent_base = Num(2);
 challenges[challenge_towerdefense].helpdialogindex = 44;

@@ -691,9 +691,9 @@ function State() {
 
   this.misttime = 0; // mist is unlocked if state.upgrades[upgrade_mistunlock].count
   this.suntime = 0; // similar
-  this.rainbowtime = 0;
+  this.rainbowtime = 0; // similar
   this.lastWeather = 0; // last clicked weather ability, if multiple are active according to the timer, only the one matching this counts as active
-  this.lastPermaWeather = 0; // Indicates which perma weathe ris active. Similar to lastWeather and usually set to the same as it, but can be set to something else to change which perma weather will get activated when the true weather ended.
+  this.lastPermaWeather = 0; // Indicates which perma weather is active. Similar to lastWeather and usually set to the same as it, but can be set to something else to change which perma weather will get activated when the true weather ended.
   this.lastLightningTime = 0; // for the stormy challenge
 
   this.lastFernTime = 0; // if there is a fern: time since it spawned. If there is no fern: time that there was no fern
