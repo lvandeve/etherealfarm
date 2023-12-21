@@ -6922,7 +6922,7 @@ function getChallengeBonus(challenge_id, level, completed, opt_cycle) {
     var mul1 = mul0.mul(c.bonus_exponent_base);
     var progress = (level - k0) / (k1 - k0);
     var mul = mul0.add(mul1.sub(mul0).mulr(c.bonus_p * progress));
-    return bonus.mul(mul);
+    return bonus.mul(mul).subr(1);
   }
 
   return bonus; // unknown formula
