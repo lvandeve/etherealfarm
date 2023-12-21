@@ -6384,8 +6384,8 @@ function treeLevelResin(level, breakdown) {
   }
 
   // challenges
-  if(state.challenge_multiplier.neqr(1)) {
-    var challenge_multiplier = state.challenge_multiplier.subr(1).divr(100).addr(1);
+  if(state.challenge_multiplier_resin_twigs.neqr(1)) {
+    var challenge_multiplier = state.challenge_multiplier_resin_twigs.subr(1).divr(100).addr(1);
     resin.mulInPlace(challenge_multiplier);
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_multiplier, resin.clone()]);
   }
@@ -6517,8 +6517,8 @@ function treeLevelTwigs(level, breakdown) {
   }
 
   // challenges
-  if(state.challenge_multiplier.neqr(1)) {
-    var challenge_multiplier = state.challenge_multiplier.subr(1).divr(100).addr(1);
+  if(state.challenge_multiplier_resin_twigs.neqr(1)) {
+    var challenge_multiplier = state.challenge_multiplier_resin_twigs.subr(1).divr(100).addr(1);
     res.twigs.mulInPlace(challenge_multiplier);
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_multiplier, res.clone()]);
   }

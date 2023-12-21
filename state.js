@@ -1168,6 +1168,7 @@ function State() {
   // total production bonus from all challenges (multiplicative), as multpilier
   // derived stat, not to be saved.
   this.challenge_multiplier = Num(1);
+  this.challenge_multiplier_resin_twigs = Num(1);
 
   // how many challenges are unlocked but never attempted
   // derived stat, not to be saved.
@@ -1856,6 +1857,7 @@ function computeDerived(state) {
   state.challenges_completed2 = 0;
   state.challenges_completed3 = 0;
   state.challenge_multiplier = Num(1);
+  state.challenge_multiplier_resin_twigs = Num(1);
   state.untriedchallenges = 0;
   for(var i = 0; i < registered_challenges.length; i++) {
     var index = registered_challenges[i];
@@ -1879,8 +1881,10 @@ function computeDerived(state) {
           multiplier.addInPlace(getChallengeBonus(index, c2.maxlevels[j], c.cycleCompleted(j, false), j));
         }
         state.challenge_multiplier.mulInPlace(multiplier);
+        if(c.bonus_formula != 1) state.challenge_multiplier_resin_twigs.mulInPlace(multiplier);
       } else {
         state.challenge_multiplier.mulInPlace(getChallengeMultiplier(index, c2.maxlevel, c2.completed));
+        if(c.bonus_formula != 1) state.challenge_multiplier_resin_twigs.mulInPlace(getChallengeMultiplier(index, c2.maxlevel, c2.completed));
       }
     }
   }
