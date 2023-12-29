@@ -288,7 +288,7 @@ function makeTreeDialog() {
       }
     } else {
       // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
-      if(c.targetlevel.length > 1) {
+      if(c.targetlevel != undefined && c.targetlevel.length > 1) {
         registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its next reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');
       } else {
         registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its one-time reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');
