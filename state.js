@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1167,7 +1167,7 @@ function State() {
 
   // total production bonus from all challenges (multiplicative), as multpilier
   // derived stat, not to be saved.
-  this.challenge_multiplier = Num(1);
+  this.challenge_multiplier_prod = Num(1);
   this.challenge_multiplier_resin_twigs = Num(1);
 
   // how many challenges are unlocked but never attempted
@@ -1856,7 +1856,7 @@ function computeDerived(state) {
   state.challenges_completed = 0;
   state.challenges_completed2 = 0;
   state.challenges_completed3 = 0;
-  state.challenge_multiplier = Num(1);
+  state.challenge_multiplier_prod = Num(1);
   state.challenge_multiplier_resin_twigs = Num(1);
   state.untriedchallenges = 0;
   for(var i = 0; i < registered_challenges.length; i++) {
@@ -1876,18 +1876,21 @@ function computeDerived(state) {
       // when updating the code of this challenge bonus computation, also update totalChallengeBonusIncludingCurrentRun to match!
       if(c.cycling) {
         // within a cycling challenge, the bonuses are additive
-        var multiplier = Num(1);
+        var multiplier_prod = Num(1);
+        var multiplier_resin_twigs = Num(1);
         for(var j = 0; j < c.cycling; j++) {
-          multiplier.addInPlace(getChallengeBonus(index, c2.maxlevels[j], c.cycleCompleted(j, false), j));
+          multiplier_prod.addInPlace(getChallengeBonus(0, index, c2.maxlevels[j], c.cycleCompleted(j, false), j));
+          multiplier_resin_twigs.addInPlace(getChallengeBonus(1, index, c2.maxlevels[j], c.cycleCompleted(j, false), j));
         }
-        state.challenge_multiplier.mulInPlace(multiplier);
-        if(c.bonus_formula != 1) state.challenge_multiplier_resin_twigs.mulInPlace(multiplier);
+        state.challenge_multiplier_prod.mulInPlace(multiplier_prod);
+        state.challenge_multiplier_resin_twigs.mulInPlace(multiplier_resin_twigs);
       } else {
-        state.challenge_multiplier.mulInPlace(getChallengeMultiplier(index, c2.maxlevel, c2.completed));
-        if(c.bonus_formula != 1) state.challenge_multiplier_resin_twigs.mulInPlace(getChallengeMultiplier(index, c2.maxlevel, c2.completed));
+        state.challenge_multiplier_prod.mulInPlace(getChallengeMultiplier(0, index, c2.maxlevel, c2.completed));
+        state.challenge_multiplier_resin_twigs.mulInPlace(getChallengeMultiplier(1, index, c2.maxlevel, c2.completed));
       }
     }
   }
+  state.challenge_multiplier_resin_twigs = modifyResinTwigsChallengeBonus(state.challenge_multiplier_resin_twigs.subr(1)).addr(1);
 
   // blueprints
   state.numnonemptyblueprints = 0;

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -838,8 +838,8 @@ function createStatsDialog() {
       text += '• challenge stages completed: ' + open + state.challenges_completed3 + close + '<br>';
       text += '• challenge fully completed: ' + open + state.challenges_completed2 + close + '<br>';
     }
-    text += '• total challenge production bonus: ' + open + totalChallengeBonus().toPercentString() + close + '<br>';
-    text += '• total challenge resin + twigs bonus: ' + open + totalChallengeBonus().divr(100).toPercentString() + close + '<br>';
+    text += '• total challenge production bonus: ' + open + totalChallengeBonus(0).toPercentString() + close + '<br>';
+    text += '• total challenge resin + twigs bonus: ' + open + totalChallengeBonus(1).toPercentString() + close + '<br>';
 
     text += '<br>';
   }

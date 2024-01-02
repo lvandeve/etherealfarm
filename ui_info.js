@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -669,12 +669,24 @@ function openTimeInfoDialog() {
 
       if(state.g_numresets >= 1) {
         result += '<br>';
-        if(state.g_p_treelevel && (state.treelevel > state.g_p_treelevel)) {
-          result += '<b>Previous max level ever:</b> ' + state.g_p_treelevel + ' (now: ' + state.g_treelevel + ')' + '<br>';
-        } else if(state.g_p_treelevel && (state.treelevel == state.g_p_treelevel)) {
+        if(state.g_p_treelevel && (state.treelevel >= state.g_p_treelevel)) {
           result += '<b>Max tree level ever:</b> ' + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')<br>';
         } else {
           result += '<b>Max tree level ever:</b> ' + state.g_treelevel + '<br>';
+        }
+
+        if(state.challenge) {
+          var c = challenges[state.challenge];
+          var c2 = state.challenges[state.challenge];
+          if(c2.num >= 1) {
+            var maxlevel = c2.maxlevel;
+            if(c.cycling > 1) maxlevel = c2.maxlevels[c2.num_completed % c.cycling];
+            if(maxlevel && (state.treelevel >= maxlevel)) {
+              result += '<b>Max challenge level:</b> ' + state.treelevel + ' (before: ' + maxlevel + ')<br>';
+            } else {
+              result += '<b>Max challenge level:</b> ' + maxlevel + '<br>';
+            }
+          }
         }
       }
 
@@ -845,12 +857,24 @@ function updateResourceUI() {
     registerTooltip(resourceDivs[0][0], function() {
       var text = '';
       if(state.g_numresets >= 1) {
-        if(state.g_p_treelevel && (state.treelevel > state.g_p_treelevel)) {
-          text += 'Previous max tree level ever: ' + state.g_p_treelevel + ' (now: ' + state.g_treelevel + ')';
-        } else if(state.g_p_treelevel && (state.treelevel == state.g_p_treelevel)) {
+        if(state.g_p_treelevel && (state.treelevel >= state.g_p_treelevel)) {
           text += 'Max tree level ever: ' + state.g_treelevel + ' (before: ' + state.g_p_treelevel + ')';
         } else {
           text += 'Max tree level ever: ' + state.g_treelevel;
+        }
+        if(state.challenge) {
+          text += '<br>';
+          var c = challenges[state.challenge];
+          var c2 = state.challenges[state.challenge];
+          if(c2.num >= 1) {
+            var maxlevel = c2.maxlevel;
+            if(c.cycling > 1) maxlevel = c2.maxlevels[c2.num_completed % c.cycling];
+            if(maxlevel && (state.treelevel >= maxlevel)) {
+              text += 'Max challenge level: ' + state.treelevel + ' (before: ' + maxlevel + ')<br>';
+            } else {
+              text += 'Max challenge level: ' + maxlevel + '<br>';
+            }
+          }
         }
         text += '<br><br>';
       }

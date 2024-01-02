@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1039,6 +1039,9 @@ Waves begin at wave 1, the wave to get to tree level 1 (from tree level 0)
 function sporesForTDWave_(wave) {
   // wave 0 should give the resources to bring tree to level 1, etc..., hence the + 1
   var spores = treeLevelReqBase(wave + 1).spores;
+
+  // there actually isn't a wave 0, so add the required seeds to go from tree 0 to tree 1 to those of wave 1. So wave 1 will bring the tree from 0 to 2 (and the tree will be 1 during wave 1, as desired: the goal is that the number that the tree shows, is the number of the currently active wave, and the number of the next wave while waiting for it after previous one defeated)
+  if(wave == 1) spores.addInPlace(treeLevelReqBase(1).spores);
 
   // give a bit more to avoid numerical issues preventing a tree level
   // NOTE: nuts crops or anything else that costs spores should never be introduced during TD unless some alternations to this system is done, currently TD depends on getting almost exactly the amount of spores needed for a tree level

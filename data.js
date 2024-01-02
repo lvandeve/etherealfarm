@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ function getCropTypeHelp3(type, opt_state) {
     case CROPTYPE_BEE: return have_fishes ? 'Boosts neighboring flowers. For the flower boost to mushrooms, also has a small effect based on tier.' : 'Boosts neighboring flowers.';
     case CROPTYPE_CHALLENGE: return '';
     case CROPTYPE_FERN: return 'Copies all infinity seed and spores resources of the entire field, for crops of the same tier';
-    case CROPTYPE_NUT: return '';
+    case CROPTYPE_NUT: return 'Produces infinity seeds. Works exactly the same as berries and is boosted by the same flowers and fishes.';
     case CROPTYPE_PUMPKIN: return '';
     case CROPTYPE_RUNESTONE: return 'Boosts the basic field production boost of any neighboring crops in the infinity field. WARNING: The runestone, and any non-brassica crops it touches, cannot be deleted for ' + initialrunehours + ' hours after placing the runestone, and this time resets when planting crops next to it later on.';
   }
@@ -1090,9 +1090,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   if(!basic) {
     // challenges
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.challenge_multiplier.neqr(1)) {
-      result.mulInPlace(state.challenge_multiplier);
-      if(breakdown) breakdown.push(['challenge highest levels', true, state.challenge_multiplier, result.clone()]);
+    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.challenge_multiplier_prod.neqr(1)) {
+      result.mulInPlace(state.challenge_multiplier_prod);
+      if(breakdown) breakdown.push(['challenge highest levels', true, state.challenge_multiplier_prod, result.clone()]);
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.squirrel_upgrades[upgradesq_highest_level].count && state.g_treelevel > upgradesq_highest_level_min) {
@@ -6385,9 +6385,9 @@ function treeLevelResin(level, breakdown) {
 
   // challenges
   if(state.challenge_multiplier_resin_twigs.neqr(1)) {
-    var challenge_multiplier = state.challenge_multiplier_resin_twigs.subr(1).divr(100).addr(1);
-    resin.mulInPlace(challenge_multiplier);
-    if(breakdown) breakdown.push(['challenge highest levels', true, challenge_multiplier, resin.clone()]);
+    var mul = state.challenge_multiplier_resin_twigs;
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['challenge highest levels', true, mul, resin.clone()]);
   }
 
   count = state.mistletoes;
@@ -6518,7 +6518,7 @@ function treeLevelTwigs(level, breakdown) {
 
   // challenges
   if(state.challenge_multiplier_resin_twigs.neqr(1)) {
-    var challenge_multiplier = state.challenge_multiplier_resin_twigs.subr(1).divr(100).addr(1);
+    var challenge_multiplier = state.challenge_multiplier_resin_twigs;
     res.twigs.mulInPlace(challenge_multiplier);
     if(breakdown) breakdown.push(['challenge highest levels', true, challenge_multiplier, res.clone()]);
   }
@@ -6882,9 +6882,16 @@ function getRainbowFlowerBoost(opt_perma) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+// Modify resin/twigs bonus according to the old (pre-2024) system. Since the bonus of all challenges is multiplicative with each other, this has no effect on the new system, it's a multiplier that virtually affects one of the challenges using the old system, exactly as it worked then.
+// TODO: remove need for this
+function modifyResinTwigsChallengeBonus(bonus) {
+  return bonus.divr(100);
+}
+
+// which = 0 for prod bonus, 1 for resin/twigs bonus
 // level = highest tree level reached with this challenge, or hypothetical other level
 // returned as bonus value, not as multiplier (see function below for that)
-function getChallengeBonus(challenge_id, level, completed, opt_cycle) {
+function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
   var c = challenges[challenge_id];
   var bonus = c.bonus;
   if(c.cycling && opt_cycle != undefined) bonus = c.cycling_bonus[opt_cycle];
@@ -6897,6 +6904,9 @@ function getChallengeBonus(challenge_id, level, completed, opt_cycle) {
     var score = Num(level2).powr(c.bonus_exponent);
     var result = bonus.mulr(score);
     if(completed) result.addrInPlace(c.completion_bonus);
+
+    //if(which == 1) result = result.addr(1).divr(100).subr(1); // TODO: make resin bonus fully computable in here. See todo at modifyResinTwigsChallengeBonus
+
     return result;
   }
 
@@ -6922,19 +6932,29 @@ function getChallengeBonus(challenge_id, level, completed, opt_cycle) {
     var mul1 = mul0.mul(c.bonus_exponent_base);
     var progress = (level - k0) / (k1 - k0);
     var mul = mul0.add(mul1.sub(mul0).mulr(c.bonus_p * progress));
-    return bonus.mul(mul).subr(1);
+
+    var result = bonus.mul(mul).subr(1);
+
+    if(which == 1) {
+      var l = Num(Num.log(result.addr(1)));
+      result = l.mul(l).mulr(0.25);
+    }
+
+    return result;
   }
 
   return bonus; // unknown formula
 }
 
-function getChallengeMultiplier(challenge_id, level, completed, opt_cycle) {
-  return getChallengeBonus(challenge_id, level, completed, opt_cycle).addr(1);
+// which = 0 for prod bonus, 1 for resin/twigs bonus
+function getChallengeMultiplier(which, challenge_id, level, completed, opt_cycle) {
+  return getChallengeBonus(which, challenge_id, level, completed, opt_cycle).addr(1);
 }
 
 // get the bonus of 1 challenge based on current state without taking current run into account, for UI
 // if it's a cycling challenge, shows it for all cycles combined
-function oneChallengeBonus(challenge_id) {
+// which = 0 for prod bonus, 1 for resin/twigs bonus
+function oneChallengeBonus(which, challenge_id) {
   if(challenge_id == 0) return Num(0);
   var c = challenges[challenge_id];
   var c2 = state.challenges[challenge_id];
@@ -6944,21 +6964,22 @@ function oneChallengeBonus(challenge_id) {
     for(var j = 0; j < c.cycling; j++) {
       var maxlevel = c2.maxlevels[j];
       var completed = c.cycleCompleted(j, false);
-      result.addInPlace(getChallengeBonus(c.index, maxlevel, completed, j));
+      result.addInPlace(getChallengeBonus(which, c.index, maxlevel, completed, j));
     }
     return result;
   } else {
     var maxlevel = c2.maxlevel;
     var completed = c.cycleCompleted(undefined, false);
-    return getChallengeMultiplier(c.index, maxlevel, completed, undefined).subr(1);
+    return getChallengeMultiplier(which, c.index, maxlevel, completed, undefined).subr(1);
   }
 }
 
 // get the bonus of 1 challenge based on current state with taking current run into account, for UI
 // if it's a cycling challenge, shows it for all cycles combined
-function oneChallengeBonusIncludingCurrentRun(challenge_id) {
+// which = 0 for prod bonus, 1 for resin/twigs bonus
+function oneChallengeBonusIncludingCurrentRun(which, challenge_id) {
   if(challenge_id == 0) return Num(0);
-  if(state.challenge != challenge_id) return oneChallengeBonus(challenge_id);
+  if(state.challenge != challenge_id) return oneChallengeBonus(which, challenge_id);
   var c = challenges[challenge_id];
   var c2 = state.challenges[challenge_id];
   if(c.cycling) {
@@ -6972,28 +6993,35 @@ function oneChallengeBonusIncludingCurrentRun(challenge_id) {
         var maxlevel = Math.max(maxlevel, state.treelevel);
         var completed = c.cycleCompleted(j, true);
       }
-      result.addInPlace(getChallengeBonus(c.index, maxlevel, completed, j));
+      result.addInPlace(getChallengeBonus(which, c.index, maxlevel, completed, j));
     }
     return result;
   } else {
     var maxlevel = Math.max(c2.maxlevel, state.treelevel);
     var completed = c.cycleCompleted(undefined, true);
-    return getChallengeMultiplier(c.index, maxlevel, completed, undefined).subr(1);
+    return getChallengeMultiplier(which, c.index, maxlevel, completed, undefined).subr(1);
   }
 }
 
-function totalChallengeBonus() {
-  return state.challenge_multiplier.subr(1);
+// which = 0 for prod bonus, 1 for resin/twigs bonus
+function totalChallengeBonus(which) {
+  if(which) return state.challenge_multiplier_resin_twigs.subr(1);
+  return state.challenge_multiplier_prod.subr(1);
+}
+
+function totalChallengeProdBonus() {
+  return totalChallengeBonus(0);
 }
 
 // total challenge bonus, but taking into account running challenge (with challenge_id) having the new given maxlevel
 // for cycling challenge, uses the current cycle (= of the current run, or upcoming run if the challenge is not active now).
-function totalChallengeBonusIncludingCurrentRun() {
-  var result = totalChallengeBonus();
+// which = 0 for prod bonus, 1 for resin/twigs bonus
+function totalChallengeBonusIncludingCurrentRun(which) {
+  var result = totalChallengeBonus(which);
   if(!state.challenge) return result;
 
-  // the full challenge bonus is computed in state.challenge_multiplier by computeDerived.
-  // so don't redo whole computatio here, just compute the modification by the current challenge
+  // the full challenge bonus is computed in state.challenge_multiplier_prod by computeDerived.
+  // so don't redo whole computation here, just compute the modification by the current challenge
 
   var c = challenges[state.challenge];
   var c2 = state.challenges[state.challenge];
@@ -7009,12 +7037,12 @@ function totalChallengeBonusIncludingCurrentRun() {
     for(var j = 0; j < c.cycling; j++) {
       var maxlevel0 = c2.maxlevels[j];
       var completed0 = c.cycleCompleted(j, false);
-      var mul0 = getChallengeBonus(c.index, maxlevel0, completed0, j);
+      var mul0 = getChallengeBonus(which, c.index, maxlevel0, completed0, j);
       var mul1 = mul0;
       if(j == cycle) {
         var maxlevel1 = Math.max(maxlevel0, state.treelevel);
         var completed1 = c.cycleCompleted(j, true);
-        mul1 = getChallengeBonus(c.index, maxlevel1, completed1, j);
+        mul1 = getChallengeBonus(which, c.index, maxlevel1, completed1, j);
       }
       before.addInPlace(mul0);
       after.addInPlace(mul1);
@@ -7024,14 +7052,16 @@ function totalChallengeBonusIncludingCurrentRun() {
     var maxlevel1 = Math.max(c2.maxlevel, state.treelevel);
     var completed0 = c.cycleCompleted(undefined, false);
     var completed1 = c.cycleCompleted(undefined, true);
-    before = getChallengeMultiplier(c.index, maxlevel0, completed0, undefined);
-    after = getChallengeMultiplier(c.index, maxlevel1, completed1, undefined);
+    before = getChallengeMultiplier(which, c.index, maxlevel0, completed0, undefined);
+    after = getChallengeMultiplier(which, c.index, maxlevel1, completed1, undefined);
   }
 
   var ratio = after.div(before);
   // subr(1) to convert from multiplier to bonus for UI
-  return state.challenge_multiplier.mul(ratio).subr(1);
+  var bonus = which ? state.challenge_multiplier_resin_twigs : state.challenge_multiplier_prod;
+  return bonus.mul(ratio).subr(1);
 }
+
 
 // only during bee challenge
 function getWorkerBeeBonus() {
@@ -8073,7 +8103,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   // flower boost for berry
-  if(f && this.type == CROPTYPE_BERRY) {
+  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT)) {
     var flowermul = new Num(1);
     var num = 0;
 
@@ -8119,7 +8149,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
   }
 
   // puffer fish
-  if(this.type == CROPTYPE_BERRY && state.fishes[puffer_0].unlocked) {
+  // for berries, but also for nuts, nuts behave just like berries in infinity field
+  if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT) && state.fishes[puffer_0].unlocked) {
     var num0 = state.fishcount[puffer_0];
     var num1 = state.fishcount[puffer_1];
     var have_fish = !!(num0 + num1);
@@ -8348,9 +8379,9 @@ Crop3.prototype.getBasicBoost = function(f, breakdown) {
   var result = this.basicboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
+  var runestone_mul = new Num(1);
 
   if(f) {
-    var mul = new Num(1);
     var num = 0;
 
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -8361,14 +8392,29 @@ Crop3.prototype.getBasicBoost = function(f, breakdown) {
       if(n.hasCrop() && crops3[n.cropIndex()].type == CROPTYPE_RUNESTONE) {
         var boost = crops3[n.cropIndex()].getInfBoost(n);
         if(boost.neqr(0)) {
-          mul.addInPlace(boost);
+          runestone_mul.addInPlace(boost);
           num++;
         }
       }
     }
     if(num) {
-      result.mulInPlace(mul);
-      if(breakdown) breakdown.push(['runestones (' + num + ')', true, mul, result.clone()]);
+      result.mulInPlace(runestone_mul);
+      if(breakdown) breakdown.push(['runestones (' + num + ')', true, runestone_mul, result.clone()]);
+    }
+  }
+
+  // oranda fish
+  if(this.type != CROPTYPE_RUNESTONE && state.fishcount[oranda_0]) {
+    var num0 = state.fishcount[oranda_0];
+    var oranda_mul = Num(1 + oranda_0_bonus * num0);
+    var mul = oranda_mul.add(runestone_mul).subr(1).div(runestone_mul); // the oranda is additive to runestones, NOT multiplicative with it. So do as if a bonus that's the sum of runestone and oranda is given, and then divide through the original runestone bonus from above to only have the oranda effect here
+    result.mulInPlace(mul);
+    if(breakdown) {
+      if(runestone_mul.eqr(1)) {
+        breakdown.push(['oranda (fish)', true, oranda_mul, result.clone()]);
+      } else {
+        breakdown.push(['oranda fish (additive w. runestone)', true, oranda_mul, result.clone()]);
+      }
     }
   }
 
@@ -8471,6 +8517,13 @@ function registerFern3(name, tier, cost, infboost, basicboost, planttime, image,
   return index;
 }
 
+function registerNut3(name, tier, cost, prod, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_NUT, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.prod = prod;
+  return index;
+}
+
 var default_crop3_growtime = 5; // in seconds
 
 
@@ -8544,6 +8597,9 @@ crop3_register_id = 2100;
 var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
 var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
 
+crop3_register_id = 2400;
+var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(25), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
+
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
 }
@@ -8563,6 +8619,7 @@ var FISHTYPE_PUFFER = fishtype_index++; // puffer fish: boosts berries
 var FISHTYPE_EEL = fishtype_index++; // eel: boosts twigs
 var FISHTYPE_TANG = fishtype_index++; // yellow tang: boosts resin
 var FISHTYPE_LEPORINUS = fishtype_index++; // fish with yellow and black stripes, boosts infinity bees
+var FISHTYPE_ORANDA = fishtype_index++; // a goldfish/koi like fish. boost of the boost to basic boost, without requiring runestone (additive to runestone)
 var NUM_FISHTYPES = fishtype_index;
 
 function getFishTypeName(type) {
@@ -8575,6 +8632,7 @@ function getFishTypeName(type) {
   if(type == FISHTYPE_EEL) return 'eel';
   if(type == FISHTYPE_TANG) return 'tang';
   if(type == FISHTYPE_LEPORINUS) return 'leporinus';
+  if(type == FISHTYPE_ORANDA) return 'oranda';
   return 'unknown';
 }
 
@@ -8600,6 +8658,7 @@ Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   if(this.type == FISHTYPE_PUFFER) mul = 17;
   if(this.type == FISHTYPE_EEL || this.type == FISHTYPE_TANG) mul = 21;
   if(this.type == FISHTYPE_LEPORINUS) mul = 25;
+  if(this.type == FISHTYPE_ORANDA) mul = 19;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -8700,6 +8759,12 @@ function registerLeporinus(name, tier, cost, effect_description, image, opt_tagl
   return index;
 }
 
+function registerOranda(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_ORANDA, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
 fish_register_id = 100;
 var goldfish_0_bonus = 0.1;
 var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
@@ -8728,9 +8793,9 @@ var anemone_1 = registerAnemone('red anemone', 1, Res({infspores:200e9}), 'Impro
 
 fish_register_id = 600;
 var puffer_0_bonus = 0.2;
-var puffer_0 = registerPuffer('pufferfish', 0, Res({infspores:1e8}), 'Improves infinity berries by ' + Num(puffer_0_bonus).toPercentString(), image_puffer0);
+var puffer_0 = registerPuffer('pufferfish', 0, Res({infspores:1e8}), 'Improves infinity berries/nuts by ' + Num(puffer_0_bonus).toPercentString(), image_puffer0);
 var puffer_1_bonus = 1.5;
-var puffer_1 = registerPuffer('red pufferfish', 1, Res({infspores:500e12}), 'Improves infinity berries by ' + Num(puffer_1_bonus).toPercentString(), image_puffer1);
+var puffer_1 = registerPuffer('red pufferfish', 1, Res({infspores:500e12}), 'Improves infinity berries/nuts by ' + Num(puffer_1_bonus).toPercentString(), image_puffer1);
 
 fish_register_id = 700;
 var eel_0_bonus = 0.25;
@@ -8746,7 +8811,11 @@ var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin 
 
 fish_register_id = 900;
 var leporinus_0_bonus = 0.35;
-var leporinus_0 = registerLeporinus('leporinus', 0, Res({infspores:2e15}), 'Improves infinity bees by ' + Num(leporinus_0_bonus).toPercentString() + ' for berries (for mushrooms, has a lesser effect)', image_leporinus0); // the mushroom effect is complicated to describe, depends on the relative-tier-of-bees-through-flowers effect, it's much lower, around 5-10%
+var leporinus_0 = registerLeporinus('leporinus', 0, Res({infspores:2e15}), 'Improves infinity bees by ' + Num(leporinus_0_bonus).toPercentString() + ' for berries/nuts (for mushrooms, has a lesser effect)', image_leporinus0); // the mushroom effect is complicated to describe, depends on the relative-tier-of-bees-through-flowers effect, it's much lower, around 5-10%
+
+fish_register_id = 1000;
+var oranda_0_bonus = 2;
+var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)', image_oranda0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -9658,6 +9727,7 @@ registerPlantTypeMedal3(bee3_8);
 registerPlantTypeMedal3(mush3_8);
 registerPlantTypeMedal3(stinging3_8);
 registerPlantTypeMedal3(fern3_8);
+registerPlantTypeMedal3(nut3_8);
 
 
 
@@ -9693,6 +9763,7 @@ registerFishTypeMedal(puffer_1);
 registerFishTypeMedal(eel_1);
 registerFishTypeMedal(tang_1);
 registerFishTypeMedal(leporinus_0);
+registerFishTypeMedal(oranda_0);
 
 
 

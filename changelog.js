@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,6 +25,13 @@ function getChangeLog() {
     text += window['beta_patchnotes'];
     text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
   }
+
+  text += '0.11.1 (2024-01-02)';
+  text += '<br/>• Added a new infinity crop.';
+  text += '<br/>• Added a new fish type.';
+  text += '<br/>• Added back a resin/twigs bonus for the TD challenge reward.';
+  text += '<br/>• Tweaks and bugfixes.'; // e.g. now shows challenge max level in the dialog where it shows max tree level ever when running a challenge
+  text += '<br/><br/>';
 
   text += '0.11.0 (2023-12-20) - Tower Defense:';
   text += '<br/>• Added the tower defense challenge (unlocks at level 75), with a completely different game mechanic.';

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -758,7 +758,7 @@ function createMainHelpDialog() {
   text += '<br/><br/><br/>';
   text += 'Game version: ' + programname + ' v' + formatVersion();
   text += '<br/><br/>';
-  text += 'Copyright (c) 2020-2023 by Lode Vandevenne';
+  text += 'Copyright (c) 2020-2024 by Lode Vandevenne';
 
   dialog.content.div.innerHTML = text;
 

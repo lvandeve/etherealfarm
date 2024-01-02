@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -2464,6 +2464,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[flower3_8].had) unlockInfinityCrop(bee3_8);
   if(state.crops3[flower3_8].had) unlockInfinityCrop(fern3_8);
   if(state.crops3[mush3_8].had) unlockInfinityCrop(stinging3_8);
+  if(state.crops3[fern3_8].had) unlockInfinityCrop(nut3_8);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2489,6 +2490,7 @@ function maybeUnlockFishes() {
   if(state.fishes[puffer_1].had) unlockFish(leporinus_0);
   if(state.fishes[eel_1].had) unlockFish(tang_1);
 
+  if(state.fishes[leporinus_0].had) unlockFish(oranda_0);
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
   if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
@@ -2732,6 +2734,7 @@ function computeFractionTime(cost, fraction) {
 
   var time = 0;
   if(res_needed.gt(state.res)) {
+    if(state.challenge == challenge_towerdefense) return Infinity; // during TD, the gain is 0, even if gain.seeds is set to something, it's not added to stacks
     var rem = res_needed.sub(state.res);
     var time = -Infinity;
     if(rem.seeds.gtr(0)) time = Math.max(time, rem.seeds.div(gain.seeds).valueOf());
@@ -3511,11 +3514,13 @@ var update = function(opt_ignorePause) {
     // TODO: try to do this only when needed rather than every tick while paused
     if(update_ui_paused) {
       updateUI2();
+      if(state.challenge == challenge_towerdefense) {
+        precomputeTD(); // otherwise TD will not render the pests, e.g. after loading a paused savegame
+        updateUI2(); // field rendering already happened elsewhere after loading save, but only now we precomputed td, so render one more time
+      }
     }
     return;
   }
-
-  update_prev_paused = paused_;
 
   var prev_large_time_delta = large_time_delta;
   var autoplanted_fastanim = false;
@@ -5860,7 +5865,7 @@ var update = function(opt_ignorePause) {
         state.eth_stats_res[state.treelevel2 - 1].spores = Num(state.g_max_res.spores);
         state.eth_stats_level[state.treelevel2 - 1] = state.g_treelevel;
         state.eth_stats_numresets[state.treelevel2 - 1] = state.g_numresets;
-        state.eth_stats_challenge[state.treelevel2 - 1] = Num(state.challenge_multiplier.subr(1));
+        state.eth_stats_challenge[state.treelevel2 - 1] = Num(state.challenge_multiplier_prod.subr(1));
         state.eth_stats_medal_bonus[state.treelevel2 - 1] = Num(state.medal_prodmul);
       }
       maybeUnlockEtherealCrops();

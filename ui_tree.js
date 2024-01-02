@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -93,16 +93,16 @@ function makeTreeDialog() {
       var basicfar = basic && (maxlevel >= basicfarlevel || state.treelevel >= basicfarlevel);
       var addbasicmessage = false;
 
-      var bonus_before = oneChallengeBonus(state.challenge)
-      var bonus_after = oneChallengeBonusIncludingCurrentRun(state.challenge);
-      var total_bonus_before = totalChallengeBonus();
-      var total_bonus_after = totalChallengeBonusIncludingCurrentRun();
+      var bonus_before = oneChallengeBonus(0, state.challenge)
+      var bonus_after = oneChallengeBonusIncludingCurrentRun(0, state.challenge);
+      var total_bonus_before = totalChallengeBonus(0);
+      var total_bonus_after = totalChallengeBonusIncludingCurrentRun(0);
 
       if(maxlevel > 0) {
         if(state.treelevel > maxlevel) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel;
           text += '. Thist will bring your bonus for this challenge from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
-          text += ', and your total challenge production bonus from ' + totalChallengeBonus().toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun().toPercentString();
+          text += ', and your total challenge production bonus from ' + totalChallengeBonus(0).toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun(0).toPercentString();
           if(basicfar) addbasicmessage = true;
         } else if(!basiccapped) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet beat your previous best of lvl ' + maxlevel + '.';

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -128,7 +128,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
 function getCropInfoHTML3Breakdown(f, c) {
   var result = '';
 
-  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BRASSICA) {
+  if(c.type == CROPTYPE_BERRY || c.type == CROPTYPE_NUT || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BRASSICA) {
     var breakdown = [];
     var total = c.getProd(f, breakdown);
     result += formatBreakdown(breakdown, false, 'Breakdown (production/s)');

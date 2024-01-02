@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -266,8 +266,8 @@ function getChallengeStatsString(challenge_id, include_current_run) {
       text += '<br>';
       text += '• Production bonuses: ';
       for(var j = 0; j < c.cycling; j++) {
-        text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], c.cycleCompleted(j, false), j).toPercentString();
-        if(j == cycle) text += ' <b>(after: ' + getChallengeBonus(c.index, maxlevel, c.cycleCompleted(j, true), cycle).toPercentString() + ')</b>';
+        text +=  (j ? ', ' : '') + getChallengeBonus(0, c.index, c2.maxlevels[j], c.cycleCompleted(j, false), j).toPercentString();
+        if(j == cycle) text += ' <b>(after: ' + getChallengeBonus(0, c.index, maxlevel, c.cycleCompleted(j, true), cycle).toPercentString() + ')</b>';
       }
       text += '<br>';
       //text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
@@ -276,7 +276,7 @@ function getChallengeStatsString(challenge_id, include_current_run) {
       for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c2.maxlevels[j];
       text += '<br>';
       text += '• Production bonuses: ';
-      for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + getChallengeBonus(c.index, c2.maxlevels[j], c.cycleCompleted(j, false), j).toPercentString();
+      for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + getChallengeBonus(0, c.index, c2.maxlevels[j], c.cycleCompleted(j, false), j).toPercentString();
       text += '<br>';
       //text += '• Production bonus applies fully to seeds and spores, and 1/100th to resin and twigs' + '<br>';
     }
@@ -284,12 +284,12 @@ function getChallengeStatsString(challenge_id, include_current_run) {
     var maxlevel = Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0);
     if(currentlyrunning) {
       text += '• Max level reached before: ' + c2.maxlevel + ', <b>after: ' + maxlevel + '</b><br>';
-      var challenge2 = totalChallengeBonusIncludingCurrentRun();
-      text += '• Production bonus before: ' + getChallengeBonus(c.index, c2.maxlevel, c2.completed).toPercentString() + ', <b>after: ' + getChallengeBonus(c.index, maxlevel, !!c.numCompleted(true)).toPercentString() +
-              '</b>. Total (all challenges) before: ' + totalChallengeBonus().toPercentString() + ', <b>after: ' + challenge2.toPercentString() + '</b><br>';
+      var challenge2 = totalChallengeBonusIncludingCurrentRun(0);
+      text += '• Production bonus before: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString() + ', <b>after: ' + getChallengeBonus(0, c.index, maxlevel, !!c.numCompleted(true)).toPercentString() +
+              '</b>. Total (all challenges) before: ' + totalChallengeBonus(0).toPercentString() + ', <b>after: ' + challenge2.toPercentString() + '</b><br>';
     } else {
       text += '• Max level reached: ' + c2.maxlevel + '<br>';
-      text += '• Production bonus: ' + getChallengeBonus(c.index, c2.maxlevel, c2.completed).toPercentString() + '<br>';
+      text += '• Production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString() + '<br>';
     }
   }
   if(currentlyrunning) {
@@ -513,10 +513,10 @@ function createFinishChallengeDialog() {
   var newmax = Math.max(state.treelevel, maxlevel);
   text += '<br><br>';
   text += 'Production bonus from challenge max reached level' + ((c.cycling > 1) ? ' for this cycle' : '') + ':<br>';
-  text += '• Before (level ' + maxlevel + '): ' + getChallengeBonus(state.challenge, maxlevel, c.cycleCompleted(cycle, false), cycle).toPercentString() + ' (' + totalChallengeBonus().toPercentString() + ' total for all challenges)<br>';
+  text += '• Before (level ' + maxlevel + '): ' + getChallengeBonus(0, state.challenge, maxlevel, c.cycleCompleted(cycle, false), cycle).toPercentString() + ' (' + totalChallengeBonus(0).toPercentString() + ' total for all challenges)<br>';
   if(state.treelevel > maxlevel) {
-    var new_total = totalChallengeBonusIncludingCurrentRun();
-    text += '• After (level ' + newmax + '): ' + getChallengeBonus(state.challenge, newmax, c.cycleCompleted(cycle, true), cycle).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
+    var new_total = totalChallengeBonusIncludingCurrentRun(0);
+    text += '• After (level ' + newmax + '): ' + getChallengeBonus(0, state.challenge, newmax, c.cycleCompleted(cycle, true), cycle).toPercentString() + ' (' + new_total.toPercentString() + ' total for all challenges)<br>';
     // TODO: if challenge not completed but max level beaten, add text here "you didn't complete the challenge, but at least you gained production bonus", but this taking cycling challenges and multi-level-target challenges into account
   } else {
     text += '• After stays the same, max level not beaten';
@@ -595,8 +595,8 @@ function createAllChallengeStatsDialog() {
   var pos = 0;
   var h = 0.1;
 
-  text += 'Total challenge production bonus: +' + totalChallengeBonus().toPercentString() + '<br>';
-  text += 'Total challenge resin & twigs bonus: +' + totalChallengeBonus().divr(100).toPercentString() + '<br>';
+  text += 'Total challenge production bonus: +' + totalChallengeBonus(0).toPercentString() + '<br>';
+  text += 'Total challenge resin & twigs bonus: +' + totalChallengeBonus(1).toPercentString() + '<br>';
   text += '<br>';
   if(state.challenges_completed > 1) {
     text += 'Challenge bonuses are multiplicative with each other, so every challenge bonus is its own multiplier. E.g. if you have a challenge with +50% production bonus and one with +60% production bonus, you get 1.5 * 1.6 = 2.4x or +140% production bonus total.<br>';
@@ -660,15 +660,21 @@ function createAllChallengeStatsDialog() {
       text += 'formula: ' + getChallengeFormulaString(c, 'base bonus');
       text += '<br>';
       text += 'production bonuses: ';
-      var sum = Num(0);
+      var sum_prod = Num(0);
+      var sum_resin_twigs = Num(0);
       for(var j = 0; j < c.cycling; j++) {
-        var bonus = getChallengeBonus(c.index, c2.maxlevels[j], c.cycleCompleted(j, false), j);
-        text +=  (j ? ', ' : '') + bonus.toPercentString();
-        sum.addInPlace(bonus);
+        var bonus_prod = getChallengeBonus(0, c.index, c2.maxlevels[j], c.cycleCompleted(j, false), j);
+        text +=  (j ? ', ' : '') + bonus_prod.toPercentString();
+        sum_prod.addInPlace(bonus_prod);
+        var bonus_resin_twigs = getChallengeBonus(1, c.index, c2.maxlevels[j], c.cycleCompleted(j, false), j);
+        sum_resin_twigs.addInPlace(bonus_resin_twigs);
       }
-      text += ' (total: ' + sum.toPercentString() + ')';
-      text += '<br>';
-      text += 'resin & twigs bonus: ' + sum.divr(100).toPercentString();
+      text += ' (total: ' + sum_prod.toPercentString() + ')';
+      // disabled for bonus_formula=0, see todo at modifyResinTwigsChallengeBonus
+      if(c.bonus_formula != 0) {
+        text += '<br>';
+        text += 'resin & twigs bonus: ' + sum_resin_twigs.toPercentString();
+      }
       text += '<br>';
       var cycle = c2.num_completed % c.cycling;
       var nextString = state.challenge == c.index ? 'current' : 'next';
@@ -677,9 +683,12 @@ function createAllChallengeStatsDialog() {
     } else {
       text += 'bonus formula: ' + getChallengeFormulaString(c, c.bonus.toPercentString());
       text += '<br>';
-      text += 'production bonus: ' + getChallengeBonus(c.index, c2.maxlevel, c2.completed).toPercentString();
-      text += '<br>';
-      text += 'resin & twigs bonus: ' + getChallengeBonus(c.index, c2.maxlevel, c2.completed).divr(100).toPercentString();
+      text += 'production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString();
+      // disabled for bonus_formula=0, see todo at modifyResinTwigsChallengeBonus
+      if(c.bonus_formula != 0) {
+        text += '<br>';
+        text += 'resin & twigs bonus: ' + getChallengeBonus(1, c.index, c2.maxlevel, c2.completed).toPercentString();
+      }
       text += '<br>';
     }
     if(c.targetlevel != undefined && c.targetlevel.length > 1) {
