@@ -27,8 +27,8 @@ function getChangeLog() {
   }
 
   text += '0.11.1 (2024-01-02)';
-  text += '<br/>• Added a new infinity crop.';
-  text += '<br/>• Added a new fish type.';
+  text += '<br/>• Added a new infinity crop.'; // infinity sapphire acorn
+  text += '<br/>• Added a new fish type.'; // oranda
   text += '<br/>• Added back a resin/twigs bonus for the TD challenge reward.';
   text += '<br/>• Tweaks and bugfixes.'; // e.g. now shows challenge max level in the dialog where it shows max tree level ever when running a challenge
   text += '<br/><br/>';

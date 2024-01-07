@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ function Num(b, e) {
 // e.g. Num.makeDecimal(3, 5) will return a number representing 3*10^5 = 300000
 Num.makeDecimal = function(b, e) {
   if(e == undefined) e = 0;
-  var e2 = e * log10_log2;
+  var e2 = e * log2_10;
   var ef = Math.floor(e2);
   var f = Math.pow(2, e2 - ef);
   b *= f;
@@ -494,7 +494,7 @@ Num.prototype.rpowInPlace = function(r) {
   this.e = this.b;
   this.b = 1;
   if(r != 2) {
-    var e = this.e * (Math.log(r) / log2_ln);
+    var e = this.e * (Math.log(r) / ln_2);
     var e2 = Math.floor(e);
     this.e = e2;
     var f = Math.pow(2, e - e2);
@@ -518,7 +518,7 @@ Num.prototype.powInPlace = function(b) {
     if(b.ltr(0)) return new Num(Infinity);
     return new Num(1); // 0**0
   }
-  var r = Num.log(this); // regular JS number
+  var r = Num.rlog(this);
   var e = Num.exp(b.mulr(r));
   this.b = e.b;
   this.e = e.e;
@@ -545,36 +545,46 @@ Num.prototype.exp = function() {
 Num.exp = function(a) { return a.exp(); }
 
 // returned as regular JS number
-Num.prototype.log2 = function() {
+Num.prototype.rlog2 = function() {
   var r = this.e;
   r += Math.log2(this.b);
   return r;
 };
-Num.log2 = function(a) { return a.log2(); }
+Num.rlog2 = function(a) { return a.rlog2(); }
+
+Num.prototype.log2 = function() { return new Num(this.rlog2()); }
+Num.log2 = function(a) { return new Num(a.rlog2()); }
 
 // returned as regular JS number
-Num.prototype.log10 = function() {
-  var r = this.e * log2_log10;
+Num.prototype.rlog10 = function() {
+  var r = this.e * log10_2;
   r += Math.log10(this.b);
   return r;
 };
-Num.log10 = function(a) { return a.log10(); }
+Num.rlog10 = function(a) { return a.rlog10(); }
 
-Num.prototype.log = function() {
-  var r = this.e * log2_ln;
+Num.prototype.log10 = function() { return new Num(this.rlog10()); }
+Num.log10 = function(a) { return new Num(a.rlog10()); }
+
+// natural logarithm (ln), returned as regular JS number
+Num.prototype.rlog = function() {
+  var r = this.e * ln_2;
   r += Math.log(this.b);
   return r;
 };
-Num.log = function(a) { return a.log(); }
+Num.rlog = function(a) { return a.rlog(); }
 
-// log_r, returned as regular JS number and with r regular JS number
-Num.prototype.logr = function(r) {
+Num.prototype.log = function() { return new Num(this.rlog()); }
+Num.log = function(a) { return new Num(a.rlog()); }
+
+// log with base r, returned as regular JS number and with r regular JS number
+Num.prototype.rlogr = function(r) {
   var lr = 1 / Math.log(r);
-  var res = this.e * Math.log(2) * lr;
+  var res = this.e * ln_2 * lr;
   res += Math.log(this.b) * lr;
   return res;
 };
-Num.logr = function(a, r) { return a.logr(r); }
+Num.rlogr = function(a, r) { return a.rlogr(r); }
 
 Num.prototype.gt = function(b) {
   if(b.eqr(0)) return this.b > 0 && !isNaN(this.e); // avoid scaling in place to 0
@@ -716,9 +726,9 @@ Num.roundNicely = function(num) {
   return res;
 }
 
-var log2_log10 = 0.30102999566398114; // log2 / log10
-var log10_log2 = 1 / log2_log10; // log10 / log2
-var log2_ln = 0.6931471805599453; // log2 / log(e), which is just log2
+var log10_2 = 0.30102999566398114; // ln(2) / ln(10) = log10(2)
+var log2_10 = 1 / log10_2; // ln(10) / ln(2) - log2(10)
+var ln_2 = 0.6931471805599453; // ln(2)
 
 Num.N_Names = []; // names of the notations
 Num.N_Help = []; // help of the notations
@@ -1053,11 +1063,11 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 
   if(eng) eng = (eng < 3 ? 3 : (eng > 8 ? 8 : eng));
   var base = opt_base || 10;
-  var l = (base == 10) ? log2_log10 : (0.6931471805599453 / Math.log(base));
+  var l = (base == 10) ? log10_2 : (ln_2 / Math.log(base));
 
   var e_orig = v.e * l;
 
-  var e = Math.floor(v.abs().logr(base));
+  var e = Math.floor(v.abs().rlogr(base));
 
   var b = v.b * Math.pow(base, e_orig - e);
 
@@ -1127,8 +1137,8 @@ Num.smallValueNotation = function(v, precision) {
   var result = (v.valueOf() * 1.0000000001).toString();
 
   if(result[0] == '0') {
-    var e = v.e * log2_log10;
-    var e2 = -Math.floor(v.abs().log10());
+    var e = v.e * log10_2;
+    var e2 = -Math.floor(v.abs().rlog10());
     //return result.substr(0, Math.max(precision + 2, 7));
     result = result.substr(0, e2 + 1 + precision);
   } else if(result.length >= precision) {
@@ -1164,9 +1174,9 @@ Num.notationAbr = function(v, precision, suffixtype, opt_sci) {
     }
   }
 
-  var e = v.e * log2_log10;
-  var e2 = v.abs().log10();
-  // we take the floor of e2 to determine amount of digits, but due to numerical imprecision, e.g. Num(1000).log10 = 2.9999999999999996. Fix that here.
+  var e = v.e * log10_2;
+  var e2 = v.abs().rlog10();
+  // we take the floor of e2 to determine amount of digits, but due to numerical imprecision, e.g. Num(1000).rlog10() = 2.9999999999999996. Fix that here.
   if(e2 > 0) e2 += Math.pow(10, -e2 - 1);
   var b = v.b;
   var result = '';
@@ -1297,7 +1307,7 @@ Num.notationLog10 = function(v, precision) {
   if(v.b == Infinity) return '10^Inf';
   if(v.b == 0) return '0'; //in theory this is '10^-Inf' but 0 is good enough and more readable
 
-  var l = Num.log10(v);
+  var l = Num.rlog10(v);
   precision--;
   if(l >= 10) precision--;
   if(l >= 100) precision--;
@@ -1315,7 +1325,7 @@ Num.notationLn = function(v, precision) {
   if(v.b == Infinity) return 'e^Inf';
   if(v.b == 0) return '0'; //in theory this is 'e^-Inf' but 0 is good enough and more readable
 
-  var l = Num.log(v);
+  var l = Num.rlog(v);
   precision--;
   if(l >= 10) precision--;
   if(l >= 100) precision--;
@@ -1529,6 +1539,6 @@ function getLatinSuffixFullName(e) {
 // returns only the full latin suffix the number would get when its exponent spelled out in full
 // does not have lower granularity than multiples of tens
 function getLatinSuffixFullNameForNumber(v) {
-  var e = Math.floor(v.abs().logr(10));
+  var e = Math.floor(v.abs().rlog10());
   return getLatinSuffixFullName(e);
 }

@@ -6329,7 +6329,7 @@ function treeLevelResin(level, breakdown) {
     var bonus = getAlternateResinBonus(season);
     if(bonus.gtr(1)) {
       resin.mulInPlace(bonus);
-      if(breakdown) breakdown.push([seasonNames[season] + ' bonus (squirrel)', true, bonus, resin.clone()]);
+      if(breakdown) breakdown.push([seasonNames[season] + ' bonus (ethereal upgrade)', true, bonus, resin.clone()]);
     }
   }
 
@@ -6612,7 +6612,7 @@ function getStarterResources(opt_add_type, opt_sub_type) {
 
 // returned as multiplier
 function getUnusedResinBonusFor(resin) {
-  var result = Num(Num.log10(resin.addr(1))).mulr(0.1).addr(1);
+  var result = Num.log10(resin.addr(1)).mulr(0.1).addr(1);
 
   var level = getFruitAbility(FRUIT_RESINBOOST, true);
   if(level > 0) {
@@ -6634,7 +6634,7 @@ function getUnusedResinBonus() {
 // returned as multiplier
 function getUnusedTwigsBonusFor(twigs) {
   //var result = Num(1); // twigs bonus doesn't actually exist without the fruit that gives it
-  var result = Num(Num.log10(twigs.addr(1))).mulr(0.01).addr(1);
+  var result = Num.log10(twigs.addr(1)).mulr(0.01).addr(1);
 
   var level = getFruitAbility(FRUIT_TWIGSBOOST, true);
   if(level > 0) {
@@ -6658,7 +6658,7 @@ function haveUnusedNutsBonus() {
 
 function getUnusedNutsBonusFor(nuts) {
   if(!haveUnusedNutsBonus()) return Num(1);
-  return Num(Num.log10(nuts.addr(1))).mulr(0.025).addr(1);
+  return Num.log10(nuts.addr(1)).mulr(0.025).addr(1);
 }
 
 function getUnusedNutsBonus() {
@@ -6936,7 +6936,7 @@ function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
     var result = bonus.mul(mul).subr(1);
 
     if(which == 1) {
-      var l = Num(Num.log(result.addr(1)));
+      var l = Num.log(result.addr(1));
       result = l.mul(l).mulr(0.25);
     }
 
@@ -9670,7 +9670,7 @@ medal_register_id = 4200;
 
 function getPlantTypeMedalBonus3(cropid) {
   var c = crops3[cropid];
-  var l = Num.log(c.cost.infseeds);
+  var l = Num.rlog(c.cost.infseeds);
   return Math.pow(l * 2, 1.15);
 }
 
@@ -9736,7 +9736,7 @@ medal_register_id = 4700;
 
 function getFishTypeMedalBonus(fishid) {
   var c = fishes[fishid];
-  var l = Num.log(c.cost.infspores);
+  var l = Num.rlog(c.cost.infspores);
   return Math.pow(l * 20, 1.15);
 }
 

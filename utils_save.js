@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -877,7 +877,7 @@ var approx_num_skipped = 6; // chosen such that the encoding of values above app
 function encApproxNum(f) {
   if(f.ltr(0.5)) return 0;
   if(f.lter(approx_num_exact)) return Math.round(f.valueOf());
-  var l = f.logr(approx_num_base) - approx_num_skipped;
+  var l = f.rlogr(approx_num_base) - approx_num_skipped;
   if(l > 9007199254740992) return 9007199254740992;
   return Math.round(l);
 }
@@ -900,7 +900,7 @@ var approx2_num_skipped = 5911; // chosen such that the encoding of values above
 function encApprox2Num(f) {
   if(f.ltr(0.5)) return 0;
   if(f.lter(approx2_num_exact)) return Math.round(f.valueOf());
-  var l = f.logr(approx2_num_base) - approx2_num_skipped;
+  var l = f.rlogr(approx2_num_base) - approx2_num_skipped;
   if(l > 9007199254740992) return 9007199254740992;
   return Math.round(l);
 }
