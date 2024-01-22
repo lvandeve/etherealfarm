@@ -8859,15 +8859,15 @@ var puffer_1 = registerPuffer('red pufferfish', 1, Res({infspores:500e12}), 'Imp
 
 fish_register_id = 700;
 var eel_0_bonus = 0.25;
-var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_eel0);
+var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_eel0);
 var eel_1_bonus = 0.5;
-var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_eel1);
+var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_eel1);
 
 fish_register_id = 800;
 var tang_0_bonus = 0.25;
-var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_tang0);
+var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_tang0);
 var tang_1_bonus = 0.5;
-var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' (fish must be in pond entire run for the effect to work)', image_tang1);
+var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_tang1);
 
 fish_register_id = 900;
 var leporinus_0_bonus = 0.35;
