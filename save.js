@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -132,8 +132,6 @@ function encState(state, opt_raw_only) {
   processRes(state.fernres); // used to be state.lastReFernTime before v0.9.2
   processInt(state.lastPlanted3);
   processInt(state.lastPlantedFish);
-  processNum(state.min_fish_resinmul);
-  processNum(state.min_fish_twigsmul);
   id = 31;
   processUint6(state.beta);
 
@@ -1035,6 +1033,15 @@ function encState(state, opt_raw_only) {
     processStructArrayEnd();
   }
 
+  section = 34; id = 0; // timings of fishes
+
+  processNum(state.fish_resinmul_weighted);
+  processNum(state.fish_resinmul_last);
+  processTime(state.fish_resinmul_time);
+  processNum(state.fish_twigsmul_weighted);
+  processNum(state.fish_twigsmul_last);
+  processTime(state.fish_twigsmul_time);
+
   //////////////////////////////////////////////////////////////////////////////
 
   var e = encTokens(tokens);
@@ -1260,8 +1267,16 @@ function decState(s) {
   }
   if(save_version >= 262144*2+64*7+0) state.lastPlanted3 = processInt();
   if(save_version >= 262144*2+64*9+0) state.lastPlantedFish = processInt();
-  if(save_version >= 262144*2+64*10+1) state.min_fish_resinmul = processNum();
-  if(save_version >= 262144*2+64*10+1) state.min_fish_twigsmul = processNum();
+  if(save_version >= 262144*2+64*10+1 && save_version < 262144*2+64*11+2) {
+    state.fish_resinmul_weighted = processNum();
+    state.fish_resinmul_last = state.fish_resinmul_weighted;
+    state.fish_resinmul_time = 0;
+  }
+  if(save_version >= 262144*2+64*10+1 && save_version < 262144*2+64*11+2) {
+    state.fish_twigsmul_weighted = processNum();
+    state.fish_twigsmul_last = state.fish_twigsmul_weighted;
+    state.fish_twigsmul_time = 0;
+  }
   id = 31;
   if(save_version >= 262144*2+64*10+4) state.beta = processUint6();
 
@@ -2715,6 +2730,18 @@ function decState(s) {
   }
   if(error) return err(4);
 
+
+  section = 34; id = 0; // timings of fishes
+
+  if(save_version >= 262144*2+64*11+2) {
+    state.fish_resinmul_weighted = processNum();
+    state.fish_resinmul_last = processNum();
+    state.fish_resinmul_time = processTime();
+    state.fish_twigsmul_weighted = processNum();
+    state.fish_twigsmul_last = processNum();
+    state.fish_twigsmul_time = processTime();
+  }
+  if(error) return err(4);
 
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////

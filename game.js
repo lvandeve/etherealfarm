@@ -764,8 +764,12 @@ function beginNextRun(opt_challenge) {
   state.c_td_hits = 0;
   state.c_td_kills = 0;
 
-  state.min_fish_resinmul = Num(-1);
-  state.min_fish_twigsmul = Num(-1);
+  state.fish_resinmul_weighted = Num(-1);
+  state.fish_resinmul_last = Num(0);
+  state.fish_resinmul_time = 0;
+  state.fish_twigsmul_weighted = Num(-1);
+  state.fish_twigsmul_last = Num(0);
+  state.fish_twigsmul_time = 0;
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
@@ -2408,6 +2412,9 @@ function maybeUnlockEtherealCrops() {
   if(state.treelevel2 >= 24) {
     unlockEtherealCrop(lotus2_6);
   }
+  if(state.treelevel2 >= 26) {
+    unlockEtherealCrop(nettle2_2);
+  }
 }
 
 function maybeUnlockInfinityCrops() {
@@ -2465,6 +2472,9 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[flower3_8].had) unlockInfinityCrop(fern3_8);
   if(state.crops3[mush3_8].had) unlockInfinityCrop(stinging3_8);
   if(state.crops3[fern3_8].had) unlockInfinityCrop(nut3_8);
+
+  if(state.crops3[nut3_8].had) unlockInfinityCrop(brassica3_9);
+  if(state.crops3[brassica3_9].had) unlockInfinityCrop(berry3_9);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2491,6 +2501,9 @@ function maybeUnlockFishes() {
   if(state.fishes[eel_1].had) unlockFish(tang_1);
 
   if(state.fishes[leporinus_0].had) unlockFish(oranda_0);
+  if(state.fishes[leporinus_0].had) unlockFish(shrimp_1);
+
+  ////////
 
   var first_fish_unlocked2 = state.fishes[goldfish_0].unlocked;
   if(!first_fish_unlocked && first_fish_unlocked2) showRegisteredHelpDialog(43);
@@ -4649,7 +4662,6 @@ var update = function(opt_ignorePause) {
           var cost = c.getCost();
           var finalcost = cost;
           if(type == ACTION_REPLACE3 && !!recoup) finalcost = cost.sub(recoup);
-          if(!action.silent) showMessage('planted infinity ' + c.name + '. Consumed: ' + finalcost + '. Next costs: ' + c.getCost(1));
           state.g_numplanted3++;
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
@@ -4684,6 +4696,8 @@ var update = function(opt_ignorePause) {
               }
             }
           }
+          var nextcost = c.getCost(1);
+          if(!action.silent) showMessage('planted infinity ' + c.name + '. Consumed: ' + finalcost + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
 
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
@@ -4737,16 +4751,24 @@ var update = function(opt_ignorePause) {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
             ok = false;
-          } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG) && c.tier > 0 && state.fishcount[c.index]) {
+          } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && state.fishcount[c.index]) {
             // TODO: consider also reducing this to max 1 for tier 0
             showMessage('Can have only max 1 of this fish', C_INVALID, 0, 0);
             ok = false;
           } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG) && c.tier == 0 && state.fishtypecount[c.type] >= 4 && !(f.hasCrop() && f.getCrop().type == c.type)) {
             showMessage('Can have only max 4 of this fish type', C_INVALID, 0, 0);
             ok = false;
+          } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishtypecount[c.type] >= 9 && !(f.hasCrop() && f.getCrop().type == c.type)) {
+            showMessage('Can have only max 9 of this fish type', C_INVALID, 0, 0);
+            ok = false;
           } else if(state.res.lt(cost)) {
             showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
                         ', need: ' + cost.toString(Math.max(5, Num.precision)) + ' (' + getCostAffordTimer(cost) + ')', C_INVALID, 0, 0);
+            ok = false;
+          } else if(c.type == FISHTYPE_SHRIMP && state.fishtypecount[c.type] > 0 && state.fishcount[c.index] == 0 && !(f.hasCrop() && f.getCrop().type == c.type && state.fishtypecount[c.type] == 1)) {
+            // this is checking that you don't have a fish of this same type, but of a different tier (by checking fishtype count is non-zero but fish count of the current one is zero), but do allow this when you have exactly one fish of this tier and are replacing it with the same type (even if of a different tier)
+            // this check is done after the 'enough resources' check so that it wouldn't show a message to remove all fishes of the type to place this one only to then find out not having enough resources
+            showMessage('Cannot have multiple tiers of shrimp at the same time. Remove all other shrimp, then try to place this tier again', C_INVALID, 0, 0);
             ok = false;
           }
         }
@@ -5246,6 +5268,7 @@ var update = function(opt_ignorePause) {
       }
       state.lastLightningTime = state.time;
     }
+    if(state.challenge != challenge_stormy) state.lastLightningTime = 0; // don't use lastLightningTime when stormy challenge isn't active, avoids stray lightning rendering after the challenge is done
 
     ////////////////////////////////////////////////////////////////////////////
 

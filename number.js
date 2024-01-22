@@ -1130,25 +1130,33 @@ Num.notationSci = function(v, precision, eng, opt_base) {
   return result;
 };
 
-// intended for values in range 1e-6 to 1, to avoid showing something like 200e-6, instead show 0.0002
+// intended for positive values in range 1e-6 to 1, to avoid showing something like 200e-6, instead show 0.0002
 // can also be used for values below 10000, e.g. to display 3500 instead of 3.5e3, but still take precision into account in a more limited way than scientific notation does
+// some examples of expected results:
+// Num.smallValueNotation(Num(0.1), 3): 0.1
+// Num.smallValueNotation(Num(0.009777), 3): 0.00978
 Num.smallValueNotation = function(v, precision) {
   // the 1.0000000001 is so that e.g. 0.00999999999 will show up as 0.01 instead. TODO: use better method for this
-  var result = (v.valueOf() * 1.0000000001).toString();
+  v = v.valueOf() * 1.0000000001;
+  var result;
+  if(v < 1 && precision > 0 && precision < 100) { // the 1-100 range is to prevent JS throwing range error for toPrecision
+    // the reason for using toFixed is to benefit from its correct rounding, since the trimming code below just trims things without rounding up when needed
+    result = v.toPrecision(precision);
+  } else {
+    result = v.toString();
+  }
 
-  if(result[0] == '0') {
-    var e = v.e * log10_2;
-    var e2 = -Math.floor(v.abs().rlog10());
-    //return result.substr(0, Math.max(precision + 2, 7));
-    result = result.substr(0, e2 + 1 + precision);
-  } else if(result.length >= precision) {
-    var dotpos = result.indexOf('.');
-    if(dotpos >= 0) {
-      var keep = Math.max(dotpos, precision + 1); // keep up to requested precision
-      while(keep > dotpos && result[keep - 1] == '0') keep--; // don't keep trailing zeros
-      if(keep == dotpos + 1) keep--; // remove dot itself if nothing after dot kept
-      result = result.substr(0, keep);
-    }
+  // limit it to the desired precision
+  // remove trailing zeroes, otherwise e.g. Num(0.001).toString(5, Num.N_SCI) shows up as 0.00100, which we do NOT want, the precision flag is not about showing that many trailing zeroes
+  var dotpos = result.indexOf('.');
+  if(dotpos >= 0) {
+    var epos = result.indexOf('e');
+    if(epos >= 0) return result; // the toPrecision used scientific notation, don't trim that now. Note that this function isn't intended for values below 1e-6 anyway
+    var keep = Math.max(dotpos, precision + 1); // keep up to requested precision
+    if(v < 1) keep = result.length; // for number below 1, the JS toPrecision function above already did what we want more correctly (e.g. Num.smallValueNotation(Num(0.009777), 3) should output 0.00978, not be trimmed to 0.009)
+    while(keep > dotpos && result[keep - 1] == '0') keep--; // don't keep trailing zeros
+    if(keep == dotpos + 1) keep--; // remove dot itself if nothing after dot kept
+    result = result.substr(0, keep);
   }
   return result;
 }

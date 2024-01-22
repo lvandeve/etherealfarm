@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -274,22 +274,22 @@ function generatePalette(header) {
   // These hues are 12 30-degree equispaced RGB hues, plus in addition 4 hues inserted between: red-orange, orange-yellow, lime-green, blue-violet.
   // This allows to use any desired subset or all of them, including any desired 12-color color circle: RGB (opposing pairs RC, GM and BY), RYB (opposing pairs RG, YV and BO) or RYGB (opposing pairs RG and YB).
   var hues = [
-    '#f00', // red
-    '#f40', // scarlet
-    '#f80', // orange
-    '#fc0', // amber
-    '#ff0', // yellow
-    '#8f0', // lime
-    '#5f0', // harlequin
-    '#0f0', // green
-    '#0f8', // turquoise
-    '#0ff', // cyan
-    '#08f', // azure
-    '#00f', // blue
-    '#40f', // indigo
-    '#80f', // violet
-    '#f0f', // magenta
-    '#f08', // fuchsia
+    '#f00', // red (R)
+    '#f40', // scarlet (S)
+    '#f80', // orange (O)
+    '#fc0', // amber (E)
+    '#ff0', // yellow (Y)
+    '#8f0', // lime (L)
+    '#5f0', // harlequin (H)
+    '#0f0', // green (G)
+    '#0f8', // turquoise (T)
+    '#0ff', // cyan (C)
+    '#08f', // azure (A)
+    '#00f', // blue (B)
+    '#40f', // indigo (I)
+    '#80f', // violet (V)
+    '#f0f', // magenta (M)
+    '#f08', // fuchsia (F)
   ];
 
   // the 4 default lightness/saturation combos for the 4 letters belonging to the same group

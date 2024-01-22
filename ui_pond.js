@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -120,7 +120,7 @@ function updatePondDialogText() {
     return;
   } else {
     var missing_types = getAvailableNonPlantedFishTypes();
-    var print_missing_types = state.numemptypond < 8 && missing_types.length > 0;
+    var print_missing_types = state.numfishes > 4 && missing_types.length > 0;
     if(!print_missing_types && state.numemptypond > 0) {
       text += '<br><br>';
       text += 'Click the pond below to place fishes, at the cost of infinity spores.';

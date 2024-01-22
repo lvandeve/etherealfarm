@@ -938,7 +938,7 @@ function createChangelogDialog() {
 
   text += getChangeLog();
 
-  text += 'Copyright (c) 2020-2022 by Lode Vandevenne';
+  text += 'Copyright (c) 2020-2024 by Lode Vandevenne';
 
   dialog.content.div.innerHTML = text;
 }

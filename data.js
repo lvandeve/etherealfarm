@@ -804,13 +804,20 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       result = e;
     }
 
-    // tree's gesture ethereal upgrade
     if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
+      // tree's gesture ethereal upgrade
       var gesture = treeGestureBonus();
       if(gesture.neqr(1)) {
-        result.seeds.mulInPlace(gesture);
-        result.spores.mulInPlace(gesture);
+        result.mulInPlace(gesture);
         if(breakdown) breakdown.push(['tree\'s gesture', true, gesture, result.clone()]);
+      }
+
+      // ethereal tree level above 25 ethereal upgrade
+      var num = state.upgrades2[upgrade2_ethereal_tree_level].count;
+      if(num) {
+        var mul = upgrade2_ethereal_tree_level_bonus.mulr(num).mulr(state.treelevel2 - 25).addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['ethereal tree level > 25', true, mul, result.clone()]);
       }
     }
 
@@ -3334,8 +3341,8 @@ function Challenge() {
   // for formula=1: base of exponent for each key level, e.g. 1.5 to make it a 50% boost for each key milestone reached
   this.bonus_exponent_base = Num(1);
   // for formula=1: defines key levels
-  this.bonus_level_a = 0;
-  this.bonus_level_b = 0;
+  this.bonus_level_a = 0; // first level with exponential increase
+  this.bonus_level_b = 0; // num levels between each next level with exponential increase
   // for formula=1: defines progression between key levels
   this.bonus_p = 0.5;
 
@@ -3918,8 +3925,13 @@ function() {
 }, function() {
 }, 0);
 challenges[challenge_infernal].bonus_exponent = Num(1.1);
-
-
+/*
+challenges[challenge_infernal].bonus_formula = 1;
+challenges[challenge_infernal].bonus_level_a = 20;
+challenges[challenge_infernal].bonus_level_b = 100;
+challenges[challenge_infernal].bonus_p = 0.66;
+challenges[challenge_infernal].bonus_exponent_base = Num(2);
+*/
 
 
 // 14
@@ -3992,6 +4004,7 @@ challenges[challenge_towerdefense].bonus_level_a = 75;
 challenges[challenge_towerdefense].bonus_level_b = 100;
 challenges[challenge_towerdefense].bonus_p = 0.66;
 challenges[challenge_towerdefense].bonus_exponent_base = Num(2);
+//challenges[challenge_towerdefense].bonus_exponent_base = Num(1.5);
 challenges[challenge_towerdefense].helpdialogindex = 44;
 
 
@@ -4461,6 +4474,7 @@ var flower2_7 = registerFlower2('orchid', 23, 7, Res({resin:25e24}), default_eth
 crop2_register_id = 100;
 var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
 var nettle2_1 = registerNettle2('thistle', 10, 1, Res({resin:100e9}), 0.25, default_ethereal_growtime, Num(1.4), undefined, 'boosts stinging plants in the basic field (additive).', images_thistle);
+var nettle2_2 = registerNettle2('poison ivy', 26, 2, Res({resin:500e27}), 0.25, default_ethereal_growtime, Num(6), undefined, 'boosts stinging plants in the basic field (additive).', images_poisonivy);
 
 crop2_register_id = 125;
 // similar to bee2_0: very low boost value here, but given that you can immediately increase the boost tremendously with gold lotuses means it's a lot in practice
@@ -4916,11 +4930,11 @@ var upgrade2_highest_level = registerUpgrade2('tree\'s gesture', LEVEL2, Res({re
              upgrade2_highest_level_bonus2.toPercentString() + ' per upgrade level (additive). Full formula: bonus multiplier = (' +
              upgrade2_highest_level_bonus.addr(1).toString(5) + ' + ' + upgrade2_highest_level_bonus2.toString(5) + ' * (upgrade_levels - 1)) ^ max_tree_level_ever'
              + '<br><br>'
-             + 'current bonus: ' + treeGestureBonus(0).subr(1).toPercentString()
+             + '<b>Current bonus</b>: ' + treeGestureBonus(0).subr(1).toPercentString()
              + '<br>'
-             + 'next upgrade bonus: ' + treeGestureBonus(1).subr(1).toPercentString()
+             + '<b>Next upgrade bonus</b>: ' + treeGestureBonus(1).subr(1).toPercentString()
              + '<br>'
-             + 'next tree level bonus: ' + treeGestureBonus(0, 1).subr(1).toPercentString()
+             + '<b>Next tree level bonus</b>: ' + treeGestureBonus(0, 1).subr(1).toPercentString()
              ;
     }, undefined, undefined, tree_images[20][1][1]);
 
@@ -5060,6 +5074,8 @@ var upgrade2_nuts_bonus = registerUpgrade2('unused nuts bonus', LEVEL2, Res({res
 LEVEL2 = 13;
 upgrade2_register_id = 800;
 
+// no upgrades here yet, but has crops though
+
 ///////////////////////////
 LEVEL2 = 14;
 upgrade2_register_id = 900;
@@ -5082,6 +5098,8 @@ var upgrade2_ethereal_mistletoe = registerUpgrade2('unlock ethereal mistletoe', 
 ///////////////////////////
 LEVEL2 = 16;
 upgrade2_register_id = 1100;
+
+// no upgrades here yet, but has crops though
 
 ///////////////////////////
 LEVEL2 = 17;
@@ -5150,9 +5168,13 @@ var upgrade2_field2_9x8 = registerUpgrade2('ethereal field 9x8', LEVEL2, Res({re
 LEVEL2 = 23;
 upgrade2_register_id = 1800;
 
+// no upgrades here yet, but has crops though
+
 ///////////////////////////
 LEVEL2 = 24;
 upgrade2_register_id = 1900;
+
+// no upgrades here yet, but has crops though
 
 ///////////////////////////
 LEVEL2 = 25;
@@ -5168,15 +5190,42 @@ function() {
   var u = state.upgrades2[upgrade2_lotus];
   var before = upgrade2_lotus_bonus.mulr(Num(u.count).pow(upgrade2_lotus_bonus_exponent));
   var after = upgrade2_lotus_bonus.mulr(Num(u.count + 1).pow(upgrade2_lotus_bonus_exponent));
+  result += '<br><br>';
+  result += '<b>Current bonus</b>: +' + before.toPercentString();
   result += '<br>';
-  result += '<b>Currently gives</b>: +' + before.toPercentString();
-  result += '<br>';
-  result += '<b>Next gives</b>: +' + after.toPercentString();
+  result += '<b>Next upgrade bonus</b>: +' + after.toPercentString();
   //result += '<br>';
   //result += '<b>Gain</b>: +' + (after.addr(1).div(before.addr(1))).subr(1).toPercentString();
   return result;
 },
 undefined, undefined, image_lotustemplate, upgrade_arrow);
+
+///////////////////////////
+LEVEL2 = 26;
+upgrade2_register_id = 2100;
+
+var upgrade2_ethereal_tree_level_bonus = Num(0.5);
+var upgrade2_ethereal_tree_level = registerUpgrade2('spectral arboretum', LEVEL2, Res({resin:1e30}), 6, function() {
+  // nothing to do, upgrade count causes the effect elsewhere
+}, function(){return true;}, 0,
+function() {
+  var result =  'production bonus of ' + upgrade2_ethereal_tree_level_bonus.toPercentString() + ' for ethereal tree levels above 25.'
+  result += '<br>';
+  result += 'Formula: 50% * upgrade_levels * (ethereal_tree_level - 25).'
+  var u = state.upgrades2[upgrade2_ethereal_tree_level].count;
+  var l = state.treelevel2 - 25;
+  var before = upgrade2_ethereal_tree_level_bonus.mulr(u).mulr(l);
+  var after = upgrade2_ethereal_tree_level_bonus.mulr(u + 1).mulr(l);
+  var after2 = upgrade2_ethereal_tree_level_bonus.mulr(u).mulr(l + 1);
+  result += '<br>';
+  result += '<br><b>Current bonus</b>: +' + before.toPercentString();
+  result += '<br><b>Next upgrade bonus</b>: +' + after.toPercentString();
+  result += '<br><b>Next ethereal tree level bonus</b>: +' + after2.toPercentString();
+  return result;
+},
+'',
+undefined, undefined, tree_images[20][1][4]);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -6375,12 +6424,12 @@ function treeLevelResin(level, breakdown) {
   }
 
   // fishes
-  if(state.fishcount[tang_0] || state.fishcount[tang_1]) {
+  if(state.fish_resinmul_weighted.neqr(1)) {
     var mul = fishResin(state, false);
     var umul = fishResin(state, true);
     resin.mulInPlace(mul);
-    // if it says "least tang", it means the least tang that were in pond during this run: to prevent fish-swapping strategies, the tang must be in pond the entire run for the resin effect to work
-    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (tang)' : 'fishes (least tang)', true, mul, resin.clone()]);
+    // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
+    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (tang)' : 'fishes (time-weighted)', true, mul, resin.clone()]);
   }
 
   // challenges
@@ -6417,29 +6466,35 @@ function nextTreeLevelResin(breakdown) {
   return treeLevelResin(state.treelevel + 1, breakdown);
 }
 
+// use_underlying:
+// if true, computes the formula according to the fish currently there.
+// if false, takes into account time length during which the fishes were there
+// Set this to 'false' when getting the fishResin bonus currently applicable to the gameplay. Set to true if the actual formula must be computed, e.g. to update the variables used for the 'false' case.
 function fishResin(state, use_underlying) {
-  var num0 = state.fishcount[tang_0];
-  var num1 = state.fishcount[tang_1];
-  if(num0 + num1 == 0) return new Num(0);
   if(use_underlying) {
+    var num0 = state.fishcount[tang_0];
+    var num1 = state.fishcount[tang_1];
+    if(num0 + num1 == 0) return new Num(1);
     var mul = Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1);
     return mul;
   } else {
-    if(state.min_fish_resinmul.ltr(1)) return new Num(1);
-    return state.min_fish_resinmul;
+    if(state.fish_resinmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+    var deltatime = state.c_runtime - state.fish_resinmul_time;
+    return state.fish_resinmul_weighted.mulr(state.fish_resinmul_time).add(state.fish_resinmul_last.mulr(deltatime)).divr(state.c_runtime);
   }
 }
 
 function fishTwigs(state, use_underlying) {
-  var num0 = state.fishcount[eel_0];
-  var num1 = state.fishcount[eel_1];
-  if(num0 + num1 == 0) return new Num(0);
   if(use_underlying) {
+    var num0 = state.fishcount[eel_0];
+    var num1 = state.fishcount[eel_1];
+    if(num0 + num1 == 0) return new Num(1);
     var mul = Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1);
     return mul;
   } else {
-    if(state.min_fish_twigsmul.ltr(1)) return new Num(1);
-    return state.min_fish_twigsmul;
+    if(state.fish_twigsmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+    var deltatime = state.c_runtime - state.fish_twigsmul_time;
+    return state.fish_twigsmul_weighted.mulr(state.fish_twigsmul_time).add(state.fish_twigsmul_last.mulr(deltatime)).divr(state.c_runtime);
   }
 }
 
@@ -6508,12 +6563,12 @@ function treeLevelTwigs(level, breakdown) {
   }
 
   // fishes
-  if(state.fishcount[eel_0] || state.fishcount[eel_1]) {
+  if(state.fish_twigsmul_weighted.neqr(1)) {
     var mul = fishTwigs(state, false);
     var umul = fishTwigs(state, true);
     res.twigs.mulInPlace(mul);
-    // if it says "least eel", it means the least eel that were in pond during this run: to prevent fish-swapping strategies, the eel must be in pond the entire run for the twigs effect to work
-    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (eel)' : 'fishes (least eel)', true, mul, res.clone()]);
+    // if it says "time weighted", it means the amount of eel in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during twigs gain)
+    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (eel)' : 'fishes (time-weighted)', true, mul, res.clone()]);
   }
 
   // challenges
@@ -6933,7 +6988,7 @@ function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
     var progress = (level - k0) / (k1 - k0);
     var mul = mul0.add(mul1.sub(mul0).mulr(c.bonus_p * progress));
 
-    var result = bonus.mul(mul).subr(1);
+    var result = bonus.mul(mul).subr(1); // TODO: fix this, remove the 'subr(1)', when doing it also change bonus_exponent_base of challenge_towerdefense to 1.5 instead of 2
 
     if(which == 1) {
       var l = Num.log(result.addr(1));
@@ -8290,8 +8345,9 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   if(this.type == CROPTYPE_BRASSICA && state.fishes[shrimp_0].unlocked) {
     var num0 = state.fishcount[shrimp_0];
-    var have_fish = !!(num0);
-    var mul = Num(1 + shrimp_0_bonus * num0);
+    var num1 = state.fishcount[shrimp_1];
+    var have_fish = !!(num0 + num1);
+    var mul = Num(1 + shrimp_0_bonus * num0 + shrimp_1_bonus * num1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[shrimp_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['shrimp' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8537,6 +8593,7 @@ var brassica3_5 = registerBrassica3('platinum watercress', 5, Res({infseeds:25e2
 var brassica3_6 = registerBrassica3('rhodium watercress', 6, Res({infseeds:5e27}), Res({infseeds:20e21}), Num(0.05), 3 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader6, [3, 6], [0.9]));
 var brassica3_7 = registerBrassica3('amethyst watercress', 7, Res({infseeds:10e33}), Res({infseeds:16e27}), Num(0.05), 4 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader7));
 var brassica3_8 = registerBrassica3('sapphire watercress', 8, Res({infseeds:200e39}), Res({infseeds:100e33}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader8, [4, 2], [0.8, -0.1]));
+var brassica3_9 = registerBrassica3('emerald watercress', 9, Res({infseeds:100e48}), Res({infseeds:15e42}), Num(0.05), 6 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader9));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
@@ -8551,6 +8608,7 @@ var berry3_5 = registerBerry3('platinum blackberry', 5, Res({infseeds:500e21}), 
 var berry3_6 = registerBerry3('rhodium blackberry', 6, Res({infseeds:400e27}), Res({infseeds:100e15}), Num(1), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader6, [2, 3, 6], [0.15, 1]));
 var berry3_7 = registerBerry3('amethyst blackberry', 7, Res({infseeds:300e33}), Res({infseeds:100e18}), Num(1.5), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader7));
 var berry3_8 = registerBerry3('sapphire blackberry', 8, Res({infseeds:10e42}), Res({infseeds:500e21}), Num(3), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader8, [2], [1.5]));
+var berry3_9 = registerBerry3('emerald blackberry', 9, Res({infseeds:3e51}), Res({infseeds:25e27}), Num(5), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader9));
 
 crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
@@ -8784,6 +8842,8 @@ var octopus_0 = registerOctopus('octopus', 0, Res({infspores:100000}), 'Improves
 fish_register_id = 400;
 var shrimp_0_bonus = 0.2;
 var shrimp_0 = registerShrimp('shrimp', 0, Res({infspores:2500000}), 'Improves infinity watercress by ' + Num(shrimp_0_bonus).toPercentString(), image_shrimp0);
+var shrimp_1_bonus = 2;
+var shrimp_1 = registerShrimp('red shrimp', 1, Res({infspores:250e15}), 'Improves infinity watercress by ' + Num(shrimp_1_bonus).toPercentString(), image_shrimp1);
 
 fish_register_id = 500;
 var anemone_0_bonus = 0.15;

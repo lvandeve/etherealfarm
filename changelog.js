@@ -26,6 +26,14 @@ function getChangeLog() {
     text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
   }
 
+  text += '0.11.2 (2024-01-22)';
+  text += '<br/>• Added a new ethereal upgrade, at level 26.'; // spectral arboretum
+  text += '<br/>• Added a new ethereal crop, at level 26.'; // poison ivy
+  text += '<br/>• Added a new fish, the red shrimp. You can only have max one of it at the same time with no other shrimps.'; // red shrimp. max 1 for convenience to make room in the pond
+  text += '<br/>• Added the first two crops for the next infinity tier (emerald).'; // emerald watercress and berry
+  text += '<br/>• Eel and tang fishes (twigs/resin bonus) now use weighted time computation, rather than minimum ever this run.'; // that is, you can e.g. remove all tangs for a few minutes and have almost no loss of resin bonus at all during the run. Before, the minimum amount of tangs ever present during the run would determine the bonus so removing them even very briefly to move them around would ruin the bonus.
+  text += '<br/><br/>';
+
   text += '0.11.1 (2024-01-02)';
   text += '<br/>• Added a new infinity crop.'; // infinity sapphire acorn
   text += '<br/>• Added a new fish type.'; // oranda

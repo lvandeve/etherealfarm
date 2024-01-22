@@ -577,7 +577,7 @@ function getChallengeFormulaString(c, opt_bonus_string) {
     if(c.bonus_level_a) {
       result += ', starting at level ' + c.bonus_level_a;
     }
-    result += ' (multiplicative). Partial linear bonus increase between these levels)';
+    result += ' (multiplicative). Partial linear bonus increase between these levels';
   }
   return result;
 }

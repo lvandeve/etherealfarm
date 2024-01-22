@@ -669,8 +669,12 @@ function State() {
   }
 
   // minimum multiplyer to resin/twigs from fishes seen during this run, which is kept track of and used as actual multiplier to prevent fish-swapping strategies during the game
-  this.min_fish_resinmul = Num(-1);
-  this.min_fish_twigsmul = Num(-1);
+  this.fish_resinmul_weighted = Num(-1);
+  this.fish_resinmul_last = Num(0); // last computed fishresin, at fish_resinmul_time, as time since start of run
+  this.fish_resinmul_time = 0; // time since last fish_resinmul_weighted change
+  this.fish_twigsmul_weighted = Num(-1);
+  this.fish_twigsmul_last = Num(0); // last computed fishtwigs, at fish_twigsmul_time, as time since start of run
+  this.fish_twigsmul_time = 0; // time since last fish_twigsmul_weighted change
 
 
   this.squirrel_evolution = 0;
@@ -1900,15 +1904,25 @@ function computeDerived(state) {
   }
 
   // fish effects
-  if(state.min_fish_resinmul.eqr(-1)) {
-    state.min_fish_resinmul = fishResin(state, true);
-  } else {
-    state.min_fish_resinmul = Num.min(state.min_fish_resinmul, fishResin(state, true));
+  var current_fishresin = fishResin(state, true);
+  if(state.fish_resinmul_weighted.eqr(-1)) {
+    state.fish_resinmul_weighted = current_fishresin;
+    state.fish_resinmul_last = current_fishresin;
+    state.fish_resinmul_time = state.c_runtime;
+  } else if(current_fishresin.neq(state.fish_resinmul_last)) {
+    state.fish_resinmul_weighted = fishResin(state, false); // this recomputes the weighed average
+    state.fish_resinmul_last = current_fishresin;
+    state.fish_resinmul_time = state.c_runtime;
   }
-  if(state.min_fish_twigsmul.eqr(-1)) {
-    state.min_fish_twigsmul = fishTwigs(state, true);
-  } else {
-    state.min_fish_twigsmul = Num.min(state.min_fish_twigsmul, fishTwigs(state, true));
+  var current_fishtwigs = fishTwigs(state, true);
+  if(state.fish_twigsmul_weighted.eqr(-1)) {
+    state.fish_twigsmul_weighted = current_fishtwigs;
+    state.fish_twigsmul_last = current_fishtwigs;
+    state.fish_twigsmul_time = state.c_runtime;
+  } else if(current_fishtwigs.neq(state.fish_twigsmul_last)) {
+    state.fish_twigsmul_weighted = fishTwigs(state, false); // this recomputes the weighed average
+    state.fish_twigsmul_last = current_fishtwigs;
+    state.fish_twigsmul_time = state.c_runtime;
   }
 }
 
