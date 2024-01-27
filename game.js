@@ -770,6 +770,12 @@ function beginNextRun(opt_challenge) {
   state.fish_twigsmul_weighted = Num(-1);
   state.fish_twigsmul_last = Num(0);
   state.fish_twigsmul_time = 0;
+  state.fish_runestonemul_weighted = Num(-1);
+  state.fish_runestonemul_last = Num(0);
+  state.fish_runestonemul_time = 0;
+  state.fish_basicmul_weighted = Num(-1);
+  state.fish_basicmul_last = Num(0);
+  state.fish_basicmul_time = 0;
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);

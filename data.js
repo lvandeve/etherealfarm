@@ -7175,6 +7175,17 @@ function getWorkerBeeBonus() {
   return state.workerbeeboost;
 }
 
+function challengeMaxLevel(challenge) {
+  var c = challenges[challenge];
+  var c2 = state.challenges[challenge];
+
+  var result = c2.maxlevel;
+
+  if(state.challenge == challenge && state.treelevel > result) result = state.treelevel;
+
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -9909,6 +9920,28 @@ registerFishTypeMedal(octopus_1);
 registerFishTypeMedal(goldfish_2);
 
 
+
+// tower defense achievements
+medal_register_id = 5000;
+/*
+registerMedal('Tower defender', 'Reach level 50 during tower defense', images_statue_spore[0], function() {
+  return challengeMaxLevel(challenge_towerdefense) >= 50;
+}, Num(1));
+registerMedal('Tower defender II', 'Reach level 100 during tower defense', images_statue_spore[0], function() {
+  return challengeMaxLevel(challenge_towerdefense) >= 100;
+}, Num(2));
+
+medal_register_id = 5050;
+
+
+registerMedal('Exterminate!', 'Exterminate a pest during tower defense', images_ant[0], function() {
+  return state.g_td_kills >= 1;
+}, Num(0.1));
+
+registerMedal('Exterminator', 'Exterminate 1000 pests during tower defense', images_ant[0], function() {
+  return state.g_td_kills >= 1000;
+}, Num(1));
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
