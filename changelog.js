@@ -33,6 +33,7 @@ function getChangeLog() {
   text += '<br/>• The time-weighted fishes now work in a time window of max 3 hours, rather than the entire run (good for multi-day runs).'; // this means in a multi-day run if you activate a better fish near the end, you can get the full benefit by waiting 3 hours, rather than by waiting a theoretically infinite amount of time
   text += '<br/>• Kois and oranda are now also time-weighted (in addition to eel and tang).';
   text += '<br/>• Added the forgotten achievements for the new infinity crops and fishes in the previous version.';
+  text += '<br/>• Added achievements for the tower defense challenge.';
   text += '<br/><br/>';
 
   text += '0.11.2 (2024-01-22)';

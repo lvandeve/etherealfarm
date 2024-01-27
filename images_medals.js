@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -191,3 +191,22 @@ var image_medaltranscend = generateImageCanvas(`
 ................
 `);
 
+
+var image_medal_icy_tower = generateImageCanvas(`
+................
+........cc......
+.......c))c.....
+..cc...c)c(.....
+.c))c..c)c(.....
+c)))cc.c)c(..cc.
+c)c)c(.c)(..c)cc
+cc.cc(.cc(.c)c((
+...cc(..(..cc(.(
+...c(...(..c(...
+................
+.cccccccccc((((.
+..cCCCCCccccc(..
+...ccccccc(((...
+..cCCCCCCcccc(..
+.cccccccccc((((.
+`);

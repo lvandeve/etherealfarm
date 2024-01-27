@@ -9923,25 +9923,37 @@ registerFishTypeMedal(goldfish_2);
 
 // tower defense achievements
 medal_register_id = 5000;
-/*
 registerMedal('Tower defender', 'Reach level 50 during tower defense', images_statue_spore[0], function() {
   return challengeMaxLevel(challenge_towerdefense) >= 50;
 }, Num(1));
 registerMedal('Tower defender II', 'Reach level 100 during tower defense', images_statue_spore[0], function() {
   return challengeMaxLevel(challenge_towerdefense) >= 100;
 }, Num(2));
+registerMedal('Tower defender III', 'Reach level 150 during tower defense', images_statue_spore[0], function() {
+  return challengeMaxLevel(challenge_towerdefense) >= 150;
+}, Num(5));
+registerMedal('Tower defender IV', 'Reach level 150 during tower defense', images_statue_spore[0], function() {
+  return challengeMaxLevel(challenge_towerdefense) >= 200;
+}, Num(10));
 
-medal_register_id = 5050;
-
-
+medal_register_id = 5025;
 registerMedal('Exterminate!', 'Exterminate a pest during tower defense', images_ant[0], function() {
   return state.g_td_kills >= 1;
 }, Num(0.1));
 
-registerMedal('Exterminator', 'Exterminate 1000 pests during tower defense', images_ant[0], function() {
-  return state.g_td_kills >= 1000;
+registerMedal('Exterminator', 'Exterminate 100 pests during tower defense', images_ant[0], function() {
+  return state.g_td_kills >= 100;
 }, Num(1));
-*/
+
+registerMedal('Extermination', 'Exterminate 10000 pests during tower defense', images_ant[0], function() {
+  return state.g_td_kills >= 10000;
+}, Num(2));
+
+medal_register_id = 5050;
+registerMedal('Icy tower', 'Reach level 70 during tower defense in winter', image_medal_icy_tower, function() {
+  return challengeMaxLevel(challenge_towerdefense) >= 70 && getSeason() == 3;
+}, Num(1));
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
