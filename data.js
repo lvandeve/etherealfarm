@@ -385,12 +385,23 @@ Crop.prototype.getCost = function(opt_adjust_count) {
   return this.cost.mulr(countfactor);
 };
 
-
-Crop.prototype.getRecoup = function() {
-  if(state.challenge == challenge_towerdefense) return this.getCost(-1);
-  if(this.type == CROPTYPE_BRASSICA) return Res(0);
-  if(state.challenge == challenge_wither) return Res(0);
-  return this.getCost(-1).mulr(getCropRecoup());
+Crop.prototype.getRecoup = function(f, opt_adjust_count) {
+  var adjust = opt_adjust_count || 0;
+  var result = this.getCost(adjust - 1);
+  // no recoup reduction but full refund during the TD challenge
+  if(state.challenge == challenge_towerdefense) return result;
+  if(f && this.type == CROPTYPE_BRASSICA) {
+    // brassica give amount scaled by their lifetime, and full rather than multiplied with getCropRecoup() percentage
+    // this used to be different (before jan 2024 brassica gave 0 recoup) but is now made to be more like infinity field brassica, and also to make the watercress refresh button more useful and reliable for the first few minutes of the game and prevent having too few resources for first watercress by planting one and immediately deleting it again
+    return result.mulr(Math.min(Math.max(0, f.growth), 1));
+  }
+  // the withering crops during the wither challenge give no recoup
+  if(state.challenge == challenge_wither) return new Res();
+  if(f && f.growth < 1 && this.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) {
+    // growing crops give a full refund
+    return result;
+  }
+  return result.mulr(getCropRecoup());
 };
 
 var infernal_tier_base = 0.5;
@@ -6426,10 +6437,12 @@ function treeLevelResin(level, breakdown) {
   // fishes
   if(state.fish_resinmul_weighted.neqr(1)) {
     var mul = fishResin(state, false);
-    var umul = fishResin(state, true);
-    resin.mulInPlace(mul);
-    // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
-    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (tang)' : 'fishes (time-weighted)', true, mul, resin.clone()]);
+    if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
+      var umul = fishResin(state, true);
+      resin.mulInPlace(mul);
+      // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
+      if(breakdown) breakdown.push([umul.eq(mul) ? 'tang (fish)' : 'tang fish (time-weighted)', true, mul, resin.clone()]);
+    }
   }
 
   // challenges
@@ -6466,6 +6479,11 @@ function nextTreeLevelResin(breakdown) {
   return treeLevelResin(state.treelevel + 1, breakdown);
 }
 
+// max time window for the weighed fish/runestone calculations for bonuses from pond and infinity field to basic field
+// that is, once the run is longer than this, the weighed time is no longer computed over the whole run, but over this past time window
+var MAXINFTOBASICDELAY = 3600 * 3;
+
+
 // use_underlying:
 // if true, computes the formula according to the fish currently there.
 // if false, takes into account time length during which the fishes were there
@@ -6479,8 +6497,9 @@ function fishResin(state, use_underlying) {
     return mul;
   } else {
     if(state.fish_resinmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-    var deltatime = state.c_runtime - state.fish_resinmul_time;
-    return state.fish_resinmul_weighted.mulr(state.fish_resinmul_time).add(state.fish_resinmul_last.mulr(deltatime)).divr(state.c_runtime);
+    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_resinmul_time); // most recent timespan, during which 'last' is active
+    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+    return state.fish_resinmul_weighted.mulr(deltatime2).add(state.fish_resinmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
   }
 }
 
@@ -6493,8 +6512,39 @@ function fishTwigs(state, use_underlying) {
     return mul;
   } else {
     if(state.fish_twigsmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-    var deltatime = state.c_runtime - state.fish_twigsmul_time;
-    return state.fish_twigsmul_weighted.mulr(state.fish_twigsmul_time).add(state.fish_twigsmul_last.mulr(deltatime)).divr(state.c_runtime);
+    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_twigsmul_time); // most recent timespan, during which 'last' is active
+    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+    return state.fish_twigsmul_weighted.mulr(deltatime2).add(state.fish_twigsmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+  }
+}
+
+function fishRunestoneMul(state, use_underlying) {
+  if(use_underlying) {
+    var num0 = state.fishcount[koi_0];
+    var num1 = state.fishcount[koi_1];
+    if(num0 + num1 == 0) return new Num(1);
+    var mul = Num(1 + koi_0_bonus * num0 + koi_1_bonus * num1);
+    return mul;
+  } else {
+    if(state.fish_runestonemul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_runestonemul_time); // most recent timespan, during which 'last' is active
+    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+    return state.fish_runestonemul_weighted.mulr(deltatime2).add(state.fish_runestonemul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+  }
+}
+
+// the non-runestone basic field multiplier from oranda fish
+function fishBasicMul(state, use_underlying) {
+  if(use_underlying) {
+    var num0 = state.fishcount[oranda_0];
+    if(num0 == 0) return new Num(1);
+    var mul = Num(1 + oranda_0_bonus * num0);
+    return mul;
+  } else {
+    if(state.fish_basicmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_basicmul_time); // most recent timespan, during which 'last' is active
+    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+    return state.fish_basicmul_weighted.mulr(deltatime2).add(state.fish_basicmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
   }
 }
 
@@ -6565,10 +6615,12 @@ function treeLevelTwigs(level, breakdown) {
   // fishes
   if(state.fish_twigsmul_weighted.neqr(1)) {
     var mul = fishTwigs(state, false);
-    var umul = fishTwigs(state, true);
-    res.twigs.mulInPlace(mul);
-    // if it says "time weighted", it means the amount of eel in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during twigs gain)
-    if(breakdown) breakdown.push([umul.eq(mul) ? 'fishes (eel)' : 'fishes (time-weighted)', true, mul, res.clone()]);
+    if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
+      var umul = fishTwigs(state, true);
+      res.twigs.mulInPlace(mul);
+      // if it says "time weighted", it means the amount of eel in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during twigs gain)
+      if(breakdown) breakdown.push([umul.eq(mul) ? 'eel' : 'eel (time-weighted)', true, mul, res.clone()]);
+    }
   }
 
   // challenges
@@ -8185,8 +8237,9 @@ Crop3.prototype.getProd = function(f, breakdown) {
   if(result.infseeds.neqr(0) && (state.fishes[goldfish_0].unlocked)) {
     var num0 = state.fishcount[goldfish_0];
     var num1 = state.fishcount[goldfish_1];
-    var have_fish = !!(num0 + num1);
-    var mul = new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1);
+    var num2 = state.fishcount[goldfish_2];
+    var have_fish = !!(num0 + num1 + num2);
+    var mul = new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1 + goldfish_2_bonus * num2);
     if(have_fish) result.infseeds.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[goldfish_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['goldfish' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8196,8 +8249,9 @@ Crop3.prototype.getProd = function(f, breakdown) {
   // octopus
   if(result.infspores.neqr(0) && state.fishes[octopus_0].unlocked) {
     var num0 = state.fishcount[octopus_0];
-    var have_fish = !!(num0);
-    var mul = new Num(1 + octopus_0_bonus * num0);
+    var num1 = state.fishcount[octopus_1];
+    var have_fish = !!(num0 + num1);
+    var mul = new Num(1 + octopus_0_bonus * num0 + octopus_1_bonus * num1);
     if(have_fish) result.infspores.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[octopus_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['octopus' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8419,12 +8473,16 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
   }
 
   // koi to runestone
-  if(this.type == CROPTYPE_RUNESTONE && (state.fishcount[koi_0] || state.fishcount[koi_1])) {
-    var num0 = state.fishcount[koi_0];
-    var num1 = state.fishcount[koi_1];
-    var mul = Num(1 + koi_0_bonus * num0 + koi_1_bonus * num1);
-    result.mulInPlace(mul);
-    if(breakdown) breakdown.push(['kois', true, mul, result.clone()]);
+  if(this.type == CROPTYPE_RUNESTONE && state.fish_runestonemul_weighted.neqr(1)) {
+    var mul = fishRunestoneMul(state, false);
+    if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
+      result.mulInPlace(mul);
+      if(breakdown) {
+        var umul = fishRunestoneMul(state, true);
+        // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
+        breakdown.push([umul.eq(mul) ? 'koi (fish)' : 'koi (time-weighted)', true, mul, result.clone()]);
+      }
+    }
   }
 
   return result;
@@ -8459,17 +8517,20 @@ Crop3.prototype.getBasicBoost = function(f, breakdown) {
     }
   }
 
-  // oranda fish
-  if(this.type != CROPTYPE_RUNESTONE && state.fishcount[oranda_0]) {
-    var num0 = state.fishcount[oranda_0];
-    var oranda_mul = Num(1 + oranda_0_bonus * num0);
-    var mul = oranda_mul.add(runestone_mul).subr(1).div(runestone_mul); // the oranda is additive to runestones, NOT multiplicative with it. So do as if a bonus that's the sum of runestone and oranda is given, and then divide through the original runestone bonus from above to only have the oranda effect here
-    result.mulInPlace(mul);
-    if(breakdown) {
-      if(runestone_mul.eqr(1)) {
-        breakdown.push(['oranda (fish)', true, oranda_mul, result.clone()]);
-      } else {
-        breakdown.push(['oranda fish (additive w. runestone)', true, oranda_mul, result.clone()]);
+  // oranda fish: multiplier to basic field bonus for the non-runestone part of the bonus
+  if(this.type != CROPTYPE_RUNESTONE && state.fish_basicmul_weighted.neqr(1)) {
+    var oranda_mul = fishBasicMul(state, false);
+    if(oranda_mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
+      var mul = oranda_mul.add(runestone_mul).subr(1).div(runestone_mul); // the oranda is additive to runestones, NOT multiplicative with it. So do as if a bonus that's the sum of runestone and oranda is given, and then divide through the original runestone bonus from above to only have the oranda effect here
+      result.mulInPlace(mul);
+      if(breakdown) {
+        var oranda_umul = fishBasicMul(state, true);
+        // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
+        if(runestone_mul.eqr(1)) {
+          breakdown.push([oranda_umul.eq(oranda_mul) ? 'oranda (fish)' : 'oranda (time-weighted)', true, oranda_mul, result.clone()]);
+        } else {
+          breakdown.push([oranda_umul.eq(oranda_mul) ? 'oranda (additive w. runestone)' : 'oranda (additive w. runestone)', true, oranda_mul, result.clone()]);
+        }
       }
     }
   }
@@ -8616,6 +8677,7 @@ var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}),
 var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), Res({infspores:500}), Num(2), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
 var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:40000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
 var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}), Res({infspores:30e6}), Num(15), default_crop3_growtime, metalifyPlantImages(champignon, metalheader8, [2], [1.5]));
+var mush3_9 = registerMushroom3('emerald champignon', 9, Res({infseeds:20e51}), Res({infspores:25e9}), Num(50), default_crop3_growtime, metalifyPlantImages(champignon, metalheader9));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
@@ -8627,6 +8689,7 @@ var flower3_5 = registerFlower3('platinum anemone', 5, Res({infseeds:20e24}), Nu
 var flower3_6 = registerFlower3('rhodium anemone', 6, Res({infseeds:15e30}), Num(50000), Num(2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader6, [6], [0.7]));
 var flower3_7 = registerFlower3('amethyst anemone', 7, Res({infseeds:10e36}), Num(1e6), Num(3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader7));
 var flower3_8 = registerFlower3('sapphire anemone', 8, Res({infseeds:150e42}), Num(20e6), Num(6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader8, [4, 2], [0.8, -0.1]));
+var flower3_9 = registerFlower3('emerald anemone', 9, Res({infseeds:50e51}), Num(1e9), Num(25), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader9));
 
 
 crop3_register_id = 1200;
@@ -8637,6 +8700,7 @@ var bee3_5 = registerBee3('platinum bee nest', 5, Res({infseeds:500e24}), Num(20
 var bee3_6 = registerBee3('rhodium bee nest', 6, Res({infseeds:500e30}), Num(16384), Num(8), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader6, [6]));
 var bee3_7 = registerBee3('amethyst bee nest', 7, Res({infseeds:2e38}), Num(300e3), Num(16), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader7));
 var bee3_8 = registerBee3('sapphire bee nest', 8, Res({infseeds:3e45}), Num(10e6), Num(32), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader8));
+var bee3_9 = registerBee3('emerald bee nest', 9, Res({infseeds:5e54}), Num(200e6), Num(100), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader9));
 
 // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
 // the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
@@ -8650,13 +8714,16 @@ crop3_register_id = 1800;
 var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(5), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6, 9]));
 var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(4), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7, [9]));
 var stinging3_8 = registerStinging3('sapphire nettle', 8, Res({infseeds:10e45}), Num(5), Num(25), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader8, [9]));
+var stinging3_9 = registerStinging3('emerald nettle', 9, Res({infseeds:5e54}), Num(6), Num(75), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader9));
 
 crop3_register_id = 2100;
 var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
 var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
+var fern3_9 = registerFern3('emrald fern', 9, Res({infseeds:200e54}), Num(3), Num(150), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader9));
 
 crop3_register_id = 2400;
 var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(25), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
+var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(25), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
@@ -8828,6 +8895,8 @@ var goldfish_0_bonus = 0.1;
 var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
 var goldfish_1_bonus = 1.5;
 var goldfish_1 = registerGoldfish('red goldfish', 1, Res({infspores:50e9}), 'Improves infinity seeds production by ' + Num(goldfish_1_bonus).toPercentString(), image_goldfish1);
+var goldfish_2_bonus = 25;
+var goldfish_2 = registerGoldfish('black goldfish', 2, Res({infspores:5e18}), 'Improves infinity seeds production by ' + Num(goldfish_2_bonus).toPercentString(), image_goldfish2);
 
 fish_register_id = 200;
 var koi_0_bonus = 0.2;
@@ -8838,6 +8907,8 @@ var koi_1 = registerKoi('red koi', 1, Res({infspores:250e9}), 'Improves runeston
 fish_register_id = 300;
 var octopus_0_bonus = 0.25;
 var octopus_0 = registerOctopus('octopus', 0, Res({infspores:100000}), 'Improves infinity spores production by ' + Num(octopus_0_bonus).toPercentString(), image_octopus0);
+var octopus_1_bonus = 4;
+var octopus_1 = registerOctopus('red octopus', 1, Res({infspores:1e18}), 'Improves infinity spores production by ' + Num(octopus_1_bonus).toPercentString(), image_octopus1);
 
 fish_register_id = 400;
 var shrimp_0_bonus = 0.2;
@@ -8859,15 +8930,15 @@ var puffer_1 = registerPuffer('red pufferfish', 1, Res({infspores:500e12}), 'Imp
 
 fish_register_id = 700;
 var eel_0_bonus = 0.25;
-var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_eel0);
+var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_eel0);
 var eel_1_bonus = 0.5;
-var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_eel1);
+var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_eel1);
 
 fish_register_id = 800;
 var tang_0_bonus = 0.25;
-var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_tang0);
+var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_tang0);
 var tang_1_bonus = 0.5;
-var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted)', image_tang1);
+var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_tang1);
 
 fish_register_id = 900;
 var leporinus_0_bonus = 0.35;
@@ -9738,6 +9809,7 @@ function registerPlantTypeMedal3(cropid) {
   var c = crops3[cropid];
   var mul = getPlantTypeMedalBonus3(cropid);
   return registerMedal('Infinity ' + lower(c.name), 'Have a ' + c.name + ' on the infinity field', c.image[4], function() {
+    if(c.type == CROPTYPE_BRASSICA) return state.crop3count[cropid] >= 1
     return state.fullgrowncrop3count[cropid] >= 1; // alternatives: fullgrowncrop3count to require it to grow fully, crop3count to get it immediately when planting. Make sure this matches how .had is set, to avoid that you can get medal early, but next crop unlocks only later, which is confusing
   }, Num(mul));
 };
@@ -9788,6 +9860,14 @@ registerPlantTypeMedal3(mush3_8);
 registerPlantTypeMedal3(stinging3_8);
 registerPlantTypeMedal3(fern3_8);
 registerPlantTypeMedal3(nut3_8);
+registerPlantTypeMedal3(brassica3_9);
+registerPlantTypeMedal3(berry3_9);
+registerPlantTypeMedal3(mush3_9);
+registerPlantTypeMedal3(flower3_9);
+registerPlantTypeMedal3(stinging3_9);
+registerPlantTypeMedal3(bee3_9);
+registerPlantTypeMedal3(fern3_9);
+registerPlantTypeMedal3(nut3_9);
 
 
 
@@ -9824,6 +9904,9 @@ registerFishTypeMedal(eel_1);
 registerFishTypeMedal(tang_1);
 registerFishTypeMedal(leporinus_0);
 registerFishTypeMedal(oranda_0);
+registerFishTypeMedal(shrimp_1);
+registerFishTypeMedal(octopus_1);
+registerFishTypeMedal(goldfish_2);
 
 
 

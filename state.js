@@ -675,6 +675,12 @@ function State() {
   this.fish_twigsmul_weighted = Num(-1);
   this.fish_twigsmul_last = Num(0); // last computed fishtwigs, at fish_twigsmul_time, as time since start of run
   this.fish_twigsmul_time = 0; // time since last fish_twigsmul_weighted change
+  this.fish_runestonemul_weighted = Num(-1);
+  this.fish_runestonemul_last = Num(0); // last computed fishrunestone, at fish_runestonemul_time, as time since start of run
+  this.fish_runestonemul_time = 0; // time since last fish_runestonemul_weighted change
+  this.fish_basicmul_weighted = Num(-1);
+  this.fish_basicmul_last = Num(0); // last computed fishbasic, at fish_basicmul_time, as time since start of run
+  this.fish_basicmul_time = 0; // time since last fish_basicmul_weighted change
 
 
   this.squirrel_evolution = 0;
@@ -1923,6 +1929,26 @@ function computeDerived(state) {
     state.fish_twigsmul_weighted = fishTwigs(state, false); // this recomputes the weighed average
     state.fish_twigsmul_last = current_fishtwigs;
     state.fish_twigsmul_time = state.c_runtime;
+  }
+  var current_fishrunestone = fishRunestoneMul(state, true);
+  if(state.fish_runestonemul_weighted.eqr(-1)) {
+    state.fish_runestonemul_weighted = current_fishrunestone;
+    state.fish_runestonemul_last = current_fishrunestone;
+    state.fish_runestonemul_time = state.c_runtime;
+  } else if(current_fishrunestone.neq(state.fish_runestonemul_last)) {
+    state.fish_runestonemul_weighted = fishRunestoneMul(state, false); // this recomputes the weighed average
+    state.fish_runestonemul_last = current_fishrunestone;
+    state.fish_runestonemul_time = state.c_runtime;
+  }
+  var current_fishbasic = fishBasicMul(state, true);
+  if(state.fish_basicmul_weighted.eqr(-1)) {
+    state.fish_basicmul_weighted = current_fishbasic;
+    state.fish_basicmul_last = current_fishbasic;
+    state.fish_basicmul_time = state.c_runtime;
+  } else if(current_fishbasic.neq(state.fish_basicmul_last)) {
+    state.fish_basicmul_weighted = fishBasicMul(state, false); // this recomputes the weighed average
+    state.fish_basicmul_last = current_fishbasic;
+    state.fish_basicmul_time = state.c_runtime;
   }
 }
 

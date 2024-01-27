@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -340,7 +340,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
     result += '<br/>';
   }
 
-  var recoup = c.getRecoup();
+  var recoup = c.getRecoup(f);
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost, true);
 
@@ -571,7 +571,7 @@ function makeFieldDialog(x, y) {
     button2.textEl.innerText = 'Replace crop';
     registerTooltip(button2, 'Replace the crop with a new one you choose, same as delete then plant. Shows the list of unlocked crops.');
     addButtonAction(button2, function() {
-      makePlantDialog(x, y, true, c.getRecoup());
+      makePlantDialog(x, y, true, c.getRecoup(f));
     });
 
     styleButton(button3);

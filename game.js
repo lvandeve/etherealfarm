@@ -2475,6 +2475,12 @@ function maybeUnlockInfinityCrops() {
 
   if(state.crops3[nut3_8].had) unlockInfinityCrop(brassica3_9);
   if(state.crops3[brassica3_9].had) unlockInfinityCrop(berry3_9);
+  if(state.crops3[berry3_9].had) unlockInfinityCrop(flower3_9);
+  if(state.crops3[berry3_9].had) unlockInfinityCrop(mush3_9);
+  if(state.crops3[flower3_9].had) unlockInfinityCrop(bee3_9);
+  if(state.crops3[flower3_9].had) unlockInfinityCrop(fern3_9);
+  if(state.crops3[mush3_9].had) unlockInfinityCrop(stinging3_9);
+  if(state.crops3[fern3_9].had) unlockInfinityCrop(nut3_9);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2482,7 +2488,6 @@ function maybeUnlockFishes() {
   var first_fish_unlocked = state.fishes[goldfish_0].unlocked;
   unlockFish(goldfish_0);
   unlockFish(koi_0);
-  //if(state.fishes[koi_0].had) unlockFish(octopus_0);
   unlockFish(octopus_0);
   if(state.fishes[octopus_0].had) unlockFish(shrimp_0);
   if(state.fishes[shrimp_0].had) unlockFish(anemone_0);
@@ -2502,6 +2507,9 @@ function maybeUnlockFishes() {
 
   if(state.fishes[leporinus_0].had) unlockFish(oranda_0);
   if(state.fishes[leporinus_0].had) unlockFish(shrimp_1);
+  if(state.fishes[leporinus_0].had) unlockFish(octopus_1);
+
+  if(state.fishes[shrimp_1].had || state.fishes[octopus_1].had) unlockFish(goldfish_2);
 
   ////////
 
@@ -4126,11 +4134,7 @@ var update = function(opt_ignorePause) {
         if(type == ACTION_DELETE || type == ACTION_REPLACE) {
           if(f.hasCrop()) {
             var c = f.getCrop();
-            recoup = c.getRecoup();
-            if(f.growth < 1 && c.type != CROPTYPE_BRASSICA && state.challenge != challenge_wither) {
-              recoup = c.getCost(-1);
-              full_refund = true;
-            }
+            recoup = c.getRecoup(f);
           } else {
             recoup = Res();
           }
@@ -4294,12 +4298,8 @@ var update = function(opt_ignorePause) {
             }
             f.index = 0;
             f.growth = 0;
-            if(c.type == CROPTYPE_BRASSICA) {
-              if(!action.silent) showMessage('deleted ' + c.name + '. Since this is a short-lived plant, nothing is refunded');
-            } else {
-              state.res.addInPlace(recoup);
-              if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
-            }
+            state.res.addInPlace(recoup);
+            if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
             if(!action.by_automaton) store_undo = true;
             computeDerived(state); // correctly update derived stats based on changed field state. It's ok that this happens twice for replace (in next if) since this is an intermediate state now
           } else if(f.index == FIELD_REMAINDER) {
@@ -6310,7 +6310,7 @@ function showShiftCropChip(crop_id) {
   centerText2(textFlex.div);
 
   if(deleting) {
-    var recoup = f.getCrop().getRecoup();
+    var recoup = f.getCrop().getRecoup(f);
     textFlex.div.textEl.innerHTML = keyname + '+' + verb + '<br><br>recoup: ' + recoup.toString();
   } else {
     if(c) {
@@ -6319,7 +6319,7 @@ function showShiftCropChip(crop_id) {
       renderImage(c.image[4], canvas);
       var updatefun = function() {
         var recoup = Res(0);
-        if(f.hasCrop()) recoup = f.getCrop().getRecoup();
+        if(f.hasCrop()) recoup = f.getCrop().getRecoup(f);
         var cost = c.getCost().sub(recoup);
         var afford = cost.le(state.res);
         var text = keyname + '+' + verb + '<br>' + upper(c.name);

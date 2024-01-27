@@ -1041,6 +1041,12 @@ function encState(state, opt_raw_only) {
   processNum(state.fish_twigsmul_weighted);
   processNum(state.fish_twigsmul_last);
   processTime(state.fish_twigsmul_time);
+  processNum(state.fish_runestonemul_weighted);
+  processNum(state.fish_runestonemul_last);
+  processTime(state.fish_runestonemul_time);
+  processNum(state.fish_basicmul_weighted);
+  processNum(state.fish_basicmul_last);
+  processTime(state.fish_basicmul_time);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1271,8 +1277,6 @@ function decState(s) {
     state.fish_resinmul_weighted = processNum();
     state.fish_resinmul_last = state.fish_resinmul_weighted;
     state.fish_resinmul_time = 0;
-  }
-  if(save_version >= 262144*2+64*10+1 && save_version < 262144*2+64*11+2) {
     state.fish_twigsmul_weighted = processNum();
     state.fish_twigsmul_last = state.fish_twigsmul_weighted;
     state.fish_twigsmul_time = 0;
@@ -2740,6 +2744,14 @@ function decState(s) {
     state.fish_twigsmul_weighted = processNum();
     state.fish_twigsmul_last = processNum();
     state.fish_twigsmul_time = processTime();
+  }
+  if(save_version >= 262144*2+64*11+3) {
+    state.fish_runestonemul_weighted = processNum();
+    state.fish_runestonemul_last = processNum();
+    state.fish_runestonemul_time = processTime();
+    state.fish_basicmul_weighted = processNum();
+    state.fish_basicmul_last = processNum();
+    state.fish_basicmul_time = processTime();
   }
   if(error) return err(4);
 

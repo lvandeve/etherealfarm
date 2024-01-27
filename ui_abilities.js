@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -347,8 +347,8 @@ function updateAbilitiesUI() {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  // refresh watercress button. this button becomes available once more enough resources to fully replant all watercress
-  if(state.g_res.seeds.gtr(1000)) {
+  // refresh watercress button. this button becomes available once enough resources had to fully replant all watercress
+  if(state.g_res.seeds.gtr(300)) {
     var infinity_field_tab = (state.currentTab == tabindex_field3);
     var brassica_index = infinity_field_tab ? getHighestBrassica3Had() : getHighestBrassica();
     var td_challenge = state.challenge == challenge_towerdefense;
@@ -443,15 +443,21 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
   var refreshed = false;
   var remcleared = false;
   var fullyplanted = false;
-  var cresscost = crops[brassica_0].cost.seeds; // taking only cheapest one for this computation is ok, when unlocking next tiers its cost is extremely low compared to seeds you have
+  var cresscost0 = crops[brassica_0].cost.seeds; // taking only cheapest one for this computation is ok, when unlocking next tiers its cost is extremely low compared to seeds you have
   var cropindex = getHighestBrassica();
   if(cropindex < 0) return;
   var seeds_available = Num(state.res.seeds);
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
-      var can_afford = seeds_available.ge(cresscost);
       var f = state.field[y][x];
       var c = f.getCrop();
+      var recoup = new Res();
+      var cresscost = cresscost0;
+      if(c && c.type == CROPTYPE_BRASSICA) {
+        recoup = c.getRecoup(f).seeds;
+        cresscost = c.getCost().seeds.sub(recoup);
+      }
+      var can_afford = seeds_available.ge(cresscost);
       if(f.index == FIELD_REMAINDER) {
         if(opt_clear) {
           addAction({type:ACTION_DELETE, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
@@ -491,7 +497,7 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
   else if(replanted) showMessage('replanting brassica');
   else if(refreshed) showMessage(opt_clear ? 'deleting brassica' : 'refreshing brassica');
   else if(remcleared) showMessage('cleared brassica remainders');
-  else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing brassica or remainders of brassica, and requires enough resources available to plant the brassica');
+  else if(seeds_available.lt(cresscost0)) showMessage('nothing done: only refreshes existing brassica or remainders of brassica, and requires enough resources available to plant the brassica');
   else showMessage('nothing done: only refreshes existing brassica or remainders of brassica. A second click can fill up the rest of the field with brassica, when having enough resources.');
   if(!opt_by_automaton) update();
 }

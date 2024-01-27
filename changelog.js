@@ -26,6 +26,15 @@ function getChangeLog() {
     text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
   }
 
+  text += '0.11.3 (2024-01-27)';
+  text += '<br/>• Added more emerald infinity crops.';
+  text += '<br/>• Added two more new fishes.'; // red octopus and black goldfish
+  text += '<br/>• Deleting watercress in basic field now gives a refund (based on lifetime), improving very early game.'; // they gave 0 refund before. it's only about 10 seeds, but in early game as well as start of basic/truly basic this matters. also it may cause lock-out if you immediately plant and un-plant watercress, where only ferns can then save it
+  text += '<br/>• The time-weighted fishes now work in a time window of max 3 hours, rather than the entire run (good for multi-day runs).'; // this means in a multi-day run if you activate a better fish near the end, you can get the full benefit by waiting 3 hours, rather than by waiting a theoretically infinite amount of time
+  text += '<br/>• Kois and oranda are now also time-weighted (in addition to eel and tang).';
+  text += '<br/>• Added the forgotten achievements for the new infinity crops and fishes in the previous version.';
+  text += '<br/><br/>';
+
   text += '0.11.2 (2024-01-22)';
   text += '<br/>• Added a new ethereal upgrade, at level 26.'; // spectral arboretum
   text += '<br/>• Added a new ethereal crop, at level 26.'; // poison ivy
