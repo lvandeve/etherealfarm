@@ -9951,7 +9951,7 @@ registerMedal('Extermination', 'Exterminate 10000 pests during tower defense', i
 
 medal_register_id = 5050;
 registerMedal('Icy tower', 'Reach level 70 during tower defense in winter', image_medal_icy_tower, function() {
-  return challengeMaxLevel(challenge_towerdefense) >= 70 && getSeason() == 3;
+  return state.challenge == challenge_towerdefense && state.treelevel >= 70 && getSeason() == 3;
 }, Num(1));
 
 
