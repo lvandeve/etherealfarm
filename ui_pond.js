@@ -320,7 +320,19 @@ function getFishInfoHTML(f, c, opt_detailed) {
   var upgrade_fish = getUpgradeFish(f.x, f.y, upgrade_cost, true);
 
   if(c.effect_description) result += '<br>' + c.effect_description;
+
+
+  var total = getFishMultiplier(c.type, state, true);
+  if(total.neqr(1)) {
+    var current = getFishMultiplier(c.type, state, false);
+    var typename = getFishTypeName(c.type);
+    result += '<br>';
+    result += '<br>Total bonus for all ' + typename + ': ' + total.subr(1).toPercentString();
+    if(total.neq(current)) result += '<br>Current (time weighted due to recently placing fishes): ' + current.subr(1).toPercentString();
+  }
+
   result += '<br>';
+  result += '<br/>• Base cost: ' + c.cost.toString();
   result += '<br/>• Next placing cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
   result += '<br/>• Recoup on delete (d): ' + c.getRecoup().toString();
   if(upgrade_fish && upgrade_cost[0]) {
@@ -501,22 +513,7 @@ function initPondUI(flex) {
         var fd = pondDivs[y][x];
         var c = f.getCrop();
         if(!c) return undefined;
-        var result = upper(c.name);
-        if(c.effect_description) result += '<br>' + c.effect_description;
-        result += '<br><br>';
-        var recoup = c.getRecoup(f);
-        var upgrade_cost = [undefined];
-        var upgrade_fish = getUpgradeFish(f.x, f.y, upgrade_cost, true);
-        var cost = c.getCost();
-        result += ' • Base cost: ' + c.cost.toString() + '<br>';
-        result += ' • Next planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
-        result += ' • Recoup on delete: ' + recoup.toString() + ' (100% full refund)';
-        if(upgrade_fish && upgrade_cost[0]) {
-          var tier_diff = upgrade_fish.tier - c.tier;
-          var tier_diff_text = tier_diff > 1 ? (' (+' + tier_diff + ')' ) : '';
-          result += '<br/> • Upgrade tier' + tier_diff_text + ' cost: ' + upgrade_cost[0].toString() + ' (' + getCostAffordTimer(upgrade_cost[0]) + ')';
-        }
-        return result;
+        return getFishInfoHTML(f, c, false);
       }, x, y, div), true);
 
       addButtonAction(div, bind(function(x, y, div, e) {

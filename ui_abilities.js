@@ -851,7 +851,7 @@ document.addEventListener('keydown', function(e) {
     }
     if(!did_something && f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1) {
       // allow also refreshing watercress this way
-      var highest = getHighestAffordableBrassica3();
+      var highest = getHighestAffordableBrassica3(f.getCrop().getRecoup(f));
       var highest2 = getHighestBrassica3();
       if(highest >= f.getCrop().index) {
         addAction({type:ACTION_REPLACE3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[highest], ctrlPlanted:true, silent:true});

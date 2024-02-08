@@ -3349,8 +3349,13 @@ function Challenge() {
   this.bonus_max_level = 0;
   // for formula=0: exponent for the bonus formula. Total formula is: bonus * level^exponent, with level = max(0, level_reached - min_level)
   this.bonus_exponent = Num(1);
+  // for formula=0. an additional completion bonus
+  this.completion_bonus = Num(0);
+
+
   // for formula=1: base of exponent for each key level, e.g. 1.5 to make it a 50% boost for each key milestone reached
-  this.bonus_exponent_base = Num(1);
+  this.bonus_exponent_base_a = Num(1);
+  this.bonus_exponent_base_b = Num(1);
   // for formula=1: defines key levels
   this.bonus_level_a = 0; // first level with exponential increase
   this.bonus_level_b = 0; // num levels between each next level with exponential increase
@@ -3493,10 +3498,7 @@ var challenge_register_id = 1;
 // rewardfun = for completing the challenge the first time. This function may be ran only once, and should be called after all other challenge-related completions stats (such as num_completion variables in the state) are already updated
 // allowflags: 1=resin, 2=fruits, 4=twigs, 8=beyond highest level, 16=nuts
 // rulesdescription must be a list of bullet points; it may be either a string, or a function that returns a string
-// bonus = basic value for the challenge bonus, or 0 if it gives no bonus
-// bonus_min_level = minimum level where some bonus already starts being given, before reaching the target level
-// completion_bonus = a fixed constant completion bonus
-function registerChallenge(name, targetlevel, targetfun, targetdescription, bonus, bonus_min_level, completion_bonus, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
+function registerChallenge(name, targetlevel, targetfun, targetdescription, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
   if(targetlevel != undefined && !Array.isArray(targetlevel)) targetlevel = [targetlevel];
@@ -3519,9 +3521,6 @@ function registerChallenge(name, targetlevel, targetfun, targetdescription, bonu
   challenge.targetlevel = targetlevel;
   challenge.targetfun = targetfun;
   challenge.targetdescription = targetdescription;
-  challenge.bonus = bonus;
-  challenge.bonus_min_level = bonus_min_level;
-  challenge.completion_bonus = completion_bonus;
   challenge.prefun = prefun;
   challenge.rewardfun = rewardfun;
 
@@ -3536,7 +3535,7 @@ function registerChallenge(name, targetlevel, targetfun, targetdescription, bonu
 
 
 // 1
-var challenge_bees = registerChallenge('bee challenge', 10, undefined, undefined, Num(0.5), 0, 0.5,
+var challenge_bees = registerChallenge('bee challenge', 10, undefined, undefined,
 'Grow bees during this challenge! This has different gameplay than the regular game.',
 `
 • You get only limited regular crops, and must instead boost global production using specially placed bees:<br>
@@ -3555,11 +3554,14 @@ function() {
 }, function() {
   // nothing here: the reward is unlocked indirectly by having this challenge marked complete
 }, 0);
+challenges[challenge_bees].bonus = Num(0.5);
+challenges[challenge_bees].bonus_min_level = 0;
+challenges[challenge_bees].completion_bonus = Num(0.5);
 challenges[challenge_bees].bonus_exponent = Num(0.25); // such low exponent because before v0.10.0, challenge bonuses were additive with each other, when changing them to multiplicative, earlier challenges needed low exponents but high bases to keep the bonuses similar for contemporary low level vs high level players (the other mechanism that also aids with this is completion_bonus)
 challenges[challenge_bees].autoaction_warning = true;
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135, 165, 195, 225], undefined, undefined, Num(0.2), 0, 0.5,
+var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135, 165, 195, 225], undefined, undefined,
 `The field has rocks on which you can't plant. The rock pattern is randomly generated at the start of the challenge, but will always be the same within the same when starting in the same 3-hour time interval (based on global UTC time)`,
 function() {
   return '• All regular crops, upgrades, ... are available and work as usual<br>' +
@@ -3580,12 +3582,15 @@ function() { state.fruit_slots++; },
 function() { state.fruit_slots++; }
 ]
 , 31);
+challenges[challenge_rocks].bonus = Num(0.2);
+challenges[challenge_rocks].bonus_min_level = 0;
+challenges[challenge_rocks].completion_bonus = Num(0.5);
 challenges[challenge_rocks].bonus_exponent = Num(0.2);
 challenges[challenge_rocks].autoaction_warning = true;
 
 
 // 3
-var challenge_nodelete = registerChallenge('undeletable challenge', 25, undefined, undefined, Num(0.1), 10, 0.5,
+var challenge_nodelete = registerChallenge('undeletable challenge', 25, undefined, undefined,
 `
 During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops, and plan ahead before planting!
 `,
@@ -3600,6 +3605,9 @@ function() {
 }, function() {
   // nothing here: the reward is unlocked indirectly by having this challenge marked complete
 }, 11);
+challenges[challenge_nodelete].bonus = Num(0.1);
+challenges[challenge_nodelete].bonus_min_level = 10;
+challenges[challenge_nodelete].completion_bonus = Num(0.5);
 challenges[challenge_nodelete].bonus_exponent = Num(0.5);
 // idea: a harder version of this challenge that takes place on a fixed size field (5x5)
 challenges[challenge_nodelete].autoaction_warning = true;
@@ -3607,7 +3615,7 @@ challenges[challenge_nodelete].autoaction_warning = true;
 
 // 4
 // reason why watercress upgrade is still present: otherwise it disappears after a minute, requiring too much manual work when one wants to upkeep the watercress
-var challenge_noupgrades = registerChallenge('no upgrades challenge', [20, 30], undefined, undefined, Num(0.003), 10, 0.5,
+var challenge_noupgrades = registerChallenge('no upgrades challenge', [20, 30], undefined, undefined,
 `
 During this challenge, crops cannot be upgraded.
 `,
@@ -3636,6 +3644,9 @@ function() {
   showMessage('Auto-upgrade extra options unlocked!', C_AUTOMATON, 1067714398);
 }
 ], 31);
+challenges[challenge_noupgrades].bonus = Num(0.003);
+challenges[challenge_noupgrades].bonus_min_level = 10;
+challenges[challenge_noupgrades].completion_bonus = Num(0.5);
 
 // is an upgrade not available during challenge_noupgrades
 // that is all crop upgrades, except watercress
@@ -3649,7 +3660,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170], undefined, undefined, Num(0.003), 30, 0.5,
+var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170], undefined, undefined,
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -3700,6 +3711,9 @@ function() {
   showMessage('An new limited kind of automaton auto-action unlocked, this one can only be configured to trigger at start of run (to set up correct starting fruit, ...).', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);
+challenges[challenge_wither].bonus = Num(0.003);
+challenges[challenge_wither].bonus_min_level = 30;
+challenges[challenge_wither].completion_bonus = Num(0.5);
 challenges[challenge_wither].autoaction_warning = true;
 
 function witherDuration() {
@@ -3717,7 +3731,7 @@ function witherCurve(t) {
 }
 
 // 6
-var challenge_blackberry = registerChallenge('blackberry challenge', [19], undefined, undefined, Num(0.003), 0, 0.25,
+var challenge_blackberry = registerChallenge('blackberry challenge', [19], undefined, undefined,
 `
 During this challenge, only the first tier of each crop type is available.
 `,
@@ -3735,6 +3749,9 @@ function() {
   showRegisteredHelpDialog(33);
 },
 ], 15);
+challenges[challenge_blackberry].bonus = Num(0.003);
+challenges[challenge_blackberry].bonus_min_level = 0;
+challenges[challenge_blackberry].completion_bonus = Num(0.25);
 
 var rockier_text = 'A harder version of the rocks challenge. The field has a difficult predetermined rock pattern. Beating the challenge the first time gives a new type of passive bonus (multiplicity). The rock patterns are very restrictive and don\'t benefit from field size above 5x5. This challenge is not a cakewalk, especially later patterns.';
 var rockier_text_long = `
@@ -3756,13 +3773,16 @@ var rockier_layouts = [
 ];
 
 // 7
-var challenge_rockier = registerChallenge('rockier challenge', [40], undefined, undefined, Num(0), 20, 0.2,
+var challenge_rockier = registerChallenge('rockier challenge', [40], undefined, undefined,
 rockier_text, rockier_text_long, 'multiplicity for berries and mushrooms', rockier_text_unlock_reason,
 function() {
   return state.treelevel >= 45;
 }, function() {
   showRegisteredHelpDialog(34);
 }, 31);
+challenges[challenge_rockier].bonus = Num(0);
+challenges[challenge_rockier].bonus_min_level = 20;
+challenges[challenge_rockier].completion_bonus = Num(0.2);
 challenges[challenge_rockier].cycling = 5;
 challenges[challenge_rockier].cycling_bonus = [Num(0.02), Num(0.025), Num(0.03), Num(0.035), Num(0.04)];
 challenges[challenge_rockier].bonus_exponent = Num(0.5);
@@ -3771,7 +3791,7 @@ challenges[challenge_rockier].autoaction_warning = true;
 
 
 // 8
-var challenge_thistle = registerChallenge('thistle challenge', [66], undefined, undefined, Num(0.002), 33, 0,
+var challenge_thistle = registerChallenge('thistle challenge', [66], undefined, undefined,
 `The field is full of thistles which you cannot remove. The thistle pattern is randomly determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours. The thistles hurt most crops, but benefit mushrooms, they are next-tier nettles.`,
 function() {
   return '• All regular crops, upgrades, ... are available and work as usual<br>' +
@@ -3787,11 +3807,13 @@ function() {
 }, function() {
   showMessage('Thistle unlocked! Thistle is the next tier of the nettle crop.');
 }, 31);
+challenges[challenge_thistle].bonus = Num(0.002);
+challenges[challenge_thistle].bonus_min_level = 33;
 challenges[challenge_thistle].autoaction_warning = true;
 
 
 // 9
-var challenge_wasabi = registerChallenge('wasabi challenge', [65], undefined, undefined, Num(0.0025), 40, 0,
+var challenge_wasabi = registerChallenge('wasabi challenge', [65], undefined, undefined,
 `You only get income from brassica, such as watercress.`,
 `
 • You can only get income from brassica, such as watercress, and their copying effect.<br>
@@ -3807,10 +3829,12 @@ function() {
 }, function() {
   showMessage('Wasabi unlocked! Wasabi is the next tier of brassica, after watercress crop.');
 }, 31);
+challenges[challenge_wasabi].bonus = Num(0.0025);
+challenges[challenge_wasabi].bonus_min_level = 40;
 
 
 // 10
-var challenge_basic = registerChallenge('basic challenge', [10], undefined, undefined, Num(0.075), 10, 0.35,
+var challenge_basic = registerChallenge('basic challenge', [10], undefined, undefined,
 `Upgrades and effects that last through transcensions don't work, everything is back to basics`,
 `
 • Everything, except the effects listed below, is back to basics like at the first run of the game: Upgrades and effects that last through transcensions (e.g. ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, ...) or unlock later (amber, ...) don't work.<br>
@@ -3830,12 +3854,15 @@ function() {
   return state.treelevel >= 50;
 }, function() {
 }, 0);
+challenges[challenge_basic].bonus = Num(0.075);
+challenges[challenge_basic].bonus_min_level = 10;
+challenges[challenge_basic].completion_bonus = Num(0.35);
 challenges[challenge_basic].bonus_exponent = Num(0.5);
 challenges[challenge_basic].bonus_max_level = 30;
 //challenges[challenge_basic].autoaction_warning = true;
 
 // 11
-var challenge_truly_basic = registerChallenge('truly basic challenge', [10], undefined, undefined, Num(0.1), 10, 0.35,
+var challenge_truly_basic = registerChallenge('truly basic challenge', [10], undefined, undefined,
 `Like the basic challenge, but even less effects work, truly everything is back to basics.`,
 `
 • Truly everything is back to basics like at the first run of the game and even a bit more difficult. Running this challenge now is as good as it can get since no future game advancement can make it easier.<br>
@@ -3853,6 +3880,9 @@ function() {
   showRegisteredHelpDialog(38);
   showMessage('Auto-prestige unlocked!', C_AUTOMATON, 2067714398);
 }, 0);
+challenges[challenge_truly_basic].bonus = Num(0.1);
+challenges[challenge_truly_basic].bonus_min_level = 10;
+challenges[challenge_truly_basic].completion_bonus = Num(0.35);
 challenges[challenge_truly_basic].bonus_exponent = Num(0.5);
 challenges[challenge_truly_basic].bonus_max_level = 25;
 challenges[challenge_truly_basic].autoaction_warning = true;
@@ -3895,7 +3925,7 @@ function havePermaWeatherFor(ability) {
 }
 
 // 12
-var challenge_stormy = registerChallenge('stormy challenge', [65], undefined, undefined, Num(0.0025), 50, 0,
+var challenge_stormy = registerChallenge('stormy challenge', [65], undefined, undefined,
 `The weather is stormy, other weather doesn't work`,
 `
 • The weather is stormy throughout the challenge, and other weather abilities don't work.<br>
@@ -3908,6 +3938,8 @@ function() {
   return state.treelevel >= 65;
 }, function() {
 }, 31);
+challenges[challenge_stormy].bonus = Num(0.0025);
+challenges[challenge_stormy].bonus_min_level = 50;
 
 
 function cropCanBeHitByLightning(f) {
@@ -3920,7 +3952,7 @@ function cropCanBeHitByLightning(f) {
 
 
 // 13
-var challenge_infernal = registerChallenge('infernal challenge', [20], undefined, undefined, Num(0.005), 20, 0,
+var challenge_infernal = registerChallenge('infernal challenge', [20], undefined, undefined,
 `A challenge where the season is infernal and everything is difficult.`,
 `
 • There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>
@@ -3935,13 +3967,16 @@ function() {
   return state.treelevel >= 85;
 }, function() {
 }, 0);
+challenges[challenge_infernal].bonus = Num(0.005);
+challenges[challenge_infernal].bonus_min_level = 20;
 challenges[challenge_infernal].bonus_exponent = Num(1.1);
 /*
 challenges[challenge_infernal].bonus_formula = 1;
 challenges[challenge_infernal].bonus_level_a = 20;
 challenges[challenge_infernal].bonus_level_b = 100;
 challenges[challenge_infernal].bonus_p = 0.66;
-challenges[challenge_infernal].bonus_exponent_base = Num(2);
+challenges[challenge_infernal].bonus_exponent_base_a = Num(2);
+challenges[challenge_infernal].bonus_exponent_base_b = Num(2);
 */
 
 
@@ -3950,7 +3985,7 @@ var challenge_poisonivy = registerChallenge('poison ivy challenge', undefined, f
   if(state.crops[mush_2].prestige > 0) return true;
   if(state.crops[berry_6].prestige > 0) return true; // the berry after mush_2 (prestiged), just in case no mushrooms were grown
   return false;
-}, 'prestige the morel', Num(0.0075), 130, 0,
+}, 'prestige the morel',
 `The field is full of poison ivy in a regular pattern which you cannot remove. The poison ivy hurts most crops, but benefits mushrooms, they are next-tier thistles.
 `,
 `
@@ -3968,14 +4003,15 @@ function() {
 }, function() {
   showMessage('Poison ivy unlocked! Poison ivy is the next tier of the stingy crop, after the thistle.');
 }, 31);
+challenges[challenge_poisonivy].bonus = Num(0.0075);
+challenges[challenge_poisonivy].bonus_min_level = 130;
 //challenges[challenge_poisonivy].bonus_exponent = Num(1.1);
 challenges[challenge_poisonivy].autoaction_warning = true;
 
 
 
 // 15
-
-var challenge_towerdefense = registerChallenge('tower defense challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*bonus=*/Num(1), /*bonus_min_level=*/0, /*completion_bonus=*/0,
+var challenge_towerdefense = registerChallenge('tower defense challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined,
 `Tower defense
 `,
 `
@@ -4009,13 +4045,14 @@ function() {
 }, function() {
   // no reward fun, only the production bonus
 }, 0);
+challenges[challenge_towerdefense].bonus = Num(1);
 challenges[challenge_towerdefense].autoaction_warning = true;
 challenges[challenge_towerdefense].bonus_formula = 1;
 challenges[challenge_towerdefense].bonus_level_a = 75;
 challenges[challenge_towerdefense].bonus_level_b = 100;
 challenges[challenge_towerdefense].bonus_p = 0.66;
-challenges[challenge_towerdefense].bonus_exponent_base = Num(2);
-//challenges[challenge_towerdefense].bonus_exponent_base = Num(1.5);
+challenges[challenge_towerdefense].bonus_exponent_base_a = Num(2);
+challenges[challenge_towerdefense].bonus_exponent_base_b = Num(2);
 challenges[challenge_towerdefense].helpdialogindex = 44;
 
 
@@ -6436,9 +6473,9 @@ function treeLevelResin(level, breakdown) {
 
   // fishes
   if(state.fish_resinmul_weighted.neqr(1)) {
-    var mul = fishResin(state, false);
+    var mul = getFishMultiplier(FISHTYPE_TANG, state, false);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
-      var umul = fishResin(state, true);
+      var umul = getFishMultiplier(FISHTYPE_TANG, state, true);
       resin.mulInPlace(mul);
       // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
       if(breakdown) breakdown.push([umul.eq(mul) ? 'tang (fish)' : 'tang fish (time-weighted)', true, mul, resin.clone()]);
@@ -6483,69 +6520,94 @@ function nextTreeLevelResin(breakdown) {
 // that is, once the run is longer than this, the weighed time is no longer computed over the whole run, but over this past time window
 var MAXINFTOBASICDELAY = 3600 * 3;
 
+var timeweightedinfo = '(the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)';
 
-// use_underlying:
+
+// Gets the total multiplier of fish effect for all placed fishes of the type (all tiers).
+// If you have none of this fish, it returns a multiplier of 1.
+// use_underlying: only used for time-weighted fishes:
 // if true, computes the formula according to the fish currently there.
 // if false, takes into account time length during which the fishes were there
 // Set this to 'false' when getting the fishResin bonus currently applicable to the gameplay. Set to true if the actual formula must be computed, e.g. to update the variables used for the 'false' case.
-function fishResin(state, use_underlying) {
-  if(use_underlying) {
-    var num0 = state.fishcount[tang_0];
-    var num1 = state.fishcount[tang_1];
-    if(num0 + num1 == 0) return new Num(1);
-    var mul = Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1);
-    return mul;
-  } else {
-    if(state.fish_resinmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_resinmul_time); // most recent timespan, during which 'last' is active
-    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
-    return state.fish_resinmul_weighted.mulr(deltatime2).add(state.fish_resinmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+function getFishMultiplier(fishtype, state, use_underlying) {
+  if(fishtype == FISHTYPE_GOLDFISH) {
+    // infinity seeds bonus
+    var num0 = state.fishcount[goldfish_0];
+    var num1 = state.fishcount[goldfish_1];
+    var num2 = state.fishcount[goldfish_2];
+    return new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1 + goldfish_2_bonus * num2);
+  } else if(fishtype == FISHTYPE_KOI) {
+    // runestone multiplier
+    if(use_underlying) {
+      var num0 = state.fishcount[koi_0];
+      var num1 = state.fishcount[koi_1];
+      return new Num(1 + koi_0_bonus * num0 + koi_1_bonus * num1);
+    } else {
+      if(state.fish_runestonemul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_runestonemul_time); // most recent timespan, during which 'last' is active
+      var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+      return state.fish_runestonemul_weighted.mulr(deltatime2).add(state.fish_runestonemul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+    }
+  } else if(fishtype == FISHTYPE_OCTOPUS) {
+    // infinity spores bonus
+    var num0 = state.fishcount[octopus_0];
+    var num1 = state.fishcount[octopus_1];
+    return new Num(1 + octopus_0_bonus * num0 + octopus_1_bonus * num1);
+  } else if(fishtype == FISHTYPE_SHRIMP) {
+    var num0 = state.fishcount[shrimp_0];
+    var num1 = state.fishcount[shrimp_1];
+    return new Num(1 + shrimp_0_bonus * num0 + shrimp_1_bonus * num1);
+  } else if(fishtype == FISHTYPE_ANEMONE) {
+    // infinity flower bonus
+    var num0 = state.fishcount[anemone_0];
+    var num1 = state.fishcount[anemone_1];
+    return new Num(1 + anemone_0_bonus * num0 + anemone_1_bonus * num1);
+  } else if(fishtype == FISHTYPE_PUFFER) {
+    // infinity berry bonus
+    var num0 = state.fishcount[puffer_0];
+    var num1 = state.fishcount[puffer_1];
+    return new Num(1 + puffer_0_bonus * num0 + puffer_1_bonus * num1);
+  } else if(fishtype == FISHTYPE_EEL) {
+    if(use_underlying) {
+      var num0 = state.fishcount[eel_0];
+      var num1 = state.fishcount[eel_1];
+      return new Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1);
+    } else {
+      if(state.fish_twigsmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_twigsmul_time); // most recent timespan, during which 'last' is active
+      var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+      return state.fish_twigsmul_weighted.mulr(deltatime2).add(state.fish_twigsmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+    }
+  } else if(fishtype == FISHTYPE_TANG) {
+    if(use_underlying) {
+      var num0 = state.fishcount[tang_0];
+      var num1 = state.fishcount[tang_1];
+      return new Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1);
+    } else {
+      if(state.fish_resinmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_resinmul_time); // most recent timespan, during which 'last' is active
+      var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+      return state.fish_resinmul_weighted.mulr(deltatime2).add(state.fish_resinmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+    }
+  } else if(fishtype == FISHTYPE_LEPORINUS) {
+    // infinity bee bonus
+    var num0 = state.fishcount[leporinus_0];
+    return new Num(1 + leporinus_0_bonus * num0);
+  } else if(fishtype == FISHTYPE_ORANDA) {
+    // non-runestone multiplier
+    if(use_underlying) {
+      var num0 = state.fishcount[oranda_0];
+      if(num0 == 0) return new Num(1);
+      return new Num(1 + oranda_0_bonus * num0);
+    } else {
+      if(state.fish_basicmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
+      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_basicmul_time); // most recent timespan, during which 'last' is active
+      var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
+      return state.fish_basicmul_weighted.mulr(deltatime2).add(state.fish_basicmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+    }
   }
-}
 
-function fishTwigs(state, use_underlying) {
-  if(use_underlying) {
-    var num0 = state.fishcount[eel_0];
-    var num1 = state.fishcount[eel_1];
-    if(num0 + num1 == 0) return new Num(1);
-    var mul = Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1);
-    return mul;
-  } else {
-    if(state.fish_twigsmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_twigsmul_time); // most recent timespan, during which 'last' is active
-    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
-    return state.fish_twigsmul_weighted.mulr(deltatime2).add(state.fish_twigsmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
-  }
-}
-
-function fishRunestoneMul(state, use_underlying) {
-  if(use_underlying) {
-    var num0 = state.fishcount[koi_0];
-    var num1 = state.fishcount[koi_1];
-    if(num0 + num1 == 0) return new Num(1);
-    var mul = Num(1 + koi_0_bonus * num0 + koi_1_bonus * num1);
-    return mul;
-  } else {
-    if(state.fish_runestonemul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_runestonemul_time); // most recent timespan, during which 'last' is active
-    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
-    return state.fish_runestonemul_weighted.mulr(deltatime2).add(state.fish_runestonemul_last.mulr(deltatime)).divr(deltatime + deltatime2);
-  }
-}
-
-// the non-runestone basic field multiplier from oranda fish
-function fishBasicMul(state, use_underlying) {
-  if(use_underlying) {
-    var num0 = state.fishcount[oranda_0];
-    if(num0 == 0) return new Num(1);
-    var mul = Num(1 + oranda_0_bonus * num0);
-    return mul;
-  } else {
-    if(state.fish_basicmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_basicmul_time); // most recent timespan, during which 'last' is active
-    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'weighted' was active
-    return state.fish_basicmul_weighted.mulr(deltatime2).add(state.fish_basicmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
-  }
+  return new Num(1);
 }
 
 // get twig drop at tree going to this level from mistletoes
@@ -6614,9 +6676,9 @@ function treeLevelTwigs(level, breakdown) {
 
   // fishes
   if(state.fish_twigsmul_weighted.neqr(1)) {
-    var mul = fishTwigs(state, false);
+    var mul = getFishMultiplier(FISHTYPE_EEL, state, false);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
-      var umul = fishTwigs(state, true);
+      var umul = getFishMultiplier(FISHTYPE_EEL, state, true);
       res.twigs.mulInPlace(mul);
       // if it says "time weighted", it means the amount of eel in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during twigs gain)
       if(breakdown) breakdown.push([umul.eq(mul) ? 'eel' : 'eel (time-weighted)', true, mul, res.clone()]);
@@ -7000,17 +7062,18 @@ function modifyResinTwigsChallengeBonus(bonus) {
 // returned as bonus value, not as multiplier (see function below for that)
 function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
   var c = challenges[challenge_id];
-  var bonus = c.bonus;
-  if(c.cycling && opt_cycle != undefined) bonus = c.cycling_bonus[opt_cycle];
 
   if(c.bonus_formula == 0) {
+    var bonus = c.bonus;
+    if(c.cycling && opt_cycle != undefined) bonus = c.cycling_bonus[opt_cycle];
+
     var level2 = level;
     if(c.bonus_max_level) level2 = Math.min(c.bonus_max_level, level2);
     if(c.bonus_min_level) level2 = Math.max(0, level - c.bonus_min_level + 1);
 
     var score = Num(level2).powr(c.bonus_exponent);
     var result = bonus.mulr(score);
-    if(completed) result.addrInPlace(c.completion_bonus);
+    if(completed) result.addInPlace(c.completion_bonus);
 
     //if(which == 1) result = result.addr(1).divr(100).subr(1); // TODO: make resin bonus fully computable in here. See todo at modifyResinTwigsChallengeBonus
 
@@ -7018,15 +7081,13 @@ function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
   }
 
   if(c.bonus_formula == 1) {
+    // TODO: handle cycling challenges for this formula, how the weights between different cycles work... e.g. multipliers with cycling_bonus. Or just add then all.
+
     if(level == 0) return Num(0);
     var k0; // key level 0, beginning of current range (key level = one of the levels where exponent changes)
     var k1; // key level 1, end of current range
     var e; // index of current range (which key-level range reached), for the exponent (0 if in first range)
-    if(!c.bonus_level_a) {
-      e = Math.floor(level / c.bonus_level_b);
-      k0 = e * c.bonus_level_b;
-      k1 = k0 + c.bonus_level_b;
-    } else if(level < c.bonus_level_a) {
+    if(level < c.bonus_level_a) {
       e = 0;
       k0 = 0;
       k1 = c.bonus_level_a;
@@ -7035,12 +7096,21 @@ function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
       k0 = c.bonus_level_a + (e - 1) * c.bonus_level_b;
       k1 = k0 + c.bonus_level_b;
     }
-    var mul0 = Num.pow(c.bonus_exponent_base, Num(e));
-    var mul1 = mul0.mul(c.bonus_exponent_base);
+    var mul0, mul1;
+    if(e == 0) {
+      mul0 = Num(1);
+      mul1 = c.bonus_exponent_base_a;
+    } else if(e == 1) {
+      mul0 = c.bonus_exponent_base_a;
+      mul1 = mul0.mul(c.bonus_exponent_base_b);
+    } else {
+      mul0 = c.bonus_exponent_base_a.mul(Num.pow(c.bonus_exponent_base_b, Num(e - 1)));
+      mul1 = mul0.mul(c.bonus_exponent_base_b);
+    }
     var progress = (level - k0) / (k1 - k0);
     var mul = mul0.add(mul1.sub(mul0).mulr(c.bonus_p * progress));
 
-    var result = bonus.mul(mul).subr(1); // TODO: fix this, remove the 'subr(1)', when doing it also change bonus_exponent_base of challenge_towerdefense to 1.5 instead of 2
+    var result = mul.subr(1);
 
     if(which == 1) {
       var l = Num.log(result.addr(1));
@@ -7050,7 +7120,7 @@ function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
     return result;
   }
 
-  return bonus; // unknown formula
+  return Num(0); // unknown formula
 }
 
 // which = 0 for prod bonus, 1 for resin/twigs bonus
@@ -8246,11 +8316,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   // goldfish
   if(result.infseeds.neqr(0) && (state.fishes[goldfish_0].unlocked)) {
-    var num0 = state.fishcount[goldfish_0];
-    var num1 = state.fishcount[goldfish_1];
-    var num2 = state.fishcount[goldfish_2];
-    var have_fish = !!(num0 + num1 + num2);
-    var mul = new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1 + goldfish_2_bonus * num2);
+    var mul = getFishMultiplier(FISHTYPE_GOLDFISH, state, false);
+    var have_fish = mul.neqr(1);
     if(have_fish) result.infseeds.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[goldfish_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['goldfish' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8259,10 +8326,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   // octopus
   if(result.infspores.neqr(0) && state.fishes[octopus_0].unlocked) {
-    var num0 = state.fishcount[octopus_0];
-    var num1 = state.fishcount[octopus_1];
-    var have_fish = !!(num0 + num1);
-    var mul = new Num(1 + octopus_0_bonus * num0 + octopus_1_bonus * num1);
+    var mul = getFishMultiplier(FISHTYPE_OCTOPUS, state, false);
+    var have_fish = mul.neqr(1);
     if(have_fish) result.infspores.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[octopus_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['octopus' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8271,10 +8336,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
   // puffer fish
   // for berries, but also for nuts, nuts behave just like berries in infinity field
   if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT) && state.fishes[puffer_0].unlocked) {
-    var num0 = state.fishcount[puffer_0];
-    var num1 = state.fishcount[puffer_1];
-    var have_fish = !!(num0 + num1);
-    var mul = new Num(1 + puffer_0_bonus * num0 + puffer_1_bonus * num1);
+    var mul = getFishMultiplier(FISHTYPE_PUFFER, state, false);
+    var have_fish = mul.neqr(1);
     if(have_fish) result.infseeds.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[puffer_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['puffer fish' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8339,12 +8402,10 @@ Crop3.prototype.getProd = function(f, breakdown) {
       if(breakdown) breakdown.push(['flower tiers (' + numflowers + ')', true, floweronlymul, result.clone()]);
 
       // sea anemone through flower to mushrooms
-      // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
+      // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the flower multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
       if(state.fishes[anemone_0].unlocked) {
-        var num0 = state.fishcount[anemone_0];
-        var num1 = state.fishcount[anemone_1];
-        var have_fish = !!(num0 + num1);
-        var mul = Num(1 + anemone_0_bonus * num0 + anemone_1_bonus * num1);
+        var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, false);
+        var have_fish = mul.neqr(1);
         if(have_fish) result.mulInPlace(mul);
         var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
         if(breakdown) breakdown.push(['sea anemones' + (give_warning ? ' (have 0, put some in the pond!)' : ' (through flowers)'), true, mul, result.clone()]);
@@ -8356,9 +8417,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
       // leporinus through bees to mushrooms
       // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
       if(numbees && state.fishes[leporinus_0].unlocked) {
-        var num0 = state.fishcount[leporinus_0];
-        var have_fish = !!(num0);
-        var mul = Num(1 + leporinus_0_bonus * num0);
+        var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, false);
+        var have_fish = mul.neqr(1);
         var beemul_before = beeonlymul;
         var beemul_after = (beeonlymul.subr(1)).mul(mul).addr(1);
         mul = beemul_after.div(beemul_before);
@@ -8409,10 +8469,8 @@ Crop3.prototype.getProd = function(f, breakdown) {
   }
 
   if(this.type == CROPTYPE_BRASSICA && state.fishes[shrimp_0].unlocked) {
-    var num0 = state.fishcount[shrimp_0];
-    var num1 = state.fishcount[shrimp_1];
-    var have_fish = !!(num0 + num1);
-    var mul = Num(1 + shrimp_0_bonus * num0 + shrimp_1_bonus * num1);
+    var mul = getFishMultiplier(FISHTYPE_SHRIMP, state, false);
+    var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[shrimp_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['shrimp' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8421,7 +8479,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   // minimum for brassica to at least pay their own cost back
   // this can happen if brassica is expected to be boosted by fishes, but the fishes aren't there, and then the brassica would cause a loss of infinity seeds over its lifetime which could be a large unintended setback
   if(this.type == CROPTYPE_BRASSICA && result.infseeds.gtr(0)) {
-    var minimum = this.cost.infseeds.divr(this.planttime).mulr(1.01);
+    var minimum = this.minForBrassicaSelfSustain();
     if(result.infseeds.lt(minimum)) {
       var mul = minimum.div(result.infseeds);
       result.mulInPlace(mul);
@@ -8431,6 +8489,10 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
 
   return result;
+}
+
+Crop3.prototype.minForBrassicaSelfSustain = function() {
+  return this.cost.infseeds.divr(this.planttime).mulr(1.01);
 }
 
 // boost from inf field to inf field (flowers to berries, and flowers themselves compute their boost from infinity bees here)
@@ -8464,10 +8526,8 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 
   // sea anemone to flower
   if(this.type == CROPTYPE_FLOWER && state.fishes[anemone_0].unlocked) {
-    var num0 = state.fishcount[anemone_0];
-    var num1 = state.fishcount[anemone_1];
-    var have_fish = !!(num0 + num1);
-    var mul = Num(1 + anemone_0_bonus * num0 + anemone_1_bonus * num1);
+    var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, false);
+    var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['sea anemones' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8475,9 +8535,8 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 
   // leporinus to bee
   if(this.type == CROPTYPE_BEE && state.fishes[leporinus_0].unlocked) {
-    var num0 = state.fishcount[leporinus_0];
-    var have_fish = !!(num0);
-    var mul = Num(1 + leporinus_0_bonus * num0);
+    var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, false);
+    var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[leporinus_0].cost.infspores.mulr(2));
     if(breakdown) breakdown.push(['leporinus (fish)' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
@@ -8485,11 +8544,11 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 
   // koi to runestone
   if(this.type == CROPTYPE_RUNESTONE && state.fish_runestonemul_weighted.neqr(1)) {
-    var mul = fishRunestoneMul(state, false);
+    var mul = getFishMultiplier(FISHTYPE_KOI, state, false);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       result.mulInPlace(mul);
       if(breakdown) {
-        var umul = fishRunestoneMul(state, true);
+        var umul = getFishMultiplier(FISHTYPE_KOI, state, true);
         // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
         breakdown.push([umul.eq(mul) ? 'koi (fish)' : 'koi (time-weighted)', true, mul, result.clone()]);
       }
@@ -8530,12 +8589,12 @@ Crop3.prototype.getBasicBoost = function(f, breakdown) {
 
   // oranda fish: multiplier to basic field bonus for the non-runestone part of the bonus
   if(this.type != CROPTYPE_RUNESTONE && state.fish_basicmul_weighted.neqr(1)) {
-    var oranda_mul = fishBasicMul(state, false);
+    var oranda_mul = getFishMultiplier(FISHTYPE_ORANDA, state, false);
     if(oranda_mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       var mul = oranda_mul.add(runestone_mul).subr(1).div(runestone_mul); // the oranda is additive to runestones, NOT multiplicative with it. So do as if a bonus that's the sum of runestone and oranda is given, and then divide through the original runestone bonus from above to only have the oranda effect here
       result.mulInPlace(mul);
       if(breakdown) {
-        var oranda_umul = fishBasicMul(state, true);
+        var oranda_umul = getFishMultiplier(FISHTYPE_ORANDA, state, true);
         // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
         if(runestone_mul.eqr(1)) {
           breakdown.push([oranda_umul.eq(oranda_mul) ? 'oranda (fish)' : 'oranda (time-weighted)', true, oranda_mul, result.clone()]);
@@ -8911,9 +8970,9 @@ var goldfish_2 = registerGoldfish('black goldfish', 2, Res({infspores:5e18}), 'I
 
 fish_register_id = 200;
 var koi_0_bonus = 0.2;
-var koi_0 = registerKoi('koi', 0, Res({infspores:20000}), 'Improves runestone bonus by ' + Num(koi_0_bonus).toPercentString(), image_koi0);
+var koi_0 = registerKoi('koi', 0, Res({infspores:20000}), 'Improves runestone bonus by ' + Num(koi_0_bonus).toPercentString() + ' ' + timeweightedinfo, image_koi0);
 var koi_1_bonus = 1.5;
-var koi_1 = registerKoi('red koi', 1, Res({infspores:250e9}), 'Improves runestone bonus by ' + Num(koi_1_bonus).toPercentString(), image_koi1);
+var koi_1 = registerKoi('red koi', 1, Res({infspores:250e9}), 'Improves runestone bonus by ' + Num(koi_1_bonus).toPercentString() + ' ' + timeweightedinfo, image_koi1);
 
 fish_register_id = 300;
 var octopus_0_bonus = 0.25;
@@ -8941,15 +9000,15 @@ var puffer_1 = registerPuffer('red pufferfish', 1, Res({infspores:500e12}), 'Imp
 
 fish_register_id = 700;
 var eel_0_bonus = 0.25;
-var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_eel0);
+var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' ' + timeweightedinfo, image_eel0);
 var eel_1_bonus = 0.5;
-var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_eel1);
+var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' ' + timeweightedinfo, image_eel1);
 
 fish_register_id = 800;
 var tang_0_bonus = 0.25;
-var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_tang0);
+var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' ' + timeweightedinfo, image_tang0);
 var tang_1_bonus = 0.5;
-var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' (the bonus is decreased if the fish is only present for part of the time during a run, time-weighted in a max ' + util.formatDuration(MAXINFTOBASICDELAY) + ' time window)', image_tang1);
+var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' ' + timeweightedinfo, image_tang1);
 
 fish_register_id = 900;
 var leporinus_0_bonus = 0.35;
@@ -8957,7 +9016,7 @@ var leporinus_0 = registerLeporinus('leporinus', 0, Res({infspores:2e15}), 'Impr
 
 fish_register_id = 1000;
 var oranda_0_bonus = 2;
-var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)', image_oranda0);
+var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda0);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

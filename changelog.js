@@ -26,6 +26,18 @@ function getChangeLog() {
     text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
   }
 
+  text += '0.11.4 - Bugfixes, balanding and QoL (2024-02-08)';
+  text += '<br/>• Crop unlocks that have never been done before, now must be done manually the first time, not by automaton. The upgrade tab will get a special color in this case.'; // this is so that you can see them by being required to manually interact with it at least once
+  text += '<br/>• Fish tooltips now show total bonus of all of their type, and time-weighted as well as non-time-weighted value in case it is time-weighted.';
+  text += '<br/>• Long-lived ferns now also show in the tooltip whether they were bushy, this information was missing.';
+  text += '<br/>• Added warning message in infinity brassica tooltip, and exclamation mark icon, if it doesn\'t produce enough due to no shrimp.';
+  text += '<br/>• Improved some log messages when replacing infinity crops.'; // when replacing it used to say "deleted" followed by "planted" but using the plant cost minus delete cost in the plant message, which was confusing
+  text += '<br/>• Removed a potential cause of some lag when receiving an achievement on mobile.'; // on mobile chrome, rendering of many canvases goes slow, so no longer updating the achievement UI when the achievement tab is not open
+  text += '<br/>• Removed the old ability to change fruit border color by clicking the dialog icon, the "mark border color" button already allows doing it in a better way.';
+  text += '<br/>• Fixed issue where refreshing infinity brassica sometimes didn\'t work even if having enough infinity seeds.'; // when having enough seeds to refresh it but not enough for a whole new one
+  text += '<br/>• Fixed issue where blueprint in the start-of-run-only auto-action didn\'t work.';
+  text += '<br/><br/>';
+
   text += '0.11.3 (2024-01-27)';
   text += '<br/>• Added more emerald infinity crops.';
   text += '<br/>• Added two more new fishes.'; // red octopus and black goldfish

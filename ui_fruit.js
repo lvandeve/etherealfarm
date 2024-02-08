@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -749,13 +749,13 @@ function fillFruitDialog(dialog, f, opt_selected) {
     });
   });
 
-  styleButton0(canvas, true);
+  /*styleButton0(canvas, true);
   addButtonAction(canvas, function() {
     f.mark = ((f.mark || 0) + 1) % 9;
     updateFruitUI();
     recreate();
   }, 'fruit icon: ' + getFruitAriaLabel(f) + '. Click to mark favorite');
-  registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');
+  registerTooltip(canvas, 'click to mark as favorite and toggle color style. This is a visual effect only.');*/
 
 
 

@@ -79,6 +79,14 @@ function getCropInfoHTML3(f, c, opt_detailed) {
       /*if(baseprod.infseeds.neqr(0) && baseprod.infseeds.ltr(0.1) && baseprod.infseeds.gtr(-0.1))*/ result += ' (' + baseprod.infseeds.mulr(3600).toString() + '/h)';
     }
     result += '<br/><br/>';
+
+    if(c.type == CROPTYPE_BRASSICA) {
+      var minimum = c.minForBrassicaSelfSustain();
+      if(prod.infseeds.le(minimum)) {
+        result += '<span class="efWarningOnDialogText">Warning: this brassica is not producing enough infinity seeds, place fishes such as shrimp and goldfish in the pond to increase production!</span>';
+        result += '<br/><br/>';
+      }
+    }
   }
 
   var infboost = c.getInfBoost(f);
@@ -246,19 +254,31 @@ function makeUpgradeCrop3Action(x, y, opt_silent) {
   if(c3 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c3, shiftPlanted:true});
     return true;
-  } else {
-    if(!opt_silent) {
-      if(too_expensive[1]) {
-        showMessage('not enough resources for next infinity crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
-            ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
-      } else if(!(x >= 0 && x < state.numw3 && y >= 0 && y < state.numh3) || state.field3[y][x].index < CROPINDEX) {
-        showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
-      } else {
-        showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
-      }
+  }
+
+  var f = state.field3[y][x];
+  if(f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1) {
+    // allow also refreshing watercress this way
+    var highest = getHighestAffordableBrassica3(f.getCrop().getRecoup(f));
+    var highest2 = getHighestBrassica3();
+    if(highest >= f.getCrop().index && (highest2 <= highest || f.growth < 0.9)) {
+      addAction({type:ACTION_REPLACE3, x:x, y:y, crop:crops3[highest], ctrlPlanted:true, silent:opt_silent});
+      return true;
     }
   }
-  return true;
+
+  if(!opt_silent) {
+    if(too_expensive[1]) {
+      showMessage('not enough resources for next infinity crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
+          ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
+    } else if(!(x >= 0 && x < state.numw3 && y >= 0 && y < state.numh3) || state.field3[y][x].index < CROPINDEX) {
+      showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+    } else {
+      showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
+    }
+  }
+
+  return false;
 }
 
 function makeDowngradeCrop3Action(x, y, opt_silent) {
@@ -314,10 +334,9 @@ function makeField3Dialog(x, y) {
     button0.textEl.innerText = 'Upgrade tier';
     registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford. This deletes the original crop (which gives refund), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      if(makeUpgradeCrop3Action(x, y)) {
-        closeAllDialogs();
-        update();
-      }
+      makeUpgradeCrop3Action(x, y);
+      closeAllDialogs();
+      update();
     });
 
     styleButton(button1);
@@ -574,13 +593,25 @@ function updateField3CellUI(x, y) {
 
   var is_undeletable_runestone = f.runetime > 0 && f.hasCrop() && f.getCrop().index == runestone3_0;
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || is_undeletable_runestone != fd.is_undeletable_runestone) {
+  var brassica_no_selfsustain = false;
+  if(f.hasCrop()) {
+    var c = f.getCrop();
+    if(c.type == CROPTYPE_BRASSICA) {
+      var prod = c.getProd(f);
+      if(prod.infseeds.le(c.minForBrassicaSelfSustain())) {
+        brassica_no_selfsustain = true;
+      }
+    }
+  }
+
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || is_undeletable_runestone != fd.is_undeletable_runestone || brassica_no_selfsustain != fd.brassica_no_selfsustain) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
     fd.ferncode = ferncode;
     fd.progresspixel = progresspixel;
     fd.is_undeletable_runestone = is_undeletable_runestone;
+    fd.brassica_no_selfsustain = brassica_no_selfsustain;
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];
@@ -605,6 +636,9 @@ function updateField3CellUI(x, y) {
     } else {
       fd.div.innerText = '';
       //unrenderImage(fd.canvas);
+    }
+    if(brassica_no_selfsustain) {
+      blendImage(image_exclamation_small, fd.canvas);
     }
     if(f.growth >= 1 || !f.hasCrop()) {
       setProgressBar(fd.progress, -1, undefined);

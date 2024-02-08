@@ -873,6 +873,9 @@ function beginNextRun(opt_challenge) {
 
   // after a transcend, it's acceptable to undo the penalty of negative time, but keep some of it. This avoid extremely long time penalties due to a clock mishap.
   if(state.negative_time > 3600) state.negative_time = 3600;
+
+  // this function is called all the time during update, but also call it now already so that an auto-planted blueprint immediately works
+  unlockTemplates();
 }
 
 // transcend
@@ -2602,7 +2605,8 @@ function doAutoAction(index, part, opt_manually) {
       refreshWatercress(false, false, true);
       did_something = true;
     }
-    if(o.enable_blueprint) {
+    // don't do blueprint if this is the start-of-run auto-action (index 0) and player already did transcend with blueprint
+    if(o.enable_blueprint && !(state.transcended_with_blueprint && !opt_manually && index == 0)) {
       var b = state.blueprints[o.blueprint];
       if(b) {
         plantBluePrint(b, true, !opt_manually);
@@ -2696,7 +2700,6 @@ function doAutoActions() {
       o.done = true;
       o.done2 = false;
       o.time2 = state.c_runtime + autoActionPart2Time;
-
       did_something |= doAutoAction(i, 1);
     }
     if(!o.done2 && triggered2) {
@@ -3045,6 +3048,7 @@ function computeNextAutoUnlock() {
     if(!u.iscropunlock) continue;
     if(!u2.unlocked) continue;
     if(u2.count) continue;
+    if(!u2.had) continue; // don't do unlock-upgrades you've never done before automatically
     if(u.cropid == undefined) continue;
     var c = crops[u.cropid];
     if(c.type == CROPTYPE_PUMPKIN && !state.anycroptypecount[CROPTYPE_PUMPKIN]) continue; // don't auto-unlock pumpkin unless there's at least a pumpkin template on the field: this crop only appears during halloween, so make it visible to the user that it exists at all, by not having automaton immediately make the only upgrade with its icon invisible
@@ -3774,6 +3778,7 @@ var update = function(opt_ignorePause) {
           }
         }
         var u = upgrades[action.u];
+        var u2 = state.upgrades[action.u];
         var shift = action.shift && (u.maxcount != 1);
         var amount_wanted = action.num ? action.num : 1; // if shift, amount_wanted is effectively infinite
         var num = 0;
@@ -3796,6 +3801,7 @@ var update = function(opt_ignorePause) {
           } else {
             state.res.subInPlace(cost);
             u.fun(action.choice);
+            u2.had = true;
             num++;
             var message = 'upgraded: ' + u.getName() + ', consumed: ' + cost.toString();
             if(u.is_choice) {
@@ -4108,7 +4114,7 @@ var update = function(opt_ignorePause) {
           store_undo = true;
         }
       } else if(type == ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND) {
-        plantBluePrint(action.blueprint, false);
+        plantBluePrint(action.blueprint, true);
       } else if(type == ACTION_PLANT || type == ACTION_DELETE || type == ACTION_REPLACE) {
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
@@ -4514,7 +4520,7 @@ var update = function(opt_ignorePause) {
           var cost = c.getCost();
           var finalcost = cost;
           if(type == ACTION_REPLACE2 && !!recoup) finalcost = cost.sub(recoup);
-          if(!action.silent) showMessage('planted ethereal ' + c.name + '. Consumed: ' + finalcost + '. Next costs: ' + c.getCost(1));
+          if(!action.silent) showMessage('planted ethereal ' + c.name + '. Consumed: ' + finalcost.toString() + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
@@ -4568,6 +4574,7 @@ var update = function(opt_ignorePause) {
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field3[action.y][action.x];
+        var oldcrop = f.getCrop(); // may be undefined
 
         var recoup = undefined;
 
@@ -4647,7 +4654,7 @@ var update = function(opt_ignorePause) {
               state.g_numplanted3--;
             }
             state.g_numunplanted3++;
-            if(!action.silent) showMessage('deleted infinity ' + c.name + ', got back ' + recoup.toString());
+            if(!action.silent && type == ACTION_DELETE3) showMessage('deleted infinity ' + c.name + ', got back ' + recoup.toString());
             f.index = 0;
             f.growth = 0;
             computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
@@ -4703,7 +4710,12 @@ var update = function(opt_ignorePause) {
             }
           }
           var nextcost = c.getCost(1);
-          if(!action.silent) showMessage('planted infinity ' + c.name + '. Consumed: ' + finalcost + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
+          if(!action.silent) {
+            var verb = 'planted';
+            if(type == ACTION_REPLACE3 && oldcrop && c.index == oldcrop.index) verb = 'refreshed';
+            else if(type == ACTION_REPLACE3) verb = 'replaced with';
+            showMessage(verb + ' infinity ' + c.name + (finalcost.infseeds.ltr(0) ? ('. Got back: ' + finalcost.neg().toString()) : ('. Consumed: ' + finalcost.toString())) + '. Next costs: ' + nextcost.toString() + ' (' + getCostAffordTimer(nextcost) + ')');
+          }
 
           computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
@@ -6079,7 +6091,7 @@ var update = function(opt_ignorePause) {
         }
       }
     }
-    if(unlocked_any) updateMedalUI();
+    //if(unlocked_any) updateMedalUI(); // commented out: updateMedalUI is slow on mobile and it already does this when going to that tab, don't make the game slow when receiving a medal when not looking at the tab
 
     // check unlocked challenges
     if(state.g_numresets > 0) { // all challenges require having done at least 1 regular transcension first
@@ -6242,9 +6254,12 @@ var update = function(opt_ignorePause) {
     }
   }
 
+  if(do_transcend) state.transcended_with_blueprint = false;
+
   if(do_transcend && actions.length) {
     // when transcending with blueprint, do the next actions immediately to avoid having a momentary empty field visible
     window.setTimeout(update, 0.01);
+    state.transcended_with_blueprint = true;
   } else if(autoplanted_fastanim) {
     // go faster when the automaton is autoplanting one-by-one
     window.setTimeout(update, update_ms * 0.4);

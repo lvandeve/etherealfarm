@@ -125,10 +125,9 @@ function createNumberFormatDialog() {
     title:'Choose large number notation',
     help:function() { createNumberFormatHelp(notations, precision); },
     onclose:function() {
-      // updateMedalUI is somewhat slow, so only do it if something possibly changed
       if(changed) {
-        updateUI();
-        updateMedalUI();
+        updateUI(); // some numbers in the UI need to be re-rendered such as on the medals tab
+        if(state.currentTab == tabindex_medals) updateMedalUI(); // this one is slow, only do if actually in that tab
       }
     }
   });

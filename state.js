@@ -225,6 +225,7 @@ function FishState() {
 function UpgradeState() {
   this.seen = false; // seen the upgrade in the upgrades tab
   this.seen2 = false; // seen the upgrade ever
+  this.had = false; // had the upgrade ever
   this.unlocked = false;
   // how many times this upgrade was done
   // if is_choice, then this is the choice instead of a count. 0 means no choice made yet, 1 means first choice, 2 means second choice.
@@ -1235,6 +1236,14 @@ function State() {
   // Boost to basic field from infinity field crops
   // derived stat, not to be saved.
   this.infinityboost = Num(0);
+
+  // used to prevent auto-action blueprint in case you already did transcend with blueprint
+  // derived stat, not to be saved.
+  this.transcended_with_blueprint = false;
+
+  // If true, have some upgrade visible that you've never done before
+  // derived stat, not to be saved.
+  this.neverhadupgradeunlocked = false;
 }
 
 // this.squirrel_evolution must already be set to the intended evolution
@@ -1625,12 +1634,16 @@ function computeDerived(state) {
   state.upgrades2_new = 0;
   state.upgrades2_upgradable = 0;
   state.upgrades2_affordable = 0;
+  state.neverhadupgradeunlocked = false;
 
   for(var i = 0; i < registered_upgrades.length; i++) {
     var u = upgrades[registered_upgrades[i]];
     var u2 = state.upgrades[registered_upgrades[i]];
     if(u2.unlocked) {
       state.upgrades_unlocked++;
+      if(u2.seen && !u2.had && u.iscropunlock && u.cost.le(state.res)) {
+        state.neverhadupgradeunlocked = true;
+      }
       if(!u2.seen && !u2.count) {
         state.upgrades_new++;
         var update_b = true;
@@ -1910,43 +1923,43 @@ function computeDerived(state) {
   }
 
   // fish effects
-  var current_fishresin = fishResin(state, true);
+  var current_fishresin = getFishMultiplier(FISHTYPE_TANG, state, true);
   if(state.fish_resinmul_weighted.eqr(-1)) {
     state.fish_resinmul_weighted = current_fishresin;
     state.fish_resinmul_last = current_fishresin;
     state.fish_resinmul_time = state.c_runtime;
   } else if(current_fishresin.neq(state.fish_resinmul_last)) {
-    state.fish_resinmul_weighted = fishResin(state, false); // this recomputes the weighed average
+    state.fish_resinmul_weighted = getFishMultiplier(FISHTYPE_TANG, state, false); // this recomputes the weighed average
     state.fish_resinmul_last = current_fishresin;
     state.fish_resinmul_time = state.c_runtime;
   }
-  var current_fishtwigs = fishTwigs(state, true);
+  var current_fishtwigs = getFishMultiplier(FISHTYPE_EEL, state, true);
   if(state.fish_twigsmul_weighted.eqr(-1)) {
     state.fish_twigsmul_weighted = current_fishtwigs;
     state.fish_twigsmul_last = current_fishtwigs;
     state.fish_twigsmul_time = state.c_runtime;
   } else if(current_fishtwigs.neq(state.fish_twigsmul_last)) {
-    state.fish_twigsmul_weighted = fishTwigs(state, false); // this recomputes the weighed average
+    state.fish_twigsmul_weighted = getFishMultiplier(FISHTYPE_EEL, state, false); // this recomputes the weighed average
     state.fish_twigsmul_last = current_fishtwigs;
     state.fish_twigsmul_time = state.c_runtime;
   }
-  var current_fishrunestone = fishRunestoneMul(state, true);
+  var current_fishrunestone = getFishMultiplier(FISHTYPE_KOI, state, true);
   if(state.fish_runestonemul_weighted.eqr(-1)) {
     state.fish_runestonemul_weighted = current_fishrunestone;
     state.fish_runestonemul_last = current_fishrunestone;
     state.fish_runestonemul_time = state.c_runtime;
   } else if(current_fishrunestone.neq(state.fish_runestonemul_last)) {
-    state.fish_runestonemul_weighted = fishRunestoneMul(state, false); // this recomputes the weighed average
+    state.fish_runestonemul_weighted = getFishMultiplier(FISHTYPE_KOI, state, false); // this recomputes the weighed average
     state.fish_runestonemul_last = current_fishrunestone;
     state.fish_runestonemul_time = state.c_runtime;
   }
-  var current_fishbasic = fishBasicMul(state, true);
+  var current_fishbasic = getFishMultiplier(FISHTYPE_ORANDA, state, true);
   if(state.fish_basicmul_weighted.eqr(-1)) {
     state.fish_basicmul_weighted = current_fishbasic;
     state.fish_basicmul_last = current_fishbasic;
     state.fish_basicmul_time = state.c_runtime;
   } else if(current_fishbasic.neq(state.fish_basicmul_last)) {
-    state.fish_basicmul_weighted = fishBasicMul(state, false); // this recomputes the weighed average
+    state.fish_basicmul_weighted = getFishMultiplier(FISHTYPE_ORANDA, state, false); // this recomputes the weighed average
     state.fish_basicmul_last = current_fishbasic;
     state.fish_basicmul_time = state.c_runtime;
   }
@@ -2682,10 +2695,13 @@ function getHighestBrassica3Had() {
 }
 
 // returns index of the highest unlocked brassica that you can afford for infinity field. Always returns a valid, brassica3_0 if nothing else is possible, even if this one cannot be afforded
-function getHighestAffordableBrassica3() {
+// opt_recoup: if given, it's assumed this recoup is added to your resources so you can afford more
+function getHighestAffordableBrassica3(opt_recoup) {
   var result = getHighestBrassica3();
-  if(result > brassica3_0 && state.res.lt(crops3[result].getCost())) result--;
-  if(result > brassica3_0 && state.res.lt(crops3[result].getCost())) result--;
+  var res = state.res;
+  if(opt_recoup) res = res.add(opt_recoup);
+  if(result > brassica3_0 && res.lt(crops3[result].getCost())) result--;
+  if(result > brassica3_0 && res.lt(crops3[result].getCost())) result--;
   // no need to do this more times, two tiers down of brassica should be negligable
   return result;
 }

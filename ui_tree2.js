@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -96,7 +96,11 @@ function showEtherealTreeLevelDialog(level, opt_later) {
       text += 'No new ethereal upgrades, crops or challenges unlocked. New content for this ethereal tree level may be added in future game updates. You can always see this dialog again later by clicking the ethereal tree using "See previous unlocks".';
     }
   } else {
-    text += 'The following new ethereal things got, or will get, unlocked at this level:<br><br>';
+    if(anything) {
+      text += 'The following new ethereal things got, or will get, unlocked at this level:<br><br>';
+    } else {
+      text += 'No new ethereal upgrades, crops or challenges were unlocked at this level. New content for this ethereal tree level may be added in future game updates.';
+    }
   }
 
   text += '<br><br>';

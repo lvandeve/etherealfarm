@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -70,7 +70,9 @@ function setTab(i, opt_temp) {
     highlightButton(tabbuttons[j], i == j);
   }
 
-  if(i == tabindex_upgrades) updateUpgradeUI();
+  if(i == tabindex_upgrades) {
+    updateUpgradeUI();
+  }
   if(i == tabindex_fruit) {
     state.fruit_seen = true;
     lastTouchedFruit = null;
@@ -166,6 +168,9 @@ function updateTabButtons2() {
     var text = 'upgrades<br/>(' + state.upgrades_affordable + '/' + state.upgrades_upgradable + ')';
     if(state.upgrades_new_b) {
       text = '<b><font color="red">' + text + '</font></b>';
+    }
+    if(state.neverhadupgradeunlocked) {
+      text = '<b><font color="#f60">' + text + '</font></b>';
     }
 
     if(text != upgradesButtonLastText) {

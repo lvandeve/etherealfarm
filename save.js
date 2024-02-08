@@ -191,6 +191,7 @@ function encState(state, opt_raw_only) {
     if(state.upgrades[registered_upgrades[i]].unlocked) add = true;
     // also add those with seen2: it's possible an upgrade was seen in a previous run but not upgraded yet now
     if(state.upgrades[registered_upgrades[i]].seen2) add = true;
+    if(state.upgrades[registered_upgrades[i]].had) add = true;
     if(add) unlocked.push(registered_upgrades[i]);
   }
   array0 = [];
@@ -198,6 +199,7 @@ function encState(state, opt_raw_only) {
   array2 = [];
   array3 = [];
   array4 = [];
+  array5 = [];
   prev = 0;
   for(var i = 0; i < unlocked.length; i++) {
     if(unlocked[i] - prev < 0) throw 'upgrades must be registered in increasing order';
@@ -205,6 +207,7 @@ function encState(state, opt_raw_only) {
     prev = unlocked[i];
     array1.push(state.upgrades[unlocked[i]].unlocked);
     array2.push(state.upgrades[unlocked[i]].seen2);
+    array5.push(state.upgrades[unlocked[i]].had);
     if(state.upgrades[unlocked[i]].unlocked) {
       array3.push(state.upgrades[unlocked[i]].seen);
       array4.push(state.upgrades[unlocked[i]].count);
@@ -215,6 +218,7 @@ function encState(state, opt_raw_only) {
   processBoolArray(array2);
   processBoolArray(array3);
   processUintArray(array4);
+  processBoolArray(array5);
 
 
   section = 4; id = 0; // crops
@@ -1362,8 +1366,13 @@ function decState(s) {
     array2 = processBoolArray();
     array3 = processBoolArray();
     array4 = processUintArray();
+    if(save_version >= 262144*2+64*11+4) {
+      array5 = processBoolArray();
+    } else {
+      array5 = array2; // set had to seen2 as a fallback
+    }
     if(error) return err(4);
-    if(array0.length != array1.length || array0.length != array2.length || array3.length != array4.length || array3.length > array0.length) return err(4);
+    if(array0.length != array1.length || array0.length != array2.length || array0.length != array5.length || array3.length != array4.length || array3.length > array0.length) return err(4);
     prev = 0;
     var i2 = 0;
     for(var i = 0; i < array0.length; i++) {
@@ -1376,6 +1385,7 @@ function decState(s) {
       if(!upgrades[index]) return err(4);
       state.upgrades[index].unlocked = array1[i];
       state.upgrades[index].seen2 = array2[i];
+      state.upgrades[index].had = array5[i];
       if(state.upgrades[index].unlocked) {
         state.upgrades[index].seen = array3[i2];
         state.upgrades[index].count = array4[i2];

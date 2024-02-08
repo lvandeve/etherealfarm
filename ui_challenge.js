@@ -195,7 +195,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       text += '<br>';
     }
   }
-  text += '• Max level reached with this challenge gives a production bonus of <b>(' + getChallengeFormulaString(c, c.cycling ? undefined : c.bonus.toPercentString()) + ')</b> to the game depending on level reached, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  text += '• Max level reached with this challenge gives a production bonus of <b>(' + getChallengeFormulaString(c) + ')</b> to the game depending on level reached, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
   if(c.cycling) {
     text += '<br>';
     text += '• <b>bonus</b> value itself depends on cycle, respectively: ';
@@ -551,7 +551,7 @@ function createFinishChallengeDialog() {
 }
 
 function getChallengeFormulaString(c, opt_bonus_string) {
-  var bonus_string = opt_bonus_string || 'bonus';
+  var bonus_string = (c.cycling ? 'base bonus' : c.bonus.toPercentString());
 
   var result = '';
 
@@ -569,15 +569,17 @@ function getChallengeFormulaString(c, opt_bonus_string) {
         result = bonus_string + ' * level ^ ' + c.bonus_exponent;
       }
     }
-    if(c.completion_bonus) {
-      result += ' + ' + Num(c.completion_bonus).toPercentString() + ' completion bonus';
+    if(c.completion_bonus.neqr(0)) {
+      result += ' + ' + c.completion_bonus.toPercentString() + ' completion bonus';
     }
   } else if(c.bonus_formula == 1) {
-    result += bonus_string + ' * ' + c.bonus_exponent_base.toString() + ' every ' + c.bonus_level_b + ' levels';
-    if(c.bonus_level_a) {
-      result += ', starting at level ' + c.bonus_level_a;
+    if(c.bonus_level_a == c.bonus_level_b && c.bonus_exponent_base_a.eq(c.bonus_exponent_base_b)) {
+      result = '+' + c.bonus_exponent_base_b.subr(1).toPercentString() + ' every ' + c.bonus_level_b + ' levels';
+    } else {
+      result = '+' + c.bonus_exponent_base_a.subr(1).toPercentString() + ' at level ' + c.bonus_level_a;
+      result += ', then +' + c.bonus_exponent_base_b.subr(1).toPercentString() + ' every ' + c.bonus_level_b + ' levels';
     }
-    result += ' (multiplicative). Partial linear bonus increase between these levels';
+    result += ', multiplicative with partial gradual increase between those level intervals.';
   }
   return result;
 }
@@ -657,7 +659,7 @@ function createAllChallengeStatsDialog() {
       text += 'base bonuses: ';
       for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
       text += '<br>';
-      text += 'formula: ' + getChallengeFormulaString(c, 'base bonus');
+      text += 'formula: ' + getChallengeFormulaString(c);
       text += '<br>';
       text += 'production bonuses: ';
       var sum_prod = Num(0);
@@ -681,7 +683,7 @@ function createAllChallengeStatsDialog() {
       text += nextString + ' cycle: ' + (cycle + 1) + ' of ' + (c.cycling);
       text += '<br>';
     } else {
-      text += 'bonus formula: ' + getChallengeFormulaString(c, c.bonus.toPercentString());
+      text += 'bonus formula: ' + getChallengeFormulaString(c);
       text += '<br>';
       text += 'production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString();
       // disabled for bonus_formula=0, see todo at modifyResinTwigsChallengeBonus
