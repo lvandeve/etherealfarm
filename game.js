@@ -2606,7 +2606,7 @@ function doAutoAction(index, part, opt_manually) {
       did_something = true;
     }
     // don't do blueprint if this is the start-of-run auto-action (index 0) and player already did transcend with blueprint
-    if(o.enable_blueprint && !(state.transcended_with_blueprint && !opt_manually && index == 0)) {
+    if(o.enable_blueprint && !(state.transcended_with_blueprint && !opt_manually && haveBeginOfRunAutoAction() && index == 0)) {
       var b = state.blueprints[o.blueprint];
       if(b) {
         plantBluePrint(b, true, !opt_manually);
