@@ -1923,43 +1923,43 @@ function computeDerived(state) {
   }
 
   // fish effects
-  var current_fishresin = getFishMultiplier(FISHTYPE_TANG, state, true);
+  var current_fishresin = getFishMultiplier(FISHTYPE_TANG, state, 0);
   if(state.fish_resinmul_weighted.eqr(-1)) {
     state.fish_resinmul_weighted = current_fishresin;
     state.fish_resinmul_last = current_fishresin;
     state.fish_resinmul_time = state.c_runtime;
   } else if(current_fishresin.neq(state.fish_resinmul_last)) {
-    state.fish_resinmul_weighted = getFishMultiplier(FISHTYPE_TANG, state, false); // this recomputes the weighed average
+    state.fish_resinmul_weighted = getFishMultiplier(FISHTYPE_TANG, state, 1); // this recomputes the weighed average
     state.fish_resinmul_last = current_fishresin;
     state.fish_resinmul_time = state.c_runtime;
   }
-  var current_fishtwigs = getFishMultiplier(FISHTYPE_EEL, state, true);
+  var current_fishtwigs = getFishMultiplier(FISHTYPE_EEL, state, 0);
   if(state.fish_twigsmul_weighted.eqr(-1)) {
     state.fish_twigsmul_weighted = current_fishtwigs;
     state.fish_twigsmul_last = current_fishtwigs;
     state.fish_twigsmul_time = state.c_runtime;
   } else if(current_fishtwigs.neq(state.fish_twigsmul_last)) {
-    state.fish_twigsmul_weighted = getFishMultiplier(FISHTYPE_EEL, state, false); // this recomputes the weighed average
+    state.fish_twigsmul_weighted = getFishMultiplier(FISHTYPE_EEL, state, 1); // this recomputes the weighed average
     state.fish_twigsmul_last = current_fishtwigs;
     state.fish_twigsmul_time = state.c_runtime;
   }
-  var current_fishrunestone = getFishMultiplier(FISHTYPE_KOI, state, true);
+  var current_fishrunestone = getFishMultiplier(FISHTYPE_KOI, state, 0);
   if(state.fish_runestonemul_weighted.eqr(-1)) {
     state.fish_runestonemul_weighted = current_fishrunestone;
     state.fish_runestonemul_last = current_fishrunestone;
     state.fish_runestonemul_time = state.c_runtime;
   } else if(current_fishrunestone.neq(state.fish_runestonemul_last)) {
-    state.fish_runestonemul_weighted = getFishMultiplier(FISHTYPE_KOI, state, false); // this recomputes the weighed average
+    state.fish_runestonemul_weighted = getFishMultiplier(FISHTYPE_KOI, state, 1); // this recomputes the weighed average
     state.fish_runestonemul_last = current_fishrunestone;
     state.fish_runestonemul_time = state.c_runtime;
   }
-  var current_fishbasic = getFishMultiplier(FISHTYPE_ORANDA, state, true);
+  var current_fishbasic = getFishMultiplier(FISHTYPE_ORANDA, state, 0);
   if(state.fish_basicmul_weighted.eqr(-1)) {
     state.fish_basicmul_weighted = current_fishbasic;
     state.fish_basicmul_last = current_fishbasic;
     state.fish_basicmul_time = state.c_runtime;
   } else if(current_fishbasic.neq(state.fish_basicmul_last)) {
-    state.fish_basicmul_weighted = getFishMultiplier(FISHTYPE_ORANDA, state, false); // this recomputes the weighed average
+    state.fish_basicmul_weighted = getFishMultiplier(FISHTYPE_ORANDA, state, 1); // this recomputes the weighed average
     state.fish_basicmul_last = current_fishbasic;
     state.fish_basicmul_time = state.c_runtime;
   }

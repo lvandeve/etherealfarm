@@ -3337,11 +3337,16 @@ function Challenge() {
   in-between a smaller non-exponential bonus is given, which is more significant again after each of the exponential bumps
   levels of the form A + B * level are the "key" levels, and in addition level 0 is a key level if A > 0
   between two key levels K0 and K1, bonus linearly ramps up from K0 to K0 * + (K1 - K0) * p, where p is e.g. 0.5 to go to midway
+
+  value 2:
+  works like value 1 for seeds/spores production bonus
+  works like value 0 for resin/twigs bonus
+  this is a temporary measure while gradually moving everything to value 1, to allow already moving the production bonus to it but the resin/twigs is a bit more tricky to change for everyone
   */
   this.bonus_formula = 0;
 
 
-  // main bonus multiplier
+  // for formula=0. main bonus multiplier
   this.bonus = Num(0);
   // for formula=0. if higher than 0, bonus only starts working from that level
   this.bonus_min_level = 0;
@@ -3971,12 +3976,16 @@ challenges[challenge_infernal].bonus = Num(0.005);
 challenges[challenge_infernal].bonus_min_level = 20;
 challenges[challenge_infernal].bonus_exponent = Num(1.1);
 /*
-challenges[challenge_infernal].bonus_formula = 1;
+challenges[challenge_infernal].bonus_formula = 2;
 challenges[challenge_infernal].bonus_level_a = 20;
 challenges[challenge_infernal].bonus_level_b = 100;
-challenges[challenge_infernal].bonus_p = 0.66;
-challenges[challenge_infernal].bonus_exponent_base_a = Num(2);
+challenges[challenge_infernal].bonus_p = 0.5;
+challenges[challenge_infernal].bonus_exponent_base_a = Num(1.1);
 challenges[challenge_infernal].bonus_exponent_base_b = Num(2);
+// old values, for resin/twigs
+challenges[challenge_infernal].bonus = Num(0.005);
+challenges[challenge_infernal].bonus_min_level = 20;
+challenges[challenge_infernal].bonus_exponent = Num(1.1);
 */
 
 
@@ -6472,10 +6481,10 @@ function treeLevelResin(level, breakdown) {
   }
 
   // fishes
-  if(state.fish_resinmul_weighted.neqr(1)) {
-    var mul = getFishMultiplier(FISHTYPE_TANG, state, false);
+  if(state.fishtypecount[FISHTYPE_TANG] || state.fish_resinmul_weighted.neqr(1)) {
+    var mul = getFishMultiplier(FISHTYPE_TANG, state, 2);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
-      var umul = getFishMultiplier(FISHTYPE_TANG, state, true);
+      var umul = getFishMultiplier(FISHTYPE_TANG, state, 0);
       resin.mulInPlace(mul);
       // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
       if(breakdown) breakdown.push([umul.eq(mul) ? 'tang (fish)' : 'tang fish (time-weighted)', true, mul, resin.clone()]);
@@ -6525,11 +6534,14 @@ var timeweightedinfo = '(the bonus is decreased if the fish is only present for 
 
 // Gets the total multiplier of fish effect for all placed fishes of the type (all tiers).
 // If you have none of this fish, it returns a multiplier of 1.
-// use_underlying: only used for time-weighted fishes:
-// if true, computes the formula according to the fish currently there.
-// if false, takes into account time length during which the fishes were there
-// Set this to 'false' when getting the fishResin bonus currently applicable to the gameplay. Set to true if the actual formula must be computed, e.g. to update the variables used for the 'false' case.
-function getFishMultiplier(fishtype, state, use_underlying) {
+// weighted: only used for time-weighted fishes:
+// if 0, computes the formula according to the fish currently there. Use this to compute what the actual underlying value is, which is the basis for the time-weighted computations
+// if 1, takes into account time length during which the fishes were there. Use this when computing time-weighted value to update state (but not for the actual gameplay)
+// if 2, returns the minimum of the computation for weighted==0 and weighted==1, for actual current gameplay computation
+function getFishMultiplier(fishtype, state, weighted) {
+  if(weighted == 2) {
+    return Num.min(getFishMultiplier(fishtype, state, 0), getFishMultiplier(fishtype, state, 1));
+  }
   if(fishtype == FISHTYPE_GOLDFISH) {
     // infinity seeds bonus
     var num0 = state.fishcount[goldfish_0];
@@ -6538,7 +6550,7 @@ function getFishMultiplier(fishtype, state, use_underlying) {
     return new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1 + goldfish_2_bonus * num2);
   } else if(fishtype == FISHTYPE_KOI) {
     // runestone multiplier
-    if(use_underlying) {
+    if(weighted == 0) {
       var num0 = state.fishcount[koi_0];
       var num1 = state.fishcount[koi_1];
       return new Num(1 + koi_0_bonus * num0 + koi_1_bonus * num1);
@@ -6568,7 +6580,7 @@ function getFishMultiplier(fishtype, state, use_underlying) {
     var num1 = state.fishcount[puffer_1];
     return new Num(1 + puffer_0_bonus * num0 + puffer_1_bonus * num1);
   } else if(fishtype == FISHTYPE_EEL) {
-    if(use_underlying) {
+    if(weighted == 0) {
       var num0 = state.fishcount[eel_0];
       var num1 = state.fishcount[eel_1];
       return new Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1);
@@ -6579,7 +6591,7 @@ function getFishMultiplier(fishtype, state, use_underlying) {
       return state.fish_twigsmul_weighted.mulr(deltatime2).add(state.fish_twigsmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
     }
   } else if(fishtype == FISHTYPE_TANG) {
-    if(use_underlying) {
+    if(weighted == 0) {
       var num0 = state.fishcount[tang_0];
       var num1 = state.fishcount[tang_1];
       return new Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1);
@@ -6595,7 +6607,7 @@ function getFishMultiplier(fishtype, state, use_underlying) {
     return new Num(1 + leporinus_0_bonus * num0);
   } else if(fishtype == FISHTYPE_ORANDA) {
     // non-runestone multiplier
-    if(use_underlying) {
+    if(weighted == 0) {
       var num0 = state.fishcount[oranda_0];
       if(num0 == 0) return new Num(1);
       return new Num(1 + oranda_0_bonus * num0);
@@ -6675,10 +6687,10 @@ function treeLevelTwigs(level, breakdown) {
   }
 
   // fishes
-  if(state.fish_twigsmul_weighted.neqr(1)) {
-    var mul = getFishMultiplier(FISHTYPE_EEL, state, false);
+  if(state.fishtypecount[FISHTYPE_EEL] || state.fish_twigsmul_weighted.neqr(1)) {
+    var mul = getFishMultiplier(FISHTYPE_EEL, state, 2);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
-      var umul = getFishMultiplier(FISHTYPE_EEL, state, true);
+      var umul = getFishMultiplier(FISHTYPE_EEL, state, 0);
       res.twigs.mulInPlace(mul);
       // if it says "time weighted", it means the amount of eel in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during twigs gain)
       if(breakdown) breakdown.push([umul.eq(mul) ? 'eel' : 'eel (time-weighted)', true, mul, res.clone()]);
@@ -7063,7 +7075,7 @@ function modifyResinTwigsChallengeBonus(bonus) {
 function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
   var c = challenges[challenge_id];
 
-  if(c.bonus_formula == 0) {
+  if(c.bonus_formula == 0 || (c.bonus_formula == 2 && which == 1)) {
     var bonus = c.bonus;
     if(c.cycling && opt_cycle != undefined) bonus = c.cycling_bonus[opt_cycle];
 
@@ -7080,7 +7092,7 @@ function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
     return result;
   }
 
-  if(c.bonus_formula == 1) {
+  if(c.bonus_formula == 1 || (c.bonus_formula == 2 && which == 0)) {
     // TODO: handle cycling challenges for this formula, how the weights between different cycles work... e.g. multipliers with cycling_bonus. Or just add then all.
 
     if(level == 0) return Num(0);
@@ -8316,7 +8328,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   // goldfish
   if(result.infseeds.neqr(0) && (state.fishes[goldfish_0].unlocked)) {
-    var mul = getFishMultiplier(FISHTYPE_GOLDFISH, state, false);
+    var mul = getFishMultiplier(FISHTYPE_GOLDFISH, state, 2);
     var have_fish = mul.neqr(1);
     if(have_fish) result.infseeds.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[goldfish_0].cost.infspores.mulr(2));
@@ -8326,7 +8338,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   // octopus
   if(result.infspores.neqr(0) && state.fishes[octopus_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_OCTOPUS, state, false);
+    var mul = getFishMultiplier(FISHTYPE_OCTOPUS, state, 2);
     var have_fish = mul.neqr(1);
     if(have_fish) result.infspores.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[octopus_0].cost.infspores.mulr(2));
@@ -8336,7 +8348,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   // puffer fish
   // for berries, but also for nuts, nuts behave just like berries in infinity field
   if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT) && state.fishes[puffer_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_PUFFER, state, false);
+    var mul = getFishMultiplier(FISHTYPE_PUFFER, state, 2);
     var have_fish = mul.neqr(1);
     if(have_fish) result.infseeds.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[puffer_0].cost.infspores.mulr(2));
@@ -8404,7 +8416,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
       // sea anemone through flower to mushrooms
       // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the flower multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
       if(state.fishes[anemone_0].unlocked) {
-        var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, false);
+        var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, 2);
         var have_fish = mul.neqr(1);
         if(have_fish) result.mulInPlace(mul);
         var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
@@ -8417,7 +8429,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
       // leporinus through bees to mushrooms
       // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
       if(numbees && state.fishes[leporinus_0].unlocked) {
-        var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, false);
+        var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, 2);
         var have_fish = mul.neqr(1);
         var beemul_before = beeonlymul;
         var beemul_after = (beeonlymul.subr(1)).mul(mul).addr(1);
@@ -8469,7 +8481,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   }
 
   if(this.type == CROPTYPE_BRASSICA && state.fishes[shrimp_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_SHRIMP, state, false);
+    var mul = getFishMultiplier(FISHTYPE_SHRIMP, state, 2);
     var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[shrimp_0].cost.infspores.mulr(2));
@@ -8526,7 +8538,7 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 
   // sea anemone to flower
   if(this.type == CROPTYPE_FLOWER && state.fishes[anemone_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, false);
+    var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, 2);
     var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
@@ -8535,7 +8547,7 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 
   // leporinus to bee
   if(this.type == CROPTYPE_BEE && state.fishes[leporinus_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, false);
+    var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, 2);
     var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[leporinus_0].cost.infspores.mulr(2));
@@ -8543,12 +8555,12 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
   }
 
   // koi to runestone
-  if(this.type == CROPTYPE_RUNESTONE && state.fish_runestonemul_weighted.neqr(1)) {
-    var mul = getFishMultiplier(FISHTYPE_KOI, state, false);
+  if(this.type == CROPTYPE_RUNESTONE && (state.fishtypecount[FISHTYPE_KOI] || state.fish_runestonemul_weighted.neqr(1))) {
+    var mul = getFishMultiplier(FISHTYPE_KOI, state, 2);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       result.mulInPlace(mul);
       if(breakdown) {
-        var umul = getFishMultiplier(FISHTYPE_KOI, state, true);
+        var umul = getFishMultiplier(FISHTYPE_KOI, state, 0);
         // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
         breakdown.push([umul.eq(mul) ? 'koi (fish)' : 'koi (time-weighted)', true, mul, result.clone()]);
       }
@@ -8588,13 +8600,13 @@ Crop3.prototype.getBasicBoost = function(f, breakdown) {
   }
 
   // oranda fish: multiplier to basic field bonus for the non-runestone part of the bonus
-  if(this.type != CROPTYPE_RUNESTONE && state.fish_basicmul_weighted.neqr(1)) {
-    var oranda_mul = getFishMultiplier(FISHTYPE_ORANDA, state, false);
+  if(this.type != CROPTYPE_RUNESTONE && (state.fishtypecount[FISHTYPE_ORANDA] || state.fish_basicmul_weighted.neqr(1))) {
+    var oranda_mul = getFishMultiplier(FISHTYPE_ORANDA, state, 2);
     if(oranda_mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       var mul = oranda_mul.add(runestone_mul).subr(1).div(runestone_mul); // the oranda is additive to runestones, NOT multiplicative with it. So do as if a bonus that's the sum of runestone and oranda is given, and then divide through the original runestone bonus from above to only have the oranda effect here
       result.mulInPlace(mul);
       if(breakdown) {
-        var oranda_umul = getFishMultiplier(FISHTYPE_ORANDA, state, true);
+        var oranda_umul = getFishMultiplier(FISHTYPE_ORANDA, state, 0);
         // if it says "time weighted", it means the amount of tang in the pond was not always the same during this run, so a time-weighted average is taken (to prevent fish-swapping techniques like getting the fish only briefly during resin gain)
         if(runestone_mul.eqr(1)) {
           breakdown.push([oranda_umul.eq(oranda_mul) ? 'oranda (fish)' : 'oranda (time-weighted)', true, oranda_mul, result.clone()]);

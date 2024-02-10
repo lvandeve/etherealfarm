@@ -195,7 +195,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       text += '<br>';
     }
   }
-  text += '• Max level reached with this challenge gives a production bonus of <b>(' + getChallengeFormulaString(c) + ')</b> to the game depending on level reached, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
+  text += '• Max level reached with this challenge gives a production bonus of <b>(' + getChallengeFormulaString(0, c) + ')</b> to the game depending on level reached, whether successfully completed or not. The bonus applies to seeds and spores, and 1/100th of it to resin and twigs.';
   if(c.cycling) {
     text += '<br>';
     text += '• <b>bonus</b> value itself depends on cycle, respectively: ';
@@ -550,12 +550,13 @@ function createFinishChallengeDialog() {
   });
 }
 
-function getChallengeFormulaString(c, opt_bonus_string) {
+// which = 0 for prod bonus, 1 for resin/twigs bonus
+function getChallengeFormulaString(which, c, opt_bonus_string) {
   var bonus_string = (c.cycling ? 'base bonus' : c.bonus.toPercentString());
 
   var result = '';
 
-  if(c.bonus_formula == 0) {
+  if(c.bonus_formula == 0 || (c.bonus_formula == 2 && which == 1)) {
     if(c.bonus_exponent == 1) {
       if(c.bonus_min_level) {
         result = bonus_string + ' * max(0, level - ' + (c.bonus_min_level - 1) + ')';
@@ -572,7 +573,7 @@ function getChallengeFormulaString(c, opt_bonus_string) {
     if(c.completion_bonus.neqr(0)) {
       result += ' + ' + c.completion_bonus.toPercentString() + ' completion bonus';
     }
-  } else if(c.bonus_formula == 1) {
+  } else if(c.bonus_formula == 1 || (c.bonus_formula == 2 && which == 0)) {
     if(c.bonus_level_a == c.bonus_level_b && c.bonus_exponent_base_a.eq(c.bonus_exponent_base_b)) {
       result = '+' + c.bonus_exponent_base_b.subr(1).toPercentString() + ' every ' + c.bonus_level_b + ' levels';
     } else {
@@ -659,7 +660,7 @@ function createAllChallengeStatsDialog() {
       text += 'base bonuses: ';
       for(var j = 0; j < c.cycling; j++) text +=  (j ? ', ' : '') + c.cycling_bonus[j].toPercentString();
       text += '<br>';
-      text += 'formula: ' + getChallengeFormulaString(c);
+      text += 'formula: ' + getChallengeFormulaString(0, c);
       text += '<br>';
       text += 'production bonuses: ';
       var sum_prod = Num(0);
@@ -683,7 +684,7 @@ function createAllChallengeStatsDialog() {
       text += nextString + ' cycle: ' + (cycle + 1) + ' of ' + (c.cycling);
       text += '<br>';
     } else {
-      text += 'bonus formula: ' + getChallengeFormulaString(c);
+      text += 'bonus formula: ' + getChallengeFormulaString(0, c);
       text += '<br>';
       text += 'production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString();
       // disabled for bonus_formula=0, see todo at modifyResinTwigsChallengeBonus

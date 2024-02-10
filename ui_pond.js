@@ -322,9 +322,9 @@ function getFishInfoHTML(f, c, opt_detailed) {
   if(c.effect_description) result += '<br>' + c.effect_description;
 
 
-  var total = getFishMultiplier(c.type, state, true);
+  var total = getFishMultiplier(c.type, state, 0);
   if(total.neqr(1)) {
-    var current = getFishMultiplier(c.type, state, false);
+    var current = getFishMultiplier(c.type, state, 2);
     var typename = getFishTypeName(c.type);
     result += '<br>';
     result += '<br>Total bonus for all ' + typename + ': ' + total.subr(1).toPercentString();
