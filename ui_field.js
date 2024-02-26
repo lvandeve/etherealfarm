@@ -1116,7 +1116,7 @@ function updateFieldCellUI(x, y) {
         if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
       }
       label = c.name + '. ' + label;
-      if(largeravailable) blendImage(upgrade_arrow_small, fd.canvas);
+      if(largeravailable) blendImage(image_field_larger_available_arrow, fd.canvas);
     } else if(f.index == FIELD_TREE_TOP) {
       blendImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;

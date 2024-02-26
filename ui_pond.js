@@ -110,8 +110,9 @@ function updatePondDialogText() {
 
   var text = '';
 
-  text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
-  text += ' (max ever had: ' + state.g_max_infinityboost.toPercentString() + ')';
+  text += 'Total boost from infinity crops to basic field: ' + state.expected_infinityboost.toPercentString();
+  if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (time-weighted: ' + state.infinityboost.toPercentString() + ')';
+  text += '. Max ever had: ' + state.g_max_infinityboost.toPercentString();
 
   if(!haveFishes()) {
     text += '<br><br>';
@@ -620,7 +621,7 @@ function updatePondCellUI(x, y) {
       var c = fishes[f.cropIndex()];
       blendImage(c.image, fd.canvas);
       label = c.name + '. ' + label;
-      if(largeravailable) blendImage(upgrade_arrow_small, fd.canvas);
+      if(largeravailable) blendImage(image_field_larger_available_arrow, fd.canvas);
     } else {
       fd.div.innerText = '';
       //unrenderImage(fd.canvas);

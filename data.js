@@ -1114,9 +1114,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.squirrel_upgrades[upgradesq_highest_level].count && state.g_treelevel > upgradesq_highest_level_min) {
-      //var bonus = Num(upgradesq_highest_level_base).pow(Num(state.g_treelevel - upgradesq_highest_level_min));
-      var diff = state.g_treelevel - upgradesq_highest_level_min;
-      var bonus = Num(diff * upgradesq_highest_level_param1 + 1).powr(upgradesq_highest_level_param2);
+      var bonus = GetSquirrelUpgradeHighestTreeLevelBonus();
       result.mulInPlace(bonus);
       if(breakdown) breakdown.push(['highest tree level ever ' + state.g_treelevel + ' (squirrel upgrade)', true, bonus, result.clone()]);
     }
@@ -3972,10 +3970,6 @@ function() {
   return state.treelevel >= 85;
 }, function() {
 }, 0);
-challenges[challenge_infernal].bonus = Num(0.005);
-challenges[challenge_infernal].bonus_min_level = 20;
-challenges[challenge_infernal].bonus_exponent = Num(1.1);
-/*
 challenges[challenge_infernal].bonus_formula = 2;
 challenges[challenge_infernal].bonus_level_a = 20;
 challenges[challenge_infernal].bonus_level_b = 100;
@@ -3986,7 +3980,6 @@ challenges[challenge_infernal].bonus_exponent_base_b = Num(2);
 challenges[challenge_infernal].bonus = Num(0.005);
 challenges[challenge_infernal].bonus_min_level = 20;
 challenges[challenge_infernal].bonus_exponent = Num(1.1);
-*/
 
 
 // 14
@@ -4215,7 +4208,7 @@ function getEtherealTreeNeighborBoost() {
   return boost;
 }
 
-// boost to basic field
+// boost from ethereal crops to basic field
 Crop2.prototype.getBasicBoost = function(f, breakdown) {
   var result = this.effect.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
@@ -5332,6 +5325,7 @@ var FRUIT_MIX = fruit_index++; // nettle/brassica/bee mix
 var FRUIT_TREELEVEL = fruit_index++; // treelevel production bonus
 var FRUIT_SEED_OVERLOAD = fruit_index++; // increase seed production but also mushrooms's seed consumption
 var FRUIT_SPORES_OVERLOAD = fruit_index++; // increase spore production but at the cost of even more seed consumption. This ability is introduced for emerald fruits, the first fruit with 6 slots. This ability is only useable if seeds boost is also slotted in the fruit, without it the mushroom for sure won't get enough seeds. It's also not useable to have this ability and the regular FRUIT_MUSHBOOST at the same time, there won't be enough seed production to support both multiplier at the same time. Instead, it's like this: if there are enough seeds, FRUIT_SPORES_OVERLOAD is best. If there are not enough seeds, then instead FRUIT_MUSHBOOST is better because the seeds are cheaper now, even though FRUIT_MUSHBOOST can't reach an as high spores amount as FRUIT_SPORES_OVERLOAD.
+var FRUIT_RESIN_TWIGS = fruit_index++; // works like FRUIT_RESINBOOST and FRUIT_TWIGSBOOST at the same time
 
 // These seasonal abilities only exist for the appropriate seasonal fruit and do not take up a regular slot
 fruit_index = 20; // leave a few available spots for non-seasonal abilities above
@@ -5353,7 +5347,7 @@ var FRUIT_ALL_SEASON2 = fruit_index++; // dragon fruit
 
 // returns the amount of boost (add 1 to get multiplier) of the ability, when relevant, for a given ability level in the fruit and the fruit tier
 // opt_basic: if true, adjusts some abilities if basic challenge active. Doesn't adjust ability or level, as the getFruitTier and getFruitAbility already take an opt_basic parameter for that
-// opt_sub_part: optional sub-part, for some abilities that have multiple independent effects, e.g. FRUIT_RESINBOOST and FRUIT_TWIGSBOOST
+// opt_sub_part: optional sub-part, for some abilities that have multiple independent effects, e.g. FRUIT_RESINBOOST and FRUIT_TWIGSBOOST. Can also be used for FRUIT_TREELEVEL to get the target level instead of depending on current treelevel
 function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
   var base = Math.pow(getFruitTierStrength(tier), 0.75) * 0.05;
 
@@ -5459,6 +5453,20 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
       return Num(tweak * max * amount);
     }
   }
+  if(ability == FRUIT_RESIN_TWIGS) {
+    if(opt_sub_part == 1) {
+      // boost to the unused resin and twigs production bonus, but only partially in a similar way to the partial abilities of the mix ability
+      // since it applies to both at same time multiplicatively, exponent is smaller then for FRUIT_RESINBOOST and FRUIT_TWIGSBOOST
+      return Num(base * 1.0 * level).powr(0.15);
+    } else {
+      var amount = towards1(level, 5);
+      var t = tier - 4; // only starts at tier 5
+      if(t < 0) t = 0;
+      var max = 0.2 + 0.5 * t / 6;
+      var tweak = 2.5;
+      return Num(tweak * max * amount);
+    }
+  }
   if(ability == FRUIT_NUTBOOST) {
     var amount = towards1(level, 5);
     var t = tier - 4; // only starts at tier 5
@@ -5495,7 +5503,7 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
   }
   if(ability == FRUIT_TREELEVEL) {
     // this one depends on current tree level, and uses the treeLevelFruitBoost implementation, which itself is based on the bee boost but with a tree-level dependent multiplier
-    return treeLevelFruitBoost(tier, level, state.treelevel);
+    return treeLevelFruitBoost(tier, level, state.treelevel, opt_sub_part == 1);
   }
   if(ability == FRUIT_SEED_OVERLOAD) {
     return Num(base * 1.1 * level);
@@ -5541,12 +5549,13 @@ function getFruitAbilityCost(ability, level, tier) {
   if(ability == FRUIT_GROWSPEED) nonlinearability = true;
   if(ability == FRUIT_RESINBOOST) nonlinearability = true;
   if(ability == FRUIT_TWIGSBOOST) nonlinearability = true;
+  if(ability == FRUIT_RESIN_TWIGS) nonlinearability = true;
   if(ability == FRUIT_NUTBOOST) nonlinearability = true;
 
   if(nonlinearability) {
-   result = Num(1.5).powr(level);
+    result = Num(1.5).powr(level);
   } else {
-   result = Num(1.25).powr(level);
+    result = Num(1.25).powr(level);
   }
   result = result.mulr(getFruitTierCost(tier));
 
@@ -5576,11 +5585,11 @@ function getFruitTierCost(tier) {
     case 7: return 1500;
     case 8: return 4000;
     case 9: return 25000;
+    case 10: return 100000;
     // TODO: these numbers must be tuned once those fruits are introduced
-    case 10: return 40000;
-    case 11: return 100000;
+    case 11: return 400000;
   }
-  return tier < 0 ? 0 : 100000;
+  return tier < 0 ? 0 : 400000;
 }
 
 // This determines how strong standard fruit abilities such as flower boost and berry boost are at this tier
@@ -5597,12 +5606,12 @@ function getFruitTierStrength(tier) {
     case 6: return 500;
     case 7: return 1500;
     case 8: return 4000;
-    case 9: return 10000; // a smaller growth than in getFruitTierCost, because this fruit already adds an extras lot which is already a very strong thing on its own
+    case 9: return 10000; // a smaller growth than in getFruitTierCost, because this fruit already adds an extra slot which is already a very strong thing on its own
+    case 10: return 40000;
     // TODO: these numbers must be tuned once those fruits are introduced
-    case 10: return 20000;
-    case 11: return 50000;
+    case 11: return 100000;
   }
-  return tier < 0 ? 0 : 50000;
+  return tier < 0 ? 0 : 100000;
 }
 
 // if due to a game update the costs of certain abilities of fruits changes, this recomputes the correct amount of essence spent
@@ -5825,32 +5834,67 @@ function getNewFruitTier(roll, treelevel, improved_probability) {
   }
 
   // level 160: emerald introduced - NOTE: this is 25 levels after the previous fruit, instead of per 20 levels as it was before
-  if(treelevel >= 160 && treelevel <= 165) {
+  if(treelevel >= 160 && treelevel < 165) {
     return (roll > prob75) ? 9 : 8;
   }
 
   // level 165
-  if(treelevel >= 165 && treelevel <= 170) {
+  if(treelevel >= 165 && treelevel < 170) {
     return (roll > prob50) ? 9 : 8;
   }
 
   // level 170
-  if(treelevel >= 170 && treelevel <= 175) {
+  if(treelevel >= 170 && treelevel < 175) {
     return (roll > prob25) ? 9 : 8;
   }
 
   // level 175
-  if(treelevel >= 175 && treelevel <= 180) {
+  if(treelevel >= 175 && treelevel < 180) {
     return (roll > prob20) ? 9 : 8;
   }
 
   // level 180
-  if(treelevel >= 180 && treelevel <= 185) {
+  if(treelevel >= 180 && treelevel < 185) {
     return (roll > prob10) ? 9 : 8;
   }
 
+  // level 185
+  if(treelevel >= 185 && treelevel < 190) {
+    return 9;
+  }
+
+  // level 190: ruby introduced - NOTE: this is 30 levels after the previous fruit, instead of per 20/25 levels as it was before
+  if(treelevel >= 190 && treelevel < 195) {
+    return (roll > prob75) ? 10 : 9;
+  }
+
+  // level 195
+  if(treelevel >= 195 && treelevel < 200) {
+    return (roll > prob50) ? 10 : 9;
+  }
+
+  // level 200
+  if(treelevel >= 200 && treelevel < 205) {
+    return (roll > prob25) ? 10 : 9;
+  }
+
+  // level 205
+  if(treelevel >= 205 && treelevel < 210) {
+    return (roll > prob20) ? 10 : 9;
+  }
+
+  // level 210
+  if(treelevel >= 210 && treelevel < 215) {
+    return (roll > prob10) ? 10 : 9;
+  }
+
+  // level 215
+  if(treelevel >= 215 && treelevel < 220) {
+    return 10;
+  }
+
   // Higher tree levels are not yet implemented for the fruits
-  return 9;
+  return 10;
 }
 
 // how many abilities should a fruit of this tier have (excluding any seasonal ability)
@@ -6327,7 +6371,8 @@ function treeLevelFruitBoostCurve(tree_level, fruit_drop_level, next_fruit_drop_
 }
 
 // returns the boost given by the FRUIT_TREELEVEL fruit
-function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
+// opt_target: if true, gives the final target level, as if tree_level is infinity
+function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, opt_target) {
   // for amethyst fruit (which drops as highest tier from 115 to 135) fruit_drop_level should be 115, for sapphire it should be 135, etc...
   var fruit_drop_level;
   var next_fruit_drop_level;
@@ -6335,14 +6380,15 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
   if(fruit_tier <= 7) {
     fruit_drop_level = 115;
     next_fruit_drop_level = 135;
-  } if(fruit_tier == 8) {
+  } else if(fruit_tier == 8) {
     fruit_drop_level = 135;
     next_fruit_drop_level = 160;
   } else if(fruit_tier == 9)  {
     fruit_drop_level = 160;
-    next_fruit_drop_level = 190; // TODO: update to correct value when actual ruby fruit drop level was decided
+    next_fruit_drop_level = 190;
   } else {
     // TODO: update as the fruits get actually designed and their levels chosen
+    // it's correct for ruby (tier 10)
     fruit_drop_level = 160 + (fruit_tier - 9) * 30;
     next_fruit_drop_level = fruit_drop_level + 30;
   }
@@ -6351,7 +6397,7 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level) {
   // For amethyst fruits: relevant tree levels where multiplier applies are from 115-135 and that's where the boost value is computed
   // to be in similar range as that for fruit berry boost etc... at input level 135, but it is soft capped after that
   // TODO: also support lower fruit tier, for e.g. basic challenge
-  var s = treeLevelFruitBoostCurve(tree_level, fruit_drop_level, next_fruit_drop_level);
+  var s = treeLevelFruitBoostCurve(opt_target ? next_fruit_drop_level : tree_level, fruit_drop_level, next_fruit_drop_level);
   return boost.mulr(s);
 }
 
@@ -6795,9 +6841,15 @@ function getStarterResources(opt_add_type, opt_sub_type) {
 function getUnusedResinBonusFor(resin) {
   var result = Num.log10(resin.addr(1)).mulr(0.1).addr(1);
 
-  var level = getFruitAbility(FRUIT_RESINBOOST, true);
+  var level;
+  level = getFruitAbility(FRUIT_RESINBOOST, true);
   if(level > 0) {
     var mul = getFruitBoost(FRUIT_RESINBOOST, level, getFruitTier(true), false, 1).addr(1);
+    result = result.mul(mul);
+  }
+  level = getFruitAbility(FRUIT_RESIN_TWIGS, true);
+  if(level > 0) {
+    var mul = getFruitBoost(FRUIT_RESIN_TWIGS, level, getFruitTier(true), false, 1).addr(1);
     result = result.mul(mul);
   }
 
@@ -6817,9 +6869,15 @@ function getUnusedTwigsBonusFor(twigs) {
   //var result = Num(1); // twigs bonus doesn't actually exist without the fruit that gives it
   var result = Num.log10(twigs.addr(1)).mulr(0.01).addr(1);
 
-  var level = getFruitAbility(FRUIT_TWIGSBOOST, true);
+  var level;
+  level = getFruitAbility(FRUIT_TWIGSBOOST, true);
   if(level > 0) {
     var mul = getFruitBoost(FRUIT_TWIGSBOOST, level, getFruitTier(true), false, 1).addr(1);
+    result = result.mul(mul);
+  }
+  level = getFruitAbility(FRUIT_RESIN_TWIGS, true);
+  if(level > 0) {
+    var mul = getFruitBoost(FRUIT_RESIN_TWIGS, level, getFruitTier(true), false, 1).addr(1);
     result = result.mul(mul);
   }
 
@@ -7419,6 +7477,13 @@ function SquirrelUpgrade() {
   this.image = undefined; // bg image, e.g. a plant
 }
 
+SquirrelUpgrade.prototype.getDescription = function() {
+  if(typeof(this.description) == 'function') {
+    return this.description();
+  }
+  return this.description;
+};
+
 // @constructor
 // Stage for the tree structure of squirrel upgrades
 // A node can have max 3 leaves, and there is one main path, so max 2 branches possible from 1 node, to keep the UI simple to render
@@ -7564,7 +7629,22 @@ var upgradesq_highest_level_param1 = 0.1;
 var upgradesq_highest_level_param2 = 1.1;
 var upgradesq_highest_level_min =  75; // min tree level where upgradesq_highest_level begins to work
 var upgradesq_highest_level_formula_text = '((highest level - ' + upgradesq_highest_level_min + ') * ' + upgradesq_highest_level_param1 + ' + 1) ^ ' + upgradesq_highest_level_param2;
-var upgradesq_highest_level = registerSquirrelUpgrade('highest tree level ever bonus', undefined, 'unlocks a production bonus that depends on highest tree level ever reached, starting from level ' + upgradesq_highest_level_min + '. Bonus multiplier formula: ' + upgradesq_highest_level_formula_text, tree_images[6][1][1]);
+var upgradesq_highest_level = registerSquirrelUpgrade('highest tree level ever bonus', undefined,
+  function() {
+    return 'unlocks a production bonus that depends on highest tree level ever reached, starting from level ' +
+            upgradesq_highest_level_min + '. Bonus multiplier formula: ' + upgradesq_highest_level_formula_text +
+            '<br>DEBUG: ' + state.g_treelevel  +
+            '<br>Current bonus: ' + GetSquirrelUpgradeHighestTreeLevelBonus().toPercentString() +
+            '<br>At next highest treelevel: ' + GetSquirrelUpgradeHighestTreeLevelBonus(1).toPercentString();
+  },
+  tree_images[6][1][1]);
+
+function GetSquirrelUpgradeHighestTreeLevelBonus(opt_adjust) {
+  var diff = state.g_treelevel - upgradesq_highest_level_min;
+  if(opt_adjust) diff += opt_adjust;
+  if(diff <= 0) return Num(0);
+  return Num(diff * upgradesq_highest_level_param1 + 1).powr(upgradesq_highest_level_param2);
+}
 
 var upgradesq_leveltime_maxbonus = 4;
 var upgradesq_leveltime_maxtime = 7200; // in seconds
@@ -8508,7 +8588,8 @@ Crop3.prototype.minForBrassicaSelfSustain = function() {
 }
 
 // boost from inf field to inf field (flowers to berries, and flowers themselves compute their boost from infinity bees here)
-Crop3.prototype.getInfBoost = function(f, breakdown) {
+// opt_expected: if true, computes the boost you get if time-weighted fishes are done (currently implemented for runestone)
+Crop3.prototype.getInfBoost = function(f, breakdown, opt_expected) {
   var result = this.infboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
@@ -8556,7 +8637,7 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 
   // koi to runestone
   if(this.type == CROPTYPE_RUNESTONE && (state.fishtypecount[FISHTYPE_KOI] || state.fish_runestonemul_weighted.neqr(1))) {
-    var mul = getFishMultiplier(FISHTYPE_KOI, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_KOI, state, opt_expected ? 0 : 2);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       result.mulInPlace(mul);
       if(breakdown) {
@@ -8571,7 +8652,8 @@ Crop3.prototype.getInfBoost = function(f, breakdown) {
 };
 
 // boost from infinity field to basic field
-Crop3.prototype.getBasicBoost = function(f, breakdown) {
+// opt_expected: if true, computes the boost you get if time-weighted fishes are done
+Crop3.prototype.getBasicBoost = function(f, breakdown, opt_expected) {
   var result = this.basicboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
@@ -8586,7 +8668,7 @@ Crop3.prototype.getBasicBoost = function(f, breakdown) {
       if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
       var n = state.field3[y2][x2];
       if(n.hasCrop() && crops3[n.cropIndex()].type == CROPTYPE_RUNESTONE) {
-        var boost = crops3[n.cropIndex()].getInfBoost(n);
+        var boost = crops3[n.cropIndex()].getInfBoost(n, undefined, opt_expected);
         if(boost.neqr(0)) {
           runestone_mul.addInPlace(boost);
           num++;
@@ -8601,7 +8683,7 @@ Crop3.prototype.getBasicBoost = function(f, breakdown) {
 
   // oranda fish: multiplier to basic field bonus for the non-runestone part of the bonus
   if(this.type != CROPTYPE_RUNESTONE && (state.fishtypecount[FISHTYPE_ORANDA] || state.fish_basicmul_weighted.neqr(1))) {
-    var oranda_mul = getFishMultiplier(FISHTYPE_ORANDA, state, 2);
+    var oranda_mul = getFishMultiplier(FISHTYPE_ORANDA, state, opt_expected ? 0 : 2);
     if(oranda_mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       var mul = oranda_mul.add(runestone_mul).subr(1).div(runestone_mul); // the oranda is additive to runestones, NOT multiplicative with it. So do as if a bonus that's the sum of runestone and oranda is given, and then divide through the original runestone bonus from above to only have the oranda effect here
       result.mulInPlace(mul);
@@ -8801,11 +8883,11 @@ var stinging3_9 = registerStinging3('emerald nettle', 9, Res({infseeds:5e54}), N
 crop3_register_id = 2100;
 var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
 var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
-var fern3_9 = registerFern3('emrald fern', 9, Res({infseeds:200e54}), Num(3), Num(150), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader9));
+var fern3_9 = registerFern3('emerald fern', 9, Res({infseeds:200e54}), Num(3), Num(150), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader9));
 
 crop3_register_id = 2400;
 var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(25), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
-var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(25), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
+var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(75), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;

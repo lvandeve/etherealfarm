@@ -1236,6 +1236,8 @@ function State() {
   // Boost to basic field from infinity field crops
   // derived stat, not to be saved.
   this.infinityboost = Num(0);
+  // expected infinity boost if time-weighted (infinityboost is the time-weighted one that affects plants, expected_infinityboost is for display purposes)
+  this.expected_infinityboost = Num(0);
 
   // used to prevent auto-action blueprint in case you already did transcend with blueprint
   // derived stat, not to be saved.
@@ -1704,6 +1706,7 @@ function computeDerived(state) {
   state.numcropfields3 = 0;
   state.numfullgrowncropfields3 = 0;
   state.infinityboost = Num(0);
+  state.expected_infinityboost = Num(0);
   for(var i = 0; i < registered_crops3.length; i++) {
     state.crop3count[registered_crops3[i]] = 0;
     state.fullgrowncrop3count[registered_crops3[i]] = 0;
@@ -1724,7 +1727,8 @@ function computeDerived(state) {
             state.numfullgrowncropfields3++;
           }
         }
-        state.infinityboost.addInPlace(c.getBasicBoost(f));
+        state.infinityboost.addInPlace(c.getBasicBoost(f, undefined, false));
+        state.expected_infinityboost.addInPlace(c.getBasicBoost(f, undefined, true));
       } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
         state.specialfield3count[f.index]++;
         state.numemptyfields3++;

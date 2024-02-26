@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -622,7 +622,7 @@ function updateField2CellUI(x, y) {
     if(f.hasCrop()) {
       var c = crops2[f.cropIndex()];
       blendImage(c.image[growstage], fd.canvas);
-      if(largeravailable) blendImage(upgrade_arrow_small, fd.canvas);
+      if(largeravailable) blendImage(image_field_larger_available_arrow, fd.canvas);
       if(f.growth >= 1) {
         // fullgrown, so hide progress bar
         setProgressBar(fd.progress, -1, undefined);

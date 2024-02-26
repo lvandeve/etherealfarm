@@ -46,6 +46,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_ALL_SEASON2: return haveFruitMix(3) ? 'S' : 's';
       case FRUIT_RESINBOOST: return 'RS';
       case FRUIT_TWIGSBOOST: return 'TW';
+      case FRUIT_RESIN_TWIGS: return 'RT';
       case FRUIT_NUTBOOST: return 'NU';
       case FRUIT_BEEBOOST: return 'BE';
       case FRUIT_MIX: return 'X';
@@ -77,6 +78,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_ALL_SEASON2: return 'ultra seasons boost';
     case FRUIT_RESINBOOST: return 'resin boost';
     case FRUIT_TWIGSBOOST: return 'twigs boost';
+    case FRUIT_RESIN_TWIGS: return 'resin and twigs boost';
     case FRUIT_NUTBOOST: return 'nuts boost';
     case FRUIT_BEEBOOST: return 'bee boost';
     case FRUIT_MIX: return 'mix nettle/brass/bee';
@@ -111,10 +113,11 @@ function getFruitAbilityDescription(ability) {
     // "taking into account the time this fruit was active" now means: it takes into account how many spores were produced while any fruit with resin boost (respectively twigs boost) was active, vs while other fruits were active. The more spores produced while such fruit active, the more of the boost is given.
     case FRUIT_RESINBOOST: return 'boost resin income (with a soft cap), based on spores produced while this fruit was active. In addition slightly boosts the unspent resin production bonus.';
     case FRUIT_TWIGSBOOST: return 'boost twigs income (with a soft cap), based on spores produced while this this fruit was active. In addition slightly boosts the unspent twigs production bonus.';
+    case FRUIT_RESIN_TWIGS: return 'boost resin and twigs income (with a soft cap), based on spores produced while this this fruit was active. In addition slightly boosts the unspent twigs production bonus.';
     case FRUIT_NUTBOOST: return 'boosts nuts production (with a soft cap)';
     case FRUIT_BEEBOOST: return 'boosts the beehive bonus';
     case FRUIT_MIX: return 'divides given boost over nettle, brassica and bee, balanced differently for spores and seeds, but only additively if corresponding non-mix abilities are present';
-    case FRUIT_TREELEVEL: return 'boosts the production boost that is given by the tree level, the listed multiplier is reached for high enough tree level'; // that is, targeted to get close at tree levels 20 levels above where this tier of fruit drops
+    case FRUIT_TREELEVEL: return 'boosts the production boost that is given by the tree level, the shown target multiplier is reached when reaching tree level where next fruit tier could drop.'; // that is, targeted to get close at tree levels 20 levels above where this tier of fruit drops
     case FRUIT_SEED_OVERLOAD: return 'boosts seeds, but increases mushroom seed consumption by the same amount';
     case FRUIT_SPORES_OVERLOAD: return 'boosts spores, but the additional spores require much higher seeds consumption';
   }
@@ -765,7 +768,7 @@ function fillFruitDialog(dialog, f, opt_selected) {
   bottomflex.div.className = 'efFruitAbilityBox';
   bottomflex.div.style.visibility = 'hidden';
   y += h;
-  var textFlex = new Flex(bottomflex, 0.01, 0.0, 0.99, 0.5);
+  var textFlex = new Flex(bottomflex, 0.01, 0.0, 0.9, 0.5);
 
   var downButton = new Flex(bottomflex, 0.01, 0.7, 0.15, 0.95).div;
   styleButton(downButton);
@@ -838,8 +841,11 @@ function fillFruitDialog(dialog, f, opt_selected) {
     } else {
       var cost = getFruitAbilityCost(a, level, f.tier);
       text += 'Current level: ' + getFruitBoost(a, level, f.tier).toPercentString();
+      if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(a, level, f.tier, undefined, 1).toPercentString() + ')';
       text += '<br>';
-      text += 'Next level: ' + getFruitBoost(a, level + 1, f.tier).toPercentString() + ', cost: ' + cost.toString();
+      text += 'Next level: ' + getFruitBoost(a, level + 1, f.tier).toPercentString()
+      if(a == FRUIT_TREELEVEL) text += ' (target: ' + getFruitBoost(a, level + 1, f.tier, undefined, 1).toPercentString() + ')';
+      text += ', cost: ' + cost.toString();
 
       levelButton.textEl.innerText = 'Buy 1';
       var available = state.res.essence.sub(f.essence);
@@ -1105,7 +1111,7 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
   var canvas = createCanvas('0%', '0%', '100%', '100%', fg.div);
   //if(f.mark || f.name || f.fuses) canvas.style.border = '1px solid black';
   renderImage(images_fruittypes[f.type][f.tier], canvas);
-  var tooltip = getFruitTooltipText(f, opt_label);
+  var tooltipfun = bind(getFruitTooltipText, f, opt_label);
 
   styleFruitChip(fg, f);
 
@@ -1127,7 +1133,7 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
     fun = bind(clickFruitChipFun, f, opt_slot_index);
   }
 
-  registerAction(flex.div, fun, label, {tooltip:tooltip, isdraggable:!opt_not_draggable});
+  registerAction(flex.div, fun, label, {tooltip:tooltipfun, isdraggable:!opt_not_draggable});
 }
 
 var dragslot = -1; // used instead of e.dataTransfer.setData since v0.1.64 because e.dataTransfer.setData still caused firefox to sometimes open things as URL despite e.preventDefault()
@@ -1234,7 +1240,6 @@ function updateFruitUI() {
   addButtonAction(titleFlex.div, function() {
     showResourceDialog(7);
   });
-
 
   titleFlex = new Flex(scrollFlex, 0.01, [0, 0, y + t/3], 0.33, [0, 0, y + t]);
   y += s;
@@ -1434,7 +1439,7 @@ function getFruitCategory(f) {
   if(getFruitAbilityFor(f, FRUIT_WEATHER) > 0) return 6;
   if(getFruitAbilityFor(f, FRUIT_GROWSPEED) > 0) return 5;
   if(getFruitAbilityFor(f, FRUIT_MUSHEFF) > 0 || getFruitAbilityFor(f, FRUIT_NETTLEBOOST) > 0) return 4;
-  if(getFruitAbilityFor(f, FRUIT_TWIGSBOOST) > 0 || getFruitAbilityFor(f, FRUIT_RESINBOOST) > 0) return 3;
+  if(getFruitAbilityFor(f, FRUIT_TWIGSBOOST) > 0 || getFruitAbilityFor(f, FRUIT_RESINBOOST) > 0 || getFruitAbilityFor(f, FRUIT_RESIN_TWIGS) > 0) return 3;
   if(getFruitAbilityFor(f, FRUIT_NUTBOOST) > 0) return 2;
   if(getFruitAbilityFor(f, FRUIT_BRASSICA) > 0) return 1;
   return 0; // only production skills

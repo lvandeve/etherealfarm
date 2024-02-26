@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getSquirrelUpgradeInfoText(u, gated, is_gate, unknown) {
   var infoText = 'Squirrel upgrade: ' + (unknown ? '???' : u.name);
   infoText += '<br><br>';
-  infoText += unknown ? 'Buy more upgrades to reveal the description of this one' : upper(u.description);
+  infoText += unknown ? 'Buy more upgrades to reveal the description of this one' : upper(u.getDescription());
   infoText += '<br><br>';
   if(gated || is_gate) {
     infoText += 'Gated: you must buy all squirrel upgrades that come before this, including side branches above, before this one unlocks.';
@@ -202,9 +202,14 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
   }
 
   if(!bought) {
-    registerTooltip(textFlex.div, 'Buy ' + lower(infoText)); // the infoText starts with 'Squirrel upgrade: ...', so this becomes: 'Buy squirrel upgrade: ...'
+    registerTooltip(textFlex.div, function() {
+      // the infoText starts with 'Squirrel upgrade: ...', so this becomes: 'Buy squirrel upgrade: ...'
+      return 'Buy ' + lower(getSquirrelUpgradeInfoText(u, gated, is_gate, unknown));
+    });
   } else {
-    registerTooltip(textFlex.div, infoText);
+    registerTooltip(textFlex.div, function() {
+      return getSquirrelUpgradeInfoText(u, gated, is_gate, unknown);
+    });
   }
 
 
@@ -226,7 +231,7 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
       buyname = 'Buy all to here';
     }
     var dialog = createDialog({size:DIALOG_SMALL, functions:buyfun2, names:buyname, title:'Squirrel upgrade', icon:u.image});
-    dialog.content.div.innerHTML = infoText;
+    dialog.content.div.innerHTML = getSquirrelUpgradeInfoText(u, gated, is_gate, unknown);
   }, 'show squirrel upgrade info', {
     tooltip:function() {
       return 'show info for: ' + u.name;

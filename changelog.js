@@ -23,8 +23,20 @@ function getChangeLog() {
   if(window['global_is_beta'] && window['beta_patchnotes']) {
     text += '<hr>Beta patch notes:';
     text += window['beta_patchnotes'];
-    text += '<br/><br/>End of BETA patch notes<hr><br/><br/>';
+    text += 'End of beta patch notes<hr><br/><br/>';
   }
+
+  text += '0.12.0 (2024-02-26)';
+  text += '<br/>• Added ruby fruits, starting from level 190. In this tier, a new ability combines resin and twigs bonus in a single slot.';
+  text += '<br/>• Using new challenge formula for the production bonus of the infernal challenge (eventually all challenges will be modified like this, and eventually resin/twigs bonus will also be changed).';
+  text += '<br/>• Improved how challenge production bonus formula is displayed in their info dialogs.';
+  text += '<br/>• Highest tree level ever squirrel upgrade tooltip now shows current and next level value info.';
+  text += '<br/>• The treelevel prod boost fruit now shows a target bonus that you get when reaching the tree level at which the <i>next</i> tier of fruit can drop. If there is no next tier, this is 5 levels above the tree level where the current fruit tier starts dropping 100% of the time. The bonus can still increase above this target for higher tree level, but it gradually reaches a cap (which is not shown but is around 25% above the shown target level).';
+  text += '<br/>• Made the arrow on crop upgrade icons a bit more subtle, to look different from the arrows that can appear in the ethereal field.';
+  text += '<br/>• Fixed a bug with the emerald fruit drop chances, they were too low.';
+  text += '<br/>• Fixed emerald infinity acorn basic field bonus.';
+  text += '<br/>• Fixed a typo.';
+  text += '<br/><br/>';
 
   text += '0.11.4 - Bugfixes, balanding and QoL (2024-02-08)';
   text += '<br/>• Crop unlocks that have never been done before, now must be done manually the first time, not by automaton. The upgrade tab will get a special color in this case.'; // this is so that you can see them by being required to manually interact with it at least once

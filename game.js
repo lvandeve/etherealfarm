@@ -2200,6 +2200,11 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       // note that mix also does something somewhat similar, but to a lesser extent so that one remains
       abilities.push(FRUIT_SPORES_OVERLOAD);
     }
+    if(tier >= 10) {
+      abilities.splice(abilities.indexOf(FRUIT_RESINBOOST), 1);
+      abilities.splice(abilities.indexOf(FRUIT_TWIGSBOOST), 1);
+      abilities.push(FRUIT_RESIN_TWIGS);
+    }
 
     for(var i = 0; i < num_abilities; i++) {
       var roll = Math.floor(roll_abilities[i] * abilities.length);
@@ -5712,6 +5717,12 @@ var update = function(opt_ignorePause) {
     if(twigs_fruit_level) {
       var twigs_fruit_bonus = getFruitBoost(FRUIT_TWIGSBOOST, twigs_fruit_level, getFruitTier(true));
       state.twigsfruitspores.addInPlace(actualgain.spores.mul(twigs_fruit_bonus));
+    }
+    var resin_twigs_fruit_level = getFruitAbility(FRUIT_RESIN_TWIGS, true);
+    if(resin_twigs_fruit_level) {
+      var resin_twigs_fruit_bonus = getFruitBoost(FRUIT_RESIN_TWIGS, resin_twigs_fruit_level, getFruitTier(true));
+      state.resinfruitspores.addInPlace(actualgain.spores.mul(resin_twigs_fruit_bonus));
+      state.twigsfruitspores.addInPlace(actualgain.spores.mul(resin_twigs_fruit_bonus));
     }
 
     ////////////////////////////////////////////////////////////////////////////
