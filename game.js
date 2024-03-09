@@ -2078,7 +2078,7 @@ function precomputeField() {
   precomputeField_(prefield, 0);
 }
 
-// xor two 48-bit numbers, given that javascript can only up to 31-bit numbers (plus sign) normally
+// xor two 48-bit numbers, given that javascript can only do this with 31-bit numbers (plus sign) normally
 function xor48(x, y) {
   var lowx = x % 16777216;
   var lowy = y % 16777216;
@@ -2089,6 +2089,7 @@ function xor48(x, y) {
   return lowz + (highz * 16777216);
 }
 
+// multiply two 48-bit integer numbers and keep the lowest 48 bits in the result, given that javascript can normally only do this with less precision as floating point numbers
 function mul48(a, b) {
   var a0 = a % 16777216;
   var b0 = b % 16777216;
@@ -2099,18 +2100,54 @@ function mul48(a, b) {
   return (c1 * 16777216 + c0) % 281474976710656;
 }
 
+function xorshift48r(x, n) {
+  var low = x % 16777216;
+  var high = Math.floor(x / 16777216);
+  var low2 = low;
+  var high2 = high;
+  if(n >= 24) {
+    low2 = high2;
+    high2 = 0;
+    n -= 24;
+  }
+  low2 = (low2 >> n) | ((high2 * (1<< (24 - n))) % 16777216);
+  high2 = (high2 >> n)
+  return (low2 ^ low) + (high2 ^ high) * 16777216;
+}
+
+function xorshift48l(x, n) {
+  var low = x % 16777216;
+  var high = Math.floor(x / 16777216);
+  var low2 = low;
+  var high2 = high;
+  if(n >= 24) {
+    high2 = low2;
+    low2 = 0;
+    n -= 24;
+  }
+  high2 = ((high2 * (1 << n)) % 16777216) | (low2 >> (24 - n));
+  low2 = ((low2 * (1 << n)) % 16777216);
+  return (low2 ^ low) + (high2 ^ high) * 16777216;
+}
+
 
 // returns array of updated seed and the random roll in range [0, 1)
+// the seed update is done by incrementing by one each time, and successive seed values will give properly distributed random values
+// some things such as tower defense depend on that fact about successive keys
 function getRandomRoll(seed) {
   if(seed < 0 || seed >= 281474976710656) seed = 0;
   var x = seed;
+
+  // a mixer for hashes and RNGs. Uses only reversible functions, and both input and output are 48 bits, so can output all possible 48-bit integers.
+  // reason for using 48 bits: JS floating point numbers have 53 mantissa bits, 48 bits fit in this.
   x = mul48(x, 154449521);
-  x = xor48(x, 111111111111111);
+  x = xorshift48r(x, 23);
   x = mul48(x, 154449521);
+  x = xorshift48l(x, 23);
+
   seed++;
   return [seed, x / 281474976710656.0];
 }
-
 
 // Use this rather than Math.random() to avoid using refresh to get better random ferns
 // opt_add_seed: if not undefined, this is a value to add to the seed. In this case, do not advance the seed from the state.

@@ -1012,13 +1012,12 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
           spore_boost.addInPlace(boost);
           num++;
           if(state.challenge == challenge_towerdefense) {
-            var boost2 = new Num(boost);
             if(c.basic_upgrade != null) {
               var eff = c.tier;
               var u = state.upgrades[c.basic_upgrade];
               eff += towards1(u.count, 50) * 0.5; // give something towards the next tier for nettle upgrades, but not 100% so next tier gives a bump up
               eff = 1 + eff * 4; // 1 = the base multiplier. multipy eff to give more visible effect of this, the effect on damage of mushroom is much smaller
-              boost.divrInPlace(eff);
+              boost = boost.divr(eff);
             }
             seed_cost.addInPlace(boost);
           }
@@ -1223,6 +1222,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 // pretend: see comment at the definition of getProd
 Crop.prototype.getBoost = function(f, pretend, breakdown) {
   if(this.type != CROPTYPE_FLOWER && this.type != CROPTYPE_STINGING) return Num(0);
+
   var result = this.boost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
@@ -3424,13 +3424,15 @@ function Challenge() {
     return this.numCompleted(opt_include_current_run) >= this.numStages();
   };
 
-  this.nextCompleted = function(opt_include_current_run) {
+  // Whether you've completed the next stage of the challenge, during the current run. This is for challenges that have multiple target levels.
+  // Does not have an 'opt_include_current_run' parameter, since "having reached the next target level" only applies to the current run, during the next run the target level would be different again
+  this.nextCompleted = function() {
     if(this.targetlevel == undefined) {
-      return this.fullyCompleted(opt_include_current_run);
+      return this.fullyCompleted(false);
     } else if(this.targetlevel.length == 0) {
-      return this.fullyCompleted(opt_include_current_run);
+      return this.fullyCompleted(false);
     } else {
-      return state.treelevel >= this.nextTargetLevel(opt_include_current_run);
+      return state.treelevel >= this.nextTargetLevel(false);
     }
   };
 

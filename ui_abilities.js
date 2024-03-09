@@ -750,7 +750,7 @@ document.addEventListener('keydown', function(e) {
       var index = number - 1;
       // even though it's possible and allowed to select a slot with no fruit in it, allow keyboard shortcuts only to select actual fruits, to avoid accidental keypresses setting the fruit to nothing and silently making a run harder
       if(index < state.fruit_stored.length && index < getNumFruitArrows()) {
-        addAction({type:ACTION_FRUIT_ACTIVE, slot:(number - 1), silent:true, allow_empty:true});
+        addAction({type:ACTION_FRUIT_ACTIVE, slot:(number - 1), silent:false, allow_empty:true});
         update();
       }
     } else if(numberfun == 4) {

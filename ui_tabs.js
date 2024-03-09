@@ -169,7 +169,8 @@ function updateTabButtons2() {
     if(state.upgrades_new_b) {
       text = '<b><font color="red">' + text + '</font></b>';
     }
-    if(state.neverhadupgradeunlocked) {
+    if(state.neverhadupgradeunlocked && autoUnlockUnlocked()) {
+      // there's a crop unlock, but never had it before so automaton won't do the upgrade, you must do it manually, give upgrades tab a special color to remind of this
       text = '<b><font color="#f60">' + text + '</font></b>';
     }
 

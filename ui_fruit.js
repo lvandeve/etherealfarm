@@ -560,7 +560,7 @@ function showFruitMarkColorDialog(f, opt_onclose) {
   //var fruitmarkcolornames = ['none', 'red', 'yellow', 'green', 'blue', 'white', 'orange', 'brown', 'purple'];
   var dialog = createDialog({
     onclose:opt_onclose,
-    title:'Choose fruit color',
+    title:'Mark fruit border color',
     bgstyle:'efDialogTranslucent',
     icon:image_palette
   });

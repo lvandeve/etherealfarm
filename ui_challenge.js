@@ -462,7 +462,7 @@ function createFinishChallengeDialog() {
   var c = challenges[state.challenge];
   var c2 = state.challenges[state.challenge];
 
-  var already_completed = c.fullyCompleted();
+  var already_completed = c.fullyCompleted(false);
   var success = c.nextCompleted();
 
   var dialog = createDialog({

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ function showConfigureAutoResourcesDialog(subject) {
 
   var dialog = createDialog({
     title:title,
-    help:bind(showRegisteredHelpDialog, helpindex, false),
+    help:bind(showRegisteredHelpDialog, helpindex, true),
     scrollable:true});
   var scrollFlex = dialog.content;
 

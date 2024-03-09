@@ -265,7 +265,7 @@ function makeTreeDialog() {
     var c2 = state.challenges[state.challenge];
 
     var already_completed = c.fullyCompleted(false);
-    var success = c.fullyCompleted(true);
+    var success = c.nextCompleted();
 
     var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;

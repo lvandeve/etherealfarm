@@ -26,6 +26,15 @@ function getChangeLog() {
     text += 'End of beta patch notes<hr><br/><br/>';
   }
 
+  text += '0.12.1 (2024-03-09)';
+  text += '<br/>• Fixed bug where some nettles were too weak during tower defense';
+  text += '<br/>• Improved the randomness of the RNG (pseudo-random number generator): while it was fair and unbiased, it had some visible regular patterns over time.';
+  text += '<br/>• Ethereal blueprints exported to text (TXT) now align the values in rows to the tier numbers using spaces (so they look better in 2D as text). This change also means spaces in blueprints are now ignored rather than treated as an empty field cell (this should have no effect since it was already using the dot "." to indicate empty cells)';
+  text += '<br/>• Improved help dialog when unlocking automaton, to mention clearly where to find the blueprint library better (it\'s in the tree).';
+  text += '<br/>• Fixed display bug where the button that should say "Complete Challenge" when beating a next challenge goal, could say "Abort Challenge" instead.';
+  text += '<br/>• Fixed bug where, when just unlocking a new resource, the resource displays at the top could have the wrong dialogs or tooltips.';
+  text += '<br/><br/>';
+
   text += '0.12.0 (2024-02-26)';
   text += '<br/>• Added ruby fruits, starting from level 190. In this tier, a new ability combines resin and twigs bonus in a single slot.';
   text += '<br/>• Using new challenge formula for the production bonus of the infernal challenge (eventually all challenges will be modified like this, and eventually resin/twigs bonus will also be changed).';

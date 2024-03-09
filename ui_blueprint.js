@@ -317,7 +317,12 @@ function plantBluePrint2(b, allow_override, opt_by_automaton) {
   var sy = treey1 - treey0;
   var w = b.numw;
   var h = b.numh;
-  // 1x1 "single" case for basic field blueprint feature disabled for ethereal blueprints: otherwise can get stuck without automaton
+  if(w == 1 && h == 1) {
+    // 1x1 "single" case for basic field blueprint feature disabled for ethereal blueprints: otherwise can get stuck without automaton
+    // interpreting such blueprint as non-filling also doesn't work, the one cell is on top of the tree so all it does is give the confusing error "field already has something"
+    showMessage('1x1 blueprint not supported on ethereal field', C_INVALID);
+    return;
+  }
   var newactions = [];
 
   // if the ethereal field freely allows deleting, then don't use the replace action, instead first delete everything that must be replaced, then plant everything from scratch
@@ -408,8 +413,9 @@ function plantBluePrint2(b, allow_override, opt_by_automaton) {
       addAction(newactions[i]);
     }
     showMessage('Planted ethereal blueprint' + (b.name ? (' "' + b.name + '"') : ''));
+  } else {
+    showMessage('This ethereal blueprint had no effect on the current field');
   }
-  else showMessage('This ethereal blueprint had no effect on the current field');
 }
 
 function blueprintFromField(b) {
@@ -472,16 +478,35 @@ function createBluePrintText(b, opt_include_tiers) {
   if(b) {
     var w = b.numw;
     var h = b.numh;
+    var align = [];
+    if(opt_include_tiers) {
+      for(var y = 0; y < h; y++) {
+        for(var x = 0; x < w; x++) {
+          if(y == 0) align[x] = 0;
+          if(b.tier && b.tier[y]) {
+            var t = b.tier[y][x];
+            if(t >= 100) align[x] = Math.max(align[x], 3);
+            else if(t >= 10) align[x] = Math.max(align[x], 2);
+            else if(t >= 0) align[x] = Math.max(align[x], 1);
+          }
+        }
+      }
+    }
     for(var y = 0; y < h; y++) {
       for(var x = 0; x < w; x++) {
         var c = BluePrint.toChar(b.data[y][x]);
         text += c;
-        if(c != '.' && c != ' ' && opt_include_tiers && b.tier && b.tier[y]) {
-          var t = b.tier[y][x];
-          // -1 is template and does not get a numeric value
-          if(t >= 0) {
-            text += b.tier[y][x];
+        if(opt_include_tiers) {
+          var text2 = '';
+          if(c != '.' && b.tier && b.tier[y]) {
+            var t = b.tier[y][x];
+            // -1 is template and does not get a numeric value
+            if(t >= 0) {
+              text2 += b.tier[y][x];
+            }
           }
+          while(text2.length < align[x]) text2 = ' ' + text2;
+          text += text2;
         }
       }
       text += '\n';
@@ -503,7 +528,7 @@ function getBluePrintTypeHelpText(ethereal) {
     if(ethereal && state.crops2[automaton2_0].unlocked) result += 'A=automaton, ';
     if(state.crops2[squirrel2_0].unlocked) result += 'Q=squirrel, ';
   }
-  result += '.=empty/tree';
+  result += '.=empty/tree, space=ignored';
   return result;
 }
 
@@ -540,11 +565,6 @@ function blueprintFromText(text, b, ethereal) {
   var w = 0;
   var data = [];
   var tier = [];
-  // heuristic: if the first line contains whitespace, then remove the whitespace from all lines
-  // there are cases where someone may import a blueprint that has whitespace in each line from a spreadsheet. In this case, it should all be stripped
-  // in other cases, one may not have whitespace like that, but some whitespace in the center where the tree is due to not using the '.' character there. For this, it's assumed that this never happens on the first line
-  // tabs are always removed, it's not likely those would get used instead of the '.'
-  var strip_spaces = false;
 
   for(var y = 0; y < h; y++) {
     data[y] = [];
@@ -554,17 +574,23 @@ function blueprintFromText(text, b, ethereal) {
     var pos = 0;
     while(pos < line.length) {
       var c = line[pos++];
-      if(c == '\t') continue;
-      if(c == ' ') {
-        if(y == 0) strip_spaces = true; // see the heuristic described above
-        if(strip_spaces) continue;
-      }
+      if(c == '\t' || c == ' ') continue; // any whitespace is ignored. It can appear when exporting from a spreadsheet, or spaces can be used to align ethereal field blueprints correctly with the numbers that appear after some crops
       data[y][x] = BluePrint.fromChar(c);
       if(ethereal) {
         // parse potential tier number. This is only used for ethereal case, in non-ethereal case numbers are used for some challenge crops
         var num = '';
-        while(pos < line.length && line.charCodeAt(pos) >= 48 && line.charCodeAt(pos) <= 57) {
-          num += line[pos++];
+        while(pos < line.length) {
+          var cv = line.charCodeAt(pos);
+          var c2 = line[pos];
+          if(cv >= 48 && cv <= 57) {
+            pos++;
+            num += c2; // digit
+          } else if(c2 == '\t' || c2 == ' ') {
+            pos++;
+            continue; // skip whitespace
+          } else {
+            break;
+          }
         }
         var t = num == '' ? -1 : parseInt(num);
         tier[y][x] = t;
@@ -793,7 +819,7 @@ function createBlueprintDialog(b, ethereal, index_pointer, opt_onclose) {
   var y = 0.51;
 
   if(ethereal) {
-    var h = 0.055;
+    var h = 0.04;
     value_indicator = new Flex(dialog.content, [0, 0, 0.25], [0, 0, y], [0, 0, 0.75], [0, 0, y + h]);
     y += h;
   }
@@ -878,7 +904,7 @@ function showBluePrintHelp() {
 
   var text = '';
 
-  text += 'Blueprints allow planting a whole field layout at once, and storing layouts';
+  text += 'Blueprints allow planting a whole field layout at once, and storing layouts. They can be accessed from the blueprint library, which is in the tree dialog of both basic and ethereal field.';
   text += '<br/><br/>';
   text += 'A field layout represents a crop type for each tile. Crop types are for example berry, mushroom, flower, nettle, ... A layout never refers to a specific crop, such as blackberry or blueberry, only to the type (here "berry") in general.';
   text += '<br/><br/>';

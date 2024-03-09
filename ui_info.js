@@ -638,6 +638,10 @@ function showResource(i, index, highlight) {
 
   // compared with index because it can sometimes change (e.g. from amber to infinity seeds when unlucking infinity field)
   if(div.tooltipadded != index) {
+    if(div.tooltipadded != undefined) {
+      // this means it was showing a different resource first (e.g. can happen after just unlocking amber for the first time), remove the tooltip and show dialog action of tha tone
+      util.removeAllEvents(div);
+    }
     div.tooltipadded = index;
     registerTooltip(div, function() {
       return getResourceDetails(index);

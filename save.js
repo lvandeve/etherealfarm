@@ -1515,7 +1515,7 @@ function decState(s) {
     prev = index;
     if(!crops2[index]) return err(4);
     state.crops2[index].unlocked = true;
-    state.crops2[index].had = (index < array1.length) ? array1[index] : false;
+    state.crops2[index].had = (i < array1.length) ? array1[i] : false;
   }
 
 

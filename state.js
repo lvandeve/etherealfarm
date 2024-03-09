@@ -383,7 +383,7 @@ BluePrint.fromCrop = function(c) {
 }
 
 BluePrint.toChar = function(i) {
-  if(i == 0) return '.';
+  if(i == 0) return '.'; // use a dot, not space, spaces are whitespace that is ignored and can be used for alignment
   if(i == 2) return 'W'; // watercress (brassica)
   if(i == 3) return 'B'; // berry
   if(i == 4) return 'M'; // mushroom
@@ -397,6 +397,7 @@ BluePrint.toChar = function(i) {
   if(i == 34) return 'L'; // lotus
   if(i == 35) return 'E'; // fern
   if(i == 60) return 'U'; // pumpkin
+  // numbers for TD challenge statue. Note that in ethereal blueprints, numbers are used for crop tiers instead.
   if(i == 100) return '0'; // challenge statue
   if(i == 101) return '1'; // challenge statue
   if(i == 102) return '2'; // challenge statue
@@ -409,6 +410,7 @@ BluePrint.toChar = function(i) {
 BluePrint.fromChar = function(c) {
   if(!c) return 0;
   c = c.toUpperCase();
+  if(c == '.') return 0;
   if(c == 'W') return 2;
   if(c == 'B') return 3;
   if(c == 'M') return 4;
@@ -422,6 +424,7 @@ BluePrint.fromChar = function(c) {
   if(c == 'L') return 34;
   if(c == 'E') return 35;
   if(c == 'U') return 60;
+  // numbers for TD challenge statue. Note that in ethereal blueprints, numbers are used for crop tiers instead.
   if(c == '0') return 100;
   if(c == '1') return 101;
   if(c == '2') return 102;

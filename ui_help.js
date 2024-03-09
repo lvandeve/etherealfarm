@@ -350,11 +350,15 @@ registerHelpDialog(27, 'Bees', 'You unlocked bees!',
 
 
 registerHelpDialog(28, 'Automaton & Blueprints', 'You unlocked the automaton!',
-    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, it gives a boost to neighbors, and the automaton tab and blueprints unlock, allowing to automate various parts of the game.<br><br>' +
+    'You unlocked the automaton! You can place the automaton in the ethereal field. When placed, it gives a boost to neighbors, the automaton tab, and blueprints library in the tree, allowing to automate various parts of the game.<br><br>' +
     'You must place the automaton in the ethereal field before this works, then go to the new automaton tab, and configure its settings before it actually automates anything.<br><br>More and more automation features become available later in the game.<br><br>' +
     'When removing the automaton from the ethereal field, most automation features will be disabled, but they all come back the way they were when placing the automaton again.<br><br>' +
-    'The automaton initially has the following features unlocked:<br><br>' +
-    ' • Blueprints and templates: Templates are translucent blue looking versions of crops that can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint button in the tree.<br>' +
+    'The following new UIs are unlocked:<br>' +
+    ' • Automaton tab.<br>' +
+    ' • Blueprint library, accessible from the tree, both for basic field and ethereal field.<br>' +
+    '<br>' +
+    'The automaton initially has the following features unlocked:<br>' +
+    ' • Blueprints and templates: Templates are translucent blue looking versions of crops that can be placed in the field using the regular planting menu. Blueprints can be created and placed from the blueprint library, accessible from the tree.<br>' +
     ' • Auto-plant: the automaton will automatically plant crops according to a blueprint, and plant higher tiers once you unlock those tiers.<br>' +
     ' • Buttons to delete all crops in the main field or in the ethereal field: these are in the automaton tab and are for convenience.<br>' +
     ' • Neighbor boost in the ethereal field: the automaton in the ethereal field gives an independent boost to neighbors, similar to lotuses.<br>' +
@@ -778,6 +782,8 @@ function createHelpDialog() {
     title:'Help'
   });
 
+  checkUnlockedAutomatonHelpDialogs();
+
   var pos = 0.05;
   var buttondiv;
   var h = 0.06;
@@ -865,6 +871,7 @@ function createAutomatonHelpDialog() {
     }
   });
 
+  checkUnlockedAutomatonHelpDialogs();
 
   var scrollFlex = dialog.content;
   makeScrollable(scrollFlex);
@@ -894,6 +901,11 @@ function createAutomatonHelpDialog() {
     addButtonAction(button, bind(function(id) {
       showRegisteredHelpDialog(id, true);},
     id));
+
+    if(i == 0) {
+     var button = makeButton('Blueprint help');
+      addButtonAction(button, showBluePrintHelp);
+    }
   }
 
   var moreFlex = new Flex(scrollFlex, 0.1, pos, 0.9, pos + h);
