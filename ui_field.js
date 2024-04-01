@@ -173,25 +173,6 @@ function getCropInfoHTML(f, c, opt_detailed) {
       }
     }
     result += '<br/><br/>';
-    var expected_prod = c.getProd(f, 2);
-    var expected_boost = c.getBoost(f, 2);
-    var expected_boostboost = c.getBoostBoost(f, 2);
-    if(!expected_prod.empty()) {
-      result += 'Current production/sec: ' + c.getProd(f, 0).toString() + '<br>';
-      result += 'Expected production/sec: ' + expected_prod.toString();
-      if(state.challenge == challenge_wasabi) result += '<br>NOTE: this production is only accessible through copying with watercress etc... during the wasabi challenge!';
-    }
-    if(expected_boost.neqr(0)) {
-      var current_boost = c.getBoost(f, 0);
-      if(current_boost.neqr(0)) result += 'Current boost: ' + current_boost.toPercentString() + '<br>';
-      result += 'Expected boost: ' + expected_boost.toPercentString();
-    }
-    if(expected_boostboost.neqr(0)) {
-      var current_boost = c.getBoostBoost(f, 0);
-      if(current_boost.neqr(0)) result += 'Current boost: ' + current_boost.toPercentString() + '<br>';
-      result += 'Expected boost: ' + expected_boostboost.toPercentString();
-    }
-    result += '<br/>';
   } else {
     if(c.type == CROPTYPE_BRASSICA) {
       if(opt_detailed) {
@@ -214,7 +195,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
         }
       }
 
-      result += '<br/>';
+      result += '<br/><br/>';
     } else if(state.challenge == challenge_wither) {
       result += 'Withering. Time left: ' + util.formatDuration(f.growth * witherDuration(), true, 4, true) + '<br/><br/>';
     } else {
@@ -268,12 +249,16 @@ function getCropInfoHTML(f, c, opt_detailed) {
   }
 
 
-  if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN) {
-    if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) {
-      result += 'Copyable production per second: ' + prod3.toString() + '<br/>';
-    } else if(!growing) {
+  if(!prod3.empty() || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_NUT) {
+    if(growing) {
+      var current_prod = c.getProd(f, 0);
+      var expected_prod = c.getProd(f, 2);
+      if(!current_prod.empty()) result += 'Current production/sec: ' + c.getProd(f, 0).toString() + '<br>';
+      if(!expected_prod.empty()) result += 'Expected production/sec: ' + expected_prod.toString() + '<br>';
+    } else {
       result += 'Production per second: ' + prod3.toString() + '<br/>';
     }
+    if(state.challenge == challenge_wasabi && c.type != CROPTYPE_BRASSICA) result += 'NOTE: this production is only accessible through copying with watercress etc... during the wasabi challenge!<br>';
     if(c.type == CROPTYPE_BRASSICA) {
       var breakdown_copy = p.getBreakdownWatercress();
       if(breakdown_copy && breakdown_copy.length) {
@@ -309,6 +294,22 @@ function getCropInfoHTML(f, c, opt_detailed) {
     }
     result += '<br/>';
   }
+  if(opt_detailed && (c.type == CROPTYPE_BERRY || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_NUT)) {
+    var prod_without = c.getProd(undefined, 0); // The production without taking field into account (also excludes growing since field position must be known to know growth state)
+    var prod_with = c.getProd(f, 1); // The production without taking growing into account, but with field neighbors
+    // This is intended to show the boost to berries, mushrooms and nuts this field position gets from flowers and nettles
+    var neighbor_boost = Res.findPosDiv(prod_with, prod_without).subr(1);
+    result += 'Field neighbor boost to here: ' + neighbor_boost.toPercentString();
+    result += '<br/><br/>';
+  }
+  if(opt_detailed && c.type == CROPTYPE_FLOWER) {
+    var boost_without = c.getBoost(undefined, 0); // The boost without taking field into account (also excludes growing since field position must be known to know growth state)
+    var boost_with = c.getBoost(f, 1); // The boost without taking growing into account, but with field neighbors
+    // This is intended to show the boost to flowers this field position gets from bees
+    var neighbor_boost = boost_with.div(boost_without).subr(1);
+    result += 'Field neighbor boost to here: ' + neighbor_boost.toPercentString();
+    result += '<br/><br/>';
+  }
   if(c.type == CROPTYPE_MUSH) {
     result += 'Efficiency: ' + prod0.spores.div(prod0.seeds.neg()).toString() + ' spores/seed, ' +
         prod0.seeds.div(prod0.spores.neg()).toString() + ' seeds/spore<br/>';
@@ -331,12 +332,26 @@ function getCropInfoHTML(f, c, opt_detailed) {
     if(c.type == CROPTYPE_STINGING) {
       result += 'Boosting spores: ' + (c.getBoost(f).toPercentString()) + '. Nerfing orthogonally neighboring berries and flowers<br/>';
     } else {
-      result += 'Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br/>';
+      if(growing) {
+        var current_boost = c.getBoost(f, 0);
+        var expected_boost = c.getBoost(f, 2);
+        if(current_boost.neqr(0)) result += 'Current boost to neighbors: ' + current_boost.toPercentString() + '<br>';
+        if(expected_boost.neqr(0)) result += 'Expected boost: ' + expected_boost.toPercentString() + '<br>';
+      } else {
+        result += 'Boosting neighbors: ' + (c.getBoost(f).toPercentString()) + '<br>';
+      }
     }
     result += '<br/>';
   }
   if(c.boost.neqr(0) && (c.type == CROPTYPE_BEE)) {
-    result += 'Boosting flowers: ' + (c.getBoostBoost(f).toPercentString()) + '<br/>';
+    if(growing) {
+      var current_boost = c.getBoostBoost(f, 0);
+      var expected_boostboost = c.getBoostBoost(f, 2);
+      if(current_boost.neqr(0)) result += 'Current boost to flowers: ' + current_boost.toPercentString() + '<br>';
+      if(expected_boostboost.neqr(0)) result += 'Expected boost: ' + expected_boostboost.toPercentString() + '<br>';
+    } else {
+      result += 'Boosting flowers: ' + (c.getBoostBoost(f).toPercentString()) + '<br>';
+    }
     result += '<br/>';
   }
 
@@ -345,6 +360,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
   var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost, true);
 
   if(opt_detailed) {
+    // NOTE: type here means the exact type (same tier, same croptype), not generic croptype.
     result += 'Num planted of this type: ' + state.cropcount[c.index] + '<br>';
     result += '<br/>';
     result += 'Cost: ' + '<br>';
@@ -640,11 +656,9 @@ function fieldCellTooltipFun(x, y, div) {
     } else {
       result = 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
     }
-    // show the effect of the present in the tooltip, but only if it has seeds or spores, because you may want to activate a weather for those
-    // other effects are not shown, to keep it a surprise like an actual present is supposed to be
-    var effect = computePresentEffect();
-    if(effect == 1) result += '<br>(this one feels like it contains seeds)';
-    if(effect == 2) result += '<br>(this one feels like it contains spores)';
+    // show a vague hint of the effect in tooltip
+    var hint = getPresentEffectHint(computePresentEffect());
+    result += '<br>(' + hint + ')';
   } else if(f.index == 0) {
     //result = 'Empty field, click to plant';
     // no tooltip for empty fields, it's a bit too spammy when you move the mouse there

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -70,6 +70,13 @@ function getTranscendValueInfo(opt_from_challenge) {
   return text;
 }
 
+function transcendFromDialogNow() {
+  addAction({type:ACTION_TRANSCEND, challenge:0});
+  closeAllDialogs();
+  update();
+  return true;
+}
+
 function createTranscendDialog(opt_from_challenge) {
   blueprintdialogopen = false;
   challengedialogopen = false;
@@ -90,13 +97,6 @@ function createTranscendDialog(opt_from_challenge) {
   var extrafun2 = undefined;
   var shortcutfun = undefined;
 
-  var transcendfun = function(e) {
-    addAction({type:ACTION_TRANSCEND, challenge:0});
-    closeAllDialogs();
-    update();
-    return true;
-  };
-
   var automaton_unlocked = false;
   if(automatonUnlocked() && state.numnonemptyblueprints) {
     extraname2 = 'with blueprint';
@@ -116,8 +116,8 @@ function createTranscendDialog(opt_from_challenge) {
     if(challenge_unlocked && (e.key == 'c' || e.key == 'C') && !ctrl) {
       if(!challengedialogopen) createChallengeDialog();
     }
-    if(e.key == 'Enter' && !shift && !ctrl) {
-      transcendfun();
+    if((e.key == 'Enter' || e.key == 'r') && !shift && !ctrl) {
+      transcendFromDialogNow();
     }
   };
 
@@ -129,13 +129,15 @@ function createTranscendDialog(opt_from_challenge) {
     extraname2 = undefined;
   }
 
+  var transcendbuttonname = challenge_unlocked ? 'regular run' : 'transcend';
+
   var dialog = createDialog({
     size:DIALOG_MEDIUM,
-    functions:[transcendfun, extrafun, extrafun2],
-    names:['transcend', extraname, extraname2],
+    functions:[transcendFromDialogNow, extrafun, extrafun2],
+    names:[transcendbuttonname, extraname, extraname2],
     cancelname:'cancel',
     shortcutfun:shortcutfun,
-    title:(opt_from_challenge ? 'New regular run' : 'Transcension'),
+    title:'Transcension',
     bgstyle:'efDialogEthereal'
   });
 

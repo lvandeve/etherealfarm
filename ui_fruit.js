@@ -333,7 +333,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       var flex = new Flex(scrollFlex, [0.01, 0, x], [0, 0, y], [0.01, 0, x + s], [0, 0, y + s]);
       x += s;
       var f2 = fruits[i]
-      makeFruitChip(flex, f2, 0, undefined, true);
+      makeFruitChip(flex, f2, 0, undefined, true, undefined, true);
 
       styleButton0(flex.div);
       addButtonAction(flex.div, bind(function(f) {
@@ -383,8 +383,8 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
         registerTooltip(flex.div, 'Swap the fuse order of the two input fruits');
       } else {
         if(f2) {
-          var text = (i == 0) ? 'First selected fuse fruit: "from" fruit' : 'Second selected fuse fruit: "into" fruit';
-          makeFruitChip(flex, f2, 0, undefined, true, text);
+          var text = (i == 0) ? 'First selected fuse fruit: the "from" fruit' : 'Second selected fuse fruit: the "into" fruit';
+          makeFruitChip(flex, f2, 0, undefined, true, text, true);
         } else {
           flex.div.style.backgroundColor = '#ccc';
           flex.div.style.border = '1px solid black';
@@ -424,7 +424,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
     var flex = new Flex(scrollFlex, [0.01, 0, x + result_x], [0, 0, y0c], [0.01, 0, x + s + result_x], [0, 0, y0c + s]);
     x += s;
     if(fuse) {
-      makeFruitChip(flex, fuse, 0, undefined, true, 'fused fruit result');
+      makeFruitChip(flex, fuse, 0, undefined, true, 'fused fruit result', true);
       styleButton0(flex.div);
       addButtonAction(flex.div, bind(function(f) {
         createFruitInfoDialog(f, 'Fuse result fruit stats');

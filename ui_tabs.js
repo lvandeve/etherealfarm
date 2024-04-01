@@ -194,7 +194,7 @@ function updateTabButtons2() {
           // to increase probability of splitting in a good way, try to find a space within the last few characters
           var space = num.lastIndexOf(' ', 12);
           if(!(space >= 9 && space <= 12)) space = 12;
-          num = num.substr(0, space);
+          num = num.substr(0, space) + '…';
         }
       }
     }

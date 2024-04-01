@@ -1174,8 +1174,6 @@ function PreCell(x, y) {
   this.nettlemalus_received = Num(1);
   this.num_nettle = 0; // num nettle neighbors, if receiving malus or for mushroom heuristics
 
-
-
   this.weights = null; // used during precompute of field: if filled in, array of 4 elements: weights for N, E, S, W neighbors of their share of recource consumption from this. Used for mushrooms taking seeds of neighboring berries.
 
   // different stages of the production computation, some useful for certain UI, others not, see the comments
@@ -1377,7 +1375,7 @@ function precomputeField_(prefield, opt_pretend) {
       for(var x = 0; x < w; x++) {
         var f = state.field[y][x];
         var c = f.getRealCrop();
-        if(c && c.index == challengecrop_1 && f.isFullGrown()) {
+        if(c && c.index == challengecrop_1) {
           var p = prefield[y][x];
           var boost = c.getBoostBoost(f, pretend);
           p.boost = Num(boost);
@@ -1387,7 +1385,7 @@ function precomputeField_(prefield, opt_pretend) {
             if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
-            if(c2 && c2.index == challengecrop_2 && f2.isFullGrown()) {
+            if(c2 && c2.index == challengecrop_2) {
               p.boost.addInPlace(boost.mul(c2.getBoostBoost(f2, pretend)));
             }
           }
@@ -1401,7 +1399,7 @@ function precomputeField_(prefield, opt_pretend) {
         if(c && c.index == challengecrop_0) {
           var p = prefield[y][x];
           var boost = c.getBoostBoost(f, pretend);
-          if(f.isFullGrown()) p.boost = Num(boost);
+          p.boost = Num(boost);
           for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
             var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
             var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
@@ -1409,14 +1407,14 @@ function precomputeField_(prefield, opt_pretend) {
             var f2 = state.field[y2][x2];
             var c2 = f2.getRealCrop();
             var p2 = prefield[y2][x2];
-            if(c2 && c2.index == challengecrop_1 && f2.isFullGrown() && f.isFullGrown()) {
+            if(c2 && c2.index == challengecrop_1) {
               p.boost.addInPlace(boost.mul(p2.boost));
             }
-            if(c2 && c2.index == challengeflower_0 && f2.isFullGrown()) {
+            if(c2 && c2.index == challengeflower_0) {
               p.flowerneighbor = true;
             }
           }
-          if(p.flowerneighbor && f.isFullGrown()) {
+          if(p.flowerneighbor) {
             state.workerbeeboost.addInPlace(p.boost);
           }
         }
@@ -2532,6 +2530,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[flower3_9].had) unlockInfinityCrop(fern3_9);
   if(state.crops3[mush3_9].had) unlockInfinityCrop(stinging3_9);
   if(state.crops3[fern3_9].had) unlockInfinityCrop(nut3_9);
+  if(state.crops3[nut3_9].had) unlockInfinityCrop(lotus3_9);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2561,6 +2560,9 @@ function maybeUnlockFishes() {
   if(state.fishes[leporinus_0].had) unlockFish(octopus_1);
 
   if(state.fishes[shrimp_1].had || state.fishes[octopus_1].had) unlockFish(goldfish_2);
+
+  if(state.fishes[goldfish_2].had) unlockFish(oranda_1);
+  if(state.fishes[goldfish_2].had) unlockFish(anemone_2);
 
   ////////
 
@@ -3493,6 +3495,18 @@ function getPresentEffectName(effect) {
   else if(effect == 7) return 'amber';
   else return 'unknown';
 }*/
+
+// for present or eggs
+function getPresentEffectHint(effect) {
+  if(effect == 1) return 'it\'s full of life'; // seeds
+  else if(effect == 2) return 'microscopic contents'; // spores
+  else if(effect == 3) return 'it\'s plentiful'; // production boost
+  else if(effect == 4) return 'crunchy'; // nuts
+  else if(effect == 5) return 'it appeared swiftly'; // grow speed
+  else if(effect == 6) return 'it smells sweet'; // fruit
+  else if(effect == 7) return 'it smells spicy'; // amber
+  else return '????';
+}
 
 
 // for misc things in UI that update themselves

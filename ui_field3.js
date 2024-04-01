@@ -407,6 +407,8 @@ function field3CellTooltipFun(x, y, div) {
     if(state.infinityboost.gtr(0)) {
       text += '<br><br>';
       text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
+      if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (after time-weighting: ' + state.expected_infinityboost.toPercentString() + ')';
+
       if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
     }
     return text;

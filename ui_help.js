@@ -390,7 +390,7 @@ registerHelpDialog(33, 'Auto unlock', 'You unlocked auto-unlock!',
     images_automaton[4]);
 
 registerHelpDialog(34, 'Multiplicity', 'You unlocked multiplicity! Mushrooms and berries boost each other no matter at what location.',
-    'You unlocked multiplicity! Berries now boost other berries just by having multiple anywhere field, and similarly, mushrooms boost mushrooms. This works across tiers, but max 1 tier higher or lower (e.g. blackberry affects blueberry, but it won\'t affect the 2-higher tier cranberry). For example, if there are 4 berry plants anywhere in the field, each berry receives a boost from the three others. Crops that are growing already fully count for multiplicity.',
+    'You unlocked multiplicity! Berries now boost other berries just by having multiple anywhere in the field, and similarly, mushrooms boost mushrooms. This works across tiers, but max 1 tier higher or lower (e.g. blackberry affects blueberry, but it won\'t affect the 2-higher tier cranberry). For example, if there are 4 berry plants anywhere in the field, each berry receives a boost from the three others. Crops that are growing already fully count for multiplicity.',
     blackberry[4],
     undefined,
   [[blackberry[4],undefined,blueberry[4]],
@@ -630,7 +630,7 @@ function createKeyboardHelpDialog() {
   }
   text += '<b>Mobile shortcuts:</b>';
   text += '<br/><br/>';
-  text += ' • long-press icons/buttons to access the shift and ctrl variants of any button (e.g. the pause button and refresh watercress button).';
+  text += ' • long-press icons/buttons to access the shift and ctrl variants of any button (e.g. try the refresh watercress button or the undo button).';
   text += '<br/>';
   text += ' • long-press things to see tooltips, e.g on most buttons in the setting dialogs, or crops on the field.';
   text += '<br/>';
@@ -638,7 +638,7 @@ function createKeyboardHelpDialog() {
   text += '<br/>';
 
   text += '<br/><b>Main shortcuts:</b>';
-  text += '<br/>';
+  text += '<br/><br/>';
   text += ' • <i>Note</i>: on mac, ctrl means command instead.';
   text += '<br/>';
   text += ' • <b>esc</b>: close current dialog. If no dialogs are open, shows main menu.';
@@ -700,7 +700,7 @@ function createKeyboardHelpDialog() {
     text += '<br/>';
     text += ' • <b>"t" followed by "b"</b>: transcend and open the transcend-with-blueprint dialog.';
     text += '<br/>';
-    text += ' • <b>"t" followed by "Enter"</b>: transcend without blueprint.';
+    text += ' • <b>"t" followed by "Enter" or "r"</b>: transcend without blueprint.';
     text += '<br/>';
     text += ' • <b>"t" followed by "c"</b>: transcend and open the start-new-challenge dialog.';
     text += '<br/>';

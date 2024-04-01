@@ -368,6 +368,7 @@ var fieldheader_infernal = '+:#c42 -:#f63';
 //var fieldheader_infinity = '+:#efd -:#fdd';
 var fieldheader_infinity = '+:#efd -:#ddf';
 //var fieldheader_infinity = '+:#cdb -:#bbd';
+var fieldheader_4seasons = '0:#dbecc8 1:#c5e591 2:#bda 3:#ba5 4:#d3be9c 5:#cea78b 6:#fff 7:#eef'; // for medal
 
 var field0 = `
 ++++++++++++++++
@@ -463,6 +464,26 @@ var field_empty = `
 ++++++++++++++++
 ++++++++++++++++
 `;
+
+
+var image_field_4seasons = generateImageCanvas(fieldheader_4seasons + `
+0000100022222222
+0000000023322222
+0001100022222222
+0000011022222332
+0000000022332222
+1000000022222232
+0001100022222222
+0000001023222222
+4544444466666666
+4444554466676666
+4445444466666776
+4444444467766666
+4455444466666676
+4444444466666666
+4444544467766666
+4444444466666666
+`);
 
 
 

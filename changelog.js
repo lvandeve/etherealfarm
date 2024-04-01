@@ -20,11 +20,29 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function getChangeLog() {
   var text = '';
 
-  if(window['global_is_beta'] && window['beta_patchnotes']) {
-    text += '<hr>Beta patch notes:';
-    text += window['beta_patchnotes'];
-    text += 'End of beta patch notes<hr><br/><br/>';
+  if(window['global_is_beta']) {
+    if(window['beta_patchnotes']) {
+      text += '<hr>Beta patch notes:';
+      text += window['beta_patchnotes'];
+      text += 'End of beta patch notes<hr><br/><br/>';
+    } else {
+      text += 'This is a beta version<br/><br/>';
+    }
   }
+
+  text += '0.12.2 (2024-04-01)';
+  text += '<br/>• Added new infinity crop: emerald infinity lotus.';
+  text += '<br/>• Added two new fishes: red oranda and black anemone.';
+  text += '<br/>• New exponential bonus formula used for the production bonus of the rocks challenge and poison ivy challenge. This especially makes rocks challenge more worth it at higher levels. These are the next two challenges after infernal challenge to get this change, and in future updates all challenges (and the resin/twigs bonus too, but not exponential) will get a similar change.';
+  text += '<br/>• In the bee challenge, bees no longer need to be fullgrown to workm their effect is visible immediately.';
+  text += '<br/>• All eggs and presents now have a hint in the tooltip.'; // the hint does not directly reveal what it is but is consistent, so is learnable
+  text += '<br/>• In transcend dialogs, the "r" shortcut can now be used to transcend without blueprint (like the "b" shortcut that already worked for with blueprint).'; // "enter" already worked in some cases (but not in case of finishing challenge) but was not intuitive. 'r' is a bit better because the buttons are named 'run' or 'regular run'
+  text += '<br/>• Added "Field neighbor boost to here" statistic in the detailed stats dialog for berries, mushrooms, nuts and flowers.';
+  text += '<br/>• The "Basic tree boost bonus" ethereal upgrade now shows current and upgraded bonus in the tooltip.'; // similar to tree's gesture and spectral arboretum
+  text += '<br/>• Better icon for the "Four seasons" achievement.';
+  text += '<br/>• Renamed the "save after each action" preference to "save on refresh / action" for clarity'; // since it wasn't clear for players that this setting disables the browser refresh behavior
+  text += '<br/>• Bugfixes and other small UI tweaks.'; // e.g. shows both time-weighted and non-time-weighted infinity field to basic field bonus in the pond tooltip too now when applicable, and shows present/egg production/growspeed duration in the info dialog too instead of only in tooltip
+  text += '<br/><br/>';
 
   text += '0.12.1 (2024-03-09)';
   text += '<br/>• Fixed bug where some nettles were too weak during tower defense';

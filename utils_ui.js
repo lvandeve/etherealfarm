@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2023  Lode Vandevenne
+Copyright (C) 2020-2024  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -244,8 +244,10 @@ function makeLongTouchContextDialog(div, fun, label, params) {
 
   y += 0.05;
   if(params.tooltip) {
-    flex = new Flex(content, 0.05, y, 0.95, 'a');
-    var text = 'Tooltip:<br><br>';
+    var textflex = new Flex(content, 0.05, y, 0.95, y + 0.05);
+    textflex.div.innerText = 'Tooltip:';
+    flex = new Flex(content, 0.05, y + 0.05, 0.95, 'a');
+    var text = '';
     text += (typeof params.tooltip == 'string') ? params.tooltip : params.tooltip()
     flex.div.innerHTML = text;
     applyTooltipStyle(flex.div, state.tooltipstyle);

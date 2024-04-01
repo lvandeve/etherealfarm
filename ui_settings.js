@@ -508,7 +508,7 @@ function createAdvancedSettingsDialog() {
   button = makeSettingsButton();
   var updatebuttontext = function(button) {
     var style = '?';
-    if(state.tooltipstyle == 0) style = 'none';
+    if(state.tooltipstyle == 0) style = 'none (tooltips off)';
     if(state.tooltipstyle == 1) style = 'dark';
     if(state.tooltipstyle == 2) style = 'light';
     if(state.tooltipstyle == 3) style = 'translucent';
@@ -553,9 +553,9 @@ function createAdvancedSettingsDialog() {
   addSettingsSpacer();
 
   button = makeSettingsButton();
-  updatebuttontext = function(button) { button.textEl.innerText = 'save after each action: ' + (state.saveonaction ? 'yes' : 'no'); };
+  updatebuttontext = function(button) { button.textEl.innerText = 'save on refresh / actions: ' + (state.saveonaction ? 'yes' : 'no'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Whether to auto-save after each action (and also when refreshing browser tab). If this is on, actions are saved reliably even when closing the web browser soon after. If this is off, the game will still auto-save every few minutes anyway, but the last minutes of gameplay may get lost when closing browser tab. Remember it\'s also recommended to export saves manually regularly since web browsers can lose all data easily.');
+  registerTooltip(button, 'Whether to auto-savewhen refreshing browser tab and aftere each action. If this is on, actions are saved reliably even when closing the web browser soon after. If this is off, the game will still auto-save every few minutes anyway, but the last minutes of gameplay may get lost when closing browser tab. Remember it\'s also recommended to export saves manually regularly since web browsers can lose all data easily.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.saveonaction = !state.saveonaction;
     updatebuttontext(button);
@@ -1302,9 +1302,9 @@ function initSettingsUI() {
     removeAllTooltips();
   }, 'undo', {
     tooltip:function() {
-      return 'Undo your last action(s). Press again to redo.<br><br>' +
-        'Undo is saved when doing an action, but with at least ' + util.formatDuration(minUndoTime) + ' of time in-between, so multiple actions in quick succession may all be undone.<br><br>' +
-        'Undo save time duration is limited to ' + util.formatDuration(maxUndoTime) + '. If you undo a long time duration, you\'ll still get the correct amount of resources gained during that time.' +
+      return 'Undo your last action(s). There is only a single undo, press again to redo.<br><br>' +
+        'Undo restores the state before your last action, in case of multiple actions in quick succesion (max ' + util.formatDuration(minUndoTime) + '), this group of actions is undone.<br><br>' +
+        'No resource gain is lost (income during the undone timespan is computed correctly), even if pressing undo after a long time. However, undo save time duration is limited to ' + util.formatDuration(maxUndoTime) + '.' +
         '';
     },
     label_shift:'store undo now'

@@ -2345,7 +2345,7 @@ function getPrevResinHour() {
   if(state.p_runtime < 2) return Num(0); // don't count the first seconds to avoid possible huge values
   var hours = state.p_runtime / 3600;
   if(!hours) return Num(0);
-  return state.p_res_no_ferns.divr(hours);
+  return state.p_res_no_ferns.resin.divr(hours);
 }
 
 // returns twigs per hour so far this run

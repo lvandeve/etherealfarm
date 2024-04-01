@@ -274,6 +274,22 @@ Res.findDiv = function(a, b) {
   return r;
 };
 
+// Similar to Res.findDiv, but does not consider negative values. E.g. to find the mushroom production, not its seed concumption
+Res.findPosDiv = function(a, b) {
+  var arra = a.toArray();
+  var arrb = b.toArray();
+  var r = Num(NaN);
+  for(var i = 0; i < arra.length; i++) {
+    var va = arra[i];
+    var vb = arrb[i];
+    if(va.eqr(0) && vb.eqr(0)) continue;
+    if(va.ltr(0) || vb.ltr(0)) continue; // negative values ignored
+    var d = va.div(vb);
+    if(r.isNaN() || d.gt(r)) r = d;
+  }
+  return r;
+};
+
 
 
 // elementwise multiply with another resource.

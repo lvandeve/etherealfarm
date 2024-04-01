@@ -25,7 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // -sub: 0..any: does not change the numeric version code. if non-0, adds 'b', 'c'. ... to the version name. Should not affect savegame format. Cosmetic changes only. Version name including this part is appended to CSS URL query part to ensure no stale cached CSS file is used.
 var version_major = 0; // 0..61
 var version_minor = 12; // 0..4095
-var version_patch = 1; // 0..63
+var version_patch = 2; // 0..63
 var version_sub = 0; // 0=no suffix, 1=b, 2=c, ...
 
 var version = 262144 * (version_major + 2) + 64 * version_minor + version_patch;
@@ -45,6 +45,11 @@ function getProgramName() {
 document.title = getProgramName() + ' v' + formatVersion();
 
 showMessage('Welcome to ' + programname + ' v' + formatVersion(), C_META, 0, 0);
+if(window['global_is_beta']) {
+  window.setTimeout(function() {
+    showMessage('This is a beta version. Savegames can be exported to the beta from the main game, but beta saves can never be imported into the main game, beta versions are for temporary testing of new features only.', C_META, 0, 0);
+  }, 1000);
+}
 
 var update_ms = 333;
 

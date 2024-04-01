@@ -1069,7 +1069,9 @@ document.addEventListener('keydown', function(e) {
   // these keys for prev and next fruit are chosen such that hopefully at least one set of them is reachable on any keyboard layout, even if in combination with shift if necessary
   if((key == ']' || key == '}' || key == ')' || key == '>') && !ctrl) {
     if(state.keys_brackets == 2) {
-      setTabNumber(getTabNumber() + 1);
+      var newtab = getTabNumber() + 1;
+      if(newtab >= numtabs) newtab = 0;
+      setTabNumber(newtab);
     }
     if(state.keys_brackets == 3) {
       if(state.fruit_active + 1 < state.fruit_stored.length && state.fruit_active + 1 < getNumFruitArrows()) {
@@ -1080,7 +1082,9 @@ document.addEventListener('keydown', function(e) {
   }
   if((key == '[' || key == '{' || key == '(' || key == '<') && !ctrl) {
     if(state.keys_brackets == 2) {
-      setTabNumber(getTabNumber() - 1);
+      var newtab = getTabNumber() - 1;
+      if(newtab < 0) newtab = numtabs - 1;
+      setTabNumber(newtab);
     }
     if(state.keys_brackets == 3) {
       if(state.fruit_active > 0) {

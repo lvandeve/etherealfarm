@@ -403,7 +403,10 @@ function createChallengeDialog(opt_from_challenge) {
     styleButton(button.div);
     var currentlyrunning = (state.challenge == c.index);
     var text = upper(c.name);
-    if(isnew) text += ' (New!)';
+    if(isnew) {
+      if(c2.num) text += ' (Open)';
+      else text += ' (New!)';
+    }
     // The '/' means: "new stage available with target level: " but that's too long for the button
     else if(isnotfull && c.targetlevel != undefined && c.targetlevel.length > 0) text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
     else if(c.cycling > 1) {
@@ -456,6 +459,10 @@ function createFinishChallengeDialog() {
     }
     if(e.key == 'c' && !shift && !ctrl) {
       if(!challengedialogopen) createChallengeDialog();
+    }
+    if(e.key == 'r' && !shift && !ctrl) {
+      // regular run
+      transcendFromDialogNow();
     }
   };
 

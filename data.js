@@ -106,6 +106,7 @@ function getCropTypeHelp3(type, opt_state) {
     case CROPTYPE_NUT: return 'Produces infinity seeds. Works exactly the same as berries and is boosted by the same flowers and fishes.';
     case CROPTYPE_PUMPKIN: return '';
     case CROPTYPE_RUNESTONE: return 'Boosts the basic field production boost of any neighboring crops in the infinity field. WARNING: The runestone, and any non-brassica crops it touches, cannot be deleted for ' + initialrunehours + ' hours after placing the runestone, and this time resets when planting crops next to it later on.';
+    case CROPTYPE_LOTUS: return 'Boosts berries and mushrooms, similar to flower but this is a separate boost multiplicative with the flower boost. Not affected by bees.';
   }
   return undefined;
 }
@@ -1458,10 +1459,10 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
 
   var hasboostboost = false;
   if(this.type == CROPTYPE_BEE) hasboostboost = true;
+  // bee challenge crops. There's also special handling for these in precomputeField_(), but getBoostBoost is also used for them
   if(this.index == challengecrop_0) hasboostboost = true;
   if(this.index == challengecrop_1) hasboostboost = true;
   if(this.index == challengecrop_2) hasboostboost = true;
-
 
   if(!hasboostboost) {
     if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
@@ -1473,8 +1474,7 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
 
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
     if(this.type == CROPTYPE_CHALLENGE) {
-      // bee challenge bees while growing do nothing
-      return Num(0);
+      // do nothing: the bee challenge bees give their boost immediately, even while growing
     } else {
       // wither challenge
       if(state.challenge == challenge_wither) {
@@ -3587,6 +3587,13 @@ function() { state.fruit_slots++; },
 function() { state.fruit_slots++; }
 ]
 , 31);
+challenges[challenge_rocks].bonus_formula = 2;
+challenges[challenge_rocks].bonus_level_a = 15;
+challenges[challenge_rocks].bonus_level_b = 100;
+challenges[challenge_rocks].bonus_p = 0.75;
+challenges[challenge_rocks].bonus_exponent_base_a = Num(1.6);
+challenges[challenge_rocks].bonus_exponent_base_b = Num(1.4);
+// old values, for resin/twigs
 challenges[challenge_rocks].bonus = Num(0.2);
 challenges[challenge_rocks].bonus_min_level = 0;
 challenges[challenge_rocks].completion_bonus = Num(0.5);
@@ -4007,6 +4014,13 @@ function() {
 }, function() {
   showMessage('Poison ivy unlocked! Poison ivy is the next tier of the stingy crop, after the thistle.');
 }, 31);
+challenges[challenge_poisonivy].bonus_formula = 2;
+challenges[challenge_poisonivy].bonus_level_a = 150;
+challenges[challenge_poisonivy].bonus_level_b = 100;
+challenges[challenge_poisonivy].bonus_p = 0.75;
+challenges[challenge_poisonivy].bonus_exponent_base_a = Num(1.3);
+challenges[challenge_poisonivy].bonus_exponent_base_b = Num(1.5);
+// old values, for resin/twigs
 challenges[challenge_poisonivy].bonus = Num(0.0075);
 challenges[challenge_poisonivy].bonus_min_level = 130;
 //challenges[challenge_poisonivy].bonus_exponent = Num(1.1);
@@ -4768,7 +4782,29 @@ var treeboost_exponent_1 = 1.05; // basic
 var treeboost_exponent_2 = 1.2; // from ethereal upgrade
 
 var upgrade2_basic_tree = registerUpgrade2('basic tree boost bonus', LEVEL2, Res({resin:10}), 1.5, function() {
-}, function(){return true}, 0, 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (scales by n^' + treeboost_exponent_2 +  ').', undefined, undefined, tree_images[10][1][1]);
+  }, function(){return true}, 0,
+  function() {
+    var result = 'add ' + upgrade2_basic_tree_bonus.toPercentString() + ' to the basic tree production bonus per level (scales by n^' + treeboost_exponent_2 +  ').';
+    var level_current = state.treelevel || 1;
+    var level_max = state.g_treelevel;
+    var current = getTreeBoostFor(level_current, state.upgrades2[upgrade2_basic_tree].count, true);
+    var current_up = getTreeBoostFor(level_current, state.upgrades2[upgrade2_basic_tree].count + 1, true);
+    var max = getTreeBoostFor(level_max, state.upgrades2[upgrade2_basic_tree].count, true);
+    var max_up = getTreeBoostFor(level_max, state.upgrades2[upgrade2_basic_tree].count + 1, true);
+    result += '<br><br>';
+    result += '<b>Current bonus at tree level ' + level_current + '</b>: ' + current.toPercentString();
+    result += '<br>';
+    result += '<b>Next upgrade bonus at tree level ' + level_current + '</b>: ' + current_up.toPercentString();
+    if(level_current != level_max) {
+      result += '<br>';
+      result += '<b>Current bonus at tree level ' + level_max + '</b>: ' + max.toPercentString();
+      result += '<br>';
+      result += '<b>Next upgrade bonus at tree level ' + level_max + '</b>: ' + max_up.toPercentString();
+    }
+    return result;
+  }, undefined, undefined, tree_images[10][1][1]);
+
+
 
 var upgrade2_extra_fruit_slot = registerUpgrade2('extra fruit slot', 0, Res({resin:50,essence:25}), 2, function() {
   state.fruit_slots++;
@@ -6334,22 +6370,22 @@ var min_transcension_level = 10;
 
 var treeboost = Num(0.05); // additive production boost per tree level
 
-function getTreeBoost() {
+function getTreeBoostFor(treelevel, upgrade2level, only_for_ethereal_upgrade_display) {
   var result = Num(treeboost);
 
   var basic = basicChallenge();
 
-  if(!basic) {
-    var n = state.upgrades2[upgrade2_basic_tree].count;
+  if(!basic || only_for_ethereal_upgrade_display) {
+    var n = upgrade2level;
     n = Math.pow(n, treeboost_exponent_2);
     result.addInPlace(upgrade2_basic_tree_bonus.mulr(n));
   }
 
-  var l = state.treelevel;
+  var l = treelevel;
   l = Math.pow(l, treeboost_exponent_1);
   result.mulrInPlace(l);
 
-  if(basic != 2) {
+  if(basic != 2 && !only_for_ethereal_upgrade_display) {
     // fruit ability
     var level = getFruitAbility(FRUIT_TREELEVEL, true);
     if(level > 0) {
@@ -6359,6 +6395,10 @@ function getTreeBoost() {
   }
 
   return result;
+}
+
+function getTreeBoost() {
+  return getTreeBoostFor(state.treelevel, state.upgrades2[upgrade2_basic_tree].count, false);
 }
 
 // this is tuned so that from fruit_drop_level to fruit_drop_level + 20 (115 to 135 for sapphire fruit), a scaling where it's worse than FRUIT_BEEBOOST to getting significantly better than FRUIT_BEEBOOST occurs, with it being equal somewhere before the mid point
@@ -6621,7 +6661,8 @@ function getFishMultiplier(fishtype, state, weighted) {
     // infinity flower bonus
     var num0 = state.fishcount[anemone_0];
     var num1 = state.fishcount[anemone_1];
-    return new Num(1 + anemone_0_bonus * num0 + anemone_1_bonus * num1);
+    var num2 = state.fishcount[anemone_2];
+    return new Num(1 + anemone_0_bonus * num0 + anemone_1_bonus * num1 + anemone_2_bonus * num2);
   } else if(fishtype == FISHTYPE_PUFFER) {
     // infinity berry bonus
     var num0 = state.fishcount[puffer_0];
@@ -6657,8 +6698,9 @@ function getFishMultiplier(fishtype, state, weighted) {
     // non-runestone multiplier
     if(weighted == 0) {
       var num0 = state.fishcount[oranda_0];
-      if(num0 == 0) return new Num(1);
-      return new Num(1 + oranda_0_bonus * num0);
+      var num1 = state.fishcount[oranda_1];
+      if(num0 == 0 && num1 == 0) return new Num(1);
+      return new Num(1 + oranda_0_bonus * num0 + oranda_1_bonus * num1);
     } else {
       if(state.fish_basicmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
       var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_basicmul_time); // most recent timespan, during which 'last' is active
@@ -7635,9 +7677,8 @@ var upgradesq_highest_level = registerSquirrelUpgrade('highest tree level ever b
   function() {
     return 'unlocks a production bonus that depends on highest tree level ever reached, starting from level ' +
             upgradesq_highest_level_min + '. Bonus multiplier formula: ' + upgradesq_highest_level_formula_text +
-            '<br>DEBUG: ' + state.g_treelevel  +
             '<br>Current bonus: ' + GetSquirrelUpgradeHighestTreeLevelBonus().toPercentString() +
-            '<br>At next highest treelevel: ' + GetSquirrelUpgradeHighestTreeLevelBonus(1).toPercentString();
+            '<br>At next highest tree level (' + (state.g_treelevel + 1) + '): ' + GetSquirrelUpgradeHighestTreeLevelBonus(1).toPercentString();
   },
   tree_images[6][1][1]);
 
@@ -8328,6 +8369,7 @@ var sameTypeCostMultiplier3_bee_b = 4;
 var sameTypeCostMultiplier3_runestone = 1000;
 var sameTypeCostMultiplier3_mushroom = 10;
 var sameTypeCostMultiplier3_fern = 2;
+var sameTypeCostMultiplier3_lotus = 7;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
 
 Crop3.prototype.isReal = function() {
@@ -8358,6 +8400,7 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   if(this.type == CROPTYPE_BEE) mul = (this.tier < 7) ? sameTypeCostMultiplier3_bee : sameTypeCostMultiplier3_bee_b;
   if(this.type == CROPTYPE_MUSH) mul = sameTypeCostMultiplier3_mushroom;
   if(this.type == CROPTYPE_FERN) mul = sameTypeCostMultiplier3_fern;
+  if(this.type == CROPTYPE_LOTUS) mul = sameTypeCostMultiplier3_lotus;
   var countfactor = Math.pow(mul, count);
   return this.cost.mulr(countfactor);
 };
@@ -8384,7 +8427,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   var result = this.prod.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
-  // flower boost for berry
+  // flower boost for berry/nut
   if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT)) {
     var flowermul = new Num(1);
     var num = 0;
@@ -8405,6 +8448,30 @@ Crop3.prototype.getProd = function(f, breakdown) {
     if(num) {
       result.mulInPlace(flowermul);
       if(breakdown) breakdown.push(['flowers (' + num + ')', true, flowermul, result.clone()]);
+    }
+  }
+
+  // lotus boost for berry/nut
+  if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT)) {
+    var flowermul = new Num(1);
+    var num = 0;
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+      var n = state.field3[y2][x2];
+      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_LOTUS) {
+        var boost = crops3[n.cropIndex()].getInfBoost(n);
+        if(boost.neqr(0)) {
+          flowermul.addInPlace(boost);
+          num++;
+        }
+      }
+    }
+    if(num) {
+      result.mulInPlace(flowermul);
+      if(breakdown) breakdown.push(['lotuses (' + num + ')', true, flowermul, result.clone()]);
     }
   }
 
@@ -8520,6 +8587,35 @@ Crop3.prototype.getProd = function(f, breakdown) {
         var give_warning = !have_fish && state.g_res.infspores.gt(fishes[leporinus_0].cost.infspores.mulr(2));
         if(breakdown) breakdown.push(['leporinus' + (give_warning ? ' (have 0, put some in the pond!)' : ' (fish, through bees)'), true, mul, result.clone()]);
       }
+    }
+  }
+
+  // lotus boost for mushroom: does not use getInfBoost, but depends on relative tier
+  if(f && this.type == CROPTYPE_MUSH) {
+    var lotusmul = new Num(1);
+    var numlotuses = 0; // flowers
+
+    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+      if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+      var n = state.field3[y2][x2];
+      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_LOTUS) {
+        var c2 = crops3[n.cropIndex()];
+        if(c2.tier >= this.tier - 1) {
+          var boost = new Num(1);
+          if(c2.tier <= this.tier - 1) boost = new Num(0.5);
+          if(c2.tier >= this.tier + 1) boost = new Num(1.5);
+          if(boost.neqr(0)) {
+            lotusmul.addInPlace(boost);
+            numlotuses++;
+          } // end of 'boost.neqr(0)' for flower
+        }
+      }
+    }
+    if(numlotuses) {
+      result.mulInPlace(lotusmul);
+      if(breakdown) breakdown.push(['lotus tiers (' + numlotuses + ')', true, lotusmul, result.clone()]);
     }
   }
 
@@ -8807,6 +8903,13 @@ function registerNut3(name, tier, cost, prod, basicboost, planttime, image, opt_
   return index;
 }
 
+function registerLotus3(name, tier, cost, infboost, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_LOTUS, tier, cost, basicboost, planttime, image, opt_tagline);
+  var crop = crops3[index];
+  crop.infboost = infboost;
+  return index;
+}
+
 var default_crop3_growtime = 5; // in seconds
 
 
@@ -8890,6 +8993,9 @@ var fern3_9 = registerFern3('emerald fern', 9, Res({infseeds:200e54}), Num(3), N
 crop3_register_id = 2400;
 var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(25), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
 var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(75), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
+
+crop3_register_id = 2700;
+var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(77.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
@@ -9087,6 +9193,8 @@ var anemone_0_bonus = 0.15;
 var anemone_0 = registerAnemone('anemone', 0, Res({infspores:7500000}), 'Improves infinity flowers by ' + Num(anemone_0_bonus).toPercentString(), image_anemone0);
 var anemone_1_bonus = 1.5;
 var anemone_1 = registerAnemone('red anemone', 1, Res({infspores:200e9}), 'Improves infinity flowers by ' + Num(anemone_1_bonus).toPercentString(), image_anemone1);
+var anemone_2_bonus = 20;
+var anemone_2 = registerAnemone('black anemone', 2, Res({infspores:5e21}), 'Improves infinity flowers by ' + Num(anemone_2_bonus).toPercentString(), image_anemone2);
 
 fish_register_id = 600;
 var puffer_0_bonus = 0.2;
@@ -9113,6 +9221,8 @@ var leporinus_0 = registerLeporinus('leporinus', 0, Res({infspores:2e15}), 'Impr
 fish_register_id = 1000;
 var oranda_0_bonus = 2;
 var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda0);
+var oranda_1_bonus = 10;
+var oranda_1 = registerOranda('red oranda', 1, Res({infspores:200e18}), 'Boosts the basic field boost by ' + Num(oranda_1_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda1);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -9278,7 +9388,7 @@ for(var i = 0; i < level_achievement_values.length; i++) {
 
 // TODO: from now on, clearly define the value of a new medal series right before it, rather than the "+= 20" system from above, to prevent no accidental changing of all achievement IDs
 medal_register_id = 104;
-var season_medal = registerMedal('four seasons', 'reached winter and seen all seasons', field_winter[0], function() { return getSeason() == 3; }, Num(0.05));
+var season_medal = registerMedal('four seasons', 'reached winter and seen all four seasons', image_field_4seasons, function() { return getSeason() == 3; }, Num(0.05));
 
 medal_register_id = 110;
 registerMedal('watercress', 'plant the entire field full of watercress', images_watercress[4], function() {
@@ -10034,6 +10144,7 @@ registerPlantTypeMedal3(stinging3_9);
 registerPlantTypeMedal3(bee3_9);
 registerPlantTypeMedal3(fern3_9);
 registerPlantTypeMedal3(nut3_9);
+registerPlantTypeMedal3(lotus3_9);
 
 
 
@@ -10073,6 +10184,8 @@ registerFishTypeMedal(oranda_0);
 registerFishTypeMedal(shrimp_1);
 registerFishTypeMedal(octopus_1);
 registerFishTypeMedal(goldfish_2);
+registerFishTypeMedal(oranda_1);
+registerFishTypeMedal(anemone_2);
 
 
 

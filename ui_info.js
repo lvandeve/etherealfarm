@@ -771,6 +771,22 @@ function openTimeInfoDialog() {
       if(have_mist) result += '<b>Mist:</b> mushroom production boost: +' + getMistSporesBoost().toPercentString() + ', consumption reduced by ' + getMistSeedsBoost().rsub(1).toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getMistDuration()) + '. Cooldown time: ' + util.formatDuration(getMistWait() - getMistDuration()) + '<br>';
       if(have_rainbow) result += '<b>Rainbow:</b> flower boost: +' + getRainbowFlowerBoost().toPercentString() + ', and not negatively affected by winter.' + ' Run time: ' + util.formatDuration(getRainbowDuration()) + '. Cooldown time: ' + util.formatDuration(getRainbowWait() - getRainbowDuration()) + '<br>';
     }
+
+    if(presentGrowSpeedActive()) {
+      if(holidayEventActive() == 1) {
+        result += 'Grow speed effect from present active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
+      } else {
+        result += 'Grow speed effect from egg active: crops grow twice as fast for 15 minutes. Time remaining: ' + util.formatDuration(presentGrowSpeedTimeRemaining(), true, 4, true);
+      }
+    }
+    if(presentProductionBoostActive()) {
+      if(holidayEventActive() == 1) {
+        result += 'Production boost effect from present active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
+      } else {
+        result += 'Production boost effect from egg active: +25% boost to seeds and spores production for 15 minutes. Time remaining: ' + util.formatDuration(presentProductionBoostTimeRemaining(), true, 4, true);
+      }
+    }
+
     return result;
   };
   flex.div.innerHTML = getText();
