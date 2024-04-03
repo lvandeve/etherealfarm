@@ -215,7 +215,11 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   }
   for(var j = 0; j < c2.completed; j++) {
     if(j >= c.rewarddescription.length) break;
-    text += '• Reward gotten: ' + c.rewarddescription[j];
+    text += '• Reward gotten';
+    if(c.targetlevel && c.targetlevel.length && j < c.targetlevel.length) {
+      text += ' (at level ' + c.targetlevel[j] + ')';
+    }
+    text += ': ' + c.rewarddescription[j];
     text += '<br>';
   }
 

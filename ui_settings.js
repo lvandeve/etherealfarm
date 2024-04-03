@@ -555,7 +555,7 @@ function createAdvancedSettingsDialog() {
   button = makeSettingsButton();
   updatebuttontext = function(button) { button.textEl.innerText = 'save on refresh / actions: ' + (state.saveonaction ? 'yes' : 'no'); };
   updatebuttontext(button);
-  registerTooltip(button, 'Whether to auto-savewhen refreshing browser tab and aftere each action. If this is on, actions are saved reliably even when closing the web browser soon after. If this is off, the game will still auto-save every few minutes anyway, but the last minutes of gameplay may get lost when closing browser tab. Remember it\'s also recommended to export saves manually regularly since web browsers can lose all data easily.');
+  registerTooltip(button, 'Whether to auto-save when refreshing browser tab and after each action. If this is on, actions are saved reliably even when closing the web browser soon after. If this is off, the game will still auto-save every few minutes anyway, but the last minutes of gameplay may get lost when closing browser tab. Remember it\'s also recommended to export saves manually regularly since web browsers can lose all data easily.');
   addButtonAction(button, bind(function(button, updatebuttontext, e) {
     state.saveonaction = !state.saveonaction;
     updatebuttontext(button);

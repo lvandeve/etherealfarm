@@ -364,7 +364,12 @@ function setCSSFile(file) {
   link.setAttribute("href", file);
 }
 
+var prevstyle = undefined;
+
 function setStyle() {
+  if(prevstyle == state.uistyle) return; // don't load the style if the same one is already loaded: otherwise pressing undo causes it to reload the stylesheet for no reason, which can break the display when offline
+  prevstyle = state.uistyle;
+
   // add version code, otherwise the CSS files get cached for a long time and if new styles are added they won't be picked up when loading a next game version
   // caching within a game version is desired though
   var version_code = '?v=' + formatVersion().replace(/\./g, '_');

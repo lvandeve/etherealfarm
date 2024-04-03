@@ -201,6 +201,22 @@ function renderUpgradeDialog(chip, completed) {
     };
     extraname = 'buy many';
   }
+  if(u.is_choice) {
+    okfun = function() {
+      addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
+      closeAllDialogs();
+      update();
+      return true;
+    };
+    okname = 'buy ' + u.choicename_a;
+    extrafun = function() {
+      addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
+      closeAllDialogs();
+      update();
+      return true;
+    };
+    extraname = 'buy ' + u.choicename_b;
+  }
   chip.updateInfoText();
   var dialog = createDialog({
     size:DIALOG_SMALL,

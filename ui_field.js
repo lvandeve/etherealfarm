@@ -361,7 +361,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
   if(opt_detailed) {
     // NOTE: type here means the exact type (same tier, same croptype), not generic croptype.
-    result += 'Num planted of this type: ' + state.cropcount[c.index] + '<br>';
+    result += 'Have of this crop: ' + state.cropcount[c.index] + '<br>';
     result += '<br/>';
     result += 'Cost: ' + '<br>';
     result += ' • Base planting cost: ' + c.cost.toString() + '<br>';

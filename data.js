@@ -3846,7 +3846,7 @@ challenges[challenge_wasabi].bonus_min_level = 40;
 
 
 // 10
-var challenge_basic = registerChallenge('basic challenge', [10], undefined, undefined,
+var challenge_basic = registerChallenge('basic challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined,
 `Upgrades and effects that last through transcensions don't work, everything is back to basics`,
 `
 • Everything, except the effects listed below, is back to basics like at the first run of the game: Upgrades and effects that last through transcensions (e.g. ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, ...) or unlock later (amber, ...) don't work.<br>
@@ -3870,7 +3870,7 @@ challenges[challenge_basic].bonus = Num(0.075);
 challenges[challenge_basic].bonus_min_level = 10;
 challenges[challenge_basic].completion_bonus = Num(0.35);
 challenges[challenge_basic].bonus_exponent = Num(0.5);
-challenges[challenge_basic].bonus_max_level = 30;
+challenges[challenge_basic].bonus_max_level = 30; // Important: this must be kept even after switching to the new challenge formula, basic challenge must remain capped
 //challenges[challenge_basic].autoaction_warning = true;
 
 // 11
@@ -3896,7 +3896,7 @@ challenges[challenge_truly_basic].bonus = Num(0.1);
 challenges[challenge_truly_basic].bonus_min_level = 10;
 challenges[challenge_truly_basic].completion_bonus = Num(0.35);
 challenges[challenge_truly_basic].bonus_exponent = Num(0.5);
-challenges[challenge_truly_basic].bonus_max_level = 25;
+challenges[challenge_truly_basic].bonus_max_level = 25; // Important: this must be kept even after switching to the new challenge formula, basic challenge must remain capped
 challenges[challenge_truly_basic].autoaction_warning = true;
 
 
@@ -3964,7 +3964,7 @@ function cropCanBeHitByLightning(f) {
 
 
 // 13
-var challenge_infernal = registerChallenge('infernal challenge', [20], undefined, undefined,
+var challenge_infernal = registerChallenge('infernal challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined,
 `A challenge where the season is infernal and everything is difficult.`,
 `
 • There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>

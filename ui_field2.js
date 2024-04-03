@@ -117,10 +117,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += '<br/>';
   }
 
-
   if(opt_detailed) {
     result += '<br/>';
-    result += 'Num planted of this type: ' + state.crop2count[c.index];
+    result += 'Have of this crop: ' + state.crop2count[c.index];
     result += '<br/>';
   }
 

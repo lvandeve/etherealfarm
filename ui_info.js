@@ -383,6 +383,8 @@ function getResourceDetails(index) {
     if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
 
     if(index == 4) {
+      text += 'Highest ever had: ' + state.g_max_res.atIndex(index).toString();
+      text += '<br><br>';
       text += 'Nuts are used for squirrel upgrades, which you can access in the \'squirrel\' tab';
       text += '<br><br>';
       if(haveUnusedNutsBonus()) {

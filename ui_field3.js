@@ -119,6 +119,11 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   var upgrade_cost = [undefined];
   var upgrade_crop = getUpgradeCrop3(f.x, f.y, upgrade_cost, true);
 
+  if(opt_detailed) {
+    result += 'Have of this crop: ' + state.crop3count[c.index];
+    result += '<br/><br/>';
+  }
+
   var cost = c.getCost();
   result += ' • Base cost: ' + c.cost.toString() + '<br>';
   result += ' • Next planting cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')<br>';
