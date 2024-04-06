@@ -291,8 +291,14 @@ function getChallengeStatsString(challenge_id, include_current_run) {
     if(currentlyrunning) {
       text += '• Max level reached before: ' + c2.maxlevel + ', <b>after: ' + maxlevel + '</b><br>';
       var challenge2 = totalChallengeBonusIncludingCurrentRun(0);
-      text += '• Production bonus before: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString() + ', <b>after: ' + getChallengeBonus(0, c.index, maxlevel, !!c.numCompleted(true)).toPercentString() +
-              '</b>. Total (all challenges) before: ' + totalChallengeBonus(0).toPercentString() + ', <b>after: ' + challenge2.toPercentString() + '</b><br>';
+
+      var bonus_before = oneChallengeBonus(0, c.index);
+      var bonus_after = oneChallengeBonusIncludingCurrentRun(0, c.index);
+      var total_bonus_before = totalChallengeBonus(0);
+      var total_bonus_after = totalChallengeBonusIncludingCurrentRun(0);
+
+      text += '• Production bonus before: ' + bonus_before.toPercentString() + ', <b>after: ' + bonus_after.toPercentString() +
+              '</b>. Total (all challenges) before: ' + total_bonus_before.toPercentString() + ', <b>after: ' + total_bonus_after.toPercentString() + '</b><br>';
     } else {
       text += '• Max level reached: ' + c2.maxlevel + '<br>';
       text += '• Production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString() + '<br>';

@@ -93,7 +93,7 @@ function makeTreeDialog() {
       var basicfar = basic && (maxlevel >= basicfarlevel || state.treelevel >= basicfarlevel);
       var addbasicmessage = false;
 
-      var bonus_before = oneChallengeBonus(0, state.challenge)
+      var bonus_before = oneChallengeBonus(0, state.challenge);
       var bonus_after = oneChallengeBonusIncludingCurrentRun(0, state.challenge);
       var total_bonus_before = totalChallengeBonus(0);
       var total_bonus_after = totalChallengeBonusIncludingCurrentRun(0);

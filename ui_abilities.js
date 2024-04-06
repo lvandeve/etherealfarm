@@ -377,12 +377,16 @@ function updateAbilitiesUI() {
           image = crops[brassica_index].image[4];
           name = crops[brassica_index].name;
         }
-        alltiers_name = 'brassica';
+        if(state.crops[brassica_1].known) {
+          alltiers_name = 'brassica';
+        } else {
+          alltiers_name = name; // have not seen other brassica yet, so name it 'watercress' to make it easier to understand what is meant in the early game
+        }
       }
 
       watercressbutton = addTopBarFlex(9, 10);
       var tooltip;
-      var label = 'refresh ' + name;
+      var label = 'refresh ' + alltiers_name;
       var label_shift;
       var label_ctrl;
       if(infinity_field_tab) {
@@ -396,7 +400,7 @@ function updateAbilitiesUI() {
         label_shift = 'Tower defense help';
         label_ctrl = undefined;
       } else {
-        tooltip = 'Refresh ' + name + ': active ' + alltiers_name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + alltiers_name + '. With shift, plants ' + name + ' everywhere it can.';
+        tooltip = 'Refresh ' + alltiers_name + ': active ' + alltiers_name + ' and remainders only. Hotkey: w. With ctrl, deletes all ' + alltiers_name + '. With shift, plants ' + name + ' everywhere it can.';
         label_shift = 'plant ' + name + ' everywhere';
         label_ctrl = 'delete all ' + alltiers_name;
       }

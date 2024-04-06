@@ -3846,7 +3846,7 @@ challenges[challenge_wasabi].bonus_min_level = 40;
 
 
 // 10
-var challenge_basic = registerChallenge('basic challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined,
+var challenge_basic = registerChallenge('basic challenge', /*targetlevel=*/[10], /*targetfun=*/undefined, /*targetdescription=*/undefined,
 `Upgrades and effects that last through transcensions don't work, everything is back to basics`,
 `
 • Everything, except the effects listed below, is back to basics like at the first run of the game: Upgrades and effects that last through transcensions (e.g. ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, ...) or unlock later (amber, ...) don't work.<br>
