@@ -22,13 +22,30 @@ function getChangeLog() {
 
   if(window['global_is_beta']) {
     if(window['beta_patchnotes']) {
-      text += '<hr>Beta patch notes:';
+      text += '<hr>Beta patch notes:<br/><br/>';
       text += window['beta_patchnotes'];
       text += 'End of beta patch notes<hr><br/><br/>';
     } else {
       text += 'This is a beta version<br/><br/>';
     }
   }
+
+  text += '0.12.3 (2024-05-02)';
+  text += '<br/>• Added first few crops of the ruby infinity tier.';
+  text += '<br/>• Added new ethereal mistletoe upgrade: squirrel friendliness at mistletoe evolution level 13.';
+  text += '<br/>• Squirrel evolution now allows placing two squirrels in the ethereal field.';
+  text += '<br/>• Using the new exponential challenge production boost bonus formula for thistle challenge and wasabi challenge (see earlier changelog entries for more info).';
+  text += '<br/>• Changed the the special neighbor boosts in ethereal field (this are: tree, automaton, squirrel and mistletoe):';
+  text += '<br/>&nbsp;&nbsp;◦ Their main boost is made additive with other special neighbor types instead of multiplicative, which ensures more surface area of the ethereal field can be made useful.';
+  text += '<br/>&nbsp;&nbsp;◦ There\'s a separate additional bonus for having at least 2 special neighbor boosts touching a single crop (no increase for having 3+), to make the boosts somewhat similar to before this update up to this point.';
+  text += '<br/>&nbsp;&nbsp;◦ This change is done to allow this and future updates to increase the ethereal tree, automaton and squirrel neighbor boost (similar to the mistletoe which can already reach arbitrarily high boosts).';
+  text += '<br/>• Boost to basic field of infinity crop tier 7 and up increased (this is to compensate part of the loss from the special neighbor boost change).';
+  text += '<br/>• Infinity lotus boost now only affects infinity crops within its own tier (since ruby is the first higher tier for lotus, this change has no real effect on current games).';
+  text += '<br/>• Crop prestiges that have never been done before, now must be done manually the first time, not by automaton, similar to crop unlocks. The upgrade tab will get a special color in this case.'; // for crop unlocks this was released in februari 2024, and actually not doing it for prestiges as an oversight back then
+  text += '<br/>• Ethereal squirrel and automaton detailed info dialogs now show a breakdown for neighbor boost, and ethereal tree and mistletoe dialog also show their neighbor boost now.';
+  text += '<br/>• Fix issue where squirrel didn\'t use the evolved squirrel texture after squirrel evolution anymore.'; // and holiday hats were broken too, which used similar texture change method
+  text += '<br/>• Other bugfixes.'; // e.g. fern could spawn on top of tree on 6x6 field but not others, and display of seeds/s and spores/s when loading paused game was wrong (NOTE: that if infinity seeds/spores is still wrong, showing 0; but the regular seeds/spores showed a misleading non-zero amount)
+  text += '<br/><br/>';
 
   text += '0.12.2 (2024-04-01)';
   text += '<br/>• Added new infinity crop: emerald infinity lotus.';

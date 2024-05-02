@@ -6209,13 +6209,14 @@ function metalify_nonlincolor(v) {
 // *) 0/undefined: no effect
 // *) 1: darken
 // *) 2: brighten
-// *) 3: increase saturation slightly (e.g. to make rhodium a bit less red)
-// *) 4: decrease saturation slightly (e.g. to make electrum a bit more green)
+// *) 3: decrease saturation slightly (e.g. to make rhodium a bit less red)
+// *) 4: increase saturation slightly (e.g. to make electrum a bit more green)
 // *) 5: shiny
 // *) 6: effect specifically for platinum infinity crops on the bright infinity field background, to have some contrast
 // *) 7: subtle bottom right shadow, again to provide contrast for bright crops like the platinum ones against infinity field background
 // *) 8: hue rotation
 // *) 9: "unlight": make only light parts darker, this is specifically to make the 'flower' part of nettles more visible against the bright background in the infinity field
+// *) 10: gamma
 // opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
 function metalify(im, metalheader, opt_effects, opt_params) {
   var pal = generatePalette(metalheader);
@@ -6338,6 +6339,11 @@ function metalify(im, metalheader, opt_effects, opt_params) {
               g *= amount;
               b *= amount;
             }
+          }
+          if(effect == 10) {
+            r = Math.pow(r, param);
+            g = Math.pow(g, param);
+            b = Math.pow(b, param);
           }
         }
       }

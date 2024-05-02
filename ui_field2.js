@@ -44,7 +44,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   }
 
   if(c.effect_description_long) {
-    result += 'Effect: ' + c.effect_description_long;
+    var effect = c.effect_description_long;
+    if(typeof effect == 'function') effect = c.effect_description_long();
+    result += 'Effect: ' + effect;
   } else if(c.effect_description_short) {
     result += 'Effect: ' + c.effect_description_short;
   }
@@ -84,6 +86,8 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   var squirrel = c.index == squirrel2_0;
   var mistletoe = c.index == mistletoe2_0;
 
+  var breakdown = opt_detailed ? [] : undefined;
+
   if(f.growth >= 1) {
     if(c.boost.neqr(0)) {
       var etherealBoost = c.getEtherealBoost(f);
@@ -92,16 +96,17 @@ function getCropInfoHTML2(f, c, opt_detailed) {
       boostFromNeighbors = etherealBoost.div(temp).subr(1); // this one can be from upgraded ethereal mistletoe boosting lotuses
     }
     if(automaton) {
-      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonNeighborBoost().toPercentString()) + '<br/>';
+      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonNeighborBoost(breakdown).toPercentString()) + '<br/>';
     }
     if(squirrel) {
-      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealSquirrelNeighborBoost().toPercentString()) + '<br/>';
+      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealSquirrelNeighborBoost(breakdown).toPercentString()) + '<br/>';
     }
-    if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
-      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeBonus(mistle_upgrade_neighbor).toPercentString()) + '<br/>';
+    if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_mistle_neighbor)) {
+      // NOTE: this actually does not do anything, the mistletoe has a special dialog. That shows this info better, including lotus boost too.
+      result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeNeighborBoost().toPercentString()) + '<br/>';
     }
     if(mistletoe && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
-      result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).toPercentString()) + '<br/>';
+      result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeLotusNeighborBoost().toPercentString()) + '<br/>';
     }
     /*if(!boostFromNeighbors) {
       var fakecrop = crops2[berry2_0];
@@ -158,6 +163,11 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   }
 
   result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;
+
+  if(breakdown && breakdown.length) {
+    result += '<br>' + formatBreakdown(breakdown, true, 'Breakdown of neighbor boost');
+  }
+
 
   return result;
 }
@@ -601,7 +611,7 @@ function updateField2CellUI(x, y) {
 
   var largeravailable = c && c.tier >= 0 && state.highestoftype2unlocked[c.type] > state.highestoftype2planted[c.type] && state.res.resin.gt(crops2[state.highestcropoftype2unlocked[c.type]].cost.resin);
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active || fd.largeravailable != largeravailable) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active || fd.largeravailable != largeravailable || fd.squirrel_evolution != state.squirrel_evolution) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
@@ -609,6 +619,7 @@ function updateField2CellUI(x, y) {
     fd.progresspixel = progresspixel;
     fd.holiday_hats_active = holiday_hats_active;
     fd.largeravailable = largeravailable;
+    fd.squirrel_evolution = state.squirrel_evolution;
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];

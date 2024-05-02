@@ -1015,13 +1015,16 @@ function getRandomPreferablyEmptyFieldSpot() {
   if(num < minemptyspots) {
     var x = Math.floor(Math.random() * state.numw);
     var y = Math.floor(Math.random() * state.numh);
-    var f = state.field[y][x];
     var maxruns = 4;
     for(;;) {
+      var x0 = x;
+      var y0 = y;
+      var f = state.field[y][x];
       if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) x = (x + 1) % state.numw;
       if(state.fern && x == state.fernx && y == state.ferny) y = (y + 1) % state.numh;
       if(state.present_effect && x == state.presentx && y == state.presenty) y = (y + 1) % state.numh;
       if(maxruns-- < 0) break; // just in case there are e.g. tons of tree tops for some reason
+      if(x0 == x && y0 == y) break; // no change, nothing to do
     }
     return [x, y];
   }
@@ -2531,6 +2534,9 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[mush3_9].had) unlockInfinityCrop(stinging3_9);
   if(state.crops3[fern3_9].had) unlockInfinityCrop(nut3_9);
   if(state.crops3[nut3_9].had) unlockInfinityCrop(lotus3_9);
+
+  if(state.crops3[lotus3_9].had) unlockInfinityCrop(brassica3_10);
+  if(state.crops3[brassica3_10].had) unlockInfinityCrop(berry3_10);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -3155,7 +3161,8 @@ function computeNextAutoPrestige() {
     if(!u.isprestige) continue;
     if(!u2.unlocked) continue;
     if(u2.count) continue;
-    if(u.cropid == undefined) continue
+    if(!u2.had) continue; // don't do unlock-upgrades you've never done before automatically
+    if(u.cropid == undefined) continue;
 
     var cost = u.getCost();
     // the auto-unlock costs are also used for prestige
@@ -3591,6 +3598,8 @@ var update = function(opt_ignorePause) {
     state.lastLightningTime += d;
     state.infinitystarttime += d;
     state.recentweighedleveltime_time += d;
+    state.present_production_boost_time += d;
+    state.present_grow_speed_time += d;
     if(state.challenge == challenge_towerdefense) {
       var td = state.towerdef;
       td.wavestarttime += d;
@@ -4530,8 +4539,12 @@ var update = function(opt_ignorePause) {
           } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
             showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
             ok = false;
-          } else if(c.index == squirrel2_0 && state.crop2count[squirrel2_0]) {
-            showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
+          } else if(c.index == squirrel2_0 && state.crop2count[squirrel2_0] >= getMaxNumEtherealSquirrels()) {
+            if(state.crop2count[squirrel2_0] == 1) {
+              showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
+            } else {
+              showMessage('already have the max amount of squirrels, cannot place more', C_INVALID, 0, 0);
+            }
             ok = false;
           } else if(c.index == mistletoe2_0 && (state.crop2count[mistletoe2_0] > (haveEtherealMistletoeUpgrade(mistle_upgrade_second_mistletoe) ? 1 : 0))) {
             if(state.crop2count[mistletoe2_0] == 1) {

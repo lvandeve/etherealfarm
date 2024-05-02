@@ -234,7 +234,7 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
     dialog.content.div.innerHTML = getSquirrelUpgradeInfoText(u, gated, is_gate, unknown);
   }, 'show squirrel upgrade info', {
     tooltip:function() {
-      return 'show info for: ' + u.name;
+      return 'show info for: ' + u.name + '<br><hr><br>' + infoText;
     }
   });
 
@@ -506,6 +506,7 @@ function getSquirrelEvolutionHelp() {
     <br> • Nuts will stay at 0 and cannot be produced until next transcension
     <br><br>
     What you get:
+    <br> • You can place a second squirrel in the ethereal field
     <br> • Permanent flat production bonus of ` + squirrel_epoch_prod_bonus.toPercentString() + `
     <br> • Permanent ethereal tree neighbor bonus of ` + squirrel_evolution_ethtree_boost.toPercentString() + `
     <br> • New squirrel upgrade tree with more expensive upgrades, a mix of new ones and the old ones returning

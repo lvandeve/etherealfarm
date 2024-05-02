@@ -68,6 +68,7 @@ function prodBreakdown(index) {
   }
   return result;
 }
+
 // breakdown of which crops produce/consume how much of a particular resource type in infinity field
 function prodBreakdown3(index) {
   if(!haveInfinityField()) return undefined;

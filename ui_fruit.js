@@ -113,7 +113,7 @@ function getFruitAbilityDescription(ability) {
     // "taking into account the time this fruit was active" now means: it takes into account how many spores were produced while any fruit with resin boost (respectively twigs boost) was active, vs while other fruits were active. The more spores produced while such fruit active, the more of the boost is given.
     case FRUIT_RESINBOOST: return 'boost resin income (with a soft cap), based on spores produced while this fruit was active. In addition slightly boosts the unspent resin production bonus.';
     case FRUIT_TWIGSBOOST: return 'boost twigs income (with a soft cap), based on spores produced while this this fruit was active. In addition slightly boosts the unspent twigs production bonus.';
-    case FRUIT_RESIN_TWIGS: return 'boost resin and twigs income (with a soft cap), based on spores produced while this this fruit was active. In addition slightly boosts the unspent twigs production bonus.';
+    case FRUIT_RESIN_TWIGS: return 'boost resin and twigs income (with a soft cap), based on spores produced while this this fruit was active. In addition slightly boosts the unspent resin and twigs production bonus.';
     case FRUIT_NUTBOOST: return 'boosts nuts production (with a soft cap)';
     case FRUIT_BEEBOOST: return 'boosts the beehive bonus';
     case FRUIT_MIX: return 'divides given boost over nettle, brassica and bee, balanced differently for spores and seeds, but only additively if corresponding non-mix abilities are present';

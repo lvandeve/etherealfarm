@@ -106,7 +106,7 @@ function getCropTypeHelp3(type, opt_state) {
     case CROPTYPE_NUT: return 'Produces infinity seeds. Works exactly the same as berries and is boosted by the same flowers and fishes.';
     case CROPTYPE_PUMPKIN: return '';
     case CROPTYPE_RUNESTONE: return 'Boosts the basic field production boost of any neighboring crops in the infinity field. WARNING: The runestone, and any non-brassica crops it touches, cannot be deleted for ' + initialrunehours + ' hours after placing the runestone, and this time resets when planting crops next to it later on.';
-    case CROPTYPE_LOTUS: return 'Boosts berries and mushrooms, similar to flower but this is a separate boost multiplicative with the flower boost. Not affected by bees.';
+    case CROPTYPE_LOTUS: return 'Boosts berries and mushrooms, similar to flower but this is a separate boost multiplicative with the flower boost, and only works within the same crop tier. Not affected by bees.';
   }
   return undefined;
 }
@@ -3819,8 +3819,16 @@ function() {
 }, function() {
   showMessage('Thistle unlocked! Thistle is the next tier of the nettle crop.');
 }, 31);
+challenges[challenge_thistle].bonus_formula = 2;
+challenges[challenge_thistle].bonus_level_a = 70;
+challenges[challenge_thistle].bonus_level_b = 100;
+challenges[challenge_thistle].bonus_p = 0.75;
+challenges[challenge_thistle].bonus_exponent_base_a = Num(1.25);
+challenges[challenge_thistle].bonus_exponent_base_b = Num(1.75);
+// old values, for resin/twigs
 challenges[challenge_thistle].bonus = Num(0.002);
 challenges[challenge_thistle].bonus_min_level = 33;
+//
 challenges[challenge_thistle].autoaction_warning = true;
 
 
@@ -3841,8 +3849,16 @@ function() {
 }, function() {
   showMessage('Wasabi unlocked! Wasabi is the next tier of brassica, after watercress crop.');
 }, 31);
+challenges[challenge_wasabi].bonus_formula = 2;
+challenges[challenge_wasabi].bonus_level_a = 65;
+challenges[challenge_wasabi].bonus_level_b = 100;
+challenges[challenge_wasabi].bonus_p = 0.66;
+challenges[challenge_wasabi].bonus_exponent_base_a = Num(1.25);
+challenges[challenge_wasabi].bonus_exponent_base_b = Num(1.75);
+// old values, for resin/twigs
 challenges[challenge_wasabi].bonus = Num(0.0025);
 challenges[challenge_wasabi].bonus_min_level = 40;
+
 
 
 // 10
@@ -4191,7 +4207,7 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
 
     if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
       // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
-      var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor).addr(1);
+      var mistlemul = getEtherealMistletoeLotusNeighborBoost().addr(1);
       result.mulInPlace(mistlemul);
       if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
     }
@@ -4282,28 +4298,88 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
         num_tree++;
       }
     }
-    if(num_automaton) {
-      var automatonmul = getEtherealAutomatonNeighborBoost().addr(1);
-      result.mulInPlace(automatonmul);
-      if(breakdown) breakdown.push(['automaton neighbor', true, automatonmul, result.clone()]);
+
+    // num_... itself is not taken into account in computations below: bonus of same type does not stack with each other, neither additively, nor multiplicatively.
+    var do_automaton = !!num_automaton;
+    var do_squirrel = !!num_squirrel;
+    var do_mistle = !!num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_mistle_neighbor);
+    var do_tree = !!num_tree;
+
+    // actually the values as boosts, not multipliers. mul1 is the actual multiplier.
+    var automatonmul0 = do_automaton ? getEtherealAutomatonNeighborBoost() : new Num(0);
+    var squirrelmul0 = do_squirrel ? getEtherealSquirrelNeighborBoost() : new Num(0);
+    var mistlemul0 = do_mistle ? getEtherealMistletoeNeighborBoost() : new Num(0);
+    var treemul0 = do_tree ? getEtherealTreeNeighborBoost() : new Num(0);
+
+    var automatonmul1 = automatonmul0.addr(1);
+    var squirrelmul1 = squirrelmul0.addr(1);
+    var mistlemul1 = mistlemul0.addr(1);
+    var treemul1 = treemul0.addr(1);
+
+
+    var num_types = 0;
+    if(do_automaton) num_types++;
+    if(do_squirrel) num_types++;
+    if(do_mistle) num_types++;
+    if(do_tree) num_types++;
+
+    var automatonmul2 = automatonmul1;
+    var squirrelmul2 = squirrelmul1;
+    var mistlemul2 = mistlemul1;
+    var treemul2 = treemul1;
+
+    if(num_types > 1) {
+      // the one actually used
+      var total_additive = automatonmul0.add(squirrelmul0).add(mistlemul0).add(treemul0).addr(1);
+      // what is displayed due to display limitations, if you look at them one by one
+      var total_multiplicative = automatonmul1.mul(squirrelmul1).mul(mistlemul1).mul(treemul1);
+      var correction = Num.powr(total_additive.div(total_multiplicative), 1 / num_types);
+      // spread the difference equally over all active ones
+      var automatonmul2 = do_automaton ? automatonmul1.mul(correction) : new Num(1);
+      var squirrelmul2 = do_squirrel ? squirrelmul1.mul(correction) : new Num(1);
+      var mistlemul2 = do_mistle ? mistlemul1.mul(correction) : new Num(1);
+      var treemul2 = do_tree ? treemul1.mul(correction) : new Num(1);
     }
-    if(num_squirrel) {
-      var squirrelmul = getEtherealSquirrelNeighborBoost().addr(1);
-      result.mulInPlace(squirrelmul);
-      if(breakdown) breakdown.push(['squirrel neighbor', true, squirrelmul, result.clone()]);
-    }
-    if(num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_neighbor)) {
-      // num_mistle itself is not taken into account: mistletoe bonus does not stack with each other, neither additively, nor multiplicatively.
-      var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_neighbor).addr(1);
-      result.mulInPlace(mistlemul);
-      if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
-    }
-    if(num_tree) {
-      var treemul = getEtherealTreeNeighborBoost().addr(1);
-      if(treemul.neqr(1)) {
-        result.mulInPlace(treemul);
-        if(breakdown) breakdown.push(['tree neighbor', true, treemul, result.clone()]);
+
+    if(do_automaton) {
+      result.mulInPlace(automatonmul2);
+      if(breakdown) {
+        var name = 'automaton neighbor';
+        if(num_types > 1) name += ' [' + automatonmul1.subr(1).toPercentString() + ']';
+        breakdown.push([name, true, automatonmul2, result.clone()]);
       }
+    }
+    if(do_squirrel) {
+      result.mulInPlace(squirrelmul2);
+      if(breakdown) {
+        var name = 'squirrel neighbor';
+        if(num_types > 1) name += ' [' + squirrelmul1.subr(1).toPercentString() + ']';
+        breakdown.push([name, true, squirrelmul2, result.clone()]);
+      }
+    }
+    if(do_mistle) {
+      result.mulInPlace(mistlemul2);
+      if(breakdown) {
+        var name = 'mistletoe neighbor';
+        if(num_types > 1) name += ' [' + mistlemul1.subr(1).toPercentString() + ']';
+        breakdown.push([name, true, mistlemul2, result.clone()]);
+      }
+    }
+    if(do_tree) {
+      if(treemul2.neqr(1)) {
+        result.mulInPlace(treemul2);
+        if(breakdown) {
+          var name = 'tree neighbor';
+          if(num_types > 1) name += ' [' + treemul1.subr(1).toPercentString() + ']';
+          breakdown.push([name, true, treemul2, result.clone()]);
+        }
+      }
+    }
+    if(num_types > 1) {
+      var typemul = Num(1.5);
+      result.mulInPlace(typemul);
+      //if(breakdown) breakdown.push(['different special neighbor types (' + num_types + ')', true, typemul, result.clone()]);
+      if(breakdown) breakdown.push(['have at least two special neighbor types', true, typemul, result.clone()]);
     }
   }
 
@@ -4501,7 +4577,9 @@ var fern2_4 = registerFern2('fern V', 8, 4, Res({resin:200e6}), default_ethereal
 
 crop2_register_id = 10;
 var automaton2_0 = registerAutomaton2('automaton', 1, 0, Res({resin:10}), 1.5, 'Automates things', 'Automates things and unlocks crop templates. Boosts 8 ethereal neighbors. Can have max 1. The higher your ethereal tree level, the more it can automate and the more challenges it unlocks. See automaton tab.', images_automaton);
-var squirrel2_0 = registerSquirrel2('squirrel', 5, 0, Res({resin:10}), 1.5, 'Automates things', 'Unlocks nuts and squirrel upgrades. Boosts 8 ethereal neighbors. Can have max 1.', images_squirrel);
+var squirrel2_0 = registerSquirrel2('squirrel', 5, 0, Res({resin:10}), 1.5, 'Boosts neighbors', function() {
+  return 'Unlocks nuts and squirrel upgrades. Boosts 8 ethereal neighbors. Can have max ' + getMaxNumEtherealSquirrels() + '.';
+}, images_squirrel);
 
 // berries2
 crop2_register_id = 25;
@@ -8188,7 +8266,7 @@ var mistle_upgrade_evolve = registerMistletoeUpgrade('evolve', '', Num(0.1), 0, 
 
 var mistle_upgrade_prod = registerMistletoeUpgrade('leafiness', 'production', Num(0.07), 0, 3600, 'Gives a %BONUS% production bonus per level to the main field');
 
-var mistle_upgrade_neighbor = registerMistletoeUpgrade('friendliness', 'neighbors', Num(0.07), 1, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring ethereal crops, of any type that can receive bonus from lotuses (but not to lotuses themselves)');
+var mistle_upgrade_mistle_neighbor = registerMistletoeUpgrade('friendliness', 'neighbors', Num(0.07), 1, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring ethereal crops to the ethereal mistletoe, to any type that can receive bonus from lotuses (but not to lotuses themselves)');
 
 var mistle_upgrade_stingy = registerMistletoeUpgrade('stinginess', 'stingy', Num(0.07), 5, 3600, 'Gives a %BONUS% bonus to stingy crops (for spore production) per level');
 
@@ -8196,7 +8274,7 @@ var mistle_upgrade_mush = registerMistletoeUpgrade('funginess', 'mushrooms', Num
 
 var mistle_upgrade_berry = registerMistletoeUpgrade('berry-ness', 'berries', Num(0.07), 11, 3600, 'Gives a %BONUS% bonus to berry seed production per level');
 
-var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', 'lotuses', Num(0.03), 12, 3600, 'Gives a %BONUS% bonus to orthogonally or diagonally neighboring lotuses');
+var mistle_upgrade_lotus_neighbor = registerMistletoeUpgrade('lotus neighbors', 'lotuses', Num(0.03), 12, 3600, 'Gives a %BONUS% bonus to lotuses that are orthogonally or diagonally neighboring an etherael mistletoe ');
 
 var mistle_upgrade_nuts = registerMistletoeUpgrade('nuttiness', 'nuts', Num(0.05), 10, 3600, 'Gives a %BONUS% bonus to nuts per level');
 
@@ -8226,6 +8304,9 @@ mistletoeupgrades[mistle_upgrade_twigs].getResourceCostToReachLevel = function(l
   result.resin.subrInPlace(1e18);
   return result;
 };
+
+var mistle_upgrade_squirrel_neighbor = registerMistletoeUpgrade('squirrel friendliness', 'neighbors', Num(0.07), 13, 3600, 'Gives a %BONUS% bonus to ethereal crops that orthogonally or diagonally neighbor the ethereal squirrel, for crops of any type that can receive bonus from lotuses (but not to lotuses themselves)');
+
 
 //one-time mistletoe upgrades
 mistle_register_id = 100;
@@ -8453,7 +8534,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   // lotus boost for berry/nut
   if(f && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT)) {
-    var flowermul = new Num(1);
+    var lotusmul = new Num(1);
     var num = 0;
 
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -8461,16 +8542,16 @@ Crop3.prototype.getProd = function(f, breakdown) {
       var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
       if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
       var n = state.field3[y2][x2];
-      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_LOTUS) {
+      if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_LOTUS && crops3[n.cropIndex()].tier == this.tier) {
         var boost = crops3[n.cropIndex()].getInfBoost(n);
         if(boost.neqr(0)) {
-          flowermul.addInPlace(boost);
+          lotusmul.addInPlace(boost);
           num++;
         }
       }
     }
     if(num) {
-      result.mulInPlace(flowermul);
+      result.mulInPlace(lotusmul);
       if(breakdown) breakdown.push(['lotuses (' + num + ')', true, flowermul, result.clone()]);
     }
   }
@@ -8924,6 +9005,7 @@ var brassica3_6 = registerBrassica3('rhodium watercress', 6, Res({infseeds:5e27}
 var brassica3_7 = registerBrassica3('amethyst watercress', 7, Res({infseeds:10e33}), Res({infseeds:16e27}), Num(0.05), 4 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader7));
 var brassica3_8 = registerBrassica3('sapphire watercress', 8, Res({infseeds:200e39}), Res({infseeds:100e33}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader8, [4, 2], [0.8, -0.1]));
 var brassica3_9 = registerBrassica3('emerald watercress', 9, Res({infseeds:100e48}), Res({infseeds:15e42}), Num(0.05), 6 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader9));
+var brassica3_10 = registerBrassica3('ruby watercress', 10, Res({infseeds:3e60}), Res({infseeds:50e51}), Num(0.05), 7 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader10, [4, 10], [0.9, 1.02]));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
@@ -8935,18 +9017,19 @@ var berry3_3 = registerBerry3('electrum blackberry', 3, Res({infseeds:100e12}), 
 var berry3_4 = registerBerry3('gold blackberry', 4, Res({infseeds:5e18}), Res({infseeds:50e9}), Num(0.4), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader4, [2]));
 var berry3_5 = registerBerry3('platinum blackberry', 5, Res({infseeds:500e21}), Res({infseeds:50e12}), Num(0.75), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader5, [2, 6], [0.3]));
 // this time it's more expensive relative to the watercress, so multiple rounds of having all watercress are needed before this becomes affordable
-var berry3_6 = registerBerry3('rhodium blackberry', 6, Res({infseeds:400e27}), Res({infseeds:100e15}), Num(1), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader6, [2, 3, 6], [0.15, 1]));
-var berry3_7 = registerBerry3('amethyst blackberry', 7, Res({infseeds:300e33}), Res({infseeds:100e18}), Num(1.5), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader7));
-var berry3_8 = registerBerry3('sapphire blackberry', 8, Res({infseeds:10e42}), Res({infseeds:500e21}), Num(3), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader8, [2], [1.5]));
-var berry3_9 = registerBerry3('emerald blackberry', 9, Res({infseeds:3e51}), Res({infseeds:25e27}), Num(5), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader9));
+var berry3_6 = registerBerry3('rhodium blackberry', 6, Res({infseeds:400e27}), Res({infseeds:100e15}), Num(1.25), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader6, [2, 3, 6], [0.15, 1]));
+var berry3_7 = registerBerry3('amethyst blackberry', 7, Res({infseeds:300e33}), Res({infseeds:100e18}), Num(3), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader7));
+var berry3_8 = registerBerry3('sapphire blackberry', 8, Res({infseeds:10e42}), Res({infseeds:500e21}), Num(8), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader8, [2], [1.5]));
+var berry3_9 = registerBerry3('emerald blackberry', 9, Res({infseeds:3e51}), Res({infseeds:25e27}), Num(15), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader9));
+var berry3_10 = registerBerry3('ruby blackberry', 10, Res({infseeds:100e60}), Res({infseeds:40e33}), Num(50), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader10, [4, 10], [0.9, 1.02]));
 
 crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
 var mush3_5 = registerMushroom3('platinum champignon', 5, Res({infseeds:20e24}), Res({infspores:25}), Num(1), default_crop3_growtime, metalifyPlantImages(champignon, metalheader5, [7]));
-var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), Res({infspores:500}), Num(2), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
-var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:40000}), Num(6), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
-var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}), Res({infspores:30e6}), Num(15), default_crop3_growtime, metalifyPlantImages(champignon, metalheader8, [2], [1.5]));
-var mush3_9 = registerMushroom3('emerald champignon', 9, Res({infseeds:20e51}), Res({infspores:25e9}), Num(50), default_crop3_growtime, metalifyPlantImages(champignon, metalheader9));
+var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), Res({infspores:500}), Num(2.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader6, [6]));
+var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:40000}), Num(10), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
+var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}), Res({infspores:30e6}), Num(40), default_crop3_growtime, metalifyPlantImages(champignon, metalheader8, [2], [1.5]));
+var mush3_9 = registerMushroom3('emerald champignon', 9, Res({infseeds:20e51}), Res({infspores:25e9}), Num(160), default_crop3_growtime, metalifyPlantImages(champignon, metalheader9));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
@@ -8955,10 +9038,10 @@ var flower3_2 = registerFlower3('silver anemone', 2, Res({infseeds:20e9}), Num(3
 var flower3_3 = registerFlower3('electrum anemone', 3, Res({infseeds:1e15}), Num(12), Num(0.3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader3, [4]));
 var flower3_4 = registerFlower3('gold anemone', 4, Res({infseeds:200e18}), Num(200), Num(0.6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader4));
 var flower3_5 = registerFlower3('platinum anemone', 5, Res({infseeds:20e24}), Num(2500), Num(1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader5, [6]));
-var flower3_6 = registerFlower3('rhodium anemone', 6, Res({infseeds:15e30}), Num(50000), Num(2), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader6, [6], [0.7]));
-var flower3_7 = registerFlower3('amethyst anemone', 7, Res({infseeds:10e36}), Num(1e6), Num(3), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader7));
-var flower3_8 = registerFlower3('sapphire anemone', 8, Res({infseeds:150e42}), Num(20e6), Num(6), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader8, [4, 2], [0.8, -0.1]));
-var flower3_9 = registerFlower3('emerald anemone', 9, Res({infseeds:50e51}), Num(1e9), Num(25), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader9));
+var flower3_6 = registerFlower3('rhodium anemone', 6, Res({infseeds:15e30}), Num(50000), Num(2.5), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader6, [6], [0.7]));
+var flower3_7 = registerFlower3('amethyst anemone', 7, Res({infseeds:10e36}), Num(1e6), Num(5), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader7));
+var flower3_8 = registerFlower3('sapphire anemone', 8, Res({infseeds:150e42}), Num(20e6), Num(16), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader8, [4, 2], [0.8, -0.1]));
+var flower3_9 = registerFlower3('emerald anemone', 9, Res({infseeds:50e51}), Num(1e9), Num(90), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader9));
 
 
 crop3_register_id = 1200;
@@ -8966,10 +9049,10 @@ var bee3_2 = registerBee3('silver bee nest', 2, Res({infseeds:200e9}), Num(4), N
 var bee3_3 = registerBee3('electrum bee nest', 3, Res({infseeds:10e15}), Num(32), Num(0.75), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader3, [4]));
 var bee3_4 = registerBee3('gold bee nest', 4, Res({infseeds:5e21}), Num(256), Num(1.5), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader4));
 var bee3_5 = registerBee3('platinum bee nest', 5, Res({infseeds:500e24}), Num(2048), Num(4), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader5, [2, 6, 7], [0.15]));
-var bee3_6 = registerBee3('rhodium bee nest', 6, Res({infseeds:500e30}), Num(16384), Num(8), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader6, [6]));
-var bee3_7 = registerBee3('amethyst bee nest', 7, Res({infseeds:2e38}), Num(300e3), Num(16), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader7));
-var bee3_8 = registerBee3('sapphire bee nest', 8, Res({infseeds:3e45}), Num(10e6), Num(32), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader8));
-var bee3_9 = registerBee3('emerald bee nest', 9, Res({infseeds:5e54}), Num(200e6), Num(100), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader9));
+var bee3_6 = registerBee3('rhodium bee nest', 6, Res({infseeds:500e30}), Num(16384), Num(10), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader6, [6]));
+var bee3_7 = registerBee3('amethyst bee nest', 7, Res({infseeds:2e38}), Num(300e3), Num(30), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader7));
+var bee3_8 = registerBee3('sapphire bee nest', 8, Res({infseeds:3e45}), Num(10e6), Num(100), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader8));
+var bee3_9 = registerBee3('emerald bee nest', 9, Res({infseeds:5e54}), Num(200e6), Num(300), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader9));
 
 // Time that runestone, or crops next to it, cannot be deleted. Reason for this long no-deletion time: to not make it so that you want to change layout of infinity field all the time between basic field or infinity field focused depending on whether you get some actual production in basic field
 // the reason for 20 instead of 24 hours is to allow taking action slightly earlier next day, rather than longer
@@ -8980,22 +9063,22 @@ crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
 
 crop3_register_id = 1800;
-var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(5), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6, 9]));
-var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(4), Num(10), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7, [9]));
-var stinging3_8 = registerStinging3('sapphire nettle', 8, Res({infseeds:10e45}), Num(5), Num(25), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader8, [9]));
-var stinging3_9 = registerStinging3('emerald nettle', 9, Res({infseeds:5e54}), Num(6), Num(75), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader9));
+var stinging3_6 = registerStinging3('rhodium nettle', 6, Res({infseeds:1e33}), Num(1.5), Num(6), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader6, [6, 9]));
+var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), Num(4), Num(20), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader7, [9]));
+var stinging3_8 = registerStinging3('sapphire nettle', 8, Res({infseeds:10e45}), Num(5), Num(75), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader8, [9]));
+var stinging3_9 = registerStinging3('emerald nettle', 9, Res({infseeds:5e54}), Num(6), Num(250), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader9));
 
 crop3_register_id = 2100;
-var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(25), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
-var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
-var fern3_9 = registerFern3('emerald fern', 9, Res({infseeds:200e54}), Num(3), Num(150), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader9));
+var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
+var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(150), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
+var fern3_9 = registerFern3('emerald fern', 9, Res({infseeds:200e54}), Num(3), Num(500), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader9));
 
 crop3_register_id = 2400;
-var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(25), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
-var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(75), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
+var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(75), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
+var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(250), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
 
 crop3_register_id = 2700;
-var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(77.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
+var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;
@@ -10145,6 +10228,8 @@ registerPlantTypeMedal3(bee3_9);
 registerPlantTypeMedal3(fern3_9);
 registerPlantTypeMedal3(nut3_9);
 registerPlantTypeMedal3(lotus3_9);
+registerPlantTypeMedal3(brassica3_10);
+registerPlantTypeMedal3(berry3_10);
 
 
 

@@ -198,7 +198,9 @@ function makeTree2Dialog() {
   if(state.crops2[nettle2_0].unlocked) text += '• stinging boost: ' + state.ethereal_nettle_bonus.toPercentString() + '<br>';
   if(state.crops2[bee2_0].unlocked) text += '• bee boost: ' + state.ethereal_bee_bonus.toPercentString() + '<br>';
   if(state.crops2[brassica2_0].unlocked) text += '• brassica boost: ' + state.ethereal_brassica_bonus.toPercentString() + '<br>';
-  text += '<br><br>';
+  text += '<br>';
+
+  text += '<b>Boost to non-lotus neighbors</b>: ' + getEtherealTreeNeighborBoost().toPercentString();
 
   f0.div.innerHTML = text;
 

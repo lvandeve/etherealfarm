@@ -643,7 +643,8 @@ function renderImage(image, canvas) {
 
   //ctx.transferFromImageBitmap(image[3].transferToImageBitmap());
 
-  ctx.clearRect(0, 0, iw, ih); // this has to be done no matter what, because the canvas could be a reused one from the pool
+  // image[3] is the offscreen canvas where a copy of the image is stored at an offset. This is copied to the canvas argument of the function, which has no offset
+  ctx.clearRect(0, 0, iw, ih); // this has to be done no matter what, because the canvas could be a reused one from the pool.
   ctx.drawImage(image[3], offsetx, offsety, iw, ih, 0, 0, iw, ih);
 }
 
@@ -658,12 +659,21 @@ function generateImageCanvas(text) {
 // overwrites canvas of existing image result with new data. object is what was returned by generateImageCanvas
 function regenerateImageCanvas(text, object) {
   var image = generateImage(text);
-  var id = object[0];
+  var iw = image[1];
+  var ih = image[2];
+  object[1] = iw;
+  object[2] = ih;
+  object[4] = image;
+
   var canvas = object[3];
+  var ctx = canvas.getContext('2d');
+  object[0] = ctx.createImageData(iw, ih);
+  var id = object[0];
+  arrayFillImageData(id, image[0], iw, ih, 0, 0);
+
   var offsetx = object[5];
   var offsety = object[6];
-  arrayFillImageData(id, image[0], image[1], image[2]);
-  var ctx = canvas.getContext('2d');
+
   ctx.putImageData(id, offsetx, offsety);
 }
 
@@ -760,7 +770,7 @@ function blendImage(image, canvas) {
   var offsety = image[6];
 
   if(canvas.width != iw) canvas.width = iw;
-  if(canvas.height != iw) canvas.height = ih;
+  if(canvas.height != ih) canvas.height = ih;
   var ctx = canvas.getContext('2d');
   ctx.drawImage(image[3], offsetx, offsety, iw, ih, 0, 0, iw, ih);
 }

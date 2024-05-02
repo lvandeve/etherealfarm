@@ -88,7 +88,7 @@ function renderUpgrade2Chip(u, x, y, w, flex, completed) {
     var dialog = createDialog({size:DIALOG_SMALL, title:'Ethereal upgrade info'});
     dialog.content.div.innerHTML = infoText;
   }, i), 'Show upgrade info', {
-    tooltip:('Show ' + name + ' info')
+    tooltip:('Show ' + name + ' info' + '<br><hr><br>' + infoText)
   });
 
   titleFlex.div.innerHTML = text;

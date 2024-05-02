@@ -3018,7 +3018,8 @@ var postload = function(new_state) {
   state = new_state;
   updateAllPrestigeData();
 
-  // do these computations once here, in case update() is not called such as when the save is paused
+  // do precompute-computations once here, in case update() is not called such as when the save is paused
+  state.time = state.prevtime; // state.time is set to 0 after loading, but set it to something valid since some of the computations below depend on it (weather time, ...)
   computeDerived(state);
   precomputeField();
 

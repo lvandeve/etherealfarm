@@ -1646,7 +1646,7 @@ function computeDerived(state) {
     var u2 = state.upgrades[registered_upgrades[i]];
     if(u2.unlocked) {
       state.upgrades_unlocked++;
-      if(u2.seen && !u2.had && u.iscropunlock && u.cost.le(state.res)) {
+      if(u2.seen && !u2.had && (u.iscropunlock || u.isprestige) && u.cost.le(state.res)) {
         state.neverhadupgradeunlocked = true;
       }
       if(!u2.seen && !u2.count) {
@@ -2508,10 +2508,18 @@ function autoPrestigeEnabled() {
   return !!state.automaton_autoprestige;
 }
 
-function getEtherealAutomatonNeighborBoost() {
+function getEtherealAutomatonNeighborBoost(breakdown) {
   var result = Num(automatonboost);
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  var result_before = result.clone();
+
   result.addInPlace(upgradesq_automaton_boost.mulr(state.squirrel_upgrades[upgradesq_automaton].count));
   result.addInPlace(upgradesq_automaton_boost2.mulr(state.squirrel_upgrades[upgradesq_automaton2].count));
+
+  if(breakdown && result.neq(result_before)) {
+    breakdown.push(['squirrel upgrades (additive)', true, result.sub(result_before).addr(1), result.clone()]);
+  }
   return result;
 }
 
@@ -2535,11 +2543,29 @@ function tooManyNutsPlants(opt_replacing) {
   return (state.croptypecount[CROPTYPE_NUT] - (opt_replacing ? 1 : 0)) > 0;
 }
 
-function getEtherealSquirrelNeighborBoost() {
+function getEtherealSquirrelNeighborBoost(breakdown) {
   var result = Num(squirrelboost);
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  var result_before = result.clone();
+
   result.addInPlace(upgradesq_squirrel_boost.mulr(state.squirrel_upgrades[upgradesq_squirrel].count));
   result.addInPlace(upgradesq_squirrel_boost2.mulr(state.squirrel_upgrades[upgradesq_squirrel2].count));
+
+  if(breakdown && result.neq(result_before)) {
+    breakdown.push(['squirrel upgrades (additive)', true, result.sub(result_before).addr(1), result.clone()]);
+  }
+
+  if(haveEtherealMistletoeUpgrade(mistle_upgrade_squirrel_neighbor)) {
+    var mistlemul = getEtherealMistletoeBonus(mistle_upgrade_squirrel_neighbor).addr(1);
+    result.mulInPlace(mistlemul);
+    if(breakdown) breakdown.push(['mistletoe neighbor', true, mistlemul, result.clone()]);
+  }
   return result;
+}
+
+function getMaxNumEtherealSquirrels() {
+  return state.squirrel_evolution + 1;
 }
 
 /*
@@ -2616,6 +2642,17 @@ function haveEtherealMistletoeAnywhere() {
 // have ethereal mistletoe with valid placement
 function haveEtherealMistletoe() {
   return state.etherealmistletoenexttotree;
+}
+
+
+// to regular ethereal crops
+function getEtherealMistletoeNeighborBoost() {
+  return getEtherealMistletoeBonus(mistle_upgrade_mistle_neighbor);
+}
+
+// to lotuses
+function getEtherealMistletoeLotusNeighborBoost() {
+  return getEtherealMistletoeBonus(mistle_upgrade_lotus_neighbor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -251,8 +251,20 @@ function makeEtherealMistletoeDialog(x, y) {
 
   buttonpos += buttonextraseparater;
 
-  var prevtext = '';
 
+
+  var textel2 = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], 0.8);
+  var text2 = '';
+  if(haveEtherealMistletoeUpgrade(mistle_upgrade_mistle_neighbor)) {
+    text2 += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeNeighborBoost().toPercentString()) + '<br/>';
+  }
+  if(haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
+    text2 += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeLotusNeighborBoost().toPercentString()) + '<br/>';
+  }
+  textel2.div.innerHTML = text2;
+
+  // variables used in updatecontent()
+  var prevtext = '';
   var prev_evo = state.mistletoeupgrades[mistle_upgrade_evolve].num;
 
   updatecontent();

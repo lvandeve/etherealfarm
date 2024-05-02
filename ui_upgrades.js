@@ -296,7 +296,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
     label_shift:(completed ? undefined : 'buy many'),
     tooltip:function() {
       updateInfoText();
-      return infoText;
+      return upper(upgrades[chip.u].name) + '<br><hr><br>' + infoText;
     },
     tooltip_poll:true
   });
@@ -307,7 +307,10 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
   registerAction(canvasFlex.div, function(shift, ctrl) {
     renderUpgradeDialog(chip);
   }, 'Show upgrade info', {
-    tooltip:function() { return 'Show ' + lower(upgrades[chip.u].name) + ' info'; }
+    tooltip:function() {
+      updateInfoText();
+      return 'Show ' + lower(upgrades[chip.u].name) + ' info' + '<br><hr><br>' + infoText;
+    }
   });
 
   chip.updateInfoText = updateInfoText;
