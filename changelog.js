@@ -30,6 +30,11 @@ function getChangeLog() {
     }
   }
 
+  text += '0.12.3b (2024-05-02)';
+  text += '<br/>• The pond now shows an hourglass symbol when time-weighted fishes are in effect, so that it\'s clear why e.g. infinity boost to basic field isn\'t immediately increasing after placing an oranda.';
+  text += '<br/>• Fixed bug with oranda and koi sometimes not working.';
+  text += '<br/><br/>';
+
   text += '0.12.3 (2024-05-02)';
   text += '<br/>• Added first few crops of the ruby infinity tier.';
   text += '<br/>• Added new ethereal mistletoe upgrade: squirrel friendliness at mistletoe evolution level 13.';

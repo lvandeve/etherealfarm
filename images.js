@@ -1703,6 +1703,27 @@ var image_hourglass = generateImageCanvas(`
 ................
 `);
 
+// yellow halo around it to make it extra visible in the pond to indicate time-weighted fishes
+var image_small_hourglass = generateImageCanvas(`
+aa:#f00d
+.......---------
+.......-0000000-
+.......--09990--
+........-09890-.
+........--090--.
+.........--0--..
+........--090--.
+........-09890-.
+.......--08980--
+.......-0000000-
+.......---------
+................
+................
+................
+................
+................
+`);
+
 var image_info = generateImageCanvas(`
 ................
 ................

@@ -416,6 +416,9 @@ function field3CellTooltipFun(x, y, div) {
 
       if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
     }
+    if(someFishIsTimeWeighted()) {
+      text += '<br><br> Some fish effects are currently time-weighted due to recently changing the fishes';
+    }
     return text;
   } else if(f.hasCrop()) {
     var c = crops3[f.cropIndex()];
@@ -588,6 +591,18 @@ function initField3UI() {
   }
 }
 
+function someFishIsTimeWeighted() {
+  //if(state.fish_resinmul_weighted.neq(state.fish_resinmul_last)) return true;
+  //if(state.fish_twigsmul_weighted.neq(state.fish_twigsmul_last)) return true;
+  //if(state.fish_runestonemul_weighted.neq(state.fish_runestonemul_last)) return true;
+  //if(state.fish_basicmul_weighted.neq(state.fish_basicmul_last)) return true;
+  if(state.c_runtime - state.fish_resinmul_time < MAXINFTOBASICDELAY && state.fish_resinmul_weighted.lt(state.fish_resinmul_last)) return true;
+  if(state.c_runtime - state.fish_twigsmul_time < MAXINFTOBASICDELAY && state.fish_twigsmul_weighted.lt(state.fish_twigsmul_last)) return true;
+  if(state.c_runtime - state.fish_runestonemul_time < MAXINFTOBASICDELAY && state.fish_runestonemul_weighted.lt(state.fish_runestonemul_last)) return true;
+  if(state.c_runtime - state.fish_basicmul_time < MAXINFTOBASICDELAY && state.fish_basicmul_weighted.lt(state.fish_basicmul_last)) return true;
+  return false;
+}
+
 function updateField3CellUI(x, y) {
   var f = state.field3[y][x];
   var fd = field3Divs[y][x];
@@ -611,7 +626,9 @@ function updateField3CellUI(x, y) {
     }
   }
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || is_undeletable_runestone != fd.is_undeletable_runestone || brassica_no_selfsustain != fd.brassica_no_selfsustain) {
+  var timeweighted = (f.index == FIELD_POND && someFishIsTimeWeighted());
+
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || is_undeletable_runestone != fd.is_undeletable_runestone || brassica_no_selfsustain != fd.brassica_no_selfsustain || fd.timeweighted != timeweighted) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
@@ -619,6 +636,7 @@ function updateField3CellUI(x, y) {
     fd.progresspixel = progresspixel;
     fd.is_undeletable_runestone = is_undeletable_runestone;
     fd.brassica_no_selfsustain = brassica_no_selfsustain;
+    fd.timeweighted = timeweighted;
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];
@@ -646,6 +664,9 @@ function updateField3CellUI(x, y) {
     }
     if(brassica_no_selfsustain) {
       blendImage(image_exclamation_small, fd.canvas);
+    }
+    if(timeweighted) {
+      blendImage(image_small_hourglass, fd.canvas);
     }
     if(f.growth >= 1 || !f.hasCrop()) {
       setProgressBar(fd.progress, -1, undefined);

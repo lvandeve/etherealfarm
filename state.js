@@ -672,17 +672,17 @@ function State() {
     this.fishes[registered_fishes[i]] = new FishState();
   }
 
-  // minimum multiplyer to resin/twigs from fishes seen during this run, which is kept track of and used as actual multiplier to prevent fish-swapping strategies during the game
-  this.fish_resinmul_weighted = Num(-1);
+  // minimum multiplier to resin/twigs from fishes seen during this run, which is kept track of and used as actual multiplier to prevent fish-swapping strategies during the game
+  this.fish_resinmul_weighted = Num(-1); // time-weighted
   this.fish_resinmul_last = Num(0); // last computed fishresin, at fish_resinmul_time, as time since start of run
   this.fish_resinmul_time = 0; // time since last fish_resinmul_weighted change
-  this.fish_twigsmul_weighted = Num(-1);
+  this.fish_twigsmul_weighted = Num(-1); // time-weighted
   this.fish_twigsmul_last = Num(0); // last computed fishtwigs, at fish_twigsmul_time, as time since start of run
   this.fish_twigsmul_time = 0; // time since last fish_twigsmul_weighted change
-  this.fish_runestonemul_weighted = Num(-1);
+  this.fish_runestonemul_weighted = Num(-1); // time-weighted
   this.fish_runestonemul_last = Num(0); // last computed fishrunestone, at fish_runestonemul_time, as time since start of run
   this.fish_runestonemul_time = 0; // time since last fish_runestonemul_weighted change
-  this.fish_basicmul_weighted = Num(-1);
+  this.fish_basicmul_weighted = Num(-1); // time-weighted
   this.fish_basicmul_last = Num(0); // last computed fishbasic, at fish_basicmul_time, as time since start of run
   this.fish_basicmul_time = 0; // time since last fish_basicmul_weighted change
 
@@ -1704,6 +1704,40 @@ function computeDerived(state) {
     }
   }
 
+  // pond.
+  // Computed before field3 since some field3 computations (state.infinityboost ) depend on the fistypecount values etc...
+  state.numemptypond = 0;
+  state.numfishes = 0;
+  for(var i = 0; i < registered_fishes.length; i++) {
+    state.fishcount[registered_fishes[i]] = 0;
+  }
+  for(var y = 0; y < state.pondh; y++) {
+    for(var x = 0; x < state.pondw; x++) {
+      var f = state.pond[y][x];
+      if(f.hasCrop()) {
+        var c = fishes[f.cropIndex()];
+        state.fishcount[c.index]++;
+        state.numfishes++;
+        state.fishtypecount[c.type]++;
+        state.highestoftypefishplanted[c.type] = Math.max(c.tier || 0, state.highestoftypefishplanted[c.type]);
+      } else {
+        state.numemptypond++;
+      }
+    }
+  }
+
+  for(var i = 0; i < registered_fishes.length; i++) {
+    var c = fishes[registered_fishes[i]];
+    var c2 = state.fishes[registered_fishes[i]];
+    if(c2.unlocked) {
+      if((c.tier || 0) > state.highestoftypefishunlocked[c.type]) state.highestfishoftypeunlocked[c.type] = c.index;
+      state.highestoftypefishunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypefishunlocked[c.type]);
+    }
+    if(c2.had) {
+      state.highestoftypefishhad[c.type] = Math.max(c.tier || 0, state.highestoftypefishhad[c.type]);
+    }
+  }
+
   // field3
   state.numemptyfields3 = 0;
   state.numcropfields3 = 0;
@@ -1749,39 +1783,6 @@ function computeDerived(state) {
     }
     if(c2.had) {
       state.highestoftype3had[c.type] = Math.max(c.tier || 0, state.highestoftype3had[c.type]);
-    }
-  }
-
-  // pond
-  state.numemptypond = 0;
-  state.numfishes = 0;
-  for(var i = 0; i < registered_fishes.length; i++) {
-    state.fishcount[registered_fishes[i]] = 0;
-  }
-  for(var y = 0; y < state.pondh; y++) {
-    for(var x = 0; x < state.pondw; x++) {
-      var f = state.pond[y][x];
-      if(f.hasCrop()) {
-        var c = fishes[f.cropIndex()];
-        state.fishcount[c.index]++;
-        state.numfishes++;
-        state.fishtypecount[c.type]++;
-        state.highestoftypefishplanted[c.type] = Math.max(c.tier || 0, state.highestoftypefishplanted[c.type]);
-      } else {
-        state.numemptypond++;
-      }
-    }
-  }
-
-  for(var i = 0; i < registered_fishes.length; i++) {
-    var c = fishes[registered_fishes[i]];
-    var c2 = state.fishes[registered_fishes[i]];
-    if(c2.unlocked) {
-      if((c.tier || 0) > state.highestoftypefishunlocked[c.type]) state.highestfishoftypeunlocked[c.type] = c.index;
-      state.highestoftypefishunlocked[c.type] = Math.max(c.tier || 0, state.highestoftypefishunlocked[c.type]);
-    }
-    if(c2.had) {
-      state.highestoftypefishhad[c.type] = Math.max(c.tier || 0, state.highestoftypefishhad[c.type]);
     }
   }
 
