@@ -113,6 +113,9 @@ function updatePondDialogText() {
   text += 'Total boost from infinity crops to basic field: ' + state.expected_infinityboost.toPercentString();
   if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (time-weighted: ' + state.infinityboost.toPercentString() + ')';
   text += '. Max ever had: ' + state.g_max_infinityboost.toPercentString();
+  if(!state.expected_infinityboost.neq(state.infinityboost) && someFishIsTimeWeighted()) {
+    text += '. Some fish effects are currently time-weighted due to recently changing the fishes';
+  }
 
   if(!haveFishes()) {
     text += '<br><br>';
