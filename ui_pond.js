@@ -111,10 +111,10 @@ function updatePondDialogText() {
   var text = '';
 
   text += 'Total boost from infinity crops to basic field: ' + state.expected_infinityboost.toPercentString();
-  if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (time-weighted: ' + state.infinityboost.toPercentString() + ')';
+  if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (time-weighted (⏳): ' + state.infinityboost.toPercentString() + ')';
   text += '. Max ever had: ' + state.g_max_infinityboost.toPercentString();
-  if(!state.expected_infinityboost.neq(state.infinityboost) && someFishIsTimeWeighted()) {
-    text += '. Some fish effects are currently time-weighted due to recently changing the fishes';
+  if(!state.expected_infinityboost.neq(state.infinityboost) && someInfinityEffectIsTimeWeighted(1)) {
+    text += '. Some fish effects are currently time-weighted (⏳) due to recently changing the fishes';
   }
 
   if(!haveFishes()) {
@@ -130,7 +130,11 @@ function updatePondDialogText() {
       text += 'Click the pond below to place fishes, at the cost of infinity spores.';
     }
     text += '<br><br>';
+    text += 'Infinity seeds: ' + state.res.infseeds.toString();
+    text += '  (' + gain.infseeds.toString() + '/s)';
+    text += '<br>';
     text += 'Infinity spores: ' + state.res.infspores.toString();
+    text += ' (' + gain.infspores.toString() + '/s)';
     var inpond = computePondInfinitySpores();
     text += '. In pond: ' + inpond.toString();
     text += '. Total: ' + inpond.add(state.res.infspores).toString();
@@ -289,7 +293,7 @@ function makePond3Dialog() {
 
   if(!haveFishes()) return;
 
-  var fieldFlex = new Flex(dialog.content, 0, 0.25, 1, 1);
+  var fieldFlex = new Flex(dialog.content, 0, 0.25, 1, 0.99);
 
   //fieldFlex.div.style.border = '1px solid red';
 

@@ -1072,6 +1072,7 @@ function importSaveFromDialog(shift, ctrl, enc, messageFlex) {
     if(state && state.error_reason == 9) message += '\n' + loadfailreason_beta;
     messageFlex.div.innerText = message;
     messageFlex.div.style.color = '';
+    if(state && state.error_reason) messageFlex.div.style.color = '#f00';
   });
 }
 

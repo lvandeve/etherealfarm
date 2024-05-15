@@ -525,6 +525,8 @@ registerHelpDialog(43, 'Infinity pond fishes', 'You unlocked fishes in the infin
     Fishes cost infinity spores to place. They can be accessed by clicking the pond in the infinity field, then placing fishes on cells of the pond.
     <br><br>
     Fishes upgrade the infinity field in various ways. The location of fishes in the pond does not matter.
+    <br><br>
+    Some effects from the infinity field that benefit the main field are time-weighted, e.g. the production boost from infinity crops to the basic field. After a few hours, the effect will fully settle.
     `,
     image_goldfish0,
     undefined,

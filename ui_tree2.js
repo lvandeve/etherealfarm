@@ -200,7 +200,7 @@ function makeTree2Dialog() {
   if(state.crops2[brassica2_0].unlocked) text += '• brassica boost: ' + state.ethereal_brassica_bonus.toPercentString() + '<br>';
   text += '<br>';
 
-  text += '<b>Boost to non-lotus neighbors</b>: ' + getEtherealTreeNeighborBoost().toPercentString();
+  text += '<b>Tree boost to ethereal non-lotus neighbors</b>: ' + getEtherealTreeNeighborBoost().toPercentString();
 
   f0.div.innerHTML = text;
 

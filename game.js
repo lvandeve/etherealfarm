@@ -770,12 +770,9 @@ function beginNextRun(opt_challenge) {
   state.fish_twigsmul_weighted = Num(-1);
   state.fish_twigsmul_last = Num(0);
   state.fish_twigsmul_time = 0;
-  state.fish_runestonemul_weighted = Num(-1);
-  state.fish_runestonemul_last = Num(0);
-  state.fish_runestonemul_time = 0;
-  state.fish_basicmul_weighted = Num(-1);
-  state.fish_basicmul_last = Num(0);
-  state.fish_basicmul_time = 0;
+  state.infinity_prodmul_weighted = Num(-1);
+  state.infinity_prodmul_last = Num(0);
+  state.infinity_prodmul_time = 0;
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
@@ -2537,6 +2534,13 @@ function maybeUnlockInfinityCrops() {
 
   if(state.crops3[lotus3_9].had) unlockInfinityCrop(brassica3_10);
   if(state.crops3[brassica3_10].had) unlockInfinityCrop(berry3_10);
+  if(state.crops3[berry3_10].had) unlockInfinityCrop(mush3_10);
+  if(state.crops3[berry3_10].had) unlockInfinityCrop(flower3_10);
+  if(state.crops3[mush3_10].had) unlockInfinityCrop(stinging3_10);
+  if(state.crops3[flower3_10].had) unlockInfinityCrop(bee3_10);
+  if(state.crops3[flower3_10].had) unlockInfinityCrop(fern3_10);
+  if(state.crops3[fern3_10].had) unlockInfinityCrop(nut3_10);
+  if(state.crops3[nut3_10].had) unlockInfinityCrop(lotus3_10);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2569,6 +2573,8 @@ function maybeUnlockFishes() {
 
   if(state.fishes[goldfish_2].had) unlockFish(oranda_1);
   if(state.fishes[goldfish_2].had) unlockFish(anemone_2);
+  if(state.fishes[anemone_2].had) unlockFish(puffer_2);
+  if(state.fishes[puffer_2].had) unlockFish(leporinus_1);
 
   ////////
 
@@ -4086,11 +4092,6 @@ var update = function(opt_ignorePause) {
             showMessage('This doesn\'t work when hold season is active.', C_INVALID, 0, 0);
             ok = false;
           }
-          /*if(timeTilNextSeason() / 3600 + 1 >= 24) {
-            // TODO: support this. This requires remembering more state in the savegame, to distinguish that the season should already be the next one despite being before this 24h interval
-            showMessage('Extending season did not work, please wait around an hour and try again, when the next season is less than ' + initialrunehours + ' hours away: the game currently doesn\'t support the next season being more than 24 hours away, and this action adds 1 hour to the current season duration.', C_INVALID, 0, 0);
-            ok = false;
-          }*/
         }
         if(action.effect == AMBER_SHORTEN) {
           if(state.amberseason) {
@@ -4671,26 +4672,6 @@ var update = function(opt_ignorePause) {
             showMessage('no crop to delete here', C_INVALID, 0, 0);
             ok = false;
           }
-          if(f.hasCrop() && f.runetime > 0 /*&& f.growth >= 1*/ && f.getCrop().type != CROPTYPE_BRASSICA) {
-            if(f.getCrop().type == CROPTYPE_RUNESTONE) {
-              showMessage('cannot yet delete this runestone, must wait ' + initialrunehours + ' hours after planting, or again after planting crops next to it. Time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
-              ok = false;
-            } else {
-              var sametypebuthigher = action.crop && action.crop.type == c.type && action.crop.tier >= c.tier;
-              if(!sametypebuthigher) {
-                ok = false;
-                showMessage('cannot yet delete this crop due to recently placed next to runestone, must wait ' + initialrunehours + ' hours after placing next to runestone, time left: ' + util.formatDuration(f.runetime), C_INVALID, 0, 0);
-              }
-            }
-          }
-        }
-
-        if(type != ACTION_DELETE3 && !action.confirmedyes && action.crop && action.crop.index == runestone3_0 && !state.crops3[action.crop.index].had) {
-          makeYesNoQuestion('Planting runestone', 'Are you sure you want to place the runestone? It, and any crops it touches, cannot be deleted for ' + initialrunehours + ' hours after placing it. Any crops you plant next to it later on, also cannot be deleted for ' + initialrunehours + ' hours and reset the runestone time to ' + initialrunehours + ' hours. The runestone does not give any infinity seeds income, so ensure you\'re willing to miss this income for at least ' + initialrunehours + ' hours.', function() {
-            action.confirmedyes = true;
-            addAction(action);
-          });
-          ok = false;
         }
 
         if(ok && (type == ACTION_PLANT3 || type == ACTION_REPLACE3)) {
@@ -4736,7 +4717,6 @@ var update = function(opt_ignorePause) {
             f.growth = 0;
             //if(!action.silent) showMessage('cleared watercress remainder');
           }
-          f.runetime = 0;
         }
 
         if(ok && (type == ACTION_PLANT3 || type == ACTION_REPLACE3)) {
@@ -4752,18 +4732,13 @@ var update = function(opt_ignorePause) {
           } else {
             f.growth = 0;
           }
-          f.runetime = 0;
           if(c.type == CROPTYPE_RUNESTONE) {
-            f.runetime = initialrunetime;
             for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
               var x2 = action.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
               var y2 = action.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
               if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
               var f2 = state.field3[y2][x2];
               var c2 = f2.getRealCrop();
-              if(c2 && c2.type != CROPTYPE_RUNESTONE && c2.type != CROPTYPE_BRASSICA) {
-                f2.runetime = initialrunetime;
-              }
             }
           } else if(c.type != CROPTYPE_BRASSICA) {
             for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
@@ -4772,10 +4747,6 @@ var update = function(opt_ignorePause) {
               if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
               var f2 = state.field3[y2][x2];
               var c2 = f2.getRealCrop();
-              if(c2 && c2.type == CROPTYPE_RUNESTONE) {
-                f.runetime = initialrunetime; // the crop itself is planted next to runestone, so gets the deletion time penalty
-                f2.runetime = initialrunetime; // in addition, also reset the time of the runestone itself to become undeletable
-              }
             }
           }
           var nextcost = c.getCost(1);
@@ -4877,7 +4848,6 @@ var update = function(opt_ignorePause) {
             f.growth = 0;
             //if(!action.silent) showMessage('cleared watercress remainder');
           }
-          f.runetime = 0;
         }
 
         if(ok && (type == ACTION_PLANT_FISH || type == ACTION_REPLACE_FISH)) {
@@ -5532,14 +5502,8 @@ var update = function(opt_ignorePause) {
                 state.g_numfullgrown3++;
               }
             }
-            if(f.runetime) {
-              f.runetime -= d;
-              if(f.runetime < 0) f.runetime = 0;
-            }
             gain.addInPlace(prod);
             actualgain.addInPlace(prod.mulr(d));
-          } else {
-            f.runetime = 0;
           }
         }
       }

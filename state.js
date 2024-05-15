@@ -34,7 +34,6 @@ function Cell(x, y, fieldttype) {
   // >= CROPINDEX: crop with crop index = this.index - CROPINDEX.
   this.index = 0;
   this.growth = 0; // 0.0-1.0: percentage completed, or 1 if fullgrown
-  this.runetime = 0; // used for runestone and crops next to runestone in infinity field. Starts at 23 hours, and then drops down to 0 over time (only used if runestone is involved, always 0 otherwise)
 
   this.x = x;
   this.y = y;
@@ -679,12 +678,12 @@ function State() {
   this.fish_twigsmul_weighted = Num(-1); // time-weighted
   this.fish_twigsmul_last = Num(0); // last computed fishtwigs, at fish_twigsmul_time, as time since start of run
   this.fish_twigsmul_time = 0; // time since last fish_twigsmul_weighted change
-  this.fish_runestonemul_weighted = Num(-1); // time-weighted
-  this.fish_runestonemul_last = Num(0); // last computed fishrunestone, at fish_runestonemul_time, as time since start of run
-  this.fish_runestonemul_time = 0; // time since last fish_runestonemul_weighted change
-  this.fish_basicmul_weighted = Num(-1); // time-weighted
-  this.fish_basicmul_last = Num(0); // last computed fishbasic, at fish_basicmul_time, as time since start of run
-  this.fish_basicmul_time = 0; // time since last fish_basicmul_weighted change
+
+  // minimum multiplier for infinity-field-to-basic-field effects (including from pond), which is kept track of and used as actual multiplier to prevent fish-swapping and infinity crop-swapping strategies during the game (which is intended as a good thing, less manual work needed)
+  // infinity field to basic field production multiplier
+  this.infinity_prodmul_weighted = Num(-1); // time-weighted
+  this.infinity_prodmul_last = Num(0); // last computed bonus value, at infinity_prodmul_time, as time since start of run
+  this.infinity_prodmul_time = 0; // time since last infinity_prodmul_weighted change
 
 
   this.squirrel_evolution = 0;
@@ -1704,8 +1703,51 @@ function computeDerived(state) {
     }
   }
 
-  // pond.
-  // Computed before field3 since some field3 computations (state.infinityboost ) depend on the fistypecount values etc...
+  // field3
+  state.numemptyfields3 = 0;
+  state.numcropfields3 = 0;
+  state.numfullgrowncropfields3 = 0;
+  for(var i = 0; i < registered_crops3.length; i++) {
+    state.crop3count[registered_crops3[i]] = 0;
+    state.fullgrowncrop3count[registered_crops3[i]] = 0;
+  }
+  for(var i = 0; i < CROPINDEX; i++) {
+    state.specialfield3count[i] = 0;
+  }
+  for(var y = 0; y < state.numh3; y++) {
+    for(var x = 0; x < state.numw3; x++) {
+      var f = state.field3[y][x];
+      if(f.hasCrop()) {
+        var c = crops3[f.cropIndex()];
+        state.crop3count[c.index]++;
+        if(f.hasRealCrop()) {
+          state.numcropfields3++;
+          if(f.growth >= 1) {
+            state.fullgrowncrop3count[c.index]++;
+            state.numfullgrowncropfields3++;
+          }
+        }
+      } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
+        state.specialfield3count[f.index]++;
+        state.numemptyfields3++;
+      } else {
+        state.specialfield3count[f.index]++;
+      }
+    }
+  }
+
+  for(var i = 0; i < registered_crops3.length; i++) {
+    var c = crops3[registered_crops3[i]];
+    var c2 = state.crops3[registered_crops3[i]];
+    if(c2.unlocked) {
+      state.highestoftype3unlocked[c.type] = Math.max(c.tier || 0, state.highestoftype3unlocked[c.type]);
+    }
+    if(c2.had) {
+      state.highestoftype3had[c.type] = Math.max(c.tier || 0, state.highestoftype3had[c.type]);
+    }
+  }
+
+  // pond
   state.numemptypond = 0;
   state.numfishes = 0;
   for(var i = 0; i < registered_fishes.length; i++) {
@@ -1735,54 +1777,6 @@ function computeDerived(state) {
     }
     if(c2.had) {
       state.highestoftypefishhad[c.type] = Math.max(c.tier || 0, state.highestoftypefishhad[c.type]);
-    }
-  }
-
-  // field3
-  state.numemptyfields3 = 0;
-  state.numcropfields3 = 0;
-  state.numfullgrowncropfields3 = 0;
-  state.infinityboost = Num(0);
-  state.expected_infinityboost = Num(0);
-  for(var i = 0; i < registered_crops3.length; i++) {
-    state.crop3count[registered_crops3[i]] = 0;
-    state.fullgrowncrop3count[registered_crops3[i]] = 0;
-  }
-  for(var i = 0; i < CROPINDEX; i++) {
-    state.specialfield3count[i] = 0;
-  }
-  for(var y = 0; y < state.numh3; y++) {
-    for(var x = 0; x < state.numw3; x++) {
-      var f = state.field3[y][x];
-      if(f.hasCrop()) {
-        var c = crops3[f.cropIndex()];
-        state.crop3count[c.index]++;
-        if(f.hasRealCrop()) {
-          state.numcropfields3++;
-          if(f.growth >= 1) {
-            state.fullgrowncrop3count[c.index]++;
-            state.numfullgrowncropfields3++;
-          }
-        }
-        state.infinityboost.addInPlace(c.getBasicBoost(f, undefined, false));
-        state.expected_infinityboost.addInPlace(c.getBasicBoost(f, undefined, true));
-      } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
-        state.specialfield3count[f.index]++;
-        state.numemptyfields3++;
-      } else {
-        state.specialfield3count[f.index]++;
-      }
-    }
-  }
-
-  for(var i = 0; i < registered_crops3.length; i++) {
-    var c = crops3[registered_crops3[i]];
-    var c2 = state.crops3[registered_crops3[i]];
-    if(c2.unlocked) {
-      state.highestoftype3unlocked[c.type] = Math.max(c.tier || 0, state.highestoftype3unlocked[c.type]);
-    }
-    if(c2.had) {
-      state.highestoftype3had[c.type] = Math.max(c.tier || 0, state.highestoftype3had[c.type]);
     }
   }
 
@@ -1951,26 +1945,19 @@ function computeDerived(state) {
     state.fish_twigsmul_last = current_fishtwigs;
     state.fish_twigsmul_time = state.c_runtime;
   }
-  var current_fishrunestone = getFishMultiplier(FISHTYPE_KOI, state, 0);
-  if(state.fish_runestonemul_weighted.eqr(-1)) {
-    state.fish_runestonemul_weighted = current_fishrunestone;
-    state.fish_runestonemul_last = current_fishrunestone;
-    state.fish_runestonemul_time = state.c_runtime;
-  } else if(current_fishrunestone.neq(state.fish_runestonemul_last)) {
-    state.fish_runestonemul_weighted = getFishMultiplier(FISHTYPE_KOI, state, 1); // this recomputes the weighed average
-    state.fish_runestonemul_last = current_fishrunestone;
-    state.fish_runestonemul_time = state.c_runtime;
+  // similar to the per-fish effects but for the entire infinity field to basic field boost at once
+  var current_infinityboost = computeInfinityToBasicBoost(state, 0);
+  if(state.infinity_prodmul_weighted.eqr(-1)) {
+    state.infinity_prodmul_weighted = current_infinityboost;
+    state.infinity_prodmul_last = current_infinityboost;
+    state.infinity_prodmul_time = state.c_runtime;
+  } else if(current_infinityboost.neq(state.infinity_prodmul_last)) {
+    state.infinity_prodmul_weighted = computeInfinityToBasicBoost(state, 1); // this recomputes the weighed average
+    state.infinity_prodmul_last = current_infinityboost;
+    state.infinity_prodmul_time = state.c_runtime;
   }
-  var current_fishbasic = getFishMultiplier(FISHTYPE_ORANDA, state, 0);
-  if(state.fish_basicmul_weighted.eqr(-1)) {
-    state.fish_basicmul_weighted = current_fishbasic;
-    state.fish_basicmul_last = current_fishbasic;
-    state.fish_basicmul_time = state.c_runtime;
-  } else if(current_fishbasic.neq(state.fish_basicmul_last)) {
-    state.fish_basicmul_weighted = getFishMultiplier(FISHTYPE_ORANDA, state, 1); // this recomputes the weighed average
-    state.fish_basicmul_last = current_fishbasic;
-    state.fish_basicmul_time = state.c_runtime;
-  }
+  state.infinityboost = computeInfinityToBasicBoost(state, 2, current_infinityboost);
+  state.expected_infinityboost = current_infinityboost;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

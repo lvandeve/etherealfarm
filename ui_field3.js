@@ -33,6 +33,11 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   }
   result += '<br/><br/>';
 
+  if(brassicaNoSelfSutain(f)) {
+    result += 'WARNING! This brassica isn\'t producing producing enough seeds due to insufficient brassica-boosting fishes (shrimp and goldfish) in the pond';
+    result += '<br/><br/>';
+  }
+
   if(f.growth < 1) {
     if(c.type == CROPTYPE_BRASSICA) {
       if(opt_detailed) {
@@ -48,16 +53,6 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     } else {
       result += 'Grow time: ' + util.formatDuration(c.getPlantTime());
       if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
-      result += '<br/><br/>';
-    }
-  }
-
-  if(f.runetime > 0) {
-    if(c.type == CROPTYPE_RUNESTONE) {
-      result += 'Can only be deleted in ' + util.formatDuration(f.runetime);
-      result += '<br/><br/>';
-    } else {
-      result += 'Due to runestone, can only be deleted in ' + util.formatDuration(f.runetime);
       result += '<br/><br/>';
     }
   }
@@ -416,8 +411,10 @@ function field3CellTooltipFun(x, y, div) {
 
       if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
     }
-    if(someFishIsTimeWeighted()) {
-      text += '<br><br> Some fish effects are currently time-weighted due to recently changing the fishes';
+    if(someInfinityEffectIsTimeWeighted(1)) {
+      text += '<br><br> Some fish effects are currently time-weighted (⏳) due to recently changing the fishes.';
+    } else if(someInfinityEffectIsTimeWeighted(2)) {
+      text += '<br><br> The production boost to basic field is currently time-weighted (⏳) due to recently increasing it.';
     }
     return text;
   } else if(f.hasCrop()) {
@@ -591,15 +588,37 @@ function initField3UI() {
   }
 }
 
-function someFishIsTimeWeighted() {
-  //if(state.fish_resinmul_weighted.neq(state.fish_resinmul_last)) return true;
-  //if(state.fish_twigsmul_weighted.neq(state.fish_twigsmul_last)) return true;
-  //if(state.fish_runestonemul_weighted.neq(state.fish_runestonemul_last)) return true;
-  //if(state.fish_basicmul_weighted.neq(state.fish_basicmul_last)) return true;
-  if(state.c_runtime - state.fish_resinmul_time < MAXINFTOBASICDELAY && state.fish_resinmul_weighted.lt(state.fish_resinmul_last)) return true;
-  if(state.c_runtime - state.fish_twigsmul_time < MAXINFTOBASICDELAY && state.fish_twigsmul_weighted.lt(state.fish_twigsmul_last)) return true;
-  if(state.c_runtime - state.fish_runestonemul_time < MAXINFTOBASICDELAY && state.fish_runestonemul_weighted.lt(state.fish_runestonemul_last)) return true;
-  if(state.c_runtime - state.fish_basicmul_time < MAXINFTOBASICDELAY && state.fish_basicmul_weighted.lt(state.fish_basicmul_last)) return true;
+function brassicaNoSelfSutain(f) {
+  var brassica_no_selfsustain = false;
+  if(f.hasCrop()) {
+    var c = f.getCrop();
+    if(c.type == CROPTYPE_BRASSICA) {
+      var prod = c.getProd(f);
+      if(prod.infseeds.le(c.minForBrassicaSelfSustain())) {
+        brassica_no_selfsustain = true;
+      }
+      if(c.tier >= 8 && state.fishtypecount[FISHTYPE_SHRIMP] == 0) {
+        // also indicate if it can barely self-sustain but you have no shrimp, for high enough tiers where shrimp really matters
+        brassica_no_selfsustain = true;
+      }
+    }
+  }
+  return brassica_no_selfsustain;
+}
+
+// This function is only intended to be used for display purposes, such as icons and tooltips
+// opt_fish: if 0, any effect counts. if 1, only fish effects. if 2, only more generic (not individual fish) effects (but a fish may still be part of it)
+function someInfinityEffectIsTimeWeighted(opt_fish) {
+  // multiplication with this threshold is there to not show the hourglass icon all the time whenever changing infinity crops in the infinity field, only when there's a significant
+  // change in boost, it'll start showing the icon
+  var show_threshold = 0.8;
+  if(opt_fish != 2) {
+    if(state.c_runtime - state.fish_resinmul_time < MAXINFTOBASICDELAY && state.fish_resinmul_weighted.lt(state.fish_resinmul_last.mulr(show_threshold))) return true;
+    if(state.c_runtime - state.fish_twigsmul_time < MAXINFTOBASICDELAY && state.fish_twigsmul_weighted.lt(state.fish_twigsmul_last.mulr(show_threshold))) return true;
+  }
+  if(opt_fish != 1) {
+    if(state.c_runtime - state.infinity_prodmul_time < MAXINFTOBASICDELAY && state.infinity_prodmul_weighted.lt(state.infinity_prodmul_last.mulr(show_threshold))) return true;
+  }
   return false;
 }
 
@@ -613,28 +632,16 @@ function updateField3CellUI(x, y) {
 
   var ferncode = 0;
 
-  var is_undeletable_runestone = f.runetime > 0 && f.hasCrop() && f.getCrop().index == runestone3_0;
+  var brassica_no_selfsustain = brassicaNoSelfSutain(f);
 
-  var brassica_no_selfsustain = false;
-  if(f.hasCrop()) {
-    var c = f.getCrop();
-    if(c.type == CROPTYPE_BRASSICA) {
-      var prod = c.getProd(f);
-      if(prod.infseeds.le(c.minForBrassicaSelfSustain())) {
-        brassica_no_selfsustain = true;
-      }
-    }
-  }
+  var timeweighted = (f.index == FIELD_POND && someInfinityEffectIsTimeWeighted());
 
-  var timeweighted = (f.index == FIELD_POND && someFishIsTimeWeighted());
-
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || is_undeletable_runestone != fd.is_undeletable_runestone || brassica_no_selfsustain != fd.brassica_no_selfsustain || fd.timeweighted != timeweighted) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || brassica_no_selfsustain != fd.brassica_no_selfsustain || fd.timeweighted != timeweighted) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
     fd.ferncode = ferncode;
     fd.progresspixel = progresspixel;
-    fd.is_undeletable_runestone = is_undeletable_runestone;
     fd.brassica_no_selfsustain = brassica_no_selfsustain;
     fd.timeweighted = timeweighted;
 
@@ -649,9 +656,6 @@ function updateField3CellUI(x, y) {
     if(f.hasCrop()) {
       var c = crops3[f.cropIndex()];
       var image = c.image[growstage];
-      if(is_undeletable_runestone) {
-        image = image_runestone_undeletable;
-      }
       blendImage(image, fd.canvas);
       label = c.name + '. ' + label;
     } else if(f.index == FIELD_POND) {

@@ -30,6 +30,18 @@ function getChangeLog() {
     }
   }
 
+  text += '0.12.4 (2024-05-15)';
+  text += '<br/>• Added "prestiged grow speed" ethereal upgrade for ethereal tree level 27.';
+  text += '<br/>• Added two new fishes.'; // black puffer and red banded leporinus
+  text += '<br/>• Added the next ruby infinity crops.';
+  text += '<br/>• All basic field production bonus from infinity field is now time-delayed after increasing it (before, only fishes did this, now also placing crops). This is to reduce need to manually change the infinity field layout whenever transcending. As before, the time-delay disappears gradually over 3 hours, or immediately when starting a new run.';
+  text += '<br/>• Infinity runestones 20-hour freeze completely removed from the game (since the time-delay now replaces this limitation).';
+  text += '<br/>• Infinity runestones now have a growing animation.';
+  text += '<br/>• Increased boost to basic field from the infinity ruby blackberry.';
+  text += '<br/>• Infinity pond dialog now also shows infinity seeds and production/s info inside.';
+  text += '<br/>• Bugfixes.';
+  text += '<br/><br/>';
+
   text += '0.12.3b (2024-05-02)';
   text += '<br/>• The pond now shows an hourglass symbol when time-weighted fishes are in effect, so that it\'s clear why e.g. infinity boost to basic field isn\'t immediately increasing after placing an oranda.';
   text += '<br/>• Fixed bug with oranda and koi sometimes not working.';
