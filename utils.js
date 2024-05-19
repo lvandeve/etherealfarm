@@ -70,6 +70,7 @@ var Utils = (function() {
   // Make the element completely reusable again, as if it was created from scratch, but instead it was an existing element, to which various events/styles/... could have been added, which are removed by this function
   // What this does NOT do is remove child elements.
   // aka cleanupElement aka recycleElement
+  // does NOT support removing of events that used standard 'addEventListener' JS code, but supports those with util.addEvent or util.setEvent
   var cleanSlateElement = function(el) {
     // reset event listeners, style, attributes, ... set to this HTML element, that could be completely unneeded or different when the canvas is reused elsewhere
     util.removeAllEvents(el);
@@ -734,6 +735,7 @@ var Utils = (function() {
   result.hasEvents = hasEvents;
 
   // removes all events that were added with addEvent or setEvent
+  // does NOT support removing of events that used standard 'addEventListener' JS code
   var removeAllEvents = function(el) {
     if(el.util_event_listeners_) {
       var l = el.util_event_listeners_;

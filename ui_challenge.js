@@ -462,15 +462,19 @@ function createFinishChallengeDialog() {
   }
 
   shortcutfun = function(e) {
-    var shift = util.eventHasShiftKey(e);
-    var ctrl = util.eventHasCtrlKey(e);
-    if(automaton_unlocked && e.key == 'b' && !shift && !ctrl) {
+    var keys = getEventKeys(e);
+    var key = keys.key;
+    var code = keys.code;
+    var shift = keys.shift;
+    var ctrl = keys.ctrl;
+
+    if(automaton_unlocked && key == 'b' && !shift && !ctrl) {
       if(!blueprintdialogopen) createBlueprintsDialog(true);
     }
-    if(e.key == 'c' && !shift && !ctrl) {
+    if(key == 'c' && !shift && !ctrl) {
       if(!challengedialogopen) createChallengeDialog();
     }
-    if(e.key == 'r' && !shift && !ctrl) {
+    if(key == 'r' && !shift && !ctrl) {
       // regular run
       transcendFromDialogNow();
     }

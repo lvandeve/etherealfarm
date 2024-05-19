@@ -525,6 +525,10 @@ Generates an image from ASCII text as follows:
   -- 0-9,a-z,A-Z,... (any known single character): set value directly to the given CSS color (can also have alpha channel), overriding and after any of the above rules
   -- aa: affect all: reduce lightness, saturation and alpha of all based on the lightness, saturation and alpha of the given color value here, this is done after all the above rules, including single characters. NOTE: to keep saturation, don't set it to white. The color #f00f (or variants such as #0fff) keeps everything: max saturation, lightness and alpha.
   -- example of a header: l0:#c22 l1:#d44 l2:#e66 l3:#f88
+Returns following data type: [data, w, h], where:
+-data is 2D array of pixels, where each pixel is a 4-element array of R,G,B,A in range 0-255
+-w is width in pixels
+-h is height in pixels
 */
 function generateImage(text) {
   text = text.trim();
@@ -587,7 +591,14 @@ function createOffscreenCanvas(w, h) {
   }
 }
 
-// internal canvas (in memory texture)
+// Renders image on an internal canvas (in memory texture)
+// Returns same format as generateImage, but with additional fields behind it:
+// [data, w, h, canvas, imagedata, offsetx, offsety]
+// data = the array of numeric pixel values
+// w, h = dimensions
+// canvas = HTML canvas on which this image is placed
+// imagedata = ImageData object used on this canvas
+// offsetx, offsety = an offset on the canvas in which this image is, in case a single canvas was used to contain multiple textures (where the offset points to our texture)
 function createCanvasImageFor(image) {
   if(!image) return undefined;
   var data = image[0];
@@ -618,7 +629,7 @@ function createCanvasImageFor(image) {
 
   ctx.putImageData(imagedata, offsetx, offsety);
 
-  return [imagedata, w, h, canvas, image, offsetx, offsety];
+  return [data, w, h, canvas, imagedata, offsetx, offsety];
 }
 
 
@@ -639,7 +650,7 @@ function renderImage(image, canvas) {
   // It looks like the drawImage solution is faster, though as of aug 2023 putImageData instead seems faster in chrome. The other solution is available commented out in case JS performance changes
   // Probably drawImage really should be the faster one anyway though, since it uses an existing canvas as input so can do whatever is most efficient, rather than be forced to start from the bytes data in image[0]
 
-  //ctx.putImageData(image[0], 0, 0);
+  //ctx.putImageData(image[4], 0, 0);
 
   //ctx.transferFromImageBitmap(image[3].transferToImageBitmap());
 
@@ -661,14 +672,14 @@ function regenerateImageCanvas(text, object) {
   var image = generateImage(text);
   var iw = image[1];
   var ih = image[2];
+  object[0] = image[0];
   object[1] = iw;
   object[2] = ih;
-  object[4] = image;
 
   var canvas = object[3];
   var ctx = canvas.getContext('2d');
-  object[0] = ctx.createImageData(iw, ih);
-  var id = object[0];
+  object[4] = ctx.createImageData(iw, ih);
+  var id = object[4];
   arrayFillImageData(id, image[0], iw, ih, 0, 0);
 
   var offsetx = object[5];
@@ -749,12 +760,12 @@ function renderImages(images, canvas) {
   for(var y = 0; y < images.length; y++) {
     for(var x = 0; x < images[y].length; x++) {
       if(images[y][x]) {
-        ctx.putImageData(images[y][x][0], x * iw, y * ih);
+        ctx.putImageData(images[y][x][4], x * iw, y * ih);
       }
     }
   }
 
-  //ctx.putImageData(image[0], 0, 0);
+  //ctx.putImageData(image[4], 0, 0);
 
   /*ctx.clearRect(0, 0, iw, ih);
   ctx.drawImage(image[3], 0, 0);*/
@@ -763,7 +774,6 @@ function renderImages(images, canvas) {
 
 // similar to renderImage, but doesn't clear the canvas first, so if the image has transparent pixels, it's drawn with the original canvas content as background
 function blendImage(image, canvas) {
-  var data = image[0];
   var iw = image[1];
   var ih = image[2];
   var offsetx = image[5];
@@ -792,36 +802,33 @@ function unrenderImage(canvas) {
 
 // alpha-blends image b on top of image a, with the images given as RGBA 0-255 colors
 function blendImages(a, b) {
-  if(a.length == 3) {
-    // for the data type where a and b are array of (2D classic array data, width, height)
-    var aw = a[1];
-    var ah = a[2];
-    a = a[0];
-    var bw = b[1];
-    var bh = b[2];
-    b = b[0];
-    var w = Math.max(aw, bw);
-    var h = Math.max(ah, bh);
-    var r = [];
-    for(var y = 0; y < h; y++) {
-      r[y] = [];
-      for(var x = 0; x < w; x++) {
-        var ca = (y < ah && x < aw) ? a[y][x] : [0, 0, 0, 0];
-        var cb = (y < bh && x < bw) ? b[y][x] : [0, 0, 0, 0];
-        var v = cb[3] / 255;
-        var red = ca[0] * (1 - v) + cb[0] * v;
-        var green = ca[1] * (1 - v) + cb[1] * v;
-        var blue = ca[2] * (1 - v) + cb[2] * v;
-        var alpha = Math.max(ca[3], cb[3]); // TODO this needs a slightly different formula
-        r[y][x] = [Math.floor(red), Math.floor(green), Math.floor(blue), Math.floor(alpha)];
-      }
+  // for the data type where a and b are array of (2D classic array data, width, height)
+  var aw = a[1];
+  var ah = a[2];
+  a = a[0];
+  var bw = b[1];
+  var bh = b[2];
+  b = b[0];
+  var w = Math.max(aw, bw);
+  var h = Math.max(ah, bh);
+  var r = [];
+  for(var y = 0; y < h; y++) {
+    r[y] = [];
+    for(var x = 0; x < w; x++) {
+      var ca = (y < ah && x < aw) ? a[y][x] : [0, 0, 0, 0];
+      var cb = (y < bh && x < bw) ? b[y][x] : [0, 0, 0, 0];
+      var v = cb[3] / 255;
+      var red = ca[0] * (1 - v) + cb[0] * v;
+      var green = ca[1] * (1 - v) + cb[1] * v;
+      var blue = ca[2] * (1 - v) + cb[2] * v;
+      var alpha = Math.max(ca[3], cb[3]); // TODO this needs a slightly different formula
+      r[y][x] = [Math.floor(red), Math.floor(green), Math.floor(blue), Math.floor(alpha)];
     }
-    return [r, w, h];
-  } else {
-    // for the data type where a and b are array of (ImageData, width, height, canvas, the 3-element array described above)
-    var blended = blendImages(a[4], b[4]);
-    return createCanvasImageFor(blended);
   }
+  var result = [r, w, h];
+  // If the input objects were images on canvas (the format returned by createCanvasImageFor instead of generateImage), put the result also in that same format
+  if(a.length > 3) result = createCanvasImageFor(result);
+  return result;
 }
 
 // downscales image given as text string

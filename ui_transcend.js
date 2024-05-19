@@ -108,15 +108,19 @@ function createTranscendDialog(opt_from_challenge) {
   }
 
   shortcutfun = function(e) {
-    var shift = util.eventHasShiftKey(e);
-    var ctrl = util.eventHasCtrlKey(e);
-    if(automaton_unlocked && (e.key == 'b' || e.key == 'B') && !ctrl) {
+    var keys = getEventKeys(e);
+    var key = keys.key;
+    var code = keys.code;
+    var shift = keys.shift;
+    var ctrl = keys.ctrl;
+
+    if(automaton_unlocked && key == 'b' && !shift && !ctrl) {
       if(!blueprintdialogopen) createBlueprintsDialog(true);
     }
-    if(challenge_unlocked && (e.key == 'c' || e.key == 'C') && !ctrl) {
+    if(challenge_unlocked && key == 'c' && !shift && !ctrl) {
       if(!challengedialogopen) createChallengeDialog();
     }
-    if((e.key == 'Enter' || e.key == 'r') && !shift && !ctrl) {
+    if((key == 'Enter' || key == 'r') && !shift && !ctrl) {
       transcendFromDialogNow();
     }
   };

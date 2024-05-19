@@ -369,7 +369,7 @@ var image_statue_spore = `
 
 var images_statue_spore = createPlantImages2(image_statue_spore, image_statue_spore, image_statue_spore, image_statue_spore, image_statue_spore);
 
-var image_statue_spore_template = createCanvasImageFor(blueprintifyImage(images_statue_spore[4][4]));
+var image_statue_spore_template = createCanvasImageFor(blueprintifyImage(images_statue_spore[4]));
 var images_statue_spore_template = [image_statue_spore_template, image_statue_spore_template, image_statue_spore_template, image_statue_spore_template, image_statue_spore_template];
 
 
@@ -394,7 +394,7 @@ var image_statue_splash = `
 
 var images_statue_splash = createPlantImages2(image_statue_splash, image_statue_splash, image_statue_splash, image_statue_splash, image_statue_splash);
 
-var image_statue_splash_template = createCanvasImageFor(blueprintifyImage(images_statue_splash[4][4]));
+var image_statue_splash_template = createCanvasImageFor(blueprintifyImage(images_statue_splash[4]));
 var images_statue_splash_template = [image_statue_splash_template, image_statue_splash_template, image_statue_splash_template, image_statue_splash_template, image_statue_splash_template];
 
 
@@ -419,7 +419,7 @@ var image_statue_range = `
 
 var images_statue_range = createPlantImages2(image_statue_range, image_statue_range, image_statue_range, image_statue_range, image_statue_range);
 
-var image_statue_range_template = createCanvasImageFor(blueprintifyImage(images_statue_range[4][4]));
+var image_statue_range_template = createCanvasImageFor(blueprintifyImage(images_statue_range[4]));
 var images_statue_range_template = [image_statue_range_template, image_statue_range_template, image_statue_range_template, image_statue_range_template, image_statue_range_template];
 
 
@@ -444,7 +444,7 @@ var image_statue_seed = `
 
 var images_statue_seed = createPlantImages2(image_statue_seed, image_statue_seed, image_statue_seed, image_statue_seed, image_statue_seed);
 
-var image_statue_seed_template = createCanvasImageFor(blueprintifyImage(images_statue_seed[4][4]));
+var image_statue_seed_template = createCanvasImageFor(blueprintifyImage(images_statue_seed[4]));
 var images_statue_seed_template = [image_statue_seed_template, image_statue_seed_template, image_statue_seed_template, image_statue_seed_template, image_statue_seed_template];
 
 
@@ -469,7 +469,7 @@ var image_statue_snail = `
 
 var images_statue_snail = createPlantImages2(image_statue_snail, image_statue_snail, image_statue_snail, image_statue_snail, image_statue_snail);
 
-var image_statue_snail_template = createCanvasImageFor(blueprintifyImage(images_statue_snail[4][4]));
+var image_statue_snail_template = createCanvasImageFor(blueprintifyImage(images_statue_snail[4]));
 var images_statue_snail_template = [image_statue_snail_template, image_statue_snail_template, image_statue_snail_template, image_statue_snail_template, image_statue_snail_template];
 
 
@@ -495,6 +495,6 @@ var image_statue_sniper = `
 
 var images_statue_sniper = createPlantImages2(image_statue_sniper, image_statue_sniper, image_statue_sniper, image_statue_sniper, image_statue_sniper);
 
-var image_statue_sniper_template = createCanvasImageFor(blueprintifyImage(images_statue_sniper[4][4]));
+var image_statue_sniper_template = createCanvasImageFor(blueprintifyImage(images_statue_sniper[4]));
 var images_statue_sniper_template = [image_statue_sniper_template, image_statue_sniper_template, image_statue_sniper_template, image_statue_sniper_template, image_statue_sniper_template];
 

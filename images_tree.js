@@ -1073,4 +1073,4 @@ var image_pond = generateImageCanvas(`
 ................
 `);
 
-var image_pond_on_field = createCanvasImageFor(blendImages(field_infinity[0][4], image_pond[4]));
+var image_pond_on_field = createCanvasImageFor(blendImages(field_infinity[0], image_pond));
