@@ -967,35 +967,35 @@ var digits = [
 ];
 
 // progresspixel = pixel to use different color for progress bar effect, must be an integer in range 0..5
-function renderDigit(ctx, digit, x0, y0, progresspixel, opt_color_off, opt_color_on) {
-  ctx.fillStyle = opt_color_off || '#840';
+function renderDigit(canvas, digit, x0, y0, progresspixel, opt_color_off, opt_color_on) {
+  var color = opt_color_off || '#840';
   var ax = digit * 3;
   var aw = 30;
   for(var y = 0; y < 5; y++) {
-    if(y >= (5 - progresspixel)) ctx.fillStyle = opt_color_on || '#f80';
+    if(y >= (5 - progresspixel)) color = opt_color_on || '#f80';
     var as = y * aw + ax;
     for(var x = 0; x < 3; x++) {
-      if(digits[as + x]) ctx.fillRect(x0 + x, y0 + y, 1, 1);
+      //if(digits[as + x]) ctx.fillRect(x0 + x, y0 + y, 1, 1);
+      if(digits[as + x]) renderer.renderPixel(x0 + x, y0 + y, color, canvas);
     }
   }
 };
 
 function renderLevel(canvas, level, x, y, progresspixel, opt_color_off, opt_color_on) {
-  var ctx = canvas.getContext('2d');
   if(level < 10) {
-    renderDigit(ctx, level, x + 6, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, level, x + 6, y, progresspixel, opt_color_off, opt_color_on);
   } else if(level < 100) {
-    renderDigit(ctx, Math.floor(level / 10), x + 4, y, progresspixel, opt_color_off, opt_color_on);
-    renderDigit(ctx, level % 10, x + 8, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, Math.floor(level / 10), x + 4, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, level % 10, x + 8, y, progresspixel, opt_color_off, opt_color_on);
   } else if(level < 1000) {
-    renderDigit(ctx, Math.floor(level / 100), x + 2, y, progresspixel, opt_color_off, opt_color_on);
-    renderDigit(ctx, Math.floor(level / 10) % 10, x + 6, y, progresspixel, opt_color_off, opt_color_on);
-    renderDigit(ctx, level % 10, x + 10, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, Math.floor(level / 100), x + 2, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, Math.floor(level / 10) % 10, x + 6, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, level % 10, x + 10, y, progresspixel, opt_color_off, opt_color_on);
   } else if(level < 10000) {
-    renderDigit(ctx, Math.floor(level / 1000), x + 0, y, progresspixel, opt_color_off, opt_color_on);
-    renderDigit(ctx, Math.floor(level / 100) % 10, x + 4, y, progresspixel, opt_color_off, opt_color_on);
-    renderDigit(ctx, Math.floor(level / 10) % 10, x + 8, y, progresspixel, opt_color_off, opt_color_on);
-    renderDigit(ctx, level % 10, x + 12, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, Math.floor(level / 1000), x + 0, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, Math.floor(level / 100) % 10, x + 4, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, Math.floor(level / 10) % 10, x + 8, y, progresspixel, opt_color_off, opt_color_on);
+    renderDigit(canvas, level % 10, x + 12, y, progresspixel, opt_color_off, opt_color_on);
   }
 }
 

@@ -32,28 +32,32 @@ function Renderer() {
 // Depending on the renderer, what it returns doesn't have to be a 'canvas' html element, but it always must be some html element (if not a canvas, then a div, ...)
 // x, y, w and h must have HTML units
 Renderer.prototype.createCanvas = function(x, y, w, h, opt_parent) {
-  // Empty, to impelemnt by implementing classes
+  // Empty, to implement by implementing classes
 };
 
 // Extends an image object created by generateImage, with extra data needed for the renderer (such as OffscreenCanvas, ImageData, ...)
 // generateImage returns a 3-element array, setupImage may add extra elements to it, but keeps the first 3 the same
 Renderer.prototype.setupImage = function(image) {
-  // Empty, to impelemnt by implementing classes
+  // Empty, to implement by implementing classes
 };
 
 // Render image (as created by setupImage) onto the given canvas. The canvas is completely replaced by this image, there's no alpha blending onto previous content.
 Renderer.prototype.renderImage = function(image, canvas) {
-  // Empty, to impelemnt by implementing classes
+  // Empty, to implement by implementing classes
 };
 
 // Render multiple images (as created by setupImage) onto the given canvas
 Renderer.prototype.renderImages = function(images, canvas) {
-  // Empty, to impelemnt by implementing classes
+  // Empty, to implement by implementing classes
 };
 
 // Blend image (as created by setupImage) onto the given canvas. The difference with renderImage is that it alpha-blends it on top of existing content
 Renderer.prototype.blendImage = function(image, canvas) {
-  // Empty, to impelemnt by implementing classes
+  // Empty, to implement by implementing classes
+};
+
+Renderer.prototype.renderPixel = function(x, y, color, canvas) {
+  // Empty, to implement by implementing classes
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -261,6 +265,12 @@ OffscreenCanvasRenderer.prototype.blendImage = function(image, canvas) {
   ctx.drawImage(image[3], offsetx, offsety, iw, ih, 0, 0, iw, ih);
 };
 
+OffscreenCanvasRenderer.prototype.renderPixel = function(x, y, color, canvas) {
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, 1, 1);
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -365,10 +375,131 @@ PureCanvasRenderer.prototype.blendImage = function(image, canvas) {
   ctx.drawImage(canvas2, 0, 0, iw, ih, 0, 0, iw, ih);
 };
 
+PureCanvasRenderer.prototype.renderPixel = function(x, y, color, canvas) {
+  var ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, 1, 1);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+/*
+Renders without canvas, but on a div, using a little div for every single pixel
+This is very slow, but doesn't suffer from two things (that chrome does mostly on android):
+-chrome removing content from canvases of background tabs with no way of knowing (not even firing contentrestored event), resulting in lost textures with no way to know that we should recreate them
+-chrome sometimes being very slow with canvases, even though we're only rendering mostly 16x16 pixel images on them (maybe it's adding overhead for hardware rendering that makes things worse instead of better like hardware is supposed to do, due to how we're using multiple small canvases)
+But this renderer is still unusably slow, so just exists as a proof of concept unfortunately
+@constructor
+*/
+function DivRenderer() {
+}
+//DivRenderer.prototype = new Renderer();
+
+DivRenderer.prototype.createCanvas = function(x, y, w, h, opt_parent) {
+  var parent = opt_parent || document.body;
+
+  var div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.left = x;
+  div.style.top = y;
+  div.style.width = w;
+  div.style.height = h;
+
+  parent.appendChild(div);
+
+  return div;
+};
+
+DivRenderer.prototype.setupImage = function(image) {
+  return image;
+};
+
+DivRenderer.prototype.renderImage = function(image, canvas) {
+  canvas.innerHTML = '';
+  canvas.divrenderer_w_ = image[1];
+  canvas.divrenderer_h_ = image[2];
+
+  this.blendImage(image, canvas);
+};
+
+DivRenderer.prototype.renderImages = function(images, canvas) {
+  var iw, ih;
+  var numw = 0;
+  for(var y = 0; y < images.length; y++) {
+    numw = Math.max(numw, images[y].length);
+    for(var x = 0; x < images[y].length; x++) {
+      if(images[y][x]) {
+        iw = images[y][x][1];
+        ih = images[y][x][2];
+        break;
+      }
+    }
+  }
+  if(iw == undefined) return; // nothing to do, no images
+
+  var iw2 = iw * numw;
+  var ih2 = ih * images.length;
+
+  canvas.innerHTML = '';
+  canvas.divrenderer_w_ = iw2;
+  canvas.divrenderer_h_ = ih2;
+
+  for(var y = 0; y < images.length; y++) {
+    for(var x = 0; x < images[y].length; x++) {
+      var image = images[y][x];
+      if(image) {
+        var data = image[0];
+        for(var y2 = 0; y2 < ih; y2++) {
+          for(var x2 = 0; x2 < iw; x2++) {
+            if(data[y2][x2][2] == 0) continue;
+            this.renderPixel(x * iw + x2, y * ih + y2, RGBtoCSS(data[y2][x2]), canvas)
+          }
+        }
+      }
+    }
+  }
+};
+
+DivRenderer.prototype.blendImage = function(image, canvas) {
+  var data = image[0];
+  var w = image[1];
+  var h = image[2];
+
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      this.renderPixel(x, y, RGBtoCSS(data[y][x]), canvas)
+    }
+  }
+};
+
+DivRenderer.prototype.renderPixel = function(x, y, color, canvas) {
+  var w = canvas.divrenderer_w_;
+  var h = canvas.divrenderer_h_;
+
+  var div = document.createElement('div', canvas);
+  div.style.position = 'absolute';
+
+  div.style.left = (100 * x / w) + '%';
+  div.style.top = (100 * y / h) + '%';
+
+  // extra is needed due to HTML with relative sizes not properly putting divs exactly next to each other, it can either put some 1-pixel gaps between them, or make them overlap (which looks bad for semi-translucent pixels)
+  // even if it looks ok on desktop, e.g. on android it may look bad anyway
+  var extra = 0.1;
+  if(CSStoRGB(color)[3] > 200) extra = 0.6; // this is to avoid ugly empty stripes when things just don't match up
+
+  div.style.width = ((100 * (x + 1) / w) - (100 * x / w) + extra) + '%';
+  div.style.height = ((100 * (y + 1) / h) - (100 * y / h) + extra) + '%';
+
+  div.style.backgroundColor = color;
+  canvas.appendChild(div);
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 var renderer = new OffscreenCanvasRenderer();
 //var renderer = new PureCanvasRenderer();
+//var renderer = new DivRenderer();
 
 ////////////////////////////////////////////////////////////////////////////////
 

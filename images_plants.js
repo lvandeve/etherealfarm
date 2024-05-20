@@ -6402,6 +6402,10 @@ function metalify(im, metalheader, opt_effects, opt_params) {
           }
         }
       }
+      r = Math.min(Math.max(0, Math.floor(r)), 255);
+      g = Math.min(Math.max(0, Math.floor(g)), 255);
+      b = Math.min(Math.max(0, Math.floor(b)), 255);
+      a = Math.min(Math.max(0, Math.floor(a)), 255);
       res[y][x] = [r, g, b, a];
     }
   }
