@@ -451,7 +451,7 @@ DivRenderer.prototype.renderImages = function(images, canvas) {
         var data = image[0];
         for(var y2 = 0; y2 < ih; y2++) {
           for(var x2 = 0; x2 < iw; x2++) {
-            if(data[y2][x2][2] == 0) continue;
+            if(data[y2][x2][3] == 0) continue;
             this.renderPixel(x * iw + x2, y * ih + y2, RGBtoCSS(data[y2][x2]), canvas)
           }
         }
@@ -501,6 +501,8 @@ DivRenderer.prototype.renderPixel = function(x, y, color, canvas) {
 Uses a technique with CSS box-shadow to put arbitrarily many pixels on a single div
 Faster than DivRenderer, and has its advantages of not using canvas, but may have some issues with pixel sizes, edges of tiles not exactly touching or overlapping, ...
 It's also still clearly slower than the canvas based renderers anyway
+This renderer also has a bug currently that makes it not yet releasable: if you start a new game, all the field tiles will be too small compared to the grid, and this has something to do with resizing of the flexes to accomdate for not yet having the tab-UI take up space
+Resizing flexes by changing the browser window size works though, for the most part... sometimes some grid artefacts there too
 @constructor
 */
 function CSSRenderer() {
@@ -525,6 +527,8 @@ CSSRenderer.prototype.createCanvas = function(x, y, w, h, opt_parent) {
 CSSRenderer.prototype.setupImage = function(image) {
   return image;
 };
+
+CSSRenderer.twiddle_ = 1.2;
 
 CSSRenderer.prototype.renderImage = function(image, canvas) {
   canvas.innerHTML = '';
@@ -561,8 +565,6 @@ CSSRenderer.computeBoxShadowAt_ = function(em, image, sx, sy) {
 CSSRenderer.computeBoxShadow_ = function(em, image) {
   return CSSRenderer.computeBoxShadowAt_(em, image, 0, 0);
 };
-
-CSSRenderer.twiddle_ = 1.2;
 
 CSSRenderer.prototype.renderImages = function(images, canvas) {
   var dim = Renderer.computeImagesSizes_(images);
@@ -649,10 +651,146 @@ CSSRenderer.prototype.renderPixel = function(x, y, color, canvas) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//var renderer = new OffscreenCanvasRenderer();
+
+/*
+Use SVG as the way to render the pixels
+Unfortunately it turns out to be too slow, not as bad as DivRenderer but everything feels a bit slugglish, like opening dialogs.
+@constructor
+*/
+function SVGRenderer() {
+}
+//SVGRenderer.prototype = new Renderer();
+
+SVGRenderer.namespace = 'http://www.w3.org/2000/svg'; // This must be used with createElementNS to make SVG's work
+
+SVGRenderer.prototype.createCanvas = function(x, y, w, h, opt_parent) {
+  var parent = opt_parent || document.body;
+
+  var svg = document.createElementNS(SVGRenderer.namespace, 'svg');
+  svg.style.position = 'absolute';
+  svg.style.left = x;
+  svg.style.top = y;
+  svg.style.width = w;
+  svg.style.height = h;
+  svg.setAttribute('shape-rendering', 'crispEdges');
+
+  parent.appendChild(svg);
+
+  return svg;
+};
+
+SVGRenderer.prototype.setupImage = function(image) {
+  return image;
+};
+
+SVGRenderer.prototype.renderImage = function(image, canvas) {
+  var w = image[1];
+  var h = image[2];
+  canvas.innerHTML = '';
+  canvas.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+  this.blendImage(image, canvas);
+};
+
+SVGRenderer.prototype.renderImages = function(images, canvas) {
+  var dim = Renderer.computeImagesSizes_(images);
+  if(dim == undefined) return;
+  var iw = dim[0];
+  var ih = dim[1];
+  var iw2 = dim[2];
+  var ih2 = dim[3];
+
+  canvas.innerHTML = '';
+  canvas.setAttribute('viewBox', '0 0 ' + iw2 + ' ' + ih2);
+
+  for(var y = 0; y < images.length; y++) {
+    for(var x = 0; x < images[y].length; x++) {
+      var image = images[y][x];
+      if(image) {
+        var data = image[0];
+        for(var y2 = 0; y2 < ih; y2++) {
+          for(var x2 = 0; x2 < iw; x2++) {
+            if(data[y2][x2][3] == 0) continue;
+            this.renderPixel(x * iw + x2, y * ih + y2, RGBtoCSS(data[y2][x2]), canvas)
+          }
+        }
+      }
+    }
+  }
+};
+
+SVGRenderer.prototype.blendImage = function(image, canvas) {
+  var data = image[0];
+  var w = image[1];
+  var h = image[2];
+
+  /*for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      if(data[y][x][3] == 0) continue;
+      this.renderPixel(x, y, RGBtoCSS(data[y][x]), canvas)
+    }
+  }*/
+
+  /*var html = '';
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      if(data[y][x][3] == 0) continue;
+      html += '<rect width="1" height="1" x=';
+      html += x;
+      html += ' y=';
+      html += y;
+      html += ' fill=';
+      html += RGBtoCSS(data[y][x]);
+      html += '></rect>';
+    }
+  }
+  canvas.innerHTML += html;*/
+
+  var html = '';
+  for(var y = 0; y < h; y++) {
+    var multi = 1; // combine multiple pixels of same color together to have less elements overall
+    for(var x = 0; x < w; x++) {
+      if(data[y][x][3] == 0) continue;
+      if(x + 1 < w && data[y][x][0] == data[y][x + 1][0]&& data[y][x][1] == data[y][x + 1][1]&& data[y][x][2] == data[y][x + 1][2]&& data[y][x][3] == data[y][x + 1][3]) {
+        multi++;
+        continue;
+      }
+      html += '<rect width="';
+      html += multi;
+      html += '" height="1" x=';
+      html += x - multi + 1;
+      html += ' y=';
+      html += y;
+      html += ' fill=';
+      html += RGBtoCSS(data[y][x]);
+      html += '></rect>';
+      multi = 1;
+    }
+  }
+  canvas.innerHTML += html;
+};
+
+SVGRenderer.prototype.renderPixel = function(x, y, color, canvas) {
+  //var w = canvas.imagerenderer_w_;
+  //var h = canvas.imagerenderer_h_;
+
+  var rect = document.createElementNS(SVGRenderer.namespace, 'rect');
+
+  rect.setAttribute('width', '1');
+  rect.setAttribute('height', '1');
+  rect.setAttribute('x', x);
+  rect.setAttribute('y', y);
+  rect.setAttribute('fill', color);
+
+  canvas.appendChild(rect);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+var renderer = new OffscreenCanvasRenderer();
 //var renderer = new PureCanvasRenderer();
 //var renderer = new DivRenderer();
-var renderer = new CSSRenderer();
+//var renderer = new CSSRenderer();
+//var renderer = new SVGRenderer();
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -1014,8 +1014,6 @@ function getNextTierCrop(crop) {
 
 
 function updateFieldCellUI(x, y) {
-  if(state.numh != fieldDivs.length || state.numw != fieldDivs[0].length) initFieldUI();
-
   var f = state.field[y][x];
   var fd = fieldDivs[y][x];
   var g = f.growth;
@@ -1204,11 +1202,16 @@ function updateFieldCellUI(x, y) {
 }
 
 function renderField() {
+  if(state.numh != fieldDivs.length || state.numw != fieldDivs[0].length) {
+    initFieldUI();
+  }
+
   if(state.challenge == challenge_towerdefense && state.towerdef && state.towerdef.path) {
     pest_render_info = computePestsRenderInfo(); // TODO: don't do this here
   } else {
     pest_render_info = undefined;
   }
+
   for(var y = 0; y < state.numh; y++) {
     for(var x = 0; x < state.numw; x++) {
       updateFieldCellUI(x, y);
