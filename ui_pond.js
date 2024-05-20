@@ -631,7 +631,6 @@ function updatePondCellUI(x, y) {
       if(largeravailable) blendImage(image_field_larger_available_arrow, fd.canvas);
     } else {
       fd.div.innerText = '';
-      //unrenderImage(fd.canvas);
     }
 
     if(f.index == 0) {

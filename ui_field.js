@@ -1163,7 +1163,6 @@ function updateFieldCellUI(x, y) {
     } else {
       if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
-      //unrenderImage(fd.canvas);
     }
     if(state.fern && x == state.fernx && y == state.ferny) {
       var fernbaseimage = (state.fern == 2 ? images_fern2 : images_fern);

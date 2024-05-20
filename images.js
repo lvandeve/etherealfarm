@@ -123,30 +123,30 @@ GgGG.gggGG......
 `;
 
 var images_fern = [
-  generateImageCanvas(fern_spring_header + fern_base_image),
-  generateImageCanvas(fern_summer_header + fern_base_image),
-  generateImageCanvas(fern_autumn_header + fern_base_image),
-  generateImageCanvas(fern_winter_header + fern_base_image),
-  generateImageCanvas(fern_ethereal_header + fern_base_image),
-  generateImageCanvas(fern_infernal_header + fern_base_image),
+  generateAndSetupImage(fern_spring_header + fern_base_image),
+  generateAndSetupImage(fern_summer_header + fern_base_image),
+  generateAndSetupImage(fern_autumn_header + fern_base_image),
+  generateAndSetupImage(fern_winter_header + fern_base_image),
+  generateAndSetupImage(fern_ethereal_header + fern_base_image),
+  generateAndSetupImage(fern_infernal_header + fern_base_image),
 ];
 
 var images_fern2 = [
-  generateImageCanvas(fern_spring_header + fern_base_image2),
-  generateImageCanvas(fern_summer_header + fern_base_image2),
-  generateImageCanvas(fern_autumn_header + fern_base_image2),
-  generateImageCanvas(fern_winter_header + fern_base_image2),
-  generateImageCanvas(fern_ethereal_header + fern_base_image2),
-  generateImageCanvas(fern_infernal_header + fern_base_image2),
+  generateAndSetupImage(fern_spring_header + fern_base_image2),
+  generateAndSetupImage(fern_summer_header + fern_base_image2),
+  generateAndSetupImage(fern_autumn_header + fern_base_image2),
+  generateAndSetupImage(fern_winter_header + fern_base_image2),
+  generateAndSetupImage(fern_ethereal_header + fern_base_image2),
+  generateAndSetupImage(fern_infernal_header + fern_base_image2),
 ];
 
 var images_fern3 = [
-  generateImageCanvas(fern_spring_header + fern_base_image3),
-  generateImageCanvas(fern_summer_header + fern_base_image3),
-  generateImageCanvas(fern_autumn_header + fern_base_image3),
-  generateImageCanvas(fern_winter_header + fern_base_image3),
-  generateImageCanvas(fern_ethereal_header + fern_base_image3),
-  generateImageCanvas(fern_infernal_header + fern_base_image3),
+  generateAndSetupImage(fern_spring_header + fern_base_image3),
+  generateAndSetupImage(fern_summer_header + fern_base_image3),
+  generateAndSetupImage(fern_autumn_header + fern_base_image3),
+  generateAndSetupImage(fern_winter_header + fern_base_image3),
+  generateAndSetupImage(fern_ethereal_header + fern_base_image3),
+  generateAndSetupImage(fern_infernal_header + fern_base_image3),
 ];
 
 var present_header = '0:#000';
@@ -230,10 +230,10 @@ var present_base_image3 = present_header + `
 
 
 var present_images = [
-  generateImageCanvas(present_base_image0),
-  generateImageCanvas(present_base_image1),
-  generateImageCanvas(present_base_image2),
-  generateImageCanvas(present_base_image3),
+  generateAndSetupImage(present_base_image0),
+  generateAndSetupImage(present_base_image1),
+  generateAndSetupImage(present_base_image2),
+  generateAndSetupImage(present_base_image3),
 ];
 
 var egg_header = '';
@@ -317,15 +317,15 @@ var egg_base_image3 = egg_header + `
 
 
 var egg_images = [
-  generateImageCanvas(egg_base_image0),
-  generateImageCanvas(egg_base_image1),
-  generateImageCanvas(egg_base_image2),
-  generateImageCanvas(egg_base_image3),
+  generateAndSetupImage(egg_base_image0),
+  generateAndSetupImage(egg_base_image1),
+  generateAndSetupImage(egg_base_image2),
+  generateAndSetupImage(egg_base_image3),
 ];
 
 
 
-var bunny_image = generateImageCanvas(`
+var bunny_image = generateAndSetupImage(`
 ...0000...0000..
 ..099900.009990.
 .09N0N90.09N0N90
@@ -466,7 +466,7 @@ var field_empty = `
 `;
 
 
-var image_field_4seasons = generateImageCanvas(fieldheader_4seasons + `
+var image_field_4seasons = generateAndSetupImage(fieldheader_4seasons + `
 0000100022222222
 0000000023322222
 0001100022222222
@@ -490,59 +490,59 @@ var image_field_4seasons = generateImageCanvas(fieldheader_4seasons + `
 // field array must have 5 values: 4 similar but slightly different patterns, and a patternless one for under tree
 
 var field_spring = [
-generateImageCanvas(fieldheader_spring + field0),
-generateImageCanvas(fieldheader_spring + field1),
-generateImageCanvas(fieldheader_spring + field2),
-generateImageCanvas(fieldheader_spring + field3),
-generateImageCanvas(fieldheader_spring + field_empty),
+generateAndSetupImage(fieldheader_spring + field0),
+generateAndSetupImage(fieldheader_spring + field1),
+generateAndSetupImage(fieldheader_spring + field2),
+generateAndSetupImage(fieldheader_spring + field3),
+generateAndSetupImage(fieldheader_spring + field_empty),
 ];
 
 var field_summer = [
-generateImageCanvas(fieldheader_summer + field0),
-generateImageCanvas(fieldheader_summer + field1),
-generateImageCanvas(fieldheader_summer + field2),
-generateImageCanvas(fieldheader_summer + field3),
-generateImageCanvas(fieldheader_summer + field_empty),
+generateAndSetupImage(fieldheader_summer + field0),
+generateAndSetupImage(fieldheader_summer + field1),
+generateAndSetupImage(fieldheader_summer + field2),
+generateAndSetupImage(fieldheader_summer + field3),
+generateAndSetupImage(fieldheader_summer + field_empty),
 ];
 
 var field_autumn = [
-generateImageCanvas(fieldheader_autumn + field0),
-generateImageCanvas(fieldheader_autumn + field1),
-generateImageCanvas(fieldheader_autumn + field2),
-generateImageCanvas(fieldheader_autumn + field3),
-generateImageCanvas(fieldheader_autumn + field_empty),
+generateAndSetupImage(fieldheader_autumn + field0),
+generateAndSetupImage(fieldheader_autumn + field1),
+generateAndSetupImage(fieldheader_autumn + field2),
+generateAndSetupImage(fieldheader_autumn + field3),
+generateAndSetupImage(fieldheader_autumn + field_empty),
 ];
 
 var field_winter = [
-generateImageCanvas(fieldheader_winter + field0),
-generateImageCanvas(fieldheader_winter + field1),
-generateImageCanvas(fieldheader_winter + field2),
-generateImageCanvas(fieldheader_winter + field3),
-generateImageCanvas(fieldheader_winter + field_empty),
+generateAndSetupImage(fieldheader_winter + field0),
+generateAndSetupImage(fieldheader_winter + field1),
+generateAndSetupImage(fieldheader_winter + field2),
+generateAndSetupImage(fieldheader_winter + field3),
+generateAndSetupImage(fieldheader_winter + field_empty),
 ];
 
 var field_ethereal = [
-generateImageCanvas(fieldheader_ethereal + field0),
-generateImageCanvas(fieldheader_ethereal + field1),
-generateImageCanvas(fieldheader_ethereal + field2),
-generateImageCanvas(fieldheader_ethereal + field3),
-generateImageCanvas(fieldheader_ethereal + field_empty),
+generateAndSetupImage(fieldheader_ethereal + field0),
+generateAndSetupImage(fieldheader_ethereal + field1),
+generateAndSetupImage(fieldheader_ethereal + field2),
+generateAndSetupImage(fieldheader_ethereal + field3),
+generateAndSetupImage(fieldheader_ethereal + field_empty),
 ];
 
 var field_infernal = [
-generateImageCanvas(fieldheader_infernal + field0),
-generateImageCanvas(fieldheader_infernal + field1),
-generateImageCanvas(fieldheader_infernal + field2),
-generateImageCanvas(fieldheader_infernal + field3),
-generateImageCanvas(fieldheader_infernal + field_empty),
+generateAndSetupImage(fieldheader_infernal + field0),
+generateAndSetupImage(fieldheader_infernal + field1),
+generateAndSetupImage(fieldheader_infernal + field2),
+generateAndSetupImage(fieldheader_infernal + field3),
+generateAndSetupImage(fieldheader_infernal + field_empty),
 ];
 
 var field_infinity = [
-generateImageCanvas(fieldheader_infinity + field0),
-generateImageCanvas(fieldheader_infinity + field1),
-generateImageCanvas(fieldheader_infinity + field2),
-generateImageCanvas(fieldheader_infinity + field3),
-generateImageCanvas(fieldheader_infinity + field_empty),
+generateAndSetupImage(fieldheader_infinity + field0),
+generateAndSetupImage(fieldheader_infinity + field1),
+generateAndSetupImage(fieldheader_infinity + field2),
+generateAndSetupImage(fieldheader_infinity + field3),
+generateAndSetupImage(fieldheader_infinity + field_empty),
 ];
 
 var images_field = [
@@ -652,15 +652,15 @@ aaaaAaaaaaaaaaaa
 `;
 
 var images_pond = [
-generateImageCanvas(pond0),
-generateImageCanvas(pond1),
-generateImageCanvas(pond2),
-generateImageCanvas(pond3),
-generateImageCanvas(pond4),
+generateAndSetupImage(pond0),
+generateAndSetupImage(pond1),
+generateAndSetupImage(pond2),
+generateAndSetupImage(pond3),
+generateAndSetupImage(pond4),
 ];
 
 
-var empty = generateImageCanvas(`
+var empty = generateAndSetupImage(`
 ................
 ................
 ................
@@ -679,7 +679,7 @@ var empty = generateImageCanvas(`
 ................
 `);
 
-var gray = generateImageCanvas(`
+var gray = generateAndSetupImage(`
 5555555555555555
 5555555555555555
 5555555555555555
@@ -700,7 +700,7 @@ var gray = generateImageCanvas(`
 
 
 
-var image_exclamation = generateImageCanvas(`
+var image_exclamation = generateAndSetupImage(`
 ................
 .....000000.....
 ...00------00...
@@ -722,7 +722,7 @@ var image_exclamation = generateImageCanvas(`
 
 
 
-var image_exclamation_small = generateImageCanvas(`
+var image_exclamation_small = generateAndSetupImage(`
 ................
 ..........404...
 .........4-0-4..
@@ -741,7 +741,7 @@ var image_exclamation_small = generateImageCanvas(`
 ................
 `);
 
-var image_exclamation_side_arrow = generateImageCanvas(`
+var image_exclamation_side_arrow = generateAndSetupImage(`
 ................
 ................
 ................
@@ -762,7 +762,7 @@ var image_exclamation_side_arrow = generateImageCanvas(`
 
 
 
-var upgrade_arrow = generateImageCanvas(`
+var upgrade_arrow = generateAndSetupImage(`
 aa:#f00a
 ...........0....
 ..........090...
@@ -783,7 +783,7 @@ aa:#f00a
 `);
 
 
-var image_field_larger_available_arrow = generateImageCanvas(`
+var image_field_larger_available_arrow = generateAndSetupImage(`
 ............0...
 ...........0Z0..
 ..........0ZZZ0.
@@ -803,7 +803,7 @@ var image_field_larger_available_arrow = generateImageCanvas(`
 `);
 
 
-var image_seed = generateImageCanvas(`
+var image_seed = generateAndSetupImage(`
 ................
 ................
 ................
@@ -822,7 +822,7 @@ var image_seed = generateImageCanvas(`
 ................
 `);
 
-var image_starting_seeds = generateImageCanvas(`
+var image_starting_seeds = generateAndSetupImage(`
 ................
 ................
 ................
@@ -841,7 +841,7 @@ var image_starting_seeds = generateImageCanvas(`
 ................
 `);
 
-var image_spore = generateImageCanvas(`
+var image_spore = generateAndSetupImage(`
 ................
 ................
 ................
@@ -860,7 +860,7 @@ var image_spore = generateImageCanvas(`
 ................
 `);
 
-var image_spores = generateImageCanvas(`
+var image_spores = generateAndSetupImage(`
 ................
 ................
 ................
@@ -879,7 +879,7 @@ var image_spores = generateImageCanvas(`
 ................
 `);
 
-var image_resin = generateImageCanvas(`
+var image_resin = generateAndSetupImage(`
 ................
 ................
 ................
@@ -898,7 +898,7 @@ var image_resin = generateImageCanvas(`
 ................
 `);
 
-var image_nuts = generateImageCanvas(`
+var image_nuts = generateAndSetupImage(`
 ................
 ................
 ....o....OO.....
@@ -917,7 +917,7 @@ var image_nuts = generateImageCanvas(`
 ................
 `);
 
-var image_mist = generateImageCanvas(`
+var image_mist = generateAndSetupImage(`
 ................
 ................
 ......aaaa......
@@ -936,7 +936,7 @@ a@@@@@@@@@@@@@@a
 ................
 `);
 
-var image_sun = generateImageCanvas(`
+var image_sun = generateAndSetupImage(`
 +:#ff08
 ................
 ................
@@ -957,7 +957,7 @@ var image_sun = generateImageCanvas(`
 `);
 
 
-var image_rainbow = generateImageCanvas(`
+var image_rainbow = generateAndSetupImage(`
 ................
 ...............+
 ..............+-
@@ -976,7 +976,7 @@ y....0...0..+-*/
 ................
 `);
 
-var image_storm = generateImageCanvas(`
+var image_storm = generateAndSetupImage(`
 ......aaaa......
 ....aa@@@@a.....
 ...a@@@@@@@aaa..
@@ -995,7 +995,7 @@ a@@@@@@@@@@@@@@a
 ....yyyyy.......
 `);
 
-var image_lightning = generateImageCanvas(`
+var image_lightning = generateAndSetupImage(`
 .......0000000..
 .......09----0..
 ......09----0...
@@ -1254,158 +1254,158 @@ var image_dragonfruit = `
 
 // the different metal tiers for the fruits
 var images_apple = [
-generateImageCanvas(metalheader0 + image_apple),
-generateImageCanvas(metalheader1 + image_apple),
-generateImageCanvas(metalheader2 + image_apple),
-generateImageCanvas(metalheader3 + image_apple),
-generateImageCanvas(metalheader4 + image_apple),
-generateImageCanvas(metalheader5 + image_apple),
-generateImageCanvas(metalheader6 + image_apple),
-generateImageCanvas(metalheader7 + image_apple),
-generateImageCanvas(metalheader8 + image_apple),
-generateImageCanvas(metalheader9 + image_apple),
-generateImageCanvas(metalheader10 + image_apple),
-generateImageCanvas(metalheader11 + image_apple),
+generateAndSetupImage(metalheader0 + image_apple),
+generateAndSetupImage(metalheader1 + image_apple),
+generateAndSetupImage(metalheader2 + image_apple),
+generateAndSetupImage(metalheader3 + image_apple),
+generateAndSetupImage(metalheader4 + image_apple),
+generateAndSetupImage(metalheader5 + image_apple),
+generateAndSetupImage(metalheader6 + image_apple),
+generateAndSetupImage(metalheader7 + image_apple),
+generateAndSetupImage(metalheader8 + image_apple),
+generateAndSetupImage(metalheader9 + image_apple),
+generateAndSetupImage(metalheader10 + image_apple),
+generateAndSetupImage(metalheader11 + image_apple),
 ];
 var images_apricot = [
-generateImageCanvas(metalheader0 + image_apricot),
-generateImageCanvas(metalheader1 + image_apricot),
-generateImageCanvas(metalheader2 + image_apricot),
-generateImageCanvas(metalheader3 + image_apricot),
-generateImageCanvas(metalheader4 + image_apricot),
-generateImageCanvas(metalheader5 + image_apricot),
-generateImageCanvas(metalheader6 + image_apricot),
-generateImageCanvas(metalheader7 + image_apricot),
-generateImageCanvas(metalheader8 + image_apricot),
-generateImageCanvas(metalheader9 + image_apricot),
-generateImageCanvas(metalheader10 + image_apricot),
-generateImageCanvas(metalheader11 + image_apricot),
+generateAndSetupImage(metalheader0 + image_apricot),
+generateAndSetupImage(metalheader1 + image_apricot),
+generateAndSetupImage(metalheader2 + image_apricot),
+generateAndSetupImage(metalheader3 + image_apricot),
+generateAndSetupImage(metalheader4 + image_apricot),
+generateAndSetupImage(metalheader5 + image_apricot),
+generateAndSetupImage(metalheader6 + image_apricot),
+generateAndSetupImage(metalheader7 + image_apricot),
+generateAndSetupImage(metalheader8 + image_apricot),
+generateAndSetupImage(metalheader9 + image_apricot),
+generateAndSetupImage(metalheader10 + image_apricot),
+generateAndSetupImage(metalheader11 + image_apricot),
 ];
 var images_pineapple = [
-generateImageCanvas(metalheader0 + image_pineapple),
-generateImageCanvas(metalheader1 + image_pineapple),
-generateImageCanvas(metalheader2 + image_pineapple),
-generateImageCanvas(metalheader3 + image_pineapple),
-generateImageCanvas(metalheader4 + image_pineapple),
-generateImageCanvas(metalheader5 + image_pineapple),
-generateImageCanvas(metalheader6 + image_pineapple),
-generateImageCanvas(metalheader7 + image_pineapple),
-generateImageCanvas(metalheader8 + image_pineapple),
-generateImageCanvas(metalheader9 + image_pineapple),
-generateImageCanvas(metalheader10 + image_pineapple),
-generateImageCanvas(metalheader11 + image_pineapple),
+generateAndSetupImage(metalheader0 + image_pineapple),
+generateAndSetupImage(metalheader1 + image_pineapple),
+generateAndSetupImage(metalheader2 + image_pineapple),
+generateAndSetupImage(metalheader3 + image_pineapple),
+generateAndSetupImage(metalheader4 + image_pineapple),
+generateAndSetupImage(metalheader5 + image_pineapple),
+generateAndSetupImage(metalheader6 + image_pineapple),
+generateAndSetupImage(metalheader7 + image_pineapple),
+generateAndSetupImage(metalheader8 + image_pineapple),
+generateAndSetupImage(metalheader9 + image_pineapple),
+generateAndSetupImage(metalheader10 + image_pineapple),
+generateAndSetupImage(metalheader11 + image_pineapple),
 ];
 var images_pear = [
-generateImageCanvas(metalheader0 + image_pear),
-generateImageCanvas(metalheader1 + image_pear),
-generateImageCanvas(metalheader2 + image_pear),
-generateImageCanvas(metalheader3 + image_pear),
-generateImageCanvas(metalheader4 + image_pear),
-generateImageCanvas(metalheader5 + image_pear),
-generateImageCanvas(metalheader6 + image_pear),
-generateImageCanvas(metalheader7 + image_pear),
-generateImageCanvas(metalheader8 + image_pear),
-generateImageCanvas(metalheader9 + image_pear),
-generateImageCanvas(metalheader10 + image_pear),
-generateImageCanvas(metalheader11 + image_pear),
+generateAndSetupImage(metalheader0 + image_pear),
+generateAndSetupImage(metalheader1 + image_pear),
+generateAndSetupImage(metalheader2 + image_pear),
+generateAndSetupImage(metalheader3 + image_pear),
+generateAndSetupImage(metalheader4 + image_pear),
+generateAndSetupImage(metalheader5 + image_pear),
+generateAndSetupImage(metalheader6 + image_pear),
+generateAndSetupImage(metalheader7 + image_pear),
+generateAndSetupImage(metalheader8 + image_pear),
+generateAndSetupImage(metalheader9 + image_pear),
+generateAndSetupImage(metalheader10 + image_pear),
+generateAndSetupImage(metalheader11 + image_pear),
 ];
 var images_medlar = [
-generateImageCanvas(metalheader0 + image_medlar),
-generateImageCanvas(metalheader1 + image_medlar),
-generateImageCanvas(metalheader2 + image_medlar),
-generateImageCanvas(metalheader3 + image_medlar),
-generateImageCanvas(metalheader4 + image_medlar),
-generateImageCanvas(metalheader5 + image_medlar),
-generateImageCanvas(metalheader6 + image_medlar),
-generateImageCanvas(metalheader7 + image_medlar),
-generateImageCanvas(metalheader8 + image_medlar),
-generateImageCanvas(metalheader9 + image_medlar),
-generateImageCanvas(metalheader10 + image_medlar),
-generateImageCanvas(metalheader11 + image_medlar),
+generateAndSetupImage(metalheader0 + image_medlar),
+generateAndSetupImage(metalheader1 + image_medlar),
+generateAndSetupImage(metalheader2 + image_medlar),
+generateAndSetupImage(metalheader3 + image_medlar),
+generateAndSetupImage(metalheader4 + image_medlar),
+generateAndSetupImage(metalheader5 + image_medlar),
+generateAndSetupImage(metalheader6 + image_medlar),
+generateAndSetupImage(metalheader7 + image_medlar),
+generateAndSetupImage(metalheader8 + image_medlar),
+generateAndSetupImage(metalheader9 + image_medlar),
+generateAndSetupImage(metalheader10 + image_medlar),
+generateAndSetupImage(metalheader11 + image_medlar),
 ];
 var images_mango = [
-generateImageCanvas(metalheader0 + image_mango),
-generateImageCanvas(metalheader1 + image_mango),
-generateImageCanvas(metalheader2 + image_mango),
-generateImageCanvas(metalheader3 + image_mango),
-generateImageCanvas(metalheader4 + image_mango),
-generateImageCanvas(metalheader5 + image_mango),
-generateImageCanvas(metalheader6 + image_mango),
-generateImageCanvas(metalheader7 + image_mango),
-generateImageCanvas(metalheader8 + image_mango),
-generateImageCanvas(metalheader9 + image_mango),
-generateImageCanvas(metalheader10 + image_mango),
-generateImageCanvas(metalheader11 + image_mango),
+generateAndSetupImage(metalheader0 + image_mango),
+generateAndSetupImage(metalheader1 + image_mango),
+generateAndSetupImage(metalheader2 + image_mango),
+generateAndSetupImage(metalheader3 + image_mango),
+generateAndSetupImage(metalheader4 + image_mango),
+generateAndSetupImage(metalheader5 + image_mango),
+generateAndSetupImage(metalheader6 + image_mango),
+generateAndSetupImage(metalheader7 + image_mango),
+generateAndSetupImage(metalheader8 + image_mango),
+generateAndSetupImage(metalheader9 + image_mango),
+generateAndSetupImage(metalheader10 + image_mango),
+generateAndSetupImage(metalheader11 + image_mango),
 ];
 var images_plum = [
-generateImageCanvas(metalheader0 + image_plum),
-generateImageCanvas(metalheader1 + image_plum),
-generateImageCanvas(metalheader2 + image_plum),
-generateImageCanvas(metalheader3 + image_plum),
-generateImageCanvas(metalheader4 + image_plum),
-generateImageCanvas(metalheader5 + image_plum),
-generateImageCanvas(metalheader6 + image_plum),
-generateImageCanvas(metalheader7 + image_plum),
-generateImageCanvas(metalheader8 + image_plum),
-generateImageCanvas(metalheader9 + image_plum),
-generateImageCanvas(metalheader10 + image_plum),
-generateImageCanvas(metalheader11 + image_plum),
+generateAndSetupImage(metalheader0 + image_plum),
+generateAndSetupImage(metalheader1 + image_plum),
+generateAndSetupImage(metalheader2 + image_plum),
+generateAndSetupImage(metalheader3 + image_plum),
+generateAndSetupImage(metalheader4 + image_plum),
+generateAndSetupImage(metalheader5 + image_plum),
+generateAndSetupImage(metalheader6 + image_plum),
+generateAndSetupImage(metalheader7 + image_plum),
+generateAndSetupImage(metalheader8 + image_plum),
+generateAndSetupImage(metalheader9 + image_plum),
+generateAndSetupImage(metalheader10 + image_plum),
+generateAndSetupImage(metalheader11 + image_plum),
 ];
 var images_quince = [
-generateImageCanvas(metalheader0 + image_quince),
-generateImageCanvas(metalheader1 + image_quince),
-generateImageCanvas(metalheader2 + image_quince),
-generateImageCanvas(metalheader3 + image_quince),
-generateImageCanvas(metalheader4 + image_quince),
-generateImageCanvas(metalheader5 + image_quince),
-generateImageCanvas(metalheader6 + image_quince),
-generateImageCanvas(metalheader7 + image_quince),
-generateImageCanvas(metalheader8 + image_quince),
-generateImageCanvas(metalheader9 + image_quince),
-generateImageCanvas(metalheader10 + image_quince),
-generateImageCanvas(metalheader11 + image_quince),
+generateAndSetupImage(metalheader0 + image_quince),
+generateAndSetupImage(metalheader1 + image_quince),
+generateAndSetupImage(metalheader2 + image_quince),
+generateAndSetupImage(metalheader3 + image_quince),
+generateAndSetupImage(metalheader4 + image_quince),
+generateAndSetupImage(metalheader5 + image_quince),
+generateAndSetupImage(metalheader6 + image_quince),
+generateAndSetupImage(metalheader7 + image_quince),
+generateAndSetupImage(metalheader8 + image_quince),
+generateAndSetupImage(metalheader9 + image_quince),
+generateAndSetupImage(metalheader10 + image_quince),
+generateAndSetupImage(metalheader11 + image_quince),
 ];
 var images_kumquat = [
-generateImageCanvas(metalheader0 + image_kumquat),
-generateImageCanvas(metalheader1 + image_kumquat),
-generateImageCanvas(metalheader2 + image_kumquat),
-generateImageCanvas(metalheader3 + image_kumquat),
-generateImageCanvas(metalheader4 + image_kumquat),
-generateImageCanvas(metalheader5 + image_kumquat),
-generateImageCanvas(metalheader6 + image_kumquat),
-generateImageCanvas(metalheader7 + image_kumquat),
-generateImageCanvas(metalheader8 + image_kumquat),
-generateImageCanvas(metalheader9 + image_kumquat),
-generateImageCanvas(metalheader10 + image_kumquat),
-generateImageCanvas(metalheader11 + image_kumquat),
+generateAndSetupImage(metalheader0 + image_kumquat),
+generateAndSetupImage(metalheader1 + image_kumquat),
+generateAndSetupImage(metalheader2 + image_kumquat),
+generateAndSetupImage(metalheader3 + image_kumquat),
+generateAndSetupImage(metalheader4 + image_kumquat),
+generateAndSetupImage(metalheader5 + image_kumquat),
+generateAndSetupImage(metalheader6 + image_kumquat),
+generateAndSetupImage(metalheader7 + image_kumquat),
+generateAndSetupImage(metalheader8 + image_kumquat),
+generateAndSetupImage(metalheader9 + image_kumquat),
+generateAndSetupImage(metalheader10 + image_kumquat),
+generateAndSetupImage(metalheader11 + image_kumquat),
 ];
 var images_starfruit = [
-generateImageCanvas(metalheader0 + image_starfruit),
-generateImageCanvas(metalheader1 + image_starfruit),
-generateImageCanvas(metalheader2 + image_starfruit),
-generateImageCanvas(metalheader3 + image_starfruit),
-generateImageCanvas(metalheader4 + image_starfruit),
-generateImageCanvas(metalheader5 + image_starfruit),
-generateImageCanvas(metalheader6 + image_starfruit),
-generateImageCanvas(metalheader7 + image_starfruit),
-generateImageCanvas(metalheader8 + image_starfruit),
-generateImageCanvas(metalheader9 + image_starfruit),
-generateImageCanvas(metalheader10 + image_starfruit),
-generateImageCanvas(metalheader11 + image_starfruit),
+generateAndSetupImage(metalheader0 + image_starfruit),
+generateAndSetupImage(metalheader1 + image_starfruit),
+generateAndSetupImage(metalheader2 + image_starfruit),
+generateAndSetupImage(metalheader3 + image_starfruit),
+generateAndSetupImage(metalheader4 + image_starfruit),
+generateAndSetupImage(metalheader5 + image_starfruit),
+generateAndSetupImage(metalheader6 + image_starfruit),
+generateAndSetupImage(metalheader7 + image_starfruit),
+generateAndSetupImage(metalheader8 + image_starfruit),
+generateAndSetupImage(metalheader9 + image_starfruit),
+generateAndSetupImage(metalheader10 + image_starfruit),
+generateAndSetupImage(metalheader11 + image_starfruit),
 ];
 var images_dragonfruit = [
-generateImageCanvas(metalheader0 + image_dragonfruit),
-generateImageCanvas(metalheader1 + image_dragonfruit),
-generateImageCanvas(metalheader2 + image_dragonfruit),
-generateImageCanvas(metalheader3 + image_dragonfruit),
-generateImageCanvas(metalheader4 + image_dragonfruit),
-generateImageCanvas(metalheader5 + image_dragonfruit),
-generateImageCanvas(metalheader6 + image_dragonfruit),
-generateImageCanvas(metalheader7 + image_dragonfruit),
-generateImageCanvas(metalheader8 + image_dragonfruit),
-generateImageCanvas(metalheader9 + image_dragonfruit),
-generateImageCanvas(metalheader10 + image_dragonfruit),
-generateImageCanvas(metalheader11 + image_dragonfruit),
+generateAndSetupImage(metalheader0 + image_dragonfruit),
+generateAndSetupImage(metalheader1 + image_dragonfruit),
+generateAndSetupImage(metalheader2 + image_dragonfruit),
+generateAndSetupImage(metalheader3 + image_dragonfruit),
+generateAndSetupImage(metalheader4 + image_dragonfruit),
+generateAndSetupImage(metalheader5 + image_dragonfruit),
+generateAndSetupImage(metalheader6 + image_dragonfruit),
+generateAndSetupImage(metalheader7 + image_dragonfruit),
+generateAndSetupImage(metalheader8 + image_dragonfruit),
+generateAndSetupImage(metalheader9 + image_dragonfruit),
+generateAndSetupImage(metalheader10 + image_dragonfruit),
+generateAndSetupImage(metalheader11 + image_dragonfruit),
 ];
 
 
@@ -1423,7 +1423,7 @@ var images_fruittypes = [
   images_dragonfruit
 ];
 
-var images_rock = [generateImageCanvas(`
+var images_rock = [generateAndSetupImage(`
 ................
 ................
 ................
@@ -1440,7 +1440,7 @@ var images_rock = [generateImageCanvas(`
 ................
 ................
 ................
-`), generateImageCanvas(`
+`), generateAndSetupImage(`
 ................
 ................
 ................
@@ -1457,7 +1457,7 @@ var images_rock = [generateImageCanvas(`
 ................
 ................
 ................
-`),generateImageCanvas(`
+`),generateAndSetupImage(`
 ................
 ................
 ................
@@ -1474,7 +1474,7 @@ var images_rock = [generateImageCanvas(`
 ................
 ................
 ................
-`),generateImageCanvas(`
+`),generateAndSetupImage(`
 ................
 ................
 ................
@@ -1494,7 +1494,7 @@ var images_rock = [generateImageCanvas(`
 `)
 ];
 
-var image_gear = generateImageCanvas(`
+var image_gear = generateAndSetupImage(`
 .......77.......
 ...7..7553..7...
 ..757.7553.753..
@@ -1515,7 +1515,7 @@ var image_gear = generateImageCanvas(`
 
 
 
-var image_fruitsel_active = generateImageCanvas(`#:#4b4
+var image_fruitsel_active = generateAndSetupImage(`#:#4b4
 ................
 ................
 ................
@@ -1534,7 +1534,7 @@ var image_fruitsel_active = generateImageCanvas(`#:#4b4
 ................
 `);
 
-var image_fruitsel_inactive = generateImageCanvas(`
+var image_fruitsel_inactive = generateAndSetupImage(`
 ................
 ................
 ................
@@ -1554,7 +1554,7 @@ var image_fruitsel_inactive = generateImageCanvas(`
 `);
 
 
-var image_fruitsel_active_automaton = generateImageCanvas(`#:#4b4
+var image_fruitsel_active_automaton = generateAndSetupImage(`#:#4b4
 .......5........
 ......555.......
 .....55.55......
@@ -1573,7 +1573,7 @@ var image_fruitsel_active_automaton = generateImageCanvas(`#:#4b4
 ................
 `);
 
-var image_fruitsel_inactive_automaton = generateImageCanvas(`
+var image_fruitsel_inactive_automaton = generateAndSetupImage(`
 .......5........
 ......555.......
 .....55.55......
@@ -1593,7 +1593,7 @@ var image_fruitsel_inactive_automaton = generateImageCanvas(`
 `);
 
 
-var image_swap = generateImageCanvas(`
+var image_swap = generateAndSetupImage(`
 ................
 ................
 ................
@@ -1614,7 +1614,7 @@ var image_swap = generateImageCanvas(`
 
 
 
-var image_pause = generateImageCanvas(`
+var image_pause = generateAndSetupImage(`
 ................
 ................
 ................
@@ -1634,7 +1634,7 @@ var image_pause = generateImageCanvas(`
 `);
 
 
-var image_paused = generateImageCanvas(`
+var image_paused = generateAndSetupImage(`
 ................
 ................
 ................
@@ -1653,7 +1653,7 @@ var image_paused = generateImageCanvas(`
 ................
 `);
 
-var image_close = generateImageCanvas(`
+var image_close = generateAndSetupImage(`
 666......666
 6336....6330
 63336..63330
@@ -1668,7 +1668,7 @@ var image_close = generateImageCanvas(`
 600......000
 `);
 
-var image_help = generateImageCanvas(`
+var image_help = generateAndSetupImage(`
 ....9999....
 ...955550...
 ..95000050..
@@ -1684,7 +1684,7 @@ var image_help = generateImageCanvas(`
 `);
 
 
-var image_hourglass = generateImageCanvas(`
+var image_hourglass = generateAndSetupImage(`
 ................
 ................
 ....&&&&&&&.....
@@ -1704,7 +1704,7 @@ var image_hourglass = generateImageCanvas(`
 `);
 
 // orange outline instead of black to make it extra visible in the pond to indicate time-weighted fishes
-var image_small_hourglass = generateImageCanvas(`
+var image_small_hourglass = generateAndSetupImage(`
 +:#f80 *:#e70 -:#d60
 ..........++*--.
 ..........+999-.
@@ -1724,7 +1724,7 @@ var image_small_hourglass = generateImageCanvas(`
 ................
 `);
 
-var image_info = generateImageCanvas(`
+var image_info = generateAndSetupImage(`
 ................
 ................
 ......000.......
@@ -1743,7 +1743,7 @@ var image_info = generateImageCanvas(`
 ................
 `);
 
-var image_stats = generateImageCanvas(`
+var image_stats = generateAndSetupImage(`
 ................
 .0........RRRR..
 .0..........RR..
@@ -1762,7 +1762,7 @@ var image_stats = generateImageCanvas(`
 ................
 `);
 
-var image_checkbox_on = generateImageCanvas(`
+var image_checkbox_on = generateAndSetupImage(`
 000000000
 088888880
 089999090
@@ -1774,7 +1774,7 @@ var image_checkbox_on = generateImageCanvas(`
 000000000
 `);
 
-var image_checkbox_off = generateImageCanvas(`
+var image_checkbox_off = generateAndSetupImage(`
 000000000
 088888880
 089999990
@@ -1787,7 +1787,7 @@ var image_checkbox_off = generateImageCanvas(`
 `);
 
 
-var image_squirrel_evolution = generateImageCanvas(`
+var image_squirrel_evolution = generateAndSetupImage(`
 ....aaaaa.......
 ...aAAAAAaa.....
 ..aA@@@@@AAa....
@@ -1808,7 +1808,7 @@ aA@..XXooooAa@A.
 
 
 
-var image_infinity = generateImageCanvas(`
+var image_infinity = generateAndSetupImage(`
 ................
 ................
 ................
@@ -1828,7 +1828,7 @@ var image_infinity = generateImageCanvas(`
 `);
 
 
-var image_palette = generateImageCanvas(`
+var image_palette = generateAndSetupImage(`
 ................
 ................
 ......ooooo.....
@@ -1848,7 +1848,7 @@ var image_palette = generateImageCanvas(`
 `);
 
 
-var image_beta = generateImageCanvas(`
+var image_beta = generateAndSetupImage(`
 ..PPPPP..PPPPP..
 ..PRRRRr.PRrrr..
 ..PR..rr.PR.....

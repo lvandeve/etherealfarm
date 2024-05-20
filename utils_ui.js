@@ -1333,7 +1333,7 @@ Flex.prototype.update = function(opt_parentdiv) {
   }
 };
 
-// move canvases to the canvaspool_ in image.js, see comment there for more info (it's for performance)
+// move canvases to the canvaspool_ in image_renderer.js, see comment there for more info (it's for performance)
 Flex.prototype.salvageCanvas = function() {
   for(var i = 0; i < this.elements.length; i++) {
     this.elements[i].salvageCanvas();

@@ -51,27 +51,27 @@ var stem_metal_header11 = 'X:#fff O:#eee o:#ddd x:#ccc'; // diamond
 // the images have season dependent palette, for colors qgGQ. Use them as green, but they'll become season dependent. Only those 4 colors.
 function createTreeImages(name, top, bottom, opt_stem_header, opt_no_lights) {
   var s = (opt_stem_header ? (' ' + opt_stem_header) : '') + '\n';
-  var a0 = generateImageCanvas(leaves_spring_header + s + top.trim());
-  var a1 = generateImageCanvas(leaves_summer_header + s + top.trim());
-  var a2 = generateImageCanvas(leaves_autumn_header + s + top.trim());
-  var a3 = generateImageCanvas(leaves_winter_header + s + top.trim());
+  var a0 = generateAndSetupImage(leaves_spring_header + s + top.trim());
+  var a1 = generateAndSetupImage(leaves_summer_header + s + top.trim());
+  var a2 = generateAndSetupImage(leaves_autumn_header + s + top.trim());
+  var a3 = generateAndSetupImage(leaves_winter_header + s + top.trim());
   var use_lights = false;
-  var a4 = generateImageCanvas(leaves_ethereal_header + s + top.trim());
+  var a4 = generateAndSetupImage(leaves_ethereal_header + s + top.trim());
   // holiday code commented out
   /*if(!opt_no_lights) {
-    a4 = generateImageCanvas(leaves_ethereal_header + s + top.trim());
+    a4 = generateAndSetupImage(leaves_ethereal_header + s + top.trim());
   } else {
-    a4 = createCanvasImageFor(blendImages(generateImage(leaves_ethereal_header + s + top.trim()), generateImage(image_tree_lights)));
+    a4 = setupImage(blendImages(generateImage(leaves_ethereal_header + s + top.trim()), generateImage(image_tree_lights)));
   }*/
-  var a5 = generateImageCanvas(leaves_infernal_header + s + top.trim());
-  var a6 = generateImageCanvas(leaves_infinity_header + s + top.trim());
-  var b0 = generateImageCanvas(leaves_spring_header + s + bottom.trim());
-  var b1 = generateImageCanvas(leaves_summer_header + s + bottom.trim());
-  var b2 = generateImageCanvas(leaves_autumn_header + s + bottom.trim());
-  var b3 = generateImageCanvas(leaves_winter_header + s + bottom.trim());
-  var b4 = generateImageCanvas(leaves_ethereal_header + s + bottom.trim());
-  var b5 = generateImageCanvas(leaves_infernal_header + s + bottom.trim());
-  var b6 = generateImageCanvas(leaves_infinity_header + s + bottom.trim());
+  var a5 = generateAndSetupImage(leaves_infernal_header + s + top.trim());
+  var a6 = generateAndSetupImage(leaves_infinity_header + s + top.trim());
+  var b0 = generateAndSetupImage(leaves_spring_header + s + bottom.trim());
+  var b1 = generateAndSetupImage(leaves_summer_header + s + bottom.trim());
+  var b2 = generateAndSetupImage(leaves_autumn_header + s + bottom.trim());
+  var b3 = generateAndSetupImage(leaves_winter_header + s + bottom.trim());
+  var b4 = generateAndSetupImage(leaves_ethereal_header + s + bottom.trim());
+  var b5 = generateAndSetupImage(leaves_infernal_header + s + bottom.trim());
+  var b6 = generateAndSetupImage(leaves_infinity_header + s + bottom.trim());
   return [name, [a0, a1, a2, a3, a4, a5, a6], [b0, b1, b2, b3, b4, b5, b6]];
 }
 
@@ -1054,7 +1054,7 @@ Ggqoooooxxx.....
 
 
 
-var image_pond = generateImageCanvas(`
+var image_pond = generateAndSetupImage(`
 ........000.....
 .......0aaa00...
 ..00000aAaAaa...
@@ -1073,4 +1073,4 @@ var image_pond = generateImageCanvas(`
 ................
 `);
 
-var image_pond_on_field = createCanvasImageFor(blendImages(field_infinity[0], image_pond));
+var image_pond_on_field = setupImage(blendImages(field_infinity[0], image_pond));

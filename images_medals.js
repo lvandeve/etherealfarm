@@ -105,17 +105,17 @@ var medalgenericgem = `
 
 
 var medalgeneric = [
-generateImageCanvas(medalimageheader + medalheader0 + medalgenericmetal),
-generateImageCanvas(medalimageheader + medalheader1 + medalgenericmetal),
-generateImageCanvas(medalimageheader + medalheader2 + medalgenericmetal),
-generateImageCanvas(medalimageheader + medalheader3 + medalgenericmetal),
-generateImageCanvas(medalimageheader + medalheader4 + medalgenericmetal),
-generateImageCanvas(medalimageheader + medalheader5 + medalgenericmetal),
-generateImageCanvas(medalimageheader + medalheader6 + medalgenericmetal),
-generateImageCanvas(medalimageheader + medalheader7 + medalgenericgem),
-generateImageCanvas(medalimageheader + medalheader8 + medalgenericgem),
-generateImageCanvas(medalimageheader + medalheader9 + medalgenericgem),
-generateImageCanvas(medalimageheader + medalheader10 + medalgenericgem),
+generateAndSetupImage(medalimageheader + medalheader0 + medalgenericmetal),
+generateAndSetupImage(medalimageheader + medalheader1 + medalgenericmetal),
+generateAndSetupImage(medalimageheader + medalheader2 + medalgenericmetal),
+generateAndSetupImage(medalimageheader + medalheader3 + medalgenericmetal),
+generateAndSetupImage(medalimageheader + medalheader4 + medalgenericmetal),
+generateAndSetupImage(medalimageheader + medalheader5 + medalgenericmetal),
+generateAndSetupImage(medalimageheader + medalheader6 + medalgenericmetal),
+generateAndSetupImage(medalimageheader + medalheader7 + medalgenericgem),
+generateAndSetupImage(medalimageheader + medalheader8 + medalgenericgem),
+generateAndSetupImage(medalimageheader + medalheader9 + medalgenericgem),
+generateAndSetupImage(medalimageheader + medalheader10 + medalgenericgem),
 ];
 
 var medalhiddenmetal = `
@@ -157,22 +157,22 @@ var medalhiddengem = `
 `;
 
 var medalhidden = [
-generateImageCanvas(hiddenmedalimageheader + medalheader0 + medalhiddenmetal),
-generateImageCanvas(hiddenmedalimageheader + medalheader1 + medalhiddenmetal),
-generateImageCanvas(hiddenmedalimageheader + medalheader2 + medalhiddenmetal),
-generateImageCanvas(hiddenmedalimageheader + medalheader3 + medalhiddenmetal),
-generateImageCanvas(hiddenmedalimageheader + medalheader4 + medalhiddenmetal),
-generateImageCanvas(hiddenmedalimageheader + medalheader5 + medalhiddenmetal),
-generateImageCanvas(hiddenmedalimageheader + medalheader6 + medalhiddenmetal),
-generateImageCanvas(hiddenmedalimageheader + medalheader7 + medalhiddengem),
-generateImageCanvas(hiddenmedalimageheader + medalheader8 + medalhiddengem),
-generateImageCanvas(hiddenmedalimageheader + medalheader9 + medalhiddengem),
-generateImageCanvas(hiddenmedalimageheader + medalheader10 + medalhiddengem),
-generateImageCanvas(hiddenmedalimageheader + medalheader11 + medalhiddengem),
+generateAndSetupImage(hiddenmedalimageheader + medalheader0 + medalhiddenmetal),
+generateAndSetupImage(hiddenmedalimageheader + medalheader1 + medalhiddenmetal),
+generateAndSetupImage(hiddenmedalimageheader + medalheader2 + medalhiddenmetal),
+generateAndSetupImage(hiddenmedalimageheader + medalheader3 + medalhiddenmetal),
+generateAndSetupImage(hiddenmedalimageheader + medalheader4 + medalhiddenmetal),
+generateAndSetupImage(hiddenmedalimageheader + medalheader5 + medalhiddenmetal),
+generateAndSetupImage(hiddenmedalimageheader + medalheader6 + medalhiddenmetal),
+generateAndSetupImage(hiddenmedalimageheader + medalheader7 + medalhiddengem),
+generateAndSetupImage(hiddenmedalimageheader + medalheader8 + medalhiddengem),
+generateAndSetupImage(hiddenmedalimageheader + medalheader9 + medalhiddengem),
+generateAndSetupImage(hiddenmedalimageheader + medalheader10 + medalhiddengem),
+generateAndSetupImage(hiddenmedalimageheader + medalheader11 + medalhiddengem),
 ];
 
 
-var image_medaltranscend = generateImageCanvas(`
+var image_medaltranscend = generateAndSetupImage(`
 ................
 ................
 .ZZZZZZZZZZZZZZ.
@@ -192,7 +192,7 @@ var image_medaltranscend = generateImageCanvas(`
 `);
 
 
-var image_medal_icy_tower = generateImageCanvas(`
+var image_medal_icy_tower = generateAndSetupImage(`
 ................
 ........cc......
 .......c))c.....

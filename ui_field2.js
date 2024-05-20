@@ -648,7 +648,6 @@ function updateField2CellUI(x, y) {
     } else {
       setProgressBar(fd.progress, -1, undefined);
       fd.div.innerText = '';
-      //unrenderImage(fd.canvas);
     }
 
     if(f.index == 0) {

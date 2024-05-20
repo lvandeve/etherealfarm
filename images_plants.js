@@ -209,36 +209,36 @@ var seeds_nettle = `
 // ---
 // Then returns those images as 5-element array
 function createPlantImages(seeds, sprout, growing, grown, ripe) {
-  var a = generateImageCanvas(seeds);
-  var b = generateImageCanvas(sprout);
-  var c = generateImageCanvas(growing);
-  var d = generateImageCanvas(grown);
-  var e = createCanvasImageFor(blendImages(generateImage(grown), generateImage((ripe))));
+  var a = generateAndSetupImage(seeds);
+  var b = generateAndSetupImage(sprout);
+  var c = generateAndSetupImage(growing);
+  var d = generateAndSetupImage(grown);
+  var e = setupImage(blendImages(generateImage(grown), generateImage((ripe))));
   return [a, b, c, d, e];
 }
 
 // similar but without the blending, so need 5 unique images
 function createPlantImages2(seeds, sprout, growing, grown, ripe) {
-  var a = generateImageCanvas(seeds);
-  var b = generateImageCanvas(sprout);
-  var c = generateImageCanvas(growing);
-  var d = generateImageCanvas(grown);
-  var e = generateImageCanvas(ripe);
+  var a = generateAndSetupImage(seeds);
+  var b = generateAndSetupImage(sprout);
+  var c = generateAndSetupImage(growing);
+  var d = generateAndSetupImage(grown);
+  var e = generateAndSetupImage(ripe);
   return [a, b, c, d, e];
 }
 
 // similar to createPlantImages, but with two blending stages, one for blossom, one for grown fruit (for nuts)
 function createPlantImages3(seeds, sprout, grown, blossom, ripe) {
-  var a = generateImageCanvas(seeds);
-  var b = generateImageCanvas(sprout);
-  var c = generateImageCanvas(grown);
-  var d = createCanvasImageFor(blendImages(generateImage(grown), generateImage((blossom))));
-  var e = createCanvasImageFor(blendImages(generateImage(grown), generateImage((ripe))));
+  var a = generateAndSetupImage(seeds);
+  var b = generateAndSetupImage(sprout);
+  var c = generateAndSetupImage(grown);
+  var d = setupImage(blendImages(generateImage(grown), generateImage((blossom))));
+  var e = setupImage(blendImages(generateImage(grown), generateImage((ripe))));
   return [a, b, c, d, e];
 }
 
 function createFishImage(text) {
-  return generateImageCanvas(text);
+  return generateAndSetupImage(text);
 }
 
 
@@ -4408,7 +4408,7 @@ Hhhh......HHhh..
 ................
 `);
 
-var image_watercress_remainder = generateImageCanvas(`aa:#fff6
+var image_watercress_remainder = generateAndSetupImage(`aa:#fff6
 ................
 ................
 ................
@@ -4428,7 +4428,7 @@ Oooo......OOoo..
 `);
 
 // similar to image_watercress_remainder, but for infinity field, a bit more subtle because the silver watercress otherwise looks too much like this remainder
-var image_watercress_remainder3 = generateImageCanvas(`aa:#fff4
+var image_watercress_remainder3 = generateAndSetupImage(`aa:#fff4
 ................
 ................
 ................
@@ -4449,7 +4449,7 @@ Oooo......OOoo..
 
 
 
-var image_watercress_post = generateImageCanvas(brassicaimageheader + ` aa:#f00a
+var image_watercress_post = generateAndSetupImage(brassicaimageheader + ` aa:#f00a
 ................
 ................
 ................
@@ -4562,7 +4562,7 @@ brassicaimageheader + `
 ................
 `);
 
-var image_wasabi_remainder = generateImageCanvas(`aa:#fff6
+var image_wasabi_remainder = generateAndSetupImage(`aa:#fff6
 ................
 ............oOOo
 ..OoOoO....OOooO
@@ -4581,7 +4581,7 @@ var image_wasabi_remainder = generateImageCanvas(`aa:#fff6
 ................
 `);
 
-var image_wasabi_post = generateImageCanvas(brassicaimageheader + ` aa:#f00a
+var image_wasabi_post = generateAndSetupImage(brassicaimageheader + ` aa:#f00a
 ................
 ............sSSs
 ..SsSsS....SSssS
@@ -5867,7 +5867,7 @@ var image_fern_as_crop_inf = createPlantImages2(seeds_nettle,
 ////////////////////////////////////////////////////////////////////////////////
 
 
-var image_automaton_base = `
+var image_automaton_text = `
 ................
 .....646535.....
 .....646o3o.....
@@ -5886,7 +5886,9 @@ var image_automaton_base = `
 ....664..664....
 `;
 
-var image_automaton_hat = `
+var image_automaton = generateAndSetupImage(image_automaton_text);
+
+var image_automaton_hat_text = `
 ....++++........
 ...++++++9......
 ..+..999935.....
@@ -5905,17 +5907,17 @@ var image_automaton_hat = `
 ....664..664....
 `;
 
-var image_automaton = image_automaton_base;
+var image_automaton_hat = generateAndSetupImage(image_automaton_hat_text);
 
 var images_automaton = createPlantImages2(
-  image_automaton_base,
-  image_automaton_base,
-  image_automaton_base,
-  image_automaton_base,
-  image_automaton_base
+  image_automaton_text,
+  image_automaton_text,
+  image_automaton_text,
+  image_automaton_text,
+  image_automaton_text
 );
 
-var image_squirrel_base = `
+var image_squirrel_text = `
 ................
 ................
 ................
@@ -5934,7 +5936,9 @@ var image_squirrel_base = `
 ................
 `;
 
-var image_squirrel_hat = `
+var image_squirrel = generateAndSetupImage(image_squirrel_text);
+
+var image_squirrel_hat_text = `
 ................
 ................
 ......9.........
@@ -5953,16 +5957,18 @@ var image_squirrel_hat = `
 ................
 `;
 
+var image_squirrel_hat = generateAndSetupImage(image_squirrel_hat_text);
+
 // State.prototype.manageHatImages may replace these with other squirrel evolutions or hat images
 var images_squirrel = createPlantImages2(
-  image_squirrel_base,
-  image_squirrel_base,
-  image_squirrel_base,
-  image_squirrel_base,
-  image_squirrel_base
+  image_squirrel_text,
+  image_squirrel_text,
+  image_squirrel_text,
+  image_squirrel_text,
+  image_squirrel_text
 );
 
-var image_squirrel2_base = `
+var image_squirrel2_text = `
 ................
 ................
 ................
@@ -5981,8 +5987,10 @@ var image_squirrel2_base = `
 ................
 `;
 
+var image_squirrel2 = generateAndSetupImage(image_squirrel2_text);
 
-var image_squirrel2_hat = `
+
+var image_squirrel2_hat_text = `
 ................
 ................
 ......9.........
@@ -6000,6 +6008,8 @@ var image_squirrel2_hat = `
 ....ssss........
 ................
 `;
+
+var image_squirrel2_hat = generateAndSetupImage(image_squirrel2_hat_text);
 
 
 var images_pumpkin_base = `
@@ -6402,98 +6412,98 @@ function metalifyPlantImages(images, metalheader, opt_effect, opt_effect2, opt_e
   var result = [];
   for(var i = 0; i < images.length; i++) {
     var im = images[i];
-    result[i] = createCanvasImageFor(metalify(im, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param));
+    result[i] = setupImage(metalify(im, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param));
   }
   return result;
 }
 
 
-var image_pumpkin_large_blueprintified = createCanvasImageFor(blueprintifyImage(generateImage(images_pumpkin_base)));
+var image_pumpkin_large_blueprintified = setupImage(blueprintifyImage(generateImage(images_pumpkin_base)));
 
-var image_watercresstemplate = createCanvasImageFor(blueprintifyImage(images_watercress[4]));
+var image_watercresstemplate = setupImage(blueprintifyImage(images_watercress[4]));
 var images_watercresstemplate = [image_watercresstemplate, image_watercresstemplate, image_watercresstemplate, image_watercresstemplate, image_watercresstemplate];
-var image_watercressghost = createCanvasImageFor(ghostifyImage(images_watercress[4]));
+var image_watercressghost = setupImage(ghostifyImage(images_watercress[4]));
 var images_watercressghost = [image_watercressghost, image_watercressghost, image_watercressghost, image_watercressghost, image_watercressghost];
 
-var image_berrytemplate = createCanvasImageFor(blueprintifyImage(blackberry[4]));
+var image_berrytemplate = setupImage(blueprintifyImage(blackberry[4]));
 var images_berrytemplate = [image_berrytemplate, image_berrytemplate, image_berrytemplate, image_berrytemplate, image_berrytemplate];
-var image_berryghost = createCanvasImageFor(ghostifyImage(blackberry[4]));
+var image_berryghost = setupImage(ghostifyImage(blackberry[4]));
 var images_berryghost = [image_berryghost, image_berryghost, image_berryghost, image_berryghost, image_berryghost];
 
-var image_mushtemplate = createCanvasImageFor(blueprintifyImage(champignon[4]));
+var image_mushtemplate = setupImage(blueprintifyImage(champignon[4]));
 var images_mushtemplate = [image_mushtemplate, image_mushtemplate, image_mushtemplate, image_mushtemplate, image_mushtemplate];
-var image_mushghost = createCanvasImageFor(ghostifyImage(champignon[4]));
+var image_mushghost = setupImage(ghostifyImage(champignon[4]));
 var images_mushghost = [image_mushghost, image_mushghost, image_mushghost, image_mushghost, image_mushghost];
 
-var image_flowertemplate = createCanvasImageFor(blueprintifyImage(images_anemone[4]));
+var image_flowertemplate = setupImage(blueprintifyImage(images_anemone[4]));
 var images_flowertemplate = [image_flowertemplate, image_flowertemplate, image_flowertemplate, image_flowertemplate, image_flowertemplate];
-var image_flowerghost = createCanvasImageFor(ghostifyImage(images_anemone[4]));
+var image_flowerghost = setupImage(ghostifyImage(images_anemone[4]));
 var images_flowerghost = [image_flowerghost, image_flowerghost, image_flowerghost, image_flowerghost, image_flowerghost];
 
-var image_nettletemplate = createCanvasImageFor(blueprintifyImage(images_nettle[4]));
+var image_nettletemplate = setupImage(blueprintifyImage(images_nettle[4]));
 var images_nettletemplate = [image_nettletemplate, image_nettletemplate, image_nettletemplate, image_nettletemplate, image_nettletemplate];
-var image_nettleghost = createCanvasImageFor(ghostifyImage(images_nettle[4]));
+var image_nettleghost = setupImage(ghostifyImage(images_nettle[4]));
 var images_nettleghost = [image_nettleghost, image_nettleghost, image_nettleghost, image_nettleghost, image_nettleghost];
 
-var image_beetemplate = createCanvasImageFor(blueprintifyImage(images_beenest[4]));
+var image_beetemplate = setupImage(blueprintifyImage(images_beenest[4]));
 var images_beetemplate = [image_beetemplate, image_beetemplate, image_beetemplate, image_beetemplate, image_beetemplate];
-var image_beeghost = createCanvasImageFor(ghostifyImage(images_beenest[4]));
+var image_beeghost = setupImage(ghostifyImage(images_beenest[4]));
 var images_beeghost = [image_beeghost, image_beeghost, image_beeghost, image_beeghost, image_beeghost];
 
-var image_workerbeetemplate = createCanvasImageFor(blueprintifyImage(images_workerbee[4]));
+var image_workerbeetemplate = setupImage(blueprintifyImage(images_workerbee[4]));
 
-var image_mistletoetemplate = createCanvasImageFor(blueprintifyImage(images_mistletoe[4]));
+var image_mistletoetemplate = setupImage(blueprintifyImage(images_mistletoe[4]));
 var images_mistletoetemplate = [image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate, image_mistletoetemplate];
-var image_mistletoeghost = createCanvasImageFor(ghostifyImage(images_mistletoe[4]));
+var image_mistletoeghost = setupImage(ghostifyImage(images_mistletoe[4]));
 var images_mistletoeghost = [image_mistletoeghost, image_mistletoeghost, image_mistletoeghost, image_mistletoeghost, image_mistletoeghost];
 
-var image_lotustemplate = createCanvasImageFor(blueprintifyImage(images_whitelotus[4]));
+var image_lotustemplate = setupImage(blueprintifyImage(images_whitelotus[4]));
 var images_lotustemplate = [image_lotustemplate, image_lotustemplate, image_lotustemplate, image_lotustemplate, image_lotustemplate];
-var image_lotusghost = createCanvasImageFor(ghostifyImage(images_whitelotus[4]));
+var image_lotusghost = setupImage(ghostifyImage(images_whitelotus[4]));
 var images_lotusghost = [image_lotusghost, image_lotusghost, image_lotusghost, image_lotusghost, image_lotusghost];
 
-var image_ferntemplate = createCanvasImageFor(blueprintifyImage(image_fern_as_crop[4]));
+var image_ferntemplate = setupImage(blueprintifyImage(image_fern_as_crop[4]));
 var images_ferntemplate = [image_ferntemplate, image_ferntemplate, image_ferntemplate, image_ferntemplate, image_ferntemplate];
-var image_fernghost = createCanvasImageFor(ghostifyImage(image_fern_as_crop[4]));
+var image_fernghost = setupImage(ghostifyImage(image_fern_as_crop[4]));
 var images_fernghost = [image_fernghost, image_fernghost, image_fernghost, image_fernghost, image_fernghost];
 
-var image_automatontemplate = createCanvasImageFor(blueprintifyImage(images_automaton[4]));
+var image_automatontemplate = setupImage(blueprintifyImage(images_automaton[4]));
 var images_automatontemplate = [image_automatontemplate, image_automatontemplate, image_automatontemplate, image_automatontemplate, image_automatontemplate];
-var image_automatonghost = createCanvasImageFor(ghostifyImage(images_automaton[4]));
+var image_automatonghost = setupImage(ghostifyImage(images_automaton[4]));
 var images_automatonghost = [image_automatonghost, image_automatonghost, image_automatonghost, image_automatonghost, image_automatonghost];
 
-var image_squirreltemplate = createCanvasImageFor(blueprintifyImage(images_squirrel[4]));
+var image_squirreltemplate = setupImage(blueprintifyImage(images_squirrel[4]));
 var images_squirreltemplate = [image_squirreltemplate, image_squirreltemplate, image_squirreltemplate, image_squirreltemplate, image_squirreltemplate];
-var image_squirrelghost = createCanvasImageFor(ghostifyImage(images_squirrel[4]));
+var image_squirrelghost = setupImage(ghostifyImage(images_squirrel[4]));
 var images_squirrelghost = [image_squirrelghost, image_squirrelghost, image_squirrelghost, image_squirrelghost, image_squirrelghost];
 
-var image_nutstemplate = createCanvasImageFor(blueprintifyImage(images_acorn[4]));
+var image_nutstemplate = setupImage(blueprintifyImage(images_acorn[4]));
 var images_nutstemplate = [image_nutstemplate, image_nutstemplate, image_nutstemplate, image_nutstemplate, image_nutstemplate];
-var image_nutsghost = createCanvasImageFor(ghostifyImage(images_acorn[4]));
+var image_nutsghost = setupImage(ghostifyImage(images_acorn[4]));
 var images_nutsghost = [image_nutsghost, image_nutsghost, image_nutsghost, image_nutsghost, image_nutsghost];
 
-var image_pumpkintemplate_small = createCanvasImageFor(blueprintifyImage(images_pumpkin_small[4]));
+var image_pumpkintemplate_small = setupImage(blueprintifyImage(images_pumpkin_small[4]));
 var images_pumpkintemplate_small = [image_pumpkintemplate_small, image_pumpkintemplate_small, image_pumpkintemplate_small, image_pumpkintemplate_small, image_pumpkintemplate_small];
-var image_pumpkinghost_small = createCanvasImageFor(ghostifyImage(images_pumpkin_small[4]));
+var image_pumpkinghost_small = setupImage(ghostifyImage(images_pumpkin_small[4]));
 var images_pumpkinghost_small = [image_pumpkinghost_small, image_pumpkinghost_small, image_pumpkinghost_small, image_pumpkinghost_small, image_pumpkinghost_small];
 
-var image_pumpkintemplate00 = createCanvasImageFor(blueprintifyImage(images_pumpkin00[4]));
+var image_pumpkintemplate00 = setupImage(blueprintifyImage(images_pumpkin00[4]));
 var images_pumpkintemplate00 = [image_pumpkintemplate00, image_pumpkintemplate00, image_pumpkintemplate00, image_pumpkintemplate00, image_pumpkintemplate00];
-var image_pumpkinghost00 = createCanvasImageFor(ghostifyImage(images_pumpkin00[4]));
+var image_pumpkinghost00 = setupImage(ghostifyImage(images_pumpkin00[4]));
 var images_pumpkinghost00 = [image_pumpkinghost00, image_pumpkinghost00, image_pumpkinghost00, image_pumpkinghost00, image_pumpkinghost00];
 
-var image_pumpkintemplate01 = createCanvasImageFor(blueprintifyImage(images_pumpkin01[4]));
+var image_pumpkintemplate01 = setupImage(blueprintifyImage(images_pumpkin01[4]));
 var images_pumpkintemplate01 = [image_pumpkintemplate01, image_pumpkintemplate01, image_pumpkintemplate01, image_pumpkintemplate01, image_pumpkintemplate01];
-var image_pumpkinghost01 = createCanvasImageFor(ghostifyImage(images_pumpkin01[4]));
+var image_pumpkinghost01 = setupImage(ghostifyImage(images_pumpkin01[4]));
 var images_pumpkinghost01 = [image_pumpkinghost01, image_pumpkinghost01, image_pumpkinghost01, image_pumpkinghost01, image_pumpkinghost01];
 
-var image_pumpkintemplate10 = createCanvasImageFor(blueprintifyImage(images_pumpkin10[4]));
+var image_pumpkintemplate10 = setupImage(blueprintifyImage(images_pumpkin10[4]));
 var images_pumpkintemplate10 = [image_pumpkintemplate10, image_pumpkintemplate10, image_pumpkintemplate10, image_pumpkintemplate10, image_pumpkintemplate10];
-var image_pumpkinghost10 = createCanvasImageFor(ghostifyImage(images_pumpkin10[4]));
+var image_pumpkinghost10 = setupImage(ghostifyImage(images_pumpkin10[4]));
 var images_pumpkinghost10 = [image_pumpkinghost10, image_pumpkinghost10, image_pumpkinghost10, image_pumpkinghost10, image_pumpkinghost10];
 
-var image_pumpkintemplate11 = createCanvasImageFor(blueprintifyImage(images_pumpkin11[4]));
+var image_pumpkintemplate11 = setupImage(blueprintifyImage(images_pumpkin11[4]));
 var images_pumpkintemplate11 = [image_pumpkintemplate11, image_pumpkintemplate11, image_pumpkintemplate11, image_pumpkintemplate11, image_pumpkintemplate11];
-var image_pumpkinghost11 = createCanvasImageFor(ghostifyImage(images_pumpkin11[4]));
+var image_pumpkinghost11 = setupImage(ghostifyImage(images_pumpkin11[4]));
 var images_pumpkinghost11 = [image_pumpkinghost11, image_pumpkinghost11, image_pumpkinghost11, image_pumpkinghost11, image_pumpkinghost11];
 

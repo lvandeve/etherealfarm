@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // The images for the tower defense challenges and its pests
 
-var image_burrow = generateImageCanvas(`
+var image_burrow = generateAndSetupImage(`
 ................
 ................
 ................
@@ -37,7 +37,7 @@ var image_burrow = generateImageCanvas(`
 ................
 `);
 
-var image_go = generateImageCanvas(`
+var image_go = generateAndSetupImage(`
 ................
 ................
 ................
@@ -56,7 +56,7 @@ $SS%%%S%$SS$$SS%
 ................
 `);
 
-var image_gameover = generateImageCanvas(`
+var image_gameover = generateAndSetupImage(`
 9:#fff8 8:#fff4
 8999999999999998
 9999999999999999
@@ -80,17 +80,17 @@ var image_gameover = generateImageCanvas(`
 
 // generates 4 rotated versions: N, E, S, W
 function createPestImages(image) {
-  var a = generateImageCanvas(image);
+  var a = generateAndSetupImage(image);
   image = rot90(image);
-  var b = generateImageCanvas(image);
+  var b = generateAndSetupImage(image);
   image = rot90(image);
-  var c = generateImageCanvas(image);
+  var c = generateAndSetupImage(image);
   image = rot90(image);
-  var d = generateImageCanvas(image);
+  var d = generateAndSetupImage(image);
   return [a, b, c, d];
 }
 
-var image_bullet_berry = generateImageCanvas(`
+var image_bullet_berry = generateAndSetupImage(`
 ................
 ................
 .....oOoo.......
@@ -109,7 +109,7 @@ var image_bullet_berry = generateImageCanvas(`
 ................
 `);
 
-var image_bullet_mush = generateImageCanvas(`
+var image_bullet_mush = generateAndSetupImage(`
 ................
 ................
 .....0300.......
@@ -128,7 +128,7 @@ var image_bullet_mush = generateImageCanvas(`
 ................
 `);
 
-var image_splash_mush = generateImageCanvas(`
+var image_splash_mush = generateAndSetupImage(`
 ................
 ................
 ..0.....030030..
@@ -147,7 +147,7 @@ var image_splash_mush = generateImageCanvas(`
 ................
 `);
 
-var image_bullet_brassica = generateImageCanvas(`
+var image_bullet_brassica = generateAndSetupImage(`
 ................
 ................
 .....hHhh.......
@@ -369,7 +369,7 @@ var image_statue_spore = `
 
 var images_statue_spore = createPlantImages2(image_statue_spore, image_statue_spore, image_statue_spore, image_statue_spore, image_statue_spore);
 
-var image_statue_spore_template = createCanvasImageFor(blueprintifyImage(images_statue_spore[4]));
+var image_statue_spore_template = setupImage(blueprintifyImage(images_statue_spore[4]));
 var images_statue_spore_template = [image_statue_spore_template, image_statue_spore_template, image_statue_spore_template, image_statue_spore_template, image_statue_spore_template];
 
 
@@ -394,7 +394,7 @@ var image_statue_splash = `
 
 var images_statue_splash = createPlantImages2(image_statue_splash, image_statue_splash, image_statue_splash, image_statue_splash, image_statue_splash);
 
-var image_statue_splash_template = createCanvasImageFor(blueprintifyImage(images_statue_splash[4]));
+var image_statue_splash_template = setupImage(blueprintifyImage(images_statue_splash[4]));
 var images_statue_splash_template = [image_statue_splash_template, image_statue_splash_template, image_statue_splash_template, image_statue_splash_template, image_statue_splash_template];
 
 
@@ -419,7 +419,7 @@ var image_statue_range = `
 
 var images_statue_range = createPlantImages2(image_statue_range, image_statue_range, image_statue_range, image_statue_range, image_statue_range);
 
-var image_statue_range_template = createCanvasImageFor(blueprintifyImage(images_statue_range[4]));
+var image_statue_range_template = setupImage(blueprintifyImage(images_statue_range[4]));
 var images_statue_range_template = [image_statue_range_template, image_statue_range_template, image_statue_range_template, image_statue_range_template, image_statue_range_template];
 
 
@@ -444,7 +444,7 @@ var image_statue_seed = `
 
 var images_statue_seed = createPlantImages2(image_statue_seed, image_statue_seed, image_statue_seed, image_statue_seed, image_statue_seed);
 
-var image_statue_seed_template = createCanvasImageFor(blueprintifyImage(images_statue_seed[4]));
+var image_statue_seed_template = setupImage(blueprintifyImage(images_statue_seed[4]));
 var images_statue_seed_template = [image_statue_seed_template, image_statue_seed_template, image_statue_seed_template, image_statue_seed_template, image_statue_seed_template];
 
 
@@ -469,7 +469,7 @@ var image_statue_snail = `
 
 var images_statue_snail = createPlantImages2(image_statue_snail, image_statue_snail, image_statue_snail, image_statue_snail, image_statue_snail);
 
-var image_statue_snail_template = createCanvasImageFor(blueprintifyImage(images_statue_snail[4]));
+var image_statue_snail_template = setupImage(blueprintifyImage(images_statue_snail[4]));
 var images_statue_snail_template = [image_statue_snail_template, image_statue_snail_template, image_statue_snail_template, image_statue_snail_template, image_statue_snail_template];
 
 
@@ -495,6 +495,6 @@ var image_statue_sniper = `
 
 var images_statue_sniper = createPlantImages2(image_statue_sniper, image_statue_sniper, image_statue_sniper, image_statue_sniper, image_statue_sniper);
 
-var image_statue_sniper_template = createCanvasImageFor(blueprintifyImage(images_statue_sniper[4]));
+var image_statue_sniper_template = setupImage(blueprintifyImage(images_statue_sniper[4]));
 var images_statue_sniper_template = [image_statue_sniper_template, image_statue_sniper_template, image_statue_sniper_template, image_statue_sniper_template, image_statue_sniper_template];
 

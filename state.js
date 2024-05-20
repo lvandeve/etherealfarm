@@ -1260,20 +1260,42 @@ State.prototype.initSquirrelStages = function() {
   }
 };
 
+function getSquirrelImage(state) {
+  if(holidayEventActive() == 1) {
+    return (state.squirrel_evolution == 0) ? image_squirrel_hat : image_squirrel2_hat;
+  } else {
+    return (state.squirrel_evolution == 0) ? image_squirrel : image_squirrel2;
+  }
+}
+
+function getAutomatonImage(state) {
+  if(holidayEventActive() == 1) {
+    return image_automaton_hat;
+  } else {
+    return image_automaton;
+  }
+}
+
 // chooses the correct squirrel evolution image
 // in addition, set the holiday hat images for squirrel and automaton if applicable
 State.prototype.initEvolutionAndHatImages = function() {
-  var image_squirrel_evolution;
-  var image_automaton;
-  if(holidayEventActive() == 1) {
-    image_squirrel_evolution = (this.squirrel_evolution == 0) ? image_squirrel_hat : image_squirrel2_hat;
-    image_automaton = image_automaton_hat;
-  } else {
-    image_squirrel_evolution = (this.squirrel_evolution == 0) ? image_squirrel_base : image_squirrel2_base;
-    image_automaton = image_automaton_base;
+  var image_automaton = getAutomatonImage(this);
+  var crop_automaton = crops2[automaton2_0];
+  for(var i = 0; i < crop_automaton.image.length; i++) {
+    crop_automaton.image[i] = image_automaton;
   }
-  for(var i = 0; i < images_squirrel.length; i++) regenerateImageCanvas(image_squirrel_evolution, images_squirrel[i]);
-  for(var i = 0; i < images_automaton.length; i++) regenerateImageCanvas(image_automaton, images_automaton[i]);
+
+  squirrel_upgrades[upgradesq_automaton].image = image_automaton;
+
+  var image_squirrel = getSquirrelImage(this);
+  var crop_squirrel = crops2[squirrel2_0];
+
+  for(var i = 0; i < crop_squirrel.image.length; i++) {
+    crop_squirrel.image[i] = image_squirrel;
+  }
+
+  squirrel_upgrades[upgradesq_squirrel].image = image_squirrel;
+  squirrel_upgrades[upgradesq_squirrel2].image = image_squirrel;
 };
 
 // opt_insert_at_front: set to true to insert new ones at the front. This should be used for when the start-only auto-action is unlocked, since that one is from then on always at index 0.

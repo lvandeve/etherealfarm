@@ -664,7 +664,6 @@ function updateField3CellUI(x, y) {
       blendImage(image_watercress_remainder3, fd.canvas);
     } else {
       fd.div.innerText = '';
-      //unrenderImage(fd.canvas);
     }
     if(brassica_no_selfsustain) {
       blendImage(image_exclamation_small, fd.canvas);
