@@ -56,9 +56,38 @@ Renderer.prototype.blendImage = function(image, canvas) {
   // Empty, to implement by implementing classes
 };
 
+// Render an individual pixel on the canvas, which must already have some image rendered on it. The pixel size used is the one of that rendered image.
+// This is not necessarily fast (except possibly for some implementations that internally use this for everything), so should be used sparingly, but is useful for a small amount of pixels
 Renderer.prototype.renderPixel = function(x, y, color, canvas) {
   // Empty, to implement by implementing classes
 };
+
+// Static utility function, given a 2D array of images forming a grid, returns array of [w, h, w2, h2] where:
+// w = width of individual image (all are assumed to have the same size)
+// h = height of individual image (all are assumed to have the same size)
+// w2 = width of the entire grid in pixels
+// h2 = height of the entire grid in pixels
+// Returns undefined instead of the input is empty (nothing to do)
+Renderer.computeImagesSizes_ = function(images) {
+  var w, h;
+  var numw = 0;
+  for(var y = 0; y < images.length; y++) {
+    numw = Math.max(numw, images[y].length);
+    for(var x = 0; x < images[y].length; x++) {
+      if(images[y][x]) {
+        w = images[y][x][1];
+        h = images[y][x][2];
+        break;
+      }
+    }
+  }
+  if(w == undefined) return undefined; // nothing to do, no images
+
+  var w2 = w * numw;
+  var h2 = h * images.length;
+
+  return [w, h, w2, h2];
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -217,22 +246,12 @@ OffscreenCanvasRenderer.prototype.renderImage = function(image, canvas) {
 };
 
 OffscreenCanvasRenderer.prototype.renderImages = function(images, canvas) {
-  var iw, ih;
-  var numw = 0;
-  for(var y = 0; y < images.length; y++) {
-    numw = Math.max(numw, images[y].length);
-    for(var x = 0; x < images[y].length; x++) {
-      if(images[y][x]) {
-        iw = images[y][x][1];
-        ih = images[y][x][2];
-        break;
-      }
-    }
-  }
-  if(iw == undefined) return; // nothing to do, no images
-
-  var iw2 = iw * numw;
-  var ih2 = ih * images.length;
+  var dim = Renderer.computeImagesSizes_(images);
+  if(dim == undefined) return;
+  var iw = dim[0];
+  var ih = dim[1];
+  var iw2 = dim[2];
+  var ih2 = dim[3];
 
   if(canvas.width != iw2) canvas.width = iw2;
   if(canvas.height != ih2) canvas.height = ih2;
@@ -321,22 +340,12 @@ PureCanvasRenderer.prototype.renderImage = function(image, canvas) {
 };
 
 PureCanvasRenderer.prototype.renderImages = function(images, canvas) {
-  var iw, ih;
-  var numw = 0;
-  for(var y = 0; y < images.length; y++) {
-    numw = Math.max(numw, images[y].length);
-    for(var x = 0; x < images[y].length; x++) {
-      if(images[y][x]) {
-        iw = images[y][x][1];
-        ih = images[y][x][2];
-        break;
-      }
-    }
-  }
-  if(iw == undefined) return; // nothing to do, no images
-
-  var iw2 = iw * numw;
-  var ih2 = ih * images.length;
+  var dim = Renderer.computeImagesSizes_(images);
+  if(dim == undefined) return;
+  var iw = dim[0];
+  var ih = dim[1];
+  var iw2 = dim[2];
+  var ih2 = dim[3];
 
   if(canvas.width != iw2) canvas.width = iw2;
   if(canvas.height != ih2) canvas.height = ih2;
@@ -417,33 +426,23 @@ DivRenderer.prototype.setupImage = function(image) {
 
 DivRenderer.prototype.renderImage = function(image, canvas) {
   canvas.innerHTML = '';
-  canvas.divrenderer_w_ = image[1];
-  canvas.divrenderer_h_ = image[2];
+  canvas.imagerenderer_w_ = image[1];
+  canvas.imagerenderer_h_ = image[2];
 
   this.blendImage(image, canvas);
 };
 
 DivRenderer.prototype.renderImages = function(images, canvas) {
-  var iw, ih;
-  var numw = 0;
-  for(var y = 0; y < images.length; y++) {
-    numw = Math.max(numw, images[y].length);
-    for(var x = 0; x < images[y].length; x++) {
-      if(images[y][x]) {
-        iw = images[y][x][1];
-        ih = images[y][x][2];
-        break;
-      }
-    }
-  }
-  if(iw == undefined) return; // nothing to do, no images
-
-  var iw2 = iw * numw;
-  var ih2 = ih * images.length;
+  var dim = Renderer.computeImagesSizes_(images);
+  if(dim == undefined) return;
+  var iw = dim[0];
+  var ih = dim[1];
+  var iw2 = dim[2];
+  var ih2 = dim[3];
 
   canvas.innerHTML = '';
-  canvas.divrenderer_w_ = iw2;
-  canvas.divrenderer_h_ = ih2;
+  canvas.imagerenderer_w_ = iw2;
+  canvas.imagerenderer_h_ = ih2;
 
   for(var y = 0; y < images.length; y++) {
     for(var x = 0; x < images[y].length; x++) {
@@ -474,8 +473,8 @@ DivRenderer.prototype.blendImage = function(image, canvas) {
 };
 
 DivRenderer.prototype.renderPixel = function(x, y, color, canvas) {
-  var w = canvas.divrenderer_w_;
-  var h = canvas.divrenderer_h_;
+  var w = canvas.imagerenderer_w_;
+  var h = canvas.imagerenderer_h_;
 
   var div = document.createElement('div', canvas);
   div.style.position = 'absolute';
@@ -497,9 +496,163 @@ DivRenderer.prototype.renderPixel = function(x, y, color, canvas) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var renderer = new OffscreenCanvasRenderer();
+
+/*
+Uses a technique with CSS box-shadow to put arbitrarily many pixels on a single div
+Faster than DivRenderer, and has its advantages of not using canvas, but may have some issues with pixel sizes, edges of tiles not exactly touching or overlapping, ...
+It's also still clearly slower than the canvas based renderers anyway
+@constructor
+*/
+function CSSRenderer() {
+}
+//CSSRenderer.prototype = new Renderer();
+
+CSSRenderer.prototype.createCanvas = function(x, y, w, h, opt_parent) {
+  var parent = opt_parent || document.body;
+
+  var div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.left = x;
+  div.style.top = y;
+  div.style.width = w;
+  div.style.height = h;
+
+  parent.appendChild(div);
+
+  return div;
+};
+
+CSSRenderer.prototype.setupImage = function(image) {
+  return image;
+};
+
+CSSRenderer.prototype.renderImage = function(image, canvas) {
+  canvas.innerHTML = '';
+
+  canvas.imagerenderer_w_ = image[1];
+  canvas.imagerenderer_h_ = image[2];
+
+  this.blendImage(image, canvas);
+};
+
+CSSRenderer.computeBoxShadowAt_ = function(em, image, sx, sy) {
+  var data = image[0];
+  var w = image[1];
+  var h = image[2];
+
+  var boxShadow = '';
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      if(!data[y][x][3]) continue;
+      if(boxShadow.length > 0) boxShadow += ', ';
+      // boxShadow does not support using % as unit, which is very unfortunate. But it does support using 'em', which is also relative, but requires ensuring 'em' is set up correctly
+      // em should be setup correctly by multiple getComputedStyle calls, but this is still an unfortunate brittle system and it would have been much better if % would work for box-shadow
+      // the reason we want relative is so that window resizes will automatically make this be correct
+      boxShadow += ((sx + x) * em) + 'em ';
+      boxShadow += ((sy + y) * em) + 'em ';
+      boxShadow += '0 ';
+      boxShadow += RGBtoCSS(data[y][x]);
+    }
+  }
+
+  return boxShadow;
+};
+
+CSSRenderer.computeBoxShadow_ = function(em, image) {
+  return CSSRenderer.computeBoxShadowAt_(em, image, 0, 0);
+};
+
+CSSRenderer.twiddle_ = 1.2;
+
+CSSRenderer.prototype.renderImages = function(images, canvas) {
+  var dim = Renderer.computeImagesSizes_(images);
+  if(dim == undefined) return;
+  var iw = dim[0];
+  var ih = dim[1];
+  var iw2 = dim[2];
+  var ih2 = dim[3];
+
+  canvas.innerHTML = '';
+  canvas.imagerenderer_w_ = iw2;
+  canvas.imagerenderer_h_ = ih2;
+
+  var fontSize = parseFloat(getComputedStyle(canvas).fontSize);
+  var elWidth = parseFloat(getComputedStyle(canvas).width);
+  var em = elWidth / fontSize / iw2;
+
+  var div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.left = 0;
+  div.style.top = 0;
+  div.style.width = (100 / iw2 * CSSRenderer.twiddle_) + '%';
+  div.style.height = (100 / ih2 * CSSRenderer.twiddle_) + '%';
+
+  var boxShadow = '';
+
+  for(var y = 0; y < images.length; y++) {
+    for(var x = 0; x < images[y].length; x++) {
+      var image = images[y][x];
+      if(!image) continue;
+
+      if(boxShadow.length > 0) boxShadow += ', ';
+      boxShadow += CSSRenderer.computeBoxShadowAt_(em, image, x * iw, y * ih);
+    }
+  }
+
+  //div.style.marginBottom = (100 / h * CSSRenderer.twiddle_) + '%';
+  //div.style.marginBottom = '8px';
+  div.style.boxShadow = boxShadow;
+  //div.style.boxShadow = '8px 8px 0 #0ff';
+  canvas.appendChild(div);
+
+
+  if(images[0][0] && images[0][0][0][0][3] > 0) {
+    div.style.backgroundColor = RGBtoCSS(images[0][0][0][0]); // the first one doesn't work for some reason (because it's where the div itself is maybe?)
+  }
+};
+
+CSSRenderer.prototype.blendImage = function(image, canvas) {
+  var data = image[0];
+  var w = image[1];
+  var h = image[2];
+
+  var div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.left = 0;
+  div.style.top = 0;
+  div.style.width = (100 / w * CSSRenderer.twiddle_) + '%';
+  div.style.height = (100 / h * CSSRenderer.twiddle_) + '%';
+
+  var fontSize = parseFloat(getComputedStyle(canvas).fontSize);
+  var elWidth = parseFloat(getComputedStyle(canvas).width);
+  var em = elWidth / fontSize / w;
+
+  var boxShadow = CSSRenderer.computeBoxShadow_(em, image);
+  if(data[0][0][3] > 0) {
+    div.style.backgroundColor = RGBtoCSS(data[0][0]); // the first one doesn't work for some reason (because it's where the div itself is maybe?)
+  }
+
+
+  //div.style.marginBottom = (100 / h * CSSRenderer.twiddle_) + '%';
+  //div.style.marginBottom = '8px';
+  div.style.boxShadow = boxShadow;
+  //div.style.boxShadow = '8px 8px 0 #0ff';
+  canvas.appendChild(div);
+
+};
+
+CSSRenderer.prototype.renderPixel = function(x, y, color, canvas) {
+  // For now, reuse the implementation of the DivRenderer instead...
+  // TODO: instead add more styles to the boxShadow (or to a new boxShadow div specifically for those extra pixels), and have an 'endPixelRender' function to group them together to avoid reassigning a huge CSS style string each time
+  new DivRenderer().renderPixel(x, y, color, canvas);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+//var renderer = new OffscreenCanvasRenderer();
 //var renderer = new PureCanvasRenderer();
 //var renderer = new DivRenderer();
+var renderer = new CSSRenderer();
 
 ////////////////////////////////////////////////////////////////////////////////
 
