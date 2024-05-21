@@ -229,7 +229,9 @@ function RGBtoCSS(rgba) {
   if(g.length == 1) g = '0' + g;
   if(b.length == 1) b = '0' + b;
   if(a.length == 1) a = '0' + a;
-  return '#' + r + g + b + a;
+  var result = '#' + r + g + b;
+  if(a != 'ff') result += a;
+  return result;
 }
 
 

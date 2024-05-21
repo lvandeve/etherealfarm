@@ -27,21 +27,26 @@ Abstract class for methods to render the images (with canvas, ...)
 function Renderer() {
 }
 
-// Creates a new canvas to visibly render image(s) on. Doesn't delete any. WARNING: If re-using this function on existing div, ensure to clear it first!
-// This is different from any internal (offscreen, ...) canvas that might be created in setupImage, since that one is not visible and a way to store textures for rendering/blending only
-// Depending on the renderer, what it returns doesn't have to be a 'canvas' html element, but it always must be some html element (if not a canvas, then a div, ...)
-// x, y, w and h must have HTML units
+// Creates a new canvas to visibly render image(s) on.
+// WARNING: If re-using this function on existing div, ensure to clear it first!
+// This is not for creating internal (offscreen, ...) canvases like some renderers use in setupImage to contain textures, this function is intended to create the visible element in the UI on which the image will be visibly drawn
+// Does not necessarily return a 'canvas' element, but it will always be some DOM element. Depending on the renderer, this may be a canvas, a div, an svg, ...
+// We still call it canvas anyway as it's the place we'll draw the image on so it is figuratively speaking a canvas.
+// x, y, w and h must have HTML units (px, %, ...)
 Renderer.prototype.createCanvas = function(x, y, w, h, opt_parent) {
   // Empty, to implement by implementing classes
 };
 
-// Extends an image object created by generateImage, with extra data needed for the renderer (such as OffscreenCanvas, ImageData, ...)
+// Extends an image object created by generateImage, with possibly extra data needed for the renderer (such as OffscreenCanvas, ImageData, ...)
 // generateImage returns a 3-element array, setupImage may add extra elements to it, but keeps the first 3 the same
+// So the result of this function can be used wherever results of generateImage can be used, however setupImage must be used to make the image usable with this Renderer.
 Renderer.prototype.setupImage = function(image) {
   // Empty, to implement by implementing classes
 };
 
 // Render image (as created by setupImage) onto the given canvas. The canvas is completely replaced by this image, there's no alpha blending onto previous content.
+// The canvas must be an element that was created by the createCanvas function of this renderer.
+// The image argument must be an image that was returned by the setupImage function of this renderer.
 Renderer.prototype.renderImage = function(image, canvas) {
   // Empty, to implement by implementing classes
 };
@@ -62,11 +67,13 @@ Renderer.prototype.renderPixel = function(x, y, color, canvas) {
   // Empty, to implement by implementing classes
 };
 
-// Static utility function, given a 2D array of images forming a grid, returns array of [w, h, w2, h2] where:
+// Static utility function, given a 2D array of images forming a grid, returns array of [w, h, w2, h2, numw, numh] where:
 // w = width of individual image (all are assumed to have the same size)
 // h = height of individual image (all are assumed to have the same size)
 // w2 = width of the entire grid in pixels
 // h2 = height of the entire grid in pixels
+// numw = amount of images in x-direction
+// numh = amount of images in y-direction
 // Returns undefined instead of the input is empty (nothing to do)
 Renderer.computeImagesSizes_ = function(images) {
   var w, h;
@@ -86,7 +93,7 @@ Renderer.computeImagesSizes_ = function(images) {
   var w2 = w * numw;
   var h2 = h * images.length;
 
-  return [w, h, w2, h2];
+  return [w, h, w2, h2, numw, images.length];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -265,11 +272,6 @@ OffscreenCanvasRenderer.prototype.renderImages = function(images, canvas) {
       }
     }
   }
-
-  //ctx.putImageData(image[4], 0, 0);
-
-  /*ctx.clearRect(0, 0, iw, ih);
-  ctx.drawImage(image[3], 0, 0);*/
 };
 
 OffscreenCanvasRenderer.prototype.blendImage = function(image, canvas) {
@@ -601,10 +603,7 @@ CSSRenderer.prototype.renderImages = function(images, canvas) {
     }
   }
 
-  //div.style.marginBottom = (100 / h * CSSRenderer.twiddle_) + '%';
-  //div.style.marginBottom = '8px';
   div.style.boxShadow = boxShadow;
-  //div.style.boxShadow = '8px 8px 0 #0ff';
   canvas.appendChild(div);
 
 
@@ -634,13 +633,8 @@ CSSRenderer.prototype.blendImage = function(image, canvas) {
     div.style.backgroundColor = RGBtoCSS(data[0][0]); // the first one doesn't work for some reason (because it's where the div itself is maybe?)
   }
 
-
-  //div.style.marginBottom = (100 / h * CSSRenderer.twiddle_) + '%';
-  //div.style.marginBottom = '8px';
   div.style.boxShadow = boxShadow;
-  //div.style.boxShadow = '8px 8px 0 #0ff';
   canvas.appendChild(div);
-
 };
 
 CSSRenderer.prototype.renderPixel = function(x, y, color, canvas) {
@@ -723,28 +717,6 @@ SVGRenderer.prototype.blendImage = function(image, canvas) {
   var w = image[1];
   var h = image[2];
 
-  /*for(var y = 0; y < h; y++) {
-    for(var x = 0; x < w; x++) {
-      if(data[y][x][3] == 0) continue;
-      this.renderPixel(x, y, RGBtoCSS(data[y][x]), canvas)
-    }
-  }*/
-
-  /*var html = '';
-  for(var y = 0; y < h; y++) {
-    for(var x = 0; x < w; x++) {
-      if(data[y][x][3] == 0) continue;
-      html += '<rect width="1" height="1" x=';
-      html += x;
-      html += ' y=';
-      html += y;
-      html += ' fill=';
-      html += RGBtoCSS(data[y][x]);
-      html += '></rect>';
-    }
-  }
-  canvas.innerHTML += html;*/
-
   var html = '';
   for(var y = 0; y < h; y++) {
     var multi = 1; // combine multiple pixels of same color together to have less elements overall
@@ -786,18 +758,199 @@ SVGRenderer.prototype.renderPixel = function(x, y, color, canvas) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var renderer = new OffscreenCanvasRenderer();
+/*
+Renderer based on base64-encoded PNG images set as backgroundImage in divs
+@constructor
+*/
+function PNGRenderer() {
+}
+//PNGRenderer.prototype = new Renderer();
+
+PNGRenderer.crc32_table_ = [
+  0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac, 0x76dc4190, 0x6b6b51f4, 0x4db26158, 0x5005713c,
+  0xedb88320, 0xf00f9344, 0xd6d6a3e8, 0xcb61b38c, 0x9b64c2b0, 0x86d3d2d4, 0xa00ae278, 0xbdbdf21c
+];
+
+PNGRenderer.crc32_ = function(data) {
+  var r = 0xffffffff;
+  for(var i = 0; i < data.length; i++) {
+    r = PNGRenderer.crc32_table_[(r ^ data[i]) & 15] ^ (r >>> 4);
+    r = PNGRenderer.crc32_table_[(r ^ (data[i] >>> 4)) & 15] ^ (r >>> 4);
+  }
+  r ^= 0xffffffff;
+  if(r < 0) r += 4294967296;
+  return r;
+};
+
+PNGRenderer.adler32_ = function(data) {
+  var s1 = 1;
+  var s2 = 0;
+  var len = data.length;
+  var j = 0;
+  while(len > 0) {
+    var amount = Math.min(5552, len);
+    len -= amount;
+    for(var i = 0; i < amount; i++) {
+      s1 += data[j++];
+      s2 += s1;
+    }
+    s1 %= 65521;
+    s2 %= 65521;
+  }
+  return s2 * 65536 + s1;
+};
+
+PNGRenderer.uint32ToArr_ = function(i) {
+  return [Math.floor(i / 16777216), Math.floor(i / 65536) & 255, Math.floor(i / 256) & 255, i % 256];
+};
+
+PNGRenderer.makeChunk_ = function(type, data) {
+  var arr_size = PNGRenderer.uint32ToArr_(data.length);
+  var arr_type = [type.charCodeAt(0), type.charCodeAt(1), type.charCodeAt(2), type.charCodeAt(3)];
+  var arr_type_data = arr_type.concat(data);
+  var arr_crc = PNGRenderer.uint32ToArr_(PNGRenderer.crc32_(arr_type_data));
+  return arr_size.concat(arr_type_data).concat(arr_crc);
+};
+
+PNGRenderer.createPNG_ = function(image) {
+  var data = image[0];
+  var w = image[1];
+  var h = image[2];
+
+  var arr = [];
+  arr = arr.concat([137, 80, 78, 71, 13, 10, 26, 10]); // PNG signature
+
+  var ihdr = [];
+  ihdr = ihdr.concat(PNGRenderer.uint32ToArr_(w));
+  ihdr = ihdr.concat(PNGRenderer.uint32ToArr_(h));
+  ihdr = ihdr.concat([8, 6, 0, 0, 0]); // bit depth, color type, compression method, filter method, interlace method
+  arr = arr.concat(PNGRenderer.makeChunk_('IHDR', ihdr));
+
+  var pixels = [];
+  for(var y = 0; y < h; y++) {
+    pixels.push(0); // filter byte
+    for(var x = 0; x < w; x++) {
+      for(var c = 0; c < 4; c++) {
+        pixels.push(Math.min(Math.max(0, Math.floor(data[y][x][c])), 255));
+      }
+    }
+  }
+
+  var deflate = [];
+  var pos = 0;
+  while(pos < pixels.length) {
+    var len = pixels.length;
+    // uncompressed blocks supports a max length of 65535 only
+    len = Math.min(65535, len);
+    var nlen = 65535 - len;
+    var bfinal = (pos + len < pixels.length) ? 0 : 1;
+    deflate = deflate.concat([bfinal, len & 255, len >>> 8, nlen & 255, nlen >>> 8]);
+    deflate = deflate.concat((pos == 0 && len == pixels.length) ? pixels : pixels.slice(pos, pos + len));
+    pos += len;
+  }
+
+  var idat = [];
+  idat = idat.concat([120, 1]); // cmf, flevel, fdict, fcheck
+  idat = idat.concat(deflate);
+  idat = idat.concat(PNGRenderer.uint32ToArr_(PNGRenderer.adler32_(pixels)));
+  arr = arr.concat(PNGRenderer.makeChunk_('IDAT', idat));
+
+  arr = arr.concat([0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]); // IEND chunk
+
+  var text = '';
+  for(var i = 0; i < arr.length; i++) text += String.fromCharCode(arr[i]);
+  return btoa(text);
+};
+
+PNGRenderer.setPNGBackground_ = function(image, canvas) {
+  canvas.style.backgroundImage = 'url(data:image/png;base64,' + image[3] + ')';
+  canvas.style.backgroundSize = '100% 100%';
+}
+
+PNGRenderer.prototype.createCanvas = function(x, y, w, h, opt_parent) {
+  var parent = opt_parent || document.body;
+
+  var div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.left = x;
+  div.style.top = y;
+  div.style.width = w;
+  div.style.height = h;
+  div.className = 'pixelated'; // prevent blurry image due to default non-pixelated browser upscaling
+
+  parent.appendChild(div);
+
+  return div;
+};
+
+PNGRenderer.prototype.setupImage = function(image) {
+  var png = PNGRenderer.createPNG_(image);
+  return [image[0], image[1], image[2], png];
+};
+
+PNGRenderer.prototype.renderImage = function(image, canvas) {
+  canvas.innerHTML = '';
+
+  // Used only for the current renderPixel implementation
+  canvas.imagerenderer_w_ = image[1];
+  canvas.imagerenderer_h_ = image[2];
+
+  PNGRenderer.setPNGBackground_(image, canvas);
+};
+
+PNGRenderer.prototype.renderImages = function(images, canvas) {
+  var dim = Renderer.computeImagesSizes_(images);
+  if(dim == undefined) return;
+  var iw = dim[0];
+  var ih = dim[1];
+  var iw2 = dim[2];
+  var ih2 = dim[3];
+  var numw = dim[4];
+  var numh = dim[5];
+
+  canvas.innerHTML = '';
+
+  // Used only for the current renderPixel implementation
+  canvas.imagerenderer_w_ = iw2;
+  canvas.imagerenderer_h_ = ih2;
+
+  for(var y = 0; y < images.length; y++) {
+    for(var x = 0; x < images[y].length; x++) {
+      var image = images[y][x];
+      if(image) {
+        var ex = 100 * x / numw;
+        var ey = 100 * y / numh;
+        var ew = 100 * (x + 1) / numw - ex;
+        var eh = 100 * (y + 1) / numh - ey;
+        var subCanvas = this.createCanvas(ex + '%', ey + '%', ew + '%', eh + '%', canvas);
+        PNGRenderer.setPNGBackground_(image, subCanvas);
+      }
+    }
+  }
+};
+
+PNGRenderer.prototype.blendImage = function(image, canvas) {
+  var subCanvas = this.createCanvas(0, 0, '100%', '100%', canvas);
+  PNGRenderer.setPNGBackground_(image, subCanvas);
+};
+
+PNGRenderer.prototype.renderPixel = function(x, y, color, canvas) {
+  // For now, reuse the implementation of the DivRenderer instead...
+  new DivRenderer().renderPixel(x, y, color, canvas);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+//var renderer = new OffscreenCanvasRenderer();
 //var renderer = new PureCanvasRenderer();
 //var renderer = new DivRenderer();
 //var renderer = new CSSRenderer();
 //var renderer = new SVGRenderer();
+var renderer = new PNGRenderer();
 
 ////////////////////////////////////////////////////////////////////////////////
 
 
-// creates a new canvas, doesn't delete any. WARNING: If re-using this function on existing div, ensure to clear it first!
-// difference from generateAndSetupImage: the canvas from createCanvas is a visible canvas, that of generateAndSetupImage is the texture in memory
-// x, y, w and h must have HTML units
 function createCanvas(x, y, w, h, opt_parent) {
   return renderer.createCanvas(x, y, w, h, opt_parent);
 }
@@ -806,19 +959,14 @@ function setupImage(image) {
   return renderer.setupImage(image);
 }
 
-
-function renderImage(image, canvas) {
-  return renderer.renderImage(image, canvas);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-
 // like generateImage, but also calls setupImage on it
 function generateAndSetupImage(text) {
   return setupImage(generateImage(text));
 }
 
+function renderImage(image, canvas) {
+  return renderer.renderImage(image, canvas);
+}
 
 // renders grid of images. All images must have the same size, and the grid must be rectangular.
 // some images may be set to null/undefined to not render one there
@@ -826,7 +974,6 @@ function generateAndSetupImage(text) {
 function renderImages(images, canvas) {
   renderer.renderImages(images, canvas);
 }
-
 
 // similar to renderImage, but doesn't clear the canvas first, so if the image has transparent pixels, it's drawn with the original canvas content as background
 function blendImage(image, canvas) {
