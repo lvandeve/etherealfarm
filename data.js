@@ -3705,11 +3705,11 @@ During this challenge, crops wither and must be replanted.
 `,
 ['unlock the auto-action ability of the automaton',
  'allow using blueprints during future wither challenge runs',
- 'unlock a second automaton auto-action',
+ 'unlock one more automaton auto-action',
  'auto-action can now also automate weather, fern and brassica refresh',
- 'unlock a third automaton auto-action',
- 'auto-action can now also automate ethereal blueprints',
- 'unlock a limited  kind of automaton auto-action, this one can only be configured to trigger at start of run (to set up correct starting fruit, ...)'],
+ 'unlock one more automaton auto-action',
+ 'unlock one more automaton auto-action',
+ 'unlock one more automaton auto-action'],
 'reaching ethereal tree level 5 and having automaton with auto-unlock plants',
 function() {
   return state.treelevel2 >= 5 && haveAutomaton() && autoUnlockUnlocked();
