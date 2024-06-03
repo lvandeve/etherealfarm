@@ -2974,6 +2974,15 @@ function decState(s) {
     if(num_runestone > 2) state.res.infseeds.addInPlace(Num(500e9).mul(Num.rpowr(1000, num_runestone - 1))); // refund the highest one with the old price
   }
 
+  if(save_version < 262144*2+64*12+5 && state.challenges[challenge_wither].completed >= 1 && state.challenges[challenge_wither].completed < 7) {
+    // the "start of run only" auto action moved from wither state 7 to all the way the beginning. But don't put autoactions from these saves in slot 0, which now became this start-only one. So shift them all up by 1
+    for(var i = 1; i < state.automaton_autoactions.length; i++) {
+      var j = state.automaton_autoactions.length - i;
+      state.automaton_autoactions[j] = state.automaton_autoactions[j - 1];
+    }
+    state.automaton_autoactions[0] = new AutoActionState();
+  }
+
   if(error) return err(4);
   state.g_numloads++;
   return state;
