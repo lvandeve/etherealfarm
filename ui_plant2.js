@@ -174,9 +174,13 @@ function makePlantDialog2(x, y, opt_replace, opt_recoup) {
       result += '<br><br>Grow time: ' + util.formatDuration(c.planttime);
 
       if(c.effect_description_long) {
-        result += '<br><br>Effect: ' + c.effect_description_long;
+        var effect = c.effect_description_long;
+        if(typeof effect == 'function') effect = c.effect_description_long();
+        result += '<br><br>Effect: ' + effect;
       } else if(c.effect_description_short) {
-        result += '<br><br>Effect: ' + c.effect_description_short;
+        var effect = c.effect_description_short;
+        if(typeof effect == 'function') effect = c.effect_description_short();
+        result += '<br><br>Effect: ' + effect;
       }
 
       result += '<br><br>Ethereal tree level that unlocked this crop: ' + c.treelevel2;

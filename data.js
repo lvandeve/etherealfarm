@@ -3065,13 +3065,13 @@ var nettlemul_1 = registerBoostMultiplier(nettle_1, getNettleCost(1).mulr(10), f
 var nettlemul_2 = registerBoostMultiplier(nettle_2, getNettleCost(2).mulr(10), flower_upgrade_power_increase, 1, nettleunlock_2, flower_upgrade_cost_increase);
 
 upgrade_register_id = 580;
-var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0.2, 5, undefined, function(){
+var brassicamul_0 = registerBrassicaTimeIncrease(brassica_0, Res({seeds:100}), 0.35, 5, undefined, function(){
   if(!basicChallenge() && state.upgrades2[upgrade2_blackberrysecret].count) return true; // blackberry secret makes the watercress upgrade visible from the start rather than after 5 brassica
   if(basicChallenge() != 2 && automatonUnlocked()) return true; // when having templates and automaton, unlock this upgrade from the beginning because with a field full of templates it starts getting unclear why no upgrades are available and that you must plant watercress (if watercress secret not yet available)
   return (state.c_numplanted >= 1 || state.c_numplantedbrassica >= 5) && (state.c_numplantedbrassica >= 1);
 });
 
-var brassicamul_1 = registerBrassicaTimeIncrease(brassica_1, Res({seeds:1000}), 0.2, 1, brassicaunlock_1);
+var brassicamul_1 = registerBrassicaTimeIncrease(brassica_1, Res({seeds:1000}), 0.35, 1, brassicaunlock_1);
 
 upgrade_register_id = 590;
 var beemul_0 = registerBoostMultiplier(bee_0, getBeeCost(0).mulr(beehive_upgrade_initial_cost), beehive_upgrade_power_increase, 1, beeunlock_0, beehive_upgrade_cost_increase);
@@ -3163,7 +3163,7 @@ var fern_choice0 = registerChoiceUpgrade('fern choice',
   }, function() {
   },
  'Slower ferns', 'Richer ferns',
- 'Ferns take ' + (fern_wait_minutes + fern_choice0_a_minutes) + ' instead of ' + fern_wait_minutes + ' minutes to appear, but contain enough resources to make up the difference exactly. Ferns left for a very long time will give additional resources, up to a few hours worth. This allows to collect more fern resources during idle play, but has no effect on the overall fern income during active play.',
+ 'Ferns take ' + (fern_wait_minutes + fern_choice0_a_minutes) + ' instead of ' + fern_wait_minutes + ' minutes to appear, but contain enough resources to make up the difference exactly. Ferns left for a very long time will give additional resources, up to several hours worth. This allows to collect more fern resources during idle play, but has no effect on the overall fern income during active play.',
  'Ferns contain on average ' + (fern_choice0_b_bonus * 100) + '% more resources, but they\'ll appear as often as before so this benefits active play more than idle play, and is a disadvantage for e.g. combining ferns with weather effects.',
  '#000', '#fff', images_fern[0], undefined);
 upgrades[fern_choice0].istreebasedupgrade = true;
@@ -3717,7 +3717,7 @@ function() {
 [
 function() {
   state.updateAutoActionAmount(numAutoActionsUnlocked());
-  state.automaton_autoactions[0].enabled = true;
+  //state.automaton_autoactions[0].enabled = true;
   showMessage('Automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
   showRegisteredHelpDialog(40);
 },
@@ -3736,11 +3736,13 @@ function() {
   showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
-  showMessage('From now on, auto-actions can also be configured to plant ethereal blueprints!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  state.updateAutoActionAmount(numAutoActionsUnlocked());
+  showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  //showMessage('From now on, auto-actions can also be configured to plant ethereal blueprints!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
-  state.updateAutoActionAmount(numAutoActionsUnlocked(), true);
-  showMessage('An new limited kind of automaton auto-action unlocked, this one can only be configured to trigger at start of run (to set up correct starting fruit, ...).', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  state.updateAutoActionAmount(numAutoActionsUnlocked());
+  showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 }
 ], 0);
 challenges[challenge_wither].bonus = Num(0.003);
@@ -6327,7 +6329,7 @@ function fuseFruitMatchOrder(f, orig) {
 // fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruit, 5: allow forming the dragon fruit
 // transfer_choices: array of bools which, if false, indicate you do NOT want to transfer this **-ability from fruit b into fruit a
 // keep_choices: array of bools which, if true, indicate you don't want this ability pushed out by transferred abilities. This only enforces priority, it doesn't change the amount of abilities being pushed out. If all booleans are true or all booleans are false, fruit a's ability order is used (last ones pushed out first). If there is a mix of true and false, those that are false will be pushed out first.
-// opt_message: an array with a single string inside of it, that will be set to a message if there's a reason why fusing can't work
+// opt_message: an output array with in it [messate string, severity]. The message string may be set to a message if there's a reason why fusing can't work or a warning, and severity is 0 for warning, 1 for error (fusing can't work), this determines the color it's rendered with
 function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) {
   if(!a || !b) return null;
   if(a == b) return null;
@@ -6342,7 +6344,10 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
   if((a.type == 9) != (b.type == 9)) { // exactly one is a star fruit
     var with_apple = a.type == 0 || b.type == 0;
     if(with_apple && fruitmix < 5) {
-      if(opt_message) opt_message[0] = 'You need another squirrel upgrade before you can fuse star fruit with apple, and the apple must have the same set of abilities.';
+      if(opt_message) {
+        opt_message[0] = 'You need another squirrel upgrade before you can fuse star fruit with apple, and the apple must have the same set of abilities.';
+        opt_message[1] = 1;
+      }
       return null;
     }
   }
@@ -6350,20 +6355,32 @@ function fuseFruit(a, b, fruitmix, transfer_choices, keep_choices, opt_message) 
     var sameabilities = fruitsHaveSameAbilities(a, b);
     if(!sameabilities) {
       seasonmix_result = 0;
-      if(opt_message) opt_message[0] = 'You could get a legendary dragon fruit out of these fruit types, but only if they have the same abilities. Fuse a star fruit with an apple with the same set of abilities to get a dragon fruit.';
+      if(opt_message) {
+        opt_message[0] = 'You could get a legendary dragon fruit out of these fruit types, but only if they have the same abilities. Fuse a star fruit with an apple with the same set of abilities to get a dragon fruit.';
+        opt_message[1] = 1;
+      }
       return null;
     } else {
-      if(opt_message) opt_message[0] = 'You fused a legendary dragon fruit! Beware, dragon fruits can only be fused with other dragon fruits, not with any other fruit types.';
+      if(opt_message) {
+        opt_message[0] = 'You fused a legendary dragon fruit! Beware, dragon fruits can only be fused with other dragon fruits, not with any other fruit types.';
+        opt_message[1] = 0;
+      }
     }
   }
   if(seasonmix_result == 9 && a.type < 9 && b.type < 9) { // made star fruit from lower fruit types (two 2-seasonals)
     var sameabilities = fruitsHaveSameAbilities(a, b);
     if(!sameabilities) {
       seasonmix_result = 0;
-      if(opt_message) opt_message[0] = 'You could get a 4-season star fruit out of these fruit types, but only if they have the same abilities. Fuse two complementing two-seasonal fruits with the same set of abilities to get a star fruit.';
+      if(opt_message) {
+        opt_message[0] = 'You could get a 4-season star fruit out of these fruit types, but only if they have the same abilities. Fuse two complementing two-seasonal fruits with the same set of abilities to get a star fruit.';
+        opt_message[1] = 1;
+      }
       return null;
     } else {
-      if(opt_message) opt_message[0] = 'You fused a 4-season star fruit! Beware, star fruits can only be fused with other star fruits, or, after you have a certain squirrel ability, with apples.';
+      if(opt_message) {
+        opt_message[0] = 'You fused a 4-season star fruit! Beware, star fruits can only be fused with other star fruits, or, after you have a certain squirrel ability, with apples.';
+        opt_message[1] = 0;
+      }
     }
   }
 
@@ -6702,7 +6719,7 @@ function treeLevelResin(level, breakdown) {
 
   // fishes
   if(state.fishtypecount[FISHTYPE_TANG] || state.fish_resinmul_weighted.neqr(1)) {
-    var mul = getFishMultiplier(FISHTYPE_TANG, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_TANG, state, 3);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       var umul = getFishMultiplier(FISHTYPE_TANG, state, 0);
       resin.mulInPlace(mul);
@@ -6756,11 +6773,12 @@ var timeweightedinfo = '(the bonus is decreased if the fish is only present for 
 // If you have none of this fish, it returns a multiplier of 1.
 // timeweighted: only used for a few time-weighted fishes:
 // if 0, computes the formula according to the fish currently there. Use this to compute what the actual underlying value is, which is the basis for the time-weighted computations
-// if 1, takes into account time length during which the fishes were there. Use this when computing time-weighted value to update state (but not for the actual gameplay)
-// if 2, returns the minimum of the computation for timeweighted==0 and timeweighted==1, for actual current gameplay computation
+// if 1, takes into account time length during which the fishes were there. Use this when computing time-weighted value (weighted average in last MAXINFTOBASICDELAY time) to update state (but not for the actual gameplay)
+// if 2, similar to 1 but also takes reduced penalty with time shift into account, so it's like the weighed average but sometimes improved
+// if 3, returns the minimum of the computation for timeweighted==0 and timeweighted==1, for actual current gameplay computation
 function getFishMultiplier(fishtype, state, timeweighted) {
-  if(timeweighted == 2) {
-    return Num.min(getFishMultiplier(fishtype, state, 0), getFishMultiplier(fishtype, state, 1));
+  if(timeweighted == 3) {
+    return Num.min(getFishMultiplier(fishtype, state, 0), getFishMultiplier(fishtype, state, 2));
   }
   if(fishtype == FISHTYPE_GOLDFISH) {
     // infinity seeds bonus
@@ -6801,8 +6819,9 @@ function getFishMultiplier(fishtype, state, timeweighted) {
       return new Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1);
     } else {
       if(state.fish_twigsmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_twigsmul_time); // most recent timespan, during which 'last' is active
-      var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'timeweighted' was active
+      var shift = (timeweighted == 2) ? state.fish_twigsmul_time_shift : 0;
+      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_twigsmul_time + shift); // most recent timespan, during which 'last' is active
+      var deltatime2 = MAXINFTOBASICDELAY - deltatime; // timespan before that, during which 'timeweighted' was active
       return state.fish_twigsmul_weighted.mulr(deltatime2).add(state.fish_twigsmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
     }
   } else if(fishtype == FISHTYPE_TANG) {
@@ -6812,8 +6831,9 @@ function getFishMultiplier(fishtype, state, timeweighted) {
       return new Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1);
     } else {
       if(state.fish_resinmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_resinmul_time); // most recent timespan, during which 'last' is active
-      var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'timeweighted' was active
+      var shift = (timeweighted == 2) ? state.fish_resinmul_time_shift : 0;
+      var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.fish_resinmul_time + shift); // most recent timespan, during which 'last' is active
+      var deltatime2 = MAXINFTOBASICDELAY - deltatime; // timespan before that, during which 'timeweighted' was active
       return state.fish_resinmul_weighted.mulr(deltatime2).add(state.fish_resinmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
     }
   } else if(fishtype == FISHTYPE_LEPORINUS) {
@@ -6834,14 +6854,17 @@ function getFishMultiplier(fishtype, state, timeweighted) {
 
 // timeweighted: only used for time-weighted boost effect:
 // if 0, computes the formula according to the infinity crops/fishes currently there. Use this to compute what the actual underlying value is, which is the basis for the time-weighted computations
-// if 1, takes into account time length during which the infinity crops/fishes were there. Use this when computing time-weighted value to update state (but not for the actual gameplay)
-// if 2, returns the minimum of the computation for timeweighted==0 and timeweighted==1, for actual current gameplay computation
+// if 1, takes into account time length during which the infinity crops/fishes were there. Use this when computing time-weighted value (weighted average in last MAXINFTOBASICDELAY time) to update state (but not for the actual gameplay)
+// if 2, similar to 1 but also takes reduced penalty with time shift into account, so it's like the weighed average but sometimes improved
+// if 3, returns the minimum of the computation for timeweighted==0 and timeweighted==2, for actual current gameplay computation
 // opt_precomputed: if given, is the value of computeInfinityToBasicBoost(0) to avoid computing it twice
+// returns the value as boost, not as multiplier
 function computeInfinityToBasicBoost(state, timeweighted, opt_precomputed) {
-  if(timeweighted == 2) {
-    return Num.min(opt_precomputed == undefined ? computeInfinityToBasicBoost(state, 0) : opt_precomputed, computeInfinityToBasicBoost(state, 1));
+  if(timeweighted == 3) {
+    return Num.min(computeInfinityToBasicBoost(state, 0), computeInfinityToBasicBoost(state, 2));
   }
   if(timeweighted == 0) {
+    if(opt_precomputed != undefined) return opt_precomputed;
     var result = Num(0);
     for(var y = 0; y < state.numh3; y++) {
       for(var x = 0; x < state.numw3; x++) {
@@ -6854,10 +6877,29 @@ function computeInfinityToBasicBoost(state, timeweighted, opt_precomputed) {
     }
     return result;
   } else {
-    if(state.infinity_prodmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
-    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.infinity_prodmul_time); // most recent timespan, during which 'last' is active
-    var deltatime2 = Math.min(state.c_runtime, MAXINFTOBASICDELAY) - deltatime; // timespan before that, during which 'timeweighted' was active
-    return state.infinity_prodmul_weighted.mulr(deltatime2).add(state.infinity_prodmul_last.mulr(deltatime)).divr(deltatime + deltatime2);
+    if(state.infinity_prodboost_weighted.ltr(0)) return new Num(0); // not yet properly inited
+    var shift = (timeweighted == 2) ? state.infinity_prodboost_time_shift : 0;
+    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.infinity_prodboost_time + shift); // most recent timespan, during which 'last' is active
+    var deltatime2 = MAXINFTOBASICDELAY - deltatime; // timespan before that, during which 'timeweighted' was active
+    return state.infinity_prodboost_weighted.mulr(deltatime2).add(state.infinity_prodboost_last.mulr(deltatime)).divr(deltatime + deltatime2);
+  }
+}
+
+// Similar to computeInfinityToBasicBoost etc... above, but for infinity production itself
+// This one is not actually used to delay infinity's production in any way, but is used to compute a weighed average of past infinity production that is used to maybe prevent the delay of computeInfinityToBasicBoost etc... in some cases
+// The same convention of timeweighted as the above functions is implemented for consistency, however only values 0 and 1 are expected to be used.
+function computeWeightedInfProd(state, timeweighted) {
+  if(timeweighted == 2) {
+    // This is not actually used, but left for consistency with the other functions like computeInfinityToBasicBoost.
+    return Res.min(computeWeightedInfProd(state, 0), computeWeightedInfProd(state, 2));
+  }
+  if(timeweighted == 0) {
+    return state.infprod;
+  } else {
+    if(state.infinity_infprod_weighted == undefined) return new Num(0); // not yet properly inited
+    var deltatime = Math.min(MAXINFTOBASICDELAY, state.c_runtime - state.infinity_infprod_time); // most recent timespan, during which 'last' is active
+    var deltatime2 = MAXINFTOBASICDELAY - deltatime; // timespan before that, during which 'timeweighted' was active
+    return state.infinity_infprod_weighted.mulr(deltatime2).add(state.infinity_infprod_last.mulr(deltatime)).divr(deltatime + deltatime2);
   }
 }
 
@@ -6927,7 +6969,7 @@ function treeLevelTwigs(level, breakdown) {
 
   // fishes
   if(state.fishtypecount[FISHTYPE_EEL] || state.fish_twigsmul_weighted.neqr(1)) {
-    var mul = getFishMultiplier(FISHTYPE_EEL, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_EEL, state, 3);
     if(mul.neqr(1)) { // even if weighted has a value, mul may be 1 (= 0 bonus) due to having none of this fish after long time window this run
       var umul = getFishMultiplier(FISHTYPE_EEL, state, 0);
       res.twigs.mulInPlace(mul);
@@ -7524,12 +7566,13 @@ function challengeMaxLevel(challenge) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-var fernIdleTimeBegin = 30 * 60;
-// the next two variables are not the full charged up time you get, but the time it takes to charge up. the next two multipliers then determine the actual effective charged up time.
-var fernIdleTimeMaxPast = 6 * 3600; // resources from idle fern representing past gains
-var fernIdleTimeMaxFuture = fernIdleTimeMaxPast; // resources from idle fern representing future gains (based on current production, so actually current gains, but if e.g. weather activated it is those from hypothetical future with this weather all the time active). This is the regular fern behavior.
-var fernIdlePastMul = 0.5;
-var fernIdleFutureMul = 1 / 24;
+var fernIdleTimeBegin = 30 * 60; // amount of time after which the fern charges up for extra idle resources
+// resources from idle fern representing past gains. not the full charged up time you get, but the time it takes to charge up. the multiplier fernIdlePastMul then determines the actual effective charged up time.
+var fernIdleTimeMaxPast = 9 * 3600;
+// resources from idle fern representing future gains (based on current production, so actually current gains, but if e.g. weather activated it is those from hypothetical future with this weather all the time active). E.d. the same income as the regular fern behavior, but this one here is only if having the "slower ferns" choice upgrade
+var fernIdleTimeMaxFuture = fernIdleTimeMaxPast;
+var fernIdlePastMul = 0.5; // multiplier of the above time for the past gains of fern
+var fernIdleFutureMul = 1 / 24; // multiplier of the above time for the future gains of fern. Much smaller than the past gain one, the past gains themselves are usually smaller though
 
 
 function getFernWaitTime() {
@@ -8629,7 +8672,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   // goldfish
   if(result.infseeds.neqr(0) && (state.fishes[goldfish_0].unlocked)) {
-    var mul = getFishMultiplier(FISHTYPE_GOLDFISH, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_GOLDFISH, state, 3);
     var have_fish = mul.neqr(1);
     if(have_fish) result.infseeds.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[goldfish_0].cost.infspores.mulr(2));
@@ -8639,7 +8682,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
 
   // octopus
   if(result.infspores.neqr(0) && state.fishes[octopus_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_OCTOPUS, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_OCTOPUS, state, 3);
     var have_fish = mul.neqr(1);
     if(have_fish) result.infspores.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[octopus_0].cost.infspores.mulr(2));
@@ -8649,7 +8692,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   // puffer fish
   // for berries, but also for nuts, nuts behave just like berries in infinity field
   if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT) && state.fishes[puffer_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_PUFFER, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_PUFFER, state, 3);
     var have_fish = mul.neqr(1);
     if(have_fish) result.infseeds.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[puffer_0].cost.infspores.mulr(2));
@@ -8717,7 +8760,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
       // sea anemone through flower to mushrooms
       // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the flower multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
       if(state.fishes[anemone_0].unlocked) {
-        var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, 2);
+        var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, 3);
         var have_fish = mul.neqr(1);
         if(have_fish) result.mulInPlace(mul);
         var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
@@ -8730,7 +8773,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
       // leporinus through bees to mushrooms
       // NOTE: unlike for seeds, where these multipliers are indicated in the flower or bee, for spores it's indicated in the mushroom itself, the multiplier is not the same as what it is for seeds (it's less, and relative tier dependent)
       if(numbees && state.fishes[leporinus_0].unlocked) {
-        var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, 2);
+        var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, 3);
         var have_fish = mul.neqr(1);
         var beemul_before = beeonlymul;
         var beemul_after = (beeonlymul.subr(1)).mul(mul).addr(1);
@@ -8807,7 +8850,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   }
 
   if(this.type == CROPTYPE_BRASSICA && state.fishes[shrimp_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_SHRIMP, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_SHRIMP, state, 3);
     var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[shrimp_0].cost.infspores.mulr(2));
@@ -8865,7 +8908,7 @@ Crop3.prototype.getInfBoost = function(f, breakdown, opt_expected) {
 
   // sea anemone to flower
   if(this.type == CROPTYPE_FLOWER && state.fishes[anemone_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_ANEMONE, state, 3);
     var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[anemone_0].cost.infspores.mulr(2));
@@ -8874,7 +8917,7 @@ Crop3.prototype.getInfBoost = function(f, breakdown, opt_expected) {
 
   // leporinus to bee
   if(this.type == CROPTYPE_BEE && state.fishes[leporinus_0].unlocked) {
-    var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_LEPORINUS, state, 3);
     var have_fish = mul.neqr(1);
     if(have_fish) result.mulInPlace(mul);
     var give_warning = !have_fish && state.g_res.infspores.gt(fishes[leporinus_0].cost.infspores.mulr(2));
@@ -8883,7 +8926,7 @@ Crop3.prototype.getInfBoost = function(f, breakdown, opt_expected) {
 
   // koi to runestone
   if(this.type == CROPTYPE_RUNESTONE && state.fishtypecount[FISHTYPE_KOI]) {
-    var mul = getFishMultiplier(FISHTYPE_KOI, state, 2);
+    var mul = getFishMultiplier(FISHTYPE_KOI, state, 3);
     if(mul.neqr(1)) {
       result.mulInPlace(mul);
       if(breakdown) {
@@ -8927,7 +8970,7 @@ Crop3.prototype.getBasicBoost = function(f, breakdown, opt_expected) {
 
   // oranda fish: multiplier to basic field bonus for the non-runestone part of the bonus
   if(this.type != CROPTYPE_RUNESTONE && state.fishtypecount[FISHTYPE_ORANDA]) {
-    var oranda_mul = getFishMultiplier(FISHTYPE_ORANDA, state, 2);
+    var oranda_mul = getFishMultiplier(FISHTYPE_ORANDA, state, 3);
     if(oranda_mul.neqr(1)) {
       var mul = oranda_mul.add(runestone_mul).subr(1).div(runestone_mul); // the oranda is additive to runestones, NOT multiplicative with it. So do as if a bonus that's the sum of runestone and oranda is given, and then divide through the original runestone bonus from above to only have the oranda effect here
       result.mulInPlace(mul);
@@ -9093,6 +9136,7 @@ var mush3_6 = registerMushroom3('rhodium champignon', 6, Res({infseeds:5e30}), R
 var mush3_7 = registerMushroom3('amethyst champignon', 7, Res({infseeds:5e36}), Res({infspores:40000}), Num(10), default_crop3_growtime, metalifyPlantImages(champignon, metalheader7));
 var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}), Res({infspores:30e6}), Num(40), default_crop3_growtime, metalifyPlantImages(champignon, metalheader8, [2], [1.5]));
 var mush3_9 = registerMushroom3('emerald champignon', 9, Res({infseeds:20e51}), Res({infspores:25e9}), Num(160), default_crop3_growtime, metalifyPlantImages(champignon, metalheader9));
+// NOTE: the bonus to basic field of this one and the previous one is actually too high and that of the flower in comparison too low. Let's not change this yet for now, but for next tiers make the flower higher than the mushroom again, and the lotus even higher.
 var mush3_10 = registerMushroom3('ruby champignon', 10, Res({infseeds:500e60}), Res({infspores:50e12}), Num(1000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader10, [4, 10], [0.9, 1.02]));
 
 crop3_register_id = 900;
@@ -9143,7 +9187,7 @@ var nut3_10 = registerNut3('ruby acorn', 10, Res({infseeds:500e66}), Res({infsee
 
 crop3_register_id = 2700;
 var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
-var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77777), Num(777.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader10, [4, 10], [0.9, 1.02]));
+var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77777), Num(1000), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader10, [4, 10], [0.9, 1.02]));
 
 function haveInfinityField() {
   return state.upgrades2[upgrade2_infinity_field].count;

@@ -445,7 +445,7 @@ function createFruitFuseDialog(f, parentdialogrecreatefun) {
       var flex = new Flex(scrollFlex, [0.01, 0, 0], [0, 0, y], [0.99, 0, 0], [0, 0, y + s]);
       x += s;
       flex.div.innerHTML = message[0] + '<br><br><br><br>&nbsp;'; // the br are to maintain scroll position if you were scrolled down in a fuse with more text
-      flex.div.style.color = '#f00';
+      flex.div.style.color = message[1] ? '#f00' : '#0a0' ;
       y += s * 1.1;
     }
 

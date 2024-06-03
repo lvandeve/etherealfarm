@@ -767,12 +767,18 @@ function beginNextRun(opt_challenge) {
   state.fish_resinmul_weighted = Num(-1);
   state.fish_resinmul_last = Num(0);
   state.fish_resinmul_time = 0;
+  state.fish_resinmul_time_shift = 0;
   state.fish_twigsmul_weighted = Num(-1);
   state.fish_twigsmul_last = Num(0);
   state.fish_twigsmul_time = 0;
-  state.infinity_prodmul_weighted = Num(-1);
-  state.infinity_prodmul_last = Num(0);
-  state.infinity_prodmul_time = 0;
+  state.fish_twigsmul_time_shift = 0;
+  state.infinity_prodboost_weighted = Num(-1);
+  state.infinity_prodboost_last = Num(0);
+  state.infinity_prodboost_time = 0;
+  state.infinity_prodboost_time_shift = 0;
+  state.infinity_infprod_weighted = Res();
+  state.infinity_infprod_last = Res();
+  state.infinity_infprod_time = -Infinity;
 
   state.res.seeds = Num(0);
   state.res.spores = Num(0);
@@ -2076,6 +2082,21 @@ function precomputeField() {
   precomputeField_(prefield, 0);
 }
 
+
+function computeField3Income() {
+  var result = new Res();
+  for(var y = 0; y < state.numh3; y++) {
+    for(var x = 0; x < state.numw3; x++) {
+      var f = state.field3[y][x];
+      if(f.hasRealCrop()) {
+        var c = f.getCrop();
+        result.addInPlace(c.getProd(f));
+      }
+    }
+  }
+  return result;
+}
+
 // xor two 48-bit numbers, given that javascript can only do this with 31-bit numbers (plus sign) normally
 function xor48(x, y) {
   var lowx = x % 16777216;
@@ -2251,6 +2272,15 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       fruit.levels.push(level);
       fruit.charge.push(0);
     }
+
+    // sort the abilities alphabetically by name (before the season ability below is added to the end)
+    fruit.abilities = fruit.abilities.sort(function(a, b) {
+      a = getFruitAbilityName(a);
+      b = getFruitAbilityName(b);
+      if(a < b) return -1;
+      if(a > b) return 1;
+      return 0;
+    });
 
     if(state.g_numfruits >= 4) {
       var prob = 0.75;
@@ -5474,12 +5504,15 @@ var update = function(opt_ignorePause) {
       if(state.res.infseeds.ltr(10.0000000001) && haveInfinityField() && state.numcropfields3 == 0) {
         actualgain.addInPlace(Res({infseeds:(10.0000000001 - state.res.infseeds)}));
       }
+      // Production of infinity field (already precomputed)
+      gain.addInPlace(state.infprod);
+      actualgain.addInPlace(state.infprod.mulr(d));
+      // Handle growth of infinity crops
       for(var y = 0; y < state.numh3; y++) {
         for(var x = 0; x < state.numw3; x++) {
           var f = state.field3[y][x];
           if(f.hasRealCrop()) {
             var c = f.getCrop();
-            var prod = c.getProd(f);
             if(c.type == CROPTYPE_BRASSICA) {
               state.crops3[c.index].had = true;
               var croptime = c.getPlantTime();
@@ -5502,8 +5535,6 @@ var update = function(opt_ignorePause) {
                 state.g_numfullgrown3++;
               }
             }
-            gain.addInPlace(prod);
-            actualgain.addInPlace(prod.mulr(d));
           }
         }
       }

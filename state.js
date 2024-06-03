@@ -672,18 +672,27 @@ function State() {
   }
 
   // minimum multiplier to resin/twigs from fishes seen during this run, which is kept track of and used as actual multiplier to prevent fish-swapping strategies during the game
-  this.fish_resinmul_weighted = Num(-1); // time-weighted
-  this.fish_resinmul_last = Num(0); // last computed fishresin, at fish_resinmul_time, as time since start of run
-  this.fish_resinmul_time = 0; // time since last fish_resinmul_weighted change
-  this.fish_twigsmul_weighted = Num(-1); // time-weighted
-  this.fish_twigsmul_last = Num(0); // last computed fishtwigs, at fish_twigsmul_time, as time since start of run
-  this.fish_twigsmul_time = 0; // time since last fish_twigsmul_weighted change
+  this.fish_resinmul_weighted = Num(-1); // time-weighted average
+  this.fish_resinmul_last = Num(0); // last computed fishresin, at fish_resinmul_time
+  this.fish_resinmul_time = 0; // time since last fish_resinmul_weighted change, as time since start of run (can also be negative)
+  this.fish_resinmul_time_shift = 0;
+
+  this.fish_twigsmul_weighted = Num(-1); // time-weighted average
+  this.fish_twigsmul_last = Num(0); // last computed fishtwigs, at fish_twigsmul_time
+  this.fish_twigsmul_time = 0; // time since last fish_twigsmul_weighted change, as time since start of run (can also be negative)
+  this.fish_twigsmul_time_shift = 0;
 
   // minimum multiplier for infinity-field-to-basic-field effects (including from pond), which is kept track of and used as actual multiplier to prevent fish-swapping and infinity crop-swapping strategies during the game (which is intended as a good thing, less manual work needed)
   // infinity field to basic field production multiplier
-  this.infinity_prodmul_weighted = Num(-1); // time-weighted
-  this.infinity_prodmul_last = Num(0); // last computed bonus value, at infinity_prodmul_time, as time since start of run
-  this.infinity_prodmul_time = 0; // time since last infinity_prodmul_weighted change
+  this.infinity_prodboost_weighted = Num(-1); // time-weighted average
+  this.infinity_prodboost_last = Num(0); // last computed bonus value, at infinity_prodboost_time
+  this.infinity_prodboost_time = 0; // time since last infinity_prodboost_weighted change, as time since start of run (can also be negative)
+  this.infinity_prodboost_time_shift = 0;
+
+  // Computed in a similar way as infinity_prodboost_weighted etc... above, however these are actually used for deciding if the time delay from the above ones is used at all or not, and not for delaying any actual infinity-seeds / infinity-spores production itself
+  this.infinity_infprod_weighted = Res();
+  this.infinity_infprod_last = Res();
+  this.infinity_infprod_time = -Infinity;
 
 
   this.squirrel_evolution = 0;
@@ -1248,6 +1257,14 @@ function State() {
   // If true, have some upgrade visible that you've never done before
   // derived stat, not to be saved.
   this.neverhadupgradeunlocked = false;
+
+  // current production of the infinity field.
+  // derived stat, not to be saved.
+  this.infprod = new Res();
+  // used for the computations of infinity_prodboost_weighted etc... This is different from state.infinity_infprod_weighted: state.infprod_weighted is the one to actually use for the computation of the actual time delayed ones
+  // that is to say, infprod_weighted is the actual weighted average, infinity_infprod_weighted is only used to compute it
+  // derived stat, not to be saved.
+  this.infprod_weighted = new Res();
 }
 
 // this.squirrel_evolution must already be set to the intended evolution
@@ -1946,40 +1963,135 @@ function computeDerived(state) {
     if(b.numw && b.numh) state.numnonemptyblueprints++;
   }
 
-  // fish effects
-  var current_fishresin = getFishMultiplier(FISHTYPE_TANG, state, 0);
-  if(state.fish_resinmul_weighted.eqr(-1)) {
-    state.fish_resinmul_weighted = current_fishresin;
-    state.fish_resinmul_last = current_fishresin;
-    state.fish_resinmul_time = state.c_runtime;
-  } else if(current_fishresin.neq(state.fish_resinmul_last)) {
-    state.fish_resinmul_weighted = getFishMultiplier(FISHTYPE_TANG, state, 1); // this recomputes the weighed average
-    state.fish_resinmul_last = current_fishresin;
-    state.fish_resinmul_time = state.c_runtime;
+  if(haveInfinityField()) {
+    // This one must be computed very close to the end of computeDerived, since it depends on many of the above-computed things (such as the fishes)
+    state.infprod = computeField3Income();
+
+    var current_infprod = computeWeightedInfProd(state, 0, state.infprod);
+    if(state.infinity_infprod_time == -Infinity) {
+      // uninited
+      state.infinity_infprod_weighted = current_infprod;
+      state.infinity_infprod_last = current_infprod;
+      state.infinity_infprod_time = state.c_runtime;
+    } else if(current_infprod.neq(state.infinity_infprod_last)) {
+      // changed
+      state.infinity_infprod_weighted = computeWeightedInfProd(state, 1); // this recomputes the weighed average
+      state.infinity_infprod_last = current_infprod;
+      // no getInfinityToBasicDelayShift used here since in fact infinity_infprod_weighted is used to compute getInfinityToBasicDelayShift
+      state.infinity_infprod_time = state.c_runtime;
+    }
+    state.infprod_weighted = computeWeightedInfProd(state, 1);
+
+    var any_changed = false;
+
+
+    // fish effects
+    var current_fishresin = getFishMultiplier(FISHTYPE_TANG, state, 0);
+    if(state.fish_resinmul_weighted.eqr(-1)) {
+      // uninited
+      state.fish_resinmul_weighted = current_fishresin;
+      state.fish_resinmul_last = current_fishresin;
+      state.fish_resinmul_time = state.c_runtime;
+      state.fish_resinmul_time_shift = 0;
+    } else if(current_fishresin.neq(state.fish_resinmul_last)) {
+      // changed
+      state.fish_resinmul_weighted = getFishMultiplier(FISHTYPE_TANG, state, 1); // this recomputes the weighed average
+      state.fish_resinmul_last = current_fishresin;
+      state.fish_resinmul_time = state.c_runtime;
+      state.fish_resinmul_time_shift = getInfinityToBasicDelayShift();
+      any_changed = true;
+    }
+
+    var current_fishtwigs = getFishMultiplier(FISHTYPE_EEL, state, 0);
+    if(state.fish_twigsmul_weighted.eqr(-1)) {
+      // uninited
+      state.fish_twigsmul_weighted = current_fishtwigs;
+      state.fish_twigsmul_last = current_fishtwigs;
+      state.fish_twigsmul_time = state.c_runtime;
+      state.fish_twigsmul_time_shift = 0;
+    } else if(current_fishtwigs.neq(state.fish_twigsmul_last)) {
+      // changed
+      state.fish_twigsmul_weighted = getFishMultiplier(FISHTYPE_EEL, state, 1); // this recomputes the weighed average
+      state.fish_twigsmul_last = current_fishtwigs;
+      state.fish_twigsmul_time = state.c_runtime;
+      state.fish_twigsmul_time_shift = getInfinityToBasicDelayShift();
+      any_changed = true;
+    }
+
+    // similar to the per-fish effects but for the entire infinity field to basic field boost at once
+    var current_infinityboost = computeInfinityToBasicBoost(state, 0);
+    if(state.infinity_prodboost_weighted.eqr(-1)) {
+      // uninited
+      state.infinity_prodboost_weighted = current_infinityboost;
+      state.infinity_prodboost_last = current_infinityboost;
+      state.infinity_prodboost_time = state.c_runtime;
+      state.infinity_prodboost_time_shift = 0;
+    } else if(current_infinityboost.neq(state.infinity_prodboost_last)) {
+      // changed
+      state.infinity_prodboost_weighted = computeInfinityToBasicBoost(state, 1); // this recomputes the weighed average
+      state.infinity_prodboost_last = current_infinityboost;
+      state.infinity_prodboost_time = state.c_runtime;
+      state.infinity_prodboost_time_shift = getInfinityToBasicDelayShift();
+      any_changed = true;
+    }
+    state.infinityboost = computeInfinityToBasicBoost(state, 3, current_infinityboost);
+    state.expected_infinityboost = current_infinityboost;
+
+    // the following fixes the following scenarios:
+    // scenario A:
+    // - replace leporinus (infinity bee bonus fish) with red oranda (basic field prod bonus) ==> you do get the 3h time delay, because inf prod reduced while increasing the basic field bonus. This is ok, no bug in this scenario
+    // scenario B:
+    // - replace eel (twigs bonus) with red oranda (basic field prod bonus) ==> gives full bonus without delay since infinity production not decreased (only twigs bonus decreased), this is ok
+    // - next, replace leporinus (infinity bee bonus fish) with eel (twigs bonus) ==> it still gives the full red oranda bonus. The fishes you have at this point are exactly the same as in scenario A, yet now we don't have the 3h delay. This is the bug that we're fixing here.
+    // The cause of the bug is that the change in infinity field production was not detected at the same time as changing the basic field boost ("prodboost").
+    // The solution is to handle the 'getInfinityToBasicDelayShift' of all of them when any of the three kinds of things (resin, twigs, prodboost) changes
+    if(any_changed) {
+      var shift = getInfinityToBasicDelayShift();
+      state.fish_resinmul_time_shift = Math.min(shift, state.fish_resinmul_time_shift);
+      state.fish_twigsmul_time_shift = Math.min(shift, state.fish_twigsmul_time_shift);
+      state.infinity_prodboost_time_shift = Math.min(shift, state.infinity_prodboost_time_shift);
+    }
   }
-  var current_fishtwigs = getFishMultiplier(FISHTYPE_EEL, state, 0);
-  if(state.fish_twigsmul_weighted.eqr(-1)) {
-    state.fish_twigsmul_weighted = current_fishtwigs;
-    state.fish_twigsmul_last = current_fishtwigs;
-    state.fish_twigsmul_time = state.c_runtime;
-  } else if(current_fishtwigs.neq(state.fish_twigsmul_last)) {
-    state.fish_twigsmul_weighted = getFishMultiplier(FISHTYPE_EEL, state, 1); // this recomputes the weighed average
-    state.fish_twigsmul_last = current_fishtwigs;
-    state.fish_twigsmul_time = state.c_runtime;
+}
+
+// makes a single number from infinity seeds and infinity spores for the delay function below
+// Why this exists / the goal of this:
+// Without this function, we'd just test infseeds and infspores separately: if any of them goes down, do the delay penalty
+// However, situations where infspores income goes down but infseeds income goes up, should still count as ok
+// The sqrt of the infspores is taken to make them matter less
+function combineInfSeedsSporesForDelayMetric(res) {
+  return res.infseeds.addr(1).mul(Num.sqrt(res.infspores).addr(1));
+}
+
+// returns a reduction of the time delay from the weighed time delayed infinity effects. Returns 0 if no delay (full effect must be applied), MAXINFTOBASICDELAY if no delay must be applied, or something in-between if some delay but reduced
+// this is used to make the delay shorter (or not present at all) in some cases
+function getInfinityToBasicDelayShift() {
+  // this amount is computed as 1 if the full infinity delay amount must be applied, or smaller (in range 0..1) if there should be less or no (0) delay applied (infinity boost applies faster or immediately to basic field)
+  var amount = 1;
+
+  if(state.c_runtime < 300) {
+    amount = 0;
+  } else if(state.c_runtime < 600) {
+    amount = (state.c_runtime - 300) / 300;
   }
-  // similar to the per-fish effects but for the entire infinity field to basic field boost at once
-  var current_infinityboost = computeInfinityToBasicBoost(state, 0);
-  if(state.infinity_prodmul_weighted.eqr(-1)) {
-    state.infinity_prodmul_weighted = current_infinityboost;
-    state.infinity_prodmul_last = current_infinityboost;
-    state.infinity_prodmul_time = state.c_runtime;
-  } else if(current_infinityboost.neq(state.infinity_prodmul_last)) {
-    state.infinity_prodmul_weighted = computeInfinityToBasicBoost(state, 1); // this recomputes the weighed average
-    state.infinity_prodmul_last = current_infinityboost;
-    state.infinity_prodmul_time = state.c_runtime;
+
+  /*var fernDuration = state.time - state.lastFernTime;
+  if(state.fern && fernDuration > 9 * 3600) {
+    amount = Math.max(0, (12 * 3600 - fernDuration) / (3 * 3600));
+  }*/
+
+  //if(after.lt(before))
+
+  var infprod = combineInfSeedsSporesForDelayMetric(state.infprod);
+  var infprod_weighted = combineInfSeedsSporesForDelayMetric(state.infprod_weighted);
+  if(infprod.ge(infprod_weighted.mulr(0.99))) {
+    amount = 0;
   }
-  state.infinityboost = computeInfinityToBasicBoost(state, 2, current_infinityboost);
-  state.expected_infinityboost = current_infinityboost;
+
+  if(amount > 1) amount = 1;
+  if(amount < 0) amount = 0;
+
+  return MAXINFTOBASICDELAY * (1 - amount);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2477,15 +2589,17 @@ function numAutoActionsUnlocked(opt_state) {
   var s = opt_state || state;
   if(!autoActionUnlocked(opt_state)) return 0;
   // stages of the wither challenge that give extra auto-actions
-  if(s.challenges[challenge_wither].completed >= 7) return 4; // this is the one that can only be used at start of run, not a full fledged one
-  if(s.challenges[challenge_wither].completed >= 5) return 3;
-  if(s.challenges[challenge_wither].completed >= 3) return 2;
-  return 1;
+  if(s.challenges[challenge_wither].completed >= 7) return 7;
+  if(s.challenges[challenge_wither].completed >= 6) return 6;
+  if(s.challenges[challenge_wither].completed >= 5) return 5;
+  if(s.challenges[challenge_wither].completed >= 3) return 4;
+  return 3;
 }
 
 function haveBeginOfRunAutoAction(opt_state) {
-  var s = opt_state || state;
-  return s.challenges[challenge_wither].completed >= 7;
+  return true;
+  //var s = opt_state || state;
+  //return s.challenges[challenge_wither].completed >= 3;
 }
 
 function autoActionEnabled() {
@@ -2507,7 +2621,7 @@ function autoActionExtraUnlocked() {
 
 // whether more extra auto-actions, that is ethereal blueprint, are unlocked
 function autoActionExtra2Unlocked() {
-  return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 6;
+  return true;//autoActionUnlocked() && state.challenges[challenge_wither].completed >= 6;
 }
 
 function autoPrestigeEnabled() {

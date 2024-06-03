@@ -30,6 +30,21 @@ function getChangeLog() {
     }
   }
 
+  text += '0.12.5 QoL balancing (2024-06-03)';
+  text += '<br/>• Brassica upgrades now add +35% instead of +20% lifetime duration.';
+  // the 'effectively half' is due to the 0.5 multiplier of this fern bonus.
+  text += '<br/>• Increased the maximum fern charge time of the "slower ferns" choice upgrade from 6 (effectively 3) to 9 (effectively 4.5) hours.';
+  text += '<br/>• For auto-actions:';
+  text += '<br/>&nbsp;&nbsp;◦ You now get three instead of only one auto-action available from the beginning after completing the wither challenge (one of the three is the special start-of-run-only one), and up to 7 in total later.';
+  text += '<br/>&nbsp;&nbsp;◦ Automating ethereal blueprints with auto-actions is now available from the beginning when completing the wither challenge rather than as a later wither challenge reward.';
+  text += '<br/>• For infinity field time delay:';
+  text += '<br/>&nbsp;&nbsp;◦  Infinity time delay no longer happens when changing the infinity field or fishes in a way that doesn\'t decrease infintiy seeds / spores production.';
+  text += '<br/>&nbsp;&nbsp;◦  Infinity time delay also no longer happens when changing the infinity field or fishes during the first few minutes of a run.';
+  text += '<br/>&nbsp;&nbsp;◦  The remaining time of the infinity time delay for the basic field production boost, if present, is now shown in the infinity tree tooltip.';
+  text += '<br/>• Fruit abilities are now initially sorted alphabetically for newly dropped fruits rather than random order. Existing fruits are not affected and the order can still be changed manually.';
+  text += '<br/>• Bugfixes.';
+  text += '<br/><br/>';
+
   text += '0.12.4 (2024-05-15)';
   text += '<br/>• Added "prestiged grow speed" ethereal upgrade for ethereal tree level 27.';
   text += '<br/>• Added two new fishes.'; // black puffer and red banded leporinus

@@ -1039,12 +1039,18 @@ function encState(state, opt_raw_only) {
   processNum(state.fish_resinmul_weighted);
   processNum(state.fish_resinmul_last);
   processTime(state.fish_resinmul_time);
+  processTime(state.fish_resinmul_time_shift);
   processNum(state.fish_twigsmul_weighted);
   processNum(state.fish_twigsmul_last);
   processTime(state.fish_twigsmul_time);
-  processNum(state.infinity_prodmul_weighted);
-  processNum(state.infinity_prodmul_last);
-  processTime(state.infinity_prodmul_time);
+  processTime(state.fish_twigsmul_time_shift);
+  processNum(state.infinity_prodboost_weighted);
+  processNum(state.infinity_prodboost_last);
+  processTime(state.infinity_prodboost_time);
+  processTime(state.infinity_prodboost_time_shift);
+  processRes(state.infinity_infprod_weighted);
+  processRes(state.infinity_infprod_last);
+  processTime(state.infinity_infprod_time);
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -2736,14 +2742,22 @@ function decState(s) {
     state.fish_resinmul_weighted = processNum();
     state.fish_resinmul_last = processNum();
     state.fish_resinmul_time = processTime();
+    if(save_version >= 262144*2+64*12+5) state.fish_resinmul_time_shift = processTime();
     state.fish_twigsmul_weighted = processNum();
     state.fish_twigsmul_last = processNum();
     state.fish_twigsmul_time = processTime();
+    if(save_version >= 262144*2+64*12+5) state.fish_twigsmul_time_shift = processTime();
   }
   if(save_version >= 262144*2+64*12+4) {
-    state.infinity_prodmul_weighted = processNum();
-    state.infinity_prodmul_last = processNum();
-    state.infinity_prodmul_time = processTime();
+    state.infinity_prodboost_weighted = processNum();
+    state.infinity_prodboost_last = processNum();
+    state.infinity_prodboost_time = processTime();
+    if(save_version >= 262144*2+64*12+5) state.infinity_prodboost_time_shift = processTime();
+  }
+  if(save_version >= 262144*2+64*12+5) {
+    state.infinity_infprod_weighted = processRes();
+    state.infinity_infprod_last = processRes();
+    state.infinity_infprod_time = processTime();
   }
   if(error) return err(4);
 

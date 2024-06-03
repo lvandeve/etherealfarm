@@ -702,7 +702,7 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
     onclose:closefun,
     scrollable:true,
     title:('Configure automaton action ' + visual_index),
-    help:'Here you can select one or more automaton actions that occur when the condition is triggered'
+    help:'Here you can enable or disable one or more automaton actions that occur when the condition is triggered, and choose their parameters.<br><br> - Auto-blueprint: override the field with the chosen blueprint.<br> - Ethereal blueprint: override the ethereal field with the chosen blueprint.<br> - Auto-fruit: activate the chosen fruit.<br> - Other actions may unlock later.'
   });
   var scrollFlex = dialog.content;
 
@@ -962,7 +962,7 @@ function showConfigureAutoActionDialog() {
     }
 
 
-    flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
+    flex = new Flex(scrollFlex, x, y, x + w0 * 0.98, y + 0.07);
     styleButton(flex.div);
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Do now';

@@ -332,7 +332,7 @@ function getFishInfoHTML(f, c, opt_detailed) {
 
   var total = getFishMultiplier(c.type, state, 0);
   if(total.neqr(1)) {
-    var current = getFishMultiplier(c.type, state, 2);
+    var current = getFishMultiplier(c.type, state, 3);
     var typename = getFishTypeName(c.type);
     result += '<br>';
     result += '<br>Total bonus for all ' + typename + ': ' + total.subr(1).toPercentString();
@@ -816,7 +816,14 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
       if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
 
       var cost = c.getCost();
-      result += '<br><br>Placing cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+
+      if(opt_replace) {
+        var replacementcost = cost.sub(opt_recoup);
+        result += '<br><br>Cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+        result += '<br>Replacement cost: ' + replacementcost.toString() + ' (' + getCostAffordTimer(replacementcost) + ')';
+      } else {
+        result += '<br><br>Placing cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+      }
 
       result += '.';
       return result;

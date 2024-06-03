@@ -20,8 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-// resource gain per second, mainly used for display purposes, also used as temporary variable inside update()
+// resource gain per second, mainly used for display purposes, also used as temporary variable inside update() but shouldn't be relied on for any non-display purpose outside of that
 // also used for displaying estimated time remaining of upgrade, ...
+// can also get updated, through updateResourceUI, while the game is paused
 var gain = Res();
 
 var gain_pos = Res();
@@ -154,10 +155,10 @@ var lastExpectedGainNumGrowing = -1;
 
 // a global breakdown into hypothetical, actual, positive and negative production/consumption
 function prodBreakdownHypo() {
-  // even though update() computes gain, re-compute it here now (for resources from basic field at least), because it may be slightly different if watercress just disappeared
+  // even though update() computes gain, re-compute seeds, spores and nuts from it it here now (for resources from basic field at least), because it may be slightly different if watercress just disappeared
   // that matters, because if it's out of sync with gain_hyp, it may be displaying the gray parenthesis different one while it's unneeded
-  var origgain = gain.clone();
-  gain = Res();
+
+  var newgain = Res(); // copy to ensure we don't remove any unrelated resources (like infseeds and infspores) from the gain
   gain_pos = Res();
   gain_neg = Res();
   gain_hyp = Res();
@@ -169,7 +170,7 @@ function prodBreakdownHypo() {
       var f = state.field[y][x];
       var p = prefield[y][x];
       if(f.hasCrop()) {
-        gain.addInPlace(p.prod2);
+        newgain.addInPlace(p.prod2);
         gain_pos.addInPlace(p.prod3b.getPositive());
         gain_neg.addInPlace(p.prod3b.getNegative());
         gain_hyp.addInPlace(p.prod0b);
@@ -179,8 +180,9 @@ function prodBreakdownHypo() {
     }
   }
 
-  gain.infseeds = origgain.infseeds;
-  gain.infspores = origgain.infspores;
+  gain.seeds = newgain.seeds;
+  gain.spores = newgain.spores;
+  gain.nuts = newgain.nuts;
 
   if((util.getTime() - lastExpectedGainUpdateTime > 5 && state.numgrowing > 0) || state.numgrowing != lastExpectedGainNumGrowing) {
     // Computed for UI display only: the expected gain if all crops would be fullgrown
@@ -218,7 +220,7 @@ function getResourceDetails(index) {
   var res = state.res.atIndex(index);
   var upcoming;
   var upcoming_breakdown;
-  var special = (index == 2 || index == 3 || index == 7); // if true, is resource that doesn't have income/s stat
+  var special = (index == 2 || index == 3 || index == 6 || index == 7); // if true, is resource that doesn't have income/s stat
   if(index == 2) {
     // resin
     upcoming = getUpcomingResinIncludingFerns();
@@ -345,7 +347,8 @@ function getResourceDetails(index) {
   } else {
     var text = '<b>' + upper(name) + '</b><br/><br/>';
     text += 'Current amount: ' + res.toString() + '<br/>';
-    if(index == 5) { // infinity seeds
+    if(index == 5) {
+      // infinity seeds
       var infield = computeField3InfinitySeeds();
       var total = infield[0].add(state.res.infseeds);
       text += 'In field: ' + infield[0].toString() + ' (brassica: ' + infield[1].toString() + ')<br>';
@@ -354,7 +357,8 @@ function getResourceDetails(index) {
       text += '<br>';
       text += 'Total earned ever: ' + state.g_res.infseeds.toString() + '<br>'; // this can be more than total because some seeds are spent on brassicas that wither
     }
-    if(index == 8) { // infinity spores
+    if(index == 8) {
+      // infinity spores
       var inpond = computePondInfinitySpores();
       text += 'In pond: ' + inpond.toString() + '<br>';
       text += 'Total (pond + current): ' + inpond.add(state.res.infspores).toString() + '<br>';
@@ -384,6 +388,7 @@ function getResourceDetails(index) {
     if(index == 1) text += 'Spores aren\'t used for crops but will automatically level up the tree, which increases the tree progress<br><br>';
 
     if(index == 4) {
+      // nuts
       text += 'Highest ever had: ' + state.g_max_res.atIndex(index).toString();
       text += '<br><br>';
       text += 'Nuts are used for squirrel upgrades, which you can access in the \'squirrel\' tab';
@@ -422,7 +427,8 @@ function getResourceDetails(index) {
         text += '• To consumers: ' + (res_gain_hyp_pos.sub(res_gain_hyp)).toString() + '/s (= what mushrooms want to consume if enough seed production available)<br/>';
         text += '<br/><br/>';
       }
-    } else if(index == 1) { // spores
+    } else if(index == 1) {
+      // spores
       if(state.challenge == challenge_towerdefense) {
         var td = state.towerdef;
         text += 'Tower Defense Income:';
@@ -442,7 +448,8 @@ function getResourceDetails(index) {
         text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s <br/>';
       }
       text += '<br/>';
-    } else { // other non-special (= with continuous preoduction/s) resource
+    } else {
+      // other non-special (= with continuous preoduction/s) resource
       text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s';
       if(index == 5 || index == 8 || (res_gain.neqr(0) && res_gain.ltr(0.1) && res_gain.gtr(-0.1))) text += ' (' + res_gain.mulr(3600).toString() + '/h)';
       text += '<br/><br/>';
@@ -581,6 +588,11 @@ function showResource(i, index, highlight) {
     text3 = '(+' + upcoming.toString() + ')';
     text4 = hr.toString() + '/hr';
     label = text1 + ' ' + text2 + ' (' + text3 + ', ' + text4 + ')';
+  } else if(index == 6) {
+    // 6=amber
+    text1 = name;
+    text2 = res.toString();
+    label = text1 + ' ' + text2;
   } else if(index == 7) {
     // 7=essence
     text1 = name;
@@ -933,6 +945,9 @@ function updateResourceUI() {
 
 
   prodBreakdownHypo();
+  // these are usually already set to these values, but not when loading the game in paused state while we still want to display the infinity gain
+  gain.infseeds = state.infprod.infseeds;
+  gain.infspores = state.infprod.infspores;
 
   var show_infseeds = haveInfinityField();
   var show_infspores = haveInfinityField() && state.res.infspores.gtr(0);

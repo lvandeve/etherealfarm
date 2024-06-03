@@ -142,7 +142,15 @@ function shouldShowSidePanel() {
 
 
 function updateRightPane() {
-  var automatonState = (automatonEnabled() ? 1 : 0) | (autoUpgradesEnabled() ? 2 : 0) | (autoPlantEnabled() ? 4 : 0) | (autoUpgradesUnlocked() ? 8 : 0) | (autoPlantUnlocked() ? 16 : 0) | (autoUnlockEnabled() ? 32 : 0) | (autoPrestigeEnabled() ? 64 : 0) | (autoActionEnabled() ? 128 : 0);
+  var automatonState = (automatonEnabled() ? 1 : 0) |
+                       (autoUpgradesEnabled() ? 2 : 0) |
+                       (autoPlantEnabled() ? 4 : 0) |
+                       (autoUpgradesUnlocked() ? 8 : 0) |
+                       (autoPlantUnlocked() ? 16 : 0) |
+                       (autoUnlockEnabled() ? 32 : 0) |
+                       (autoPrestigeEnabled() ? 64 : 0) |
+                       (autoActionUnlocked() ? 128 : 0) |
+                       (autoActionEnabled() ? 256 : 0);
   var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
   rightPanelPrevAutomationState = automatonState;
 

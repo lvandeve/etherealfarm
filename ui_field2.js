@@ -48,7 +48,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     if(typeof effect == 'function') effect = c.effect_description_long();
     result += 'Effect: ' + effect;
   } else if(c.effect_description_short) {
-    result += 'Effect: ' + c.effect_description_short;
+    var effect = c.effect_description_short;
+    if(typeof effect == 'function') effect = c.effect_description_short();
+    result += 'Effect: ' + effect;
   }
 
   if(c.index == mistletoe2_0) {

@@ -404,17 +404,23 @@ function field3CellTooltipFun(x, y, div) {
     return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
   } else if(f.index == FIELD_POND) {
     var text = 'Infinity pond';
-    if(state.infinityboost.gtr(0)) {
+    if(state.infinityboost.gtr(0) || state.numfishes) {
       text += '<br><br>';
       text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
-      if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (after time-weighting: ' + state.expected_infinityboost.toPercentString() + ')';
+      //if(state.expected_infinityboost.mulr(0.999).gt(state.infinityboost)) {
+      if(state.expected_infinityboost.neq(state.infinityboost)) {
+        var time_remaining = MAXINFTOBASICDELAY - (state.c_runtime - state.infinity_prodboost_time + state.infinity_prodboost_time_shift);
+        text += '. After time-weighting (⏳): ' + state.expected_infinityboost.toPercentString();
+        text += ', ' + util.formatDuration(time_remaining, true);
+      }
 
       if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
     }
     if(someInfinityEffectIsTimeWeighted(1)) {
       text += '<br><br> Some fish effects are currently time-weighted (⏳) due to recently changing the fishes.';
     } else if(someInfinityEffectIsTimeWeighted(2)) {
-      text += '<br><br> The production boost to basic field is currently time-weighted (⏳) due to recently increasing it.';
+      // Disabled, already said in the 'After time-weighting...' above.
+      //text += '<br><br> The production boost to basic field is currently time-weighted (⏳) due to recently increasing it.';
     }
     return text;
   } else if(f.hasCrop()) {
@@ -611,13 +617,27 @@ function brassicaNoSelfSutain(f) {
 function someInfinityEffectIsTimeWeighted(opt_fish) {
   // multiplication with this threshold is there to not show the hourglass icon all the time whenever changing infinity crops in the infinity field, only when there's a significant
   // change in boost, it'll start showing the icon
-  var show_threshold = 0.8;
+  var show_threshold = 0.875;
+  // this one is based on actual current production, so hour glass will also disappear a bit before the actual time runs out, but not as fast as the show_threshold
+  var show_threshold2 = 0.95;
   if(opt_fish != 2) {
-    if(state.c_runtime - state.fish_resinmul_time < MAXINFTOBASICDELAY && state.fish_resinmul_weighted.lt(state.fish_resinmul_last.mulr(show_threshold))) return true;
-    if(state.c_runtime - state.fish_twigsmul_time < MAXINFTOBASICDELAY && state.fish_twigsmul_weighted.lt(state.fish_twigsmul_last.mulr(show_threshold))) return true;
+    if(state.c_runtime - state.fish_resinmul_time < MAXINFTOBASICDELAY &&
+       state.fish_resinmul_weighted.lt(state.fish_resinmul_last.mulr(show_threshold)) &&
+       getFishMultiplier(FISHTYPE_TANG, state, 3).lt(state.fish_resinmul_last.mulr(show_threshold2))) {
+      return true;
+    }
+    if(state.c_runtime - state.fish_twigsmul_time < MAXINFTOBASICDELAY &&
+       state.fish_twigsmul_weighted.lt(state.fish_twigsmul_last.mulr(show_threshold)) &&
+       getFishMultiplier(FISHTYPE_EEL, state, 3).lt(state.fish_twigsmul_last.mulr(show_threshold2))) {
+      return true;
+    }
   }
   if(opt_fish != 1) {
-    if(state.c_runtime - state.infinity_prodmul_time < MAXINFTOBASICDELAY && state.infinity_prodmul_weighted.lt(state.infinity_prodmul_last.mulr(show_threshold))) return true;
+    if(state.c_runtime - state.infinity_prodboost_time < MAXINFTOBASICDELAY &&
+       state.infinity_prodboost_weighted.lt(state.infinity_prodboost_last.mulr(show_threshold)) &&
+       state.infinityboost.lt(state.infinity_prodboost_last.mulr(show_threshold2))) {
+      return true;
+    }
   }
   return false;
 }
