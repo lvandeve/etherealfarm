@@ -9189,8 +9189,9 @@ crop3_register_id = 2700;
 var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
 var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77777), Num(1000), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader10, [4, 10], [0.9, 1.02]));
 
-function haveInfinityField() {
-  return state.upgrades2[upgrade2_infinity_field].count;
+function haveInfinityField(opt_state) {
+  var s = opt_state || state;
+  return s.upgrades2[upgrade2_infinity_field].count;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

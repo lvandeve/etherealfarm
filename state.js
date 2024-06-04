@@ -1963,7 +1963,7 @@ function computeDerived(state) {
     if(b.numw && b.numh) state.numnonemptyblueprints++;
   }
 
-  if(haveInfinityField()) {
+  if(haveInfinityField(state)) {
     // This one must be computed very close to the end of computeDerived, since it depends on many of the above-computed things (such as the fishes)
     state.infprod = computeField3Income();
 
