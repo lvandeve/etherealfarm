@@ -101,7 +101,7 @@ function makeTreeDialog() {
       if(maxlevel > 0) {
         if(state.treelevel > maxlevel) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel;
-          text += '. Thist will bring your bonus for this challenge from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
+          text += '. This will bring your bonus for this challenge from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
           text += ', and your total challenge production bonus from ' + totalChallengeBonus(0).toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun(0).toPercentString();
           if(basicfar) addbasicmessage = true;
         } else if(!basiccapped) {

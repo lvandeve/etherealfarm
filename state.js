@@ -487,6 +487,8 @@ function AutoActionState() {
   this.enable_brassica = false; // brassica refresh
 
   this.enable_fern = false; // fern pickup
+
+  this.enable_transcend = false;
 }
 
 
@@ -725,8 +727,14 @@ function State() {
   this.delete2tokens = 4; // obsolete but for now still present in case the tokens need to come back
   this.squirrel_respec_tokens = squirrel_respec_initial; // a resource, though not part of the Res() resources object since it's more its own special purpose thing
   this.paused = false;
+  this.paused_while_heavy_computing = false; // if this is true (while paused is also true), it will pause the heavy computing itself but not the game
   this.lastEtherealDeleteTime = 0; // This was used for the ethereal delete limitations, which were removed in november 2022. Not yet removed for now incase the system needs to come back in some form, but may be obsolete
   this.lastEtherealPlantTime = 0; // idem
+
+  this.lastHumanActionTime = 0; // last time a human action (rather than an automated action) was done
+  this.numLastAutomaticTranscends = 0; // amount of automatic transcends sinze the last manual transcend
+  this.numAutomaticTranscendsSinceHumanAction = 0; // amount of automatic transcends sinze the last manual action of any kind (not just transcend)
+  this.automaticTranscendRes = new Res(); // amount of resources gotten from the last streak of streak of auto-transcends.
 
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits
@@ -889,6 +897,7 @@ function State() {
   this.g_numplanted_fish = 0;
   this.g_numunplanted_fish = 0;
   this.g_td_highest_wave_ever = 0; // also used for skipping easy waves
+  this.g_num_auto_resets = 0; // amount of non-manual resets, done by auto-action
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
@@ -2588,14 +2597,16 @@ function autoActionUnlocked(opt_state) {
 function numAutoActionsUnlocked(opt_state) {
   var s = opt_state || state;
   if(!autoActionUnlocked(opt_state)) return 0;
+  var result = 3; // initial amount
   // stages of the wither challenge that give extra auto-actions
-  if(s.challenges[challenge_wither].completed >= 7) return 7;
-  if(s.challenges[challenge_wither].completed >= 6) return 6;
-  if(s.challenges[challenge_wither].completed >= 5) return 5;
-  if(s.challenges[challenge_wither].completed >= 3) return 4;
-  return 3;
+  if(s.challenges[challenge_wither].completed >= 3) result++;
+  if(s.challenges[challenge_wither].completed >= 5) result++;
+  if(s.challenges[challenge_wither].completed >= 7) result++;
+  if(s.challenges[challenge_wither].completed >= 8) result++;
+  return result;
 }
 
+// aka beginonlyautoaction aka startonlyautoaction aka beginautoaction
 function haveBeginOfRunAutoAction(opt_state) {
   return true;
   //var s = opt_state || state;
@@ -2617,6 +2628,11 @@ function autoPrestigeUnlocked() {
 // whether the extra auto-actions, that is weather, refresh brassica and fern, are unlocked
 function autoActionExtraUnlocked() {
   return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 4;
+}
+
+// aka autoTranscendUnlocked
+function autoActionTranscendUnlocked() {
+  return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 6;
 }
 
 // whether more extra auto-actions, that is ethereal blueprint, are unlocked

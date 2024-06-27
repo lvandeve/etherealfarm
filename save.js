@@ -134,6 +134,10 @@ function encState(state, opt_raw_only) {
   processInt(state.lastPlantedFish);
   id = 31;
   processUint6(state.beta);
+  processTime(state.lastHumanActionTime);
+  processUint(state.numLastAutomaticTranscends);
+  processRes(state.automaticTranscendRes);
+  processUint(state.numAutomaticTranscendsSinceHumanAction);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -385,6 +389,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numplanted_fish);
   processUint(state.g_numunplanted_fish);
   processUint(state.g_td_highest_wave_ever);
+  processUint(state.g_num_auto_resets);
 
 
   section = 11; id = 0; // global run stats
@@ -543,6 +548,7 @@ function encState(state, opt_raw_only) {
   //processFloat2(state.prevresinfruitratio);
   //processFloat2(state.prevtwigsfruitratio);
   //processBool(state.overlevel);
+  processBool(state.paused_while_heavy_computing);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -737,6 +743,7 @@ function encState(state, opt_raw_only) {
     processBool(o.done2);
     processTime(o.time2);
     processUint(o.blueprint2);
+    processBool(o.enable_transcend);
     processStructEnd();
   }
   processStructArrayEnd();
@@ -1287,7 +1294,10 @@ function decState(s) {
   }
   id = 31;
   if(save_version >= 262144*2+64*10+4) state.beta = processUint6();
-
+  if(save_version >= 262144*2+64*13+0) state.lastHumanActionTime = processTime();
+  if(save_version >= 262144*2+64*13+0) state.numLastAutomaticTranscends = processUint();
+  if(save_version >= 262144*2+64*13+0) state.automaticTranscendRes = processRes();
+  if(save_version >= 262144*2+64*13+0) state.numAutomaticTranscendsSinceHumanAction = processUint();
 
   section = 1; id = 0; // field
   state.numw = processUint();
@@ -1692,6 +1702,7 @@ function decState(s) {
     state.g_numunplanted_fish = processUint();
   }
   if(save_version >= 262144*2+64*11+0) state.g_td_highest_wave_ever = processUint();
+  if(save_version >= 262144*2+64*13+0) state.g_num_auto_resets = processUint();
 
 
   if(error) return err(4);
@@ -1884,6 +1895,7 @@ function decState(s) {
   /*if(save_version >= 262144*2+64*8+2) state.prevresinfruitratio = processFloat2();
   if(save_version >= 262144*2+64*8+2) state.prevtwigsfruitratio = processFloat2();
   if(save_version >= 262144*2+64*8+2) state.overlevel = processBool();*/
+  if(save_version >= 262144*2+64*13+0) state.paused_while_heavy_computing = processBool();
   if(error) return err(4);
 
 
@@ -2273,6 +2285,7 @@ function decState(s) {
       if(save_version >= 262144*2+64*6+5) o.done2 = processBool();
       if(save_version >= 262144*2+64*6+5) o.time2 = processTime();
       if(save_version >= 262144*2+64*8+2) o.blueprint2 = processUint();
+      if(save_version >= 262144*2+64*13+0) o.enable_transcend = processBool();
 
       processStructEnd();
     }

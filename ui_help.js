@@ -618,6 +618,20 @@ registerHelpDialog(44, 'Tower defense', 'You started the tower defense challenge
     undefined,
     makeTDHelpDialogImages());
 
+registerHelpDialog(45, 'Auto transcend', 'You unlocked auto-transcend!',
+    `
+    You unlocked auto-transcend! This allows an auto-action to be programmed to transcend, starting a next run.
+    <br><br>
+    Ensure that you also have auto-actions programmed to handle the start of a run (such as planting a new blueprint) so that something meaningful will actually happen after the auto-transcend.
+    <br><br>
+    Auto-transcend only works max 20 times in a row, but any manual user action (including other actions than transcending) will reset this counter.
+    <br><br>
+    When loading a savegame with auto-transcend, loading may be slow (a lot of computation required) to handle all the auto-transcends (it's not the transcending itself that's slow, but the start of a run after that, which has a lot of activity to compute)
+    `,
+    image_medaltranscend,
+    undefined,
+    undefined);
+
 
 function createKeyboardHelpDialog() {
   var dialog = createDialog({scrollable:true, title:'Shortcuts'});
@@ -892,7 +906,7 @@ function createAutomatonHelpDialog() {
     return button;
   };
 
-  var ids = [28, 30, 31, 29, 32, 33, 40, 38];
+  var ids = [28, 30, 31, 29, 32, 33, 40, 38, 45];
 
   for(var i = 0; i < ids.length; i++) {
     var id = ids[i];

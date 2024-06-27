@@ -170,7 +170,7 @@ function initUI() {
   contentFlex.clear();
   pausedflex = undefined;
   pausedbuttoncanvasstate = -1;
-  pausedflextext = undefined;
+  pausedFlexTextGlobal = undefined;
   tabFlex.clear();
 
   //setMainDivSizes();
@@ -265,10 +265,12 @@ function updateMainFlexPositions() {
 
 var pausedflex = undefined;
 var pausedbuttoncanvasstate = -1;
-var pausedflextext = undefined; // because reading .innerText is slow
+// Globally remembered text because reading .innerText is slow
+// This is used also for the 'Computing' text that can occur
+var pausedFlexTextGlobal = undefined;
 
 function updatePausedUI() {
-  var needflex = state.paused || large_time_delta;
+  var needflex = state.paused || heavy_computing;
 
   if(needflex && !pausedflex) {
     pausedflex = new Flex(contentFlex, 0, 0, 1, 1, FONT_FULL);
@@ -278,15 +280,29 @@ function updatePausedUI() {
   } else if(!needflex && pausedflex) {
     pausedflex.removeSelf(contentFlex);
     pausedflex = undefined;
-    pausedflextext = undefined;
+    pausedFlexTextGlobal = undefined;
   }
 
-  if(state.paused && pausedflextext != 'Paused') {
-    pausedflextext = 'Paused';
-    pausedflex.div.textEl.innerText = pausedflextext;
-  } else if(heavy_computing && pausedflextext != 'Computing') {
-    pausedflextext = 'Computing';
-    pausedflex.div.textEl.innerText = pausedflextext;
+  var pausedFlexText = undefined;
+
+  if(state.paused) {
+    if(heavy_computing) {
+      pausedFlexText = 'Computing<br>Paused';
+    } else {
+      pausedFlexText = 'Paused';
+    }
+  } else if(heavy_computing) {
+    var hours = Math.floor((util.getTime() - state.time) / 3600)
+    if(hours > 1) {
+      pausedFlexText = 'Computing ' + '<br>' + hours + 'h';
+    } else {
+      pausedFlexText = 'Computing';
+    }
+  }
+
+  if(pausedFlexText != undefined && pausedFlexText != pausedFlexTextGlobal) {
+    pausedFlexTextGlobal = pausedFlexText;
+    pausedflex.div.textEl.innerHTML = pausedFlexText;
   }
 
   if(state.paused && pausedbuttoncanvasstate != 1) {

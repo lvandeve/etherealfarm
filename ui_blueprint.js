@@ -971,11 +971,10 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custo
     } else {
       var new_challenge = opt_challenge || 0;
       if(state.challenge) {
-        addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
+        addAction({type:ACTION_TRANSCEND, challenge:new_challenge, blueprint:blueprints[index]});
       } else {
-        if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:new_challenge});
+        if(state.treelevel >= min_transcension_level) addAction({type:ACTION_TRANSCEND, challenge:new_challenge, blueprint:blueprints[index]});
       }
-      addAction({type:ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND, blueprint:blueprints[index]});
       closeAllDialogs();
       update();
     }
@@ -999,9 +998,8 @@ function blueprintClickFun(opt_transcend, opt_challenge, opt_ethereal, opt_custo
         // deprecated feature, but still supported for those who like its convenience of "b" + "ctrl+shift+click" (the alternative is: "t", "b", "click")
         if(state.treelevel >= min_transcension_level) {
           showMessage('Transcended and planted blueprint');
-          addAction({type:ACTION_TRANSCEND, challenge:0});
+          addAction({type:ACTION_TRANSCEND, challenge:0, blueprint:blueprints[index]});
         }
-        addAction({type:ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND, blueprint:blueprints[index]});
         closeAllDialogs();
         update();
       }

@@ -782,7 +782,19 @@ function createStatsDialog() {
     text += '<b>Ethereal</b><br>';
     text += '• ethereal tree level: ' + open + state.treelevel2 + close + '<br>';
     text += '• total resin: ' + open + state.g_res.resin.toString() + close + '<br>';
-    text += '• transcensions: ' + open + state.g_numresets + close + '<br>';
+    text += '• transcensions: ' + open + state.g_numresets + close;
+    if(state.g_num_auto_resets >= 1) {
+      text += ' (automated: ' + open + state.g_num_auto_resets + close;
+      if(state.numLastAutomaticTranscends >= 1) {
+        text += ', last streak: ' + open + state.numLastAutomaticTranscends + close;
+      }
+      text += ')';
+    }
+    text += '<br>';
+    if(state.numLastAutomaticTranscends >= 1) {
+      text += '• resources from last auto-transcend streak: ' + open + state.automaticTranscendRes.toString() + close;
+      text += '<br>';
+    }
     var n = Math.min(Math.min(15, state.reset_stats_time.length), state.reset_stats_level.length);
     if(n > 0) {
       if(n == 1) {
@@ -1279,6 +1291,7 @@ function initSettingsUI() {
 
   addButtonAction(pausebutton, bind(function(canvas) {
     state.paused = !state.paused;
+    state.paused_while_heavy_computing = state.paused && heavy_computing;
     if(state.messagelogenabled[4]) {
       if(state.paused) showMessage(pausedMessage);
       else showMessage(unpausedMessage);

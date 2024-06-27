@@ -446,19 +446,22 @@ function showAutomatonFeatureSourceDialog() {
     text += ' • Auto-action: wither challenge (ethereal tree level 5)';
     text += '<br/>';
   }
-  if(numAutoActionsUnlocked() >= 2) {
-    text += ' • Extra auto-action slots: further wither challenge stages';
-    text += '<br/>';
-  }
   if(autoActionExtraUnlocked()) {
     text += ' • Auto-action weather, brassica refresh and fern: wither challenge stage 4';
+    text += '<br/>';
+  }
+  if(autoActionTranscendUnlocked()) {
+    text += ' • Auto-transcend: wither challenge stage 6';
+    text += '<br/>';
+  }
+  if(numAutoActionsUnlocked() > 3) {
+    text += ' • Extra auto-action slots: other wither challenge stages';
     text += '<br/>';
   }
   if(autoPrestigeUnlocked()) {
     text += ' • Auto-prestige: truly basic challenge';
     text += '<br/>';
   }
-
 
   dialog.content.div.innerHTML = text;
 }
@@ -524,6 +527,10 @@ function getBluePrintActionDescription(index, o) {
     if(o.enable_fern) {
       if(actiontext != '') actiontext += '. ';
       actiontext += 'Pick up fern';
+    }
+    if(o.enable_transcend) {
+      if(actiontext != '') actiontext += '. ';
+      actiontext += 'Transcend';
     }
   }
 
@@ -837,6 +844,13 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
       o.enable_fern = state;
     }, 'Pick up fern');
   }
+
+  if(autoActionTranscendUnlocked() && !(haveBeginOfRunAutoAction() && index == 0)) {
+    flex = addControl(0.7);
+    makeCheckbox(flex, o.enable_transcend, 'Transcend', function(state) {
+      o.enable_transcend = state;
+    }, 'Transcend');
+  }
 }
 
 var showingConfigureAutoActionDialog = false;
@@ -913,8 +927,8 @@ function showConfigureAutoActionDialog() {
 
 
     var x = 0.0;
-    var w0 = 0.24;
-    var w1 = 0.25; // including gap
+    var w0 = 0.23;
+    var w1 = 0.24; // including gap. Not using 0.25 here, if content touches the right side, scrollbar may overlap it (and CSS/HTML have no mechanism to make scrollbar that appears dynamically not overlap content)
 
     if(haveBeginOfRunAutoAction() && j == 0) {
       flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
@@ -962,7 +976,7 @@ function showConfigureAutoActionDialog() {
     }
 
 
-    flex = new Flex(scrollFlex, x, y, x + w0 * 0.98, y + 0.07);
+    flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
     styleButton(flex.div);
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Do now';

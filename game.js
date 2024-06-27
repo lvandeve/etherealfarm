@@ -489,6 +489,8 @@ function getNewFieldSize() {
 }
 
 function endPreviousRun() {
+  var res_before = new Res(state.res);
+
   var c2 = state.challenges[state.challenge];
 
   if(state.challenge) {
@@ -706,6 +708,8 @@ function endPreviousRun() {
   } else {
     state.g_numresets++;
   }
+
+  state.automaticTranscendRes.addInPlace(state.res.sub(res_before));
 }
 
 function beginNextRun(opt_challenge) {
@@ -726,8 +730,8 @@ function beginNextRun(opt_challenge) {
   state.crops2[lotus2_0].unlocked = true;
 
   // todo: remove this? softReset is called during the update() function, that one already manages the time
-  state.time = util.getTime();
-  state.prevtime = state.time;
+  //state.time = util.getTime();
+  //state.prevtime = state.time;
 
   // state.c_runtime = util.getTime() - state.c_starttime; // state.c_runtime was computed by incrementing each delta, but this should be numerically more precise
 
@@ -2678,7 +2682,6 @@ var autoActionPart2Time = 5; // how long to wait before auto-action does the sec
 function doAutoAction(index, part, opt_manually) {
   var o = state.automaton_autoactions[index];
   var did_something = false;
-
   if(part == 1) {
     var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
     if(opt_manually) {
@@ -2722,6 +2725,10 @@ function doAutoAction(index, part, opt_manually) {
       if(state.fern) {
         addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:!opt_manually});
       }
+      did_something = true;
+    }
+    if(o.enable_transcend && autoActionTranscendUnlocked()) {
+      addAction({type:ACTION_TRANSCEND, by_automaton:!opt_manually});
       did_something = true;
     }
   }
@@ -2770,6 +2777,8 @@ function computeAutomatonActions() {
 function doAutoActions() {
   if(showingConfigureAutoActionDialog) return false; // don't activate anything while the dialog is active, to allow editing the actions without intermediate states triggering
 
+  if(autoActionTranscendUnlocked() && state.help_seen[45] == undefined) showRegisteredHelpDialog(45);
+
   // this is also something that can be wrong when importing old savegames... such as one with wither already completed but not yet the second blueprints unlocked stage
   if(numAutoActionsUnlocked() == 1 && !state.automaton_autoactions[0].enabled) state.automaton_autoactions[0].enabled = true;
 
@@ -2800,6 +2809,8 @@ function doAutoActions() {
   return did_something;
 }
 
+// JS timeout based system for part 2 of auto-actions that were manually activated
+// note: for non-manually activated auto-actions (but by their actual trigger), this is not used, those use a proper system keeping track of 'time2' correctly. But that system is not compatible with manual activations at any time, hence this hack for the manual case.
 var auto_action_manual_window_timeout_enabled = true;
 
 function doAutoActionManually(index) {
@@ -3382,11 +3393,16 @@ function nextEventTime(opt_remaining_tick_length) {
     addtime(Math.max(0, lightningTime - (state.time - state.lastLightningTime)), 'storm');
   }
 
+  // auto-actions
   if(autoActionEnabled()) {
     for(var i = 0; i < state.automaton_autoactions.length; i++) {
       var o = state.automaton_autoactions[i];
       if(!o.enabled) continue;
       if(o.done) continue;
+      if(i == 0 && haveBeginOfRunAutoAction() && o.enabled && !o.done) {
+        // the begin of run auto action must be done asap if not yet done
+        addtime(0.1, 'auto-action 0');
+      }
       if(o.type == 4) {
         if(o.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
         addtime(o.time - state.c_runtime, 'auto-action');
@@ -3400,7 +3416,6 @@ function nextEventTime(opt_remaining_tick_length) {
 
 
   //console.log('next event time: ' + time + ', ' + name);
-
   // protect against possible bugs
   if(time < 0 || isNaN(time)) return 0;
   return time;
@@ -3568,7 +3583,7 @@ var last_fullgrown_sound_time0 = 0;
 var last_fullgrown_sound_time1 = 0;
 var last_fullgrown_sound_time2 = 0;
 
-var heavy_computing = false; // for display purposes
+var heavy_computing = false; // for display purposes. This variable is slightly different than fast_forwarding: it means fast_forwarding but also doing a lot of computation (many short ticks in a row), as opposed to when nothing changes on the field and it can compute a large time range fast.
 var large_time_delta = false;
 var large_time_delta_time = 0;
 var large_time_delta_res = Res();
@@ -3602,44 +3617,49 @@ var update = function(opt_ignorePause) {
   var fast_forwarding = total_d > 2;
 
   if(paused_) {
-    var d = total_d;
-    state.c_pausetime += d;
-    state.g_pausetime += d;
-    state.prevtime = state.time = util.getTime();
+    if(!fast_forwarding || !state.paused_while_heavy_computing) {
+      var d = total_d;
+      state.c_pausetime += d;
+      state.g_pausetime += d;
+      state.prevtime = state.time = util.getTime();
 
-    // more things must get adjusted during pause
-    // There are multiple distinct flows of time going on:
-    // - the real-time clock
-    // - in-game clock: either based on current run, or since start of game (throughout runs, e.g. ethereal effects)
-    // - in-game clock, time since start of the game
-    // different time related state variables may each use a different one of those options
-    // remarks for each type:
-    // - real-time clock: not affected by pause, so must not be touched here. For e.g. the state.c_starttime stat (to get the in-game time of that one, subtract state.c_pausetime from it).
-    // - in-game time: is affected by pause. This is e.g. for weather cooldown, time at tree level, ...
-    // SO:
-    // What exactly must be incremented by d here: anything that is an in-game time stored as a timestamp (so not a duration, but a point in time, date+time, unix timestamp).
-    // What must not be touched here: stats based on real-time, and, in-game related times that are stored as a duration rather than a timestamp
-    // ALSO NOTE:
-    // see also the code further below commented with "compensate for computer clock mismatch issues" and check if variable must be handled there too
-    state.misttime += d;
-    state.suntime += d;
-    state.rainbowtime += d;
-    state.lastFernTime += d;
-    state.automatontime += d;
-    state.lasttreeleveluptime += d;
-    state.lasttree2leveluptime += d;
-    state.lastambertime += d;
-    state.lastEtherealDeleteTime += d;
-    state.lastEtherealPlantTime += d;
-    state.lastLightningTime += d;
-    state.infinitystarttime += d;
-    state.recentweighedleveltime_time += d;
-    state.present_production_boost_time += d;
-    state.present_grow_speed_time += d;
-    if(state.challenge == challenge_towerdefense) {
-      var td = state.towerdef;
-      td.wavestarttime += d;
-      td.waveendtime += d;
+      // more things must get adjusted during pause
+      // There are multiple distinct flows of time going on:
+      // - the real-time clock
+      // - in-game clock: either based on current run, or since start of game (throughout runs, e.g. ethereal effects)
+      // - in-game clock, time since start of the game
+      // different time related state variables may each use a different one of those options
+      // remarks for each type:
+      // - real-time clock: not affected by pause, so must not be touched here. For e.g. the state.c_starttime stat (to get the in-game time of that one, subtract state.c_pausetime from it).
+      // - in-game time: is affected by pause. This is e.g. for weather cooldown, time at tree level, ...
+      // SO:
+      // What exactly must be incremented by d here: anything that is an in-game time stored as a timestamp (so not a duration, but a point in time, date+time, unix timestamp).
+      // What must not be touched here: stats based on real-time, and, in-game related times that are stored as a duration rather than a timestamp
+      // ALSO NOTE:
+      // see also the code further below commented with "compensate for computer clock mismatch issues" and check if variable must be handled there too
+      state.misttime += d;
+      state.suntime += d;
+      state.rainbowtime += d;
+      state.lastFernTime += d;
+      state.automatontime += d;
+      state.lasttreeleveluptime += d;
+      state.lasttree2leveluptime += d;
+      state.lastambertime += d;
+      state.lastEtherealDeleteTime += d;
+      state.lastEtherealPlantTime += d;
+      state.lastLightningTime += d;
+      state.infinitystarttime += d;
+      state.recentweighedleveltime_time += d;
+      state.present_production_boost_time += d;
+      state.present_grow_speed_time += d;
+      if(state.challenge == challenge_towerdefense) {
+        var td = state.towerdef;
+        td.wavestarttime += d;
+        td.waveendtime += d;
+      }
+    } else {
+      // This is to make it indicate both 'Computing' and 'Paused' when refreshing the page while it was both of those things
+      heavy_computing = true;
     }
 
     // this is for e.g. after importing a save while paused
@@ -3857,6 +3877,10 @@ var update = function(opt_ignorePause) {
       var action = actions[0];
       actions.shift();
       if(fast_forwarding && !action.by_automaton) continue;
+      if(!action.by_automaton) {
+        state.lastHumanActionTime = state.time;
+        state.numAutomaticTranscendsSinceHumanAction = 0;
+      }
       var type = action.type;
       if(type == ACTION_STORE_UNDO_BEFORE_AUTO_ACTION) {
         if(state.c_runtime > 10) { // don't do this when just starting a new run: then if you press undo, you'd want to undo the transcension, instead of having it be overwritten with this undo from just after transcension
@@ -5313,14 +5337,40 @@ var update = function(opt_ignorePause) {
           showMessage('Can\'t spawn any more waves, it\'s game over', C_TD, 1250454032);
         }
       } else if(type == ACTION_TRANSCEND) {
+        var ok = true;
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
           // do nothing, invalid reset attempt
-        } else if(state.treelevel >= min_transcension_level || state.challenge) {
+          ok = false;
+        }
+
+        //if(action.by_automaton && state.time - state.lastHumanActionTime > 3600 * 24 * 14) {
+        if(action.by_automaton && state.numAutomaticTranscendsSinceHumanAction >= 20) {
+          // after a long while, no longer support auto-transcend; the game has been abandoned for a very long time, at this point resin better be gained actively again. Also, savegame loading is very slow with auto-transcend due to emulating all the starts of runs so this becomes infeasible
+          ok = false;
+        }
+
+        if(ok) {
           do_transcend = action;
           store_undo = true;
           removeTdChip();
-          // when transcending, break and execute the code below to actually transcend: if there are more actions queued, these should occur after the transcension happened.
-          break;
+          if(action.by_automaton) {
+            state.numLastAutomaticTranscends++;
+            state.numAutomaticTranscendsSinceHumanAction++;
+            state.g_num_auto_resets++;
+          } else {
+            state.numLastAutomaticTranscends = 0;
+          }
+          // There may have been some stray actions added above for computeAutomatonActions. Remove these now, since after transcend they are meaningless
+          actions = [];
+          // Now add the ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND action if a blueprint was chosen via the transcend dialog
+          if(action.blueprint != undefined) {
+            addAction({type:ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND, blueprint:action.blueprint});
+          }
+          softReset(do_transcend.challenge);
+          computeDerived(state);
+          if(!do_transcend.by_automaton) state.automaticTranscendRes = new Res(); // reset this stat when manually resetting
+          precomputeField();
+          state.transcended_with_blueprint = (do_transcend.blueprint != undefined);
         }
       }
     }
@@ -5805,7 +5855,9 @@ var update = function(opt_ignorePause) {
         state.twigs.addInPlace(twigs);
       }
 
-      actualgain.amber.addInPlace(maybeDropAmber());
+      var ambergain = maybeDropAmber();
+      actualgain.amber.addInPlace(ambergain);
+      state.automaticTranscendRes.amber.addInPlace(ambergain);
 
       state.treelevel++;
       global_tree_levelups++;
@@ -6256,7 +6308,6 @@ var update = function(opt_ignorePause) {
     large_time_delta = false;
   }
   large_time_delta_time += d_total;
-
   heavy_computing = large_time_delta && numloops > 10;
 
   // for the case after one or more large-delta ticks are finished
@@ -6297,13 +6348,6 @@ var update = function(opt_ignorePause) {
     update_amber_ui = true; // if the amber tab is currently open, the state of some buttons may change
   }
 
-  if(do_transcend) {
-    var action = do_transcend;
-    softReset(action.challenge);
-    computeDerived(state);
-    precomputeField();
-  }
-
   if(!large_time_delta) {
     if(global_season_changes) state.g_seasons++; // g_seasons only counts season changes actively seen
     global_season_changes = 0;
@@ -6324,15 +6368,15 @@ var update = function(opt_ignorePause) {
     }
   }
 
-  if(do_transcend) state.transcended_with_blueprint = false;
 
-  if(do_transcend && actions.length) {
-    // when transcending with blueprint, do the next actions immediately to avoid having a momentary empty field visible
-    window.setTimeout(update, 0.01);
-    state.transcended_with_blueprint = true;
-  } else if(autoplanted_fastanim) {
-    // go faster when the automaton is autoplanting one-by-one
-    window.setTimeout(update, update_ms * 0.4);
+  if(!heavy_computing) {
+    if(do_transcend && do_transcend.blueprint != undefined) {
+      // when transcending with blueprint, do the next actions immediately to avoid having a momentary empty field visible
+      window.setTimeout(update, 0.01);
+    } else if(autoplanted_fastanim) {
+      // go faster when the automaton is autoplanting one-by-one. But not when heavy computing or it may make browser hang if it's simulating many automated transcends
+      window.setTimeout(update, update_ms * 0.4);
+    }
   }
 }
 

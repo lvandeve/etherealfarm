@@ -3692,7 +3692,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170], undefined, undefined,
+var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170, 200], undefined, undefined,
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -3708,6 +3708,7 @@ During this challenge, crops wither and must be replanted.
  'unlock one more automaton auto-action',
  'auto-action can now also automate weather, fern and brassica refresh',
  'unlock one more automaton auto-action',
+ 'unlock auto-transcend',
  'unlock one more automaton auto-action',
  'unlock one more automaton auto-action'],
 'reaching ethereal tree level 5 and having automaton with auto-unlock plants',
@@ -3736,9 +3737,12 @@ function() {
   showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
+  showMessage('Auto-transcend unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
+  showRegisteredHelpDialog(45);
+},
+function() {
   state.updateAutoActionAmount(numAutoActionsUnlocked());
   showMessage('An additional automaton auto-action unlocked!', C_AUTOMATON, 1067714398, undefined, undefined, true);
-  //showMessage('From now on, auto-actions can also be configured to plant ethereal blueprints!', C_AUTOMATON, 1067714398, undefined, undefined, true);
 },
 function() {
   state.updateAutoActionAmount(numAutoActionsUnlocked());
@@ -9162,7 +9166,7 @@ var bee3_6 = registerBee3('rhodium bee nest', 6, Res({infseeds:500e30}), Num(163
 var bee3_7 = registerBee3('amethyst bee nest', 7, Res({infseeds:2e38}), Num(300e3), Num(30), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader7));
 var bee3_8 = registerBee3('sapphire bee nest', 8, Res({infseeds:3e45}), Num(10e6), Num(100), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader8));
 var bee3_9 = registerBee3('emerald bee nest', 9, Res({infseeds:5e54}), Num(200e6), Num(300), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader9));
-var bee3_10 = registerBee3('ruby bee nest', 10, Res({infseeds:500e63}), Num(5e9), Num(1000), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader10, [4, 10], [0.9, 1.02]));
+var bee3_10 = registerBee3('ruby bee nest', 10, Res({infseeds:500e63}), Num(4e9), Num(1000), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader10, [4, 10], [0.9, 1.02]));
 
 crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
@@ -9178,12 +9182,12 @@ crop3_register_id = 2100;
 var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
 var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(150), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
 var fern3_9 = registerFern3('emerald fern', 9, Res({infseeds:200e54}), Num(3), Num(500), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader9));
-var fern3_10 = registerFern3('ruby fern', 10, Res({infseeds:30e66}), Num(3), Num(1500), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader10, [4, 10], [0.9, 1.02]));
+var fern3_10 = registerFern3('ruby fern', 10, Res({infseeds:30e66}), Num(2), Num(1500), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader10, [4, 10], [0.9, 1.02]));
 
 crop3_register_id = 2400;
 var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(75), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
 var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(250), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
-var nut3_10 = registerNut3('ruby acorn', 10, Res({infseeds:500e66}), Res({infseeds:1e36}), Num(750), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader10, [4, 10], [0.9, 1.02]));
+var nut3_10 = registerNut3('ruby acorn', 10, Res({infseeds:500e66}), Res({infseeds:500e33}), Num(750), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader10, [4, 10], [0.9, 1.02]));
 
 crop3_register_id = 2700;
 var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));

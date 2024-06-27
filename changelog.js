@@ -30,6 +30,14 @@ function getChangeLog() {
     }
   }
 
+  text += '0.13.0 Auto-transcend (2024-06-27)';
+  text += '<br/>• Added auto-transcend for the auto-actions, unlocked by wither challenge 150.';
+  text += '<br/>• Moved the extra auto-action slot reward from wither 150, to wither 200.';
+  text += '<br/>• Added stats related to auto-transcend and the resources gained in the player stats dialog (under Ethereal).';
+  text += '<br/>• Nerfed the infinity production of the ruby infinity bee nest, fern and acorn: they were too powerful because expected fishes at this point are more powerful than anticipated when these were designed.';
+  text += '<br/>• Typo fixes.';
+  text += '<br/><br/>';
+
   text += '0.12.5 QoL balancing (2024-06-03)';
   text += '<br/>• Brassica upgrades now add +35% instead of +20% lifetime duration.';
   // the 'effectively half' is due to the 0.5 multiplier of this fern bonus.
