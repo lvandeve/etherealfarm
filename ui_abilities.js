@@ -459,7 +459,7 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
       var cresscost = cresscost0;
       if(c && c.type == CROPTYPE_BRASSICA) {
         recoup = c.getRecoup(f).seeds;
-        cresscost = c.getCost().seeds.sub(recoup);
+        cresscost = cresscost.sub(recoup);
       }
       var can_afford = seeds_available.ge(cresscost);
       if(f.index == FIELD_REMAINDER) {

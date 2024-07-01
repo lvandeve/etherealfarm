@@ -886,7 +886,7 @@ function beginNextRun(opt_challenge) {
 }
 
 // transcend
-function softReset(opt_challenge) {
+function softReset(opt_challenge, opt_automated) {
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
   savegame_recovery_situation = false;
 
@@ -895,7 +895,7 @@ function softReset(opt_challenge) {
   endPreviousRun();
   beginNextRun(opt_challenge);
 
-  setTab(0);
+  if(!opt_automated) setTab(0);
   removeChallengeChip();
   removeAllDropdownElements();
   initInfoUI();
@@ -3399,7 +3399,7 @@ function nextEventTime(opt_remaining_tick_length) {
       var o = state.automaton_autoactions[i];
       if(!o.enabled) continue;
       if(o.done) continue;
-      if(i == 0 && haveBeginOfRunAutoAction() && o.enabled && !o.done) {
+      if(i == 0 && haveBeginOfRunAutoAction() && o.enabled && !o.done && autoActionTriggerConditionReached(i, o)) {
         // the begin of run auto action must be done asap if not yet done
         addtime(0.1, 'auto-action 0');
       }
@@ -5366,7 +5366,7 @@ var update = function(opt_ignorePause) {
           if(action.blueprint != undefined) {
             addAction({type:ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND, blueprint:action.blueprint});
           }
-          softReset(do_transcend.challenge);
+          softReset(do_transcend.challenge, action.by_automaton);
           computeDerived(state);
           if(!do_transcend.by_automaton) state.automaticTranscendRes = new Res(); // reset this stat when manually resetting
           precomputeField();

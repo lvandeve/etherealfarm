@@ -779,9 +779,7 @@ function createStatsDialog() {
   text += '<br>';
 
   if(state.g_numresets > 0) {
-    text += '<b>Ethereal</b><br>';
-    text += '• ethereal tree level: ' + open + state.treelevel2 + close + '<br>';
-    text += '• total resin: ' + open + state.g_res.resin.toString() + close + '<br>';
+    text += '<b>Transcensions</b><br>';
     text += '• transcensions: ' + open + state.g_numresets + close;
     if(state.g_num_auto_resets >= 1) {
       text += ' (automated: ' + open + state.g_num_auto_resets + close;
@@ -818,6 +816,11 @@ function createStatsDialog() {
       }
       text += close + '<br>';
     }
+    text += '<br>';
+
+    text += '<b>Ethereal</b><br>';
+    text += '• ethereal tree level: ' + open + state.treelevel2 + close + '<br>';
+    text += '• total resin: ' + open + state.g_res.resin.toString() + close + '<br>';
     text += '• ethereal crops planted: ' + open + state.g_numfullgrown2 + close + '<br>';
     text += '• ethereal crops deleted: ' + open + state.g_numunplanted2 + close + '<br>';
     text += '<br>';

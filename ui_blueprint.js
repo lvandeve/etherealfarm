@@ -727,6 +727,8 @@ function createBlueprintDialog(b, ethereal, index_pointer, opt_onclose) {
   b = BluePrint.copy(b);
 
   var okfun = function() {
+    if(heavy_computing) return; // don't affect game state while loading savegame from long ago
+
     // this actually commits the change of the blueprint. This is the cancel function of the dialog: the only thing that does not commit it, is using undo.
     if(did_edit) {
       lastpreundoblueprint = BluePrint.copy(orig);
