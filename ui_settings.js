@@ -900,6 +900,75 @@ function createStatsDialog() {
   div.innerHTML = text;
 }
 
+
+function createTranscensionStatsDialog() {
+  showing_stats = true;
+  var dialog = createDialog({
+    title:'Transcension statistics',
+    scrollable:true,
+    icon:image_stats,
+    onclose:function() {
+      showing_stats = false;
+    }
+  });
+
+  var div = dialog.content.div;
+
+  var text = '';
+
+  var open = '<span class="efStatsValue">';
+  var close = '</span>';
+
+
+  text += '<b>Transcensions</b><br>';
+  text += '• transcensions: ' + open + state.g_numresets + close;
+  if(state.g_num_auto_resets >= 1) {
+    text += ' (automated: ' + open + state.g_num_auto_resets + close;
+    if(state.numLastAutomaticTranscends >= 1) {
+      text += ', last streak: ' + open + state.numLastAutomaticTranscends + close;
+    }
+    text += ')';
+  }
+  text += '<br>';
+  if(state.numLastAutomaticTranscends >= 1) {
+    text += '• resources from last auto-transcend streak: ' + open + state.automaticTranscendRes.toString() + close;
+    text += '<br>';
+  }
+  var n = Math.min(Math.min(15, state.reset_stats_time.length), state.reset_stats_level.length);
+  if(n > 0) {
+    text += '• last transcension levels (1 = last, 2 = second last, ...):' + '<br>';
+    for(var i = 0; i < n; i++) {
+      text += '&nbsp;&nbsp;◦ ' + (i + 1) + ': ' + open;
+      var minutes = state.reset_stats_time[state.reset_stats_time.length - 1 - i] * 5;
+      var timetext = '';
+      if(minutes < 60) timetext = Num(minutes).toString(1) + 'm';
+      else if(minutes < 60 * 5) timetext = Num(minutes / 60).toString(2) + 'h';
+      else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(1) + 'h';
+      else timetext = Num(minutes / (24 * 60)).toString(1) + 'd';
+      text += 'level: ' + state.reset_stats_level[state.reset_stats_level.length - 1 - i];
+      text += ', time: ' + timetext;
+      if(state.reset_stats_challenge[state.reset_stats_challenge.length - 1 - i]) text += ' (C)';
+
+      var approx;
+
+      var resin = state.reset_stats_resin[state.reset_stats_resin.length - 1 - i];
+      if(i == 0) resin = state.p_res.resin; // exact
+      approx = i > 0 && resin.neqr(0);
+      if(resin != undefined) text += ', resin: ' + (approx ? '~' : '') + resin.toString();
+
+      var twigs = state.reset_stats_twigs[state.reset_stats_twigs.length - 1 - i];
+      if(i == 0) twigs = state.p_res.twigs; // exact
+      approx = i > 0 && twigs.neqr(0);
+      if(twigs != undefined) text += ', twigs: ' + (approx ? '~' : '') + twigs.toString();
+      text += close + '<br>';
+    }
+  }
+  text += '<br>';
+
+
+  div.innerHTML = text;
+}
+
 var showing_changelog = false;
 
 var getAboutHeader = function() {
@@ -1205,6 +1274,15 @@ function createSettingsDialog() {
     createStatsDialog();
   });
   button.id = 'settings_player_stats';
+
+  if(state.g_numresets > 0) {
+    button = makeSettingsButton();
+    button.textEl.innerText = 'transcension stats';
+    addButtonAction(button, function(e) {
+      createTranscensionStatsDialog();
+    });
+    button.id = 'settings_player_stats';
+  }
 
   if(state.challenges_unlocked) {
     button = makeSettingsButton();
