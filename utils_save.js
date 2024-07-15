@@ -869,7 +869,7 @@ function decFractionChoice(e) {
 
 var approx_num_base = 1.15;
 var approx_num_exact = 11;
-var approx_num_skipped = 6; // chosen such that the encoding of values above approx_num_exact begin at encoding approx_num_exact + 1
+var approx_num_skipped = 6; // chosen such that the encoding of values above approx_num_exact begin at encoding approx_num_exact + 1. This is log(approx_num_exact) / log(approx_num_base) - approx_num_exact, that is, Math.floor(Num(approx_num_exact).rlogr(approx_num_base) - approx_num_exact)
 
 
 // Encodes a positive Num in approximate form.
@@ -890,9 +890,9 @@ function decApproxNum(e) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var approx2_num_base = 1.001;
-var approx2_num_exact = 1000;
-var approx2_num_skipped = 5911; // chosen such that the encoding of values above approx_num_exact begin at encoding approx_num_exact + 1
+var approx2_num_base = 1.005;
+var approx2_num_exact = 200;
+var approx2_num_skipped = 862; // chosen such that the encoding of values above approx_num_exact begin at encoding approx_num_exact + 1. This is log(approx2_num_exact) / log(approx2_num_base) - approx2_num_exact, that is, Math.floor(Num(approx2_num_exact).rlogr(approx2_num_base) - approx2_num_exact)
 
 
 // Encodes a positive Num in approximate form.
@@ -908,6 +908,29 @@ function encApprox2Num(f) {
 function decApprox2Num(e) {
   if(e <= approx2_num_exact) return Num(e);
   var f = Num.pow(Num(approx2_num_base), Num(e + approx2_num_skipped));
+  return f;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+var approx3_num_base = 1.001;
+var approx3_num_exact = 1000;
+var approx3_num_skipped = 5911; // chosen such that the encoding of values above approx_num_exact begin at encoding approx_num_exact + 1. This is log(approx3_num_exact) / log(approx3_num_base) - approx3_num_exact, that is, Math.floor(Num(approx3_num_exact).rlogr(approx3_num_base) - approx3_num_exact)
+
+
+// Encodes a positive Num in approximate form.
+// The precision whichever is highest of absolute 1, or relative around  0.5%
+function encApprox3Num(f) {
+  if(f.ltr(0.5)) return 0;
+  if(f.lter(approx3_num_exact)) return Math.round(f.valueOf());
+  var l = f.rlogr(approx3_num_base) - approx3_num_skipped;
+  if(l > 9007199254740992) return 9007199254740992;
+  return Math.round(l);
+}
+
+function decApprox3Num(e) {
+  if(e <= approx3_num_exact) return Num(e);
+  var f = Num.pow(Num(approx3_num_base), Num(e + approx3_num_skipped));
   return f;
 }
 

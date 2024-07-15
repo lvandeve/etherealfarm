@@ -693,6 +693,7 @@ function openTimeInfoDialog() {
         } else {
           result += '<b>Max tree level ever:</b> ' + state.g_treelevel + '<br>';
         }
+        result += '<b>Num transcends:</b> ' + state.g_numresets + '<br>';
 
         if(state.challenge) {
           var c = challenges[state.challenge];
@@ -917,6 +918,11 @@ function updateResourceUI() {
       if(state.treelevel >= 1) {
         var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
         text += 'Next tree level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
+        text += '<br><br>';
+      }
+
+      if(state.g_numresets >= 1) {
+        text += 'Num transcends: ' + state.g_numresets;
         text += '<br><br>';
       }
 

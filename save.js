@@ -138,6 +138,7 @@ function encState(state, opt_raw_only) {
   processUint(state.numLastAutomaticTranscends);
   processRes(state.automaticTranscendRes);
   processUint(state.numAutomaticTranscendsSinceHumanAction);
+  processBool(state.runHadAnyHumanAction);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -511,7 +512,7 @@ function encState(state, opt_raw_only) {
   };
   var deltaEncApprox = function(array) {
     var array2 = [];
-    for(var i = 0; i < array.length; i++) array2[i] = encApproxNum(Num(array[i]));
+    for(var i = 0; i < array.length; i++) array2[i] = encApprox2Num(Num(array[i]));
     deltaEnc(array2);
   };
   deltaEnc(state.reset_stats_level);
@@ -521,6 +522,7 @@ function encState(state, opt_raw_only) {
   deltaEnc(state.reset_stats_challenge);
   deltaEncApprox(state.reset_stats_resin);
   deltaEncApprox(state.reset_stats_twigs);
+  processUint6Array(state.reset_stats_season);
 
 
   section = 15; id = 0; // first run stats
@@ -720,30 +722,50 @@ function encState(state, opt_raw_only) {
   processUint(state.automaton_autoprestige);
   processUint(state.automaton_autoaction);
 
+  var processTrigger = function(trigger) {
+    //processStructBegin();
+    processUint6(trigger.type);
+    processUint(trigger.level);
+    processUint(trigger.crop);
+    processUint(trigger.prestige);
+    processTime(trigger.time);
+    //processStructEnd();
+  };
+
+  var processEffect = function(effect) {
+    processStructBegin();
+    processBool(effect.enable_blueprint);
+    processUint(effect.blueprint);
+    processBool(effect.enable_blueprint2);
+    processUint(effect.blueprint2);
+    processBool(effect.enable_fruit);
+    processUint(effect.fruit);
+    processBool(effect.enable_weather);
+    processUint(effect.weather);
+    processBool(effect.enable_brassica);
+    processBool(effect.enable_fern);
+    processBool(effect.enable_transcend);
+    processBool(effect.enable_hold_season);
+    processStructEnd();
+  };
+
   processStructArrayBegin();
   for(var i = 0; i < state.automaton_autoactions.length; i++) {
     var o = state.automaton_autoactions[i];
     processStructBegin();
     processBool(o.enabled);
+    processTrigger(o.trigger);
+    processStructArrayBegin();
+    processEffect(o.effect);
+    processEffect(o.effect_seasonal[0]);
+    processEffect(o.effect_seasonal[1]);
+    processEffect(o.effect_seasonal[2]);
+    processEffect(o.effect_seasonal[3]);
+    processStructArrayEnd();
+    processBoolArray(o.season_override);
     processBool(o.done);
-    processUint6(o.type);
-    processUint(o.blueprint);
-    processBool(o.enable_blueprint2);
-    processUint(o.level);
-    processUint(o.crop);
-    processUint(o.prestige);
-    processBool(o.enable_blueprint);
-    processTime(o.time);
-    processBool(o.enable_fruit);
-    processUint(o.fruit);
-    processBool(o.enable_weather);
-    processUint(o.weather);
-    processBool(o.enable_brassica);
-    processBool(o.enable_fern);
     processBool(o.done2);
     processTime(o.time2);
-    processUint(o.blueprint2);
-    processBool(o.enable_transcend);
     processStructEnd();
   }
   processStructArrayEnd();
@@ -849,10 +871,10 @@ function encState(state, opt_raw_only) {
     var c2 = state.challenges[ci];
     array0.push(c2.last_completion_level);
     array1.push(c2.last_completion_time);
-    array2.push(encApprox2Num(c2.last_completion_resin));
-    array3.push(encApprox2Num(c2.last_completion_twigs));
+    array2.push(encApprox3Num(c2.last_completion_resin));
+    array3.push(encApprox3Num(c2.last_completion_twigs));
     array4.push(c2.last_completion_date);
-    array5.push(encApprox2Num(c2.last_completion_resin));
+    array5.push(encApprox3Num(c2.last_completion_resin));
     array6.push(c2.last_completion_level2);
     array7.push(c2.last_completion_g_level);
   }
@@ -1298,6 +1320,7 @@ function decState(s) {
   if(save_version >= 262144*2+64*13+0) state.numLastAutomaticTranscends = processUint();
   if(save_version >= 262144*2+64*13+0) state.automaticTranscendRes = processRes();
   if(save_version >= 262144*2+64*13+0) state.numAutomaticTranscendsSinceHumanAction = processUint();
+  if(save_version >= 262144*2+64*13+1) state.runHadAnyHumanAction = processBool();
 
   section = 1; id = 0; // field
   state.numw = processUint();
@@ -1832,13 +1855,19 @@ function decState(s) {
   var deltaDecApproxNum = function(array) {
     var array2 = deltaDec(array);
     var result = [];
-    for(var i = 0; i < array2.length; i++) result[i] = decApproxNum(array2[i]);
+    for(var i = 0; i < array2.length; i++) {
+      if(save_version >= 262144*2+64*13+1) result[i] = decApprox2Num(array2[i]);
+      else result[i] = decApproxNum(array2[i]);
+    }
     return result;
   };
   var deltaDecApproxFloat = function(array) {
     var array2 = deltaDec(array);
     var result = [];
-    for(var i = 0; i < array2.length; i++) result[i] = decApproxNum(array2[i]).valueOf();
+    for(var i = 0; i < array2.length; i++) {
+      if(save_version >= 262144*2+64*13+1) result[i] = decApprox2Num(array2[i]).valueOf();
+      else result[i] = decApproxNum(array2[i]).valueOf();
+    }
     return result;
   };
   state.reset_stats_level = deltaDec(processIntArray());
@@ -1850,6 +1879,7 @@ function decState(s) {
       state.reset_stats_challenge = deltaDec(processIntArray());
       state.reset_stats_resin = deltaDecApproxNum(processIntArray());
       state.reset_stats_twigs = deltaDecApproxNum(processIntArray());
+      if(save_version >= 262144*2+64*13+1) state.reset_stats_season = processUint6Array();
     } else {
       state.reset_stats_time = deltaDec(processIntArray());
       for(var i = 0; i < state.reset_stats_time.length; i++) state.reset_stats_time[i] *= 3;
@@ -2253,6 +2283,33 @@ function decState(s) {
     }
   }
 
+  var processTrigger = function(trigger) {
+    //processStructBegin();
+    trigger.type = processUint6();
+    trigger.level = processUint();
+    trigger.crop = processUint();
+    trigger.prestige = processUint();
+    trigger.time = processTime();
+    //processStructEnd();
+  };
+
+  var processEffect = function(effect) {
+    processStructBegin();
+    effect.enable_blueprint = processBool();
+    effect.blueprint = processUint();
+    effect.enable_blueprint2 = processBool();
+    effect.blueprint2 = processUint();
+    effect.enable_fruit = processBool();
+    effect.fruit = processUint();
+    effect.enable_weather = processBool();
+    effect.weather = processUint();
+    effect.enable_brassica = processBool();
+    effect.enable_fern = processBool();
+    effect.enable_transcend = processBool();
+    effect.enable_hold_season = processBool();
+    processStructEnd();
+  };
+
   if(save_version >= 262144*2+64*5+0) {
     var count = processStructArrayBegin();
     state.automaton_autoactions = [];
@@ -2261,31 +2318,49 @@ function decState(s) {
       var o = state.automaton_autoactions[i];
       state.automaton_autoactions[i] = o;
       processStructBegin();
-      o.enabled = processBool();
-      o.done = processBool();
-      o.type = processUint6();
-      o.blueprint = processUint();
-      o.enable_blueprint2 = processBool();
-      o.level = processUint();
-      if(save_version >= 262144*2+64*6+0) o.crop = processUint();
-      if(save_version >= 262144*2+64*6+0) o.prestige = processUint();
-      if(save_version >= 262144*2+64*6+3) {
-        o.enable_blueprint = processBool();
+
+      if(save_version >= 262144*2+64*13+1) {
+        o.enabled = processBool();
+        processTrigger(o.trigger);
+        var count2 = processStructArrayBegin();
+        if(count2 != 5) return err(4);
+        processEffect(o.effect);
+        processEffect(o.effect_seasonal[0]);
+        processEffect(o.effect_seasonal[1]);
+        processEffect(o.effect_seasonal[2]);
+        processEffect(o.effect_seasonal[3]);
+        processStructArrayEnd();
+        o.season_override = processBoolArray();
+        o.done = processBool();
+        o.done2 = processBool();
+        o.time2 = processTime();
       } else {
-        o.enable_blueprint = (o.blueprint > 0);
-        if(o.blueprint > 0) o.blueprint--; // 0 used to indicate 'none' before this version
+        o.enabled = processBool();
+        o.done = processBool();
+        o.trigger.type = processUint6();
+        o.effect.blueprint = processUint();
+        o.effect.enable_blueprint2 = processBool();
+        o.trigger.level = processUint();
+        if(save_version >= 262144*2+64*6+0) o.trigger.crop = processUint();
+        if(save_version >= 262144*2+64*6+0) o.trigger.prestige = processUint();
+        if(save_version >= 262144*2+64*6+3) {
+          o.effect.enable_blueprint = processBool();
+        } else {
+          o.effect.enable_blueprint = (o.effect.blueprint > 0);
+          if(o.effect.blueprint > 0) o.effect.blueprint--; // 0 used to indicate 'none' before this version
+        }
+        if(save_version >= 262144*2+64*6+3) o.trigger.time = processTime();
+        if(save_version >= 262144*2+64*6+3) o.effect.enable_fruit = processBool();
+        if(save_version >= 262144*2+64*6+3) o.effect.fruit = processUint();
+        if(save_version >= 262144*2+64*6+4) o.effect.enable_weather = processBool();
+        if(save_version >= 262144*2+64*6+4) o.effect.weather = processUint();
+        if(save_version >= 262144*2+64*6+4) o.effect.enable_brassica = processBool();
+        if(save_version >= 262144*2+64*6+4) o.effect.enable_fern = processBool();
+        if(save_version >= 262144*2+64*6+5) o.done2 = processBool();
+        if(save_version >= 262144*2+64*6+5) o.time2 = processTime();
+        if(save_version >= 262144*2+64*8+2) o.effect.blueprint2 = processUint();
+        if(save_version >= 262144*2+64*13+0) o.effect.enable_transcend = processBool();
       }
-      if(save_version >= 262144*2+64*6+3) o.time = processTime();
-      if(save_version >= 262144*2+64*6+3) o.enable_fruit = processBool();
-      if(save_version >= 262144*2+64*6+3) o.fruit = processUint();
-      if(save_version >= 262144*2+64*6+4) o.enable_weather = processBool();
-      if(save_version >= 262144*2+64*6+4) o.weather = processUint();
-      if(save_version >= 262144*2+64*6+4) o.enable_brassica = processBool();
-      if(save_version >= 262144*2+64*6+4) o.enable_fern = processBool();
-      if(save_version >= 262144*2+64*6+5) o.done2 = processBool();
-      if(save_version >= 262144*2+64*6+5) o.time2 = processTime();
-      if(save_version >= 262144*2+64*8+2) o.blueprint2 = processUint();
-      if(save_version >= 262144*2+64*13+0) o.enable_transcend = processBool();
 
       processStructEnd();
     }
@@ -2507,10 +2582,10 @@ function decState(s) {
       var c2 = state.challenges[ci];
       c2.last_completion_level = array0[index];
       c2.last_completion_time = array1[index];
-      c2.last_completion_resin = decApprox2Num(array2[index]);
-      c2.last_completion_twigs = decApprox2Num(array3[index]);
+      c2.last_completion_resin = decApprox3Num(array2[index]);
+      c2.last_completion_twigs = decApprox3Num(array3[index]);
       c2.last_completion_date = array4[index];
-      c2.last_completion_resin = decApprox2Num(array5[index]);
+      c2.last_completion_resin = decApprox3Num(array5[index]);
       c2.last_completion_level2 = array6[index];
       if(save_version >= 4096*1+99) c2.last_completion_g_level = array7[index];
       index++;

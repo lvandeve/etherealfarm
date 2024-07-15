@@ -1038,12 +1038,16 @@ function swapBlueprints(a, b, ethereal, update_automaton) {
   if(update_automaton) {
     for(var i = 0; i < state.automaton_autoactions.length; i++) {
       var o = state.automaton_autoactions[i];
-      if(ethereal) {
-        if(o.blueprint2 == a) o.blueprint2 = b;
-        else if(o.blueprint2 == b) o.blueprint2 = a;
-      } else {
-        if(o.blueprint == a) o.blueprint = b;
-        else if(o.blueprint == b) o.blueprint = a;
+      for(var j = 0; j < 5; j++) {
+        var effect = o.effect;
+        if(j > 0) effect = o.effect_seasonal[j - 1];
+        if(ethereal) {
+          if(effect.blueprint2 == a) effect.blueprint2 = b;
+          else if(effect.blueprint2 == b) effect.blueprint2 = a;
+        } else {
+          if(effect.blueprint == a) effect.blueprint = b;
+          else if(effect.blueprint == b) effect.blueprint = a;
+        }
       }
     }
   }

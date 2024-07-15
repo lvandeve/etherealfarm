@@ -30,10 +30,20 @@ function getChangeLog() {
     }
   }
 
+  text += '0.13.1 (2024-07-15)';
+  text += '<br/>• Added season overrides for auto-actions, unlocked if you have auto-transcend. Any auto action effects can be overriden for any of the seasons. This uses a fully separate configuration of the action effects, only used in that season. Use the "seasonal" button under the "Configure effect" dialog for this.';
+  text += '<br/>• Added "hold season" auto-action effect. This is unlocked if you have auto-transcend.';
+  text += '<br/>• Made the resin, twigs and time statistics in the "transcension stats" dialog more precise, and added season stat. You only get these increased stats for next runs after this version\'s release';
+  text += '<br/>• Made it more robust how the game remembers the undo state before an auto-transcend. When coming back after a long time to a game with auto-transcends enabled, and pressing the "undo" button, it will undo the last auto-transcend (unless you did a manual action before pressing undo)';
+  text += '<br/>• Fixed bug where "hold season" wouldn\'t return 30 amber when transcending before the previous season ended';
+  text += '<br/>• Named the auto-action effect configuration "Effect" instead of "Action" in more places';
+  text += '<br/>• Added transcend count to the game info dialog and tooltip (from the info box at the top left, left of the seeds amount), previously this was only visible deep in the player statistics dialog';
+  text += '<br/><br/>';
+
   text += '0.13.0 Auto-transcend (2024-06-27)';
   text += '<br/>• Added auto-transcend for the auto-actions, unlocked by wither challenge 150.';
   text += '<br/>• Moved the extra auto-action slot reward from wither 150, to wither 200.';
-  text += '<br/>• Added stats related to auto-transcend and the resources gained in the player stats dialog (under Ethereal).';
+  text += '<br/>• Added a new statistics dialog with time, resin and twigs of multiple previous transcensions ("transcension stats" under the main menu dialog).';
   text += '<br/>• Nerfed the infinity production of the ruby infinity bee nest, fern and acorn: they were too powerful because expected fishes at this point are more powerful than anticipated when these were designed.';
   text += '<br/>• Typo fixes.';
   text += '<br/><br/>';

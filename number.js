@@ -1137,7 +1137,11 @@ Num.notationSci = function(v, precision, eng, opt_base) {
 // Num.smallValueNotation(Num(0.009777), 3): 0.00978
 Num.smallValueNotation = function(v, precision) {
   // the 1.0000000001 is so that e.g. 0.00999999999 will show up as 0.01 instead. TODO: use better method for this
-  v = v.valueOf() * 1.0000000001;
+  //v = v.valueOf() * 1.0000000001;
+
+  // The correction added ensures that e.g. 201.6 with precision 3 will show up as 202, not 201 (correct rounding of the digits)
+  v = v.valueOf() + (Math.pow(0.1, precision - Math.floor(Math.log10(v)))) * 5;
+
   var result;
   if(v < 1 && precision > 0 && precision < 100) { // the 1-100 range is to prevent JS throwing range error for toPrecision
     // the reason for using toFixed is to benefit from its correct rounding, since the trimming code below just trims things without rounding up when needed

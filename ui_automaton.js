@@ -451,7 +451,7 @@ function showAutomatonFeatureSourceDialog() {
     text += '<br/>';
   }
   if(autoActionTranscendUnlocked()) {
-    text += ' • Auto-transcend: wither challenge stage 6';
+    text += ' • Auto-transcend and seasonal auto-actions: wither challenge stage 6';
     text += '<br/>';
   }
   if(numAutoActionsUnlocked() > 3) {
@@ -475,76 +475,100 @@ function getBluePrintActionDescription(index, o) {
   if(index == 0 && haveBeginOfRunAutoAction()) {
     text += 'This special limited auto-action can only be used to set up start-of-run.';
   } else {
-    if(o.type == 0) {
-      text += 'tree level: ' + o.level;
-    } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
-      var c = crops[o.crop - 1];
-      var p = o.prestige;
+    if(o.trigger.type == 0) {
+      text += 'tree level: ' + o.trigger.level;
+    } else if(o.trigger.type == 1 || o.trigger.type == 2 || o.trigger.type == 3 || o.trigger.type == 5) {
+      var c = crops[o.trigger.crop - 1];
+      var p = o.trigger.prestige;
       var cropname = c ? c.name : 'none';
       if(c && p) cropname += ' (prestiged)';
-      if(o.type == 1) text += 'unlocked crop: ' + cropname;
-      if(o.type == 2) text += 'planted crop: ' + cropname;
-      if(o.type == 3) text += 'fullgrown crop: ' + cropname;
-      if(o.type == 5) text += 'upgraded crop: ' + cropname;
-    } else if(o.type == 4) {
-      text += 'run time: ' + util.formatDuration(o.time, true);
+      if(o.trigger.type == 1) text += 'unlocked crop: ' + cropname;
+      if(o.trigger.type == 2) text += 'planted crop: ' + cropname;
+      if(o.trigger.type == 3) text += 'fullgrown crop: ' + cropname;
+      if(o.trigger.type == 5) text += 'upgraded crop: ' + cropname;
+    } else if(o.trigger.type == 4) {
+      text += 'run time: ' + util.formatDuration(o.trigger.time, true);
     }
   }
 
   text += '<br>';
-  text += 'Action ' + visual_index + ': ';
+  text += 'Effect ' + visual_index + ': ';
   var actiontext = '';
-  if(o.enable_blueprint) {
-    var b = state.blueprints[o.blueprint];
+  if(o.effect.enable_blueprint) {
+    var b = state.blueprints[o.effect.blueprint];
     var empty = !b || (b.data.length == 0);
-    actiontext += 'Override blueprint ' + (o.blueprint + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;
+    actiontext += 'Override blueprint ' + (o.effect.blueprint + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;
   }
-  if(o.enable_blueprint2) {
+  if(o.effect.enable_blueprint2) {
     if(actiontext != '') actiontext += '. ';
-    var b = state.blueprints2[o.blueprint2];
+    var b = state.blueprints2[o.effect.blueprint2];
     var empty = !b || (b.data.length == 0);
-    actiontext += 'Ethereal blueprint ' + (o.blueprint2 + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;
+    actiontext += 'Ethereal blueprint ' + (o.effect.blueprint2 + 1) + ' ' + (empty ? '[empty]' : ('"' + b.name + '"'));;
   }
-  if(o.enable_fruit) {
+  if(o.effect.enable_fruit) {
     if(actiontext != '') actiontext += '. ';
-    var f = state.fruit_stored[o.fruit];
-    actiontext += 'Select fruit slot ' + (o.fruit + 1); // fruit slots start at 1 (not 0) due to the keyboard key 1 being leftmost
+    var f = state.fruit_stored[o.effect.fruit];
+    actiontext += 'Select fruit slot ' + (o.effect.fruit + 1); // fruit slots start at 1 (not 0) due to the keyboard key 1 being leftmost
     if(f) {
       actiontext += ' "' + f.toString() + '"';
     }
   }
   if(autoActionExtraUnlocked()) {
-    if(o.enable_brassica) {
+    if(o.effect.enable_brassica) {
       if(actiontext != '') actiontext += '. ';
       actiontext += 'Refresh brassica';
     }
-    if(o.enable_weather) {
+    if(o.effect.enable_weather) {
       if(actiontext != '') actiontext += '. ';
-      if(o.weather == 0) actiontext += 'Activate sun';
-      if(o.weather == 1) actiontext += 'Activate mist';
-      if(o.weather == 2) actiontext += 'Activate rainbow';
+      if(o.effect.weather == 0) actiontext += 'Activate sun';
+      if(o.effect.weather == 1) actiontext += 'Activate mist';
+      if(o.effect.weather == 2) actiontext += 'Activate rainbow';
     }
-    if(o.enable_fern) {
+    if(o.effect.enable_fern) {
       if(actiontext != '') actiontext += '. ';
       actiontext += 'Pick up fern';
     }
-    if(o.enable_transcend) {
+    if(o.effect.enable_transcend) {
       if(actiontext != '') actiontext += '. ';
       actiontext += 'Transcend';
     }
+    if(o.effect.enable_hold_season) {
+      if(actiontext != '') actiontext += '. ';
+      actiontext += 'Hold season';
+    }
   }
-
   if(actiontext == '') actiontext = 'None';
   text += actiontext;
+
+  if(autoActionSeasonOverrideUnlocked()) {
+    var has_season_override = false;
+    for(var i = 0; i < o.season_override.length; i++) has_season_override |= o.season_override[i];
+    if(has_season_override) {
+      text += '<br>';
+      text += 'Season overrides: ';
+      var first = true;
+      for(var i = 0; i < o.season_override.length; i++) {
+        if(o.season_override[i]) {
+          if(!first) text += ', ';
+          first = false;
+          text += seasonNames[i];
+        }
+      }
+    }
+  }
+
   return text;
 }
 
 
+// mark all auto actions that would fulfill the trigger condition as done, this is used to prevent triggering all at once when auto-action was disabled during the time these newly triggered
 function markTriggeredAutoActionsAsDone() {
   var num = numAutoActionsUnlocked();
   for(var j = 0; j < num; j++) {
     var b = state.automaton_autoactions[j];
-    b.done = autoActionTriggerConditionReached(j, b);
+    var done = autoActionTriggerConditionReached(j, b);
+    b.done = done;
+    b.done2 = done;
   }
 }
 
@@ -565,7 +589,7 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
       closefun();
     },
     scrollable:true,
-    title:('Configure automaton trigger ' + visual_index),
+    title:('Configure auto-action ' + visual_index + ' trigger'),
     help:'Here you can configure the conditions at which this automaton action will trigger, e.g. after some tree level is reached, some crops are unlocked or after a certain time'
   });
   var scrollFlex = dialog.content;
@@ -612,8 +636,8 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
   // the order in the dropdown is different than the save state order
   var typevalues = [0, 1, 2, 3, 5, 4];
   var invtypevalues = [0, 1, 2, 3, 5, 4];
-  makeDropdown(flex, 'Trigger by', invtypevalues[o.type], typenames, function(i) {
-    o.type = typevalues[i];
+  makeDropdown(flex, 'Trigger by', invtypevalues[o.trigger.type], typenames, function(i) {
+    o.trigger.type = typevalues[i];
     updateLevelButton(index);
   }, true);
   //flex.div.className = 'efAutomatonAuto';
@@ -624,40 +648,40 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
   centerText2(levelflex.div);
   var updateLevelButton = function() {
       var text = '';
-      if(o.type == 0) {
-        text += 'tree level: ' + o.level;
-      } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
-        var c = crops[o.crop - 1];
-        var p = o.prestige;
+      if(o.trigger.type == 0) {
+        text += 'tree level: ' + o.trigger.level;
+      } else if(o.trigger.type == 1 || o.trigger.type == 2 || o.trigger.type == 3 || o.trigger.type == 5) {
+        var c = crops[o.trigger.crop - 1];
+        var p = o.trigger.prestige;
         var cropname = c ? c.name : 'none';
         if(c && p) cropname += ' (prestiged)';
-        if(o.type == 1) text += 'unlocked crop: ' + cropname;
-        if(o.type == 2) text += 'planted crop: ' + cropname;
-        if(o.type == 3) text += 'fullgrown crop: ' + cropname;
-        if(o.type == 5) text += 'upgraded crop: ' + cropname;
-      } else if(o.type == 4) {
-        text += 'run time: ' + util.formatDuration(o.time, true);
+        if(o.trigger.type == 1) text += 'unlocked crop: ' + cropname;
+        if(o.trigger.type == 2) text += 'planted crop: ' + cropname;
+        if(o.trigger.type == 3) text += 'fullgrown crop: ' + cropname;
+        if(o.trigger.type == 5) text += 'upgraded crop: ' + cropname;
+      } else if(o.trigger.type == 4) {
+        text += 'run time: ' + util.formatDuration(o.trigger.time, true);
       }
       levelflex.div.textEl.innerText = text;
   };
   addButtonAction(levelflex.div, function() {
-    if(o.type == 0) {
+    if(o.trigger.type == 0) {
       makeTextInput('Tree level', 'Enter tree level at which to perform action', function(text) {
         var i = parseInt(text);
         if(!(i >= 0 && i < 1000000)) i = 0;
-        o.level = i;
+        o.trigger.level = i;
         updateLevelButton(index);
-      }, '' + o.level);
-    } else if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
-      makePlantSelectDialog(o.crop, o.prestige, function(cropid, prestiged) {
-        o.crop = cropid + 1;
-        o.prestige = prestiged;
+      }, '' + o.trigger.level);
+    } else if(o.trigger.type == 1 || o.trigger.type == 2 || o.trigger.type == 3 || o.trigger.type == 5) {
+      makePlantSelectDialog(o.trigger.crop, o.trigger.prestige, function(cropid, prestiged) {
+        o.trigger.crop = cropid + 1;
+        o.trigger.prestige = prestiged;
         updateLevelButton();
       });
-    } else if(o.type == 4) {
-      var current_hours = '' + Math.floor(o.time / 3600);
-      var current_minutes = '' + Math.floor((o.time % 3600) / 60);
-      var current_seconds = '' + (o.time % 60);
+    } else if(o.trigger.type == 4) {
+      var current_hours = '' + Math.floor(o.trigger.time / 3600);
+      var current_minutes = '' + Math.floor((o.trigger.time % 3600) / 60);
+      var current_seconds = '' + (o.trigger.time % 60);
       var current;
       if(current_seconds == '0') {
         if(current_minutes.length == 1) current_minutes = '0' + current_minutes;
@@ -671,19 +695,25 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
       }
       makeTextInput('Run time', 'Enter time since start of run. Supported formats, e.g. for one and a half hours: 1:30, 1h30m, 1.5h or 1.5', function(text) {
         var parts = text.split(':');
+        var parts2 = text.split('h');
         var lastchar = parts.length == 1 ? lower(parts[0].charAt(parts[0].length - 1)) : '';
         if(lastchar == 'd' || lastchar == 'h' || lastchar == 'm' || lastchar == 's') {
           // support an alternative notation such as: 5h for 5 hours, 3d for 3 days, 2m for 2 minutes, etc..., and combinations of those. Month and year are not supported, and it's case-insensitive
           var parts2 = parts[0].split(/([a-zA-Z])/); // split by letter separators such that you get both the numeric values and the separator letters. E.g. 3d 1h becomes "3","d"," 1","h",""
-          o.time = 0;
+          o.trigger.time = 0;
           for(var i = 0; i + 1 < parts2.length; i += 2) {
             var value = parseFloat(parts2[i].trim());
             var unit = parts2[i + 1];
-            if(unit == 'd') o.time += value * 24 * 3600;
-            else if(unit == 'h') o.time += value * 3600;
-            else if(unit == 'm') o.time += value * 60;
-            else if(unit == 's') o.time += value;
+            if(unit == 'd') o.trigger.time += value * 24 * 3600;
+            else if(unit == 'h') o.trigger.time += value * 3600;
+            else if(unit == 'm') o.trigger.time += value * 60;
+            else if(unit == 's') o.trigger.time += value;
           }
+        } else if(parts2.length == 2 && parts.length == 1) {
+          // support also the form "2h30" and similar
+          var hours = parseFloat(parts2[0]);
+          var minutes = parseFloat(parts2[1]);
+          o.trigger.time = hours * 3600 + minutes * 60;
         } else {
           var hours = parseFloat(parts[0]);
           var minutes = parts.length > 1 ? parseFloat(parts[1]) : 0;
@@ -691,9 +721,9 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
           if(!(hours >= 0)) hours = 0;
           if(!(minutes >= 0)) minutes = 0;
           if(!(seconds >= 0)) seconds = 0;
-          o.time = hours * 3600 + minutes * 60 + seconds;
+          o.trigger.time = hours * 3600 + minutes * 60 + seconds;
         }
-        if(isNaN(o.time)) o.time = 0;
+        if(isNaN(o.trigger.time)) o.trigger.time = 0;
 
         updateLevelButton(index);
       }, '' + current);
@@ -703,17 +733,93 @@ function showConfigureAutoActionTriggerDialog(index, closefun) {
 }
 
 
-function showConfigureAutoActionEffectDialog(index, closefun) {
+function showConfigureAutoActionSeasonsDialog(index) {
   var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
+  var o = state.automaton_autoactions[index];
+
   var dialog = createDialog({
-    onclose:closefun,
-    scrollable:true,
-    title:('Configure automaton action ' + visual_index),
-    help:'Here you can enable or disable one or more automaton actions that occur when the condition is triggered, and choose their parameters.<br><br> - Auto-blueprint: override the field with the chosen blueprint.<br> - Ethereal blueprint: override the ethereal field with the chosen blueprint.<br> - Auto-fruit: activate the chosen fruit.<br> - Other actions may unlock later.'
+    title:('Configure auto-action ' + visual_index + ' season overrides'),
+    help:'This allows to override the auto-action effect for seasons of your choice. Enable the "override" checkbox of any season to override, and configure the effect parameters of that season. All effects must be reconfigured.'
   });
   var scrollFlex = dialog.content;
 
+  var texth = 0;
+  var h = 0.06;
+  var y = 0;
+  var addControl = function(opt_height) {
+    var h = 0.08 * ((opt_height == undefined) ? 1 : opt_height);
+    var flex  = new Flex(scrollFlex, 0.01, y, 0.8, y + h);
+    y += h * 1.2;
+    return flex;
+  };
+
+  var flex;
+
+  for(var i = 0; i < 4; i++) {
+    var seasonname = seasonNames[i];
+    flex = addControl(0.7);
+    makeCheckbox(flex, o.season_override[i], 'Override ' + seasonname, bind(function(i, state) {
+      o.season_override[i] = state;
+    }, i));
+    flex = addControl();
+    styleButton(flex.div);
+    centerText2(flex.div);
+    flex.div.textEl.innerText = 'Configure ' + seasonname;
+    addButtonAction(flex.div, bind(function(i) {
+      showConfigureAutoActionEffectDialog(index, undefined, i);
+    }, i));
+    y += 0.05;
+  }
+}
+
+// opt_season: if not undefined, then configure the season override rather than the main set of effects
+function showConfigureAutoActionEffectDialog(index, closefun, opt_season) {
+  var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
   var o = state.automaton_autoactions[index];
+
+  var functions = [];
+  var names = [];
+
+  if(autoActionSeasonOverrideUnlocked() && opt_season == undefined) {
+    functions = [function(){
+      showConfigureAutoActionSeasonsDialog(index);
+      return true; // keep previous dialog open
+    }];
+    names = ['seasonal'];
+  }
+  if(opt_season != undefined) {
+    functions = [function(){
+      o.effect_seasonal[opt_season] = util.clone(o.effect);
+      // Show the new state in the dialog
+      // The timeout is because otherwise a bug happens with the semi-transparent background overlay around the dialogs, for some reason one layer gets added instead of staying same. TODO fix that
+      window.setTimeout(function() {
+        showConfigureAutoActionEffectDialog(index, closefun, opt_season);
+      });
+    }];
+    names = ['copy from main'];
+  }
+
+  var effect = o.effect;
+  if(opt_season != undefined) {
+    effect = o.effect_seasonal[opt_season];
+  }
+
+  var title = 'Configure auto-action ' + visual_index + ' effect';
+  if(opt_season != undefined) {
+    title += ' (' + seasonNames[opt_season] + ')';
+  }
+
+  var dialog = createDialog({
+    onclose:closefun,
+    scrollable:true,
+    title:title,
+    help:'Here you can enable or disable one or more auto-action effects that occur when the condition is triggered, and choose their parameters.<br><br> - Auto-blueprint: override the field with the chosen blueprint.<br> - Ethereal blueprint: override the ethereal field with the chosen blueprint.<br> - Auto-fruit: activate the chosen fruit.<br> - Other actions may unlock later.',
+    functions:functions,
+    names:names,
+    cancelname:'back'
+  });
+  var scrollFlex = dialog.content;
+
 
   var texth = 0;
   var h = 0.06;
@@ -738,8 +844,8 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
 
 
   flex = addControl(0.7);
-  makeCheckbox(flex, o.enable_blueprint, 'Enable auto-blueprint', function(state) {
-    o.enable_blueprint = state;
+  makeCheckbox(flex, effect.enable_blueprint, 'Enable auto-blueprint', function(state) {
+    effect.enable_blueprint = state;
   }, 'Enable auto-blueprint');
 
   flex = addControl();
@@ -747,14 +853,14 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
   centerText2(flex.div);
   var updateBlueprintButton = bind(function(flex, index) {
     //updateToggleButton(flex, true);
-    var i = o.blueprint;
+    var i = effect.blueprint;
     var b = state.blueprints[i];
     var empty = !b || (b.data.length == 0);
     flex.div.textEl.innerText = 'Chosen blueprint: [' + (i + 1) + '] ' + (empty ? '[empty]' : b.name);
   }, flex, index);
   addButtonAction(flex.div, function() {
     createBlueprintsDialog(undefined, undefined, false, function(i) {
-      o.blueprint = i;
+      effect.blueprint = i;
       updateBlueprintButton();
     });
   });
@@ -763,8 +869,8 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
 
   if(autoActionExtra2Unlocked()) {
     flex = addControl(0.7);
-    makeCheckbox(flex, o.enable_blueprint2, 'Enable ethereal blueprint', function(state) {
-      o.enable_blueprint2 = state;
+    makeCheckbox(flex, effect.enable_blueprint2, 'Enable ethereal blueprint', function(state) {
+      effect.enable_blueprint2 = state;
     }, 'Enable ethereal blueprint');
 
     flex = addControl();
@@ -772,14 +878,14 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
     centerText2(flex.div);
     var updateBlueprintButton2 = bind(function(flex, index) {
       //updateToggleButton(flex, true);
-      var i = o.blueprint2;
+      var i = effect.blueprint2;
       var b = state.blueprints2[i];
       var empty = !b || (b.data.length == 0);
       flex.div.textEl.innerText = 'Ethereal blueprint: [' + (i + 1) + '] ' + (empty ? '[empty]' : b.name);
     }, flex, index);
     addButtonAction(flex.div, function() {
       createBlueprintsDialog(undefined, undefined, true, function(i) {
-        o.blueprint2 = i;
+        effect.blueprint2 = i;
         updateBlueprintButton2();
       });
     });
@@ -787,8 +893,8 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
   }
 
   flex = addControl(0.7);
-  makeCheckbox(flex, o.enable_fruit, 'Enable auto-fruit', function(state) {
-    o.enable_fruit = state;
+  makeCheckbox(flex, effect.enable_fruit, 'Enable auto-fruit', function(state) {
+    effect.enable_fruit = state;
   }, 'Enable auto-fruit');
 
 
@@ -796,9 +902,9 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
   styleButton(flex.div);
   centerText2(flex.div);
   var updateFruitButton = bind(function(flex, index) {
-    var f = state.fruit_stored[o.fruit];
+    var f = state.fruit_stored[effect.fruit];
 
-    var text = 'Chosen fruit slot: ' + (o.fruit + 1);
+    var text = 'Chosen fruit slot: ' + (effect.fruit + 1);
 
     if(f) {
       text += '. "' + f.toString() + '"';
@@ -807,7 +913,7 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
   }, flex, index);
   addButtonAction(flex.div, function() {
     createSelectFruitSlotDialog(function(i) {
-      o.fruit = i;
+      effect.fruit = i;
       updateFruitButton();
     }, MAXFRUITARROWS, 'Select fruit to automatically swap to when triggering this automaton action. This selects the fruit slot, not the fruit: if you move fruits around in the fruit tab, the original slot position, not the moved fruit, is used. In the fruit tab, the selected slot will show a small gear icon as a reminder. Only slots from the topmost row can be selected.');
   });
@@ -815,40 +921,47 @@ function showConfigureAutoActionEffectDialog(index, closefun) {
 
   if(autoActionExtraUnlocked()) {
     flex = addControl(0.7);
-    makeCheckbox(flex, o.enable_brassica, 'Refresh brassica', function(state) {
-      o.enable_brassica = state;
+    makeCheckbox(flex, effect.enable_brassica, 'Refresh brassica', function(state) {
+      effect.enable_brassica = state;
     }, 'Refresh brassica');
 
     flex = addControl(0.7);
-    makeCheckbox(flex, o.enable_weather, 'Activate weather', function(state) {
-      o.enable_weather = state;
+    makeCheckbox(flex, effect.enable_weather, 'Activate weather', function(state) {
+      effect.enable_weather = state;
     }, 'Activate weather');
 
     flex = addControl();
     styleButton(flex.div);
     centerText2(flex.div);
     var updateWeatherButton = bind(function(flex, index) {
-      var text = 'Chosen weather: ' + ['sun', 'mist', 'rainbow'][o.weather];
+      var text = 'Chosen weather: ' + ['sun', 'mist', 'rainbow'][effect.weather];
       flex.div.textEl.innerText = text;
     }, flex, index);
     addButtonAction(flex.div, function() {
       createSelectWeatherDialog(function(i) {
-        o.weather = i;
+        effect.weather = i;
         updateWeatherButton();
       }, 'Select which weather to activate for this auto-action.');
     });
     updateWeatherButton();
 
     flex = addControl(0.7);
-    makeCheckbox(flex, o.enable_fern, 'Pick up fern', function(state) {
-      o.enable_fern = state;
+    makeCheckbox(flex, effect.enable_fern, 'Pick up fern', function(state) {
+      effect.enable_fern = state;
     }, 'Pick up fern');
+  }
+
+  if(autoActionSeasonOverrideUnlocked()) {
+    flex = addControl(0.7);
+    makeCheckbox(flex, effect.enable_hold_season, 'Hold season (amber)', function(state) {
+      effect.enable_hold_season = state;
+    }, 'Hold season (amber)');
   }
 
   if(autoActionTranscendUnlocked() && !(haveBeginOfRunAutoAction() && index == 0)) {
     flex = addControl(0.7);
-    makeCheckbox(flex, o.enable_transcend, 'Transcend', function(state) {
-      o.enable_transcend = state;
+    makeCheckbox(flex, effect.enable_transcend, 'Transcend', function(state) {
+      effect.enable_transcend = state;
     }, 'Transcend');
   }
 }
@@ -869,7 +982,6 @@ function showConfigureAutoActionDialog() {
   var scrollFlex = dialog.content;
 
   var texth = 0;
-  var h = 0.06;
   var y = 0;
 
   var flex;
@@ -878,14 +990,6 @@ function showConfigureAutoActionDialog() {
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Choose at which tree level to override with which blueprint';
   y += texth * 1.5;
-
-  var addControl = function(opt_width, opt_align) {
-    var h = 0.08;
-    var w = opt_width || 0.6;
-    var flex  = new Flex(scrollFlex, 0.01, y, w, y + h, undefined, opt_align);
-    y += h * 1.2;
-    return flex;
-  };
 
   var setButtonIndicationStyle = function(flex) {
     if(flex.enabledStyle != undefined) {
@@ -916,8 +1020,12 @@ function showConfigureAutoActionDialog() {
   for(var j = 0; j < num; j++) {
     var b = state.automaton_autoactions[j];
 
-    flex = addControl(1, 6);
+    var h = autoActionSeasonOverrideUnlocked() ? 0.105 : 0.08; // the text needs a bit more vertical space if the 'season overrides' text can appear
+    flex  = new Flex(scrollFlex, 0.01, y, 1, y + h, undefined, 6); // 6 to align the text to the bottom
+    y += h;
+
     flex.div.innerHTML = getBluePrintActionDescription(j, b);
+    //flex.div.style.border = '1px solid red';
     infoflexes.push(flex);
     var updateInfoFlex = function(j) {
       var flex = infoflexes[j];
@@ -925,6 +1033,8 @@ function showConfigureAutoActionDialog() {
       flex.div.innerHTML = getBluePrintActionDescription(j, b);
     };
 
+
+    y += 0.02;
 
     var x = 0.0;
     var w0 = 0.23;
@@ -953,7 +1063,7 @@ function showConfigureAutoActionDialog() {
     flex = new Flex(scrollFlex, x, y, x + w0, y + 0.07);
     styleButton(flex.div);
     centerText2(flex.div);
-    flex.div.textEl.innerText = 'Edit action';
+    flex.div.textEl.innerText = 'Edit effect';
     addButtonAction(flex.div, bind(function(j) {
       showConfigureAutoActionEffectDialog(j, function() {
         updateInfoFlex(j);
@@ -987,7 +1097,7 @@ function showConfigureAutoActionDialog() {
     registerTooltip(flex.div, 'Do this action manually now. This ignores the action trigger, and does not affect when or whether the automaton will do this action. You can do it manually any time or multiple times indepdendently from the automaton. You can also configure the number keys to do these in the settings.');
     x += w1;
 
-    y += h * 1.8;
+    y += 0.108;
   }
 }
 

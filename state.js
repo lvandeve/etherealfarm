@@ -454,15 +454,8 @@ BluePrint.copy = function(b) {
   return result;
 }
 
-// actual auto-action now (can also do other actions than blueprint)
-// TODO: rename to AutoActionState
-function AutoActionState() {
-  this.enabled = false; // if false, this one is individually disabled
-
-  this.done = false; // already done this action this round
-  this.done2 = false; // done second part of this action: auto-fern (and a few other actions with it) happen only a few seconds later to give automaton time to plant the blueprint
-  this.time2 = 0; // the time at which second part must be done. Only used while done is true and done2 is false
-
+// the trigger condition for an auto action
+function AutoActionTriggerState() {
   this.type = 0; // what triggers this action: 0 = tree level, 1/2/3 = unlocked/growing/fullgrown crop type, 4 = run time, 5 = upgraded crop type
 
   this.level = 10; // tree level, for type 0
@@ -471,7 +464,10 @@ function AutoActionState() {
   this.prestige = 0; // prestige level required from the crop
 
   this.time = 0; // runtime for the trigger based on runtime, for type 4
+}
 
+// a single set of auto action effect settings, for a single season
+function AutoActionEffectState() {
   this.enable_blueprint = false;
   this.blueprint = 0; // index of blueprint to use + 1, or 0 if not yet configured
 
@@ -489,6 +485,30 @@ function AutoActionState() {
   this.enable_fern = false; // fern pickup
 
   this.enable_transcend = false;
+
+  this.enable_hold_season = false;
+}
+
+function AutoActionState() {
+  this.enabled = false; // if false, this one is individually disabled
+
+  this.done = false; // already done this action this round
+  this.done2 = false; // done second part of this action: auto-fern (and a few other actions with it) happen only a few seconds later to give automaton time to plant the blueprint
+  this.time2 = 0; // the time at which second part must be done. Only used while done is true and done2 is false
+
+  this.trigger = new AutoActionTriggerState();
+  this.effect = new AutoActionEffectState();
+
+  this.season_override = [false, false, false, false];
+  this.effect_seasonal = [new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState()];
+
+  this.getEffect = function() {
+    var season = getSeason();
+    if(autoActionSeasonOverrideUnlocked() && season >= 0 && season <= 3 && this.season_override[season]) {
+      return this.effect_seasonal[season];
+    }
+    return this.effect;
+  };
 }
 
 
@@ -735,6 +755,7 @@ function State() {
   this.numLastAutomaticTranscends = 0; // amount of automatic transcends sinze the last manual transcend
   this.numAutomaticTranscendsSinceHumanAction = 0; // amount of automatic transcends sinze the last manual action of any kind (not just transcend)
   this.automaticTranscendRes = new Res(); // amount of resources gotten from the last streak of streak of auto-transcends.
+  this.runHadAnyHumanAction = true; // if false, this run was started by auto-transcend and no other human actions happened so far either
 
   // fruit
   this.fruit_seed = -1; // random seed for creating random fruits
@@ -1010,11 +1031,12 @@ function State() {
   // progress stats, most recent stat at the end
   this.reset_stats_level = []; // reset at what tree level for each reset
   this.reset_stats_level2 = []; // tree level 2 at end of this run
-  this.reset_stats_time = []; // approximate time of this run
+  this.reset_stats_time = []; // approximate time of this run (in units of 5 minutes)
   this.reset_stats_total_resin = []; // approximate total resin earned in total before start of this run
   this.reset_stats_resin = []; // approximate resin earned during this run
   this.reset_stats_twigs = []; // approximate twigs earned during this run
   this.reset_stats_challenge = []; // what type of challenge, if any, for this run
+  this.reset_stats_season = []; // the season at the end of the run. the beginning season, or whether it was mixed season, is not stored. The starting season can be deduced from the previous run's end season, except if 'hold season' was used that run, but we don't keep track of that for now
 
   // stats at ethereal tree levelup. The index is the ethereal tree level before, not after, e.g. index 0 corresponds to leveling up to level 1.
   this.eth_stats_time = []; // since game start
@@ -2583,6 +2605,12 @@ function autoUnlockEnabled() {
   return !!state.automaton_autounlock;
 }
 
+function autoPrestigeUnlocked() {
+  if(!automatonUnlocked()) return false;
+  if(!state.challenges[challenge_truly_basic].completed) return false;
+  return true;
+}
+
 // opt_state: if given, uses this state instead of the global state
 function autoActionUnlocked(opt_state) {
   var s = opt_state || state;
@@ -2619,25 +2647,27 @@ function autoActionEnabled() {
   return state.automaton_autoaction == 1;
 }
 
-function autoPrestigeUnlocked() {
-  if(!automatonUnlocked()) return false;
-  if(!state.challenges[challenge_truly_basic].completed) return false;
-  return true;
-}
-
 // whether the extra auto-actions, that is weather, refresh brassica and fern, are unlocked
 function autoActionExtraUnlocked() {
-  return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 4;
+  if(!autoActionUnlocked()) return false;
+  return state.challenges[challenge_wither].completed >= 4;
 }
 
 // aka autoTranscendUnlocked
 function autoActionTranscendUnlocked() {
-  return autoActionUnlocked() && state.challenges[challenge_wither].completed >= 6;
+  if(!autoActionUnlocked()) return false;
+  return state.challenges[challenge_wither].completed >= 6;
 }
 
 // whether more extra auto-actions, that is ethereal blueprint, are unlocked
 function autoActionExtra2Unlocked() {
-  return true;//autoActionUnlocked() && state.challenges[challenge_wither].completed >= 6;
+  if(!autoActionUnlocked()) return false;
+  return true;// state.challenges[challenge_wither].completed >= 6;
+}
+
+// whether the ability to unlock auto actions per season is unlocked. Also used for auto-season-hold (enable_hold_season)
+function autoActionSeasonOverrideUnlocked() {
+  return autoActionTranscendUnlocked();
 }
 
 function autoPrestigeEnabled() {

@@ -1257,7 +1257,9 @@ function updateFruitUI() {
   if(autoActionUnlocked()) {
     for(var i = 0; i < state.automaton_autoactions.length; i++) {
       var o = state.automaton_autoactions[i];
-      if(o.enable_fruit) for_automaton[o.fruit] = true;
+      var effect = o.getEffect();
+      if(effect.enable_fruit) for_automaton[effect.fruit] = true;
+      if(o.effect.enable_fruit) for_automaton[o.effect.fruit] = true; // show the icon for the current season override effect, and for the main one. TODO: perhaps show fainter color symbol for fruits not currently in effect due to season overrides
     }
   }
 

@@ -805,9 +805,8 @@ function createStatsDialog() {
         var minutes = state.reset_stats_time[state.reset_stats_time.length - 1 - i] * 5;
         var timetext = '';
         if(minutes < 60) timetext = Num(minutes).toString(1) + 'm';
-        else if(minutes < 60 * 5) timetext = Num(minutes / 60).toString(2) + 'h';
-        else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(1) + 'h';
-        else timetext = Num(minutes / (24 * 60)).toString(1) + 'd';
+        else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(2) + 'h';
+        else timetext = Num(minutes / (24 * 60)).toString(2) + 'd';
         text += (i == 0 ? ' ' : ', ') +
             state.reset_stats_level[state.reset_stats_level.length - 1 - i] +
             ' (' + timetext +
@@ -942,24 +941,22 @@ function createTranscensionStatsDialog() {
       var minutes = state.reset_stats_time[state.reset_stats_time.length - 1 - i] * 5;
       var timetext = '';
       if(minutes < 60) timetext = Num(minutes).toString(1) + 'm';
-      else if(minutes < 60 * 5) timetext = Num(minutes / 60).toString(2) + 'h';
-      else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(1) + 'h';
-      else timetext = Num(minutes / (24 * 60)).toString(1) + 'd';
+      else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(2) + 'h';
+      else timetext = Num(minutes / (24 * 60)).toString(2) + 'd';
       text += 'level: ' + state.reset_stats_level[state.reset_stats_level.length - 1 - i];
       text += ', time: ' + timetext;
-      if(state.reset_stats_challenge[state.reset_stats_challenge.length - 1 - i]) text += ' (C)';
-
-      var approx;
 
       var resin = state.reset_stats_resin[state.reset_stats_resin.length - 1 - i];
-      if(i == 0) resin = state.p_res.resin; // exact
-      approx = i > 0 && resin.neqr(0);
-      if(resin != undefined) text += ', resin: ' + (approx ? '~' : '') + resin.toString();
+      if(resin != undefined) text += ', resin: ' + resin.toString();
 
       var twigs = state.reset_stats_twigs[state.reset_stats_twigs.length - 1 - i];
-      if(i == 0) twigs = state.p_res.twigs; // exact
-      approx = i > 0 && twigs.neqr(0);
-      if(twigs != undefined) text += ', twigs: ' + (approx ? '~' : '') + twigs.toString();
+      if(twigs != undefined) text += ', twigs: ' + twigs.toString();
+
+      var season = state.reset_stats_season[state.reset_stats_season.length - 1 - i];
+      if(season != undefined) text += ', season: ' + seasonNames[season];
+
+      if(state.reset_stats_challenge[state.reset_stats_challenge.length - 1 - i]) text += ', challenge.';
+
       text += close + '<br>';
     }
   }

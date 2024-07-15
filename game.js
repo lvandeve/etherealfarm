@@ -232,6 +232,7 @@ function hardReset() {
 
   undoSave = '';
   lastUndoSaveTime = 0;
+  lastUndoKeepLong = false;
   prev_store_undo = false;
 
   resetGlobalStateVars();
@@ -630,6 +631,7 @@ function endPreviousRun() {
     addStat(state.reset_stats_resin, resin);
     addStat(state.reset_stats_twigs, twigs);
     addStat(state.reset_stats_challenge, state.challenge);
+    addStat(state.reset_stats_season, getSeason());
   }
 
   // The previous run stats are to compare regular runs with previous ones, so don't count it in case of a challenge
@@ -708,6 +710,9 @@ function endPreviousRun() {
   } else {
     state.g_numresets++;
   }
+
+  // if you had 'hold season' active but the season did not yet change, then this ensures getting the 30 amber back
+  if(state.amberkeepseason) restoreAmberSeason();
 
   state.automaticTranscendRes.addInPlace(state.res.sub(res_before));
 }
@@ -842,7 +847,6 @@ function beginNextRun(opt_challenge) {
     u2.count = 0;
   }
 
-  restoreAmberSeason();
   if(opt_challenge) {
     startChallenge(opt_challenge);
   }
@@ -894,6 +898,8 @@ function softReset(opt_challenge, opt_automated) {
   // beginNextRun sets up the state for the new run, applies any new challenge effects, ...
   endPreviousRun();
   beginNextRun(opt_challenge);
+
+  state.runHadAnyHumanAction = !opt_automated;
 
   if(!opt_automated) setTab(0);
   removeChallengeChip();
@@ -947,8 +953,8 @@ var ACTION_REPLACE3 = action_index++;
 var ACTION_PLANT_FISH = action_index++;
 var ACTION_DELETE_FISH = action_index++;
 var ACTION_REPLACE_FISH = action_index++;
-var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it.
-var ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION = action_index++; // forces no undo to be saved for the second (several seconds later) part of auto-action
+var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it. (any action caused by automaton is marked with by_automaton and not stored for undo, but the ACTION_STORE_UNDO_BEFORE_AUTO_ACTION is an exception and is saved, to allow the player to undo an unwanted/unexpected auto-action, and auto-transcends)
+var ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION = action_index++; // used to not store undo before the second part of auto-actions, used when this one is triggered by the player (so actions don't have by_automaton marked)
 var ACTION_TD_GO = action_index++;
 
 var lastSaveTime = util.getTime();
@@ -958,11 +964,13 @@ var lastnonpausetime = 0;
 
 var undoSave = '';
 var lastUndoSaveTime = 0;
+var lastUndoKeepLong = false; // if true, does not apply maxUndoTime to this undo save (this is used for undoing auto-transcend)
 var prev_store_undo = false; // this variable is only used for auto-save after actions and is not directly related to undo
 
 function clearUndo() {
   undoSave = '';
   lastUndoSaveTime = 0;
+  lastUndoKeepLong = false;
 }
 
 var next_undo_is_redo = false; // TODO: this works as long as you're in the same session, but when refreshing this may make it say the opposite thing than it should
@@ -982,11 +990,11 @@ function storeUndo(state) {
 
 function loadUndo() {
   auto_action_manual_window_timeout_enabled = false;
-  if(lastUndoSaveTime != 0 && state.time - lastUndoSaveTime > maxUndoTime) {
+  if(lastUndoSaveTime != 0 && !lastUndoKeepLong && state.time - lastUndoSaveTime > maxUndoTime) {
     // prevent undoing something from super long ago, even though it may seem like a cool feature, it can be confusing and even damaging. Use export save to do long term things.
     clearUndo();
   }
-  if(undoSave == '' || !undoSave) {
+  if(!undoSave) {
     showMessage('No undo present. Undo is stored when performing an action.', C_INVALID, 0, 0);
     return;
   }
@@ -1010,6 +1018,7 @@ function loadUndo() {
   removeHelpChip();
 
   lastUndoSaveTime = 0; // now ensure next action saves undo again, pressing undo is a break in the action sequence, let the next action save so that pressing undo again brings us back to thie same undo-result-state
+  lastUndoKeepLong = false;
 }
 
 
@@ -2649,28 +2658,28 @@ function autoActionTriggerConditionReached(index, o) {
     // this because for this one it should be prevented to trigger it if you edit it in the UI and enable it for the first time, since one would edit it for starting conditions of the game that don't match the current situation
     return state.c_runtime < 10;
   }
-  if(o.type == 0 && state.treelevel >= o.level) {
+  if(o.trigger.type == 0 && state.treelevel >= o.trigger.level) {
     return true;
   }
-  if(o.type == 1 || o.type == 2 || o.type == 3 || o.type == 5) {
-    if(o.crop == 0) return false;
-    var c = crops[o.crop - 1];
-    var c2 = state.crops[o.crop - 1];
+  if(o.trigger.type == 1 || o.trigger.type == 2 || o.trigger.type == 3 || o.trigger.type == 5) {
+    if(o.trigger.crop == 0) return false;
+    var c = crops[o.trigger.crop - 1];
+    var c2 = state.crops[o.trigger.crop - 1];
     if(!c || !c2) return false;
-    var unlocked = c2.unlocked && c2.prestige >= o.prestige;
+    var unlocked = c2.unlocked && c2.prestige >= o.trigger.prestige;
     if(!unlocked) return false; // can also not have it planted or fullgrown in this case
-    if(o.type == 1 && unlocked) return true;
-    if(o.type == 2 && state.cropcount[c.index] > 0) return true;
-    if(o.type == 3 && c2.had > c2.prestige) return true;
-    if(o.type == 5 && c.basic_upgrade && state.upgrades[c.basic_upgrade].count) return true;
-    if(o.type == 2 || o.type == 3 || o.type == 5) {
+    if(o.trigger.type == 1 && unlocked) return true;
+    if(o.trigger.type == 2 && state.cropcount[c.index] > 0) return true;
+    if(o.trigger.type == 3 && c2.had > c2.prestige) return true;
+    if(o.trigger.type == 5 && c.basic_upgrade && state.upgrades[c.basic_upgrade].count) return true;
+    if(o.trigger.type == 2 || o.trigger.type == 3 || o.trigger.type == 5) {
       // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a higher tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
       // in case of non-berry, we also consider it this way
       var next_unlocked = state.highestoftypeunlocked[c.type] > c.tier;
       if(next_unlocked) return true;
     }
   }
-  if(o.type == 4 && state.c_runtime >= o.time) {
+  if(o.trigger.type == 4 && state.c_runtime >= o.trigger.time) {
     return true;
   }
   return false;
@@ -2681,6 +2690,7 @@ var autoActionPart2Time = 5; // how long to wait before auto-action does the sec
 // part: 1 for the first part, 2 for the second part that is done a bit later
 function doAutoAction(index, part, opt_manually) {
   var o = state.automaton_autoactions[index];
+  var effect = o.getEffect();
   var did_something = false;
   if(part == 1) {
     var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
@@ -2690,44 +2700,48 @@ function doAutoAction(index, part, opt_manually) {
       showMessage('Activating auto-action ' + visual_index);
     }
     // refresh brassica is done before blueprint, otherwise the refreshWatercress may add actions that override watercress on top of actions to turn it into other crops added for blueprint override. Blueprint override must give the final state here.
-    if(o.enable_brassica && autoActionExtraUnlocked()) {
+    if(effect.enable_brassica && autoActionExtraUnlocked()) {
       refreshWatercress(false, false, true);
       did_something = true;
     }
     // don't do blueprint if this is the start-of-run auto-action (index 0) and player already did transcend with blueprint
-    if(o.enable_blueprint && !(state.transcended_with_blueprint && !opt_manually && haveBeginOfRunAutoAction() && index == 0)) {
-      var b = state.blueprints[o.blueprint];
+    if(effect.enable_blueprint && !(state.transcended_with_blueprint && !opt_manually && haveBeginOfRunAutoAction() && index == 0)) {
+      var b = state.blueprints[effect.blueprint];
       if(b) {
         plantBluePrint(b, true, !opt_manually);
         did_something = true;
       }
     }
-    if(o.enable_blueprint2) {
-      var b = state.blueprints2[o.blueprint2];
+    if(effect.enable_blueprint2) {
+      var b = state.blueprints2[effect.blueprint2];
       if(b) {
         plantBluePrint2(b, true, !opt_manually);
         did_something = true;
       }
     }
-    if(o.enable_fruit) {
-      addAction({type:ACTION_FRUIT_ACTIVE, slot:o.fruit, by_automaton:!opt_manually});
+    if(effect.enable_fruit) {
+      addAction({type:ACTION_FRUIT_ACTIVE, slot:effect.fruit, by_automaton:!opt_manually});
       did_something = true;
     }
     // arguably this could also go in part 2, but for the manual toggling of auto-actions it's more clear what's going on if it's executed immediately in part 1
-    if(o.enable_weather && autoActionExtraUnlocked()) {
-      addAction({type:ACTION_ABILITY, ability:o.weather, by_automaton:!opt_manually, change_perma:true});
+    if(effect.enable_weather && autoActionExtraUnlocked()) {
+      addAction({type:ACTION_ABILITY, ability:effect.weather, by_automaton:!opt_manually, change_perma:true});
+      did_something = true;
+    }
+    if(effect.enable_hold_season && autoActionSeasonOverrideUnlocked()) {
+      addAction({type:ACTION_AMBER, effect:AMBER_KEEP_SEASON, by_automaton:!opt_manually});
       did_something = true;
     }
   }
 
   if(part == 2) {
-    if(o.enable_fern && autoActionExtraUnlocked()) {
+    if(effect.enable_fern && autoActionExtraUnlocked()) {
       if(state.fern) {
         addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:!opt_manually});
       }
       did_something = true;
     }
-    if(o.enable_transcend && autoActionTranscendUnlocked()) {
+    if(effect.enable_transcend && autoActionTranscendUnlocked()) {
       addAction({type:ACTION_TRANSCEND, by_automaton:!opt_manually});
       did_something = true;
     }
@@ -2789,7 +2803,7 @@ function doAutoActions() {
     if(!o.enabled) continue;
     var triggered = autoActionTriggerConditionReached(i, o);
     var triggered2 = o.done && !o.done2 && state.c_runtime >= o.time2;
-    if(triggered && !o.enable_blueprint) triggered2 = true; // no need to wait for planting blueprint if there's none built
+    if(triggered && !o.getEffect().enable_blueprint) triggered2 = true; // no need to wait for planting blueprint if there's none built
     if(!o.done && triggered) {
       addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:i, by_automaton:true});
       o.done = true;
@@ -2798,7 +2812,6 @@ function doAutoActions() {
       did_something |= doAutoAction(i, 1);
     }
     if(!o.done2 && triggered2) {
-      addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION, by_automaton:true});
       o.done2 = true;
       o.time2 = 0; // no big reason to do this other than make it smaller in the savegame file format
       did_something |= doAutoAction(i, 2);
@@ -3403,9 +3416,9 @@ function nextEventTime(opt_remaining_tick_length) {
         // the begin of run auto action must be done asap if not yet done
         addtime(0.1, 'auto-action 0');
       }
-      if(o.type == 4) {
-        if(o.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
-        addtime(o.time - state.c_runtime, 'auto-action');
+      if(o.trigger.type == 4) {
+        if(o.trigger.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
+        addtime(o.trigger.time - state.c_runtime, 'auto-action');
       }
       if(o.done && !o.done2) {
         if(o.time2 - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
@@ -3680,7 +3693,9 @@ var update = function(opt_ignorePause) {
   var undostate = undefined;
   if(actions.length > 0 && (util.getTime() - lastUndoSaveTime > minUndoTime)) {
     undostate = util.clone(state);
+    lastUndoKeepLong = false;
   }
+
   var store_undo = false;
   var force_no_store_undo = false;
 
@@ -3880,16 +3895,23 @@ var update = function(opt_ignorePause) {
       if(!action.by_automaton) {
         state.lastHumanActionTime = state.time;
         state.numAutomaticTranscendsSinceHumanAction = 0;
+        state.runHadAnyHumanAction = true;
       }
       var type = action.type;
       if(type == ACTION_STORE_UNDO_BEFORE_AUTO_ACTION) {
-        if(state.c_runtime > 10) { // don't do this when just starting a new run: then if you press undo, you'd want to undo the transcension, instead of having it be overwritten with this undo from just after transcension
-          store_undo = true;
-          if(!undostate) undostate = util.clone(state);
-          // mark the auto action as done in this undo state, so it won't be repeated
-          var o = undostate.automaton_autoactions[action.action_index];
-          o.done = true;
-          o.done2 = true;
+        // don't do this when just starting a new run: then if you press undo, you'd want to undo the transcension, instead of having it be overwritten with this undo from just after transcension
+        if(state.c_runtime > 10) {
+          var auto_transcend = state.automaton_autoactions[action.action_index].effect.enable_transcend;
+          // don't do this when not having done any human actions before this auto-action (except for transcend by auto-action, which is handled in ACTION_TRANSCEND): when coming back to a game after a long time, you'd want undo to undo the last auto-transcend, not another auto-action that happened later
+          if(state.runHadAnyHumanAction || auto_transcend) {
+            if(!undostate) undostate = util.clone(state);
+            // mark the auto action as done in this undo state, so it won't be repeated (this is only in the copy in the undo state, not in the regular state)
+            var o = undostate.automaton_autoactions[action.action_index];
+            o.done = true;
+            o.done2 = true;
+            store_undo = true;
+            if(auto_transcend) lastUndoKeepLong = true; // allow undoing this action even if it was hours ago: undo the last auto-transcend
+          }
         }
       } else if(type == ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION) {
         force_no_store_undo = true;
@@ -4231,7 +4253,7 @@ var update = function(opt_ignorePause) {
 
           if(!state.g_amberbuy[action.effect]) state.g_amberbuy[action.effect] = 0;
           state.g_amberbuy[action.effect]++;
-          store_undo = true;
+          if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PLANT_BLUEPRINT_AFTER_TRANSCEND) {
         plantBluePrint(action.blueprint, true);
@@ -4924,7 +4946,7 @@ var update = function(opt_ignorePause) {
           state.g_numferns++;
           state.c_numferns++;
           // store undo for fern too, because resources from fern can trigger auto-upgrades
-          store_undo = true;
+          if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PRESENT) {
         if(!(holidayEventActive() & 3)) continue;
@@ -4962,7 +4984,7 @@ var update = function(opt_ignorePause) {
           } else {
             state.suntime = state.time;
             showMessage('sun activated, berries get a +' + getSunSeedsBoost().toPercentString()  + ' boost and aren\'t negatively affected by winter');
-            store_undo = true;
+            if(!action.by_automaton) store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
@@ -4984,7 +5006,7 @@ var update = function(opt_ignorePause) {
           } else {
             state.misttime = state.time;
             showMessage('mist activated, mushrooms produce +' + getMistSporesBoost().toPercentString() + ' more spores, consume ' + getMistSeedsBoost().rsub(1).toPercentString() + ' less seeds, and aren\'t negatively affected by winter');
-            store_undo = true;
+            if(!action.by_automaton) store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
@@ -5006,7 +5028,7 @@ var update = function(opt_ignorePause) {
           } else {
             state.rainbowtime = state.time;
             showMessage('rainbow activated, flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter');
-            store_undo = true;
+            if(!action.by_automaton) store_undo = true;
             state.c_numabilities++;
             state.g_numabilities++;
             state.lastWeather = a;
@@ -5107,7 +5129,7 @@ var update = function(opt_ignorePause) {
             var name = f_active ? (f_active.toString() + ': ' + f_active.abilitiesToString(false, true)) : 'none';
             showMessage('Set active fruit: ' + name);
           }
-          store_undo = true; // non-destructive action, but store undo anyway for consistency and to avoid confusion when pressing undo after e.g. first swapping fruit for sun, then activating sun
+          if(!action.by_automaton) store_undo = true; // non-destructive action, but store undo anyway for consistency and to avoid confusion when pressing undo after e.g. first swapping fruit for sun, then activating sun
         }
       } else if(type == ACTION_FRUIT_LEVEL) {
         var f = action.f;
@@ -5351,7 +5373,7 @@ var update = function(opt_ignorePause) {
 
         if(ok) {
           do_transcend = action;
-          store_undo = true;
+          if(!action.by_automaton) store_undo = true; // NOTE: automaton transcend is saved in undo and even longer with lastUndoKeepLong, but that's not handled here but in the auto-action undo handling.
           removeTdChip();
           if(action.by_automaton) {
             state.numLastAutomaticTranscends++;

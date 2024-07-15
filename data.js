@@ -3708,7 +3708,7 @@ During this challenge, crops wither and must be replanted.
  'unlock one more automaton auto-action',
  'auto-action can now also automate weather, fern and brassica refresh',
  'unlock one more automaton auto-action',
- 'unlock auto-transcend',
+ 'unlock auto-transcend, season overrides and auto-hold-season',
  'unlock one more automaton auto-action',
  'unlock one more automaton auto-action'],
 'reaching ethereal tree level 5 and having automaton with auto-unlock plants',

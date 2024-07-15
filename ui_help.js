@@ -618,15 +618,23 @@ registerHelpDialog(44, 'Tower defense', 'You started the tower defense challenge
     undefined,
     makeTDHelpDialogImages());
 
-registerHelpDialog(45, 'Auto transcend', 'You unlocked auto-transcend!',
+registerHelpDialog(45, 'Auto transcend & Seasons', 'You unlocked auto-transcend!',
     `
-    You unlocked auto-transcend! This allows an auto-action to be programmed to transcend, starting a next run.
+    You unlocked auto-transcend and season-based auto-actions!
     <br><br>
+    Auto-transcend allows an auto-action to be programmed to transcend, starting a next run.
+    <br>
     Ensure that you also have auto-actions programmed to handle the start of a run (such as planting a new blueprint) so that something meaningful will actually happen after the auto-transcend.
-    <br><br>
+    <br>
     Auto-transcend only works max 20 times in a row, but any manual user action (including other actions than transcending) will reset this counter.
-    <br><br>
+    <br>
     When loading a savegame with auto-transcend, loading may be slow (a lot of computation required) to handle all the auto-transcends (it's not the transcending itself that's slow, but the start of a run after that, which has a lot of activity to compute)
+    <br><br>
+    Season-based auto actions allow to override the effect for chosen seasons.
+    <br>
+    To use this, press the new "seasonal" button at the bottom of the effects configuration, then enable the "override" checkbox of any season to override, and configure the effect parameters of that season.
+    <br>
+    In addition, a new action "Hold season (amber)" is now available!
     `,
     image_medaltranscend,
     undefined,
