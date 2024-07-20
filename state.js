@@ -1561,6 +1561,7 @@ function isNextToTree2(x, y, diagonal_ok) {
 // state every now and then (e.g. every upgrade)
 // this allows getting some stats, such as unlock conditions for upgrades, in a slightly cheaper way than computing it on the fly for every upgrade check
 function computeDerived(state) {
+  counter_update_computederived++;
 
   // field
   state.numemptyfields = 0;

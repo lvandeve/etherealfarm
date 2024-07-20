@@ -4266,8 +4266,14 @@ function getEtherealTreeNeighborBoost() {
   return boost;
 }
 
+// any ethereal field or ethereal upgrade change increments (and, actually, many other changes like changing fruit even if not needed just to be sure) this, invalidating any ethereal_basic_boost_cache_
+// this cache speeds up heavy computing quite a bit, because getBasicBoost is called a lot for computing the effect of regular crops, and if the ethereal field isn't changing, there's no need to recompute this
+var ethereal_basic_boost_cache_counter = 0;
+
 // boost from ethereal crops to basic field
 Crop2.prototype.getBasicBoost = function(f, breakdown) {
+  if(f && !breakdown && f.ethereal_basic_boost_cache_ && f.ethereal_basic_boost_cache_counter_ == ethereal_basic_boost_cache_counter) return f.ethereal_basic_boost_cache_;
+
   var result = this.effect.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
@@ -4482,6 +4488,11 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
       result.mulInPlace(mul_upgrade);
       if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
     }
+  }
+
+  if(f && !breakdown) {
+    f.ethereal_basic_boost_cache_counter_ = ethereal_basic_boost_cache_counter;
+    f.ethereal_basic_boost_cache_ = result;
   }
 
   return result;
@@ -10461,6 +10472,7 @@ function holidayPresentIndex() {
 // holiday events: 0=none, 1=presents, 2=eggs, 4=pumpkins
 // it's in theory possible to use bit masks to filter the return value, e.g. (holidayEventActive() & 3) for presents or eggs, but the return value will always contain exactly 1 holiday (1 bit set)
 function holidayEventActive() {
+  // TODO: new Date() and date.getMonth() turn out to be slow functions in profiling, reduce the number of calls to holidayEventActive()
   var date = new Date();
   var month = date.getMonth() + 1;
   var day = date.getDate();

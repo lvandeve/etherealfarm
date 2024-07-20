@@ -887,6 +887,8 @@ function beginNextRun(opt_challenge) {
 
   // this function is called all the time during update, but also call it now already so that an auto-planted blueprint immediately works
   unlockTemplates();
+
+  ethereal_basic_boost_cache_counter++;
 }
 
 // transcend
@@ -1367,6 +1369,7 @@ var prefield = [];
 // --for fern: use 5, then pretends all crops are fullgrown, and uses possibly better weighted time at level, for fern resources
 // NOTE: if updating formulas here, they must also be updated in the Crop.getProd, Crop.getBoost and similar functions for the pretend != 0 cases implemented in those
 function precomputeField_(prefield, opt_pretend) {
+  counter_update_precompute++;
   var pretend = opt_pretend || 0;
   var w = state.numw;
   var h = state.numh;
@@ -3314,7 +3317,6 @@ function nextEventTime(opt_remaining_tick_length) {
           if(!(infinitelifetime && f.growth == 0)) {
             if(state.upgrades[watercress_choice0].count == 2) addtime(10, 'brassica'); // gradual bonus dropdown over time
             addtime(c.getPlantTime() * (f.growth), 'brassica'); // brassica withers or changes to end of life, or changing to end of life state
-
           }
         } else if(state.challenge == challenge_wither) {
           //addtime(witherDuration() * (f.growth), 'wither');
@@ -3325,6 +3327,7 @@ function nextEventTime(opt_remaining_tick_length) {
         } else if(f.growth < 1) {
           //addtime(c.getPlantTime() * (1 - f.growth), 'wither'); // time remaining for this plant to become full grown
           addtime(2, 'growth'); // since v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
+          //addtime(c.getPlantTime() * (1 - f.growth), 'growing'); // time remaining for this plant to become full grown
         }
       }
     }
@@ -3609,6 +3612,12 @@ var update_prev_state_ctor_count = -1;
 
 var actually_updated = false; // called update. This is for UI initialization
 
+// performance-measuring counters
+var counter_update = 0;
+var counter_update_compute = 0;
+var counter_update_precompute = 0;
+var counter_update_computederived = 0;
+
 // opt_ignorePause should be used for debugging only, as it can make time intervals nonsensical
 var update = function(opt_ignorePause) {
   actually_updated = true;
@@ -3687,6 +3696,8 @@ var update = function(opt_ignorePause) {
     return;
   }
 
+  counter_update++;
+
   var prev_large_time_delta = large_time_delta;
   var autoplanted_fastanim = false;
 
@@ -3731,9 +3742,13 @@ var update = function(opt_ignorePause) {
 
   var prev_long = false; // this is used for ensuring an extra short thing in case the nextEventTime() might be updated due to what happened during the current computation, e.g. unlocking of a new upgrade that automaton could do
 
+  var max_heavy_computing_loops = 500;
+
   for(;;) { // begin of loop for long ticks ////////////////////////////////////
     if(done) break;
-    if(numloops++ > 500) break;
+    if(numloops++ > max_heavy_computing_loops) break;
+
+    counter_update_compute++;
 
     /*
     During an update, there's a time interval in which we operate.
@@ -3822,6 +3837,7 @@ var update = function(opt_ignorePause) {
 
     // if the automaton is doing actions during long forward, do much more fine grained computations, e.g. to ensure picking up fern a few seconds after auto-action that plants blueprint (and requires automaton to replace all templates first) will happen correctly (fern gets benefit of all planted crops)
     if(is_long && actions.length > 0 && next > 0.1) next = 0.1;
+    //if(is_long && actions.length > 0 && next > 1) next = 1;
 
     if(d > next && is_long) {
       // reduce the time delta to only be up to the next event
@@ -3867,7 +3883,6 @@ var update = function(opt_ignorePause) {
 
     if(state.seasoncorrection && (getPureSeasonAtUncorrected(state.time) != getPureSeasonAtUncorrected(state.prevtime) || season_will_change2)) state.seasoncorrection = 0;
 
-
     state.g_runtime += d;
     state.c_runtime += d;
 
@@ -3887,6 +3902,8 @@ var update = function(opt_ignorePause) {
     var upgrades_done = false;
     var upgrades2_done = false;
 
+    computeDerived(state);
+
     // action
     while(actions.length) {
       var action = actions[0];
@@ -3896,6 +3913,8 @@ var update = function(opt_ignorePause) {
         state.lastHumanActionTime = state.time;
         state.numAutomaticTranscendsSinceHumanAction = 0;
         state.runHadAnyHumanAction = true;
+
+        ethereal_basic_boost_cache_counter++; // consider any non-automaton action ethereal field-affecting. Normally mainly ethereal field planting and ethereal upgrades do this, but some effects from infinity field, fruits, ... may now or in the future affect it too. When doing manual actions, it's ok to invalidate the cache, this cache is mainly for heavy_computing.
       }
       var type = action.type;
       if(type == ACTION_STORE_UNDO_BEFORE_AUTO_ACTION) {
@@ -4029,6 +4048,7 @@ var update = function(opt_ignorePause) {
           state.g_numupgrades2++;
         }
         upgrades2_done = true;
+        ethereal_basic_boost_cache_counter++;
       } else if(type == ACTION_SQUIRREL_UPGRADE) {
         var s = squirrel_stages[state.squirrel_evolution][action.s];
         var s2 = state.squirrel_stages[action.s];
@@ -4716,6 +4736,7 @@ var update = function(opt_ignorePause) {
           computeDerived(state); // correctly update derived stats based on changed field state
           if(!action.by_automaton) store_undo = true;
         }
+        ethereal_basic_boost_cache_counter++;
       } else if(type == ACTION_PLANT3 || type == ACTION_DELETE3 || type == ACTION_REPLACE3) {
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
@@ -4783,10 +4804,8 @@ var update = function(opt_ignorePause) {
             if(!action.silent && type == ACTION_DELETE3) showMessage('deleted infinity ' + c.name + ', got back ' + recoup.toString());
             f.index = 0;
             f.growth = 0;
-            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
+            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat, and for changed field state
             state.res.addInPlace(recoup);
-
-            if(type == ACTION_DELETE3) computeDerived(state); // correctly update derived stats based on changed field state (replace will do it below)
             store_undo = true;
           } else if(f.index == FIELD_REMAINDER) {
             f.index = 0;
@@ -4914,10 +4933,8 @@ var update = function(opt_ignorePause) {
             if(!action.silent) showMessage('deleted ' + c.name + ', got back ' + recoup.toString());
             f.index = 0;
             f.growth = 0;
-            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat
+            computeDerived(state); // need to recompute this now to get the correct "recoup" cost of a plant which depends on the derived stat, and for changed field state
             state.res.addInPlace(recoup);
-
-            if(type == ACTION_DELETE_FISH) computeDerived(state); // correctly update derived stats based on changed field state (replace will do it below)
             store_undo = true;
           } else if(f.index == FIELD_REMAINDER) {
             f.index = 0;
@@ -5404,9 +5421,6 @@ var update = function(opt_ignorePause) {
     if(season_will_change) {
       global_season_changes++;
     }
-
-    // this ensures up to date income displayed sooner when e.g. doing an ethereal upgrade
-    computeDerived(state);
 
     //if(upgrades_done || upgrades2_done) updateUI();
 
@@ -6091,6 +6105,7 @@ var update = function(opt_ignorePause) {
             state.mistletoeupgrade = -1;
             showMessage('Ethereal mistletoe upgrade completed: ' + upper(m.name), C_NATURE, 172897358, 0.75);
             state.g_nummistletoeupgradesdone++;
+            ethereal_basic_boost_cache_counter++;
           }
         }
       } else {
@@ -6281,10 +6296,11 @@ var update = function(opt_ignorePause) {
         state.g_res_hr_at_time.twigs = Num(state.c_runtime);
       }
     }
-
-    computeDerived(state);
   } // end of loop for long ticks //////////////////////////////////////////////
   //if(numloops > 1) console.log('numloops: ' + numloops);
+
+  // this ensures up to date income displayed sooner when e.g. doing an ethereal upgrade
+  computeDerived(state);
 
   /*if(state.g_numticks == 0) {
     showMessage('You need to gather some resources. Click a fern to get some.', C_HELP, 5646478);
