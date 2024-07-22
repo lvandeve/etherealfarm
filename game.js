@@ -3768,6 +3768,8 @@ var update = function(opt_ignorePause) {
       }
     }
 
+    computeDerived(state);
+
     computeAutomatonActions();
 
     // this function is simple and light enough that it can just be called every time. It can depend on changes mid-game hence needs to be updated regularly.
@@ -3901,8 +3903,6 @@ var update = function(opt_ignorePause) {
 
     var upgrades_done = false;
     var upgrades2_done = false;
-
-    computeDerived(state);
 
     // action
     while(actions.length) {
