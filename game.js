@@ -3115,7 +3115,7 @@ function autoPlant(res) {
 
   var do_all = false;
   if(heavy_computing) {
-    var count = state.croptypecount[crop.type] - state.cropcount[crop.index];
+    var count = state.anycroptypecount[crop.type] - state.cropcount[crop.index];
     if(count > 1) {
       // this is approximated a bit, since it really has to be the sum of the cost of all the crops. That's ok, the main goal here is less computation during heavy_computing for the cheap crops
       var cost_all = crop.getCost(count - 1).add(crop.getCost(count - 2)).mulr(1.5);
