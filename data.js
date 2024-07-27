@@ -9254,6 +9254,10 @@ function Fish() {
   this.image = undefined;
 };
 
+Fish.prototype.isReal = function() {
+  return !this.istemplate && !this.isghost;
+};
+
 Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   var count = state.fishcount[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;

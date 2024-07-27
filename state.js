@@ -74,7 +74,7 @@ Cell.prototype.hasCrop = function(opt_multipart) {
 // a crop that actually produces or does something, excluding templates or ghosts
 Cell.prototype.hasRealCrop = function(opt_multipart) {
   if(opt_multipart && this.index == FIELD_MULTIPART) return this.getMainMultiPiece().hasRealCrop(false);
-  return this.index >= CROPINDEX && !this.getCrop().istemplate && !this.getCrop().isghost;
+  return this.index >= CROPINDEX && this.getCrop().isReal();
 };
 
 // only valid if hasCrop(), else returns an out of bounds value
@@ -1123,8 +1123,8 @@ function State() {
   this.crop3count = [];
   this.fishcount = [];
 
-  this.croptypecount = []; // excludes templates
-  this.fishtypecount = []; // excludes templates
+  this.croptypecount = []; // excludes templates/ghosts
+  this.fishtypecount = []; // excludes templates/ghosts
 
   // num crops growing (not fullgrown) in main field of any type (excludes brassica, and is 0 during the wither challenge)
   this.numgrowing = 0;
@@ -1618,9 +1618,7 @@ function computeDerived(state) {
       if(f.hasCrop()) {
         var c = f.getCrop();
         state.cropcount[c.index]++;
-        if(c) {
-          state.anycroptypecount[c.type]++;
-        }
+        state.anycroptypecount[c.type]++;
         if(f.isFullGrown()) {
           state.fullgrowncropcount[c.index]++;
         } else {
@@ -2082,6 +2080,27 @@ function computeDerived(state) {
       state.fish_resinmul_time_shift = Math.min(shift, state.fish_resinmul_time_shift);
       state.fish_twigsmul_time_shift = Math.min(shift, state.fish_twigsmul_time_shift);
       state.infinity_prodboost_time_shift = Math.min(shift, state.infinity_prodboost_time_shift);
+    }
+  }
+}
+
+// updates parts of the values that computeDerived computes, without recomputing everything
+// only implemented for particular types of action, and should be kept up to date to update any variables computeDerived computes
+// only computes variables that matter for actions during one execution of a loop of multiple actions, so for anything else a full computeDerived is needed
+// this specifically saves a lot of computation time during REPLACE, PLANT and DELETE actions of the automaton during fast-forward computations
+function updateDerivedDuringAction(action_type, c) {
+  if(action_type == ACTION_DELETE) {
+    state.cropcount[c.index]--;
+    state.anycroptypecount[c.type]--;
+    if(c.isReal()) {
+      state.croptypecount[c.type]--;
+    }
+  }
+  if(action_type == ACTION_PLANT) {
+    state.cropcount[c.index]++;
+    state.anycroptypecount[c.type]++;
+    if(c.isReal()) {
+      state.croptypecount[c.type]++;
     }
   }
 }

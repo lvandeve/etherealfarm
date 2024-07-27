@@ -3113,36 +3113,67 @@ function autoPlant(res) {
     }
   }
 
-
-  res.subInPlace(cost);
-
-  // find potentially better x,y location
-  var old = state.field[y][x].cropIndex();
-  if(old < 0) return; // something must have changed since computeNextAutoPlant()
-  var oldtype = crops[old].type;
-  var best = prefield[y][x].score;
-  // simple method of determining best spot: find the one where the original crop has the most income
-  for(var y2 = 0; y2 < state.numh; y2++) {
-    for(var x2 = 0; x2 < state.numw; x2++) {
-      var f = state.field[y2][x2];
-      if(!f.hasCrop()) continue;
-      var c = f.getCrop();
-      if(c.isghost) continue; // at least during stormy challenge, automaton should not upgrade ghosts
-      if(c.type != oldtype) continue;
-      if(c.tier >= crop.tier) continue;
-      if(c.index == nettle_1 && state.challenge == challenge_thistle) continue;
-      if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
-      var p2 = prefield[y2][x2];
-      if(p2.score > best) {
-        best = p2.score;
-        x = x2;
-        y = y2;
-      }
+  var do_all = false;
+  if(heavy_computing) {
+    var count = state.croptypecount[crop.type] - state.cropcount[crop.index];
+    if(count > 1) {
+      // this is approximated a bit, since it really has to be the sum of the cost of all the crops. That's ok, the main goal here is less computation during heavy_computing for the cheap crops
+      var cost_all = crop.getCost(count - 1).add(crop.getCost(count - 2)).mulr(1.5);
+      if(res.can_afford(cost_all) && maxcost.can_afford(cost_all)) do_all = true;
     }
   }
 
-  addAction({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
-  return true;
+
+  if(do_all) {
+    var num = 0;
+    for(var y2 = 0; y2 < state.numh; y2++) {
+      for(var x2 = 0; x2 < state.numw; x2++) {
+        var f = state.field[y2][x2];
+        if(!f.hasCrop()) continue;
+        var c = f.getCrop();
+        if(c.isghost) continue; // at least during stormy challenge, automaton should not upgrade ghosts
+        if(c.type != crop.type) continue;
+        if(c.tier >= crop.tier) continue;
+        if(c.index == nettle_1 && state.challenge == challenge_thistle) continue;
+        if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
+        var costc = crop.getCost(num);
+        if(!res.can_afford(costc)) return true; // break out of all loops
+        res.subInPlace(costc);
+        num++;
+        addAction({type:ACTION_REPLACE, x:x2, y:y2, crop:crop, by_automaton:true, silent:true});
+      }
+    }
+    return true;
+  } else {
+    res.subInPlace(cost);
+
+    // find potentially better x,y location
+    var old = state.field[y][x].cropIndex();
+    if(old < 0) return; // something must have changed since computeNextAutoPlant()
+    var oldtype = crops[old].type;
+    var best = prefield[y][x].score;
+    // simple method of determining best spot: find the one where the original crop has the most income
+    for(var y2 = 0; y2 < state.numh; y2++) {
+      for(var x2 = 0; x2 < state.numw; x2++) {
+        var f = state.field[y2][x2];
+        if(!f.hasCrop()) continue;
+        var c = f.getCrop();
+        if(c.isghost) continue; // at least during stormy challenge, automaton should not upgrade ghosts
+        if(c.type != oldtype) continue;
+        if(c.tier >= crop.tier) continue;
+        if(c.index == nettle_1 && state.challenge == challenge_thistle) continue;
+        if(c.index == nettle_2 && state.challenge == challenge_poisonivy) continue;
+        var p2 = prefield[y2][x2];
+        if(p2.score > best) {
+          best = p2.score;
+          x = x2;
+          y = y2;
+        }
+      }
+    }
+    addAction({type:ACTION_REPLACE, x:x, y:y, crop:crop, by_automaton:true, silent:true});
+    return true;
+  }
 }
 
 // next chosen auto unlock, if applicable.
@@ -3325,7 +3356,6 @@ function nextEventTime(opt_remaining_tick_length) {
           addtime(2, 'wither');
           return time;
         } else if(f.growth < 1) {
-          //addtime(c.getPlantTime() * (1 - f.growth), 'wither'); // time remaining for this plant to become full grown
           addtime(2, 'growth'); // since v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
           //addtime(c.getPlantTime() * (1 - f.growth), 'growing'); // time remaining for this plant to become full grown
         }
@@ -3838,8 +3868,9 @@ var update = function(opt_ignorePause) {
     }
 
     // if the automaton is doing actions during long forward, do much more fine grained computations, e.g. to ensure picking up fern a few seconds after auto-action that plants blueprint (and requires automaton to replace all templates first) will happen correctly (fern gets benefit of all planted crops)
+    // E.g. for the planting of multiple crop types in a row, such as berries, then mushroom. Even if all berry plants are grouped together, mushroom will not be planted if next event is not triggered fast
+    // But not doing this also for example causes some watercress to wither rather than get fixed by automaton. TODO: investigate this. This is computationally expensive to do.
     if(is_long && actions.length > 0 && next > 0.1) next = 0.1;
-    //if(is_long && actions.length > 0 && next > 1) next = 1;
 
     if(d > next && is_long) {
       // reduce the time delta to only be up to the next event
@@ -3903,6 +3934,8 @@ var update = function(opt_ignorePause) {
 
     var upgrades_done = false;
     var upgrades2_done = false;
+
+    var actions_length = actions.length;
 
     // action
     while(actions.length) {
@@ -4407,6 +4440,7 @@ var update = function(opt_ignorePause) {
             }
             ok = false;
           } else if(c.index == squirrel_0 && state.cropcount[squirrel_0]) {
+            // TODO: remove this, and squirrel_0 entirely (squirrel is for ethereal field)
             showMessage('already have squirrel, cannot place more', C_INVALID, 0, 0);
             ok = false;
           } else if(c.type == CROPTYPE_NUT && c.isReal() && tooManyNutsPlants(type == ACTION_REPLACE && f.hasRealCrop() && f.getCrop().type == CROPTYPE_NUT)) {
@@ -4475,7 +4509,7 @@ var update = function(opt_ignorePause) {
             state.res.addInPlace(recoup);
             if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
             if(!action.by_automaton) store_undo = true;
-            computeDerived(state); // correctly update derived stats based on changed field state. It's ok that this happens twice for replace (in next if) since this is an intermediate state now
+            updateDerivedDuringAction(ACTION_DELETE, c); // for correct costs and recoup prices during next actions
           } else if(f.index == FIELD_REMAINDER) {
             f.index = 0;
             f.growth = 0;
@@ -4526,7 +4560,7 @@ var update = function(opt_ignorePause) {
             var known = c2.prestige + 1;
             if(c2.known < known) c2.known = known;
           }
-          computeDerived(state);
+          updateDerivedDuringAction(ACTION_PLANT, c); // for correct costs and recoup prices during next actions
           if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PLANT2 || type == ACTION_DELETE2 || type == ACTION_REPLACE2) {
@@ -5412,7 +5446,7 @@ var update = function(opt_ignorePause) {
           state.transcended_with_blueprint = (do_transcend.blueprint != undefined);
         }
       }
-    }
+    } // end of actions loop
 
     if(store_undo && undostate && !force_no_store_undo) {
       storeUndo(undostate);
