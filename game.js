@@ -116,24 +116,28 @@ function loadFromLocalStorage(onsuccess, onfail) {
 // also refunds amber if needed
 // returns true if season changed, false if it stayed the same
 function restoreAmberSeason() {
-  var season = getPureSeason();
-  var used = state.amberkeepseasonused;
-  state.amberkeepseasonused = false;
-  if(!state.amberkeepseason) return;
-  state.amberkeepseason = false;
-  if(!used) {
-    if(!state.amberkeepseasonused) {
-      showMessage('Keep season did not yet activate, refunding amber', C_UNDO, 872341239);
-      state.res.amber = state.res.amber.add(ambercost_keep_season);
-      state.g_numamberkeeprefunds++;
-    }
+  if(!state.amberkeepseason) {
+    state.amberkeepseasonused = false; // this should not be needed, this should not be set when amberkeepseason is not active, but done just to be sure...
     return false;
   }
+
+  if(!state.amberkeepseasonused) {
+    showMessage('Keep season did not yet activate, refunding amber', C_UNDO, 872341239);
+    state.res.amber = state.res.amber.add(ambercost_keep_season);
+    state.g_numamberkeeprefunds++;
+    state.amberkeepseason = false;
+    return false;
+  }
+
+  var season = getPureSeason(); // must be called before resetting state.amberkeepseasonused below
   var next_season = (season + 1) & 3;
 
-   // getSeasonTime(time) has following implementation (indirectly): return  time - state.g_starttime - state.g_pausetime - state.seasonshift + getSeasonCorrection();
-   // this is then the part of a 4-day cycle starting at spring (season 0)
-   // so adjust state.seasonshift now such that it has exactly the next season with 24h left
+  state.amberkeepseason = false;
+  state.amberkeepseasonused = false;
+
+  // getSeasonTime(time) has following implementation (indirectly): return  time - state.g_starttime - state.g_pausetime - state.seasonshift + getSeasonCorrection();
+  // this is then the part of a 4-day cycle starting at spring (season 0)
+  // so adjust state.seasonshift now such that it has exactly the next season with 24h left
 
   state.seasoncorrection = 0; // disable the need to care about getSeasonCorrection(), it's not needed when we'll update the season time ourselves
   var seasontime = getSeasonTime(state.time);
@@ -626,7 +630,7 @@ function endPreviousRun() {
     addStat(state.reset_stats_level, state.treelevel);
     addStat(state.reset_stats_level2, state.treelevel2);
     // divided through 300: best precision 5 minutes, and even lower when saved for larger times
-    addStat(state.reset_stats_time, (state.time - state.c_starttime) / 300);
+    addStat(state.reset_stats_time, state.time - state.c_starttime);
     addStat(state.reset_stats_total_resin, state.g_res.resin);
     addStat(state.reset_stats_resin, resin);
     addStat(state.reset_stats_twigs, twigs);
@@ -875,8 +879,7 @@ function beginNextRun(opt_challenge) {
   state.just_evolution = false;
 
   for(var i = 0; i < state.automaton_autoactions.length; i++) {
-    state.automaton_autoactions[i].done = false;
-    state.automaton_autoactions[i].done2 = false;
+    state.automaton_autoactions[i].done = 0;
     state.automaton_autoactions[i].time2 = 0;
   }
 
@@ -1124,7 +1127,7 @@ function getSeasonCorrection(opt_state) {
 // the underlying season, only returns 4 possible seasons, does not take challenge with alternative seasons (like infernal) into account
 function getPureSeasonAtUncorrected(time, opt_state) {
   var state2 = opt_state || state;
-  if(state2.amberkeepseasonused) return state2.amberkeepseason_season;
+  if(state2.amberkeepseasonused) return state2.amberkeepseason_season; // hold season is active and the season is extended beyond its standard duration
   var t = getSeasonTimeUncorrected(time, opt_state);
   if(isNaN(t) || t == Infinity || t == -Infinity) return 0;
   t /= (24 * 3600);
@@ -2185,17 +2188,13 @@ function getRandomRoll(seed) {
 }
 
 // Use this rather than Math.random() to avoid using refresh to get better random ferns
-// opt_add_seed: if not undefined, this is a value to add to the seed. In this case, do not advance the seed from the state.
-function getRandomFernRoll(opt_add_seed) {
+// Returns value in range [0, 1)
+// Updates the rng seed in the state.
+function getRandomFernRoll() {
   if(state.fern_seed < 0) {
     // console.log('fern seed not initialized');
     // this means the seed is uninitialized and must be randominzed now. Normally this shouldn't happen since initing a new state sets it, and loading an old savegame without the seed also sets it
     state.fern_seed = Math.floor(Math.random() * 281474976710656);
-  }
-
-  if(opt_add_seed != undefined) {
-    var roll = getRandomRoll(state.fern_seed + opt_add_seed);
-    return roll[1];
   }
 
   var roll = getRandomRoll(state.fern_seed);
@@ -2661,36 +2660,51 @@ function autoActionTriggerConditionReached(index, o) {
     // this because for this one it should be prevented to trigger it if you edit it in the UI and enable it for the first time, since one would edit it for starting conditions of the game that don't match the current situation
     return state.c_runtime < 10;
   }
-  if(o.trigger.type == 0 && state.treelevel >= o.trigger.level) {
+
+  var trigger = o.getTrigger();
+
+  if(trigger.type == 0 && state.treelevel >= trigger.level) {
     return true;
   }
-  if(o.trigger.type == 1 || o.trigger.type == 2 || o.trigger.type == 3 || o.trigger.type == 5) {
-    if(o.trigger.crop == 0) return false;
-    var c = crops[o.trigger.crop - 1];
-    var c2 = state.crops[o.trigger.crop - 1];
+  if(trigger.type == 1 || trigger.type == 2 || trigger.type == 3 || trigger.type == 5) {
+    if(trigger.crop == 0) return false;
+    var c = crops[trigger.crop - 1];
+    var c2 = state.crops[trigger.crop - 1];
     if(!c || !c2) return false;
-    var unlocked = c2.unlocked && c2.prestige >= o.trigger.prestige;
+    var unlocked = c2.unlocked && c2.prestige >= trigger.prestige;
     if(!unlocked) return false; // can also not have it planted or fullgrown in this case
-    if(o.trigger.type == 1 && unlocked) return true;
-    if(o.trigger.type == 2 && state.cropcount[c.index] > 0) return true;
-    if(o.trigger.type == 3 && c2.had > c2.prestige) return true;
-    if(o.trigger.type == 5 && c.basic_upgrade && state.upgrades[c.basic_upgrade].count) return true;
-    if(o.trigger.type == 2 || o.trigger.type == 3 || o.trigger.type == 5) {
+    if(trigger.type == 1 && unlocked) {
+      return true;
+    }
+    if(trigger.type == 2) {
+      if(state.cropcount[c.index] >= trigger.crop_count) return true;
       // in case of berry, if a higher tier is unlocked, that means you must have planted it before, but maybe growing or fullgrown crop was missed because it immediately got overplanted with a higher tier by the automaton, if it planted a higher tier from the beginning, or e.g. cranberry secret allowed starting with a higher tier
       // in case of non-berry, we also consider it this way
-      var next_unlocked = state.highestoftypeunlocked[c.type] > c.tier;
-      if(next_unlocked) return true;
+      // NOTE: this means that you can never use auto action triggers for tier 0 or tier 1 berry if you have 'blueberry secret' etc... unlocked but that is normally not a scenario one would write auto action triggers for anyway
+      if(state.highestoftypeunlocked[c.type] > c.tier) return true;
+    }
+    if(trigger.type == 3) {
+      if(c2.had > c2.prestige && state.fullgrowncropcount[c.index] >= trigger.crop_count) return true;
+      // idem
+      if(state.highestoftypeunlocked[c.type] > c.tier) return true;
+    }
+    if(trigger.type == 5) {
+      if(c.basic_upgrade && state.upgrades[c.basic_upgrade].count >= trigger.upgrade_level) return true;
+      // idem
+      // NOTE: this ignores even the upgrade_level for trigger.type 5; we could also make it only do this if its upgrade_level is set to 1 (or not at all). But normally when such auto-action is configured it would be assumed that the player considers next tier unlocked to be more prograss than reaching the set update level for this crop
+      if(state.highestoftypeunlocked[c.type] > c.tier) return true;
     }
   }
-  if(o.trigger.type == 4 && state.c_runtime >= o.trigger.time) {
+  if(trigger.type == 4 && state.c_runtime >= trigger.time) {
     return true;
   }
   return false;
 }
 
 var autoActionPart2Time = 5; // how long to wait before auto-action does the second part
+var autoActionPart3Time = 5; // how long to wait before auto-action does the third part
 
-// part: 1 for the first part, 2 for the second part that is done a bit later
+// part: 1 for the first part, 2 for the second part that is done a bit later, 3: third and final part (transcend)
 function doAutoAction(index, part, opt_manually) {
   var o = state.automaton_autoactions[index];
   var effect = o.getEffect();
@@ -2741,9 +2755,12 @@ function doAutoAction(index, part, opt_manually) {
     if(effect.enable_fern && autoActionExtraUnlocked()) {
       if(state.fern) {
         addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:!opt_manually});
+        did_something = true;
       }
-      did_something = true;
     }
+  }
+
+  if(part == 3) {
     if(effect.enable_transcend && autoActionTranscendUnlocked()) {
       addAction({type:ACTION_TRANSCEND, by_automaton:!opt_manually});
       did_something = true;
@@ -2802,22 +2819,31 @@ function doAutoActions() {
   var did_something = false;
   for(var i = 0; i < state.automaton_autoactions.length; i++) {
     var o = state.automaton_autoactions[i];
-    if(o.done && o.done2) continue;
+    if(o.done >= 3) continue;
     if(!o.enabled) continue;
     var triggered = autoActionTriggerConditionReached(i, o);
-    var triggered2 = o.done && !o.done2 && state.c_runtime >= o.time2;
-    if(triggered && !o.getEffect().enable_blueprint) triggered2 = true; // no need to wait for planting blueprint if there's none built
+    var triggered2 = o.done == 1 && state.c_runtime >= o.time2;
+    var triggered3 = o.done == 2 && state.c_runtime >= o.time2;
+    if(triggered && !o.getEffect().enable_blueprint) {
+      triggered2 = true; // no need to wait for planting blueprint if there's none built
+    }
+    if(triggered2 && !o.getEffect().enable_fern) {
+      triggered3 = true; // no need to wait for take fern if it's not being taken
+    }
     if(!o.done && triggered) {
       addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:i, by_automaton:true});
-      o.done = true;
-      o.done2 = false;
+      o.done = 1;
       o.time2 = state.c_runtime + autoActionPart2Time;
       did_something |= doAutoAction(i, 1);
     }
-    if(!o.done2 && triggered2) {
-      o.done2 = true;
-      o.time2 = 0; // no big reason to do this other than make it smaller in the savegame file format
+    if(o.done < 2 && triggered2) {
+      o.done = 2;
+      o.time2 = state.c_runtime + autoActionPart3Time;
       did_something |= doAutoAction(i, 2);
+    }
+    if(o.done < 3 && triggered3) {
+      o.done = 3;
+      did_something |= doAutoAction(i, 3);
     }
     if(did_something) break;
   }
@@ -2827,6 +2853,7 @@ function doAutoActions() {
 
 // JS timeout based system for part 2 of auto-actions that were manually activated
 // note: for non-manually activated auto-actions (but by their actual trigger), this is not used, those use a proper system keeping track of 'time2' correctly. But that system is not compatible with manual activations at any time, hence this hack for the manual case.
+// TODO: don't use window.setTimeout for this, but a flag in the state, so that this works more correctly and less hacky with undo. The current system doesn't work when doing undo followed by redo for example (won't do second part then)
 var auto_action_manual_window_timeout_enabled = true;
 
 function doAutoActionManually(index) {
@@ -2837,14 +2864,31 @@ function doAutoActionManually(index) {
   }
   var did_something = doAutoAction(index, 1, true);
   if(!did_something) {
-    doAutoAction(index, 2, true);
+    did_something = doAutoAction(index, 2, true);
+    if(!did_something) {
+      doAutoAction(index, 3, true);
+    } else {
+      window.setTimeout(function() {
+        if(!auto_action_manual_window_timeout_enabled) return;
+        addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
+        doAutoAction(index, 3, true);
+      }, autoActionPart3Time * 1000);
+    }
   } else {
-    // TODO: don't use window.setTimeout for this, but a flag in the state, so that this works more correctly and less hacky with undo. The current system doesn't work when doing undo followed by redo for example (won't do second part then)
     auto_action_manual_window_timeout_enabled = true; // set to false by doing undo so that if you undo immediately after doing it, it won't do that second part a few seconds later
     window.setTimeout(function() {
       if(!auto_action_manual_window_timeout_enabled) return;
       addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
-      doAutoAction(index, 2, true);
+      var did_something = doAutoAction(index, 2, true);
+      if(!did_something) {
+        doAutoAction(index, 3, true);
+      } else {
+        window.setTimeout(function() {
+          if(!auto_action_manual_window_timeout_enabled) return;
+          addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
+          doAutoAction(index, 3, true);
+        }, autoActionPart3Time * 1000);
+      }
     }, autoActionPart2Time * 1000);
   }
   update();
@@ -3302,17 +3346,25 @@ function autoPrestige(res) {
 // in 2 parts: the first 10 minutes, and the remaining 50 minutes. This function
 // will return that 10. Idem for season changes, ... The function returns the
 // first one.
-// the returned value is amount of seconds before the first next event
-// the value used to determine current time is state.time
+// returns array of values:
+// -the first is amount of seconds before the first next event, not super strict,
+// it's ok for the game loop to add some seconds to it for a speedup, only
+// precision is affected a bit
+// -the second is a strict amount, that is, no messing with it allowed (e.g. for
+// auto-actions triggered by time)
+// times set to Infinity mean there's nothing to do
+// The value used to determine current time is state.time
 function nextEventTime(opt_remaining_tick_length) {
   var time = Infinity;
+  var stricttime = Infinity;
   var name = 'none'; // for debugging
 
-  var addtime = function(time2, opt_name) {
+  var addtime = function(time2, opt_name, opt_strict) {
     if(isNaN(time2)) return;
     if(time2 < 0) time2 = 0;
     if(time2 < time) name = opt_name || 'other';
     time = Math.min(time, time2);
+    if(opt_strict) stricttime = Math.min(stricttime, time2);
   };
 
   if(state.challenge == challenge_towerdefense && !!opt_remaining_tick_length && opt_remaining_tick_length <= 1) {
@@ -3352,9 +3404,7 @@ function nextEventTime(opt_remaining_tick_length) {
         } else if(state.challenge == challenge_wither) {
           //addtime(witherDuration() * (f.growth), 'wither');
           // since the income value of the crop changes over time as it withers, return a short time interval so the computation happens correctly during the few minutes the withering happens.
-          // also return, no need to calculate the rest, short time intervals like this are precise enough for anything
           addtime(2, 'wither');
-          return time;
         } else if(f.growth < 1) {
           addtime(2, 'growth'); // since v0.1.61, crops already produce while growing, non-constant, so need more updates during any crop growth now
           //addtime(c.getPlantTime() * (1 - f.growth), 'growing'); // time remaining for this plant to become full grown
@@ -3431,7 +3481,7 @@ function nextEventTime(opt_remaining_tick_length) {
   // fern
   if(state.fern == 0 && state.challenge != challenge_towerdefense) {
     var t = state.lastFernTime - state.time + getFernWaitTime();
-    addtime(t, 'fern');
+    addtime(t, 'fern', true);
   }
 
   // lightning
@@ -3444,18 +3494,18 @@ function nextEventTime(opt_remaining_tick_length) {
     for(var i = 0; i < state.automaton_autoactions.length; i++) {
       var o = state.automaton_autoactions[i];
       if(!o.enabled) continue;
-      if(o.done) continue;
-      if(i == 0 && haveBeginOfRunAutoAction() && o.enabled && !o.done && autoActionTriggerConditionReached(i, o)) {
+      if(o.done >= 3) continue;
+      if(i == 0 && haveBeginOfRunAutoAction() && o.enabled && o.done == 0 && autoActionTriggerConditionReached(i, o)) {
         // the begin of run auto action must be done asap if not yet done
         addtime(0.1, 'auto-action 0');
       }
-      if(o.trigger.type == 4) {
-        if(o.trigger.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
-        addtime(o.trigger.time - state.c_runtime, 'auto-action');
+      var trigger = o.getTrigger();
+      if(trigger.type == 4 && o.done == 0) {
+        //if(trigger.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
+        addtime(trigger.time - state.c_runtime, 'auto-action', true);
       }
-      if(o.done && !o.done2) {
-        if(o.time2 - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
-        addtime(o.time2 - state.c_runtime, 'auto-action2');
+      if(o.done > 0 && o.done < 3) {
+        addtime(o.time2 - state.c_runtime, 'auto-action2', true);
       }
     }
   }
@@ -3463,8 +3513,9 @@ function nextEventTime(opt_remaining_tick_length) {
 
   //console.log('next event time: ' + time + ', ' + name);
   // protect against possible bugs
-  if(time < 0 || isNaN(time)) return 0;
-  return time;
+  if(time < 0 || isNaN(time)) time = 0;
+  if(stricttime < 0 || isNaN(stricttime)) stricttime = 0;
+  return [time, stricttime];
 }
 
 function addAction(action) {
@@ -3648,6 +3699,8 @@ var counter_update_compute = 0;
 var counter_update_precompute = 0;
 var counter_update_computederived = 0;
 
+var paused_prev_sidepanel = false;
+
 // opt_ignorePause should be used for debugging only, as it can make time intervals nonsensical
 var update = function(opt_ignorePause) {
   actually_updated = true;
@@ -3708,6 +3761,12 @@ var update = function(opt_ignorePause) {
         var td = state.towerdef;
         td.wavestarttime += d;
         td.waveendtime += d;
+      }
+
+      var should = shouldShowSidePanel();
+      if(paused_prev_sidepanel != should) {
+        updateRightPane();
+        paused_prev_sidepanel = should;
       }
     } else {
       // This is to make it indicate both 'Computing' and 'Paused' when refreshing the page while it was both of those things
@@ -3842,7 +3901,9 @@ var update = function(opt_ignorePause) {
     var next = 0;
 
     if(is_long) {
-      next = nextEventTime(nexttime - state.prevtime) + 1; // for numerical reasons, ensure it's not exactly at the border of the event
+      var next_array = nextEventTime(nexttime - state.prevtime);
+      next = next_array[0] + 1; // for numerical reasons, ensure it's not exactly at the border of the event
+      var next_strict = next_array[1] + 0.5;
 
       // if a long tick is coming up, do one more short tick first now anyway, for in case a new unlock upgrade that can be auto-unlocked by automaton popped up, if e.g. a berry or nut was just fullgrown, or other similar situations (where some changing during the tick would cause a much shorter nextEventTime)
       // this would not be needed in theory if unlocking of unlock-upgrades happened immediately after crops got fullgrown, but that depends on the order in which things get computed in a single tick, when computeDerived is called on the state, ..., so the extra tick is really needed
@@ -3863,14 +3924,16 @@ var update = function(opt_ignorePause) {
       if(numloops > 20 && next < 2) next = 2; // speed up computation if a lot is happening, at the cost of some precision
       if(numloops > 50 && next < 5) next = 5; // speed up computation if a lot is happening, at the cost of some precision
       if(numloops > 200 && next < 10) next = 10; // speed up computation if a lot is happening, at the cost of some precision
+
+      if(next > next_strict) next = next_strict; // strict time
+
+      // if the automaton is doing actions during long forward, do much more fine grained computations, e.g. to ensure picking up fern a few seconds after auto-action that plants blueprint (and requires automaton to replace all templates first) will happen correctly (fern gets benefit of all planted crops)
+      // E.g. for the planting of multiple crop types in a row, such as berries, then mushroom. Even if all berry plants are grouped together, mushroom will not be planted if next event is not triggered fast
+      // But not doing this also for example causes some watercress to wither rather than get fixed by automaton. TODO: investigate this. This is computationally expensive to do.
+      if(actions.length > 0 && next > 0.01) next = 0.01;
     } else {
       prev_long = false;
     }
-
-    // if the automaton is doing actions during long forward, do much more fine grained computations, e.g. to ensure picking up fern a few seconds after auto-action that plants blueprint (and requires automaton to replace all templates first) will happen correctly (fern gets benefit of all planted crops)
-    // E.g. for the planting of multiple crop types in a row, such as berries, then mushroom. Even if all berry plants are grouped together, mushroom will not be planted if next event is not triggered fast
-    // But not doing this also for example causes some watercress to wither rather than get fixed by automaton. TODO: investigate this. This is computationally expensive to do.
-    if(is_long && actions.length > 0 && next > 0.1) next = 0.1;
 
     if(d > next && is_long) {
       // reduce the time delta to only be up to the next event
@@ -3904,6 +3967,7 @@ var update = function(opt_ignorePause) {
     if(state.amberkeepseason && season_will_change) {
       season_will_change = false;
       state.amberkeepseasonused = true;
+      updateAmberUI(); // if it's showing "Stop hold season (-30 amber)" but it will now no longer give refund, ensures it gets updated to show 0
     }
 
     if(current_season != prev_season && prev_season != undefined) num_season_changes++; // TODO: check if this can't be combined with the "global_season_changes++" case below and if this really needs a different condition than that one
@@ -3911,7 +3975,10 @@ var update = function(opt_ignorePause) {
 
     var current_season2 = getPureSeasonAt(state.time);
     var season_will_change2 = current_season2 != getPureSeasonAt(nexttime);
-    if(current_season2 != prev_season2 && prev_season2 != undefined) num_season_changes2++;
+    if(current_season2 != prev_season2 && prev_season2 != undefined) {
+      num_season_changes2++;
+      state.g_seasons++;
+    }
     prev_season2 = current_season2;
 
     if(state.seasoncorrection && (getPureSeasonAtUncorrected(state.time) != getPureSeasonAtUncorrected(state.prevtime) || season_will_change2)) state.seasoncorrection = 0;
@@ -3959,8 +4026,7 @@ var update = function(opt_ignorePause) {
             if(!undostate) undostate = util.clone(state);
             // mark the auto action as done in this undo state, so it won't be repeated (this is only in the copy in the undo state, not in the regular state)
             var o = undostate.automaton_autoactions[action.action_index];
-            o.done = true;
-            o.done2 = true;
+            o.done = 3;
             store_undo = true;
             if(auto_transcend) lastUndoKeepLong = true; // allow undoing this action even if it was hours ago: undo the last auto-transcend
           }
@@ -5416,6 +5482,11 @@ var update = function(opt_ignorePause) {
           ok = false;
         }
 
+        if(!state.challenge && state.treelevel < 10) {
+          // tree level not high enough
+          ok = false;
+        }
+
         //if(action.by_automaton && state.time - state.lastHumanActionTime > 3600 * 24 * 14) {
         if(action.by_automaton && state.numAutomaticTranscendsSinceHumanAction >= 20) {
           // after a long while, no longer support auto-transcend; the game has been abandoned for a very long time, at this point resin better be gained actively again. Also, savegame loading is very slow with auto-transcend due to emulating all the starts of runs so this becomes infeasible
@@ -5663,20 +5734,10 @@ var update = function(opt_ignorePause) {
     ////////////////////////////////////////////////////////////////////////////
 
     if(clickedfern) {
-      var waittime = state.fernwait;
-      if(waittime == 0) waittime = getFernWaitTime(); // in case of old save where fernwait wasn't stored
-      // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
-      // e.g. 0.25 means clicking all ferns makes you get 25% more income (on average, since there is a uniforn random 0.5..1.5 factor, plus due to the "extra bushy" ferns the real active production is actually a bit higher than this value)
-      var fernTimeWorth = waittime * 0.25;
-      var roll = getRandomFernRoll();
-      roll = (state.fern == 2) ? (roll * 0.5 + 1) : (roll + 0.5);
-      var r = fernTimeWorth * roll;
-      if(state.upgrades[fern_choice0].count == 2) {
-        r *= (1 + fern_choice0_b_bonus);
-      }
       var fg = computeFernGain();
-      var g = fg.mulr(r);
+
       var has_idlecharge = false;
+      var idleres = new Res();
       if(state.upgrades[fern_choice0].count == 1) {
         var timediff = state.time - state.lastFernTime;
         var idlecharge = getFernIdlePastCharge();
@@ -5684,34 +5745,48 @@ var update = function(opt_ignorePause) {
           var seedsdiff = state.c_res.seeds.sub(state.fernres.seeds);
           var sporesdiff = state.c_res.spores.sub(state.fernres.spores);
           var reltime = idlecharge / timediff;
-          var idleres = new Res({seeds:seedsdiff, spores:sporesdiff}).mulr(reltime);
-          g.addInPlace(idleres);
+          idleres = new Res({seeds:seedsdiff, spores:sporesdiff}).mulr(reltime);
           has_idlecharge = true;
         }
 
         var idlecharge2 = getFernIdleFutureCharge();
-        if(idlecharge2 > 0) g.addInPlace(fg.mulr(idlecharge2));
+        if(idlecharge2 > 0) idleres.addInPlace(fg.mulr(idlecharge2));
       }
-      if(g.seeds.ltr(2)) g.seeds = Num.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
-      var starter = getStarterResources();
-      if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds.mulr(roll));
-      var fernres = new Res({seeds:g.seeds, spores:g.spores});
 
       var bushy = (state.fern == 2) || has_idlecharge;
 
+      var waittime = state.fernwait;
+      if(waittime == 0) waittime = getFernWaitTime(); // in case of old save where fernwait wasn't stored
+      // how much production time the fern is worth. This is how much extra production boost active players can get over passive players
+      // e.g. 0.25 means clicking all ferns makes you get 25% more income (on average, since there is a uniforn random 0.5..1.5 factor, plus due to the "extra bushy" ferns the real active production is actually a bit higher than this value)
+      var fernTimeWorth = waittime * 0.25;
+      var roll = getRandomFernRoll();
+      roll = bushy ? (roll * 0.5 + 1) : (roll + 0.5);
+      var r = fernTimeWorth * roll;
+      if(state.upgrades[fern_choice0].count == 2) {
+        r *= (1 + fern_choice0_b_bonus);
+      }
+      var g = fg.mulr(r);
+      if(g.seeds.ltr(2)) g.seeds = Num.max(g.seeds, Num(getRandomFernRoll() * 2 + 1));
+      var starter = getStarterResources();
+      if(g.seeds.lt(starter.seeds)) g.seeds = Num.max(g.seeds, starter.seeds.mulr(roll));
+      var mainres = new Res({seeds:g.seeds, spores:g.spores});
       if(bushy) {
-        fernres = fernres.mulr(1.75);
-        fernres.seeds.addrInPlace(5); // bushy ferns are better for early game
-        //fernres.nuts.addrInPlace(g.nuts);
+        mainres = mainres.mulr(1.75);
+        mainres.seeds.addrInPlace(5); // bushy ferns are better for early game
+        //mainres.nuts.addrInPlace(g.nuts);
         var fernTimeRatio = waittime / 120; //this type of resource should also depend on the duration of the fern
-        //if(state.g_res.amber.gtr(1)) fernres.amber.addrInPlace(0.5);
-        if(waittime + 1 >= fern_wait_minutes * 60 && state.g_numresets > 1 && (!state.challenge || challenges[state.challenge].allowsresin)) fernres.resin.addInPlace(state.g_max_res_earned.resin.divr(200).mulr(fernTimeRatio));
-        //fernres.resin.addInPlace(state.p_res.resin.divr(100).mulr(fernTimeRatio));
-        if(has_idlecharge) {
-          showMessage('This fern has been here a long time! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
-        } else {
-          showMessage('This fern is extra bushy! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
-        }
+        //if(state.g_res.amber.gtr(1)) mainres.amber.addrInPlace(0.5);
+        if(waittime + 1 >= fern_wait_minutes * 60 && state.g_numresets > 1 && (!state.challenge || challenges[state.challenge].allowsresin)) mainres.resin.addInPlace(state.g_max_res_earned.resin.divr(200).mulr(fernTimeRatio));
+        //mainres.resin.addInPlace(state.p_res.resin.divr(100).mulr(fernTimeRatio));
+      }
+
+      var fernres = mainres.add(idleres);
+
+      if(has_idlecharge) {
+        showMessage('This fern has been here a long time! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
+      } else if(bushy) {
+        showMessage('This fern is extra bushy! It gave ' + fernres.toString(), C_NATURE, 989456955, 1, true);
       } else {
         showMessage('That fern gave: ' + fernres.toString(), C_NATURE, 989456955, 0.5, true);
       }
@@ -5916,6 +5991,15 @@ var update = function(opt_ignorePause) {
 
       var treeleveltime = state.time - state.lasttreeleveluptime;
 
+      state.recentweighedleveltime[1] = weightedTimeAtLevel(false);
+      if(treeleveltime <= maxrecentweighedleveltime_between) {
+        state.recentweighedleveltime[0] = Math.max(state.recentweighedleveltime[0], state.recentweighedleveltime[1]);
+        state.recentweighedleveltime_time = state.time;
+      } else {
+        state.recentweighedleveltime[0] = 0;
+        state.recentweighedleveltime_time = 0;
+      }
+
       var do_twigs = true;
       if(state.challenge && !challenges[state.challenge].allowstwigs) do_twigs = false;
       if(state.challenge && !challenges[state.challenge].allowbeyondhighestlevel && state.treelevel > state.g_treelevel) do_twigs = false;
@@ -6060,12 +6144,6 @@ var update = function(opt_ignorePause) {
       } else {
         showMessage('challenge goal completed');
       }
-    }
-
-    if(state.time >= state.recentweighedleveltime_time + 120 && state.res.ge(req)) {
-      state.recentweighedleveltime_time = state.time;
-      for(var i = 1; i < state.recentweighedleveltime.length; i++) state.recentweighedleveltime[state.recentweighedleveltime.length - i] = state.recentweighedleveltime[state.recentweighedleveltime.length - 1 - i];
-      state.recentweighedleveltime[0] = weightedTimeAtLevel(false);
     }
 
     if(state.g_numresets > 0) {
@@ -6421,7 +6499,7 @@ var update = function(opt_ignorePause) {
   }
 
   if(!large_time_delta) {
-    if(global_season_changes) state.g_seasons++; // g_seasons only counts season changes actively seen
+    if(global_season_changes) state.g_season_changes_seen++; // g_season_changes_seen only counts season changes actively seen
     global_season_changes = 0;
     global_tree_levelups = 0;
     large_time_delta_res = Res(state.res);
@@ -6446,7 +6524,8 @@ var update = function(opt_ignorePause) {
       // when transcending with blueprint, do the next actions immediately to avoid having a momentary empty field visible
       window.setTimeout(update, 0.01);
     } else if(autoplanted_fastanim) {
-      // go faster when the automaton is autoplanting one-by-one. But not when heavy computing or it may make browser hang if it's simulating many automated transcends
+      // go faster when the automaton is autoplanting one-by-one (for the heavy_computing case, this is handled elsewhere)
+      // NOTE: this actually makes the automaton go must faster than just per update_ms * 0.4, because each update will trigger more of these window.setTimeout's along with the regular updates that also do this
       window.setTimeout(update, update_ms * 0.4);
     }
   }

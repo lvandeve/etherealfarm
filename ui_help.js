@@ -796,10 +796,10 @@ function createMainHelpDialog() {
   });
 }
 
-var showing_help = false; // for medal
+var showing_help = false;
 
 function createHelpDialog() {
-  showing_help = true;
+  showing_help = true; // for achievement
   var dialog = createDialog({
     onclose:function() { showing_help = false; },
     scrollable:true,
@@ -886,13 +886,9 @@ function createHelpDialog() {
 
 // shows a subset of the dynamic registered help buttons, for automaton related topics only
 function createAutomatonHelpDialog() {
-  showing_help = true;
   var dialog = createDialog({
     title:'Automaton help',
-    scrollable:true,
-    onclose:function() {
-      showing_help = false;
-    }
+    scrollable:true
   });
 
   checkUnlockedAutomatonHelpDialogs();

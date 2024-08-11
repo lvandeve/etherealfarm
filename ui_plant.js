@@ -447,10 +447,15 @@ function makePlantDialog(x, y, opt_replace, opt_recoup, opt_all) {
 function makePlantSelectDialog(cropid, prestiged, callback) {
   var crops_order = []; // = getCropOrder();
 
+  var holiday = holidayEventActive();
+
   var prestige_known = (state.g_numprestiges >= 1);
   for(var i = 0; i < registered_crops.length; i++) {
     var c = state.crops[registered_crops[i]];
+    var c2 = crops[registered_crops[i]];
     if(!(c.known || c.unlocked)) continue;
+    if(!(holiday & 4) && c2.type == CROPTYPE_PUMPKIN) continue; // don't show the pumpkins if not halloween
+    if(!state.challenge && c2.type == CROPTYPE_CHALLENGE) continue; // don't show challenge related crops here, unless it's a challenge
     if(c.known > 1 || c.prestige) prestige_known = true;
     crops_order.push(registered_crops[i]);
   }

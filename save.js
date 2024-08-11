@@ -357,6 +357,7 @@ function encState(state, opt_raw_only) {
   processUint(state.p_treelevel);
   processUint(state.g_numfullgrown2);
   processUint(state.g_seasons);
+  processUint(state.g_season_changes_seen);
   processNum(state.g_resin_from_transcends);
   processUint(state.g_delete2tokens); // obsolete but for now still present in case the tokens need to come back
   processFloat(state.g_fastestrun);
@@ -515,9 +516,14 @@ function encState(state, opt_raw_only) {
     for(var i = 0; i < array.length; i++) array2[i] = encApprox2Num(Num(array[i]));
     deltaEnc(array2);
   };
+  var deltaEncApproxTime = function(array) {
+    var array2 = [];
+    for(var i = 0; i < array.length; i++) array2[i] = encApprox3Num(Num(array[i] / 30));
+    deltaEnc(array2);
+  };
   deltaEnc(state.reset_stats_level);
   deltaEnc(state.reset_stats_level2);
-  deltaEncApprox(state.reset_stats_time);
+  deltaEncApproxTime(state.reset_stats_time);
   deltaEncApprox(state.reset_stats_total_resin);
   deltaEnc(state.reset_stats_challenge);
   deltaEncApprox(state.reset_stats_resin);
@@ -723,13 +729,15 @@ function encState(state, opt_raw_only) {
   processUint(state.automaton_autoaction);
 
   var processTrigger = function(trigger) {
-    //processStructBegin();
+    processStructBegin();
     processUint6(trigger.type);
     processUint(trigger.level);
     processUint(trigger.crop);
     processUint(trigger.prestige);
     processTime(trigger.time);
-    //processStructEnd();
+    processUint(trigger.upgrade_level);
+    processUint(trigger.crop_count);
+    processStructEnd();
   };
 
   var processEffect = function(effect) {
@@ -754,7 +762,14 @@ function encState(state, opt_raw_only) {
     var o = state.automaton_autoactions[i];
     processStructBegin();
     processBool(o.enabled);
+    processStructArrayBegin();
     processTrigger(o.trigger);
+    processTrigger(o.trigger_seasonal[0]);
+    processTrigger(o.trigger_seasonal[1]);
+    processTrigger(o.trigger_seasonal[2]);
+    processTrigger(o.trigger_seasonal[3]);
+    processBoolArray(o.trigger_season_override);
+    processStructArrayEnd();
     processStructArrayBegin();
     processEffect(o.effect);
     processEffect(o.effect_seasonal[0]);
@@ -762,9 +777,8 @@ function encState(state, opt_raw_only) {
     processEffect(o.effect_seasonal[2]);
     processEffect(o.effect_seasonal[3]);
     processStructArrayEnd();
-    processBoolArray(o.season_override);
-    processBool(o.done);
-    processBool(o.done2);
+    processBoolArray(o.effect_season_override);
+    processUint6(o.done);
     processTime(o.time2);
     processStructEnd();
   }
@@ -1160,7 +1174,8 @@ function decState(s) {
   var process = function(def, type) {
     var token = tokens[section * 64 + id];
     id++;
-    if(token == undefined || token.type != type) {
+    // the type-check does allow going from bool to uint6 in case an update wants to silently turn a bool into an uint6, they're stored the same way (in the non-array case).
+    if(token == undefined || (token.type != type && !(token.type == 0 && type == 1))) {
       if(def == undefined && !debug_allow_missing_fields) error = true;
       return def;
     }
@@ -1510,6 +1525,7 @@ function decState(s) {
     if(!crops[index]) {
       return err(4);
     }
+    if(index == berry_td_dummy || index == mush_td_dummy) continue; // these are not supposed to be visible but a pumpkin bug in 2023 made one of them 'known' in some saves; just skip these
     state.crops[index].unlocked = array1[i];
     state.crops[index].prestige = array2[i];
     state.crops[index].known = array3[i];
@@ -1655,7 +1671,8 @@ function decState(s) {
   state.g_numupgrades2_unlocked = processUint();
   state.p_treelevel = processUint();
   if(save_version >= 4096*1+9) state.g_numfullgrown2 = processUint();
-  if(save_version >= 4096*1+9) state.g_seasons = processUint();
+  if(save_version >= 262144*2+64*13+2) state.g_seasons = processUint();
+  if(save_version >= 4096*1+9) state.g_season_changes_seen = processUint();
   if(save_version >= 4096*1+10) {
     if(save_version >= 4096*1+14) {
       state.g_resin_from_transcends = processNum();
@@ -1687,6 +1704,7 @@ function decState(s) {
     state.g_num_squirrel_respec = processUint();
     state.g_amberdrops = processUint();
     var amberbuy = processUintArray();
+    if(error) return err(4);
     for(var i = 0; i < amberbuy.length; i++) state.g_amberbuy[i] = amberbuy[i];
   }
   if(save_version >= 4096*1+86) {
@@ -1861,12 +1879,13 @@ function decState(s) {
     }
     return result;
   };
-  var deltaDecApproxFloat = function(array) {
+  var deltaDecApproxTime = function(array) {
     var array2 = deltaDec(array);
     var result = [];
     for(var i = 0; i < array2.length; i++) {
-      if(save_version >= 262144*2+64*13+1) result[i] = decApprox2Num(array2[i]).valueOf();
-      else result[i] = decApproxNum(array2[i]).valueOf();
+      if(save_version >= 262144*2+64*13+2) result[i] = decApprox3Num(array2[i]).valueOf() * 30;
+      else if(save_version >= 262144*2+64*13+1) result[i] = decApprox2Num(array2[i]).valueOf() * 300;
+      else result[i] = decApproxNum(array2[i]).valueOf() * 300;
     }
     return result;
   };
@@ -1874,7 +1893,7 @@ function decState(s) {
   if(save_version >= 4096*1+26) {
     state.reset_stats_level2 = deltaDec(processIntArray());
     if(save_version >= 4096*1+63) {
-      state.reset_stats_time = deltaDecApproxFloat(processIntArray());
+      state.reset_stats_time = deltaDecApproxTime(processIntArray());
       state.reset_stats_total_resin = deltaDecApproxNum(processIntArray());
       state.reset_stats_challenge = deltaDec(processIntArray());
       state.reset_stats_resin = deltaDecApproxNum(processIntArray());
@@ -1882,7 +1901,7 @@ function decState(s) {
       if(save_version >= 262144*2+64*13+1) state.reset_stats_season = processUint6Array();
     } else {
       state.reset_stats_time = deltaDec(processIntArray());
-      for(var i = 0; i < state.reset_stats_time.length; i++) state.reset_stats_time[i] *= 3;
+      for(var i = 0; i < state.reset_stats_time.length; i++) state.reset_stats_time[i] *= 900;
       state.reset_stats_total_resin = deltaDec(processIntArray());
       for(var i = 0; i < state.reset_stats_total_resin.length; i++) state.reset_stats_total_resin[i] = Num.pow(Num(2), Num(state.reset_stats_total_resin[i])).subr(1);
       state.reset_stats_challenge = deltaDec(processIntArray());
@@ -2284,13 +2303,15 @@ function decState(s) {
   }
 
   var processTrigger = function(trigger) {
-    //processStructBegin();
+    if(save_version >= 262144*2+64*13+2) processStructBegin();
     trigger.type = processUint6();
     trigger.level = processUint();
     trigger.crop = processUint();
     trigger.prestige = processUint();
     trigger.time = processTime();
-    //processStructEnd();
+    if(save_version >= 262144*2+64*13+2) trigger.upgrade_level = processUint();
+    if(save_version >= 262144*2+64*13+2) trigger.crop_count = processUint();
+    if(save_version >= 262144*2+64*13+2) processStructEnd();
   };
 
   var processEffect = function(effect) {
@@ -2320,9 +2341,22 @@ function decState(s) {
       processStructBegin();
 
       if(save_version >= 262144*2+64*13+1) {
+        var count2;
         o.enabled = processBool();
-        processTrigger(o.trigger);
-        var count2 = processStructArrayBegin();
+        if(save_version >= 262144*2+64*13+2) {
+          count2 = processStructArrayBegin();
+          if(count2 != 5) return err(4);
+          processTrigger(o.trigger);
+          processTrigger(o.trigger_seasonal[0]);
+          processTrigger(o.trigger_seasonal[1]);
+          processTrigger(o.trigger_seasonal[2]);
+          processTrigger(o.trigger_seasonal[3]);
+          processStructArrayEnd();
+          o.trigger_season_override = processBoolArray();
+        } else {
+          processTrigger(o.trigger);
+        }
+        count2 = processStructArrayBegin();
         if(count2 != 5) return err(4);
         processEffect(o.effect);
         processEffect(o.effect_seasonal[0]);
@@ -2330,13 +2364,13 @@ function decState(s) {
         processEffect(o.effect_seasonal[2]);
         processEffect(o.effect_seasonal[3]);
         processStructArrayEnd();
-        o.season_override = processBoolArray();
-        o.done = processBool();
-        o.done2 = processBool();
+        o.effect_season_override = processBoolArray();
+        o.done = processUint6();
+        if(save_version < 262144*2+64*13+2) o.done += processUint6() * 2; // used to be 'done2'
         o.time2 = processTime();
       } else {
         o.enabled = processBool();
-        o.done = processBool();
+        o.done = processUint6();
         o.trigger.type = processUint6();
         o.effect.blueprint = processUint();
         o.effect.enable_blueprint2 = processBool();
@@ -2356,7 +2390,8 @@ function decState(s) {
         if(save_version >= 262144*2+64*6+4) o.effect.weather = processUint();
         if(save_version >= 262144*2+64*6+4) o.effect.enable_brassica = processBool();
         if(save_version >= 262144*2+64*6+4) o.effect.enable_fern = processBool();
-        if(save_version >= 262144*2+64*6+5) o.done2 = processBool();
+        if(save_version >= 262144*2+64*6+5) o.done += processUint6() * 2; // used to be 'done2'
+        else o.done *= 3;
         if(save_version >= 262144*2+64*6+5) o.time2 = processTime();
         if(save_version >= 262144*2+64*8+2) o.effect.blueprint2 = processUint();
         if(save_version >= 262144*2+64*13+0) o.effect.enable_transcend = processBool();
@@ -3069,6 +3104,17 @@ function decState(s) {
       state.automaton_autoactions[j] = state.automaton_autoactions[j - 1];
     }
     state.automaton_autoactions[0] = new AutoActionState();
+  }
+
+  // before 0.13.2 it only tracked season changes actively seen, while the actual amount of seasons is a much more useful stat
+  // estimate what g_seasons should be as best as possible (but due to the amber actions, it's impoissible to get it right)
+  if(save_version < 262144*2+64*13+2) {
+    var season_runtime = state.g_runtime;
+    if(state.g_amberbuy[AMBER_LENGTHEN]) season_runtime -= state.g_amberbuy[AMBER_LENGTHEN] * 3600;
+    if(state.g_amberbuy[AMBER_SHORTEN]) season_runtime += state.g_amberbuy[AMBER_SHORTEN] * 3600;
+    if(state.g_amberbuy[AMBER_KEEP_SEASON]) season_runtime -= state.g_amberbuy[AMBER_KEEP_SEASON] * 3600 * 8; // this is purely a guess; how long the keep seasons actually took is unknown
+    state.g_seasons = Math.ceil(season_runtime / (3600*24));
+    if(state.g_season_changes_seen + 1 > state.g_seasons) state.g_seasons = state.g_season_changes_seen + 1;
   }
 
   if(error) return err(4);

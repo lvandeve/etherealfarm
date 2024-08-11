@@ -635,7 +635,7 @@ function fieldCellTooltipFun(x, y, div) {
   var result = '';
   if(state.fern && x == state.fernx && y == state.ferny) {
     if(state.g_numresets > 1 && renderIdleFern()) {
-      result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+      result = 'Fern: provides some resources when activated.<br><br> The amount is based on production at the time the fern is activated,<br>or starter resources when there is no production yet.';
       if(state.fern == 2) result += '<br><br>Extra bushy: gives more resources, and gives a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
       result += '<br><br>';
       result += 'This fern charged up thanks to long idle time with the "slower ferns" choice upgrade. It gives more resources from the past production, as well as more resources at the current production rate, for some amount of time up to some limit. This time charges up slower than real time. This is in addition to what the fern already gives by default.';
@@ -646,9 +646,9 @@ function fieldCellTooltipFun(x, y, div) {
       result += '<br>';
       result += 'Upcoming resource time charged up: ' + util.formatDuration(getFernIdleFutureCharge()) + ' (plus the randomized regular fern default)';
     } else if(state.g_numresets > 1 && state.fern == 2) {
-      result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
+      result = 'Fern: provides some resources when activated.<br><br> The amount is based on production at the time the fern is activated,<br>or starter resources when there is no production yet.<br><br>Extra bushy ferns give more resources, and give a small amount of resin, based on highest-earning resin run ever, once far enough in the game. Resin given by ferns is itself not included in the "highest-earning resin run" metric, and is also not included in resin/hr stats, but will be given on transcend as usual';
     } else {
-      result = 'Fern: provides some resource when activated.<br><br> The amount is based on production at time the fern is activated,<br>or starter resources when there is no production yet.';
+      result = 'Fern: provides some resources when activated.<br><br> The amount is based on production at the time the fern is activated,<br>or starter resources when there is no production yet.';
     }
   } else if(state.present_effect && x == state.presentx && y == state.presenty) {
     if(holidayEventActive() == 1) {

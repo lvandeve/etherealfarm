@@ -110,16 +110,19 @@ function renderAutomatonShortcuts(flex, horizontal) {
     chip1.div.textEl.innerHTML = text1;
   }
   if(chip2) {
-    styleButton0(chip2.div);
-    centerText2(chip2.div);
-    chip2.div.title = 'quick toggle auto-action';
-    chip2.div.textEl.innerHTML = text2;
-    var miniconfigbutton = document.createElement('span');
-    chip2.div.textEl.appendChild(miniconfigbutton);
-    miniconfigbutton.innerHTML = '&#8201;⚙&#8201;'; // TODO: find a more clean way to make this exactly square
-    miniconfigbutton.className = 'efFlatButton';
-    miniconfigbutton.title = 'quick edit auto-actions';
-    addButtonAction(miniconfigbutton, function(e) {
+    var shift = 0.95;
+    var textpart = new Flex(chip2, 0, 0, [shift, -1], 1);
+    styleButton0(textpart.div);
+    centerText2(textpart.div, 2, 1);
+    textpart.div.title = 'quick toggle auto-action';
+    textpart.div.textEl.innerHTML = text2;
+    var miniconfigbutton = new Flex(chip2, [shift, -1], 0, shift, 1);
+    styleButton0(miniconfigbutton.div);
+    var canvas = createCanvas('0%', '0%', '100%', '100%', miniconfigbutton.div);
+    renderImage(image_gear, canvas);
+    miniconfigbutton.div.className = 'efFlatButton';
+    miniconfigbutton.div.title = 'quick edit auto-actions';
+    addButtonAction(miniconfigbutton.div, function(e) {
       showConfigureAutoActionDialog();
       e.stopPropagation();
     });
@@ -283,7 +286,7 @@ function updateRightPane() {
           } else if(newmaxlevel > maxlevel) {
             text += '• Previous max challenge level: ' + maxlevel + ' (goal: ' + goal + ')';
           } else {
-            text += '• Max challenge level: ' + maxlevel + ' (goal: ' + goal + ')';
+            text += '• Max challenge level reached: ' + maxlevel + ' (goal: ' + goal + ')';
           }
         }
       } else {

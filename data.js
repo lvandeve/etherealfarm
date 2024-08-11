@@ -6608,7 +6608,7 @@ function treeLevelFruitBoost(fruit_tier, ability_level, tree_level, opt_target) 
 }
 
 // in case of more spores than tree level requires, wait at least this time at that level anyway
-var tree_min_leveltime = 1;
+var tree_min_leveltime = 0.5;
 
 // outputs the minimum spores required (sporesreq) for the tree to go to the given level
 function treeLevelReqBase(level) {
@@ -7602,7 +7602,7 @@ function getFernWaitTime() {
 }
 
 
-// amount of past fern time charged up. Amount of resources gotten from this should be:
+// amount of past fern time charged up (as time duration). Amount of resources gotten from this should be:
 // (state.c_res - state.fernres) * getFernIdlePastCharge() / (state.time - state.lastFernTime), but only for spores and seeds
 function getFernIdlePastCharge() {
   var timediff = state.time - state.lastFernTime;
@@ -7612,7 +7612,8 @@ function getFernIdlePastCharge() {
   return idletime * fernIdlePastMul;
 }
 
-// amount of future (= from current moment on) fern time charged up. Amount of resources gotten from this should be this time value multiplied by the production as normally computed for ferns
+// amount of future (= from current moment on) fern time charged up (as time duration).
+// amount of resources gotten from this should be this time value multiplied by the production as normally computed for ferns
 function getFernIdleFutureCharge() {
   var timediff = state.time - state.lastFernTime;
   var idletime = timediff - fernIdleTimeBegin;
@@ -8253,6 +8254,9 @@ function canUseBluePrintsDuringChallenge(challenge, opt_print_message) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+var maxrecentweighedleveltime = 120;
+var maxrecentweighedleveltime_between = 10;
+
 // for the "time at level" bonus: is weighted with previous level durations to make a single tree level-up event not wipe the entire bonus
 // opt_fern: if true, may use state.recentweighedleveltime if better, to allow a recent value before tree just started leveling a lot to still be useful for fern for a few minutes (see state.recentweighedleveltime description)
 function weightedTimeAtLevel(opt_fern) {
@@ -8263,7 +8267,14 @@ function weightedTimeAtLevel(opt_fern) {
   var result = Math.max(Math.max(a, b), Math.max(c, d));
 
   if(opt_fern) {
-    for(var i = 0; i < state.recentweighedleveltime.length; i++) result = Math.max(result, state.recentweighedleveltime[i]);
+    if(state.time < state.recentweighedleveltime_time + maxrecentweighedleveltime) {
+      // the weighed level time as it coasted through tree levelups that happened in fast succession
+      result = Math.max(result, state.recentweighedleveltime[0]);
+    }
+    if(state.time < state.lasttreeleveluptime + maxrecentweighedleveltime) {
+      // the weighted time from the previous level, still used now if the tree leveled recently (as it may coast through to next tree level if next level follows fast)
+      result = Math.max(result, state.recentweighedleveltime[1]);
+    }
   }
 
   return result;
@@ -9857,9 +9868,33 @@ registerMedal('stats', 'viewed the player stats', image_stats, function() {
   return showing_stats == true;
 }, Num(0.01));
 
+registerMedal('challenge stats', 'viewed the challenge stats', image_stats, function() {
+  return showing_challenge_stats == true;
+}, Num(0.01));
+
+registerMedal('transcension stats', 'viewed the transcension stats', image_stats, function() {
+  return showing_transcension_stats == true;
+}, Num(0.01));
+
+registerMedal('automaton dialog', 'viewed the automaton unlock sources dialog by clicking the automaton in the automaton tab', image_automaton, function() {
+  return showing_automaton_dialog == true;
+}, Num(0.01));
+
+registerMedal('fruit dialog', 'viewed the fruit storage slot sources dialog by clicking on the "stored fruits" text title in the fruit tab', images_apple[3], function() {
+  return showing_fruit_dialog == true;
+}, Num(0.01));
+
+registerMedal('old squirrel tree', 'viewed the pre-evolution squirrel tree dialog from the squirrel tab', image_squirrel, function() {
+  return showing_old_squirrel_dialog == true;
+}, Num(0.01));
+
+registerMedal('previous unlocks', 'viewed the "previous unlocks" dialog from the ethereal tree', tree_images[10][1][4], function() {
+  return showing_previous_unlocks_dialog == true;
+}, Num(0.01));
+
 medal_register_id = 2010;
 
-var gametime_achievement_values =           [1,  7, 30];
+var gametime_achievement_values =           [1, 7, 30];
 var gametime_achievement_bonuses_percent =  [1, 5, 10];
 for(var i = 0; i < gametime_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement

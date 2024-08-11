@@ -23,17 +23,20 @@ var AMBER_PROD = 1;
 var AMBER_LENGTHEN = 2; // lengthen current season
 var AMBER_SHORTEN = 3; // shorten current season
 var AMBER_KEEP_SEASON = 4; // keep the current season for the entire current run. At end of run, if the current season took longer than 24h, next season will then start and last 24h as usual. Should refund the amber if season was not extended
-var AMBER_END_KEEP_SEASON = 5; // cancel AMBER_KEEP_SEASON
+var AMBER_END_KEEP_SEASON = 5; // cancel AMBER_KEEP_SEASON (can be done less times than AMBER_KEEP_SEASON, if it ended due to starting a new run instead)
 var AMBER_RESET_CHOICE = 6; // reset choice upgrades
 
 // returns the cost in amber as Num
-function getAmberCost(effect) {
+function getAmberCost(effect, opt_state) {
   if(effect == AMBER_SQUIRREL_RESPEC) return ambercost_squirrel_respec;
   if(effect == AMBER_PROD) return ambercost_prod;
   if(effect == AMBER_LENGTHEN) return ambercost_lengthen;
   if(effect == AMBER_SHORTEN) return ambercost_shorten;
   if(effect == AMBER_KEEP_SEASON) return ambercost_keep_season;
-  if(effect == AMBER_END_KEEP_SEASON) return ambercost_end_keep_season;
+  if(effect == AMBER_END_KEEP_SEASON) {
+    if(opt_state && !opt_state.amberkeepseasonused) return ambercost_keep_season.neg(); // refund
+    return ambercost_end_keep_season;
+  }
   if(effect == AMBER_RESET_CHOICE) return ambercost_reset_choices;
   return Num(999999999);
 }
@@ -60,7 +63,7 @@ function updateAmberUI() {
     styleButton(button, 1);
     pos += h * 1.35;
     if(effect_index != undefined) {
-      text += ' (' + getAmberCost(effect_index).toString() + ' amber)';
+      text += ' (' + getAmberCost(effect_index, state).toString() + ' amber)';
     }
     button.textEl.innerText = text;
 

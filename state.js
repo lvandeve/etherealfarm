@@ -464,6 +464,9 @@ function AutoActionTriggerState() {
   this.prestige = 0; // prestige level required from the crop
 
   this.time = 0; // runtime for the trigger based on runtime, for type 4
+
+  this.upgrade_level = 1; // upgrade level for the 'upgraded crop' trigger type
+  this.crop_count = 1; // for planted and fullgrown trigger types: how many of this crop
 }
 
 // a single set of auto action effect settings, for a single season
@@ -492,19 +495,35 @@ function AutoActionEffectState() {
 function AutoActionState() {
   this.enabled = false; // if false, this one is individually disabled
 
-  this.done = false; // already done this action this round
-  this.done2 = false; // done second part of this action: auto-fern (and a few other actions with it) happen only a few seconds later to give automaton time to plant the blueprint
-  this.time2 = 0; // the time at which second part must be done. Only used while done is true and done2 is false
+  // already done this action this round. Can het higher values for having done next stages that have 5-second intervals between them
+  // the steps are (but depending on the auto action configuration, some are skipped):
+  // 0: auto action not yet done
+  // 1: done first part
+  // 2: done second part (picking up fern)
+  // 3: done third and final part (transcend) (fully done)
+  this.done = 0;
+  this.time2 = 0; // the time at which the next part must be done. Only used while done has not yet reached the final value of 3
 
   this.trigger = new AutoActionTriggerState();
   this.effect = new AutoActionEffectState();
 
-  this.season_override = [false, false, false, false];
+  this.trigger_season_override = [false, false, false, false];
+  this.trigger_seasonal = [new AutoActionTriggerState(), new AutoActionTriggerState(), new AutoActionTriggerState(), new AutoActionTriggerState()];
+
+  this.effect_season_override = [false, false, false, false];
   this.effect_seasonal = [new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState(), new AutoActionEffectState()];
+
+  this.getTrigger = function() {
+    var season = getSeason();
+    if(autoActionSeasonOverrideUnlocked() && season >= 0 && season <= 3 && this.trigger_season_override[season]) {
+      return this.trigger_seasonal[season];
+    }
+    return this.trigger;
+  };
 
   this.getEffect = function() {
     var season = getSeason();
-    if(autoActionSeasonOverrideUnlocked() && season >= 0 && season <= 3 && this.season_override[season]) {
+    if(autoActionSeasonOverrideUnlocked() && season >= 0 && season <= 3 && this.effect_season_override[season]) {
       return this.effect_seasonal[season];
     }
     return this.effect;
@@ -591,8 +610,9 @@ function State() {
 
   this.infinitystarttime = 0; // when the infinity field was started
 
-  this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively
-  this.recentweighedleveltime = [0, 0]; // the weighed level time 2 and 4 minutes ago, this is a snapshot of recent weighted level time for use when taking fern: this allows you to change from seed fruit to spore fruit, which immediately levels up the tree a lot, but still pick up a fern with the production bonus from the previous weighted level time, since you can normally do that anyway by picking up the fern very fast after switching fruit. This is especially helpful for auto-actions that change fruit and take fern
+  this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively. Used for the computation of the weighted time at level bonus (weightedTimeAtLevel)
+
+  this.recentweighedleveltime = [0, 0]; // the best weighed level time seen at recent tree level ups. For use when taking fern: this allows you to change from seed fruit to spore fruit, which immediately levels up the tree a lot, but still pick up a fern with the production bonus from the previous weighted level time, since you can normally do that anyway by picking up the fern very fast after switching fruit. This is especially helpful for auto-actions that change fruit and take fern
   this.recentweighedleveltime_time = 0; // when the last snapshot of recentweighedleveltime was taken
 
   this.fern = 0; // 0 = no fern, 1 = standard fern, 2 = lucky fern
@@ -885,7 +905,8 @@ function State() {
   this.g_numupgrades2 = 0;
   this.g_numupgrades2_unlocked = 0;
   this.g_numfullgrown2 = 0;
-  this.g_seasons = 0; // season changes actually seen (a savegame from multiple days ago counts as only 1)
+  this.g_seasons = 1; // amount of seasons had (amount of season changes + the initial one at start of game) (does not count infernal challeng's season)
+  this.g_season_changes_seen = 0; // season changes actually seen (a savegame from multiple days ago counts as only 1)
   this.g_resin_from_transcends = Num(0); // this is likely the same value as g_res.resin, but is a separate counter for amount of resin ever earned from transcends in case it's needed for recovery in transcension-changing game updates
   this.g_delete2tokens = 0; //  obsolete but for now still present in case the tokens need to come back
   this.g_fastestrun = 0; // runtime of fastest transcension
@@ -899,7 +920,7 @@ function State() {
   this.g_num_squirrel_upgrades = 0;
   this.g_num_squirrel_respec = 0;
   this.g_amberdrops = 0;
-  this.g_amberbuy = [0, 0, 0, 0]; // amount bought of amber upgrades
+  this.g_amberbuy = [0, 0, 0, 0, 0, 0, 0]; // amount bought of amber upgrades (using amber effect action indices, e.g. #0=squirrel respec, #1=prod, #2=lengthen season, ...)
   this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
   this.g_fernres = Res(); // total resources gotten from ferns
   this.g_numpresents = [0, 0]; // order: presents '21-'22, eggs '22 + eggs '23 + presents '22-'23. Starting from index 2 with regularity: presents '23-'24, eggs '24, presents '24-'25, eggs '25, etc...
@@ -921,7 +942,7 @@ function State() {
   this.g_num_auto_resets = 0; // amount of non-manual resets, done by auto-action
 
   this.g_starttime = 0; // starttime of the game (when first run started)
-  this.g_runtime = 0; // this would be equal to getTime() - g_starttime if game-time always ran at 1x (it does, except if pause or boosts would exist)
+  this.g_runtime = 0; // this would be equal to util.getTime() - state.g_starttime if game-time always ran at 1x, however paused time is not included so it may differ
   this.g_numticks = 0;
   this.g_res = Res(); // total resources gained, all income ever without subtracting costs, including both production and one-time income
   this.g_max_res = Res(); // max resources ever had
@@ -1031,7 +1052,7 @@ function State() {
   // progress stats, most recent stat at the end
   this.reset_stats_level = []; // reset at what tree level for each reset
   this.reset_stats_level2 = []; // tree level 2 at end of this run
-  this.reset_stats_time = []; // approximate time of this run (in units of 5 minutes)
+  this.reset_stats_time = []; // approximate time of this run
   this.reset_stats_total_resin = []; // approximate total resin earned in total before start of this run
   this.reset_stats_resin = []; // approximate resin earned during this run
   this.reset_stats_twigs = []; // approximate twigs earned during this run
@@ -1058,7 +1079,7 @@ function State() {
   this.amberprod = false;
   this.amberseason = false; // a season duration amber effect was activated during this season
   this.amberkeepseason = false;
-  this.amberkeepseasonused = false;
+  this.amberkeepseasonused = false; // if true, the amberkeepseason effect has done its actual effect and is thus keeping the initial season active beyond its normal time duration
   this.amberkeepseason_season = 0; // which season is the one being held, set when enabling hold season, read when amberkeepseasonused is true
   this.seasonshift = 0; // in seconds, for the amber season move effects
   // if 1, then getSeasonAt should return 1 season higher than the current one, and timeTilNextSeason should return 24 hours more.

@@ -948,8 +948,18 @@ function createFruitInfoDialog(f, opt_label) {
   }
 }
 
+var showing_fruit_dialog = false;
+
 function showStorageFruitSourceDialog() {
-  var dialog = createDialog({title:'Fruit storage slot sources', scrollable:true});
+  showing_fruit_dialog = true; // for achievement
+  var dialog = createDialog({
+    title:'Fruit storage slot sources',
+    scrollable:true,
+    icon:images_apple[3],
+    onclose:function() {
+      showing_fruit_dialog = false;
+    }
+  });
 
   var text = '';
 

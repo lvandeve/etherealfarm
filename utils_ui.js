@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // element and allows changing the text at any time without updating this,
 // but it only supports single-line text. The div must already have its final
 // height and shouldn't change.
+// TODO: the "shoudln't change" part makes this a no-go for resizing window size; remove this function and use only centerText2.
 function centerText(div, opt_clientHeight, opt_vertical_only) {
   var divheight = opt_clientHeight || div.clientHeight;
   // the next 3 properties are to center text horizontally and vertically
@@ -34,7 +35,11 @@ function centerText(div, opt_clientHeight, opt_vertical_only) {
 // this involves creating a child element in the div. It will set a new field
 // on your dif names textEl, that is the one you must set innerText or
 // innerHTML to. Other than that fact, this one is the most versatile.
-function centerText2(div) {
+// opt_align_hor: if not given, centers. Otherwise 0=left, 1=center, 2=right
+// opt_align_ver: if not given, centers. Otherwise 0=top, 1=center, 2=bottom
+function centerText2(div, opt_align_hor, opt_align_ver) {
+  if(opt_align_hor == undefined) opt_align_hor = 1;
+  if(opt_align_ver == undefined) opt_align_ver = 1;
   div.innerHTML = '';
   var table = util.makeElement('div', div);
   table.style.display = 'table';
@@ -42,8 +47,8 @@ function centerText2(div) {
   table.style.height = '100%';
   var cell = util.makeElement('div', table);
   cell.style.display = 'table-cell';
-  cell.style.verticalAlign = 'middle';
-  cell.style.textAlign = 'center';
+  cell.style.verticalAlign = (opt_align_ver == 1) ? 'middle' : (opt_align_ver == 0 ? 'top' : 'bottom');
+  cell.style.textAlign = (opt_align_hor == 1) ? 'center' : (opt_align_hor == 0 ? 'left' : 'right');
   //cell.style.width = '100%';
   //cell.style.height = '100%';
   div.textEl = cell;

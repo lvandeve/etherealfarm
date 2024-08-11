@@ -30,8 +30,22 @@ function getChangeLog() {
     }
   }
 
+  text += '0.13.2 (2024-08-12)';
+  text += '<br/>• Added season overrides for auto-action triggers, so now also the trigger conditions can be customized separately per season (once you unlocked this ability).';
+  text += '<br/>• For the "crop upgraded" auto-action trigger type, it\'s now also possible to select the upgrade level the crop should have.';
+  text += '<br/>• For the "planted crop" and "fullgrown crop" auto-action trigger types, it\'s now also possible to select the amount of crops.';
+  text += '<br/>• Increased precision with which the time duration of previous runs in the "Transcension statistics" dialog is kept.';
+  text += '<br/>• Made the cost limit setting for auto-unlock also visible when using "share with auto-plant".'; // not having it visible was an oversight
+  text += '<br/>• It\'s now possible to rearrange the display order of auto-actions.';
+  text += '<br/>• Fixed long idle charged fern giving 1.75x more charged resources than intended.';
+  text += '<br/>• Fixed the fact that picking up fern and transcending in a single auto-action made the fern have little to no effect.'; // it used to not work because transcending happened immediately after picking up fern, so tree didn't have time to level up. In addition, made time between tree levelsups 0.5s instead of 1s.
+  text += '<br/>• Fixed computation precision issues related to auto-actions and resource amounts during multi-hour fast-forward computations (when loading savegames or inactive tabs).';
+  text += '<br/>&nbsp;&nbsp;◦  NOTE: despite the improved precision, it\'s recommended when having two time-triggered auto-actions in a row which both pick up a fern, to leave at least 10 seconds extra between the auto-actions compared to expected fern spawn time: auto-actions fern pickup time can vary up to >5 seconds.'; // 3 fixes were involved: changed how weighted time at level coasts through fast successive tree levels, made time-based triggers of auto actions more strict during heavy computing, and made automaton's auto actions succeed each other faster in the long time duration loop
+  text += '<br/>• Various small bugfixes and tweaks.'; // includes also new achievements for opening various somewhat hidden dialogs, and a display bug where some fishes showed 5% too much in tooltips
+  text += '<br/><br/>';
+
   text += '0.13.1 (2024-07-15)';
-  text += '<br/>• Added season overrides for auto-actions, unlocked if you have auto-transcend. Any auto action effects can be overriden for any of the seasons. This uses a fully separate configuration of the action effects, only used in that season. Use the "seasonal" button under the "Configure effect" dialog for this.';
+  text += '<br/>• Added season overrides for auto-action effects, unlocked if you have auto-transcend. Any auto action effects can be overriden for any of the seasons. This uses a fully separate configuration of the action effects, only used in that season. Use the "seasonal" button under the "Configure effect" dialog for this.';
   text += '<br/>• Added "hold season" auto-action effect. This is unlocked if you have auto-transcend.';
   text += '<br/>• Made the resin, twigs and time statistics in the "transcension stats" dialog more precise, and added season stat. You only get these increased stats for next runs after this version\'s release';
   text += '<br/>• Made it more robust how the game remembers the undo state before an auto-transcend. When coming back after a long time to a game with auto-transcends enabled, and pressing the "undo" button, it will undo the last auto-transcend (unless you did a manual action before pressing undo)';

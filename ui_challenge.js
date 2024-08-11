@@ -195,9 +195,9 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
       text += '<br>';
     }
   }
-  text += '• Max challenge level reached gives a seeds and spores production bonus given by the following formula, whether successfully completed or not: <b>' + getChallengeFormulaString(0, c, c2) + '</b>';
+  text += '• Your max challenge level reached gives a seeds and spores production bonus given by the following formula, whether successfully completed or not: <b>' + getChallengeFormulaString(0, c, c2) + '</b>';
   text += '<br>';
-  text += '• Max challenge level reached gives a resin and twigs bonus given by the following formula, whether successfully completed or not: <b>' + getChallengeFormulaString(1, c, c2) + '</b>';
+  text += '• Your max challenge level reached gives a resin and twigs bonus given by the following formula, whether successfully completed or not: <b>' + getChallengeFormulaString(1, c, c2) + '</b>';
   if(c.cycling) {
     text += '<br>';
     text += '• <b>bonus</b> value itself depends on cycle, respectively: ';
@@ -628,12 +628,18 @@ function getChallengeFormulaString(which, c, c2) {
   return result;
 }
 
+var showing_challenge_stats = false;
+
 function createAllChallengeStatsDialog() {
+  showing_challenge_stats = true; // for achievement
   var dialog = createDialog({
     size:DIALOG_LARGE,
     icon:image_stats,
     title:'Challenge stats',
-    scrollable:true
+    scrollable:true,
+    onclose:function() {
+      showing_challenge_stats = false;
+    }
   });
 
   var text = '';

@@ -640,11 +640,33 @@ function createAdvancedSettingsDialog() {
 }
 
 
+function formatApproxTime(t) {
+  // seconds not shown, this uses approximate encoding with precision of 30 seconds at the highest, and then lower and lower (but around 3 digits) for higher times
+  var d = t / (3600 * 24);
+  var h = t / (3600);
+  var d0 = Math.floor(t / (3600 * 24));
+  t -= d0 * 3600 * 24;
+  var h0 = Math.floor(t / 3600);
+  t -= h0 * 3600;
+  var m0 = Math.round(t / 60);
+  if(m0 >= 60) {
+    m0 -= 60;
+    h0++;
+  }
+  var timetext = '';
+  if(d >= 365) timetext = Num(d / 365.25).toString(2, Num.N_SCI) + 'y';
+  else if(d >= 10) timetext = Num(d).toString(3, Num.N_SCI) + 'd';
+  else if(d >= 2) timetext = Num(d).toString(2, Num.N_SCI) + 'd';
+  else if(h >= 16) timetext = Num(h).toString(3, Num.N_SCI) + 'h';
+  else if(h >= 1) timetext = Num(h0).toString(2, Num.N_SCI) + 'h' + Num(m0).toString(2, Num.N_SCI) + 'm';
+  else timetext = Num(m0).toString(2, Num.N_SCI) + 'm';
+  return timetext;
+}
+
 var showing_stats = false;
 
-
 function createStatsDialog() {
-  showing_stats = true;
+  showing_stats = true; // for achievement
   var dialog = createDialog({
     title:'Player statistics',
     scrollable:true,
@@ -723,7 +745,7 @@ function createStatsDialog() {
       text += '• fruit upgrades: ' + open + state.g_numfruitupgrades + close + '<br>';
     }
     text += '• weather abilities activated: ' + open + state.g_numabilities + close + '<br>';
-    text += '• season changes seen: ' + open + state.g_seasons + close + '<br>';
+    text += '• season changes seen: ' + open + state.g_season_changes_seen + close + '<br>';
     text += '• fastest run: ' + open + util.formatDuration(state.g_fastestrun) + close + '<br>';
     text += '• longest run: ' + open + util.formatDuration(state.g_slowestrun) + close + '<br>';
   }
@@ -802,11 +824,7 @@ function createStatsDialog() {
       }
       for(var i = 0; i < n; i++) {
         var j = n - 1 - i;
-        var minutes = state.reset_stats_time[state.reset_stats_time.length - 1 - i] * 5;
-        var timetext = '';
-        if(minutes < 60) timetext = Num(minutes).toString(1) + 'm';
-        else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(2) + 'h';
-        else timetext = Num(minutes / (24 * 60)).toString(2) + 'd';
+        var timetext = formatApproxTime(state.reset_stats_time[state.reset_stats_time.length - 1 - i]);
         text += (i == 0 ? ' ' : ', ') +
             state.reset_stats_level[state.reset_stats_level.length - 1 - i] +
             ' (' + timetext +
@@ -899,15 +917,16 @@ function createStatsDialog() {
   div.innerHTML = text;
 }
 
+var showing_transcension_stats = false;
 
 function createTranscensionStatsDialog() {
-  showing_stats = true;
+  showing_transcension_stats = true; // for achievement
   var dialog = createDialog({
     title:'Transcension statistics',
     scrollable:true,
     icon:image_stats,
     onclose:function() {
-      showing_stats = false;
+      showing_transcension_stats = false;
     }
   });
 
@@ -938,11 +957,7 @@ function createTranscensionStatsDialog() {
     text += '• last transcension levels (1 = last, 2 = second last, ...):' + '<br>';
     for(var i = 0; i < n; i++) {
       text += '&nbsp;&nbsp;◦ ' + (i + 1) + ': ' + open;
-      var minutes = state.reset_stats_time[state.reset_stats_time.length - 1 - i] * 5;
-      var timetext = '';
-      if(minutes < 60) timetext = Num(minutes).toString(1) + 'm';
-      else if(minutes < 60 * 48) timetext = Num(minutes / 60).toString(2) + 'h';
-      else timetext = Num(minutes / (24 * 60)).toString(2) + 'd';
+      var timetext = formatApproxTime(state.reset_stats_time[state.reset_stats_time.length - 1 - i]);
       text += 'level: ' + state.reset_stats_level[state.reset_stats_level.length - 1 - i];
       text += ', time: ' + timetext;
 
@@ -966,8 +981,6 @@ function createTranscensionStatsDialog() {
   div.innerHTML = text;
 }
 
-var showing_changelog = false;
-
 var getAboutHeader = function() {
   var text = '';
   text += 'Reddit: <a target="_blank" href="https://www.reddit.com/r/etherealfarm/">https://www.reddit.com/r/etherealfarm/</a>';
@@ -979,8 +992,10 @@ var getAboutHeader = function() {
   return text;
 };
 
+var showing_changelog = false;
+
 function createChangelogDialog() {
-  showing_changelog = true;
+  showing_changelog = true; // for achievement
 
   var icon = images_fern[1];
   if(holidayEventActive() == 1) {
@@ -1178,7 +1193,7 @@ function createSettingsDialog() {
   button.textEl.innerText = 'save now';
   registerTooltip(button, 'Save to local storage now. The game also autosaves every few minutes, but this button is useful before shutting down the computer or browser right after doing some game actions to ensure they are saved. Also force-stores the undo state.');
   addButtonAction(button, function() {
-    storeUndo(state); // also store undo state now, similar to shift+click on the undo button
+    //storeUndo(state); // also store undo state now, similar to shift+click on the undo button /// commented out anyway now, on mobile sometimes one wants to do something, save to preserve it, then press undo to check the original state
     saveNow(function(s) {
       showMessage(manualSavedStateMessage);
       closeAllDialogs();

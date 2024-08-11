@@ -427,10 +427,22 @@ function updateSquirrelUI(opt_partial) {
   }
 }
 
+
+var showing_old_squirrel_dialog = false;
+
 function showOldSquirrelTreeDialog() {
   if(!(state.squirrel_evolution > 0)) return;
 
-  var dialog = createDialog({title:'View pre-evolution squirrel tree', scrollable:true});
+  showing_old_squirrel_dialog = true; // for achievement
+
+  var dialog = createDialog({
+    title:'View pre-evolution squirrel tree',
+    scrollable:true,
+    icon:image_squirrel,
+    onclose:function() {
+      showing_old_squirrel_dialog = false;
+    }
+  });
   var scrollFlex = dialog.content;
 
   var y = 0;

@@ -1139,8 +1139,11 @@ Num.smallValueNotation = function(v, precision) {
   // the 1.0000000001 is so that e.g. 0.00999999999 will show up as 0.01 instead. TODO: use better method for this
   //v = v.valueOf() * 1.0000000001;
 
+  v = v.valueOf();
+
   // The correction added ensures that e.g. 201.6 with precision 3 will show up as 202, not 201 (correct rounding of the digits)
-  v = v.valueOf() + (Math.pow(0.1, precision - Math.floor(Math.log10(v)))) * 5;
+  var l = Math.floor(Math.log10(v));
+  if(l < precision) v += (Math.pow(0.1, precision - l)) * 4.999; // 4.999 instead of 5, otherwise 0.1 gets rendered as 0.101
 
   var result;
   if(v < 1 && precision > 0 && precision < 100) { // the 1-100 range is to prevent JS throwing range error for toPrecision

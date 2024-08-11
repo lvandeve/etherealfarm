@@ -109,11 +109,16 @@ function showEtherealTreeLevelDialog(level, opt_later) {
   dialog.content.div.innerHTML = text;
 }
 
+var showing_previous_unlocks_dialog = false;
+
 function showEtherealTreeLevelDialogs() {
+  showing_previous_unlocks_dialog = true; // for achievement
   var dialog = createDialog({
-    onclose:function() { showing_help = false; },
     scrollable:true,
-    title:'Previous ethereal tree level unlocks'
+    title:'Previous ethereal tree level unlocks',
+    onclose:function() {
+      showing_previous_unlocks_dialog = false;
+    }
   });
 
   var pos = 0.05;
