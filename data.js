@@ -1173,7 +1173,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(presentProductionBoostActive() && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var bonus = new Num(1.25);
     result.mulInPlace(bonus);
-    if(holidayEventActive() == 1) {
+    if(state.holiday & 1) {
       if(breakdown) breakdown.push(['present effect', true, bonus, result.clone()]);
     } else {
       if(breakdown) breakdown.push(['egg effect', true, bonus, result.clone()]);
@@ -3253,7 +3253,7 @@ registered_upgrades = registered_upgrades.sort(function(a, b) {
 function pumpkinUnlocked() {
   if(state.challenge) return false; // disable challenges at all in first release, in case it turns out much too strong
 
-  if(holidayEventActive() != 4) return false;
+  if(!(state.holiday & 4)) return false;
   if(basicChallenge()) return false;
   if(!state.g_numresets) return false; // don't introduce the pumpkin on first playtrough yet
   if(!state.upgrades[berryunlock_0].count) return false; // must have unlocked at least the first berry
@@ -10510,9 +10510,10 @@ function holidayPresentIndex() {
 
 // holiday events: 0=none, 1=presents, 2=eggs, 4=pumpkins
 // it's in theory possible to use bit masks to filter the return value, e.g. (holidayEventActive() & 3) for presents or eggs, but the return value will always contain exactly 1 holiday (1 bit set)
+// NOTE: slow function due to usage of 'new Date', use 'state.holiday' to access this value whenever possible
 function holidayEventActive() {
-  // TODO: new Date() and date.getMonth() turn out to be slow functions in profiling, reduce the number of calls to holidayEventActive()
   var date = new Date();
+  //date = new Date(date.getSeconds() * 2000000000); // debug season transitions by having time go really fast
   var month = date.getMonth() + 1;
   var day = date.getDate();
 

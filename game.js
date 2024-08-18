@@ -1032,7 +1032,7 @@ function loadUndo() {
 function getRandomPreferablyEmptyFieldSpot() {
   var num = 0;
   num = state.numemptyfields;
-  var minemptyspots = (holidayEventActive() & 3) ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
+  var minemptyspots = (state.holiday & 3) ? 3 : 2; // in case of holiday event with random drops, at least 3 spots must be open to ensure randomized positions
   if(num < minemptyspots) {
     var x = Math.floor(Math.random() * state.numw);
     var y = Math.floor(Math.random() * state.numh);
@@ -3835,7 +3835,12 @@ var update = function(opt_ignorePause) {
 
   for(;;) { // begin of loop for long ticks ////////////////////////////////////
     if(done) break;
-    if(numloops++ > max_heavy_computing_loops) break;
+    if(numloops++ > max_heavy_computing_loops) {
+      // give some time for the UI to update, prevent JS hanging from single huge computation. But set a short timeout, rather than relying on the standard 0.33 second interval, to avoid long waiting times during long old savegame loading
+      // NOTE: due to also the regular 0.333 second update interval going on, this causes more updates than you'd think (with explosion of parallel updates), so the amount of seconds is set to something larger htan intended here
+      window.setTimeout(update, 0.1);
+      break;
+    }
 
     counter_update_compute++;
 
@@ -5066,7 +5071,7 @@ var update = function(opt_ignorePause) {
           if(!action.by_automaton) store_undo = true;
         }
       } else if(type == ACTION_PRESENT) {
-        if(!(holidayEventActive() & 3)) continue;
+        if(!(state.holiday & 3)) continue;
 
         if(state.present_effect && state.presentx == action.x && state.presenty == action.y) {
           clickedpresent = true;
@@ -5519,7 +5524,17 @@ var update = function(opt_ignorePause) {
       }
     } // end of actions loop
 
-    if(store_undo && undostate && !force_no_store_undo) {
+    var no_undo_early_in_heavy_computing = false;
+    if(heavy_computing) {
+      no_undo_early_in_heavy_computing = true;
+      var remaining = (util.getTime() - state.time);
+      if(remaining < 3600) no_undo_early_in_heavy_computing = false;
+      // the goal here is: during heavy_computing, encoding a state for undo is slow so avoid doing the early ones
+      // but the last automated transcend must be saved, we estimage which one is the last one by checking previuos runtime
+      if(do_transcend && remaining < state.p_runtime + 3600) no_undo_early_in_heavy_computing = false;
+    }
+
+    if(store_undo && undostate && !force_no_store_undo && !no_undo_early_in_heavy_computing) {
       storeUndo(undostate);
     }
 
@@ -5836,7 +5851,7 @@ var update = function(opt_ignorePause) {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    if(!(holidayEventActive() & 3)) {
+    if(!(state.holiday & 3)) {
       state.present_effect = 0;
     } else {
       // presents, or eggs, depending on the holiday event
@@ -5856,7 +5871,7 @@ var update = function(opt_ignorePause) {
           if(g.seeds.ltr(10)) g.seeds = Num.max(g.seeds, Num(10));
           var presentres = new Res({seeds:g.seeds});
           if(basic) presentres = presentres.mulr(0.3);
-          if(holidayEventActive() == 1) {
+          if(state.holiday & 1) {
             showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
@@ -5871,7 +5886,7 @@ var update = function(opt_ignorePause) {
           if(basic) g = g.mulr(0.3);
           if(g.ltr(1)) g = Num.max(g, Num(1));
           var presentres = new Res({spores:g});
-          if(holidayEventActive() == 1) {
+          if(state.holiday & 1) {
             showMessage('That present contained: ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg contained ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
@@ -5881,7 +5896,7 @@ var update = function(opt_ignorePause) {
         } else if(effect == 3) {
           // production boost
           state.present_production_boost_time = state.time;
-          if(holidayEventActive() == 1) {
+          if(state.holiday & 1) {
             showMessage('This present boosts production for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('This egg boosts production for 15 minutes!', C_EGG, 38753631, 0.8, true);
@@ -5892,7 +5907,7 @@ var update = function(opt_ignorePause) {
           var g = computeFernGain().mulr(60 * 5);
           if(g.nuts.lt(min_nuts)) g.nuts = min_nuts;
           var presentres = new Res({nuts:g.nuts});
-          if(holidayEventActive() == 1) {
+          if(state.holiday & 1) {
             showMessage('That present contained a nutcracker! It gave ' + presentres.toString(), C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg was nut flavored! It gave ' + presentres.toString(), C_EGG, 38753631, 0.8, true);
@@ -5901,21 +5916,21 @@ var update = function(opt_ignorePause) {
         } else if(effect == 5) {
           // grow speed
           state.present_grow_speed_time = state.time;
-          if(holidayEventActive() == 1) {
+          if(state.holiday & 1) {
             showMessage('This present doubles crop grow speed for 15 minutes!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('This egg doubles crop grow speed for 15 minutes!', C_EGG, 38753631, 0.8, true);
           }
         } else if(effect == 6) {
           // fruit
-          if(holidayEventActive() == 1) {
+          if(state.holiday & 1) {
             showMessage('This present contained fruit!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('This egg contained fruit!', C_EGG, 38753631, 0.8, true);
           }
           var fruits = addRandomFruitForLevel(Math.max(5, state.g_treelevel - 2), true);
           if(fruits) {
-            var messagestyle = (holidayEventActive() == 1) ? C_PRESENT : C_EGG;
+            var messagestyle = (state.holiday & 1) ? C_PRESENT : C_EGG;
             for(var i = 0; i < fruits.length; i++) {
               if(state.messagelogenabled[5]) showMessage('fruit dropped: ' + fruits[i].toString() + '. ' + fruits[i].abilitiesToString(), messagestyle, 38753631, 0.8);
             }
@@ -5924,7 +5939,7 @@ var update = function(opt_ignorePause) {
           // amber
           var amber = Num(Math.floor(getRandomPresentRoll() * 2) + 2);
           actualgain.amber.addInPlace(amber);
-          if(holidayEventActive() == 1) {
+          if(state.holiday & 1) {
             showMessage('That present contained ' + amber.toString() + ' amber!', C_PRESENT, 38753631, 0.8, true);
           } else {
             showMessage('That egg contained ' + amber.toString() + ' amber!', C_EGG, 38753631, 0.8, true);
@@ -5946,7 +5961,7 @@ var update = function(opt_ignorePause) {
             state.presentx = s[0];
             state.presenty = s[1];
             // the coordinates are invisible but are for screenreaders
-            if(holidayEventActive() == 1) {
+            if(state.holiday & 1) {
               showMessage('A present appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_PRESENT, 5, 0.8);
             } else {
               showMessage('An egg appeared<span style="color:#0000"> at ' + state.presentx + ', ' + state.presenty + '</span>', C_EGG, 5, 0.8);
@@ -6445,7 +6460,7 @@ var update = function(opt_ignorePause) {
   // there is of course the auto-save on closing tab, but that JS event is not reliable and does not happen when closing entire browser
   // the 'store_undo' boolean is here instead used because it indicates a player action was done, automaton actions usually don't cause store_undo. There's no need to auto-save this way if no player actions is done.
   // it's using prev_store_undo instead of store_undo to ensure the save is done one tick after so the state is well updated for sure
-  if(autoSaveOk() && state.saveonaction && prev_store_undo) {
+  if(!heavy_computing && autoSaveOk() && state.saveonaction && prev_store_undo) {
     saveNow();
   }
   prev_store_undo = store_undo;

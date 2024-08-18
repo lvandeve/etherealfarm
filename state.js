@@ -1103,6 +1103,10 @@ function State() {
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
+  // which holiday(s) are active, see holidayEventActive() function for the values (binary flag based: 0=none, 1=presents, 2=eggs, 4=pumpkins)
+  // derived stat, not to be saved
+  this.holiday = 0;
+
   // temp variables for visual effect, not to be saved
   this.automatonx = 0; // for the visual planting effect
   this.automatony = 0;
@@ -1330,7 +1334,7 @@ State.prototype.initSquirrelStages = function() {
 };
 
 function getSquirrelImage(state) {
-  if(holidayEventActive() == 1) {
+  if(state.holiday & 1) {
     return (state.squirrel_evolution == 0) ? image_squirrel_hat : image_squirrel2_hat;
   } else {
     return (state.squirrel_evolution == 0) ? image_squirrel : image_squirrel2;
@@ -1338,7 +1342,7 @@ function getSquirrelImage(state) {
 }
 
 function getAutomatonImage(state) {
-  if(holidayEventActive() == 1) {
+  if(state.holiday & 1) {
     return image_automaton_hat;
   } else {
     return image_automaton;
@@ -1583,6 +1587,8 @@ function isNextToTree2(x, y, diagonal_ok) {
 // this allows getting some stats, such as unlock conditions for upgrades, in a slightly cheaper way than computing it on the fly for every upgrade check
 function computeDerived(state) {
   counter_update_computederived++;
+
+  state.holiday = holidayEventActive();
 
   // field
   state.numemptyfields = 0;
@@ -2890,7 +2896,7 @@ function presentGrowSpeedTimeRemaining() {
 }
 
 function presentGrowSpeedActive() {
-  if(!(holidayEventActive() & 3)) return false;
+  if(!(state.holiday & 3)) return false;
   if(basicChallenge()) return false;
   return presentGrowSpeedTimeRemaining() > 0;
 }
@@ -2900,7 +2906,7 @@ function presentProductionBoostTimeRemaining() {
 }
 
 function presentProductionBoostActive() {
-  if(!(holidayEventActive() & 3)) return false;
+  if(!(state.holiday & 3)) return false;
   if(basicChallenge()) return false;
   return presentProductionBoostTimeRemaining() > 0;
 }

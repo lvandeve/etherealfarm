@@ -292,7 +292,7 @@ function updatePausedUI() {
       pausedFlexText = 'Paused';
     }
   } else if(heavy_computing) {
-    var hours = Math.floor((util.getTime() - state.time) / 3600)
+    var hours = Math.floor((util.getTime() - state.time) / 3600);
     if(hours > 1) {
       pausedFlexText = 'Computing ' + '<br>' + hours + 'h';
     } else {
@@ -353,8 +353,8 @@ function updateUI2() {
     if(dialog_level == 0) globalupdatedialogfun = undefined;
   }
   updateSettingsAboutIcon();
-  if(holidayEventActive() != holiday_hats_active) {
-    holiday_hats_active = holidayEventActive();
+  if(state.holiday != holiday_hats_active) {
+    holiday_hats_active = state.holiday;
     state.initEvolutionAndHatImages();
     updateUI();
   }

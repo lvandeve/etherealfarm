@@ -998,17 +998,14 @@ function createChangelogDialog() {
   showing_changelog = true; // for achievement
 
   var icon = images_fern[1];
-  if(holidayEventActive() == 1) {
-    icon = present_images[Math.floor(Math.random() * 4)]
-  }
-  if(holidayEventActive() == 2) {
-    icon = bunny_image;
-  }
-  if(holidayEventActive() == 4) {
-    icon = images_pumpkin_small[0];
-  }
   if(state.beta) {
     icon = image_beta;
+  } else if(state.holiday & 1) {
+    icon = present_images[Math.floor(Math.random() * 4)]
+  } else if(state.holiday & 2) {
+    icon = bunny_image;
+  } else if(state.holiday & 4) {
+    icon = images_pumpkin_small[0];
   }
 
   var dialog = createDialog({title:'About', icon:icon, onclose:function(cancel) {
@@ -1340,9 +1337,9 @@ function updateSettingsAboutIcon() {
   var holiday = holidayEventActive();
   if(holiday != aboutButtonCanvas_lastHoliday) {
     if(window['global_is_beta']) renderImage(image_beta, aboutButtonCanvas);
-    else if(holiday == 1) renderImage(present_images[Math.floor(Math.random() * 4)], aboutButtonCanvas);
-    else if(holiday == 2) renderImage(bunny_image, aboutButtonCanvas);
-    else if(holiday == 4) renderImage(images_pumpkin_small[0], aboutButtonCanvas);
+    else if(holiday & 1) renderImage(present_images[Math.floor(Math.random() * 4)], aboutButtonCanvas);
+    else if(holiday & 2) renderImage(bunny_image, aboutButtonCanvas);
+    else if(holiday & 4) renderImage(images_pumpkin_small[0], aboutButtonCanvas);
     else renderImage(images_fern[1], aboutButtonCanvas);
     aboutButtonCanvas_lastHoliday = holiday;
   }

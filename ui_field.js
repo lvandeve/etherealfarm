@@ -651,7 +651,7 @@ function fieldCellTooltipFun(x, y, div) {
       result = 'Fern: provides some resources when activated.<br><br> The amount is based on production at the time the fern is activated,<br>or starter resources when there is no production yet.';
     }
   } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-    if(holidayEventActive() == 1) {
+    if(state.holiday & 1) {
       result = 'Present: provides a random bonus when activated. Presents are a temporary festive event!';
     } else {
       result = 'Egg: provides a random bonus when activated. Eggs are a temporary festive event!';
@@ -1168,7 +1168,7 @@ function updateFieldCellUI(x, y) {
       blendImage(fernbaseimage[season], fd.canvas);
       label = 'fern. ' + label;
     } else if(state.present_effect && x == state.presentx && y == state.presenty) {
-      if(holidayEventActive() == 1) {
+      if(state.holiday & 1) {
         blendImage(present_images[state.present_image], fd.canvas);
         label = 'present. ' + label;
       } else {

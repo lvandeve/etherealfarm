@@ -30,7 +30,7 @@ function Res(o) {
     return new Res(o);
   }
   if(o) {
-    // create a new Num for each, so that addrInPlace can't accently affect source number objects
+    // create a new Num for each, so that addrInPlace can't accidently affect source number objects
     this.seeds = new Num(o.seeds || 0);
     this.spores = new Num(o.spores || 0);
     this.resin = new Num(o.resin || 0);
