@@ -708,11 +708,9 @@ function decString(reader) {
 
 
 
-
-
-
 var date_base = 1600000000; // september 2020 instead of 1970 unix epoch, for smaller numbers to encode
 
+// similar to encFloat, but for values representing times, either unix timestamps or durations; it removes some precision, but good enough sub-second precision for timestamps, so is more efficient than encFloat for this purpose
 function encTime(s) {
   // a few special values
   if(s == 0) return encUint6(0);

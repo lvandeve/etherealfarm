@@ -139,6 +139,17 @@ function encState(state, opt_raw_only) {
   processRes(state.automaticTranscendRes);
   processUint(state.numAutomaticTranscendsSinceHumanAction);
   processBool(state.runHadAnyHumanAction);
+  id = 37;
+  processUint(state.infspawn);
+  if(state.infspawn) {
+    processUint(state.infspawnx);
+    processUint(state.infspawny);
+  }
+  id = 40;
+  processTime(state.lastInfSpawnTime);
+  processTime(state.infspawnTime);
+  processTime(state.infspawnGraceTime);
+  processRes(state.infspawnresin);
 
   section = 1; id = 0; // field
   processUint(state.numw);
@@ -392,6 +403,8 @@ function encState(state, opt_raw_only) {
   processUint(state.g_numunplanted_fish);
   processUint(state.g_td_highest_wave_ever);
   processUint(state.g_num_auto_resets);
+  processUint(state.g_num_infspawns);
+  processRes(state.g_infspawnres);
 
 
   section = 11; id = 0; // global run stats
@@ -1336,6 +1349,19 @@ function decState(s) {
   if(save_version >= 262144*2+64*13+0) state.automaticTranscendRes = processRes();
   if(save_version >= 262144*2+64*13+0) state.numAutomaticTranscendsSinceHumanAction = processUint();
   if(save_version >= 262144*2+64*13+1) state.runHadAnyHumanAction = processBool();
+  if(save_version >= 262144*2+64*14+0) {
+    id = 37;
+    state.infspawn = processUint();
+    if(state.infspawn) {
+      state.infspawnx = processUint();
+      state.infspawny = processUint();
+    }
+    id = 40;
+    state.lastInfSpawnTime = processTime();
+    state.infspawnTime = processTime();
+    state.infspawnGraceTime = processTime();
+    state.infspawnresin = processRes();
+  }
 
   section = 1; id = 0; // field
   state.numw = processUint();
@@ -1744,6 +1770,8 @@ function decState(s) {
   }
   if(save_version >= 262144*2+64*11+0) state.g_td_highest_wave_ever = processUint();
   if(save_version >= 262144*2+64*13+0) state.g_num_auto_resets = processUint();
+  if(save_version >= 262144*2+64*14+0) state.g_num_infspawns = processUint();
+  if(save_version >= 262144*2+64*14+0) state.g_infspawnres = processRes();
 
 
   if(error) return err(4);

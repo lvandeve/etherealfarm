@@ -528,7 +528,7 @@ function endPreviousRun() {
     }
   }
 
-  var resin_no_ferns = getUpcomingResin();
+  var resin_no_ferns = getUpcomingResin(); // does not include resin from ferns, infinity symbols, ...
   state.p_res_no_ferns = Res();
   state.p_res_no_ferns.resin = Num(resin_no_ferns);
   var resin = getUpcomingResinIncludingFerns();
@@ -587,6 +587,7 @@ function endPreviousRun() {
   state.g_resin_from_transcends.addInPlace(resin);
   state.resin = Num(0); // future resin from next tree
   state.fernresin = new Res(); // future resin from next ferns
+  state.infspawnresin = new Res(); // future resin from next infspawns
 
 
   state.res.twigs.addInPlace(twigs);
@@ -928,6 +929,7 @@ var actions = [];
 var action_index = 0;
 var ACTION_FERN = action_index++;
 var ACTION_PRESENT = action_index++; // holiday event present or egg
+var ACTION_INFSPAWN = action_index++;
 var ACTION_PLANT = action_index++;
 var ACTION_DELETE = action_index++; //un-plant
 var ACTION_REPLACE = action_index++; //same as delete+plant, in one go (prevents hving situation where plant gets deleted but then not having enough resources to plant the other one)
@@ -1076,6 +1078,38 @@ function getRandomPreferablyEmptyFieldSpot() {
     }
   }
   return undefined; // something went wrong
+}
+
+function getRandomPreferablyEmptyInfFieldSpot() {
+  var num = state.numemptyfields3;
+  var minemptyspots = 2;
+  if(num < minemptyspots) {
+    var x = Math.floor(Math.random() * state.numw3);
+    var y = Math.floor(Math.random() * state.numh3);
+    var maxruns = 4;
+    for(;;) {
+      var x0 = x;
+      var y0 = y;
+      var f = state.field3[y][x];
+      if(f.index == FIELD_POND) x = (x + 1) % state.numw;
+      if(maxruns-- < 0) break; // just in case there are e.g. tons of pond tiles for some reason
+      if(x0 == x && y0 == y) break; // no change, nothing to do
+    }
+    return [x, y];
+  }
+
+  var r = Math.floor(Math.random() * num);
+  var i = 0;
+  for(var y = 0; y < state.numh3; y++) {
+    for(var x = 0; x < state.numw3; x++) {
+      var f = state.field3[y][x];
+      if(f.index == 0) {
+        if(i == r) return [x, y];
+        i++;
+      }
+    }
+  }
+  return [0, 0]; // something went wrong
 }
 
 
@@ -3738,14 +3772,20 @@ var update = function(opt_ignorePause) {
       // - real-time clock: not affected by pause, so must not be touched here. For e.g. the state.c_starttime stat (to get the in-game time of that one, subtract state.c_pausetime from it).
       // - in-game time: is affected by pause. This is e.g. for weather cooldown, time at tree level, ...
       // SO:
-      // What exactly must be incremented by d here: anything that is an in-game time stored as a timestamp (so not a duration, but a point in time, date+time, unix timestamp).
-      // What must not be touched here: stats based on real-time, and, in-game related times that are stored as a duration rather than a timestamp
+      // What exactly must be incremented by d here:
+      // - anything that is an in-game time stored as a timestamp (so not a duration, but a point in time, date+time, unix timestamp). Examples: state.lastFernTime, state.lastLightningTime
+      // What must not be touched here:
+      // - stats based on real-time which can show up in UI or statistics display for the user. Examples: state.g_starttime, state.c_starttime, state.infinitystarttime
+      // - in-game related times that are stored as a duration rather than a timestamp. Examples: state.fish_resinmul_time
       // ALSO NOTE:
       // see also the code further below commented with "compensate for computer clock mismatch issues" and check if variable must be handled there too
       state.misttime += d;
       state.suntime += d;
       state.rainbowtime += d;
       state.lastFernTime += d;
+      state.lastPresentTime += d;
+      state.lastInfSpawnTime += d;
+      state.lastInfTakeTime += d;
       state.automatontime += d;
       state.lasttreeleveluptime += d;
       state.lasttree2leveluptime += d;
@@ -3753,7 +3793,6 @@ var update = function(opt_ignorePause) {
       state.lastEtherealDeleteTime += d;
       state.lastEtherealPlantTime += d;
       state.lastLightningTime += d;
-      state.infinitystarttime += d;
       state.recentweighedleveltime_time += d;
       state.present_production_boost_time += d;
       state.present_grow_speed_time += d;
@@ -3804,6 +3843,9 @@ var update = function(opt_ignorePause) {
   } else {
     // compensate for computer clock mismatch issues
     if(state.lastFernTime > state.prevtime) state.lastFernTime = state.prevtime;
+    if(state.lastPresentTime > state.prevtime) state.lastPresentTime = state.prevtime;
+    if(state.lastInfSpawnTime > state.prevtime) state.lastInfSpawnTime = state.prevtime;
+    if(state.lastInfTakeTime > state.prevtime) state.lastInfTakeTime = state.prevtime;
     if(state.misttime > state.prevtime) state.misttime = 0;
     if(state.suntime > state.prevtime) state.suntime = 0;
     if(state.rainbowtime > state.prevtime) state.rainbowtime = 0;
@@ -4003,6 +4045,7 @@ var update = function(opt_ignorePause) {
 
     var clickedfern = false; // if fern just clicked, don't do the next fern computation yet, since #resources is not yet taken into account
     var clickedpresent = false;
+    var clickedinfspawn = false;
 
     var upgrades_done = false;
     var upgrades2_done = false;
@@ -5079,6 +5122,12 @@ var update = function(opt_ignorePause) {
           state.g_numpresents[numpresents_index] = (state.g_numpresents[numpresents_index] || 0) + 1;
           store_undo = true;
         }
+      } else if(type == ACTION_INFSPAWN) {
+        if(state.infspawn && state.infspawnx == action.x && state.infspawny == action.y) {
+          clickedinfspawn = true;
+          state.g_num_infspawns++;
+          store_undo = true;
+        }
       } else if(type == ACTION_ABILITY) {
         var a = action.ability;
         var mistd = state.time - state.misttime;
@@ -5807,6 +5856,7 @@ var update = function(opt_ignorePause) {
       }
       state.g_fernres.addInPlace(fernres);
       if(fernres.resin.neqr(0)) {
+        // move out the resin into the upcoming resin
         state.fernresin.resin.addInPlace(fernres.resin)
         fernres.resin = Num(0);
       }
@@ -5971,6 +6021,44 @@ var update = function(opt_ignorePause) {
           state.lastPresentTime = 0;
         }
       }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    if(clickedinfspawn) {
+      state.infspawn = 0;
+      var infspawnres = new Res();
+      // a percentage of the highest resin ever earned transcending from a single run
+      infspawnres.resin.addInPlace(state.g_max_res_earned.resin.divr(10));
+
+      var infduration = state.time - state.lastInfTakeTime;
+      state.infspawnGraceTime += (infduration - 3600 * 24);
+      state.infspawnGraceTime = Math.min(Math.max(-12 * 3600, state.infspawnGraceTime), 12 * 3600);
+      state.lastInfTakeTime = state.time;
+
+      showMessage('That infinity symbol gave: ' + infspawnres.toString(), C_INFINITY, 1224656545, 0.5);
+
+      state.g_infspawnres.addInPlace(infspawnres);
+      if(infspawnres.resin.neqr(0)) {
+        // move out the resin into the upcoming resin
+        state.infspawnresin.resin.addInPlace(infspawnres.resin)
+        infspawnres.resin = Num(0);
+      }
+      actualgain.addInPlace(infspawnres);
+    }
+
+    if(infspawnUnlocked() && !state.infspawn && !clickedinfspawn && state.time >= getNextInfspawnTime()) {
+      var s = getRandomPreferablyEmptyInfFieldSpot();
+      if(s) {
+        state.infspawn = 1;
+        state.infspawnx = s[0];
+        state.infspawny = s[1];
+        // the coordinates are invisible but are for screenreaders
+        showMessage('An infinity symbol spawned<span style="color:#0000"> at ' + state.infspawnx + ', ' + state.infspawny + '</span>', C_INFINITY, 436456523, 0.5);
+      }
+
+      state.lastInfSpawnTime = state.time;
     }
 
     ////////////////////////////////////////////////////////////////////////////

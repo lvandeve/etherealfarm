@@ -620,7 +620,8 @@ function State() {
   this.ferny = 0;
   this.fernwait = 0; // how much time the currently active fern took to appear
   this.fern_seed = -1; // random seed for the fern drops
-  this.fernresin = new Res(); // amount of resin gotten from ferns. counted separately from state.resin, to not count towards the max ever itself
+  this.lastFernTime = 0; // if there is a fern: time since it spawned. If there is no fern: time that there was no fern
+  this.fernresin = new Res(); // amount of resin gotten from ferns during the current run. counted separately from state.resin, to not count towards the max ever itself
   this.fernres = new Res(); // resources player had (totally produced this run) at the moment the fern appeared. only stores spores and seeds. used for idle fern computation
 
   // presents were holiday gifts in january 2022, eggs in spring 2022
@@ -633,6 +634,15 @@ function State() {
   this.lastPresentTime = 0;
   this.present_grow_speed_time = 0;
   this.present_production_boost_time = 0;
+
+  this.infspawn = 0; // called infspawn internally, "infinity symbol" in the UI
+  this.infspawnx = 0;
+  this.infspawny = 0;
+  this.lastInfSpawnTime = 0; // last time infinity fern spawned (if it's there now) or was picked up (if it's not there now)
+  this.lastInfTakeTime = 0; // last time infinity fern spawned (if it's there now) or was picked up (if it's not there now)
+  this.infspawnGraceTime = 0; // duration added or subtracted to balance amount of infspawns that appear to be 1 per 24h even if player takes some too late. A positive value means you get the infspawn sooner than normal, negative value that you get it slower than normal
+  this.infspawnresin = new Res(); // amount of resin gotten from infspawns during the current run. counted separately from state.resin, to not count towards the max ever itself
+
 
   // field size in amount of cells
   this.numw = 5;
@@ -760,7 +770,6 @@ function State() {
   this.lastPermaWeather = 0; // Indicates which perma weather is active. Similar to lastWeather and usually set to the same as it, but can be set to something else to change which perma weather will get activated when the true weather ended.
   this.lastLightningTime = 0; // for the stormy challenge
 
-  this.lastFernTime = 0; // if there is a fern: time since it spawned. If there is no fern: time that there was no fern
   this.lastBackupWarningTime = 0;
 
   // misc
@@ -921,7 +930,7 @@ function State() {
   this.g_num_squirrel_respec = 0;
   this.g_amberdrops = 0;
   this.g_amberbuy = [0, 0, 0, 0, 0, 0, 0]; // amount bought of amber upgrades (using amber effect action indices, e.g. #0=squirrel respec, #1=prod, #2=lengthen season, ...)
-  this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns
+  this.g_max_res_earned = Res(); // max total resources earned during a run (excluding current one), includes best amount of total resin and twigs earned during a single run, but excludes resin/(twigs if implemented) earned from extra bushy ferns and infinity symbols
   this.g_fernres = Res(); // total resources gotten from ferns
   this.g_numpresents = [0, 0]; // order: presents '21-'22, eggs '22 + eggs '23 + presents '22-'23. Starting from index 2 with regularity: presents '23-'24, eggs '24, presents '24-'25, eggs '25, etc...
   this.g_nummistletoeupgradesdone = 0;
@@ -940,6 +949,8 @@ function State() {
   this.g_numunplanted_fish = 0;
   this.g_td_highest_wave_ever = 0; // also used for skipping easy waves
   this.g_num_auto_resets = 0; // amount of non-manual resets, done by auto-action
+  this.g_num_infspawns = 0;
+  this.g_infspawnres = Res();
 
   this.g_starttime = 0; // starttime of the game (when first run started)
   this.g_runtime = 0; // this would be equal to util.getTime() - state.g_starttime if game-time always ran at 1x, however paused time is not included so it may differ
@@ -2506,8 +2517,9 @@ function getUpcomingResin() {
   return result;
 }
 
+// also includes infinity symbols
 function getUpcomingResinIncludingFerns() {
-  return getUpcomingResin().add(state.fernresin.resin);
+  return getUpcomingResin().add(state.fernresin.resin).add(state.infspawnresin.resin);
 }
 
 // get upcoming twigs
@@ -2715,6 +2727,11 @@ function autoActionExtra2Unlocked() {
 // whether the ability to unlock auto actions per season is unlocked. Also used for auto-season-hold (enable_hold_season)
 function autoActionSeasonOverrideUnlocked() {
   return autoActionTranscendUnlocked();
+}
+
+// the infspawn unlocks together with auto-transcend, because auto-transcend gives almost nothing active to do anymore, so this new active feature gets introduced
+function infspawnUnlocked() {
+  return haveInfinityField() && autoActionTranscendUnlocked();
 }
 
 function autoPrestigeEnabled() {

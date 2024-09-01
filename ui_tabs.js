@@ -312,6 +312,8 @@ function updateTabButtons2() {
     var text = 'infinity field';
     if(state.numcropfields3 == 0) {
       text = '<b><font color="red">' + text + '</font></b>';
+    } else if(state.infspawn) {
+      text = '<b><font color="#2d0">' + text + '</font></b>';
     }
 
     if(text != field3ButtonLastText) {

@@ -399,6 +399,11 @@ function field3CellTooltipFun(x, y, div) {
   var f = state.field3[y][x];
   var fd = field3Divs[y][x];
 
+  if(state.infspawn && x == state.infspawnx && y == state.infspawny) {
+    return 'infinity symbol: spawns roughly daily. Provides some ethereal resources.';
+    return;
+  }
+
   var result = undefined;
   if(f.index == 0) {
     return undefined; // no tooltip for empty fields, it's a bit too spammy when you move the mouse there
@@ -432,6 +437,13 @@ function field3CellTooltipFun(x, y, div) {
 
 function field3CellClickFun(x, y, div, shift, ctrl) {
   var f = state.field3[y][x];
+
+  if(state.infspawn && x == state.infspawnx && y == state.infspawny) {
+    addAction({type:ACTION_INFSPAWN, x:x, y:y});
+    update();
+    return;
+  }
+
   if(f.index == FIELD_POND) {
     makeField3Dialog(x, y);
   } else if(f.index == 0 || f.index == FIELD_REMAINDER) {
@@ -650,17 +662,17 @@ function updateField3CellUI(x, y) {
 
   var progresspixel = -1;
 
-  var ferncode = 0;
+  var infspawncode = ((state.infspawnx + state.infspawny * state.numw) << 4) | state.infspawn;
 
   var brassica_no_selfsustain = brassicaNoSelfSutain(f);
 
   var timeweighted = (f.index == FIELD_POND && someInfinityEffectIsTimeWeighted());
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || ferncode != fd.ferncode || progresspixel != fd.progresspixel || brassica_no_selfsustain != fd.brassica_no_selfsustain || fd.timeweighted != timeweighted) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || infspawncode != fd.infspawncode || progresspixel != fd.progresspixel || brassica_no_selfsustain != fd.brassica_no_selfsustain || fd.timeweighted != timeweighted) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
-    fd.ferncode = ferncode;
+    fd.infspawncode = infspawncode;
     fd.progresspixel = progresspixel;
     fd.brassica_no_selfsustain = brassica_no_selfsustain;
     fd.timeweighted = timeweighted;
@@ -684,6 +696,10 @@ function updateField3CellUI(x, y) {
       blendImage(image_watercress_remainder3, fd.canvas);
     } else {
       fd.div.innerText = '';
+    }
+    if(state.infspawn && x == state.infspawnx && y == state.infspawny) {
+      blendImage(image_infspawn, fd.canvas);
+      label = 'infinity symbol. ' + label;
     }
     if(brassica_no_selfsustain) {
       blendImage(image_exclamation_small, fd.canvas);
