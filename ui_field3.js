@@ -34,7 +34,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
   result += '<br/><br/>';
 
   if(brassicaNoSelfSutain(f)) {
-    result += 'WARNING! This brassica isn\'t producing producing enough seeds due to insufficient brassica-boosting fishes (shrimp and goldfish) in the pond';
+    result += '<span class="efWarningOnDialogText">Warning: this brassica is not producing enough infinity seeds to sustain its own lifetime cost, place fishes such as shrimp and goldfish in the pond to increase production!</span>';
     result += '<br/><br/>';
   }
 
@@ -74,14 +74,6 @@ function getCropInfoHTML3(f, c, opt_detailed) {
       /*if(baseprod.infseeds.neqr(0) && baseprod.infseeds.ltr(0.1) && baseprod.infseeds.gtr(-0.1))*/ result += ' (' + baseprod.infseeds.mulr(3600).toString() + '/h)';
     }
     result += '<br/><br/>';
-
-    if(c.type == CROPTYPE_BRASSICA) {
-      var minimum = c.minForBrassicaSelfSustain();
-      if(prod.infseeds.le(minimum)) {
-        result += '<span class="efWarningOnDialogText">Warning: this brassica is not producing enough infinity seeds, place fishes such as shrimp and goldfish in the pond to increase production!</span>';
-        result += '<br/><br/>';
-      }
-    }
   }
 
   var infboost = c.getInfBoost(f);
@@ -112,7 +104,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
 
   var recoup = c.getRecoup(f);
   var upgrade_cost = [undefined];
-  var upgrade_crop = getUpgradeCrop3(f.x, f.y, upgrade_cost, true);
+  var upgrade_crop = getUpgradeCrop3(f.x, f.y, false, upgrade_cost);
 
   if(opt_detailed) {
     result += 'Have of this crop: ' + state.crop3count[c.index];
@@ -170,7 +162,8 @@ function getCropInfoHTML3Breakdown(f, c) {
 }
 
 // opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
-function getUpgradeCrop3(x, y, opt_cost) {
+// single: go just one tier up, rather than to the max affordable
+function getUpgradeCrop3(x, y, single, opt_cost) {
   if(!state.field3[y]) return null;
   var f = state.field3[y][x];
   if(!f) return null;
@@ -179,6 +172,7 @@ function getUpgradeCrop3(x, y, opt_cost) {
 
   if(c.type == CROPTYPE_CHALLENGE) return null;
   var tier = state.highestoftype3unlocked[c.type];
+  if(single && tier > c.tier + 1) tier = c.tier + 1;
 
   var recoup = c.getRecoup(f);
 
@@ -247,9 +241,10 @@ function getDowngradeCrop3(x, y, opt_cost) {
 }
 
 
-function makeUpgradeCrop3Action(x, y, opt_silent) {
+// single: go just one tier up, rather than to the max affordable
+function makeUpgradeCrop3Action(x, y, single, opt_silent) {
   var too_expensive = [undefined];
-  var c3 = getUpgradeCrop3(x, y, too_expensive);
+  var c3 = getUpgradeCrop3(x, y, single, too_expensive);
 
   if(c3 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE3, x:x, y:y, crop:c3, shiftPlanted:true});
@@ -334,7 +329,7 @@ function makeField3Dialog(x, y) {
     button0.textEl.innerText = 'Upgrade tier';
     registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford. This deletes the original crop (which gives refund), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      makeUpgradeCrop3Action(x, y);
+      makeUpgradeCrop3Action(x, y, false);
       closeAllDialogs();
       update();
     });
@@ -400,8 +395,7 @@ function field3CellTooltipFun(x, y, div) {
   var fd = field3Divs[y][x];
 
   if(state.infspawn && x == state.infspawnx && y == state.infspawny) {
-    return 'infinity symbol: spawns roughly daily. Provides some ethereal resources.';
-    return;
+    return 'infinity symbol: spawns roughly daily. Provides some resin.';
   }
 
   var result = undefined;
@@ -438,7 +432,7 @@ function field3CellTooltipFun(x, y, div) {
 function field3CellClickFun(x, y, div, shift, ctrl) {
   var f = state.field3[y][x];
 
-  if(state.infspawn && x == state.infspawnx && y == state.infspawny) {
+  if(state.infspawn && x == state.infspawnx && y == state.infspawny && !ctrl && !shift) {
     addAction({type:ACTION_INFSPAWN, x:x, y:y});
     update();
     return;

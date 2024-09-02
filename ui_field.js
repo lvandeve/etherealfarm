@@ -357,7 +357,7 @@ function getCropInfoHTML(f, c, opt_detailed) {
 
   var recoup = c.getRecoup(f);
   var upgrade_cost = [undefined];
-  var upgrade_crop = getUpgradeCrop(f.x, f.y, upgrade_cost, true);
+  var upgrade_crop = getUpgradeCrop(f.x, f.y, false, upgrade_cost, true);
 
   if(opt_detailed) {
     // NOTE: type here means the exact type (same tier, same croptype), not generic croptype.
@@ -400,7 +400,8 @@ function getCropInfoHTML(f, c, opt_detailed) {
 }
 
 // opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
-function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
+// single: go just one tier up, rather than to the max affordable
+function getUpgradeCrop(x, y, single, opt_cost, opt_include_locked) {
   if(!state.field[y]) return null;
   var f = state.field[y][x];
   if(!f) return;
@@ -412,6 +413,7 @@ function getUpgradeCrop(x, y, opt_cost, opt_include_locked) {
     return null;
   }
   var tier = opt_include_locked ? state.highestoftypeknown[c.type] : state.highestoftypeunlocked[c.type];
+  if(single && tier > c.tier + 1) tier = c.tier + 1;
 
   var c2 = null;
 
@@ -488,9 +490,10 @@ function getDowngradeCrop(x, y, opt_cost) {
   return getDowngradeCropForCrop(c, opt_cost);
 }
 
-function makeUpgradeCropAction(x, y, opt_silent) {
+// single: go just one tier up, rather than to the max affordable
+function makeUpgradeCropAction(x, y, single, opt_silent) {
   var too_expensive = [undefined];
-  var c2 = getUpgradeCrop(x, y, too_expensive);
+  var c2 = getUpgradeCrop(x, y, single, too_expensive);
 
   if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
@@ -571,7 +574,7 @@ function makeFieldDialog(x, y) {
     button0.textEl.innerText = 'Upgrade tier';
     registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      if(makeUpgradeCropAction(x, y)) update();
+      if(makeUpgradeCropAction(x, y, false)) update();
       closeAllDialogs();
     });
 

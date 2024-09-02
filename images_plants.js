@@ -6272,6 +6272,8 @@ function metalify_nonlincolor(v) {
 // *) 8: hue rotation
 // *) 9: "unlight": make only light parts darker, this is specifically to make the 'flower' part of nettles more visible against the bright background in the infinity field
 // *) 10: gamma
+// *) 11: translucent
+// *) 12: increase saturation additively
 // opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
 function metalify(im, metalheader, opt_effects, opt_params) {
   var pal = generatePalette(metalheader);
@@ -6399,6 +6401,18 @@ function metalify(im, metalheader, opt_effects, opt_params) {
             r = Math.pow(r, param);
             g = Math.pow(g, param);
             b = Math.pow(b, param);
+          }
+          if(effect == 11) {
+            a *= param;
+          }
+          if(effect == 12) {
+            var hsv = RGBtoHSV([r, g, b]);
+            var mul = param * 2;
+            hsv[1] = Math.min(hsv[1] + param * 255, 255);
+            var rgb = HSVtoRGB(hsv);
+            r = rgb[0];
+            g = rgb[1];
+            b = rgb[2];
           }
         }
       }

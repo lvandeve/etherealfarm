@@ -49,10 +49,10 @@ var pondDialogShortcutFun = function(e) {
   var shift = keys.shift;
   var ctrl = keys.ctrl;
 
-  if(key == 'u' && !shift && !ctrl) {
+  if(key == 'u' && !ctrl) {
     // upgrade fish
     var did_something = false;
-    did_something |= makeUpgradeFishAction(shiftFishFlexX, shiftFishFlexY);
+    did_something |= makeUpgradeFishAction(shiftFishFlexX, shiftFishFlexY, shift);
     if(did_something) {
       update();
     }
@@ -155,7 +155,8 @@ function updatePondDialogText() {
 
 
 // opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
-function getUpgradeFish(x, y, opt_cost) {
+// single: go just one tier up, rather than to the max affordable
+function getUpgradeFish(x, y, single, opt_cost) {
   if(!state.pond[y]) return null;
   var f = state.pond[y][x];
   if(!f) return null;
@@ -163,6 +164,7 @@ function getUpgradeFish(x, y, opt_cost) {
   if(!c) return null;
 
   var tier = state.highestoftypefishunlocked[c.type];
+  if(single && tier > c.tier + 1) tier = c.tier + 1;
 
   var recoup = c.getRecoup(f);
 
@@ -229,9 +231,10 @@ function getDowngradeFish(x, y, opt_cost) {
   return c2;
 }
 
-function makeUpgradeFishAction(x, y, opt_silent) {
+// single: go just one tier up, rather than to the max affordable
+function makeUpgradeFishAction(x, y, single, opt_silent) {
   var too_expensive = [undefined];
-  var c3 = getUpgradeFish(x, y, too_expensive);
+  var c3 = getUpgradeFish(x, y, single, too_expensive);
 
   if(c3 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c3, shiftPlanted:true});
@@ -325,7 +328,7 @@ function getFishInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
 
   var upgrade_cost = [undefined];
-  var upgrade_fish = getUpgradeFish(f.x, f.y, upgrade_cost, true);
+  var upgrade_fish = getUpgradeFish(f.x, f.y, false, upgrade_cost);
 
   if(c.effect_description) result += '<br>' + c.effect_description;
 
@@ -398,7 +401,7 @@ function makePondDialog(x, y, opt_override_mistletoe) {
     button.textEl.innerText = 'Upgrade tier';
     registerTooltip(button, 'Replace fish with the highest tier of this type you can afford. This deletes the original fish (which gives refund), and then places the new higher tier fish.');
     addButtonAction(button, function() {
-      if(makeUpgradeFishAction(x, y)) {
+      if(makeUpgradeFishAction(x, y, false)) {
         closeDialogsUpTo(1); // keep pond dialog itself open
         update();
       }

@@ -147,6 +147,7 @@ function encState(state, opt_raw_only) {
   }
   id = 40;
   processTime(state.lastInfSpawnTime);
+  processTime(state.lastInfTakeTime);
   processTime(state.infspawnTime);
   processTime(state.infspawnGraceTime);
   processRes(state.infspawnresin);
@@ -1358,6 +1359,7 @@ function decState(s) {
     }
     id = 40;
     state.lastInfSpawnTime = processTime();
+    state.lastInfTakeTime = processTime();
     state.infspawnTime = processTime();
     state.infspawnGraceTime = processTime();
     state.infspawnresin = processRes();

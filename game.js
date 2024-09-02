@@ -2620,6 +2620,9 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[flower3_10].had) unlockInfinityCrop(fern3_10);
   if(state.crops3[fern3_10].had) unlockInfinityCrop(nut3_10);
   if(state.crops3[nut3_10].had) unlockInfinityCrop(lotus3_10);
+
+  if(state.crops3[lotus3_10].had) unlockInfinityCrop(brassica3_11);
+  if(state.crops3[brassica3_11].had) unlockInfinityCrop(berry3_11);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -3598,7 +3601,7 @@ function maybeDropAmber() {
 
 
 // pretend: 1 for computing fullgrown field for UI, 5 for computing fern gain
-function computePretendFullgrownGain_(pretend) {
+function computeBasicGainInPlace(pretend) {
   var prefield2 = [];
   precomputeField_(prefield2, pretend);
   var gain2 = Res();
@@ -3618,7 +3621,7 @@ function computePretendFullgrownGain_(pretend) {
 
 // computes the field gain, but then pretending all crops are fullgrown
 function computePretendFullgrownGain() {
-  return computePretendFullgrownGain_(1);
+  return computeBasicGainInPlace(1);
 }
 
 // similar to computePretendFullgrownGain, but for ferns including the possibly better weighted time at level value
@@ -3631,7 +3634,7 @@ function computeFernGain() {
     var spores = Num.max(td.wave_gain.spores, state.res.spores).mulr(mul);
     return new Res({seeds:seeds, spores:spores}).divr(300); // divided by 5 minutes, because this represents gain per second, but for TD for a present we really don't want more than a fraction of a wave's worth of resources to not break the game
   }
-  return computePretendFullgrownGain_(5);
+  return computeBasicGainInPlace(5);
 }
 
 // for presents, or eggs, depending on the holiday event
@@ -4992,15 +4995,16 @@ var update = function(opt_ignorePause) {
               var c2 = f2.getRealCrop();
             }
           }
-          var nextcost = c.getCost(1);
+          computeDerived(state); // correctly update derived stats based on changed field state
+
           if(!action.silent) {
+            var nextcost = c.getCost(1);
             var verb = 'planted';
             if(type == ACTION_REPLACE3 && oldcrop && c.index == oldcrop.index) verb = 'refreshed';
             else if(type == ACTION_REPLACE3) verb = 'replaced with';
-            showMessage(verb + ' infinity ' + c.name + (finalcost.infseeds.ltr(0) ? ('. Got back: ' + finalcost.neg().toString()) : ('. Consumed: ' + finalcost.toString())) + '. Next costs: ' + nextcost.toString() + ' (' + getCostAffordTimer(nextcost) + ')');
+            showMessage(verb + ' infinity ' + c.name + (finalcost.infseeds.ltr(0) ? ('. Got back: ' + finalcost.neg().toString()) : ('. Consumed: ' + finalcost.toString())) + '. Next costs: ' + nextcost.toString() + ' (' + getCostAffordTimer(nextcost, computeField3Income()) + ')');
           }
 
-          computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
       } else if(type == ACTION_PLANT_FISH || type == ACTION_DELETE_FISH || type == ACTION_REPLACE_FISH) {
@@ -5542,7 +5546,7 @@ var update = function(opt_ignorePause) {
         }
 
         //if(action.by_automaton && state.time - state.lastHumanActionTime > 3600 * 24 * 14) {
-        if(action.by_automaton && state.numAutomaticTranscendsSinceHumanAction >= 20) {
+        if(action.by_automaton && state.numAutomaticTranscendsSinceHumanAction >= maxAutomaticTranscendsSinceHumanAction) {
           // after a long while, no longer support auto-transcend; the game has been abandoned for a very long time, at this point resin better be gained actively again. Also, savegame loading is very slow with auto-transcend due to emulating all the starts of runs so this becomes infeasible
           ok = false;
         }

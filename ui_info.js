@@ -693,7 +693,12 @@ function openTimeInfoDialog() {
         } else {
           result += '<b>Max tree level ever:</b> ' + state.g_treelevel + '<br>';
         }
-        result += '<b>Num transcends:</b> ' + state.g_numresets + '<br>';
+        result += '<b>Num transcends:</b> ' + state.g_numresets;
+        if(state.g_num_auto_resets >= 1) {
+          var numleft = maxAutomaticTranscendsSinceHumanAction - state.numAutomaticTranscendsSinceHumanAction;
+          result += ' (automated: ' + state.g_num_auto_resets + ', #left w/o interaction: ' + numleft + ')';
+        }
+        result += '<br>';
 
         if(state.challenge) {
           var c = challenges[state.challenge];
@@ -923,6 +928,10 @@ function updateResourceUI() {
 
       if(state.g_numresets >= 1) {
         text += 'Num transcends: ' + state.g_numresets;
+        if(state.g_num_auto_resets >= 1) {
+          var numleft = maxAutomaticTranscendsSinceHumanAction - state.numAutomaticTranscendsSinceHumanAction;
+          text += ' (automated: ' + state.g_num_auto_resets + ', #left w/o interaction: ' + numleft + ')';
+        }
         text += '<br><br>';
       }
 

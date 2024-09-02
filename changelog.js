@@ -30,6 +30,15 @@ function getChangeLog() {
     }
   }
 
+  text += '0.14.0 (2024-09-02)';
+  text += '<br/>• Added the diamond infinity tier, and its first two crops.';
+  text += '<br/>• Added Infinity symbol, which spawns once per day in the infinity field and provides a bit of resin when clicked manually. It unlocks together with auto-transcend.'; // The main goal of this one is to still have something simple manual to do daily when the game is auto-transcending
+  text += '<br/>• Slightly improved gold fruit boost since it was not a big gain compared to electrum fruits.';
+  text += '<br/>• Transcension stats in several places now also show amount of auto-transcends left that can be done without human interaction (out of 20).';
+  text += '<br/>• Added "shift+u" shortcut which, when hovering mouse pointer over a crop will upgrade it by 1 tier (as opposed to the already existing "u" shortcut which upgrades it to the max possible tier).';
+  text += '<br/>• Bugfixes'; // e.g. show correct game time in tooltip in the log messages when game was paused, and removed double message for same thing in infinity brassica tooltip when it isn't producing enough to sustain itself
+  text += '<br/><br/>';
+
   text += '0.13.2 (2024-08-12)';
   text += '<br/>• Added season overrides for auto-action triggers, so now also the trigger conditions can be customized separately per season (once you unlocked this ability).';
   text += '<br/>• For the "crop upgraded" auto-action trigger type, it\'s now also possible to select the upgrade level the crop should have.';

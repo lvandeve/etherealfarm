@@ -5766,7 +5766,7 @@ function getFruitTierCost(tier) {
     case 1: return 4;
     case 2: return 12;
     case 3: return 30;
-    case 4: return 45; // this is a bit of a dip in the progression, for backwards compatibility when only up to gold was available and the formula progressed too slowly
+    case 4: return 50; // this is a bit of a dip in the progression, for backwards compatibility when only up to gold was available and the formula progressed too slowly. (later, sep 2024, incrased from 45 to 50 but this could still use more balancing in combination with next tier)
     case 5: return 100;
     case 6: return 500;
     case 7: return 1500;
@@ -5788,7 +5788,7 @@ function getFruitTierStrength(tier) {
     case 1: return 4;
     case 2: return 12;
     case 3: return 30;
-    case 4: return 45;
+    case 4: return 50; // idem, see getFruitTierCost
     case 5: return 100;
     case 6: return 500;
     case 7: return 1500;
@@ -9138,6 +9138,7 @@ var brassica3_7 = registerBrassica3('amethyst watercress', 7, Res({infseeds:10e3
 var brassica3_8 = registerBrassica3('sapphire watercress', 8, Res({infseeds:200e39}), Res({infseeds:100e33}), Num(0.05), 5 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader8, [4, 2], [0.8, -0.1]));
 var brassica3_9 = registerBrassica3('emerald watercress', 9, Res({infseeds:100e48}), Res({infseeds:15e42}), Num(0.05), 6 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader9));
 var brassica3_10 = registerBrassica3('ruby watercress', 10, Res({infseeds:3e60}), Res({infseeds:50e51}), Num(0.05), 7 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader10, [4, 10], [0.9, 1.02]));
+var brassica3_11 = registerBrassica3('diamond watercress', 11, Res({infseeds:1e72}), Res({infseeds:5e63}), Num(0.05), 8 * 24 * 3600, metalifyPlantImages(images_watercress, metalheader11, [2, 6, 7, 12, 8], [0.15, 1, 1, 0.1, 160]));
 
 crop3_register_id = 300;
 var berry3_0 = registerBerry3('zinc blackberry', 0, Res({infseeds:400}), Res({infseeds:200 / (24 * 3600)}), Num(0.075), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader0));
@@ -9154,6 +9155,7 @@ var berry3_7 = registerBerry3('amethyst blackberry', 7, Res({infseeds:300e33}), 
 var berry3_8 = registerBerry3('sapphire blackberry', 8, Res({infseeds:10e42}), Res({infseeds:500e21}), Num(8), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader8, [2], [1.5]));
 var berry3_9 = registerBerry3('emerald blackberry', 9, Res({infseeds:3e51}), Res({infseeds:25e27}), Num(15), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader9));
 var berry3_10 = registerBerry3('ruby blackberry', 10, Res({infseeds:100e60}), Res({infseeds:40e33}), Num(200), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader10, [4, 10], [0.9, 1.02]));
+var berry3_11 = registerBerry3('diamond blackberry', 11, Res({infseeds:35e72}), Res({infseeds:3e40}), Num(1000), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader11, [2, 6, 7, 12, 8], [0.3, 1, 1, 0.1, 160]));
 
 crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
@@ -10405,6 +10407,8 @@ registerPlantTypeMedal3(bee3_10);
 registerPlantTypeMedal3(fern3_10);
 registerPlantTypeMedal3(nut3_10);
 registerPlantTypeMedal3(lotus3_10);
+registerPlantTypeMedal3(brassica3_11);
+registerPlantTypeMedal3(berry3_11);
 
 
 // fish crop achievements
@@ -10495,6 +10499,10 @@ function getNextInfspawnTime() {
   result = Math.min(Math.max(minTime, result), maxTime);
   return result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+var maxAutomaticTranscendsSinceHumanAction = 20;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

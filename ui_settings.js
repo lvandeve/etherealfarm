@@ -807,6 +807,8 @@ function createStatsDialog() {
       text += ' (automated: ' + open + state.g_num_auto_resets + close;
       if(state.numLastAutomaticTranscends >= 1) {
         text += ', last streak: ' + open + state.numLastAutomaticTranscends + close;
+        var numleft = maxAutomaticTranscendsSinceHumanAction - state.numAutomaticTranscendsSinceHumanAction;
+        text += ', #left w/o interaction: ' + open + numleft + close;
       }
       text += ')';
     }
@@ -944,6 +946,8 @@ function createTranscensionStatsDialog() {
     text += ' (automated: ' + open + state.g_num_auto_resets + close;
     if(state.numLastAutomaticTranscends >= 1) {
       text += ', last streak: ' + open + state.numLastAutomaticTranscends + close;
+      var numleft = maxAutomaticTranscendsSinceHumanAction - state.numAutomaticTranscendsSinceHumanAction;
+      text += ', #left w/o interaction: ' + open + numleft + close;
     }
     text += ')';
   }

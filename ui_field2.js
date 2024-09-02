@@ -132,7 +132,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
   var refund_text = cropRecoup2 == 1 ? 'full refund' : ((cropRecoup2 * 100) + '%');
   var upgrade_cost = [undefined];
-  var upgrade_crop = getUpgradeCrop2(f.x, f.y, upgrade_cost);
+  var upgrade_crop = getUpgradeCrop2(f.x, f.y, false, upgrade_cost);
 
   if(automaton || squirrel || mistletoe) {
     result += '<br/>• Cost: ' + c.cost.toString();
@@ -194,7 +194,8 @@ function getCropInfoHTML2Breakdown(f, c) {
 }
 
 // opt_cost is output variable that contains the cost and a boolean that tells if it's too expensive
-function getUpgradeCrop2(x, y, opt_cost) {
+// single: go just one tier up, rather than to the max affordable
+function getUpgradeCrop2(x, y, single, opt_cost) {
   if(!state.field2[y]) return null;
   var f = state.field2[y][x];
   if(!f) return null;
@@ -203,6 +204,7 @@ function getUpgradeCrop2(x, y, opt_cost) {
 
   if(c.type == CROPTYPE_CHALLENGE) return null;
   var tier = state.highestoftype2unlocked[c.type];
+  if(single && tier > c.tier + 1) tier = c.tier + 1;
 
   var recoup = c.getRecoup();
 
@@ -270,9 +272,10 @@ function getDowngradeCrop2(x, y, opt_cost) {
   return c2;
 }
 
-function makeUpgradeCrop2Action(x, y, opt_silent) {
+// single: go just one tier up, rather than to the max affordable
+function makeUpgradeCrop2Action(x, y, single, opt_silent) {
   var too_expensive = [undefined];
-  var c2 = getUpgradeCrop2(x, y, too_expensive);
+  var c2 = getUpgradeCrop2(x, y, single, too_expensive);
 
   if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
@@ -346,7 +349,7 @@ function makeField2Dialog(x, y, opt_override_mistletoe) {
     button0.textEl.innerText = 'Upgrade tier';
     registerTooltip(button0, 'Replace crop with the highest tier of this type you can afford, or turn template into real crop. This deletes the original crop, (with cost recoup if applicable), and then plants the new higher tier crop.');
     addButtonAction(button0, function() {
-      if(makeUpgradeCrop2Action(x, y)) {
+      if(makeUpgradeCrop2Action(x, y, false)) {
         closeAllDialogs();
         update();
       }

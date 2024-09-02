@@ -806,13 +806,13 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field) {
+  if(key == 'u' && !ctrl && state.currentTab == tabindex_field) {
     var f = undefined;
     if(state.field[shiftCropFlexY]) f = state.field[shiftCropFlexY][shiftCropFlexX];
     // upgrade tier
     var did_something = false;
     if(!(f && f.index == FIELD_REMAINDER)) {
-      did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY);
+      did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY, shift);
     }
     var upgraded = did_something;
     if(keyboard_shortcuts_pick_up_ferns && state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
@@ -836,16 +836,16 @@ document.addEventListener('keydown', function(e) {
     }
   }
 
-  if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field2) {
+  if(key == 'u' && !ctrl && state.currentTab == tabindex_field2) {
     // upgrade crop
     var did_something = false;
-    did_something |= makeUpgradeCrop2Action(shiftCrop2FlexX, shiftCrop2FlexY);
+    did_something |= makeUpgradeCrop2Action(shiftCrop2FlexX, shiftCrop2FlexY, shift);
     if(did_something) {
       update();
     }
   }
 
-  if(key == 'u' && !shift && !ctrl && state.currentTab == tabindex_field3) {
+  if(key == 'u' && !ctrl && state.currentTab == tabindex_field3) {
     var f = undefined;
     if(state.field3[shiftCrop3FlexY]) f = state.field3[shiftCrop3FlexY][shiftCrop3FlexX];
     var did_something = false;
@@ -865,7 +865,7 @@ document.addEventListener('keydown', function(e) {
 
     // upgrade tier
     if(!did_something && f) {
-      did_something |= makeUpgradeCrop3Action(shiftCrop3FlexX, shiftCrop3FlexY);
+      did_something |= makeUpgradeCrop3Action(shiftCrop3FlexX, shiftCrop3FlexY, shift);
     }
 
     if(did_something) {

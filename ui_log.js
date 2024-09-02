@@ -197,10 +197,9 @@ function showMessage(text, colortype, colorseed, opt_colorrarity, opt_forcenew, 
 
 
   var time = (state && state.prevtime) ? state.prevtime : util.getTime();
-  var time2 = (state && state.time) ? (state.time - state.c_starttime) : 0;
   var title = 'date: ' + util.formatDate(time);
   if(state && state.time) {
-    title += ', game time: ' + util.formatDuration(time2);
+    title += ', game time: ' + util.formatDuration(state.c_runtime);
     title += ', tree level: ' + state.treelevel;
   }
   var prefix = '';

@@ -1393,56 +1393,59 @@ Flex.prototype.clear = function() {
 // returns as a string the time to be able to avoid this cost, or percentage more of resources you have
 // uses the global state.res and gain variables
 // intended for dynamically updating tooltips
-function getCostAffordTimer(cost) {
+// opt_override_gain: if set, uses that gain instead
+function getCostAffordTimer(cost, opt_override_gain) {
   var time = Num(0);
   var percent = Num(Infinity);
+
+  var gain2 = opt_override_gain || gain;
 
 
   if(cost.seeds.gtr(0)) {
     var p = cost.seeds.div(state.res.seeds).mulr(100);
-    var t = cost.seeds.sub(state.res.seeds).div(gain.seeds);
+    var t = cost.seeds.sub(state.res.seeds).div(gain2.seeds);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }
 
   if(cost.spores.gtr(0)) {
     var p = cost.spores.div(state.res.spores).mulr(100);
-    var t = cost.spores.sub(state.res.spores).div(gain.spores);
+    var t = cost.spores.sub(state.res.spores).div(gain2.spores);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }
 
   if(cost.nuts.gtr(0)) {
     var p = cost.nuts.div(state.res.nuts).mulr(100);
-    var t = cost.nuts.sub(state.res.nuts).div(gain.nuts);
+    var t = cost.nuts.sub(state.res.nuts).div(gain2.nuts);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }
 
   if(cost.resin.gtr(0)) {
     var p = cost.resin.div(state.res.resin).mulr(100);
-    var t = cost.resin.sub(state.res.resin).div(gain.resin);
+    var t = cost.resin.sub(state.res.resin).div(gain2.resin);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }
 
   if(cost.twigs.gtr(0)) {
     var p = cost.twigs.div(state.res.twigs).mulr(100);
-    var t = cost.twigs.sub(state.res.twigs).div(gain.twigs);
+    var t = cost.twigs.sub(state.res.twigs).div(gain2.twigs);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }
 
   if(cost.infseeds.gtr(0)) {
     var p = cost.infseeds.div(state.res.infseeds).mulr(100);
-    var t = cost.infseeds.sub(state.res.infseeds).div(gain.infseeds);
+    var t = cost.infseeds.sub(state.res.infseeds).div(gain2.infseeds);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }
 
   if(cost.infspores.gtr(0)) {
     var p = cost.infspores.div(state.res.infspores).mulr(100);
-    var t = cost.infspores.sub(state.res.infspores).div(gain.infspores);
+    var t = cost.infspores.sub(state.res.infspores).div(gain2.infspores);
     time = Num.max(time, t);
     percent = Num.min(percent, p);
   }
@@ -1626,7 +1629,8 @@ function makeTextInput(title, description, fun, opt_value) {
     functions:function() {
       fun(area.value);
     },
-    title:title
+    title:title,
+    nobgclose:true // some browsers auto-zoom in to the text field but then get confused themselves and think the buttons are elsewhere, this causes the dialog to close when the user presses the OK button because the browser wrongly rendered it in the wrong spot and the background was clicked instead. So prevent background close to improve the situation slightly.
   });
 
   if(description) {
@@ -1647,12 +1651,14 @@ function makeTextInput(title, description, fun, opt_value) {
     }
   };
 
+  // the !isTouchDevice checks are because select/focus makes some mobile browsers zoom way too deep in an unwanted way  (see comment on nobgclose above. Note that some mobile browsers do the zoom even despite this hence also the nobgclose)
+
   if(opt_value) {
     area.value = opt_value;
-    area.select();
+    if(!isTouchDevice()) area.select();
   }
   area.style.fontSize = '100%';
-  area.focus();
+  if(!isTouchDevice()) area.focus();
 }
 
 
