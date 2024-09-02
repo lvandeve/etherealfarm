@@ -5060,7 +5060,7 @@ var update = function(opt_ignorePause) {
             // TODO: consider also reducing this to max 1 for tier 0
             showMessage('Can have only max 1 of this fish', C_INVALID, 0, 0);
             ok = false;
-          } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG) && c.tier == 0 && state.fishtypecount[c.type] >= 4 && !(f.hasCrop() && f.getCrop().type == c.type)) {
+          } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG) && state.fishtypecount[c.type] >= 4 && !(f.hasCrop() && f.getCrop().type == c.type)) {
             showMessage('Can have only max 4 of this fish type', C_INVALID, 0, 0);
             ok = false;
           } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishtypecount[c.type] >= 9 && !(f.hasCrop() && f.getCrop().type == c.type)) {
