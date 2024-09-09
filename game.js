@@ -2623,6 +2623,9 @@ function maybeUnlockInfinityCrops() {
 
   if(state.crops3[lotus3_10].had) unlockInfinityCrop(brassica3_11);
   if(state.crops3[brassica3_11].had) unlockInfinityCrop(berry3_11);
+  if(state.crops3[berry3_11].had) unlockInfinityCrop(mush3_11);
+  if(state.crops3[berry3_11].had) unlockInfinityCrop(flower3_11);
+  if(state.crops3[flower3_11].had) unlockInfinityCrop(bee3_11);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2657,6 +2660,9 @@ function maybeUnlockFishes() {
   if(state.fishes[goldfish_2].had) unlockFish(anemone_2);
   if(state.fishes[anemone_2].had) unlockFish(puffer_2);
   if(state.fishes[puffer_2].had) unlockFish(leporinus_1);
+
+  if(state.fishes[leporinus_1].had) unlockFish(octopus_2);
+  if(state.fishes[leporinus_1].had) unlockFish(tang_2);
 
   ////////
 
@@ -6038,7 +6044,7 @@ var update = function(opt_ignorePause) {
 
       var infduration = state.time - state.lastInfTakeTime;
       state.infspawnGraceTime += (infduration - 3600 * 24);
-      state.infspawnGraceTime = Math.min(Math.max(-12 * 3600, state.infspawnGraceTime), 12 * 3600);
+      state.infspawnGraceTime = Math.min(Math.max(-12 * 3600, state.infspawnGraceTime), 4 * 24 * 3600);
       state.lastInfTakeTime = state.time;
 
       showMessage('That infinity symbol gave: ' + infspawnres.toString(), C_INFINITY, 1224656545, 0.5);

@@ -30,6 +30,12 @@ function getChangeLog() {
     }
   }
 
+  text += '0.14.1 (2024-09-09)';
+  text += '<br/>• Added 3 more crops of the diamond infinity tier.';
+  text += '<br/>• Added 2 new fishes for the infinity pond.';
+  text += '<br/>• Made the infinity symbol\'s catch-up mechanism, that maintains an average of 1 per 24 hours in case of catching it late, more forgiving.'; // now allows up to 4 days of missing it
+  text += '<br/><br/>';
+
   text += '0.14.0 (2024-09-02)';
   text += '<br/>• Added the diamond infinity tier, and its first two crops.';
   text += '<br/>• Added Infinity symbol, which spawns once per day in the infinity field and provides a bit of resin when clicked manually. It unlocks together with auto-transcend.'; // The main goal of this one is to still have something simple manual to do daily when the game is auto-transcending

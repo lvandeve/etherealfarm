@@ -6810,7 +6810,8 @@ function getFishMultiplier(fishtype, state, timeweighted) {
     // infinity spores bonus
     var num0 = state.fishcount[octopus_0];
     var num1 = state.fishcount[octopus_1];
-    return new Num(1 + octopus_0_bonus * num0 + octopus_1_bonus * num1);
+    var num2 = state.fishcount[octopus_2];
+    return new Num(1 + octopus_0_bonus * num0 + octopus_1_bonus * num1 + octopus_2_bonus * num2);
   } else if(fishtype == FISHTYPE_SHRIMP) {
     var num0 = state.fishcount[shrimp_0];
     var num1 = state.fishcount[shrimp_1];
@@ -6843,7 +6844,8 @@ function getFishMultiplier(fishtype, state, timeweighted) {
     if(timeweighted == 0) {
       var num0 = state.fishcount[tang_0];
       var num1 = state.fishcount[tang_1];
-      return new Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1);
+      var num2 = state.fishcount[tang_2];
+      return new Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1 + tang_2_bonus * num2);
     } else {
       if(state.fish_resinmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
       var shift = (timeweighted == 2) ? state.fish_resinmul_time_shift : 0;
@@ -9155,7 +9157,7 @@ var berry3_7 = registerBerry3('amethyst blackberry', 7, Res({infseeds:300e33}), 
 var berry3_8 = registerBerry3('sapphire blackberry', 8, Res({infseeds:10e42}), Res({infseeds:500e21}), Num(8), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader8, [2], [1.5]));
 var berry3_9 = registerBerry3('emerald blackberry', 9, Res({infseeds:3e51}), Res({infseeds:25e27}), Num(15), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader9));
 var berry3_10 = registerBerry3('ruby blackberry', 10, Res({infseeds:100e60}), Res({infseeds:40e33}), Num(200), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader10, [4, 10], [0.9, 1.02]));
-var berry3_11 = registerBerry3('diamond blackberry', 11, Res({infseeds:35e72}), Res({infseeds:3e40}), Num(1000), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader11, [2, 6, 7, 12, 8], [0.3, 1, 1, 0.1, 160]));
+var berry3_11 = registerBerry3('diamond blackberry', 11, Res({infseeds:35e72}), Res({infseeds:4e40}), Num(1000), default_crop3_growtime, metalifyPlantImages(blackberry, metalheader11, [2, 6, 7, 12, 8], [0.3, 1, 1, 0.1, 160]));
 
 crop3_register_id = 600;
 var mush3_4 = registerMushroom3('gold champignon', 4, Res({infseeds:500e18}), Res({infspores:1}), Num(0.5), default_crop3_growtime, metalifyPlantImages(champignon, metalheader4, [2]));
@@ -9166,6 +9168,7 @@ var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}),
 var mush3_9 = registerMushroom3('emerald champignon', 9, Res({infseeds:20e51}), Res({infspores:25e9}), Num(160), default_crop3_growtime, metalifyPlantImages(champignon, metalheader9));
 // NOTE: the bonus to basic field of this one and the previous one is actually too high and that of the flower in comparison too low. Let's not change this yet for now, but for next tiers make the flower higher than the mushroom again, and the lotus even higher.
 var mush3_10 = registerMushroom3('ruby champignon', 10, Res({infseeds:500e60}), Res({infspores:50e12}), Num(1000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader10, [4, 10], [0.9, 1.02]));
+var mush3_11 = registerMushroom3('diamond champignon', 11, Res({infseeds:1e75}), Res({infspores:1e18}), Num(3000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
@@ -9179,6 +9182,7 @@ var flower3_7 = registerFlower3('amethyst anemone', 7, Res({infseeds:10e36}), Nu
 var flower3_8 = registerFlower3('sapphire anemone', 8, Res({infseeds:150e42}), Num(20e6), Num(16), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader8, [4, 2], [0.8, -0.1]));
 var flower3_9 = registerFlower3('emerald anemone', 9, Res({infseeds:50e51}), Num(1e9), Num(90), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader9));
 var flower3_10 = registerFlower3('ruby anemone', 10, Res({infseeds:10e63}), Num(20e9), Num(300), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader10, [4, 10], [0.9, 1.02]));
+var flower3_11 = registerFlower3('diamond anemone', 11, Res({infseeds:1e75}), Num(500e9), Num(2000), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 
 crop3_register_id = 1200;
@@ -9191,6 +9195,7 @@ var bee3_7 = registerBee3('amethyst bee nest', 7, Res({infseeds:2e38}), Num(300e
 var bee3_8 = registerBee3('sapphire bee nest', 8, Res({infseeds:3e45}), Num(10e6), Num(100), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader8));
 var bee3_9 = registerBee3('emerald bee nest', 9, Res({infseeds:5e54}), Num(200e6), Num(300), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader9));
 var bee3_10 = registerBee3('ruby bee nest', 10, Res({infseeds:500e63}), Num(4e9), Num(1000), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader10, [4, 10], [0.9, 1.02]));
+var bee3_11 = registerBee3('diamond bee nest', 11, Res({infseeds:30e75}), Num(100e9), Num(5000), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
@@ -9406,6 +9411,8 @@ var octopus_0_bonus = 0.25;
 var octopus_0 = registerOctopus('octopus', 0, Res({infspores:100000}), 'Improves infinity spores production by ' + Num(octopus_0_bonus).toPercentString(), image_octopus0);
 var octopus_1_bonus = 4;
 var octopus_1 = registerOctopus('red octopus', 1, Res({infspores:1e18}), 'Improves infinity spores production by ' + Num(octopus_1_bonus).toPercentString(), image_octopus1);
+var octopus_2_bonus = 64;
+var octopus_2 = registerOctopus('black octopus', 2, Res({infspores:20e27}), 'Improves infinity spores production by ' + Num(octopus_2_bonus).toPercentString(), image_octopus2);
 
 fish_register_id = 400;
 var shrimp_0_bonus = 0.2;
@@ -9440,6 +9447,8 @@ var tang_0_bonus = 0.25;
 var tang_0 = registerTang('yellow tang', 0, Res({infspores:10e9}), 'Improves resin gain by ' + Num(tang_0_bonus).toPercentString() + ' ' + timeweightedinfo, image_tang0);
 var tang_1_bonus = 0.5;
 var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' ' + timeweightedinfo, image_tang1);
+var tang_2_bonus = 2.0;
+var tang_2 = registerTang('black tang', 2, Res({infspores:300e27}), 'Improves resin gain by ' + Num(tang_2_bonus).toPercentString() + ' ' + timeweightedinfo, image_tang2);
 
 fish_register_id = 900;
 var leporinus_0_bonus = 0.35;
@@ -10409,6 +10418,9 @@ registerPlantTypeMedal3(nut3_10);
 registerPlantTypeMedal3(lotus3_10);
 registerPlantTypeMedal3(brassica3_11);
 registerPlantTypeMedal3(berry3_11);
+registerPlantTypeMedal3(mush3_11);
+registerPlantTypeMedal3(flower3_11);
+registerPlantTypeMedal3(bee3_11);
 
 
 // fish crop achievements
@@ -10451,6 +10463,8 @@ registerFishTypeMedal(oranda_1);
 registerFishTypeMedal(anemone_2);
 registerFishTypeMedal(puffer_2);
 registerFishTypeMedal(leporinus_1);
+registerFishTypeMedal(octopus_2);
+registerFishTypeMedal(tang_2);
 
 
 
@@ -10493,8 +10507,19 @@ registerMedal('Icy tower', 'Reach level 70 during tower defense in winter', imag
 // only returns useful result if there is currenlty no infspawn
 function getNextInfspawnTime() {
   var d = state.time - state.lastInfTakeTime;
-  var minTime = state.lastInfTakeTime + 12 * 3600;
-  var maxTime = state.lastInfTakeTime + 36 * 3600;
+
+  var minHours = 24;
+  var graceHours = state.infspawnGraceTime / 3600;
+  // the more time lost in picking up the infspawn, the faster a new one can appear
+  if(graceHours > 0) minHours = 12;
+  if(graceHours > 12) minHours = 10;
+  if(graceHours > 24) minHours = 8;
+  if(graceHours > 36) minHours = 6;
+  if(graceHours > 48) minHours = 4;
+  if(graceHours > 72) minHours = 2;
+
+  var minTime = state.lastInfTakeTime + minHours * 3600;
+  var maxTime = state.lastInfTakeTime + 28 * 3600; // normally it should actually never happen that it's more than 24, but just in case due to some reason player got a negative graceTime (which means having picked up too much), delay next ones by 4 hours
   var result = state.lastInfTakeTime + 24 * 3600 - state.infspawnGraceTime;
   result = Math.min(Math.max(minTime, result), maxTime);
   return result;
