@@ -1082,7 +1082,7 @@ function getFruitTooltipText(f, opt_label) {
 }
 
 
-
+// opt_slot_index: if given: < 100 for stored fruits, >= for sacrificial fruits
 function clickFruitChipFun(f, opt_slot_index, shift, ctrl) {
   if(shift || ctrl) {
     if(f.slot >= 100) {
@@ -1109,6 +1109,7 @@ function clickFruitChipFun(f, opt_slot_index, shift, ctrl) {
 
 // f = the fruit
 // slot_type: 0=storage, 1=sacrificial
+// opt_slot_index: if given: < 100 for stored fruits, >= for sacrificial fruits
 // opt_not_draggable: if true, the fruit chip is not enabled for being draggable and thus can have the long click tooltip
 function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, opt_label, opt_not_draggable) {
   // these multiple layers are there to support multiple borders, because the colored "mark" border should have itself a small black outline to make it visible against all background colors both of the inner part (fruit bg) and outper part (dark or light UI theme bg)
@@ -1136,9 +1137,10 @@ function makeFruitChip(flex, f, slot_type, opt_slot_index, opt_nobuttonaction, o
     if(opt_slot_index == undefined) {
       label = typename + ' slot: ' + getFruitAriaLabel(f);
     } else {
-      label = typename + ' slot ' + opt_slot_index + ': ' + getFruitAriaLabel(f);
+      var label_index = slot_type == 0 ? opt_slot_index : (opt_slot_index - 100);
+      label = typename + ' slot ' + label_index + ': ' + getFruitAriaLabel(f);
     }
-    label_shift = (f.slot >= 100) ? 'move fruit up' : 'move fruit down';
+    //label_shift = (f.slot >= 100) ? 'move fruit up' : 'move fruit down';
     styleButton0(flex.div);
     fun = bind(clickFruitChipFun, f, opt_slot_index);
   }
@@ -1321,6 +1323,7 @@ function updateFruitUI() {
       canvasFlex.div.style.backgroundColor = '#ccc';
       registerAction(canvasFlex.div, bind(function(help, i) {
         if(busyChoosingTargetSlot) {
+          // clicking empty spot in the storage slots
           addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:i, force_swap:busyChoosingTargetSlot_shift});
           busyChoosingTargetSlot = undefined;
           update();
@@ -1359,7 +1362,7 @@ function updateFruitUI() {
     canvasFlex.div.style.border = '1px solid black';
     var f = i < state.fruit_sacr.length ? state.fruit_sacr[i] : undefined;
     if(f) {
-      makeFruitChip(canvasFlex, f, 1, i);
+      makeFruitChip(canvasFlex, f, 1, i + 100);
     } else {
       var j = Math.min(i, i - state.fruit_sacr.length + 4);
       if(j == 0) {
@@ -1386,6 +1389,7 @@ function updateFruitUI() {
 
       addButtonAction(canvasFlex.div, bind(function(help, i) {
         if(busyChoosingTargetSlot) {
+          // clicking empty spot in the sacrificial pool
           addAction({type:ACTION_FRUIT_SLOT, f:busyChoosingTargetSlot, precise_slot:(i + 100), force_swap:busyChoosingTargetSlot_shift});
           busyChoosingTargetSlot = undefined;
           update();

@@ -669,17 +669,17 @@ Num.gter = Num.ger;
 Num.max = function(a, b) { return new Num(a.gt(b) ? a : b); }
 Num.min = function(a, b) { return new Num(a.lt(b) ? a : b); }
 
-// f is a regular JS number and represents how much a and b may differ, e.g. if f is 0.1 they may differ up to 10%
-Num.prototype.near = function(b, f) {
+// rel_eps is a regular JS number and represents how much a and b may differ, e.g. if rel_eps is 0.1 they may differ up to 10%
+Num.prototype.near = function(b, rel_eps) {
   if(this.eqr(0) != b.eqr(0)) return false;
   if(this.gtr(0) != b.gtr(0)) return false;
-  var d = this.mulr(f);
+  var d = this.mulr(rel_eps);
   if(b.lt(this.sub(d))) return false;
   if(b.gt(this.add(d))) return false;
   return true;
 };
-Num.near = function(a, b, f) {
-  return a.near(b, f);
+Num.near = function(a, b, rel_eps) {
+  return a.near(b, rel_eps);
 };
 
 // Only b indicates NaN or Infinity, but for safety, e is also checked

@@ -407,7 +407,7 @@ function field3CellTooltipFun(x, y, div) {
       text += '<br><br>';
       text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
       //if(state.expected_infinityboost.mulr(0.999).gt(state.infinityboost)) {
-      if(state.expected_infinityboost.neq(state.infinityboost)) {
+      if(!Num.near(state.expected_infinityboost, state.infinityboost, 0.001)) {
         var time_remaining = MAXINFTOBASICDELAY - (state.c_runtime - state.infinity_prodboost_time + state.infinity_prodboost_time_shift);
         text += '. After time-weighting (⏳): ' + state.expected_infinityboost.toPercentString();
         text += ', ' + util.formatDuration(time_remaining, true);

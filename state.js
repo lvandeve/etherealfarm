@@ -138,7 +138,7 @@ Cell.prototype.getMainMultiPiece = function() {
 };
 
 // function to check if two neighbors are legitimately diagonlly connected, geometrically speaking. In case of 2x2 crops or tree, something isn't diagonally connected if it's already orthogonally connected to it, to avoid double counting.
-// does NOT take into account upgrades (such as the diagonal ethreal tree squirrel upgrade), only the geometry (related to pumpkin, ...), so upgrades must be checked at the call site
+// does NOT take into account upgrades (such as the diagonal ethreal tree squirrel upgrade or diagonal brassica), only the geometry (this is especially related to pumpkin), so upgrades must be checked at the call site
 // this is for the main field, not the ethereal field
 // field parameter: state.field for basic field, state.field2 for ethereal field
 function diagConnected(x0, y0, x1, y1, field) {
@@ -174,6 +174,32 @@ Cell.prototype.getNeighborDirsFrom = function(include_diag) {
     return include_diag ? neighbors_2x2_diag : neighbors_2x2;
   }
   return include_diag ? neighbors_1x1_diag : neighbors_1x1;
+};
+
+// get the connected neighbors of the current cell, each max once (in case of e.g. pumpkin which could take up 2 neighbors spots, but it'll count only once)
+// like Cell.prototype.getNeighborDirsFrom, but outputs absolute coordinates, does bounds checking, checks diagonals, and resolves multipart target crops (while getNeighborDirsFrom only handles those for the source)
+function getNeighbors(field, x, y, include_diag) {
+  var f = field[y][x];
+  var numh = field.length;
+  var numw = field[0].length;
+  var neighbors = f.getNeighborDirsFrom(include_diag);
+  var result = [];
+  for(var i = 0; i < neighbors.length; i++) {
+    var x2 = x + neighbors[i][0];
+    var y2 = y + neighbors[i][1];
+    var diag = y + neighbors[i][2];
+    if(x2 < 0 || y2 < 0 || x2 >= numw || y2 >= numh) continue;
+    // diagConnected also is what prevents double counting e.g. brassica copying from pumpkin
+    if(diag && !diagConnected(x, y, x2, y2, field)) continue;
+    var f2 = field[y2][x2];
+    if(f2.index == FIELD_MULTIPART) {
+      f2 = f2.getMainMultiPiece();
+      x2 = f2.x;
+      y2 = f2.y;
+    }
+    result.push([x2, y2, diag]);
+  }
+  return result;
 };
 
 // is empty so that you can plant on it (rocks do not count for this)
@@ -641,7 +667,6 @@ function State() {
   this.lastInfSpawnTime = 0; // last time infinity fern spawned (if it's there now) or was picked up (if it's not there now)
   this.lastInfTakeTime = 0; // last time infinity fern spawned (if it's there now) or was picked up (if it's not there now)
   this.infspawnGraceTime = 0; // duration added or subtracted to balance amount of infspawns that appear to be 1 per 24h even if player takes some too late. A positive value means you get the infspawn sooner than normal, negative value that you get it slower than normal
-  this.infspawnresin = new Res(); // amount of resin gotten from infspawns during the current run. counted separately from state.resin, to not count towards the max ever itself
 
 
   // field size in amount of cells
@@ -2218,7 +2243,7 @@ function Fruit() {
 
   this.mark = 0; // mark as favorite etc...
 
-  // the slot in which this fruit is: 0 for the active slot, 10+ storage slots, and 100+ for sacrificial slots
+  // the slot in which this fruit is: 0-99 for storage slots, and 100+ for sacrificial slots
   // not saved, this must be updated to match the slot the fruit is placed in, this is cache for fast reverse lookup only
   this.slot = 0;
 
@@ -2443,6 +2468,7 @@ function setFruit(slot, f) {
 }
 
 function swapFruit(slot0, slot1) {
+  if(slot0 == slot1) return;
   var f0 = getFruit(slot0);
   var f1 = getFruit(slot1);
   setFruit(slot0, f1);
@@ -2519,7 +2545,7 @@ function getUpcomingResin() {
 
 // also includes infinity symbols
 function getUpcomingResinIncludingFerns() {
-  return getUpcomingResin().add(state.fernresin.resin).add(state.infspawnresin.resin);
+  return getUpcomingResin().add(state.fernresin.resin);
 }
 
 // get upcoming twigs

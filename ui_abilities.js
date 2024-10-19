@@ -96,11 +96,36 @@ function formatAbilityDurationTooltipText(index, name, description, duration, wa
 }
 
 var prev_brassica_index = -1; // for updating the button if the image for brassica changes
-var prev_brassica_tab = -1; // idem, but for basic field vs infinity field tab
+var prev_brassica_basic_tab = -1; // idem, but for being in basic field tab
+var prev_brassica_infinity_tab = -1; // idem, but for being in infinity field tab
+var prev_brassica_growstage = -1; // idem, but for brassica growstage image when out of basic tab
 var prev_td_challenge = -1; // idem, but for 'go' button for tower defense challenge
 var prev_td_gameover = -1; // idem, but for 'go' button for tower defense challenge changing into 'game over'
 
 var last_seen_havePerma = -1; // to update tooltips/action names when this changes
+
+// returns the field cell of the lowest health brassica in the basic field, or undefined if none.
+// returns a field with f.index == FIELD_REMAINDER if there are remainders
+function getLowestBrassica() {
+  var result = undefined;
+  var g = 1;
+  for(var y = 0; y < state.numh; y++) {
+    for(var x = 0; x < state.numw; x++) {
+      var f = state.field[y][x];
+      if(f.index == FIELD_REMAINDER) {
+        return f;
+      }
+      if(!f.hasCrop()) continue;
+      var c = f.getCrop();
+      if(c.type != CROPTYPE_BRASSICA) continue;
+      if(f.growth < g) {
+        g = f.growth;
+        result = f;
+      }
+    }
+  }
+  return result;
+}
 
 function updateAbilitiesUI() {
   //////////////////////////////////////////////////////////////////////////////
@@ -349,19 +374,29 @@ function updateAbilitiesUI() {
 
   // refresh watercress button. this button becomes available once enough resources had to fully replant all watercress
   if(state.g_res.seeds.gtr(300)) {
+    var basic_field_tab = (state.currentTab == tabindex_field);
     var infinity_field_tab = (state.currentTab == tabindex_field3);
     var brassica_index = infinity_field_tab ? getHighestBrassica3Had() : getHighestBrassica();
     var td_challenge = state.challenge == challenge_towerdefense;
     var td_gameover = state.towerdef.gameover;
-    if(!watercressbutton || prev_brassica_index != brassica_index || prev_brassica_tab != infinity_field_tab || prev_td_challenge != td_challenge || prev_td_gameover != td_gameover) {
+    var growstage = 4;
+    if(!basic_field_tab && !infinity_field_tab) {
+      var f = getLowestBrassica();
+      growstage = getGrowStageImageIndex(f);
+    }
+    if(!watercressbutton || prev_brassica_index != brassica_index || prev_brassica_basic_tab != basic_field_tab ||
+       prev_brassica_infinity_tab != infinity_field_tab || prev_td_challenge != td_challenge || prev_td_gameover != td_gameover ||
+       prev_brassica_growstage != growstage) {
       if(watercressbutton) {
         watercressbutton.clear();
         watercressbutton.removeSelf(topFlex);
       }
       prev_brassica_index = brassica_index;
-      prev_brassica_tab = infinity_field_tab;
+      prev_brassica_basic_tab = basic_field_tab;
+      prev_brassica_infinity_tab = infinity_field_tab;
       prev_td_challenge = td_challenge;
       prev_td_gameover = td_gameover;
+      prev_brassica_growstage = growstage;
       var image, name, alltiers_name;
       if(infinity_field_tab) {
         image = crops3[brassica_index].image[4];
@@ -371,12 +406,9 @@ function updateAbilitiesUI() {
         var td = state.towerdef;
         image = td.gameover ? image_gameover : image_go;
       } else {
-        image = images_watercress[4];
-        name = 'watercress';
-        if(brassica_index >= 0) {
-          image = crops[brassica_index].image[4];
-          name = crops[brassica_index].name;
-        }
+        var image_post = brassica_index == brassica_1 ? image_wasabi_post : image_watercress_post;
+        image = growstage == -1 ? image_post : crops[brassica_index].image[growstage];
+        name = crops[brassica_index].name;
         if(state.crops[brassica_1].known) {
           alltiers_name = 'brassica';
         } else {

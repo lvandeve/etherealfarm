@@ -1192,19 +1192,15 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     var soup = !basic && state.squirrel_upgrades[upgradesq_watercress_mush].count; // watercress and mushroom soup upgrade, which makes leech from mushroom snot cost seeds
     var total = Res();
     var num = 0;
-    for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
-      var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
-      var y2 = f.y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
-      if(x2 < 0 || x2 >= state.numw || y2 < 0 || y2 >= state.numh) continue;
-      var f2 = state.field[y2][x2];
-      if(f2.index == FIELD_MULTIPART) {
-        f2 = f2.getMainMultiPiece();
-        x2 = f2.x;
-        y2 = f2.y;
-      }
+
+
+    var dirs = f.getNeighborDirsFrom(haveDiagonalBrassica());
+    var neighbors = getNeighbors(state.field, f.x, f.y, haveDiagonalBrassica());
+    for(var n = 0; n < neighbors.length; n++) {
+      var f2 = state.field[neighbors[n][1]][neighbors[n][0]];
       var c2 = f2.getCrop();
       if(c2) {
-        var p2 = prefield[y2][x2];
+        var p2 = prefield[f2.y][f2.x];
         if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT || c2.type == CROPTYPE_PUMPKIN) {
           //total.addInPlace(p2.prod0); // TODO: this is not correct if crops are growing, since precompute is done taking growing into account while pretend does not. To be correct, instead recursively getProd of those neighbors should be called here. However this additional complexity is not super important to implement because pretend == 2 is for display purposes only
           total.addInPlace(c2.getProd(f2, pretend));
@@ -6800,7 +6796,8 @@ function getFishMultiplier(fishtype, state, timeweighted) {
     var num0 = state.fishcount[goldfish_0];
     var num1 = state.fishcount[goldfish_1];
     var num2 = state.fishcount[goldfish_2];
-    return new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1 + goldfish_2_bonus * num2);
+    var num3 = state.fishcount[goldfish_3];
+    return new Num(1 + goldfish_0_bonus * num0 + goldfish_1_bonus * num1 + goldfish_2_bonus * num2 + goldfish_3_bonus * num3);
   } else if(fishtype == FISHTYPE_KOI) {
     // runestone multiplier
     var num0 = state.fishcount[koi_0];
@@ -6832,7 +6829,8 @@ function getFishMultiplier(fishtype, state, timeweighted) {
     if(timeweighted == 0) {
       var num0 = state.fishcount[eel_0];
       var num1 = state.fishcount[eel_1];
-      return new Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1);
+      var num2 = state.fishcount[eel_2];
+      return new Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1 + eel_2_bonus * num2);
     } else {
       if(state.fish_twigsmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
       var shift = (timeweighted == 2) ? state.fish_twigsmul_time_shift : 0;
@@ -6862,8 +6860,9 @@ function getFishMultiplier(fishtype, state, timeweighted) {
     // non-runestone multiplier
     var num0 = state.fishcount[oranda_0];
     var num1 = state.fishcount[oranda_1];
-    if(num0 == 0 && num1 == 0) return new Num(1);
-    return new Num(1 + oranda_0_bonus * num0 + oranda_1_bonus * num1);
+    var num2 = state.fishcount[oranda_2];
+    if(num0 == 0 && num1 == 0 && num2 == 0) return new Num(1);
+    return new Num(1 + oranda_0_bonus * num0 + oranda_1_bonus * num1 + oranda_2_bonus * num2);
   }
 
   return new Num(1);
@@ -6906,7 +6905,7 @@ function computeInfinityToBasicBoost(state, timeweighted, opt_precomputed) {
 // This one is not actually used to delay infinity's production in any way, but is used to compute a weighed average of past infinity production that is used to maybe prevent the delay of computeInfinityToBasicBoost etc... in some cases
 // The same convention of timeweighted as the above functions is implemented for consistency, however only values 0 and 1 are expected to be used.
 function computeWeightedInfProd(state, timeweighted) {
-  if(timeweighted == 2) {
+  if(timeweighted == 3) {
     // This is not actually used, but left for consistency with the other functions like computeInfinityToBasicBoost.
     return Res.min(computeWeightedInfProd(state, 0), computeWeightedInfProd(state, 2));
   }
@@ -9168,7 +9167,7 @@ var mush3_8 = registerMushroom3('sapphire champignon', 8, Res({infseeds:50e42}),
 var mush3_9 = registerMushroom3('emerald champignon', 9, Res({infseeds:20e51}), Res({infspores:25e9}), Num(160), default_crop3_growtime, metalifyPlantImages(champignon, metalheader9));
 // NOTE: the bonus to basic field of this one and the previous one is actually too high and that of the flower in comparison too low. Let's not change this yet for now, but for next tiers make the flower higher than the mushroom again, and the lotus even higher.
 var mush3_10 = registerMushroom3('ruby champignon', 10, Res({infseeds:500e60}), Res({infspores:50e12}), Num(1000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader10, [4, 10], [0.9, 1.02]));
-var mush3_11 = registerMushroom3('diamond champignon', 11, Res({infseeds:1e75}), Res({infspores:1e18}), Num(3000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+var mush3_11 = registerMushroom3('diamond champignon', 11, Res({infseeds:1e75}), Res({infspores:1.2e18}), Num(3000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
@@ -9182,7 +9181,7 @@ var flower3_7 = registerFlower3('amethyst anemone', 7, Res({infseeds:10e36}), Nu
 var flower3_8 = registerFlower3('sapphire anemone', 8, Res({infseeds:150e42}), Num(20e6), Num(16), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader8, [4, 2], [0.8, -0.1]));
 var flower3_9 = registerFlower3('emerald anemone', 9, Res({infseeds:50e51}), Num(1e9), Num(90), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader9));
 var flower3_10 = registerFlower3('ruby anemone', 10, Res({infseeds:10e63}), Num(20e9), Num(300), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader10, [4, 10], [0.9, 1.02]));
-var flower3_11 = registerFlower3('diamond anemone', 11, Res({infseeds:1e75}), Num(500e9), Num(2000), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+var flower3_11 = registerFlower3('diamond anemone', 11, Res({infseeds:1e75}), Num(555e9), Num(2000), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 
 crop3_register_id = 1200;
@@ -9206,21 +9205,25 @@ var stinging3_7 = registerStinging3('amethyst nettle', 7, Res({infseeds:1e39}), 
 var stinging3_8 = registerStinging3('sapphire nettle', 8, Res({infseeds:10e45}), Num(5), Num(75), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader8, [9]));
 var stinging3_9 = registerStinging3('emerald nettle', 9, Res({infseeds:5e54}), Num(6), Num(250), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader9));
 var stinging3_10 = registerStinging3('ruby nettle', 10, Res({infseeds:200e63}), Num(10), Num(750), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader10, [4, 10], [0.9, 1.02]));
+var stinging3_11 = registerStinging3('diamond nettle', 11, Res({infseeds:100e75}), Num(20), Num(6000), default_crop3_growtime, metalifyPlantImages(images_nettle, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 2100;
 var fern3_7 = registerFern3('amethyst fern', 7, Res({infseeds:5e39}), Num(3), Num(50), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader7));
 var fern3_8 = registerFern3('sapphire fern', 8, Res({infseeds:200e45}), Num(3), Num(150), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader8));
 var fern3_9 = registerFern3('emerald fern', 9, Res({infseeds:200e54}), Num(3), Num(500), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader9));
 var fern3_10 = registerFern3('ruby fern', 10, Res({infseeds:30e66}), Num(2), Num(1500), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader10, [4, 10], [0.9, 1.02]));
+var fern3_11 = registerFern3('diamond fern', 11, Res({infseeds:4e78}), Num(4), Num(7500), default_crop3_growtime, metalifyPlantImages(image_fern_as_crop_inf, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 2400;
 var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(75), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
 var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(250), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
 var nut3_10 = registerNut3('ruby acorn', 10, Res({infseeds:500e66}), Res({infseeds:500e33}), Num(750), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader10, [4, 10], [0.9, 1.02]));
+var nut3_11 = registerNut3('diamond acorn', 11, Res({infseeds:50e78}), Res({infseeds:1e42}), Num(10000), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 2700;
 var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
 var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77777), Num(1000), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader10, [4, 10], [0.9, 1.02]));
+var lotus3_11 = registerLotus3('diamond lotus', 11, Res({infseeds:2.5e81}), Num(7.77777), Num(7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 function haveInfinityField(opt_state) {
   var s = opt_state || state;
@@ -9399,6 +9402,8 @@ var goldfish_1_bonus = 1.5;
 var goldfish_1 = registerGoldfish('red goldfish', 1, Res({infspores:50e9}), 'Improves infinity seeds production by ' + Num(goldfish_1_bonus).toPercentString(), image_goldfish1);
 var goldfish_2_bonus = 25;
 var goldfish_2 = registerGoldfish('black goldfish', 2, Res({infspores:5e18}), 'Improves infinity seeds production by ' + Num(goldfish_2_bonus).toPercentString(), image_goldfish2);
+var goldfish_3_bonus = 200;
+var goldfish_3 = registerGoldfish('white goldfish', 3, Res({infspores:20e30}), 'Improves infinity seeds production by ' + Num(goldfish_3_bonus).toPercentString(), image_goldfish3);
 
 fish_register_id = 200;
 var koi_0_bonus = 0.2;
@@ -9441,6 +9446,9 @@ var eel_0_bonus = 0.25;
 var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by ' + Num(eel_0_bonus).toPercentString() + ' ' + timeweightedinfo, image_eel0);
 var eel_1_bonus = 0.5;
 var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' ' + timeweightedinfo, image_eel1);
+// why not black eel: it would look too similar to the regular eel which is dark blue
+var eel_2_bonus = 1.0;
+var eel_2 = registerEel('white eel', 2, Res({infspores:15e30}), 'Improves twigs gain by ' + Num(eel_2_bonus).toPercentString() + ' ' + timeweightedinfo, image_eel2);
 
 fish_register_id = 800;
 var tang_0_bonus = 0.25;
@@ -9461,6 +9469,9 @@ var oranda_0_bonus = 2;
 var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda0);
 var oranda_1_bonus = 10;
 var oranda_1 = registerOranda('red oranda', 1, Res({infspores:200e18}), 'Boosts the basic field boost by ' + Num(oranda_1_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda1);
+// already here but not yet unlockable for now, TODO!
+var oranda_2_bonus = 50;
+var oranda_2 = registerOranda('black oranda', 2, Res({infspores:2e33}), 'Boosts the basic field boost by ' + Num(oranda_2_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda2);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -10332,8 +10343,6 @@ registerMedal('Eight runestones', 'Have eight runestones on the infinity field',
   return state.crop3count[runestone3_0] >= 8;
 }, Num(12800));
 
-// TODO: more runestone medals if needed
-
 // individual infinity crop achievements
 medal_register_id = 4200;
 
@@ -10421,6 +10430,10 @@ registerPlantTypeMedal3(berry3_11);
 registerPlantTypeMedal3(mush3_11);
 registerPlantTypeMedal3(flower3_11);
 registerPlantTypeMedal3(bee3_11);
+registerPlantTypeMedal3(stinging3_11);
+registerPlantTypeMedal3(fern3_11);
+registerPlantTypeMedal3(nut3_11);
+registerPlantTypeMedal3(lotus3_11);
 
 
 // fish crop achievements
@@ -10465,6 +10478,9 @@ registerFishTypeMedal(puffer_2);
 registerFishTypeMedal(leporinus_1);
 registerFishTypeMedal(octopus_2);
 registerFishTypeMedal(tang_2);
+registerFishTypeMedal(eel_2);
+registerFishTypeMedal(goldfish_3);
+registerFishTypeMedal(oranda_2);
 
 
 

@@ -398,9 +398,10 @@ var Utils = (function() {
 
   // formats time given in second as years, months, days, hours, minutes, seconds
   // opt_maxSections is how many different sections to print, or leave out smaller ones. Default is 3, max is 9.
-  // the sections are: giga-annum, mega-annum, millenium, year, month, day, hour, minute, second.
+  // the sections are: millenium, year, month, day, hour, minute, second.
+  // NOTE: if the duration is longer than a month, in some cases it returns only a single section no matter what, e.g. "5 millenia"
   // opt_short: if false or 0, default long notation. if 1 or true, uses e.g. "h" instead of " hours", etc..., and no longer uses sections for anything above a day. if 2, uses a sprecise but less human readable short notation
-  // opt_inv: inverses direction of max sections. If false, starts from largest and leaves out smaller. If true, leaves out larger ones instead
+  // opt_inv: inverses direction of max sections. If false, starts from largest and leaves out smaller. If true, leaves out larger ones instead (and makes the largest shows section larger, like 31h insead of 1d 7h)
   // opt_fractional: print fractional seconds like 0.5. Default is false, then prints the ceil (not floor), e.g. 0.2s will print as 1s, good for countdowns.
   var formatDuration = function(s, opt_short, opt_maxSections, opt_inv, opt_fractional) {
     var maxSections = opt_maxSections || (opt_short == 2 ? 4 : 3);
@@ -411,8 +412,8 @@ var Utils = (function() {
     if(!opt_fractional) s = Math.ceil(s);
 
     if(opt_short == 1) {
-      // For durations longer than 'days', everything involving abbreviations such as 'M' for month, Ga for giga-annum, ... is pretty
-      // unclear (e.g. M can be confused with million), so return those instead as formatted number with the full word 'years' or 'days'
+      // For durations longer than 'days', everything involving abbreviations such as 'M' for month is pretty unclear
+      // (e.g. M can be confused with million or millenium), so return those instead as formatted number with the full word 'years' or 'days'
       // NOTE: this can return fractional values, like "1.23 years"
       if(s >= 31557600000) { // 31557600000 = seconds in 1000 365.25-day years
         var formatted = Num(s / 31557600000).toString();
@@ -507,14 +508,18 @@ var Utils = (function() {
       return result == '' ? '' : ' ';
     }
 
+    // TODO: avoid displaying something like "5h 3s", use "5h 0m 3s" instead
+    // however, it's not that trivial to fix it, e.g. if s are not displayed m should also not, and maxSections can affect whether it is
+
     if(opt_inv) {
-      if(mm > 0 ) { result += sp() + Num(mm).toString() + names_single[0]; }
-      if(Y > 0 ) { result += sp() + Y + names_single[1]; }
-      if(M > 0 ) { result += sp() + M + names_single[2]; }
-      if(D > 0 ) { result += sp() + D + names_single[3]; }
-      if(h > 0 ) { result += sp() + h + names_single[4]; }
-      if(m > 0 ) { result += sp() + m + names_single[5]; }
-      if(s > 0 ) { result += sp() + s + names_single[6]; }
+      // TODO: use names_plural when relevant
+      if(mm > 0) { result += sp() + Num(mm).toString() + names_single[0]; }
+      if(Y > 0) { result += sp() + Y + names_single[1]; }
+      if(M > 0) { result += sp() + M + names_single[2]; }
+      if(D > 0) { result += sp() + D + names_single[3]; }
+      if(h > 0) { result += sp() + h + names_single[4]; }
+      if(m > 0) { result += sp() + m + names_single[5]; }
+      if(s > 0) { result += sp() + s + names_single[6]; }
     } else {
       var sections = 0;
       if(mm > 0) { result += sp() + Num(mm).toString() + (mm == 1 ? names_single[0] : names_plural[0]); if((++sections) >= maxSections) return result; }

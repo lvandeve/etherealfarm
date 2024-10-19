@@ -1015,10 +1015,9 @@ function getNextTierCrop(crop) {
   return croptype_tiers[crop.type][crop.tier + 1];
 }
 
-
-function updateFieldCellUI(x, y) {
-  var f = state.field[y][x];
-  var fd = fieldDivs[y][x];
+// returns -1 if the c.image_post of the crop must be used instead
+function getGrowStageImageIndex(f) {
+  if(!f) return 4; // for the purpose of the refresh brassica button in non-field tabs: make it look like fullgrown brassica if there are none at all, zero brassica means 'all are fullgrown'
   var g = f.growth;
   var c = f.getCrop();
   var growstage;
@@ -1034,6 +1033,15 @@ function updateFieldCellUI(x, y) {
     else growstage = 4; // already use the final fullgrown image for some time at the end of the growing phase too
     if(state.challenge == challenge_wither) growstage = 4;
   }
+  return growstage;
+}
+
+function updateFieldCellUI(x, y) {
+  var f = state.field[y][x];
+  var fd = fieldDivs[y][x];
+  var g = f.growth;
+  var c = f.getCrop();
+  var growstage = getGrowStageImageIndex(f);
 
   var p = prefield[y][x];
 

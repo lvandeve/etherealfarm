@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// ui_info: the box that contains resources, running time, ...
+// ui_info: the boxes at the top that contains resources, running time, ...
 
 
 
@@ -460,7 +460,7 @@ function getResourceDetails(index) {
       text += 'Expected when all fullgrown: ';
       if(res_expected.neq(res_expected_hyp)) {
         if(index == 0) text += res_expected.toString() + '/s (hypothetical if mushrooms could over-consume: ' + res_expected_hyp.toString() + '/s)';
-        else text += res_expected.toString() + '/s (potential: ' + res_expected_hyp.toString() + '/s)';
+        else text += res_expected.toString() + '/s (potential: ' + res_expected_hyp.toString() + '/s)'; // potential means: if mushrooms could over-consume, that is, there would be no seeds restriction
       } else {
         text += res_expected.toString() + '/s';
       }

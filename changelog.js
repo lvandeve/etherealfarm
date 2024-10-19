@@ -30,6 +30,14 @@ function getChangeLog() {
     }
   }
 
+  text += '0.14.2 (2024-10-19)';
+  text += '<br/>• Added 4 more diamond infinity crops and 3 more fishes.';
+  text += '<br/>• Infinity symbol resin now goes immediately to the main resin pool rather than upcoming resin.';
+  text += '<br/>• When not in the main field tab, the brassica refresh button will now show its state of life.'; // in the basic field tab itself it remains fully green to show that that's the state the button brings it to by default (refresh brassica), in other tabs you can't see the state of the field so the info is useful
+  text += '<br/>• Active holidays now show information in the "About" dialog.';
+  text += '<br/>• Bugfixes.'; // includes crash with swapping fruits on mobile, and incorrect 'potential' mushroom spores display
+  text += '<br/><br/>';
+
   text += '0.14.1 (2024-09-09)';
   text += '<br/>• Added 3 more crops of the diamond infinity tier.';
   text += '<br/>• Added 2 new fishes for the infinity pond.';

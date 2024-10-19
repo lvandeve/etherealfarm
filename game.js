@@ -587,7 +587,6 @@ function endPreviousRun() {
   state.g_resin_from_transcends.addInPlace(resin);
   state.resin = Num(0); // future resin from next tree
   state.fernresin = new Res(); // future resin from next ferns
-  state.infspawnresin = new Res(); // future resin from next infspawns
 
 
   state.res.twigs.addInPlace(twigs);
@@ -911,6 +910,7 @@ function softReset(opt_challenge, opt_automated) {
   removeChallengeChip();
   removeAllDropdownElements();
   initInfoUI();
+  updateFruitUI();
 }
 
 // the divs and other non-saved-state info of a field cell
@@ -940,7 +940,7 @@ var ACTION_REPLACE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++; // action_weather
 var ACTION_TRANSCEND = action_index++; // also includes starting a challenge
-var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot. Variables inside: f:fruit object, slottype:0=stored,1=sacrificial, precise_slot:exact destination slot number (only one of slottype, precise_slot must be given)
+var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot. Variables inside: f:fruit object, slottype:0=stored,1=sacrificial, precise_slot:exact destination slot number (only one of slottype or precise_slot must be given)
 var ACTION_FRUIT_ACTIVE = action_index++; // select active fruit
 var ACTION_FRUIT_LEVEL = action_index++; // level up a fruit ability
 var ACTION_FRUIT_REORDER = action_index++; // reorder an ability
@@ -2590,7 +2590,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_7].had) unlockInfinityCrop(mush3_7);
   if(state.crops3[flower3_7].had) unlockInfinityCrop(bee3_7);
   if(state.crops3[flower3_7].had) unlockInfinityCrop(fern3_7);
-  if(state.crops3[mush3_7].had) unlockInfinityCrop(stinging3_7);
+  if(state.crops3[mush3_7].had && state.crops3[stinging3_6].had) unlockInfinityCrop(stinging3_7);
 
   if(state.crops3[bee3_7].had) unlockInfinityCrop(brassica3_8);
   if(state.crops3[brassica3_8].had) unlockInfinityCrop(berry3_8);
@@ -2598,7 +2598,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_8].had) unlockInfinityCrop(mush3_8);
   if(state.crops3[flower3_8].had) unlockInfinityCrop(bee3_8);
   if(state.crops3[flower3_8].had) unlockInfinityCrop(fern3_8);
-  if(state.crops3[mush3_8].had) unlockInfinityCrop(stinging3_8);
+  if(state.crops3[mush3_8].had && state.crops3[stinging3_7].had) unlockInfinityCrop(stinging3_8);
   if(state.crops3[fern3_8].had) unlockInfinityCrop(nut3_8);
 
   if(state.crops3[nut3_8].had) unlockInfinityCrop(brassica3_9);
@@ -2607,7 +2607,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_9].had) unlockInfinityCrop(mush3_9);
   if(state.crops3[flower3_9].had) unlockInfinityCrop(bee3_9);
   if(state.crops3[flower3_9].had) unlockInfinityCrop(fern3_9);
-  if(state.crops3[mush3_9].had) unlockInfinityCrop(stinging3_9);
+  if(state.crops3[mush3_9].had && state.crops3[stinging3_8].had) unlockInfinityCrop(stinging3_9);
   if(state.crops3[fern3_9].had) unlockInfinityCrop(nut3_9);
   if(state.crops3[nut3_9].had) unlockInfinityCrop(lotus3_9);
 
@@ -2615,7 +2615,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[brassica3_10].had) unlockInfinityCrop(berry3_10);
   if(state.crops3[berry3_10].had) unlockInfinityCrop(mush3_10);
   if(state.crops3[berry3_10].had) unlockInfinityCrop(flower3_10);
-  if(state.crops3[mush3_10].had) unlockInfinityCrop(stinging3_10);
+  if(state.crops3[mush3_10].had && state.crops3[stinging3_9].had) unlockInfinityCrop(stinging3_10);
   if(state.crops3[flower3_10].had) unlockInfinityCrop(bee3_10);
   if(state.crops3[flower3_10].had) unlockInfinityCrop(fern3_10);
   if(state.crops3[fern3_10].had) unlockInfinityCrop(nut3_10);
@@ -2625,7 +2625,11 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[brassica3_11].had) unlockInfinityCrop(berry3_11);
   if(state.crops3[berry3_11].had) unlockInfinityCrop(mush3_11);
   if(state.crops3[berry3_11].had) unlockInfinityCrop(flower3_11);
+  if(state.crops3[mush3_11].had && state.crops3[stinging3_10].had) unlockInfinityCrop(stinging3_11);
   if(state.crops3[flower3_11].had) unlockInfinityCrop(bee3_11);
+  if(state.crops3[flower3_11].had) unlockInfinityCrop(fern3_11);
+  if(state.crops3[fern3_11].had) unlockInfinityCrop(nut3_11);
+  if(state.crops3[nut3_11].had) unlockInfinityCrop(lotus3_11);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -2663,6 +2667,9 @@ function maybeUnlockFishes() {
 
   if(state.fishes[leporinus_1].had) unlockFish(octopus_2);
   if(state.fishes[leporinus_1].had) unlockFish(tang_2);
+  if(state.fishes[leporinus_1].had) unlockFish(goldfish_3); // this one is much more expensive than the others, but the only one at this high level affecting inf seeds production so show it early as a goal
+  if(state.fishes[tang_2].had) unlockFish(eel_2);
+  if(state.fishes[tang_2].had) unlockFish(oranda_2);
 
   ////////
 
@@ -5106,7 +5113,8 @@ var update = function(opt_ignorePause) {
           var cost = c.getCost();
           var finalcost = cost;
           if(type == ACTION_REPLACE_FISH && !!recoup) finalcost = cost.sub(recoup);
-          if(!action.silent) showMessage('placed fish ' + c.name + '. Consumed: ' + finalcost);
+          var nextcost = c.getCost(1);
+          if(!action.silent) showMessage('placed fish ' + c.name + '. Consumed: ' + finalcost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
           state.g_numplanted_fish++;
           state.res.subInPlace(cost);
           f.index = c.index + CROPINDEX;
@@ -5225,7 +5233,6 @@ var update = function(opt_ignorePause) {
         if(action.precise_slot != undefined) {
           var to = action.precise_slot;
           var from = f.slot;
-
           var ok = true;
           var swap = action.force_swap && getFruit(to);
           if(to < 100 && from >= 100 && state.fruit_stored.length >= state.fruit_slots) {
@@ -6050,11 +6057,6 @@ var update = function(opt_ignorePause) {
       showMessage('That infinity symbol gave: ' + infspawnres.toString(), C_INFINITY, 1224656545, 0.5);
 
       state.g_infspawnres.addInPlace(infspawnres);
-      if(infspawnres.resin.neqr(0)) {
-        // move out the resin into the upcoming resin
-        state.infspawnresin.resin.addInPlace(infspawnres.resin)
-        infspawnres.resin = Num(0);
-      }
       actualgain.addInPlace(infspawnres);
     }
 

@@ -854,6 +854,9 @@ function createStatsDialog() {
       text += '• fishes placed: ' + open + state.g_numplanted_fish + close + '<br>';
       text += '• fishes deleted: ' + open + state.g_numunplanted_fish + close + '<br>';
     }
+    if(state.g_num_infspawns > 0) {
+      text += '• infinity symbols taken: ' + open + state.g_num_infspawns + close + '<br>';
+    }
     text += '<br>';
   }
 
@@ -1023,6 +1026,18 @@ function createChangelogDialog() {
 
   if(window['global_is_beta']) {
     text += '<b>This is a beta test version! Saves from a beta version can never be imported into the regular game! But you can import saves from the regular game here for testing.</b>';
+    text += '<br/><br/>';
+  }
+
+  var holiday = holidayEventActive();
+  if(holiday & 1) {
+    text += '<b>Holiday event active: presents with random effects will drop at regular time intervals between December 7th and January 7th!</b>';
+    text += '<br/><br/>';
+  } else if(holiday & 2) {
+    text += '<b>Holiday event active: eggs with random effects will drop at regular time intervals between Match 25th and April 25th!</b>';
+    text += '<br/><br/>';
+  } else if(holiday & 4) {
+    text += '<b>Holiday event active: you can now grow a pumpkin, it acts like your best berry but is bigger so can get more boosts! This event is active from October 6th until November 6th</b>';
     text += '<br/><br/>';
   }
 
