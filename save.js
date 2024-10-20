@@ -1361,6 +1361,10 @@ function decState(s) {
     state.lastInfTakeTime = processTime();
     state.infspawnTime = processTime();
     state.infspawnGraceTime = processTime();
+    if(save_version < 262144*2+64*14+2) {
+      var infspawnresin = processRes();
+      state.res.addInPlace(infspawnresin);
+    }
   }
 
   section = 1; id = 0; // field
