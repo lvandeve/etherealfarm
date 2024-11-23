@@ -1363,6 +1363,7 @@ function decState(s) {
     state.infspawnGraceTime = processTime();
     if(save_version < 262144*2+64*14+2) {
       var infspawnresin = processRes();
+      if(error) return err(4);
       state.res.addInPlace(infspawnresin);
     }
   }
@@ -1624,6 +1625,10 @@ function decState(s) {
       else if(index >= 299) index = 400 + (Math.floor((index - 299) / 5)) * 8 + ((index - 9) % 5);
       else if(index >= 249) index = 320 + (Math.floor((index - 249) / 5)) * 8 + ((index - 9) % 5);
       else if(index >= 149) index = 160 + (Math.floor((index - 149) / 5)) * 8 + ((index - 9) % 5);
+    }
+    if(save_version < 262144*2+64*14+3) {
+      // num seeds medals moved from index 4+ to 6000+ to make room for much more of them
+      if(index >= 4 && index <= 38) index += 5996;
     }
     if(!medals[index]) return err(4);
     state.medals[index].earned = true;

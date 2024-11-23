@@ -2540,8 +2540,14 @@ function maybeUnlockEtherealCrops() {
   if(state.treelevel2 >= 24) {
     unlockEtherealCrop(lotus2_6);
   }
+  if(state.treelevel2 >= 25) {
+    unlockEtherealCrop(mush2_8);
+  }
   if(state.treelevel2 >= 26) {
     unlockEtherealCrop(nettle2_2);
+  }
+  if(state.treelevel2 >= 27) {
+    unlockEtherealCrop(flower2_8);
   }
 }
 

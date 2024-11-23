@@ -4331,7 +4331,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     var do_automaton = !!num_automaton;
     var do_squirrel = !!num_squirrel;
     var do_mistle = !!num_mistle && haveEtherealMistletoeUpgrade(mistle_upgrade_mistle_neighbor);
-    var do_tree = !!num_tree;
+    var do_tree = !!num_tree && getEtherealTreeNeighborBoost().neqr(0);
 
     // actually the values as boosts, not multipliers. mul1 is the actual multiplier.
     var automatonmul0 = do_automaton ? getEtherealAutomatonNeighborBoost() : new Num(0);
@@ -4660,6 +4660,7 @@ var mush2_4 = registerMushroom2('oyster mushroom', 10, 4, Res({resin:500e9}), de
 var mush2_5 = registerMushroom2('portobello', 13, 5, Res({resin:500e12}), default_ethereal_growtime, Num(256), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', portobello);
 var mush2_6 = registerMushroom2('shiitake', 17, 6, Res({resin:3e18}), default_ethereal_growtime, Num(1024), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', shiitake);
 var mush2_7 = registerMushroom2('truffle', 22, 7, Res({resin:1e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', truffle);
+var mush2_8 = registerMushroom2('greater champignon', 25, 8, Res({resin:10e27}), default_ethereal_growtime, Num(16384), undefined, 'boosts mushrooms spore production and consumption in the basic field (additive)', champignon);
 
 
 // flowers2
@@ -4672,6 +4673,7 @@ var flower2_4 = registerFlower2('dandelion', 12, 4, Res({resin:50e12}), default_
 var flower2_5 = registerFlower2('iris', 15, 5, Res({resin:50e15}), default_ethereal_growtime, Num(256), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_iris);
 var flower2_6 = registerFlower2('lavender', 19, 6, Res({resin:500e18}), default_ethereal_growtime, Num(1024), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_lavender);
 var flower2_7 = registerFlower2('orchid', 23, 7, Res({resin:25e24}), default_ethereal_growtime, Num(4096), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_orchid);
+var flower2_8 = registerFlower2('greater anemone', 27, 8, Res({resin:1e30}), default_ethereal_growtime, Num(16384), undefined, 'boosts the boosting effect of flowers in the basic field (additive). No effect on ethereal neighbors here, but on the basic field instead.', images_anemone);
 
 crop2_register_id = 100;
 var nettle2_0 = registerNettle2('nettle', 2, 0, Res({resin:200}), 0.25, default_ethereal_growtime, Num(0.35), undefined, 'boosts stinging plants in the basic field (additive).', images_nettle);
@@ -9503,17 +9505,18 @@ function Medal() {
 // Tier for achievement images if no specific one given, maps to zinc, copper, silver, electrum, gold, etc..., see images_medals.js
 Medal.prototype.getTier = function() {
   var percent = this.prodmul.mulr(100);
-  if(percent.ltr(1)) return 0;
-  if(percent.ltr(5)) return 1;
-  if(percent.ltr(20)) return 2;
-  if(percent.ltr(100)) return 3;
-  if(percent.ltr(500)) return 4;
-  if(percent.ltr(2000)) return 5;
-  if(percent.ltr(10000)) return 6;
-  if(percent.ltr(50000)) return 7;
-  if(percent.ltr(200000)) return 8;
-  if(percent.ltr(1000000)) return 9;
-  if(percent.ltr(5000000)) return 10;
+  // The .99 are to not have numerical precision flapping at near exact values like 1M
+  if(percent.ltr(0.99)) return 0;
+  if(percent.ltr(4.99)) return 1;
+  if(percent.ltr(19.99)) return 2;
+  if(percent.ltr(99.99)) return 3;
+  if(percent.ltr(499.99)) return 4;
+  if(percent.ltr(1999.99)) return 5;
+  if(percent.ltr(9999.99)) return 6;
+  if(percent.ltr(49999.99)) return 7;
+  if(percent.ltr(199999.99)) return 8;
+  if(percent.ltr(999999.99)) return 9;
+  if(percent.ltr(4999999.99)) return 10;
   return 11;
 };
 
@@ -9523,11 +9526,11 @@ var medals_order = []; // display order of the medals, contains the indexes in m
 
 var medal_register_id = -1;
 
-// where = index of medal to put this one behind in display order
-// medal "index" will be displayed right after medal "where"
-function changeMedalDisplayOrder(index, where) {
-  if(where > index) throw 'can only move order backward for now';
-  var a = medals[where];
+// dest = index of medal to put this one behind in display order
+// medal "index" will be displayed right after medal "dest"
+function changeMedalDisplayOrder(index, dest) {
+  if(dest > index) throw 'can only move order backward for now';
+  var a = medals[dest];
   var b = medals[index];
 
   var from = a.order + 1;
@@ -9538,6 +9541,34 @@ function changeMedalDisplayOrder(index, where) {
   }
   medals_order[from] = index;
   b.order = from;
+}
+
+// change the display order of a whole range of medals. index0 is inclusive, index1 is exclusive, in the range
+function changeMedalsDisplayOrder(index0, index1, dest) {
+  if(dest > index0 || dest > index1) throw 'can only move order backward for now';
+
+  var shiftright0 = medals[dest].order + 1;
+  var shiftright1 = medals[index0].order;
+  var numshiftright = shiftright1 - shiftright0;
+
+  var shiftleft0 = medals[index0].order;
+  var shiftleft1 = medals[index1 - 1].order + 1;
+  var numshiftleft = shiftleft1 - shiftleft0;
+
+  var order2 = [];
+  for(var i = 0; i < medals_order.length; i++) {
+    var j = i;
+    if(i >= shiftright0 && i < shiftright1) {
+      j = i + numshiftleft;
+    }
+    if(i >= shiftleft0 && i < shiftleft1) {
+      j = i - numshiftright;
+    }
+    order2[j] = medals_order[i];
+    if(i != j) medals[order2[j]].order = j;
+  }
+
+  medals_order = order2;
 }
 
 function registerMedal(name, description, icon, conditionfun, prodmul) {
@@ -9580,24 +9611,9 @@ registerMedal('fern 100', 'clicked 100 ferns', images_fern[0], function() { retu
 registerMedal('fern 1000', 'clicked 1000 ferns', images_fern[0], function() { return state.g_numferns >= 1000; }, Num(0.1));
 registerMedal('fern 10000', 'clicked 10000 ferns', images_fern[0], function() { return state.g_numferns >= 10000; }, Num(1));
 
-var prevmedal;
+var prevmedal; // used during the registration of several sets of achieves for hints revealing the next one
 
-medal_register_id = 4;
-var seeds_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e66, 1e72, 1e78, 1e84, 1e90,  1e96, 1e102, 1e108, 1e114, 1e120, 1e126, 1e162, 1e168, 1e174, 1e180];
-var seeds_achievement_bonuses_percent =   [0.1, 0.3, 0.5,    1,    2,    3,   5,    10,   20,   30,   50,  100,  200,  300,  400,  500, 1000, 2000, 3000, 5000,  7000, 10000, 20000, 25000, 30000, 40000, 50000, 60000, 70000, 80000];
-for(var i = 0; i < seeds_achievement_values.length; i++) {
-  // have a good spread of this medal, more than exponential growth for its requirement
-  var num = Num(seeds_achievement_values[i]);
-  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
-  var s0 = num.toString(3, Num.N_LATIN);
-  var s1 = num.toString(3, Num.N_SCI);
-  var name = full + ' seeds';
-  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
-      bind(function(num) { return state.res.seeds.gt(num); }, num),
-      Num(seeds_achievement_bonuses_percent[i]).mulr(0.01));
-  if(i > 0) medals[id].hint = prevmedal;
-  prevmedal = id;
-}
+// 4-38 used to be seeds achievements, but those moved to id 6000
 
 
 medal_register_id = 39;
@@ -10517,7 +10533,48 @@ registerMedal('Icy tower', 'Reach level 70 during tower defense in winter', imag
   return state.challenge == challenge_towerdefense && state.treelevel >= 70 && getSeason() == 3;
 }, Num(1));
 
+function seedsToMedalBonus(seeds) {
+  var l = Num.log2(seeds);
+  // tuned to be a bit like before the seeds achievements had a formula but were manual,
+  // but as of nov 2024 they now use this formula since much more medals were added
+  return l.mulr(0.0005).powr(1.25).add(l.mulr(0.005).powr(3)).add(l.mulr(0.007).powr(5.3));
+}
 
+// was: 4; the seed achievements were moved to 6000 to give room for much more of them
+medal_register_id = 6000;
+var seeds_achievement_values = [
+  1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e36, 1e42, 1e48, 1e54, 1e60, 1e66, 1e72, 1e78, 1e84, 1e90,
+  1e96, 1e102, 1e108, 1e114, 1e120, 1e126, 1e132, 1e138, 1e144, 1e150, 1e156, 1e162, 1e168, 1e174, 1e180, 1e186, 1e192, 1e198,
+  1e204, 1e210, 1e216, 1e222, 1e228, 1e234, 1e240, 1e246, 1e252, 1e258, 1e266, 1e272, 1e278, 1e284, 1e290, 1e296, 1e302, 1e308,
+  Num.parse('1e314')
+];
+var seedmedal_index0 = medal_register_id;
+for(var i = 0; i < seeds_achievement_values.length; i++) {
+  // have a good spread of this medal, more than exponential growth for its requirement
+  var num = Num(seeds_achievement_values[i]);
+  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  var s0 = num.toString(3, Num.N_LATIN);
+  var s1 = num.toString(3, Num.N_SCI);
+  var name = full + ' seeds';
+  var bonus = Num.roundToNearestHumanNumber(seedsToMedalBonus(num));
+  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
+      bind(function(num) {
+        return state.res.seeds.gt(num);
+      }, num), bonus);
+  if(i > 0) medals[id].hint = prevmedal;
+  prevmedal = id;
+}
+var seedmedal_index1 = medal_register_id;
+changeMedalsDisplayOrder(seedmedal_index0, seedmedal_index1, 3);
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 // only returns useful result if there is currenlty no infspawn

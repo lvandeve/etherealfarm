@@ -30,6 +30,12 @@ function getChangeLog() {
     }
   }
 
+  text += '0.14.3 (2024-11-23)';
+  text += '<br/>• Added two new ethereal crops (for levels 25 and 27).';
+  text += '<br/>• Added more seeds achievements.';
+  text += '<br/>• Fixed bug where ethereal tree counted as special neighbor when not yet giving boost.';
+  text += '<br/><br/>';
+
   text += '0.14.2 (2024-10-19)';
   text += '<br/>• Added 4 more diamond infinity crops and 3 more fishes.';
   text += '<br/>• Infinity symbol resin now goes immediately to the main resin pool rather than upcoming resin.';

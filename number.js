@@ -706,6 +706,25 @@ Num.get125 = function(i) {
   return mul.mulr(b);
 };
 
+
+// for turning formula-based medal bonuses into more human looking ones: based on 10, 15, 20, 25, 35, 50, 75, 100.
+// similar to 1-2-5 above but a bit more options like 35
+Num.roundToNearestHumanNumber = function(v) {
+  var l = Num.log10(v).valueOf();
+  var f = Math.floor(l);
+  var r = l - f;
+  var result = Num.rpowr(10, f);
+  // log10(8.75) is 0.942, border between 75% and 100%. Etc...
+  if(r > 0.942) result.mulrInPlace(10);
+  else if(r > 0.796) result.mulrInPlace(7.5);
+  else if(r > 0.629) result.mulrInPlace(5);
+  else if(r > 0.477) result.mulrInPlace(3.5);
+  else if(r > 0.352) result.mulrInPlace(2.5);
+  else if(r > 0.243) result.mulrInPlace(2);
+  else if(r > 0.097) result.mulrInPlace(1.5);
+  return result;
+}
+
 /*
 rounds the base value to 6 bits of precision or to integer
 the goal of this is the following:
@@ -1143,11 +1162,16 @@ Num.smallValueNotation = function(v, precision) {
 
   // The correction added ensures that e.g. 201.6 with precision 3 will show up as 202, not 201 (correct rounding of the digits)
   var l = Math.floor(Math.log10(v));
-  if(l < precision) v += (Math.pow(0.1, precision - l)) * 4.999; // 4.999 instead of 5, otherwise 0.1 gets rendered as 0.101
+  if(l < precision) {
+    v += (Math.pow(0.1, precision - l)) * 4.999; // 4.999 instead of 5, otherwise 0.1 gets rendered as 0.101
+  } else {
+    // this one is e.g. to make 1000.6 at precision 3 become 1001. This is ignoring the precision since that's 4 digits (one of the things smallValueNotation specifically does), hence the different formula
+    v += 0.4999;
+  }
+
 
   var result;
   if(v < 1 && precision > 0 && precision < 100) { // the 1-100 range is to prevent JS throwing range error for toPrecision
-    // the reason for using toFixed is to benefit from its correct rounding, since the trimming code below just trims things without rounding up when needed
     result = v.toPrecision(precision);
   } else {
     result = v.toString();
