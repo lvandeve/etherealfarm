@@ -30,6 +30,17 @@ function getChangeLog() {
     }
   }
 
+  text += '0.15.0 (202?-??-??)';
+  text += '<br/>• Added infinity ascenscion.';
+  text += '<br/>• Rebalanced a few late things of pre-ascenscion infinity which move the main weight of having high basic field a bit earlier to be not at its best too close to ascending:';
+  text += '<br/>&nbsp;&nbsp;◦ Increased infinity diamond tier basic field bonus of flower and beehive, but decreased that of later crops';
+  text += '<br/>&nbsp;&nbsp;◦ Made the black oranda much cheaper, but limited it to max one black oranda and max 4 of any oranda type';
+  text += '<br/>• Added "From file" option to the import save dialog.';
+  text += '<br/>• Various restrictions related to maximum counts of a fish type are now shown in their placing tooltips.';
+  text += '<br/>• When having multiple tier 1 shrimp, and upgrading one to tier 2, all other tier 1\'s will be automatically deleted instead of showing an error message stating that they must be deleted first.';
+  text += '<br/>• Rescaled the buttons in the place fish dialog depending on screen size to avoid text wrapping issues.';
+  text += '<br/><br/>';
+
   text += '0.14.3 (2024-11-23)';
   text += '<br/>• Added two new ethereal crops (for levels 25 and 27).';
   text += '<br/>• Added more seeds achievements.';

@@ -635,6 +635,11 @@ function State() {
   this.fruitspores_total = Num(0); // not saved, computed during update() as a more-frequently-updated version of c_res.spores due to intermediate computations involving resinfruitspores and twigsfruitspores before the final c_res update
 
   this.infinitystarttime = 0; // when the infinity field was started
+  this.infinityascendtime = 0; // when the infinity field was ascended
+  this.infinity_ascend = 0; // whether the infinity field was ascended
+  // infseeds and infspores resources since last infinity transcension (or since beginning of the very first pre-ascension infinity run)
+  // this works similar to state.g_res, but only for inf-related resources, and gets reset to 0 upon infinity ascension
+  this.infinity_res = new Res();
 
   this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively. Used for the computation of the weighted time at level bonus (weightedTimeAtLevel)
 
@@ -968,7 +973,8 @@ function State() {
   this.g_numfullgrown3 = 0;
   this.g_numwither3 = 0;
   this.g_numamberkeeprefunds = 0;
-  this.g_max_infinityboost = Num(0); // max boost to basic field ever seen from infinity field
+  this.g_max_infinityboost = Num(0); // max boost to basic field ever seen from infinity field, during the current ascenscion only
+  this.g_max_infinityboost2 = Num(0); // max boost to basic field ever seen from infinity field, including pre-ascension
   this.g_fruits_recovered = 0;
   this.g_numplanted_fish = 0;
   this.g_numunplanted_fish = 0;
@@ -1468,9 +1474,12 @@ function clearField3(state) {
       state.field3[y][x] = new Cell(x, y, 3);
     }
   }
-  var pondx3 = Math.floor((state.numw3 - 1) / 2); // for even field size, pond will be shifted to the left, not the right.
+  var pondx3 = Math.floor(state.numw3 / 2);
   var pondy3 = Math.floor(state.numh3 / 2);
   state.field3[pondx3][pondy3].index = FIELD_POND;
+  if(!(state.numw3 & 1)) state.field3[pondx3 - 1][pondy3].index = FIELD_POND;
+  if(!(state.numh3 & 1)) state.field3[pondx3][pondy3 - 1].index = FIELD_POND;
+  if(!(state.numw3 & 1) && !(state.numh3 & 1)) state.field3[pondx3 - 1][pondy3 - 1].index = FIELD_POND;
 }
 
 function clearPond(state) {
@@ -2928,7 +2937,13 @@ function amberUnlocked() {
 // whether the fishes feature is unlocked (once having infinity spores)
 function haveFishes(opt_state) {
   if(!opt_state) opt_state = state;
-  return opt_state.g_res.infspores.neqr(0);
+  if(state.infinity_ascend == 0) {
+    return opt_state.g_res.infspores.neqr(0);
+  } else {
+    // since g_res still contains inf spores from prev run, use a different check after ascend
+    // before ascend has different set of mushrooms so do the simpler g_res check there
+    return opt_state.crops3[mush3_t].had || opt_state.res.infspores.neqr(0);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

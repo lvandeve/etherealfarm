@@ -963,6 +963,7 @@ var ACTION_REPLACE_FISH = action_index++;
 var ACTION_STORE_UNDO_BEFORE_AUTO_ACTION = action_index++; // saves undo and disables (marks as triggered without doing anything) the indicated auto-action, used by automaton when it does auto-action, to allow undoing it. (any action caused by automaton is marked with by_automaton and not stored for undo, but the ACTION_STORE_UNDO_BEFORE_AUTO_ACTION is an exception and is saved, to allow the player to undo an unwanted/unexpected auto-action, and auto-transcends)
 var ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION = action_index++; // used to not store undo before the second part of auto-actions, used when this one is triggered by the player (so actions don't have by_automaton marked)
 var ACTION_TD_GO = action_index++;
+var ACTION_INFINITY_ASCEND = action_index++;
 
 var lastSaveTime = util.getTime();
 
@@ -2559,8 +2560,13 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_0].had) unlockInfinityCrop(brassica3_1);
   if(state.crops3[brassica3_1].had) unlockInfinityCrop(berry3_1);
   if(state.crops3[berry3_1].had) unlockInfinityCrop(flower3_1);
+  if(state.infinity_ascend && state.crops3[brassica3_0].had) {
+    unlockInfinityCrop(mush3_t);
+  }
 
-  if(state.crops3[berry3_1].had) unlockInfinityCrop(brassica3_2);
+  if(state.crops3[berry3_1].had && (!state.infinity_ascend || (state.infinity_ascend && state.crops3[mush3_t].had))) {
+    unlockInfinityCrop(brassica3_2);
+  }
   if(state.crops3[brassica3_2].had) unlockInfinityCrop(berry3_2);
   if(state.crops3[berry3_2].had) unlockInfinityCrop(flower3_2);
   if(state.crops3[berry3_2].had) unlockInfinityCrop(runestone3_0);
@@ -2571,40 +2577,40 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_3].had) unlockInfinityCrop(flower3_3);
   if(state.crops3[flower3_3].had) unlockInfinityCrop(bee3_3);
 
-  if(state.crops3[flower3_3].had) unlockInfinityCrop(brassica3_4);
+  if(state.crops3[bee3_3].had) unlockInfinityCrop(brassica3_4);
   if(state.crops3[brassica3_4].had) unlockInfinityCrop(berry3_4);
   if(state.crops3[berry3_4].had) unlockInfinityCrop(flower3_4);
   if(state.crops3[berry3_4].had) unlockInfinityCrop(mush3_4);
   if(state.crops3[flower3_4].had) unlockInfinityCrop(bee3_4);
 
-  if(state.crops3[flower3_4].had) unlockInfinityCrop(brassica3_5);
+  if(state.crops3[bee3_4].had) unlockInfinityCrop(brassica3_5);
   if(state.crops3[brassica3_5].had) unlockInfinityCrop(berry3_5);
   if(state.crops3[berry3_5].had) unlockInfinityCrop(flower3_5);
   if(state.crops3[berry3_5].had) unlockInfinityCrop(mush3_5);
   if(state.crops3[flower3_5].had) unlockInfinityCrop(bee3_5);
 
-  if(state.crops3[flower3_5].had) unlockInfinityCrop(brassica3_6);
+  if(state.crops3[bee3_5].had) unlockInfinityCrop(brassica3_6);
   if(state.crops3[brassica3_6].had) unlockInfinityCrop(berry3_6);
   if(state.crops3[berry3_6].had) unlockInfinityCrop(flower3_6);
   if(state.crops3[berry3_6].had) unlockInfinityCrop(mush3_6);
   if(state.crops3[flower3_6].had) unlockInfinityCrop(bee3_6);
   if(state.crops3[mush3_6].had) unlockInfinityCrop(stinging3_6);
 
-  if(state.crops3[flower3_6].had) unlockInfinityCrop(brassica3_7);
+  if(state.crops3[bee3_6].had) unlockInfinityCrop(brassica3_7);
   if(state.crops3[brassica3_7].had) unlockInfinityCrop(berry3_7);
   if(state.crops3[berry3_7].had) unlockInfinityCrop(flower3_7);
   if(state.crops3[berry3_7].had) unlockInfinityCrop(mush3_7);
   if(state.crops3[flower3_7].had) unlockInfinityCrop(bee3_7);
   if(state.crops3[flower3_7].had) unlockInfinityCrop(fern3_7);
-  if(state.crops3[mush3_7].had && state.crops3[stinging3_6].had) unlockInfinityCrop(stinging3_7);
+  if(state.crops3[mush3_7].had) unlockInfinityCrop(stinging3_7);
 
-  if(state.crops3[bee3_7].had) unlockInfinityCrop(brassica3_8);
+  if(state.crops3[fern3_7].had) unlockInfinityCrop(brassica3_8);
   if(state.crops3[brassica3_8].had) unlockInfinityCrop(berry3_8);
   if(state.crops3[berry3_8].had) unlockInfinityCrop(flower3_8);
   if(state.crops3[berry3_8].had) unlockInfinityCrop(mush3_8);
   if(state.crops3[flower3_8].had) unlockInfinityCrop(bee3_8);
   if(state.crops3[flower3_8].had) unlockInfinityCrop(fern3_8);
-  if(state.crops3[mush3_8].had && state.crops3[stinging3_7].had) unlockInfinityCrop(stinging3_8);
+  if(state.crops3[mush3_8].had) unlockInfinityCrop(stinging3_8);
   if(state.crops3[fern3_8].had) unlockInfinityCrop(nut3_8);
 
   if(state.crops3[nut3_8].had) unlockInfinityCrop(brassica3_9);
@@ -2613,7 +2619,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[berry3_9].had) unlockInfinityCrop(mush3_9);
   if(state.crops3[flower3_9].had) unlockInfinityCrop(bee3_9);
   if(state.crops3[flower3_9].had) unlockInfinityCrop(fern3_9);
-  if(state.crops3[mush3_9].had && state.crops3[stinging3_8].had) unlockInfinityCrop(stinging3_9);
+  if(state.crops3[mush3_9].had) unlockInfinityCrop(stinging3_9);
   if(state.crops3[fern3_9].had) unlockInfinityCrop(nut3_9);
   if(state.crops3[nut3_9].had) unlockInfinityCrop(lotus3_9);
 
@@ -2621,7 +2627,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[brassica3_10].had) unlockInfinityCrop(berry3_10);
   if(state.crops3[berry3_10].had) unlockInfinityCrop(mush3_10);
   if(state.crops3[berry3_10].had) unlockInfinityCrop(flower3_10);
-  if(state.crops3[mush3_10].had && state.crops3[stinging3_9].had) unlockInfinityCrop(stinging3_10);
+  if(state.crops3[mush3_10].had) unlockInfinityCrop(stinging3_10);
   if(state.crops3[flower3_10].had) unlockInfinityCrop(bee3_10);
   if(state.crops3[flower3_10].had) unlockInfinityCrop(fern3_10);
   if(state.crops3[fern3_10].had) unlockInfinityCrop(nut3_10);
@@ -2631,19 +2637,27 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[brassica3_11].had) unlockInfinityCrop(berry3_11);
   if(state.crops3[berry3_11].had) unlockInfinityCrop(mush3_11);
   if(state.crops3[berry3_11].had) unlockInfinityCrop(flower3_11);
-  if(state.crops3[mush3_11].had && state.crops3[stinging3_10].had) unlockInfinityCrop(stinging3_11);
+  if(state.crops3[mush3_11].had) unlockInfinityCrop(stinging3_11);
   if(state.crops3[flower3_11].had) unlockInfinityCrop(bee3_11);
   if(state.crops3[flower3_11].had) unlockInfinityCrop(fern3_11);
   if(state.crops3[fern3_11].had) unlockInfinityCrop(nut3_11);
   if(state.crops3[nut3_11].had) unlockInfinityCrop(lotus3_11);
+  if(state.crops3[brassica3_11].had) unlockInfinityCrop(mistletoe3_11);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
 function maybeUnlockFishes() {
   var first_fish_unlocked = state.fishes[goldfish_0].unlocked;
-  unlockFish(goldfish_0);
-  unlockFish(koi_0);
-  unlockFish(octopus_0);
+  if(state.infinity_ascend) {
+    unlockFish(eel_t);
+    unlockFish(tang_t);
+    if(state.fishes[tang_t].had) unlockFish(jellyfish_t);
+  }
+  if(!state.infinity_ascend || (state.infinity_ascend && state.crops3[mush3_4].had)) {
+    unlockFish(goldfish_0);
+    unlockFish(koi_0);
+    unlockFish(octopus_0);
+  }
   if(state.fishes[octopus_0].had) unlockFish(shrimp_0);
   if(state.fishes[shrimp_0].had) unlockFish(anemone_0);
   if(state.fishes[anemone_0].had) unlockFish(puffer_0);
@@ -5014,7 +5028,6 @@ var update = function(opt_ignorePause) {
               var c2 = f2.getRealCrop();
             }
           }
-          computeDerived(state); // correctly update derived stats based on changed field state
 
           if(!action.silent) {
             var nextcost = c.getCost(1);
@@ -5024,6 +5037,7 @@ var update = function(opt_ignorePause) {
             showMessage(verb + ' infinity ' + c.name + (finalcost.infseeds.ltr(0) ? ('. Got back: ' + finalcost.neg().toString()) : ('. Consumed: ' + finalcost.toString())) + '. Next costs: ' + nextcost.toString() + ' (' + getCostAffordTimer(nextcost, computeField3Income()) + ')');
           }
 
+          computeDerived(state); // correctly update derived stats based on changed field state
           store_undo = true;
         }
       } else if(type == ACTION_PLANT_FISH || type == ACTION_DELETE_FISH || type == ACTION_REPLACE_FISH) {
@@ -5060,6 +5074,7 @@ var update = function(opt_ignorePause) {
         }
 
         if(ok && (type == ACTION_PLANT_FISH || type == ACTION_REPLACE_FISH)) {
+          var limit_reason = [];
           var c = action.fish;
           var cost = c.getCost();
           if(type == ACTION_REPLACE_FISH && f.hasCrop()) cost = cost.sub(recoup);
@@ -5075,24 +5090,13 @@ var update = function(opt_ignorePause) {
               showMessage(shiftClickPlantUnset, C_INVALID, 0, 0);
             }
             ok = false;
-          } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && state.fishcount[c.index]) {
-            // TODO: consider also reducing this to max 1 for tier 0
-            showMessage('Can have only max 1 of this fish', C_INVALID, 0, 0);
-            ok = false;
-          } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG) && state.fishtypecount[c.type] >= 4 && !(f.hasCrop() && f.getCrop().type == c.type)) {
-            showMessage('Can have only max 4 of this fish type', C_INVALID, 0, 0);
-            ok = false;
-          } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishtypecount[c.type] >= 9 && !(f.hasCrop() && f.getCrop().type == c.type)) {
-            showMessage('Can have only max 9 of this fish type', C_INVALID, 0, 0);
+          } else if(!canPlaceThisFishGivenCounts(c, f, undefined, limit_reason)) {
+            showMessage(limit_reason[0], C_INVALID, 0, 0);
             ok = false;
           } else if(state.res.lt(cost)) {
+            // The cost check is done after the canPlaceThisFishGivenCounts check: ensure the player knows well about the limitations before saving up for it
             showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
                         ', need: ' + cost.toString(Math.max(5, Num.precision)) + ' (' + getCostAffordTimer(cost) + ')', C_INVALID, 0, 0);
-            ok = false;
-          } else if(c.type == FISHTYPE_SHRIMP && state.fishtypecount[c.type] > 0 && state.fishcount[c.index] == 0 && !(f.hasCrop() && f.getCrop().type == c.type && state.fishtypecount[c.type] == 1)) {
-            // this is checking that you don't have a fish of this same type, but of a different tier (by checking fishtype count is non-zero but fish count of the current one is zero), but do allow this when you have exactly one fish of this tier and are replacing it with the same type (even if of a different tier)
-            // this check is done after the 'enough resources' check so that it wouldn't show a message to remove all fishes of the type to place this one only to then find out not having enough resources
-            showMessage('Cannot have multiple tiers of shrimp at the same time. Remove all other shrimp, then try to place this tier again', C_INVALID, 0, 0);
             ok = false;
           }
         }
@@ -5552,6 +5556,10 @@ var update = function(opt_ignorePause) {
         if(state.towerdef.gameover) {
           showMessage('Can\'t spawn any more waves, it\'s game over', C_TD, 1250454032);
         }
+      } else if(type == ACTION_INFINITY_ASCEND) {
+        ascendInfinity();
+        computeDerived(state); // prevent currently produced infinity seeds, infinityboost, ... leaking through
+        store_undo = true;
       } else if(type == ACTION_TRANSCEND) {
         var ok = true;
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
@@ -5779,8 +5787,9 @@ var update = function(opt_ignorePause) {
     }
 
     if(haveInfinityField()) {
-      if(state.res.infseeds.ltr(10.0000000001) && haveInfinityField() && state.numcropfields3 == 0) {
-        actualgain.addInPlace(Res({infseeds:(10.0000000001 - state.res.infseeds)}));
+      var min_infseeds = state.infinity_ascend ? 15000.00001 : 10.0000000001;
+      if(state.res.infseeds.ltr(min_infseeds) && haveInfinityField() && state.numcropfields3 == 0) {
+        actualgain.addInPlace(Res({infseeds:(min_infseeds - state.res.infseeds)}));
       }
       // Production of infinity field (already precomputed)
       gain.addInPlace(state.infprod);
@@ -6306,6 +6315,7 @@ var update = function(opt_ignorePause) {
       maybeUnlockInfinityCrops();
       if(haveFishes()) maybeUnlockFishes();
       if(state.infinityboost.gt(state.g_max_infinityboost)) state.g_max_infinityboost = state.infinityboost.clone();
+      if(state.infinityboost.gt(state.g_max_infinityboost2)) state.g_max_infinityboost2 = state.infinityboost.clone();
     }
 
     // ethereal mistletoe
@@ -6502,6 +6512,8 @@ var update = function(opt_ignorePause) {
 
     state.g_res.addInPlace(actualgain);
     state.c_res.addInPlace(actualgain);
+    state.infinity_res.infseeds.addInPlace(actualgain.infseeds);
+    state.infinity_res.infspores.addInPlace(actualgain.infspores);
     state.g_max_res = Res.max(state.g_max_res, state.res);
     state.c_max_res = Res.max(state.c_max_res, state.res);
     state.g_max_prod = Res.max(state.g_max_prod, gain);

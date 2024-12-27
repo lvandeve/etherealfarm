@@ -27,6 +27,7 @@ var importfailedmessage = 'Invalid savegame';
 var importedmessage = 'imported save';
 var loadlocalstoragefailedmessage = 'Loading failed. Copy the saves in the dialog for recovery, or else you may lose it forever. If the dialog got closed, refresh to see it again, or copypaste the saves printed above instead, they are the same recovery saves, make sure to copy all (it is scrolled up and to the right).';
 var loadfailreason_toosmall = 'Loading fail reason: the string is too short to be a savegame';
+var loadfailreason_toolarge = 'Loading fail reason: the string is too large to be a savegame';
 var loadfailreason_notbase64 = 'Loading fail reason: not base64';
 var loadfailreason_signature = 'Loading fail reason: invalid signature';
 var loadfailreason_checksum = 'Loading fail reason: checksum mismatch';

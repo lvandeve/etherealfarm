@@ -127,8 +127,8 @@ function computeField3InfinitySeeds() {
 
 // computes how many infinity spores currently spent in the infinity pond, what you'd get back from all recoups
 function computePondInfinitySpores() {
-  // for now the below computation is not needed: spores are always fully refunded when deleting fishes so far so g_res works to keep track
-  return state.g_res.infspores.sub(state.res.infspores);
+  // for now the below computation is not needed: spores are always fully refunded when deleting fishes so far so infinity_res works to keep track
+  return state.infinity_res.infspores.sub(state.res.infspores);
 
   /*var total = Num(0);
   var o = {};

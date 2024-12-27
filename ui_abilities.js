@@ -556,9 +556,9 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
   var cropindex2 = brassica3_0; // even lower tier, if relevant
   if(cropindex1 > brassica3_0) cropindex2 = cropindex1 - 1;
   var seeds_available = Num(state.res.infseeds);
-  var cresscost = crops3[cropindex].cost.infseeds;
-  var cresscost1 = crops3[cropindex1].cost.infseeds;
-  var cresscost2 = crops3[cropindex2].cost.infseeds;
+  var cresscost = crops3[cropindex].getBaseCost().infseeds;
+  var cresscost1 = crops3[cropindex1].getBaseCost().infseeds;
+  var cresscost2 = crops3[cropindex2].getBaseCost().infseeds;
   var numplanted = 0;
   var numdeleted = 0;
 

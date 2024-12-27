@@ -113,8 +113,26 @@ function updatePondDialogText() {
   text += 'Total boost from infinity crops to basic field: ' + state.expected_infinityboost.toPercentString();
   if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (time-weighted (⏳): ' + state.infinityboost.toPercentString() + ')';
   text += '. Max ever had: ' + state.g_max_infinityboost.toPercentString();
-  if(!state.expected_infinityboost.neq(state.infinityboost) && someInfinityEffectIsTimeWeighted(1)) {
-    text += '. Some fish effects are currently time-weighted (⏳) due to recently changing the fishes';
+
+  var resinbonus = getFishMultiplier(FISHTYPE_TANG, state, 3).subr(1);
+  var twigsbonus = getFishMultiplier(FISHTYPE_EEL, state, 3).subr(1);
+  var fishweighted = someInfinityEffectIsTimeWeighted(1);
+  if(resinbonus.neqr(0) || twigsbonus.neqr(0) || fishweighted) {
+    text += '<br>';
+    var dot = false;
+    if(resinbonus.neqr(0)) {
+      text += 'Total resin bonus: ' + resinbonus.toPercentString();
+      dot = true;
+    }
+    if(twigsbonus.neqr(0)) {
+      if(dot) text += '. ';
+      text += 'Total twigs bonus: ' + twigsbonus.toPercentString();
+      dot = true;
+    }
+    if(fishweighted) {
+      if(dot) text += '. ';
+      text += 'Some fish effects are currently time-weighted (⏳) due to recently changing the fishes';
+    }
   }
 
   if(!haveFishes()) {
@@ -236,6 +254,27 @@ function makeUpgradeFishAction(x, y, single, opt_silent) {
   var too_expensive = [undefined];
   var c3 = getUpgradeFish(x, y, single, too_expensive);
 
+  // the shrimp situation is very complicated and probably too unclear for players the way it's represented, and hard to represent better
+  // the rules for shrimp are:
+  // you can have max 9 tier 0 shrimps
+  // you can have max 1 tier 1 shrimp
+  // you cannot have more than 2 tiers of shrimp at the same time
+  // if the player now has multiple tier 0 shrimps, and wants to use the "upgrade tier" button to upgrade one to tier 1, it will give an error that you can't mix w tiers
+  // so, to solve that: instead auto-delete all the other tier 0 shrimps
+  if(c3 && !too_expensive[1] && c3.index == shrimp_1 && state.fishcount[shrimp_0] > 1) {
+    for(var y2 = 0; y2 < state.pondh; y2++) {
+      for(var x2 = 0; x2 < state.pondw; x2++) {
+        if(x2 == x && y2 == y) continue;
+        var f2 = state.pond[y2][x2];
+        if(f2.hasCrop() && f2.getCrop().index == shrimp_0) {
+          addAction({type:ACTION_DELETE_FISH, x:x2, y:y2});
+        }
+      }
+    }
+    showMessage('Deleted other tier 0 shrimps as well since max 1 tier can be combined');
+  }
+
+
   if(c3 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE_FISH, x:x, y:y, fish:c3, shiftPlanted:true});
     return true;
@@ -281,6 +320,7 @@ function makePond3Dialog() {
     title:'Infinity pond',
     bgstyle:'efDialogTranslucent',
     icon:image_pond,
+    size:DIALOG_LARGE,
     closeFun:function() {
       pondDialogFlex = undefined;
       abovePondTextFlex = undefined;
@@ -289,14 +329,15 @@ function makePond3Dialog() {
     help:helpfun
   });
 
-  var textFlex = new Flex(dialog.content, 0, 0, 1, 0.2);
+  var textFlex = new Flex(dialog.content, 0, 0, 1, 0.28);
+  makeScrollable(textFlex);
   abovePondTextFlex = textFlex;
 
   updatePondDialogText();
 
   if(!haveFishes()) return;
 
-  var fieldFlex = new Flex(dialog.content, 0, 0.25, 1, 0.99);
+  var fieldFlex = new Flex(dialog.content, 0, 0.29, 1, 0.999);
 
   //fieldFlex.div.style.border = '1px solid red';
 
@@ -327,6 +368,15 @@ function makePond3Dialog() {
 function getFishInfoHTML(f, c, opt_detailed) {
   var result = upper(c.name);
 
+  result += '<br><br>';
+  result += 'Fish type: ' + getFishTypeName(c.type);
+  if(c.tier == -1) {
+    result += ' (tier: translucent)';
+  } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
+    result += ' (tier ' + (c.tier + 1) + ')';
+  }
+  result += '<br>';
+
   var upgrade_cost = [undefined];
   var upgrade_fish = getUpgradeFish(f.x, f.y, false, upgrade_cost);
 
@@ -342,9 +392,20 @@ function getFishInfoHTML(f, c, opt_detailed) {
     if(total.neq(current)) result += '<br>Current (time weighted due to recently placing fishes): ' + current.subr(1).toPercentString();
   }
 
+
+  var limit_reason = [];
+  // do NOT pass the field 'f' to canPlaceThisFishGivenCounts here, since the tooltip applies to 'any' next cost, not the cost for this particular one.
+  // that is: given the rule that you can have max 4 eels overall, if you have 1 white eel, 1 red eel and 2 blue eels: the tooltip here must say "N/A", it must
+  // NOT say that it's ok to plant the next one, which would happen when passing the field 'f' variable since it then assumes the next eel well _replace_ this one
+  var canplace = canPlaceThisFishGivenCounts(c, undefined, limit_reason, undefined);
+
   result += '<br>';
   result += '<br/>• Base cost: ' + c.cost.toString();
-  result += '<br/>• Next placing cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
+  if(canplace) {
+    result += '<br/>• Next placing cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
+  } else {
+    result += '<br/>• Next costs: N/A: ' + limit_reason[0];
+  }
   result += '<br/>• Recoup on delete (d): ' + c.getRecoup().toString();
   if(upgrade_fish && upgrade_cost[0]) {
     var tier_diff = upgrade_fish.tier - c.tier;
@@ -423,7 +484,7 @@ function makePondDialog(x, y, opt_override_mistletoe) {
     button.textEl.innerText = 'Replace fish';
     registerTooltip(button, 'Replace the fish with another one you choose, same as delete then place. Shows the list of unlocked fishes.');
     addButtonAction(button, function() {
-      makePlantFishDialog(x, y, true, c.getRecoup());
+      makePlantFishDialog(x, y, f, true, c.getRecoup());
     });
 
     button = button3;
@@ -610,11 +671,15 @@ function initPondUI(flex) {
 }
 
 function updatePondCellUI(x, y) {
+  // out of range: can happen if pond size increased from infinity ascention and assets from the previous time the pond dialog was shown are still active.
+  // just return, when actually opening the dialog again the UI will be correctly reset
+  if(y >= pondDivs.length || x >= pondDivs[y].length) return;
+
   var f = state.pond[y][x];
   var fd = pondDivs[y][x];
   var c = fishes[f.cropIndex()];
 
-  var largeravailable = c && c.tier >= 0 && state.highestoftypefishunlocked[c.type] > state.highestoftypefishplanted[c.type] && state.res.infspores.gt(fishes[state.highestfishoftypeunlocked[c.type]].cost.infspores);
+  var largeravailable = c && c.tier >= -1 && state.highestoftypefishunlocked[c.type] > state.highestoftypefishplanted[c.type] && state.res.infspores.gt(fishes[state.highestfishoftypeunlocked[c.type]].getBaseCost().infspores);
 
   if(fd.index != f.index || fd.largeravailable != largeravailable) {
     fd.index = f.index;
@@ -622,7 +687,7 @@ function updatePondCellUI(x, y) {
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var field_image = r < 0.25 ? images_pond[0] : (r < 0.5 ? images_pond[1] : (r < 0.75 ? images_pond[2] : images_pond[3]));
-    if(x == (state.pondw >> 1) && y == (state.pondh >> 1)) field_image = images_pond[4];
+    if(x == (state.pondw >> 1) && y == (state.pondh >> 1)) field_image = ((state.pondw & 1) ? images_pond[4] : images_pond[5]);
     renderImage(field_image, fd.canvas);
 
     var label = 'pond tile ' + x + ', ' + y;
@@ -664,16 +729,21 @@ function renderPond() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-function makeFishChip(fish, x, y, w, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_field) {
-  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * w + 0.010, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * w - 0.01, 0.5]);
+function makeFishChip(fish, x, y, numcols, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_field) {
+  // scale things slightly differently depending on if numcols is 2 for narrow/mobile or 3 for wider screens
+  var w = 1 / numcols;
+  var h = (numcols == 2) ? 0.4 : 0.33; // this is not a direct ratio of w
+  var iconsize = (numcols == 2) ? 0.7 : 0.5; // this is not actually 0.7 full units wide
+
+  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * h + 0.010, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * h - 0.01, 0.5]);
   var div = flex.div;
   div.className = 'efEtherealPlantChip';
 
-  var canvasFlex = new Flex(flex, 0, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
+  var canvasFlex = new Flex(flex, 0, [0.5, 0, -iconsize / 2], [0, 0, iconsize], [0.5, 0, iconsize / 2]);
   var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
   renderImage(fish.image, canvas);
 
-  var infoFlex = new Flex(flex, [0, 0, 0.7], 0, 1, [0, 0, 1]);
+  var infoFlex = new Flex(flex, [0, 0, iconsize], 0, 1, [0, 0, 1]);
   var text = '';
   if(opt_replace) {
     text +=  '<b>' + upper(fish.name) + '</b><br>';
@@ -694,7 +764,7 @@ function makeFishChip(fish, x, y, w, parent, opt_plantfun, opt_showfun, opt_tool
     addButtonAction(canvasFlex.div, opt_showfun, upper(fish.name) + ' info');
   }
   if(opt_plantfun) {
-    buyFlex = new Flex(flex, [0, 0, 0.7], [0, 0, 0.0], [1, 0, -0.02], [0, 0, 0.98]);
+    buyFlex = new Flex(flex, [0, 0, 0.5], [0, 0, 0.0], [1, 0, -0.02], [0, 0, 0.98]);
     addButtonAction(buyFlex.div, opt_plantfun, (opt_replace ? 'Replace with ' : 'Place ') + fish.name);
     styleButton0(buyFlex.div);
   }
@@ -772,7 +842,7 @@ function getFishesOrder() {
   return result;
 }
 
-function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
+function makePlantFishDialog(x, y, opt_f, opt_replace, opt_recoup) {
   var num_unlocked = 0;
   for(var i = 0; i < registered_fishes.length; i++) {
     if(state.fishes[registered_fishes[i]].unlocked) num_unlocked++;
@@ -803,6 +873,9 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
 
   var fishes_order = getFishesOrder();
 
+  var ratio = getMainFlexRatio();
+  var numcols = ratio < 0.65 ? 2 : 3; // how many columns to render, less for narrow (mobile) to avoid overflowing text
+
   for(var i = 0; i < fishes_order.length; i++) {
     var index = fishes_order[i];
     var c = fishes[index];
@@ -811,24 +884,35 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
       var result = '';
       var c = fishes[index];
 
-      result += 'Fish type: ' + getFishTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '');
+      result += 'Fish type: ' + getFishTypeName(c.type);
+      if(c.tier == -1) {
+        result += ' (tier: translucent)';
+      } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
+        result += ' (tier ' + (c.tier + 1) + ')';
+      }
+      result += '<br>';
 
       if(c.effect_description) {
-        result += '.<br>' + c.effect_description;
+        result += '<br>' + c.effect_description;
       }
       if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
 
+      var basecost = c.getBaseCost();
       var cost = c.getCost();
+      var limit_reason = [];
+      var canplace = canPlaceThisFishGivenCounts(c, opt_replace ? opt_f : undefined, limit_reason, undefined);
 
-      if(opt_replace) {
+      result += '<br><br>Base cost: ' + basecost.toString();
+      if(!canplace) {
+        result += '<br>Next costs: N/A: ' + limit_reason[0];
+      } else if(opt_replace) {
         var replacementcost = cost.sub(opt_recoup);
-        result += '<br><br>Cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+        result += '<br>Next costs: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
         result += '<br>Replacement cost: ' + replacementcost.toString() + ' (' + getCostAffordTimer(replacementcost) + ')';
       } else {
-        result += '<br><br>Placing cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
+        result += '<br>Next placing cost: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
       }
 
-      result += '.';
       return result;
     }, index);
 
@@ -857,9 +941,9 @@ function makePlantFishDialog(x, y, opt_replace, opt_recoup) {
       dialog.content.div.innerHTML = text;
     }, tooltipfun, plantfun, c);
 
-    var chip = makeFishChip(c, tx, ty, 0.33, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.pond[y][x]);
+    var chip = makeFishChip(c, tx, ty, numcols, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.pond[y][x]);
     tx++;
-    if(tx >= 3) {
+    if(tx >= numcols) {
       tx = 0;
       ty++;
     }

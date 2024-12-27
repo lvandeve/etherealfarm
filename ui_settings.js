@@ -857,6 +857,9 @@ function createStatsDialog() {
     if(state.g_num_infspawns > 0) {
       text += '• infinity symbols taken: ' + open + state.g_num_infspawns + close + '<br>';
     }
+    if(state.infinity_ascend) {
+      text += '• infinity resources gained since ascend: ' + open + state.infinity_res.toString() + close + '<br>';
+    }
     text += '<br>';
   }
 
@@ -1150,9 +1153,11 @@ function showExportTextDialog(title, description, text, filename, opt_close_on_c
 }
 
 
-function importSaveFromDialog(shift, ctrl, enc, messageFlex) {
+function loadForImportDialog(shift, ctrl, enc, messageFlex) {
+  if(!enc) return;
   enc = enc.trim();
-  if(enc == '') return;
+  if(!enc) return; // empty string after trim
+
   load(enc, function(state) {
     showMessage(loadedFromLocalImportMessage, C_UNIMPORTANT, 0, 0);
     state.g_numimports++;
@@ -1182,10 +1187,32 @@ function importSaveFromDialog(shift, ctrl, enc, messageFlex) {
     if(state && state.error_reason == 7) message += '\n' + loadfailreason_toonew;
     if(state && state.error_reason == 8) message += '\n' + loadfailreason_tooold;
     if(state && state.error_reason == 9) message += '\n' + loadfailreason_beta;
+    if(state && state.error_reason == 10) message += '\n' + loadfailreason_toolarge;
     messageFlex.div.innerText = message;
     messageFlex.div.style.color = '';
     if(state && state.error_reason) messageFlex.div.style.color = '#f00';
   });
+}
+
+function importSaveFromPasted(shift, ctrl, enc, messageFlex) {
+  loadForImportDialog(shift, ctrl, enc, messageFlex);
+}
+
+function importSaveFromOpenFileDialog(shift, ctrl, enc, messageFlex) {
+  var input = document.createElement("input");
+  input.type = "file";
+  input.multiple = false;
+  input.click();
+
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    var reader = new FileReader();
+    reader.readAsText(file, 'UTF-8');
+    reader.onload = readerEvent => {
+      var enc = readerEvent.target.result;
+      loadForImportDialog(shift, ctrl, enc, messageFlex);
+    }
+  };
 }
 
 
@@ -1239,10 +1266,19 @@ function createSettingsDialog() {
     var w = 500, h = 500;
     var dialog = createDialog({
       size:DIALOG_SMALL,
-      functions: function(shift, ctrl) { importSaveFromDialog(shift, ctrl, area.value, textFlex); return true; },
-      names:'import',
-      names_shift:'import paused',
-      names_ctrl:'import unpaused',
+      functions: [
+        function(shift, ctrl) {
+          importSaveFromOpenFileDialog(shift, ctrl, area.value, textFlex);
+          return true;
+        },
+        function(shift, ctrl) {
+          importSaveFromPasted(shift, ctrl, area.value, textFlex);
+          return true;
+        }
+      ],
+      names:['from file...', 'import'],
+      names_shift:['from file...', 'import paused'],
+      names_ctrl:['from file...', 'import unpaused'],
       cancelname:'cancel',
       title:'Import savegame'
     });

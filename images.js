@@ -585,12 +585,12 @@ aAaaAaAAaaaaaaaa
 aaaaaAaaaaaaAaaA
 aaaaaaaaaaaAaAAa
 aaaaaaaaaaaaaaaa
-aaaaaaAAaaaaaaaa
-aaaAaAaaAaaaaaaa
-aaaaAaaaaaaAaaaa
-aaaaaaaaaAAaAaAa
-aAAaAaaaaaaaaAaa
-AaaAaaaaaaaaaaaa
+aaaaaaAAaAaaaaaa
+aaaaaaaaAaaaaaaa
+aaAAaaaaaaaAaaaa
+aAaaAaaaaAAaAaAa
+aaaaaAaaaaaaaAaa
+aaaaaaaaaaaaaaaa
 `;
 
 var pond2 = `
@@ -602,8 +602,8 @@ aAaAaaaaaaaaaaaa
 aaaaaaaaaaaaaaaa
 aaaaaaaaaaAaaaaa
 aaaaaaaaaAaAaAaa
-aaAAaAaaaaaaAaaa
-aaaaAaAaaaaaaaaa
+aaaAaAAaaaaaAaaa
+aaaaAaaAaaaaaaaa
 aaaaaaaaaaaaaaaa
 aaaaaaaaaAaaAaaa
 aaaaaaaaAaAAaAaa
@@ -618,8 +618,8 @@ aaaaaaaaaaAAAaAa
 aaaaaaaaaaaaaAaa
 aaaAAaaaaaaaaaaa
 aaAaaAaAaaaaaaaa
-aaaaaaAaaaaaAaAa
-aaaaaaaaaaaAaAaa
+aaaaaaAaaaaaaAaA
+aaaaaaaaaaaaAaAa
 aaaaaaaaaaaaaaaa
 aaaaaaaAaAaaaaaa
 aaaaaaAaAaaaaaaa
@@ -651,12 +651,33 @@ aaaAaAAaaaaaaAaa
 aaaaAaaaaaaaaaaa
 `;
 
+// similar to pond4, but the infinity symbol is in the top left, for even-sized ponds
+var pond5 = `
+aAaAaaaaAAaaAaaa
+AaAaAaaaaaAAaaaa
+aAaAaaaaaaaaaaaa
+aaaaaaaaaaaAaAaa
+aaaaaaaaaaaaAaAa
+aaaaaaaaaaaaaaaa
+aaaaaaaaAaaaaaaa
+aaaaaAaAaAaaaaaa
+aaaaaaAaaaaaaaaa
+aAAaaaaaaaaAAaAa
+aaaAAaaaaaAaaAaa
+aaaaaaaaaaaaaaaa
+aaaaaaaaaaaAaaaa
+aAAaaaaaaaAaAaAa
+aaaAaAAaaaaaaAaa
+aaaaAaaaaaaaaaaa
+`;
+
 var images_pond = [
 generateAndSetupImage(pond0),
 generateAndSetupImage(pond1),
 generateAndSetupImage(pond2),
 generateAndSetupImage(pond3),
 generateAndSetupImage(pond4),
+generateAndSetupImage(pond5),
 ];
 
 

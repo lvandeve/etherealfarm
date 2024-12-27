@@ -195,7 +195,14 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       var c = crops3[index];
       var f = state.field3[y][x];
 
-      result += 'Crop type: ' + getCropTypeName(c.type) + (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
+      result += 'Crop type: Infinity ' + getCropTypeName(c.type);
+      if(c.tier == -1) {
+        result += ' (tier: translucent)';
+      } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
+        result += ' (tier ' + (c.tier + 1) + ')';
+      }
+      result += '<br>';
+
       var help = getCropTypeHelp3(c.type, state);
       if(help) {
         result += help;

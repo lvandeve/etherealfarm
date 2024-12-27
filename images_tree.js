@@ -1074,3 +1074,86 @@ var image_pond = generateAndSetupImage(`
 `);
 
 var image_pond_on_field = setupImage(blendImages(field_infinity[0], image_pond));
+
+
+var image_pond_2x2_00 = generateAndSetupImage(`
+................
+........00000...
+...00000aaaaaa00
+..0aaaaaAaAaaaaa
+.0aaaaaAaAaaaAAa
+.0AaAaaaaaaaAaaA
+.0aAaaaaaAaaaaaa
+.0aaaaAaAaAaaaaa
+.0aaaaaAaaaaaaaa
+.0aaaaaaaaaaaAaa
+..0aAaAaaaaaAaAa
+..0AaAaaAaAaaaaa
+..0aaaaAaAaaaaaa
+...aaaaaaaaaaaaa
+..0aaaaaaaaaaaaA
+..0aaaaaaaaaaaAa
+`);
+
+var image_pond_2x2_01 = generateAndSetupImage(`
+........000.....
+.......0aaa00...
+0000000aAaAaa...
+aaaaaaaAaAaaa0..
+aaaaaaaaaaaaaA..
+aaAaAaaaaaaaAa..
+aAaAaaaaaAaaaa..
+aaaaaaAaAaAaa...
+aaaaaaaAaaaaa0..
+aaaaaaaaaaaaaA..
+aaaAaAaaaaaaAa..
+aaAaAaaaAaAaaa..
+aaaaaaaAaAaaaa..
+aaaaaaaaaaaaaa..
+aAaaaaaaaaaaa...
+AaAaaaaaaaaaa...
+`);
+
+var image_pond_2x2_10 = generateAndSetupImage(`
+..aaaaaaaaaaaaaA
+..aaaaaaaaaaaaaa
+..aaaaaaAaAaaaaa
+.0aaaaaAaAaaaaaa
+0aaaaaaaaaaaaAaa
+0aAaAaaaaaaaAaaa
+0AaAaaaAaaaaaaaa
+0aaaaaAaAaAaaaaa
+.aaaaaaaaAaaaaaa
+.aaaaaaaaaaaaAaa
+0aaAaAaaaaaaAaaa
+0aAaAaaaAaAaaaaa
+.aaaaaaAaAaaaaaa
+.....0aaa.....aa
+......aa........
+................
+`);
+
+var image_pond_2x2_11 = generateAndSetupImage(`
+aAaaaaaaaaaa....
+aaaaaaaaaaaaa...
+aaaaaaaaAaAaa...
+aaaaaaaAaAaaa...
+aaaaaaaaaaaaaA..
+aaAaAaaaaaaaAa..
+aAaAaaaAaaaaaa..
+aaaaaaAaAaAaaa..
+aaaaaaaaaAaaaa..
+aaaaaaaaaaaaaA..
+aaaAaAaaaaaaAa..
+aaAaAaaaAaAaa...
+aaaaaaaAaAaa....
+aaaaaaaaa.......
+.....0aa........
+................
+`);
+
+
+var image_pond_2x2_00_on_field = setupImage(blendImages(field_infinity[0], image_pond_2x2_00));
+var image_pond_2x2_01_on_field = setupImage(blendImages(field_infinity[1], image_pond_2x2_01));
+var image_pond_2x2_10_on_field = setupImage(blendImages(field_infinity[2], image_pond_2x2_10));
+var image_pond_2x2_11_on_field = setupImage(blendImages(field_infinity[0], image_pond_2x2_11));

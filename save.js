@@ -405,6 +405,7 @@ function encState(state, opt_raw_only) {
   processUint(state.g_num_auto_resets);
   processUint(state.g_num_infspawns);
   processRes(state.g_infspawnres);
+  processNum(state.g_max_infinityboost2);
 
 
   section = 11; id = 0; // global run stats
@@ -570,6 +571,9 @@ function encState(state, opt_raw_only) {
   //processFloat2(state.prevtwigsfruitratio);
   //processBool(state.overlevel);
   processBool(state.paused_while_heavy_computing);
+  processTime(state.infinityascendtime);
+  processUint(state.infinity_ascend);
+  processRes(state.infinity_res);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -1141,9 +1145,10 @@ function isFiniteGE0(v) {
 
 function decState(s) {
   var orig = s;
-  if(!isBase64(s)) return err(2);
-  if(s.length < 22) return err(1);  // too small for save version, ticks code and checksum
+  if(s.length < 22) return err(1); // too small for save version, ticks code and checksum
+  if(s.length > 10000000) return err(10); // too large to realistically be a savegame, probably chose wrong file with file dialog, return early to avoid further heavy in-memory loading
   if(s[0] != 'E' || s[1] != 'F') return err(3); // invalid signature "Ethereal Farm"
+  if(!isBase64(s)) return err(2);
 
   // game version at the time of saving
   var save_version;
@@ -1781,6 +1786,7 @@ function decState(s) {
   if(save_version >= 262144*2+64*13+0) state.g_num_auto_resets = processUint();
   if(save_version >= 262144*2+64*14+0) state.g_num_infspawns = processUint();
   if(save_version >= 262144*2+64*14+0) state.g_infspawnres = processRes();
+  if(save_version >= 262144*2+64*15+0) state.g_max_infinityboost2 = processNum();
 
 
   if(error) return err(4);
@@ -1982,6 +1988,15 @@ function decState(s) {
   if(save_version >= 262144*2+64*8+2) state.prevtwigsfruitratio = processFloat2();
   if(save_version >= 262144*2+64*8+2) state.overlevel = processBool();*/
   if(save_version >= 262144*2+64*13+0) state.paused_while_heavy_computing = processBool();
+  if(save_version >= 262144*2+64*15+0) {
+    state.infinityascendtime = processTime();
+    state.infinity_ascend = processUint();
+    state.infinity_res = processRes();
+  } else {
+    state.infinity_res = new Res();
+    state.infinity_res.infseeds = state.g_res.infseeds.clone();
+    state.infinity_res.infspores = state.g_res.infspores.clone();
+  }
   if(error) return err(4);
 
 
@@ -3109,7 +3124,7 @@ function decState(s) {
     if(state.upgrades2[upgrade2_infinity_field].count) {
       var releasetime = 1666655999; // end of the day infinity field was released
       if(state.treelevel2 == 20) state.infinitystarttime = Math.max(releasetime, state.lasttree2leveluptime);
-      else state.infinitystarttime = releasetime; // end of the day infinity field was released
+      else state.infinitystarttime = releasetime;
     }
   }
   if(save_version < 262144*2+64*7+4 && state.amberkeepseason) {
@@ -3152,6 +3167,22 @@ function decState(s) {
     if(state.g_amberbuy[AMBER_KEEP_SEASON]) season_runtime -= state.g_amberbuy[AMBER_KEEP_SEASON] * 3600 * 8; // this is purely a guess; how long the keep seasons actually took is unknown
     state.g_seasons = Math.ceil(season_runtime / (3600*24));
     if(state.g_season_changes_seen + 1 > state.g_seasons) state.g_seasons = state.g_season_changes_seen + 1;
+  }
+
+  if(save_version <= 262144*2+64*14+3 && state.fishes[oranda_2].had) {
+    // black oranda got made significantly cheaper, refund one if someone has one. This assumes nobody has more than 2, which is extremely unlikely (even 1 is unlikely)
+    var refund = Num(0);
+    var num_oranda2 = 0;
+    for(var y = 0; y < state.pondh; y++) {
+      for(var x = 0; x < state.pondw; x++) {
+        if(state.pond[y][x].index == CROPINDEX + oranda_2) {
+          num_oranda2++;
+          if(num_oranda2 == 1) refund.addrInPlace(2e33 - 50e30);
+          else refund.addrInPlace(38e33 - 950e30);
+        }
+      }
+    }
+    if(num_oranda2 > 0) state.res.infspores.addInPlace(refund);
   }
 
   if(error) return err(4);

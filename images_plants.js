@@ -6274,6 +6274,7 @@ function metalify_nonlincolor(v) {
 // *) 10: gamma
 // *) 11: translucent
 // *) 12: increase saturation additively
+// *) 13: translucent except outline
 // opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
 function metalify(im, metalheader, opt_effects, opt_params) {
   var pal = generatePalette(metalheader);
@@ -6414,6 +6415,16 @@ function metalify(im, metalheader, opt_effects, opt_params) {
             g = rgb[1];
             b = rgb[2];
           }
+          if(effect == 13) {
+            if(a == 0) continue;
+            var touching_transparent = false;
+            if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
+            if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
+            if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
+            if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
+            if(touching_transparent) continue;
+            a *= param;
+          }
         }
       }
       r = Math.min(Math.max(0, Math.floor(r)), 255);
@@ -6426,15 +6437,19 @@ function metalify(im, metalheader, opt_effects, opt_params) {
   return [res, w, h];
 }
 
+
+
+function metalifyPlantImage(image, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param) {
+  return setupImage(metalify(image, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param));
+}
+
 function metalifyPlantImages(images, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param) {
   var result = [];
   for(var i = 0; i < images.length; i++) {
-    var im = images[i];
-    result[i] = setupImage(metalify(im, metalheader, opt_effect, opt_effect2, opt_effect3, opt_param));
+    result[i] = metalifyPlantImage(images[i], metalheader, opt_effect, opt_effect2, opt_effect3, opt_param);
   }
   return result;
 }
-
 
 var image_pumpkin_large_blueprintified = setupImage(blueprintifyImage(generateImage(images_pumpkin_base)));
 

@@ -95,7 +95,7 @@ function getCropTypeHelp3(type, opt_state) {
   var have_fishes = !!opt_state && haveFishes(opt_state);
   switch(type) {
     case CROPTYPE_BERRY: return 'Produces infinity seeds. Boosted by flowers.';
-    case CROPTYPE_MUSH: return 'Produces infinity spores. Does not require berry neighbors. Boosted by flower tiers, but not as much as berries are and depends on relative tier difference.';
+    case CROPTYPE_MUSH: return 'Produces infinity spores. Unlocks the pond. Does not require berry neighbors. Boosted by flower tiers, but not as much as berries are and depends on relative tier difference.';
     case CROPTYPE_FLOWER: return have_fishes ? 'Boosts neighboring berries. Also boosts mushrooms but with a smaller boost depending on relative tier.' : 'Boosts neighboring berries.';
     case CROPTYPE_STINGING: return 'Boosts neighboring mushrooms. The boost depends on the tier of the stinging crop relative to the mushroom, and too low tier gives no boost.';
     case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
@@ -707,8 +707,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     // squirrel evolution
     if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
       if(state.squirrel_evolution > 0) {
-        result.mulInPlace(squirrel_epoch_prod_bonus);
-        if(breakdown) breakdown.push(['squirrel evolution', true, squirrel_epoch_prod_bonus, result.clone()]);
+        var mul = squirrel_epoch_prod_bonus.addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['squirrel evolution', true, mul, result.clone()]);
       }
     }
   }
@@ -1158,6 +1159,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       var bonus_bees = getWorkerBeeBonus().addr(1);
       result.posmulInPlace(bonus_bees);
       if(breakdown) breakdown.push(['worker bees (challenge)', true, bonus_bees, result.clone()]);
+    }
+
+    // Infinity ascension
+    if(state.infinity_ascend && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
+      var mul = infinity_ascension_production_bonus.addr(1);
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['infinity ascension', true, mul, result.clone()]);
     }
 
     // Infinity field
@@ -6730,6 +6738,13 @@ function treeLevelResin(level, breakdown) {
     if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, resin.clone()]);
   }
 
+  // infinity ascension
+  if(state.infinity_ascend) {
+    var mul = infinity_ascension_resin_bonus.addr(1);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['infinity ascension', true, mul, resin.clone()]);
+  }
+
   // fishes
   if(state.fishtypecount[FISHTYPE_TANG] || state.fish_resinmul_weighted.neqr(1)) {
     var mul = getFishMultiplier(FISHTYPE_TANG, state, 3);
@@ -6832,7 +6847,8 @@ function getFishMultiplier(fishtype, state, timeweighted) {
       var num0 = state.fishcount[eel_0];
       var num1 = state.fishcount[eel_1];
       var num2 = state.fishcount[eel_2];
-      return new Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1 + eel_2_bonus * num2);
+      var numt = state.fishcount[eel_t];
+      return new Num(1 + eel_0_bonus * num0 + eel_1_bonus * num1 + eel_2_bonus * num2 + eel_t_bonus * numt);
     } else {
       if(state.fish_twigsmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
       var shift = (timeweighted == 2) ? state.fish_twigsmul_time_shift : 0;
@@ -6845,7 +6861,8 @@ function getFishMultiplier(fishtype, state, timeweighted) {
       var num0 = state.fishcount[tang_0];
       var num1 = state.fishcount[tang_1];
       var num2 = state.fishcount[tang_2];
-      return new Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1 + tang_2_bonus * num2);
+      var numt = state.fishcount[tang_t];
+      return new Num(1 + tang_0_bonus * num0 + tang_1_bonus * num1 + tang_2_bonus * num2 + tang_t_bonus * numt);
     } else {
       if(state.fish_resinmul_weighted.ltr(1)) return new Num(1); // not yet properly inited
       var shift = (timeweighted == 2) ? state.fish_resinmul_time_shift : 0;
@@ -6865,6 +6882,11 @@ function getFishMultiplier(fishtype, state, timeweighted) {
     var num2 = state.fishcount[oranda_2];
     if(num0 == 0 && num1 == 0 && num2 == 0) return new Num(1);
     return new Num(1 + oranda_0_bonus * num0 + oranda_1_bonus * num1 + oranda_2_bonus * num2);
+  } else if(fishtype == FISHTYPE_JELLYFISH) {
+    // jellyfish pond neighbor bonus (not very large on purpose, just a nice to have during early post-ascend infinity field)
+    var num0 = state.fishcount[jellyfish_t];
+    if(num0 == 0) return new Num(1);
+    return new Num(1 + jellyfish_t_bonus * num0);
   }
 
   return new Num(1);
@@ -6983,6 +7005,13 @@ function treeLevelTwigs(level, breakdown) {
     var mul = getEtherealMistletoeBonus(mistle_upgrade_twigs).addr(1);
     res.twigs.mulInPlace(mul);
     if(breakdown) breakdown.push(['ethereal mistletoe', true, mul, res.clone()]);
+  }
+
+  // infinity ascension
+  if(state.infinity_ascend) {
+    var mul = infinity_ascension_twigs_bonus.addr(1);
+    res.twigs.mulInPlace(mul);
+    if(breakdown) breakdown.push(['infinity ascension', true, mul, res.clone()]);
   }
 
   // fishes
@@ -8057,7 +8086,18 @@ registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_automaton]
 ////////////////////////////////////////////////////////////////////////////////
 
 
-var squirrel_epoch_prod_bonus = Num(101);
+// these values are as bonus, so this means the multiplier is this value + 1 (e.g. bonus 1.5 means +150%, or x2.5)
+var squirrel_epoch_prod_bonus = Num(100);
+// aka infinity_ascend_bonus
+// designed such that once you're at end of the first tier (zinc) after ascend (with half the map full of berries, and 4 flowers), your infinity bonus should be similar to what you had before ascenscion again.
+// a reasonable basic field bonus at end of infinity pre-ascend (when having max oranda: 1 black, 3 red, and having maxed basic-field-giving crops given enough resources to afford mistletoe) is:
+//   +1.5B% (multiplier: x15mil)
+// a typical post-ascend end-of-zinc-tier infinity to basic field bonus is:
+//   +800% (multiplier: x9)
+// so we want infinity_ascension_production_bonus * 9 = 15 mil, so set it to roughly 1.5 mil.
+var infinity_ascension_production_bonus = Num(1.5e6);
+var infinity_ascension_resin_bonus = Num(1.5);
+var infinity_ascension_twigs_bonus = Num(1.5);
 
 // as Num, in nuts.
 // i = current amount of squirrel upgrades gotten
@@ -8592,6 +8632,7 @@ var sameTypeCostMultiplier3_bee = 2;
 var sameTypeCostMultiplier3_bee_b = 4;
 var sameTypeCostMultiplier3_runestone = 1000;
 var sameTypeCostMultiplier3_mushroom = 10;
+var sameTypeCostMultiplier3_mushroom_b = 100; // for the translucent mushroom, which has to remain relevant through 4 tiers
 var sameTypeCostMultiplier3_fern = 2;
 var sameTypeCostMultiplier3_lotus = 7;
 var cropRecoup3 = 1.0; // 100% resin recoup. But deletions are limited through max amount of deletions per season instead
@@ -8600,9 +8641,20 @@ Crop3.prototype.isReal = function() {
   return !this.istemplate && !this.isghost;
 };
 
+Crop3.prototype.getBaseCost = function() {
+  if(state.infinity_ascend) {
+    if(this.tier == 0) return this.cost.mulr(1000); // only the first tier goes at original speed
+    if(this.tier == 1) return this.cost.mulr(1125); // ramp up to the slower speed of the next tiers
+    return this.cost.mulr(1250);
+  }
+  return this.cost;
+};
+
 // opt_force_count, if not undefined, overrides anything, including opt_adjust_count
 Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
-  if(this.type == CROPTYPE_BRASSICA) return this.cost;
+  var basecost = this.getBaseCost();
+
+  if(this.type == CROPTYPE_BRASSICA) return basecost;
 
   var count = state.crop3count[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
@@ -8616,17 +8668,19 @@ Crop3.prototype.getCost = function(opt_adjust_count, opt_force_count) {
     // 5: base * 1e30
     // etc... (so first it goes x1000, then x1 million, then x1 billion, etc...)
     var t = (count * (count + 1)) >> 1;
-    return this.cost.mul(Num.rpowr(sameTypeCostMultiplier3_runestone, t));
+    //if(count == 7) return new Res({infseeds:Num(500e80)});
+    if(count == 7) t = 23; // there are 8 runestone achievements. to make the 8th one plantable before infinity field ascend, adjust this price to a cheaper one, otherwise it's never affordable and the achievement could never be gotten
+    return basecost.mul(Num.rpowr(sameTypeCostMultiplier3_runestone, t));
   }
 
   var mul = (this.tier < 4) ? sameTypeCostMultiplier3 : sameTypeCostMultiplier3_b;
   if(this.type == CROPTYPE_FLOWER) mul = (this.tier < 4) ? sameTypeCostMultiplier3_flower : sameTypeCostMultiplier3_flower_b;
   if(this.type == CROPTYPE_BEE) mul = (this.tier < 7) ? sameTypeCostMultiplier3_bee : sameTypeCostMultiplier3_bee_b;
-  if(this.type == CROPTYPE_MUSH) mul = sameTypeCostMultiplier3_mushroom;
+  if(this.type == CROPTYPE_MUSH) mul = (this.tier == -1) ? sameTypeCostMultiplier3_mushroom_b : sameTypeCostMultiplier3_mushroom;
   if(this.type == CROPTYPE_FERN) mul = sameTypeCostMultiplier3_fern;
   if(this.type == CROPTYPE_LOTUS) mul = sameTypeCostMultiplier3_lotus;
   var countfactor = Math.pow(mul, count);
-  return this.cost.mulr(countfactor);
+  return basecost.mulr(countfactor);
 };
 
 
@@ -8643,12 +8697,22 @@ Crop3.prototype.getRecoup = function(f, opt_adjust_count) {
 
 
 Crop3.prototype.getPlantTime = function() {
+  if(state.infinity_ascend && this.type == CROPTYPE_BRASSICA) {
+    return this.planttime * 1.5;
+  }
   return this.planttime;
+};
+
+Crop3.prototype.getBaseProd = function() {
+  if(state.infinity_ascend) {
+    return this.prod.mulr(1000);
+  }
+  return this.prod;
 };
 
 
 Crop3.prototype.getProd = function(f, breakdown) {
-  var result = this.prod.clone();
+  var result = this.getBaseProd().clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   // flower boost for berry/nut
@@ -8708,7 +8772,6 @@ Crop3.prototype.getProd = function(f, breakdown) {
     if(breakdown) breakdown.push(['goldfish' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
   }
 
-
   // octopus
   if(result.infspores.neqr(0) && state.fishes[octopus_0].unlocked) {
     var mul = getFishMultiplier(FISHTYPE_OCTOPUS, state, 3);
@@ -8728,6 +8791,36 @@ Crop3.prototype.getProd = function(f, breakdown) {
     if(breakdown) breakdown.push(['puffer fish' + (give_warning ? ' (have 0, put some in the pond!)' : ''), true, mul, result.clone()]);
   }
 
+  // jellyfish: pond neighbor bonus
+  if(f && state.fishes[jellyfish_t].had) {
+    // any type that produces infseeds or infspores
+    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_BRASSICA) {
+      var mul = getFishMultiplier(FISHTYPE_JELLYFISH, state, 3);
+      var have_fish = mul.neqr(1);
+      if(have_fish) {
+        // limit the multiplier for brassica, because there's a finely tuned balance between brassica lifetime and production, that is already made harder by shrimp
+        // this limit only affects late post-ascend infinity field, since one couldn't get that many jellyfish before having the non-translucent mushrooms
+        if(this.type == CROPTYPE_BRASSICA && mul.gtr(1.25)) mul = new Num(1.25);
+        var have_pond = false;
+        // check if next to pond, orthogonally and diagonally
+        for(var dir = 0; dir < 8; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
+          var x2 = f.x + ((dir == 1 || dir == 4 || dir == 5) ? 1 : ((dir == 3 || dir == 6 || dir == 7) ? -1 : 0));
+          var y2 = f.y + ((dir == 0 || dir == 4 || dir == 7) ? -1 : ((dir == 2 || dir == 5 || dir == 6) ? 1 : 0));
+          if(x2 < 0 || x2 >= state.numw3 || y2 < 0 || y2 >= state.numh3) continue;
+          var n = state.field3[y2][x2];
+          if(n.index == FIELD_POND) {
+            have_pond = true;
+            break;
+          }
+        }
+        if(have_pond) {
+          result.mulInPlace(mul); // both infspores and infseeds
+          if(breakdown) breakdown.push(['jellyfish: next to pond', true, mul, result.clone()]);
+        }
+      }
+    }
+  }
+
   // flower boost for mushroom: does not use getInfBoost, but depends on relative tier
   if(f && this.type == CROPTYPE_MUSH) {
     var floweronlymul = new Num(1);
@@ -8744,8 +8837,13 @@ Crop3.prototype.getProd = function(f, breakdown) {
         var c2 = crops3[n.cropIndex()];
         if(c2.tier >= this.tier - 1) {
           var boost = new Num(1);
-          if(c2.tier <= this.tier - 1) boost = new Num(0.5);
-          if(c2.tier >= this.tier + 1) boost = new Num(1.5);
+          if(this.tier == -1) {
+            if(c2.tier > this.tier) boost = new Num(c2.tier - this.tier); // translucent mushroom goes through more flower tiers
+          } else if(c2.tier <= this.tier - 1) {
+            boost = new Num(0.5);
+          } else if(c2.tier >= this.tier + 1) {
+            boost = new Num(1.5);
+          }
           if(boost.neqr(0)) {
             floweronlymul.addInPlace(boost);
             numflowers++;
@@ -8967,10 +9065,20 @@ Crop3.prototype.getInfBoost = function(f, breakdown, opt_expected) {
   return result;
 };
 
+// Returns the 'base' value of the boost to basic field, which depends on whether infinity ascenscion happened
+Crop3.prototype.getBaseBasicBoost = function() {
+  if(state.infinity_ascend) {
+    if(this.type == CROPTYPE_BRASSICA) return this.basicboost.mulr(2);
+    return this.basicboost.mulr(4);
+  }
+  return this.basicboost.clone();
+};
+
 // boost from infinity field to basic field
 // opt_expected: if true, computes the boost you get if time-weighted fishes are done
 Crop3.prototype.getBasicBoost = function(f, breakdown, opt_expected) {
-  var result = this.basicboost.clone();
+  var result = this.getBaseBasicBoost();
+
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   var runestone_mul = new Num(1);
@@ -9126,6 +9234,12 @@ function registerLotus3(name, tier, cost, infboost, basicboost, planttime, image
   return index;
 }
 
+function registerMistletoe3(name, tier, cost, basicboost, planttime, image, opt_tagline) {
+  var index = registerCrop3(name, CROPTYPE_MISTLETOE, tier, cost, basicboost, new Num(0), image, opt_tagline);
+  var crop = crops3[index];
+  return index;
+}
+
 var default_crop3_growtime = 5; // in seconds
 
 
@@ -9170,6 +9284,8 @@ var mush3_9 = registerMushroom3('emerald champignon', 9, Res({infseeds:20e51}), 
 // NOTE: the bonus to basic field of this one and the previous one is actually too high and that of the flower in comparison too low. Let's not change this yet for now, but for next tiers make the flower higher than the mushroom again, and the lotus even higher.
 var mush3_10 = registerMushroom3('ruby champignon', 10, Res({infseeds:500e60}), Res({infspores:50e12}), Num(1000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader10, [4, 10], [0.9, 1.02]));
 var mush3_11 = registerMushroom3('diamond champignon', 11, Res({infseeds:1e75}), Res({infspores:1.2e18}), Num(3000), default_crop3_growtime, metalifyPlantImages(champignon, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+// this one only exists after infinity ascension, to have some fishes in the pond earlier on
+var mush3_t = registerMushroom3('translucent champignon', -1, Res({infseeds:1000}), Res({infspores:0.001}), Num(0.125), default_crop3_growtime, metalifyPlantImages(champignon, metalheader11, [1, 13], [0.5, 0.5]));
 
 crop3_register_id = 900;
 var flower3_0 = registerFlower3('zinc anemone', 0, Res({infseeds:2500}), Num(0.5), Num(0.1), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader0, [1]));
@@ -9183,7 +9299,7 @@ var flower3_7 = registerFlower3('amethyst anemone', 7, Res({infseeds:10e36}), Nu
 var flower3_8 = registerFlower3('sapphire anemone', 8, Res({infseeds:150e42}), Num(20e6), Num(16), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader8, [4, 2], [0.8, -0.1]));
 var flower3_9 = registerFlower3('emerald anemone', 9, Res({infseeds:50e51}), Num(1e9), Num(90), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader9));
 var flower3_10 = registerFlower3('ruby anemone', 10, Res({infseeds:10e63}), Num(20e9), Num(300), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader10, [4, 10], [0.9, 1.02]));
-var flower3_11 = registerFlower3('diamond anemone', 11, Res({infseeds:1e75}), Num(555e9), Num(2000), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+var flower3_11 = registerFlower3('diamond anemone', 11, Res({infseeds:1e75}), Num(555e9), Num(2500), default_crop3_growtime, metalifyPlantImages(images_anemone, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 
 crop3_register_id = 1200;
@@ -9196,7 +9312,7 @@ var bee3_7 = registerBee3('amethyst bee nest', 7, Res({infseeds:2e38}), Num(300e
 var bee3_8 = registerBee3('sapphire bee nest', 8, Res({infseeds:3e45}), Num(10e6), Num(100), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader8));
 var bee3_9 = registerBee3('emerald bee nest', 9, Res({infseeds:5e54}), Num(200e6), Num(300), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader9));
 var bee3_10 = registerBee3('ruby bee nest', 10, Res({infseeds:500e63}), Num(4e9), Num(1000), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader10, [4, 10], [0.9, 1.02]));
-var bee3_11 = registerBee3('diamond bee nest', 11, Res({infseeds:30e75}), Num(100e9), Num(5000), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+var bee3_11 = registerBee3('diamond bee nest', 11, Res({infseeds:30e75}), Num(100e9), Num(10000), default_crop3_growtime, metalifyPlantImages(images_beenest, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 1500;
 var runestone3_0 = registerRunestone3('runestone', 0, Res({infseeds:500e9}), Num(2), Num(0), 3, images_runestone);
@@ -9220,12 +9336,15 @@ crop3_register_id = 2400;
 var nut3_8 = registerNut3('sapphire acorn', 8, Res({infseeds:2e48}), Res({infseeds:5e24}), Num(75), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader8));
 var nut3_9 = registerNut3('emerald acorn', 9, Res({infseeds:2e57}), Res({infseeds:250e27}), Num(250), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader9));
 var nut3_10 = registerNut3('ruby acorn', 10, Res({infseeds:500e66}), Res({infseeds:500e33}), Num(750), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader10, [4, 10], [0.9, 1.02]));
-var nut3_11 = registerNut3('diamond acorn', 11, Res({infseeds:50e78}), Res({infseeds:1e42}), Num(10000), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+var nut3_11 = registerNut3('diamond acorn', 11, Res({infseeds:50e78}), Res({infseeds:1e42}), Num(5000), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 2700;
 var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
 var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77777), Num(1000), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader10, [4, 10], [0.9, 1.02]));
 var lotus3_11 = registerLotus3('diamond lotus', 11, Res({infseeds:2.5e81}), Num(7.77777), Num(7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+
+crop3_register_id = 2800;
+var mistletoe3_11 = registerMistletoe3('diamond mistletoe', 11, Res({infseeds:10e81}), Num(0.05), default_crop3_growtime, metalifyPlantImages(images_mistletoe, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 function haveInfinityField(opt_state) {
   var s = opt_state || state;
@@ -9248,6 +9367,7 @@ var FISHTYPE_EEL = fishtype_index++; // eel: boosts twigs
 var FISHTYPE_TANG = fishtype_index++; // yellow tang: boosts resin
 var FISHTYPE_LEPORINUS = fishtype_index++; // fish with yellow and black stripes, boosts infinity bees
 var FISHTYPE_ORANDA = fishtype_index++; // a goldfish/koi like fish. boost of the boost to basic boost, without requiring runestone (additive to runestone)
+var FISHTYPE_JELLYFISH = fishtype_index++; // gives pond a small inf seeds/spores production boost to neighbors of the pond
 var NUM_FISHTYPES = fishtype_index;
 
 function getFishTypeName(type) {
@@ -9261,6 +9381,7 @@ function getFishTypeName(type) {
   if(type == FISHTYPE_TANG) return 'tang';
   if(type == FISHTYPE_LEPORINUS) return 'leporinus';
   if(type == FISHTYPE_ORANDA) return 'oranda';
+  if(type == FISHTYPE_JELLYFISH) return 'jellyfish';
   return 'unknown';
 }
 
@@ -9281,7 +9402,16 @@ Fish.prototype.isReal = function() {
   return !this.istemplate && !this.isghost;
 };
 
+Fish.prototype.getBaseCost = function(opt_adjust_count, opt_force_count) {
+  if(state.infinity_ascend) {
+    return this.cost.mulr(1000);
+  }
+  return this.cost;
+};
+
 Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
+  var basecost = this.getBaseCost();
+
   var count = state.fishcount[this.index] + (opt_adjust_count || 0);
   if(opt_force_count != undefined) count = opt_force_count;
 
@@ -9291,8 +9421,9 @@ Fish.prototype.getCost = function(opt_adjust_count, opt_force_count) {
   if(this.type == FISHTYPE_EEL || this.type == FISHTYPE_TANG) mul = 21;
   if(this.type == FISHTYPE_LEPORINUS) mul = 25;
   if(this.type == FISHTYPE_ORANDA) mul = 19;
+  if(this.type == FISHTYPE_JELLYFISH) mul = 3;
   var countfactor = Math.pow(mul, count);
-  return this.cost.mulr(countfactor);
+  return basecost.mulr(countfactor);
 };
 
 var FISHRECOUP = 1.0;
@@ -9397,6 +9528,12 @@ function registerOranda(name, tier, cost, effect_description, image, opt_tagline
   return index;
 }
 
+function registerJellyfish(name, tier, cost, effect_description, image, opt_tagline) {
+  var index = registerFish(name, FISHTYPE_JELLYFISH, tier, cost, effect_description, image, opt_tagline);
+  //var fish = fishes[index];
+  return index;
+}
+
 fish_register_id = 100;
 var goldfish_0_bonus = 0.1;
 var goldfish_0 = registerGoldfish('goldfish', 0, Res({infspores:5000}), 'Improves infinity seeds production by ' + Num(goldfish_0_bonus).toPercentString(), image_goldfish0);
@@ -9449,8 +9586,12 @@ var eel_0 = registerEel('eel', 0, Res({infspores:1e9}), 'Improves twigs gain by 
 var eel_1_bonus = 0.5;
 var eel_1 = registerEel('red eel', 1, Res({infspores:1e15}), 'Improves twigs gain by ' + Num(eel_1_bonus).toPercentString() + ' ' + timeweightedinfo, image_eel1);
 // why not black eel: it would look too similar to the regular eel which is dark blue
-var eel_2_bonus = 1.0;
+var eel_2_bonus = 2.0;
 var eel_2 = registerEel('white eel', 2, Res({infspores:15e30}), 'Improves twigs gain by ' + Num(eel_2_bonus).toPercentString() + ' ' + timeweightedinfo, image_eel2);
+var eel_t_bonus = 0.05;
+var eel_t = registerEel('translucent eel', -1, Res({infspores:20}), 'Improves twigs gain by ' + Num(eel_t_bonus).toPercentString() + ' ' + timeweightedinfo, metalifyPlantImage(image_eel0, metalheader11, [1, 13], [0.5, 0.5]));
+
+
 
 fish_register_id = 800;
 var tang_0_bonus = 0.25;
@@ -9459,6 +9600,9 @@ var tang_1_bonus = 0.5;
 var tang_1 = registerTang('red tang', 1, Res({infspores:5e15}), 'Improves resin gain by ' + Num(tang_1_bonus).toPercentString() + ' ' + timeweightedinfo, image_tang1);
 var tang_2_bonus = 2.0;
 var tang_2 = registerTang('black tang', 2, Res({infspores:300e27}), 'Improves resin gain by ' + Num(tang_2_bonus).toPercentString() + ' ' + timeweightedinfo, image_tang2);
+var tang_t_bonus = 0.05;
+var tang_t = registerTang('translucent tang', -1, Res({infspores:250}), 'Improves resin gain by ' + Num(tang_t_bonus).toPercentString() + ' ' + timeweightedinfo, metalifyPlantImage(image_tang0, metalheader11, [1, 13], [0.5, 0.5]));
+
 
 fish_register_id = 900;
 var leporinus_0_bonus = 0.35;
@@ -9471,16 +9615,64 @@ var oranda_0_bonus = 2;
 var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda0);
 var oranda_1_bonus = 10;
 var oranda_1 = registerOranda('red oranda', 1, Res({infspores:200e18}), 'Boosts the basic field boost by ' + Num(oranda_1_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda1);
-// already here but not yet unlockable for now, TODO!
 var oranda_2_bonus = 50;
-var oranda_2 = registerOranda('black oranda', 2, Res({infspores:2e33}), 'Boosts the basic field boost by ' + Num(oranda_2_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda2);
+var oranda_2 = registerOranda('black oranda', 2, Res({infspores:50e30}), 'Boosts the basic field boost by ' + Num(oranda_2_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda2);
+
+fish_register_id = 1100;
+var jellyfish_t_bonus = 0.05;
+var jellyfish_t = registerJellyfish('iridescent jellyfish', -1, Res({infspores:3000}), 'Boosts infinity production of seed or spore producing neighbors of the pond by ' + Num(jellyfish_t_bonus).toPercentString(), image_jellyfish_t);
+
+// some fishes have limits depending on count across tiers. This function checks all those conditions
+// returns false if not.
+// Can also output a textual reason in opt_short_reason and/or opt_long_reason, if given as array. It will output two string in [0]
+// opt_short_reason is intended for short explanation in small dialog/tooltip
+// opt_long_reason is intended for error log message when attempting the action
+function canPlaceThisFishGivenCounts(c, opt_f, opt_short_reason, opt_long_reason) {
+  if(opt_f && opt_f.hasCrop() && opt_f.getCrop().index == c.index) {
+    // this here is intended for some cases of tooltips
+    // in the usage of this function for actual game logic, the case of the two fish indices being the same doesn't exist since
+    // it already checks with an error before that
+    // in the case of tooltips/dialogs, when showing a tooltip, then e.g. 'Next costs: ...' tooltip refers to a next one you could plant _anywhere_
+    //opt_f = undefined;
+  }
+  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && state.fishcount[c.index]) {
+    // TODO: consider also reducing this to max 1 for tier 0
+    if(opt_short_reason) opt_short_reason[0] = 'Max 1';
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 1 of this fish';
+    return false;
+  } else if(c.index == oranda_2 && state.fishcount[c.index]) {
+    if(opt_short_reason) opt_short_reason[0] = 'Max 1';
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 1 black oranda. This is the final infinity fish.';
+    return false;
+  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && state.fishtypecount[c.type] >= 4 && !(opt_f && opt_f.hasCrop() && opt_f.getCrop().type == c.type)) {
+    if(opt_short_reason) opt_short_reason[0] = 'Max 4 ' + getFishTypeName(c.type);
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 4 of this fish type';
+    return false;
+  } else if(c.type == FISHTYPE_JELLYFISH && state.fishtypecount[c.type] >= 5) {
+    if(opt_short_reason) opt_short_reason[0] = 'Max 5 ' + getFishTypeName(c.type);
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 5 of this fish type';
+    return false;
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishtypecount[c.type] >= 9 && !(opt_f && opt_f.hasCrop() && opt_f.getCrop().type == c.type)) {
+    if(opt_short_reason) opt_short_reason[0] = 'Max 9';
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 9 of this fish type';
+    return false;
+  } else if(c.type == FISHTYPE_SHRIMP && state.fishtypecount[c.type] > 0 && state.fishcount[c.index] == 0 &&
+            !(opt_f && opt_f.hasCrop() && opt_f.getCrop().type == c.type && state.fishtypecount[c.type] == 1)) {
+    // this is checking that you don't have a fish of this same type, but of a different tier (by checking fishtype count is non-zero but fish count of the current one is zero), but do allow this when you have exactly one fish of this tier and are replacing it with the same type (even if of a different tier)
+    if(opt_short_reason) opt_short_reason[0] = 'Max 1 shrimp tier'; // of any shrimp type across all tiers, IF higher tier than 0 is present
+    if(opt_long_reason) opt_long_reason[0] = 'Cannot have multiple tiers of shrimp at the same time. Remove all other shrimp, then try to place this shrimp tier again (alternatively, delete all but one shrimp, and upgrade the remaining one to the higher tier)';
+    return false;
+  }
+  return true;
+}
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-
 
 
 // @constructor
@@ -10327,35 +10519,35 @@ registerMedal('Infinite infinities', 'Filled the entire infinity field with crop
 
 // Specific achievements for infinity runestones, because of how much their cost scales
 
-registerMedal('One runestone', 'Have one runestone on the infinity field', images_runestone[4], function() {
+var medal_runestone1 = registerMedal('One runestone', 'Have one runestone on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 1;
 }, Num(100));
 
-registerMedal('Two runestones', 'Have two runestones on the infinity field', images_runestone[4], function() {
+var medal_runestone2 = registerMedal('Two runestones', 'Have two runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 2;
 }, Num(200));
 
-registerMedal('Three runestones', 'Have three runestones on the infinity field', images_runestone[4], function() {
+var medal_runestone3 = registerMedal('Three runestones', 'Have three runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 3;
 }, Num(400));
 
-registerMedal('Four runestones', 'Have four runestones on the infinity field', images_runestone[4], function() {
+var medal_runestone4 = registerMedal('Four runestones', 'Have four runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 4;
 }, Num(800));
 
-registerMedal('Five runestones', 'Have five runestones on the infinity field', images_runestone[4], function() {
+var medal_runestone5 = registerMedal('Five runestones', 'Have five runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 5;
 }, Num(1600));
 
-registerMedal('Six runestones', 'Have six runestones on the infinity field', images_runestone[4], function() {
+var medal_runestone6 = registerMedal('Six runestones', 'Have six runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 6;
 }, Num(3200));
 
-registerMedal('Seven runestones', 'Have seven runestones on the infinity field', images_runestone[4], function() {
+var medal_runestone7 = registerMedal('Seven runestones', 'Have seven runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 7;
 }, Num(6400));
 
-registerMedal('Eight runestones', 'Have eight runestones on the infinity field', images_runestone[4], function() {
+var medal_runestone8 = registerMedal('Eight runestones', 'Have eight runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 8;
 }, Num(12800));
 
@@ -10596,6 +10788,57 @@ function getNextInfspawnTime() {
   var result = state.lastInfTakeTime + 24 * 3600 - state.infspawnGraceTime;
   result = Math.min(Math.max(minTime, result), maxTime);
   return result;
+}
+
+function infinityAscensionOk() {
+  if(!state.medals[medal_runestone8].earned) return false;
+  for(var i = 0; i < registered_crops3.length; i++) {
+    if(!state.crops3[registered_crops3[i]].had) {
+      return false;
+    }
+  }
+  for(var i = 0; i < registered_fishes.length; i++) {
+    if(!state.fishes[registered_fishes[i]].had) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function ascendInfinity() {
+  if(state.infinity_ascend) return; // already ascended
+
+  state.infinity_ascend = 1;
+  state.infinityascendtime = state.time;
+
+  state.numw3++;
+  state.numh3++;
+  state.pondw++;
+  state.pondh++;
+
+  clearField3(state);
+  initField3UI();
+
+  clearPond(state);
+  // no need to initPondUI here: that one is in a dialog and requires to know the dialog flex
+
+  for(var i = 0; i < registered_crops3.length; i++) {
+    var c = state.crops3[registered_crops3[i]];
+    c.had = false;
+    c.unlocked = false;
+  }
+  for(var i = 0; i < registered_fishes.length; i++) {
+    var c = state.fishes[registered_fishes[i]];
+    c.had = false;
+    c.unlocked = false;
+  }
+
+  state.g_max_infinityboost = new Num(0);
+
+  state.res.infseeds = new Num(0);
+  state.res.infspores = new Num(0);
+
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

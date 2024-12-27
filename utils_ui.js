@@ -76,6 +76,12 @@ function centerContent(parent, child) {
   child.style.top = Math.floor((ph - ch) / 2) + 'px';
 }
 
+// returns ratio width/height of the main div
+function getMainFlexRatio() {
+  if(!mainFlex || !mainFlex.div) return 1;
+  return mainFlex.div.clientWidth / mainFlex.div.clientHeight;
+}
+
 function setAriaLabel(div, label) {
   div.setAttribute('aria-label', label);
 }
@@ -457,6 +463,7 @@ var DIALOG_TINY = 0;
 var DIALOG_SMALL = 1;
 var DIALOG_MEDIUM = 2;
 var DIALOG_LARGE = 3;
+var DIALOG_EXTRA_LARGE = 4;
 
 // if not undefined, can handle shortcuts for dialog (as opposed to global shortcut)
 // NOTE: only supported in one dialog level in the chain
@@ -480,7 +487,7 @@ params.title: title for top of the dialog. If empty, title can still be set on t
 params.icon: image, icon for top left of the dialog. If empty, title can still be set on the flex result.icon
 params.iconmargin: if present, gives this percentage of margin to the icon, if not present there's 0 margin. Should be used only when filling the dialog.icon space yourself, so when not using params.icon: params.icon already applies its own margin.
 params.help: optional function or string for help text. If set, there'll be a help button. If text, a dialog with the help text will be opened. If function, the function will be executed when pressing the help button
-params.size: DIALOG_TINY, DIALOG_SMALL, DIALOG_MEDIUM or DIALOG_LARGE
+params.size: DIALOG_TINY, DIALOG_SMALL, DIALOG_MEDIUM, DIALOG_LARGE or DIALOG_EXTRA_LARGE
 parrams.narrow: content will be more narrow, the width of the top icon / close button will be removed from each side, allows making a taller icon
 params.scrollable: whether to make the content flex scrollable with scrollbar if the content is too large
 params.scrollable_canchange: like scrollable, but with more event listeners to adapt to changing content
@@ -531,7 +538,9 @@ function createDialog(params) {
   } else if(params.size == DIALOG_SMALL) {
     dialogFlex = new Flex(topDialogFlex, 0.05, 0.25, 0.95, 0.75);
   } else if(params.size == DIALOG_LARGE) {
-    dialogFlex = new Flex(topDialogFlex, 0.05, 0.05, 0.95, 0.9);
+    dialogFlex = new Flex(topDialogFlex, 0.05, 0.075, 0.95, 0.925);
+  } else if(params.size == DIALOG_EXTRA_LARGE) {
+    dialogFlex = new Flex(topDialogFlex, 0.025, 0.025, 0.95, 0.975);
   } else {
     // default, medium. Designed to be as big as possible without covering up the resource display
     dialogFlex = new Flex(topDialogFlex, 0.05, 0.12, 0.95, 0.9);
@@ -774,6 +783,9 @@ function closeAllDialogs() {
 
 // update other effects that are there due to the dialog level
 function updateDialogLevel() {
+  // when using closeAllDialogs() and then the closing of a dialog itself activates as well due to button press, this may happen, fix it here
+  if(dialog_level < 0) dialog_level = 0;
+
   if(dialog_level == 0) {
     topDialogFlex.div.style.visibility = 'hidden';
     makeAriaHidden(nonDialogFlex.div, false);
@@ -824,9 +836,6 @@ function makeAriaHidden(div, hidden) {
 }
 
 document.addEventListener('keydown', function(e) {
-  if(dialog_level > 0) {
-  }
-
   if(dialogshortcutfun) {
     if(dialog_level <= 0) {
       dialogshortcutfun = undefined;
