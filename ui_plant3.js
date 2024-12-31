@@ -226,9 +226,9 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
       }
       if(opt_replace) result += '<br>Replacement cost: ' + replacementcost.toString() + ' (' + getCostAffordTimer(replacementcost) + ')';
       if(c.type == CROPTYPE_BRASSICA) {
-        result += '<br><br>Finite lifetime: ' + util.formatDuration(c.planttime);
+        result += '<br><br>Finite lifetime: ' + util.formatDuration(c.getPlantTime());
       } else {
-        result += '<br><br>Grow time: ' + util.formatDuration(c.planttime);
+        result += '<br><br>Grow time: ' + util.formatDuration(c.getPlantTime());
       }
 
       var prod = c.getProd(f);

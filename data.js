@@ -8090,14 +8090,15 @@ registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_automaton]
 var squirrel_epoch_prod_bonus = Num(100);
 // aka infinity_ascend_bonus
 // designed such that once you're at end of the first tier (zinc) after ascend (with half the map full of berries, and 4 flowers), your infinity bonus should be similar to what you had before ascenscion again.
-// a reasonable basic field bonus at end of infinity pre-ascend (when having max oranda: 1 black, 3 red, and having maxed basic-field-giving crops given enough resources to afford mistletoe) is:
+// a reasonable basic field bonus at end of infinity pre-ascend (when having max oranda: 1 black, 3 red, and having maxed basic-field-giving crops given enough resources to afford mistletoe with 10e81 as it was during beta version) is:
 //   +1.5B% (multiplier: x15mil)
 // a typical post-ascend end-of-zinc-tier infinity to basic field bonus is:
 //   +800% (multiplier: x9)
-// so we want infinity_ascension_production_bonus * 9 = 15 mil, so set it to roughly 1.5 mil.
-var infinity_ascension_production_bonus = Num(1.5e6);
-var infinity_ascension_resin_bonus = Num(1.5);
-var infinity_ascension_twigs_bonus = Num(1.5);
+// so we want infinity_ascension_production_bonus * 9 = 15 mil, so that means to set it to roughly 1.5 mil.
+// however to make the difference more noticeable, and since production bonus doesn't affect resin/twigs gain as much as you'd think, make it 1 mil
+var infinity_ascension_production_bonus = Num(1e6);
+var infinity_ascension_resin_bonus = Num(2); // as much as highest tang
+var infinity_ascension_twigs_bonus = Num(2); // as much as highest eel
 
 // as Num, in nuts.
 // i = current amount of squirrel upgrades gotten
@@ -8698,7 +8699,7 @@ Crop3.prototype.getRecoup = function(f, opt_adjust_count) {
 
 Crop3.prototype.getPlantTime = function() {
   if(state.infinity_ascend && this.type == CROPTYPE_BRASSICA) {
-    return this.planttime * 1.5;
+    return this.planttime * 1.5; // the lifetime, in this case. Increased 1.5x even though the costs are relatively only up to 1.25x, a small bonus to make this part about post-ascend infinity a bit more convenient
   }
   return this.planttime;
 };
@@ -9344,7 +9345,7 @@ var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77
 var lotus3_11 = registerLotus3('diamond lotus', 11, Res({infseeds:2.5e81}), Num(7.77777), Num(7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 2800;
-var mistletoe3_11 = registerMistletoe3('diamond mistletoe', 11, Res({infseeds:10e81}), Num(0.05), default_crop3_growtime, metalifyPlantImages(images_mistletoe, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
+var mistletoe3_11 = registerMistletoe3('diamond mistletoe', 11, Res({infseeds:20e81}), Num(0.05), default_crop3_growtime, metalifyPlantImages(images_mistletoe, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 function haveInfinityField(opt_state) {
   var s = opt_state || state;
@@ -10810,6 +10811,7 @@ function ascendInfinity() {
 
   state.infinity_ascend = 1;
   state.infinityascendtime = state.time;
+  state.infinity_res = new Res();
 
   state.numw3++;
   state.numh3++;

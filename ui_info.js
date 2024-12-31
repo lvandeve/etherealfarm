@@ -355,6 +355,9 @@ function getResourceDetails(index) {
       text += 'Total (field + current): ' + total.toString();
       if(infield[1].neqr(0)) text += ' (w/o brassica: ' + total.sub(infield[1]).toString() + ')';
       text += '<br>';
+      if(state.infinity_ascend) {
+        text += 'Total earned ever this ascend: ' + state.infinity_res.infseeds.toString() + '<br>';
+      }
       text += 'Total earned ever: ' + state.g_res.infseeds.toString() + '<br>'; // this can be more than total because some seeds are spent on brassicas that wither
     }
     if(index == 8) {
@@ -362,7 +365,10 @@ function getResourceDetails(index) {
       var inpond = computePondInfinitySpores();
       text += 'In pond: ' + inpond.toString() + '<br>';
       text += 'Total (pond + current): ' + inpond.add(state.res.infspores).toString() + '<br>';
-      //text += 'Total earned ever: ' + state.g_res.infspores.toString() + '<br>';
+      if(state.infinity_ascend) {
+        text += 'Total earned ever this ascend: ' + state.infinity_res.infspores.toString() + '<br>';
+      }
+      text += 'Total earned ever: ' + state.g_res.infspores.toString() + '<br>';
     }
     text += '<br/>';
 

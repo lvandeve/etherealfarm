@@ -22,9 +22,9 @@ function getChangeLog() {
 
   if(window['global_is_beta']) {
     if(window['beta_patchnotes']) {
-      text += '<hr>Beta patch notes:<br/><br/>';
+      text += '<hr>Beta-only patch notes:<br/><br/>';
       text += window['beta_patchnotes'];
-      text += 'End of beta patch notes<hr><br/><br/>';
+      text += 'End of beta-only patch notes<hr><br/><br/>';
     } else {
       text += 'This is a beta version<br/><br/>';
     }

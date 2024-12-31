@@ -4870,9 +4870,12 @@ var update = function(opt_ignorePause) {
           var cost = c.getCost();
           var finalcost = cost;
           if(type == ACTION_REPLACE2 && !!recoup) finalcost = cost.sub(recoup);
-          if(!action.silent) showMessage('planted ethereal ' + c.name + '. Consumed: ' + finalcost.toString() + '. Next costs: ' + c.getCost(1));
           state.g_numplanted2++;
           state.res.subInPlace(cost);
+          if(!action.silent) {
+            var nextcost = c.getCost(1);
+            showMessage('planted ethereal ' + c.name + '. Consumed: ' + finalcost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
+          }
           f.index = c.index + CROPINDEX;
           f.growth = 0;
           if(type == ACTION_REPLACE2) {

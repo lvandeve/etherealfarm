@@ -58,7 +58,6 @@ function getCropInfoHTML3(f, c, opt_detailed) {
       result += '<br/>';
     } else {
       result += 'Grow time: ' + util.formatDuration(c.getPlantTime());
-      if(c.getPlantTime() != c.planttime) result += ' (base: ' + util.formatDuration(c.planttime) + ')';
       result += '<br/><br/>';
     }
   }
