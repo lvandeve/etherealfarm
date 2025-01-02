@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -841,30 +841,26 @@ document.addEventListener('keydown', function(e) {
   if(key == 'u' && !ctrl && state.currentTab == tabindex_field) {
     var f = undefined;
     if(state.field[shiftCropFlexY]) f = state.field[shiftCropFlexY][shiftCropFlexX];
-    // upgrade tier
-    var did_something = false;
-    if(!(f && f.index == FIELD_REMAINDER)) {
-      did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY, shift);
-    }
-    var upgraded = did_something;
-    if(keyboard_shortcuts_pick_up_ferns && state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
-      addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
-      did_something = true;
-    }
-    if(!did_something && f) {
-      var f = state.field[shiftCropFlexY][shiftCropFlexX];
-      if(f && f.index == FIELD_REMAINDER) {
-        addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[brassica_0], ctrlPlanted:true});
+    if(f) {
+      // upgrade tier
+      var did_something = false;
+      if(f.index != FIELD_REMAINDER) {
+        did_something |= makeUpgradeCropAction(shiftCropFlexX, shiftCropFlexY, shift, false);
+      }
+      var upgraded = did_something;
+      if(keyboard_shortcuts_pick_up_ferns && state.fern && shiftCropFlexX == state.fernx && shiftCropFlexY == state.ferny) {
+        addAction({type:ACTION_FERN, x:shiftCropFlexX, y:shiftCropFlexY});
         did_something = true;
       }
-      // special case: allow also refreshing watercress this way
-      if(!upgraded && f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1) {
-        addAction({type:ACTION_REPLACE, x:shiftCropFlexX, y:shiftCropFlexY, crop:f.getCrop(), ctrlPlanted:true, silent:true});
-        did_something = true;
+      if(!did_something) {
+        if(f.index == FIELD_REMAINDER) {
+          addAction({type:ACTION_PLANT, x:shiftCropFlexX, y:shiftCropFlexY, crop:crops[brassica_0], ctrlPlanted:true});
+          did_something = true;
+        }
       }
-    }
-    if(did_something) {
-      update();
+      if(did_something) {
+        update();
+      }
     }
   }
 
@@ -890,7 +886,7 @@ document.addEventListener('keydown', function(e) {
       var highest = getHighestAffordableBrassica3(f.getCrop().getRecoup(f));
       var highest2 = getHighestBrassica3();
       if(highest >= f.getCrop().index) {
-        addAction({type:ACTION_REPLACE3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[highest], ctrlPlanted:true, silent:true});
+        addAction({type:ACTION_REPLACE3, x:shiftCrop3FlexX, y:shiftCrop3FlexY, crop:crops3[highest], ctrlPlanted:true, silent:false});
         if(highest2 <= highest || f.growth < 0.9) did_something = true; // in case a higher brassica than the affordable one exists, don't mark did_something, so the message about its price can come from "upgrade tier" below
       }
     }

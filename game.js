@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -4464,6 +4464,7 @@ var update = function(opt_ignorePause) {
         // These 3 actions are handled together here, to be able to implement replace:
         // this to be able, for replace, to do all the checks for both delete and plant first, and then perform the actions, in an atomic way
         var f = state.field[action.y][action.x];
+        var oldcrop = f.getCrop(); // may be undefined
 
         if(f.index == FIELD_MULTIPART) {
           f = f.getMainMultiPiece();
@@ -4473,6 +4474,8 @@ var update = function(opt_ignorePause) {
 
         var orig_growth = f.growth;
         var orig_brassica = f.hasCrop() && f.getCrop().type == CROPTYPE_BRASSICA;
+        var hardlyreplacedbrassica = false; // at least 50% worth replacement
+        if(type == ACTION_REPLACE && f.index == CROPINDEX + action.crop.index && f.growth > 0.5) hardlyreplacedbrassica = true;
 
         if(action.by_automaton) {
           if(action.x != state.automatonx || action.y != state.automatony) {
@@ -4634,14 +4637,17 @@ var update = function(opt_ignorePause) {
               // NOTE: during wither you can't delete crops. But even if you could (or if the game gets changed to allow it), during the wither challenge, crops growth is always < 1, though in theory could be 1 at the very start. During wither, numunplanted stat can't be gained, and the numplanted stat will always be decreased when deleting
               if((state.challenge == challenge_wither || f.growth < 1) && c.type != CROPTYPE_BRASSICA) {
                 if(!action.silent && full_refund) showMessage('plant was still growing, full refund given', C_UNDO, 1197352652);
+                // undo the being planted since it was replaced early
                 state.g_numplanted--;
                 state.c_numplanted--;
               } else {
-                state.g_numunplanted++;
-                state.c_numunplanted++;
-                if(action.by_automaton) {
-                  state.c_numautodelete++;
-                  state.g_numautodelete++;
+                if(!hardlyreplacedbrassica) {
+                  state.g_numunplanted++;
+                  state.c_numunplanted++;
+                  if(action.by_automaton) {
+                    state.c_numautodelete++;
+                    state.g_numautodelete++;
+                  }
                 }
               }
             }
@@ -4657,7 +4663,7 @@ var update = function(opt_ignorePause) {
             f.index = 0;
             f.growth = 0;
             state.res.addInPlace(recoup);
-            if(!action.silent) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
+            if(!action.silent && type == ACTION_DELETE) showMessage('deleted ' + c.name + ', got back: ' + recoup.toString());
             if(!action.by_automaton) store_undo = true;
             updateDerivedDuringAction(ACTION_DELETE, c); // for correct costs and recoup prices during next actions
           } else if(f.index == FIELD_REMAINDER) {
@@ -4671,9 +4677,11 @@ var update = function(opt_ignorePause) {
           var c = action.crop;
           var cost = c.getCost();
           if(c.isReal()) {
-            if(c.type == CROPTYPE_BRASSICA) {
-              state.g_numplantedbrassica++;
-              state.c_numplantedbrassica++;
+            if(c.type == CROPTYPE_BRASSICA ) {
+              if(!hardlyreplacedbrassica) {
+                state.g_numplantedbrassica++;
+                state.c_numplantedbrassica++;
+              }
             } else {
               state.g_numplanted++;
               state.c_numplanted++;
@@ -4701,7 +4709,20 @@ var update = function(opt_ignorePause) {
           }
           if(state.challenge == challenge_wither) f.growth = 1;
           var nextcost = c.getCost(1);
-          if(!action.silent) showMessage('planted ' + c.name + '. Consumed: ' + cost.toString() + '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')');
+          if(!action.silent) {
+            var message = '';
+            var totalcost = cost;
+            if(type == ACTION_REPLACE) totalcost = cost.sub(recoup);
+
+            if(type == ACTION_REPLACE && oldcrop && c.index == oldcrop.index) message = 'refreshed';
+            else if(type == ACTION_REPLACE) message = 'replaced with';
+            else message = 'planted';
+            message += ' ' + c.name;
+            if((totalcost.seeds.ltr(0) && totalcost.spores.eqr(0)) || (totalcost.spores.ltr(0) && totalcost.seeds.eqr(0))) message += '. Got back: ' + totalcost.neg().toString();
+            else message += '. Consumed: ' + totalcost.toString();
+            message += '. Next costs: ' + nextcost + ' (' + getCostAffordTimer(nextcost) + ')';
+            showMessage(message);
+          }
           if(state.c_numplanted + state.c_numplantedbrassica <= 1 && c.isReal() && state.g_numresets < 5) {
             showMessage('Keep planting more crops on other field cells to get more income', C_HELP, 28466751);
           }

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -413,7 +413,12 @@ function getUpgradeCrop(x, y, single, opt_cost, opt_include_locked) {
     return null;
   }
   var tier = opt_include_locked ? state.highestoftypeknown[c.type] : state.highestoftypeunlocked[c.type];
-  if(single && tier > c.tier + 1) tier = c.tier + 1;
+  if(single && tier > c.tier + 1) {
+    var maxtier = tier;
+    tier = c.tier + 1;
+    // need to search, since c.tier + 1 may not exist (if c.tier is -1 and it's a template) due to prestiged crops
+    while(tier < maxtier && !croptype_tiers[c.type][tier]) tier++;
+  }
 
   var c2 = null;
 
@@ -498,22 +503,29 @@ function makeUpgradeCropAction(x, y, single, opt_silent) {
   if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE, x:x, y:y, crop:c2, shiftPlanted:true});
     return true;
-  } else {
-    if(!opt_silent) {
-      if(too_expensive[1]) {
-        showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
-            ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
-      } else if(!(x >= 0 && x < state.numw && y >= 0 && y < state.numh) || !(state.field[y][x].hasCrop(true))) {
-        showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
-      } else if(state.field[y][x].index != 0) {
-        if(state.field[y][x].hasCrop() && state.field[y][x].getCrop().istemplate && !state.upgrades[berryunlock_0].count) {
-          showMessage('Crop not replaced, no higher tier unlocked or available. Must plant watercress first to unlock blackberry.', C_INVALID);
-        } else {
-          showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
-        }
+  }
+
+  var f = state.field[y][x];
+  if(f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1 && !c2 && !single) {
+    addAction({type:ACTION_REPLACE, x:x, y:y, crop:f.getCrop(), ctrlPlanted:true, silent:opt_silent});
+    return true;
+  }
+
+  if(!opt_silent) {
+    if(too_expensive[1]) {
+      showMessage('not enough resources for crop upgrade: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
+          ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
+    } else if(!(x >= 0 && x < state.numw && y >= 0 && y < state.numh) || !(state.field[y][x].hasCrop(true))) {
+      showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+    } else if(state.field[y][x].index != 0) {
+      if(state.field[y][x].hasCrop() && state.field[y][x].getCrop().istemplate && !state.upgrades[berryunlock_0].count) {
+        showMessage('Crop not replaced, no higher tier unlocked or available. Must plant watercress first to unlock blackberry.', C_INVALID);
+      } else {
+        showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
       }
     }
   }
+
   return false;
 }
 

@@ -112,6 +112,11 @@ a:visited {
   color: #666;
 }
 
+.efButtonInfinityAscend {
+  color: #440;
+  text-shadow: 0px 0px 5px #ff8;
+}
+
 .efSeasonBgSpring {
   background-color: #dbecc8;
 }

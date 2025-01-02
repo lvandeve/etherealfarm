@@ -133,6 +133,11 @@ body {
   color: #959595;
 }
 
+.efButtonInfinityAscend {
+  color: #cc0;
+  text-shadow: 0px 0px 5px #ff8;
+}
+
 .efSeasonBgSpring {
   background-color: #fff1;
   color: #7d3;

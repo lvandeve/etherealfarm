@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -2997,7 +2997,7 @@ function getHighestBrassica() {
   return cropindex;
 }
 
-// returns index of the highest unlocked brassica for infinity field. Always returns a valid, brassica3_0 if nothing else is possible
+// returns index of the highest unlocked brassica for infinity field. Always returns a valid crop, brassica3_0 if nothing else is possible
 function getHighestBrassica3() {
   if(!state) return brassica3_0;
   var cropindex = brassica3_0 + state.highestoftype3unlocked[CROPTYPE_BRASSICA];
@@ -3013,7 +3013,7 @@ function getHighestBrassica3Had() {
   return cropindex;
 }
 
-// returns index of the highest unlocked brassica that you can afford for infinity field. Always returns a valid, brassica3_0 if nothing else is possible, even if this one cannot be afforded
+// returns index of the highest unlocked brassica that you can afford for infinity field. Always returns a valid crop, brassica3_0 if nothing else is possible, even if this one cannot be afforded
 // opt_recoup: if given, it's assumed this recoup is added to your resources so you can afford more
 function getHighestAffordableBrassica3(opt_recoup) {
   var result = getHighestBrassica3();
