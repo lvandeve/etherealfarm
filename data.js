@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -6804,7 +6804,7 @@ var timeweightedinfo = '(the bonus is decreased if the fish is only present for 
 // if 1, takes into account time length during which the fishes were there. Use this when computing time-weighted value (weighted average in last MAXINFTOBASICDELAY time) to update state (but not for the actual gameplay)
 // if 2, similar to 1 but also takes reduced penalty with time shift into account, so it's like the weighed average but sometimes improved
 // if 3, returns the minimum of the computation for timeweighted==0 and timeweighted==1, for actual current gameplay computation
-function getFishMultiplier(fishtype, state, timeweighted) {
+function getFishMultiplier(fishtype, state, timeweighted) { // aka getFishBonus
   if(timeweighted == 3) {
     return Num.min(getFishMultiplier(fishtype, state, 0), getFishMultiplier(fishtype, state, 2));
   }
@@ -6881,6 +6881,13 @@ function getFishMultiplier(fishtype, state, timeweighted) {
     var num1 = state.fishcount[oranda_1];
     var num2 = state.fishcount[oranda_2];
     if(num0 == 0 && num1 == 0 && num2 == 0) return new Num(1);
+
+    // v--- temporary hack: Since v0.15.0 (20250102), there's a limit of max 4 oranda (and max 1 black oranda, num2). Old saves can still have more. Instead of adding refund/removal logic, just limit the max amount here so that having more fishes in the pond is pointless and can be removed.
+    if(num2 > 1) num2 = 1;
+    if(num1 > 4 - num2) num1 = 4 - num2;
+    if(num0 > 4 - (num1 + num2)) num0 = 4 - (num1 + num2);
+    // ^--- end of temporary hack
+
     return new Num(1 + oranda_0_bonus * num0 + oranda_1_bonus * num1 + oranda_2_bonus * num2);
   } else if(fishtype == FISHTYPE_JELLYFISH) {
     // jellyfish pond neighbor bonus (not very large on purpose, just a nice to have during early post-ascend infinity field)
@@ -9629,13 +9636,6 @@ var jellyfish_t = registerJellyfish('iridescent jellyfish', -1, Res({infspores:3
 // opt_short_reason is intended for short explanation in small dialog/tooltip
 // opt_long_reason is intended for error log message when attempting the action
 function canPlaceThisFishGivenCounts(c, opt_f, opt_short_reason, opt_long_reason) {
-  if(opt_f && opt_f.hasCrop() && opt_f.getCrop().index == c.index) {
-    // this here is intended for some cases of tooltips
-    // in the usage of this function for actual game logic, the case of the two fish indices being the same doesn't exist since
-    // it already checks with an error before that
-    // in the case of tooltips/dialogs, when showing a tooltip, then e.g. 'Next costs: ...' tooltip refers to a next one you could plant _anywhere_
-    //opt_f = undefined;
-  }
   if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && state.fishcount[c.index]) {
     // TODO: consider also reducing this to max 1 for tier 0
     if(opt_short_reason) opt_short_reason[0] = 'Max 1';
@@ -10551,6 +10551,13 @@ var medal_runestone7 = registerMedal('Seven runestones', 'Have seven runestones 
 var medal_runestone8 = registerMedal('Eight runestones', 'Have eight runestones on the infinity field', images_runestone[4], function() {
   return state.crop3count[runestone3_0] >= 8;
 }, Num(12800));
+
+// more infinity related achievements
+medal_register_id = 4100;
+
+registerMedal('Infinity ascenscion', 'Ascended the infinity field', image_infinity_ascend, function() {
+  return state.infinity_ascend >= 1;
+}, Num(10000));
 
 // individual infinity crop achievements
 medal_register_id = 4200;

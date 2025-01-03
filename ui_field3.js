@@ -358,9 +358,8 @@ function makeInfinityAscensionDialog() {
   text += '<br><br>';
   text += 'WARNING: Since infinity ascenscion might give a temporary decrease of basic field production, choose a convenient time to do it. Initially, the total bonus to the basic field will be lower than what you get from the infinity field now (depending on the current layout), so there will be a temporary setback of a few weeks. However, the new infinity field will surpass the current bonus eventually, so this is worth doing in the end.';
 
-  var icon = crops3[mistletoe3_11].image[4];
   var dialog = createDialog({
-    icon:icon,
+    icon:image_infinity_ascend,
     title:'Infinity ascension requirements',
     bgstyle:'efDialogTranslucent',
     scrollable:true,

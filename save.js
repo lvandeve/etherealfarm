@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -2941,6 +2941,13 @@ function decState(s) {
   // End of sections, post-processing
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
+
+
+  // Set the holiday state and the computation of the actual holiday images (squirrel/automaton with hat) correct now,
+  // if not doing this immediately after loading the save, the cached state of holiday_hats_active gets wrong and it may
+  // never correctly change to the hat images. The holiday_hats_active mechanism itself is needed for in case the holidays change while the game is already open.
+  state.holiday = holiday_hats_active = holidayEventActive();
+  state.initEvolutionAndHatImages();
 
   // the amount may have changed, if e.g. a new/changed challenge has a different reward for it, ...
   var autoaction_count = numAutoActionsUnlocked(state);

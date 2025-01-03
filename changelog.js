@@ -30,6 +30,12 @@ function getChangeLog() {
     }
   }
 
+  text += '0.15.1 (2025-01-03)';
+  text += '<br/>• Added achievement for infinity ascenscion.';
+  text += '<br/>• Limited oranda boost for the case of old savegames with too many orandas';
+  text += '<br/>• Fixed squirrel/automaton holiday hats sometimes not showing.';
+  text += '<br/><br/>';
+
   text += '0.15.0 (2025-01-02)';
   text += '<br/>• Added infinity ascenscion, initiated through the infinity mistletoe in the final infinity tier.';
   text += '<br/>• Rebalanced a few late things of pre-ascenscion infinity which move the main weight of having high basic field bonus a bit earlier:';
