@@ -98,14 +98,12 @@ function loadFromLocalStorage(onsuccess, onfail) {
         showMessage('current: ' + e, C_ERROR, 0, 0);
       }
       var text = loadlocalstoragefailedmessage;
-      if(state && state.error_reason == 4) text += ' ' + loadfailreason_format;
-      if(state && state.error_reason == 5) text += ' ' + loadfailreason_decompression;
-      if(state && state.error_reason == 6) text += ' ' + loadfailreason_checksum;
-      if(state && state.error_reason == 7) text += ' ' + loadfailreason_toonew;
-      if(state && state.error_reason == 8) text += ' ' + loadfailreason_tooold;
+      var failreasontext = '';
+      if(state) failreasontext = getLoadFailReasonMessage(state.error_reason);
+      text += ' ' + failreasontext;
 
       showMessage(text, C_ERROR, 0, 0);
-      showSavegameRecoveryDialog(true);
+      showSavegameRecoveryDialog(true, failreasontext);
 
       savegame_recovery_situation = true;
     }
@@ -476,7 +474,9 @@ function startChallenge(challenge_id) {
 function getNewFieldSize() {
   if(basicChallenge() == 2) return [5, 5];
   var result = [5, 5];
-  if(state.upgrades2[upgrade2_field9x8].count) {
+  if(state.upgrades2[upgrade2_field9x9].count) {
+    result = [9, 9];
+  } else if(state.upgrades2[upgrade2_field9x8].count) {
     result = [9, 8];
   } else if(state.upgrades2[upgrade2_field8x8].count) {
     result = [8, 8];
@@ -2549,6 +2549,15 @@ function maybeUnlockEtherealCrops() {
   }
   if(state.treelevel2 >= 27) {
     unlockEtherealCrop(flower2_8);
+  }
+  if(state.treelevel2 >= 28) {
+    unlockEtherealCrop(berry2_8);
+  }
+  if(state.treelevel2 >= 29) {
+    unlockEtherealCrop(mush2_9);
+  }
+  if(state.treelevel2 >= 30) {
+    unlockEtherealCrop(brassica2_1);
   }
 }
 
@@ -4838,8 +4847,12 @@ var update = function(opt_ignorePause) {
             showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
                         ', need: ' + cost.toString(Math.max(5, Num.precision)), C_INVALID, 0, 0);
             ok = false;
-          } else if(c.index == automaton2_0 && state.crop2count[automaton2_0]) {
-            showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
+          } else if(c.index == automaton2_0 && state.crop2count[automaton2_0] >= getMaxNumEtherealAutomatons()) {
+            if(state.crop2count[automaton2_0] == 1) {
+              showMessage('already have automaton, cannot place more', C_INVALID, 0, 0);
+            } else {
+              showMessage('already have the max amount of automatons, cannot place more', C_INVALID, 0, 0);
+            }
             ok = false;
           } else if(c.index == squirrel2_0 && state.crop2count[squirrel2_0] >= getMaxNumEtherealSquirrels()) {
             if(state.crop2count[squirrel2_0] == 1) {
@@ -5564,7 +5577,7 @@ var update = function(opt_ignorePause) {
           state.mistletoeupgrade = -1;
           store_undo = true;
         } else if(state.mistletoeupgrade < 0) {
-            showMessage('Cannot stop upgrade, no mistletoe upgrade in progress', C_INVALID, 0, 0);
+          showMessage('Cannot stop upgrade, no mistletoe upgrade in progress', C_INVALID, 0, 0);
         }
       } else if(type == ACTION_TD_GO) {
         if(state.challenge == challenge_towerdefense && !state.towerdef.gameover) {

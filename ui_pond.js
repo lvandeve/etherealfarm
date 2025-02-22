@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -111,7 +111,9 @@ function updatePondDialogText() {
   var text = '';
 
   text += 'Total boost from infinity crops to basic field: ' + state.expected_infinityboost.toPercentString();
-  if(state.expected_infinityboost.neq(state.infinityboost)) text += ' (time-weighted (⏳): ' + state.infinityboost.toPercentString() + ')';
+  if(!Num.near(state.expected_infinityboost, state.infinityboost, 0.001)) {
+    text += ' (time-weighted (⏳): ' + state.infinityboost.toPercentString() + ')';
+  }
   text += '. Max ever had: ' + state.g_max_infinityboost.toPercentString();
 
   var resinbonus = getFishMultiplier(FISHTYPE_TANG, state, 3).subr(1);

@@ -997,8 +997,8 @@ var getAboutHeader = function() {
   text += '<br/>';
   text += 'Discord: <a target="_blank" href="https://discord.gg/9eaTxXvMT2">https://discord.gg/9eaTxXvMT2</a>';
   text += '<br/>';
-  text += 'Fandom wiki: <a target="_blank" href="https://ethereal-farm.fandom.com/wiki/Ethereal_Farm_Wiki">https://ethereal-farm.fandom.com/wiki/Ethereal_Farm_Wiki</a>';
-  text += '<br/><br/>';
+  //text += 'Fandom wiki: <a target="_blank" href="https://ethereal-farm.fandom.com/wiki/Ethereal_Farm_Wiki">https://ethereal-farm.fandom.com/wiki/Ethereal_Farm_Wiki</a>';
+  //text += '<br/><br/>';
   return text;
 };
 
@@ -1059,10 +1059,12 @@ function createChangelogDialog() {
 
 
 // if opt_failed_save is true, the dialog is shown due to an actual failed save so the message is different.
-function showSavegameRecoveryDialog(opt_failed_save) {
+function showSavegameRecoveryDialog(opt_failed_save, opt_fail_reason_text) {
   var description;
   if(opt_failed_save) {
-    description = '<font color="red"><b>Loading failed</b></font>. Read this carefully to help recover your savegame if you don\'t have backups. Copypaste all the recovery savegame(s) below and save them in a text file. Once they\'re stored safely by you, try some of them in the "import save" dialog under settings. One of them may be recent enough and work. Even if the recovery saves don\'t work now, a future version of the game may fix it. Apologies for this.';
+    description = '<font color="red"><b>Loading failed</b></font>';
+    if(opt_fail_reason_text) description += '. <font color="red"><b>' + opt_fail_reason_text + '</b></font><br>';
+    description += 'Read this carefully to help recover your savegame if you don\'t have backups. Copypaste all the recovery savegame(s) below and save them in a text file. Once they\'re stored safely by you, try some of them in the "import save" dialog under settings. One of them may be recent enough and work. Even if the recovery saves don\'t work now, a future version of the game may fix it. If the loading fail reason is due to game version later than save, hard-refreshing the page may solve the issue instead. Apologies for this.';
   } else {
     description = 'Recovery saves. These may be older saves, some from previous game versions. Use at your own risk, but if your current save has an issue, save all of these to a text file as soon as possible so that if there\'s one good one it doesn\'t risk being overwritten by more issues. Try importing each of them, hopefully at least one will be good and recent enough.';
   }
@@ -1139,13 +1141,15 @@ function showExportTextDialog(title, description, text, filename, opt_close_on_c
     cancelname:'back'
   });
 
+  var areastart = 0.2;
 
   if(description) {
-    var textFlex = new Flex(dialog.content, 0, 0, 1, 0.15);
+    var textFlex = new Flex(dialog.content, 0, 0, 1, 0.25);
     textFlex.div.innerHTML = description;
+    areastart = 0.3;
   }
 
-  var areaFlex = new Flex(dialog.content, 0, 0.2, 1, 1);
+  var areaFlex = new Flex(dialog.content, 0, areastart, 1, 1);
   var area = util.makeAbsElement('textarea', '0', '0', '100%', '100%', areaFlex.div);
 
   area.value = text;
@@ -1178,20 +1182,25 @@ function loadForImportDialog(shift, ctrl, enc, messageFlex) {
     saveNow(); // save immediately now: otherwise if e.g. you close browser on mobile device now, it may still load the old save when reloading the browser later
   }, function(state) {
     var message = importfailedmessage;
-    if(state && state.error_reason == 1) message += '\n' + loadfailreason_toosmall;
-    if(state && state.error_reason == 2) message += '\n' + loadfailreason_notbase64;
-    if(state && state.error_reason == 3) message += '\n' + loadfailreason_signature;
-    if(state && state.error_reason == 4) message += '\n' + loadfailreason_format;
-    if(state && state.error_reason == 5) message += '\n' + loadfailreason_decompression;
-    if(state && state.error_reason == 6) message += '\n' + loadfailreason_checksum;
-    if(state && state.error_reason == 7) message += '\n' + loadfailreason_toonew;
-    if(state && state.error_reason == 8) message += '\n' + loadfailreason_tooold;
-    if(state && state.error_reason == 9) message += '\n' + loadfailreason_beta;
-    if(state && state.error_reason == 10) message += '\n' + loadfailreason_toolarge;
+    if(state) message += '\n' + getLoadFailReasonMessage(state.error_reason);
     messageFlex.div.innerText = message;
     messageFlex.div.style.color = '';
     if(state && state.error_reason) messageFlex.div.style.color = '#f00';
   });
+}
+
+function getLoadFailReasonMessage(error_reason) {
+  if(error_reason == 1) return loadfailreason_toosmall;
+  if(error_reason == 2) return loadfailreason_notbase64;
+  if(error_reason == 3) return loadfailreason_signature;
+  if(error_reason == 4) return loadfailreason_format;
+  if(error_reason == 5) return loadfailreason_decompression;
+  if(error_reason == 6) return loadfailreason_checksum;
+  if(error_reason == 7) return loadfailreason_toonew;
+  if(error_reason == 8) return loadfailreason_tooold;
+  if(error_reason == 9) return loadfailreason_beta;
+  if(error_reason == 10) return loadfailreason_toolarge;
+  return loadfailreason_unknown;
 }
 
 function importSaveFromPasted(shift, ctrl, enc, messageFlex) {

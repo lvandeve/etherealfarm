@@ -30,6 +30,15 @@ function getChangeLog() {
     }
   }
 
+  text += '0.15.2 (2025-02-22)';
+  text += '<br/>• New ethereal crops and upgrades.';
+  text += '<br/>• New ethereal mistletoe upgrades.';
+  //text += '<br/>• Added back an extra boost when having at least 3 different special neighbor types (tree, automaton, ...) in the ethereal field: now it gives 75% for at least 3 types, and as before 50% for 2 types.';
+  text += '<br/>• Added achievements for the translucent infinity crops.';
+  text += '<br/>• Fixed bug with the "complete challenge" button name for the poison ivy challenge.';
+  text += '<br/>• Other minor UI tweaks and fixes.';
+  text += '<br/><br/>';
+
   text += '0.15.1 (2025-01-03)';
   text += '<br/>• Added achievement for infinity ascenscion.';
   text += '<br/>• Limited oranda boost for the case of old savegames with too many orandas';

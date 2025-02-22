@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -265,7 +265,7 @@ function makeTreeDialog() {
     var c2 = state.challenges[state.challenge];
 
     var already_completed = c.fullyCompleted(false);
-    var success = c.nextCompleted();
+    var success = c.nextStageCompletedOrRecordBroken();
 
     var button = new Flex(f1, button0, y, button1, y + h, FONT_BIG_BUTTON).div;
     y += buttonshift;

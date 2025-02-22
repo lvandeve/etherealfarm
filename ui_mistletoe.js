@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ function getMistleInfoText(index, opt_multiline) {
     tooltiptext += separator + 'Current level: ' + toRomanUpTo(m2.num);
   }
   tooltiptext += separator + upper(m.description);
-  if(m.index != mistle_upgrade_evolve) tooltiptext += separator + 'Unlocked at evolution level ' + toRomanUpTo(m.evo);
+  if(m.index != mistle_upgrade_evolve) tooltiptext += separator + 'Unlocked at evolution level ' + m.evo;
   if(m.index == mistle_upgrade_evolve) {
     var next = etherealMistletoeNextEvolutionUnlockLevel();
     //if(next >= 0) tooltiptext += separator + 'Next new upgrade unlocks at evolution level: ' + toRomanUpTo(next) + ' (current level: ' + toRomanUpTo(haveEtherealMistletoeUpgrade(mistle_upgrade_evolve)) + ')';
@@ -47,6 +47,26 @@ function getMistleInfoText(index, opt_multiline) {
   } else if(m.bonus != undefined) {
     tooltiptext += separator + 'Current bonus: ' + getEtherealMistleToeBonusWithEvoString(m.index);
   }
+
+  // the evolution upgrade
+  if(index == 0 && opt_multiline) {
+    var curr = getEtherealMistletoeEvolutionLevel();
+    tooltiptext += '<br><br>';
+    tooltiptext += 'List of upgrades unlocked by evolution level:<br>';
+    var arr = [];
+    for(var i = 0; i < registered_mistles.length; i++) {
+      var m = mistletoeupgrades[registered_mistles[i]];
+      if(m.evo > curr) continue;
+      arr.push([m.evo, m.name]);
+    }
+    arr = arr.sort(function(a, b) {
+      return a[0] - b[0];
+    });
+    for(var i = 0; i < arr.length; i++) {
+      tooltiptext += arr[i][0] + ': ' + arr[i][1] + '<br>';
+    }
+  }
+
   return tooltiptext;
 }
 
@@ -54,12 +74,12 @@ function makeEtherealMistletoeDialog(x, y) {
   var f = state.field2[y][x];
   var fd = field2Divs[y][x];
 
-  var tree_ok = isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal());
+  var tree_ok = isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal()) || etherealMistletoeCanGoAnywhere();
 
   // uses variables from below, defined here to allow using it at updatedialogfun of the dialog
   var updatecontent = function() {
     if(!tree_ok) return; // buttons etc... not created, so the below code will crash
-    if(state.mistletoeupgrades[mistle_upgrade_evolve].num != prev_evo) {
+    if(getEtherealMistletoeEvolutionLevel() != prev_evo) {
       // amount of visible updates changed, more update of all the HTML dialog needed, recreate it completely
       closeTopDialog();
       makeEtherealMistletoeDialog(x, y);
@@ -139,7 +159,7 @@ function makeEtherealMistletoeDialog(x, y) {
 
   if(!tree_ok) {
     var textel = new Flex(dialog.content, [0, 0, 0.2], [buttonpos, 0, 0.01], [1, 0, -0.2], 0.8);
-    if(state.etherealmistletoenexttotree) {
+    if(state.etherealmistletoetreepositionok) {
       textel.div.innerText = 'The ethereal mistletoe must be planted orthogonally (not diagonally) next to the tree, otherwise it does nothing and does not boost neighbors.'; // you still have another one next to the tree so upgrades not paused, but at least clearly indicate it still doesn't boost neighbors
     } else {
       textel.div.innerText = 'The ethereal mistletoe must be planted orthogonally (not diagonally) next to the tree, otherwise it does nothing. Its upgrades are currently paused.';
@@ -261,11 +281,15 @@ function makeEtherealMistletoeDialog(x, y) {
   if(haveEtherealMistletoeUpgrade(mistle_upgrade_lotus_neighbor)) {
     text2 += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealMistletoeLotusNeighborBoost().toPercentString()) + '<br/>';
   }
+  if(getEtherealMistletoeEvolutionLevel() > 0) {
+    text2 += 'Evolution level: ' + (getEtherealMistletoeEvolutionLevel()) + '<br/>';
+  }
+
   textel2.div.innerHTML = text2;
 
   // variables used in updatecontent()
   var prevtext = '';
-  var prev_evo = state.mistletoeupgrades[mistle_upgrade_evolve].num;
+  var prev_evo = getEtherealMistletoeEvolutionLevel();
 
   updatecontent();
 }

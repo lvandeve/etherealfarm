@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -188,7 +188,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     } else if(c.targetlevel.length == 0) {
       // nothing, it's the bonus below
     } else if(c.targetlevel.length > 1 && c2.completed > 0) {
-      text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numCompleted(include_current_run)];
+      text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numStagesCompleted(include_current_run)];
       text += '<br>';
     } else {
       text += '• Reward (at level ' + targetlevel + '): ' + c.rewarddescription[0];
@@ -325,12 +325,12 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   }
 
   var completedtext;
-  if(c.numStages() == 1 || !c.numCompleted(include_current_run)) {
-    completedtext = (c.numCompleted(include_current_run) ? 'yes' : 'no');
+  if(c.numStages() == 1 || !c.numStagesCompleted(include_current_run)) {
+    completedtext = (c.numStagesCompleted(include_current_run) ? 'yes' : 'no');
   } else if(c.numStages() == 0) {
     completedtext = (c.fullyCompleted(include_current_run) ? 'yes' : 'no');
   } else {
-    completedtext = '' + c.numCompleted(include_current_run) + ' of ' + c.numStages();
+    completedtext = '' + c.numStagesCompleted(include_current_run) + ' of ' + c.numStages();
   }
 
   text += '• Completed: ' + completedtext + '<br>';
@@ -357,6 +357,7 @@ function getEndChallengeButtonName(already_completed, success) {
     // End the challenge early, but it already was completed beforehand, so it's called "end", not "abort"
     return 'End challenge';
   } else if(success) {
+    // Successfully complete it for the first time
     return 'Complete challenge';
   } else {
     // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
@@ -406,7 +407,7 @@ function createChallengeDialog(opt_from_challenge) {
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
-    var isnew = !c.numCompleted(true);
+    var isnew = !c.numStagesCompleted(true);
     var isnotfull = !c.fullyCompleted(true)
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;
@@ -484,7 +485,7 @@ function createFinishChallengeDialog() {
   var c2 = state.challenges[state.challenge];
 
   var already_completed = c.fullyCompleted(false);
-  var success = c.nextCompleted();
+  var success = c.nextStageCompletedOrRecordBroken();
 
   var dialog = createDialog({
     functions:extrafun,

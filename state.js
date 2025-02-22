@@ -279,10 +279,10 @@ function MedalState() {
 
 function ChallengeState() {
   this.unlocked = false;
-  this.completed = 0; // whether the challenge was successfully completed, or higher values if higher versions of the challenge with extra rewards were completed. Not useful to determine if cycles of cycling challenges were completed, use num_completed for that
+  this.completed = 0; // whether the challenge was successfully completed, or higher values if higher versions of the challenge with extra rewards were completed (= multiple stages). Not useful to determine if cycles of cycling challenges were completed, use num_completed for that
   this.num = 0; // amount of times started, whether successful or not, excluding the current one
-  this.num_completed = 0; // how often, the challenge was successfully completed (excluding currently ongoing challenge, if any)
-  this.num_completed2 = 0; // how often, the challenge was successfully completed to final stage, or 0 if this challenge only has 1 stage
+  this.num_completed = 0; // how often the challenge was successfully completed (excluding currently ongoing challenge, if any)
+  this.num_completed2 = 0; // how often the challenge was successfully completed to final stage, or 0 if this challenge only has 1 stage
   this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any)
   this.besttime = 0; // best time for reaching first targetlevel, even when not resetting. If continuing the challenge for higher maxlevel, still only the time to reach targetlevel is counted, so it's the best time for completing the first main reward part of the challenge.
   this.besttime2 = 0; // best time for reaching last targetlevel, or 0 if this challenge only has 1 stage. NOTE: so best time of first and last stage are tracked, if there are more intermediate stages, those are not tracked
@@ -1333,7 +1333,7 @@ function State() {
   this.numnonemptyblueprints = 0;
 
   // derived stat, not to be saved.
-  this.etherealmistletoenexttotree = false;
+  this.etherealmistletoetreepositionok = false;
 
   // derived stat, not to be saved. Computed in precomputeField. Only used for halloween pumpkin.
   this.bestberryforpumpkin = undefined;
@@ -1733,7 +1733,7 @@ function computeDerived(state) {
   state.numemptyfields2 = 0;
   state.numcropfields2 = 0;
   state.numfullgrowncropfields2 = 0;
-  state.etherealmistletoenexttotree = false;
+  state.etherealmistletoetreepositionok = false;
   for(var i = 0; i < registered_crops2.length; i++) {
     state.crop2count[registered_crops2[i]] = 0;
     state.fullgrowncrop2count[registered_crops2[i]] = 0;
@@ -1757,8 +1757,11 @@ function computeDerived(state) {
         }
         if(c.index == mistletoe2_0) {
           if(isNextToTree2(x, y, etherealMistletoeSupportsTreeDiagonal())) {
-            state.etherealmistletoenexttotree = true;
+            state.etherealmistletoetreepositionok = true;
             f.nexttotree = true;
+          }
+          if(etherealMistletoeCanGoAnywhere()) {
+            state.etherealmistletoetreepositionok = true;
           }
         }
         state.highestoftype2planted[c.type] = Math.max(c.tier || 0, state.highestoftype2planted[c.type]);
@@ -2792,6 +2795,16 @@ function getEtherealAutomatonNeighborBoost(breakdown) {
   return result;
 }
 
+
+function getEtherealAutomatonLotusNeighborBoost() {
+  return getEtherealMistletoeBonus(mistle_upgrade_automaton_florality);
+}
+
+function getMaxNumEtherealAutomatons() {
+  if(state.upgrades2[upgrade2_second_automaton].count) return 2;
+  return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -2910,7 +2923,8 @@ function haveEtherealMistletoeAnywhere() {
 
 // have ethereal mistletoe with valid placement
 function haveEtherealMistletoe() {
-  return state.etherealmistletoenexttotree;
+  if(etherealMistletoeCanGoAnywhere() && haveEtherealMistletoeAnywhere()) return true;
+  return state.etherealmistletoetreepositionok;
 }
 
 

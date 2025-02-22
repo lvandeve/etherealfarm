@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ var loadfailreason_tooold = 'Loading fail reason: savegame is from an early prev
 var loadfailreason_format = 'Loading fail reason: format structure';
 var loadfailreason_decompression = 'Loading fail reason: decompression';
 var loadfailreason_beta = 'Loading fail reason: savegame is from a beta version';
+var loadfailreason_unknown = 'Loading fail reason: unknown';
 var programname = 'Ethereal Farm';
 var autoSavedStateMessage = 'Auto-saved state locally';
 var autoSavedStateMessageWithReminder = 'Auto-saved state locally. Reminder: make a manual savegame backup or risk losing everything. Use "export save" under settings.';
@@ -66,3 +67,4 @@ The automatic blueprint is useful to get a different layout later in the run tha
 During some challenges you may want this disabled, toggle it off in the automaton tab in this case.
 `;
 var boostableCrop2Hint = 'Boosted by lotuses and other special ethereal neighbors';
+

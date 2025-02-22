@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -277,7 +277,7 @@ function updateTabButtons2() {
       // ethereal mistletoe upgrade available
       color = '#0f0';
     }
-    if(haveEtherealMistletoeAnywhere() && !state.etherealmistletoenexttotree) {
+    if(haveEtherealMistletoeAnywhere() && !state.etherealmistletoetreepositionok) {
       // ethereal mistletoe not placed next to tree
       color = '#fa0';
     }

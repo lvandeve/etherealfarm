@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -170,6 +170,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     result += '<br>' + formatBreakdown(breakdown, true, 'Breakdown of neighbor boost');
   }
 
+  if(mistletoe && getEtherealMistletoeEvolutionLevel() > 0) {
+    result += '<br/><br/>Evolution level: ' + (getEtherealMistletoeEvolutionLevel()) + '<br/>';
+  }
 
   return result;
 }
@@ -603,7 +606,7 @@ function updateField2CellUI(x, y) {
   var growstage = (f.growth >= 1) ? 4 : Math.min(Math.floor(f.growth * 4), 3);
   var season = 4; // the ethereal season
   var c = f.getCrop();
-  if(c && c.index == mistletoe2_0 && !f.nexttotree) {
+  if(c && c.index == mistletoe2_0 && !f.nexttotree && !etherealMistletoeCanGoAnywhere()) {
     // indicate that it is not placed next to tree (so has no effect) by rendering a lower growstage
     growstage = Math.max(0, growstage - 2);
   }

@@ -260,7 +260,9 @@ function makeUpgradeCrop3Action(x, y, single, opt_silent) {
   }
 
   var f = state.field3[y][x];
+  var is_brassica = false;
   if(f && f.hasRealCrop() && f.getCrop().type == CROPTYPE_BRASSICA && f.growth < 1) {
+    is_brassica = true;
     // allow also refreshing watercress this way
     var highest = getHighestAffordableBrassica3(f.getCrop().getRecoup(f));
     var highest2 = getHighestBrassica3();
@@ -276,6 +278,8 @@ function makeUpgradeCrop3Action(x, y, single, opt_silent) {
           ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
     } else if(!(x >= 0 && x < state.numw3 && y >= 0 && y < state.numh3) || state.field3[y][x].index < CROPINDEX) {
       showMessage('No crop to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+    } else if(is_brassica) {
+      showMessage('Not enough resources to refresh brassica', C_INVALID);
     } else {
       showMessage('Crop not replaced, no higher tier unlocked or available', C_INVALID);
     }
@@ -525,7 +529,6 @@ function field3CellTooltipFun(x, y, div) {
         text += '<br><br>';
         text += 'Boost from jellyfish to resource-producing neighbors of pond: ' + bonus.toPercentString();
       }
-      //if(state.expected_infinityboost.mulr(0.999).gt(state.infinityboost)) {
       if(!Num.near(state.expected_infinityboost, state.infinityboost, 0.001)) {
         var time_remaining = MAXINFTOBASICDELAY - (state.c_runtime - state.infinity_prodboost_time + state.infinity_prodboost_time_shift);
         text += '. After time-weighting (⏳): ' + state.expected_infinityboost.toPercentString();
