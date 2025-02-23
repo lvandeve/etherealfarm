@@ -4248,7 +4248,7 @@ Crop2.prototype.getEtherealBoost = function(f, breakdown) {
         if(!num_automaton) {
           breakdown.push(['mistletoe neighbor', true, totalmul, result.clone()]);
         } else if(!num_mistle) {
-          breakdown.push(['mistletoe neighbor', true, totalmul, result.clone()]);
+          breakdown.push(['automaton neighbor', true, totalmul, result.clone()]);
         } else {
           breakdown.push(['mistletoe and automaton neighbors', true, totalmul, result.clone()]);
         }

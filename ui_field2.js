@@ -100,6 +100,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
     if(automaton) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonNeighborBoost(breakdown).toPercentString()) + '<br/>';
     }
+    if(automaton && haveEtherealMistletoeUpgrade(mistle_upgrade_automaton_florality)) {
+      result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonLotusNeighborBoost().toPercentString()) + '<br/>';
+    }
     if(squirrel) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealSquirrelNeighborBoost(breakdown).toPercentString()) + '<br/>';
     }
