@@ -377,20 +377,22 @@ function getFishInfoHTML(f, c, opt_detailed) {
   } else if(c.tier > 0 || (state.infinity_ascend && c.tier >= 0)) {
     result += ' (tier ' + (c.tier + 1) + ')';
   }
-  result += '<br>';
 
   var upgrade_cost = [undefined];
   var upgrade_fish = getUpgradeFish(f.x, f.y, false, upgrade_cost);
 
-  if(c.effect_description) result += '<br>' + c.effect_description;
+  if(c.effect_description) result += '<br><br>' + c.effect_description;
+
+  var restrictions = getFishPlacementRestrictionDescription(c);
+  if(restrictions) result += '<br><br>Placement restriction: ' + restrictions;
 
 
   var total = getFishMultiplier(c.type, state, 0);
   if(total.neqr(1)) {
     var current = getFishMultiplier(c.type, state, 3);
     var typename = getFishTypeName(c.type);
-    result += '<br>';
-    result += '<br>Total bonus for all ' + typename + ': ' + total.subr(1).toPercentString();
+    result += '<br><br>';
+    result += 'Total bonus for all ' + typename + ': ' + total.subr(1).toPercentString();
     if(total.neq(current)) result += '<br>Current (time weighted due to recently placing fishes): ' + current.subr(1).toPercentString();
   }
 
@@ -401,7 +403,7 @@ function getFishInfoHTML(f, c, opt_detailed) {
   // NOT say that it's ok to plant the next one, which would happen when passing the field 'f' variable since it then assumes the next eel well _replace_ this one
   var canplace = canPlaceThisFishGivenCounts(c, undefined, limit_reason, undefined);
 
-  result += '<br>';
+  result += '<br><br>';
   result += '<br/>• Base cost: ' + c.cost.toString();
   if(canplace) {
     result += '<br/>• Next placing cost (p): ' + c.getCost().toString() + ' (' + getCostAffordTimer(c.getCost()) + ')';
@@ -898,6 +900,9 @@ function makePlantFishDialog(x, y, opt_f, opt_replace, opt_recoup) {
         result += '<br>' + c.effect_description;
       }
       if(c.tagline) result += '<br/><br/>' + upper(c.tagline);
+
+      var restrictions = getFishPlacementRestrictionDescription(c);
+      if(restrictions) result += '<br><br>Placement restriction: ' + restrictions;
 
       var basecost = c.getBaseCost();
       var cost = c.getCost();

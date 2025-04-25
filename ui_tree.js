@@ -101,17 +101,21 @@ function makeTreeDialog() {
       if(maxlevel > 0) {
         if(state.treelevel > maxlevel) {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You beat your previous best of lvl ' + maxlevel + ' with lvl ' + state.treelevel;
+          if(c.cycling > 1) text += ' for this cycle';
           text += '. This will bring your bonus for this challenge from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
           text += ', and your total challenge production bonus from ' + totalChallengeBonus(0).toPercentString() + ' to ' + totalChallengeBonusIncludingCurrentRun(0).toPercentString();
           if(basicfar) addbasicmessage = true;
         } else if(!basiccapped) {
-          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet beat your previous best of lvl ' + maxlevel + '.';
+          text += '<b>Challenge active</b>: ' + upper(c.name) + '. You did not yet beat your previous best of lvl ' + maxlevel + ((c.cycling > 1) ? ' for this cycle' : '') + '.';
           if(basicfar) addbasicmessage = true;
         } else {
           text += '<b>Challenge active</b>: ' + upper(c.name) + '. You have capped this challenge, you reached ' + maxlevel + ' and it does not give any more bonus or achievements above ' + basicmaxlevel + '.';
         }
       } else {
         text += '<b>Challenge active</b>: ' + upper(c.name);
+        if(c.cycling > 1 && c2.maxlevel > 0 && maxlevel == 0) {
+          text += '. Setting max level for this cycle for the first time';
+        }
         if(bonus_before.neq(bonus_after)) {
           text += '. So far, it will bring your bonus for this challenge from ' + bonus_before.toPercentString() + ' to ' + bonus_after.toPercentString();
           text += ', and your total challenge production bonus from ' + total_bonus_before.toPercentString() + ' to ' + total_bonus_after.toPercentString();
@@ -130,7 +134,9 @@ function makeTreeDialog() {
           text += '<br>Current challenge target level: <b>' + c.targetlevel[c2.completed] + '</b>';
         }
       } else {
-        if(!c2.completed) {
+        if(c2.completed) {
+          text += '<br>Challenge target level (already completed): <b>' + c.targetlevel[0] + '</b>';
+        } else {
           text += '<br>Challenge target level: <b>' + c.targetlevel[0] + '</b>';
         }
       }

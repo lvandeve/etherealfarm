@@ -99,7 +99,7 @@ function getCropTypeHelp3(type, opt_state) {
     case CROPTYPE_FLOWER: return have_fishes ? 'Boosts neighboring berries. Also boosts mushrooms but with a smaller boost depending on relative tier.' : 'Boosts neighboring berries.';
     case CROPTYPE_STINGING: return 'Boosts neighboring mushrooms. The boost depends on the tier of the stinging crop relative to the mushroom, and too low tier gives no boost.';
     case CROPTYPE_BRASSICA: return 'Produces seeds, but has a limited lifespan. Produces more seeds than its initial cost over its lifespan.';
-    case CROPTYPE_MISTLETOE: return '';
+    case CROPTYPE_MISTLETOE: return 'Allows ascending to the next level of infinity';
     case CROPTYPE_BEE: return have_fishes ? 'Boosts neighboring flowers. For the flower boost to mushrooms, also has a small effect based on tier.' : 'Boosts neighboring flowers.';
     case CROPTYPE_CHALLENGE: return '';
     case CROPTYPE_FERN: return 'Copies all infinity seed and spores resources of the entire field, for crops of the same tier';
@@ -4289,7 +4289,8 @@ var ethereal_basic_boost_cache_counter = 0;
 
 // boost from ethereal crops to basic field
 Crop2.prototype.getBasicBoost = function(f, breakdown) {
-  if(f && !breakdown && f.ethereal_basic_boost_cache_ && f.ethereal_basic_boost_cache_counter_ == ethereal_basic_boost_cache_counter) return f.ethereal_basic_boost_cache_;
+  var use_cache = f && f.cropIndex() == this.index; // don't use the cache when showing e.g. 'what-if' scenario for the 'boost (here)' tooltip when planting a new crop here
+  if(f && !breakdown && use_cache && f.ethereal_basic_boost_cache_ && f.ethereal_basic_boost_cache_counter_ == ethereal_basic_boost_cache_counter) return f.ethereal_basic_boost_cache_;
 
   var result = this.effect.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
@@ -4510,7 +4511,7 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     }
   }
 
-  if(f && !breakdown) {
+  if(f && !breakdown && use_cache) {
     f.ethereal_basic_boost_cache_counter_ = ethereal_basic_boost_cache_counter;
     f.ethereal_basic_boost_cache_ = result;
   }
@@ -8935,7 +8936,11 @@ Crop3.prototype.getProd = function(f, breakdown) {
                 if(c3.tier >= this.tier - 1) {
                   var boost2 = new Num(0.5);
                   if(c3.tier <= this.tier - 1) boost2 = new Num(0.25);
-                  if(c3.tier >= this.tier + 1) boost2 = new Num(0.75);
+                  // the +3 and +4 cases are for silver and electrum beehive to translucent mushroom, to still see some difference there. That's the only case where such extreme tier differences can naturally occur. The +2 case does not occur naturally and so its difference is made very small to have some more spread in the +3/+4 case.
+                  else if(c3.tier >= this.tier + 4) boost2 = new Num(1.0);
+                  else if(c3.tier >= this.tier + 3) boost2 = new Num(0.77);
+                  else if(c3.tier >= this.tier + 2) boost2 = new Num(0.76);
+                  else if(c3.tier >= this.tier + 1) boost2 = new Num(0.75);
                   if(boost2.neqr(0)) {
                     beeboost.addInPlace(boost2);
                     numbees++;
@@ -9732,6 +9737,22 @@ function canPlaceThisFishGivenCounts(c, opt_f, opt_short_reason, opt_long_reason
     return false;
   }
   return true;
+}
+
+// similar to the messages output by canPlaceThisFishGivenCounts, but for general description without knowing / having a fish count
+function getFishPlacementRestrictionDescription(c) {
+  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0) {
+    return 'Can have only max 1 of this fish';
+  } else if(c.index == oranda_2) {
+    return 'Can have only max 1 black oranda. This is the final infinity fish.';
+  } else if(c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) {
+    return 'Can have only max 4 of this fish type';
+  } else if(c.type == FISHTYPE_JELLYFISH) {
+    return 'Can have only max 5 of this fish type';
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0) {
+    return 'Can have only max 9 of this fish type, and cannot mix tiers';
+  }
+  return undefined;
 }
 
 
@@ -10639,7 +10660,8 @@ function registerPlantTypeMedal3(cropid) {
   var c = crops3[cropid];
   var mul = getPlantTypeMedalBonus3(cropid);
   return registerMedal('Infinity ' + lower(c.name), 'Have a ' + c.name + ' on the infinity field', c.image[4], function() {
-    if(c.type == CROPTYPE_BRASSICA) return state.crop3count[cropid] >= 1
+    if(c.type == CROPTYPE_BRASSICA) return state.crop3count[cropid] >= 1;
+    if(c.index == mistletoe3_11 && state.infinity_ascend >= 1) return true; // infinity mistletoe medal was forgotten, and won't be reachable by already ascended players without this tweak
     return state.fullgrowncrop3count[cropid] >= 1; // alternatives: fullgrowncrop3count to require it to grow fully, crop3count to get it immediately when planting. Make sure this matches how .had is set, to avoid that you can get medal early, but next crop unlocks only later, which is confusing
   }, Num(mul));
 };
@@ -10716,8 +10738,10 @@ registerPlantTypeMedal3(bee3_11);
 registerPlantTypeMedal3(stinging3_11);
 registerPlantTypeMedal3(fern3_11);
 registerPlantTypeMedal3(nut3_11);
-registerPlantTypeMedal3(lotus3_11);
+var medal_lotus3_11 = registerPlantTypeMedal3(lotus3_11);
 registerPlantTypeMedal3(mush3_t);
+var medal_mistletoe3_11 = registerPlantTypeMedal3(mistletoe3_11);
+changeMedalDisplayOrder(medal_mistletoe3_11, medal_lotus3_11);
 
 
 // fish crop achievements

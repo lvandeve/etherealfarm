@@ -30,6 +30,14 @@ function getChangeLog() {
     }
   }
 
+  text += '0.15.3 (2025-04-25)';
+  text += '<br/>• Slightly buffed electrum infinity beehive effect on translucent mushroom so that it makes a difference compared to silver beehive.';
+  text += '<br/>• Infinity mistletoe tweaks: its visibility only unlocks later, added tooltip description of its effect, and added missing achievement.';
+  text += '<br/>• Fishes with placement restrictions now state this in their info dialogs and tooltips.';
+  text += '<br/>• Ethereal mistletoe now shows an exclamation mark when no upgrade active.';
+  text += '<br/>• Bug- and typo fixes.';
+  text += '<br/><br/>';
+
   text += '0.15.2 (2025-02-22)';
   text += '<br/>• New ethereal crops and upgrades.';
   text += '<br/>• New ethereal mistletoe upgrades.';

@@ -179,43 +179,45 @@ function renderUpgradeDialog(chip, completed) {
   var u = upgrades[chip.u];
   var okfun = undefined;
   var okname = undefined;
-  if(!u.is_choice) {
-    okfun = function() {
-      addAction({type:ACTION_UPGRADE, u:u.index, shift:false});
-      if(u.maxcount == 1) closeAllDialogs();
-      update();
-      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
-      return true;
-    };
-    okname = u.maxcount == 1 ? 'buy' : 'buy one';
-  }
   var extrafun = undefined;
   var extraname = undefined;
-  if(!u.is_choice && u.maxcount != 1) {
-    extrafun = function() {
-      addAction({type:ACTION_UPGRADE, u:u.index, shift:true});
-      //closeAllDialogs();
-      update();
-      dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
-      return true;
-    };
-    extraname = 'buy many';
-  }
-  if(u.is_choice) {
-    okfun = function() {
-      addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
-      closeAllDialogs();
-      update();
-      return true;
-    };
-    okname = 'buy ' + u.choicename_a;
-    extrafun = function() {
-      addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
-      closeAllDialogs();
-      update();
-      return true;
-    };
-    extraname = 'buy ' + u.choicename_b;
+  if(!completed) {
+    if(!u.is_choice) {
+      okfun = function() {
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:false});
+        if(u.maxcount == 1) closeAllDialogs();
+        update();
+        dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
+        return true;
+      };
+      okname = u.maxcount == 1 ? 'buy' : 'buy one';
+    }
+    if(!u.is_choice && u.maxcount != 1) {
+      extrafun = function() {
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:true});
+        //closeAllDialogs();
+        update();
+        dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
+        return true;
+      };
+      extraname = 'buy many';
+    }
+    if(u.is_choice) {
+      okfun = function() {
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:1});
+        closeAllDialogs();
+        update();
+        return true;
+      };
+      okname = 'buy ' + u.choicename_a;
+      extrafun = function() {
+        addAction({type:ACTION_UPGRADE, u:u.index, shift:false, choice:2});
+        closeAllDialogs();
+        update();
+        return true;
+      };
+      extraname = 'buy ' + u.choicename_b;
+    }
   }
   chip.updateInfoText();
   var dialog = createDialog({
@@ -228,7 +230,6 @@ function renderUpgradeDialog(chip, completed) {
   });
   dialog.content.div.innerHTML = getUpgradeInfoText(u, completed, true);
   renderUpgraceIcon(dialog.icon, u);
-
 }
 
 // make a button for planting a crop with picture, price and info. w should be larger than h for good effect.
@@ -305,7 +306,7 @@ function renderUpgradeChip(u, x, y, w, chip, completed, opt_ui_location) {
   styleButton0(canvasFlex.div);
 
   registerAction(canvasFlex.div, function(shift, ctrl) {
-    renderUpgradeDialog(chip);
+    renderUpgradeDialog(chip, completed);
   }, 'Show upgrade info', {
     tooltip:function() {
       updateInfoText();

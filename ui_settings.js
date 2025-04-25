@@ -1037,7 +1037,7 @@ function createChangelogDialog() {
     text += '<b>Holiday event active: presents with random effects will drop at regular time intervals between December 7th and January 7th!</b>';
     text += '<br/><br/>';
   } else if(holiday & 2) {
-    text += '<b>Holiday event active: eggs with random effects will drop at regular time intervals between Match 25th and April 25th!</b>';
+    text += '<b>Holiday event active: eggs with random effects will drop at regular time intervals between March 25th and April 25th!</b>';
     text += '<br/><br/>';
   } else if(holiday & 4) {
     text += '<b>Holiday event active: you can now grow a pumpkin, it acts like your best berry but is bigger so can get more boosts! This event is active from October 6th until November 6th</b>';

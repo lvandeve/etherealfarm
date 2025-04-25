@@ -2651,7 +2651,7 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[flower3_11].had) unlockInfinityCrop(fern3_11);
   if(state.crops3[fern3_11].had) unlockInfinityCrop(nut3_11);
   if(state.crops3[nut3_11].had) unlockInfinityCrop(lotus3_11);
-  if(state.crops3[brassica3_11].had) unlockInfinityCrop(mistletoe3_11);
+  if(state.crops3[nut3_11].had) unlockInfinityCrop(mistletoe3_11);
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)

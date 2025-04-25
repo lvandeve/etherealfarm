@@ -621,8 +621,11 @@ function updateField2CellUI(x, y) {
   }
 
   var largeravailable = c && c.tier >= 0 && state.highestoftype2unlocked[c.type] > state.highestoftype2planted[c.type] && state.res.resin.gt(crops2[state.highestcropoftype2unlocked[c.type]].cost.resin);
+  var mistletoeupgradeavailable = haveEtherealMistletoe() && state.mistletoeupgrade < 0;
 
-  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 || progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active || fd.largeravailable != largeravailable || fd.squirrel_evolution != state.squirrel_evolution) {
+  if(fd.index != f.index || fd.growstage != growstage || season != fd.season || state.treelevel2 != fd.treelevel2 ||
+     progresspixel != fd.progresspixel || fd.holiday_hats_active != holiday_hats_active || fd.largeravailable != largeravailable ||
+     fd.squirrel_evolution != state.squirrel_evolution || fd.mistletoeupgradeavailable != mistletoeupgradeavailable) {
     fd.index = f.index;
     fd.growstage = growstage;
     fd.season = season;
@@ -631,6 +634,7 @@ function updateField2CellUI(x, y) {
     fd.holiday_hats_active = holiday_hats_active;
     fd.largeravailable = largeravailable;
     fd.squirrel_evolution = state.squirrel_evolution;
+    fd.mistletoeupgradeavailable = mistletoeupgradeavailable;
 
     var r = util.pseudoRandom2D(x, y, 55555);
     var fieldim = images_field[season];
@@ -644,6 +648,9 @@ function updateField2CellUI(x, y) {
       var c = crops2[f.cropIndex()];
       blendImage(c.image[growstage], fd.canvas);
       if(largeravailable) blendImage(image_field_larger_available_arrow, fd.canvas);
+      if(c.index == mistletoe2_0 && mistletoeupgradeavailable) {
+        blendImage(image_exclamation_small, fd.canvas);
+      }
       if(f.growth >= 1) {
         // fullgrown, so hide progress bar
         setProgressBar(fd.progress, -1, undefined);
