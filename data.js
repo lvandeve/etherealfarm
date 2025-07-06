@@ -9150,11 +9150,11 @@ Crop3.prototype.getProd = function(f, breakdown) {
     }
   }
 
-  if(this.type == CROPTYPE_BERRY && state.squirrel_upgrades[upgradesq_infinity_boost]) {
-    var mul = new Num(upgradesq_infinity_boost_value);
-    result.mulrInPlace(mul);
-    if(breakdown) breakdown.push(['squirrel infinity boost', true, mul, result.clone()]);
-  }
+  //if(this.type == CROPTYPE_BERRY && state.squirrel_upgrades[upgradesq_infinity_boost]) {
+  //  var mul = new Num(upgradesq_infinity_boost_value);
+  //  result.mulrInPlace(mul);
+  //  if(breakdown) breakdown.push(['squirrel infinity boost', true, mul, result.clone()]);
+  //}
 
 
   return result;
