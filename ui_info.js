@@ -761,7 +761,7 @@ function openTimeInfoDialog() {
       }
     }
     if(s == 2) {
-      result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production, ' + getAutumnMushroomConsumptionReduction().toPercentString() + ' less seed consumption<br>';
+      result += '• +' + getAutumnMushroomBonus().subr(1).toPercentString() + ' bonus to mushroom spores production (but also consumption), ' + getAutumnMushroomConsumptionReduction().toPercentString() + ' less seed consumption<br>';
       if(getAutumnBerryBonus().neqr(1)) {
         result += '• +' + getAutumnBerryBonus().subr(1).toPercentString() + ' bonus to berry seed production<br>';
       }

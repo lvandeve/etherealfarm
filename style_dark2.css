@@ -125,6 +125,12 @@ body {
   background-color: #0001;
 }
 
+.efButtonTranslucentCantRestricted {
+  background-color: #0000;
+  border: 1px solid #666;
+  color: #855;
+}
+
 .efButtonMistletoeOngoing {
   color: #c99;
 }

@@ -794,7 +794,12 @@ function makeFishChip(fish, x, y, numcols, parent, opt_plantfun, opt_showfun, op
 
   infoFlex.div.innerHTML = text;
 
-  if(opt_plantfun && state.res.lt(cost)) {
+
+  // the fishcount check is for the following reason: restricted is to mark the button as 'can't place this fish', but if you have 0 of them we DO want the button to show up as normal, for the case whe na higher tier of fish can replace lower tier ones
+  var restricted = (fish.tier >= state.highestoftypefishunlocked[fish.type]) ? !canPlaceThisFishGivenCountsIgnoringLowerTiers(fish) : !canPlaceThisFishGivenCounts(fish);
+  if(opt_plantfun && restricted) {
+    flex.div.className = 'efButtonTranslucentCantRestricted';
+  } else if(opt_plantfun && state.res.lt(cost)) {
     flex.div.className = 'efButtonTranslucentCantAfford';
     registerUpdateListener(function() {
       if(!flex || !document.body.contains(infoFlex.div)) return false;

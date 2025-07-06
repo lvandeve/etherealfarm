@@ -104,6 +104,12 @@ a:visited {
   background-color: #0001;
 }
 
+.efButtonTranslucentCantRestricted {
+  background-color: #0000;
+  border: 1px solid black;
+  color: #b88;
+}
+
 .efButtonMistletoeOngoing {
   color: #a66;
 }

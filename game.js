@@ -2276,7 +2276,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     var roll_abilities = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
     var roll_abilities_level = [getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll(), getRandomFruitRoll()];
 
-    var tier = getNewFruitTier(roll_tier, treelevel, state.squirrel_upgrades[upgradesq_fruittierprob].count || state.squirrel_upgrades[upgradesq_fruittierprob2].count);
+    var tier = getNewFruitTier(roll_tier, treelevel, state.squirrel_upgrades[upgradesq_fruittierprob].count || state.squirrel_upgrades[upgradesq_fruittierprob2].count || state.squirrel_upgrades[upgradesq_fruittierprob3].count);
 
     var fruit = new Fruit();
     fruit.tier = tier;
@@ -2334,7 +2334,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
 
     if(state.g_numfruits >= 4) {
       var prob = 0.75;
-      if(state.squirrel_upgrades[upgradesq_seasonfruitprob].count || state.squirrel_upgrades[upgradesq_seasonfruitprob2].count) prob = 0.666; // from 1/4th to 1/3th probability
+      if(state.squirrel_upgrades[upgradesq_seasonfruitprob].count || state.squirrel_upgrades[upgradesq_seasonfruitprob2].count || state.squirrel_upgrades[upgradesq_fruittierprob3]) prob = 0.666; // from 1/4th to 1/3th probability
       if(roll_season > prob) {
         var season = getSeason();
         if(season >= 0 && season <= 3) {
@@ -2407,6 +2407,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     if(state.squirrel_upgrades[upgradesq_doublefruitprob].count) double_prob = upgradesq_doublefruitprob_prob;
     if(state.squirrel_upgrades[upgradesq_fruittierprob2].count) double_prob += upgradesq_doublefruitprob_prob_half;
     if(state.squirrel_upgrades[upgradesq_seasonfruitprob2].count) double_prob += upgradesq_doublefruitprob_prob_half;
+    if(state.squirrel_upgrades[upgradesq_fruittierprob3].count) double_prob += upgradesq_doublefruitprob_prob;
 
     if(double_prob && !opt_nodouble && fruits.length == 1 && roll_double < double_prob) {
       // probability of a second fruit

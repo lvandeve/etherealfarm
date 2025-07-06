@@ -459,14 +459,15 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
   // with ethereal upgrades, spring also benefits mushrooms a bit, to catch up with other seasons ethereal upgrades
   if(season == 1 && this.type == CROPTYPE_MUSH) {
     var bonus = getSummerMushroomBonus();
+    // unlike in autumn, not using posmul here. This can give a huge discrepancy when not having the watercress and mushroom soup upgrade, but one is expected to have that upgrade eventually anyway and otherwise summer is too close to autumn while spring/winter still have much lower spores
     result.mulInPlace(bonus);
     if(breakdown && bonus.neqr(1)) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
 
   if(season == 2 && this.type == CROPTYPE_MUSH) {
     var bonus = getAutumnMushroomBonus();
-    result.posmulInPlace(bonus);
-    var reduction = Num(1).sub(getAutumnMushroomConsumptionReduction());
+    result.mulInPlace(bonus);
+    var reduction = (new Num(1)).sub(getAutumnMushroomConsumptionReduction());
     result.negmulInPlace(reduction);
     if(breakdown) breakdown.push([seasonNames[season], true, bonus, result.clone()]);
   }
@@ -657,6 +658,10 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     if(breakdown) breakdown.push(['not the main 2x2 crop piece', true, Num(0), result.clone()]);
     return result;
   }
+  if(this.type == CROPTYPE_NUT && state.squirrel_upgrades[upgradesq_nuts].count) {
+    var mul = (new Num(upgradesq_nuts_value)).powr(state.squirrel_upgrades[upgradesq_nuts].count);
+    if(breakdown) breakdown.push(['squirrel nuts upgrade', true, mul, result.clone()]);
+  }
 
   // The f.isFullGrown check considers all brassica fullgrown (so brassica aren't affected by this), except those that are end of life from infinite lifetime (so those get 0 production, but still copy). This behavior is not by design (EOL brassica was only implemented later) but is ok and sensible.
   if((!pretend || pretend == 3) && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
@@ -706,10 +711,15 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   if(!basic) {
     // squirrel evolution
     if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) {
-      if(state.squirrel_evolution > 0) {
+      if(state.squirrel_evolution >= 1) {
         var mul = squirrel_epoch_prod_bonus.addr(1);
         result.mulInPlace(mul);
         if(breakdown) breakdown.push(['squirrel evolution', true, mul, result.clone()]);
+      }
+      if(state.squirrel_evolution >= 2) {
+        var mul = squirrel_epoch_prod_bonus2.addr(1);
+        result.mulInPlace(mul);
+        if(breakdown) breakdown.push(['squirrel evolution II', true, mul, result.clone()]);
       }
     }
   }
@@ -883,6 +893,11 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
           bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
+        }
+        if(state.squirrel_upgrades[upgradesq_mushroom_efficiency].count) {
+          var mul = (new Num(1)).subr(upgradesq_mushroom_efficiency_value);
+          result.negmulInPlace(mul);
+          if(breakdown) breakdown.push(['squirrel efficiency', true, mul, result.clone()]);
         }
       }
     }
@@ -7256,7 +7271,7 @@ autumn: mushrooms
 winter: tree
 */
 
-// multipliers, e.g. 2 means +100%
+// multipliers, e.g. 2 means +100%. TODO: rename 'bonus' to 'multplier' to reflect that
 var bonus_season_flower_spring = 1.5;
 var bonus_season_summer_berry = 2.5;
 var bonus_season_autumn_mushroom = 2.5;
@@ -7270,6 +7285,7 @@ var season_ethereal_upgrade_exponent = 1.25;
 var bonus_season_summer_mushroom = 0.5; // with ethereal upgrades only
 var bonus_season_autumn_berry = 0.5; // with ethereal upgrades only
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 function getSpringFlowerBonus() {
   var bonus = Num(bonus_season_flower_spring);
 
@@ -7292,6 +7308,7 @@ function getSpringFlowerBonus() {
   return bonus;
 }
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 function getSummerBerryBonus() {
   var bonus = Num(bonus_season_summer_berry);
 
@@ -7314,12 +7331,14 @@ function getSummerBerryBonus() {
   return bonus;
 }
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 function getSummerMushroomBonus() {
   return getSummerBerryBonus().subr(bonus_season_summer_berry).mulr(bonus_season_summer_mushroom).addr(1);
 }
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 function getAutumnMushroomBonus() {
-  var bonus = Num(bonus_season_autumn_mushroom);
+  var bonus = new Num(bonus_season_autumn_mushroom);
 
   var ethereal_season = state.upgrades2[upgrade2_season[2]].count;
   if(!basicChallenge() && ethereal_season > 0) {
@@ -7342,13 +7361,17 @@ function getAutumnMushroomBonus() {
 
 // returns percentage to subtract, e.g. if this returns 0.3, then the consumption is 70% of the original consumption
 function getAutumnMushroomConsumptionReduction() {
-  return new Num(0.5);
+  //return new Num(0.5);
+  //return new Num(0.75);
+  return new Num(0.875);
 }
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 function getAutumnBerryBonus() {
   return getAutumnMushroomBonus().subr(bonus_season_autumn_mushroom).mulr(bonus_season_autumn_berry).addr(1);
 }
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 function getAutumnMistletoeBonus() {
   var bonus = Num(bonus_season_autumn_mistletoe);
 
@@ -7390,6 +7413,7 @@ function getWinterTreeWarmth() {
   return bonus;
 }
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 function getWinterTreeResinBonus() {
   var result = Num(bonus_season_winter_resin);
   var ethereal_season = state.upgrades2[upgrade2_season[3]].count;
@@ -7400,6 +7424,7 @@ function getWinterTreeResinBonus() {
   return result;
 }
 
+// returns multiplier instead of bonus (TODO: rename function to reflect that)
 // resin bonus for other seasons, if they have their respective ethereal upgrade bonus unlocked
 // this is intended for summer and autumn, spring has the grow speed increase instead
 function getAlternateResinBonus(season) {
@@ -8097,6 +8122,27 @@ var upgradesq_fruittierprob2 = registerSquirrelUpgrade('fruit tier and double fr
 var upgradesq_seasonfruitprob2 = registerSquirrelUpgrade('seasonal fruit and double fruit chance', undefined, 'increases probability of getting a better seasonal fruit drop from 1/4th to 1/3rd. In addition, adds ' + Num(upgradesq_doublefruitprob_prob_half).toPercentString() + ' chance to drop 2 fruits at once', images_apricot[3]);
 
 
+var upgradesq_evolution2 = registerSquirrelUpgrade('Evolve squirrel II', function() {
+      showSquirrelEvolutionDialog();
+      return true; // indicate that this upgrade is not bought and applied immediately, it shows a dialog first
+    },
+    'Resets and removes all squirrel upgrades. Gives a flat permanent production bonus. Replaces the squirrel upgrade tree with a new, more expensive, tree. You will be weaker after this, but eventually get stronger than ever before thanks to the new upgrades.',
+    image_squirrel_evolution);
+
+var upgradesq_fruittierprob3 = registerSquirrelUpgrade('fruit tier, seasonal and double fruit chance', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels. In addition, increases probability of getting a better seasonal fruit drop from 1/4th to 1/3rd. In addition, adds ' + Num(upgradesq_doublefruitprob_prob).toPercentString() + ' chance to drop 2 fruits at once', images_apple[4]);
+
+var upgradesq_infinity_boost_value = 0.1;
+var upgradesq_infinity_boost = registerSquirrelUpgrade('infinity boost', undefined, 'Adds +' + Num(upgradesq_doublefruitprob_prob).toPercentString() + ' boost to infinity seeds income', image_infinity);
+
+var upgradesq_mushroom_efficiency_value = 0.5;
+var upgradesq_mushroom_efficiency = registerSquirrelUpgrade('mushroom efficiency', undefined, 'Reduces mushroom seed consumption by ' + Num(upgradesq_mushroom_efficiency_value).toPercentString(), image_seed);
+
+var upgradesq_nuts_value = 5;
+var upgradesq_nuts = registerSquirrelUpgrade('nuts boost', undefined, '' + upgradesq_nuts_value + 'x boost to nuts production (multiplicatively)', image_nuts);
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 var STAGE_REGISTER_EVOLUTION;
 ////////////////////////////////////////////////////////////////////////////////
@@ -8142,13 +8188,37 @@ registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_flower], [upgradesq_e
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_mushroom], [upgradesq_squirrel], [upgradesq_berry]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_bee], [upgradesq_weather_duration], [upgradesq_nettle]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_automaton], undefined, true);
+//registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_evolution2], undefined, true);
 
+////////////////////////////////////////////////////////////////////////////////
+/*
+STAGE_REGISTER_EVOLUTION = 2;
+
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_flower, upgradesq_prestiged_flower, upgradesq_flower_multiplicity], undefined, true);
+
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts], undefined, [upgradesq_mushroom_efficiency]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_fruitmix123], undefined, [upgradesq_watercress_mush]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_fruittierprob3], undefined, [upgradesq_bee_multiplicity]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_infinity_boost], undefined, [upgradesq_growspeed]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton], undefined, [upgradesq_squirrel]);
+
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_nettle, upgradesq_stinging_multiplicity], undefined, true);
+
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts, upgradesq_mushroom_multiplicity_boost], undefined, [upgradesq_nuts, upgradesq_berry_multiplicity_boost]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_prestiged_mushroom, upgradesq_prestiged_berry], undefined, [upgradesq_mushroom, upgradesq_berry], undefined, true);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton2, upgradesq_resin], undefined, [upgradesq_squirrel2, upgradesq_twigs], undefined, false);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_watercresstime2, upgradesq_diagonal_brassica], undefined, [upgradesq_weather_duration, upgradesq_bee], undefined, false);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_essence, upgradesq_highest_level], undefined, [upgradesq_ethtree_diag, upgradesq_leveltime], undefined, false);
+
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_ethtree2], undefined, true);
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
 
 // these values are as bonus, so this means the multiplier is this value + 1 (e.g. bonus 1.5 means +150%, or x2.5)
-var squirrel_epoch_prod_bonus = Num(100);
+var squirrel_epoch_prod_bonus = Num(100); // for first squirrel evolution
+var squirrel_epoch_prod_bonus2 = Num(100); // for second squirrel evolution
 // aka infinity_ascend_bonus
 // designed such that once you're at end of the first tier (zinc) after ascend (with half the map full of berries, and 4 flowers), your infinity bonus should be similar to what you had before ascenscion again.
 // a reasonable basic field bonus at end of infinity pre-ascend (when having max oranda: 1 black, 3 red, and having maxed basic-field-giving crops given enough resources to afford mistletoe with 10e81 as it was during beta version) is:
@@ -8178,6 +8248,11 @@ function getSquirrelUpgradeCost(i) {
     i--;
     // the last one of evolution 0 costs 1e42, but given the set-back after squirrel reset that's very hard to reach now, 1e39 is quite a bit more reachable
     var result = Num(20).powr(i).mulr(1e39);
+    return result;
+  }
+  if(state.squirrel_evolution == 2) {
+    // the last one of evolution 0 costs 172e81, but given the set-back after squirrel reset that's very hard to reach now, make it more reachable
+    var result = Num(25).powr(i).mulr(1e78);
     return result;
   }
   return Num(Infinity);
@@ -9075,12 +9150,18 @@ Crop3.prototype.getProd = function(f, breakdown) {
     }
   }
 
+  if(this.type == CROPTYPE_BERRY && state.squirrel_upgrades[upgradesq_infinity_boost]) {
+    var mul = new Num(upgradesq_infinity_boost_value);
+    result.mulrInPlace(mul);
+    if(breakdown) breakdown.push(['squirrel infinity boost', true, mul, result.clone()]);
+  }
+
 
   return result;
 }
 
 Crop3.prototype.minForBrassicaSelfSustain = function() {
-  return this.cost.infseeds.divr(this.planttime).mulr(1.01);
+  return this.getCost().infseeds.divr(this.getPlantTime()).mulr(1.01);
 }
 
 // boost from inf field to inf field (flowers to berries, and flowers themselves compute their boost from infinity bees here)
@@ -9734,6 +9815,24 @@ function canPlaceThisFishGivenCounts(c, opt_f, opt_short_reason, opt_long_reason
     // this is checking that you don't have a fish of this same type, but of a different tier (by checking fishtype count is non-zero but fish count of the current one is zero), but do allow this when you have exactly one fish of this tier and are replacing it with the same type (even if of a different tier)
     if(opt_short_reason) opt_short_reason[0] = 'Max 1 shrimp tier'; // of any shrimp type across all tiers, IF higher tier than 0 is present
     if(opt_long_reason) opt_long_reason[0] = 'Cannot have multiple tiers of shrimp at the same time. Remove all other shrimp, then try to place this shrimp tier again (alternatively, delete all but one shrimp, and upgrade the remaining one to the higher tier)';
+    return false;
+  }
+  return true;
+}
+
+// This is for UI, specifically for reddening the fish buttons
+function canPlaceThisFishGivenCountsIgnoringLowerTiers(c) {
+  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && state.fishcount[c.index]) {
+    return false;
+  } else if(c.index == oranda_2 && state.fishcount[c.index]) {
+    return false;
+  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && state.fishcount[c.index] >= 4) {
+    return false;
+  } else if(c.type == FISHTYPE_JELLYFISH && state.fishcount[c.index] >= 5) {
+    return false;
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishcount[c.index] >= 9) {
+    return false;
+  } else if(c.type == FISHTYPE_SHRIMP && state.fishcount[c.index] > 0 && state.fishcount[c.index] == 0) {
     return false;
   }
   return true;
@@ -10547,6 +10646,10 @@ var medal_challenge_thistle_stingy = registerMedal('rather stingy', 'plant the e
   return state.challenge == challenge_thistle && state.fullgrowncroptypecount[CROPTYPE_STINGING] >= (state.numw * state.numh - 2);
 }, Num(4));
 changeMedalDisplayOrder(medal_challenge_thistle_stingy, medal_challenge_thistle);
+
+registerMedal('squirrel evolution II', 'evolve the squirrel a second time', image_squirrel_evolution, function() {
+  return state.squirrel_evolution >= 2;
+}, Num(100));
 
 medal_register_id = 3040;
 

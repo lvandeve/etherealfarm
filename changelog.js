@@ -30,6 +30,13 @@ function getChangeLog() {
     }
   }
 
+  text += '0.15.4 (2025-07-06)';
+  text += '<br/>• Fishes that can\'t be placed due to max fish count placement restrictions now have their button grayed out with slightly red font.';
+  text += '<br/>• Autumn reduction to seed consumption is now constant and no longer increasing with the autumn spore production income, above a certain percentage. This to prevent an uncontrollably growing difference with other seasons.';
+  text += '<br/>• Fixed bug with brassica self-sustainability mechanism not working in ascended infinity field.';
+  text += '<br/>• Code changes done in the background for next squirrel evolution, but this is not released yet here.';
+  text += '<br/><br/>';
+
   text += '0.15.3 (2025-04-25)';
   text += '<br/>• Slightly buffed electrum infinity beehive effect on translucent mushroom so that it makes a difference compared to silver beehive.';
   text += '<br/>• Infinity mistletoe tweaks: its visibility only unlocks later, added tooltip description of its effect, and added missing achievement.';

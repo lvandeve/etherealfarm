@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2024  Lode Vandevenne
+Copyright (C) 2020-2025  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -230,11 +230,12 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
       };
       buyname = 'Buy all to here';
     }
-    var dialog = createDialog({size:DIALOG_SMALL, functions:buyfun2, names:buyname, title:'Squirrel upgrade', icon:u.image});
+    var icon = unknown ? undefined : u.image;
+    var dialog = createDialog({size:DIALOG_SMALL, functions:buyfun2, names:buyname, title:'Squirrel upgrade', icon:icon});
     dialog.content.div.innerHTML = getSquirrelUpgradeInfoText(u, gated, is_gate, unknown);
   }, 'show squirrel upgrade info', {
     tooltip:function() {
-      return 'show info for: ' + u.name + '<br><hr><br>' + infoText;
+      return 'show info for: ' + (unknown ? '???' : u.name) + '<br><hr><br>' + infoText;
     }
   });
 
@@ -361,7 +362,7 @@ function updateSquirrelUI(opt_partial) {
         names:'Respec now',
         title:'Squirrel respec'
       });
-      dialog.content.div.innerHTML = 'Really respec? This resets and refunds all squirrel upgrades, and consumes 1 respec token<br><br>Tip: after respec, you can click on upgrades further below the tree (as long as their name is revealed) to buy all upgrades up to that one at once, so you don\'t have to click all the individual ones.';
+      dialog.content.div.innerHTML = 'Really respec? This resets and refunds all squirrel upgrades, and consumes 1 respec token<br><br>Respec tokens can be bought with amber in the amber tab.<br><br>Tip: after respec, you can click on upgrades further below the tree (as long as their name is revealed) to buy all upgrades up to that one at once, so you don\'t have to click all the individual ones.';
     }
   };
 
@@ -394,7 +395,7 @@ function updateSquirrelUI(opt_partial) {
 
     if(state.squirrel_evolution) {
       var seePrevButton = new Flex(buttonFlex, 0.52, 0, 0.76, 0.9);
-      addButtonAction(seePrevButton.div, showOldSquirrelTreeDialog);
+      addButtonAction(seePrevButton.div, bind(showOldSquirrelTreeDialog, 0));
       styleButton(seePrevButton.div, 1);
       seePrevButton.div.textEl.innerText = 'See old tree';
       registerTooltip(seePrevButton.div, 'Shows the old tree from before the squirrel evolution ');
@@ -430,24 +431,49 @@ function updateSquirrelUI(opt_partial) {
 
 var showing_old_squirrel_dialog = false;
 
-function showOldSquirrelTreeDialog() {
+function showOldSquirrelTreeDialog(opt_evolution_level) {
   if(!(state.squirrel_evolution > 0)) return;
+  if(opt_evolution_level == undefined) opt_evolution_level = 0;
 
   showing_old_squirrel_dialog = true; // for achievement
 
+  var functions = [];
+  var names = [];
+  var title = 'Pre-evolution squirrel tree';
+
+  if(opt_evolution_level == 1) title = 'Evolution I squirrel tree';
+  else if(opt_evolution_level == 2) title = 'Evolution II squirrel tree';
+  else if(opt_evolution_level > 2) title = 'Earlier evolution squirrel tree'; // todo automatically give it the correct name matching the evolution upgrade's name
+
+  if(opt_evolution_level + 1 < state.squirrel_evolution) {
+    functions.push(function() {
+      showOldSquirrelTreeDialog(opt_evolution_level + 1);
+    });
+    names.push('See next evolution');
+  }
+
+  if(opt_evolution_level > 0) {
+    functions.push(function() {
+      showOldSquirrelTreeDialog(opt_evolution_level - 1);
+    });
+    names.push('See prev evolution');
+  }
+
   var dialog = createDialog({
-    title:'View pre-evolution squirrel tree',
+    title:title,
     scrollable:true,
     icon:image_squirrel,
     onclose:function() {
       showing_old_squirrel_dialog = false;
-    }
+    },
+    functions:functions,
+    names:names
   });
   var scrollFlex = dialog.content;
 
   var y = 0;
 
-  var stages = squirrel_stages[0];
+  var stages = squirrel_stages[opt_evolution_level];
 
   for(var i = 0; i < stages.length; i++) {
     y = renderStage(scrollFlex, stages[i], y, true);
