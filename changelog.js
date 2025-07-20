@@ -30,6 +30,14 @@ function getChangeLog() {
     }
   }
 
+  text += '0.16.0 (2025-??-??)';
+  text += '<br/>• Added squirrel evolution II.';
+  text += '<br/>• Ethereal automaton details dialog now shows breakdown for regular and lotus neighbors separately.';
+  text += '<br/>• Fixed translucent fish types not working for the "fish types available but not placed" message.';
+  text += '<br/>• Fixed some infinity crop dialogs showing wrong base cost after ascend.';
+  text += '<br/><br/>';
+
+
   text += '0.15.4 (2025-07-06)';
   text += '<br/>• Fishes that can\'t be placed due to max fish count placement restrictions now have their button grayed out with slightly red font.';
   text += '<br/>• Autumn reduction to seed consumption is now constant and no longer increasing with the autumn spore production income, above a certain percentage. This to prevent an uncontrollably growing difference with other seasons.';

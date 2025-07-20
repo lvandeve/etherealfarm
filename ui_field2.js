@@ -89,6 +89,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
   var mistletoe = c.index == mistletoe2_0;
 
   var breakdown = opt_detailed ? [] : undefined;
+  var breakdown2 = opt_detailed ? [] : undefined;
 
   if(f.growth >= 1) {
     if(c.boost.neqr(0)) {
@@ -101,7 +102,7 @@ function getCropInfoHTML2(f, c, opt_detailed) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonNeighborBoost(breakdown).toPercentString()) + '<br/>';
     }
     if(automaton && haveEtherealMistletoeUpgrade(mistle_upgrade_automaton_florality)) {
-      result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonLotusNeighborBoost().toPercentString()) + '<br/>';
+      result += 'Boosting lotus neighbors orthogonally and diagonally: ' + (getEtherealAutomatonLotusNeighborBoost(breakdown2).toPercentString()) + '<br/>';
     }
     if(squirrel) {
       result += '<br/>Boosting non-lotus neighbors orthogonally and diagonally: ' + (getEtherealSquirrelNeighborBoost(breakdown).toPercentString()) + '<br/>';
@@ -171,6 +172,9 @@ function getCropInfoHTML2(f, c, opt_detailed) {
 
   if(breakdown && breakdown.length) {
     result += '<br>' + formatBreakdown(breakdown, true, 'Breakdown of neighbor boost');
+  }
+  if(breakdown2 && breakdown2.length) {
+    result += '<br>' + formatBreakdown(breakdown2, true, 'Breakdown of lotus neighbor boost');
   }
 
   if(mistletoe && getEtherealMistletoeEvolutionLevel() > 0) {

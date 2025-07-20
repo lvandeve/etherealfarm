@@ -475,7 +475,7 @@ registerHelpDialog(38, 'Auto prestige', 'You unlocked auto prestige!',
     images_automaton[4]);
 
 registerHelpDialog(39, 'Squirrel evolution', 'Squirrel evolution',
-    function() { return getSquirrelEvolutionHelp(); },
+    function() { return getSquirrelEvolutionHelp(1); },
     image_squirrel_evolution);
 
 registerHelpDialog(40, 'Auto action', 'You unlocked auto actions by the automaton!',

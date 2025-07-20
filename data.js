@@ -660,6 +660,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
   }
   if(this.type == CROPTYPE_NUT && state.squirrel_upgrades[upgradesq_nuts].count) {
     var mul = (new Num(upgradesq_nuts_value)).powr(state.squirrel_upgrades[upgradesq_nuts].count);
+    result.mulInPlace(mul);
     if(breakdown) breakdown.push(['squirrel nuts upgrade', true, mul, result.clone()]);
   }
 
@@ -4476,6 +4477,12 @@ Crop2.prototype.getBasicBoost = function(f, breakdown) {
     }
   }
 
+  if(state.squirrel_upgrades[upgradesq_eth_all].count) {
+    var mul = upgradesq_eth_all_boost.addr(1);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['squirrel all ethereal crops boost', true, mul, result.clone()]);
+  }
+
   if(this.type == CROPTYPE_BERRY) {
     var u = state.upgrades2[upgrade2_berry];
     var u2 = upgrades2[upgrade2_berry];
@@ -8113,6 +8120,7 @@ var upgradesq_ethtree_boost2 = Num(0.5);
 var upgradesq_ethtree2 = registerSquirrelUpgrade('ethereal tree neighbor boost II', undefined, 'ethereal tree boosts non-lotus neighbors (non-diagonal) by ' + upgradesq_ethtree_boost2.toPercentString(), tree_images[6][1][4]);
 
 var squirrel_evolution_ethtree_boost = Num(0.2);
+var squirrel_evolution_ethtree_boost2 = Num(0); // not increased for the second squirrel evolution, don't encourage putting everything in the center anymore
 
 var upgradesq_ethtree_diag = registerSquirrelUpgrade('diagonal ethereal tree', undefined, 'ethereal tree boost also works diagonally', tree_images[6][1][4]);
 
@@ -8127,12 +8135,12 @@ var upgradesq_evolution2 = registerSquirrelUpgrade('Evolve squirrel II', functio
       return true; // indicate that this upgrade is not bought and applied immediately, it shows a dialog first
     },
     'Resets and removes all squirrel upgrades. Gives a flat permanent production bonus. Replaces the squirrel upgrade tree with a new, more expensive, tree. You will be weaker after this, but eventually get stronger than ever before thanks to the new upgrades.',
-    image_squirrel_evolution);
+    image_squirrel_evolution2);
 
 var upgradesq_fruittierprob3 = registerSquirrelUpgrade('fruit tier, seasonal and double fruit chance', undefined, 'increases probability of getting a better fruit tier drop: moves the probability tipping point for higher tier drop by around 10%, give or take because the probability table is different for different tree levels. In addition, increases probability of getting a better seasonal fruit drop from 1/4th to 1/3rd. In addition, adds ' + Num(upgradesq_doublefruitprob_prob).toPercentString() + ' chance to drop 2 fruits at once', images_apple[4]);
 
 var upgradesq_infinity_boost_value = 0.1;
-var upgradesq_infinity_boost = registerSquirrelUpgrade('infinity boost', undefined, 'Adds +' + Num(upgradesq_doublefruitprob_prob).toPercentString() + ' boost to infinity seeds income', image_infinity);
+var upgradesq_infinity_boost = registerSquirrelUpgrade('infinity boost', undefined, 'Adds +' + Num(upgradesq_infinity_boost_value).toPercentString() + ' boost to infinity seeds income', image_infinity);
 
 var upgradesq_mushroom_efficiency_value = 0.5;
 var upgradesq_mushroom_efficiency = registerSquirrelUpgrade('mushroom efficiency', undefined, 'Reduces mushroom seed consumption by ' + Num(upgradesq_mushroom_efficiency_value).toPercentString(), image_seed);
@@ -8140,6 +8148,14 @@ var upgradesq_mushroom_efficiency = registerSquirrelUpgrade('mushroom efficiency
 var upgradesq_nuts_value = 5;
 var upgradesq_nuts = registerSquirrelUpgrade('nuts boost', undefined, '' + upgradesq_nuts_value + 'x boost to nuts production (multiplicatively)', image_nuts);
 
+var upgradesq_eth_all_boost = Num(0.25);
+var upgradesq_eth_all = registerSquirrelUpgrade('all ethereal crops boost', undefined, '+ ' + upgradesq_eth_all_boost.toPercentString() + ' boost to all ethereal crops that boost the basic field', image_medaltranscend);
+
+var upgradesq_squirrel_boost3 = Num(0.75);
+var upgradesq_squirrel3 = registerSquirrelUpgrade('ethereal squirrel boost III', undefined, 'adds a +' + upgradesq_squirrel_boost3.toPercentString() + ' boost to the ethereal squirrel neighbor boost', images_squirrel[4]);
+
+var upgradesq_automaton_boost3 = Num(0.75);
+var upgradesq_automaton3 = registerSquirrelUpgrade('ethereal automaton boost III', undefined, 'adds a +' + upgradesq_automaton_boost3.toPercentString() + ' boost to the ethereal automaton neighbor boost and lotus neighbor boost', images_automaton[4]);
 
 
 
@@ -8188,37 +8204,39 @@ registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_flower], [upgradesq_e
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_mushroom], [upgradesq_squirrel], [upgradesq_berry]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_bee], [upgradesq_weather_duration], [upgradesq_nettle]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_automaton], undefined, true);
-//registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_evolution2], undefined, true);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_evolution2], undefined, true);
 
 ////////////////////////////////////////////////////////////////////////////////
-/*
+
 STAGE_REGISTER_EVOLUTION = 2;
+
+// NOTE: no upgradesq_ethtree or upgradesq_ethtree2 in this stage, no longer limit positionality in the eth field so much near the center
 
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_flower, upgradesq_prestiged_flower, upgradesq_flower_multiplicity], undefined, true);
 
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts], undefined, [upgradesq_mushroom_efficiency]);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_fruitmix123], undefined, [upgradesq_watercress_mush]);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_fruittierprob3], undefined, [upgradesq_bee_multiplicity]);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_infinity_boost], undefined, [upgradesq_growspeed]);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton], undefined, [upgradesq_squirrel]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts], undefined, [upgradesq_infinity_boost]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_watercress_mush], undefined, [upgradesq_watercresstime2]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_fruitmix123], undefined, [upgradesq_fruittierprob3]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_growspeed], undefined, [upgradesq_bee_multiplicity]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton3], undefined, [upgradesq_squirrel3]);
 
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_nettle, upgradesq_stinging_multiplicity], undefined, true);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_eth_all], undefined, true);
 
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts, upgradesq_mushroom_multiplicity_boost], undefined, [upgradesq_nuts, upgradesq_berry_multiplicity_boost]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts, upgradesq_mushroom_multiplicity_boost], undefined, [upgradesq_diagonal_brassica, upgradesq_berry_multiplicity_boost]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_prestiged_mushroom, upgradesq_prestiged_berry], undefined, [upgradesq_mushroom, upgradesq_berry], undefined, true);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton2, upgradesq_resin], undefined, [upgradesq_squirrel2, upgradesq_twigs], undefined, false);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_watercresstime2, upgradesq_diagonal_brassica], undefined, [upgradesq_weather_duration, upgradesq_bee], undefined, false);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_essence, upgradesq_highest_level], undefined, [upgradesq_ethtree_diag, upgradesq_leveltime], undefined, false);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton3, upgradesq_resin], undefined, [upgradesq_squirrel3, upgradesq_twigs], undefined, false);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nettle, upgradesq_stinging_multiplicity], undefined, [upgradesq_weather_duration, upgradesq_bee], undefined, false);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_essence, upgradesq_highest_level], undefined, [upgradesq_mushroom_efficiency, upgradesq_leveltime], undefined, false);
 
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_ethtree2], undefined, true);
-*/
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_ethtree_diag], undefined, true);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
 
 // these values are as bonus, so this means the multiplier is this value + 1 (e.g. bonus 1.5 means +150%, or x2.5)
 var squirrel_epoch_prod_bonus = Num(100); // for first squirrel evolution
-var squirrel_epoch_prod_bonus2 = Num(100); // for second squirrel evolution
+var squirrel_epoch_prod_bonus2 = Num(200); // for second squirrel evolution
 // aka infinity_ascend_bonus
 // designed such that once you're at end of the first tier (zinc) after ascend (with half the map full of berries, and 4 flowers), your infinity bonus should be similar to what you had before ascenscion again.
 // a reasonable basic field bonus at end of infinity pre-ascend (when having max oranda: 1 black, 3 red, and having maxed basic-field-giving crops given enough resources to afford mistletoe with 10e81 as it was during beta version) is:
@@ -8238,21 +8256,23 @@ function getSquirrelUpgradeCost(i) {
     // this uses a large exponential base on purpose: higher tree levels will also give exponentialy more nuts income, so this
     // encourages pushing for high tree levels. The high factor also makes even planting multiple nuts plants not significant compared to getting higher tree levels
     var result = Num(10).powr(i).mulr(1000);
-    // squirrel evolution is only significantly later, so that there is a certain timespan where all upgrades are active
+    // squirrel evolution is made only significantly later here, so that there is a certain timespan where all upgrades are active
     if(i >= 33) result.mulrInPlace(1000000);
     return result;
   }
   if(state.squirrel_evolution == 1) {
     // the first one is free at this evolution
     if(i == 0) return Num(0);
-    i--;
     // the last one of evolution 0 costs 1e42, but given the set-back after squirrel reset that's very hard to reach now, 1e39 is quite a bit more reachable
-    var result = Num(20).powr(i).mulr(1e39);
+    var result = Num(20).powr(i - 1).mulr(1e39);
+    // squirrel evolution is made only significantly later here, so that there is a certain timespan where all upgrades are active
+    if(i >= 35) result.mulrInPlace(400);
     return result;
   }
   if(state.squirrel_evolution == 2) {
+    // at this evolution, the first one is NOT free since there's only a single choice
     // the last one of evolution 0 costs 172e81, but given the set-back after squirrel reset that's very hard to reach now, make it more reachable
-    var result = Num(25).powr(i).mulr(1e78);
+    var result = Num(20).powr(i).mulr(1e78);
     return result;
   }
   return Num(Infinity);
@@ -8463,8 +8483,9 @@ function weightedTimeAtLevel(opt_fern) {
 ////////////////////////////////////////////////////////////////////////////////
 
 function showSquirrelEvolutionDialog() {
+  var icon = state.squirrel_evolution ? image_squirrel_evolution2 : image_squirrel_evolution;
   var dialog = createDialog({
-    icon:image_squirrel_evolution,
+    icon:icon,
     size:DIALOG_MEDIUM,
     functions:function() {
       addAction({type:ACTION_SQUIRREL_EVOLUTION});
@@ -8473,7 +8494,7 @@ function showSquirrelEvolutionDialog() {
     cancelname:'cancel',
     title:'Squirrel evolution'
   });
-  dialog.content.div.innerHTML = getSquirrelEvolutionHelp();
+  dialog.content.div.innerHTML = getSquirrelEvolutionHelp(state.squirrel_evolution + 1);
   unlockRegisteredHelpDialog(39);
 }
 
@@ -10647,9 +10668,9 @@ var medal_challenge_thistle_stingy = registerMedal('rather stingy', 'plant the e
 }, Num(4));
 changeMedalDisplayOrder(medal_challenge_thistle_stingy, medal_challenge_thistle);
 
-registerMedal('squirrel evolution II', 'evolve the squirrel a second time', image_squirrel_evolution, function() {
+registerMedal('squirrel evolution II', 'evolve the squirrel a second time', image_squirrel_evolution2, function() {
   return state.squirrel_evolution >= 2;
-}, Num(100));
+}, Num(200));
 
 medal_register_id = 3040;
 

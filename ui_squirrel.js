@@ -81,6 +81,7 @@ function buyAllSquirrelUpgradesUpTo(stage, b, d, opt_final_gated) {
       // attempt as a regular action, so that it'll then print the error
       // message saying that it's gated.
       addAction({type:ACTION_SQUIRREL_UPGRADE, s:stage.index, b:b, d:d});
+      //update();
       return;
     }
     showMessage('not enough resources to buy these ' + num + ' squirrel upgrades' +
@@ -94,6 +95,7 @@ function buyAllSquirrelUpgradesUpTo(stage, b, d, opt_final_gated) {
   for(var i = 0; i < new_actions.length; i++) {
     addAction(new_actions[i]);
   }
+  if(new_actions.length) update();
 }
 
 // s2 = stage state (can be null if view_only), u = the upgrade for this branch and depth in this stage, b = branch in this stage, d = depth of upgrade in this stage
@@ -180,6 +182,7 @@ function renderSquirrelUpgradeChip(flex, stage, s2, u, b, d, view_only) {
       }
       if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
       update();
+      //update();
       updateSquirrelUI();
     };
   }
@@ -428,6 +431,17 @@ function updateSquirrelUI(opt_partial) {
   }
 }
 
+// function showSquirrelEvolutionStatsDialog() {
+  // var dialog = createDialog({
+    // title:'Squirrel evolution stats',
+    // scrollable:true,
+    // icon:image_squirrel
+  // });
+  // var scrollFlex = dialog.content;
+
+  // var html = '';
+// }
+
 
 var showing_old_squirrel_dialog = false;
 
@@ -458,6 +472,11 @@ function showOldSquirrelTreeDialog(opt_evolution_level) {
     });
     names.push('See prev evolution');
   }
+
+  // functions.push(function() {
+    // showSquirrelEvolutionStatsDialog();
+  // });
+  // names.push('Stats');
 
   var dialog = createDialog({
     title:title,
@@ -531,7 +550,13 @@ function squirrelUINeedsFastUpdate() {
   return result;
 }
 
-function getSquirrelEvolutionHelp() {
+function getSquirrelEvolutionHelp(evolution_level) {
+  var prod_bonus = (evolution_level == 2) ? squirrel_epoch_prod_bonus2 : squirrel_epoch_prod_bonus;
+  var ethtree_boost = (evolution_level == 2) ? squirrel_evolution_ethtree_boost2 : squirrel_evolution_ethtree_boost;
+  var squirrel_ordinal = (evolution_level == 2) ? 'third' : 'second';
+
+  var ethtree_text = ethtree_boost.eqr(0) ? '' : '<br> • Permanent ethereal tree neighbor bonus of ' + ethtree_boost.toPercentString();
+
   return `
     This will reset all squirrel upgrades and remove their effects, but unlocks a new squirrel tree with more expensive upgrades, and gives a permanent flat bonus.
     <br><br>
@@ -544,9 +569,9 @@ function getSquirrelEvolutionHelp() {
     <br> • Nuts will stay at 0 and cannot be produced until next transcension
     <br><br>
     What you get:
-    <br> • You can place a second squirrel in the ethereal field
-    <br> • Permanent flat production bonus of ` + squirrel_epoch_prod_bonus.toPercentString() + `
-    <br> • Permanent ethereal tree neighbor bonus of ` + squirrel_evolution_ethtree_boost.toPercentString() + `
+    <br> • You can place a ` + squirrel_ordinal + ` squirrel in the ethereal field
+    <br> • Permanent flat production bonus of ` + prod_bonus.toPercentString() +
+    ethtree_text + `
     <br> • New squirrel upgrade tree with more expensive upgrades, a mix of new ones and the old ones returning
     <br> • The first new squirrel upgrade is free and can be chosen immediately
     <br><br>

@@ -1377,9 +1377,13 @@ State.prototype.initSquirrelStages = function() {
 
 function getSquirrelImage(state) {
   if(state.holiday & 1) {
-    return (state.squirrel_evolution == 0) ? image_squirrel_hat : image_squirrel2_hat;
+    if(state.squirrel_evolution == 2) return image_squirrel3_hat;
+    if(state.squirrel_evolution == 1) return image_squirrel2_hat;
+    return image_squirrel_hat;
   } else {
-    return (state.squirrel_evolution == 0) ? image_squirrel : image_squirrel2;
+    if(state.squirrel_evolution == 2) return image_squirrel3;
+    if(state.squirrel_evolution == 1) return image_squirrel2;
+    return image_squirrel;
   }
 }
 
@@ -2788,16 +2792,31 @@ function getEtherealAutomatonNeighborBoost(breakdown) {
 
   result.addInPlace(upgradesq_automaton_boost.mulr(state.squirrel_upgrades[upgradesq_automaton].count));
   result.addInPlace(upgradesq_automaton_boost2.mulr(state.squirrel_upgrades[upgradesq_automaton2].count));
+  if(state.squirrel_upgrades[upgradesq_automaton3].count) {
+    // this one is multiplicative instead
+    var mul = upgradesq_automaton_boost3.mulr(state.squirrel_upgrades[upgradesq_automaton3].count).addr(1);
+    result.mulInPlace(mul);
+  }
 
   if(breakdown && result.neq(result_before)) {
     breakdown.push(['squirrel upgrades (additive)', true, result.sub(result_before).addr(1), result.clone()]);
   }
+
   return result;
 }
 
 
-function getEtherealAutomatonLotusNeighborBoost() {
-  return getEtherealMistletoeBonus(mistle_upgrade_automaton_florality);
+function getEtherealAutomatonLotusNeighborBoost(breakdown) {
+  var result = getEtherealMistletoeBonus(mistle_upgrade_automaton_florality);
+  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+
+  if(state.squirrel_upgrades[upgradesq_automaton3].count) {
+    var mul = upgradesq_automaton_boost3.mulr(state.squirrel_upgrades[upgradesq_automaton3].count).addr(1);
+    result.mulInPlace(mul);
+    if(breakdown) breakdown.push(['squirrel upgrades (additive)', true, mul, result.clone()]);
+  }
+
+  return result;
 }
 
 function getMaxNumEtherealAutomatons() {
@@ -2833,6 +2852,11 @@ function getEtherealSquirrelNeighborBoost(breakdown) {
 
   result.addInPlace(upgradesq_squirrel_boost.mulr(state.squirrel_upgrades[upgradesq_squirrel].count));
   result.addInPlace(upgradesq_squirrel_boost2.mulr(state.squirrel_upgrades[upgradesq_squirrel2].count));
+  if(state.squirrel_upgrades[upgradesq_squirrel3].count) {
+    // this one is multiplicative instead
+    var mul = upgradesq_squirrel_boost3.mulr(state.squirrel_upgrades[upgradesq_squirrel3].count).addr(1);
+    result.mulInPlace(mul);
+  }
 
   if(breakdown && result.neq(result_before)) {
     breakdown.push(['squirrel upgrades (additive)', true, result.sub(result_before).addr(1), result.clone()]);
@@ -3042,7 +3066,8 @@ function getHighestAffordableBrassica3(opt_recoup) {
 function getAvailableNonPlantedFishTypes() {
   var result = [];
   for(var t = 0; t < NUM_FISHTYPES; t++) {
-    if(state.highestoftypefishunlocked[t] >= 0 && state.highestoftypefishplanted[t] < 0) {
+    // using -1 instead of 0 in the checks, to support the translucent fish and jellyfish
+    if(state.highestoftypefishunlocked[t] >= -1 && state.highestoftypefishplanted[t] < -1) {
       result.push(t);
     }
   }

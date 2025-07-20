@@ -161,7 +161,7 @@ function updatePondDialogText() {
 
     if(print_missing_types) {
       text += '<br><br>';
-      text += 'Types avaible but not placed: <b>';
+      text += 'Types available but not placed: <b>';
       for(var i = 0; i < missing_types.length; i++) {
         if(i > 0) text += ', ';
         text += getFishTypeName(missing_types[i]);

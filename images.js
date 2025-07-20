@@ -1828,6 +1828,26 @@ aA@..XXooooAa@A.
 `);
 
 
+var image_squirrel_evolution2 = generateAndSetupImage(`
+....iiiii.......
+...iIIIIIii.....
+..iIJJJJJIIi....
+..IJ.....JJI84..
+.iIJ..s....84ss.
+iIJsssiii.84ssss
+iIss0sIII84sssss
+iIssssJJJ84sssss
+iIJ.8ss..84sJss.
+iIJsssss.84sIi..
+iIJ.88ss44ssIJ..
+iIJ..88ssssIiJI.
+.iIJssssiiii.JIi
+..iIIJJJJJJJJIi.
+...iiIIIIIIIIi..
+.....iiiiiiii...
+`);
+
+
 
 var image_infinity = generateAndSetupImage(`
 ................
