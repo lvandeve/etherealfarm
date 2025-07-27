@@ -1594,6 +1594,8 @@ function makeDropdown(flex, title, current, choices, fun, opt_dont_change_style)
       util.removeElement(dropdownOverlayEl);
       dropdownOverlayEl = undefined;
     }
+
+    if(choiceFlex.firstElement_) choiceFlex.firstElement_.div.focus(); // focus an element of the dialog for aria
   };
   choiceFlex.showFun(false);
 
@@ -1601,6 +1603,9 @@ function makeDropdown(flex, title, current, choices, fun, opt_dont_change_style)
   centerText2(titleEl.div);
   titleEl.div.textEl.innerText = title + ':';
 
+  var firstElement = null;
+
+  // this creates all the elements beforehand when just the one button representing the unopened dropdown is rendered. 'showFun' above is what runs when actually opening the dropdown
   for(var i = 0; i <= choices.length; i++) {
     var iscancel = (i == choices.length);
     var choice = new Flex(choiceFlex, 0.01, (i + 1.01) / numchips, 0.99, (i + 1.99) / numchips);
@@ -1622,7 +1627,11 @@ function makeDropdown(flex, title, current, choices, fun, opt_dont_change_style)
         choiceFlex.showFun(false);
       }, i));
     }
+
+    if(!firstElement) firstElement = choice;
   }
+
+  choiceFlex.firstElement_ = firstElement;
 
   addButtonAction(flex.div, function() {
     choiceFlex.showFun(!showing);

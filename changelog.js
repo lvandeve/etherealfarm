@@ -35,6 +35,8 @@ function getChangeLog() {
   text += '<br/>• Ethereal automaton details dialog now shows breakdown for regular and lotus neighbors separately.';
   text += '<br/>• Fixed translucent fish types not working for the "fish types available but not placed" message.';
   text += '<br/>• Fixed some infinity crop dialogs showing wrong base cost after ascend.';
+  text += '<br/>• Fixed a bug with tab-focus of automaton configuration dropdowns.';
+  text += '<br/>• Fixed transcension stats accidently also counting paused game time (already existing stats remain as-is).';
   text += '<br/><br/>';
 
 

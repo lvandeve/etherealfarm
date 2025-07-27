@@ -1385,13 +1385,17 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
         }
       }
       if(this.type == CROPTYPE_FLOWER) {
-        if(state.squirrel_upgrades[upgradesq_flower].count) {
-          var bonus = upgradesq_flower_bonus.mulr(state.squirrel_upgrades[upgradesq_flower].count).addr(1);
+        if(state.squirrel_upgrades[upgradesq_flower].count || state.squirrel_upgrades[upgradesq_flower2].count) {
+          var bonus1 = upgradesq_flower_bonus.mulr(state.squirrel_upgrades[upgradesq_flower].count).addr(1);
+          var bonus2 = upgradesq_flower_bonus2.mulr(state.squirrel_upgrades[upgradesq_flower2].count).addr(1);
+          var bonus = bonus1.mul(bonus2);
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
         }
-        if(state.crops[this.index].prestige && state.squirrel_upgrades[upgradesq_prestiged_flower].count) {
-          var bonus = upgradesq_prestiged_flower_bonus.mulr(state.squirrel_upgrades[upgradesq_prestiged_flower].count).addr(1);
+        if(state.crops[this.index].prestige && (state.squirrel_upgrades[upgradesq_prestiged_flower].count || state.squirrel_upgrades[upgradesq_prestiged_flower2].count)) {
+          var bonus1 = upgradesq_prestiged_flower_bonus.mulr(state.squirrel_upgrades[upgradesq_prestiged_flower].count).addr(1);
+          var bonus2 = upgradesq_prestiged_flower_bonus2.mulr(state.squirrel_upgrades[upgradesq_prestiged_flower2].count).addr(1);
+          var bonus = bonus1.mul(bonus2);
           bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
@@ -1573,10 +1577,12 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   if(!basic) {
     if(haveSquirrel()) {
       if(this.type == CROPTYPE_BEE) {
-        if(state.squirrel_upgrades[upgradesq_bee].count) {
-          var bonus = upgradesq_bee_bonus.mulr(state.squirrel_upgrades[upgradesq_bee].count).addr(1);
-          result.mulInPlace(bonus);
-          if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
+        if(state.squirrel_upgrades[upgradesq_bee].count || state.squirrel_upgrades[upgradesq_bee2].count) {
+          var mul = new Num(1);
+          mul.addInPlace(upgradesq_bee_bonus.mulr(state.squirrel_upgrades[upgradesq_bee].count));
+          mul.addInPlace(upgradesq_bee_bonus2.mulr(state.squirrel_upgrades[upgradesq_bee2].count));
+          result.mulInPlace(mul);
+          if(breakdown) breakdown.push(['squirrel upgrades', true, mul, result.clone()]);
         }
       }
     }
@@ -8145,19 +8151,28 @@ var upgradesq_infinity_boost = registerSquirrelUpgrade('infinity boost', undefin
 var upgradesq_mushroom_efficiency_value = 0.5;
 var upgradesq_mushroom_efficiency = registerSquirrelUpgrade('mushroom efficiency', undefined, 'Reduces mushroom seed consumption by ' + Num(upgradesq_mushroom_efficiency_value).toPercentString(), image_seed);
 
-var upgradesq_nuts_value = 5;
+// next squirrel upgrade is 20x more expensive after the 2nd squirrel evolve, make this a slightly higher value so that it's worth purchasing this upgrade, but not too high so that it's really a tradeoff between getting this, or getting some non-nuts boost first instead
+var upgradesq_nuts_value = 25; // multiplier
 var upgradesq_nuts = registerSquirrelUpgrade('nuts boost', undefined, '' + upgradesq_nuts_value + 'x boost to nuts production (multiplicatively)', image_nuts);
 
 var upgradesq_eth_all_boost = Num(0.25);
 var upgradesq_eth_all = registerSquirrelUpgrade('all ethereal crops boost', undefined, '+ ' + upgradesq_eth_all_boost.toPercentString() + ' boost to all ethereal crops that boost the basic field', image_medaltranscend);
 
-var upgradesq_squirrel_boost3 = Num(0.75);
+var upgradesq_squirrel_boost3 = Num(1.0);
 var upgradesq_squirrel3 = registerSquirrelUpgrade('ethereal squirrel boost III', undefined, 'adds a +' + upgradesq_squirrel_boost3.toPercentString() + ' boost to the ethereal squirrel neighbor boost', images_squirrel[4]);
 
-var upgradesq_automaton_boost3 = Num(0.75);
+var upgradesq_automaton_boost3 = Num(1.0);
 var upgradesq_automaton3 = registerSquirrelUpgrade('ethereal automaton boost III', undefined, 'adds a +' + upgradesq_automaton_boost3.toPercentString() + ' boost to the ethereal automaton neighbor boost and lotus neighbor boost', images_automaton[4]);
 
+var upgradesq_flower_bonus2 = Num(2);
+var upgradesq_flower2 = registerSquirrelUpgrade('flower boost II', undefined, 'boosts the flower boost by +' + upgradesq_flower_bonus2.toPercentString(), images_anemone[4]);
 
+var upgradesq_prestiged_flower_bonus2 = Num(3);
+var upgradesq_prestiged_flower2 = registerSquirrelUpgrade('prestiged flower boost II', undefined, 'Prestiged flowers get a ' + upgradesq_prestiged_flower_bonus2.toPercentString() + ' boost', images_anemone[4]);
+
+
+var upgradesq_bee_bonus2 = Num(5);
+var upgradesq_bee2 = registerSquirrelUpgrade('bee boost II', undefined, 'boosts the bee boost by +' + upgradesq_bee_bonus2.toPercentString(), images_beenest[4]);
 
 ////////////////////////////////////////////////////////////////////////////////
 var STAGE_REGISTER_EVOLUTION;
@@ -8212,12 +8227,15 @@ STAGE_REGISTER_EVOLUTION = 2;
 
 // NOTE: no upgradesq_ethtree or upgradesq_ethtree2 in this stage, no longer limit positionality in the eth field so much near the center
 
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_flower, upgradesq_prestiged_flower, upgradesq_flower_multiplicity], undefined, true);
+//registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_flower2, upgradesq_prestiged_flower2, upgradesq_flower_multiplicity], undefined, true);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_flower2], undefined, undefined, true);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_prestiged_flower2], undefined, [upgradesq_flower_multiplicity], undefined, true);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_watercress_mush], undefined, true);
 
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts], undefined, [upgradesq_infinity_boost]);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_watercress_mush], undefined, [upgradesq_watercresstime2]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_growspeed], undefined, [upgradesq_watercresstime2]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_fruitmix123], undefined, [upgradesq_fruittierprob3]);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_growspeed], undefined, [upgradesq_bee_multiplicity]);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_bee2], undefined, [upgradesq_bee_multiplicity]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton3], undefined, [upgradesq_squirrel3]);
 
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_eth_all], undefined, true);
@@ -8225,10 +8243,10 @@ registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_eth_all], 
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nuts, upgradesq_mushroom_multiplicity_boost], undefined, [upgradesq_diagonal_brassica, upgradesq_berry_multiplicity_boost]);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_prestiged_mushroom, upgradesq_prestiged_berry], undefined, [upgradesq_mushroom, upgradesq_berry], undefined, true);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_automaton3, upgradesq_resin], undefined, [upgradesq_squirrel3, upgradesq_twigs], undefined, false);
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nettle, upgradesq_stinging_multiplicity], undefined, [upgradesq_weather_duration, upgradesq_bee], undefined, false);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_nettle, upgradesq_stinging_multiplicity], undefined, [upgradesq_weather_duration, upgradesq_ethtree_diag], undefined, false);
 registerSquirrelStage(STAGE_REGISTER_EVOLUTION, [upgradesq_essence, upgradesq_highest_level], undefined, [upgradesq_mushroom_efficiency, upgradesq_leveltime], undefined, false);
 
-registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_ethtree_diag], undefined, true);
+registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_bee2], undefined, true);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -8236,7 +8254,7 @@ registerSquirrelStage(STAGE_REGISTER_EVOLUTION, undefined, [upgradesq_ethtree_di
 
 // these values are as bonus, so this means the multiplier is this value + 1 (e.g. bonus 1.5 means +150%, or x2.5)
 var squirrel_epoch_prod_bonus = Num(100); // for first squirrel evolution
-var squirrel_epoch_prod_bonus2 = Num(200); // for second squirrel evolution
+var squirrel_epoch_prod_bonus2 = Num(250); // for second squirrel evolution
 // aka infinity_ascend_bonus
 // designed such that once you're at end of the first tier (zinc) after ascend (with half the map full of berries, and 4 flowers), your infinity bonus should be similar to what you had before ascenscion again.
 // a reasonable basic field bonus at end of infinity pre-ascend (when having max oranda: 1 black, 3 red, and having maxed basic-field-giving crops given enough resources to afford mistletoe with 10e81 as it was during beta version) is:

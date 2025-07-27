@@ -630,7 +630,7 @@ function endPreviousRun() {
     addStat(state.reset_stats_level, state.treelevel);
     addStat(state.reset_stats_level2, state.treelevel2);
     // divided through 300: best precision 5 minutes, and even lower when saved for larger times
-    addStat(state.reset_stats_time, state.time - state.c_starttime);
+    addStat(state.reset_stats_time, state.time - state.c_starttime - state.c_pausetime);
     addStat(state.reset_stats_total_resin, state.g_res.resin);
     addStat(state.reset_stats_resin, resin);
     addStat(state.reset_stats_twigs, twigs);
@@ -4285,8 +4285,8 @@ var update = function(opt_ignorePause) {
           if(state.res.nuts.lt(nuts)) {
             ok = false;
             showMessage('not enough resources for the next squirrel upgrade' +
-                        ': have: ' + state.res.nuts.toString(Math.max(5, Num.precision)) +
-                        ', need: ' + nuts.toString(Math.max(5, Num.precision)) +
+                        ': have: ' + state.res.nuts.toString(Math.max(5, Num.precision)) + ' nuts' +
+                        ', need: ' + nuts.toString(Math.max(5, Num.precision)) + ' nuts' +
                         ' (' + getCostAffordTimer(Res({nuts:nuts})) + ')',
                         C_INVALID, 0, 0);
           }
@@ -5133,7 +5133,7 @@ var update = function(opt_ignorePause) {
             ok = false;
           } else if(state.res.lt(cost)) {
             // The cost check is done after the canPlaceThisFishGivenCounts check: ensure the player knows well about the limitations before saving up for it
-            showMessage('not enough resources to plant ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+            showMessage('not enough resources to place ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
                         ', need: ' + cost.toString(Math.max(5, Num.precision)) + ' (' + getCostAffordTimer(cost) + ')', C_INVALID, 0, 0);
             ok = false;
           }
