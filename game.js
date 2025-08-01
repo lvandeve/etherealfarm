@@ -4242,6 +4242,7 @@ var update = function(opt_ignorePause) {
         }
         upgrades2_done = true;
         ethereal_basic_boost_cache_counter++;
+        computeDerived(state); // ethereal field changes can change the income numbers, but without computeDerived now this will lag behind one frame and even show lower numbers for one frame
       } else if(type == ACTION_SQUIRREL_UPGRADE) {
         var s = squirrel_stages[state.squirrel_evolution][action.s];
         var s2 = state.squirrel_stages[action.s];
@@ -4317,6 +4318,8 @@ var update = function(opt_ignorePause) {
             store_undo = true;
           }
         }
+        ethereal_basic_boost_cache_counter++; // squirrel changes can also change the ethereal field bonuses
+        computeDerived(state); // squirrel changes can change the income numbers, but without computeDerived now this will lag behind one frame and even show lower numbers for one frame
       } else if(type == ACTION_SQUIRREL_RESPEC) {
         var ok = true;
         if(!haveSquirrel()) {
@@ -4351,10 +4354,12 @@ var update = function(opt_ignorePause) {
           }
           showMessage('Reset all squirrel upgrades and gave all nuts back. Consumed 1 squirrel respec token.');
 
+          ethereal_basic_boost_cache_counter++; // squirrel changes can also change the ethereal field bonuses
           store_undo = true;
         }
       } else if(type == ACTION_SQUIRREL_EVOLUTION) {
         performSquirrelEvolution();
+        ethereal_basic_boost_cache_counter++; // squirrel changes can also change the ethereal field bonuses
         store_undo = true;
       } else if(type == ACTION_AMBER) {
         var ok = true;

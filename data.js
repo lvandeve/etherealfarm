@@ -6776,22 +6776,28 @@ function treeLevelResin(level, breakdown) {
 
   var count = state.upgrades2[upgrade2_resin].count;
   if(count) {
-    var bonus = upgrade2_resin_bonus.mulr(count).addr(1);
-    resin.mulInPlace(bonus);
-    if(breakdown) breakdown.push(['ethereal upgrades', true, bonus, resin.clone()]);
+    var mul = upgrade2_resin_bonus.mulr(count).addr(1);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['ethereal upgrades', true, mul, resin.clone()]);
   }
 
   var count = state.squirrel_upgrades[upgradesq_resin].count;
   if(count) {
-    var bonus = upgradesq_resin_bonus.mulr(count).addr(1);
-    resin.mulInPlace(bonus);
-    if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, resin.clone()]);
+    var mul = upgradesq_resin_bonus.mulr(count).addr(1);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['squirrel upgrades', true, mul, resin.clone()]);
+  }
+
+  if(state.squirrel_evolution >= 2) {
+    var mul = squirrel_evolution_resin_boost2.addr(1);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['squirrel evolution II', true, mul, resin.clone()]);
   }
 
   if(state.treelevel2) {
-    var bonus = treelevel2_resin_bonus.mulr(state.treelevel2).addr(1);
-    resin.mulInPlace(bonus);
-    if(breakdown) breakdown.push(['ethereal tree level', true, bonus, resin.clone()]);
+    var mul = treelevel2_resin_bonus.mulr(state.treelevel2).addr(1);
+    resin.mulInPlace(mul);
+    if(breakdown) breakdown.push(['ethereal tree level', true, mul, resin.clone()]);
   }
 
   // resin choice upgrade
@@ -8128,6 +8134,9 @@ var upgradesq_ethtree2 = registerSquirrelUpgrade('ethereal tree neighbor boost I
 var squirrel_evolution_ethtree_boost = Num(0.2);
 var squirrel_evolution_ethtree_boost2 = Num(0); // not increased for the second squirrel evolution, don't encourage putting everything in the center anymore
 
+// squirrel evolution 2 gives a resin boost, 1 does not
+var squirrel_evolution_resin_boost2 = Num(0.25);
+
 var upgradesq_ethtree_diag = registerSquirrelUpgrade('diagonal ethereal tree', undefined, 'ethereal tree boost also works diagonally', tree_images[6][1][4]);
 
 // these also each add half of the upgradesq_doublefruitprob upgrade's double fruit chance, so doing these 2 is same as doing the 3 original fruit chance related upgrades
@@ -9189,7 +9198,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
     }
   }
 
-  if(this.type == CROPTYPE_BERRY && state.squirrel_upgrades[upgradesq_infinity_boost].count) {
+  if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_NUT || this.type == CROPTYPE_BRASSICA) && state.squirrel_upgrades[upgradesq_infinity_boost].count) {
     var mul = (new Num(upgradesq_infinity_boost_value + 1));
     result.mulrInPlace(mul);
     if(breakdown) breakdown.push(['squirrel infinity boost', true, mul, result.clone()]);

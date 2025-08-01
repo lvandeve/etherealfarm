@@ -555,9 +555,7 @@ function getSquirrelEvolutionHelp(evolution_level) {
   var ethtree_boost = (evolution_level == 2) ? squirrel_evolution_ethtree_boost2 : squirrel_evolution_ethtree_boost;
   var squirrel_ordinal = (evolution_level == 2) ? 'third' : 'second';
 
-  var ethtree_text = ethtree_boost.eqr(0) ? '' : '<br> • Permanent ethereal tree neighbor bonus of ' + ethtree_boost.toPercentString();
-
-  return `
+  var result = `
     This will reset all squirrel upgrades and remove their effects, but unlocks a new squirrel tree with more expensive upgrades, and gives a permanent flat bonus.
     <br><br>
     After doing this, you will initially be weaker than before, but the new upgrade tree will eventually make you much stronger, so doing this is worth it at some point and you can earn your strength back multifold.
@@ -570,14 +568,19 @@ function getSquirrelEvolutionHelp(evolution_level) {
     <br><br>
     What you get:
     <br> • You can place a ` + squirrel_ordinal + ` squirrel in the ethereal field
-    <br> • Permanent flat production bonus of ` + prod_bonus.toPercentString() +
-    ethtree_text + `
-    <br> • New squirrel upgrade tree with more expensive upgrades, a mix of new ones and the old ones returning
-    <br> • The first new squirrel upgrade is free and can be chosen immediately
-    <br><br>
+    <br> • Permanent flat production bonus of ` + prod_bonus.toPercentString();
+
+    if(evolution_level == 2) result += '<br> • Permanent resin bonus of ' + squirrel_evolution_resin_boost2.toPercentString();
+    if(ethtree_boost.neqr(0)) result += '<br> • Permanent ethereal tree neighbor bonus of ' + ethtree_boost.toPercentString();
+    result += '<br> • New squirrel upgrade tree with more expensive upgrades, a mix of new ones and the old ones returning';
+    if(evolution_level == 1) result += '<br> • The first new squirrel upgrade is free and can be chosen immediately';
+
+    result += `<br><br>
     WARNING: this is irreversible, you cannot respec to go back. Since you will initially be weaker, if there are any challenges or other runs you want to push soon, you may wish to do those first.
     You can also store a backup of your savegame using export from the main menu first, so that if you feel the reset was not worth it yet, you can still go back to the old savegame.
     <br><br>
     TIP: to get back to original strength over the next days, try to get the first new squirrel upgrades. To get those, push to high level berries and mushrooms, then focus on spore production to afford better nuts crops.
     `;
+
+  return result;
 }
