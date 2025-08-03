@@ -2556,31 +2556,6 @@ function decState(s) {
         s3.num[1] = 0;
         s3.seen[1] = false;
       }
-      if(state.beta || window['global_is_beta']) { // TODO: remove this, this is only for during beta testing
-        // during beta testing of the squirrel evolution II tree, the shape of the tree may change. To support beta test saves from version with different tree shape, recover upgrades this way
-        // this may completely alter which upgrades are actually bought, but a respec allows beta-testing any other shape again
-        if(s3.num[0] > stages[i].upgrades0.length || s3.num[1] > stages[i].upgrades1.length || s3.num[2] > stages[i].upgrades2.length ||
-           s3.seen[0] > stages[i].upgrades0.length || s3.seen[1] > stages[i].upgrades1.length || s3.seen[2] > stages[i].upgrades2.length) {
-          var numbought = s3.num[0] + s3.num[1] + s3.num[2];
-          s3.num[0] = s3.seen[0] = Math.min(numbought, stages[i].upgrades0.length);
-          numbought -= s3.num[0];
-          s3.num[1] = s3.seen[1] = Math.min(numbought, stages[i].upgrades1.length);
-          numbought -= s3.num[1];
-          s3.num[2] = s3.seen[2] = Math.min(numbought, stages[i].upgrades2.length);
-          numbought -= s3.num[2];
-          if(numbought > 0) {
-            index0 -= 3;
-            index1 -= 3;
-            num++;
-            array0[index0 + 0] = 0;
-            array0[index0 + 1] = numbought;
-            array0[index0 + 2] = 0;
-            array1[index1 + 0] = array0[index0 + 0];
-            array1[index1 + 1] = array0[index0 + 1];
-            array1[index1 + 2] = array0[index0 + 2];
-          }
-        }
-      }
       if(s3.num[0] > stages[i].upgrades0.length) return err(4);
       if(s3.num[1] > stages[i].upgrades1.length) return err(4);
       if(s3.num[2] > stages[i].upgrades2.length) return err(4);

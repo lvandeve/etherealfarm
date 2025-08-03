@@ -570,7 +570,7 @@ function getSquirrelEvolutionHelp(evolution_level) {
     <br> • You can place a ` + squirrel_ordinal + ` squirrel in the ethereal field
     <br> • Permanent flat production bonus of ` + prod_bonus.toPercentString();
 
-    if(evolution_level == 2) result += '<br> • Permanent resin bonus of ' + squirrel_evolution_resin_boost2.toPercentString();
+    if(evolution_level == 2) result += '<br> • Permanent resin income bonus of ' + squirrel_evolution_resin_boost2.toPercentString();
     if(ethtree_boost.neqr(0)) result += '<br> • Permanent ethereal tree neighbor bonus of ' + ethtree_boost.toPercentString();
     result += '<br> • New squirrel upgrade tree with more expensive upgrades, a mix of new ones and the old ones returning';
     if(evolution_level == 1) result += '<br> • The first new squirrel upgrade is free and can be chosen immediately';

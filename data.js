@@ -10697,7 +10697,7 @@ changeMedalDisplayOrder(medal_challenge_thistle_stingy, medal_challenge_thistle)
 
 registerMedal('squirrel evolution II', 'evolve the squirrel a second time', image_squirrel_evolution2, function() {
   return state.squirrel_evolution >= 2;
-}, Num(200));
+}, Num(250));
 
 medal_register_id = 3040;
 
