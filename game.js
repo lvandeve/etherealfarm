@@ -209,6 +209,7 @@ function resetGlobalStateVars(opt_state) {
   showingConfigureAutoActionDialog = false;
   showingConfigureAutoChoiceDialog = false;
   aboutButtonCanvas_lastHoliday = -1;
+  auto_action_manual_window_timeout_enabled = false;
 }
 
 function hardReset() {
@@ -235,6 +236,7 @@ function hardReset() {
   undoSave = '';
   lastUndoSaveTime = 0;
   lastUndoKeepLong = false;
+  lastUndoDisablesAutoAction = false;
   prev_store_undo = false;
 
   resetGlobalStateVars();
@@ -898,6 +900,7 @@ function beginNextRun(opt_challenge) {
 function softReset(opt_challenge, opt_automated) {
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
   savegame_recovery_situation = false;
+  auto_action_manual_window_timeout_enabled = false;
 
   // both of these functions are part of softReset, but endPreviousRun still assumes the old run's state (effects from the old challenge, ...) while
   // beginNextRun sets up the state for the new run, applies any new challenge effects, ...
@@ -973,12 +976,16 @@ var lastnonpausetime = 0;
 var undoSave = '';
 var lastUndoSaveTime = 0;
 var lastUndoKeepLong = false; // if true, does not apply maxUndoTime to this undo save (this is used for undoing auto-transcend)
+var lastUndoDisablesAutoAction = false;
 var prev_store_undo = false; // this variable is only used for auto-save after actions and is not directly related to undo
 
 function clearUndo() {
   undoSave = '';
   lastUndoSaveTime = 0;
   lastUndoKeepLong = false;
+  lastUndoDisablesAutoAction = false;
+
+  updateUndoButtonText();
 }
 
 var next_undo_is_redo = false; // TODO: this works as long as you're in the same session, but when refreshing this may make it say the opposite thing than it should
@@ -991,6 +998,7 @@ function storeUndo(state) {
     undoSave = s;
     util.setLocalStorage(undoSave, localstorageName_undo);
     next_undo_is_redo = false;
+    updateUndoButtonText();
   }, function() {
     undoSave = '';
   });
@@ -1014,6 +1022,7 @@ function loadUndo() {
       update();
       undoSave = redoSave;
       util.setLocalStorage(undoSave, localstorageName_undo);
+      updateUndoButtonText();
     }, function(state) {
       showMessage('Not undone, failed to load undo-save', C_ERROR, 0, 0);
     });
@@ -1027,6 +1036,7 @@ function loadUndo() {
 
   lastUndoSaveTime = 0; // now ensure next action saves undo again, pressing undo is a break in the action sequence, let the next action save so that pressing undo again brings us back to thie same undo-result-state
   lastUndoKeepLong = false;
+  lastUndoDisablesAutoAction = false;
 }
 
 
@@ -1274,6 +1284,7 @@ function PreCell(x, y) {
 
   // breakdown of the leech %
   this.breakdown_leech = undefined;
+  this.breakdown_leech_nuts = undefined;
 
   this.getBreakdown = function() {
     if(this.breakdown == undefined) {
@@ -1304,16 +1315,29 @@ function PreCell(x, y) {
     return this.breakdown;
   };
 
-  this.getBreakdownWatercress = function() {
-    if(this.breakdown_leech == undefined) {
-      this.breakdown_leech = [];
+  // opt_croptype: if not given, auto-picks a croptype (berry has priority over nut)
+  // if given, specifically shows the breakdown for that croptype
+  this.getBreakdownWatercress = function(opt_croptype) {
+    var croptype = (opt_croptype == undefined) ? this.getBrassicaBreakdownCroptype() : opt_croptype;
+
+    var breakdown = (croptype == CROPTYPE_NUT) ? this.breakdown_leech_nuts : this.breakdown_leech;
+
+    if(breakdown == undefined) {
+      breakdown = [];
       var f = state.field[this.y][this.x];
       var c = f.getRealCrop();
       if(c && this.hasbreakdown_watercress) {
-        c.getLeech(f, 0, this.breakdown_leech, this.getBrassicaBreakdownCroptype());
+        c.getLeech(f, 0, breakdown, croptype);
+      }
+
+      if(croptype == CROPTYPE_NUT) {
+        this.breakdown_leech_nuts = breakdown;
+      } else {
+        this.breakdown_leech = breakdown;
       }
     }
-    return this.breakdown_leech;
+
+    return breakdown;
   };
 
   this.hasbreakdown_prod = false;
@@ -1342,13 +1366,22 @@ function PreCell(x, y) {
   this.num_brassica = 0; // num brassica neighbors this tile has, for automaton heuristics
 
   // only for brassica
-  // which one to show in the breakdown (because showing 3 breakdowns is a bit much). by default, do berry. if it has only mushroom or nut neighbors, show that breakdown instead (with mushroom as priority here)
+  // which one to show in the non-detailed breakdown (because showing 3 breakdowns is a bit much). by default, do berry. if it has only mushroom or nut neighbors, show that breakdown instead (with mushroom as priority here)
   this.getBrassicaBreakdownCroptype = function() {
     if(this.brassicaneighbors & 1) return CROPTYPE_BERRY;
     if(this.brassicaneighbors & 2) return CROPTYPE_MUSH;
     if(this.brassicaneighbors & 4) return CROPTYPE_NUT;
     return CROPTYPE_BERRY;
   };
+
+  // note that berry and mushroom have same breakdown so checking for berry or mush is enough to show one breakdown
+  this.hasBrassicaBreakdownCroptype = function(croptype) {
+    if(croptype == CROPTYPE_BERRY && (this.brassicaneighbors & 1)) return true;
+    if(croptype == CROPTYPE_MUSH && (this.brassicaneighbors & 2)) return true;
+    if(croptype == CROPTYPE_NUT && (this.brassicaneighbors & 4)) return true;
+    return false;
+  };
+
 
   // reset without reallocating any objects. Keeps this.x and this.y as-is.
   this.reset = function() {
@@ -2034,7 +2067,7 @@ function precomputeField_(prefield, opt_pretend) {
       }
     }
   }
-  // a next pass in the automaton heuristics to add berry bonus to flowers
+  // a next pass in the automaton heuristics to add berry bonus to flowers, and mushroom score to nettles
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
@@ -2042,10 +2075,10 @@ function precomputeField_(prefield, opt_pretend) {
       if(!c) continue;
       var p = prefield[y][x];
 
-      var score_flower = 0;
       var score_num = 0;
       var score_mul = 1;
       var score_malus = 1;
+      var score_mush = 0;
 
       for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
         var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -2071,7 +2104,10 @@ function precomputeField_(prefield, opt_pretend) {
           if(c2.type == CROPTYPE_NUT) score_num += 0.65;
         }
         if(c.type == CROPTYPE_STINGING) {
-          if(c2.type == CROPTYPE_MUSH) score_num++;
+          if(c2.type == CROPTYPE_MUSH) {
+            score_num++;
+            score_mush += p2.score;
+          }
           if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) score_num--;
           if(c2.type == CROPTYPE_NUT) score_num--;
           if(c2.type == CROPTYPE_FLOWER) score_num--;
@@ -2088,12 +2124,42 @@ function precomputeField_(prefield, opt_pretend) {
       }
       if(c.type == CROPTYPE_STINGING) {
         if(winter && !p.treeneighbor) score_malus *= 0.5;
-        p.score = score_num;
+        p.score = score_num + score_mush;
       }
-      if(c.type == CROPTYPE_BEE) {
-        if(winter && !p.treeneighbor) score_malus *= 0.5;
-        p.score = score_malus * score_num;
+    }
+  }
+  // a next pass in the automaton heuristics to add flower score to bees
+  for(var y = 0; y < h; y++) {
+    for(var x = 0; x < w; x++) {
+      var f = state.field[y][x];
+      var c = f.getCrop();
+      if(!c) continue;
+      var p = prefield[y][x];
+
+      if(c.type != CROPTYPE_BEE) continue;
+
+      var score_flower = 0;
+
+      for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
+        var x2 = x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
+        var y2 = y + (dir == 2 ? 1 : (dir == 0 ? -1 : 0));
+        if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
+        var f2 = state.field[y2][x2];
+        if(f2.index == FIELD_MULTIPART) {
+          f2 = f2.getMainMultiPiece();
+          x2 = f2.x;
+          y2 = f2.y;
+        }
+        var c2 = f2.getCrop();
+        if(!c2) continue;
+        var p2 = prefield[y2][x2];
+
+        if(c2.type != CROPTYPE_FLOWER) continue;
+
+        score_flower += p2.score;
       }
+
+      p.score = score_flower;
     }
   }
 
@@ -2781,14 +2847,20 @@ function autoActionTriggerConditionReached(index, o) {
   return false;
 }
 
-var autoActionPart2Time = 5; // how long to wait before auto-action does the second part
-var autoActionPart3Time = 5; // how long to wait before auto-action does the third part
+var autoActionPartTime = 5; // how long to wait before auto-action does the next part for a multi-part auto-action (when fern, or transcend, comes later)
 
 // part: 1 for the first part, 2 for the second part that is done a bit later, 3: third and final part (transcend)
+// returns OR of two flags: 1=did something, 2=will do something in any next part
 function doAutoAction(index, part, opt_manually) {
   var o = state.automaton_autoactions[index];
   var effect = o.getEffect();
   var did_something = false;
+  var will_do_something = false;
+
+  var fern_in_part_2 = false;
+  if(effect.enable_blueprint || effect.enable_blueprint2) fern_in_part_2 = true;
+
+
   if(part == 1) {
     var visual_index = haveBeginOfRunAutoAction() ? index : (index + 1);
     if(opt_manually) {
@@ -2829,24 +2901,32 @@ function doAutoAction(index, part, opt_manually) {
       addAction({type:ACTION_AMBER, effect:AMBER_KEEP_SEASON, by_automaton:!opt_manually});
       did_something = true;
     }
-  }
-
-  if(part == 2) {
-    if(effect.enable_fern && autoActionExtraUnlocked()) {
-      if(state.fern) {
-        addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:!opt_manually});
-        did_something = true;
-      }
-    }
-  }
-
-  if(part == 3) {
-    if(effect.enable_transcend && autoActionTranscendUnlocked()) {
-      addAction({type:ACTION_TRANSCEND, by_automaton:!opt_manually});
+    if(!fern_in_part_2 && effect.enable_fern && state.fern && autoActionExtraUnlocked()) {
+      addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:!opt_manually});
       did_something = true;
     }
   }
-  return did_something;
+
+  // fern: this is for part 2 if part 1's actions can cause new crops with blueprint, because automaton should have time to plant them all first before the fern is taken
+  if(fern_in_part_2 && effect.enable_fern && state.fern && autoActionExtraUnlocked()) {
+    if(part == 2) {
+      addAction({type:ACTION_FERN, x:state.fernx, y:state.ferny, by_automaton:!opt_manually});
+      did_something = true;
+    } else if(part < 2) {
+      will_do_something = true;
+    }
+  }
+
+  // transcend: this part is a few seconds after fern if there's a fern, because picking up the fern can cause multiple tree levelups, allow those to happen before transcending
+  if(effect.enable_transcend && autoActionTranscendUnlocked()) {
+    if(part == 3) {
+      addAction({type:ACTION_TRANSCEND, by_automaton:!opt_manually});
+      did_something = true;
+    } else if(part < 3) {
+      will_do_something = true;
+    }
+  }
+  return (did_something ? 1 : 0) | (will_do_something ? 2 : 0);
 }
 
 // computes all automaton actions (auto-plant, etc...)
@@ -2913,28 +2993,26 @@ function doAutoActions() {
     if(!o.done && triggered) {
       addAction({type:ACTION_STORE_UNDO_BEFORE_AUTO_ACTION, action_index:i, by_automaton:true});
       o.done = 1;
-      o.time2 = state.c_runtime + autoActionPart2Time;
-      did_something |= doAutoAction(i, 1);
+      o.time2 = state.c_runtime + autoActionPartTime;
+      did_something |= (doAutoAction(i, 1) & 1);
     }
     if(o.done < 2 && triggered2) {
       o.done = 2;
-      o.time2 = state.c_runtime + autoActionPart3Time;
-      did_something |= doAutoAction(i, 2);
+      o.time2 = state.c_runtime + autoActionPartTime;
+      did_something |= (doAutoAction(i, 2) & 1);
     }
     if(o.done < 3 && triggered3) {
       o.done = 3;
-      did_something |= doAutoAction(i, 3);
+      did_something |= (doAutoAction(i, 3) & 1);
     }
     if(did_something) break;
   }
-
-  return did_something;
 }
 
 // JS timeout based system for part 2 of auto-actions that were manually activated
 // note: for non-manually activated auto-actions (but by their actual trigger), this is not used, those use a proper system keeping track of 'time2' correctly. But that system is not compatible with manual activations at any time, hence this hack for the manual case.
 // TODO: don't use window.setTimeout for this, but a flag in the state, so that this works more correctly and less hacky with undo. The current system doesn't work when doing undo followed by redo for example (won't do second part then)
-var auto_action_manual_window_timeout_enabled = true;
+var auto_action_manual_window_timeout_enabled = false;
 
 function doAutoActionManually(index) {
   if(!autoActionUnlocked()) return;
@@ -2943,33 +3021,38 @@ function doAutoActionManually(index) {
     return;
   }
   var did_something = doAutoAction(index, 1, true);
-  if(!did_something) {
+  if(!(did_something & 1)) {
     did_something = doAutoAction(index, 2, true);
-    if(!did_something) {
+    if(!(did_something & 1)) {
       doAutoAction(index, 3, true);
-    } else {
+    } else if(did_something & 2) {
+      auto_action_manual_window_timeout_enabled = true;
       window.setTimeout(function() {
         if(!auto_action_manual_window_timeout_enabled) return;
+        auto_action_manual_window_timeout_enabled = false;
         addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
         doAutoAction(index, 3, true);
-      }, autoActionPart3Time * 1000);
+      }, autoActionPartTime * 1000);
     }
-  } else {
+  } else if(did_something & 2) {
     auto_action_manual_window_timeout_enabled = true; // set to false by doing undo so that if you undo immediately after doing it, it won't do that second part a few seconds later
     window.setTimeout(function() {
       if(!auto_action_manual_window_timeout_enabled) return;
+      auto_action_manual_window_timeout_enabled = false;
       addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
       var did_something = doAutoAction(index, 2, true);
-      if(!did_something) {
+      if(!(did_something & 1)) {
         doAutoAction(index, 3, true);
-      } else {
+      } else if(did_something & 2) {
+        auto_action_manual_window_timeout_enabled = true;
         window.setTimeout(function() {
           if(!auto_action_manual_window_timeout_enabled) return;
+          auto_action_manual_window_timeout_enabled = false;
           addAction({type:ACTION_FORCE_NO_UNDO_BEFORE_AUTO_ACTION});
           doAutoAction(index, 3, true);
-        }, autoActionPart3Time * 1000);
+        }, autoActionPartTime * 1000);
       }
-    }, autoActionPart2Time * 1000);
+    }, autoActionPartTime * 1000);
   }
   update();
 }
@@ -3879,6 +3962,7 @@ var update = function(opt_ignorePause) {
   if(actions.length > 0 && (util.getTime() - lastUndoSaveTime > minUndoTime)) {
     undostate = util.clone(state);
     lastUndoKeepLong = false;
+    lastUndoDisablesAutoAction = false;
   }
 
   var store_undo = false;
@@ -4099,7 +4183,7 @@ var update = function(opt_ignorePause) {
     var actions_length = actions.length;
 
     // action
-    while(actions.length) {
+    while(actions.length) { // end of this loop is at comment 'end of actions loop'
       var action = actions[0];
       actions.shift();
       if(fast_forwarding && !action.by_automaton) continue;
@@ -4110,10 +4194,15 @@ var update = function(opt_ignorePause) {
 
         ethereal_basic_boost_cache_counter++; // consider any non-automaton action ethereal field-affecting. Normally mainly ethereal field planting and ethereal upgrades do this, but some effects from infinity field, fruits, ... may now or in the future affect it too. When doing manual actions, it's ok to invalidate the cache, this cache is mainly for heavy_computing.
       }
+      var was_automaton_undo = false;
       var type = action.type;
       if(type == ACTION_STORE_UNDO_BEFORE_AUTO_ACTION) {
+        // don't do this when there was an action so recently that this undo would be combined with this. This is to prevent following situation:
+        // say a human action is done in the infinity field, and just a second after it automaton does an auto-action. If the player would then press undo, they would want their player action to be undone, and this here would overwrite that one if we would clone a new one, or even if we don't clone a new one, it would _silently_ not cause the auto-action to happen after the player undoes their own action and that could make the entire auto-transcend sequence to break without the player noticing
+        var recentUndo = util.getTime() - lastUndoSaveTime < minUndoTime;
         // don't do this when just starting a new run: then if you press undo, you'd want to undo the transcension, instead of having it be overwritten with this undo from just after transcension
-        if(state.c_runtime > 10) {
+        var longEnoughRun = state.c_runtime > 10;
+        if(!recentUndo && !longEnoughRun) {
           var auto_transcend = state.automaton_autoactions[action.action_index].effect.enable_transcend;
           // don't do this when not having done any human actions before this auto-action (except for transcend by auto-action, which is handled in ACTION_TRANSCEND): when coming back to a game after a long time, you'd want undo to undo the last auto-transcend, not another auto-action that happened later
           if(state.runHadAnyHumanAction || auto_transcend) {
@@ -4122,6 +4211,8 @@ var update = function(opt_ignorePause) {
             var o = undostate.automaton_autoactions[action.action_index];
             o.done = 3;
             store_undo = true;
+            lastUndoDisablesAutoAction = true;
+            was_automaton_undo = true;
             if(auto_transcend) lastUndoKeepLong = true; // allow undoing this action even if it was hours ago: undo the last auto-transcend
           }
         }
@@ -4323,6 +4414,10 @@ var update = function(opt_ignorePause) {
       } else if(type == ACTION_SQUIRREL_RESPEC) {
         var ok = true;
         if(!haveSquirrel()) {
+          ok = false;
+        } else if(state.squirrel_upgrades_count <= 0) {
+          showMessage('Not respecced, because no squirrel upgrades were bought',
+                      C_INVALID, 0, 0);
           ok = false;
         } else if(state.squirrel_respec_tokens < 1) {
           showMessage('Cannot respec, no respec token available. It\'s possible to get one in the amber tab.',
@@ -5644,6 +5739,13 @@ var update = function(opt_ignorePause) {
           precomputeField();
           state.transcended_with_blueprint = (do_transcend.blueprint != undefined);
         }
+      }
+      if(!was_automaton_undo && lastUndoDisablesAutoAction) {
+        // there was a human action right after an undo for auto action got stored.
+        // when the player would press undo they likely intend to undo only their own action, but it would silently also undo the auto-action and not repeat it
+        // this could mean it silently breaks auto-transcend cycles
+        // so force-store the undo now to be for undoing the player action only
+        undostate = util.clone(state);
       }
     } // end of actions loop
 

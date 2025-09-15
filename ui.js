@@ -270,7 +270,7 @@ var pausedbuttoncanvasstate = -1;
 var pausedFlexTextGlobal = undefined;
 
 function updatePausedUI() {
-  var needflex = state.paused || heavy_computing;
+  var needflex = state.paused || heavy_computing || auto_action_manual_window_timeout_enabled;
 
   if(needflex && !pausedflex) {
     pausedflex = new Flex(contentFlex, 0, 0, 1, 1, FONT_FULL);
@@ -298,6 +298,8 @@ function updatePausedUI() {
     } else {
       pausedFlexText = 'Computing';
     }
+  } else if(auto_action_manual_window_timeout_enabled) {
+    pausedFlexText = 'Auto-action waiting...';
   }
 
   if(pausedFlexText != undefined && pausedFlexText != pausedFlexTextGlobal) {

@@ -30,6 +30,18 @@ function getChangeLog() {
     }
   }
 
+  text += '0.16.1 QoL and Bugfixes (2025-09-15)';
+  text += '<br/>• The tooltip of a prestige-upgrade now also shows some of the relative stats of the prestiged crop, directly comparable with other upgrade tooltips, just like regular unlock and upgrade crop upgrade tooltips do.'; // This allows direct comparison of the production values of current crop and its next tier. Note that the "Upgraded Production" stat in these tooltips is not necessarily the same value as the crop gets in the field, but it does allow relative comparison between different upgrade tooltips. It is roughly the effect of all non-field-position related boosts and upgrades.';
+  text += '<br/>• Detailed stats of watercress can now show both nuts and berry/mushroom copy stats at the same time if it copies from multiple crop types.';
+  text += '<br/>• Improved automaton priotarization for planting/upgrading stinging crops and bees.'
+  text += '<br/>• When manually activating an auto-action that has 5s wait times, there\'s now an indication of this.';
+  text += '<br/>• Optimizations for the auto-action 5s wait times (for blueprint, fern and transcend to allow automaton planting and tree levelups) for some cases.'; // e.g. the 5s wait time for fern is no longer done if no blueprint placed, and, fixed manual auto action with transcend to stop if you transend yourself before that
+  text += '<br/>• The "Undo" button is now named "Redo" when appropriate.'
+  text += '<br/>• If you do a manual action while the automaton also happens to do an auto-action, pressing undo will no longer disable the auto-action. Auto-actions that happen without manual action near them still are undo-able and get disabled.'
+  text += '<br/>• It no longer consumes a squirrel respec token when trying to respec with 0 squirrel upgrades bought.'
+  text += '<br/>• Other bugfixes.' // e.g. consider growing flower as fullgrown in the 'expected production' tooltip of growing nut crop, like it already dit for berry/mushroom
+  text += '<br/><br/>';
+
   text += '0.16.0 (2025-08-03)';
   text += '<br/>• Added squirrel evolution II.';
   text += '<br/>• Ethereal automaton details dialog now shows breakdown for regular and lotus neighbors separately.';

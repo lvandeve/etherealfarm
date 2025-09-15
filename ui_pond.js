@@ -393,7 +393,10 @@ function getFishInfoHTML(f, c, opt_detailed) {
     var typename = getFishTypeName(c.type);
     result += '<br><br>';
     result += 'Total bonus for all ' + typename + ': ' + total.subr(1).toPercentString();
-    if(total.neq(current)) result += '<br>Current (time weighted due to recently placing fishes): ' + current.subr(1).toPercentString();
+
+    if(!Num.near(total, current, 0.001)) {
+      result += '<br>Current (time-weighted due to recently placing fishes): ' + current.subr(1).toPercentString();
+    }
   }
 
 

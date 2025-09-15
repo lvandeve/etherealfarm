@@ -308,9 +308,9 @@ function addLongTouchEvent(div, fun) {
 
   util.addEvent(div, startEvent, function(e) {
     if(!touch && e.which == 3) return; // don't prevent right click menu in regular browsers
-    if(eventHasCtrlKey(e) || eventHasShiftKey(e)) return; // if user is using shift/ctrl, the long click is definitely not needed.
     // don't prevent *next* click (for touch case, where preventing regular click below is in fact possibly not executed, but some other things use onclick)
     div.removeEventListener('click', cancelClick, true);
+    if(eventHasCtrlKey(e) || eventHasShiftKey(e)) return; // if user is using shift/ctrl, the long click is definitely not needed.
     var pos = getEventXY(e);
     x0 = pos[0];
     y0 = pos[1];
@@ -364,6 +364,7 @@ function addLongTouchEvent(div, fun) {
   };
 
   // this stops mobile context callouts from appearing on long press on ios
+  // (callout = a type of popup / context menu with info about link)
   div.style.webkitTouchCallout = 'none';
   div.style.webkitUserSelect = 'none';
 }

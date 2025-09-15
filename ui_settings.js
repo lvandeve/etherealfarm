@@ -1409,6 +1409,12 @@ function updateSettingsAboutIcon() {
   }
 }
 
+var undobutton = undefined;
+
+function updateUndoButtonText() {
+  undobutton.div.textEl.innerText = next_undo_is_redo ? 'Redo' : 'Undo';
+}
+
 function initSettingsUI() {
   var gearbutton = addTopBarFlex(0, 1).div;
   var canvas = createCanvas('0%', '0%', '100%', '100%', gearbutton);
@@ -1453,9 +1459,9 @@ function initSettingsUI() {
     updatePausedUI();
     setAriaLabel(pausebutton, state.paused ? 'paused' : 'pause');
   }, canvas), 'pause');
-  aboutbutton.id = 'pause_button';
+  pausebutton.id = 'pause_button';
 
-  var undobutton = addTopBarFlex(2, 4, FONT_DIALOG_BUTTON);
+  undobutton = addTopBarFlex(2, 4, FONT_DIALOG_BUTTON);
   styleButton(undobutton.div, undefined, true);
   undobutton.div.textEl.innerText = 'Undo';
   registerAction(undobutton.div, function(shift, ctrl) {

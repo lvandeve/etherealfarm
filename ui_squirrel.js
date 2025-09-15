@@ -349,14 +349,14 @@ function updateSquirrelUI(opt_partial) {
   }
 
   var respecname = 'Respec\n(Available: ' + state.squirrel_respec_tokens + ')';
-  var respecfun = function(e) {
+  var respecfun = function(shift, ctrl) {
     var respecfun2 = function() {
       addAction({type:ACTION_SQUIRREL_RESPEC});
       if(squirrel_scrollflex) squirrel_scrollpos = squirrel_scrollflex.div.scrollTop;
       update();
       updateSquirrelUI();
     };
-    if(eventHasShiftKey(e)) {
+    if(shift) {
       respecfun2();
     } else {
       var dialog = createDialog({
@@ -391,7 +391,9 @@ function updateSquirrelUI(opt_partial) {
     helpButton.div.textEl.innerText = 'Help';
 
     var respecButton = new Flex(buttonFlex, 0.26, 0, 0.5, 0.9);
-    addButtonAction(respecButton.div, respecfun);
+    registerAction(respecButton.div, respecfun, 'Respec squirrel upgrades', {
+      label_shift: 'Respec squirrel upgrades without confirmation'
+    });
     styleButton(respecButton.div, 1);
     respecButton.div.textEl.innerText = 'Respec\n(Available: ' + state.squirrel_respec_tokens + ')';
     registerTooltip(respecButton.div, 'Resets and refunds all squirrel upgrades, consumes 1 respec token');

@@ -137,41 +137,60 @@ var getUpgradeInfoText = function(u, completed, opt_detailed) {
   if(u.cropid != undefined && !u.iscropunlock) {
     infoText += '<br>' + 'Have of this crop: ' + state.cropcount[u.cropid];
   }
-  if(u.cropid != undefined && !u.isprestige) {
+  if(u.cropid != undefined) {
     var c = crops[u.cropid];
     var c2 = state.crops[u.cropid];
     infoText += '<hr>';
     infoText += 'Crop info (' + c.name + '):<br><br>';
 
-    if(!c.prod.empty()) {
-      infoText += 'Base production: ' + c.prod.toString() + '<br>';
-      infoText += 'Upgraded production: ' + c.getProd().toString() + '<br>';
-    }
-    if(c.boost.neqr(0)) {
-      infoText += 'Base boost: ' + c.boost.toPercentString() + '<br>';
-      var hasboostboost = c.type == CROPTYPE_BEE; // TODO: consolidate getBoostBoost and getBoost into single function to avoid need for this check
-      if(c.type == CROPTYPE_CHALLENGE) hasboostboost = c.index == challengecrop_0 || c.index == challengecrop_1 || c.index == challengecrop_2;
-      infoText += 'Upgraded boost: ' + (hasboostboost ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
-    }
+    if(u.isprestige) {
+      var o = getPrestigedCropStats(u.cropid);
+      if(o.prod && !o.prod.empty()) {
+        infoText += 'Base production: ' + o.prod.toString() + '<br>';
+        infoText += 'Upgraded production: ' + c.getProd(undefined, 6).toString() + '<br>';
+      }
+      if(o.boost && o.boost.neqr(0)) {
+        infoText += 'Base boost: ' + o.boost.toPercentString() + '<br>';
+        var hasboostboost = c.type == CROPTYPE_BEE; // TODO: consolidate getBoostBoost and getBoost into single function to avoid need for this check
+        if(c.type == CROPTYPE_CHALLENGE) hasboostboost = c.index == challengecrop_0 || c.index == challengecrop_1 || c.index == challengecrop_2;
+        infoText += 'Upgraded boost: ' + (hasboostboost ? c.getBoostBoost(undefined, 6) : c.getBoost(undefined, 6)).toPercentString() + '<br>';
+      }
 
+      // planttime not (yet) supported for the prestige upgrade crop details display. To implement this, add support for "pretend == 6" to Crop.prototype.getPlantTime, similar to getProd etc...
 
-    var cropcost = c.getCost();
-    infoText += 'Planting cost: ' + cropcost.toString() + ' (' + getCostAffordTimer(cropcost) + ')<br>';
-    if(c.type == CROPTYPE_BRASSICA) {
-      infoText += 'Living time: ' + util.formatDuration(c.getPlantTime());
+      infoText += '<br>';
+      infoText += 'Type: ' + getCropTypeName(c.type) +  (o.tier ? (' (tier ' + (o.tier + 1) + ')') : '') + '<br>';
+      infoText += 'Prestiged: ' + (c2.prestige + 1) + 'x<br>';
     } else {
-      infoText += 'Grow time: ' + util.formatDuration(c.getPlantTime());
-      if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
+      if(!c.prod.empty()) {
+        infoText += 'Base production: ' + c.prod.toString() + '<br>';
+        infoText += 'Upgraded production: ' + c.getProd().toString() + '<br>';
+      }
+      if(c.boost.neqr(0)) {
+        infoText += 'Base boost: ' + c.boost.toPercentString() + '<br>';
+        var hasboostboost = c.type == CROPTYPE_BEE; // TODO: consolidate getBoostBoost and getBoost into single function to avoid need for this check
+        if(c.type == CROPTYPE_CHALLENGE) hasboostboost = c.index == challengecrop_0 || c.index == challengecrop_1 || c.index == challengecrop_2;
+        infoText += 'Upgraded boost: ' + (hasboostboost ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
+      }
+
+      var cropcost = c.getCost();
+      infoText += 'Planting cost: ' + cropcost.toString() + ' (' + getCostAffordTimer(cropcost) + ')<br>';
+      if(c.type == CROPTYPE_BRASSICA) {
+        infoText += 'Living time: ' + util.formatDuration(c.getPlantTime());
+      } else {
+        infoText += 'Grow time: ' + util.formatDuration(c.getPlantTime());
+        if(c.getPlantTime() != c.planttime) infoText += ' (base: ' + util.formatDuration(c.planttime) + ')';
+      }
+      infoText += '<br>';
+      infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
+      if(c2.prestige) infoText += 'Prestiged: ' + c2.prestige + 'x<br>';
     }
-    infoText += '<br>';
-    infoText += 'Type: ' + getCropTypeName(c.type) +  (c.tier ? (' (tier ' + (c.tier + 1) + ')') : '') + '<br>';
-    if(c2.prestige) infoText += 'Prestiged: ' + c2.prestige + 'x<br>';
 
     if(opt_detailed) {
-      var c = crops[u.cropid];
-      if(c) infoText += '<br>' + c.tagline;
+      infoText += '<br>' + c.tagline;
     }
   }
+
   return infoText;
 };
 

@@ -602,18 +602,26 @@ var spores_overload_penalty = Num(4);
 
 // f = Cell from field, or undefined to not take location-based production bonuses into account
 // prefield must already have been computed for flowers, bees and nettles (but not yet for berries/mushrooms, which is what is being computed now) before this may get called, unless pretent is non-0
-// pretend: if anything else than 0, pretents crops are fullgrown, and cannot use the prefield computations so is slower to compute
+// pretend: if anything else than 0, pretents crops are fullgrown or other variations, and cannot use the prefield computations so is slower to compute
 //  0: normal
 //  1: compute income if this plant would be planted here, while it doesn't exist here in reality. For the planting dialog UI, ...
-//  2: same as 1, but for tooltips/dialogs/expected hypothetical gain display/..., so will also include brassica copying, but normally precomputefield handles this instead
+//  2: same as 1, but for tooltips/dialogs/expected hypothetical gain display/..., so will also include brassica copying [TODO: investigate: does it actually include brassica? it's used in places where it's not supposed to (like the "Expected production/s" tooltip of growing berry or nut), but normally precomputefield handles this instead
 //  3: compute the value for best berry for the pumpkin income. Must include all berry specific bonuses and its growth, but not the pumpkin bonuses. The max of all berries from this must be stored in state.bestberryforpumpkin, and then if the crop type is CROPTYPE_PUMPKIN it uses this value as base
 //  4: same as 3, but assuming the crop is fullgrown
 //  5: compute for fern. This assumes everything is fullgrown, like 1, and in addition uses modified weighted time at level
+//  6: compute as if for next prestige level, otherwise works like 0. Next prestige means: the base production of next prestige level, and do as if the amount of upgrades is 0. Only supports the case of f=undefined as input
 Crop.prototype.getProd = function(f, pretend, breakdown) {
   var basic = basicChallenge();
 
   var baseprod = this.prod;
   var baseprod0 = this.prod0; // production without prestige, only used for display purposes
+
+  if(pretend == 6) {
+    var o = getPrestigedCropStats(this.index);
+    if(o.prod != undefined) {
+      baseprod = o.prod;
+    }
+  }
 
   if(state.challenge == challenge_towerdefense) {
     if(this.type == CROPTYPE_BRASSICA) {
@@ -683,12 +691,16 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       } else {
         result.mulrInPlace(t);
       }
-      if(breakdown) breakdown.push(['growing', true, Num(t), result.clone()]);
+      if(breakdown) {
+        var name = 'growing';
+        if(this.type == CROPTYPE_BRASSICA) name = 'withered'; // brassica only ends up here if it has infinite lifetime but is in the withered state, thereby producing 0%
+        breakdown.push([name, true, Num(t), result.clone()]);
+      }
     }
   }
 
   // upgrades
-  if(this.basic_upgrade != null) {
+  if(this.basic_upgrade != null && pretend != 6) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
@@ -1002,7 +1014,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
       if(x2 < 0 || x2 >= w || y2 < 0 || y2 >= h) continue;
       var n = state.field[y2][x2];
       if(n.hasRealCrop() && n.getCrop().type == CROPTYPE_FLOWER && n.getCrop().tier >= min_tier) {
-        mul_boost.addInPlace(flower_nut_boost.mulr(n.growth));
+        var boost = flower_nut_boost;
+        if(!pretend || pretend == 3) boost = boost.mulr(n.growth);
+        mul_boost.addInPlace(boost);
         num++;
       }
     }
@@ -1260,7 +1274,16 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 Crop.prototype.getBoost = function(f, pretend, breakdown) {
   if(this.type != CROPTYPE_FLOWER && this.type != CROPTYPE_STINGING) return Num(0);
 
-  var result = this.boost.clone();
+  var baseboost = this.boost;
+
+  if(pretend == 6) {
+    var o = getPrestigedCropStats(this.index);
+    if(o.boost != undefined) {
+      baseboost = o.boost;
+    }
+  }
+
+  var result = baseboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   var basic = basicChallenge();
@@ -1302,7 +1325,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
   }
 
   // upgrades
-  if(this.basic_upgrade != null) {
+  if(this.basic_upgrade != null && pretend != 6) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
@@ -1492,6 +1515,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
 
 
 // bee boosting the boost of flowers
+// pretend: see comment at the definition of getProd
 Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   var result = Num(0);
 
@@ -1509,7 +1533,17 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
     return result;
   }
 
-  result = this.boost.clone();
+
+  var baseboost = this.boost;
+
+  if(pretend == 6) {
+    var o = getPrestigedCropStats(this.index);
+    if(o.boost != undefined) {
+      baseboost = o.boost;
+    }
+  }
+
+  var result = baseboost.clone();
   if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
 
   if(!pretend && f && (!f.isFullGrown() || state.challenge == challenge_wither)) {
@@ -1530,7 +1564,7 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
   }
 
   // upgrades
-  if(this.basic_upgrade != null) {
+  if(this.basic_upgrade != null && pretend != 6) {
     var u = state.upgrades[this.basic_upgrade];
     var u2 = upgrades[this.basic_upgrade];
     if(u.count > 0) {
@@ -8357,6 +8391,55 @@ function applyPrestige(crop_id, prestige) {
     var u2 = state.upgrades[c.basic_upgrade];
     u2.count = 0;
   }
+}
+
+// returns some stats that you would get if c were prestiged
+// outputs some of the values that updatePrestigeData computes, but this one is intended for UI-info related usages
+function getPrestigedCropStats(crop_id) {
+  var c = crops[crop_id];
+  var c2 = state.crops[crop_id];
+  var o = {};
+
+  var prestige2 = c2.prestige + 1;
+
+  var oldtier = c.tier;
+  if(c.type == CROPTYPE_BERRY) {
+    if(c.tier < 0) return o; // doesn't work for templates
+    var tier = (c.tier & 15);
+    var tier2 = tier + prestige2 * num_tiers_per_crop_type[c.type];
+    o.cost = getBerryCost(tier2);
+    o.prod = getBerryProd(tier2);
+    o.tier = tier2;
+    o.planttime = c.planttime0 * (1 + 3 * prestige2);
+  }
+  if(c.type == CROPTYPE_FLOWER) {
+    if(c.tier < 0) return o; // doesn't work for templates
+    var tier = (c.tier & 7);
+    var tier2 = tier + prestige2 * num_tiers_per_crop_type[c.type];
+    o.cost = getFlowerCost(tier2);
+    o.boost = getFlowerBoost(tier2);
+    o.tier = tier2;
+    o.planttime = c.planttime0 * (1 + prestige2);
+  }
+  if(c.type == CROPTYPE_MUSH) {
+    if(c.tier < 0) return o; // doesn't work for templates
+    var tier = (c.tier & 7);
+    var tier2 = tier + prestige2 * num_tiers_per_crop_type[c.type];
+    o.cost = getMushroomCost(tier2);
+    o.prod = getMushroomProd(tier2);
+    o.tier = tier2;
+    o.planttime = c.planttime0 * (1 + prestige2);
+  }
+  if(c.type == CROPTYPE_NUT) {
+    if(c.tier < 0) return o; // doesn't work for templates
+    var tier = (c.tier & 15);
+    var tier2 = tier + prestige2 * num_tiers_per_crop_type[c.type];
+    o.cost = getNutCost(tier2);
+    o.prod = getNutProd(tier2);
+    o.tier = tier2;
+    o.planttime = c.planttime0 * (1 + prestige2);
+  }
+  return o;
 }
 
 function updatePrestigeData(crop_id) {

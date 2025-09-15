@@ -68,16 +68,26 @@ function getCropInfoHTMLBreakdown(f, c) {
   var bdname = f.isSemiFullGrown() ? 'Breakdown' : 'Preliminary breakdown';
 
   var p = prefield[f.y][f.x];
-  var breakdown_watercress = p.getBreakdownWatercress();
-  if(breakdown_watercress && breakdown_watercress.length > 0) {
-    if(p.getBrassicaBreakdownCroptype() == CROPTYPE_NUT) {
-      result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy nuts)');
-    } else {
-      result += formatBreakdown(breakdown_watercress, true, bdname + ' (copy)');
+
+  var has_nuts_leech = p.hasBrassicaBreakdownCroptype(CROPTYPE_NUT);
+  var has_berry_leech = p.hasBrassicaBreakdownCroptype(CROPTYPE_BERRY);
+  var has_mush_leech = p.hasBrassicaBreakdownCroptype(CROPTYPE_MUSH);
+
+  // these two have the same breakdown so only one is displayed
+  if(has_berry_leech || has_mush_leech) {
+    var bdname2 = bdname + ' (copy)';
+    if(has_nuts_leech) {
+      if(has_berry_leech && has_mush_leech) bdname2 = bdname + ' (copy berry & mushroom)';
+      else if(has_berry_leech) bdname2 = bdname + ' (copy berry)';
+      else if(has_mush_leech) bdname2 = bdname + ' (copy mushroom)';
     }
+    result += formatBreakdown(p.getBreakdownWatercress(CROPTYPE_BERRY), true, bdname2);
+  }
+  if(has_nuts_leech) {
+    result += formatBreakdown(p.getBreakdownWatercress(CROPTYPE_NUT), true, bdname + ' (copy nuts)');
   }
   var prod = c.getProd(f);
-  if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_NUT) {
+  if(!prod.empty() || c.type == CROPTYPE_BERRY || c.type == CROPTYPE_PUMPKIN || c.type == CROPTYPE_MUSH || c.type == CROPTYPE_NUT || c.type == CROPTYPE_BRASSICA) {
     var breakdown = p.getBreakdown();
     result += formatBreakdown(breakdown, false, bdname + ' (production/s)');
   }
