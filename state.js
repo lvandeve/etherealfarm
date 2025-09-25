@@ -493,6 +493,15 @@ function AutoActionTriggerState() {
 
   this.upgrade_level = 1; // upgrade level for the 'upgraded crop' trigger type
   this.crop_count = 1; // for planted and fullgrown trigger types: how many of this crop
+
+  this.triggeredAt = undefined; // for relative time auto actions, time this trigger was activated
+  this.relativeTo = 0; // autoaction to reference from for relative time actions
+  this.relativeTime = 0; // difference from reference (must be positive)
+ 
+  this.getTime = function() {
+    if(this.type == 4) return this.time;
+    if(this.type == 6) return state.automaton_autoactions[this.relativeTo].getTrigger().triggeredAt + this.relativeTime;
+  }
 }
 
 // a single set of auto action effect settings, for a single season

@@ -883,6 +883,7 @@ function beginNextRun(opt_challenge) {
   for(var i = 0; i < state.automaton_autoactions.length; i++) {
     state.automaton_autoactions[i].done = 0;
     state.automaton_autoactions[i].time2 = 0;
+    state.automaton_autoactions[i].getTrigger().triggeredAt = undefined;
   }
 
   //updateAbilitiesUI();
@@ -2844,6 +2845,9 @@ function autoActionTriggerConditionReached(index, o) {
   if(trigger.type == 4 && state.c_runtime >= trigger.time) {
     return true;
   }
+  if(trigger.type == 6 && state.c_runtime >= trigger.getTime()) { // relative time
+    return true;
+  }
   return false;
 }
 
@@ -2982,6 +2986,7 @@ function doAutoActions() {
     if(o.done >= 3) continue;
     if(!o.enabled) continue;
     var triggered = autoActionTriggerConditionReached(i, o);
+    if(triggered && o.done == 0) o.getTrigger().triggeredAt = state.c_runtime; // for relative time auto actions
     var triggered2 = o.done == 1 && state.c_runtime >= o.time2;
     var triggered3 = o.done == 2 && state.c_runtime >= o.time2;
     if(triggered && !o.getEffect().enable_blueprint) {
@@ -3663,9 +3668,9 @@ function nextEventTime(opt_remaining_tick_length) {
         addtime(0.1, 'auto-action 0');
       }
       var trigger = o.getTrigger();
-      if(trigger.type == 4 && o.done == 0) {
+      if((trigger.type == 4 || trigger.type == 6) && o.done == 0) {
         //if(trigger.time - state.c_runtime < 60) continue; // don't overshoot this if it was e.g. disabled through some other way, else computing a long time interval will go very slow since this will keep trying to add a small time interval forever
-        addtime(trigger.time - state.c_runtime, 'auto-action', true);
+        addtime(trigger.getTime() - state.c_runtime, 'auto-action', true);
       }
       if(o.done > 0 && o.done < 3) {
         addtime(o.time2 - state.c_runtime, 'auto-action2', true);

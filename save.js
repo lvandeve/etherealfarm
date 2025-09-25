@@ -754,6 +754,9 @@ function encState(state, opt_raw_only) {
     processTime(trigger.time);
     processUint(trigger.upgrade_level);
     processUint(trigger.crop_count);
+    processUint(trigger.relativeTo);
+    processTime(trigger.relativeTime);
+    processTime(trigger.triggeredAt);
     processStructEnd();
   };
 
@@ -2363,7 +2366,13 @@ function decState(s) {
     trigger.time = processTime();
     if(save_version >= 262144*2+64*13+2) trigger.upgrade_level = processUint();
     if(save_version >= 262144*2+64*13+2) trigger.crop_count = processUint();
+    if(save_version >= 262144*2+64*16+2) { 
+        trigger.relativeTo = processUint();
+        trigger.relativeTime = processTime();
+        trigger.triggeredAt = processTime();
+    }
     if(save_version >= 262144*2+64*13+2) processStructEnd();
+    
   };
 
   var processEffect = function(effect) {

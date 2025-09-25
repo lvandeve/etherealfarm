@@ -498,6 +498,8 @@ function getBluePrintActionTriggerDescription(trigger) {
     }
   } else if(trigger.type == 4) {
     text += 'run time: ' + util.formatDuration(trigger.time, true);
+  } else if(trigger.type == 6) {
+    text += 'relative time: ' + util.formatDuration(trigger.relativeTime, true) + ' after Action ' + trigger.relativeTo;
   }
   return text;
 }
@@ -695,6 +697,26 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
       var done = autoActionTriggerConditionReached(index, o);
       o.done = o.done2 = done;
       o.time2 = 0;
+      if(o.done == 0) {
+        o.getTrigger().triggeredAt = undefined; 
+        // allow relative actions to re-trigger too, if their reference action has changed to a valid future time.
+        // actions can have multiple children, are not required to be in order, and can have chains of multiple relative actions
+        let relatives = [index];
+        let finishedRelatives = [];
+        while (relatives.length > 0) {
+          let indexRel = relatives.pop();
+          finishedRelatives.push(indexRel);
+          for(let i = 0; i < state.automaton_autoactions.length; i++) {
+            let a = state.automaton_autoactions[i];
+            if(a.done != 0 && a.getTrigger().relativeTo == indexRel) {
+              a.done = 0;  
+              a.time2 = 0;
+              a.getTrigger().triggeredAt = undefined;
+              if (!finishedRelatives.includes(i) && !relatives.includes(i)) relatives.push(i); // follow potential chains 
+            }
+          }
+        }
+      }
       if(closefun) closefun();
     },
     scrollable:true,
@@ -730,10 +752,10 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
   flex = addControl();
   styleButton(flex.div);
   centerText2(flex.div);
-  var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop', 'upgraded crop', 'run time'];
+  var typenames = ['tree level', 'unlocked crop', 'planted crop', 'fullgrown crop', 'upgraded crop', 'run time', 'relative time'];
   // the order in the dropdown is different than the save state order
-  var typevalues = [0, 1, 2, 3, 5, 4];
-  var invtypevalues = [0, 1, 2, 3, 5, 4];
+  var typevalues = [0, 1, 2, 3, 5, 4, 6];
+  var invtypevalues = [0, 1, 2, 3, 5, 4, 6];
   makeDropdown(flex, 'Trigger by', invtypevalues[trigger.type], typenames, function(i) {
     trigger.type = typevalues[i];
     updateParamButtons();
@@ -761,6 +783,8 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
         if(trigger.type == 5) text += 'upgraded crop: ' + cropname;
       } else if(trigger.type == 4) {
         text += 'run time: ' + util.formatDuration(trigger.time, true);
+      } else if(trigger.type == 6) {
+        text += 'relative time: ' + util.formatDuration(trigger.relativeTime, true);
       }
       paramflex.div.textEl.innerText = text;
 
@@ -770,6 +794,9 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
         paramflex2.div.style.visibility = 'visible';
       } else if(trigger.type == 2 || trigger.type == 3) {
         text2 += 'minimum count: ' + trigger.crop_count;
+        paramflex2.div.style.visibility = 'visible';
+      } else if(trigger.type == 6) {
+        text2 += 'reference auto action: ' + trigger.relativeTo;
         paramflex2.div.style.visibility = 'visible';
       } else {
         paramflex2.div.style.visibility = 'hidden';
@@ -796,10 +823,13 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
         trigger.prestige = prestiged;
         updateParamButtons();
       });
-    } else if(trigger.type == 4) {
-      var current_hours = '' + Math.floor(trigger.time / 3600);
-      var current_minutes = '' + Math.floor((trigger.time % 3600) / 60);
-      var current_seconds = '' + (trigger.time % 60);
+    } else if(trigger.type == 4 || trigger.type == 6) {
+      let triggerTime;
+      if(trigger.type == 4) triggerTime = trigger.time;
+      if(trigger.type == 6) triggerTime = trigger.relativeTime;
+      var current_hours = '' + Math.floor(triggerTime / 3600);
+      var current_minutes = '' + Math.floor((triggerTime % 3600) / 60);
+      var current_seconds = '' + (triggerTime % 60);
       var current;
       if(current_seconds == '0') {
         if(current_minutes.length == 1) current_minutes = '0' + current_minutes;
@@ -811,27 +841,37 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
         if(current_seconds != 0) current += current_seconds + 's';
         current = current.trim();
       }
-      makeTextInput('Run time', 'Enter time since start of run. Supported formats, e.g. for one and a half hours: 1:30, 1h30m, 1.5h or 1.5', function(text) {
+      let textLabel;
+      let textHelp;
+      if(trigger.type == 4) {
+        textLabel = 'Run time';
+        textHelp = 'Enter time since start of run. Supported formats, e.g. for one and a half hours: 1:30, 1h30m, 1.5h or 1.5';
+      }
+      if(trigger.type == 6) {
+        textLabel = 'relative time';
+        textHelp = 'Enter time relative to the chosen auto action. Supported formats, e.g. for four minutes thirty seconds: 0:4:30, 4m30s, or 4.5m';
+      }
+      makeTextInput(textLabel, textHelp, function(text) {
         var parts = text.split(':');
         var parts2 = text.split('h');
         var lastchar = parts.length == 1 ? lower(parts[0].charAt(parts[0].length - 1)) : '';
+        let totalTime = 0;
         if(lastchar == 'd' || lastchar == 'h' || lastchar == 'm' || lastchar == 's') {
           // support an alternative notation such as: 5h for 5 hours, 3d for 3 days, 2m for 2 minutes, etc..., and combinations of those. Month and year are not supported, and it's case-insensitive
           var parts2 = parts[0].split(/([a-zA-Z])/); // split by letter separators such that you get both the numeric values and the separator letters. E.g. 3d 1h becomes "3","d"," 1","h",""
-          trigger.time = 0;
           for(var i = 0; i + 1 < parts2.length; i += 2) {
             var value = parseFloat(parts2[i].trim());
             var unit = parts2[i + 1];
-            if(unit == 'd') trigger.time += value * 24 * 3600;
-            else if(unit == 'h') trigger.time += value * 3600;
-            else if(unit == 'm') trigger.time += value * 60;
-            else if(unit == 's') trigger.time += value;
+            if(unit == 'd') totalTime += value * 24 * 3600;
+            else if(unit == 'h') totalTime += value * 3600;
+            else if(unit == 'm') totalTime += value * 60;
+            else if(unit == 's') totalTime += value;
           }
         } else if(parts2.length == 2 && parts.length == 1) {
           // support also the form "2h30" and similar
           var hours = parseFloat(parts2[0]);
           var minutes = parseFloat(parts2[1]);
-          trigger.time = hours * 3600 + minutes * 60;
+          totalTime = hours * 3600 + minutes * 60;
         } else {
           var hours = parseFloat(parts[0]);
           var minutes = parts.length > 1 ? parseFloat(parts[1]) : 0;
@@ -839,9 +879,12 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
           if(!(hours >= 0)) hours = 0;
           if(!(minutes >= 0)) minutes = 0;
           if(!(seconds >= 0)) seconds = 0;
-          trigger.time = hours * 3600 + minutes * 60 + seconds;
+          totalTime = hours * 3600 + minutes * 60 + seconds;
         }
-        if(isNaN(trigger.time)) trigger.time = 0;
+        if(isNaN(totalTime)) totalTime = 0;
+
+        if(trigger.type == 4) trigger.time = totalTime;
+        if(trigger.type == 6) trigger.relativeTime = totalTime;
 
         updateParamButtons();
       }, '' + current);
@@ -866,6 +909,15 @@ function showConfigureAutoActionTriggerDialog(index, closefun, opt_season) {
         trigger.crop_count = i;
         updateParamButtons();
       }, '' + trigger.upgrade_level);
+    }
+    if(trigger.type == 6) {
+        makeTextInput('Reference auto action', 'Enter the desired action number to reference', function(text) {
+        var i = parseInt(text);
+        if(!(i >= 0 && i < state.automaton_autoactions.length)) i = 0; 
+        trigger.relativeTo = i;
+        updateParamButtons();
+      }, '' + trigger.relativeTo);
+
     }
   });
 
