@@ -1881,14 +1881,13 @@ function precomputeField_(prefield, opt_pretend) {
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
       var f = state.field[y][x];
-      var p = prefield[y][x];
       var c = f.getRealCrop();
       if(c) {
         if(c.type == CROPTYPE_BRASSICA) {
+          let p = prefield[y][x];
           var leech_berry = (p.brassicaneighbors & 1) ? c.getLeech(f, pretend, null, CROPTYPE_BERRY) : Num(0);
           var leech_mush = (p.brassicaneighbors & 2) ? c.getLeech(f, pretend, null, CROPTYPE_MUSH) : Num(0);
           var leech_nuts = (p.brassicaneighbors & 4) ? c.getLeech(f, pretend, null, CROPTYPE_NUT) : Num(0);
-          var p = prefield[y][x];
           total.reset();
           var num = 0;
           var numdir = haveDiagonalBrassica() ? 8 : 4;
@@ -3086,7 +3085,7 @@ function computeFractionTime(cost, fraction) {
   if(res_needed.gt(state.res)) {
     if(state.challenge == challenge_towerdefense) return Infinity; // during TD, the gain is 0, even if gain.seeds is set to something, it's not added to stacks
     var rem = res_needed.sub(state.res);
-    var time = -Infinity;
+    time = -Infinity;
     if(rem.seeds.gtr(0)) time = Math.max(time, rem.seeds.div(gain.seeds).valueOf());
     if(rem.spores.gtr(0)) time = Math.max(time, rem.spores.div(gain.spores).valueOf());
     if(time == -Infinity) time = Infinity; // this upgrade may cost some new resource, TODO: implement here too
@@ -3886,7 +3885,7 @@ var update = function(opt_ignorePause) {
 
   if(paused_) {
     if(!fast_forwarding || !state.paused_while_heavy_computing) {
-      var d = total_d;
+      const d = total_d;
       state.c_pausetime += d;
       state.g_pausetime += d;
       state.prevtime = state.time = util.getTime();
@@ -4045,7 +4044,7 @@ var update = function(opt_ignorePause) {
 
     var td_go_now = false;
 
-    var d; // time delta
+    let d = 0; // time delta
     if(state.prevtime == 0) {
       d = 0;
     } else if(state.prevtime > nexttime) {
@@ -4335,19 +4334,19 @@ var update = function(opt_ignorePause) {
         ethereal_basic_boost_cache_counter++;
         computeDerived(state); // ethereal field changes can change the income numbers, but without computeDerived now this will lag behind one frame and even show lower numbers for one frame
       } else if(type == ACTION_SQUIRREL_UPGRADE) {
-        var s = squirrel_stages[state.squirrel_evolution][action.s];
-        var s2 = state.squirrel_stages[action.s];
-        var b = action.b; // which branch (left: 0, middle: 1, right: 2)
-        var d = action.d; // depth in the branch
-        var ok = true;
-        var us = (b == 0) ? s.upgrades0  : ((b == 1) ? s.upgrades1 : s.upgrades2);
-        var buyable = squirrelUpgradeBuyable(action.s, b, d);
+        let s = squirrel_stages[state.squirrel_evolution][action.s];
+        let s2 = state.squirrel_stages[action.s];
+        let b = action.b; // which branch (left: 0, middle: 1, right: 2)
+        let d = action.d; // depth in the branch
+        let ok = true;
+        let us = (b == 0) ? s.upgrades0  : ((b == 1) ? s.upgrades1 : s.upgrades2);
+        let buyable = squirrelUpgradeBuyable(action.s, b, d);
 
-        var bought = buyable == 0;
-        var gated = buyable == 2;
-        var canbuy = buyable == 1;
-        var next = buyable == 3;
-        var unknown = buyable >= 4;
+        let bought = buyable == 0;
+        let gated = buyable == 2;
+        let canbuy = buyable == 1;
+        let next = buyable == 3;
+        let unknown = buyable >= 4;
 
         if(!haveSquirrel()) {
           showMessage('Don\'t have squirrel', C_INVALID);
