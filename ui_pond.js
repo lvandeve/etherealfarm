@@ -118,7 +118,8 @@ function updatePondDialogText() {
 
   var resinbonus = getFishMultiplier(FISHTYPE_TANG, state, 3).subr(1);
   var twigsbonus = getFishMultiplier(FISHTYPE_EEL, state, 3).subr(1);
-  var fishweighted = someInfinityEffectIsTimeWeighted(1);
+  var reason = [];
+  var fishweighted = someInfinityEffectIsTimeWeighted(1, reason);
   if(resinbonus.neqr(0) || twigsbonus.neqr(0) || fishweighted) {
     text += '<br>';
     var dot = false;
@@ -133,7 +134,7 @@ function updatePondDialogText() {
     }
     if(fishweighted) {
       if(dot) text += '. ';
-      text += 'Some fish effects are currently time-weighted (⏳) due to recently changing the fishes';
+      text += 'Some fish effects are currently time-weighted (⏳) due to recently changing the fishes: ' + reason.join(', ') + '.';
     }
   }
 

@@ -514,34 +514,47 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     }
   }
 
-  if(state.challenge == challenge_infernal && season == 5 && this.tier >= 0) {
-    var tier_effective = -1;
-    var upgrade_base = undefined;
-    if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
-      tier_effective = this.tier;
-      upgrade_base = infernal_berry_upgrade_base;
+  // infernal season (for challenges)
+  if(season == 5) {
+    var fruit_infernal = getFruitAbility_MultiSeasonal(FRUIT_INFERNAL, true);
+    if(fruit_infernal[0] > 0 && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN || this.type == CROPTYPE_MUSH)) {
+      var level = fruit_infernal[0];
+      var ability = fruit_infernal[1];
+      var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true), true));
+      result.mulInPlace(mul);
+      if(breakdown) breakdown.push(['infernal fruit', true, mul, result.clone()]);
     }
-    if(this.type == CROPTYPE_MUSH) {
-      tier_effective = this.tier * 2 + 2;
-      upgrade_base = infernal_mush_upgrade_base;
-    }
-    var malus = Num(1e-9); // this applies to berries, flowers, mushrooms, bees, nettles, watercress production (but not copying)
-    if(tier_effective >= 0) {
-      malus.mulInPlace(Num.powr(Num(infernal_tier_base), tier_effective + 1));
-      var u = state.upgrades[this.basic_upgrade];
-      malus.mulInPlace(Num.powr(Num(upgrade_base), -u.count));
-    }
-    if(this.type == CROPTYPE_BRASSICA && result.seeds) {
-      // for brassica, keep the production at least as much as initial game brassica: so that it's possible to play infermal without having fern in ethereal field in theory
-      var minseeds = Num.min(this.prod.seeds, result.seeds);
-      if(result.seeds.mul(malus).lt(minseeds) && result.seeds.neqr(0)) {
-        // the result.seeds.neqr(0) check above is to avoid NaN, production can be 0 if the watercress is end of life (it still copies then, but doesn't produce)
-        malus = minseeds.div(result.seeds);
+
+    if(state.challenge == challenge_infernal && this.tier >= 0) {
+      var tier_effective = -1;
+      var upgrade_base = undefined;
+      if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
+        tier_effective = this.tier;
+        upgrade_base = infernal_berry_upgrade_base;
       }
+      if(this.type == CROPTYPE_MUSH) {
+        tier_effective = this.tier * 2 + 2;
+        upgrade_base = infernal_mush_upgrade_base;
+      }
+      var malus = Num(1e-9); // this applies to berries, flowers, mushrooms, bees, nettles, watercress production (but not copying)
+      if(tier_effective >= 0) {
+        malus.mulInPlace(Num.powr(Num(infernal_tier_base), tier_effective + 1));
+        var u = state.upgrades[this.basic_upgrade];
+        malus.mulInPlace(Num.powr(Num(upgrade_base), -u.count));
+      }
+      if(this.type == CROPTYPE_BRASSICA && result.seeds) {
+        // for brassica, keep the production at least as much as initial game brassica: so that it's possible to play infermal without having fern in ethereal field in theory
+        var minseeds = Num.min(this.prod.seeds, result.seeds);
+        if(result.seeds.mul(malus).lt(minseeds) && result.seeds.neqr(0)) {
+          // the result.seeds.neqr(0) check above is to avoid NaN, production can be 0 if the watercress is end of life (it still copies then, but doesn't produce)
+          malus = minseeds.div(result.seeds);
+        }
+      }
+      result.mulInPlace(malus);
+      if(breakdown) breakdown.push(['infernal', true, malus, result.clone()]);
     }
-    result.mulInPlace(malus);
-    if(breakdown) breakdown.push(['infernal', true, malus, result.clone()]);
   }
+
 }
 
 // derive the nettle malus from its boost to mushrooms
@@ -4071,6 +4084,7 @@ var challenge_infernal = registerChallenge('infernal challenge', /*targetlevel=*
 • There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>
 • Production or boost of most crops divided through 1 billion.<br>
 • In addition, the stats of berries and mushrooms are reduced even more for higher tiers.<br>
+• Instead of regular fruits, mandrake fruits will drop. These may seem weak during this challenge, but will get a use elsewhere in the future.<br>
 • Seasonal boosts don't work.<br>
 `,
 ['No special reward other than the challenge production bonus itself!'],
@@ -4079,7 +4093,7 @@ function() {
   // would have been neat to unlock this challenge at 66, but stormy already unlocks at 65 which is too close
   return state.treelevel >= 85;
 }, function() {
-}, 0);
+}, 2);
 challenges[challenge_infernal].bonus_formula = 2;
 challenges[challenge_infernal].bonus_level_a = 20;
 challenges[challenge_infernal].bonus_level_b = 100;
@@ -4794,6 +4808,7 @@ crop2_register_id = 200;
 var bee2_0 = registerBeehive2('worker bee', 8, 0, Res({resin:2e9}), default_ethereal_growtime, Num(0.01), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_workerbee);
 var bee2_1 = registerBeehive2('drone', 13, 1, Res({resin:1e15}), default_ethereal_growtime, Num(0.04), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_dronebee);
 var bee2_2 = registerBeehive2('queen bee', 19, 2, Res({resin:1e21}), default_ethereal_growtime, Num(0.12), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_queenbee);
+var bee2_3 = registerBeehive2('bee nest', 31, 3, Res({resin:400e33}), default_ethereal_growtime, Num(0.5), undefined, 'boosts bees in the basic field. Does not boost ethereal flowers. Gets a boost from neighboring lotuses.', images_beenest);
 
 crop2_register_id = 250;
 var mistletoe2_0 = registerMistletoe2('mistletoe', 15, 0, Res({resin:10}), 1.5, Num(0.01), undefined, 'Must be planted next to ethereal tree to work. Gives multiple bonuses, which can be unlocked and upgraded over time.', images_mistletoe);
@@ -5643,6 +5658,7 @@ var FRUIT_AUTUMN_WINTER = fruit_index++;
 var FRUIT_WINTER_SPRING = fruit_index++;
 var FRUIT_ALL_SEASON = fruit_index++; // star fruit
 var FRUIT_ALL_SEASON2 = fruit_index++; // dragon fruit
+var FRUIT_INFERNAL = fruit_index++; // mandrake fruit
 // BEWARE: only add new ones at the end or before the seasonal ones, since the numeric index values are saved in savegames!
 
 // NOT TODO: one that extends lifetime of watercress --> do not do this: too much manual work required with swapping fruits when active playing with watercress then
@@ -5730,6 +5746,9 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
     }
     if(opt_basic && basicChallenge()) return Num(0.4); // in case of basic challenge, only be slightly better than starfruit rather than a big jump up
     return Num(1.0); // not upgradeable
+  }
+  if(ability == FRUIT_INFERNAL) {
+    return Num(0.25); // not upgradeable
   }
   if(ability == FRUIT_RESINBOOST) {
     if(opt_sub_part == 1) {
@@ -5841,6 +5860,7 @@ function isInherentAbility(ability) {
   if(ability == FRUIT_WINTER_SPRING) return true;
   if(ability == FRUIT_ALL_SEASON) return true;
   if(ability == FRUIT_ALL_SEASON2) return true;
+  if(ability == FRUIT_INFERNAL) return true;
   return false;
 }
 
@@ -6209,6 +6229,7 @@ function getNumFruitAbilities(tier) {
   if(tier >= 5) num_abilities = 4;
   if(tier >= 7) num_abilities = 5;
   if(tier >= 9) num_abilities = 6;
+  if(tier >= 11) num_abilities = 7;
   return num_abilities;
 }
 
@@ -6245,6 +6266,7 @@ fuse_skip[FRUIT_AUTUMN_WINTER] = true;
 fuse_skip[FRUIT_WINTER_SPRING] = true;
 fuse_skip[FRUIT_ALL_SEASON] = true;
 fuse_skip[FRUIT_ALL_SEASON2] = true;
+fuse_skip[FRUIT_INFERNAL] = true;
 
 
 // automatically purchases ability levels in fruit c, given what the levels were in fruit a and b
@@ -6308,6 +6330,9 @@ function fruitContainsSeasonalType(fruit, type) {
 // fruitmix: state of the season-mix squirrel upgrades: 2: allow forming the 2-season fruits, 4: allow forming the 4-season fruits, 5: allow forming the dragon fruit
 function fruitSeasonMix(a, b, fruitmix) {
   if(a == b) return a;
+
+  // mandrake fruit (for infernal challenges) can only mix with itself, otherwise reverts to apple
+  if(a == 11 || b == 11) return 0;
 
   /*
   Mixing rules, assuming fruitmix = 5 (for lower fruit mix, depending on how low, dragon fruit, star fruit (4-season), or 2-season fruits can't be formed and become apple or other lower fruit instead. The other rules stay the same)
@@ -10130,12 +10155,12 @@ var prevmedal; // used during the registration of several sets of achieves for h
 medal_register_id = 39;
 var planted_achievement_values =  [   5,   50,  100,  200,  500,  1000,  1500, 2000, 5000];
 var planted_achievement_bonuses = [0.01, 0.01, 0.02, 0.02, 0.05,  0.05,   0.1,  0.1,  0.2];
-for(var i = 0; i < planted_achievement_values.length; i++) {
-  var a = planted_achievement_values[i];
-  var b = planted_achievement_bonuses[i];
-  var name = 'planted ' + a;
+for(let i = 0; i < planted_achievement_values.length; i++) {
+  let a = planted_achievement_values[i];
+  let b = planted_achievement_bonuses[i];
+  let name = 'planted ' + a;
   //if(i > 0) medals[prevmedal].description += '. Next achievement in this series, ' + name + ', unlocks at ' + a + ' planted.';
-  var id = registerMedal(name, 'Planted ' + a + ' or more permanent plants over the course of the game', blackberry[0],
+  let id = registerMedal(name, 'Planted ' + a + ' or more permanent plants over the course of the game', blackberry[0],
       bind(function(a) { return state.g_numfullgrown >= a; }, a),
       Num(b));
   if(i > 0) medals[id].hint = prevmedal;
@@ -10149,13 +10174,13 @@ var level_achievement_values = [[5, 0.025], [10, 0.05], [15, 0.075], [20, 0.1], 
                                 [60, 1.5],  [70, 2.5],  [80, 5],  [90, 10],  [100, 15],
                                 [110, 25],  [120, 50],  [130, 75],  [140, 150],  [150, 200],
                                 [160, 300],  [170, 400],  [180, 500],  [190, 600],  [200, 700]];
-for(var i = 0; i < level_achievement_values.length; i++) {
-  var level = level_achievement_values[i][0];
-  var bonus = Num(level_achievement_values[i][1]);
-  var s = Num(level).toString(5, Num.N_FULL);
-  var name = 'tree level ' + s;
+for(let i = 0; i < level_achievement_values.length; i++) {
+  let level = level_achievement_values[i][0];
+  let bonus = Num(level_achievement_values[i][1]);
+  let s = Num(level).toString(5, Num.N_FULL);
+  let name = 'tree level ' + s;
   //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + s + '.';
-  var id = registerMedal(name, 'Reached tree level ' + s, tree_images[treeLevelIndex(level)][1][1],
+  let id = registerMedal(name, 'Reached tree level ' + s, tree_images[treeLevelIndex(level)][1][1],
       bind(function(level) { return level <= state.g_treelevel; }, level),
       bonus);
   if(i > 0) medals[id].hint = prevmedal;
@@ -10206,12 +10231,12 @@ registerMedal('royal buzz', 'fill the entire field (5x5) with queen bees during 
 medal_register_id = 125;
 var numreset_achievement_values =   [   1,    5,   10,   20,   50,  100,  200,  500, 1000];
 var numreset_achievement_bonuses =  [ 0.1,  0.2,  0.25,  0.3,  0.5,   1,    2,    3,    4];
-for(var i = 0; i < numreset_achievement_values.length; i++) {
-  var level = numreset_achievement_values[i];
-  var bonus = Num(numreset_achievement_bonuses[i]);
-  var name = 'transcend ' + level;
+for(let i = 0; i < numreset_achievement_values.length; i++) {
+  let level = numreset_achievement_values[i];
+  let bonus = Num(numreset_achievement_bonuses[i]);
+  let name = 'transcend ' + level;
   //if(i > 0) medals[prevmedal].description += '. Next achievement in this series unlocks at level ' + level + '.';
-  var id = registerMedal(name, 'Transcended ' + level + ' times', image_medaltranscend,
+  let id = registerMedal(name, 'Transcended ' + level + ' times', image_medaltranscend,
       bind(function(level) { return state.g_numresets >= level; }, level),
       bonus);
   if(i > 0) medals[id].hint = prevmedal;
@@ -10356,11 +10381,11 @@ medal_register_id = 1100;
 var fruit_achievement_values =   [   5,   10,   20,   50,  100,  200,  500, 1000, 2000, 5000, 10000];
 var fruit_achievement_bonuses =  [0.02, 0.05, 0.05, 0.05,  0.1,  0.1,  0.2,  0.5,  0.5,    1,     2];
 var fruit_achievement_images =   [   0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10];
-for(var i = 0; i < fruit_achievement_values.length; i++) {
-  var num = fruit_achievement_values[i];
-  var bonus = Num(fruit_achievement_bonuses[i]);
-  var name = 'fruits ' + num;
-  var id = registerMedal(name, 'Found ' + num + ' fruits', images_apple[fruit_achievement_images[i]],
+for(let i = 0; i < fruit_achievement_values.length; i++) {
+  let num = fruit_achievement_values[i];
+  let bonus = Num(fruit_achievement_bonuses[i]);
+  let name = 'fruits ' + num;
+  let id = registerMedal(name, 'Found ' + num + ' fruits', images_apple[fruit_achievement_images[i]],
       bind(function(num) { return state.g_numfruits >= num; }, num),
       bonus);
   if(i > 0) medals[id].hint = prevmedal;
@@ -10372,12 +10397,12 @@ medal_register_id = 1200;
 // those higher values like 500 are probably never reachable unless something fundamental is changed to the game design in the future, but that's ok,
 // not all medals that are in the code must be reachable.
 var level2_achievement_values =  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
-for(var i = 0; i < level2_achievement_values.length; i++) {
-  var level = level2_achievement_values[i];
-  var bonus = Num((level * level) / 20);
-  var s = level;
-  var name = 'ethereal tree level ' + s;
-  var id = registerMedal(name, 'Reached ethereal tree level ' + s, tree_images[treeLevelIndex(level)][1][4],
+for(let i = 0; i < level2_achievement_values.length; i++) {
+  let level = level2_achievement_values[i];
+  let bonus = Num((level * level) / 20);
+  let s = level;
+  let name = 'ethereal tree level ' + s;
+  let id = registerMedal(name, 'Reached ethereal tree level ' + s, tree_images[treeLevelIndex(level)][1][4],
       bind(function(level) { return level <= state.treelevel2; }, level), bonus);
   if(i > 0) medals[id].hint = prevmedal;
   prevmedal = id;
@@ -10387,15 +10412,15 @@ medal_register_id = 1300;
 
 var resin_achievement_values =           [10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1e12,1e15,1e18,1e21,1e24,1e27];
 var resin_achievement_bonuses_percent =  [ 1,  2,  5, 10, 15, 20, 35, 50,100, 250, 500,1000,2000,3000,4000];
-for(var i = 0; i < resin_achievement_values.length; i++) {
+for(let i = 0; i < resin_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
-  var num = Num(resin_achievement_values[i]);
-  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
-  var s0 = num.toString(3, Num.N_LATIN);
-  var s1 = num.toString(3, Num.N_SCI);
-  var name = full + ' resin ';
-  var name2 = (num.ltr(900)) ? (s0) : (s0 + ' (' + s1 + ')');
-  var id = registerMedal(name, 'earned over ' + name2 + ' resin in total', image_resin,
+  let num = Num(resin_achievement_values[i]);
+  let full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  let s0 = num.toString(3, Num.N_LATIN);
+  let s1 = num.toString(3, Num.N_SCI);
+  let name = full + ' resin ';
+  let name2 = (num.ltr(900)) ? (s0) : (s0 + ' (' + s1 + ')');
+  let id = registerMedal(name, 'earned over ' + name2 + ' resin in total', image_resin,
       bind(function(num) { return state.g_res.resin.gt(num); }, num),
       Num(resin_achievement_bonuses_percent[i]).mulr(0.01));
   if(i > 0) medals[id].hint = prevmedal;
@@ -10445,13 +10470,13 @@ medal_register_id = 2010;
 
 var gametime_achievement_values =           [1, 7, 30];
 var gametime_achievement_bonuses_percent =  [1, 5, 10];
-for(var i = 0; i < gametime_achievement_values.length; i++) {
+for(let i = 0; i < gametime_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
-  var days = gametime_achievement_values[i];
-  var name = days + ' ' + (days == 1 ? 'day' : 'days');
-  var id = registerMedal(name, 'played for ' + days + ' days', undefined,
+  let days = gametime_achievement_values[i];
+  let name = days + ' ' + (days == 1 ? 'day' : 'days');
+  let id = registerMedal(name, 'played for ' + days + ' days', undefined,
       bind(function(days) {
-        var play = (state.time - state.g_starttime) / (24 * 3600);
+        let play = (state.time - state.g_starttime) / (24 * 3600);
         return play >= days;
       }, days),
       Num(gametime_achievement_bonuses_percent[i]).mulr(0.01));
@@ -10687,14 +10712,14 @@ for(var i = 0; i < 16; i++) {
 medal_register_id = 2900;
 var nuts_achievement_values =            [1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33, 1e36, 1e39, 1e42, 1e45, 1e48, 1e51, 1e54, 1e57, 1e60, 1e63, 1e66, 1e69, 1e72, 1e75, 1e78, 1e81, 1e84, 1e87, 1e90, 1e93, 1e96, 1e99];
 var nuts_achievement_bonuses_percent =   [  1,   3,   5,   10,   20,   30,   40,   50,   60,   70,   80,  100,  150,  200,  300,  400,  500,  600,  700,  800,  900, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 15000];
-for(var i = 0; i < nuts_achievement_values.length; i++) {
+for(let i = 0; i < nuts_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
-  var num = Num(nuts_achievement_values[i]);
-  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
-  var s0 = num.toString(3, Num.N_LATIN);
-  var s1 = num.toString(3, Num.N_SCI);
-  var name = full + ' nuts';
-  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') nuts', image_nuts,
+  let num = Num(nuts_achievement_values[i]);
+  let full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  let s0 = num.toString(3, Num.N_LATIN);
+  let s1 = num.toString(3, Num.N_SCI);
+  let name = full + ' nuts';
+  let id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') nuts', image_nuts,
       bind(function(num) { return state.res.nuts.gt(num); }, num),
       Num(nuts_achievement_bonuses_percent[i]).mulr(0.01));
   if(i > 0) medals[id].hint = prevmedal;
@@ -10977,6 +11002,36 @@ registerPlantTypeMedal3(mush3_t);
 var medal_mistletoe3_11 = registerPlantTypeMedal3(mistletoe3_11);
 changeMedalDisplayOrder(medal_mistletoe3_11, medal_lotus3_11);
 
+medal_register_id = 4400;
+
+// after infinity ascensions, gives a medal per tier instead of per crop
+function getInfTierBonus3(ascend, tier) {
+  var t = ascend * 12 + tier;
+  return Math.pow(t * 50, 1.15);
+}
+
+function registerInfTierBonusMedal3(ascend, tier) {
+  var mul = getInfTierBonus3(ascend, tier);
+  return registerMedal('Infinity ' + util.toRoman(ascend) + ' tier ' + tier, 'Reached tier ' + tier + ' during infinity ascension ' + util.toRoman(ascend), images_infinity_metal[tier], function() {
+    if(state.infinity_ascend > ascend) return true;
+    if(state.infinity_ascend < ascend) return false;
+    if(state.highestof3had >= tier) return true;
+    return false;
+  }, Num(mul));
+};
+
+registerInfTierBonusMedal3(1, 0);
+registerInfTierBonusMedal3(1, 1);
+registerInfTierBonusMedal3(1, 2);
+registerInfTierBonusMedal3(1, 3);
+registerInfTierBonusMedal3(1, 4);
+registerInfTierBonusMedal3(1, 5);
+registerInfTierBonusMedal3(1, 6);
+registerInfTierBonusMedal3(1, 7);
+registerInfTierBonusMedal3(1, 8);
+registerInfTierBonusMedal3(1, 9);
+registerInfTierBonusMedal3(1, 10);
+registerInfTierBonusMedal3(1, 11);
 
 // fish crop achievements
 medal_register_id = 4700;
@@ -11078,15 +11133,15 @@ var seeds_achievement_values = [
   Num.parse('1e314')
 ];
 var seedmedal_index0 = medal_register_id;
-for(var i = 0; i < seeds_achievement_values.length; i++) {
+for(let i = 0; i < seeds_achievement_values.length; i++) {
   // have a good spread of this medal, more than exponential growth for its requirement
-  var num = Num(seeds_achievement_values[i]);
-  var full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
-  var s0 = num.toString(3, Num.N_LATIN);
-  var s1 = num.toString(3, Num.N_SCI);
-  var name = full + ' seeds';
-  var bonus = Num.roundToNearestHumanNumber(seedsToMedalBonus(num));
-  var id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
+  let num = Num(seeds_achievement_values[i]);
+  let full = getLatinSuffixFullNameForNumber(num.mulr(1.1)); // the mulr is to avoid numerical imprecision causing the exponent to be 1 lower and hence the wrong name
+  let s0 = num.toString(3, Num.N_LATIN);
+  let s1 = num.toString(3, Num.N_SCI);
+  let name = full + ' seeds';
+  let bonus = Num.roundToNearestHumanNumber(seedsToMedalBonus(num));
+  let id = registerMedal(name, 'have over ' + s0 + ' (' + s1 + ') seeds', image_seed,
       bind(function(num) {
         return state.res.seeds.gt(num);
       }, num), bonus);
@@ -11095,7 +11150,6 @@ for(var i = 0; i < seeds_achievement_values.length; i++) {
 }
 var seedmedal_index1 = medal_register_id;
 changeMedalsDisplayOrder(seedmedal_index0, seedmedal_index1, 3);
-
 
 
 

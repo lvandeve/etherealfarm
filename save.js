@@ -3245,6 +3245,10 @@ var postload = function(new_state) {
 
   checkUnlockedAutomatonHelpDialogs();
 
+  if(state.challenge == challenge_towerdefense) {
+    initTD();
+  }
+
   if(state.paused) showMessage(pausedMessage, undefined, undefined, undefined, undefined, undefined, /*opt_showlate0=*/true);
   ethereal_basic_boost_cache_counter++;
 };

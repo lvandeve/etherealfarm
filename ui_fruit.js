@@ -44,6 +44,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
       case FRUIT_WINTER_SPRING: return ((getSeason() == 3 || getSeason() == 0) && haveFruitMix(1)) ? 'S' : 's';
       case FRUIT_ALL_SEASON: return haveFruitMix(2) ? 'S' : 's';
       case FRUIT_ALL_SEASON2: return haveFruitMix(3) ? 'S' : 's';
+      case FRUIT_INFERNAL: return 'I';
       case FRUIT_RESINBOOST: return 'RS';
       case FRUIT_TWIGSBOOST: return 'TW';
       case FRUIT_RESIN_TWIGS: return 'RT';
@@ -76,6 +77,7 @@ function getFruitAbilityName(ability, opt_abbreviation) {
     case FRUIT_WINTER_SPRING: return 'winter and spring boost';
     case FRUIT_ALL_SEASON: return '4-seasons boost';
     case FRUIT_ALL_SEASON2: return 'ultra seasons boost';
+    case FRUIT_INFERNAL: return 'infernal boost (challenge only)';
     case FRUIT_RESINBOOST: return 'resin boost';
     case FRUIT_TWIGSBOOST: return 'twigs boost';
     case FRUIT_RESIN_TWIGS: return 'resin and twigs boost';
@@ -110,6 +112,7 @@ function getFruitAbilityDescription(ability) {
     case FRUIT_WINTER_SPRING: return 'boosts the winter tree warmth effect and the spring flower boost, only during the respective seasons';
     case FRUIT_ALL_SEASON: return 'boosts the special effect of each of the 4 seasons, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
     case FRUIT_ALL_SEASON2: return 'boosts the special effect of each of the 4 seasons, even more for dragon fruit, when the applicable season is active: flower boost in spring, berry boost in summer, mushroom boost in autumn, tree warmth boost in winter';
+    case FRUIT_INFERNAL: return 'boost for the infernal season, which only exists during certain challenges';
     // "taking into account the time this fruit was active" now means: it takes into account how many spores were produced while any fruit with resin boost (respectively twigs boost) was active, vs while other fruits were active. The more spores produced while such fruit active, the more of the boost is given.
     case FRUIT_RESINBOOST: return 'boost resin income (with a soft cap), based on spores produced while this fruit was active. In addition slightly boosts the unspent resin production bonus.';
     case FRUIT_TWIGSBOOST: return 'boost twigs income (with a soft cap), based on spores produced while this this fruit was active. In addition slightly boosts the unspent twigs production bonus.';

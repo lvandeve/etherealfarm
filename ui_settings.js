@@ -997,8 +997,7 @@ var getAboutHeader = function() {
   text += '<br/>';
   text += 'Discord: <a target="_blank" href="https://discord.gg/9eaTxXvMT2">https://discord.gg/9eaTxXvMT2</a>';
   text += '<br/>';
-  //text += 'Fandom wiki: <a target="_blank" href="https://ethereal-farm.fandom.com/wiki/Ethereal_Farm_Wiki">https://ethereal-farm.fandom.com/wiki/Ethereal_Farm_Wiki</a>';
-  //text += '<br/><br/>';
+  text += '<br/>';
   return text;
 };
 

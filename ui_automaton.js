@@ -554,7 +554,7 @@ function getBluePrintActionDescription(index, o) {
       if(actiontext != '') actiontext += '. ';
       actiontext += 'Pick up fern';
     }
-    if(effect.enable_transcend) {
+    if(effect.hasTranscendEnabled()) {
       if(actiontext != '') actiontext += '. ';
       actiontext += 'Transcend';
     }
@@ -1098,9 +1098,9 @@ function showConfigureAutoActionEffectDialog(index, closefun, opt_season) {
 
   if(autoActionTranscendUnlocked() && !(haveBeginOfRunAutoAction() && index == 0)) {
     flex = addControl(0.7);
-    makeCheckbox(flex, effect.enable_transcend, 'Transcend', function(state) {
+    makeCheckbox(flex, effect.enable_transcend, 'Transcend (disabled during challenges)', function(state) {
       effect.enable_transcend = state;
-    }, 'Transcend');
+    }, 'Transcend (disabled during challenges)');
   }
 }
 

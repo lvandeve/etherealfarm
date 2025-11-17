@@ -30,6 +30,15 @@ function getChangeLog() {
     }
   }
 
+  text += '0.16.2 (2025-11-17)';
+  text += '<br/>• Added a new tier of ethereal bee.';
+  text += '<br/>• There are now achievements for reaching tiers in the infinity field after ascension.';
+  text += '<br/>• During the infernal challenge, a new type of fruit can drop: the mandrake fruit. These fruits may seem weak due to lower fruit tiers, but are targeted at a future not yet released infernal-weather based challenge so will become useful in the near future.';
+  text += '<br/>• Auto-transcend is now disabled during challenges.';
+  text += '<br/>• The burrow in the tower defense challenge now has a tooltip indicating the enemy types in the next wave.';
+  text += '<br/>• If resin or twigs boosting fishes are time-weighted, the tooltip now says *which* fish types are time-weighted. This doesn\'t work for kois or orandas because their time-weighting system is tied to that of the infinity crops.';
+  text += '<br/><br/>';
+
   text += '0.16.1 QoL and Bugfixes (2025-09-15)';
   text += '<br/>• The tooltip of a prestige-upgrade now also shows some of the relative stats of the prestiged crop, directly comparable with other upgrade tooltips, just like regular unlock and upgrade crop upgrade tooltips do.'; // This allows direct comparison of the production values of current crop and its next tier. Note that the "Upgraded Production" stat in these tooltips is not necessarily the same value as the crop gets in the field, but it does allow relative comparison between different upgrade tooltips. It is roughly the effect of all non-field-position related boosts and upgrades.';
   text += '<br/>• Detailed stats of watercress can now show both nuts and berry/mushroom copy stats at the same time if it copies from multiple crop types.';

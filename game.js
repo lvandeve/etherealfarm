@@ -2329,10 +2329,10 @@ function getRandomFruitRoll() {
   return roll[1];
 }
 
-
 // aka addFruit, dropFruit
-function addRandomFruitForLevel(treelevel, opt_nodouble) {
+function addRandomFruitForLevel(treelevel, infernal, opt_nodouble) {
   var fruits = [];
+
   for(;;) {
     // do same amount of rolls per fruit, even if some are unneeded, so that it's harder to affect the fruit seed by choosing when to do squirrel upgrades, transcends, ...
     var roll_double = getRandomFruitRoll();
@@ -2346,6 +2346,21 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     var fruit = new Fruit();
     fruit.tier = tier;
 
+    if(infernal) {
+      fruit.type = 11; // mandrake
+    } else {
+      if(state.g_numfruits >= 4) {
+        var prob = 0.75;
+        if(state.squirrel_upgrades[upgradesq_seasonfruitprob].count || state.squirrel_upgrades[upgradesq_seasonfruitprob2].count || state.squirrel_upgrades[upgradesq_fruittierprob3]) prob = 0.666; // from 1/4th to 1/3th probability
+        if(roll_season > prob) {
+          var season = getSeason();
+          if(season >= 0 && season <= 3) {
+            fruit.type = 1 + season;
+          }
+        }
+      }
+    }
+
     var num_abilities = getNumFruitAbilities(tier);
 
     var abilities = [FRUIT_BERRYBOOST, FRUIT_MUSHBOOST, FRUIT_MUSHEFF, FRUIT_FLOWERBOOST, FRUIT_BRASSICA, FRUIT_GROWSPEED, FRUIT_WEATHER, FRUIT_NETTLEBOOST];
@@ -2356,7 +2371,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       abilities.push(FRUIT_BEEBOOST);
     }
     if(tier >= 7) {
-      abilities.splice(abilities.indexOf(FRUIT_MUSHEFF), 1); // remove the possibility to get the bad FRUIT_MUSHEFF ability from now on
+      util.removeFromArray(abilities, FRUIT_MUSHEFF); // remove the possibility to get the bad FRUIT_MUSHEFF ability from now on
       abilities.push(FRUIT_MIX);
       abilities.push(FRUIT_TREELEVEL);
       abilities.push(FRUIT_SEED_OVERLOAD);
@@ -2366,15 +2381,24 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       // the reason is that there are 5 abilities that all do the same thing, which is to boost both seeds and spores:
       // flower boost, brassica boost, bee boost, treelevel boost, weather boost (because due to the permanent weather it's also perma-active with large multiplier)
       // so now the 6 fruits slots won't have to be filled up with 5x the same thing
-      abilities.splice(abilities.indexOf(FRUIT_BEEBOOST), 1);
-      abilities.splice(abilities.indexOf(FRUIT_WEATHER), 1);
+      util.removeFromArray(abilities, FRUIT_BEEBOOST);
+      util.removeFromArray(abilities, FRUIT_WEATHER);
       // note that mix also does something somewhat similar, but to a lesser extent so that one remains
       abilities.push(FRUIT_SPORES_OVERLOAD);
     }
     if(tier >= 10) {
-      abilities.splice(abilities.indexOf(FRUIT_RESINBOOST), 1);
-      abilities.splice(abilities.indexOf(FRUIT_TWIGSBOOST), 1);
+      util.removeFromArray(abilities, FRUIT_RESINBOOST);
+      util.removeFromArray(abilities, FRUIT_TWIGSBOOST);
       abilities.push(FRUIT_RESIN_TWIGS);
+    }
+
+    if(fruit.type == 11) {
+      // for the mandrake fruit, don't add in types such as resin or twigs, these are not useful during infernal challenges
+      util.removeFromArray(abilities, FRUIT_RESINBOOST);
+      util.removeFromArray(abilities, FRUIT_TWIGSBOOST);
+      util.removeFromArray(abilities, FRUIT_RESIN_TWIGS);
+      util.removeFromArray(abilities, FRUIT_WEATHER);
+      util.removeFromArray(abilities, FRUIT_NUTBOOST);
     }
 
     for(var i = 0; i < num_abilities; i++) {
@@ -2397,17 +2421,6 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       return 0;
     });
 
-    if(state.g_numfruits >= 4) {
-      var prob = 0.75;
-      if(state.squirrel_upgrades[upgradesq_seasonfruitprob].count || state.squirrel_upgrades[upgradesq_seasonfruitprob2].count || state.squirrel_upgrades[upgradesq_fruittierprob3]) prob = 0.666; // from 1/4th to 1/3th probability
-      if(roll_season > prob) {
-        var season = getSeason();
-        if(season >= 0 && season <= 3) {
-          fruit.type = 1 + season;
-        }
-      }
-    }
-
     if(fruit.type == 1) {
       fruit.abilities.push(FRUIT_SPRING);
       fruit.levels.push(1);
@@ -2424,6 +2437,10 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
       fruit.abilities.push(FRUIT_WINTER);
       fruit.levels.push(1);
     }
+    if(fruit.type == 11) { // mandrake
+      fruit.abilities.push(FRUIT_INFERNAL);
+      fruit.levels.push(1);
+    }
 
     for(var i = 0; i < fruit.levels.length; i++) {
       fruit.starting_levels[i] = fruit.levels[i];
@@ -2432,6 +2449,7 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
 
     var season_before = state.seen_seasonal_fruit;
     if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
+    if(fruit.type == 11) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));
     var season_after = state.seen_seasonal_fruit;
     if(!season_before && season_after) {
       showFruitChip('You got a seasonal fruit for the first time! One extra fruit storage slot added to cope with the variety.');
@@ -2439,6 +2457,10 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
     }
     if((season_before & 15) != 15 && (season_after & 15) == 15) {
       showFruitChip('You\'ve seen all 4 possible seasonal fruits! One extra fruit storage slot added to cope with the variety.');
+      state.fruit_slots++;
+    }
+    if(!(season_before & 1024) && (season_after & 1024)) {
+      showFruitChip('You got an infernal fruit for the first time! One extra fruit storage slot added to cope with the variety.');
       state.fruit_slots++;
     }
 
@@ -2486,7 +2508,9 @@ function addRandomFruitForLevel(treelevel, opt_nodouble) {
 }
 
 function addRandomFruit() {
-  return addRandomFruitForLevel(state.treelevel);
+  var treelevel = state.treelevel;
+  var infernal = state.challenge == challenge_infernal || getSeason() == 5; // the getSeason() check captures fruture infernal challenges
+  return addRandomFruitForLevel(treelevel, infernal);
 }
 
 // unlocks and shows message, if not already unlocked
@@ -2624,6 +2648,9 @@ function maybeUnlockEtherealCrops() {
   }
   if(state.treelevel2 >= 30) {
     unlockEtherealCrop(brassica2_1);
+  }
+  if(state.treelevel2 >= 31) {
+    unlockEtherealCrop(bee2_3);
   }
 }
 
@@ -2917,7 +2944,7 @@ function doAutoAction(index, part, opt_manually) {
   }
 
   // transcend: this part is a few seconds after fern if there's a fern, because picking up the fern can cause multiple tree levelups, allow those to happen before transcending
-  if(effect.enable_transcend && autoActionTranscendUnlocked()) {
+  if(effect.hasTranscendEnabled() && autoActionTranscendUnlocked()) {
     if(part == 3) {
       addAction({type:ACTION_TRANSCEND, by_automaton:!opt_manually});
       did_something = true;
@@ -4202,7 +4229,7 @@ var update = function(opt_ignorePause) {
         // don't do this when just starting a new run: then if you press undo, you'd want to undo the transcension, instead of having it be overwritten with this undo from just after transcension
         var longEnoughRun = state.c_runtime > 10;
         if(!recentUndo && !longEnoughRun) {
-          var auto_transcend = state.automaton_autoactions[action.action_index].effect.enable_transcend;
+          var auto_transcend = state.automaton_autoactions[action.action_index].getEffect().hasTranscendEnabled();
           // don't do this when not having done any human actions before this auto-action (except for transcend by auto-action, which is handled in ACTION_TRANSCEND): when coming back to a game after a long time, you'd want undo to undo the last auto-transcend, not another auto-action that happened later
           if(state.runHadAnyHumanAction || auto_transcend) {
             if(!undostate) undostate = util.clone(state);
@@ -5691,7 +5718,7 @@ var update = function(opt_ignorePause) {
           }
         }
         if(state.towerdef.gameover) {
-          showMessage('Can\'t spawn any more waves, it\'s game over', C_TD, 1250454032);
+          showMessage('Can\'t spawn any more waves, it\'s game over. All that can be done now is to start a new run.', C_TD, 1250454032);
         }
       } else if(type == ACTION_INFINITY_ASCEND) {
         ascendInfinity();
@@ -6154,7 +6181,7 @@ var update = function(opt_ignorePause) {
           } else {
             showMessage('This egg contained fruit!', C_EGG, 38753631, 0.8, true);
           }
-          var fruits = addRandomFruitForLevel(Math.max(5, state.g_treelevel - 2), true);
+          var fruits = addRandomFruitForLevel(Math.max(5, state.g_treelevel - 2), false, true);
           if(fruits) {
             var messagestyle = (state.holiday & 1) ? C_PRESENT : C_EGG;
             for(var i = 0; i < fruits.length; i++) {

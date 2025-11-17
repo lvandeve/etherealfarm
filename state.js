@@ -513,9 +513,14 @@ function AutoActionEffectState() {
 
   this.enable_fern = false; // fern pickup
 
-  this.enable_transcend = false;
+  this.enable_transcend = false; // auto-transcend
+  this.enable_transcend_challenge = false; // auto-transcend during challenge [not yet saved or exposed in UI]
 
   this.enable_hold_season = false;
+
+  this.hasTranscendEnabled = function() {
+    return (state.challenge == 0) ? this.enable_transcend : this.enable_transcend_challenge;
+  };
 }
 
 function AutoActionState() {
@@ -823,7 +828,7 @@ function State() {
   this.fruit_stored = []; // fruits in storage that stay after transcension
   this.fruit_slots = 3; // amount of slots for fruit_stored
   this.fruit_sacr = []; // fruits outside of storage that will be sacrificed on transcension
-  this.seen_seasonal_fruit = 0; // bit flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit, and so on for higher fruit types. For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
+  this.seen_seasonal_fruit = 0; // bit flags: 1=spring fruit, 2=summer fruit, 4=autumn fruit, 8=winter fruit, 16+...=the various multi-season fruits, 1024=mandrake fruit(infernal). For each flag, if false means never seen a seasonal fruit of that type yet. Some events here give an extra fruit slot.
   this.fruit_recover = []; // fruits from previous run that can be recovered
 
   // settings / preferences
@@ -1318,6 +1323,7 @@ function State() {
   this.highestoftype2unlocked = [];
   this.highestoftype3unlocked = [];
   this.highestoftype3had = [];
+  this.highestof3had = -Infinity; // highest tier of any crop at all
   this.highestoftypefishunlocked = [];
   this.highestoftypefishhad = [];
 
@@ -1666,6 +1672,7 @@ function computeDerived(state) {
     state.highestoftype3had[i] = -Infinity;
     state.highestoftypeknown[i] = -Infinity;
   }
+  state.highestof3had = -Infinity;
   for(var i = 0; i < NUM_FISHTYPES; i++) {
     state.fishtypecount[i] = 0;
     state.highestoftypefishunlocked[i] = -Infinity;
@@ -1892,6 +1899,7 @@ function computeDerived(state) {
     }
     if(c2.had) {
       state.highestoftype3had[c.type] = Math.max(c.tier || 0, state.highestoftype3had[c.type]);
+      state.highestof3had = Math.max(c.tier || 0, state.highestof3had);
     }
   }
 
@@ -2271,7 +2279,7 @@ function Fruit() {
   this.typeName = function() {
     return ['apple', 'apricot (spring)', 'pineapple (summer)', 'pear (autumn)', 'medlar (winter)',
             'mango (spring+summer)', 'plum (summer+autumn)', 'quince (autumn+winter)', 'kumquat (winter+spring)',
-            'star fruit (4 seasons)', 'dragon fruit (4 seasons)'][this.type];
+            'star fruit (4 seasons)', 'dragon fruit (4 seasons)', 'mandrake fruit (infernal)'][this.type];
   };
 
   this.origName = function() {

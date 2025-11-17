@@ -524,21 +524,27 @@ function field3CellTooltipFun(x, y, div) {
     if(state.infinityboost.gtr(0) || state.numfishes) {
       text += '<br><br>';
       text += 'Total boost from infinity crops to basic field: ' + state.infinityboost.toPercentString();
-      if(state.fishes[jellyfish_t].unlocked) {
-        var bonus = getFishMultiplier(FISHTYPE_JELLYFISH, state, 3).subr(1);
-        text += '<br><br>';
-        text += 'Boost from jellyfish to resource-producing neighbors of pond: ' + bonus.toPercentString();
-      }
       if(!Num.near(state.expected_infinityboost, state.infinityboost, 0.001)) {
         var time_remaining = MAXINFTOBASICDELAY - (state.c_runtime - state.infinity_prodboost_time + state.infinity_prodboost_time_shift);
         text += '. After time-weighting (⏳): ' + state.expected_infinityboost.toPercentString();
         text += ', ' + util.formatDuration(time_remaining, true);
       }
 
-      if(state.numfishes > 0) text += '<br><br> Fishes: ' + state.numfishes;
+      if(state.numfishes > 0) text += '<br><br> Amount of fishes: ' + state.numfishes;
+
+      if(state.fishes[jellyfish_t].unlocked) {
+        var bonus = getFishMultiplier(FISHTYPE_JELLYFISH, state, 3).subr(1);
+        text += '<br><br>';
+        text += 'Boost from jellyfish to resource-producing neighbors of pond: ' + bonus.toPercentString();
+      }
+
+      if(state.infinity_ascend > 0) {
+        text += '<br><br> Num infinity ascensions: ' + state.infinity_ascend;
+      }
     }
-    if(someInfinityEffectIsTimeWeighted(1)) {
-      text += '<br><br> Some fish effects are currently time-weighted (⏳) due to recently changing the fishes.';
+    var reason = [];
+    if(someInfinityEffectIsTimeWeighted(1, reason)) {
+      text += '<br><br> Some fish effects are currently time-weighted (⏳) due to recently changing the fishes: ' + reason.join(', ') + '.';
     } else if(someInfinityEffectIsTimeWeighted(2)) {
       // Disabled, already said in the 'After time-weighting...' above.
       //text += '<br><br> The production boost to basic field is currently time-weighted (⏳) due to recently increasing it.';
@@ -742,32 +748,37 @@ function brassicaNoSelfSutain(f) {
 
 // This function is only intended to be used for display purposes, such as icons and tooltips
 // opt_fish: if 0, any effect counts. if 1, only fish effects. if 2, only more generic (not individual fish) effects (but a fish may still be part of it)
-function someInfinityEffectIsTimeWeighted(opt_fish) {
+// opt_reason: optional output value, if given must be empty array, the name of each involved fish type will be appended to the array
+function someInfinityEffectIsTimeWeighted(opt_fish, opt_reason) {
   // multiplication with this threshold is there to not show the hourglass icon all the time whenever changing infinity crops in the infinity field, only when there's a significant
   // change in boost, it'll start showing the icon
   var show_threshold = 0.875;
   // this one is based on actual current production, so hour glass will also disappear a bit before the actual time runs out, but not as fast as the show_threshold
   var show_threshold2 = 0.95;
+  var result = false;
   if(opt_fish != 2) {
     if(state.c_runtime - state.fish_resinmul_time < MAXINFTOBASICDELAY &&
        state.fish_resinmul_weighted.lt(state.fish_resinmul_last.mulr(show_threshold)) &&
        getFishMultiplier(FISHTYPE_TANG, state, 3).lt(state.fish_resinmul_last.mulr(show_threshold2))) {
-      return true;
+      result = true;
+      if(opt_reason != undefined) opt_reason.push('tang');
     }
     if(state.c_runtime - state.fish_twigsmul_time < MAXINFTOBASICDELAY &&
        state.fish_twigsmul_weighted.lt(state.fish_twigsmul_last.mulr(show_threshold)) &&
        getFishMultiplier(FISHTYPE_EEL, state, 3).lt(state.fish_twigsmul_last.mulr(show_threshold2))) {
-      return true;
+      result = true;
+      if(opt_reason != undefined) opt_reason.push('eel');
     }
   }
   if(opt_fish != 1) {
     if(state.c_runtime - state.infinity_prodboost_time < MAXINFTOBASICDELAY &&
        state.infinity_prodboost_weighted.lt(state.infinity_prodboost_last.mulr(show_threshold)) &&
        state.infinityboost.lt(state.infinity_prodboost_last.mulr(show_threshold2))) {
-      return true;
+      result = true;
+      if(opt_reason != undefined) opt_reason.push('production');
     }
   }
-  return false;
+  return result;
 }
 
 function updateField3CellUI(x, y) {

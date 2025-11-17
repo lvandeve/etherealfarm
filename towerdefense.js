@@ -18,6 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // Code for the tower defense challenge
 
+var nextWaveString = '';
+
 
 // opt_crop is cropid for specific crop in case it has a slightly different description
 function getTDCropTypeHelp(type) {
@@ -191,6 +193,7 @@ function TowerDefenseState() {
 
 function resetTD() {
   state.towerdef = new TowerDefenseState();
+  initTD();
 }
 
 function tdWaveActive() {
@@ -218,6 +221,12 @@ function tdNextWait() {
   return tdNextWaveTime() - state.time;
 }
 
+// to be called only when TD starts or is loaded from a savegame
+function initTD() {
+  updateNextWaveString(state.towerdef);
+}
+
+// called once per update anyway despite the name
 function precomputeTD() {
   var td = state.towerdef;
   computeTDPath(td);
@@ -961,9 +970,38 @@ function spawnWave(opt_force_num, opt_force_type) {
   for(var i = 0; i < td.pests.length; i++) actual_hp.addInPlace(td.pests[i].hp);
   showMessage('Spawning wave ' + td.wave + '. Total HP: ' + actual_hp.toString() + ', amount: ' + td.num, C_TD, 1250454032);
 
+  updateNextWaveString(td);
+
   td.wave_hp = actual_hp;
 }
 
+function updateNextWaveString(td) {
+  nextWaveString = wavePestsToString(createRandomWave(td, td.wave + 1, getTDWaveHealth(td.wave + 1)));
+}
+
+// wavePestsToString(createRandomWave(state.towerdef, state.towerdef.wave, getTDWaveHealth(state.towerdef.wave)));
+function wavePestsToString(wave_pests) {
+  var result = '';
+
+  var types = [];
+  var hp = new Num(0);
+  for(var i = 0; i < wave_pests.length; i++) {
+    var p = wave_pests[i];
+    if(!types[p.index]) types[p.index] = 0;
+    types[p.index]++;
+    hp = hp.add(p.maxhp);
+  }
+  var printed = false;
+  for(var k in types) {
+    var p = pests[k];
+    var num = types[k];
+    if(printed) result += ', ';
+    result += num + 'x ' + p.name;
+    printed = true;
+  }
+  result += '. Total HP: ' + hp.toString();
+  return result;
+}
 
 
 // must call precomputeTD() before this.
@@ -1000,10 +1038,13 @@ function getTDSummary() {
   result += '<br>';
   result += '<br>';
   result += 'Tip: speed up the arrival of the next wave using the "Go" button or the "w" shortcut key';
+  result += '<br>';
+  result += '<br>';
+  result += 'Next wave: ' + nextWaveString;
 
   if(!td.started) {
     result += '<br><br>';
-    result += 'Waves not yet started. Press the GO button when ready.';
+    result += 'Waves not yet started. Press the GO button in the top right when ready.';
   } else if(td.gameover) {
     result += '<br><br>';
     result += 'Game over! All that can be done now is to end the challenge.';

@@ -687,3 +687,244 @@ function rot90(text) {
   }
   return result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+function blueprintifyImage(im) {
+  var w = im[1];
+  var h = im[2];
+  im = im[0];
+  var res = [];
+  for(var y = 0; y < h; y++) {
+    res[y] = [];
+    for(var x = 0; x < w; x++) {
+      var c = im[y][x];
+      var r = c[0];
+      var g = c[1];
+      var b = c[2];
+      var a = c[3];
+      var l = (r + g + b) / 3;
+      r = l;
+      g = l;
+      b = 255;
+      a = a * 0.5;
+      res[y][x] = [Math.floor(r), Math.floor(g), Math.floor(b), Math.floor(a)];
+    }
+  }
+  return [res, w, h];
+}
+
+function ghostifyImage(im) {
+  var w = im[1];
+  var h = im[2];
+  im = im[0];
+  var res = [];
+  for(var y = 0; y < h; y++) {
+    res[y] = [];
+    for(var x = 0; x < w; x++) {
+      var c = im[y][x];
+      var r = c[0];
+      var g = c[1];
+      var b = c[2];
+      var a = c[3];
+      var l = 128 + (r + g + b) / 6;
+      r = l;
+      g = l;
+      b = l;
+      a = a * 0.75;
+      res[y][x] = [Math.floor(r), Math.floor(g), Math.floor(b), Math.floor(a)];
+    }
+  }
+  return [res, w, h];
+}
+
+// make the color end up more in the palette-colored region, and less in the pure white and pure black endpoints. This reduces contrast, but increases visibility of the intended metal color for very bright or very dark objects
+function metalify_nonlincolor(v) {
+  var d = 1.0 / 12.0;
+  if(v < d) return v * 2;
+  if(v > 1 - d) return 1 - ((1 - v) * 2);
+  v -= d;
+  v /= (1 - d * 2);
+  v *= (1 - d * 4);
+  v += d * 2;
+  return v;
+}
+
+// metalheader = metalheader0 for zinc, etc... They use the colors N,M,m,n (hue range hm) for the metal colors
+// opt_effect, opt_effect2, opt_effect3: operation done to make things more distinguishable if needed. Second can be given to apply two of the effects.
+// *) 0/undefined: no effect
+// *) 1: darken
+// *) 2: brighten
+// *) 3: decrease saturation slightly (e.g. to make rhodium a bit less red)
+// *) 4: increase saturation slightly (e.g. to make electrum a bit more green)
+// *) 5: shiny
+// *) 6: effect specifically for platinum infinity crops on the bright infinity field background, to have some contrast
+// *) 7: subtle bottom right shadow, again to provide contrast for bright crops like the platinum ones against infinity field background
+// *) 8: hue rotation
+// *) 9: "unlight": make only light parts darker, this is specifically to make the 'flower' part of nettles more visible against the bright background in the infinity field
+// *) 10: gamma
+// *) 11: translucent
+// *) 12: increase saturation additively
+// *) 13: translucent except outline
+// opt_params: parameters used by some of the effects, given in same order. If not set default value 1 is used, values higher than 1 strenghten the effect, lower values reduce it (0 results in no effect)
+function metalify(im, metalheader, opt_effects, opt_params) {
+  var pal = generatePalette(metalheader);
+  var m = [];
+  m[0] = pal['0']; // black
+  m[1] = pal['n']; // darkest metal
+  m[2] = pal['m']; // dark metal
+  m[3] = pal['M']; // medium metal
+  m[4] = pal['N']; // light metal
+  m[5] = pal['9']; // white
+
+  var w = im[1];
+  var h = im[2];
+  im = im[0];
+  var res = [];
+  for(var y = 0; y < h; y++) {
+    res[y] = [];
+    for(var x = 0; x < w; x++) {
+      var c = im[y][x];
+      var r = c[0];
+      var g = c[1];
+      var b = c[2];
+      var a = c[3];
+      var l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      //var l = (0.33 * r + 0.33 * g + 0.33 * b) / 255;
+      l = metalify_nonlincolor(l);
+      var i = Math.min(m.length - 1, Math.floor(l * m.length));
+      var i2 = Math.min(m.length - 1, i + 1);
+      var f1 = l * m.length - i;
+      var f0 = 1 - f1;
+      r = m[i][0] * f0 + m[i2][0] * f1;
+      g = m[i][1] * f0 + m[i2][1] * f1;
+      b = m[i][2] * f0 + m[i2][2] * f1;
+      if(opt_effects) {
+        for(var i = 0; i < opt_effects.length; i++) {
+          var effect = opt_effects[i];
+          var param = (opt_params && opt_params[i] != undefined) ? opt_params[i] : 1; // if undefined a default is used below
+
+          if(effect == 1) {
+            var amount = 1 / (1 + param); // 0.5 for default param=1
+            r *= amount;
+            g *= amount;
+            b *= amount;
+          }
+          if(effect == 2) {
+            var amount = 1 + param * 0.35;
+            r = Math.min(r * amount, 255);
+            g = Math.min(g * amount, 255);
+            b = Math.min(b * amount, 255);
+          }
+          if(effect == 3) {
+            var hsv = RGBtoHSV([r, g, b]);
+            var mul = 1 / (1 + param); // 0.5 for default param=1
+            hsv[1] *= mul;
+            var rgb = HSVtoRGB(hsv);
+            r = rgb[0];
+            g = rgb[1];
+            b = rgb[2];
+          }
+          if(effect == 4) {
+            var hsv = RGBtoHSV([r, g, b]);
+            var mul = param * 2;
+            hsv[1] = Math.min(hsv[1] * mul, 255);
+            var rgb = HSVtoRGB(hsv);
+            r = rgb[0];
+            g = rgb[1];
+            b = rgb[2];
+          }
+          if(effect == 5) {
+            //l = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            var d = 1 - (x + y) / (w + h - 2);
+            //d = Math.sin(d * 16) * 64;
+            d = (d - 0.5) * 255;
+            //d = Math.abs(d - 0.5) * 255;
+            //d *= 64;
+            //if((x + y) & 1) d *= 1.1;
+            r = Math.min(Math.max(0, r + d), 255);
+            g = Math.min(Math.max(0, g + d), 255);
+            b = Math.min(Math.max(0, b + d), 255);
+          }
+          if(effect == 6) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            r = (r * r * r + 0.05) * param + (r * 1 - param);
+            g = (g * g * g + 0.05) * param + (g * 1 - param)
+            b = (b * b * b + 0.05) * param + (b * 1 - param)
+            r = Math.min(Math.max(0, r * 255), 255);
+            g = Math.min(Math.max(0, g * 255), 255);
+            b = Math.min(Math.max(0, b * 255), 255);
+          }
+          if(effect == 7) {
+            if(a == 255) {
+              var touching_transparent = false;
+              //if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
+              //if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
+              if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
+              if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
+              if(touching_transparent) {
+                r *= 0.85;
+                g *= 0.85;
+                b *= 0.85;
+              }
+            }
+          }
+          if(effect == 8) {
+            var hsv = RGBtoHSV([r, g, b]);
+            hsv[0] += Math.floor(param * 256);
+            if(hsv[0] > 255) hsv[0] -= 256;
+            var rgb = HSVtoRGB(hsv);
+            r = rgb[0];
+            g = rgb[1];
+            b = rgb[2];
+          }
+          if(effect == 9) {
+            var hsv = RGBtoHSV([r, g, b]);
+            if(hsv[2] > 240) {
+              var amount = 1 / (1 + param); // 0.5 for default param=1
+              r *= amount;
+              g *= amount;
+              b *= amount;
+            }
+          }
+          if(effect == 10) {
+            r = Math.pow(r, param);
+            g = Math.pow(g, param);
+            b = Math.pow(b, param);
+          }
+          if(effect == 11) {
+            a *= param;
+          }
+          if(effect == 12) {
+            var hsv = RGBtoHSV([r, g, b]);
+            var mul = param * 2;
+            hsv[1] = Math.min(hsv[1] + param * 255, 255);
+            var rgb = HSVtoRGB(hsv);
+            r = rgb[0];
+            g = rgb[1];
+            b = rgb[2];
+          }
+          if(effect == 13) {
+            if(a == 0) continue;
+            var touching_transparent = false;
+            if(x > 0 && im[y][x - 1][3] == 0) touching_transparent = true;
+            if(y > 0 && im[y - 1][x][3] == 0) touching_transparent = true;
+            if(x + 1 < w && im[y][x + 1][3] == 0) touching_transparent = true;
+            if(y + 1 < w && im[y + 1][x][3] == 0) touching_transparent = true;
+            if(touching_transparent) continue;
+            a *= param;
+          }
+        }
+      }
+      r = Math.min(Math.max(0, Math.floor(r)), 255);
+      g = Math.min(Math.max(0, Math.floor(g)), 255);
+      b = Math.min(Math.max(0, Math.floor(b)), 255);
+      a = Math.min(Math.max(0, Math.floor(a)), 255);
+      res[y][x] = [r, g, b, a];
+    }
+  }
+  return [res, w, h];
+}

@@ -125,6 +125,13 @@ var Utils = (function() {
   };
   result.clone = clone;
 
+  // removes 1 occurence of the given value from the array if present, if not present does nothing
+  var removeFromArray = function(array, value) {
+    var index = array.indexOf(value);
+    if(index >= 0) array.splice(index, 1);
+  };
+  result.removeFromArray = removeFromArray;
+
   var textHasAt = function(text, pos, sub) {
     return text.substr(pos, sub.length) == sub;
   };
