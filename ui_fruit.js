@@ -991,6 +991,10 @@ function showStorageFruitSourceDialog() {
     text += ' • 1: for having seen a dragon fruit';
     text += '<br/>';
   }
+  if((state.seen_seasonal_fruit & 1024) == 1024) {
+    text += ' • 1: for having seen a mandrake fruit (infernal challenge)';
+    text += '<br/>';
+  }
 
   var num_ethereal_upgrades = 0;
   if(state.upgrades2[upgrade2_extra_fruit_slot].count) num_ethereal_upgrades++;
