@@ -261,6 +261,9 @@ function showMedalChip(medal_id) {
   textFlex.div.style.color = '#000';
   textFlex.div.innerHTML = 'Achievement Unlocked' + '<br><br>' + upper(m.name) + ' (+' + m.prodmul.toPercentString() + ')';
 
-  addButtonAction(medalChipFlex.div, removeMedalChip);
+  registerAction(medalChipFlex.div, removeMedalChip, 'close achievement message chip', {
+    short_only: true
+  });
+
 }
 

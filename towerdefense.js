@@ -1210,7 +1210,9 @@ function showTdChip(text) {
   textFlex.div.style.color = '#000';
   textFlex.div.innerHTML = text;
 
-  addButtonAction(tdChipFlex.div, removeTdChip);
+  registerAction(tdChipFlex.div, removeTdChip, 'close message chip', {
+    short_only: true
+  });
 }
 
 

@@ -47,7 +47,9 @@ function showHelpChip(text) {
   centerText2(textFlex.div);
   textFlex.div.textEl.innerHTML = text;
 
-  addButtonAction(helpChipFlex.div, removeHelpChip);
+  registerAction(helpChipFlex.div, removeHelpChip, 'close message chip', {
+    short_only: true
+  });
 }
 
 // if due to a bug in the game, or help dialog added to the game after the fact (and it can never be unlocked again due to e.g. already having done upgrade that had this as one-time effect),
@@ -400,7 +402,7 @@ registerHelpDialog(34, 'Multiplicity', 'You unlocked multiplicity! Mushrooms and
 registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nuts crops!',
     `You unlocked the squirrel and the nuts crops! The squirrel gives an entirely new tech tree of ugrades. Place a squirrel in the ethereal field (it\'ll also boost neighbors!). Grow nuts in the main field using the new nuts crops. Use nuts to buy squirrel upgrades, in the new squirrel tab.
     <br><br>
-    Nuts crops unlock at tree level 45, the first one is Almond. You can have max 1 nut crop in the main field, but it can be upgraded and replaced with better types. Nuts crops benefit from flowers, but only in a limited form independent of flower upgrades or bees, nuts crops are not affected by the same boosts as berries or mushrooms, they have their own more limited boosts. Watercress can copy from nuts, but only at half effectiveness and without fruit bonus. Nuts are negatively affected by winter if not next to tree, just like most crops.
+    Nuts crops unlock at tree level 45, the first one is Acorn. You can have max 1 nut crop in the main field, but it can be upgraded and replaced with better types. Nuts crops benefit from flowers, but only in a limited form independent of flower upgrades or bees, nuts crops are not affected by the same boosts as berries or mushrooms, they have their own more limited boosts. Watercress can copy from nuts, but only at half effectiveness and without fruit bonus. Nuts are negatively affected by winter if not next to tree, just like most crops.
     <br><br>
     Buy squirrel upgrades in the squirrel tab. Squirrel upgrades are laid out in a tech tree. Each next squirrel upgrade costs exponentially more than the previous one, no matter what order you do them in. Get higher tree levels and nut crops to get enough nuts for the next one.
     <br><br>
@@ -413,7 +415,7 @@ registerHelpDialog(35, 'Squirrel & Nuts', 'You unlocked the squirrel and the nut
     images_squirrel[4],
     undefined,
   [[mulberry[4],images_iris[4],mulberry[4]],
-   [images_iris[4],images_almond[4],images_watercress[4]],
+   [images_iris[4],images_acorn[4],images_watercress[4]],
    [mulberry[4],images_iris[4],mulberry[4]]]);
 
 registerHelpDialog(36, 'Amber', 'The tree dropped amber!',

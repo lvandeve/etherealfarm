@@ -1344,14 +1344,17 @@ function deleteEtherealField() {
   }, 333);
 }
 
-function deleteInfinityField() {
+function deleteInfinityField(shift, ctrl) {
   var num_deleted = 0;
   setTab(tabindex_field3);
   window.setTimeout(function() {
     for(var y = 0; y < state.numh3; y++) {
       for(var x = 0; x < state.numw3; x++) {
         var f = state.field3[y][x];
-        if(f.hasCrop() || f.index == FIELD_REMAINDER) {
+        var ok = f.hasCrop() || f.index == FIELD_REMAINDER;
+        // When holding shift, does not delete brassica
+        if(shift) ok = f.hasCrop() && f.getCrop().type != CROPTYPE_BRASSICA;
+        if(ok) {
           num_deleted++;
           var c = f.getCrop();
           addAction({type:ACTION_DELETE3, x:x, y:y, silent:true});
@@ -1547,8 +1550,10 @@ function updateAutomatonUI() {
     centerText2(flex.div);
     flex.div.textEl.innerText = 'Clear infinity field';
     flex.div.style.textShadow = '0px 0px 5px #88f';
-    addButtonAction(flex.div, deleteInfinityField);
-    registerTooltip(flex.div, 'Immediately delete all crops from the infinity field. All infinity seeds will be refunded as usual.');
+    registerAction(flex.div, deleteInfinityField, 'Clear infinity field', {
+      label_shift: 'Clear infinity field, except brassica'
+    });
+    registerTooltip(flex.div, 'Immediately delete all crops from the infinity field. All infinity seeds will be refunded as usual. With shift: deletes all infinity crops except brassica');
     x = 0;
   }
 

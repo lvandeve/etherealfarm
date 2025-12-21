@@ -232,6 +232,7 @@ function Crop() {
   // how much this boosts neighboring crops, 0 means no boost, 1 means +100%, etc... (do not use directly, use getBoost() to get all multipliers taken into account)
   // meaning depends on crop type, e.g. for bees this is boostboost instead, challenge specific crops may use this value, ...
   this.boost = Num(0);
+  this.boost0 = Num(0); // boost if not prestiged
   this.tagline = '';
 
   this.basic_upgrade = null; // id of registered upgrade that does basic upgrades of this plant
@@ -438,7 +439,8 @@ var infernal_mush_upgrade_base = Num.pow(Num(infernal_mush_tier_mul), Num(1.0 / 
 // used for multiple possible aspects, such as production, boost if this is a flower, etc...
 // f is field, similar to in Crop.prototype.getProd
 // result is changed in-place and may be either Num or Res. Nothing is returned.
-Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
+// pretend: see explanation of the values at .getProd
+Crop.prototype.addSeasonBonus_ = function(result, season, f, pretend, breakdown) {
   // posmul is used:
   // Unlike other multipliers, this one does not affect negative production. This is a good thing in the crop's good season, but extra harsh in a bad season (e.g. winter)
 
@@ -526,21 +528,30 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, breakdown) {
     }
 
     if(state.challenge == challenge_infernal && this.tier >= 0) {
+      var tier = this.tier;
+      if(pretend == 6) {
+        var o = getPrestigedCropStats(this.index);
+        if(o.tier != undefined) {
+          tier = o.tier;
+        }
+      }
       var tier_effective = -1;
       var upgrade_base = undefined;
       if(this.type == CROPTYPE_BERRY || this.type == CROPTYPE_PUMPKIN) {
-        tier_effective = this.tier;
+        tier_effective = tier;
         upgrade_base = infernal_berry_upgrade_base;
       }
       if(this.type == CROPTYPE_MUSH) {
-        tier_effective = this.tier * 2 + 2;
+        tier_effective = tier * 2 + 2;
         upgrade_base = infernal_mush_upgrade_base;
       }
       var malus = Num(1e-9); // this applies to berries, flowers, mushrooms, bees, nettles, watercress production (but not copying)
       if(tier_effective >= 0) {
         malus.mulInPlace(Num.powr(Num(infernal_tier_base), tier_effective + 1));
-        var u = state.upgrades[this.basic_upgrade];
-        malus.mulInPlace(Num.powr(Num(upgrade_base), -u.count));
+        if(pretend != 6) {
+          var u = state.upgrades[this.basic_upgrade];
+          malus.mulInPlace(Num.powr(Num(upgrade_base), -u.count));
+        }
       }
       if(this.type == CROPTYPE_BRASSICA && result.seeds) {
         // for brassica, keep the production at least as much as initial game brassica: so that it's possible to play infermal without having fern in ethereal field in theory
@@ -622,17 +633,21 @@ var spores_overload_penalty = Num(4);
 //  3: compute the value for best berry for the pumpkin income. Must include all berry specific bonuses and its growth, but not the pumpkin bonuses. The max of all berries from this must be stored in state.bestberryforpumpkin, and then if the crop type is CROPTYPE_PUMPKIN it uses this value as base
 //  4: same as 3, but assuming the crop is fullgrown
 //  5: compute for fern. This assumes everything is fullgrown, like 1, and in addition uses modified weighted time at level
-//  6: compute as if for next prestige level, otherwise works like 0. Next prestige means: the base production of next prestige level, and do as if the amount of upgrades is 0. Only supports the case of f=undefined as input
+//  6: compute as if for next prestige level, otherwise works like 7. Next prestige means: the base production of next prestige level, and do as if the amount of upgrades is 0. Only supports the case of f=undefined as input
+//  7: for the 'Upgraded production' and 'Upgraded boost' tooltips of crop upgrades. You should also set f to undefined for the intended effect. This is the same as 0, except multiplicity is also not taken into account
 Crop.prototype.getProd = function(f, pretend, breakdown) {
   var basic = basicChallenge();
 
   var baseprod = this.prod;
   var baseprod0 = this.prod0; // production without prestige, only used for display purposes
 
+  var prestige = state.crops[this.index].prestige;
+
   if(pretend == 6) {
     var o = getPrestigedCropStats(this.index);
     if(o.prod != undefined) {
       baseprod = o.prod;
+      prestige++;
     }
   }
 
@@ -650,7 +665,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     result = new Res(best);
   }
   if(breakdown) {
-    if(state.crops[this.index].prestige > 0) {
+    if(prestige > 0) {
       breakdown.push(['base', true, Num(0), baseprod0.clone()]);
       var div = Res.findDiv(baseprod, baseprod0);
       breakdown.push(['prestige', true, div, result.clone()]);
@@ -772,7 +787,6 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
         var bonus = Num(2);
         result.mulInPlace(bonus);
         if(breakdown) breakdown.push(['amber production bonus active', true, bonus, result.clone()]);
-
       }
     }
   }
@@ -897,13 +911,13 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
         }
-        var this_prestige = state.crops[this.index].prestige;
+        var prestige2 = prestige;
         if(this.type == CROPTYPE_PUMPKIN) {
-          this_prestige = state.bestberryforpumpkin_prestige;
+          prestige2 = state.bestberryforpumpkin_prestige;
         }
-        if(this_prestige && state.squirrel_upgrades[upgradesq_prestiged_berry].count) {
+        if(prestige2 && state.squirrel_upgrades[upgradesq_prestiged_berry].count) {
           var bonus = upgradesq_prestiged_berry_bonus.mulr(state.squirrel_upgrades[upgradesq_prestiged_berry].count).addr(1);
-          bonus = bonus.powr(this_prestige); // applies multiple times for multiple prestiges
+          bonus = bonus.powr(prestige2); // applies multiple times for multiple prestiges
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
         }
@@ -914,9 +928,9 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
         }
-        if(state.crops[this.index].prestige && state.squirrel_upgrades[upgradesq_prestiged_mushroom].count) {
+        if(prestige && state.squirrel_upgrades[upgradesq_prestiged_mushroom].count) {
           var bonus = upgradesq_prestiged_mushroom_bonus.mulr(state.squirrel_upgrades[upgradesq_prestiged_mushroom].count).addr(1);
-          bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
+          bonus = bonus.powr(prestige); // applies multiple times for multiple prestiges
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
         }
@@ -1100,7 +1114,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   if(!basic) {
     // multiplicity
-    if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && haveMultiplicity(this.type)) {
+    if((pretend != 6 && pretend != 7) && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && haveMultiplicity(this.type)) {
       var num = getMultiplicityNum(this);
       if(num > 0) {
         var boost = getMultiplicityBonusBase(this.type).mulr(num).addr(1);
@@ -1128,7 +1142,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
   // weather
 
-  this.addSeasonBonus_(result, season, f, breakdown);
+  this.addSeasonBonus_(result, season, f, pretend, breakdown);
 
   if(state.challenge == challenge_stormy && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
     var malus = Num(0.5);
@@ -1288,16 +1302,27 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
   if(this.type != CROPTYPE_FLOWER && this.type != CROPTYPE_STINGING) return Num(0);
 
   var baseboost = this.boost;
+  var baseboost0 = this.boost0; // production without prestige, only used for display purposes
+  var prestige = state.crops[this.index].prestige;
 
   if(pretend == 6) {
     var o = getPrestigedCropStats(this.index);
     if(o.boost != undefined) {
       baseboost = o.boost;
+      prestige++;
     }
   }
 
   var result = baseboost.clone();
-  if(breakdown) breakdown.push(['base', true, Num(0), result.clone()]);
+  if(breakdown) {
+    if(prestige > 0) {
+      breakdown.push(['base', true, Num(0), baseboost0.clone()]);
+      var div = Num.div(baseboost, baseboost0);
+      breakdown.push(['prestige', true, div, result.clone()]);
+    } else {
+      breakdown.push(['base', true, Num(0), result.clone()]);
+    }
+  }
 
   var basic = basicChallenge();
 
@@ -1354,7 +1379,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
   }
 
   var season = getSeason();
-  this.addSeasonBonus_(result, season, f, breakdown);
+  this.addSeasonBonus_(result, season, f, pretend, breakdown);
 
   // fruit
   if(basic != 2) {
@@ -1428,11 +1453,11 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel upgrades', true, bonus, result.clone()]);
         }
-        if(state.crops[this.index].prestige && (state.squirrel_upgrades[upgradesq_prestiged_flower].count || state.squirrel_upgrades[upgradesq_prestiged_flower2].count)) {
+        if(prestige && (state.squirrel_upgrades[upgradesq_prestiged_flower].count || state.squirrel_upgrades[upgradesq_prestiged_flower2].count)) {
           var bonus1 = upgradesq_prestiged_flower_bonus.mulr(state.squirrel_upgrades[upgradesq_prestiged_flower].count).addr(1);
           var bonus2 = upgradesq_prestiged_flower_bonus2.mulr(state.squirrel_upgrades[upgradesq_prestiged_flower2].count).addr(1);
           var bonus = bonus1.mul(bonus2);
-          bonus = bonus.powr(state.crops[this.index].prestige); // applies multiple times for multiple prestiges
+          bonus = bonus.powr(prestige); // applies multiple times for multiple prestiges
           result.mulInPlace(bonus);
           if(breakdown) breakdown.push(['squirrel prestiged', true, bonus, result.clone()]);
         }
@@ -1471,7 +1496,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
 
   if(!basic) {
     // multiplicity
-    if((this.type == CROPTYPE_FLOWER || this.type == CROPTYPE_STINGING) && haveMultiplicity(this.type)) {
+    if((pretend != 6 && pretend != 7) && (this.type == CROPTYPE_FLOWER || this.type == CROPTYPE_STINGING) && haveMultiplicity(this.type)) {
       // multiplicity only works by fully grown crops, not for intermediate growing ones
       var num = getMultiplicityNum(this);
       if(num > 0) {
@@ -1635,7 +1660,7 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
     }
 
     // multiplicity
-    if((this.type == CROPTYPE_BEE) && haveMultiplicity(this.type)) {
+    if((pretend != 6 && pretend != 7) && (this.type == CROPTYPE_BEE) && haveMultiplicity(this.type)) {
       // multiplicity only works by fully grown crops, not for intermediate growing ones
       var num = getMultiplicityNum(this);
       if(num > 0) {
@@ -1663,7 +1688,7 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
     }
   }
 
-  this.addSeasonBonus_(result, getSeason(), f, breakdown);
+  this.addSeasonBonus_(result, getSeason(), f, pretend, breakdown);
 
   return result;
 };
@@ -1910,6 +1935,7 @@ function registerCrop(name, cost, prod, boost, planttime, image, opt_tagline, op
   }
 
   crop.prod0 = Res(crop.prod);
+  crop.boost0 = Num(crop.boost);
   crop.planttime0 = crop.planttime;
 
   return crop.index;

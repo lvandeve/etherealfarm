@@ -145,6 +145,8 @@ function updateTabButtons2() {
 
   var tabnum;
 
+  var darkstyle = state.uistyle == 2 || state.uistyle == 3;
+
   tabnum = tabindex_field;
   if(tabbuttons[tabnum]) {
     var text = 'field';
@@ -152,8 +154,15 @@ function updateTabButtons2() {
     if(state.treelevel > 0) {
       text += '<br/>(' + state.treelevel + ')';
     }
-    if(state.fern /*&& state.currentTab != tabindex_field*/) {
-      text = '<b><font color="#2d0">' + text + '</font></b>';
+
+    if(state.fern && state.present_effect) {
+      if(darkstyle) text = '<b><span style="background: linear-gradient(in oklch to bottom, #f88, #8f8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">' + text + '</span></b>';
+      else text = '<b><span style="background: linear-gradient(in oklch to bottom, #f00, #080); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">' + text + '</span></b>';
+    } else if(state.present_effect) {
+      text = '<b><font color="#f00">' + text + '</font></b>';
+    } else if(state.fern /*&& state.currentTab != tabindex_field*/) {
+      if(darkstyle) text = '<b><font color="#2d0">' + text + '</font></b>';
+      else text = '<b><font color="#0a0">' + text + '</font></b>';
     }
 
     if(text != fieldButtonLastText) {
@@ -225,7 +234,7 @@ function updateTabButtons2() {
 
       var color = undefined;
       var bold = false;
-      var darkstyle = state.uistyle == 2 || state.uistyle == 3;
+
       if(!state.fruit_seen || special == 7) {
         color = 'red';
         bold = true;
@@ -275,7 +284,7 @@ function updateTabButtons2() {
 
     if(haveEtherealMistletoe() && state.mistletoeupgrade < 0) {
       // ethereal mistletoe upgrade available
-      color = '#0f0';
+      color = darkstyle ? '#0f0' : '#070';
     }
     if(haveEtherealMistletoeAnywhere() && !state.etherealmistletoetreepositionok) {
       // ethereal mistletoe not placed next to tree
@@ -311,9 +320,10 @@ function updateTabButtons2() {
   if(tabbuttons[tabnum]) {
     var text = 'infinity field';
     if(state.numcropfields3 == 0) {
-      text = '<b><font color="red">' + text + '</font></b>';
+      text = '<b><font color="#f00">' + text + '</font></b>';
     } else if(state.infspawn) {
-      text = '<b><font color="#2d0">' + text + '</font></b>';
+      if(darkstyle) text = '<b><font color="#2d0">' + text + '</font></b>';
+      else text = '<b><font color="#090">' + text + '</font></b>';
     }
 
     if(text != field3ButtonLastText) {

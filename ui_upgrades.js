@@ -164,13 +164,13 @@ var getUpgradeInfoText = function(u, completed, opt_detailed) {
     } else {
       if(!c.prod.empty()) {
         infoText += 'Base production: ' + c.prod.toString() + '<br>';
-        infoText += 'Upgraded production: ' + c.getProd().toString() + '<br>';
+        infoText += 'Upgraded production: ' + c.getProd(undefined, 7).toString() + '<br>';
       }
       if(c.boost.neqr(0)) {
         infoText += 'Base boost: ' + c.boost.toPercentString() + '<br>';
         var hasboostboost = c.type == CROPTYPE_BEE; // TODO: consolidate getBoostBoost and getBoost into single function to avoid need for this check
         if(c.type == CROPTYPE_CHALLENGE) hasboostboost = c.index == challengecrop_0 || c.index == challengecrop_1 || c.index == challengecrop_2;
-        infoText += 'Upgraded boost: ' + (hasboostboost ? c.getBoostBoost() : c.getBoost()).toPercentString() + '<br>';
+        infoText += 'Upgraded boost: ' + (hasboostboost ? c.getBoostBoost(undefined, 7) : c.getBoost(undefined, 7)).toPercentString() + '<br>';
       }
 
       var cropcost = c.getCost();

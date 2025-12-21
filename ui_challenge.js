@@ -821,7 +821,9 @@ function showChallengeChip(challenge) {
 
   textFlex.div.textEl.innerHTML = text;
 
-  addButtonAction(challengeChipFlex.div, removeChallengeChip);
+  registerAction(challengeChipFlex.div, removeChallengeChip, 'close message chip', {
+    short_only: true
+  });
 }
 
 // the "challenge unlocked" chip at the bottom
@@ -850,7 +852,9 @@ function showchallengeUnlockedChip(challenge) {
   var text = 'Challenge Unlocked!';
   textFlex.div.textEl.innerHTML = text + '<br><br>\"' + upper(c.name) + '\"';
 
-  addButtonAction(challengeUnlockedChipFlex.div, removechallengeUnlockedChip);
+  registerAction(challengeUnlockedChipFlex.div, removechallengeUnlockedChip, 'close message chip', {
+    short_only: true
+  });
 }
 
 

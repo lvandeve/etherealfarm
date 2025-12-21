@@ -131,6 +131,7 @@ params.label_longclick_extra: label for extra action that only shows up on longc
 params.tooltip: function or string for tooltip. If it's text, it's shown as-is. If function, the function should return text (for tooltips with dynamic content)
 params.tooltip_poll: if true, will make the tooltip dynamically update by calling fun again
 params.immediate: make the button respond immediately on mousedown, rather than only on mouseup. Not compatible with mobile.
+params.short_only: make the action not work if you long click, only if you do a brief mousedown. This is for e.g. some element that would close if you click the element itself, but it also has some text that one may be trying to select and that selection would then close it. Note that if 'immediate' is true, this setting has no effect since the action then already happened no matter how short or long the mouse button is held after that. For now, only works on non-touch devices
 params.noenterkey: do not make it activate on enter key (e.g. for the close button of dialogs, which is selected by default normally but shouldn't make the dialog close on pressing enter)
 params.isdraggable: indicate there is some dragging action available from the div, that works on PC but not on mobile. Therefore, disable the long touch event on non-touch devices here since it may interfere with the dragging.
 */
@@ -146,6 +147,23 @@ function registerAction(div, fun, label, params) {
     if(params.immediate && !isTouchDevice()) {
       // TODO: verify this works on all devices (screen readers, mobile where for some reason isTouchDevice doesn't detect it, etc...)
       util.setEvent(div, 'mousedown', fun2, 'action');
+    } else if(params.short_only && !isTouchDevice()) {
+      var downtime = undefined;
+      var hadselection = false;
+      util.setEvent(div, 'mousedown', function() {
+        downtime = Date.now();
+        hadselection = window.getSelection().toString() != '';
+      }, 'action');
+      util.setEvent(div, 'mouseup', function() {
+        if(downtime == undefined) return;
+        var duration = Date.now() - downtime;
+        if(duration > 300) return;
+        // in addition, don't close if there is or was selected text on this element, the click may be intended to clear that selection in that case
+        // this is intended for chips at the bottom with long-ish text, don't make those disappear if the user is interacting with the text with the mouse
+        // TODO: this should only check selection inside this div... but there's no div.getSelection() function
+        if(window.getSelection().toString() != '' || hadselection) return;
+        fun2();
+      }, 'action');
     } else {
       util.setEvent(div, 'click', fun2, 'action');
     }
@@ -1088,23 +1106,36 @@ var FONT_TITLE = 5; // titles at top of dialogs
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-Does something very similar as what setting all element sizes to '%' units
+Flex is a wrapper around elements/divs that automatically adjusts their size to
+relative screen or parent elemtn size based on multiple types of scaling rules.
+It's unrelated to CSS flex.
+
+It can do something similar to what setting all element sizes to '%' units
 does, but also makes the font sizes relative, something that is in theory
 also possible with 'vw' and 'vh', but those are always relative to viewport
 rather than parent, so we need to do it all in JS after all.
-NOTE: not all children must be flexes, e.g. if you have a simple regular grid inside of
+It can also do more complex things like have an element be a square that auto-fits
+to max possible size inside a parent dynamically where it doesn't matter if the
+parent is horizontally or vertically elongated.
+
+Not all children must be flexes, e.g. if you have a simple regular grid inside of
 a Flex unit, you can use relative sizes with HTML's % unit in that one. Even if it has text,
 setting a Flexible fontsize on the parent Flex is sufficient.
 
-set parent to null or undefined to create root flex (will then use document.body as parent div)
+parent argument: another flex, the parent of this flex, or null/undefined.
+Set parent to null or undefined to create root flex (will then use document.body as parent div)
+To make the root flex visible, use e.g. 'rootFlex.attachTo(document.body)', only on the root flex.
+Flexes that are children of other flexes are handled automatically.
 
-coordinates are all in range 0..1, representing relative size factor of parent
-the x/y coordinates may also be an array of 1, 2, 3 or 4 items, then:
--the first is relative size compared to corresponding size (w or h)
--the second is relative size compared to the opposing dimension (h or w)
--the third is relative size compared to minimum dimension (w or h)
--the fourth is a factor used for the opposing dimension in the min(current, opposing) formula above. Default value is 1. Other values allow to use the "minimum dimension" feature from the third value for non-square parent flexes.
--the fifth is a value directly in pixels
+x0, y0, x1, y1 arguments: sets the relative sizes or scaling rules for left, top, right and bottom.
+
+These coordinates are typically in range 0..1, representing relative size factor of parent
+the x/y coordinates may either be a single number, or an array of 1, 2, 3, 4 or 5 items, then:
+-the first or only value is relative size compared to corresponding size (w or h)
+-the second value is relative size compared to the opposing dimension (h or w)
+-the third value is relative size compared to minimum dimension (w or h)
+-the fourth value is a factor used for the opposing dimension in the min(current, opposing) formula above. Default value is 1. Other values allow to use the "minimum dimension" feature from the third value for non-square parent flexes.
+-the fifth value is a value directly in pixels
 e.g. the formula for "left" is (with w and h the width and height of parent): x0[0] * w + x0[1] * h + x0[2] * min(w, x0[3] * h)
 example: to have an element take full width if smaller than twice the height, stay at twice height otherwise, use x1 = [0, 0, 1, 0.5]
 example: to have something always be square inside of rectangular parent (which can dynamically be either horizontally or vertically longer), and always centered in there, use: [0.5,0,-0.5], [0.5,0,-0.5], [0.5,0,0.5], [0.5,0,0.5]
@@ -1127,11 +1158,16 @@ A few rules, restrictions and tips about the 'a' feature for y0:
 
 the y1 coordinate may also be set to 'a'. That makes it height unset, so it takes up the height of all the content automatically.
 
+opt_fontSize: this overrides the font size of text in this flex, when not given the text has the size it gets through other HTML rules
+
+opt_align: if set, aligns text horizontally or vertically inside this flex.  Values:
+0: top/left, 1: hcenter, 2: right, 3: vcenter, 6: bottom. Add h and v values for combinations: 4 for fully centered, 8 for bottom right, ...
+
 */
 function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
   this.fontSize = opt_fontSize;
 
-  this.align = opt_align; // 0: top/left, 1: hcenter, 2: right, 3: vcenter, 6: bottom. Add h and v values for combinations: 4 for fully centered, 8 for bottom right, ...
+  this.align = opt_align;
 
   this.isroot = !parent || (parent.div == document.body);
 
@@ -1400,114 +1436,6 @@ Flex.prototype.clear = function() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// returns as a string the time to be able to avoid this cost, or percentage more of resources you have
-// uses the global state.res and gain variables
-// intended for dynamically updating tooltips
-// opt_override_gain: if set, uses that gain instead
-function getCostAffordTimer(cost, opt_override_gain) {
-  var time = Num(0);
-  var percent = Num(Infinity);
-
-  var gain2 = opt_override_gain || gain;
-
-
-  if(cost.seeds.gtr(0)) {
-    var p = cost.seeds.div(state.res.seeds).mulr(100);
-    var t = cost.seeds.sub(state.res.seeds).div(gain2.seeds);
-    time = Num.max(time, t);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.spores.gtr(0)) {
-    var p = cost.spores.div(state.res.spores).mulr(100);
-    var t = cost.spores.sub(state.res.spores).div(gain2.spores);
-    time = Num.max(time, t);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.nuts.gtr(0)) {
-    var p = cost.nuts.div(state.res.nuts).mulr(100);
-    var t = cost.nuts.sub(state.res.nuts).div(gain2.nuts);
-    time = Num.max(time, t);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.resin.gtr(0)) {
-    var p = cost.resin.div(state.res.resin).mulr(100);
-    var t = cost.resin.sub(state.res.resin).div(gain2.resin);
-    time = Num.max(time, t);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.twigs.gtr(0)) {
-    var p = cost.twigs.div(state.res.twigs).mulr(100);
-    var t = cost.twigs.sub(state.res.twigs).div(gain2.twigs);
-    time = Num.max(time, t);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.infseeds.gtr(0)) {
-    var p = cost.infseeds.div(state.res.infseeds).mulr(100);
-    var t = cost.infseeds.sub(state.res.infseeds).div(gain2.infseeds);
-    time = Num.max(time, t);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.infspores.gtr(0)) {
-    var p = cost.infspores.div(state.res.infspores).mulr(100);
-    var t = cost.infspores.sub(state.res.infspores).div(gain2.infspores);
-    time = Num.max(time, t);
-    percent = Num.min(percent, p);
-  }
-
-  var result = '';
-  if(percent.gtr(100) && !time.eqr(Infinity)) {
-    result += util.formatDuration(time.valueOf(), true);
-  } else {
-    if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
-    result += percent.toString() + '% of stacks';
-  }
-
-  return result;
-}
-
-
-// similar to getCostAffordTimer, but only shows percentage of resources, whether higher or lower
-function getCostAffordPercentage(cost) {
-  var percent = Num(Infinity);
-
-
-  if(cost.seeds.gtr(0)) {
-    var p = cost.seeds.div(state.res.seeds).mulr(100);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.spores.gtr(0)) {
-    var p = cost.spores.div(state.res.spores).mulr(100);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.nuts.gtr(0)) {
-    var p = cost.nuts.div(state.res.nuts).mulr(100);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.resin.gtr(0)) {
-    var p = cost.resin.div(state.res.resin).mulr(100);
-    percent = Num.min(percent, p);
-  }
-
-  if(cost.twigs.gtr(0)) {
-    var p = cost.twigs.div(state.res.twigs).mulr(100);
-    percent = Num.min(percent, p);
-  }
-
-  var result = '';
-  if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
-  result += percent.toString() + '% of stacks';
-
-  return result;
-}
 
 
 // adds scrollbar and shadow effect if needed, otherwise not.

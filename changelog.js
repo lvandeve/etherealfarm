@@ -30,6 +30,14 @@ function getChangeLog() {
     }
   }
 
+  text += '0.16.3 (2025-12-21)';
+  text += '<br/>• You can now shift+click the automaton "Clear infinity field" button to only clear non-brassica crops. On mobile devices, long-press the button to get this option.';
+  text += '<br/>• A message will appear at the bottom if automaton transcended while it was possible to buy a never-bought-before crop unlock or prestige. This because such upgrade must be done manually at least once before automaton can use it. The message should prevent cases of never noticing that you can afford a next tier due to auto-transcend hiding it again.';
+  text += '<br/>• The field tab now has a different color if a present spawned.';
+  text += '<br/>• The color contrast of some of the colored tab names has been improved in the light theme.';
+  text += '<br/>• Fixed a bug with mismatched "Upgraded production" values in crop upgrade tooltips in some cases. Note that these tooltip values are intended to only be compared against other "Upgraded production" tooltips for their relative values, not against crops planted in the field.';
+  text += '<br/><br/>';
+
   text += '0.16.2 (2025-11-17)';
   text += '<br/>• Added a new tier of ethereal bee.';
   text += '<br/>• There are now achievements for reaching tiers in the infinity field after ascension.';

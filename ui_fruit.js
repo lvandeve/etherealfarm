@@ -1533,7 +1533,9 @@ function showFruitChip(message) {
   textFlex.div.style.color = '#000';
   textFlex.div.innerHTML = message;
 
-  addButtonAction(fruitChipFlex.div, removeFruitChip);
+  registerAction(fruitChipFlex.div, removeFruitChip, 'close message chip', {
+    short_only: true
+  });
 }
 
 

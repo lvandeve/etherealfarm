@@ -232,6 +232,7 @@ function hardReset() {
   removeChallengeChip();
   removeMedalChip();
   removeHelpChip();
+  removeAutomatonIgnoredUpgradeChip();
 
   undoSave = '';
   lastUndoSaveTime = 0;
@@ -896,8 +897,22 @@ function beginNextRun(opt_challenge) {
   ethereal_basic_boost_cache_counter++;
 }
 
+// checks whether you can afford a new upgrade that automaton isn't doing to force the player to manually unlock new crop unlocks / prestiges the first time
+// this are upgrades that you have the resources for, but computeNextAutoUnlock and computeNextAutoPrestige won't select them due to never having manually done them
+// returns the index of one such upgrade (doesn't check if there could be more at the same time), or undefined if there is none
+function canAffordUpgradeThatWasNeverDoneManually() {
+  for(var i = 0; i < registered_upgrades.length; i++) {
+    var u = upgrades[registered_upgrades[i]];
+    var u2 = state.upgrades[registered_upgrades[i]];
+    if(!u.iscropunlock && !u.isprestige) continue;
+    if(!u2.had && state.res.can_afford(u.cost)) return u.index;
+  }
+}
+
 // transcend
 function softReset(opt_challenge, opt_automated) {
+  var afford_new = canAffordUpgradeThatWasNeverDoneManually();
+
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
   savegame_recovery_situation = false;
   auto_action_manual_window_timeout_enabled = false;
@@ -914,6 +929,10 @@ function softReset(opt_challenge, opt_automated) {
   removeAllDropdownElements();
   initInfoUI();
   updateFruitUI();
+
+  if(afford_new != undefined) {
+    showAutomatonIgnoredUpgradeChip(afford_new);
+  }
 }
 
 // the divs and other non-saved-state info of a field cell
@@ -1033,6 +1052,7 @@ function loadUndo() {
   removeChallengeChip();
   removeMedalChip();
   removeHelpChip();
+  removeAutomatonIgnoredUpgradeChip();
 
   lastUndoSaveTime = 0; // now ensure next action saves undo again, pressing undo is a break in the action sequence, let the next action save so that pressing undo again brings us back to thie same undo-result-state
   lastUndoKeepLong = false;
@@ -2745,6 +2765,116 @@ function maybeUnlockInfinityCrops() {
   if(state.crops3[fern3_11].had) unlockInfinityCrop(nut3_11);
   if(state.crops3[nut3_11].had) unlockInfinityCrop(lotus3_11);
   if(state.crops3[nut3_11].had) unlockInfinityCrop(mistletoe3_11);
+}
+
+
+// returns as a string the time to be able to avoid this cost, or percentage more of resources you have
+// uses the global state.res and gain variables
+// intended for dynamically updating tooltips
+// opt_override_gain: if set, uses that gain instead
+function getCostAffordTimer(cost, opt_override_gain) {
+  var time = Num(0);
+  var percent = Num(Infinity);
+
+  var gain2 = opt_override_gain || gain;
+
+
+  if(cost.seeds.gtr(0)) {
+    var p = cost.seeds.div(state.res.seeds).mulr(100);
+    var t = cost.seeds.sub(state.res.seeds).div(gain2.seeds);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.spores.gtr(0)) {
+    var p = cost.spores.div(state.res.spores).mulr(100);
+    var t = cost.spores.sub(state.res.spores).div(gain2.spores);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.nuts.gtr(0)) {
+    var p = cost.nuts.div(state.res.nuts).mulr(100);
+    var t = cost.nuts.sub(state.res.nuts).div(gain2.nuts);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.resin.gtr(0)) {
+    var p = cost.resin.div(state.res.resin).mulr(100);
+    var t = cost.resin.sub(state.res.resin).div(gain2.resin);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.twigs.gtr(0)) {
+    var p = cost.twigs.div(state.res.twigs).mulr(100);
+    var t = cost.twigs.sub(state.res.twigs).div(gain2.twigs);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.infseeds.gtr(0)) {
+    var p = cost.infseeds.div(state.res.infseeds).mulr(100);
+    var t = cost.infseeds.sub(state.res.infseeds).div(gain2.infseeds);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.infspores.gtr(0)) {
+    var p = cost.infspores.div(state.res.infspores).mulr(100);
+    var t = cost.infspores.sub(state.res.infspores).div(gain2.infspores);
+    time = Num.max(time, t);
+    percent = Num.min(percent, p);
+  }
+
+  var result = '';
+  if(percent.gtr(100) && !time.eqr(Infinity)) {
+    result += util.formatDuration(time.valueOf(), true);
+  } else {
+    if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+    result += percent.toString() + '% of stacks';
+  }
+
+  return result;
+}
+
+
+// similar to getCostAffordTimer, but only shows percentage of resources, whether higher or lower
+function getCostAffordPercentage(cost) {
+  var percent = Num(Infinity);
+
+
+  if(cost.seeds.gtr(0)) {
+    var p = cost.seeds.div(state.res.seeds).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.spores.gtr(0)) {
+    var p = cost.spores.div(state.res.spores).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.nuts.gtr(0)) {
+    var p = cost.nuts.div(state.res.nuts).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.resin.gtr(0)) {
+    var p = cost.resin.div(state.res.resin).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  if(cost.twigs.gtr(0)) {
+    var p = cost.twigs.div(state.res.twigs).mulr(100);
+    percent = Num.min(percent, p);
+  }
+
+  var result = '';
+  if(percent.ltr(0.001)) percent = Num(0); // avoid display like '1.321e-9%'
+  result += percent.toString() + '% of stacks';
+
+  return result;
 }
 
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
@@ -7217,3 +7347,35 @@ window.addEventListener('blur', function(e) {
 });
 
 
+////////////////////////////////////////////////////////////////////////
+
+var automatonIgnoredUpgradeChipFlex = undefined;
+
+function removeAutomatonIgnoredUpgradeChip() {
+  if(!automatonIgnoredUpgradeChipFlex) return;
+
+  automatonIgnoredUpgradeChipFlex.removeSelf(gameFlex);
+  automatonIgnoredUpgradeChipFlex = undefined;
+}
+
+function showAutomatonIgnoredUpgradeChip(upgrade_index) {
+  var u = upgrades[upgrade_index];
+  removeAutomatonIgnoredUpgradeChip();
+
+  automatonIgnoredUpgradeChipFlex = new Flex(gameFlex, 0.1, 0.73, 0.9, 0.97);
+  automatonIgnoredUpgradeChipFlex.div.style.backgroundColor = '#ffdf';
+  automatonIgnoredUpgradeChipFlex.div.style.border = '2px solid red';
+
+  var canvasFlex = new Flex(automatonIgnoredUpgradeChipFlex, 0.01, [0.5, 0, -0.35], [0, 0, 0.7], [0.5, 0, 0.35]);
+  var canvas = createCanvas('0%', '0%', '100%', '100%', canvasFlex.div);
+  if(u.image0) renderImage(u.image0, canvas);
+
+  var textFlex = new Flex(automatonIgnoredUpgradeChipFlex, [0, 0, 0.7], [0.5, 0, -0.45], 0.99, [0.5, 0, 0.45]);
+  //textFlex.div.style.color = '#fff';
+  textFlex.div.style.color = '#000';
+  textFlex.div.innerHTML = 'Notice: Automaton did not buy the following new upgrade that could be afforded before auto-trancend, because it must be performed manually at least once first: ' + '<br><br>' + upper(u.name) + '<br><br>To ensure this upgrade can get used automatically, buy it manually before auto-transcend activates next time, or disable auto-transcend for a while.';
+
+  registerAction(automatonIgnoredUpgradeChipFlex.div, removeAutomatonIgnoredUpgradeChip, 'close message chip', {
+    short_only: true
+  });
+}
