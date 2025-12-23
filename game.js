@@ -905,7 +905,7 @@ function canAffordUpgradeThatWasNeverDoneManually() {
     var u = upgrades[registered_upgrades[i]];
     var u2 = state.upgrades[registered_upgrades[i]];
     if(!u.iscropunlock && !u.isprestige) continue;
-    if(!u2.had && state.res.can_afford(u.cost)) return u.index;
+    if(u2.unlocked && !u2.had && state.res.can_afford(u.cost)) return u.index;
   }
 }
 
@@ -930,7 +930,7 @@ function softReset(opt_challenge, opt_automated) {
   initInfoUI();
   updateFruitUI();
 
-  if(afford_new != undefined) {
+  if(afford_new != undefined && opt_automated) {
     showAutomatonIgnoredUpgradeChip(afford_new);
   }
 }

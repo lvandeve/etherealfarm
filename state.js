@@ -251,7 +251,7 @@ function UpgradeState() {
   this.seen = false; // seen the upgrade in the upgrades tab
   this.seen2 = false; // seen the upgrade ever
   this.had = false; // had the upgrade ever
-  this.unlocked = false;
+  this.unlocked = false; // available for buying during this run
   // how many times this upgrade was done
   // if is_choice, then this is the choice instead of a count. 0 means no choice made yet, 1 means first choice, 2 means second choice.
   this.count = 0;
