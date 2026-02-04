@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -270,13 +270,15 @@ var pausedbuttoncanvasstate = -1;
 var pausedFlexTextGlobal = undefined;
 
 function updatePausedUI() {
-  var needflex = state.paused || heavy_computing || auto_action_manual_window_timeout_enabled;
+  var needflex = state.paused || heavy_computing || auto_action_manual_window_timeout_enabled || auto_action_automatic_timeout_enabled;
 
   if(needflex && !pausedflex) {
     pausedflex = new Flex(contentFlex, 0, 0, 1, 1, FONT_FULL);
     centerText2(pausedflex.div);
     pausedflex.div.style.pointerEvents = 'none';
-    pausedflex.div.style.color = '#f008';
+    var color = '#f008';
+    if(getSeason() == 5) color = '#fe08' // red paused is not visible enough against the red background of infernal season
+    pausedflex.div.style.color = color;
   } else if(!needflex && pausedflex) {
     pausedflex.removeSelf(contentFlex);
     pausedflex = undefined;
@@ -298,8 +300,8 @@ function updatePausedUI() {
     } else {
       pausedFlexText = 'Computing';
     }
-  } else if(auto_action_manual_window_timeout_enabled) {
-    pausedFlexText = 'Auto-action waiting...';
+  } else if(auto_action_manual_window_timeout_enabled || auto_action_automatic_timeout_enabled) {
+    pausedFlexText = 'Auto-action';
   }
 
   if(pausedFlexText != undefined && pausedFlexText != pausedFlexTextGlobal) {

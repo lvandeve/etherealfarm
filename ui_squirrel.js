@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ function getSquirrelUpgradeInfoText(u, gated, is_gate, unknown) {
   var cost = new Res({nuts:getNextSquirrelUpgradeCost()});
   infoText += 'Next costs: ' + cost.toString() + ' (' + getCostAffordTimer(cost) + ')';
   infoText += '<br>';
-  infoText += 'Nuts available: ' + state.res.nuts.toString() + '. Grow nut crops in the main field to get more nuts.';
+  infoText += 'Nuts available: ' + state.res.nuts.toString();
+  if(gain.nuts.eqr(0)) infoText += '. Grow a nut crop in the main field to get more nuts.';
   return infoText;
 }
 

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,6 +29,16 @@ function getChangeLog() {
       text += 'This is a beta version<br/><br/>';
     }
   }
+
+  text += '0.17.0 (2026-02-??)';
+  text += '<br/>• Added the igniferous challenge, unlocked at level 200. This challenge gets harder each time you complete it but gives a multiplicative bonus for each completion.';
+  text += '<br/>• Added a few more achievements for higher tower defense levels.';
+  text += '<br/>• It no longer triggers auto-actions that could have triggered _earlier_, when switching auto-action from off to on (fixed the fact that this got broken).';
+  text += '<br/>• It will show large text "Auto-action" when a triggered auto-action will ascend (or do something else) in 5-10 seconds.'; // this already existed for when manually triggering an auto-action, but so now also for when it's automatic
+  text += '<br/>• The text "paused" given a higher contrast on the red background in infernal challenges.';
+  text += '<br/>• Fixed bug with brassica detailed breakdown in some cases when having multiple.';
+  text += '<br/>• Various other tweaks and typo/bugfixes.'; // includes: typos, fix fishes colored red too often in fish replace dialog, Tower defender IV wrong medal description, clearer message about refreshing watercress in infinity field in some cases, fix tooltip of "clear infinity field" button, basic boost info fix in the infinity field details dialog
+  text += '<br/><br/>';
 
   text += '0.16.3 (2025-12-21)';
   text += '<br/>• You can now shift+click the automaton "Clear infinity field" button to only clear non-brassica crops. On mobile devices, long-press the button to get this option.';

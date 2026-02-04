@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -289,6 +289,7 @@ function makeUpgradeCrop2Action(x, y, single, opt_silent) {
 
   if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
+    update();
     return true;
   } else {
     if(!opt_silent) {
@@ -311,6 +312,7 @@ function makeDowngradeCrop2Action(x, y, opt_silent) {
 
   if(c2 && !too_expensive[1]) {
     addAction({type:ACTION_REPLACE2, x:x, y:y, crop:c2, shiftPlanted:true});
+    update();
   } else if(c2 && too_expensive[1]) {
     // TODO: instead go to an even lower tier?
     showMessage('not enough resources for lower crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() + ', need ' + too_expensive[0].toString() + '. This can happen if you have a lot of the lower tier crop planted.', C_INVALID, 0, 0);

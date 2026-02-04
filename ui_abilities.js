@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -534,7 +534,7 @@ function refreshWatercress(opt_clear, opt_all, opt_by_automaton) {
   else if(refreshed) showMessage(opt_clear ? 'deleting brassica' : 'refreshing brassica');
   else if(remcleared) showMessage('cleared brassica remainders');
   else if(seeds_available.lt(cresscost0)) showMessage('nothing done: only refreshes existing brassica or remainders of brassica, and requires enough resources available to plant the brassica');
-  else showMessage('nothing done: only refreshes existing brassica or remainders of brassica. A second click can fill up the rest of the field with brassica, when having enough resources.');
+  else showMessage('nothing done: only refreshes existing brassica or remainders of brassica.');
   if(!opt_by_automaton) update();
 }
 
@@ -663,9 +663,9 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
   else if(numdeleted) showMessage('deleting infinity brassica');
   else if(refreshed) showMessage('refreshing infinity brassica');
   else if(remcleared) showMessage('cleared infinity brassica remainders');
-  else if(seeds_available.lt(cresscost)) showMessage('nothing done: only refreshes existing infinity brassica or remainders of infinity brassica, and requires enough resources available to plant the infinity brassica');
+  else if(seeds_available.lt(cresscost) && !opt_recursed) showMessage('nothing done: only refreshes existing infinity brassica or remainders of infinity brassica, and requires enough resources available to plant the infinity brassica');
   else if(opt_all && !opt_recursed) showMessage('nothing done: with shift, only adds new infinity brassica where possible, doesn\'t refresh existing ones');
-  else showMessage('nothing done: no brassica or brassica remainders available to refresh');
+  else showMessage('nothing done: no brassica or brassica remainders available to refresh. A second click can fill up the rest of the field with brassica, when having enough resources');
   if(!opt_by_automaton) update();
 }
 

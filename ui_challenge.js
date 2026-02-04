@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -152,8 +152,13 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
   text += '<br>';
   text += '<b>Goal:</b>';
   text += '<br>';
-  if(c.targetlevel == undefined) {
-    text += '•  ' + c.targetdescription + '</b> to successfully complete the challenge, or reach high tree levels to increase challenge production bonus.';
+  if(c.targetlevel == undefined || c.targetdescription != undefined) {
+    text += '•  ' + c.targetdescription;
+    if(c.targetdescription2) {
+      text += c.targetdescription2;
+    } else {
+      text += ' to successfully complete the challenge, or reach high tree levels to increase challenge production bonus.';
+    }
   } else if(c.targetlevel.length == 0) {
     text += '•  Reach as high level as you can, the higher level ever reached in this challenge, the higher the production bonus.';
   } else if(c.targetlevel.length > 1) {
@@ -188,7 +193,7 @@ function createChallengeDescriptionDialog(challenge_id, info_only, include_curre
     } else if(c.targetlevel.length == 0) {
       // nothing, it's the bonus below
     } else if(c.targetlevel.length > 1 && c2.completed > 0) {
-      text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numStagesCompleted(include_current_run)];
+      text += '• Next completion reward (at level ' + targetlevel + '): ' + c.rewarddescription[c.numStagesCompletedAtCurrentDifficulty(include_current_run)];
       text += '<br>';
     } else {
       text += '• Reward (at level ' + targetlevel + '): ' + c.rewarddescription[0];
@@ -301,7 +306,7 @@ function getChallengeStatsString(challenge_id, include_current_run) {
               '</b>. Total (all challenges) before: ' + total_bonus_before.toPercentString() + ', <b>after: ' + total_bonus_after.toPercentString() + '</b><br>';
     } else {
       text += '• Max level reached: ' + c2.maxlevel + '<br>';
-      text += '• Production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString() + '<br>';
+      text += '• Production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c.completedAtCurrentDifficulty()).toPercentString() + '<br>';
     }
   }
   if(currentlyrunning) {
@@ -325,12 +330,12 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   }
 
   var completedtext;
-  if(c.numStages() == 1 || !c.numStagesCompleted(include_current_run)) {
-    completedtext = (c.numStagesCompleted(include_current_run) ? 'yes' : 'no');
+  if(c.numStages() == 1 || !c.numStagesCompletedAtCurrentDifficulty(include_current_run)) {
+    completedtext = (c.numStagesCompletedAtCurrentDifficulty(include_current_run) ? 'yes' : 'no');
   } else if(c.numStages() == 0) {
     completedtext = (c.fullyCompleted(include_current_run) ? 'yes' : 'no');
   } else {
-    completedtext = '' + c.numStagesCompleted(include_current_run) + ' of ' + c.numStages();
+    completedtext = '' + c.numStagesCompletedAtCurrentDifficulty(include_current_run) + ' of ' + c.numStages();
   }
 
   text += '• Completed: ' + completedtext + '<br>';
@@ -360,7 +365,7 @@ function getEndChallengeButtonName(already_completed, success) {
     // Successfully complete it for the first time
     return 'Complete challenge';
   } else {
-    // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
+    // Abort the attempt to complete this challenge, it remains unfinished. But it can still give the challenge highest level production bonus.
     return 'Abort challenge';
   }
 }
@@ -407,7 +412,7 @@ function createChallengeDialog(opt_from_challenge) {
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
-    var isnew = !c.numStagesCompleted(true);
+    var isnew = !c.numStagesCompletedAtCurrentDifficulty(true);
     var isnotfull = !c.fullyCompleted(true)
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;
@@ -625,6 +630,13 @@ function getChallengeFormulaString(which, c, c2) {
       }
       result = '25% * ln(1 + ' + result + ') ^ 2';
     }
+  } else if(c.bonus_formula == 3) {
+    if(which == 0) {
+      result = 'multiplicative +' + c.bonus.toPercentString() + ' bonus for each harder completion, plus partial bonus up to '  + (c.bonus.divr(2)).toPercentString() + ' for incomplete run';
+    } else if(which == 1) {
+      result = '(1 + ' + c.bonus.toPercentString() + ') ^ num_completions'; // this is same as the which==0 string but shorter to fit in the ln formula below
+      result = '50% * ln(1 + ' + result + '), plus partial bonus for incomplete run';
+    }
   }
   return result;
 }
@@ -664,7 +676,9 @@ function createAllChallengeStatsDialog() {
     if(!c2.unlocked) continue;
     text += '<b>' + upper(c.name) + '</b>';
     text += '<br>';
-    if(c.numStages() <= 1 || !c2.completed) {
+    if(c.bonus_formula == 3) {
+      text += 'num completions: ' + c2.num_completed;
+    } else if(c.numStages() <= 1 || !c2.completed) {
       text += 'completed: ' + (c2.completed ? 'yes' : 'no');
     } else {
       text += 'completed: stage ' + c2.completed + ' of ' + c.numStages();
@@ -694,7 +708,12 @@ function createAllChallengeStatsDialog() {
       text += 'highest levels: ';
       for(var j = 0; j < c.cycling; j++) text += (j ? ', ' : '') + c2.maxlevels[j];
     } else {
-      text += 'highest level: ' + c2.maxlevel;
+      if(c.bonus_formula == 3) {
+        text += 'highest level (at current difficulty): ' + c2.maxlevel;
+        //text += 'highest level ever: ' + c2.maxlevel2; // not shown because going higher than the target level for this type of challenge is not needed, and there shouldn't be a reason to encourage doing it either
+      } else {
+        text += 'highest level: ' + c2.maxlevel;
+      }
       if(c.bonus_max_level && c2.maxlevel >= c.bonus_max_level) {
         text += ' (capped)';
       }
@@ -734,13 +753,15 @@ function createAllChallengeStatsDialog() {
       text += nextString + ' cycle: ' + (cycle + 1) + ' of ' + (c.cycling);
       text += '<br>';
     } else {
-      text += 'bonus formula: ' + getChallengeFormulaString(0, c, c2);
+      text += 'production bonus formula: ' + getChallengeFormulaString(0, c, c2);
       text += '<br>';
-      text += 'production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c2.completed).toPercentString();
+      text += 'production bonus: ' + getChallengeBonus(0, c.index, c2.maxlevel, c.completedAtCurrentDifficulty()).toPercentString();
       // disabled for bonus_formula=0, see todo at modifyResinTwigsChallengeBonus
       if(c.bonus_formula != 0) {
         text += '<br>';
-        text += 'resin & twigs bonus: ' + getChallengeBonus(1, c.index, c2.maxlevel, c2.completed).toPercentString();
+        text += 'resin & twigs bonus formula: ' + getChallengeFormulaString(1, c, c2);
+        text += '<br>';
+        text += 'resin & twigs bonus: ' + getChallengeBonus(1, c.index, c2.maxlevel, c.completedAtCurrentDifficulty()).toPercentString();
       }
       text += '<br>';
     }
@@ -749,7 +770,7 @@ function createAllChallengeStatsDialog() {
         text += 'reward gotten (at level ' + c.targetlevel[j] + '): ' + c.rewarddescription[j];
         text += '<br>';
       }
-      if(!c.fullyCompleted) {
+      if(!c.fullyCompleted()) {
         text += '(next unclaimed reward: ' + c.rewarddescription[c2.completed] + ')';
         text += '<br>';
       }

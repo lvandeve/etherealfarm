@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -711,6 +711,8 @@ function encState(state, opt_raw_only) {
       for(var j = 0; j < c.cycling; j++) array8.push(c2.maxlevels[j]);
       for(var j = 0; j < c.cycling; j++) array9.push(c2.besttimes[j]);
       for(var j = 0; j < c.cycling; j++) array10.push(c2.besttimes2[j]);
+    } else if(c.bonus_formula == 3) {
+      array8.push(c2.maxlevel2);
     }
   }
   processUintArray(array0);
@@ -2258,10 +2260,11 @@ function decState(s) {
           c2.besttimes[0] = c2.besttime;
           c2.besttimes2[0] = c2.besttime2;
         }
+      } else if(c.bonus_formula == 3) {
+        c2.maxlevel2 = array8[index8++];
       }
     }
     if(save_version >= 4096*1+69 && (index8 != array8.length || index9 != array9.length || index10 != array10.length)) return err(4);
-
   }
   // fix up the fact that the more fair g_numresets_challenge_10 stat didn't exist yet before v 0.1.43, and a few other stat changes
   if(save_version < 4096*1+43) {

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -258,7 +258,7 @@ function setGoalText(text, opt_small) {
   //goalFlex.div.style.border = '1px solid red';
   if(!text) {
     logFlex.y0 = logFlexBegin;
-    logFlex.updateSelf(gameFlex.div);
+    logFlex.update(gameFlex.div);
     goalFlex.div.style.visibility = 'hidden';
   } else {
     // see makeMainDivs for the basis of these values
@@ -266,9 +266,9 @@ function setGoalText(text, opt_small) {
     var logy0 = goaly1 + 0.004;
     if(logFlex.y0 != logy0 || goalFlex.y1 != goaly1) {
       logFlex.y0 = logy0;
-      logFlex.updateSelf(gameFlex.div);
+      logFlex.update(gameFlex.div);
       goalFlex.y1 = goaly1;
-      goalFlex.updateSelf(gameFlex.div);
+      goalFlex.update(gameFlex.div);
       goalFlex.div.className = opt_small ? 'efGoalSmall' : 'efGoal';
       goalFlex.div.style.visibility = 'visible';
     }

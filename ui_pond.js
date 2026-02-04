@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -737,13 +737,15 @@ function renderPond() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-function makeFishChip(fish, x, y, numcols, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_field) {
+// tx, ty are coordinates of the flex in the fish list dialog
+// x, y are coordinates of the field where to place the fish, used if opt_replace is true
+function makeFishChip(fish, tx, ty, x, y, numcols, parent, opt_plantfun, opt_showfun, opt_tooltipfun, opt_replace, opt_recoup, opt_field) {
   // scale things slightly differently depending on if numcols is 2 for narrow/mobile or 3 for wider screens
   var w = 1 / numcols;
   var h = (numcols == 2) ? 0.4 : 0.33; // this is not a direct ratio of w
   var iconsize = (numcols == 2) ? 0.7 : 0.5; // this is not actually 0.7 full units wide
 
-  var flex = new Flex(parent, x * w + 0.01, [0, 0, y * h + 0.010, 0.5], (x + 1) * w - 0.01, [0, 0, (y + 1) * h - 0.01, 0.5]);
+  var flex = new Flex(parent, tx * w + 0.01, [0, 0, ty * h + 0.010, 0.5], (tx + 1) * w - 0.01, [0, 0, (ty + 1) * h - 0.01, 0.5]);
   var div = flex.div;
   div.className = 'efEtherealPlantChip';
 
@@ -799,8 +801,8 @@ function makeFishChip(fish, x, y, numcols, parent, opt_plantfun, opt_showfun, op
   infoFlex.div.innerHTML = text;
 
 
-  // the fishcount check is for the following reason: restricted is to mark the button as 'can't place this fish', but if you have 0 of them we DO want the button to show up as normal, for the case whe na higher tier of fish can replace lower tier ones
-  var restricted = (fish.tier >= state.highestoftypefishunlocked[fish.type]) ? !canPlaceThisFishGivenCountsIgnoringLowerTiers(fish) : !canPlaceThisFishGivenCounts(fish);
+  // the fishcount check is for the following reason: restricted is to mark the button as 'can't place this fish', but if you have 0 of them we DO want the button to show up as normal, for the case when a higher tier of fish can replace lower tier ones
+  var restricted = !canPlaceThisFishGivenCountsForUi(fish, opt_replace ? state.pond[y][x].getCrop() : null);
   if(opt_plantfun && restricted) {
     flex.div.className = 'efButtonTranslucentCantRestricted';
   } else if(opt_plantfun && state.res.lt(cost)) {
@@ -957,7 +959,7 @@ function makePlantFishDialog(x, y, opt_f, opt_replace, opt_recoup) {
       dialog.content.div.innerHTML = text;
     }, tooltipfun, plantfun, c);
 
-    var chip = makeFishChip(c, tx, ty, numcols, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.pond[y][x]);
+    var chip = makeFishChip(c, tx, ty, x, y, numcols, flex, plantfun, showfun, tooltipfun, opt_replace, opt_recoup, state.pond[y][x]);
     tx++;
     if(tx >= numcols) {
       tx = 0;

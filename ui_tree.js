@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -53,10 +53,10 @@ function makeTreeDialog() {
 
   var flex = new Flex(dialog.icon, 0, 0, 1, 1);
   var canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-  renderImage(tree_images[treeLevelIndex(state.treelevel)][1][getSeason()], canvas);
+  renderImage(getTreeImage()[1][getSeason()], canvas);
   flex = new Flex(dialog.icon, 0, 1, 1, 2);
   canvas = createCanvas('0%', '0%', '100%', '100%', flex.div);
-  renderImage(tree_images[treeLevelIndex(state.treelevel)][2][getSeason()], canvas);
+  renderImage(getTreeImage()[2][getSeason()], canvas);
 
   var ypos = 0;
   var ysize = 0.1;
@@ -73,7 +73,7 @@ function makeTreeDialog() {
     var resin_breakdown = [];
     var twigs_breakdown = [];
 
-    text = '<b>' + upper(tree_images[treeLevelIndex(state.treelevel)][0]) + '</b><br/>';
+    text = '<b>' + upper(getTreeImage()[0]) + '</b><br/>';
     text += 'Tree level: ' + state.treelevel + '<br/>';
     if(state.treelevel == 0 && state.res.spores.eqr(0)) {
       text += 'This tree needs to be rejuvenated first. Requires spores.<br/>';
@@ -293,7 +293,7 @@ function makeTreeDialog() {
         registerTooltip(button, 'Successfully finish the challenge for the first time.');
       }
     } else {
-      // Abort the attempt to complete this challenge, it remainds unfinished. But it can still give the challenge highest level production bonus.
+      // Abort the attempt to complete this challenge, it remains unfinished. But it can still give the challenge highest level production bonus.
       if(c.targetlevel != undefined && c.targetlevel.length > 1) {
         registerTooltip(button, 'Open the dialog to abort the challenge, you don\'t get its next reward, but if you broke the max level record, your challenge production bonus will still increase. The dialog will show the amounts.');
       } else {

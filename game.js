@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -210,6 +210,7 @@ function resetGlobalStateVars(opt_state) {
   showingConfigureAutoChoiceDialog = false;
   aboutButtonCanvas_lastHoliday = -1;
   auto_action_manual_window_timeout_enabled = false;
+  auto_action_automatic_timeout_enabled = false;
 }
 
 function hardReset() {
@@ -512,11 +513,11 @@ function endPreviousRun() {
     }
     if(c.numStages() == 0) {
       c2.completed = (c2.num > 0); // it has no stages, but at least consider ending it as being completed
-    } else if(c.stageCompleted(0)) {
+    } else if(c.stageCompletedInCurrentRun(0)) {
       var i = c2.completed;
       c2.num_completed++;
       // whether a next stage of the challenge completed. Note, you can only complete one stage at the time, even if you immediately reach the target level of the highest stage, you only get 1 stage for now
-      if(i < c.numStages() && c.stageCompleted(i)) {
+      if(i < c.numStages() && c.stageCompletedInCurrentRun(i)) {
         if(c.numStages() > 1) {
           showMessage('Completed the next stage of the challenge and got reward: ' + c.rewarddescription[i], C_UNLOCK, 38658833);
         } else {
@@ -528,6 +529,14 @@ function endPreviousRun() {
     }
     if(c.numStages() > 1 && c2.completed >= c.numStages()) {
       c2.num_completed2++;
+    }
+
+    if(c.bonus_formula == 3) {
+      c2.maxlevel2 = Math.max(c2.maxlevel2, c2.maxlevel);
+      if(c.numCompletedAtCurrentDifficulty(true)) {
+        // if completed, reset max level back to 0, challenges with bonus_formula 3 get harder each time so previous max level does not count anymore
+        c2.maxlevel = 0;
+      }
     }
   }
 
@@ -916,6 +925,7 @@ function softReset(opt_challenge, opt_automated) {
   util.clearLocalStorage(localstorageName_recover); // if there was a recovery save, delete it now assuming that transcending means all about the game is going fine
   savegame_recovery_situation = false;
   auto_action_manual_window_timeout_enabled = false;
+  auto_action_automatic_timeout_enabled = false;
 
   // both of these functions are part of softReset, but endPreviousRun still assumes the old run's state (effects from the old challenge, ...) while
   // beginNextRun sets up the state for the new run, applies any new challenge effects, ...
@@ -1025,6 +1035,7 @@ function storeUndo(state) {
 
 function loadUndo() {
   auto_action_manual_window_timeout_enabled = false;
+  auto_action_automatic_timeout_enabled = false;
   if(lastUndoSaveTime != 0 && !lastUndoKeepLong && state.time - lastUndoSaveTime > maxUndoTime) {
     // prevent undoing something from super long ago, even though it may seem like a cool feature, it can be confusing and even damaging. Use export save to do long term things.
     clearUndo();
@@ -1207,6 +1218,7 @@ function getPureSeasonAt(time, opt_state) {
 
 function getSeasonAt(time) {
   if(state.challenge == challenge_infernal) return 5;
+  if(state.challenge == challenge_igniferous) return 5;
 
   return getPureSeasonAt(time);
 }
@@ -1895,8 +1907,6 @@ function precomputeField_(prefield, opt_pretend) {
     }
   }
 
-  var total = new Res(); // temporary object for below
-
   // pass 5: watercress copying
   for(var y = 0; y < h; y++) {
     for(var x = 0; x < w; x++) {
@@ -1908,7 +1918,8 @@ function precomputeField_(prefield, opt_pretend) {
           var leech_berry = (p.brassicaneighbors & 1) ? c.getLeech(f, pretend, null, CROPTYPE_BERRY) : Num(0);
           var leech_mush = (p.brassicaneighbors & 2) ? c.getLeech(f, pretend, null, CROPTYPE_MUSH) : Num(0);
           var leech_nuts = (p.brassicaneighbors & 4) ? c.getLeech(f, pretend, null, CROPTYPE_NUT) : Num(0);
-          total.reset();
+          var total = new Res();
+          var has_neighbors = false;
           var num = 0;
           var numdir = haveDiagonalBrassica() ? 8 : 4;
           for(var dir = 0; dir < numdir; dir++) { // get the neighbors N,E,S,W,NE,SE,SW,NW
@@ -1926,6 +1937,7 @@ function precomputeField_(prefield, opt_pretend) {
             if(c2) {
               var p2 = prefield[y2][x2];
               if(c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN || c2.type == CROPTYPE_MUSH || c2.type == CROPTYPE_NUT) {
+                has_neighbors = true;
                 // leech ratio that applies here
                 var leech = (c2.type == CROPTYPE_NUT) ? leech_nuts : ((c2.type == CROPTYPE_BERRY || c2.type == CROPTYPE_PUMPKIN) ? leech_berry : leech_mush);
                 // leeched resources
@@ -1950,13 +1962,13 @@ function precomputeField_(prefield, opt_pretend) {
                 // however, then the hypothetical seed production may differ from the main seed production even when mushrooms have enough seeds to produce all spores
                 // and that is not the goal of the hypothetical production display. So instad add the actual leech. when adding leech0, then if you have champignon+blueberry+watercress (in that order, and with champignon satisfied), it'd display some hypothetical seds in gray parenthesis which is undesired
                 p.prod0b.addInPlace(leech3b);
-                total.addInPlace(leech3b); // for the breakdown
+                total.addInPlace(leech2); // for the breakdown in UI
                 num++;
               }
             }
           }
           // also add this to the breakdown
-          if(!total.empty()) {
+          if(has_neighbors) {
             p.hasbreakdown_watercress = true;
             p.breakdown_watercress_info = [true, num, total, p.prod3];
           } else {
@@ -2529,7 +2541,7 @@ function addRandomFruitForLevel(treelevel, infernal, opt_nodouble) {
 
 function addRandomFruit() {
   var treelevel = state.treelevel;
-  var infernal = state.challenge == challenge_infernal || getSeason() == 5; // the getSeason() check captures fruture infernal challenges
+  var infernal = getSeason() == 5; // the getSeason() check captures infernal challenges (challenge_infernal, challenge_igniferous, possible future ones...)
   return addRandomFruitForLevel(treelevel, infernal);
 }
 
@@ -3045,8 +3057,15 @@ function doAutoAction(index, part, opt_manually) {
       }
     }
     if(effect.enable_fruit) {
-      addAction({type:ACTION_FRUIT_ACTIVE, slot:effect.fruit, by_automaton:!opt_manually});
-      did_something = true;
+      var ok = true;
+      if(state.challenge == challenge_igniferous) {
+        var fruit = getFruit(effect.fruit);
+        if(fruit && fruit.type != 11) ok = false; // during igniferous challenge, don't make it swap to a non-mandrake fruit, those don't work and it's almost certainly accidental and unwanted that an auto-action would switch to it
+      }
+      if(ok) {
+        addAction({type:ACTION_FRUIT_ACTIVE, slot:effect.fruit, by_automaton:!opt_manually});
+        did_something = true;
+      }
     }
     // arguably this could also go in part 2, but for the manual toggling of auto-actions it's more clear what's going on if it's executed immediately in part 1
     if(effect.enable_weather && autoActionExtraUnlocked()) {
@@ -3122,6 +3141,14 @@ function computeAutomatonActions() {
   if(autoActionEnabled()) {
     doAutoActions();
   }
+
+  auto_action_automatic_timeout_enabled = false;
+  for(var i = 0; i < state.automaton_autoactions.length; i++) {
+    var o = state.automaton_autoactions[i];
+    if(state.c_runtime < o.time2 && o.getEffect().hasTranscendEnabled()) {
+      auto_action_automatic_timeout_enabled = true;
+    }
+  }
 }
 
 function doAutoActions() {
@@ -3169,6 +3196,9 @@ function doAutoActions() {
 // note: for non-manually activated auto-actions (but by their actual trigger), this is not used, those use a proper system keeping track of 'time2' correctly. But that system is not compatible with manual activations at any time, hence this hack for the manual case.
 // TODO: don't use window.setTimeout for this, but a flag in the state, so that this works more correctly and less hacky with undo. The current system doesn't work when doing undo followed by redo for example (won't do second part then)
 var auto_action_manual_window_timeout_enabled = false;
+
+// idem for automatic, these are not JS timer based though
+var auto_action_automatic_timeout_enabled = false;
 
 function doAutoActionManually(index) {
   if(!autoActionUnlocked()) return;
@@ -4652,8 +4682,8 @@ var update = function(opt_ignorePause) {
             showMessage('Already used this run.', C_INVALID, 0, 0);
             ok = false;
           }
-          if(state.challenge == challenge_infernal) {
-            showMessage('This effect doesn\'t work during the infernal challenge.', C_INVALID, 0, 0);
+          if(getSeason() == 5) {
+            showMessage('This effect doesn\'t work during the infernal weather.', C_INVALID, 0, 0);
             ok = false;
           }
         }
@@ -6467,7 +6497,7 @@ var update = function(opt_ignorePause) {
       var showtreemessages = state.messagelogenabled[1] || state.treelevel >= state.g_treelevel;
 
       if(showtreemessages) {
-        var message = 'Tree leveled up to: ' + tree_images[treeLevelIndex(state.treelevel)][0] + ', level ' + state.treelevel +
+        var message = 'Tree leveled up to: ' + getTreeImage()[0] + ', level ' + state.treelevel +
             '. Consumed: ' + req.toString() +
             '. Tree boost: ' + getTreeBoost().toPercentString();
         if(resin.neqr(0)) message += '. Resin added: ' + resin.toString() + '. Total resin ready: ' + getUpcomingResinIncludingFerns().toString();
@@ -6511,7 +6541,7 @@ var update = function(opt_ignorePause) {
 
       if(state.treelevel == 1) {
         showRegisteredHelpDialog(6);
-      } else if(state.treelevel == min_transcension_level) {
+      } else if(state.treelevel == min_transcension_level && state.challenge == 0) {
         showRegisteredHelpDialog(7);
       }
       // targetlevel-based challenges

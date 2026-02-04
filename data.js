@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -527,7 +527,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, pretend, breakdown)
       if(breakdown) breakdown.push(['infernal fruit', true, mul, result.clone()]);
     }
 
-    if(state.challenge == challenge_infernal && this.tier >= 0) {
+    if((state.challenge == challenge_infernal || state.challenge == challenge_igniferous) && this.tier >= 0) {
       var tier = this.tier;
       if(pretend == 6) {
         var o = getPrestigedCropStats(this.index);
@@ -554,7 +554,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, pretend, breakdown)
         }
       }
       if(this.type == CROPTYPE_BRASSICA && result.seeds) {
-        // for brassica, keep the production at least as much as initial game brassica: so that it's possible to play infermal without having fern in ethereal field in theory
+        // for brassica's regular non-copy production, keep the production at least as much as initial game brassica: so that it's possible to play infermal without having fern in ethereal field in theory
         var minseeds = Num.min(this.prod.seeds, result.seeds);
         if(result.seeds.mul(malus).lt(minseeds) && result.seeds.neqr(0)) {
           // the result.seeds.neqr(0) check above is to avoid NaN, production can be 0 if the watercress is end of life (it still copies then, but doesn't produce)
@@ -564,8 +564,24 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, pretend, breakdown)
       result.mulInPlace(malus);
       if(breakdown) breakdown.push(['infernal', true, malus, result.clone()]);
     }
+    if(state.challenge == challenge_igniferous) {
+      if(state.challenges[challenge_igniferous].num_completed > 0) {
+        var malus = (new Num(1000)).powr(-1 / state.challenges[challenge_igniferous].num_completed);
+        result.mulInPlace(malus);
+        if(breakdown) breakdown.push(['igniferous repetitions malus', true, malus, result.clone()]);
+      }
+      if(f) {
+        var p = prefield[f.y][f.x];
+        if(p.treeneighbor) {
+          var malus = new Num(1 - challenge_igniferous_tree_malus);
+          if(malus.neqr(1)) {
+            result.posmulInPlace(malus);
+            if(breakdown) breakdown.push(['igniferous tree neighbor malus', true, malus, result.clone()]);
+          }
+        }
+      }
+    }
   }
-
 }
 
 // derive the nettle malus from its boost to mushrooms
@@ -1184,7 +1200,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
     // challenges
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.challenge_multiplier_prod.neqr(1)) {
       result.mulInPlace(state.challenge_multiplier_prod);
-      if(breakdown) breakdown.push(['challenge highest levels', true, state.challenge_multiplier_prod, result.clone()]);
+      if(breakdown) breakdown.push(['challenges done', true, state.challenge_multiplier_prod, result.clone()]);
     }
 
     if((this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN) && state.squirrel_upgrades[upgradesq_highest_level].count && state.g_treelevel > upgradesq_highest_level_min) {
@@ -1373,7 +1389,7 @@ Crop.prototype.getBoost = function(f, pretend, breakdown) {
       }
       var mul_upgrade = u2.bonus.mulr(n).addr(1); // the flower upgrades are additive, unlike the crop upgrades which are multiplicative. This because the flower bonus itself is already multiplicative to the plants.
       result.mulInPlace(mul_upgrade);
-      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
     }
   }
@@ -1611,7 +1627,7 @@ Crop.prototype.getBoostBoost = function(f, pretend, breakdown) {
       n.powrInPlace(beehive_upgrade_power_exponent);
       var mul_upgrade = u2.bonus.mulr(n).addr(1);
       result.mulInPlace(mul_upgrade);
-      if(breakdown) breakdown.push([' upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
+      if(breakdown) breakdown.push(['upgrades (' + u.count + ')', true, mul_upgrade, result.clone()]);
       // example: if without upgrades boost was +50%, and now 16 upgrades of 10% each together add 160%, then result will be 130%: 0.5*(1+16*0.1)=1.3
     }
   }
@@ -3183,6 +3199,7 @@ var upgrade_mistunlock = registerUpgrade('mist ability', treeLevelReqBase(4).mul
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
   if(state.challenge == challenge_stormy) return false;
+  if(state.challenge == challenge_igniferous) return false;
   if(state.treelevel >= 4) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_mistunlock].unlocked = true;
@@ -3200,6 +3217,7 @@ var upgrade_sununlock = registerUpgrade('sun ability', treeLevelReqBase(2).mulr(
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
   if(state.challenge == challenge_stormy) return false;
+  if(state.challenge == challenge_igniferous) return false;
   if(state.treelevel >= 2) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_sununlock].unlocked = true;
@@ -3217,6 +3235,7 @@ var upgrade_rainbowunlock = registerUpgrade('rainbow ability', treeLevelReqBase(
   // nothing to do here, the fact that this upgrade's count is changed to 1 already enables it
 }, function() {
   if(state.challenge == challenge_stormy) return false;
+  if(state.challenge == challenge_igniferous) return false;
   if(state.treelevel >= 6) {
     // auto apply this upgrade already for convenience. Cost ignored. It was too annoying to have to indirectly have this extra step of applying the upgrade.
     state.upgrades[upgrade_rainbowunlock].unlocked = true;
@@ -3343,6 +3362,7 @@ function pumpkinUnlocked() {
   if(state.challenge == 0) challenge_ok = true;
   if(state.challenge == challenge_rocks || state.challenge == challenge_thistle) challenge_ok = true; // unlikely the pumpkin fits but it might
   if(state.challenge == challenge_infernal) challenge_ok = true;
+  if(state.challenge == challenge_igniferous) challenge_ok = true;
   if(state.challenge == challenge_stormy) challenge_ok = true;
   if(state.challenge == challenge_noupgrades) challenge_ok = true;
   if(state.challenge == challenge_wither) challenge_ok = true;
@@ -3424,14 +3444,15 @@ function Challenge() {
   // if targetlevel is empty array, there's no target level at all and the challenge's only reward is production bonus from reaching higher levels in it (NOTE: tree level 1 must still be reached at least to count the challenge as a 'run' and thus 'completed' at all)
   this.targetlevel = [0];
   this.targetfun = undefined;
-  this.targetdescription = undefined;
+  this.targetdescription = undefined; // the part shown in bold
+  this.targetdescription2 = undefined; // the extra fluff, not shown in bold, if targetdescription is used. if undefined, the default fluff is added
 
   /* which formula is used to compute the bonus overall
   value 0:
-  system from mid 2023 and some time before that (but this is already a different system than initial game release, which is completely gone here)
+  older system from mid 2023 and some time before that (but this is already a different system than initial game release, which is completely gone here)
 
   value 1:
-  new system introduced for tower defense end 2023 (and planned to extend to other challenges)
+  new system introduced end 2023 (planned to replace the old formula for most challenges, introduced for tower defense)
   at every level of the form A + B * level, an exponential increase is given (e.g. B=100 for every 100 levels such increase)
   in-between a smaller non-exponential bonus is given, which is more significant again after each of the exponential bumps
   levels of the form A + B * level are the "key" levels, and in addition level 0 is a key level if A > 0
@@ -3441,11 +3462,19 @@ function Challenge() {
   works like value 1 for seeds/spores production bonus
   works like value 0 for resin/twigs bonus
   this is a temporary measure while gradually moving everything to value 1, to allow already moving the production bonus to it but the resin/twigs is a bit more tricky to change for everyone
+
+  value 3:
+  the system for the igniferous challenge:
+  each time you beat the challenge, you get this.bonus, multiplicatively. (so you get this.bonus ** num_completed)
+  also a bit of the bonus is given for level reached when partially beating the challenge, based on targetlevel
+  challenges that use this formula, always have the same target level, but become more difficult each time
+  for twigs/resin, does the same as 2 but using "max level reached + num completions" as level reached. This does not increase resin/twigs indefinitely unlike the production bonus.
+  this value cannot be combined with cycling, nor with multi-target challenges (it should have 1 target level, no cycling)
   */
   this.bonus_formula = 0;
 
 
-  // for formula=0. main bonus multiplier
+  // for formula=0 or 3. main bonus multiplier
   this.bonus = Num(0);
   // for formula=0. if higher than 0, bonus only starts working from that level
   this.bonus_min_level = 0;
@@ -3483,8 +3512,30 @@ function Challenge() {
   this.rewardfun = [function() {
   }];
 
-  // whether a stage is completed in the current run (whether for the first time, or any later time in re-runs)
-  this.stageCompleted = function(stage) {
+  // number of times this challenge was completed _at the current difficulty level_
+  // this is different than num_completed in the case of challenges that increase in difficulty each time (like igniferous), for such challenges this can never return more than 1
+  this.numCompletedAtCurrentDifficulty = function(opt_include_current_run) {
+    var result = 0;
+    if(this.bonus_formula == 3) {
+      result = 0; // it's never completed, because each time you do, its next harder cycle enables and then that one is not completed
+    } else {
+      result = state.challenges[this.index].num_completed;
+    }
+    if(opt_include_current_run && state.challenge == this.index && this.stageCompletedInCurrentRun(0)) result++;
+    return result;
+  };
+
+  // number of times this challenge was completed at any difficulty level
+  // for challenges that increase in difficulty each time, like igniferous, this is the total amount of times completed at any difficulty level
+  // for other challenges, this returns the same value as numCompletedAtCurrentDifficulty
+  this.numCompletedTotal = function(opt_include_current_run) {
+    var result = state.challenges[this.index].num_completed;
+    if(opt_include_current_run && state.challenge == this.index && this.stageCompletedInCurrentRun(0)) result++;
+    return result;
+  };
+
+  // whether a stage is completed in the current run (whether for the first time, or any later time in re-runs). Only looks at current run, not previous completions
+  this.stageCompletedInCurrentRun = function(stage) {
     if(this.targetlevel == undefined) {
       return this.targetfun();
     } else if(this.targetlevel.length == 0) {
@@ -3504,17 +3555,31 @@ function Challenge() {
 
   // this is different than state state.challenges[this.index].num_completed: that one is about amount of times target level reached, while here it's about amount of different target levels reached, if there are multiple stages
   // for challenges that have no stages, will return 1 if the challenge was ever run at all
-  this.numStagesCompleted = function(opt_include_current_run) {
+  // for challenges that increase in difficulty each time (like igniferous), this can only return 0, unless opt_include_current_run is true and target level reached
+  // unlike "stageCompletedInCurrentRun", this looks at previous runs too
+  this.numStagesCompletedAtCurrentDifficulty = function(opt_include_current_run) {
     if(this.numStages() == 0) {
+      if(this.bonus_formula == 3) return (opt_include_current_run && state.challenge == this.index) ? 1 : 0;
       // the challenge has no stages or target level at all, but still only consider it completed if at least one run was done
       return (state.challenges[this.index].num > 0 || (opt_include_current_run ? (state.challenge == this.index) : false)) ? 1 : 0;
     }
-    var completed = state.challenges[this.index].completed;
-    if(opt_include_current_run && state.challenge == this.index && completed < this.numStages() && this.stageCompleted(completed)) completed++;
-    return completed;
+
+    var result = 0;
+    if(this.bonus_formula == 3) {
+      result = 0;
+    } else {
+      result = state.challenges[this.index].completed;
+    }
+    if(opt_include_current_run && state.challenge == this.index && result < this.numStages() && this.stageCompletedInCurrentRun(result)) result++;
+    return result;
   };
 
-  // use numStagesCompleted to check if any stage at all was completed, or fullyCompleted to check all stages are completed
+  // same as numStagesCompletedAtCurrentDifficulty, but returns boolean value
+  this.completedAtCurrentDifficulty = function(opt_include_current_run) {
+    return !!this.numStagesCompletedAtCurrentDifficulty(opt_include_current_run);
+  };
+
+  // use numStagesCompletedAtCurrentDifficulty to check if any stage at all was completed, or fullyCompleted to check all stages are completed
   // does not take cycles into account (from this.cycling), use allCyclesCompleted for that
   // for challenges that have no stages, returns true if at least 1 run was done
   // aka allStagesCompleted
@@ -3523,7 +3588,7 @@ function Challenge() {
       // the challenge has no stages or target level at all, but still only consider it completed if at least one run was done
       return state.challenges[this.index].num > 0 || (opt_include_current_run ? (state.challenge == this.index) : false);
     }
-    return this.numStagesCompleted(opt_include_current_run) >= this.numStages();
+    return this.numStagesCompletedAtCurrentDifficulty(opt_include_current_run) >= this.numStages();
   };
 
   // Whether you've completed the next stage of the challenge, during the current run.
@@ -3556,28 +3621,26 @@ function Challenge() {
   // whether a given cycle was ever completed
   // if the challenge is not cycling, then it returns if the one main cycle is completed (and the cycle parameter is ignored so may be undefined if desired)
   // does not look at stages, considers it complete after first stage is reached
+  // if it's a challenge that increases in difficulty each time, like igniferous, this will always return false (unless if opt_include_current_run is true and we're above the target level), because then it only checks if the current difficulty level was completed, and as soon as you actually complete it, the next difficulty level is active
   this.cycleCompleted = function(cycle, opt_include_current_run) {
     var c2 = state.challenges[this.index];
     if(this.cycling <= 1) {
-      if(c2.completed) return true;
-      return opt_include_current_run ? this.stageCompleted(0) : false;
+      // TODO: why is this returning false if opt_include_current_run==false? the function documentation implies this should then be returning whether the challenge was ever completed before...
+      return opt_include_current_run ? this.stageCompletedInCurrentRun(0) : false;
     }
-    var num_completed = c2.num_completed;
-    if(opt_include_current_run && state.challenge == this.index && this.stageCompleted(0)) num_completed++;
-    return num_completed > cycle;
+    return this.numCompletedAtCurrentDifficulty(opt_include_current_run) > cycle;
   };
 
   this.allCyclesCompleted = function(opt_include_current_run) {
     if(this.cycling <= 1) return this.fullyCompleted(opt_include_current_run);
-    var num_completed = state.challenges[this.index].num_completed;
-    if(opt_include_current_run && state.challenge == this.index && this.stageCompleted(0)) num_completed++;
+    var num_completed = this.numCompletedTotal(opt_include_current_run);
     return num_completed > 0 && num_completed >= this.cycling;
   };
 
   this.getCurrentCycle = function(opt_include_current_run) {
     if(this.cycling < 2) return 0;
-    var num_completed = state.challenges[this.index].num_completed;
-    if(opt_include_current_run && state.challenge == this.index && this.stageCompleted(0)) num_completed++;
+    // TODO: check if 'opt_include_current_run' is needed; this would mean that the current cycle would change DURING doing the challenge...
+    var num_completed = this.numCompletedTotal(opt_include_current_run);
     return num_completed % this.cycling;
   };
 
@@ -3586,7 +3649,7 @@ function Challenge() {
     if(this.targetlevel == undefined) return 0; // not level based
     if(this.targetlevel.length == 0) return 0; // not level based
     if(this.fullyCompleted(opt_include_current_run)) return this.targetlevel[this.targetlevel.length - 1];
-    return this.targetlevel[this.numStagesCompleted(opt_include_current_run)];
+    return this.targetlevel[this.numStagesCompletedAtCurrentDifficulty(opt_include_current_run)];
   };
 
   this.finalTargetLevel = function() {
@@ -3620,7 +3683,7 @@ var challenge_register_id = 1;
 // rewardfun = for completing the challenge the first time. This function may be ran only once, and should be called after all other challenge-related completions stats (such as num_completion variables in the state) are already updated
 // allowflags: 1=resin, 2=fruits, 4=twigs, 8=beyond highest level, 16=nuts
 // rulesdescription must be a list of bullet points; it may be either a string, or a function that returns a string
-function registerChallenge(name, targetlevel, targetfun, targetdescription, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
+function registerChallenge(name, targetlevel, targetfun, targetdescription, targetdescription2, description, rulesdescription, rewarddescription, unlockdescription, prefun, rewardfun, allowflags) {
   if(challenges[challenge_register_id] || challenge_register_id < 0 || challenge_register_id > 65535) throw 'challenge id already exists or is invalid!';
 
   if(targetlevel != undefined && !Array.isArray(targetlevel)) targetlevel = [targetlevel];
@@ -3643,6 +3706,7 @@ function registerChallenge(name, targetlevel, targetfun, targetdescription, desc
   challenge.targetlevel = targetlevel;
   challenge.targetfun = targetfun;
   challenge.targetdescription = targetdescription;
+  challenge.targetdescription2 = targetdescription2;
   challenge.prefun = prefun;
   challenge.rewardfun = rewardfun;
 
@@ -3657,7 +3721,7 @@ function registerChallenge(name, targetlevel, targetfun, targetdescription, desc
 
 
 // 1
-var challenge_bees = registerChallenge('bee challenge', 10, undefined, undefined,
+var challenge_bees = registerChallenge('bee challenge', 10, /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 'Grow bees during this challenge! This has different gameplay than the regular game.',
 `
 • You get only limited regular crops, and must instead boost global production using specially placed bees:<br>
@@ -3683,7 +3747,7 @@ challenges[challenge_bees].bonus_exponent = Num(0.25); // such low exponent beca
 challenges[challenge_bees].autoaction_warning = true;
 
 // 2
-var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135, 165, 195, 225], undefined, undefined,
+var challenge_rocks = registerChallenge('rocks challenge', [15, 45, 75, 105, 135, 165, 195, 225], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `The field has rocks on which you can't plant. The rock pattern is randomly generated at the start of the challenge, but will always be the same within the same when starting in the same 3-hour time interval (based on global UTC time)`,
 function() {
   return '• All regular crops, upgrades, ... are available and work as usual<br>' +
@@ -3719,7 +3783,7 @@ challenges[challenge_rocks].autoaction_warning = true;
 
 
 // 3
-var challenge_nodelete = registerChallenge('undeletable challenge', 25, undefined, undefined,
+var challenge_nodelete = registerChallenge('undeletable challenge', 25, /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `
 During this challenge, no crops can be removed, only added. Ensure to leave spots open for future crops, and plan ahead before planting!
 `,
@@ -3745,7 +3809,7 @@ challenges[challenge_nodelete].autoaction_warning = true;
 
 // 4
 // reason why watercress upgrade is still present: otherwise it disappears after a minute, requiring too much manual work when one wants to upkeep the watercress
-var challenge_noupgrades = registerChallenge('no upgrades challenge', [20, 30], undefined, undefined,
+var challenge_noupgrades = registerChallenge('no upgrades challenge', [20, 30], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `
 During this challenge, crops cannot be upgraded.
 `,
@@ -3790,7 +3854,7 @@ function isNoUpgrade(u) {
 // If this challenge would hand out resin, it'd be possible to farm resin very fast at the cost of a lot of manual action, and this game tries to avoid that
 // The reason for the no deletion rule is: crops produce less and less over time, so one could continuously replant crops to have the full production bar, but this too
 // would be too much manual work, the no delete rule requires waiting for them to run out. But allowing to upgrade crops to better versions allows to enjoy a fast unlock->next crop cycle
-var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170, 200], undefined, undefined,
+var challenge_wither = registerChallenge('wither challenge', [50, 70, 90, 110, 130, 150, 170, 200], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `
 During this challenge, crops wither and must be replanted.
 `,
@@ -3867,7 +3931,7 @@ function witherCurve(t) {
 }
 
 // 6
-var challenge_blackberry = registerChallenge('blackberry challenge', [19], undefined, undefined,
+var challenge_blackberry = registerChallenge('blackberry challenge', [19], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `
 During this challenge, only the first tier of each crop type is available.
 `,
@@ -3909,7 +3973,7 @@ var rockier_layouts = [
 ];
 
 // 7
-var challenge_rockier = registerChallenge('rockier challenge', [40], undefined, undefined,
+var challenge_rockier = registerChallenge('rockier challenge', [40], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 rockier_text, rockier_text_long, 'multiplicity for berries and mushrooms', rockier_text_unlock_reason,
 function() {
   return state.treelevel >= 45;
@@ -3927,7 +3991,7 @@ challenges[challenge_rockier].autoaction_warning = true;
 
 
 // 8
-var challenge_thistle = registerChallenge('thistle challenge', [66], undefined, undefined,
+var challenge_thistle = registerChallenge('thistle challenge', [66], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `The field is full of thistles which you cannot remove. The thistle pattern is randomly determined at the start of the challenge, and is generated with a 3-hour UTC time interval as pseudorandom seed, so you can get a new pattern every 3 hours. The thistles hurt most crops, but benefit mushrooms, they are next-tier nettles.`,
 function() {
   return '• All regular crops, upgrades, ... are available and work as usual<br>' +
@@ -3957,7 +4021,7 @@ challenges[challenge_thistle].autoaction_warning = true;
 
 
 // 9
-var challenge_wasabi = registerChallenge('wasabi challenge', [65], undefined, undefined,
+var challenge_wasabi = registerChallenge('wasabi challenge', [65], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `You only get income from brassica, such as watercress.`,
 `
 • You can only get income from brassica, such as watercress, and their copying effect.<br>
@@ -3986,7 +4050,7 @@ challenges[challenge_wasabi].bonus_min_level = 40;
 
 
 // 10
-var challenge_basic = registerChallenge('basic challenge', /*targetlevel=*/[10], /*targetfun=*/undefined, /*targetdescription=*/undefined,
+var challenge_basic = registerChallenge('basic challenge', /*targetlevel=*/[10], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `Upgrades and effects that last through transcensions don't work, everything is back to basics`,
 `
 • Everything, except the effects listed below, is back to basics like at the first run of the game: Upgrades and effects that last through transcensions (e.g. ethereal crops and upgrades, achievement bonus, squirrel, challenge bonus, multiplicity, ...) or unlock later (amber, ...) don't work.<br>
@@ -4014,7 +4078,7 @@ challenges[challenge_basic].bonus_max_level = 30; // Important: this must be kep
 //challenges[challenge_basic].autoaction_warning = true;
 
 // 11
-var challenge_truly_basic = registerChallenge('truly basic challenge', [10], undefined, undefined,
+var challenge_truly_basic = registerChallenge('truly basic challenge', [10], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `Like the basic challenge, but even less effects work, truly everything is back to basics.`,
 `
 • Truly everything is back to basics like at the first run of the game and even a bit more difficult. Running this challenge now is as good as it can get since no future game advancement can make it easier.<br>
@@ -4077,7 +4141,7 @@ function havePermaWeatherFor(ability) {
 }
 
 // 12
-var challenge_stormy = registerChallenge('stormy challenge', [65], undefined, undefined,
+var challenge_stormy = registerChallenge('stormy challenge', [65], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `The weather is stormy, other weather doesn't work`,
 `
 • The weather is stormy throughout the challenge, and other weather abilities don't work.<br>
@@ -4104,7 +4168,7 @@ function cropCanBeHitByLightning(f) {
 
 
 // 13
-var challenge_infernal = registerChallenge('infernal challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined,
+var challenge_infernal = registerChallenge('infernal challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `A challenge where the season is infernal and everything is difficult.`,
 `
 • There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>
@@ -4137,7 +4201,7 @@ var challenge_poisonivy = registerChallenge('poison ivy challenge', undefined, f
   if(state.crops[mush_2].prestige > 0) return true;
   if(state.crops[berry_6].prestige > 0) return true; // the berry after mush_2 (prestiged), just in case no mushrooms were grown
   return false;
-}, 'prestige the morel',
+}, 'prestige the morel', /*targetdescription2=*/undefined,
 `The field is full of poison ivy in a regular pattern which you cannot remove. The poison ivy hurts most crops, but benefits mushrooms, they are next-tier thistles.
 `,
 `
@@ -4170,7 +4234,7 @@ challenges[challenge_poisonivy].autoaction_warning = true;
 
 
 // 15
-var challenge_towerdefense = registerChallenge('tower defense challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined,
+var challenge_towerdefense = registerChallenge('tower defense challenge', /*targetlevel=*/[], /*targetfun=*/undefined, /*targetdescription=*/undefined, /*targetdescription2=*/undefined,
 `Tower defense
 `,
 `
@@ -4216,6 +4280,35 @@ challenges[challenge_towerdefense].helpdialogindex = 44;
 
 
 
+// 16
+var challenge_igniferous_tree_malus = 0.25;
+var challenge_igniferous = registerChallenge('igniferous challenge', /*targetlevel=*/[150], /*targetfun=*/undefined,
+/*targetdescription=*/'Reach level 150 to complete the challenge. ',
+/*targetdescription2=*/'After successfully completing it, the challenge will become much more difficult each time and have the same target level again.',
+`A more difficult infernal challenge, but with higher rewards.`,
+`
+• Each time you beat this challenge, it becomes more difficult, but repeats its reward multiplicatively.<br>
+• Going beyond the target level of 150 does not increase any bonus, there's no benefit to continue longer than needed.<br>
+• There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>
+• Production or boost of most crops divided through 1 billion, but every time you beat this challenge, they will be divided through another factor of 1000.<br>
+• In addition, the stats of berries and mushrooms are reduced even more for higher tiers.<br>
+• Crops next to the igniferous tree lose ` + Num(challenge_igniferous_tree_malus).toPercentString() + ` strength.<br>
+• Only mandrake fruits work during this challenge, not regular fruits. Mandrake fruits can be collected in this challenge or the infernal challenge<br>
+• Seasonal boosts don't work.<br>
+• Weather effects don't exist.<br>
+`,
+['Each time you beat this challenge, you gain a +25% production bonus, multiplicatively! But it gets harder each time'],
+'reaching tree level 200',
+function() {
+  // the unlock condition
+  return state.treelevel >= 200;
+}, function() {
+}, 2);
+challenges[challenge_igniferous].bonus_formula = 3;
+challenges[challenge_igniferous].bonus = Num(0.25);
+challenges[challenge_igniferous].autoaction_warning = true;
+
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -4227,7 +4320,7 @@ var challenges_order = [
   challenge_noupgrades, challenge_blackberry, challenge_wither,
   challenge_thistle, challenge_stormy, challenge_wasabi,
   challenge_basic, challenge_towerdefense, challenge_infernal, challenge_truly_basic,
-  challenge_poisonivy
+  challenge_poisonivy, challenge_igniferous
 ];
 
 
@@ -6821,6 +6914,14 @@ function treeLevelIndex(level) {
   return result;
 }
 
+function getTreeImage() {
+  if(state.challenge == challenge_igniferous) {
+    return ignifereous_tree_image;
+  } else {
+    return tree_images[treeLevelIndex(state.treelevel)];
+  }
+}
+
 
 var mistletoe_resin_malus = Num(0.15);
 
@@ -6928,7 +7029,7 @@ function treeLevelResin(level, breakdown) {
   if(state.challenge_multiplier_resin_twigs.neqr(1)) {
     var mul = state.challenge_multiplier_resin_twigs;
     resin.mulInPlace(mul);
-    if(breakdown) breakdown.push(['challenge highest levels', true, mul, resin.clone()]);
+    if(breakdown) breakdown.push(['challenges done', true, mul, resin.clone()]);
   }
 
   count = state.mistletoes;
@@ -7204,7 +7305,7 @@ function treeLevelTwigs(level, breakdown) {
   if(state.challenge_multiplier_resin_twigs.neqr(1)) {
     var challenge_multiplier = state.challenge_multiplier_resin_twigs;
     res.twigs.mulInPlace(challenge_multiplier);
-    if(breakdown) breakdown.push(['challenge highest levels', true, challenge_multiplier, res.clone()]);
+    if(breakdown) breakdown.push(['challenges done', true, challenge_multiplier, res.clone()]);
   }
 
   if(state.twigsfruitspores.gtr(0)) {
@@ -7600,9 +7701,12 @@ function modifyResinTwigsChallengeBonus(bonus) {
 
 // which = 0 for prod bonus, 1 for resin/twigs bonus
 // level = highest tree level reached with this challenge, or hypothetical other level
+// completed = boolean value whether challenge was ever successfully completed
+// in case of challenges that increase in difficulty each time (like igniferous), level and completed refer to the most recent difficulty only ('ever completed' is therefore here never true except if you're above its target level right now and have not yet ascended)
 // returned as bonus value, not as multiplier (see function below for that)
 function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
   var c = challenges[challenge_id];
+  var c2 = state.challenges[challenge_id];
 
   if(c.bonus_formula == 0 || (c.bonus_formula == 2 && which == 1)) {
     var bonus = c.bonus;
@@ -7654,8 +7758,35 @@ function getChallengeBonus(which, challenge_id, level, completed, opt_cycle) {
     var result = mul.subr(1);
 
     if(which == 1) {
+      // for resin/twigs use a logarithm of the actual bonus since this one may not grow as extreme
       var l = Num.log(result.addr(1));
       result = l.mul(l).mulr(0.25);
+    }
+
+    return result;
+  }
+
+  if(c.bonus_formula == 3) {
+    // for igniferous challenge
+    // the formula is: challenge.bonus ** num_completed, multiplied by a partial bonus for partially completing it
+
+    // the bonus from PREVIOUS completions of this challenge
+    var result = c.bonus.addr(1).powr(c2.num_completed);
+
+    if(c.targetlevel && c.targetlevel[0] && level > 0) {
+      var progress = Math.min(1, level / c.targetlevel[0]); // value in range 0..1
+      var curve = 0.5 * progress * progress; // max half the full bonus for partially completing the challenge. The square is to give more near end.
+      if(completed) curve = 1; // 'completed' here can only mean that this is the virtual display for UI while you have already reached target level in this challenge. In that case don't use partial but a full extra power
+      var partial = c.bonus.mulr(curve);
+      result = result.mul(partial.addr(1));
+    }
+
+    result = result.subr(1);
+
+    if(which == 1) {
+      // A log-based formula for resin, but different than the one for c.bonus_formula == 1, because that one gives
+      // a disappointingly low bonus (of 1%) after 1 completion of a +25% challenge. This one here gives +11% for that case.
+      result = Num.log(result.addr(1)).mulr(0.5);
     }
 
     return result;
@@ -7688,7 +7819,7 @@ function oneChallengeBonus(which, challenge_id) {
   } else {
     var maxlevel = c2.maxlevel;
     var completed = c.cycleCompleted(undefined, false);
-    return getChallengeMultiplier(which, c.index, maxlevel, completed, undefined).subr(1);
+    return getChallengeBonus(which, c.index, maxlevel, completed, undefined);
   }
 }
 
@@ -7717,7 +7848,7 @@ function oneChallengeBonusIncludingCurrentRun(which, challenge_id) {
   } else {
     var maxlevel = Math.max(c2.maxlevel, state.treelevel);
     var completed = c.cycleCompleted(undefined, true);
-    return getChallengeMultiplier(which, c.index, maxlevel, completed, undefined).subr(1);
+    return getChallengeBonus(which, c.index, maxlevel, completed, undefined);
   }
 }
 
@@ -10003,18 +10134,27 @@ function canPlaceThisFishGivenCounts(c, opt_f, opt_short_reason, opt_long_reason
 }
 
 // This is for UI, specifically for reddening the fish buttons
-function canPlaceThisFishGivenCountsIgnoringLowerTiers(c) {
-  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && state.fishcount[c.index]) {
+function canPlaceThisFishGivenCountsForUi(c, opt_replace_fish) {
+  if(opt_replace_fish && opt_replace_fish.index == c.index) return true;
+
+  var fishcount = state.fishcount[c.index];
+  var fishtypecount = state.fishtypecount[c.type];
+  //if(opt_replace_fish && opt_replace_fish.index == c.index) fishcount--;
+  if(opt_replace_fish && opt_replace_fish.type == c.type) fishtypecount--;
+
+  if(c.tier >= state.highestoftypefishunlocked[c.type]) return true; //whether you can place it or not, always highlight these as placeable in the UI
+
+  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && fishcount) {
     return false;
-  } else if(c.index == oranda_2 && state.fishcount[c.index]) {
+  } else if(c.index == oranda_2 && fishcount) {
     return false;
-  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && state.fishcount[c.index] >= 4) {
+  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && fishcount >= 4) {
     return false;
-  } else if(c.type == FISHTYPE_JELLYFISH && state.fishcount[c.index] >= 5) {
+  } else if(c.type == FISHTYPE_JELLYFISH && fishcount >= 5) {
     return false;
-  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishcount[c.index] >= 9) {
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && fishcount >= 9) {
     return false;
-  } else if(c.type == FISHTYPE_SHRIMP && state.fishcount[c.index] > 0 && state.fishcount[c.index] == 0) {
+  } else if(c.type == FISHTYPE_SHRIMP && fishtypecount > 0) {
     return false;
   }
   return true;
@@ -10022,8 +10162,10 @@ function canPlaceThisFishGivenCountsIgnoringLowerTiers(c) {
 
 // similar to the messages output by canPlaceThisFishGivenCounts, but for general description without knowing / having a fish count
 function getFishPlacementRestrictionDescription(c) {
-  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0) {
-    return 'Can have only max 1 of this fish';
+  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG) && c.tier > 0) {
+    return 'Can have only max 1 of this fish, and 4 across any tier';
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier > 0) {
+    return 'Can have only max 1 of this fish, and cannot mix tiers';
   } else if(c.index == oranda_2) {
     return 'Can have only max 1 black oranda. This is the final infinity fish.';
   } else if(c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) {
@@ -10706,6 +10848,14 @@ var medal_challenge_poison_ivy = registerMedal('poisonous perils', 'completed th
   return state.challenges[challenge_poisonivy].completed;
 }, Num(10));
 
+medal_register_id = 2200;
+
+var medal_challenge_igniferous = registerMedal('igniferous', 'completed the igniferous challenge', ignifereous_tree_image[1][4], function() {
+  return state.challenges[challenge_igniferous].completed;
+}, Num(10));
+
+// TODO: medals for finishing the next harder stages of this challenge
+
 medal_register_id = 2500;
 
 function registerPrestigeMedal(cropid) {
@@ -10883,7 +11033,7 @@ registerMedal('Eight infinities', 'Have eight crops on the infinity field', imag
   return state.numcropfields3 >= 8;
 }, Num(80));
 
-registerMedal('Sixtien infinities', 'Have sixteen crops on the infinity field', image_infinity, function() {
+registerMedal('Sixteen infinities', 'Have sixteen crops on the infinity field', image_infinity, function() {
   return state.numcropfields3 >= 16;
 }, Num(160));
 
@@ -11121,9 +11271,15 @@ registerMedal('Tower defender II', 'Reach level 100 during tower defense', image
 registerMedal('Tower defender III', 'Reach level 150 during tower defense', images_statue_spore[0], function() {
   return challengeMaxLevel(challenge_towerdefense) >= 150;
 }, Num(5));
-registerMedal('Tower defender IV', 'Reach level 150 during tower defense', images_statue_spore[0], function() {
+registerMedal('Tower defender IV', 'Reach level 200 during tower defense', images_statue_spore[0], function() {
   return challengeMaxLevel(challenge_towerdefense) >= 200;
 }, Num(10));
+registerMedal('Tower defender V', 'Reach level 250 during tower defense', images_statue_spore[0], function() {
+  return challengeMaxLevel(challenge_towerdefense) >= 250;
+}, Num(20));
+registerMedal('Tower defender VI', 'Reach level 300 during tower defense', images_statue_spore[0], function() {
+  return challengeMaxLevel(challenge_towerdefense) >= 300;
+}, Num(50));
 
 medal_register_id = 5025;
 registerMedal('Exterminate!', 'Exterminate a pest during tower defense', images_ant[0], function() {

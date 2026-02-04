@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -235,7 +235,11 @@ function updateTabButtons2() {
       var color = undefined;
       var bold = false;
 
-      if(!state.fruit_seen || special == 7) {
+      if(state.challenge == challenge_igniferous && a && a.type != 11) {
+        color = 'red';
+        bold = true;
+        text = 'fruit<br/>(need mandrake)';
+      } else if(!state.fruit_seen || special == 7) {
         color = 'red';
         bold = true;
       } else if(special >= 5) {

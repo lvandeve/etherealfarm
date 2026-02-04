@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -281,9 +281,10 @@ function ChallengeState() {
   this.unlocked = false;
   this.completed = 0; // whether the challenge was successfully completed, or higher values if higher versions of the challenge with extra rewards were completed (= multiple stages). Not useful to determine if cycles of cycling challenges were completed, use num_completed for that
   this.num = 0; // amount of times started, whether successful or not, excluding the current one
-  this.num_completed = 0; // how often the challenge was successfully completed (excluding currently ongoing challenge, if any)
+  this.num_completed = 0; // how often the challenge was successfully completed (excluding currently ongoing challenge, if any). In case of challenge that gets more difficulty each time (like igniferous), this value represents the total amount of completions at earlier difficulties, even though the number of completions at _current_ difficulty is in fact always 0.
   this.num_completed2 = 0; // how often the challenge was successfully completed to final stage, or 0 if this challenge only has 1 stage
-  this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any)
+  this.maxlevel = 0; // max level reached with this challenge (excluding the current ongoing challenge if any). in case of bonus_formula == 3, this gets reset to 0 each time the challenge is completed and the next harder iteration begins
+  this.maxlevel2 = 0; // max level ever reached with this challenge. only used for challenges with bonus_formula = 3, for other challenges this is not set but the value maxlevel captures this already
   this.besttime = 0; // best time for reaching first targetlevel, even when not resetting. If continuing the challenge for higher maxlevel, still only the time to reach targetlevel is counted, so it's the best time for completing the first main reward part of the challenge.
   this.besttime2 = 0; // best time for reaching last targetlevel, or 0 if this challenge only has 1 stage. NOTE: so best time of first and last stage are tracked, if there are more intermediate stages, those are not tracked
   this.maxlevels = undefined; // max level if this is a cycling challenge: the max level per cycle. If enabled, this this is an array.
@@ -2053,7 +2054,7 @@ function computeDerived(state) {
     if(c2.unlocked && c2.num == 0 && state.challenge != c.index) {
       state.untriedchallenges++;
     }
-    if(c2.maxlevel > 0) {
+    if(c2.maxlevel > 0 || c2.maxlevel2 > 0) {
       // when updating the code of this challenge bonus computation, also update totalChallengeBonusIncludingCurrentRun to match!
       if(c.cycling) {
         // within a cycling challenge, the bonuses are additive
@@ -2066,8 +2067,8 @@ function computeDerived(state) {
         state.challenge_multiplier_prod.mulInPlace(multiplier_prod);
         state.challenge_multiplier_resin_twigs.mulInPlace(multiplier_resin_twigs);
       } else {
-        state.challenge_multiplier_prod.mulInPlace(getChallengeMultiplier(0, index, c2.maxlevel, c2.completed));
-        state.challenge_multiplier_resin_twigs.mulInPlace(getChallengeMultiplier(1, index, c2.maxlevel, c2.completed));
+        state.challenge_multiplier_prod.mulInPlace(getChallengeMultiplier(0, index, c2.maxlevel, c.completedAtCurrentDifficulty(false)));
+        state.challenge_multiplier_resin_twigs.mulInPlace(getChallengeMultiplier(1, index, c2.maxlevel, c.completedAtCurrentDifficulty(false)));
       }
     }
   }
@@ -2246,6 +2247,7 @@ function Fruit() {
   // type 8: kumquat, winter+spring
   // type 9: starfruit, all-season
   // type 10: dragonfruit, all-season improved
+  // type 11: mandrake fruit, for innfernal challenges
   this.type = 0;
   this.tier = 0;
   this.abilities = []; // array of the FRUIT_... abilities
@@ -2322,14 +2324,15 @@ function getActiveFruit() {
 }
 
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
-// opt_basic: if true, takes state of basic challenge into account
-function getFruitAbilityFor(f, ability, opt_basic) {
+// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+function getFruitAbilityFor(f, ability, opt_check_challenge) {
   if(!f) return 0;
-  if(opt_basic && basicChallenge() == 2) return 0;
+  if(opt_check_challenge && basicChallenge() == 2) return 0;
+  if(opt_check_challenge && state.challenge == challenge_igniferous && f.type != 11) return 0; // only mandrake fruit works here
   for(var i = 0; i < f.abilities.length; i++) {
     if(f.abilities[i] == ability) {
       var result = f.levels[i];
-      if(opt_basic && basicChallenge()) {
+      if(opt_check_challenge && basicChallenge()) {
         if(result > 3) result = 3;
       }
       return result;
@@ -2340,23 +2343,24 @@ function getFruitAbilityFor(f, ability, opt_basic) {
 }
 
 // returns the level of a specific fruit ability, or 0 if you don't have that ability
-// opt_basic: if true, takes state of basic challenge into account
-function getFruitAbility(ability, opt_basic) {
-  return getFruitAbilityFor(getActiveFruit(), ability, opt_basic);
+// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+function getFruitAbility(ability, opt_check_challenge) {
+  return getFruitAbilityFor(getActiveFruit(), ability, opt_check_challenge);
 }
 
 // similar to getFruitAbility but conveniently takes multi-season fruits into account
 // will check FRUIT_SUMMER_AUTUMN etc... if given just FRUIT_SUMMER or FRUIT_AUTUMN etc..., if the necessary squirrel upgrades are purchased
 // returns array of level and actual ability. Actual ability is usually same as the input ability, but can be e.g. FRUIT_SPRING_SUMMER if input was FRUIT_SPRING but fruit has FRUIT_SPRING_SUMMER
-// opt_basic: if true, takes state of basic challenge into account
-function getFruitAbility_MultiSeasonal(ability, opt_basic) {
-  if(opt_basic && basicChallenge() == 2) return 0;
-
-  var result = getFruitAbility(ability, opt_basic);
-  if(result > 0) return [result, ability];
-
+// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+function getFruitAbility_MultiSeasonal(ability, opt_check_challenge) {
   var f = getActiveFruit();
   if(!f) return [0, ability];
+
+  if(opt_check_challenge && basicChallenge() == 2) return [0, ability];
+  if(opt_check_challenge && state.challenge == challenge_igniferous && f.type != 11) return [0, ability]; // only mandrake fruit works here
+
+  var result = getFruitAbility(ability, opt_check_challenge);
+  if(result > 0) return [result, ability];
 
   // this assumes the seasonal ability is listed last, as it indeed is
   var last = f.abilities[f.abilities.length - 1];
@@ -2375,17 +2379,18 @@ function getFruitAbility_MultiSeasonal(ability, opt_basic) {
     if(last == FRUIT_WINTER_SPRING) return [(ability == FRUIT_WINTER || ability == FRUIT_SPRING) ? 1 : 0, last];
   }
 
-  if(opt_basic && !!basicChallenge() && ability > 2) ability = 2;
+  if(opt_check_challenge && !!basicChallenge() && ability > 2) ability = 2;
 
   return [0, ability];
 }
 
-// opt_basic: if 1 or 2, returns the reduced/disabled value for basic challenge
-function getFruitTier(opt_basic) {
-  if(opt_basic && basicChallenge() == 2) return 0; // return lowest tier, in fact fruits are completely disabled during the truly basic challenge
+// opt_check_challenge: if true, takes state of basic challenge, igniferous challenge, etc..., into account
+function getFruitTier(opt_check_challenge) {
   var f = getActiveFruit();
   if(!f) return 0;
-  if(opt_basic && basicChallenge()) {
+  if(opt_check_challenge && basicChallenge() == 2) return 0; // return lowest tier, in fact fruits are completely disabled during the truly basic challenge
+  if(opt_check_challenge && state.challenge == challenge_igniferous && f.type != 11) return 0; // only mandrake fruit works here
+  if(opt_check_challenge && basicChallenge()) {
     // max the fruit that could drop at the current tree level, during the basic challenge
     var max = getNewFruitTier(1.0, state.treelevel, false);
     var result = f.tier;

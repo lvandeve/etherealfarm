@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1278,7 +1278,7 @@ function Flex(parent, x0, y0, x1, y1, opt_fontSize, opt_align) {
 
   if(this.y1a) this.div.style.height = '';
 
-  this.updateSelf(parentdiv);
+  this.updateSelf_(parentdiv);
 }
 
 // parent may be a flex, or a div
@@ -1300,7 +1300,7 @@ Flex.prototype.attachTo = function(parent) {
     parentdiv.appendChild(this.div_)
   }*/
   parentdiv.appendChild(this.div_)
-  //this.updateSelf(parentdiv);
+  //this.updateSelf_(parentdiv);
   this.update(parentdiv);
 };
 
@@ -1335,7 +1335,9 @@ Flex.prototype.getDim_ = function(parentdiv) {
   return [w, h];
 }
 
-Flex.prototype.updateSelf = function(parentdiv) {
+// Updates the relative sizes compared to parent, non-recursively
+// NOTE: only call update functions when you know parent size changed (e.g. on window.onresize for the root), not every frame (to avoid unneeded div size recomputations)
+Flex.prototype.updateSelf_ = function(parentdiv) {
   //if(!parentdiv) parentdiv = this.div_.parentElement;
   var dim = this.getDim_(parentdiv);
   var w = dim[0];
@@ -1347,8 +1349,10 @@ Flex.prototype.updateSelf = function(parentdiv) {
   var y1 = h * this.y1 + w * this.y1o + Math.min(this.y1f * w, h) * this.y1b + this.y1p;
   this.div_.style.left = Math.floor(x0) + 'px';
   this.div_.style.top = Math.floor(y0) + 'px';
-  this.div_.style.width = Math.floor(x1 - x0) + 'px';
-  this.div_.style.height = Math.floor(y1 - y0) + 'px';
+  // ceil is used for the width/height, this to ensure divs rather overlap than have gaps when the pixels aren't exactly aligned, to ensure rendered textures in a grid have no gaps
+  this.div_.style.width = Math.ceil(x1 - x0) + 'px';
+  this.div_.style.height = Math.ceil(y1 - y0) + 'px';
+
   if(this.fontSize) {
     //this.div_.style.fontSize = Math.floor(Math.min(x1 - x0, y1 - y0) * this.fontSize) + 'px';
     //this.div_.style.fontSize = Math.floor(Math.min((x1 - x0) / 10, y1 - y0) * this.fontSize) + 'px';
@@ -1371,12 +1375,13 @@ Flex.prototype.updateSelf = function(parentdiv) {
   }
 };
 
-// updates self and all chilren recursively
+// Updates the relative sizes compared to parent, recursively with all children
+// NOTE: only call update functions when you know parent size changed (e.g. on window.onresize for the root), not every frame (to avoid unneeded div size recomputations)
 Flex.prototype.update = function(opt_parentdiv) {
   if(opt_parentdiv) {
-    this.updateSelf(opt_parentdiv);
+    this.updateSelf_(opt_parentdiv);
   } else if(this.isroot) {
-    this.updateSelf(undefined);
+    this.updateSelf_(undefined);
   }
 
   for(var i = 0; i < this.elements.length; i++) {

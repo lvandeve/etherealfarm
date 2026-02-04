@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,9 +24,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // -patch: 0..63: increment for small bugfixes, ...
 // -sub: 0..any: does not change the numeric version code. if non-0, adds 'b', 'c'. ... to the version name. Should not affect savegame format. Cosmetic changes only. Version name including this part is appended to CSS URL query part to ensure no stale cached CSS file is used.
 var version_major = 0; // 0..61
-var version_minor = 16; // 0..4095
-var version_patch = 3; // 0..63
-var version_sub = 1; // 0=no suffix, 1=b, 2=c, ...
+var version_minor = 17; // 0..4095
+var version_patch = 0; // 0..63
+var version_sub = 0; // 0=no suffix, 1=b, 2=c, ...
 
 var version = 262144 * (version_major + 2) + 64 * version_minor + version_patch;
 

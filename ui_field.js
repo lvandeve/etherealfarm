@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ function formatBreakdown(breakdown, percent, title) {
     if(after != undefined) {
       result += (i == 0) ? ': ' : ' ⇒ ';
       if(percent) {
-        result += after.toPercentString();
+        result += after.toPercentString(undefined, undefined, true);
       } else {
         result += after.toString();
       }
@@ -695,12 +695,12 @@ function fieldCellTooltipFun(x, y, div) {
   } else if(f.index == FIELD_TREE_TOP || f.index == FIELD_TREE_BOTTOM) {
     var time = treeLevelReq(state.treelevel + 1).spores.sub(state.res.spores).div(gain.spores);
     if(time.ltr(0)) time = Num(0);
-    if(state.treelevel <= 0 && state.res.spores.eqr(0)) {
+    if(state.treelevel <= 0 && state.res.spores.eqr(0) && state.challenge != challenge_igniferous) {
       result = 'a weathered tree';
       if(state.res.spores.gtr(0)) result += '<br>(' + util.formatDuration(time.valueOf(), true) + ')';
     } else {
       var nextlevelprogress = state.res.spores.div(treeLevelReq(state.treelevel + 1).spores);
-      result = upper(tree_images[treeLevelIndex(state.treelevel)][0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
+      result = upper(getTreeImage()[0]) + ' level ' + state.treelevel + '.<br>Next level requires: ' + treeLevelReq(state.treelevel + 1).toString() + '<br>(' + util.formatDuration(time.valueOf(), true) + ', ' + nextlevelprogress.toPercentString() + ')';
       result += '<br>Time at this level: ' + util.formatDuration(timeAtTreeLevel(state), true) + '<br/>';
     }
   } else if(f.index == FIELD_BURROW) {
@@ -1163,14 +1163,14 @@ function updateFieldCellUI(x, y) {
       label = c.name + '. ' + label;
       if(largeravailable) blendImage(image_field_larger_available_arrow, fd.canvas);
     } else if(f.index == FIELD_TREE_TOP) {
-      blendImage(tree_images[treeLevelIndex(state.treelevel)][1][season], fd.canvas);
+      blendImage(getTreeImage()[1][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;
       if(!have_td_progress_bar) setProgressBar(fd.progress, -1, undefined);
     } else if(f.index == FIELD_TREE_BOTTOM) {
-      blendImage(tree_images[treeLevelIndex(state.treelevel)][2][season], fd.canvas);
+      blendImage(getTreeImage()[2][season], fd.canvas);
       label = 'tree level ' + state.treelevel + '. ' + label;
       if(state.treelevel > 0 || state.res.spores.gtr(0)) {
-        if(state.challenge == challenge_infernal) {
+        if(getSeason() == 5) {
           renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel, '#420', '#fa0');
         } else {
           renderLevel(fd.canvas, state.treelevel, 0, 11, progresspixel);

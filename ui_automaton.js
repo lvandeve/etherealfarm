@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -596,12 +596,11 @@ function printSeasonOverrides(array) {
 
 // mark all auto actions that would fulfill the trigger condition as done, this is used to prevent triggering all at once when auto-action was disabled during the time these newly triggered
 function markTriggeredAutoActionsAsDone() {
-  var num = numAutoActionsUnlocked();
-  for(var j = 0; j < num; j++) {
-    var b = state.automaton_autoactions[j];
-    var done = autoActionTriggerConditionReached(j, b);
-    b.done = done;
-    b.done2 = done;
+  for(var i = 0; i < state.automaton_autoactions.length; i++) {
+    var o = state.automaton_autoactions[i];
+    if(o.done >= 3) continue;
+    var triggered = autoActionTriggerConditionReached(i, o);
+    if(triggered) o.done = 3;
   }
 }
 
@@ -1517,18 +1516,21 @@ function updateAutomatonUI() {
   styleButton(flex.div);
   centerText2(flex.div);
   flex.div.textEl.innerText = 'Clear entire field';
-  addButtonAction(flex.div, deleteEntireField);
-  registerTooltip(flex.div, 'Immediately delete all crops from the entire field');
+  registerAction(flex.div, deleteEntireField, 'Clear entire field', {
+    tooltip: 'Immediately delete all crops from the entire field'
+  });
 
   flex = addButton();
   styleButton(flex.div);
   centerText2(flex.div);
   flex.div.textEl.innerText = 'Plant entire field...';
-  addButtonAction(flex.div, bind(function() {
+  registerAction(flex.div, bind(function() {
     setTab(tabindex_field);
     makePlantDialog(0, 0, false, false, true);
-  }));
-  registerTooltip(flex.div, 'Plant a chosen crop in all open spots in the field, as resources allow.');
+  }), 'Plant entire field...', {
+    tooltip: 'Plant a chosen crop in all open spots in the field, as resources allow.'
+  });
+
 
   if(haveInfinityField()) {
     // if the clear infinity field button is also added, align this and ethereal one to the right instead of below the basic field related buttons
@@ -1541,8 +1543,10 @@ function updateAutomatonUI() {
   centerText2(flex.div);
   flex.div.textEl.innerText = 'Clear ethereal field';
   flex.div.style.textShadow = '0px 0px 5px #ff8';
-  addButtonAction(flex.div, deleteEtherealField);
-  registerTooltip(flex.div, 'Delete all crops from the ethereal field. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place it back.');
+  registerAction(flex.div, deleteEtherealField, 'Clear ethereal field', {
+    tooltip: 'Delete all crops from the ethereal field. As usual, all resin is refunded. Note that this will also delete the automaton itself, so this will disable the automaton tab until you place it back.'
+  });
+
 
   if(haveInfinityField()) {
     flex = addButton();
@@ -1551,9 +1555,9 @@ function updateAutomatonUI() {
     flex.div.textEl.innerText = 'Clear infinity field';
     flex.div.style.textShadow = '0px 0px 5px #88f';
     registerAction(flex.div, deleteInfinityField, 'Clear infinity field', {
-      label_shift: 'Clear infinity field, except brassica'
+      label_shift: 'Clear infinity field, except brassica',
+      tooltip: 'Immediately delete all crops from the infinity field. All infinity seeds will be refunded as usual. With shift: deletes all infinity crops except brassica'
     });
-    registerTooltip(flex.div, 'Immediately delete all crops from the infinity field. All infinity seeds will be refunded as usual. With shift: deletes all infinity crops except brassica');
     x = 0;
   }
 

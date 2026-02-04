@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -260,10 +260,14 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
         }
       }
 
-      var basicboost = c.getBasicBoost();
+      var basicboost = c.getBasicBoost(f);
       if(basicboost.neqr(0)) {
+        var base = c.getBaseBasicBoost();
         result += '<br><br>Production boost to basic field: ' + basicboost.toPercentString();
+        if(base.neq(basicboost)) result += ' (base: ' + base.toPercentString() + ')';
+        result += '<br/><br/>';
       }
+
 
       return result;
     }, index);
