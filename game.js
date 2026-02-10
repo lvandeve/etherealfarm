@@ -2478,6 +2478,13 @@ function addRandomFruitForLevel(treelevel, infernal, opt_nodouble) {
       fruit.starting_levels[i] = fruit.levels[i];
     }
 
+    // mandrake fruits start with fuse-charge 1 instead of 0
+    if(fruit.type == 11) {
+      for(var i = 0; i < fruit.charge.length; i++) {
+        fruit.charge[i] = 1;
+      }
+    }
+
 
     var season_before = state.seen_seasonal_fruit;
     if(fruit.type >= 1 && fruit.type <= 4) state.seen_seasonal_fruit |= (1 << (fruit.type - 1));

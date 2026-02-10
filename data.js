@@ -566,7 +566,8 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, pretend, breakdown)
     }
     if(state.challenge == challenge_igniferous) {
       if(state.challenges[challenge_igniferous].num_completed > 0) {
-        var malus = (new Num(1000)).powr(-1 / state.challenges[challenge_igniferous].num_completed);
+        // This affects: berries, mushrooms, flowers, bees and nettles (but not brassica copying)
+        var malus = challenge_igniferous_repetitions_malus.powr(-state.challenges[challenge_igniferous].num_completed);
         result.mulInPlace(malus);
         if(breakdown) breakdown.push(['igniferous repetitions malus', true, malus, result.clone()]);
       }
@@ -4282,6 +4283,7 @@ challenges[challenge_towerdefense].helpdialogindex = 44;
 
 // 16
 var challenge_igniferous_tree_malus = 0.25;
+var challenge_igniferous_repetitions_malus = new Num(666);
 var challenge_igniferous = registerChallenge('igniferous challenge', /*targetlevel=*/[150], /*targetfun=*/undefined,
 /*targetdescription=*/'Reach level 150 to complete the challenge. ',
 /*targetdescription2=*/'After successfully completing it, the challenge will become much more difficult each time and have the same target level again.',

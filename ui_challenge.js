@@ -412,7 +412,8 @@ function createChallengeDialog(opt_from_challenge) {
     var c = challenges[challenges_order[i]];
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
-    var isnew = !c.numStagesCompletedAtCurrentDifficulty(true);
+    //var isnew = !c.numStagesCompletedAtCurrentDifficulty(true);
+    var isnew = c2.num == 0 && c2.maxlevel == 0;
     var isnotfull = !c.fullyCompleted(true)
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;
@@ -420,8 +421,8 @@ function createChallengeDialog(opt_from_challenge) {
     var currentlyrunning = (state.challenge == c.index);
     var text = upper(c.name);
     if(isnew) {
-      if(c2.num) text += ' (Open)';
-      else text += ' (New!)';
+      //if(c2.num) text += ' (Open)'; else
+      text += ' (New!)';
     }
     // The '/' means: "new stage available with target level: " but that's too long for the button
     else if(isnotfull && c.targetlevel != undefined && c.targetlevel.length > 0) text += ' (' + Math.max(c2.maxlevel, currentlyrunning ? state.treelevel : 0) + ' / ' + c.nextTargetLevel(true) + ')';
@@ -635,7 +636,7 @@ function getChallengeFormulaString(which, c, c2) {
       result = 'multiplicative +' + c.bonus.toPercentString() + ' bonus for each harder completion, plus partial bonus up to '  + (c.bonus.divr(2)).toPercentString() + ' for incomplete run';
     } else if(which == 1) {
       result = '(1 + ' + c.bonus.toPercentString() + ') ^ num_completions'; // this is same as the which==0 string but shorter to fit in the ln formula below
-      result = '50% * ln(1 + ' + result + '), plus partial bonus for incomplete run';
+      result = '50% * ln(' + result + '), plus partial bonus for incomplete run';
     }
   }
   return result;
