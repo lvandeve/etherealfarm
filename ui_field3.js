@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ function getCropInfoHTML3(f, c, opt_detailed) {
     } else if(c.type == CROPTYPE_FLOWER) {
       result += 'Boost to neighboring berries: ' + infboost.toPercentString();
     } else if(c.type == CROPTYPE_STINGING) {
-      result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString();
+      result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString() + ' (less if higher tier)';
     } else if(c.type == CROPTYPE_FERN) {
       result += 'Copy: ' + infboost.toPercentString();
     } else {

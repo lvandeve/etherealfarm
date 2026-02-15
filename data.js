@@ -524,7 +524,7 @@ Crop.prototype.addSeasonBonus_ = function(result, season, f, pretend, breakdown)
       var ability = fruit_infernal[1];
       var mul = Num(1).add(getFruitBoost(ability, level, getFruitTier(true), true));
       result.mulInPlace(mul);
-      if(breakdown) breakdown.push(['infernal fruit', true, mul, result.clone()]);
+      if(breakdown) breakdown.push(['fruit: infernal', true, mul, result.clone()]);
     }
 
     if((state.challenge == challenge_infernal || state.challenge == challenge_igniferous) && this.tier >= 0) {
@@ -4283,7 +4283,7 @@ challenges[challenge_towerdefense].helpdialogindex = 44;
 
 // 16
 var challenge_igniferous_tree_malus = 0.25;
-var challenge_igniferous_repetitions_malus = new Num(666);
+var challenge_igniferous_repetitions_malus = new Num(250);
 var challenge_igniferous = registerChallenge('igniferous challenge', /*targetlevel=*/[150], /*targetfun=*/undefined,
 /*targetdescription=*/'Reach level 150 to complete the challenge. ',
 /*targetdescription2=*/'After successfully completing it, the challenge will become much more difficult each time and have the same target level again.',
@@ -4292,7 +4292,7 @@ var challenge_igniferous = registerChallenge('igniferous challenge', /*targetlev
 • Each time you beat this challenge, it becomes more difficult, but repeats its reward multiplicatively.<br>
 • Going beyond the target level of 150 does not increase any bonus, there's no benefit to continue longer than needed.<br>
 • There is only one season: infernal. This doesn't affect the timing of seasons of regular runs.<br>
-• Production or boost of most crops divided through 1 billion, but every time you beat this challenge, they will be divided through another factor of 1000.<br>
+• Production or boost of most crops divided through 1 billion, and every time you beat this challenge, they will be divided through another factor of ` + challenge_igniferous_repetitions_malus.toString() + `.<br>
 • In addition, the stats of berries and mushrooms are reduced even more for higher tiers.<br>
 • Crops next to the igniferous tree lose ` + Num(challenge_igniferous_tree_malus).toPercentString() + ` strength.<br>
 • Only mandrake fruits work during this challenge, not regular fruits. Mandrake fruits can be collected in this challenge or the infernal challenge<br>
@@ -5869,7 +5869,7 @@ function getFruitBoost(ability, level, tier, opt_basic, opt_sub_part) {
     return Num(1.0); // not upgradeable
   }
   if(ability == FRUIT_INFERNAL) {
-    return Num(0.25); // not upgradeable
+    return Num(1.5); // not upgradeable
   }
   if(ability == FRUIT_RESINBOOST) {
     if(opt_sub_part == 1) {

@@ -252,7 +252,7 @@ function makePlantDialog3(x, y, opt_replace, opt_recoup) {
         } else if(c.type == CROPTYPE_FLOWER) {
           result += 'Boost to neighboring berries: ' + infboost.toPercentString();
         } else if(c.type == CROPTYPE_STINGING) {
-          result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString();
+          result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString() + ' (less if higher tier)';
         } else if(c.type == CROPTYPE_FERN) {
           result += 'Copy: ' + infboost.toPercentString();
         } else {
