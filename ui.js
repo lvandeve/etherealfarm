@@ -268,16 +268,25 @@ var pausedbuttoncanvasstate = -1;
 // Globally remembered text because reading .innerText is slow
 // This is used also for the 'Computing' text that can occur
 var pausedFlexTextGlobal = undefined;
+var pausedFlexLastTab = -1; // this is to update the pausedFlex if the color has to change due to changing to different tab (for contrast)
 
+// NOTE: also used for the 'computing' and 'auto-action' messages now
 function updatePausedUI() {
   var needflex = state.paused || heavy_computing || auto_action_manual_window_timeout_enabled || auto_action_automatic_timeout_enabled;
+
+  if(pausedflex && pausedFlexLastTab != state.currentTab) {
+    pausedFlexLastTab = state.currentTab;
+    pausedflex.removeSelf(contentFlex);
+    pausedflex = undefined;
+    pausedFlexTextGlobal = undefined;
+  }
 
   if(needflex && !pausedflex) {
     pausedflex = new Flex(contentFlex, 0, 0, 1, 1, FONT_FULL);
     centerText2(pausedflex.div);
     pausedflex.div.style.pointerEvents = 'none';
     var color = '#f008';
-    if(getSeason() == 5) color = '#fe08' // red paused is not visible enough against the red background of infernal season
+    if(getSeason() == 5 && state.currentTab == 0) color = '#fe08' // red paused is not visible enough against the red background of infernal season
     pausedflex.div.style.color = color;
   } else if(!needflex && pausedflex) {
     pausedflex.removeSelf(contentFlex);

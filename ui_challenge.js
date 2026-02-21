@@ -330,7 +330,11 @@ function getChallengeStatsString(challenge_id, include_current_run) {
   }
 
   var completedtext;
-  if(c.numStages() == 1 || !c.numStagesCompletedAtCurrentDifficulty(include_current_run)) {
+  if(c.bonus_formula == 3) {
+    if(c2.num_completed == 0) completedtext = 'no';
+    else if(c2.num_completed == 1) ' 1 time';
+    else completedtext = c2.num_completed + ' times';
+  } else if(c.numStages() == 1 || !c.numStagesCompletedAtCurrentDifficulty(include_current_run)) {
     completedtext = (c.numStagesCompletedAtCurrentDifficulty(include_current_run) ? 'yes' : 'no');
   } else if(c.numStages() == 0) {
     completedtext = (c.fullyCompleted(include_current_run) ? 'yes' : 'no');
@@ -413,7 +417,7 @@ function createChallengeDialog(opt_from_challenge) {
     var c2 = state.challenges[challenges_order[i]];
     if(!c2.unlocked) continue;
     //var isnew = !c.numStagesCompletedAtCurrentDifficulty(true);
-    var isnew = c2.num == 0 && c2.maxlevel == 0;
+    var isnew = c2.num == 0 && c2.maxlevel == 0 && state.challenge != c.index;
     var isnotfull = !c.fullyCompleted(true)
     var button = new Flex(buttonFlex, 0.2, pos, 0.8, pos + h);
     pos += h * 1.05;

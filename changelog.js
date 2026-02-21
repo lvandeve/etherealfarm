@@ -30,6 +30,15 @@ function getChangeLog() {
     }
   }
 
+  text += '0.17.1 QoL and Bugfixes (2026-02-21)';
+  text += '<br/>• If auto-transcend gets disabled due to activating 20 times without any manual interaction, this is now indicated with the orange text "partial" at the auto-action state indicator. As before, any game-affecting human interaction will revert this to "on".'
+  text += '<br/>• During igniferous challenge, it now shows the amount of previous completions done in the tree dialog.'
+  text += '<br/>• Fix that it could say "(New!)" in the start challenge dialog when you were currently in that challenge.'
+  text += '<br/>• Fix that it showed wrong challenge before/after stats in the tree dialog during some challenges.'
+  text += '<br/>• Fix that the "disabled" style of buttons for fishes with restrictions had broken.'
+  text += '<br/>• Made the contrast of the "Paused" or "Computing" text better in other tabs during infernal challenges (it was made yellow to increase contrast against the red field, but in other tabs it is made red again now)'
+  text += '<br/><br/>';
+
   text += '0.17.0 (2026-02-15)';
   text += '<br/>• Added the igniferous challenge, unlocked at level 200. This challenge gets harder each time you complete it but gives a multiplicative bonus for each completion.';
   text += '<br/>• Infernal fruit season boost now gives +150% instead of +25% boost during infernal challenges.';

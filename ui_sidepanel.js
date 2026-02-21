@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -91,6 +91,7 @@ function renderAutomatonShortcuts(flex, horizontal) {
   var text0 = 'Plant: ' + (autoPlantEnabled() ? ((autoUnlockUnlockedButDisabled || autoPrestigeUnlockedButDisabled) ? '<font color="#bb0">auto</font>' : '<font color="#0b0">auto</font>') : '<font color="#b00">manual</font>');
   var text1 = 'Upgrades: ' + (autoUpgradesEnabled() ? '<font color="#0b0">auto</font>' : '<font color="#b00">manual</font>');
   var text2 = 'Auto-action: ' + (autoActionEnabled() ? '<font color="#0b0">on</font>' : (state.automaton_autoaction == 2 ? '<font color="#c60">off</font>' : '<font color="#b00">off</font>')) + '&nbsp;&nbsp;';
+  if(autoActionEnabled() && autoActionTranscendUnlocked() && state.numAutomaticTranscendsSinceHumanAction >= maxAutomaticTranscendsSinceHumanAction) text2 = 'Auto-action: <font color="#f80">partial</font>';
   if(chip0) {
     styleButton0(chip0.div);
     centerText2(chip0.div);
@@ -115,6 +116,9 @@ function renderAutomatonShortcuts(flex, horizontal) {
     styleButton0(textpart.div);
     centerText2(textpart.div, 2, 1);
     textpart.div.title = 'quick toggle auto-action';
+    if(autoActionEnabled() && autoActionTranscendUnlocked() && state.numAutomaticTranscendsSinceHumanAction >= maxAutomaticTranscendsSinceHumanAction) {
+      textpart.div.title = 'it has been too long since human interaction was done, auto-transcends are disabled until any human action is done (e.g. pick up infinity symbol)';
+    }
     textpart.div.textEl.innerHTML = text2;
     var miniconfigbutton = new Flex(chip2, [shift, -1], 0, shift, 1);
     styleButton0(miniconfigbutton.div);
@@ -153,7 +157,8 @@ function updateRightPane() {
                        (autoUnlockEnabled() ? 32 : 0) |
                        (autoPrestigeEnabled() ? 64 : 0) |
                        (autoActionUnlocked() ? 128 : 0) |
-                       (autoActionEnabled() ? 256 : 0);
+                       (autoActionEnabled() ? 256 : 0) |
+                       ((state.numAutomaticTranscendsSinceHumanAction >= maxAutomaticTranscendsSinceHumanAction) ? 512 : 0);
   var automatonStateChanged = (automatonState != rightPanelPrevAutomationState);
   rightPanelPrevAutomationState = automatonState;
 

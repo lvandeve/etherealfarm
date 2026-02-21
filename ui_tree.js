@@ -134,13 +134,14 @@ function makeTreeDialog() {
           text += '<br>Current challenge target level: <b>' + c.targetlevel[c2.completed] + '</b>';
         }
       } else {
-        if(c2.completed) {
+        if(c2.completed && c.bonus_formula != 3) {
           text += '<br>Challenge target level (already completed): <b>' + c.targetlevel[0] + '</b>';
         } else {
           text += '<br>Challenge target level: <b>' + c.targetlevel[0] + '</b>';
         }
       }
       text += '<br>';
+      if(c.bonus_formula == 3) text += 'Amount of previous completions: ' + c2.num_completed + '<br>';
     }
 
     if(state.treelevel > 0 || state.res.spores.gtr(0)) {

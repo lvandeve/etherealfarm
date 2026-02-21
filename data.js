@@ -3626,7 +3626,7 @@ function Challenge() {
   this.cycleCompleted = function(cycle, opt_include_current_run) {
     var c2 = state.challenges[this.index];
     if(this.cycling <= 1) {
-      // TODO: why is this returning false if opt_include_current_run==false? the function documentation implies this should then be returning whether the challenge was ever completed before...
+      if(c2.completed && this.bonus_formula != 3) return true;
       return opt_include_current_run ? this.stageCompletedInCurrentRun(0) : false;
     }
     return this.numCompletedAtCurrentDifficulty(opt_include_current_run) > cycle;
@@ -4303,7 +4303,7 @@ var challenge_igniferous = registerChallenge('igniferous challenge', /*targetlev
 'reaching tree level 200',
 function() {
   // the unlock condition
-  return state.treelevel >= 200;
+  return state.g_treelevel >= 200;
 }, function() {
 }, 2);
 challenges[challenge_igniferous].bonus_formula = 3;
@@ -10144,7 +10144,7 @@ function canPlaceThisFishGivenCountsForUi(c, opt_replace_fish) {
   //if(opt_replace_fish && opt_replace_fish.index == c.index) fishcount--;
   if(opt_replace_fish && opt_replace_fish.type == c.type) fishtypecount--;
 
-  if(c.tier >= state.highestoftypefishunlocked[c.type]) return true; //whether you can place it or not, always highlight these as placeable in the UI
+  if(c.tier >= state.highestoftypefishunlocked[c.type] && state.fishcount[c.index] == 0) return true; //whether you can place it or not, always highlight these as placeable in the UI
 
   if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && fishcount) {
     return false;

@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -409,7 +409,7 @@ function movePests() {
     var f2 = state.field[y2][x2];
     if(f2.index == FIELD_TREE_TOP || f2.index == FIELD_TREE_BOTTOM) {
       td.gameover = true;
-      var text = 'Tower defense: game over! A pest reached the tree. Wave reached ' + td.wave + '. All that can be done now is to start a new run.';
+      var text = 'Tower defense: game over! A pest reached the tree. Wave reached: ' + td.wave + '. All that can be done now is to start a new run.';
       showMessage(text, C_TD, 84683311);
       showTdChip(text);
       if(f2.index == FIELD_TREE_BOTTOM) p.y--; // the one remaining pest: don't overlap the tree level number

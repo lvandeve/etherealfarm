@@ -3099,7 +3099,7 @@ function doAutoAction(index, part, opt_manually) {
     }
   }
 
-  // transcend: this part is a few seconds after fern if there's a fern, because picking up the fern can cause multiple tree levelups, allow those to happen before transcending
+  // auto-transcend: this part is a few seconds after fern if there's a fern, because picking up the fern can cause multiple tree levelups, allow those to happen before transcending
   if(effect.hasTranscendEnabled() && autoActionTranscendUnlocked()) {
     if(part == 3) {
       addAction({type:ACTION_TRANSCEND, by_automaton:!opt_manually});

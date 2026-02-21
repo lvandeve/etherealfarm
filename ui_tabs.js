@@ -105,6 +105,8 @@ function setTab(i, opt_temp) {
   showGoalChips(); // some goal chips or help arrows depend on tab
   updateAbilitiesUI(); // when switching between infinity field and basic field, brassica icon at the top should update, make sure it goes immediately and not after 0.3 seconds with next game update: 0.3 seconds makes it feel sluggish
 
+  updatePausedUI(); // in some cases the 'paused' text needs to change color on a different tab for contrast reasons
+
   if(markmedalsseen) {
     // when leaving the achievements tab and there are unseen medals, mark them all as seen now, to not let the player hunt for which
     // medals to mouseover to remove the red indication
