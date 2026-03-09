@@ -641,8 +641,9 @@ function State() {
   this.fruitspores_total = Num(0); // not saved, computed during update() as a more-frequently-updated version of c_res.spores due to intermediate computations involving resinfruitspores and twigsfruitspores before the final c_res update
 
   this.infinitystarttime = 0; // when the infinity field was started
-  this.infinityascendtime = 0; // when the infinity field was ascended
-  this.infinity_ascend = 0; // whether the infinity field was ascended
+  this.infinityascendtime = 0; // when the infinity field was first ascended
+  this.infinityascendtime2 = 0; // when the infinity field was last ascended
+  this.infinity_ascend = 0; // whether the infinity field was ascended, and how many times
   // infseeds and infspores resources since last infinity transcension (or since beginning of the very first pre-ascension infinity run)
   // this works similar to state.g_res, but only for inf-related resources, and gets reset to 0 upon infinity ascension
   this.infinity_res = new Res();
@@ -1488,9 +1489,13 @@ function clearField3(state) {
   var pondx3 = Math.floor(state.numw3 / 2);
   var pondy3 = Math.floor(state.numh3 / 2);
   state.field3[pondx3][pondy3].index = FIELD_POND;
+  // even-sized gives 2x2 pond
   if(!(state.numw3 & 1)) state.field3[pondx3 - 1][pondy3].index = FIELD_POND;
   if(!(state.numh3 & 1)) state.field3[pondx3][pondy3 - 1].index = FIELD_POND;
   if(!(state.numw3 & 1) && !(state.numh3 & 1)) state.field3[pondx3 - 1][pondy3 - 1].index = FIELD_POND;
+  // odd-sized and larger than or equal to 7x7 gives plus-shaped pond
+  if((state.numw3 & 1) && state.numw3 >= 7) state.field3[pondx3 - 1][pondy3].index = state.field3[pondx3 + 1][pondy3].index = FIELD_POND;
+  if((state.numh3 & 1) && state.numh3 >= 7) state.field3[pondx3][pondy3 - 1].index = state.field3[pondx3][pondy3 + 1].index = FIELD_POND;
 }
 
 function clearPond(state) {

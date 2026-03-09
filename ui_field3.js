@@ -93,6 +93,8 @@ function getCropInfoHTML3(f, c, opt_detailed) {
       result += 'Boost to neighboring mushrooms: ' + infboost.toPercentString() + ' (less if higher tier)';
     } else if(c.type == CROPTYPE_FERN) {
       result += 'Copy: ' + infboost.toPercentString();
+    } else if(c.type == CROPTYPE_LOTUS) {
+      result += 'Boost: +' + infboost.toPercentString() + ' (for mushrooms: +' + lotus_to_mushroom_boost.toPercentString() + ')';
     } else {
       result += 'Boost: ' + infboost.toPercentString();
     }
@@ -303,47 +305,68 @@ function makeDowngradeCrop3Action(x, y, opt_silent) {
   return true;
 }
 
-function makeInfinityAscensionDialog() {
+// returns true if ascending is possible, false if not
+// outputs the reason why in reqtext. if given, reqtext must be an array, and the string with the reason will be placed as its first element (as output variable)
+function canAscendInfinity(opt_reqtext) {
   var functions = [];
   var names = [];
 
   var numreqs = 0;
 
-  var reqtext = '';
+  if(opt_reqtext) opt_reqtext[0] = '';
+
+  // These requirements exist to ensure the player doesn't accidently skip earning any achievements before doing the infinity ascend
+  // After second/... ascension, some of these requirements (like 8 runestones) may already have been met by the previous ascension, and that's ok, there's no achievement to miss out on then
+  // This still checks for any new fish types introduced in later ascensions, like the translucent fishes etc...
+
   if(!state.medals[medal_runestone8].earned) {
-    reqtext += '• Place 8 runestones at the same time on the infinity field.';
-    reqtext += '<br>';
+    if(opt_reqtext) opt_reqtext[0] += '• Place 8 runestones at the same time on the infinity field.' + '<br>';
     numreqs++;
   }
   for(var i = 0; i < registered_crops3.length; i++) {
     var c = crops3[registered_crops3[i]];
     var c2 = state.crops3[registered_crops3[i]];
-    if(c.index == mush3_t) continue; // the translucent mushroom is post-ascend only
+    // crops that are only available in later ascensions
+    if(c.index == mush3_t && state.infinity_ascend < 1) continue; // the translucent mushroom is post-ascend only
     if(!c2.had) {
-      reqtext += '• Plant a ' + c.name + ' on the infinity field.';
-      reqtext += '<br>';
+      if(opt_reqtext) opt_reqtext[0] += '• Plant a ' + c.name + ' on the infinity field.' + '<br>';
       numreqs++;
     }
   }
   for(var i = 0; i < registered_fishes.length; i++) {
     var c = fishes[registered_fishes[i]];
     var c2 = state.fishes[registered_fishes[i]];
-    if(c.index == eel_t) continue; // the translucent eel is post-ascend only
-    if(c.index == tang_t) continue; // the translucent tang is post-ascend only
-    if(c.index == jellyfish_t) continue; // the iridescent jellyfish is post-ascend only
+    // fishes that are only available in later ascensions
+    if(c.index == eel_t && state.infinity_ascend < 1) continue;
+    if(c.index == tang_t && state.infinity_ascend < 1) continue;
+    if(c.index == jellyfish_t && state.infinity_ascend < 1) continue;
+    if(c.index == jellyfish_0 && state.infinity_ascend < 2) continue;
+    if(c.index == oranda_t && state.infinity_ascend < 2) continue;
     if(!c2.had) {
-      reqtext += '• Place a ' + c.name + ' in the pond.';
-      reqtext += '<br>';
+      if(opt_reqtext) opt_reqtext[0] += '• Place a ' + c.name + ' in the pond.' + '<br>';
       numreqs++;
     }
   }
+
+  return numreqs == 0;
+}
+
+function makeInfinityAscensionDialog() {
+  var functions = [];
+  var names = [];
+
+  var numreqs = 0;
+
+  var reqtext = [];
+
+  var can_ascend = canAscendInfinity(reqtext);
 
   var text = '';
 
   text += '<b>Requirements</b>';
   text += '<br><br>';
 
-  if(numreqs) {
+  if(!can_ascend) {
     text += 'Not all the requirements for infinity ascenscion are met yet. Place the following plants or fishes to earn all the associated achievements first (it\'s not necessarily to meet all these requirements at the same time, each can be done at any time to check it off):'
          + '<br><br>' + reqtext;
   } else {
@@ -360,7 +383,7 @@ function makeInfinityAscensionDialog() {
   text += '<br><br>';
   text += 'Infinity ascenscion will reset the entire infinity field progress back to the beginning. All unlocked infinity crops, pond, fishes, infinity seeds and infinity spores will be reset. The basic and ethereal fields are not affected, other than the temporary loss of the current infinity bonuses. A permanent infinity ascension bonus will be given to the basic field production, resin and twigs, and regular infinity bonuses can be gained again over time from the next infinity field. The new infinity field, and pond (once unlocked), will be larger than the current iterations.';
   text += '<br><br>';
-  text += 'WARNING: Since infinity ascenscion might give a temporary decrease of basic field production, choose a convenient time to do it. Initially, the total bonus to the basic field will be lower than what you get from the infinity field now (depending on the current layout), so there will be a temporary setback of a few weeks. However, the new infinity field will surpass the current bonus eventually, so this is worth doing in the end.';
+  text += 'WARNING: Since infinity ascenscion gives a temporary decrease of basic field production, choose a convenient time to do it. Initially, the total bonus to the basic field will be lower than what you get from the infinity field now (depending on the current layout), so there will be a temporary setback of a few weeks. However, the new infinity field will surpass the current bonus eventually, so this is worth doing in the end.';
 
   var dialog = createDialog({
     icon:image_infinity_ascend,
@@ -557,10 +580,10 @@ function field3CellTooltipFun(x, y, div) {
   return result;
 }
 
-function field3CellClickFun(x, y, div, shift, ctrl) {
+function field3CellClickFun(x, y, div, shift, ctrl, longclick_extra) {
   var f = state.field3[y][x];
 
-  if(state.infspawn && x == state.infspawnx && y == state.infspawny && !ctrl && !shift) {
+  if(state.infspawn && x == state.infspawnx && y == state.infspawny && !ctrl && !shift && !longclick_extra) {
     addAction({type:ACTION_INFSPAWN, x:x, y:y});
     update();
     return;
@@ -711,6 +734,7 @@ function initField3UI() {
         label_shift:'(over)plant selected crop',
         label_ctrl:'delete crop or plant brassica',
         label_ctrl_shift:'select crop or plant highest tier',
+        label_longclick_extra:'open crop dialog',
         tooltip:bind(field3CellTooltipFun, x, y, div),
         tooltip_poll:true
       });
@@ -794,7 +818,6 @@ function updateField3CellUI(x, y) {
   var brassica_no_selfsustain = brassicaNoSelfSutain(f);
 
   var timeweighted = (f.index == FIELD_POND && someInfinityEffectIsTimeWeighted());
-  var toprightpond = false;
 
   if(fd.index != f.index || fd.growstage != growstage || season != fd.season || infspawncode != fd.infspawncode || progresspixel != fd.progresspixel || brassica_no_selfsustain != fd.brassica_no_selfsustain || fd.timeweighted != timeweighted) {
     fd.index = f.index;
@@ -819,18 +842,32 @@ function updateField3CellUI(x, y) {
       blendImage(image, fd.canvas);
       label = c.name + '. ' + label;
     } else if(f.index == FIELD_POND) {
-      if(x + 1 < state.numw3 && y + 1 < state.numh3 && state.field3[y + 1][x + 1].index == FIELD_POND) {
+      // which neighbors are also pond
+      var pn = y - 1 >= 0 && state.field3[y - 1][x].index == FIELD_POND;
+      var pe = x + 1 < state.numw3 && state.field3[y][x + 1].index == FIELD_POND;
+      var ps = y + 1 < state.numh3 && state.field3[y + 1][x].index == FIELD_POND;
+      var pw = x - 1 >= 0 && state.field3[y][x - 1].index == FIELD_POND;
+
+      if(pe && ps && !pn && !pw) {
         blendImage(image_pond_2x2_00, fd.canvas);
-      } else if(x > 0 && y + 1 < state.numh3 && state.field3[y + 1][x - 1].index == FIELD_POND) {
-        toprightpond = true;
+      } else if(!pn && !pe && ps && pw) {
         blendImage(image_pond_2x2_01, fd.canvas);
-      } else if(x + 1 < state.numw3 && y > 0 && state.field3[y - 1][x + 1].index == FIELD_POND) {
+      } else if(pn && pe && !ps && !pw) {
         blendImage(image_pond_2x2_10, fd.canvas);
-      } else if(x > 0 && y > 0 && state.field3[y - 1][x - 1].index == FIELD_POND) {
+      } else if(pn && !pe && !ps && pw) {
         blendImage(image_pond_2x2_11, fd.canvas);
+      } else if(pn && pe && ps && pw) {
+        blendImage(image_pond_cross_c, fd.canvas);
+      } else if(!pn && !pe && ps && !pw) {
+        blendImage(image_pond_cross_n, fd.canvas);
+      } else if(!pn && !pe && !ps && pw) {
+        blendImage(image_pond_cross_e, fd.canvas);
+      } else if(pn && !pe && !ps && !pw) {
+        blendImage(image_pond_cross_s, fd.canvas);
+      } else if(!pn && pe && !ps && !pw) {
+        blendImage(image_pond_cross_w, fd.canvas);
       } else {
         blendImage(image_pond, fd.canvas);
-        toprightpond = true;
       }
     } else if(f.index == FIELD_REMAINDER) {
       blendImage(image_watercress_remainder3, fd.canvas);
@@ -844,7 +881,7 @@ function updateField3CellUI(x, y) {
     if(brassica_no_selfsustain) {
       blendImage(image_exclamation_small, fd.canvas);
     }
-    if(timeweighted && toprightpond) {
+    if(timeweighted && x == Math.floor(state.numw3 / 2) && y == Math.floor(state.numh3 / 2)) {
       blendImage(image_small_hourglass, fd.canvas);
     }
     if(f.growth >= 1 || !f.hasCrop()) {

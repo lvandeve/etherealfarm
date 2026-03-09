@@ -1192,7 +1192,113 @@ aaaaaaaaa.......
 `);
 
 
-var image_pond_2x2_00_on_field = setupImage(blendImages(field_infinity[0], image_pond_2x2_00));
-var image_pond_2x2_01_on_field = setupImage(blendImages(field_infinity[1], image_pond_2x2_01));
-var image_pond_2x2_10_on_field = setupImage(blendImages(field_infinity[2], image_pond_2x2_10));
-var image_pond_2x2_11_on_field = setupImage(blendImages(field_infinity[0], image_pond_2x2_11));
+//var image_pond_2x2_00_on_field = setupImage(blendImages(field_infinity[0], image_pond_2x2_00));
+//var image_pond_2x2_01_on_field = setupImage(blendImages(field_infinity[1], image_pond_2x2_01));
+//var image_pond_2x2_10_on_field = setupImage(blendImages(field_infinity[2], image_pond_2x2_10));
+//var image_pond_2x2_11_on_field = setupImage(blendImages(field_infinity[0], image_pond_2x2_11));
+
+
+var image_pond_cross_c = generateAndSetupImage(`
+aaaaaaaaaaaaAaaa
+aAAaAaaaaaaAaAAa
+aaaAaAaaaaaaaaaa
+aaaaaaaaAaAaaaaa
+aaaaaaaAaAaaaAAa
+aaAaAaaaaaaaAaaA
+aAaAaaaAaAaaaaaa
+aaaaaaAaAaAaaaaa
+aaaaaaaAaAaaaaaa
+aaaaaaaaaaaAaAaa
+aaaaAaAaaaaaAaAa
+aaaAaAaaAaAaaaaa
+aaaaaaaAaAaaaaaa
+aAaAaaaaaaaAaaaa
+aaAaAaaaaaAaAaaA
+aaaaaaaaaaaaaaAa
+`);
+
+
+var image_pond_cross_n = generateAndSetupImage(`
+........000.....
+.......0aaa00...
+..00000aAaAaa...
+.0aaaaaAaAaaa00.
+.0aaaaaaaaaaaAa.
+.0AaAaaaaaaaAaa.
+0aaAaaaaaAaaaaa.
+0aaaaaAaAaAaaa..
+0aaaaaaAaaaaaa0.
+0aaaaaaaaaaaaAa.
+.0aAaAaaaaaaAaA.
+.0AaAaaaAaAaaaa.
+.0aaaaaAaAaaaaa.
+.0aaaaaaaaaAaaa.
+.0aaaaaaaaAaAAaa
+0aAaaaaaaaaaaaaa
+`);
+
+
+var image_pond_cross_e = generateAndSetupImage(`
+0.........00....
+a000000000aa0...
+aaaaaaaaAaAaa...
+aaaaaaaAaAaaa...
+aaaaaaaaaaaaa0..
+aaAaAaaaaaaaAa..
+aAaAaaaAaaaaaa..
+aaaaaaAaAaAaaa..
+aaaaaaaaaAaaaa..
+aaaaaaaaaaaaaA..
+aaaAaAaaaaaaAa..
+aaAaAaaaAaAaaa..
+aaaaaaaAaAaaa...
+AaAaaaaaaaaa....
+aAaAaaaaaa......
+a....0aa........
+`);
+
+var image_pond_cross_s = generateAndSetupImage(`
+0Aaaaaaaaaaaaaaa
+0aaaaaaaaaaaaaa.
+.0aaaaaaAaAaaaa.
+.0aaaaaAaAaaaaa.
+.0aaaaaaaaaaaaa.
+.0AaAaaaaaaaAaa.
+.0aAaaaAaaaaaaa.
+.0aaaaAaAaAaaaa.
+0aaaaaaaaAaaaaa.
+0aaaaaaaaaaaaaa.
+0aaAaAaaaaaaAaa.
+.0AaAaaaAaAaaa..
+.0aaaaaAaAaaaa..
+.0aaaaaaaaaaa...
+...0aaaaaaaa....
+................
+`);
+
+var image_pond_cross_w = generateAndSetupImage(`
+.........0000000
+..0000000aaaaaaa
+..aaaaaaAaAaaaaa
+.0aaaaaAaAaaaaaa
+0aaaaaaaaaaAaAaa
+0aAaAaaaaaaaAaAa
+0AaAaaaAaaaaaaaa
+0aaaaaAaAaAaaaaa
+.aaaaaaaaAaaaaaa
+.aaaaaaaaaaaaAaa
+0aaAaAaaaaaaAaAa
+0aAaAaaaAaAaaaaa
+.aaaaaaAaAaaaaaa
+..aaaaaaaaaaaaaa
+....0a.....aaaaa
+...............a
+`);
+
+
+//var image_pond_cross_c_on_field = setupImage(blendImages(field_infinity[0], image_pond_cross_c));
+//var image_pond_cross_n_on_field = setupImage(blendImages(field_infinity[1], image_pond_cross_n));
+//var image_pond_cross_e_on_field = setupImage(blendImages(field_infinity[2], image_pond_cross_e));
+//var image_pond_cross_s_on_field = setupImage(blendImages(field_infinity[0], image_pond_cross_s));
+//var image_pond_cross_w_on_field = setupImage(blendImages(field_infinity[1], image_pond_cross_w));
+

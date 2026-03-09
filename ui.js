@@ -155,8 +155,13 @@ var tabindex_medals;
 
 // init the UI after a reset, save load, .... Keeps log messages
 // assume state is already correctly initialized
-// NOTE: nothing in here may depend on prefield
 function initUI() {
+  // prodBreakdownHypo() is called to ensure the 'gain' variable is updated, and precomputeField() is a prerequisite to make prodBreakdownHypo() work correctly
+  // this is needed e.g. if the tab is at 'squirrel' to show the correct time remaining for next squirrel upgrade (which depends on gain.nuts)
+  precomputeField();
+  prodBreakdownHypo();
+
+
   //topDiv.innerHTML = '';
   //tabDiv.innerHTML = '';
   //contentDiv.innerHTML = '';

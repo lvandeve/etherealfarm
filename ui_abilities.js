@@ -628,25 +628,42 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
   // now refresh existing ones if seeds remaining. Also, only if no remainder plants were done already. A second buttonpress can be done to do the refresh then: one may want to refresh remainders but not existing watercress.
   // reason for not doing this with opt_all: for infinity watercress, you may really want to only add new ones and not spend infinity seeds into the refreshing of existing ones, if shift is pressed (for all), do only adding
   if(!opt_clear && !opt_all && !numplanted) {
+    // do these in priority of shortest remaining lifespan to higher remaining lifespan: it's more useful to refresh 1 shortlived one, than many already long-lived ones. normally one wants to spread the resources over as many different ones as possible, so add new ones rather than refresh still long-lived ones.
+    // but when this button is used, then at least it's intended to make those that will almost expire be fully long-lived again, not to spread resources across many watercress that still had a long lifespan
+    var order = [];
     for(var y = 0; y < state.numh3; y++) {
       for(var x = 0; x < state.numw3; x++) {
         var f = state.field3[y][x];
         var c = f.getCrop();
-        if(c && c.type == CROPTYPE_BRASSICA && c.isReal()) {
-          var cost = c.getCost();
-          var recoup = c.getRecoup(f);
-          var can_afford = seeds_available.ge(cost.infseeds);
-          if(!replanted) can_afford = seeds_available.ge(cost.infseeds.sub(recoup.infseeds));
-          if(can_afford) {
-            seeds_available.addInPlace(recoup.infseeds);
-            addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
-            seeds_available.subInPlace(cost.infseeds);
-            addAction({type:ACTION_PLANT3, x:x, y:y, crop:c, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
-            // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
-            // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
-            if(f.growth < 0.999) numplanted++;
-            refreshed = true;
-          }
+        if(c && c.index == cropindex) {
+          var score = c.tier + f.growth;
+          order.push([score, x, y]);
+        }
+     }
+   }
+   order.sort(function(a, b) {
+     return a[0] - b[0];
+   });
+
+    for(var i = 0; i < order.length; i++) {
+      var x = order[i][1];
+      var y = order[i][2];
+      var f = state.field3[y][x];
+      var c = f.getCrop();
+      if(c && c.index == cropindex) {
+        var cost = c.getCost();
+        var recoup = c.getRecoup(f);
+        var can_afford = seeds_available.ge(cost.infseeds);
+        if(!replanted) can_afford = seeds_available.ge(cost.infseeds.sub(recoup.infseeds));
+        if(can_afford) {
+          seeds_available.addInPlace(recoup.infseeds);
+          addAction({type:ACTION_DELETE3, x:x, y:y, silent:true, by_automaton:opt_by_automaton});
+          seeds_available.subInPlace(cost.infseeds);
+          addAction({type:ACTION_PLANT3, x:x, y:y, crop:c, ctrlPlanted:true, silent:true, by_automaton:opt_by_automaton});
+          // the check for 0.999 is here because: numplanted is used to plant watercress in every empty spot if nothing was done. But refreshing brassica is something, and when refreshing existing old brassica, planting more may be undesired. But if they are very new (growth > 0.999), then it was clearly a double click on the refresh watercress button with the goal to plant them on the entire field
+          // 0.999 works here because the lifespan of infinity brassica is a day, so 1 - 0.999 still represents several seconds
+          if(f.growth < 0.999) numplanted++;
+          refreshed = true;
         }
       }
     }

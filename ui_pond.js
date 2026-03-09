@@ -276,6 +276,19 @@ function makeUpgradeFishAction(x, y, single, opt_silent) {
     }
     showMessage('Deleted other tier 0 shrimps as well since max 1 tier can be combined');
   }
+  // idem for jellyfish
+  if(c3 && !too_expensive[1] && c3.index == jellyfish_0 && state.fishcount[jellyfish_t] > 1) {
+    for(var y2 = 0; y2 < state.pondh; y2++) {
+      for(var x2 = 0; x2 < state.pondw; x2++) {
+        if(x2 == x && y2 == y) continue;
+        var f2 = state.pond[y2][x2];
+        if(f2.hasCrop() && f2.getCrop().index == jellyfish_t) {
+          addAction({type:ACTION_DELETE_FISH, x:x2, y:y2});
+        }
+      }
+    }
+    showMessage('Deleted other iridescent jellyfish as well since max 1 tier can be combined');
+  }
 
 
   if(c3 && !too_expensive[1]) {

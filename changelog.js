@@ -30,13 +30,19 @@ function getChangeLog() {
     }
   }
 
+  text += '0.18 Ascension II (2026-03-??)';
+  text += '<br/>• Added second infinity ascension.';
+  text += '<br/>• In the infinity field (also pre-ascension), lotuses now boost mushrooms by +125% instead of +100%. Also indicated in its description that it boost mushrooms differently than berries.'; // +100% boost of lotuses to mushrooms was not giving a significant boost: 2 flowers+2 nettles does about the same to a mushroom as 1 flower+2 nettles or 2 flowers+1 nettle and an extra 100% boost. The +125% makes it worth something. Can't boost it too much higher though or all the old fish balancing will be out of sync
+  text += '<br/>• The "refresh brassica" button in infinity field will now prioritize the brassica with lowest remaining lifespan first, instead of going from left to right and top to bottom.';
+  text += '<br/><br/>';
+
   text += '0.17.1 QoL and Bugfixes (2026-02-21)';
-  text += '<br/>• If auto-transcend gets disabled due to activating 20 times without any manual interaction, this is now indicated with the orange text "partial" at the auto-action state indicator. As before, any game-affecting human interaction will revert this to "on".'
-  text += '<br/>• During igniferous challenge, it now shows the amount of previous completions done in the tree dialog.'
-  text += '<br/>• Fix that it could say "(New!)" in the start challenge dialog when you were currently in that challenge.'
-  text += '<br/>• Fix that it showed wrong challenge before/after stats in the tree dialog during some challenges.'
-  text += '<br/>• Fix that the "disabled" style of buttons for fishes with restrictions had broken.'
-  text += '<br/>• Made the contrast of the "Paused" or "Computing" text better in other tabs during infernal challenges (it was made yellow to increase contrast against the red field, but in other tabs it is made red again now)'
+  text += '<br/>• If auto-transcend gets disabled due to activating 20 times without any manual interaction, this is now indicated with the orange text "partial" at the auto-action state indicator. As before, any game-affecting human interaction will revert this to "on".';
+  text += '<br/>• During igniferous challenge, it now shows the amount of previous completions done in the tree dialog.';
+  text += '<br/>• Fix that it could say "(New!)" in the start challenge dialog when you were currently in that challenge.';
+  text += '<br/>• Fix that it showed wrong challenge before/after stats in the tree dialog during some challenges.';
+  text += '<br/>• Fix that the "disabled" style of buttons for fishes with restrictions had broken.';
+  text += '<br/>• Made the contrast of the "Paused" or "Computing" text better in other tabs during infernal challenges (it was made yellow to increase contrast against the red field, but in other tabs it is made red again now)';
   text += '<br/><br/>';
 
   text += '0.17.0 (2026-02-15)';

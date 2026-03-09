@@ -859,6 +859,7 @@ function createStatsDialog() {
     }
     if(state.infinity_ascend) {
       text += '• infinity resources gained since ascend: ' + open + state.infinity_res.toString() + close + '<br>';
+      text += '• infinity ascensions done: ' + open + state.infinity_ascend + close + '<br>';
     }
     text += '<br>';
   }

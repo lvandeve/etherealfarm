@@ -1013,6 +1013,7 @@ function clearUndo() {
   lastUndoSaveTime = 0;
   lastUndoKeepLong = false;
   lastUndoDisablesAutoAction = false;
+  next_undo_is_redo = false;
 
   updateUndoButtonText();
 }
@@ -2899,12 +2900,12 @@ function getCostAffordPercentage(cost) {
 // may only be called if the fishes feature in the infinity field is already unlocked (haveFishes() returns true)
 function maybeUnlockFishes() {
   var first_fish_unlocked = state.fishes[goldfish_0].unlocked;
-  if(state.infinity_ascend) {
+  if(state.infinity_ascend >= 1) {
     unlockFish(eel_t);
     unlockFish(tang_t);
     if(state.fishes[tang_t].had) unlockFish(jellyfish_t);
   }
-  if(!state.infinity_ascend || (state.infinity_ascend && state.crops3[mush3_4].had)) {
+  if(!state.infinity_ascend || (state.infinity_ascend >= 1 && state.crops3[mush3_4].had)) {
     unlockFish(goldfish_0);
     unlockFish(koi_0);
     unlockFish(octopus_0);
@@ -2918,6 +2919,7 @@ function maybeUnlockFishes() {
 
   if(state.fishes[anemone_0].had) unlockFish(goldfish_1);
   if(state.fishes[goldfish_1].had) unlockFish(koi_1);
+  if(state.infinity_ascend >= 2 && state.fishes[goldfish_1].had) unlockFish(oranda_t);
   if(state.fishes[goldfish_1].had) unlockFish(anemone_1);
   if(state.fishes[anemone_1].had) unlockFish(puffer_1);
 
@@ -2928,6 +2930,7 @@ function maybeUnlockFishes() {
   if(state.fishes[leporinus_0].had) unlockFish(oranda_0);
   if(state.fishes[leporinus_0].had) unlockFish(shrimp_1);
   if(state.fishes[leporinus_0].had) unlockFish(octopus_1);
+  if(state.infinity_ascend >= 2 && state.fishes[leporinus_0].had) unlockFish(jellyfish_0);
 
   if(state.fishes[shrimp_1].had || state.fishes[octopus_1].had) unlockFish(goldfish_2);
 
@@ -5422,8 +5425,15 @@ var update = function(opt_ignorePause) {
             }
             ok = false;
           } else if(!canPlaceThisFishGivenCounts(c, f, undefined, limit_reason)) {
-            showMessage(limit_reason[0], C_INVALID, 0, 0);
+            var text = limit_reason[0];
+            // in this case also show message if too little resources so that you can see the future predicted time
+            if(state.res.lt(cost)) {
+              text += '. In addition, not enough resources: have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
+                        ', need: ' + cost.toString(Math.max(5, Num.precision)) + ' (' + getCostAffordTimer(cost) + ')';
+            }
+            showMessage(text, C_INVALID, 0, 0);
             ok = false;
+
           } else if(state.res.lt(cost)) {
             // The cost check is done after the canPlaceThisFishGivenCounts check: ensure the player knows well about the limitations before saving up for it
             showMessage('not enough resources to place ' + c.name + ': have: ' + Res.getMatchingResourcesOnly(cost, state.res).toString(Math.max(5, Num.precision)) +
@@ -5888,9 +5898,11 @@ var update = function(opt_ignorePause) {
           showMessage('Can\'t spawn any more waves, it\'s game over. All that can be done now is to start a new run.', C_TD, 1250454032);
         }
       } else if(type == ACTION_INFINITY_ASCEND) {
-        ascendInfinity();
-        computeDerived(state); // prevent currently produced infinity seeds, infinityboost, ... leaking through
-        store_undo = true;
+        if(canAscendInfinity()) {
+          ascendInfinity();
+          computeDerived(state); // prevent currently produced infinity seeds, infinityboost, ... leaking through
+          store_undo = true;
+        }
       } else if(type == ACTION_TRANSCEND) {
         var ok = true;
         if(action.challenge && !state.challenges[action.challenge].unlocked) {
@@ -6125,8 +6137,8 @@ var update = function(opt_ignorePause) {
     }
 
     if(haveInfinityField()) {
-      var min_infseeds = state.infinity_ascend ? 15000.00001 : 10.0000000001;
-      if(state.res.infseeds.ltr(min_infseeds) && haveInfinityField() && state.numcropfields3 == 0) {
+      var min_infseeds = crops3[brassica3_0].getBaseCost().infseeds.mulr(state.infinity_ascend ? 1.5 : 1.00001); //state.infinity_ascend ? 15000.00001 : 10.0000000001;
+      if(state.res.infseeds.lt(min_infseeds) && haveInfinityField() && state.numcropfields3 == 0) {
         actualgain.addInPlace(Res({infseeds:(min_infseeds - state.res.infseeds)}));
       }
       // Production of infinity field (already precomputed)

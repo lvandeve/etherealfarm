@@ -1233,7 +1233,7 @@ Crop.prototype.getProd = function(f, pretend, breakdown) {
 
     // Infinity ascension
     if(state.infinity_ascend && (this.type == CROPTYPE_BERRY || this.type == CROPTYPE_MUSH || this.type == CROPTYPE_PUMPKIN)) {
-      var mul = infinity_ascension_production_bonus.addr(1);
+      var mul = infinity_ascension_production_bonus.addr(1).powr(state.infinity_ascend);
       result.mulInPlace(mul);
       if(breakdown) breakdown.push(['infinity ascension', true, mul, result.clone()]);
     }
@@ -7011,7 +7011,7 @@ function treeLevelResin(level, breakdown) {
 
   // infinity ascension
   if(state.infinity_ascend) {
-    var mul = infinity_ascension_resin_bonus.addr(1);
+    var mul = infinity_ascension_resin_bonus.addr(1).powr(state.infinity_ascend);
     resin.mulInPlace(mul);
     if(breakdown) breakdown.push(['infinity ascension', true, mul, resin.clone()]);
   }
@@ -7148,10 +7148,11 @@ function getFishMultiplier(fishtype, state, timeweighted) { // aka getFishBonus
     return new Num(1 + leporinus_0_bonus * num0 + leporinus_1_bonus * num1);
   } else if(fishtype == FISHTYPE_ORANDA) {
     // non-runestone multiplier
+    var numt = state.fishcount[oranda_t];
     var num0 = state.fishcount[oranda_0];
     var num1 = state.fishcount[oranda_1];
     var num2 = state.fishcount[oranda_2];
-    if(num0 == 0 && num1 == 0 && num2 == 0) return new Num(1);
+    if(numt == 0 && num0 == 0 && num1 == 0 && num2 == 0) return new Num(1);
 
     // v--- temporary hack: Since v0.15.0 (20250102), there's a limit of max 4 oranda (and max 1 black oranda, num2). Old saves can still have more. Instead of adding refund/removal logic, just limit the max amount here so that having more fishes in the pond is pointless and can be removed.
     if(num2 > 1) num2 = 1;
@@ -7159,12 +7160,13 @@ function getFishMultiplier(fishtype, state, timeweighted) { // aka getFishBonus
     if(num0 > 4 - (num1 + num2)) num0 = 4 - (num1 + num2);
     // ^--- end of temporary hack
 
-    return new Num(1 + oranda_0_bonus * num0 + oranda_1_bonus * num1 + oranda_2_bonus * num2);
+    return new Num(1 + oranda_t_bonus * numt + oranda_0_bonus * num0 + oranda_1_bonus * num1 + oranda_2_bonus * num2);
   } else if(fishtype == FISHTYPE_JELLYFISH) {
     // jellyfish pond neighbor bonus (not very large on purpose, just a nice to have during early post-ascend infinity field)
-    var num0 = state.fishcount[jellyfish_t];
-    if(num0 == 0) return new Num(1);
-    return new Num(1 + jellyfish_t_bonus * num0);
+    var numt = state.fishcount[jellyfish_t];
+    var num0 = state.fishcount[jellyfish_0];
+    if(numt == 0 && num0 == 0) return new Num(1);
+    return new Num(1 + jellyfish_t_bonus * numt + jellyfish_0_bonus * num0);
   }
 
   return new Num(1);
@@ -7287,7 +7289,7 @@ function treeLevelTwigs(level, breakdown) {
 
   // infinity ascension
   if(state.infinity_ascend) {
-    var mul = infinity_ascension_twigs_bonus.addr(1);
+    var mul = infinity_ascension_twigs_bonus.addr(1).powr(state.infinity_ascend);
     res.twigs.mulInPlace(mul);
     if(breakdown) breakdown.push(['infinity ascension', true, mul, res.clone()]);
   }
@@ -9108,10 +9110,14 @@ Crop3.prototype.isReal = function() {
 };
 
 Crop3.prototype.getBaseCost = function() {
-  if(state.infinity_ascend) {
+  if(state.infinity_ascend == 1) {
     if(this.tier == 0) return this.cost.mulr(1000); // only the first tier goes at original speed
     if(this.tier == 1) return this.cost.mulr(1125); // ramp up to the slower speed of the next tiers
     return this.cost.mulr(1250);
+  }
+  if(state.infinity_ascend >= 2) {
+    if(this.tier == 0) return this.cost.mulr(1250000);
+    return this.cost.mulr(1500000);
   }
   return this.cost;
 };
@@ -9163,15 +9169,21 @@ Crop3.prototype.getRecoup = function(f, opt_adjust_count) {
 
 
 Crop3.prototype.getPlantTime = function() {
-  if(state.infinity_ascend && this.type == CROPTYPE_BRASSICA) {
+  if(state.infinity_ascend == 1 && this.type == CROPTYPE_BRASSICA) {
     return this.planttime * 1.5; // the lifetime, in this case. Increased 1.5x even though the costs are relatively only up to 1.25x, a small bonus to make this part about post-ascend infinity a bit more convenient
+  }
+  if(state.infinity_ascend >= 2 && this.type == CROPTYPE_BRASSICA) {
+    return this.planttime * 1.75
   }
   return this.planttime;
 };
 
 Crop3.prototype.getBaseProd = function() {
-  if(state.infinity_ascend) {
+  if(state.infinity_ascend == 1) {
     return this.prod.mulr(1000);
+  }
+  if(state.infinity_ascend >= 2) {
+    return this.prod.mulr(1000000);
   }
   return this.prod;
 };
@@ -9385,7 +9397,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
   // lotus boost for mushroom: only for same tier
   if(f && this.type == CROPTYPE_MUSH) {
     var lotusmul = new Num(1);
-    var numlotuses = 0; // flowers
+    var numlotuses = 0;
 
     for(var dir = 0; dir < 4; dir++) { // get the neighbors N,E,S,W
       var x2 = f.x + (dir == 1 ? 1 : (dir == 3 ? -1 : 0));
@@ -9395,8 +9407,7 @@ Crop3.prototype.getProd = function(f, breakdown) {
       if(n.hasCrop() /*&& n.isFullGrown()*/ && crops3[n.cropIndex()].type == CROPTYPE_LOTUS) {
         var c2 = crops3[n.cropIndex()];
         if(c2.tier == this.tier) {
-          var boost = new Num(1);
-          lotusmul.addInPlace(boost);
+          lotusmul.addInPlace(lotus_to_mushroom_boost);
           numlotuses++;
         }
       }
@@ -9543,9 +9554,13 @@ Crop3.prototype.getInfBoost = function(f, breakdown, opt_expected) {
 
 // Returns the 'base' value of the boost to basic field, which depends on whether infinity ascenscion happened
 Crop3.prototype.getBaseBasicBoost = function() {
-  if(state.infinity_ascend) {
+  if(state.infinity_ascend == 1) {
     if(this.type == CROPTYPE_BRASSICA) return this.basicboost.mulr(2);
     return this.basicboost.mulr(4);
+  }
+  if(state.infinity_ascend >= 2) {
+    if(this.type == CROPTYPE_BRASSICA) return this.basicboost.mulr(3);
+    return this.basicboost.mulr(16);
   }
   return this.basicboost.clone();
 };
@@ -9815,6 +9830,7 @@ var nut3_10 = registerNut3('ruby acorn', 10, Res({infseeds:500e66}), Res({infsee
 var nut3_11 = registerNut3('diamond acorn', 11, Res({infseeds:50e78}), Res({infseeds:1e42}), Num(5000), default_crop3_growtime, metalifyPlantImages(images_acorn, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
 
 crop3_register_id = 2700;
+var lotus_to_mushroom_boost = new Num(1.25); // it uses a separate lower boost to mushrooms
 var lotus3_9 = registerLotus3('emerald lotus', 9, Res({infseeds:77e57}), Num(7.77777), Num(277.7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader9));
 var lotus3_10 = registerLotus3('ruby lotus', 10, Res({infseeds:20e69}), Num(7.77777), Num(1000), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader10, [4, 10], [0.9, 1.02]));
 var lotus3_11 = registerLotus3('diamond lotus', 11, Res({infseeds:2.5e81}), Num(7.77777), Num(7777), default_crop3_growtime, metalifyPlantImages(images_greenlotus, metalheader11, [2, 6, 7, 12, 8, 10], [0.1, 1, 1, 0.1, 160, 1.02]));
@@ -9879,8 +9895,11 @@ Fish.prototype.isReal = function() {
 };
 
 Fish.prototype.getBaseCost = function(opt_adjust_count, opt_force_count) {
-  if(state.infinity_ascend) {
+  if(state.infinity_ascend == 1) {
     return this.cost.mulr(1000);
+  }
+  if(state.infinity_ascend >= 2) {
+    return this.cost.mulr(1500000);
   }
   return this.cost;
 };
@@ -10088,45 +10107,73 @@ var leporinus_1 = registerLeporinus('red banded leporinus', 1, Res({infspores:70
 
 fish_register_id = 1000;
 var oranda_0_bonus = 2;
-var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda0);
+var oranda_0 = registerOranda('oranda', 0, Res({infspores:10e15}), '' + ' ' + timeweightedinfo, image_oranda0);
 var oranda_1_bonus = 10;
-var oranda_1 = registerOranda('red oranda', 1, Res({infspores:200e18}), 'Boosts the basic field boost by ' + Num(oranda_1_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda1);
+var oranda_1 = registerOranda('red oranda', 1, Res({infspores:200e18}), '' + ' ' + timeweightedinfo, image_oranda1);
 var oranda_2_bonus = 50;
-var oranda_2 = registerOranda('black oranda', 2, Res({infspores:50e30}), 'Boosts the basic field boost by ' + Num(oranda_2_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, image_oranda2);
+var oranda_2 = registerOranda('black oranda', 2, Res({infspores:50e30}), '' + ' ' + timeweightedinfo, image_oranda2);
+var oranda_t_bonus = 2;
+var oranda_t = registerOranda('translucent oranda', -1, Res({infspores:500e9}), 'Boosts the basic field boost by ' + Num(oranda_t_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo, metalifyPlantImage(image_oranda0, metalheader10, [1, 13], [0.5, 0.5]));
+
+// This exists because starting from infinity ascension 2, oranta_t is introduced, and the bonuses of the others are increased so the bonus values and descriptions must be updated dynamically
+function updateOrandasForAscension(ascension) {
+  if(ascension < 2) {
+    oranda_0_bonus = 2;
+    oranda_1_bonus = 10;
+    oranda_2_bonus = 50;
+  } else {
+    oranda_0_bonus = 10;
+    oranda_1_bonus = 50;
+    oranda_2_bonus = 250;
+  }
+  fishes[oranda_0].effect_description = 'Boosts the basic field boost by ' + Num(oranda_0_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo;
+  fishes[oranda_1].effect_description = 'Boosts the basic field boost by ' + Num(oranda_1_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo;
+  fishes[oranda_2].effect_description = 'Boosts the basic field boost by ' + Num(oranda_2_bonus).toPercentString() + ', without requiring runestone (additive to runestone)' + ' ' + timeweightedinfo;
+}
 
 fish_register_id = 1100;
 var jellyfish_t_bonus = 0.05;
 var jellyfish_t = registerJellyfish('iridescent jellyfish', -1, Res({infspores:3000}), 'Boosts infinity production of seed or spore producing neighbors of the pond by ' + Num(jellyfish_t_bonus).toPercentString(), image_jellyfish_t);
+var jellyfish_0_bonus = 0.35; // this is 7 iridescent jellyfish worth of bonus. you can have max 5 iridescent jellyfish, or max 1 moon jellyfish (not both at the same time). So this is a very minor upgrade in boost, but what it actually does is free up 4 spots in the pond by needing only 1 instead of 5 jellyfish
+var jellyfish_0 = registerJellyfish('moon jellyfish', 0, Res({infspores:20e15}), 'Boosts infinity production of seed or spore producing neighbors of the pond by ' + Num(jellyfish_0_bonus).toPercentString(), image_jellyfish_0);
 
 // some fishes have limits depending on count across tiers. This function checks all those conditions
 // returns false if not.
 // Can also output a textual reason in opt_short_reason and/or opt_long_reason, if given as array. It will output two string in [0]
+// opt_f: if given, is pond cell with fish to be replaced by the new one
 // opt_short_reason is intended for short explanation in small dialog/tooltip
 // opt_long_reason is intended for error log message when attempting the action
 function canPlaceThisFishGivenCounts(c, opt_f, opt_short_reason, opt_long_reason) {
-  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP) && c.tier > 0 && state.fishcount[c.index]) {
+  var c2 = (opt_f && opt_f.hasCrop()) ? opt_f.getCrop() : null;
+  if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_SHRIMP || c.type == FISHTYPE_JELLYFISH) && c.tier > (c.type == FISHTYPE_JELLYFISH ? -1 : 0) && state.fishcount[c.index]) {
     // TODO: consider also reducing this to max 1 for tier 0
     if(opt_short_reason) opt_short_reason[0] = 'Max 1';
-    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 1 of this fish';
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 1 ' + c.name;
     return false;
   } else if(c.index == oranda_2 && state.fishcount[c.index]) {
     if(opt_short_reason) opt_short_reason[0] = 'Max 1';
     if(opt_long_reason) opt_long_reason[0] = 'Can have only max 1 black oranda. This is the final infinity fish.';
     return false;
-  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && state.fishtypecount[c.type] >= 4 && !(opt_f && opt_f.hasCrop() && opt_f.getCrop().type == c.type)) {
+  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && state.fishtypecount[c.type] >= 4 && !(c2 && c2.type == c.type)) {
     if(opt_short_reason) opt_short_reason[0] = 'Max 4 ' + getFishTypeName(c.type);
-    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 4 of this fish type';
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 4 ' + getFishTypeName(c.type) + ' of any tier';
     return false;
-  } else if(c.type == FISHTYPE_JELLYFISH && state.fishtypecount[c.type] >= 5) {
-    if(opt_short_reason) opt_short_reason[0] = 'Max 5 ' + getFishTypeName(c.type);
-    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 5 of this fish type';
+  } else if(c.type == FISHTYPE_JELLYFISH && c.tier == -1 && state.fishtypecount[c.type] >= 5 && !(c2 && c2.type == c.type)) {
+    if(opt_short_reason) opt_short_reason[0] = 'Max 5 ' + c.name;
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 5 ' + c.name;
     return false;
-  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishtypecount[c.type] >= 9 && !(opt_f && opt_f.hasCrop() && opt_f.getCrop().type == c.type)) {
+  } else if(c.type == FISHTYPE_JELLYFISH && state.fishtypecount[c.type] > 0 && state.fishcount[c.index] == 0 &&
+            !(c2 && c2.type == c.type && state.fishtypecount[c.type] == 1)) {
+    // this is checking that you don't have a fish of this same type, but of a different tier (by checking fishtype count is non-zero but fish count of the current one is zero), but do allow this when you have exactly one fish of this tier and are replacing it with the same type (even if of a different tier)
+    if(opt_short_reason) opt_short_reason[0] = 'Max 1 jellyfish tier'; // of any jellyfish type across all tiers, IF higher tier than 0 is present
+    if(opt_long_reason) opt_long_reason[0] = 'Cannot have multiple tiers of jellyfish at the same time. Remove all other jellyfish, then try to place this jellyfish tier again (alternatively, delete all but one jellyfish, and upgrade the remaining one to the higher tier)';
+    return false;
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && state.fishtypecount[c.type] >= 9 && !(c2 && c2.type == c.type)) {
     if(opt_short_reason) opt_short_reason[0] = 'Max 9';
-    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 9 of this fish type';
+    if(opt_long_reason) opt_long_reason[0] = 'Can have only max 9 ' + c.name;
     return false;
   } else if(c.type == FISHTYPE_SHRIMP && state.fishtypecount[c.type] > 0 && state.fishcount[c.index] == 0 &&
-            !(opt_f && opt_f.hasCrop() && opt_f.getCrop().type == c.type && state.fishtypecount[c.type] == 1)) {
+            !(c2 && c2.type == c.type && state.fishtypecount[c.type] == 1)) {
     // this is checking that you don't have a fish of this same type, but of a different tier (by checking fishtype count is non-zero but fish count of the current one is zero), but do allow this when you have exactly one fish of this tier and are replacing it with the same type (even if of a different tier)
     if(opt_short_reason) opt_short_reason[0] = 'Max 1 shrimp tier'; // of any shrimp type across all tiers, IF higher tier than 0 is present
     if(opt_long_reason) opt_long_reason[0] = 'Cannot have multiple tiers of shrimp at the same time. Remove all other shrimp, then try to place this shrimp tier again (alternatively, delete all but one shrimp, and upgrade the remaining one to the higher tier)';
@@ -10150,13 +10197,15 @@ function canPlaceThisFishGivenCountsForUi(c, opt_replace_fish) {
     return false;
   } else if(c.index == oranda_2 && fishcount) {
     return false;
-  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && fishcount >= 4) {
+  } else if((c.type == FISHTYPE_EEL || c.type == FISHTYPE_TANG || c.type == FISHTYPE_ORANDA) && fishtypecount >= 4) {
     return false;
-  } else if(c.type == FISHTYPE_JELLYFISH && fishcount >= 5) {
+  } else if(c.type == FISHTYPE_JELLYFISH && c.tier == -1 && (fishcount >= 5 || fishtypecount > fishcount)) {
     return false;
-  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && fishcount >= 9) {
+  } else if(c.type == FISHTYPE_JELLYFISH && c.tier > -1 && fishtypecount > 0) {
     return false;
-  } else if(c.type == FISHTYPE_SHRIMP && fishtypecount > 0) {
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier == 0 && (fishcount >= 9 || fishtypecount > fishcount)) {
+    return false;
+  } else if(c.type == FISHTYPE_SHRIMP && c.tier > 0 && fishtypecount > 0) {
     return false;
   }
   return true;
@@ -11084,6 +11133,10 @@ registerMedal('Infinity ascenscion', 'Ascended the infinity field', image_infini
   return state.infinity_ascend >= 1;
 }, Num(10000));
 
+registerMedal('Infinity ascenscion II', 'Ascended the infinity field a second time', image_infinity_ascend2, function() {
+  return state.infinity_ascend >= 2;
+}, Num(100000));
+
 // individual infinity crop achievements
 medal_register_id = 4200;
 
@@ -11210,6 +11263,18 @@ registerInfTierBonusMedal3(1, 8);
 registerInfTierBonusMedal3(1, 9);
 registerInfTierBonusMedal3(1, 10);
 registerInfTierBonusMedal3(1, 11);
+registerInfTierBonusMedal3(2, 0);
+registerInfTierBonusMedal3(2, 1);
+registerInfTierBonusMedal3(2, 2);
+registerInfTierBonusMedal3(2, 3);
+registerInfTierBonusMedal3(2, 4);
+registerInfTierBonusMedal3(2, 5);
+registerInfTierBonusMedal3(2, 6);
+registerInfTierBonusMedal3(2, 7);
+registerInfTierBonusMedal3(2, 8);
+registerInfTierBonusMedal3(2, 9);
+registerInfTierBonusMedal3(2, 10);
+registerInfTierBonusMedal3(2, 11);
 
 // fish crop achievements
 medal_register_id = 4700;
@@ -11259,6 +11324,8 @@ registerFishTypeMedal(oranda_2);
 registerFishTypeMedal(eel_t);
 registerFishTypeMedal(tang_t);
 registerFishTypeMedal(jellyfish_t);
+registerFishTypeMedal(jellyfish_0);
+registerFishTypeMedal(oranda_t);
 
 
 
@@ -11381,10 +11448,14 @@ function infinityAscensionOk() {
 }
 
 function ascendInfinity() {
-  if(state.infinity_ascend) return; // already ascended
+  if(state.infinity_ascend >= 2) {
+    showMessage('The next infinity ascension is not yet implemented', C_INFINITY);
+    return; // next ascend not yet implemented
+  }
 
-  state.infinity_ascend = 1;
-  state.infinityascendtime = state.time;
+  if(!state.infinity_ascend) state.infinityascendtime = state.time;
+  state.infinityascendtime2 = state.time;
+  state.infinity_ascend += 1;
   state.infinity_res = new Res();
 
   state.numw3++;
@@ -11413,6 +11484,8 @@ function ascendInfinity() {
 
   state.res.infseeds = new Num(0);
   state.res.infspores = new Num(0);
+
+  updateOrandasForAscension(state.infinity_ascend);
 
   return true;
 }

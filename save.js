@@ -572,6 +572,7 @@ function encState(state, opt_raw_only) {
   //processBool(state.overlevel);
   processBool(state.paused_while_heavy_computing);
   processTime(state.infinityascendtime);
+  processTime(state.infinityascendtime2);
   processUint(state.infinity_ascend);
   processRes(state.infinity_res);
 
@@ -1992,6 +1993,8 @@ function decState(s) {
   if(save_version >= 262144*2+64*13+0) state.paused_while_heavy_computing = processBool();
   if(save_version >= 262144*2+64*15+0) {
     state.infinityascendtime = processTime();
+    if(save_version >= 262144*2+64*18+0) state.infinityascendtime2 = processTime();
+    else state.infinityascendtime2 = state.infinityascendtime;
     state.infinity_ascend = processUint();
     state.infinity_res = processRes();
   } else {
@@ -3234,6 +3237,7 @@ var presave = function(state) {
 var postload = function(new_state) {
   state = new_state;
   updateAllPrestigeData();
+  updateOrandasForAscension(state.infinity_ascend);
 
   // do precompute-computations once here, in case update() is not called such as when the save is paused
   state.time = state.prevtime; // state.time is set to 0 after loading, but set it to something valid since some of the computations below depend on it (weather time, ...)
