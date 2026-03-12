@@ -30,10 +30,12 @@ function getChangeLog() {
     }
   }
 
-  text += '0.18 Ascension II (2026-03-??)';
+  text += '0.18.0 Ascension II (2026-03-12)';
   text += '<br/>• Added second infinity ascension.';
-  text += '<br/>• In the infinity field (also pre-ascension), lotuses now boost mushrooms by +125% instead of +100%. Also indicated in its description that it boost mushrooms differently than berries.'; // +100% boost of lotuses to mushrooms was not giving a significant boost: 2 flowers+2 nettles does about the same to a mushroom as 1 flower+2 nettles or 2 flowers+1 nettle and an extra 100% boost. The +125% makes it worth something. Can't boost it too much higher though or all the old fish balancing will be out of sync
+  text += '<br/>• In the infinity field (also pre-ascension), lotuses now boost mushrooms by +125% instead of +100%. Also indicated in its tooltip that it boost mushrooms differently than berries.'; // +100% boost of lotuses to mushrooms was not giving a significant boost: 2 flowers+2 nettles does about the same to a mushroom as 1 flower+2 nettles or 2 flowers+1 nettle and an extra 100% boost. The +125% makes it worth something. Can't boost it too much higher though or all the old fish balancing will be out of sync
   text += '<br/>• The "refresh brassica" button in infinity field will now prioritize the brassica with lowest remaining lifespan first, instead of going from left to right and top to bottom.';
+  text += '<br/>• Added "time since last infinity ascension" and "time since infinity field begin" in the player stats dialog (when the relevant things are unlocked).';
+  text += '<br/>• Fixed bug where nuts production display in nuts tab could sometimes not be updated correctly.';
   text += '<br/><br/>';
 
   text += '0.17.1 QoL and Bugfixes (2026-02-21)';

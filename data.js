@@ -9116,7 +9116,8 @@ Crop3.prototype.getBaseCost = function() {
     return this.cost.mulr(1250);
   }
   if(state.infinity_ascend >= 2) {
-    if(this.tier == 0) return this.cost.mulr(1250000);
+    if(this.tier == 0) return this.cost.mulr(1000000);
+    if(this.tier == 1) return this.cost.mulr(1250000);
     return this.cost.mulr(1500000);
   }
   return this.cost;

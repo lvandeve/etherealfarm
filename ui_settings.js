@@ -860,7 +860,9 @@ function createStatsDialog() {
     if(state.infinity_ascend) {
       text += '• infinity resources gained since ascend: ' + open + state.infinity_res.toString() + close + '<br>';
       text += '• infinity ascensions done: ' + open + state.infinity_ascend + close + '<br>';
+      text += '• time since last infinity ascension: ' + open + util.formatDuration(state.time - state.infinityascendtime2) + close + '<br>';
     }
+    text += '• time since infinity field begin: ' + open + util.formatDuration(state.time - state.infinitystarttime) + close + '<br>';
     text += '<br>';
   }
 
