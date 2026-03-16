@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -458,8 +458,25 @@ function getResourceDetails(index) {
       // other non-special (= with continuous preoduction/s) resource
       text += 'Production (' + name + '/s): ' + res_gain.toString() + '/s';
       if(index == 5 || index == 8 || (res_gain.neqr(0) && res_gain.ltr(0.1) && res_gain.gtr(-0.1))) text += ' (' + res_gain.mulr(3600).toString() + '/h)';
-      text += '<br/><br/>';
+      text += '<br/>';
+
+      if(index == 5) {
+        if(state.infinity_ascend) {
+          text += 'Highst production ever this ascend: ' + state.infinity_max_prod.infseeds.toString() + '/s<br>';
+        }
+        text += 'Highest production ever: ' + state.g_max_prod.infseeds.toString() + '/s<br>'; // this can be more than total because some seeds are spent on brassicas that wither
+        text += '<br/>';
+      }
+      if(index == 8) {
+        if(state.infinity_ascend) {
+          text += 'Highst production ever this ascend: ' + state.infinity_max_prod.infspores.toString() + '/s<br>';
+        }
+        text += 'Highst production ever: ' + state.g_max_prod.infspores.toString() + '/s<br>';
+        text += '<br/>';
+      }
+
     }
+
     if(state.numgrowing > 0 && gain_expected_hyp.atIndex(index).neqr(0)) {
       var res_expected = gain_expected.atIndex(index);
       var res_expected_hyp = gain_expected_hyp.atIndex(index);

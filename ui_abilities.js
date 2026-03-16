@@ -549,7 +549,13 @@ function refreshWatercress3(opt_clear, opt_all, opt_by_automaton, opt_recursed) 
   var refreshed = false;
   var remcleared = false;
   var fullyplanted = false;
-  var cropindex = getHighestBrassica3();
+  // which one to choose as the main one to refresh to:
+  // -getHighestBrassica3 returns highest unlocked one, but it may be irrelevant when it's only unlocked and you don't have the seeds for it yet; this is not optimal, since during zinc it can happen that you have still-useful zinc brassica that you want to refresh while bronze is already unlocked
+  // -getHighestBrassica3Had returns highest one ever planted, that's a good choice with one flaw, when it just became unlocked and you can afford it, you may expect the refresh brassica button to actually start using this one
+  // -getHighestAffordableBrassica3 returns the highest one you can afford now, that's also a good choice but also with a flaw, once you have a higher brassica planted, but can't afford it anymore now, you still expect the refresh brassica button to use this highest one now
+  // So the max of getHighestBrassica3Had and getHighestAffordableBrassica3 is taken as best of both worlds
+  // And why is this used at all, and not just refresh brassica within their own tier for example? Because once you are using higher tier brassica, lower tier ones are meaningless and it's not expected they ever get refreshed within their own tier
+  var cropindex = Math.max(getHighestBrassica3Had(), getHighestAffordableBrassica3());
   if(cropindex < 0) return;
   var cropindex1 = brassica3_0; // lower tier, if relevant
   if(cropindex > brassica3_0) cropindex1 = cropindex - 1;

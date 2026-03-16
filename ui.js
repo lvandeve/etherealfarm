@@ -255,8 +255,8 @@ function updateMainFlexPositions() {
     }
   } else {
     if(numtabs <= 1) {
-      if(contentFlex.y0 != tabFlexBegin) {
-        contentFlex.y0 = tabFlexBegin;
+      if(contentFlex.y0 != tabFlexBegin + 0.005) {
+        contentFlex.y0 = tabFlexBegin + 0.005;
         contentFlex.update(gameFlex.div);
       }
     } else {

@@ -30,6 +30,14 @@ function getChangeLog() {
     }
   }
 
+  text += '0.18.1 (2026-03-16)';
+  text += '<br/>• Added a truly basic speed medal for 45 minutes';
+  text += '<br/>• Added "highest production ever" stats to infinity seeds and infinity spores dialogs.';
+  text += '<br/>• Added more tree level achievements';
+  text += '<br/>• Fixed bug with infinity brassica refresh when using zinc tier while bronze tier already unlocked but not yet affordable.';
+  text += '<br/>• Small other tweaks and fixes.';
+  text += '<br/><br/>';
+
   text += '0.18.0 Ascension II (2026-03-12)';
   text += '<br/>• Added second infinity ascension.';
   text += '<br/>• In the infinity field (also pre-ascension), lotuses now boost mushrooms by +125% instead of +100%. Also indicated in its tooltip that it boost mushrooms differently than berries.'; // +100% boost of lotuses to mushrooms was not giving a significant boost: 2 flowers+2 nettles does about the same to a mushroom as 1 flower+2 nettles or 2 flowers+1 nettle and an extra 100% boost. The +125% makes it worth something. Can't boost it too much higher though or all the old fish balancing will be out of sync

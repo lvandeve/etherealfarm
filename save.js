@@ -575,6 +575,7 @@ function encState(state, opt_raw_only) {
   processTime(state.infinityascendtime2);
   processUint(state.infinity_ascend);
   processRes(state.infinity_res);
+  processRes(state.infinity_max_prod);
 
   section = 17; id = 0; // fruits
   processInt(state.fruit_seed);
@@ -1997,6 +1998,7 @@ function decState(s) {
     else state.infinityascendtime2 = state.infinityascendtime;
     state.infinity_ascend = processUint();
     state.infinity_res = processRes();
+    if(save_version >= 262144*2+64*18+1) state.infinity_max_prod = processRes();
   } else {
     state.infinity_res = new Res();
     state.infinity_res.infseeds = state.g_res.infseeds.clone();

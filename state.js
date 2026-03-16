@@ -647,6 +647,7 @@ function State() {
   // infseeds and infspores resources since last infinity transcension (or since beginning of the very first pre-ascension infinity run)
   // this works similar to state.g_res, but only for inf-related resources, and gets reset to 0 upon infinity ascension
   this.infinity_res = new Res();
+  this.infinity_max_prod = new Res(); // similar to g_max_prod, but only for the current infinity ascend
 
   this.prevleveltime = [0, 0, 0]; // previous tree level time durations. E.g. if tree level is now 10, this is the duration 9-10, 8-9 and 7-8 took respectively. Used for the computation of the weighted time at level bonus (weightedTimeAtLevel)
 

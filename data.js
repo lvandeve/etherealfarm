@@ -10393,7 +10393,9 @@ var level_achievement_values = [[5, 0.025], [10, 0.05], [15, 0.075], [20, 0.1], 
                                 [30, 0.3],  [35, 0.4],  [40, 0.5],  [45, 0.75],  [50, 1.0],
                                 [60, 1.5],  [70, 2.5],  [80, 5],  [90, 10],  [100, 15],
                                 [110, 25],  [120, 50],  [130, 75],  [140, 150],  [150, 200],
-                                [160, 300],  [170, 400],  [180, 500],  [190, 600],  [200, 700]];
+                                [160, 300],  [170, 400],  [180, 500],  [190, 600],  [200, 1000],
+                                [210, 1200],  [220, 1400],  [230, 1600],  [240, 1800],  [250, 2000],
+                                [260, 2200],  [270, 2400],  [280, 2600],  [290, 2800],  [300, 3000]];
 for(let i = 0; i < level_achievement_values.length; i++) {
   let level = level_achievement_values[i][0];
   let bonus = Num(level_achievement_values[i][1]);
@@ -10406,6 +10408,8 @@ for(let i = 0; i < level_achievement_values.length; i++) {
   if(i > 0) medals[id].hint = prevmedal;
   prevmedal = id;
 }
+
+// NOTE: the tree level 300 medal has id 102, so there's room for only one more medal. if more tree level medals needed, move all of these to another id
 
 // TODO: from now on, clearly define the value of a new medal series right before it, rather than the "+= 20" system from above, to prevent no accidental changing of all achievement IDs
 medal_register_id = 104;
@@ -11018,6 +11022,15 @@ var medal_tb_speed_3 = registerMedal('truly basic speed 1h', 'reach level 10 in 
   return false;
 }, Num(4));
 medals[medal_tb_speed_3].hint = medal_tb_speed_2;
+
+var medal_tb_speed_4 = registerMedal('truly basic speed 45m', 'reach level 10 in the truly basic challenge in 45 minutes or less', image_hourglass, function() {
+  var runtime = 2700;
+  if(state.challenge == challenge_truly_basic && state.treelevel >= 10 && state.c_runtime <= runtime) return true;
+  var besttime = state.challenges[challenge_truly_basic].besttime;
+  if(state.challenges[challenge_truly_basic].completed && !!besttime && besttime <= runtime) return true; // also apply retroactively
+  return false;
+}, Num(5));
+medals[medal_tb_speed_4].hint = medal_tb_speed_3;
 
 
 medal_register_id = 3020;

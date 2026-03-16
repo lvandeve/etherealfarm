@@ -4069,6 +4069,7 @@ var update = function(opt_ignorePause) {
   update_prev_state_ctor_count = state_ctor_count;
 
   var update_fruit_ui = false;
+  var update_medal_ui = false;
 
   if(!prefield || !prefield.length) {
     if(!paused_ || update_ui_paused) precomputeField(); // do this even before the paused check, because some UI elements use prefield
@@ -6834,6 +6835,7 @@ var update = function(opt_ignorePause) {
         showMessage('Achievement unlocked: ' + upper(medals[j].name) + ' (+' + medals[j].prodmul.toPercentString() + ')', C_UNLOCK, 34776048, 0.75);
         unlocked_any = true;
         showMedalChip(j);
+        update_medal_ui = true;
 
         if(j == medal_crowded_id && state.g_numresets == 0) {
           //showHelpDialog(10, undefined, 'The field is full. If more room is needed, old crops can be deleted, click a crop to see its delete button. Ferns will still appear safely on top of crops, no need to make room for them.');
@@ -6868,6 +6870,20 @@ var update = function(opt_ignorePause) {
     state.c_max_res = Res.max(state.c_max_res, state.res);
     state.g_max_prod = Res.max(state.g_max_prod, gain);
     state.c_max_prod = Res.max(state.c_max_prod, gain);
+    state.infinity_max_prod.infseeds = Num.max(state.infinity_max_prod.infseeds, gain.infseeds);
+    state.infinity_max_prod.infspores = Num.max(state.infinity_max_prod.infspores, gain.infspores);
+
+    // the infinity income has nothing to do with current run, look for that in the global stats instead
+    // therefore, set this to 0, to both not give misleading info in the stats dialog (one might think this is highest ever), and not spend bytes in the savefile on this
+    // similar for other resources for max_res
+    state.c_max_res.infseeds = new Num(0);
+    state.c_max_res.infspores = new Num(0);
+    state.c_max_res.essence = new Num(0);
+    state.c_max_res.amber = new Num(0);
+    state.c_max_res.twigs = new Num(0);
+    state.c_max_res.resin = new Num(0);
+    state.c_max_prod.infseeds = new Num(0);
+    state.c_max_prod.infspores = new Num(0);
 
     var resinhr = getResinHour();
     var twigshr = getTwigsHour();
@@ -6992,6 +7008,7 @@ var update = function(opt_ignorePause) {
   updateUI2();
   if(update_fruit_ui) updateFruitUI();
   if(update_amber_ui) updateAmberUI();
+  if(update_medal_ui) updateMedalUI();
   showGoalChips();
 
   for(var i = 0; i < update_listeners.length; i++) {
