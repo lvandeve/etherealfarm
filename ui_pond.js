@@ -297,10 +297,10 @@ function makeUpgradeFishAction(x, y, single, opt_silent) {
   } else {
     if(!opt_silent) {
       if(too_expensive[1]) {
-        showMessage('not enough resources for next infinity crop tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
+        showMessage('not enough resources for next fish tier: have ' + Res.getMatchingResourcesOnly(too_expensive[0], state.res).toString() +
             ', need ' + too_expensive[0].toString() + ' (' + getCostAffordTimer(too_expensive[0]) + ')', C_INVALID, 0, 0);
       } else if(!(x >= 0 && x < state.pondw && y >= 0 && y < state.pondh) || state.pond[y][x].index < CROPINDEX) {
-        showMessage('No fish to upgrade tier here. Move mouse cursor over a crop and press u to upgrade it to the next tier', C_INVALID);
+        showMessage('No fish to upgrade tier here. Move mouse cursor over a fish and press u to upgrade it to the next tier', C_INVALID);
       } else {
         showMessage('Fish not replaced, no higher tier unlocked or available', C_INVALID);
       }

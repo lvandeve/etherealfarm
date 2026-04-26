@@ -1,6 +1,6 @@
 /*
 Ethereal Farm
-Copyright (C) 2020-2025  Lode Vandevenne
+Copyright (C) 2020-2026  Lode Vandevenne
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,8 +19,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 function renderUpgraceIcon(canvasFlex, u) {
   canvasFlex.div.style.backgroundColor = '#ccc';
   canvasFlex.div.style.border = '1px solid black';
+  canvasFlex.div.style.background = '';
+  canvasFlex.div.style.backgroundColor = '';
   if(u.bgcolor) {
-    canvasFlex.div.style.backgroundColor = u.bgcolor;
+    if(Array.isArray(u.bgcolor)) {
+      var s = 'linear-gradient(135deg';
+      for(var i = 0; i < u.bgcolor.length; i++) {
+        s += ', ' + u.bgcolor[i];
+      }
+      s += ')';
+      canvasFlex.div.style.background = s;
+    } else {
+      canvasFlex.div.style.backgroundColor = u.bgcolor;
+    }
   }
   if(u.bordercolor) {
     canvasFlex.div.style.border = '1px solid ' + u.bordercolor;

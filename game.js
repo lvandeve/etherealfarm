@@ -971,6 +971,7 @@ var ACTION_DELETE2 = action_index++;
 var ACTION_REPLACE2 = action_index++;
 var ACTION_UPGRADE2 = action_index++;
 var ACTION_ABILITY = action_index++; // action_weather
+var ACTION_CHANGE_PERMA = action_index++;
 var ACTION_TRANSCEND = action_index++; // also includes starting a challenge
 var ACTION_FRUIT_SLOT = action_index++; // move fruit to other slot. Variables inside: f:fruit object, slottype:0=stored,1=sacrificial, precise_slot:exact destination slot number (only one of slottype or precise_slot must be given)
 var ACTION_FRUIT_ACTIVE = action_index++; // select active fruit
@@ -5580,6 +5581,9 @@ var update = function(opt_ignorePause) {
           state.lastWeather = a;
           if(action.change_perma) state.lastPermaWeather = a;
         }
+      } else if(type == ACTION_CHANGE_PERMA) {
+        state.lastPermaWeather = action.ability;
+        store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE (consistency)
       } else if(type == ACTION_FRUIT_SLOT) {
         var f = action.f;
         if(action.precise_slot != undefined) {
@@ -5631,7 +5635,7 @@ var update = function(opt_ignorePause) {
                 f.slot = to;
               }
             }
-            store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
+            store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE (consistency)
           }
         } else {
           var slottype = action.slottype; // 0:stored, 1:sacrificial
@@ -5651,7 +5655,7 @@ var update = function(opt_ignorePause) {
             setOrAppendFruit(f.slot, undefined);
             setOrAppendFruit(slot, f);
           }
-          store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE
+          store_undo = true; // for same reason as in ACTION_FRUIT_ACTIVE (consistency)
         }
         updateFruitUI();
       } else if(type == ACTION_FRUIT_ACTIVE) {

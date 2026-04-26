@@ -30,6 +30,12 @@ function getChangeLog() {
     }
   }
 
+  text += '0.18.2 (2026-04-26)';
+  text += '<br/>• Added a second prestige level for all prestigeable crops: nuts, berries, flowers and mushrooms';
+  text += '<br/>&nbsp;&nbsp;◦ Note: the grow times of the berries are not final and may be tweaked in a next update';
+  text += '<br/>• Bug- and typo fixes'; // includes blueprint templates of tower defense statues in blueprints
+  text += '<br/><br/>';
+
   text += '0.18.1 (2026-03-16)';
   text += '<br/>• Added a truly basic speed medal for 45 minutes';
   text += '<br/>• Added "highest production ever" stats to infinity seeds and infinity spores dialogs.';

@@ -462,16 +462,16 @@ function getResourceDetails(index) {
 
       if(index == 5) {
         if(state.infinity_ascend) {
-          text += 'Highst production ever this ascend: ' + state.infinity_max_prod.infseeds.toString() + '/s<br>';
+          text += 'Highest production ever this ascend: ' + state.infinity_max_prod.infseeds.toString() + '/s<br>';
         }
         text += 'Highest production ever: ' + state.g_max_prod.infseeds.toString() + '/s<br>'; // this can be more than total because some seeds are spent on brassicas that wither
         text += '<br/>';
       }
       if(index == 8) {
         if(state.infinity_ascend) {
-          text += 'Highst production ever this ascend: ' + state.infinity_max_prod.infspores.toString() + '/s<br>';
+          text += 'Highest production ever this ascend: ' + state.infinity_max_prod.infspores.toString() + '/s<br>';
         }
-        text += 'Highst production ever: ' + state.g_max_prod.infspores.toString() + '/s<br>';
+        text += 'Highest production ever: ' + state.g_max_prod.infspores.toString() + '/s<br>';
         text += '<br/>';
       }
 

@@ -399,12 +399,12 @@ BluePrint.fromCrop = function(c) {
   if(c.type == CROPTYPE_LOTUS) return 34;
   if(c.type == CROPTYPE_FERN) return 35;
   if(c.type == CROPTYPE_PUMPKIN) return 60;
-  if(c.index == challengestatue_0) return 100;
-  if(c.index == challengestatue_1) return 101;
-  if(c.index == challengestatue_2) return 102;
-  if(c.index == challengestatue_3) return 103;
-  if(c.index == challengestatue_4) return 104;
-  if(c.index == challengestatue_5) return 105;
+  if(c.index == challengestatue_0 || c.index == challengestatue_0_template) return 100;
+  if(c.index == challengestatue_1 || c.index == challengestatue_1_template) return 101;
+  if(c.index == challengestatue_2 || c.index == challengestatue_2_template) return 102;
+  if(c.index == challengestatue_3 || c.index == challengestatue_3_template) return 103;
+  if(c.index == challengestatue_4 || c.index == challengestatue_4_template) return 104;
+  if(c.index == challengestatue_5 || c.index == challengestatue_5_template) return 105;
   return 0;
 }
 

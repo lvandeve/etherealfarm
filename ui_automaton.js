@@ -1127,6 +1127,11 @@ function showConfigureAutoActionDialog() {
   flex  = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
   flex.div.innerText = 'Choose at which tree level to override with which blueprint';
   y += texth * 1.5;
+  if(state.numAutomaticTranscendsSinceHumanAction >= maxAutomaticTranscendsSinceHumanAction) {
+    flex = new Flex(scrollFlex, 0.01, y, 1, y + 0.07);
+    flex.div.innerHTML = '<font color="#f80">It has been too long since human interaction was done, auto-transcends are disabled until any human action is done (you can perform any action to immediately fix this, e.g. pick up infinity symbol)</font>';
+    y += texth * 2.5;
+  }
 
   var setButtonIndicationStyle = function(flex) {
     if(flex.enabledStyle != undefined) {
@@ -1498,6 +1503,13 @@ function updateAutomatonUI() {
   }, flex));
   flex.isGlobalButtonItself = true;
   flex.enabledStyle = true;
+
+  if(state.numAutomaticTranscendsSinceHumanAction >= maxAutomaticTranscendsSinceHumanAction) {
+    flex = new Flex(automatonFlex, 0.01, y, 0.85, y + 0.07);
+    flex.div.innerHTML = '<font color="#f80">It has been too long since human interaction was done, auto-transcends are disabled until any human action is done (you can perform any action to immediately fix this, e.g. pick up infinity symbol)</font>';
+    y += texth * 2.5;
+  }
+
 
   //////////////////////////////////////////////////////////////////////////////
   addHR();

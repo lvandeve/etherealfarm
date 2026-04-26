@@ -92,6 +92,7 @@ function formatAbilityDurationTooltipText(index, name, description, duration, wa
   var cooldown = wait - duration;
   var text = name + ': ' + description + '<br>' + 'Run time: ' + util.formatDuration(duration) + '. Cooldown time: ' + util.formatDuration(cooldown);
   if(statusWord) text += '<br><br>Status: ' + upper(statusWord);
+  if(havePermaWeather()) text += '<br><br>With shift: change only perma-weather. With ctrl: activate weather without changing perma-weather.';
   return text;
 }
 
@@ -158,7 +159,7 @@ function updateAbilitiesUI() {
 
     registerAction(sunbutton.div, function(shift, ctrl) {
       if(shift) {
-        state.lastPermaWeather = 0;
+        if(state.lastPermaWeather != 0) addAction({type:ACTION_CHANGE_PERMA, ability:0});
       } else {
         addAction({type:ACTION_ABILITY, ability:0, change_perma:!ctrl});
       }
@@ -230,7 +231,7 @@ function updateAbilitiesUI() {
 
     registerAction(mistbutton.div, function(shift, ctrl) {
       if(shift) {
-        state.lastPermaWeather = 1;
+        if(state.lastPermaWeather != 1) addAction({type:ACTION_CHANGE_PERMA, ability:1});
       } else {
         addAction({type:ACTION_ABILITY, ability:1, change_perma:!ctrl});
       }
@@ -303,7 +304,7 @@ function updateAbilitiesUI() {
 
     registerAction(rainbowbutton.div, function(shift, ctrl) {
       if(shift) {
-        state.lastPermaWeather = 2;
+        if(state.lastPermaWeather != 2) addAction({type:ACTION_CHANGE_PERMA, ability:2});
       } else {
         addAction({type:ACTION_ABILITY, ability:2, change_perma:!ctrl});
       }
@@ -311,7 +312,7 @@ function updateAbilitiesUI() {
     }, 'rainbow ability', {
       label_shift: (havePerma ? 'change perma weather only' : undefined),
       label_ctrl: (havePerma ? 'activate without changing perma' : undefined),
-      tooltip: function() { return formatAbilityDurationTooltipText(2, 'rainbow ability', 'rainbow ability: flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())}
+      tooltip: function() { return formatAbilityDurationTooltipText(2, 'rainbow ability', 'flowers get a +' + getRainbowFlowerBoost().toPercentString() + ' boost and aren\'t negatively affected by winter', getRainbowDuration(), getRainbowWait())}
     });
     rainbowbutton.div.id = 'rainbow_button';
   }
